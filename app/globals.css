@@ -1,0 +1,585 @@
+@import "tailwindcss";
+
+/* ── Nexa font (local) ─────────────────────────────────── */
+@font-face {
+  font-family: 'Nexa';
+  src: url('/fonts/NexaRegular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ── Base app vars (keep existing) ─────────────────────── */
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+
+  /* ── WeLead brand primitives ─────────────────────────── */
+  --wl-red-500:     #E84848;
+  --wl-red-hover:   #D93C3C;
+  --wl-charcoal-900: #282838;
+
+  /* ── WeLead semantic ────────────────────────────────── */
+  --wl-success: #2ECC71;
+  --wl-info:    #3B82F6;
+  --wl-warning: #F39C12;
+
+  /* ── WeLead surfaces / text (light) ─────────────────── */
+  --wl-bg:         #FFFFFF;
+  --wl-surface:    #F7F7F9;
+  --wl-surface-2:  #FFFFFF;
+  --wl-text:       #111317;
+  --wl-text-muted: #5B6575;
+  --wl-border:     #E6E6EA;
+
+  /* ── WeLead effects ─────────────────────────────────── */
+  --wl-shadow-sm:   0 4px 12px rgba(0,0,0,0.06);
+  --wl-shadow-md:   0 10px 24px rgba(0,0,0,0.10);
+  --wl-glow-red:    0 0 12px rgba(232,72,72,0.35);
+  --wl-focus-ring:  0 0 0 3px rgba(232,72,72,0.28);
+
+  /* ── WeLead radius ──────────────────────────────────── */
+  --wl-radius-sm:   8px;
+  --wl-radius-lg:   14px;
+  --wl-radius-pill: 9999px;
+}
+
+/* ── WeLead dark-theme surface overrides ──────────────── */
+[data-theme="dark"] {
+  --wl-bg:         #111317;
+  --wl-surface:    #1A1D24;
+  --wl-surface-2:  #141824;
+  --wl-text:       #F2F2F2;
+  --wl-text-muted: #9AA3B2;
+  --wl-border:     #2E323C;
+  --wl-shadow-sm:  0 0 0 rgba(0,0,0,0);
+  --wl-shadow-md:  0 0 0 rgba(0,0,0,0);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+/* ── Tailwind v4 theme extension ──────────────────────── */
+@theme inline {
+  /* Existing tokens (keep) */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: 'Nexa', var(--font-inter);   /* Nexa Regular → body font, Inter fallback */
+  --font-head: var(--font-montserrat);     /* new     → Montserrat (WeLead heading font) */
+  --font-geist: var(--font-geist-sans);   /* kept    → Geist as named alias */
+  --font-mono: var(--font-geist-mono);
+
+  /* ── Brand colors ──────────────────────────────────── */
+  --color-wl-red:         #E84848;
+  --color-wl-red-hover:   #D93C3C;
+  --color-wl-charcoal:    #282838;
+
+  /* Semantic */
+  --color-wl-success:     #2ECC71;
+  --color-wl-info:        #3B82F6;
+  --color-wl-warning:     #F39C12;
+
+  /* Theme-aware surfaces (follow CSS var, not hardcoded) */
+  --color-wl-bg:          var(--wl-bg);
+  --color-wl-surface:     var(--wl-surface);
+  --color-wl-surface-2:   var(--wl-surface-2);
+  --color-wl-text:        var(--wl-text);
+  --color-wl-muted:       var(--wl-text-muted);
+  --color-wl-border:      var(--wl-border);
+
+  /* ── Brand spacing (8pt grid) ──────────────────────── */
+  /* Usage: p-wl-1 = 8px, p-wl-2 = 16px … p-wl-6 = 64px */
+  --spacing-wl-1:  8px;
+  --spacing-wl-2:  16px;
+  --spacing-wl-3:  24px;
+  --spacing-wl-4:  32px;
+  --spacing-wl-5:  48px;
+  --spacing-wl-6:  64px;
+
+  /* ── Border radius ─────────────────────────────────── */
+  --radius-wl-sm:   8px;
+  --radius-wl-lg:   14px;
+  --radius-wl-pill: 9999px;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: 'Nexa', var(--font-inter), Arial, Helvetica, sans-serif;
+}
+
+/* ── Hero playbook background ──────────────────────────────── */
+.hero-playbook {
+  position: relative;
+  isolation: isolate;
+}
+
+/* SVG playbook pattern — rendered as inline animated component */
+.playbook-bg {
+  opacity: 0.28;
+  animation: playbookDrift 55s ease-in-out infinite;
+  transition: opacity 0.3s ease;
+}
+
+/* Allow CSS transform on SVG circles (for scale pop-in) */
+.playbook-bg circle {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+/* Remove red glow on specific pages */
+.nx-no-glow::after {
+  background: radial-gradient(ellipse 130% 100% at 50% 50%, transparent 35%, rgba(0, 0, 0, 0.52) 100%) !important;
+}
+
+/* Hide playbook text in coach portal — keep only diagrams */
+.nx-no-glow .playbook-bg text {
+  display: none !important;
+}
+
+/* Red accent glow + dark edge vignette */
+.hero-playbook::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(700px 300px at 72% 38%, rgba(232, 72, 72, 0.16), transparent 60%),
+    radial-gradient(ellipse 130% 100% at 50% 50%, transparent 35%, rgba(0, 0, 0, 0.52) 100%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+@keyframes playbookDrift {
+  0%   { transform: translate3d(0, 0, 0); }
+  50%  { transform: translate3d(-18px, 10px, 0); }
+  100% { transform: translate3d(0, 0, 0); }
+}
+
+/* ── Smooth theme transitions ──────────────────────────────── */
+*, *::before, *::after {
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.2s ease;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   LIGHT MODE — scoped to body.light-mode
+   Cool gray #eef1f5 base · red accents unchanged · athletic feel
+══════════════════════════════════════════════════════════════ */
+
+/* ── Backgrounds ─────────────────────────────────────────── */
+
+body.light-mode .hero-playbook {
+  background-color: #eef1f5 !important;
+}
+
+body.light-mode nav {
+  background-color: rgba(238,241,245,0.96) !important;
+  border-color: #c8d0dc !important;
+}
+
+body.light-mode section {
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+body.light-mode footer {
+  background-color: transparent !important;
+  border-color: #c8d0dc !important;
+}
+
+/* Diagonal separator divs — keep height but hide visually in light mode */
+body.light-mode .nx-sep { visibility: hidden !important; background: transparent !important; }
+
+/* Step cards — dark mode: fully transparent (grid wrapper too) */
+.nx-steps-grid {
+  background-color: transparent !important;
+}
+.nx-step-card {
+  background-color: transparent !important;
+}
+.nx-step-card:hover {
+  background-color: rgba(255,255,255,0.04) !important;
+}
+
+/* Step cards — light mode: off-white card surface */
+body.light-mode .nx-step-card {
+  background-color: #f0f3f8 !important;
+}
+body.light-mode .nx-step-card:hover {
+  background-color: #e5eaf2 !important;
+}
+
+/* Dark surface cards → transparent in light mode */
+body.light-mode div[class*="bg-[#0A1428]"],
+body.light-mode div[class*="bg-[#070D1C]"],
+body.light-mode div[class*="bg-[#060E1E]"],
+body.light-mode div[class*="bg-[#060A14]"],
+body.light-mode div[class*="bg-[#0A1020]"],
+body.light-mode div[class*="bg-[#1E2D4A]"],
+body.light-mode span[class*="bg-[#1E2D4A]"] {
+  background-color: transparent !important;
+}
+
+/* Card hover states → subtle tint */
+body.light-mode div[class*="hover:bg-[#0D1A38]"]:hover,
+body.light-mode div[class*="hover:bg-[#0A1228]"]:hover,
+body.light-mode div[class*="hover:bg-[#0A1020]"]:hover {
+  background-color: rgba(0,0,50,0.05) !important;
+}
+
+/* ── Playbook overlay ────────────────────────────────────── */
+
+body.light-mode .playbook-bg {
+  opacity: 0.52 !important;
+}
+
+/* Remove dark vignette */
+body.light-mode .hero-playbook::after {
+  opacity: 0 !important;
+}
+
+/* ── Typography ──────────────────────────────────────────── */
+
+body.light-mode h1,
+body.light-mode h2,
+body.light-mode h3 {
+  color: #0d1117 !important;
+}
+
+body.light-mode p {
+  color: #2d3748 !important;
+}
+
+body.light-mode nav a {
+  color: #4a5568 !important;
+}
+
+body.light-mode .nx-stat-num {
+  color: #0d1117 !important;
+}
+
+/* Ghost step numbers — visible dark watermark in light mode */
+body.light-mode .nx-step-num {
+  color: rgba(13, 30, 60, 0.35) !important;
+}
+
+body.light-mode [class*="text-[#9AA3B2]"],
+body.light-mode [class*="text-[#D8E1EA]"],
+body.light-mode [class*="text-[#C4CDD8]"],
+body.light-mode [class*="text-[#475569]"],
+body.light-mode [class*="text-[#3D5578]"] {
+  color: #4a5568 !important;
+}
+
+/* ── Buttons ─────────────────────────────────────────────── */
+
+/* Red buttons — white text stays white */
+body.light-mode button[class*="bg-wl-red"] {
+  color: #ffffff !important;
+}
+
+/* ── Ghost button system ─────────────────────────────────
+   Uses CSS custom properties so hover always wins cleanly.
+──────────────────────────────────────────────────────── */
+.nx-ghost-btn {
+  --gb-bg:     transparent;
+  --gb-border: rgba(255,255,255,0.40);
+  --gb-color:  #ffffff;
+  --gb-shadow: none;
+  background-color: var(--gb-bg)     !important;
+  border-color:     var(--gb-border) !important;
+  color:            var(--gb-color)  !important;
+  box-shadow:       var(--gb-shadow) !important;
+  transition: background-color 0.25s ease, border-color 0.25s ease, color 0.2s ease, box-shadow 0.25s ease, transform 0.2s ease !important;
+}
+
+/* Light mode — remap vars */
+body.light-mode .nx-ghost-btn {
+  --gb-border: #9aa3b2;
+  --gb-color:  #2d3748;
+}
+
+/* Hover — remap vars (wins on specificity via :hover, both modes) */
+.nx-ghost-btn:hover {
+  --gb-bg:     #E84848;
+  --gb-border: #E84848;
+  --gb-color:  #ffffff;
+  --gb-shadow: 0 8px 28px rgba(232,72,72,0.4);
+  transform: translateY(-2px);
+}
+
+/* ── Logo swap ───────────────────────────────────────────── */
+
+.nx-logo-light { display: none !important; }
+body.light-mode .nx-logo-dark { display: none !important; }
+body.light-mode .nx-logo-light { display: block !important; }
+
+/* ── CÉGEP school names ───────────────────────────────── */
+body.light-mode .nx-cegep-grid [class*="text-white"] {
+  color: #0d1117 !important;
+}
+
+/* ── Step cards & general white text in light mode ───── */
+body.light-mode div[class*="bg-[#060A14]"] [class*="text-white"],
+body.light-mode div[class*="bg-[#060A14]"] h3,
+body.light-mode div[class*="bg-[#060A14]"] p {
+  color: #0d1117 !important;
+}
+body.light-mode div[class*="bg-[#060A14]"] [class*="text-[#9AA3B2]"] {
+  color: #4a5568 !important;
+}
+
+/* ── Card red glow — boost in light mode ────────────────── */
+body.light-mode .nx-card-glow {
+  background: rgba(232, 72, 72, 0.45) !important;
+}
+
+/* ── Player OVR card ─────────────────────────────────────── */
+
+body.light-mode .nx-card-body {
+  background-color: #ffffff !important;
+}
+
+body.light-mode .nx-card {
+  background-color: #f0f3f8 !important;
+  border-color: #c8d0dc !important;
+  box-shadow: 0 8px 32px rgba(0,0,50,0.10) !important;
+}
+
+body.light-mode .nx-card [class*="text-white"] {
+  color: #0d1117 !important;
+}
+
+/* Opacity variants (text-white/50, text-white/65) */
+body.light-mode .nx-card [class*="text-white\/"] {
+  color: #6b7280 !important;
+}
+
+/* Exception: keep white text inside the red top bar & red gradient avatar */
+body.light-mode .nx-card [class*="bg-wl-red"] [class*="text-white"],
+body.light-mode .nx-card [class*="bg-wl-red"] [class*="text-white\/"],
+body.light-mode .nx-card [class*="from-wl-red"][class*="text-white"] {
+  color: #ffffff !important;
+}
+
+body.light-mode .nx-card [class*="bg-[#1E2D4A]"] {
+  background-color: #e4e9f2 !important;
+  border-color: #c8d0dc !important;
+}
+
+body.light-mode .nx-card [class*="bg-white\/"] {
+  background-color: #e8ecf4 !important;
+  border-color: #c8d0dc !important;
+}
+
+body.light-mode .nx-card [class*="bg-[#060E1E]"] {
+  background-color: #e4e9f2 !important;
+  border-color: #c8d0dc !important;
+}
+
+/* ── Borders & dividers ──────────────────────────────────── */
+
+body.light-mode .divide-\[\#3D5578\] > *,
+body.light-mode .divide-\[\#1E2D4A\] > * {
+  border-color: #c8d0dc !important;
+}
+
+body.light-mode div[class*="border-[#1E2D4A]"],
+body.light-mode div[class*="border-[#1E3058]"],
+body.light-mode div[class*="border-[#2E3D55]"],
+body.light-mode section[class*="border-[#1E2D4A]"],
+body.light-mode footer[class*="border-[#1E2D4A]"] {
+  border-color: #c8d0dc !important;
+}
+
+/* ── Social media icons ──────────────────────────────────── */
+
+.nx-social-icon {
+  color: #475569;
+  display: inline-flex;
+  transition: color 0.22s ease, filter 0.22s ease, transform 0.22s ease;
+}
+
+.nx-social-icon:hover {
+  color: #E84848;
+  filter: drop-shadow(0 0 7px rgba(232, 72, 72, 0.60));
+  transform: scale(1.18);
+}
+
+body.light-mode .nx-social-icon {
+  color: #6b7280;
+}
+
+/* ── Athlete card v30 ──────────────────────────────────── */
+
+.nx-v30-card {
+  transform: rotate(-2deg);
+  transition: transform 0.4s cubic-bezier(.22,.68,0,1.2), box-shadow 0.4s ease;
+  box-shadow: 0 0 0 1.5px #3D4452, 0 20px 60px rgba(0,0,0,0.7);
+}
+.nx-v30-wrap:hover .nx-v30-card {
+  transform: rotate(-1deg) translateY(-8px);
+  box-shadow: 0 0 0 1.5px #E64B47, 0 30px 80px rgba(0,0,0,0.8),
+    0 0 40px rgba(230,75,71,0.3), 0 0 80px rgba(230,75,71,0.12);
+}
+
+.nx-v30-badge {
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,0.55));
+  transition: transform 0.35s cubic-bezier(.22,.68,0,1.2), filter 0.35s ease;
+}
+.nx-v30-wrap:hover .nx-v30-badge {
+  transform: scale(1.12) rotate(-6deg);
+  filter: drop-shadow(0 6px 18px rgba(230,75,71,0.55));
+}
+
+.nx-v30-ticket {
+  transform: rotate(3.5deg);
+  box-shadow: 2px 6px 18px rgba(0,0,0,0.6);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.nx-v30-wrap:hover .nx-v30-ticket {
+  transform: rotate(2deg) translateX(-4px) translateY(-2px);
+  box-shadow: 3px 8px 22px rgba(0,0,0,0.7);
+}
+
+.nx-v30-perf {
+  position: relative;
+}
+.nx-v30-perf::before,
+.nx-v30-perf::after {
+  content: '';
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #1E2128;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.nx-v30-perf::before { top: -5px; }
+.nx-v30-perf::after  { bottom: -5px; }
+
+/* ── Auth page ──────────────────────────────────────────────── */
+
+.nx-auth-card {
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
+
+.nx-auth-fade {
+  animation: authFadeIn 0.35s ease-out both;
+}
+
+@keyframes authFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes tagIn {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes nxDropIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Native select arrow for dark theme */
+.nx-select-arrow {
+  appearance: none;
+  padding-right: 28px;
+  background-image: url("data:image/svg+xml,%3Csvg width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2.5' stroke-linecap='round' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+}
+
+/* Custom scrollbar for NxSelect dropdowns */
+.nx-scrollbar::-webkit-scrollbar {
+  width: 14px;
+}
+.nx-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+  margin-block: 8px;
+}
+.nx-scrollbar::-webkit-scrollbar-thumb {
+  background: #2a2d36;
+  border-radius: 10px;
+  border: 4px solid transparent;
+  background-clip: padding-box;
+}
+.nx-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #3a3d46;
+}
+
+.nx-input:focus {
+  box-shadow: var(--wl-focus-ring);
+}
+
+/* ── Player card preview ─────────────────────────── */
+.nx-card-fade {
+  background: linear-gradient(to top, rgba(11,18,32,0.97) 0%, rgba(11,18,32,0.7) 35%, transparent 100%);
+}
+.nx-card-perf {
+  border-left: 1.5px dashed rgba(11,18,32,0.2);
+  border-right: 1.5px dashed rgba(11,18,32,0.2);
+}
+.nx-card-stub {
+  writing-mode: vertical-rl;
+}
+
+/* Social auth buttons */
+.nx-social-auth-btn:hover {
+  border-color: #2E3D55 !important;
+}
+
+/* Light mode — auth */
+body.light-mode .nx-auth-card {
+  background-color: #ffffff !important;
+  border-color: #c8d0dc !important;
+  box-shadow: 0 10px 40px rgba(0,0,50,0.10) !important;
+}
+
+body.light-mode .nx-input {
+  background-color: #f0f3f8 !important;
+  border-color: #c8d0dc !important;
+  color: #0d1117 !important;
+}
+
+body.light-mode .nx-input::placeholder {
+  color: #9aa3b2 !important;
+}
+
+body.light-mode .nx-input:focus {
+  border-color: #E84848 !important;
+}
+
+body.light-mode .nx-social-auth-btn {
+  border-color: #c8d0dc !important;
+  color: #0d1117 !important;
+}
+
+body.light-mode .nx-social-auth-btn:hover {
+  background-color: rgba(0,0,50,0.04) !important;
+  border-color: #9aa3b2 !important;
+}

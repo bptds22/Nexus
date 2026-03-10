@@ -1,0 +1,144 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" width="100%" height="100%">
+  <defs>
+    <marker id="ah" markerWidth="10" markerHeight="8" refX="10" refY="4" orient="auto">
+      <polygon points="0 0, 10 4, 0 8" fill="#7B94B0"/>
+    </marker>
+    <marker id="ah2" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#7B94B0"/>
+    </marker>
+  </defs>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       A · FOOTBALL — I-Formation Play-Action Pass  (upper-left)
+  ═══════════════════════════════════════════════════════════════ -->
+  <g transform="rotate(-4, 230, 390)" stroke="#7B94B0" stroke-width="2.2" fill="none">
+
+    <!-- OL 5 players -->
+    <circle cx="90"  cy="390" r="20"/>
+    <circle cx="140" cy="390" r="20"/>
+    <circle cx="190" cy="390" r="20"/>
+    <circle cx="240" cy="390" r="20"/>
+    <circle cx="290" cy="390" r="20"/>
+    <circle cx="370" cy="390" r="20"/>
+    <circle cx="18"  cy="390" r="20"/>
+
+    <!-- OL blocking T-bars -->
+    <line x1="90"  y1="370" x2="90"  y2="330"/> <line x1="68"  y1="330" x2="112" y2="330"/>
+    <line x1="140" y1="370" x2="140" y2="330"/> <line x1="118" y1="330" x2="162" y2="330"/>
+    <line x1="190" y1="370" x2="190" y2="330"/> <line x1="168" y1="330" x2="212" y2="330"/>
+    <line x1="240" y1="370" x2="240" y2="330"/> <line x1="218" y1="330" x2="262" y2="330"/>
+    <line x1="290" y1="370" x2="290" y2="330"/> <line x1="268" y1="330" x2="312" y2="330"/>
+
+    <!-- QB (X) -->
+    <line x1="170" y1="418" x2="210" y2="458"/>
+    <line x1="210" y1="418" x2="170" y2="458"/>
+
+    <!-- FB + HB -->
+    <circle cx="190" cy="508" r="20"/>
+    <circle cx="190" cy="578" r="20"/>
+
+    <!-- QB drop dashed -->
+    <path d="M190,458 C188,490 185,534 183,576" stroke-dasharray="8 6"/>
+
+    <!-- WR curl -->
+    <path d="M18,370 C16,294 -8,246 -26,268 C-44,290 -35,336 -10,342" stroke-width="2.5" marker-end="url(#ah)"/>
+
+    <!-- TE seam -->
+    <path d="M370,370 C368,310 320,262 240,248" stroke-width="2.5" marker-end="url(#ah)"/>
+
+    <!-- RB checkdown (dashed) -->
+    <path d="M190,598 C228,630 310,640 374,632" stroke-dasharray="10 7" marker-end="url(#ah2)"/>
+
+    <!-- FB lead block -->
+    <line x1="190" y1="488" x2="190" y2="436" stroke-width="2.5" marker-end="url(#ah2)"/>
+
+  </g>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       B · BASKETBALL — Pick & Roll  (upper-right)
+  ═══════════════════════════════════════════════════════════════ -->
+  <g transform="rotate(3, 1060, 360)" stroke="#7B94B0" stroke-width="2.2" fill="none">
+
+    <!-- Paint / key -->
+    <rect x="970" y="80" width="180" height="340" stroke-dasharray="12 8" stroke-width="1.8"/>
+    <line x1="970" y1="250" x2="1150" y2="250" stroke-dasharray="12 8" stroke-width="1.8"/>
+    <!-- Basket rim -->
+    <circle cx="1060" cy="94" r="14" stroke-width="2.4"/>
+
+    <!-- PG with ball -->
+    <circle cx="1060" cy="500" r="20"/>
+    <circle cx="1060" cy="500" r="7" fill="#7B94B0"/>
+
+    <!-- C with screen -->
+    <circle cx="1148" cy="306" r="20"/>
+    <line x1="1126" y1="290" x2="1170" y2="290" stroke-width="3.2"/>
+
+    <!-- Wings + corner -->
+    <circle cx="1320" cy="468" r="20"/>
+    <circle cx="810"  cy="468" r="20"/>
+    <circle cx="1305" cy="610" r="20"/>
+
+    <!-- PG drive to basket -->
+    <path d="M1068,481 C1096,434 1144,356 1128,210 C1120,156 1078,106 1062,97" stroke-width="2.6" marker-end="url(#ah)"/>
+
+    <!-- C roll to basket -->
+    <path d="M1148,286 C1134,228 1104,152 1068,100" stroke-width="2.6" marker-end="url(#ah)"/>
+
+    <!-- SG spacing cut (dashed) -->
+    <path d="M1320,448 C1288,408 1234,358 1180,316" stroke-dasharray="10 7" marker-end="url(#ah2)"/>
+
+    <!-- SF skip pass (dashed) -->
+    <path d="M1042,484 C984,466 900,462 820,462" stroke-dasharray="14 8" marker-end="url(#ah2)"/>
+
+  </g>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       C · HOCKEY — Power Play Umbrella  (bottom-center)
+  ═══════════════════════════════════════════════════════════════ -->
+  <g transform="rotate(-2, 720, 760)" stroke="#7B94B0" stroke-width="2.2" fill="none">
+
+    <!-- Net (goal) at top of zone -->
+    <rect x="695" y="618" width="50" height="30" stroke-width="2.6"/>
+    <!-- Goal crease (small arc in front of net) -->
+    <path d="M695,648 Q720,672 745,648" stroke-dasharray="6 4" stroke-width="1.6"/>
+
+    <!-- Face-off circles (left and right) -->
+    <circle cx="542" cy="762" r="68" stroke-dasharray="14 8" stroke-width="1.6"/>
+    <circle cx="898" cy="762" r="68" stroke-dasharray="14 8" stroke-width="1.6"/>
+
+    <!-- Blue line -->
+    <line x1="400" y1="868" x2="1040" y2="868" stroke-dasharray="16 8" stroke-width="1.8"/>
+
+    <!-- LW (left wing) -->
+    <circle cx="462" cy="722" r="20"/>
+    <!-- C (center) with puck -->
+    <circle cx="720" cy="696" r="20"/>
+    <circle cx="720" cy="696" r="7" fill="#7B94B0"/>
+    <!-- RW (right wing) -->
+    <circle cx="978" cy="722" r="20"/>
+    <!-- LD (left defence) -->
+    <circle cx="570" cy="834" r="20"/>
+    <!-- RD (right defence) -->
+    <circle cx="870" cy="834" r="20"/>
+
+    <!-- C shoots on net (solid bold) -->
+    <path d="M720,676 C720,664 720,654 720,648" stroke-width="3" marker-end="url(#ah)"/>
+
+    <!-- LD passes to RD across the blue line (dashed) -->
+    <path d="M590,834 C720,822 848,830 850,834" stroke-dasharray="12 7" marker-end="url(#ah2)"/>
+
+    <!-- RD one-timer shot (solid) -->
+    <path d="M870,814 C840,770 790,720 730,658" stroke-width="2.6" marker-end="url(#ah)"/>
+
+    <!-- LW drives toward crease (solid) -->
+    <path d="M462,702 C500,676 580,660 680,650" stroke-width="2.4" marker-end="url(#ah2)"/>
+
+    <!-- RW cycles down low then passes (dashed) -->
+    <path d="M978,702 C940,676 860,660 760,652" stroke-dasharray="10 7" marker-end="url(#ah2)"/>
+
+    <!-- LD pinches in (solid) -->
+    <path d="M570,814 C562,784 556,758 550,736" stroke-width="2.2" marker-end="url(#ah2)"/>
+
+  </g>
+
+</svg>

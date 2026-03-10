@@ -1,0 +1,7 @@
+[00:20:52.100] Server  LOG     ○ Compiling /_not-found/page ...
+[00:22:10.557] Server  ERROR   Error: Cannot find module './image-optimizer'
+Require stack:
+- C:\Users\bptds\OneDrive\Documents\Nexus\nexus-app\node_modules\next\dist\server\next-server.js
+- C:\Users\bptds\OneDrive\Documents\Nexus\nexus-app\node_modules\next\dist\server\dev\next-dev-server.js
+- C:\Users\bptds\OneDrive\Documents\Nexus\nexus-app\node_modules\next\dist\server\next.js
+- C:\Users\bptds\OneDrive\Documents\Nexus\nexus-app\node_modules\next\dist\server\lib\start-server.js
