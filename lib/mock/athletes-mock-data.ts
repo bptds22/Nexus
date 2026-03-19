@@ -19,7 +19,6 @@ export const MOCK_ATHLETES: Athlete[] = [
       "Touchés (saison)": "22", "Interceptions": "4",
       "Cote QBR": "87.3", "Matchs joués": "18",
     },
-    coteR: null, program: "Sciences de la nature",
     languages: ["Français", "Anglais"], nationality: "Canadienne",
     videos: [
       { title: "Highlights Saison 2025-2026", url: "https://youtube.com/watch?v=example1", description: "Meilleurs jeux de la saison régulière — 22 touchés, 2 860 verges", duration: "4:32" },
@@ -54,7 +53,6 @@ export const MOCK_ATHLETES: Athlete[] = [
       "Passes décisives": "14", "Précision de passes": "86%",
       "Taux de duels gagnés": "62%", "Distance par match (km)": "9.8",
     },
-    coteR: null, program: "Sciences humaines",
     languages: ["Français", "Anglais", "Espagnol"], nationality: "Canadienne",
     videos: [
       { title: "Highlights Saison 2025-2026", url: "https://youtube.com/watch?v=example4", description: "Compilation des meilleurs jeux — 8 buts, 14 passes décisives", duration: "5:10" },
@@ -85,7 +83,6 @@ export const MOCK_ATHLETES: Athlete[] = [
       "40 verges": "4.55s", "Réceptions (saison)": "42", "Verges (saison)": "680",
       "Touchés": "7", "Détente verticale": "34 po",
     },
-    coteR: null, program: "Programme général",
     languages: ["Français", "Anglais"], nationality: "Canadienne",
     videos: [
       { title: "Highlights Saison 2025-2026", url: "https://youtube.com/watch?v=example6", description: "42 réceptions, 680 verges, 7 touchés", duration: "4:05" },
@@ -115,7 +112,6 @@ export const MOCK_ATHLETES: Athlete[] = [
       "Interceptions par match": "2.3", "Tirs à 3 pts (%)": "38%",
       "Lancers francs (%)": "82%", "Matchs joués": "22",
     },
-    coteR: null, program: "Sciences de la nature",
     languages: ["Français", "Anglais"], nationality: "Canadienne",
     videos: [
       { title: "Highlights Saison 2025-2026", url: "https://youtube.com/watch?v=example7", description: "18.5 ppg, 6.2 apg — Meilleure joueuse de la ligue", duration: "5:45" },

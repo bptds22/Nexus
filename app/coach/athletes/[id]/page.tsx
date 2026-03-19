@@ -11,7 +11,7 @@ import type { Athlete } from "@/lib/types/models";
 ══════════════════════════════════════════════════════════════ */
 
 const cardCls = "bg-[#1A1D24] rounded-[14px] border border-[#1e2128]";
-const sectionTitle = "font-head font-bold text-[13px] tracking-[0.2em] uppercase text-white mb-5";
+const sectionTitle = "font-head font-bold text-[14px] tracking-[0.2em] uppercase text-white mb-5";
 const labelCls = "text-[12px] text-[#6b7280]";
 const valueCls = "text-[15px] font-semibold text-white";
 const NOW = new Date("2026-03-09");
@@ -39,16 +39,16 @@ function relativeTime(dateStr: string): string {
 
 function nudge(a: Athlete): { text: string; color: string } {
   const p = a.profileCompletion;
-  if (p >= 95) return { text: "Profil complet", color: "#10b981" };
+  if (p >= 95) return { text: "Profil complet", color: "#22C55E" };
   if (p >= 70) {
     const missing = !a.hasVideo ? "une vidéo highlight" : !a.hasStats ? "les statistiques" : !a.hasPhoto ? "une photo" : "les détails manquants";
-    return { text: `Presque complet — Ajouter ${missing}`, color: "#3b82f6" };
+    return { text: `Presque complet — Ajouter ${missing}`, color: "#3B82F6" };
   }
   if (p >= 40) {
     const tip = !a.hasVideo ? "Ajouter une vidéo highlight" : !a.hasStats ? "Compléter les statistiques" : "Compléter le profil";
-    return { text: tip, color: "#f59e0b" };
+    return { text: tip, color: "#6B7280" };
   }
-  return { text: "Profil incomplet", color: "#f59e0b" };
+  return { text: "Profil incomplet", color: "#EF4444" };
 }
 
 function formatDob(dob: string): string {
@@ -138,7 +138,7 @@ function CompletionRing({ pct, size = 80 }: { pct: number; size?: number }) {
   const r = (size - stroke) / 2;
   const circ = 2 * Math.PI * r;
   const offset = circ * (1 - pct / 100);
-  const clr = pct >= 50 ? "#E63946" : "#8a8d96";
+  const clr = pct >= 70 ? "#3B82F6" : pct >= 40 ? "#6B7280" : "#EF4444";
   return (
     <div className="relative" style={{ width: size, height: size }}>
       <svg width={size} height={size} className="-rotate-90">
@@ -160,7 +160,7 @@ function CompletionRing({ pct, size = 80 }: { pct: number; size?: number }) {
 
 function StatusBadge({ status }: { status: Athlete["status"] }) {
   const cfg: Record<string, { dot: string; text: string; label: string }> = {
-    actif: { dot: "#10b981", text: "#10b981", label: "Profil actif" },
+    actif: { dot: "#22C55E", text: "#22C55E", label: "Profil actif" },
     en_attente: { dot: "#f59e0b", text: "#f59e0b", label: "En attente" },
     brouillon: { dot: "#8a8d96", text: "#8a8d96", label: "Brouillon" },
     inactif: { dot: "#8a8d96", text: "#8a8d96", label: "Inactif" },
@@ -183,7 +183,7 @@ function StatusBadge({ status }: { status: Athlete["status"] }) {
 
 function StatusPill({ status }: { status: Athlete["status"] }) {
   const cfg: Record<string, { bg: string; dot: string; text: string; label: string }> = {
-    actif: { bg: "rgba(16,185,129,0.12)", dot: "#10b981", text: "#10b981", label: "Actif" },
+    actif: { bg: "rgba(16,185,129,0.12)", dot: "#22C55E", text: "#22C55E", label: "Actif" },
     en_attente: { bg: "rgba(245,158,11,0.12)", dot: "#f59e0b", text: "#f59e0b", label: "En attente" },
     brouillon: { bg: "rgba(138,141,150,0.12)", dot: "#8a8d96", text: "#8a8d96", label: "Brouillon" },
     inactif: { bg: "rgba(138,141,150,0.12)", dot: "#8a8d96", text: "#8a8d96", label: "Inactif" },
@@ -195,7 +195,7 @@ function StatusPill({ status }: { status: Athlete["status"] }) {
         {status === "actif" && <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ backgroundColor: c.dot }} />}
         <span className="relative inline-flex rounded-full h-2 w-2" style={{ backgroundColor: c.dot }} />
       </span>
-      <span className="text-[11px] font-bold uppercase tracking-[0.1em]" style={{ color: c.text }}>{c.label}</span>
+      <span className="text-[12px] font-bold uppercase tracking-[0.1em]" style={{ color: c.text }}>{c.label}</span>
     </span>
   );
 }
@@ -299,19 +299,21 @@ function PlayerCard({ a }: { a: Athlete }) {
             {/* Right — cream */}
             <div className="flex-1 flex flex-col justify-center" style={{ background: '#FFFFFF', padding: '12px 16px' }}>
               {/* Stars (large) */}
-              <svg width="130" height="20" viewBox="0 0 130 20" fill="none" style={{ display: 'block', marginBottom: 6 }}>
-                {[0, 26, 52, 78, 104].map((x, i) => (
-                  <path key={x} d="M10,0L12.2,7.2L20,7.2L14,11.8L16.2,19L10,14.6L3.8,19L6,11.8L0,7.2L7.8,7.2Z"
-                    fill={i < stars ? "#F5C518" : "#3D4452"} transform={`translate(${x},0)`} />
-                ))}
-              </svg>
+              <div style={{ display: 'inline-flex', background: '#1E2128', borderRadius: 6, padding: '5px 8px', marginBottom: 6 }}>
+                <svg width="130" height="20" viewBox="0 0 130 20" fill="none" style={{ display: 'block' }}>
+                  {[0, 26, 52, 78, 104].map((x, i) => (
+                    <path key={x} d="M10,0L12.2,7.2L20,7.2L14,11.8L16.2,19L10,14.6L3.8,19L6,11.8L0,7.2L7.8,7.2Z"
+                      fill={i < stars ? "#F5C518" : "#3D4452"} transform={`translate(${x},0)`} />
+                  ))}
+                </svg>
+              </div>
               <div style={{ fontFamily: 'var(--font-barlow-cond), sans-serif', fontWeight: 700, fontSize: 13, letterSpacing: '0.1em', textTransform: 'uppercase' as const, color: '#1E2128', marginBottom: 2 }}>
                 {a.schoolName}
               </div>
               <div style={{ fontFamily: 'var(--font-barlow-cond), sans-serif', fontWeight: 700, fontSize: 12, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#9CA3AF' }}>
                 {a.city}
               </div>
-              <div style={{ fontFamily: 'var(--font-barlow-cond), sans-serif', fontWeight: 700, fontSize: 12, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#E64B47', marginTop: 2 }}>
+              <div style={{ fontFamily: 'var(--font-barlow-cond), sans-serif', fontWeight: 700, fontSize: 12, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#E63946', marginTop: 2 }}>
                 Promotion {a.gradYear}
               </div>
             </div>
@@ -320,7 +322,7 @@ function PlayerCard({ a }: { a: Athlete }) {
             <div
               className="flex items-center justify-center flex-shrink-0"
               style={{
-                background: '#E64B47',
+                background: '#E63946',
                 width: 24,
                 writingMode: 'vertical-rl' as const,
                 fontFamily: 'var(--font-bebas), sans-serif',
@@ -356,7 +358,7 @@ function NotFoundState() {
       </div>
       <Link
         href="/coach/athletes"
-        className="px-5 py-2.5 rounded-lg border border-[#E63946] text-[#E63946] text-[13px] font-bold uppercase tracking-[0.1em] hover:bg-[#E63946] hover:text-white transition-all"
+        className="px-5 py-2.5 rounded-lg border border-[#E63946] text-[#E63946] text-[14px] font-bold uppercase tracking-[0.1em] hover:bg-[#E63946] hover:text-white transition-all"
       >
         Retour à Mes Athlètes
       </Link>
@@ -416,7 +418,7 @@ export default function AthleteProfilePage() {
       </div>
 
       {/* Back link */}
-      <Link href="/coach/athletes" className="inline-flex items-center gap-2 text-[13px] text-[#6b7280] hover:text-white transition-colors mb-6">
+      <Link href="/coach/athletes" className="inline-flex items-center gap-2 text-[14px] text-[#6b7280] hover:text-white transition-colors mb-6">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
         Retour
       </Link>
@@ -453,7 +455,7 @@ export default function AthleteProfilePage() {
               <p className="mt-3 text-[14px] text-[#8a8d96]">
                 {a.schoolName} &middot; {a.city}
               </p>
-              <p className="text-[13px] text-[#6b7280] mt-0.5">
+              <p className="text-[14px] text-[#6b7280] mt-0.5">
                 Promotion {a.gradYear}
               </p>
             </div>
@@ -467,7 +469,7 @@ export default function AthleteProfilePage() {
                 <div key={i} className="bg-[#13151a] rounded-lg border border-[#1e2128] p-3 flex flex-col items-center gap-1.5 text-center">
                   <span className="text-[#6b7280]">{s.icon}</span>
                   <span className="text-[16px] font-bold text-white leading-none">{s.val}</span>
-                  <span className="text-[10px] text-[#6b7280] uppercase tracking-wider">{s.lbl}</span>
+                  <span className="text-[12px] text-[#6b7280] uppercase tracking-wider">{s.lbl}</span>
                 </div>
               ))}
             </div>
@@ -478,22 +480,22 @@ export default function AthleteProfilePage() {
                 <CompletionRing pct={a.profileCompletion} size={52} />
                 <div>
                   <p className="text-[14px] font-bold text-white">{a.profileCompletion}%</p>
-                  <p className="text-[10px] font-semibold" style={{ color: n.color }}>{n.text}</p>
+                  <p className="text-[12px] font-semibold" style={{ color: n.color }}>{n.text}</p>
                 </div>
               </div>
               <div className="h-8 w-px bg-[#1e2128]" />
               <div className="text-center lg:text-left">
                 <p className="text-[20px] font-bold text-white leading-none">{a.recruiterViews}</p>
-                <p className="text-[10px] text-[#6b7280] uppercase tracking-wider mt-0.5">Vues</p>
+                <p className="text-[12px] text-[#6b7280] uppercase tracking-wider mt-0.5">Vues</p>
               </div>
               <div className="text-center lg:text-left">
                 <p className="text-[20px] font-bold text-white leading-none">{a.favoriteCount}</p>
-                <p className="text-[10px] text-[#6b7280] uppercase tracking-wider mt-0.5">Favoris</p>
+                <p className="text-[12px] text-[#6b7280] uppercase tracking-wider mt-0.5">Favoris</p>
               </div>
               <div className="h-8 w-px bg-[#1e2128]" />
               <div className="text-center lg:text-left">
                 <p className="text-[12px] font-semibold text-white leading-none">{relativeTime(a.updatedAt)}</p>
-                <p className="text-[10px] text-[#6b7280] uppercase tracking-wider mt-0.5">Mis à jour</p>
+                <p className="text-[12px] text-[#6b7280] uppercase tracking-wider mt-0.5">Mis à jour</p>
               </div>
             </div>
           </div>
@@ -515,7 +517,7 @@ export default function AthleteProfilePage() {
             {a.traits && a.traits.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-5">
                 {a.traits.map((t) => (
-                  <span key={t} className="px-3 py-1 rounded-full text-[11px] font-semibold uppercase tracking-wider bg-[#13151a] border border-[#2a2d36] text-[#8a8d96]">
+                  <span key={t} className="px-3 py-1 rounded-full text-[12px] font-semibold uppercase tracking-wider bg-[#13151a] border border-[#2a2d36] text-[#8a8d96]">
                     {t}
                   </span>
                 ))}
@@ -527,7 +529,7 @@ export default function AthleteProfilePage() {
           <div className={`${cardCls} p-6`}>
             <h2 className={sectionTitle}>Statistiques</h2>
 
-            <p className="text-[11px] font-bold tracking-[0.2em] uppercase text-[#6b7280] mb-3">Physique</p>
+            <p className="text-[12px] font-bold tracking-[0.2em] uppercase text-[#6b7280] mb-3">Physique</p>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4 mb-6">
               <div><p className={labelCls}>Taille</p><p className={valueCls}>{a.heightCm ? `${a.heightCm} cm` : "—"}</p></div>
               <div><p className={labelCls}>Poids</p><p className={valueCls}>{a.weightKg ? `${a.weightKg} kg` : "—"}</p></div>
@@ -537,7 +539,7 @@ export default function AthleteProfilePage() {
             {Object.keys(stats).length > 0 && (
               <>
                 <div className="border-t border-[#1e2128] my-5" />
-                <p className="text-[11px] font-bold tracking-[0.2em] uppercase text-[#6b7280] mb-3">Performance</p>
+                <p className="text-[12px] font-bold tracking-[0.2em] uppercase text-[#6b7280] mb-3">Performance</p>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4 mb-6">
                   {Object.entries(stats).map(([k, v]) => (
                     <div key={k}>
@@ -550,10 +552,8 @@ export default function AthleteProfilePage() {
             )}
 
             <div className="border-t border-[#1e2128] my-5" />
-            <p className="text-[11px] font-bold tracking-[0.2em] uppercase text-[#6b7280] mb-3">Académique</p>
+            <p className="text-[12px] font-bold tracking-[0.2em] uppercase text-[#6b7280] mb-3">Académique</p>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4">
-              <div><p className={labelCls}>Programme</p><p className={valueCls}>{a.program || "—"}</p></div>
-              <div><p className={labelCls}>Cote R</p><p className={valueCls}>{a.coteR != null ? a.coteR : "À venir"}</p></div>
               <div><p className={labelCls}>Graduation</p><p className={valueCls}>{a.gradYear}</p></div>
             </div>
           </div>
@@ -567,7 +567,7 @@ export default function AthleteProfilePage() {
                   <PlayIcon />
                 </div>
                 <p className="text-[14px] text-[#6b7280]">Aucune vidéo ajoutée</p>
-                <p className="text-[12px] text-[#4b5563] mt-1">Ajoutez un lien Hudl ou YouTube pour mettre en valeur ce profil</p>
+                <p className="text-[13px] text-[#4b5563] mt-1">Ajoutez un lien Hudl ou YouTube pour mettre en valeur ce profil</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -578,10 +578,10 @@ export default function AthleteProfilePage() {
                       <div className="relative z-10 w-12 h-12 rounded-full bg-[#E63946]/90 flex items-center justify-center group-hover:bg-[#E63946] transition-colors">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z" /></svg>
                       </div>
-                      <span className="absolute bottom-2 right-2 z-10 text-[10px] bg-black/70 text-white px-1.5 py-0.5 rounded">{v.duration}</span>
+                      <span className="absolute bottom-2 right-2 z-10 text-[12px] bg-black/70 text-white px-1.5 py-0.5 rounded">{v.duration}</span>
                     </div>
-                    <p className="text-[13px] font-semibold text-white mt-2 group-hover:text-[#E63946] transition-colors">{v.title}</p>
-                    <p className="text-[11px] text-[#6b7280] mt-0.5 line-clamp-2">{v.description}</p>
+                    <p className="text-[14px] font-semibold text-white mt-2 group-hover:text-[#E63946] transition-colors">{v.title}</p>
+                    <p className="text-[12px] text-[#6b7280] mt-0.5 line-clamp-2">{v.description}</p>
                   </a>
                 ))}
               </div>
@@ -602,7 +602,7 @@ export default function AthleteProfilePage() {
                       <div className="absolute -left-6 top-1 w-[14px] h-[14px] rounded-full border-2 border-[#E63946] bg-[#1A1D24]" />
                       <p className="text-[12px] font-bold tracking-wider uppercase text-[#E63946]">{t.yearRange}</p>
                       <p className="text-[14px] font-semibold text-white mt-1">{t.team}</p>
-                      <p className="text-[13px] text-[#8a8d96] mt-0.5">{t.role}</p>
+                      <p className="text-[14px] text-[#8a8d96] mt-0.5">{t.role}</p>
                       {t.achievements && (
                         <p className="text-[12px] text-[#6b7280] mt-1 italic">{t.achievements}</p>
                       )}
@@ -635,8 +635,6 @@ export default function AthleteProfilePage() {
             <h2 className={sectionTitle}>Académique</h2>
             <div className="flex flex-col gap-4">
               <div><p className={labelCls}>École actuelle</p><p className={valueCls}>{a.schoolName}</p></div>
-              <div><p className={labelCls}>Programme</p><p className={valueCls}>{a.program || "—"}</p></div>
-              <div><p className={labelCls}>Cote R</p><p className={valueCls}>{a.coteR != null ? a.coteR : "À venir"}</p></div>
               <div><p className={labelCls}>Année de graduation</p><p className={valueCls}>{a.gradYear}</p></div>
               <div><p className={labelCls}>Mention</p><p className={valueCls}>Étudiant-athlète</p></div>
             </div>
@@ -646,7 +644,7 @@ export default function AthleteProfilePage() {
           <div className={`${cardCls} p-6`}>
             <div className="flex items-center justify-between mb-5">
               <h2 className={`${sectionTitle} mb-0`}>Contact</h2>
-              <span className="flex items-center gap-1.5 text-[11px] text-[#6b7280]">
+              <span className="flex items-center gap-1.5 text-[12px] text-[#6b7280]">
                 <LockIcon /> Visible par le coach
               </span>
             </div>
@@ -664,7 +662,7 @@ export default function AthleteProfilePage() {
               </div>
             )}
             <div className="mt-4 pt-4 border-t border-[#1e2128]">
-              <p className="text-[11px] text-[#4b5563] italic">
+              <p className="text-[12px] text-[#4b5563] italic">
                 Les recruteurs doivent envoyer une demande pour obtenir les coordonnées
               </p>
             </div>
@@ -680,16 +678,16 @@ export default function AthleteProfilePage() {
                 {activity.map((r, i) => (
                   <div key={i} className="flex items-start gap-3">
                     <div className="w-8 h-8 rounded-full bg-[#13151a] border border-[#2a2d36] flex items-center justify-center shrink-0 mt-0.5">
-                      <span className="text-[10px] font-bold text-[#6b7280]">
+                      <span className="text-[12px] font-bold text-[#6b7280]">
                         {r.recruiterName.split(" ").map((w) => w[0]).join("")}
                       </span>
                     </div>
                     <div>
-                      <p className="text-[13px] text-[#c4c7cd]">
+                      <p className="text-[14px] text-[#c4c7cd]">
                         <span className="font-semibold text-white">{r.recruiterName}</span>
                         {" — "}{r.cegepName} {r.action}
                       </p>
-                      <p className="text-[11px] text-[#6b7280] mt-0.5">{r.date}</p>
+                      <p className="text-[12px] text-[#6b7280] mt-0.5">{r.date}</p>
                     </div>
                   </div>
                 ))}

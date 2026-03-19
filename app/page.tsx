@@ -1,20 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
-import ThemeToggle from "./components/ThemeToggle";
 import PlaybookBackground from "./components/PlaybookBackground";
+import MarketingNav from "@/components/marketing/MarketingNav";
 
 /* ─────────────────────────────────────────────────────────────────
    Nexus — Landing Page
    Inspired by: College Football 25 UI · ESPN · Nike College
    Dark navy · chalk playbook · condensed bold · OVR card aesthetic
 ───────────────────────────────────────────────────────────────────*/
-
-const NAV_LINKS = [
-  { label: "Comment ça marche", href: "/comment-ca-marche" },
-  { label: "Coaches & Recruteurs", href: "#roles" },
-  { label: "Athlètes", href: "#athletes" },
-  { label: "Roadmap", href: "/roadmap" },
-];
 
 const STEPS = [
   {
@@ -82,54 +75,7 @@ export default function Home() {
     <div className="hero-playbook bg-[#060A14] min-h-screen">
       <PlaybookBackground />
 
-      {/* ══════════════════════════════════════════
-          NAV
-      ══════════════════════════════════════════ */}
-      <nav className="sticky top-0 z-50 bg-[#060A14]/92 backdrop-blur-md border-b border-[#1E2D4A]">
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-
-          <a href="#" className="flex items-center gap-3">
-            <Image
-              src="/brand/Profile%20white%20trans@4x.png"
-              alt="Nexus"
-              width={32}
-              height={32}
-              className="object-contain nx-logo-dark"
-            />
-            <Image
-              src="/brand/Profile%20trans@4x.png"
-              alt="Nexus"
-              width={32}
-              height={32}
-              className="object-contain nx-logo-light"
-            />
-            <span className="font-head font-black text-white text-base tracking-[0.06em] uppercase hidden sm:block">
-              Nexus
-            </span>
-          </a>
-
-          <ul className="hidden md:flex items-center gap-8 list-none">
-            {NAV_LINKS.map((l) => (
-              <li key={l.href}>
-                <Link href={l.href} className={`${label} text-[#9AA3B2] hover:text-white transition-colors`}>
-                  {l.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-
-          <div className="flex items-center gap-2">
-            <ThemeToggle />
-            <Link href="/auth" className={`hidden sm:block ${label} text-wl-red transition-colors px-4 h-9 leading-9 hover:drop-shadow-[0_0_8px_rgba(232,72,72,0.6)]`}>
-              Connexion
-            </Link>
-            <Link href="/auth?mode=signup" className="nx-ghost-btn h-9 px-5 border font-head font-black text-xs uppercase tracking-widest inline-flex items-center">
-              S&apos;inscrire
-            </Link>
-          </div>
-
-        </div>
-      </nav>
+      <MarketingNav />
 
       {/* ══════════════════════════════════════════
           HERO
@@ -254,8 +200,8 @@ export default function Home() {
                     >
                       {[
                         { lbl: "Sport", val: "Football" },
-                        { lbl: "Pos", val: "LB" },
-                        { lbl: "Div", val: "D1" },
+                        { lbl: "Pos", val: "QB" },
+                        { lbl: "No.", val: "#12" },
                       ].map((r) => (
                         <div key={r.lbl}>
                           <div style={{ fontFamily: 'var(--font-barlow-cond), sans-serif', fontSize: 7, fontWeight: 800, letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.38)', marginBottom: 2 }}>
@@ -278,22 +224,21 @@ export default function Home() {
                       ))}
                     </div>
 
-                    {/* Right — cream */}
+                    {/* Right — white with dark star pill */}
                     <div className="flex-1 flex flex-col justify-center" style={{ background: '#FFFFFF', padding: '14px 18px' }}>
-                      {/* Stars — 5/5 (large) */}
                       <svg width="150" height="22" viewBox="0 0 150 22" fill="none" style={{ display: 'block', marginBottom: 8 }}>
                         {[0, 30, 60, 90, 120].map((x) => (
-                          <path key={x} d="M11,0L13.5,8L22,8L15.5,13L18,21L11,16.2L4,21L6.5,13L0,8L8.5,8Z" fill="#F5C518" transform={`translate(${x},0)`}/>
+                          <path key={x} d="M11,0L13.5,8L22,8L15.5,13L18,21L11,16.2L4,21L6.5,13L0,8L8.5,8Z" fill="#F59E0B" transform={`translate(${x},0)`}/>
                         ))}
                       </svg>
-                      <div style={{ fontFamily: 'var(--font-barlow-cond), sans-serif', fontWeight: 700, fontSize: 14, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#1E2128', marginBottom: 2 }}>
-                        CSJV
+                      <div style={{ fontFamily: 'var(--font-barlow-cond), sans-serif', fontWeight: 800, fontSize: 14, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#1E2128', marginBottom: 2 }}>
+                        École secondaire Saint-Jean-Eudes
                       </div>
                       <div style={{ fontFamily: 'var(--font-barlow-cond), sans-serif', fontWeight: 700, fontSize: 13, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#9CA3AF' }}>
-                        Montréal
+                        Québec, QC
                       </div>
-                      <div style={{ fontFamily: 'var(--font-barlow-cond), sans-serif', fontWeight: 700, fontSize: 13, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#E64B47', marginTop: 2 }}>
-                        Promotion 2027
+                      <div style={{ fontFamily: 'var(--font-barlow-cond), sans-serif', fontWeight: 700, fontSize: 13, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#E63946', marginTop: 2 }}>
+                        Promotion 2026
                       </div>
                     </div>
 
@@ -301,7 +246,7 @@ export default function Home() {
                     <div
                       className="flex items-center justify-center flex-shrink-0"
                       style={{
-                        background: '#E64B47',
+                        background: '#E63946',
                         width: 26,
                         writingMode: 'vertical-rl',
                         fontFamily: 'var(--font-bebas), sans-serif',

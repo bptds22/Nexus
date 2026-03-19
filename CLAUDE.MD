@@ -5,6 +5,124 @@ Follow these instructions exactly.
 
 ---
 
+## STRICT DESIGN RULES — NEVER OVERRIDE
+
+These rules are the law. Every page, every component, every portal
+must follow them. If a prompt conflicts with these rules, these rules win.
+When in doubt, refer to this section.
+
+### Backgrounds
+- Page background: #111317 — everywhere, every portal, every page
+- Card / Surface: #1A1D24 — all cards, modals, sidebar, dropdowns
+- Card border: border-white/5 (#FFFFFF0D) — subtle, consistent
+- Never white, never pure black, never any other dark color
+
+### Accent Colors (only 3 primary accents in the entire app)
+- Red #E63946: Nexus brand signature — CTAs, favorite hearts, sidebar
+  active states, commitment-phase pipeline badges, suspended status,
+  red labels on landing pages, Admin role badge, Recruteur role badge
+- Blue #3B82F6: verification ONLY — verified badge (≥60%), profile
+  completion ≥70%, Coach role badge, École revenue chart
+- Green #22C55E: positive status — active user status, Athlète role
+  badge, CÉGEP revenue chart, success toasts
+- #EF4444 is used ONLY for: error/critical states, profile completion
+  <40%, Entreprise tier badge. Nowhere else.
+
+### Verification Badge
+- Verified (profile_completeness ≥ 60%): Blue checkmark #3B82F6. Always.
+- Not verified (< 60%): Gray circle #6B7280. Always.
+- Binary — NO intermediate states. No yellow, no orange, no "in progress".
+
+### Favorite Heart
+- Favorited: Filled heart #E63946. Always.
+- Not favorited: Outline heart #6B7280. Always.
+
+### Star Ratings
+- Filled stars: #F59E0B (gold/amber). Always.
+- Empty stars: #374151 (dark gray fill) with #F59E0B star-shaped outline.
+  The empty star shows the star shape in gold but unfilled.
+
+### Pipeline Status Badges (2 AUTO + 4 MANUAL)
+Auto-tracking statuses (gray #6B7280 — triggered by user actions):
+- IDENTIFIE: #6B7280 (gray) — auto on favorite
+- CONTACTE: #6B7280 (gray) — auto on first message sent
+
+Commitment statuses (red #E63946 — manual recruiter decision):
+- EN_DISCUSSION: #E63946 (red) — recruiter manually sets "actively pursuing"
+- VISITE_PLANIFIEE: #E63946 (red) — manual
+- ENGAGE: #E63946 (red) — manual
+- LETTRE_SIGNEE: #E63946 (red) — manual
+
+Withdrawn:
+- RETIRE: #6B7280 (gray) — can be set from any status, final state
+
+Movement: forward-only EXCEPT EN_DISCUSSION can go back to CONTACTÉ
+(re-engage a cold conversation). No other backward movement.
+The text inside each badge still shows the status name. The color
+communicates "auto vs commitment" — not individual stages.
+
+### User Status Pills
+- Actif: green #22C55E bg/10 opacity, green text
+- En attente: yellow #EAB308 bg/10 opacity, yellow text
+- Suspendu: red #E63946 bg/10 opacity, red text (brand red, not #EF4444)
+- Inactif / Expiré: gray #6B7280 bg/10 opacity, gray text
+
+### Role Badges
+- Admin: #E63946 (red)
+- Coach: #3B82F6 (blue)
+- Recruteur: #E63946 (red)
+- Directeur: #EAB308 (yellow/amber)
+- Athlète: #22C55E (green)
+
+### Profile Completeness Colors
+- < 40%: #EF4444 (bright red — incomplete/urgent)
+- 40% — 69%: #6B7280 (gray — in progress)
+- ≥ 70%: #3B82F6 (blue — ready)
+Both the progress bar fill and the percentage text use these colors.
+
+### Subscription Tier Badges (Medal System)
+- Gratuit / Découverte / Essentiel: Bronze #A48261
+- Standard / Pro: Silver #B4BCC8
+- Premium / Élite: Gold #DAB65A
+- Entreprise: #EF4444 (bright red — distinct from brand red)
+
+### Revenue Chart Colors
+- CÉGEP revenue: #E63946 (red)
+- École revenue: #3B82F6 (blue)
+- Athlète revenue (Phase 2): #22C55E (green)
+
+### Text Colors
+- Headings: #FFFFFF (white)
+- Body text: #9CA3AF (muted gray)
+- Red labels (landing pages): #E63946, uppercase, 12px, letter-spacing 2px
+- Muted / disabled: #6B7280
+
+### Alert Indicators
+- Info: #9CA3AF (gray dot)
+- Warning: #EAB308 (yellow dot)
+- Critical / Error: #EF4444 (bright red dot)
+- Success: #22C55E (green dot / toast)
+
+### Typography (NO EXCEPTIONS)
+- ALL headings: Nexa Bold — never Inter, Montserrat, Arial, or system fonts
+- ALL body text: Nexa Regular
+- If Nexa is not loaded, the component is broken — fix the font import
+
+### Card Style
+- Background: #1A1D24
+- Border: border-white/5 (subtle)
+- Radius: rounded-xl
+- No other card background color unless explicitly specified in a prompt
+
+### Two Reds Rule
+- #E63946 = brand red (95% of red usage — CTAs, favorites, sidebar,
+  pipeline commitment, suspended, role badges, revenue charts)
+- #EF4444 = error/danger red (5% of usage — critical alerts,
+  completion <40%, Entreprise tier badge ONLY)
+- If unsure which red to use: use #E63946. Default is always brand red.
+
+---
+
 ## Always Do First (every session)
 
 1. Ask: **“What phase are we in (Phase 1 MVP or Phase 2)?”** Default to **Phase 1 MVP**.
@@ -210,6 +328,72 @@ Constraints:
 6. Recruiter search + filters + favorites
 7. Contact requests workflow
 8. Director org admin pages
+
+---
+
+## DATA FLOW RULE: Coach Input → Recruiter Display
+
+The coach's form mode (Simplifié/Détaillé) controls **DATA ENTRY** depth.
+The recruiter's toggle (Simplifié/Détaillé) controls **DATA DISPLAY** depth.
+These are **INDEPENDENT**.
+
+### Simplified recruiter view ALWAYS benefits from detailed coach input:
+- 8 trait criteria → condensed to 1 **Cote Globale** (auto-calculated average)
+- Full mensurations → condensed to **taille + poids** only
+- All academic fields → condensed to **moyenne + programme + graduation** + preference pills
+- All media links → condensed to **1 CTA button** (if highlight video exists)
+- Full sport info → condensed to sport + position on the player card (no separate section)
+- Coach report → **quote + Cote Globale stars** only
+
+### Detailed recruiter view shows EVERYTHING the coach entered:
+- All 8 trait criteria individually with stars
+- Full mensurations grid + all athletic tests
+- Matières fortes, honneurs, régions préférées, programme CÉGEP visé
+- All media link cards (Hudl, YouTube, Instagram, match complet, entraînement)
+- Sport info section with secondary sport, team, league
+- Coach reputation mini-card
+
+### Empty field handling:
+If a field is empty (coach used simplified), show **nothing** — no empty state,
+no placeholder, just skip that field cleanly.
+
+### Section-by-section breakdown:
+
+**Évaluation du coach**
+- Coach detailed → 8 individual star criteria
+- Recruiter simplified → 1 Cote Globale (average of 8) with stars
+- Recruiter detailed → all 8 criteria individually with stars
+- Coach simplified (overall rating only) → both views show same single score, no breakdown
+
+**Profil physique**
+- Coach detailed → taille, poids, envergure, taille des mains, main/pied dominants + 6 athletic tests
+- Recruiter simplified → only taille + poids (e.g. 6'2" | 195 lbs)
+- Recruiter detailed → full mensurations grid + all tests with progress bars
+- Coach simplified (taille + poids only) → simplified same, detailed shows taille/poids + "Aucun test athlétique enregistré"
+
+**Profil académique**
+- Coach detailed → moyenne, matières fortes, mentions, programme visé, ouvert privé/anglophone/déménager, régions préférées
+- Recruiter simplified → 82% | Sport-études | Juin 2026 + preference tags
+- Recruiter detailed → everything: matières fortes chips, mentions, régions préférées checkboxes
+- Coach simplified (moyenne + programme only) → simplified shows 3 stats, detailed shows those + empty states for rest
+
+**Informations sportives**
+- Coach detailed → sport principal, position, numéro, sport secondaire, position secondaire, équipe/ligue
+- Recruiter simplified → sport + position + numéro already on the player card, no separate section
+- Recruiter detailed → full section with secondary sport, team name, league
+- Coach simplified (sport + position + numéro only) → same card, detailed shows no secondary sport
+
+**Médias**
+- Coach detailed → highlight video + Hudl + YouTube + Instagram + match complet + entraînement
+- Recruiter simplified → only ▶ VOIR LES FAITS SAILLANTS CTA button (if highlight video exists)
+- Recruiter detailed → embedded player + all link cards
+- Coach simplified (highlight video only) → simplified CTA button, detailed shows player + no additional links
+
+**Rapport de l'entraîneur**
+- Coach detailed → 8 star criteria + distinctions + texte libre
+- Recruiter simplified → texte libre quote + Cote Globale stars only
+- Recruiter detailed → quote + full 8-criteria grid + distinctions
+- Coach simplified (texte libre + overall rating only) → both views show quote + score, no breakdown
 
 ---
 
@@ -436,6 +620,46 @@ When implementing UI:
 5. Connect real data last
 
 If no reference image is available for a screen, keep the same design language (clean cards, left filters, top dark nav, blue + green accents).
+
+---
+
+## Official Design Patterns
+
+### Settings Page with Sub-Navigation
+
+**Reference file:** `app/admin/settings/page.tsx`
+**When to use:** Any page with multiple configuration sections (settings, preferences, parameters).
+
+**Structure:**
+```
+Page header (title + subtitle)
+├── Left sub-nav (lg:w-[240px])
+│   └── Buttons: icon + label, red active state (bg-[#E63946]/12 text-[#E63946])
+│   └── Horizontal scroll on mobile, vertical stack on desktop
+└── Content panel (flex-1)
+    └── bg-[#111317]/60 backdrop-blur-sm rounded-xl border border-[#1e2128] p-6 sm:p-8
+    └── Section-based rendering (useState, no routing)
+```
+
+**Specs:**
+- Nav button active: `bg-[#E63946]/12 text-[#E63946]`, icon matches
+- Nav button idle: `text-[#8a8d96] hover:text-white hover:bg-white/5`
+- Label class: `text-[12px] font-bold tracking-[0.25em] uppercase text-[#6b7280]`
+- Input class: `bg-[#13151a] border border-[#2a2d36] rounded-lg px-4 py-2.5 text-[14px] text-[#e0e0e0] focus:border-[#E63946]`
+- Rule cards: green dot indicator (w-2 h-2 bg-[#22C55E]) left + label + badge/value right
+- Toggle switches: `w-12 h-7 rounded-full` with `w-5 h-5` white circle, green (#22C55E) for on, gray (#2D3748) for off
+- Danger sections: `border-[#E63946]/30` border, red title text
+- Save buttons: `bg-[#E63946] hover:bg-[#D42B22] text-white font-bold rounded-lg`
+- Responsive: `flex flex-col lg:flex-row gap-8`
+
+**Brand red:** Always use `#E63946` for the active nav state and accent color across all settings pages.
+
+**Existing pages using this pattern:**
+- `app/admin/settings/page.tsx` ← canonical reference
+- `app/coach/settings/page.tsx`
+- `app/recruteur/parametres/page.tsx`
+- `app/directeur-ecole/parametres/page.tsx`
+- `app/directeur-cegep/parametres/page.tsx`
 
 ---
 

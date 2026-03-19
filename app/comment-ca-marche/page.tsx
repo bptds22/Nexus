@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
-import ThemeToggle from "../components/ThemeToggle";
 import PlaybookBackground from "../components/PlaybookBackground";
+import MarketingNav from "@/components/marketing/MarketingNav";
 
 /* ─────────────────────────────────────────────────────────────────
    Nexus — Comment ça marche
@@ -54,7 +54,7 @@ const ROLES = [
   },
   {
     tag: "ÉTUDIANT-ATHLÈTE",
-    color: "#2ECC71",
+    color: "#22C55E",
     icon: (
       <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="12" r="10"/>
@@ -87,7 +87,7 @@ const ROLES = [
   },
   {
     tag: "RECRUTEUR",
-    color: "#E84848",
+    color: "#E63946",
     icon: (
       <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="11" cy="11" r="8"/>
@@ -119,56 +119,7 @@ export default function CommentCaMarche() {
       {/* ══════════════════════════════════════════
           NAV
       ══════════════════════════════════════════ */}
-      <nav className="sticky top-0 z-50 bg-[#060A14]/92 backdrop-blur-md border-b border-[#1E2D4A]">
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-
-          <Link href="/" className="flex items-center gap-3">
-            <Image
-              src="/brand/Profile%20white%20trans@4x.png"
-              alt="Nexus"
-              width={32}
-              height={32}
-              className="object-contain nx-logo-dark"
-            />
-            <Image
-              src="/brand/Profile%20trans@4x.png"
-              alt="Nexus"
-              width={32}
-              height={32}
-              className="object-contain nx-logo-light"
-            />
-            <span className="font-head font-black text-white text-base tracking-[0.06em] uppercase hidden sm:block">
-              Nexus
-            </span>
-          </Link>
-
-          <ul className="hidden md:flex items-center gap-8 list-none">
-            {[
-              { label: "Accueil", href: "/" },
-              { label: "Coaches & Recruteurs", href: "/#roles" },
-              { label: "Athlètes", href: "/#athletes" },
-              { label: "Roadmap", href: "/roadmap" },
-            ].map((l) => (
-              <li key={l.href}>
-                <Link href={l.href} className={`${label} text-[#9AA3B2] hover:text-white transition-colors`}>
-                  {l.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-
-          <div className="flex items-center gap-2">
-            <ThemeToggle />
-            <Link href="/auth" className={`hidden sm:block ${label} text-wl-red transition-colors px-4 h-9 leading-9 hover:drop-shadow-[0_0_8px_rgba(232,72,72,0.6)]`}>
-              Connexion
-            </Link>
-            <Link href="/auth?mode=signup" className="nx-ghost-btn h-9 px-5 border font-head font-black text-xs uppercase tracking-widest inline-flex items-center">
-              S&apos;inscrire
-            </Link>
-          </div>
-
-        </div>
-      </nav>
+      <MarketingNav />
 
       {/* ══════════════════════════════════════════
           HERO

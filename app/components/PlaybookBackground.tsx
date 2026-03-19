@@ -70,7 +70,7 @@ const tile0 = (
     </g>
     {/* ── Handwritten text ── */}
     <text x="500" y="120" stroke="#7B94B0" strokeWidth="1.4" fill="none" fontFamily="'Georgia', serif" fontStyle="italic" fontSize="38" opacity="0.75" letterSpacing="3" transform="rotate(-3, 500, 120)">NEXUS</text>
-    <text x="1200" y="720" stroke="#7B94B0" strokeWidth="1.2" fill="none" fontFamily="'Georgia', serif" fontStyle="italic" fontSize="26" opacity="0.6" letterSpacing="2" transform="rotate(-6, 1200, 720)">Québec</text>
+    <text x="1200" y="720" stroke="#7B94B0" strokeWidth="1.2" fill="none" fontFamily="'Georgia', serif" fontStyle="italic" fontSize="26" opacity="0.6" letterSpacing="2" transform="rotate(-6, 1200, 720)">Canada</text>
     <text x="580" y="220" stroke="#7B94B0" strokeWidth="1.3" fill="none" fontFamily="'Georgia', serif" fontStyle="italic" fontSize="30" opacity="0.65" letterSpacing="2" transform="rotate(3, 580, 220)">MVP</text>
     <text x="1250" y="850" stroke="#7B94B0" strokeWidth="1.2" fill="none" fontFamily="'Georgia', serif" fontStyle="italic" fontSize="22" opacity="0.6" letterSpacing="1" transform="rotate(-4, 1250, 850)">Fierté</text>
   </>
@@ -342,7 +342,7 @@ const tile3 = (
     </g>
     {/* ── Handwritten text ── */}
     <text x="200" y="100" stroke="#7B94B0" strokeWidth="1.3" fill="none" fontFamily="'Georgia', serif" fontStyle="italic" fontSize="28" opacity="0.65" letterSpacing="2" transform="rotate(-5, 200, 100)">CÉGEP</text>
-    <text x="600" y="440" stroke="#7B94B0" strokeWidth="1.2" fill="none" fontFamily="'Georgia', serif" fontStyle="italic" fontSize="22" opacity="0.6" letterSpacing="1" transform="rotate(3, 600, 440)">Talent du Québec</text>
+    <text x="600" y="440" stroke="#7B94B0" strokeWidth="1.2" fill="none" fontFamily="'Georgia', serif" fontStyle="italic" fontSize="22" opacity="0.6" letterSpacing="1" transform="rotate(3, 600, 440)">Talent du Canada</text>
     <text x="100" y="460" stroke="#7B94B0" strokeWidth="1.2" fill="none" fontFamily="'Georgia', serif" fontStyle="italic" fontSize="24" opacity="0.63" letterSpacing="2" transform="rotate(-4, 100, 460)">Relève</text>
     <text x="620" y="160" stroke="#7B94B0" strokeWidth="1.2" fill="none" fontFamily="'Georgia', serif" fontStyle="italic" fontSize="22" opacity="0.6" letterSpacing="1" transform="rotate(2, 620, 160)">Objectif</text>
     <text x="560" y="870" stroke="#7B94B0" strokeWidth="1.3" fill="none" fontFamily="'Georgia', serif" fontStyle="italic" fontSize="26" opacity="0.65" letterSpacing="2" transform="rotate(-3, 560, 870)">Stats</text>

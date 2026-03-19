@@ -148,11 +148,11 @@ function ResetPasswordContent() {
 
                   {/* Error message */}
                   {error && (
-                    <div className="flex items-center gap-2.5 bg-[#E84848]/[0.08] border border-[#E84848]/25 rounded px-4 py-2.5">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E84848" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                    <div className="flex items-center gap-2.5 bg-[#E63946]/[0.08] border border-[#E63946]/25 rounded px-4 py-2.5">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
                         <circle cx="12" cy="12" r="10" /><path d="M12 8v4" /><path d="M12 16h.01" />
                       </svg>
-                      <p className="font-sans text-sm text-[#E84848]">{error}</p>
+                      <p className="font-sans text-sm text-[#E63946]">{error}</p>
                     </div>
                   )}
 

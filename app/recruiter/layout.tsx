@@ -68,13 +68,13 @@ export default function RecruiterLayout({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <div className="hero-playbook nx-no-glow bg-[#060A14] min-h-screen flex flex-col">
+    <div className="hero-playbook nx-no-glow bg-[#111317] min-h-screen flex flex-col">
       <PlaybookBackground />
 
       {/* ══════════════════════════════════════════
           TOP NAV — recruiter portal
       ══════════════════════════════════════════ */}
-      <nav className="sticky top-0 z-50 bg-[#060A14]/92 backdrop-blur-md border-b border-[#1E2D4A]">
+      <nav className="sticky top-0 z-50 bg-[#111317]/92 backdrop-blur-md border-b border-[#2D3748]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
 
           {/* Main nav row */}
@@ -101,8 +101,8 @@ export default function RecruiterLayout({
                   Nexus
                 </span>
               </Link>
-              <span className="hidden sm:block w-px h-5 bg-[#1E2D4A]" />
-              <span className={`hidden sm:block ${label} text-[#475569]`}>
+              <span className="hidden sm:block w-px h-5 bg-[#2D3748]" />
+              <span className={`hidden sm:block ${label} text-[#6B7280]`}>
                 Portail recruteur
               </span>
             </div>
@@ -122,7 +122,7 @@ export default function RecruiterLayout({
                       relative flex items-center gap-2 px-4 h-16 font-head text-[11px] font-bold uppercase tracking-[0.15em] transition-colors
                       ${isActive
                         ? "text-white"
-                        : "text-[#9AA3B2] hover:text-white"
+                        : "text-[#9CA3AF] hover:text-white"
                       }
                     `}
                   >
@@ -141,13 +141,13 @@ export default function RecruiterLayout({
             <div className="flex items-center gap-3">
               <ThemeToggle />
               {/* User avatar placeholder */}
-              <div className="w-8 h-8 rounded-full bg-[#1E2D4A] border border-[#3D5578] flex items-center justify-center">
-                <span className="text-[10px] font-bold text-[#9AA3B2]">MR</span>
+              <div className="w-8 h-8 rounded-full bg-[#2D3748] border border-[#374151] flex items-center justify-center">
+                <span className="text-[10px] font-bold text-[#9CA3AF]">MR</span>
               </div>
               {/* Mobile hamburger */}
               <button
                 type="button"
-                className="md:hidden text-[#9AA3B2] hover:text-white transition-colors"
+                className="md:hidden text-[#9CA3AF] hover:text-white transition-colors"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 aria-label="Menu"
               >
@@ -172,7 +172,7 @@ export default function RecruiterLayout({
 
           {/* Mobile tab menu */}
           {mobileMenuOpen && (
-            <div className="md:hidden pb-4 border-t border-[#1E2D4A] pt-3 flex flex-col gap-1">
+            <div className="md:hidden pb-4 border-t border-[#2D3748] pt-3 flex flex-col gap-1">
               {PORTAL_TABS.map((tab) => {
                 const isActive =
                   pathname === tab.href ||
@@ -187,7 +187,7 @@ export default function RecruiterLayout({
                       flex items-center gap-3 px-3 py-2.5 rounded-lg font-head text-[11px] font-bold uppercase tracking-[0.15em] transition-colors
                       ${isActive
                         ? "text-white bg-wl-red/10"
-                        : "text-[#9AA3B2] hover:text-white hover:bg-white/5"
+                        : "text-[#9CA3AF] hover:text-white hover:bg-white/5"
                       }
                     `}
                   >

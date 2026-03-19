@@ -234,9 +234,9 @@ const STATUS_MAP: Record<
   },
   contacted: {
     label: "Contacté",
-    bg: "bg-[#F39C12]/15",
-    text: "text-[#F39C12]",
-    dot: "bg-[#F39C12]",
+    bg: "bg-[#F59E0B]/15",
+    text: "text-[#F59E0B]",
+    dot: "bg-[#F59E0B]",
   },
 };
 
@@ -254,14 +254,14 @@ function Stars({ rating, max = 5 }: { rating: number; max?: number }) {
             width="14"
             height="14"
             viewBox="0 0 24 24"
-            fill={filled ? "#F5C518" : half ? "url(#half-star)" : "none"}
-            stroke={filled || half ? "#F5C518" : "#3D5578"}
+            fill={filled ? "#F59E0B" : half ? "url(#half-star)" : "none"}
+            stroke={filled || half ? "#F59E0B" : "#374151"}
             strokeWidth="2"
           >
             {half && (
               <defs>
                 <linearGradient id="half-star">
-                  <stop offset="50%" stopColor="#F5C518" />
+                  <stop offset="50%" stopColor="#F59E0B" />
                   <stop offset="50%" stopColor="transparent" />
                 </linearGradient>
               </defs>
@@ -344,7 +344,7 @@ export default function RecruiterDashboard() {
         <h1 className="font-head text-2xl sm:text-3xl font-black text-white uppercase tracking-tight">
           Tableau de bord
         </h1>
-        <p className="font-sans text-sm text-[#9AA3B2] mt-1">
+        <p className="font-sans text-sm text-[#9CA3AF] mt-1">
           Découvrez les meilleurs étudiants-athlètes du Québec
         </p>
       </div>
@@ -356,16 +356,16 @@ export default function RecruiterDashboard() {
         {KPIS.map((kpi) => (
           <div
             key={kpi.label}
-            className="nx-auth-card bg-[#0A1428] border border-[#1E2D4A] p-5 transition-colors hover:border-[#3D5578]"
+            className="nx-auth-card bg-[#1A1D24] border border-[#2D3748] p-5 transition-colors hover:border-[#374151]"
           >
             <div className="flex items-start justify-between mb-3">
-              <span className={`${label} text-[#9AA3B2]`}>{kpi.label}</span>
-              <div className="text-[#3D5578]">{kpi.icon}</div>
+              <span className={`${label} text-[#9CA3AF]`}>{kpi.label}</span>
+              <div className="text-[#374151]">{kpi.icon}</div>
             </div>
             <p className="font-head text-2xl font-black text-white tracking-tight">
               {kpi.value}
             </p>
-            <p className="font-sans text-xs text-[#475569] mt-1">
+            <p className="font-sans text-xs text-[#6B7280] mt-1">
               {kpi.change}
             </p>
           </div>
@@ -375,13 +375,13 @@ export default function RecruiterDashboard() {
       {/* ══════════════════════════════════════════
           FILTERS BAR
       ══════════════════════════════════════════ */}
-      <div className="nx-auth-card bg-[#0A1428] border border-[#1E2D4A] p-4 mb-6">
+      <div className="nx-auth-card bg-[#1A1D24] border border-[#2D3748] p-4 mb-6">
         <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-3">
 
           {/* Search */}
           <div className="relative flex-1 min-w-0">
             <svg
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-[#475569]"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6B7280]"
               width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
             >
               <circle cx="11" cy="11" r="8" />
@@ -392,7 +392,7 @@ export default function RecruiterDashboard() {
               placeholder="Rechercher un athlète, école, sport..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="nx-input w-full h-10 pl-10 pr-4 bg-[#060A14] border border-[#1E2D4A] rounded-lg text-white font-sans text-sm placeholder:text-[#475569] focus:border-wl-red focus:outline-none transition-colors"
+              className="nx-input w-full h-10 pl-10 pr-4 bg-[#111317] border border-[#2D3748] rounded-lg text-white font-sans text-sm placeholder:text-[#6B7280] focus:border-wl-red focus:outline-none transition-colors"
             />
           </div>
 
@@ -403,7 +403,7 @@ export default function RecruiterDashboard() {
               aria-label="Filtrer par sport"
               value={sportFilter}
               onChange={(e) => setSportFilter(e.target.value)}
-              className="nx-input h-10 px-3 min-w-[150px] bg-[#060A14] border border-[#1E2D4A] rounded-lg text-white font-sans text-sm focus:border-wl-red focus:outline-none transition-colors appearance-none cursor-pointer"
+              className="nx-input h-10 px-3 min-w-[150px] bg-[#111317] border border-[#2D3748] rounded-lg text-white font-sans text-sm focus:border-wl-red focus:outline-none transition-colors appearance-none cursor-pointer"
             >
               <option value="all">Tous les sports</option>
               {sports.map((s) => (
@@ -416,7 +416,7 @@ export default function RecruiterDashboard() {
               aria-label="Filtrer par division"
               value={divisionFilter}
               onChange={(e) => setDivisionFilter(e.target.value)}
-              className="nx-input h-10 px-3 min-w-[150px] bg-[#060A14] border border-[#1E2D4A] rounded-lg text-white font-sans text-sm focus:border-wl-red focus:outline-none transition-colors appearance-none cursor-pointer"
+              className="nx-input h-10 px-3 min-w-[150px] bg-[#111317] border border-[#2D3748] rounded-lg text-white font-sans text-sm focus:border-wl-red focus:outline-none transition-colors appearance-none cursor-pointer"
             >
               <option value="all">Toutes divisions</option>
               {divisions.map((d) => (
@@ -429,7 +429,7 @@ export default function RecruiterDashboard() {
               aria-label="Filtrer par statut"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="nx-input h-10 px-3 min-w-[150px] bg-[#060A14] border border-[#1E2D4A] rounded-lg text-white font-sans text-sm focus:border-wl-red focus:outline-none transition-colors appearance-none cursor-pointer"
+              className="nx-input h-10 px-3 min-w-[150px] bg-[#111317] border border-[#2D3748] rounded-lg text-white font-sans text-sm focus:border-wl-red focus:outline-none transition-colors appearance-none cursor-pointer"
             >
               <option value="all">Tous les statuts</option>
               <option value="approved">Approuvé</option>
@@ -444,29 +444,29 @@ export default function RecruiterDashboard() {
       {/* ══════════════════════════════════════════
           ATHLETE TABLE
       ══════════════════════════════════════════ */}
-      <div className="nx-auth-card bg-[#0A1428] border border-[#1E2D4A] overflow-hidden">
+      <div className="nx-auth-card bg-[#1A1D24] border border-[#2D3748] overflow-hidden">
 
         {/* Table header */}
-        <div className="hidden lg:grid grid-cols-[minmax(160px,1.4fr)_minmax(120px,1.2fr)_minmax(80px,0.7fr)_90px_90px_minmax(120px,1.3fr)_90px_80px] gap-4 px-6 py-3 border-b border-[#1E2D4A] bg-[#060A14]/60">
-          <span className={`${label} text-[#475569]`}>Athlète</span>
-          <span className={`${label} text-[#475569]`}>École</span>
-          <span className={`${label} text-[#475569]`}>Sport / Pos.</span>
-          <span className={`${label} text-[#475569]`}>Note coach</span>
-          <span className={`${label} text-[#475569]`}>Moy. CÉGEP</span>
-          <span className={`${label} text-[#475569]`}>Stats clés</span>
-          <span className={`${label} text-[#475569]`}>Statut</span>
-          <span className={`${label} text-[#475569]`}>Action</span>
+        <div className="hidden lg:grid grid-cols-[minmax(160px,1.4fr)_minmax(120px,1.2fr)_minmax(80px,0.7fr)_90px_90px_minmax(120px,1.3fr)_90px_80px] gap-4 px-6 py-3 border-b border-[#2D3748] bg-[#111317]/60">
+          <span className={`${label} text-[#6B7280]`}>Athlète</span>
+          <span className={`${label} text-[#6B7280]`}>École</span>
+          <span className={`${label} text-[#6B7280]`}>Sport / Pos.</span>
+          <span className={`${label} text-[#6B7280]`}>Note coach</span>
+          <span className={`${label} text-[#6B7280]`}>Moy. CÉGEP</span>
+          <span className={`${label} text-[#6B7280]`}>Stats clés</span>
+          <span className={`${label} text-[#6B7280]`}>Statut</span>
+          <span className={`${label} text-[#6B7280]`}>Action</span>
         </div>
 
         {/* Table rows */}
         {filtered.length === 0 ? (
           <div className="px-6 py-16 text-center">
-            <p className="font-sans text-sm text-[#475569]">
+            <p className="font-sans text-sm text-[#6B7280]">
               Aucun athlète ne correspond à vos critères.
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-[#1E2D4A]">
+          <div className="divide-y divide-[#2D3748]">
             {filtered.map((a) => {
               const st = STATUS_MAP[a.status];
               return (
@@ -481,8 +481,8 @@ export default function RecruiterDashboard() {
                     {/* Name + division badge */}
                     <div className="flex items-center gap-3">
                       {/* Avatar circle */}
-                      <div className="w-9 h-9 rounded-full bg-[#1E2D4A] border border-[#3D5578] flex items-center justify-center shrink-0">
-                        <span className="text-[10px] font-bold text-[#9AA3B2]">
+                      <div className="w-9 h-9 rounded-full bg-[#2D3748] border border-[#374151] flex items-center justify-center shrink-0">
+                        <span className="text-[10px] font-bold text-[#9CA3AF]">
                           {a.firstName[0]}{a.lastName[0]}
                         </span>
                       </div>
@@ -491,27 +491,27 @@ export default function RecruiterDashboard() {
                           {a.firstName} {a.lastName}
                         </p>
                         <div className="flex items-center gap-1.5 mt-0.5">
-                          <span className="inline-block px-1.5 py-0.5 text-[9px] font-bold tracking-wider uppercase bg-wl-red/15 text-[#E84848] rounded">
+                          <span className="inline-block px-1.5 py-0.5 text-[9px] font-bold tracking-wider uppercase bg-wl-red/15 text-[#E63946] rounded">
                             {a.division}
                           </span>
-                          <span className="text-[10px] text-[#475569]">{a.gradYear}</span>
+                          <span className="text-[10px] text-[#6B7280]">{a.gradYear}</span>
                         </div>
                       </div>
                       {/* Favorite indicator */}
                       {a.isFavorite && (
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="#E84848" stroke="none" className="shrink-0">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="#E63946" stroke="none" className="shrink-0">
                           <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
                         </svg>
                       )}
                     </div>
 
                     {/* School */}
-                    <p className="font-sans text-sm text-[#9AA3B2] truncate">{a.school}</p>
+                    <p className="font-sans text-sm text-[#9CA3AF] truncate">{a.school}</p>
 
                     {/* Sport + Position */}
                     <div className="min-w-0">
                       <p className="font-sans text-xs text-white truncate">{a.sport}</p>
-                      <p className="font-sans text-[11px] text-[#475569] truncate">{a.position}</p>
+                      <p className="font-sans text-[11px] text-[#6B7280] truncate">{a.position}</p>
                     </div>
 
                     {/* Coach rating */}
@@ -521,7 +521,7 @@ export default function RecruiterDashboard() {
                     <Stars rating={a.cegepAvgRating} />
 
                     {/* Key stats */}
-                    <p className="font-sans text-xs text-[#C4CDD8] truncate">{a.keyStats}</p>
+                    <p className="font-sans text-xs text-[#e0e0e0] truncate">{a.keyStats}</p>
 
                     {/* Status badge */}
                     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full ${st.bg} ${st.text} text-[9px] font-bold tracking-[0.12em] uppercase w-fit`}>
@@ -546,8 +546,8 @@ export default function RecruiterDashboard() {
                   <div className="lg:hidden">
                     <div className="flex items-center justify-between gap-3 mb-2">
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-9 h-9 rounded-full bg-[#1E2D4A] border border-[#3D5578] flex items-center justify-center shrink-0">
-                          <span className="text-[10px] font-bold text-[#9AA3B2]">
+                        <div className="w-9 h-9 rounded-full bg-[#2D3748] border border-[#374151] flex items-center justify-center shrink-0">
+                          <span className="text-[10px] font-bold text-[#9CA3AF]">
                             {a.firstName[0]}{a.lastName[0]}
                           </span>
                         </div>
@@ -555,7 +555,7 @@ export default function RecruiterDashboard() {
                           <p className="font-sans text-sm text-white font-semibold truncate">
                             {a.firstName} {a.lastName}
                           </p>
-                          <p className="font-sans text-xs text-[#475569] truncate">{a.school}</p>
+                          <p className="font-sans text-xs text-[#6B7280] truncate">{a.school}</p>
                         </div>
                       </div>
                       <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full ${st.bg} ${st.text} text-[9px] font-bold tracking-wider uppercase shrink-0`}>
@@ -563,12 +563,12 @@ export default function RecruiterDashboard() {
                         {st.label}
                       </span>
                     </div>
-                    <div className="flex items-center gap-3 text-xs text-[#9AA3B2]">
-                      <span className="inline-block px-1.5 py-0.5 text-[9px] font-bold tracking-wider uppercase bg-wl-red/15 text-[#E84848] rounded">{a.division}</span>
+                    <div className="flex items-center gap-3 text-xs text-[#9CA3AF]">
+                      <span className="inline-block px-1.5 py-0.5 text-[9px] font-bold tracking-wider uppercase bg-wl-red/15 text-[#E63946] rounded">{a.division}</span>
                       <span>{a.sport} — {a.position}</span>
                       <Stars rating={a.coachRating} />
                     </div>
-                    <p className="font-sans text-xs text-[#475569] mt-1.5 truncate">{a.keyStats}</p>
+                    <p className="font-sans text-xs text-[#6B7280] mt-1.5 truncate">{a.keyStats}</p>
                   </div>
 
                 </div>
@@ -578,11 +578,11 @@ export default function RecruiterDashboard() {
         )}
 
         {/* Table footer */}
-        <div className="px-6 py-3 border-t border-[#1E2D4A] bg-[#060A14]/60 flex items-center justify-between">
-          <p className="font-sans text-xs text-[#475569]">
+        <div className="px-6 py-3 border-t border-[#2D3748] bg-[#111317]/60 flex items-center justify-between">
+          <p className="font-sans text-xs text-[#6B7280]">
             {filtered.length} athlète{filtered.length !== 1 ? "s" : ""} affiché{filtered.length !== 1 ? "s" : ""}
           </p>
-          <p className="font-sans text-xs text-[#475569]">
+          <p className="font-sans text-xs text-[#6B7280]">
             Page 1 sur 1
           </p>
         </div>
@@ -602,7 +602,7 @@ export default function RecruiterDashboard() {
       <div
         ref={panelRef}
         className={`
-          fixed top-0 right-0 z-50 h-full w-full sm:w-[440px] bg-[#0A1428] border-l border-[#1E2D4A]
+          fixed top-0 right-0 z-50 h-full w-full sm:w-[440px] bg-[#1A1D24] border-l border-[#2D3748]
           transform transition-transform duration-300 ease-in-out
           ${selectedAthlete ? "translate-x-0" : "translate-x-full"}
           overflow-y-auto
@@ -612,12 +612,12 @@ export default function RecruiterDashboard() {
           <div className="flex flex-col h-full">
 
             {/* Panel header */}
-            <div className="sticky top-0 z-10 bg-[#0A1428] border-b border-[#1E2D4A] px-6 py-4 flex items-center justify-between">
-              <span className={`${label} text-[#9AA3B2]`}>Profil athlète</span>
+            <div className="sticky top-0 z-10 bg-[#1A1D24] border-b border-[#2D3748] px-6 py-4 flex items-center justify-between">
+              <span className={`${label} text-[#9CA3AF]`}>Profil athlète</span>
               <button
                 type="button"
                 onClick={() => setSelectedAthlete(null)}
-                className="text-[#475569] hover:text-white transition-colors"
+                className="text-[#6B7280] hover:text-white transition-colors"
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                   <path d="M18 6L6 18" />
@@ -665,9 +665,9 @@ export default function RecruiterDashboard() {
                       {/* Gradient avatar bg */}
                       <div
                         className="absolute inset-0 z-[1] flex items-center justify-center"
-                        style={{ background: 'linear-gradient(135deg, #1E2D4A 0%, #0A1428 50%, #1a0a0a 100%)' }}
+                        style={{ background: 'linear-gradient(135deg, #2D3748 0%, #1A1D24 50%, #1a0a0a 100%)' }}
                       >
-                        <span className="font-head text-[80px] font-black text-[#1E2D4A] uppercase select-none" style={{ letterSpacing: '0.05em' }}>
+                        <span className="font-head text-[80px] font-black text-[#2D3748] uppercase select-none" style={{ letterSpacing: '0.05em' }}>
                           {selectedAthlete.firstName[0]}{selectedAthlete.lastName[0]}
                         </span>
                       </div>
@@ -730,23 +730,25 @@ export default function RecruiterDashboard() {
                         {/* Right — cream */}
                         <div className="flex-1 flex flex-col justify-center" style={{ background: '#FFFFFF', padding: '12px 14px' }}>
                           {/* Stars (large) */}
-                          <svg width="130" height="20" viewBox="0 0 130 20" fill="none" style={{ display: 'block', marginBottom: 6 }}>
-                            {[0, 26, 52, 78, 104].map((x, i) => (
-                              <path
-                                key={x}
-                                d="M10,0L12.2,7.2L20,7.2L14,11.8L16.2,19L10,14.6L3.8,19L6,11.8L0,7.2L7.8,7.2Z"
-                                fill={i < Math.round(selectedAthlete.coachRating) ? "#F5C518" : "#3D4452"}
-                                transform={`translate(${x},0)`}
-                              />
-                            ))}
-                          </svg>
+                          <div style={{ display: 'inline-flex', background: '#1E2128', borderRadius: 6, padding: '5px 8px', marginBottom: 6 }}>
+                            <svg width="130" height="20" viewBox="0 0 130 20" fill="none" style={{ display: 'block' }}>
+                              {[0, 26, 52, 78, 104].map((x, i) => (
+                                <path
+                                  key={x}
+                                  d="M10,0L12.2,7.2L20,7.2L14,11.8L16.2,19L10,14.6L3.8,19L6,11.8L0,7.2L7.8,7.2Z"
+                                  fill={i < Math.round(selectedAthlete.coachRating) ? "#F59E0B" : "#374151"}
+                                  transform={`translate(${x},0)`}
+                                />
+                              ))}
+                            </svg>
+                          </div>
                           <div style={{ fontFamily: 'var(--font-inter), sans-serif', fontWeight: 700, fontSize: 12, letterSpacing: '0.1em', textTransform: 'uppercase' as const, color: '#1E2128', marginBottom: 2 }}>
                             {selectedAthlete.school.length > 22 ? selectedAthlete.school.slice(0, 22) + "…" : selectedAthlete.school}
                           </div>
                           <div style={{ fontFamily: 'var(--font-inter), sans-serif', fontWeight: 700, fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#9CA3AF' }}>
                             {selectedAthlete.hometown}
                           </div>
-                          <div style={{ fontFamily: 'var(--font-inter), sans-serif', fontWeight: 700, fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#E64B47', marginTop: 2 }}>
+                          <div style={{ fontFamily: 'var(--font-inter), sans-serif', fontWeight: 700, fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#E63946', marginTop: 2 }}>
                             Promotion {selectedAthlete.gradYear}
                           </div>
                         </div>
@@ -755,7 +757,7 @@ export default function RecruiterDashboard() {
                         <div
                           className="flex items-center justify-center flex-shrink-0"
                           style={{
-                            background: '#E64B47',
+                            background: '#E63946',
                             width: 22,
                             writingMode: 'vertical-rl' as const,
                             fontFamily: 'var(--font-montserrat), sans-serif',
@@ -783,46 +785,46 @@ export default function RecruiterDashboard() {
                   { l: "Ville", v: selectedAthlete.hometown },
                   { l: "Grad.", v: String(selectedAthlete.gradYear) },
                 ].map((item) => (
-                  <div key={item.l} className="bg-[#060A14] border border-[#1E2D4A] p-2.5 rounded-lg text-center">
-                    <p className={`${label} text-[#475569] mb-0.5`} style={{ fontSize: 8 }}>{item.l}</p>
+                  <div key={item.l} className="bg-[#111317] border border-[#2D3748] p-2.5 rounded-lg text-center">
+                    <p className={`${label} text-[#6B7280] mb-0.5`} style={{ fontSize: 8 }}>{item.l}</p>
                     <p className="font-sans text-xs text-white font-semibold">{item.v}</p>
                   </div>
                 ))}
               </div>
 
               {/* Ratings */}
-              <div className="flex gap-6 mb-6 p-4 bg-[#060A14] border border-[#1E2D4A] rounded-lg">
+              <div className="flex gap-6 mb-6 p-4 bg-[#111317] border border-[#2D3748] rounded-lg">
                 <div>
-                  <p className={`${label} text-[#475569] mb-1.5`}>Note coach</p>
+                  <p className={`${label} text-[#6B7280] mb-1.5`}>Note coach</p>
                   <Stars rating={selectedAthlete.coachRating} />
                 </div>
                 <div>
-                  <p className={`${label} text-[#475569] mb-1.5`}>Moy. CÉGEP</p>
+                  <p className={`${label} text-[#6B7280] mb-1.5`}>Moy. CÉGEP</p>
                   <Stars rating={selectedAthlete.cegepAvgRating} />
                 </div>
               </div>
 
               {/* Key stats */}
               <div className="mb-6">
-                <p className={`${label} text-[#9AA3B2] mb-2`}>Statistiques clés</p>
-                <p className="font-sans text-sm text-[#C4CDD8] bg-[#060A14] border border-[#1E2D4A] p-3 rounded-lg">
+                <p className={`${label} text-[#9CA3AF] mb-2`}>Statistiques clés</p>
+                <p className="font-sans text-sm text-[#e0e0e0] bg-[#111317] border border-[#2D3748] p-3 rounded-lg">
                   {selectedAthlete.keyStats}
                 </p>
               </div>
 
               {/* Bio */}
               <div className="mb-6">
-                <p className={`${label} text-[#9AA3B2] mb-2`}>Biographie</p>
-                <p className="font-sans text-sm text-[#C4CDD8] leading-relaxed">
+                <p className={`${label} text-[#9CA3AF] mb-2`}>Biographie</p>
+                <p className="font-sans text-sm text-[#e0e0e0] leading-relaxed">
                   {selectedAthlete.bio}
                 </p>
               </div>
 
               {/* Coach notes */}
               <div className="mb-6">
-                <p className={`${label} text-[#9AA3B2] mb-2`}>Notes de l&apos;entraîneur</p>
-                <div className="bg-[#060A14] border border-[#1E2D4A] p-4 rounded-lg">
-                  <p className="font-sans text-sm text-[#C4CDD8] leading-relaxed italic">
+                <p className={`${label} text-[#9CA3AF] mb-2`}>Notes de l&apos;entraîneur</p>
+                <div className="bg-[#111317] border border-[#2D3748] p-4 rounded-lg">
+                  <p className="font-sans text-sm text-[#e0e0e0] leading-relaxed italic">
                     &ldquo;{selectedAthlete.coachNotes}&rdquo;
                   </p>
                 </div>
@@ -831,7 +833,7 @@ export default function RecruiterDashboard() {
             </div>
 
             {/* Panel footer — sticky CTA */}
-            <div className="sticky bottom-0 bg-[#0A1428] border-t border-[#1E2D4A] px-6 py-4">
+            <div className="sticky bottom-0 bg-[#1A1D24] border-t border-[#2D3748] px-6 py-4">
               <button
                 type="button"
                 className="nx-ghost-btn w-full h-12 border font-head font-black text-sm uppercase tracking-widest"

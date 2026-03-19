@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find /c/Users/bptds/OneDrive/Documents/Nexus/app/coach/components -type f -name *.tsx)",
+      "Bash(find c:UsersbptdsOneDriveDocumentsNexusnexus-app -type f -name *.tsx -o -name *.ts)",
+      "Read(//mnt/c/Users/bptds/OneDrive/Documents/**)"
+    ]
+  }
+}

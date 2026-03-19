@@ -154,9 +154,9 @@ const STATUS_CONFIG: Record<
   },
   "in-progress": {
     label: "En cours",
-    bg: "bg-[#E84848]/15",
-    text: "text-[#E84848]",
-    dot: "bg-[#E84848]",
+    bg: "bg-[#E63946]/15",
+    text: "text-[#E63946]",
+    dot: "bg-[#E63946]",
   },
   planned: {
     label: "Planifié",
@@ -366,7 +366,7 @@ export default function RoadmapPage() {
                         ${phase.status === "completed"
                           ? "border-emerald-400"
                           : phase.status === "in-progress"
-                            ? "border-[#E84848]"
+                            ? "border-[#E63946]"
                             : "border-[#3D5578]"
                         }
                       `}
@@ -378,7 +378,7 @@ export default function RoadmapPage() {
                           ${phase.status === "completed"
                             ? "bg-emerald-400"
                             : phase.status === "in-progress"
-                              ? "bg-[#E84848] animate-pulse"
+                              ? "bg-[#E63946] animate-pulse"
                               : "bg-[#3D5578]"
                           }
                         `}
@@ -432,7 +432,7 @@ export default function RoadmapPage() {
                               height="16"
                               viewBox="0 0 24 24"
                               fill="none"
-                              stroke="#2ECC71"
+                              stroke="#22C55E"
                               strokeWidth="2.5"
                               strokeLinecap="round"
                               strokeLinejoin="round"
@@ -446,7 +446,7 @@ export default function RoadmapPage() {
                               height="16"
                               viewBox="0 0 24 24"
                               fill="none"
-                              stroke="#E84848"
+                              stroke="#E63946"
                               strokeWidth="2"
                               strokeLinecap="round"
                               strokeLinejoin="round"
@@ -491,7 +491,7 @@ export default function RoadmapPage() {
                             className={`h-full rounded-full transition-all duration-700 ${
                               phase.status === "completed"
                                 ? "bg-emerald-400"
-                                : "bg-[#E84848]"
+                                : "bg-[#E63946]"
                             }`}
                             style={{
                               width: phase.status === "completed" ? "100%" : "40%",

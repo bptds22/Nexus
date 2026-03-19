@@ -15,14 +15,14 @@
   --foreground: #171717;
 
   /* ── WeLead brand primitives ─────────────────────────── */
-  --wl-red-500:     #E84848;
-  --wl-red-hover:   #D93C3C;
+  --wl-red-500:     #E63946;
+  --wl-red-hover:   #D42B22;
   --wl-charcoal-900: #282838;
 
   /* ── WeLead semantic ────────────────────────────────── */
-  --wl-success: #2ECC71;
+  --wl-success: #22C55E;
   --wl-info:    #3B82F6;
-  --wl-warning: #F39C12;
+  --wl-warning: #F59E0B;
 
   /* ── WeLead surfaces / text (light) ─────────────────── */
   --wl-bg:         #FFFFFF;
@@ -35,8 +35,8 @@
   /* ── WeLead effects ─────────────────────────────────── */
   --wl-shadow-sm:   0 4px 12px rgba(0,0,0,0.06);
   --wl-shadow-md:   0 10px 24px rgba(0,0,0,0.10);
-  --wl-glow-red:    0 0 12px rgba(232,72,72,0.35);
-  --wl-focus-ring:  0 0 0 3px rgba(232,72,72,0.28);
+  --wl-glow-red:    0 0 12px rgba(230,57,70,0.35);
+  --wl-focus-ring:  0 0 0 3px rgba(230,57,70,0.28);
 
   /* ── WeLead radius ──────────────────────────────────── */
   --wl-radius-sm:   8px;
@@ -48,9 +48,9 @@
 [data-theme="dark"] {
   --wl-bg:         #111317;
   --wl-surface:    #1A1D24;
-  --wl-surface-2:  #141824;
+  --wl-surface-2:  #1A1D24;
   --wl-text:       #F2F2F2;
-  --wl-text-muted: #9AA3B2;
+  --wl-text-muted: #9CA3AF;
   --wl-border:     #2E323C;
   --wl-shadow-sm:  0 0 0 rgba(0,0,0,0);
   --wl-shadow-md:  0 0 0 rgba(0,0,0,0);
@@ -74,14 +74,14 @@
   --font-mono: var(--font-geist-mono);
 
   /* ── Brand colors ──────────────────────────────────── */
-  --color-wl-red:         #E84848;
-  --color-wl-red-hover:   #D93C3C;
+  --color-wl-red:         #E63946;
+  --color-wl-red-hover:   #D42B22;
   --color-wl-charcoal:    #282838;
 
   /* Semantic */
-  --color-wl-success:     #2ECC71;
+  --color-wl-success:     #22C55E;
   --color-wl-info:        #3B82F6;
-  --color-wl-warning:     #F39C12;
+  --color-wl-warning:     #F59E0B;
 
   /* Theme-aware surfaces (follow CSS var, not hardcoded) */
   --color-wl-bg:          var(--wl-bg);
@@ -147,7 +147,7 @@ body {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(700px 300px at 72% 38%, rgba(232, 72, 72, 0.16), transparent 60%),
+    radial-gradient(700px 300px at 72% 38%, rgba(230, 57, 70, 0.16), transparent 60%),
     radial-gradient(ellipse 130% 100% at 50% 50%, transparent 35%, rgba(0, 0, 0, 0.52) 100%);
   pointer-events: none;
   z-index: -1;
@@ -192,6 +192,78 @@ body.light-mode footer {
 
 /* Diagonal separator divs — keep height but hide visually in light mode */
 body.light-mode .nx-sep { visibility: hidden !important; background: transparent !important; }
+
+/* ── nx-pill-tab — standard segmented pill/tab with red top-bar hover ── */
+.nx-pill-tab {
+  position: relative;
+  overflow: hidden;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #6b7280;
+  background: transparent;
+  transition: color 0.2s, background-color 0.25s;
+  cursor: pointer;
+  border: none;
+}
+
+/* Top red bar — slides down on hover */
+.nx-pill-tab::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 20%;
+  right: 20%;
+  height: 3px;
+  background: #E63946;
+  border-radius: 0 0 3px 3px;
+  transform: translateY(-100%);
+  opacity: 0;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s, left 0.25s, right 0.25s;
+}
+
+.nx-pill-tab:hover {
+  color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.04);
+}
+
+.nx-pill-tab:hover::before {
+  transform: translateY(0);
+  opacity: 1;
+  left: 10%;
+  right: 10%;
+}
+
+/* Active state — solid red background, no top bar needed */
+.nx-pill-tab[data-active="true"] {
+  color: #ffffff;
+  background: #E63946;
+}
+.nx-pill-tab[data-active="true"]::before {
+  display: none;
+}
+
+/* Light mode adjustments */
+body.light-mode .nx-pill-tab {
+  color: #6b7280;
+}
+body.light-mode .nx-pill-tab:hover {
+  color: #1a1d24;
+  background-color: rgba(0, 0, 0, 0.05);
+}
+body.light-mode .nx-pill-tab[data-active="true"] {
+  color: #ffffff;
+  background: #E63946;
+}
+
+/* ── Maintenance page — pulsing dots ── */
+@keyframes pulse-dot {
+  0%, 100% { opacity: 0.3; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
 
 /* Step cards — dark mode: fully transparent (grid wrapper too) */
 .nx-steps-grid {
@@ -304,10 +376,10 @@ body.light-mode .nx-ghost-btn {
 
 /* Hover — remap vars (wins on specificity via :hover, both modes) */
 .nx-ghost-btn:hover {
-  --gb-bg:     #E84848;
-  --gb-border: #E84848;
+  --gb-bg:     #E63946;
+  --gb-border: #E63946;
   --gb-color:  #ffffff;
-  --gb-shadow: 0 8px 28px rgba(232,72,72,0.4);
+  --gb-shadow: 0 8px 28px rgba(230,57,70,0.4);
   transform: translateY(-2px);
 }
 
@@ -334,7 +406,7 @@ body.light-mode div[class*="bg-[#060A14]"] [class*="text-[#9AA3B2]"] {
 
 /* ── Card red glow — boost in light mode ────────────────── */
 body.light-mode .nx-card-glow {
-  background: rgba(232, 72, 72, 0.45) !important;
+  background: rgba(230, 57, 70, 0.45) !important;
 }
 
 /* ── Player OVR card ─────────────────────────────────────── */
@@ -404,8 +476,8 @@ body.light-mode footer[class*="border-[#1E2D4A]"] {
 }
 
 .nx-social-icon:hover {
-  color: #E84848;
-  filter: drop-shadow(0 0 7px rgba(232, 72, 72, 0.60));
+  color: #E63946;
+  filter: drop-shadow(0 0 7px rgba(230, 57, 70, 0.60));
   transform: scale(1.18);
 }
 
@@ -422,8 +494,8 @@ body.light-mode .nx-social-icon {
 }
 .nx-v30-wrap:hover .nx-v30-card {
   transform: rotate(-1deg) translateY(-8px);
-  box-shadow: 0 0 0 1.5px #E64B47, 0 30px 80px rgba(0,0,0,0.8),
-    0 0 40px rgba(230,75,71,0.3), 0 0 80px rgba(230,75,71,0.12);
+  box-shadow: 0 0 0 1.5px #E63946, 0 30px 80px rgba(0,0,0,0.8),
+    0 0 40px rgba(230,57,70,0.3), 0 0 80px rgba(230,57,70,0.12);
 }
 
 .nx-v30-badge {
@@ -432,7 +504,7 @@ body.light-mode .nx-social-icon {
 }
 .nx-v30-wrap:hover .nx-v30-badge {
   transform: scale(1.12) rotate(-6deg);
-  filter: drop-shadow(0 6px 18px rgba(230,75,71,0.55));
+  filter: drop-shadow(0 6px 18px rgba(230,57,70,0.55));
 }
 
 .nx-v30-ticket {
@@ -483,6 +555,21 @@ body.light-mode .nx-social-icon {
   }
 }
 
+/* ── Auth & Onboarding animations ── */
+@keyframes nxShake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  50% { transform: translateX(6px); }
+  75% { transform: translateX(-4px); }
+}
+.animate-shake { animation: nxShake 0.4s ease-out; }
+
+@keyframes nxSlideIn {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.animate-slide-in { animation: nxSlideIn 0.3s ease-out; }
+
 @keyframes tagIn {
   from {
     opacity: 0;
@@ -504,6 +591,38 @@ body.light-mode .nx-social-icon {
     transform: translateY(0);
   }
 }
+
+/* ── Confetti animation (Lettre d'intention signée celebration) ── */
+@keyframes nxConfettiUp {
+  0% { opacity: 1; transform: translateY(0) rotate(0deg) scale(1); }
+  100% { opacity: 0; transform: translateY(-120px) rotate(360deg) scale(0.4); }
+}
+@keyframes nxConfettiPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+.nx-confetti-piece {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  animation: nxConfettiUp 1.5s ease-out forwards;
+}
+.nx-celebrate-pulse {
+  animation: nxConfettiPulse 0.3s ease-in-out 2;
+}
+
+/* ── Toast animation ── */
+@keyframes nxToastIn {
+  from { opacity: 0; transform: translateY(12px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes nxToastOut {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to { opacity: 0; transform: translateY(-8px) scale(0.95); }
+}
+.nx-toast-enter { animation: nxToastIn 0.3s ease-out forwards; }
+.nx-toast-exit { animation: nxToastOut 0.3s ease-in forwards; }
 
 /* Native select arrow for dark theme */
 .nx-select-arrow {
@@ -530,6 +649,29 @@ body.light-mode .nx-social-icon {
 }
 .nx-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #3a3d46;
+}
+
+/* ── Global dark scrollbars ──────────────────────── */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #2a2d36 transparent;
+}
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #2a2d36;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3a3d46;
+}
+::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 .nx-input:focus {
@@ -571,7 +713,7 @@ body.light-mode .nx-input::placeholder {
 }
 
 body.light-mode .nx-input:focus {
-  border-color: #E84848 !important;
+  border-color: #E63946 !important;
 }
 
 body.light-mode .nx-social-auth-btn {
@@ -582,4 +724,124 @@ body.light-mode .nx-social-auth-btn {
 body.light-mode .nx-social-auth-btn:hover {
   background-color: rgba(0,0,50,0.04) !important;
   border-color: #9aa3b2 !important;
+}
+
+/* ── Recruiter profile slide-down toggle animation ─────────── */
+@keyframes nxSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    max-height: 2000px;
+  }
+}
+
+.nx-slide-section {
+  animation: nxSlideDown 0.3s ease-out both;
+}
+.nx-slide-section:nth-child(2) { animation-delay: 0.05s; }
+.nx-slide-section:nth-child(3) { animation-delay: 0.10s; }
+.nx-slide-section:nth-child(4) { animation-delay: 0.15s; }
+.nx-slide-section:nth-child(5) { animation-delay: 0.20s; }
+.nx-slide-section:nth-child(6) { animation-delay: 0.25s; }
+.nx-slide-section:nth-child(7) { animation-delay: 0.30s; }
+.nx-slide-section:nth-child(8) { animation-delay: 0.35s; }
+
+/* ── Review widget animations ─────────────────────────── */
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-8px); max-height: 0; }
+  to   { opacity: 1; transform: translateY(0); max-height: 1200px; }
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.97); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* ── Filter bar (recruiter search) ───────────────────────── */
+.nx-filter-select {
+  background-color: #1A1D24;
+  border: 1px solid #3a3f4b;
+  border-radius: 9999px;
+  padding: 8px 36px 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #ffffff;
+  outline: none;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%239CA3AF' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  transition: border-color 0.2s, background-color 0.2s, box-shadow 0.2s, transform 0.15s;
+}
+.nx-filter-select option {
+  background: #1A1D24;
+  color: #ffffff;
+}
+.nx-filter-select:hover {
+  border-color: #555a66;
+  background-color: #1E2128;
+}
+.nx-filter-select:focus {
+  border-color: #E63946;
+  box-shadow: 0 0 0 3px rgba(230,57,70,0.12);
+}
+.nx-filter-select:active {
+  transform: scale(0.97);
+}
+.nx-filter-select.nx-filter-active {
+  border-color: #E63946;
+  background-color: rgba(230,57,70,0.08);
+  color: #fff;
+  background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23E63946' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+.nx-filter-select:disabled {
+  opacity: 0.35;
+  color: #6b7280;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.nx-filter-checkbox {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  border: 1.5px solid #2D3748;
+  background: #13151a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s, border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+}
+.nx-filter-checkbox:hover {
+  border-color: #4a4d56;
+}
+.nx-filter-checkbox.checked {
+  background: #E63946;
+  border-color: #E63946;
+  box-shadow: 0 0 8px rgba(230,57,70,0.3);
+  animation: nxCheckPop 0.25s cubic-bezier(0.34,1.56,0.64,1);
+}
+
+.nx-filter-reset {
+  animation: nxFilterFadeIn 0.25s ease-out both;
+}
+
+@keyframes nxCheckPop {
+  0%   { transform: scale(0.8); }
+  50%  { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+@keyframes nxFilterFadeIn {
+  from { opacity: 0; transform: translateX(-6px); }
+  to   { opacity: 1; transform: translateX(0); }
 }

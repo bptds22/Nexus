@@ -59,7 +59,7 @@ export default function StepIndicator({
                   ${isCurrent
                     ? "bg-[#E63946] text-white shadow-[0_0_12px_rgba(230,57,70,0.45)] scale-110"
                     : isCompleted || isPast
-                      ? "bg-[#10b981] text-white hover:brightness-110"
+                      ? "bg-[#22C55E] text-white hover:brightness-110"
                       : "bg-[#1A1D24] border border-[#2a2d36] text-[#6b7280] hover:border-[#4a4d56] hover:text-[#8a8d96]"
                   }
                 `}
@@ -78,7 +78,7 @@ export default function StepIndicator({
                 <div
                   className={`
                     flex-1 h-[2px] mx-1.5 transition-colors duration-200
-                    ${isPast || isCompleted ? "bg-[#10b981]" : "bg-[#2a2d36]"}
+                    ${isPast || isCompleted ? "bg-[#22C55E]" : "bg-[#2a2d36]"}
                   `}
                 />
               )}
