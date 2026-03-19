@@ -541,10 +541,10 @@ function CoachConfirmation({ user }: { user: NexusUser }) {
         ))}
       </div>
 
-      {p.bio && (
+      {typeof p.bio === "string" && p.bio && (
         <div className="bg-[#111317] border border-white/10 rounded-xl px-5 py-4">
           <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#6B7280] block mb-2">Bio</span>
-          <p className="text-sm text-[#9CA3AF] leading-relaxed italic">&ldquo;{p.bio as string}&rdquo;</p>
+          <p className="text-sm text-[#9CA3AF] leading-relaxed italic">&ldquo;{p.bio}&rdquo;</p>
         </div>
       )}
 

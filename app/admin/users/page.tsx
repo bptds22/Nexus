@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { ADMIN_USERS, PENDING_RECRUITERS, ADMIN_SCHOOLS } from "@/lib/mock/admin";
 import type { AdminUserRow } from "@/lib/mock/admin";
@@ -38,6 +38,14 @@ const STATUS_BADGE: Record<AdminUserRow["status"], { bg: string; text: string; l
 /* ── Page ─────────────────────────────────────────────────── */
 
 export default function AdminUsersPage() {
+  return (
+    <Suspense fallback={<div className="px-6 py-8 text-[#6b7280]">Chargement...</div>}>
+      <AdminUsersContent />
+    </Suspense>
+  );
+}
+
+function AdminUsersContent() {
   const searchParams = useSearchParams();
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
