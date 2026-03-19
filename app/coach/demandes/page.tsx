@@ -3,6 +3,7 @@
 import { useState, useMemo, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import StarRating from "@/components/ui/StarRating";
 import { MOCK_THREADS, STATUS_CONFIG, type ConversationThread, type ThreadStatus } from "./_data/mockThreadsData";
 import EntityLink from "@/components/shared/EntityLink";
 
@@ -122,13 +123,7 @@ function ThreadCard({ thread: t }: { thread: ConversationThread }) {
                 {a.favorites > 1 && <span className="text-[10px] font-bold text-[#E63946]">{a.favorites}</span>}
               </div>
             )}
-            <div className="flex items-center gap-0.5 ml-0.5">
-              {Array.from({ length: 5 }, (_, i) => (
-                <svg key={i} width="11" height="11" viewBox="0 0 24 24" fill={i < a.stars ? "#F59E0B" : "#374151"} stroke={i < a.stars ? "none" : "#F59E0B"} strokeWidth={i < a.stars ? 0 : 1}>
-                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                </svg>
-              ))}
-            </div>
+            <StarRating rating={a.stars} size="sm" />
           </div>
         </div>
       </div>

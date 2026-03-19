@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import StarRating from "@/components/ui/StarRating";
 
 /* ── Props ── */
 interface ReputationScoreCardProps {
@@ -11,65 +12,7 @@ interface ReputationScoreCardProps {
   isPublic: boolean; // false if <3 reviews AND score >= 3.0
 }
 
-/* ── Star SVG ── */
-const STAR_PATH =
-  "M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14 2 9.27l6.91-1.01L12 2z";
-
-function Star({
-  size,
-  fill,
-  halfFill,
-}: {
-  size: number;
-  fill: "full" | "half" | "empty";
-  halfFill?: boolean;
-}) {
-  const id = React.useId();
-  if (fill === "half") {
-    return (
-      <svg
-        width={size}
-        height={size}
-        viewBox="0 0 24 24"
-        className="shrink-0"
-      >
-        <defs>
-          <linearGradient id={`half-${id}`}>
-            <stop offset="50%" stopColor="#F59E0B" />
-            <stop offset="50%" stopColor="#2A2D35" />
-          </linearGradient>
-        </defs>
-        <path d={STAR_PATH} fill={`url(#half-${id})`} />
-      </svg>
-    );
-  }
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" className="shrink-0">
-      <path
-        d={STAR_PATH}
-        fill={fill === "full" ? "#F59E0B" : "#2A2D35"}
-        stroke={fill === "empty" ? "#2A2D35" : "none"}
-        strokeWidth={fill === "empty" ? 1 : 0}
-      />
-    </svg>
-  );
-}
-
-function Stars({ score, size }: { score: number; size: number }) {
-  const stars: ("full" | "half" | "empty")[] = [];
-  for (let i = 1; i <= 5; i++) {
-    if (score >= i) stars.push("full");
-    else if (score >= i - 0.5) stars.push("half");
-    else stars.push("empty");
-  }
-  return (
-    <div className="flex items-center gap-0.5">
-      {stars.map((fill, idx) => (
-        <Star key={idx} size={size} fill={fill} />
-      ))}
-    </div>
-  );
-}
+/* Stars: use shared StarRating component */
 
 /* ── Hourglass SVG ── */
 function HourglassIcon() {
@@ -149,7 +92,7 @@ export default function ReputationScoreCard({
         </div>
 
         {/* Stars */}
-        <Stars score={overallScore} size={28} />
+        <StarRating rating={overallScore} size="lg" />
 
         {/* Reviewer count (distinct recruiters) */}
         <p className="text-[14px] text-[#9CA3AF]">

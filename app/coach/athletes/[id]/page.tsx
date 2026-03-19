@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { MOCK_ATHLETES } from "@/lib/mock/athletes-mock-data";
 import type { Athlete } from "@/lib/types/models";
+import StarRating from "@/components/ui/StarRating";
 
 /* ══════════════════════════════════════════════════════════════
    STYLE CONSTANTS
@@ -298,14 +299,9 @@ function PlayerCard({ a }: { a: Athlete }) {
 
             {/* Right — cream */}
             <div className="flex-1 flex flex-col justify-center" style={{ background: '#FFFFFF', padding: '12px 16px' }}>
-              {/* Stars (large) */}
-              <div style={{ display: 'inline-flex', background: '#1E2128', borderRadius: 6, padding: '5px 8px', marginBottom: 6 }}>
-                <svg width="130" height="20" viewBox="0 0 130 20" fill="none" style={{ display: 'block' }}>
-                  {[0, 26, 52, 78, 104].map((x, i) => (
-                    <path key={x} d="M10,0L12.2,7.2L20,7.2L14,11.8L16.2,19L10,14.6L3.8,19L6,11.8L0,7.2L7.8,7.2Z"
-                      fill={i < stars ? "#F5C518" : "#3D4452"} transform={`translate(${x},0)`} />
-                  ))}
-                </svg>
+              {/* Stars */}
+              <div style={{ display: 'inline-flex', alignItems: 'center', background: '#1E2128', borderRadius: 4, padding: '3px 5px', marginBottom: 6, width: 'fit-content' }}>
+                <StarRating rating={a.coachRating} size="md" showNumber={false} className="!gap-0.5" />
               </div>
               <div style={{ fontFamily: 'var(--font-barlow-cond), sans-serif', fontWeight: 700, fontSize: 13, letterSpacing: '0.1em', textTransform: 'uppercase' as const, color: '#1E2128', marginBottom: 2 }}>
                 {a.schoolName}

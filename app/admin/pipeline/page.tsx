@@ -120,7 +120,7 @@ export default function AdminPipelinePage() {
                     {stage.trend > 0 ? (
                       <span className="text-[12px] text-[#22C55E] font-bold">↑{stage.trend}</span>
                     ) : stage.trend < 0 ? (
-                      <span className="text-[12px] text-[#EF4444] font-bold">↓{Math.abs(stage.trend)}</span>
+                      <span className="text-[12px] text-[#E63946] font-bold">↓{Math.abs(stage.trend)}</span>
                     ) : (
                       <span className="text-[12px] text-[#6b7280] font-bold">—</span>
                     )}
@@ -146,9 +146,9 @@ export default function AdminPipelinePage() {
         <div className="mt-6 pt-4 border-t border-[#2D3748]/50 flex items-center gap-4">
           <span className="text-[13px] font-bold text-[#9CA3AF] w-[140px] shrink-0 text-right">Retirés</span>
           <div className="flex items-center gap-3">
-            <span className="text-[20px] font-head font-black text-[#EF4444]">{retired.count}</span>
+            <span className="text-[20px] font-head font-black text-[#6B7280]">{retired.count}</span>
             {retired.trend > 0 ? (
-              <span className="text-[12px] text-[#EF4444] font-bold">↑{retired.trend}</span>
+              <span className="text-[12px] text-[#6B7280] font-bold">↑{retired.trend}</span>
             ) : retired.trend < 0 ? (
               <span className="text-[12px] text-[#22C55E] font-bold">↓{Math.abs(retired.trend)}</span>
             ) : (
@@ -217,7 +217,7 @@ export default function AdminPipelinePage() {
                     {s.funnel.map((f) => (
                       <td key={f.status} className="px-4 py-3 text-[13px] font-bold text-white">{f.count}</td>
                     ))}
-                    <td className="px-4 py-3 text-[13px] font-bold text-[#EF4444]">{s.retired.count}</td>
+                    <td className="px-4 py-3 text-[13px] font-bold text-[#6B7280]">{s.retired.count}</td>
                     <td className="px-4 py-3">
                       <span className={`text-[13px] font-bold ${s.conversionRate > 0 ? "text-[#22C55E]" : "text-[#6b7280]"}`}>
                         {s.conversionRate}%

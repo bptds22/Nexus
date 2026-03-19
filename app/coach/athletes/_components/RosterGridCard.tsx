@@ -1,4 +1,5 @@
 import Link from "next/link";
+import StarRating from "@/components/ui/StarRating";
 import type { RosterAthlete } from "../_data/mockRosterData";
 import { COMMITMENT_CONFIG as COMMIT_CFG } from "../_data/mockRosterData";
 import VerificationBadge from "./VerificationBadge";
@@ -65,14 +66,7 @@ export default function RosterGridCard({ athlete: a }: { athlete: RosterAthlete 
         </p>
 
         {/* Stars */}
-        <div className="flex items-center gap-px">
-          {Array.from({ length: 5 }, (_, i) => (
-            <svg key={i} width="14" height="14" viewBox="0 0 24 24"
-              fill={i < a.stars ? "#F59E0B" : "#374151"} stroke={i < a.stars ? "none" : "#F59E0B"} strokeWidth={i < a.stars ? 0 : 1}>
-              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-            </svg>
-          ))}
-        </div>
+        <StarRating rating={a.stars} size="sm" />
 
         {/* Profile completeness bar */}
         <div className="mt-1">

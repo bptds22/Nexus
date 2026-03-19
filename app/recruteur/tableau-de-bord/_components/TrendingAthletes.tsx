@@ -1,4 +1,5 @@
 import Link from "next/link";
+import StarRating from "@/components/ui/StarRating";
 import type { TrendingAthlete } from "../../_data/mockDashboardData";
 
 /* ─────────────────────────────────────────────────────────────────
@@ -54,13 +55,7 @@ export default function TrendingAthletes({ athletes }: { athletes: TrendingAthle
                 <p className="text-[16px] font-bold text-white truncate group-hover:text-[#E63946] transition-colors">
                   {a.name}
                 </p>
-                <div className="flex items-center gap-px shrink-0">
-                  {[...Array(5)].map((_, i) => (
-                    <svg key={i} width="13" height="13" viewBox="0 0 20 20" fill={i < a.stars ? "#F59E0B" : "#374151"}>
-                      <path d="M10,0L12.2,7.2L20,7.2L14,11.8L16.2,19L10,14.6L3.8,19L6,11.8L0,7.2L7.8,7.2Z" />
-                    </svg>
-                  ))}
-                </div>
+                <StarRating rating={a.stars} size="sm" />
               </div>
               <div className="flex items-center gap-2 mt-0.5">
                 <span className="text-[12px] text-[#6b7280] font-bold uppercase tracking-wider">{a.position}</span>

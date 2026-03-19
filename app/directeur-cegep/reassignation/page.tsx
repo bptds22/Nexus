@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useCallback } from "react";
 import { getStatusConfig } from "@/lib/config/recruitmentStatuses";
+import StarRating from "@/components/ui/StarRating";
 import type { RecruitmentStatus } from "@/lib/config/recruitmentStatuses";
 import {
   MOCK_RECRUITERS,
@@ -80,19 +81,7 @@ function StatusBadge({ status }: { status: RecruitmentStatus }) {
   );
 }
 
-/* ── Stars ─────────────────────────────────────────────────────── */
-
-function Stars({ rating }: { rating: number }) {
-  return (
-    <span className="inline-flex items-center gap-0.5">
-      {Array.from({ length: 5 }, (_, i) => (
-        <svg key={i} width="11" height="11" viewBox="0 0 24 24" fill={i < rating ? "#F59E0B" : "#374151"} stroke={i < rating ? "none" : "#F59E0B"} strokeWidth="1.5">
-          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-        </svg>
-      ))}
-    </span>
-  );
-}
+/* Stars: use shared StarRating component */
 
 /* ── Recruiter Card ───────────────────────────────────────────── */
 
@@ -521,7 +510,7 @@ export default function ReassignationPage() {
 
                       <StatusBadge status={a.pipeline_status} />
                       <span className="text-[10px] text-[#4a4d56] whitespace-nowrap hidden sm:block">{a.days_in_status}j</span>
-                      <div className="hidden sm:block"><Stars rating={a.coach_rating} /></div>
+                      <div className="hidden sm:block"><StarRating rating={a.coach_rating} size="sm" /></div>
                     </label>
                   ))
                 )}

@@ -11,6 +11,7 @@ import { RECRUITER_PROFILE } from "../_data/mockRecruiterProfile";
 import RecruitmentStatusBadge from "../_components/RecruitmentStatusBadge";
 import StatusChangeDropdown from "../_components/StatusChangeDropdown";
 import NxIcon from "@/components/ui/NxIcon";
+import StarRating from "@/components/ui/StarRating";
 import ComposeIntroModal from "../_components/ComposeIntroModal";
 import PipelinePhaseLabel from "../_components/PipelinePhaseLabel";
 import PipelineKpiCards from "../_components/PipelineKpiCards";
@@ -63,13 +64,7 @@ function FavoriCard({
                 {a.stars > 0 && (
                   <>
                     <span className="text-[#2D3748]">·</span>
-                    <span className="inline-flex items-center gap-0.5">
-                      {Array.from({ length: 5 }, (_, i) => (
-                        <svg key={i} width="15" height="15" viewBox="0 0 24 24" fill={i < a.stars ? "#F59E0B" : "#374151"} stroke="none">
-                          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                        </svg>
-                      ))}
-                    </span>
+                    <StarRating rating={a.stars} size="sm" />
                   </>
                 )}
               </div>

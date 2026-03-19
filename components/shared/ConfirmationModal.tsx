@@ -36,7 +36,7 @@ export default function ConfirmationModal({
 
   if (!open) return null;
 
-  const confirmBg = variant === "danger" ? "bg-[#EF4444] hover:bg-[#DC2626]" : "bg-[#2563EB] hover:bg-[#1D4ED8]";
+  const confirmBg = variant === "danger" ? "bg-[#E63946] hover:bg-[#D42B22]" : "bg-[#2563EB] hover:bg-[#1D4ED8]";
 
   return (
     <div

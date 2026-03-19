@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import StarRating from "@/components/ui/StarRating";
 
 /* ─────────────────────────────────────────────────────────────────
    Nexus — Recruiter Dashboard
@@ -240,39 +241,7 @@ const STATUS_MAP: Record<
   },
 };
 
-/* ── Star rating component ───────────────────────────────────── */
-
-function Stars({ rating, max = 5 }: { rating: number; max?: number }) {
-  return (
-    <div className="flex items-center gap-0.5">
-      {Array.from({ length: max }, (_, i) => {
-        const filled = i < Math.floor(rating);
-        const half = !filled && i < rating;
-        return (
-          <svg
-            key={i}
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill={filled ? "#F59E0B" : half ? "url(#half-star)" : "none"}
-            stroke={filled || half ? "#F59E0B" : "#374151"}
-            strokeWidth="2"
-          >
-            {half && (
-              <defs>
-                <linearGradient id="half-star">
-                  <stop offset="50%" stopColor="#F59E0B" />
-                  <stop offset="50%" stopColor="transparent" />
-                </linearGradient>
-              </defs>
-            )}
-            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-          </svg>
-        );
-      })}
-    </div>
-  );
-}
+/* Stars: use shared StarRating component */
 
 /* ══════════════════════════════════════════════════════════════
    DASHBOARD PAGE
@@ -515,10 +484,10 @@ export default function RecruiterDashboard() {
                     </div>
 
                     {/* Coach rating */}
-                    <Stars rating={a.coachRating} />
+                    <StarRating rating={a.coachRating} size="sm" />
 
                     {/* CÉGEP avg rating */}
-                    <Stars rating={a.cegepAvgRating} />
+                    <StarRating rating={a.cegepAvgRating} size="sm" />
 
                     {/* Key stats */}
                     <p className="font-sans text-xs text-[#e0e0e0] truncate">{a.keyStats}</p>
@@ -566,7 +535,7 @@ export default function RecruiterDashboard() {
                     <div className="flex items-center gap-3 text-xs text-[#9CA3AF]">
                       <span className="inline-block px-1.5 py-0.5 text-[9px] font-bold tracking-wider uppercase bg-wl-red/15 text-[#E63946] rounded">{a.division}</span>
                       <span>{a.sport} — {a.position}</span>
-                      <Stars rating={a.coachRating} />
+                      <StarRating rating={a.coachRating} size="sm" />
                     </div>
                     <p className="font-sans text-xs text-[#6B7280] mt-1.5 truncate">{a.keyStats}</p>
                   </div>
@@ -729,18 +698,9 @@ export default function RecruiterDashboard() {
 
                         {/* Right — cream */}
                         <div className="flex-1 flex flex-col justify-center" style={{ background: '#FFFFFF', padding: '12px 14px' }}>
-                          {/* Stars (large) */}
-                          <div style={{ display: 'inline-flex', background: '#1E2128', borderRadius: 6, padding: '5px 8px', marginBottom: 6 }}>
-                            <svg width="130" height="20" viewBox="0 0 130 20" fill="none" style={{ display: 'block' }}>
-                              {[0, 26, 52, 78, 104].map((x, i) => (
-                                <path
-                                  key={x}
-                                  d="M10,0L12.2,7.2L20,7.2L14,11.8L16.2,19L10,14.6L3.8,19L6,11.8L0,7.2L7.8,7.2Z"
-                                  fill={i < Math.round(selectedAthlete.coachRating) ? "#F59E0B" : "#374151"}
-                                  transform={`translate(${x},0)`}
-                                />
-                              ))}
-                            </svg>
+                          {/* Stars */}
+                          <div style={{ display: 'inline-flex', alignItems: 'center', background: '#1E2128', borderRadius: 4, padding: '3px 5px', marginBottom: 6, width: 'fit-content' }}>
+                            <StarRating rating={selectedAthlete.coachRating} size="md" showNumber={false} className="!gap-0.5" />
                           </div>
                           <div style={{ fontFamily: 'var(--font-inter), sans-serif', fontWeight: 700, fontSize: 12, letterSpacing: '0.1em', textTransform: 'uppercase' as const, color: '#1E2128', marginBottom: 2 }}>
                             {selectedAthlete.school.length > 22 ? selectedAthlete.school.slice(0, 22) + "…" : selectedAthlete.school}
@@ -796,11 +756,11 @@ export default function RecruiterDashboard() {
               <div className="flex gap-6 mb-6 p-4 bg-[#111317] border border-[#2D3748] rounded-lg">
                 <div>
                   <p className={`${label} text-[#6B7280] mb-1.5`}>Note coach</p>
-                  <Stars rating={selectedAthlete.coachRating} />
+                  <StarRating rating={selectedAthlete.coachRating} size="sm" />
                 </div>
                 <div>
                   <p className={`${label} text-[#6B7280] mb-1.5`}>Moy. CÉGEP</p>
-                  <Stars rating={selectedAthlete.cegepAvgRating} />
+                  <StarRating rating={selectedAthlete.cegepAvgRating} size="sm" />
                 </div>
               </div>
 

@@ -7,31 +7,33 @@ Follow these instructions exactly.
 
 ## STRICT DESIGN RULES — NEVER OVERRIDE
 
-These rules are the law. Every page, every component, every portal
-must follow them. If a prompt conflicts with these rules, these rules win.
-When in doubt, refer to this section.
-
 ### Backgrounds
 - Page background: #111317 — everywhere, every portal, every page
 - Card / Surface: #1A1D24 — all cards, modals, sidebar, dropdowns
 - Card border: border-white/5 (#FFFFFF0D) — subtle, consistent
 - Never white, never pure black, never any other dark color
 
-### Accent Colors (only 3 primary accents in the entire app)
-- Red #E63946: Nexus brand signature — CTAs, favorite hearts, sidebar
-  active states, commitment-phase pipeline badges, suspended status,
-  red labels on landing pages, Admin role badge, Recruteur role badge
+### Accent Colors (only 3 primary accents)
+- Red #E63946: Nexus brand — CTAs, favorite hearts, sidebar active,
+  commitment-phase pipeline (EN_DISCUSSION, VISITE, ENGAGÉ, LETTRE),
+  suspended status, labels on landing pages, Admin badge, Recruteur badge
 - Blue #3B82F6: verification ONLY — verified badge (≥60%), profile
   completion ≥70%, Coach role badge, École revenue chart
-- Green #22C55E: positive status — active user status, Athlète role
-  badge, CÉGEP revenue chart, success toasts
-- #EF4444 is used ONLY for: error/critical states, profile completion
-  <40%, Entreprise tier badge. Nowhere else.
+- Green #22C55E: positive status — active user pill, Athlète role badge,
+  CÉGEP revenue chart, success toasts
+- #EF4444: ONLY for error/critical alerts, profile completion <40%,
+  Entreprise tier badge. Nowhere else.
+
+### Two Reds Rule
+- #E63946 = brand red (95% of all red usage)
+- #EF4444 = error/danger red (5% — critical alerts, completion <40%,
+  Entreprise tier ONLY)
+- Default is ALWAYS #E63946. Use #EF4444 only for the 3 cases above.
 
 ### Verification Badge
 - Verified (profile_completeness ≥ 60%): Blue checkmark #3B82F6. Always.
 - Not verified (< 60%): Gray circle #6B7280. Always.
-- Binary — NO intermediate states. No yellow, no orange, no "in progress".
+- Binary — NO intermediate states.
 
 ### Favorite Heart
 - Favorited: Filled heart #E63946. Always.
@@ -39,33 +41,36 @@ When in doubt, refer to this section.
 
 ### Star Ratings
 - Filled stars: #F59E0B (gold/amber). Always.
-- Empty stars: #374151 (dark gray fill) with #F59E0B star-shaped outline.
-  The empty star shows the star shape in gold but unfilled.
+- Empty stars: #374151 dark gray fill with #F59E0B star-shaped outline.
 
 ### Pipeline Status Badges (2 AUTO + 4 MANUAL)
-Auto-tracking statuses (gray #6B7280 — triggered by user actions):
-- IDENTIFIE: #6B7280 (gray) — auto on favorite
-- CONTACTE: #6B7280 (gray) — auto on first message sent
+
+Auto-tracking statuses (gray #6B7280 — triggered by actions):
+- IDENTIFIE: gray — auto on favorite
+- CONTACTE: gray — auto on first message sent
 
 Commitment statuses (red #E63946 — manual recruiter decision):
-- EN_DISCUSSION: #E63946 (red) — recruiter manually sets "actively pursuing"
-- VISITE_PLANIFIEE: #E63946 (red) — manual
-- ENGAGE: #E63946 (red) — manual
-- LETTRE_SIGNEE: #E63946 (red) — manual
+- EN_DISCUSSION: red — recruiter manually sets "actively pursuing"
+- VISITE_PLANIFIEE: red — manual
+- ENGAGE: red — manual
+- LETTRE_SIGNEE: red — manual
 
 Withdrawn:
-- RETIRE: #6B7280 (gray) — can be set from any status, final state
+- RETIRE: gray #6B7280 — can be set from any status, final state
 
-Movement: forward-only EXCEPT EN_DISCUSSION can go back to CONTACTÉ
-(re-engage a cold conversation). No other backward movement.
-The text inside each badge still shows the status name. The color
-communicates "auto vs commitment" — not individual stages.
+Movement rules:
+- Forward only EXCEPT: EN_DISCUSSION can go back to CONTACTÉ
+  (re-engage a cold conversation). No other backward movement.
+- Auto-triggers (favorite → IDENTIFIÉ, message → CONTACTÉ) do NOT
+  override manual statuses.
+- Cards in LETTRE_SIGNÉE can only go to RETIRÉ.
+- Cards in RETIRÉ cannot move anywhere.
 
 ### User Status Pills
-- Actif: green #22C55E bg/10 opacity, green text
-- En attente: yellow #EAB308 bg/10 opacity, yellow text
-- Suspendu: red #E63946 bg/10 opacity, red text (brand red, not #EF4444)
-- Inactif / Expiré: gray #6B7280 bg/10 opacity, gray text
+- Actif: green #22C55E bg/10, green text
+- En attente: yellow #EAB308 bg/10, yellow text
+- Suspendu: red #E63946 bg/10, red text
+- Inactif / Expiré: gray #6B7280 bg/10, gray text
 
 ### Role Badges
 - Admin: #E63946 (red)
@@ -75,16 +80,16 @@ communicates "auto vs commitment" — not individual stages.
 - Athlète: #22C55E (green)
 
 ### Profile Completeness Colors
-- < 40%: #EF4444 (bright red — incomplete/urgent)
+- < 40%: #EF4444 (bright red — incomplete)
 - 40% — 69%: #6B7280 (gray — in progress)
 - ≥ 70%: #3B82F6 (blue — ready)
-Both the progress bar fill and the percentage text use these colors.
+Both progress bar fill AND percentage text use these colors.
 
 ### Subscription Tier Badges (Medal System)
 - Gratuit / Découverte / Essentiel: Bronze #A48261
 - Standard / Pro: Silver #B4BCC8
 - Premium / Élite: Gold #DAB65A
-- Entreprise: #EF4444 (bright red — distinct from brand red)
+- Entreprise: #EF4444
 
 ### Revenue Chart Colors
 - CÉGEP revenue: #E63946 (red)
@@ -98,28 +103,21 @@ Both the progress bar fill and the percentage text use these colors.
 - Muted / disabled: #6B7280
 
 ### Alert Indicators
-- Info: #9CA3AF (gray dot)
-- Warning: #EAB308 (yellow dot)
-- Critical / Error: #EF4444 (bright red dot)
-- Success: #22C55E (green dot / toast)
+- Info: #9CA3AF (gray)
+- Warning: #EAB308 (yellow)
+- Critical / Error: #EF4444 (bright red)
+- Success: #22C55E (green)
 
 ### Typography (NO EXCEPTIONS)
-- ALL headings: Nexa Bold — never Inter, Montserrat, Arial, or system fonts
+- ALL headings: Nexa Bold
 - ALL body text: Nexa Regular
+- NEVER Inter, Montserrat, Arial, or any system font
 - If Nexa is not loaded, the component is broken — fix the font import
 
 ### Card Style
 - Background: #1A1D24
-- Border: border-white/5 (subtle)
+- Border: border-white/5
 - Radius: rounded-xl
-- No other card background color unless explicitly specified in a prompt
-
-### Two Reds Rule
-- #E63946 = brand red (95% of red usage — CTAs, favorites, sidebar,
-  pipeline commitment, suspended, role badges, revenue charts)
-- #EF4444 = error/danger red (5% of usage — critical alerts,
-  completion <40%, Entreprise tier badge ONLY)
-- If unsure which red to use: use #E63946. Default is always brand red.
 
 ---
 

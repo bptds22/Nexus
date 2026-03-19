@@ -35,7 +35,9 @@ export default function ReviewStarInput({ value, onChange, size = 24 }: Props) {
             width={size}
             height={size}
             viewBox="0 0 24 24"
-            fill={i <= display ? "#F59E0B" : "#333333"}
+            fill={i <= display ? "#F59E0B" : "#374151"}
+            stroke={i <= display ? "none" : "#F59E0B"}
+            strokeWidth={i <= display ? 0 : 1.5}
             style={{ transition: "fill 150ms, transform 100ms" }}
           >
             <path d="M12 2l2.9 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14 2 9.27l7.1-1.01L12 2z" />

@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import type { CoachReview } from "@/lib/types/models";
+import StarRating from "@/components/ui/StarRating";
 
 /* ── Props ── */
 interface ReviewCardProps {
@@ -29,25 +30,7 @@ function relativeTime(dateStr: string): string {
   return `Il y a ${diffY} an${diffY > 1 ? "s" : ""}`;
 }
 
-/* ── Star SVG ── */
-const STAR_PATH =
-  "M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14 2 9.27l6.91-1.01L12 2z";
-
-function SmallStars({ score }: { score: number }) {
-  const stars: ("full" | "empty")[] = [];
-  for (let i = 1; i <= 5; i++) {
-    stars.push(score >= i ? "full" : "empty");
-  }
-  return (
-    <div className="flex items-center gap-0.5">
-      {stars.map((fill, idx) => (
-        <svg key={idx} width={16} height={16} viewBox="0 0 24 24" className="shrink-0">
-          <path d={STAR_PATH} fill={fill === "full" ? "#F59E0B" : "#2A2D35"} />
-        </svg>
-      ))}
-    </div>
-  );
-}
+/* Stars: use shared StarRating component */
 
 /* ── Component ── */
 export default function ReviewCard({ review }: ReviewCardProps) {
@@ -77,7 +60,7 @@ export default function ReviewCard({ review }: ReviewCardProps) {
       {/* Line 1: stars + score + recommend / timestamp */}
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-2">
-          <SmallStars score={Math.round(review.overallScore)} />
+          <StarRating rating={review.overallScore} size="md" />
           <span className="text-white font-bold text-[14px]">
             {review.overallScore.toFixed(1)}
           </span>

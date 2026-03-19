@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import StarRating from "@/components/ui/StarRating";
 import KpiCard from "@/components/director/KpiCard";
 import KpiCardRow from "@/components/director/KpiCardRow";
 import {
@@ -479,22 +480,7 @@ export default function CegepStatsPage() {
                       <p className="text-[11px] text-[#6B7280] truncate">
                         {t.sport} · {t.position} — {t.recruiterName}
                       </p>
-                      <div className="flex items-center gap-0.5 shrink-0">
-                        {Array.from({ length: 5 }).map((_, i) => (
-                          <svg key={i} width="12" height="12" viewBox="0 0 24 24" fill={i < fullStars ? "#F59E0B" : (i === fullStars && hasHalf ? "url(#halfStar)" : "#374151")} stroke={i < fullStars ? "none" : "#F59E0B"} strokeWidth="1">
-                            {i === fullStars && hasHalf && (
-                              <defs>
-                                <linearGradient id="halfStar">
-                                  <stop offset="50%" stopColor="#F59E0B" />
-                                  <stop offset="50%" stopColor="#374151" />
-                                </linearGradient>
-                              </defs>
-                            )}
-                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                          </svg>
-                        ))}
-                        <span className="text-[11px] text-[#9CA3AF] ml-1 font-semibold">{t.rating}</span>
-                      </div>
+                      <StarRating rating={t.rating} size="sm" />
                     </div>
                   </div>
                   <span className="text-[10px] font-bold tracking-[0.1em] uppercase px-2 py-1 rounded shrink-0 bg-[rgba(107,114,128,0.2)] text-[#9CA3AF]">

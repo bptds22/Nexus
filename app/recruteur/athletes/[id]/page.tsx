@@ -16,6 +16,7 @@ import StatusChangeDropdown from "@/app/recruteur/_components/StatusChangeDropdo
 import ComposeIntroModal from "@/app/recruteur/_components/ComposeIntroModal";
 import CelebrationToast from "@/app/recruteur/_components/CelebrationToast";
 import NxIcon from "@/components/ui/NxIcon";
+import StarRating from "@/components/ui/StarRating";
 
 /* ═══════════════════════════════════════════════════════════════
    Recruiter Athlete Profile — Simplified / Detailed toggle
@@ -84,19 +85,7 @@ function CompletenessBar({ percent }: { percent: number }) {
   );
 }
 
-/* ── Star Display (read-only) ───────────────────────────────── */
-
-function Stars({ rating, max = 5, size = 16 }: { rating: number; max?: number; size?: number }) {
-  return (
-    <div className="flex items-center gap-0.5">
-      {Array.from({ length: max }, (_, i) => (
-        <svg key={i} width={size} height={size} viewBox="0 0 20 20" fill={i < rating ? "#F59E0B" : "#374151"}>
-          <path d="M10,0L12.2,7.2L20,7.2L14,11.8L16.2,19L10,14.6L3.8,19L6,11.8L0,7.2L7.8,7.2Z" />
-        </svg>
-      ))}
-    </div>
-  );
-}
+/* Stars: use shared StarRating component */
 
 /* ── Badge Pill Components ──────────────────────────────────── */
 
@@ -155,7 +144,7 @@ function positionAbbr(pos: string): string {
 }
 
 function PlayerCard({ a }: { a: AthleteProfileRecruiterView }) {
-  const stars = Math.round(a.overallRating);
+  const ratingValue = a.overallRating;
   const posAbbr = positionAbbr(a.primaryPosition);
   const sportKey = SPORT_NAME_MAP[a.primarySport];
   const sportDisplay = sportKey ? (SPORT_DISPLAY[sportKey] || a.primarySport) : a.primarySport;
@@ -222,13 +211,8 @@ function PlayerCard({ a }: { a: AthleteProfileRecruiterView }) {
               ))}
             </div>
             <div className="flex-1 flex flex-col justify-center" style={{ background: '#FFFFFF', padding: '12px 16px' }}>
-              <div style={{ display: 'inline-flex', background: '#1E2128', borderRadius: 6, padding: '5px 8px', marginBottom: 6 }}>
-                <svg width="130" height="20" viewBox="0 0 130 20" fill="none" style={{ display: 'block' }}>
-                  {[0, 26, 52, 78, 104].map((x, i) => (
-                    <path key={x} d="M10,0L12.2,7.2L20,7.2L14,11.8L16.2,19L10,14.6L3.8,19L6,11.8L0,7.2L7.8,7.2Z"
-                      fill={i < stars ? "#F59E0B" : "#374151"} transform={`translate(${x},0)`} />
-                  ))}
-                </svg>
+              <div style={{ display: 'inline-flex', alignItems: 'center', background: '#1E2128', borderRadius: 4, padding: '3px 5px', marginBottom: 6, width: 'fit-content' }}>
+                <StarRating rating={ratingValue} size="md" showNumber={false} className="!gap-0.5" />
               </div>
               <div style={{ fontFamily: 'var(--font-barlow-cond), sans-serif', fontWeight: 700, fontSize: 16, letterSpacing: '0.1em', textTransform: 'uppercase' as const, color: '#1E2128', marginBottom: 2 }}>{a.schoolName}</div>
               <div style={{ fontFamily: 'var(--font-barlow-cond), sans-serif', fontWeight: 700, fontSize: 14, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#9CA3AF' }}>{a.region}</div>
@@ -520,7 +504,7 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
                 {/* Simplified: single Cote Globale score + stars */}
                 {!isDetailed && (
                   <div className="mt-3 pl-5 flex items-center gap-3">
-                    <Stars rating={Math.round(coteGlobale)} size={18} />
+                    <StarRating rating={coteGlobale} size="md" showNumber={false} />
                     <span className="text-[18px] font-head font-black text-white">{coteGlobale.toFixed(1)}<span className="text-[14px] text-[#6B7280] font-normal">/5</span></span>
                     <span className="text-[12px] text-[#6B7280] uppercase tracking-wider font-bold">Cote Globale</span>
                   </div>
@@ -530,7 +514,7 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
                 {isDetailed && (
                   <div className="mt-5 pl-5">
                     <div className="flex items-center gap-3 mb-4">
-                      <Stars rating={Math.round(coteGlobale)} size={18} />
+                      <StarRating rating={coteGlobale} size="md" showNumber={false} />
                       <span className="text-[18px] font-head font-black text-white">{coteGlobale.toFixed(1)}<span className="text-[14px] text-[#6B7280] font-normal">/5</span></span>
                       <span className="text-[12px] text-[#6B7280] uppercase tracking-wider font-bold">Cote Globale</span>
                     </div>
@@ -547,7 +531,7 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
                                   <NxIcon name={trait.iconName} size={15} className="text-[#6B7280]" />
                                   {trait.label}
                                 </span>
-                                <Stars rating={val} size={14} />
+                                <StarRating rating={val} size="sm" />
                               </div>
                             );
                           })}
@@ -556,7 +540,7 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
                           <div className="mt-4 pt-4 border-t border-[#2D3748]/50 flex items-center justify-between">
                             <span className="text-[13px] font-bold text-[#9CA3AF] uppercase tracking-wider">Moyenne des traits</span>
                             <div className="flex items-center gap-2">
-                              <Stars rating={Math.round(traitAvg)} size={16} />
+                              <StarRating rating={traitAvg} size="md" />
                               <span className="text-[16px] font-head font-black text-white">{traitAvg.toFixed(1)}</span>
                             </div>
                           </div>

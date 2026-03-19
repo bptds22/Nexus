@@ -1,4 +1,5 @@
 import Link from "next/link";
+import StarRating from "@/components/ui/StarRating";
 import type { RosterAthlete } from "../_data/mockRosterData";
 import { COMMITMENT_CONFIG } from "../_data/mockRosterData";
 import VerificationBadge from "./VerificationBadge";
@@ -8,18 +9,7 @@ import FavoriteSignal from "./FavoriteSignal";
    Roster Row — single athlete table row
 ───────────────────────────────────────────────────────────────── */
 
-function Stars({ count }: { count: number }) {
-  return (
-    <div className="flex items-center gap-px">
-      {Array.from({ length: 5 }, (_, i) => (
-        <svg key={i} width="13" height="13" viewBox="0 0 24 24"
-          fill={i < count ? "#F59E0B" : "#374151"} stroke={i < count ? "none" : "#F59E0B"} strokeWidth={i < count ? 0 : 1}>
-          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-        </svg>
-      ))}
-    </div>
-  );
-}
+/* Stars: use shared StarRating component */
 
 interface RosterRowProps {
   athlete: RosterAthlete;
@@ -42,7 +32,7 @@ export default function RosterRow({ athlete: a, even }: RosterRowProps) {
               <span className="text-[12px] leading-none">{a.badgeIcons.join("")}</span>
             )}
           </div>
-          <Stars count={a.stars} />
+          <StarRating rating={a.stars} size="sm" />
         </Link>
       </td>
 

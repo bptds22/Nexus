@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import StarRating from "@/components/ui/StarRating";
 import { mockCoachOverviews, mockDirectorActivitiesHS } from "@/lib/mock";
 import type { CoachOverview, DirectorActivity } from "@/lib/types/models";
 
@@ -467,13 +468,7 @@ export default function CoachDetailPage() {
                     </div>
                   </td>
                   <td className="px-4 py-3">
-                    <div className="flex items-center gap-0.5">
-                      {[1, 2, 3, 4, 5].map((s) => (
-                        <svg key={s} width="14" height="14" viewBox="0 0 24 24" fill={s <= ath.stars ? "#F59E0B" : "#374151"} stroke={s <= ath.stars ? "#F59E0B" : "#F59E0B"} strokeWidth="2">
-                          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                        </svg>
-                      ))}
-                    </div>
+                    <StarRating rating={ath.stars} size="sm" />
                   </td>
                   <td className="px-4 py-3 text-[13px] text-white">
                     {ath.views30d}

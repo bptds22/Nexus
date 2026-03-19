@@ -1,4 +1,5 @@
 import EntityLink from "@/components/shared/EntityLink";
+import StarRating from "@/components/ui/StarRating";
 
 interface Props {
   coachName: string;
@@ -7,17 +8,7 @@ interface Props {
   wouldRecommend: boolean;
 }
 
-function Stars({ score, max = 5 }: { score: number; max?: number }) {
-  return (
-    <span className="inline-flex gap-0.5">
-      {Array.from({ length: max }, (_, i) => (
-        <svg key={i} width="16" height="16" viewBox="0 0 24 24" fill={i < Math.round(score) ? "#F59E0B" : "#333"}>
-          <path d="M12 2l2.9 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14 2 9.27l7.1-1.01L12 2z" />
-        </svg>
-      ))}
-    </span>
-  );
-}
+/* Stars: use shared StarRating component */
 
 export default function ReviewWidgetConfirmation({ coachName, coachId, overallScore, wouldRecommend }: Props) {
   return (
@@ -39,7 +30,7 @@ export default function ReviewWidgetConfirmation({ coachName, coachId, overallSc
             Votre feedback aide <EntityLink type="coach" id={coachId} name={coachName} portal="recruiter" className="text-[13px]" /> à s&apos;améliorer et les autres recruteurs à identifier les meilleurs entraîneurs.
           </p>
           <div className="flex items-center gap-3 mt-2">
-            <Stars score={overallScore} />
+            <StarRating rating={overallScore} size="md" />
             <span className="text-[14px] font-bold text-white">{overallScore.toFixed(1)}/5</span>
             <span
               className="text-[13px] font-bold ml-2"

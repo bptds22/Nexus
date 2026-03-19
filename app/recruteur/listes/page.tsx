@@ -4,6 +4,7 @@ import { useState, useMemo, useCallback } from "react";
 import Link from "next/link";
 import type { RecruitmentStatus } from "@/lib/config/recruitmentStatuses";
 import { getStatusConfig } from "@/lib/config/recruitmentStatuses";
+import StarRating from "@/components/ui/StarRating";
 import { MOCK_LISTS, AVAILABLE_ATHLETES } from "./_data/mockListsData";
 import type { ProspectList, ProspectListAthlete } from "./_data/mockListsData";
 
@@ -71,19 +72,7 @@ function ConfirmModal({
   );
 }
 
-/* ── Stars (small read-only) ──────────────────────────────────── */
-
-function Stars({ rating }: { rating: number }) {
-  return (
-    <span className="inline-flex items-center gap-0.5">
-      {Array.from({ length: 5 }, (_, i) => (
-        <svg key={i} width="12" height="12" viewBox="0 0 24 24" fill={i < rating ? GOLD : "#374151"} stroke={i < rating ? "none" : GOLD} strokeWidth="1.5">
-          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-        </svg>
-      ))}
-    </span>
-  );
-}
+/* Stars: use shared StarRating component */
 
 /* ── Pipeline Status Badge (inline) ───────────────────────────── */
 
@@ -624,7 +613,7 @@ function ExpandedListView({
                       <span className="inline-flex items-center px-2 py-0.5 rounded bg-[#2D3748]/50 text-[11px] font-bold text-[#9CA3AF]">{a.division}</span>
                     </td>
                     {/* Coach rating */}
-                    <td className="px-4 py-3"><Stars rating={a.coach_rating} /></td>
+                    <td className="px-4 py-3"><StarRating rating={a.coach_rating} size="sm" /></td>
                     {/* Pipeline */}
                     <td className="px-4 py-3"><StatusBadge status={a.pipeline_status} /></td>
                     {/* Added date */}
@@ -716,7 +705,7 @@ function ExpandedListView({
                 <div className="flex items-center gap-3">
                   <span className="text-[11px] text-[#6b7280]">{a.division}</span>
                   <span className="text-[11px] text-[#6b7280]">{a.graduation_year}</span>
-                  <Stars rating={a.coach_rating} />
+                  <StarRating rating={a.coach_rating} size="sm" />
                 </div>
                 {a.recruiter_note && (
                   <p className="text-[12px] text-[#9CA3AF] italic">&ldquo;{a.recruiter_note}&rdquo;</p>

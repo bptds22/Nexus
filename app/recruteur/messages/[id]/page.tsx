@@ -8,6 +8,7 @@ import { REVIEW_WIDGET_STATES, SUBMITTED_REVIEWS } from "@/lib/mock/reviewWidget
 import ReviewWidgetTeaser from "@/components/review/ReviewWidgetTeaser";
 import ReviewWidgetForm from "@/components/review/ReviewWidgetForm";
 import ReviewWidgetConfirmation from "@/components/review/ReviewWidgetConfirmation";
+import StarRating from "@/components/ui/StarRating";
 
 /* ═══════════════════════════════════════════════════════════════
    Thread Detail — Recruiter side
@@ -415,14 +416,8 @@ export default function RecruiterThreadPage({ params }: { params: Promise<{ id: 
             </div>
 
             {/* Stars */}
-            <div className="flex items-center gap-0.5 mb-3">
-              {Array.from({ length: 5 }, (_, i) => (
-                <svg key={i} width="14" height="14" viewBox="0 0 24 24"
-                  fill={i < a.stars ? "#F59E0B" : "#374151"} stroke="none">
-                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                </svg>
-              ))}
-              <span className="text-[12px] font-bold text-[#e0e0e0] ml-1.5">{a.stars}/5</span>
+            <div className="mb-3">
+              <StarRating rating={a.stars} size="sm" />
             </div>
 
             {/* School */}

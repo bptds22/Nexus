@@ -17,6 +17,7 @@ import {
 } from "@dnd-kit/core";
 import type { RecruitmentStatus } from "@/lib/config/recruitmentStatuses";
 import { isValidMove, isBackwardException, isTerminalStatus } from "@/lib/config/recruitmentStatuses";
+import StarRating from "@/components/ui/StarRating";
 import {
   MOCK_KANBAN,
   KANBAN_COLUMNS,
@@ -33,7 +34,6 @@ import type { PipelineKanbanCard } from "./_data/mockKanbanData";
 const GRAY = "#6B7280";
 const RED = "#E63946";
 const BLUE = "#3B82F6";
-const GOLD = "#F59E0B";
 const GREEN = "#22C55E";
 const ORANGE = "#EAB308";
 
@@ -100,19 +100,7 @@ function ConfirmModal({
   );
 }
 
-/* ── Stars (small, read-only) ─────────────────────────────────── */
-
-function Stars({ rating, size = 13 }: { rating: number; size?: number }) {
-  return (
-    <span className="inline-flex items-center gap-0.5">
-      {Array.from({ length: 5 }, (_, i) => (
-        <svg key={i} width={size} height={size} viewBox="0 0 24 24" fill={i < rating ? GOLD : "#374151"} stroke={i < rating ? "none" : GOLD} strokeWidth="1.5">
-          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-        </svg>
-      ))}
-    </span>
-  );
-}
+/* Stars: use shared StarRating component */
 
 function completenessColor(pct: number): string {
   if (pct < 40) return "#EF4444";
@@ -295,7 +283,7 @@ const DraggableKanbanCard = memo(function DraggableKanbanCard({
           <span className="text-[11px] text-[#6b7280]">{card.graduation_year}</span>
         </div>
         <div className="flex items-center justify-between mt-2">
-          <Stars rating={card.coach_rating} size={11} />
+          <StarRating rating={card.coach_rating} size="sm" />
           <span className="text-[11px] font-bold" style={{ color: completenessColor(card.profile_completeness) }}>{card.profile_completeness}%</span>
         </div>
         <p className="text-[10px] mt-1.5" style={{ color: daysColor(card.days_in_status) }}>
@@ -493,7 +481,7 @@ function SlideOver({
             <p className="text-[13px] text-[#6b7280] mt-1">{card.school}</p>
             <p className="text-[13px] text-[#6b7280]">Promotion {card.graduation_year}</p>
             <div className="flex items-center gap-2 mt-3">
-              <Stars rating={card.coach_rating} size={15} />
+              <StarRating rating={card.coach_rating} size="md" />
               <span className="text-[12px] text-[#6b7280]">Cote du coach</span>
             </div>
             <div className="mt-3">
