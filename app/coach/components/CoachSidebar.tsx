@@ -56,6 +56,17 @@ const NAV_ITEMS: { label: string; href: string; badge?: number; icon: React.Reac
     ),
   },
   {
+    label: "Suggestions",
+    href: "/coach/suggestions",
+    badge: 4,
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+        <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+      </svg>
+    ),
+  },
+  {
     label: "Activités",
     href: "/coach/activites",
     badge: 3,
@@ -125,7 +136,7 @@ export default function CoachSidebar({ mobileOpen, onClose }: CoachSidebarProps)
       <div className="px-5 py-6 border-b border-[#1e2128]">
         <Link href="/" className="flex items-center gap-3">
           <Image
-            src="/brand/Profile%20white%20trans@4x.png"
+            src="/brand/White%20red%20logo%20@4x.png"
             alt="Nexus"
             width={30}
             height={30}

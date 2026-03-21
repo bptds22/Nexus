@@ -59,7 +59,7 @@ export default function AdminSidebar({ mobileOpen, onClose }: Props) {
     <div className="flex flex-col h-full">
       {/* Logo + label */}
       <div className="px-5 pt-6 pb-4 flex items-center gap-3">
-        <Image src="/brand/Profile%20white%20trans@4x.png" alt="Nexus" width={28} height={28} className="object-contain" />
+        <Image src="/brand/White%20red%20logo%20@4x.png" alt="Nexus" width={28} height={28} className="object-contain" />
         <div>
           <span className="font-head text-[13px] font-black text-white uppercase tracking-[0.06em]">Nexus</span>
           <span className="block text-[9px] font-bold tracking-[0.25em] uppercase text-[#E63946]">Portail Admin</span>

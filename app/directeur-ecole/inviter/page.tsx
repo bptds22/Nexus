@@ -16,6 +16,10 @@ export default function InviterCoachPage() {
           &eacute;cole sur Nexus
         </p>
       </div>
+      <div className="bg-[#1A1D24] rounded-lg border border-white/5 px-4 py-3 flex items-start gap-2.5">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2" strokeLinecap="round" className="mt-0.5 shrink-0"><circle cx="12" cy="12" r="10" /><path d="M12 16v-4" /><path d="M12 8h.01" /></svg>
+        <p className="text-[12px] text-[#6B7280] leading-relaxed">Les directeurs invités seront ajoutés comme collaborateurs. Le directeur principal peut être changé via les paramètres ou en contactant l&apos;administration.</p>
+      </div>
       <InviteForm portalType="ecole" sports={RSEQ_SPORTS} />
       <InvitationsList invitations={mockInvitations} />
     </div>

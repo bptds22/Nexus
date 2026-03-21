@@ -107,6 +107,7 @@ interface AthleteFormData {
     recruitingStatus: string;
     preferredDivision: string;
   };
+  parentalConsent: boolean;
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -214,6 +215,7 @@ const INITIAL_FORM: AthleteFormData = {
     highlightVideo: "", fullGameVideo: "", trainingVideo: "",
   },
   submission: { recruitingStatus: "", preferredDivision: "" },
+  parentalConsent: false,
 };
 
 /* ══════════════════════════════════════════════════════════════
@@ -316,7 +318,7 @@ export default function CreateAthletePage() {
       }
       case 5: return true;
       case 6: return true;
-      case 7: return !!form.submission.recruitingStatus;
+      case 7: return !!form.submission.recruitingStatus && form.parentalConsent;
       default: return true;
     }
   }
@@ -1153,6 +1155,45 @@ export default function CreateAthletePage() {
               options={[{ value: "Ouvert aux offres", label: "Ouvert aux offres" }, { value: "Committed", label: "Committed" }, { value: "En visite", label: "En visite" }]} />
           </div>
         </div>
+
+        {/* ── Parental Consent ─────────────────────────────── */}
+        <div className="bg-[#1A1D24] border-l-4 border-[#EAB308] rounded-r-xl p-5 mt-6">
+          <div className="flex items-start gap-3 mb-4">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#EAB308" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+              <path d="M9 12l2 2 4-4" />
+            </svg>
+            <div>
+              <h3 className="font-head text-lg font-black text-white uppercase tracking-tight">Consentement parental requis</h3>
+              <p className="text-[13px] text-[#9CA3AF] mt-1.5 leading-relaxed">
+                Conformément à la Loi 25 sur la protection des renseignements personnels, tu dois obtenir le consentement écrit d&apos;un parent ou tuteur légal avant de publier le profil d&apos;un athlète mineur sur Nexus.
+              </p>
+            </div>
+          </div>
+
+          <label className="flex items-start gap-3 cursor-pointer group">
+            <div
+              className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 mt-0.5 transition-colors ${
+                form.parentalConsent ? "bg-[#E63946] border-[#E63946]" : "border-[#E63946] bg-transparent"
+              }`}
+              onClick={() => setForm((prev) => ({ ...prev, parentalConsent: !prev.parentalConsent }))}
+            >
+              {form.parentalConsent && (
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="4" strokeLinecap="round"><path d="M20 6L9 17l-5-5" /></svg>
+              )}
+            </div>
+            <span className="text-[13px] text-white font-semibold leading-snug group-hover:text-[#E63946] transition-colors" onClick={() => setForm((prev) => ({ ...prev, parentalConsent: !prev.parentalConsent }))}>
+              Je confirme avoir obtenu le consentement parental écrit pour la publication de ce profil sur Nexus.
+            </span>
+          </label>
+
+          <div className="mt-3 pl-8">
+            <p className="text-[11px] text-[#6b7280]">Le formulaire signé doit être conservé à l&apos;école.</p>
+            <button type="button" onClick={() => { setForm((prev) => prev); /* toast handled at page level */ }} className="text-[11px] font-bold text-[#E63946] hover:text-[#D42B22] mt-1 transition-colors">
+              Télécharger le formulaire type (PDF)
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
@@ -1236,7 +1277,13 @@ export default function CreateAthletePage() {
             </button>
           ) : (
             <button type="button" onClick={handleSubmit}
-              className="flex items-center gap-2.5 bg-[#E63946] text-white rounded-lg px-6 py-3.5 font-head font-bold text-[14px] uppercase tracking-widest transition-all duration-150 hover:bg-[#D42B22] hover:shadow-[0_0_16px_rgba(230,57,70,0.35)] active:scale-95 cursor-pointer">
+              disabled={!form.parentalConsent}
+              title={!form.parentalConsent ? "Tu dois confirmer le consentement parental" : undefined}
+              className={`flex items-center gap-2.5 rounded-lg px-6 py-3.5 font-head font-bold text-[14px] uppercase tracking-widest transition-all duration-150 ${
+                form.parentalConsent
+                  ? "bg-[#E63946] text-white hover:bg-[#D42B22] hover:shadow-[0_0_16px_rgba(230,57,70,0.35)] active:scale-95 cursor-pointer"
+                  : "bg-[#E63946]/40 text-white/50 cursor-not-allowed"
+              }`}>
               Soumettre le profil
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="M12 5l7 7-7 7" /></svg>
             </button>

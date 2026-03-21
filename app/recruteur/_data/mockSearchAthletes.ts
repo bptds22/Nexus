@@ -26,6 +26,8 @@ export interface SearchAthlete {
   hasVideo: boolean;
   isFavorited: boolean; // by current recruiter
   commitmentStatus: string;
+  orgType?: "scolaire" | "ligue_civile";
+  orgLevel?: "AAA" | "AA" | "A" | "Club" | "Civil";
 }
 
 export const SEARCH_ATHLETES: SearchAthlete[] = [
@@ -194,6 +196,43 @@ export const SEARCH_ATHLETES: SearchAthlete[] = [
     heightDisplay: "5'9\"", weightDisplay: "140 lbs",
     isVerified: true, badges: [{ badgeId: "best_time", label: "Record d'école", icon: "trophy", detail: "100m libre" }],
     favorites: 1, views: 9, stars: 3, hasVideo: true, isFavorited: false, commitmentStatus: "ouvert",
+  },
+  // ── League athletes ──
+  {
+    id: "r-030", firstName: "Samuel", lastName: "Bérubé",
+    position: "QB", sport: "football", school: "Wildcats Lanaudière",
+    region: "Lanaudière", graduationYear: 2026, niveau: "Sec. 5",
+    heightDisplay: "6'1\"", weightDisplay: "190 lbs",
+    isVerified: true, badges: [{ badgeId: "captain", label: "Capitaine", icon: "captain" }],
+    favorites: 2, views: 18, stars: 4, hasVideo: true, isFavorited: false, commitmentStatus: "ouvert",
+    orgType: "ligue_civile", orgLevel: "AAA",
+  },
+  {
+    id: "r-031", firstName: "Raphael", lastName: "Côté",
+    position: "Centre", sport: "hockey", school: "Remparts Hockey AAA",
+    region: "Québec", graduationYear: 2026, niveau: "Sec. 5",
+    heightDisplay: "5'11\"", weightDisplay: "185 lbs",
+    isVerified: true, badges: [{ badgeId: "offensive_leader", label: "Meilleur pointeur", icon: "trending" }],
+    favorites: 4, views: 30, stars: 5, hasVideo: true, isFavorited: false, commitmentStatus: "ouvert",
+    orgType: "ligue_civile", orgLevel: "AAA",
+  },
+  {
+    id: "r-032", firstName: "Jayden", lastName: "Williams",
+    position: "Pivot", sport: "basketball", school: "Club Basketball Brookwood",
+    region: "Montréal", graduationYear: 2027, niveau: "Sec. 4",
+    heightDisplay: "6'4\"", weightDisplay: "195 lbs",
+    isVerified: false, badges: [],
+    favorites: 1, views: 8, stars: 3, hasVideo: false, isFavorited: false, commitmentStatus: "ouvert",
+    orgType: "ligue_civile", orgLevel: "AA",
+  },
+  {
+    id: "r-033", firstName: "Diego", lastName: "Fernandez",
+    position: "Milieu", sport: "soccer", school: "RSL Québec Academy",
+    region: "Québec", graduationYear: 2026, niveau: "Sec. 5",
+    heightDisplay: "5'10\"", weightDisplay: "160 lbs",
+    isVerified: true, badges: [{ badgeId: "team_leader", label: "MVP", icon: "target" }],
+    favorites: 3, views: 22, stars: 4, hasVideo: true, isFavorited: false, commitmentStatus: "ouvert",
+    orgType: "ligue_civile", orgLevel: "AAA",
   },
 ];
 

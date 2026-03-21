@@ -2,8 +2,10 @@
 
 import { useState, useMemo, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { ADMIN_USERS, PENDING_RECRUITERS, ADMIN_SCHOOLS } from "@/lib/mock/admin";
+import Link from "next/link";
+import { ADMIN_USERS, PENDING_RECRUITERS, ADMIN_SCHOOLS, DIRECTOR_ASSIGNMENTS } from "@/lib/mock/admin";
 import type { AdminUserRow } from "@/lib/mock/admin";
+import DirectorsTab from "./_components/DirectorsTab";
 
 /* ── Helpers ─────────────────────────────────────────────── */
 
@@ -24,9 +26,12 @@ function timeAgo(iso: string | null) {
 
 const ROLE_BADGE: Record<AdminUserRow["role"], { bg: string; text: string; label: string }> = {
   admin: { bg: "bg-[#E63946]/15", text: "text-[#E63946]", label: "Admin" },
-  coach: { bg: "bg-[#3B82F6]/15", text: "text-[#3B82F6]", label: "Coach" },
+  coach: { bg: "bg-[#3B82F6]/15", text: "text-[#3B82F6]", label: "Entraîneur" },
   recruiter: { bg: "bg-[#E63946]/15", text: "text-[#E63946]", label: "Recruteur" },
   director: { bg: "bg-[#EAB308]/15", text: "text-[#EAB308]", label: "Directeur" },
+  athlete: { bg: "bg-[#22C55E]/15", text: "text-[#22C55E]", label: "Athlète" },
+  coach_league: { bg: "bg-[#3B82F6]/15", text: "text-[#3B82F6]", label: "Entraîneur (ligue)" },
+  coordinator: { bg: "bg-[#EAB308]/15", text: "text-[#EAB308]", label: "Coordonnateur" },
 };
 
 const STATUS_BADGE: Record<AdminUserRow["status"], { bg: string; text: string; label: string }> = {
@@ -47,6 +52,8 @@ export default function AdminUsersPage() {
 
 function AdminUsersContent() {
   const searchParams = useSearchParams();
+  const initialTab = searchParams.get("tab") === "directors" ? "directors" : "users";
+  const [mainTab, setMainTab] = useState<"users" | "directors">(initialTab as "users" | "directors");
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [schoolFilter, setSchoolFilter] = useState<string>("all");
@@ -62,8 +69,10 @@ function AdminUsersContent() {
   useEffect(() => {
     const role = searchParams.get("role");
     const school = searchParams.get("school");
+    const tab = searchParams.get("tab");
     if (role) setRoleFilter(role);
     if (school) setSchoolFilter(school);
+    if (tab === "directors") setMainTab("directors");
   }, [searchParams]);
 
   const allSchools = useMemo(() => {
@@ -71,20 +80,34 @@ function AdminUsersContent() {
     return Array.from(set).sort();
   }, [users]);
 
+  // Build owner/collaborator lookup from assignments
+  const directorRoleMap = useMemo(() => {
+    const m: Record<string, "owner" | "collaborator"> = {};
+    for (const a of DIRECTOR_ASSIGNMENTS) m[a.user_id] = a.director_role;
+    return m;
+  }, []);
+
   const filtered = useMemo(() => {
     return users.filter((u) => {
       if (search && !u.full_name.toLowerCase().includes(search.toLowerCase()) && !u.email.toLowerCase().includes(search.toLowerCase())) return false;
-      if (roleFilter !== "all" && u.role !== roleFilter) return false;
+      if (roleFilter === "director_owner") {
+        if (u.role !== "director" || directorRoleMap[u.id] !== "owner") return false;
+      } else if (roleFilter === "director_collaborator") {
+        if (u.role !== "director" || directorRoleMap[u.id] !== "collaborator") return false;
+      } else if (roleFilter !== "all" && u.role !== roleFilter) {
+        return false;
+      }
       if (statusFilter !== "all" && u.status !== statusFilter) return false;
       if (schoolFilter !== "all" && u.school_or_cegep !== schoolFilter) return false;
       return true;
     });
-  }, [search, roleFilter, statusFilter, schoolFilter]);
+  }, [search, roleFilter, statusFilter, schoolFilter, directorRoleMap]);
 
   const counts = {
     coach: users.filter((u) => u.role === "coach").length,
     recruiter: users.filter((u) => u.role === "recruiter").length,
     director: users.filter((u) => u.role === "director").length,
+    athlete: users.filter((u) => u.role === "athlete").length,
     admin: users.filter((u) => u.role === "admin").length,
   };
 
@@ -104,7 +127,7 @@ function AdminUsersContent() {
             Gestion des utilisateurs
           </h1>
           <p className="text-[13px] text-[#6b7280] mt-1">
-            {counts.coach} coachs · {counts.recruiter} recruteurs · {counts.director} directeurs · {counts.admin} admins
+            {counts.coach} coachs · {counts.recruiter} recruteurs · {counts.director} directeurs · {counts.athlete} athlètes · {counts.admin} admins
           </p>
         </div>
         <button
@@ -115,6 +138,22 @@ function AdminUsersContent() {
           + Inviter un utilisateur
         </button>
       </div>
+
+      {/* Main Tab Bar */}
+      <div className="flex items-center gap-1 border-b border-[#2D3748]">
+        <button type="button" onClick={() => setMainTab("users")} className={`px-5 py-2.5 text-[13px] font-bold uppercase tracking-wider border-b-2 transition-colors -mb-px ${mainTab === "users" ? "border-[#E63946] text-[#E63946]" : "border-transparent text-[#6b7280] hover:text-[#9CA3AF]"}`}>
+          Utilisateurs
+        </button>
+        <button type="button" onClick={() => setMainTab("directors")} className={`px-5 py-2.5 text-[13px] font-bold uppercase tracking-wider border-b-2 transition-colors -mb-px ${mainTab === "directors" ? "border-[#E63946] text-[#E63946]" : "border-transparent text-[#6b7280] hover:text-[#9CA3AF]"}`}>
+          Directeurs
+        </button>
+      </div>
+
+      {/* Directors Tab */}
+      {mainTab === "directors" && <DirectorsTab />}
+
+      {/* Users Tab */}
+      {mainTab === "users" && <>
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3">
@@ -128,9 +167,14 @@ function AdminUsersContent() {
         <select title="Rôle" value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)} className={selectBase}>
           <option value="all">Tous les rôles</option>
           <option value="admin">Admin</option>
-          <option value="coach">Coach</option>
+          <option value="coach">Entraîneur (scolaire)</option>
+          <option value="coach_league">Entraîneur (ligue)</option>
           <option value="recruiter">Recruteur</option>
-          <option value="director">Directeur</option>
+          <option value="director">Directeur (tous)</option>
+          <option value="director_owner">↳ Propriétaire</option>
+          <option value="director_collaborator">↳ Collaborateur</option>
+          <option value="coordinator">Coordonnateur</option>
+          <option value="athlete">Athlète</option>
         </select>
         <select title="Statut" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className={selectBase}>
           <option value="all">Tous les statuts</option>
@@ -172,7 +216,18 @@ function AdminUsersContent() {
                     </td>
                     <td className="px-4 py-3 text-[13px] text-[#9CA3AF] whitespace-nowrap">{u.email}</td>
                     <td className="px-4 py-3">
-                      <span className={`inline-flex px-2.5 py-1 rounded-full text-[11px] font-bold ${role.bg} ${role.text}`}>{role.label}</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className={`inline-flex px-2.5 py-1 rounded-full text-[11px] font-bold ${role.bg} ${role.text}`}>{role.label}</span>
+                        {u.role === "director" && directorRoleMap[u.id] === "owner" && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#DAB65A]/15 text-[#DAB65A] text-[9px] font-bold">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="#DAB65A" stroke="none"><path d="M2 20h20v2H2zm1-2l3-10 6 6 6-6 3 10z" /><circle cx="5" cy="6" r="2" /><circle cx="12" cy="3" r="2" /><circle cx="19" cy="6" r="2" /></svg>
+                            Proprio.
+                          </span>
+                        )}
+                        {u.role === "director" && directorRoleMap[u.id] === "collaborator" && (
+                          <span className="inline-flex px-2 py-0.5 rounded-full bg-[#6B7280]/15 text-[#6B7280] text-[9px] font-bold">Collab.</span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-[13px] text-[#9CA3AF] whitespace-nowrap">{u.school_or_cegep}</td>
                     <td className="px-4 py-3">
@@ -389,10 +444,12 @@ function AdminUsersContent() {
               <div>
                 <label className="block text-[11px] font-bold text-[#6b7280] uppercase tracking-wider mb-1.5">Rôle *</label>
                 <select title="Rôle" value={inviteForm.role} onChange={(e) => setInviteForm({ ...inviteForm, role: e.target.value, school: "" })} className={selectBase + " w-full"}>
-                  <option value="coach">Coach (école secondaire)</option>
+                  <option value="coach">Entraîneur (école secondaire)</option>
+                  <option value="coach_league">Entraîneur (ligue civile)</option>
                   <option value="recruiter">Recruteur (CÉGEP)</option>
                   <option value="director">Directeur sportif (école secondaire)</option>
                   <option value="director_cegep">Directeur sportif (CÉGEP)</option>
+                  <option value="coordinator">Coordonnateur (ligue civile)</option>
                   <option value="admin">Administrateur</option>
                 </select>
               </div>
@@ -439,6 +496,8 @@ function AdminUsersContent() {
           </div>
         </div>
       )}
+
+      </>}
 
       {/* Toast */}
       {toast && (

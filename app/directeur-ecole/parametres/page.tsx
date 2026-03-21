@@ -15,7 +15,7 @@ const labelCls = "block text-[12px] font-bold tracking-[0.25em] uppercase text-[
 const inputCls = "w-full bg-[#13151a] border border-[#2a2d36] rounded-lg px-4 py-2.5 text-[14px] text-[#e0e0e0] placeholder:text-[#4a4d56] focus:border-[#E63946] outline-none transition-colors";
 
 /* ── Sections ─────────────────────────────────────────────── */
-type SectionKey = "compte" | "etablissement" | "notifications" | "danger";
+type SectionKey = "compte" | "etablissement" | "directeurs" | "notifications" | "danger";
 
 const SECTIONS: { key: SectionKey; label: string; icon: React.ReactNode; isDanger?: boolean }[] = [
   {
@@ -35,6 +35,16 @@ const SECTIONS: { key: SectionKey; label: string; icon: React.ReactNode; isDange
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
         <polyline points="9 22 9 12 15 12 15 22" />
+      </svg>
+    ),
+  },
+  {
+    key: "directeurs",
+    label: "Directeurs",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M2 20h20v2H2zm1-2l3-10 6 6 6-6 3 10z" />
+        <circle cx="5" cy="6" r="2" /><circle cx="12" cy="3" r="2" /><circle cx="19" cy="6" r="2" />
       </svg>
     ),
   },
@@ -332,6 +342,68 @@ export default function DirectorHSSettingsPage() {
                   >
                     Enregistrer
                   </button>
+                </div>
+              </div>
+            )}
+
+            {/* ─── Directeurs ─────────────────────────────── */}
+            {section === "directeurs" && (
+              <div className="space-y-6">
+                <div>
+                  <h2 className="font-head text-lg font-black text-white uppercase tracking-tight">Gestion des directeurs</h2>
+                  <p className="text-[13px] text-[#6B7280] mt-1">Directeurs assignés à votre établissement</p>
+                </div>
+
+                {/* Directors table */}
+                <div className="bg-[#111317] border border-white/5 rounded-xl overflow-hidden">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="border-b border-[#2D3748]">
+                        {["Nom", "Rôle", "Email", "Depuis", ""].map((h) => (
+                          <th key={h} className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.2em] text-[#6b7280]">{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr className="border-b border-[#2D3748]/40">
+                        <td className="px-4 py-3 text-[13px] font-bold text-white flex items-center gap-1.5">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="#DAB65A" stroke="none"><path d="M2 20h20v2H2zm1-2l3-10 6 6 6-6 3 10z" /><circle cx="5" cy="6" r="2" /><circle cx="12" cy="3" r="2" /><circle cx="19" cy="6" r="2" /></svg>
+                          {mockDirectorHS.profile.firstName} {mockDirectorHS.profile.lastName}
+                        </td>
+                        <td className="px-4 py-3"><span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DAB65A]/15 text-[#DAB65A]">Propriétaire</span></td>
+                        <td className="px-4 py-3 text-[12px] text-[#9CA3AF]">{mockDirectorHS.profile.email}</td>
+                        <td className="px-4 py-3 text-[12px] text-[#6b7280]">Jan. 2025</td>
+                        <td className="px-4 py-3"></td>
+                      </tr>
+                      <tr className="border-b border-[#2D3748]/40">
+                        <td className="px-4 py-3 text-[13px] text-white">Luc Tremblay</td>
+                        <td className="px-4 py-3"><span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#6B7280]/15 text-[#6B7280]">Collaborateur</span></td>
+                        <td className="px-4 py-3 text-[12px] text-[#9CA3AF]">l.tremblay@rochebelle.qc.ca</td>
+                        <td className="px-4 py-3 text-[12px] text-[#6b7280]">Sept. 2025</td>
+                        <td className="px-4 py-3">
+                          <button type="button" onClick={() => setToast("Accès retiré (POC)")} className="text-[11px] font-bold text-[#6b7280] hover:text-[#E63946] transition-colors">Retirer</button>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Ownership transfer */}
+                <div className="bg-[#111317] border border-white/5 rounded-xl p-5 space-y-4">
+                  <h3 className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#6b7280]">Transfert de propriété</h3>
+                  <p className="text-[12px] text-[#9CA3AF] leading-relaxed">
+                    Le transfert de propriété doit être approuvé par un administrateur Nexus pour protéger la gouvernance de l&apos;école.
+                  </p>
+                  <div className="space-y-3">
+                    <select aria-label="Transférer à" className={inputCls}>
+                      <option value="">Transférer à...</option>
+                      <option value="luc">Luc Tremblay (Collaborateur)</option>
+                    </select>
+                    <textarea placeholder="Ex: Je quitte l'école à la fin de l'année scolaire. Luc Tremblay me remplace." rows={2} aria-label="Raison" className={`${inputCls} resize-none`} />
+                    <button type="button" onClick={() => setToast("Demande de transfert envoyée (POC)")} className="px-5 py-2.5 border border-[#E63946] text-[#E63946] text-[12px] font-bold uppercase tracking-wider rounded-lg hover:bg-[#E63946]/10 transition-colors">
+                      Demander le transfert
+                    </button>
+                  </div>
                 </div>
               </div>
             )}

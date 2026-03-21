@@ -23,7 +23,7 @@ export interface AdminUserRow {
   id: string;
   full_name: string;
   email: string;
-  role: "admin" | "coach" | "recruiter" | "director";
+  role: "admin" | "coach" | "recruiter" | "director" | "athlete" | "coach_league" | "coordinator";
   school_or_cegep: string;
   status: "active" | "suspended" | "pending_validation";
   created_at: string;
@@ -54,10 +54,30 @@ export const ADMIN_USERS: AdminUserRow[] = [
   { id: "u-024", full_name: "Éric Tanguay", email: "e.tanguay@edouard-montpetit.qc.ca", role: "recruiter", school_or_cegep: "CÉGEP Édouard-Montpetit", status: "pending_validation", created_at: "2026-03-10T09:00:00Z", last_login_at: null },
   { id: "u-025", full_name: "Gabrielle Morin", email: "g.morin@lionel-groulx.qc.ca", role: "recruiter", school_or_cegep: "CÉGEP Lionel-Groulx", status: "pending_validation", created_at: "2026-03-12T15:00:00Z", last_login_at: null },
 
-  // Directors (3)
+  // Directors (7 — 5 owners, 2 collaborators)
   { id: "u-030", full_name: "Nathalie Gagnon", email: "n.gagnon@rochebelle.qc.ca", role: "director", school_or_cegep: "École De Rochebelle", status: "active", created_at: "2025-01-08T10:00:00Z", last_login_at: "2026-03-15T08:00:00Z" },
   { id: "u-031", full_name: "François Simard", email: "f.simard@cegep-garneau.qc.ca", role: "director", school_or_cegep: "CÉGEP Garneau", status: "active", created_at: "2025-01-20T11:00:00Z", last_login_at: "2026-03-14T14:30:00Z" },
   { id: "u-032", full_name: "Josée Bélanger", email: "j.belanger@seminaire.qc.ca", role: "director", school_or_cegep: "Séminaire de Sherbrooke", status: "active", created_at: "2025-02-12T09:00:00Z", last_login_at: "2026-03-12T16:00:00Z" },
+  { id: "u-033", full_name: "Marie-Ève Lapointe", email: "me.lapointe@demortagne.qc.ca", role: "director", school_or_cegep: "É.S. De Mortagne", status: "active", created_at: "2025-09-01T10:00:00Z", last_login_at: "2026-03-16T10:00:00Z" },
+  { id: "u-034", full_name: "Patrick Bergeron", email: "p.bergeron@sje.qc.ca", role: "director", school_or_cegep: "É.S. Saint-Jean-Eudes", status: "active", created_at: "2025-03-15T09:00:00Z", last_login_at: "2026-01-28T14:00:00Z" },
+  { id: "u-035", full_name: "Luc Tremblay", email: "l.tremblay@rochebelle.qc.ca", role: "director", school_or_cegep: "École De Rochebelle", status: "active", created_at: "2025-09-15T11:00:00Z", last_login_at: "2026-03-14T09:30:00Z" },
+  { id: "u-036", full_name: "Sylvie Côté", email: "s.cote@cegep-garneau.qc.ca", role: "director", school_or_cegep: "CÉGEP Garneau", status: "active", created_at: "2025-10-01T14:00:00Z", last_login_at: "2026-03-15T16:00:00Z" },
+
+  // Athletes (5 — invited by coaches, have accounts)
+  { id: "u-040", full_name: "Marc-Antoine Tremblay", email: "marc-antoine@gmail.com", role: "athlete", school_or_cegep: "É.S. Saint-Jean-Eudes", status: "active", created_at: "2025-10-01T09:00:00Z", last_login_at: "2026-03-18T14:30:00Z" },
+  { id: "u-041", full_name: "Samuel Bouchard", email: "samuel.b@outlook.com", role: "athlete", school_or_cegep: "Le Sommet", status: "active", created_at: "2025-11-15T10:00:00Z", last_login_at: "2026-03-17T11:00:00Z" },
+  { id: "u-042", full_name: "Émilie Gagnon", email: "emilie.g@gmail.com", role: "athlete", school_or_cegep: "Mont-Royal", status: "active", created_at: "2025-12-01T14:00:00Z", last_login_at: "2026-03-16T09:00:00Z" },
+  { id: "u-043", full_name: "Xavier Lapointe", email: "x.lapointe@hotmail.com", role: "athlete", school_or_cegep: "É.S. De Mortagne", status: "active", created_at: "2026-01-10T11:00:00Z", last_login_at: "2026-03-15T16:00:00Z" },
+  { id: "u-044", full_name: "Félix Gagnon-Roy", email: "felix.gr@gmail.com", role: "athlete", school_or_cegep: "É.S. De Mortagne", status: "active", created_at: "2026-02-01T09:00:00Z", last_login_at: "2026-03-14T08:00:00Z" },
+
+  // League Coordinators (2)
+  { id: "u-lc-001", full_name: "Patrick Roy", email: "p.roy@wildcats.ca", role: "coordinator", school_or_cegep: "Wildcats Lanaudière", status: "active", created_at: "2025-05-01T10:00:00Z", last_login_at: "2026-03-18T09:00:00Z" },
+  { id: "u-lc-002", full_name: "Marie-Ève Tremblay", email: "me.tremblay@rempartsaaa.ca", role: "coordinator", school_or_cegep: "Remparts Hockey AAA", status: "active", created_at: "2025-04-10T10:00:00Z", last_login_at: "2026-03-17T14:30:00Z" },
+
+  // League Coaches (3)
+  { id: "u-lcoach-001", full_name: "Luc Simard", email: "l.simard@wildcats.ca", role: "coach_league", school_or_cegep: "Wildcats Lanaudière", status: "active", created_at: "2025-06-01T10:00:00Z", last_login_at: "2026-03-16T11:00:00Z" },
+  { id: "u-lcoach-005", full_name: "Martin Gagné", email: "m.gagne@elitebaseball.ca", role: "coach_league", school_or_cegep: "Élite Baseball Québec", status: "active", created_at: "2025-07-15T10:00:00Z", last_login_at: "2026-03-15T08:30:00Z" },
+  { id: "u-lcoach-008", full_name: "Alain Tremblay", email: "a.tremblay@rempartsaaa.ca", role: "coach_league", school_or_cegep: "Remparts Hockey AAA", status: "pending_validation", created_at: "2026-03-10T10:00:00Z", last_login_at: null },
 ];
 
 // ── Pending Recruiter Validations ────────────────────────────
@@ -83,14 +103,38 @@ export const PENDING_RECRUITERS: PendingRecruiter[] = [
 
 export interface SystemAlert {
   id: string;
-  type: "pending_approval" | "pending_validation" | "flagged_content" | "system";
+  type: "pending_approval" | "pending_validation" | "flagged_content" | "system" | "ownership_transfer" | "director_join" | "inactive_owner";
   message: string;
   severity: "info" | "warning" | "critical";
   created_at: string;
   link: string;
 }
 
-// ── Schools ──────────────────────────────────────────────────
+// ── Schools (with Loi 25 compliance) ────────────────────────
+
+export type ContractStatus = "EN_ATTENTE" | "ENVOYE" | "ACCEPTE" | "EXPIRE" | "REFUSE";
+
+export interface Loi25Contract {
+  id: string;
+  institution_id: string;
+  institution_type: "ECOLE_SECONDAIRE" | "CEGEP";
+  contract_version: string;
+  status: ContractStatus;
+  rprp_nom: string;
+  rprp_courriel: string;
+  rprp_telephone?: string;
+  sent_at?: string;
+  accepted_at?: string;
+  accepted_by?: string;
+  expires_at?: string;
+  ip_address?: string;
+  pdf_url?: string;
+}
+
+export interface Loi25AuditEntry {
+  date: string;
+  action: string;
+}
 
 export interface AdminSchoolRow {
   id: string;
@@ -102,41 +146,228 @@ export interface AdminSchoolRow {
   sports: string[];
   coaches_count: number;
   recruiters_count: number;
+  directors_count: number;
+  athletes_count: number;
   is_active: boolean;
   is_private: boolean;
+  status: "ACTIF" | "EN_ATTENTE_CONTRAT" | "INACTIF" | "DESACTIVE";
+  contract: Loi25Contract | null;
+  onboarding_completed: boolean;
+  audit_log: Loi25AuditEntry[];
+  subscription_status?: "actif" | "essai" | "inactif";
+  created_at: string;
 }
 
 export const ADMIN_SCHOOLS: AdminSchoolRow[] = [
-  // Écoles secondaires (15)
-  { id: "s-001", name: "De Mortagne", type: "secondaire", city: "Boucherville", region: "Montérégie", conference: "sud_ouest", sports: ["Football", "Basketball", "Soccer"], coaches_count: 4, recruiters_count: 0, is_active: true, is_private: false },
-  { id: "s-002", name: "Saint-Jean-Eudes", type: "secondaire", city: "Québec", region: "Capitale-Nationale", conference: "nord_est", sports: ["Football", "Hockey", "Basketball"], coaches_count: 5, recruiters_count: 0, is_active: true, is_private: true },
-  { id: "s-003", name: "De Rochebelle", type: "secondaire", city: "Québec", region: "Capitale-Nationale", conference: "nord_est", sports: ["Football", "Basketball", "Volleyball"], coaches_count: 3, recruiters_count: 0, is_active: true, is_private: false },
-  { id: "s-004", name: "Roger-Comtois", type: "secondaire", city: "Québec", region: "Capitale-Nationale", conference: "nord_est", sports: ["Football", "Hockey"], coaches_count: 3, recruiters_count: 0, is_active: true, is_private: false },
-  { id: "s-005", name: "Mont-Royal", type: "secondaire", city: "Montréal", region: "Montréal", conference: "sud_ouest", sports: ["Basketball", "Soccer", "Volleyball"], coaches_count: 4, recruiters_count: 0, is_active: true, is_private: false },
-  { id: "s-006", name: "Académie les Estacades", type: "secondaire", city: "Trois-Rivières", region: "Mauricie", conference: "nord_est", sports: ["Football", "Hockey", "Natation"], coaches_count: 3, recruiters_count: 0, is_active: true, is_private: false },
-  { id: "s-007", name: "Armand-Corbeil", type: "secondaire", city: "Terrebonne", region: "Lanaudière", conference: "sud_ouest", sports: ["Football", "Basketball"], coaches_count: 2, recruiters_count: 0, is_active: true, is_private: false },
-  { id: "s-008", name: "L'Odyssée", type: "secondaire", city: "Chicoutimi", region: "Saguenay–Lac-Saint-Jean", conference: "nord_est", sports: ["Hockey", "Volleyball", "Athlétisme"], coaches_count: 3, recruiters_count: 0, is_active: true, is_private: false },
-  { id: "s-009", name: "Le Sommet", type: "secondaire", city: "Sherbrooke", region: "Estrie", conference: "nord_est", sports: ["Football", "Soccer"], coaches_count: 2, recruiters_count: 0, is_active: true, is_private: false },
-  { id: "s-010", name: "Louis-Riel", type: "secondaire", city: "Montréal", region: "Montréal", conference: "sud_ouest", sports: ["Basketball", "Soccer", "Volleyball", "Athlétisme"], coaches_count: 5, recruiters_count: 0, is_active: true, is_private: false },
-  { id: "s-011", name: "Curé-Antoine-Labelle", type: "secondaire", city: "Laval", region: "Laval", conference: "sud_ouest", sports: ["Football", "Basketball", "Hockey"], coaches_count: 4, recruiters_count: 0, is_active: true, is_private: false },
-  { id: "s-012", name: "Saint-Joseph", type: "secondaire", city: "Saint-Hyacinthe", region: "Montérégie", conference: "sud_ouest", sports: ["Football", "Hockey"], coaches_count: 2, recruiters_count: 0, is_active: true, is_private: true },
-  { id: "s-013", name: "Thérèse-Martin", type: "secondaire", city: "Joliette", region: "Lanaudière", conference: "sud_ouest", sports: ["Hockey", "Volleyball"], coaches_count: 2, recruiters_count: 0, is_active: true, is_private: false },
-  { id: "s-014", name: "Le Tremplin", type: "secondaire", city: "Gatineau", region: "Outaouais", conference: "sud_ouest", sports: ["Football", "Basketball", "Rugby"], coaches_count: 3, recruiters_count: 0, is_active: false, is_private: false },
-  { id: "s-015", name: "Pierre-Laporte", type: "secondaire", city: "Montréal", region: "Montréal", conference: "sud_ouest", sports: ["Soccer", "Natation", "Athlétisme"], coaches_count: 3, recruiters_count: 0, is_active: true, is_private: false },
+  // ── Écoles secondaires (15) ─────────────────────────────────
+  // 10 ACCEPTE, 3 EN_ATTENTE, 2 ENVOYE
 
-  // CÉGEPs (12)
-  { id: "c-001", name: "CÉGEP Garneau", type: "cegep", city: "Québec", region: "Capitale-Nationale", conference: "nord_est", sports: ["Football", "Basketball", "Soccer", "Volleyball"], coaches_count: 0, recruiters_count: 4, is_active: true, is_private: false },
-  { id: "c-002", name: "CÉGEP de Sainte-Foy", type: "cegep", city: "Québec", region: "Capitale-Nationale", conference: "nord_est", sports: ["Football", "Basketball", "Hockey"], coaches_count: 0, recruiters_count: 3, is_active: true, is_private: false },
-  { id: "c-003", name: "CÉGEP Limoilou", type: "cegep", city: "Québec", region: "Capitale-Nationale", conference: "nord_est", sports: ["Football", "Soccer", "Volleyball"], coaches_count: 0, recruiters_count: 3, is_active: true, is_private: false },
-  { id: "c-004", name: "CÉGEP du Vieux-Montréal", type: "cegep", city: "Montréal", region: "Montréal", conference: "sud_ouest", sports: ["Basketball", "Soccer", "Volleyball"], coaches_count: 0, recruiters_count: 3, is_active: true, is_private: false },
-  { id: "c-005", name: "CÉGEP André-Laurendeau", type: "cegep", city: "LaSalle", region: "Montréal", conference: "sud_ouest", sports: ["Football", "Basketball", "Hockey"], coaches_count: 0, recruiters_count: 4, is_active: true, is_private: false },
-  { id: "c-006", name: "CÉGEP Édouard-Montpetit", type: "cegep", city: "Longueuil", region: "Montérégie", conference: "sud_ouest", sports: ["Football", "Basketball", "Hockey", "Soccer"], coaches_count: 0, recruiters_count: 5, is_active: true, is_private: false },
-  { id: "c-007", name: "CÉGEP de Sherbrooke", type: "cegep", city: "Sherbrooke", region: "Estrie", conference: "nord_est", sports: ["Football", "Hockey", "Volleyball"], coaches_count: 0, recruiters_count: 3, is_active: true, is_private: false },
-  { id: "c-008", name: "CÉGEP de Jonquière", type: "cegep", city: "Jonquière", region: "Saguenay–Lac-Saint-Jean", conference: "nord_est", sports: ["Hockey", "Volleyball", "Basketball"], coaches_count: 0, recruiters_count: 2, is_active: true, is_private: false },
-  { id: "c-009", name: "CÉGEP de Lévis", type: "cegep", city: "Lévis", region: "Chaudière-Appalaches", conference: "nord_est", sports: ["Football", "Hockey"], coaches_count: 0, recruiters_count: 2, is_active: true, is_private: false },
-  { id: "c-010", name: "CÉGEP de Saint-Laurent", type: "cegep", city: "Montréal", region: "Montréal", conference: "sud_ouest", sports: ["Basketball", "Soccer", "Athlétisme"], coaches_count: 0, recruiters_count: 3, is_active: true, is_private: false },
-  { id: "c-011", name: "Collège de Bois-de-Boulogne", type: "cegep", city: "Montréal", region: "Montréal", conference: "sud_ouest", sports: ["Basketball", "Soccer"], coaches_count: 0, recruiters_count: 2, is_active: true, is_private: false },
-  { id: "c-012", name: "Champlain Lennoxville", type: "cegep", city: "Sherbrooke", region: "Estrie", conference: "nord_est", sports: ["Football", "Rugby", "Soccer"], coaches_count: 0, recruiters_count: 2, is_active: true, is_private: true },
+  // ACCEPTE (10)
+  { id: "s-001", name: "De Mortagne", type: "secondaire", city: "Boucherville", region: "Montérégie", conference: "sud_ouest", sports: ["Football", "Basketball", "Soccer"], coaches_count: 4, recruiters_count: 0, directors_count: 1, athletes_count: 18, is_active: true, is_private: false, status: "ACTIF", onboarding_completed: true, created_at: "2025-06-15T10:00:00Z",
+    contract: { id: "loi-001", institution_id: "s-001", institution_type: "ECOLE_SECONDAIRE", contract_version: "1.0", status: "ACCEPTE", rprp_nom: "Marie-Ève Lapointe", rprp_courriel: "me.lapointe@demortagne.qc.ca", rprp_telephone: "450-655-7311", sent_at: "2025-06-15T10:00:00Z", accepted_at: "2025-06-18T14:30:00Z", accepted_by: "u-033", expires_at: "2026-06-18T14:30:00Z", ip_address: "24.48.112.34", pdf_url: "/contracts/loi25-s001.pdf" },
+    audit_log: [
+      { date: "2025-06-15T10:00:00Z", action: "Établissement créé par l'administrateur" },
+      { date: "2025-06-15T10:05:00Z", action: "Contrat envoyé à me.lapointe@demortagne.qc.ca" },
+      { date: "2025-06-18T14:30:00Z", action: "Contrat accepté par Marie-Ève Lapointe (IP: 24.48.112.34)" },
+    ],
+  },
+  { id: "s-002", name: "Saint-Jean-Eudes", type: "secondaire", city: "Québec", region: "Capitale-Nationale", conference: "nord_est", sports: ["Football", "Hockey", "Basketball"], coaches_count: 5, recruiters_count: 0, directors_count: 1, athletes_count: 22, is_active: true, is_private: true, status: "ACTIF", onboarding_completed: true, created_at: "2025-06-20T09:00:00Z",
+    contract: { id: "loi-002", institution_id: "s-002", institution_type: "ECOLE_SECONDAIRE", contract_version: "1.0", status: "ACCEPTE", rprp_nom: "Patrick Bergeron", rprp_courriel: "p.bergeron@sje.qc.ca", sent_at: "2025-06-20T09:00:00Z", accepted_at: "2025-06-22T11:00:00Z", accepted_by: "u-034", expires_at: "2026-06-22T11:00:00Z", ip_address: "205.151.44.12", pdf_url: "/contracts/loi25-s002.pdf" },
+    audit_log: [
+      { date: "2025-06-20T09:00:00Z", action: "Établissement créé par l'administrateur" },
+      { date: "2025-06-20T09:05:00Z", action: "Contrat envoyé à p.bergeron@sje.qc.ca" },
+      { date: "2025-06-22T11:00:00Z", action: "Contrat accepté par Patrick Bergeron (IP: 205.151.44.12)" },
+    ],
+  },
+  { id: "s-003", name: "De Rochebelle", type: "secondaire", city: "Québec", region: "Capitale-Nationale", conference: "nord_est", sports: ["Football", "Basketball", "Volleyball"], coaches_count: 3, recruiters_count: 0, directors_count: 2, athletes_count: 15, is_active: true, is_private: false, status: "ACTIF", onboarding_completed: true, created_at: "2025-07-01T10:00:00Z",
+    contract: { id: "loi-003", institution_id: "s-003", institution_type: "ECOLE_SECONDAIRE", contract_version: "1.0", status: "ACCEPTE", rprp_nom: "Nathalie Gagnon", rprp_courriel: "n.gagnon@rochebelle.qc.ca", rprp_telephone: "418-651-3080", sent_at: "2025-07-01T10:00:00Z", accepted_at: "2025-07-03T16:00:00Z", accepted_by: "u-030", expires_at: "2026-07-03T16:00:00Z", ip_address: "198.45.22.8", pdf_url: "/contracts/loi25-s003.pdf" },
+    audit_log: [
+      { date: "2025-07-01T10:00:00Z", action: "Contrat envoyé à n.gagnon@rochebelle.qc.ca" },
+      { date: "2025-07-03T16:00:00Z", action: "Contrat accepté par Nathalie Gagnon (IP: 198.45.22.8)" },
+      { date: "2025-10-01T09:00:00Z", action: "RPRP modifié: Luc Tremblay → Nathalie Gagnon" },
+    ],
+  },
+  { id: "s-004", name: "Roger-Comtois", type: "secondaire", city: "Québec", region: "Capitale-Nationale", conference: "nord_est", sports: ["Football", "Hockey"], coaches_count: 3, recruiters_count: 0, directors_count: 1, athletes_count: 12, is_active: true, is_private: false, status: "ACTIF", onboarding_completed: true, created_at: "2025-07-10T10:00:00Z",
+    contract: { id: "loi-004", institution_id: "s-004", institution_type: "ECOLE_SECONDAIRE", contract_version: "1.0", status: "ACCEPTE", rprp_nom: "Catherine Morin", rprp_courriel: "c.morin@roger-comtois.qc.ca", sent_at: "2025-07-10T10:00:00Z", accepted_at: "2025-07-12T09:00:00Z", accepted_by: "u-new-02", expires_at: "2026-07-12T09:00:00Z", pdf_url: "/contracts/loi25-s004.pdf" },
+    audit_log: [
+      { date: "2025-07-10T10:00:00Z", action: "Contrat envoyé à c.morin@roger-comtois.qc.ca" },
+      { date: "2025-07-12T09:00:00Z", action: "Contrat accepté par Catherine Morin" },
+    ],
+  },
+  { id: "s-005", name: "Mont-Royal", type: "secondaire", city: "Montréal", region: "Montréal", conference: "sud_ouest", sports: ["Basketball", "Soccer", "Volleyball"], coaches_count: 4, recruiters_count: 0, directors_count: 1, athletes_count: 14, is_active: true, is_private: false, status: "ACTIF", onboarding_completed: true, created_at: "2025-07-15T10:00:00Z",
+    contract: { id: "loi-005", institution_id: "s-005", institution_type: "ECOLE_SECONDAIRE", contract_version: "1.0", status: "ACCEPTE", rprp_nom: "Sylvie Bouchard", rprp_courriel: "s.bouchard@mont-royal.qc.ca", sent_at: "2025-07-15T10:00:00Z", accepted_at: "2025-07-17T10:30:00Z", accepted_by: "u-dir-005", expires_at: "2026-07-17T10:30:00Z", pdf_url: "/contracts/loi25-s005.pdf" },
+    audit_log: [
+      { date: "2025-07-15T10:00:00Z", action: "Contrat envoyé à s.bouchard@mont-royal.qc.ca" },
+      { date: "2025-07-17T10:30:00Z", action: "Contrat accepté par Sylvie Bouchard" },
+    ],
+  },
+  { id: "s-006", name: "Académie les Estacades", type: "secondaire", city: "Trois-Rivières", region: "Mauricie", conference: "nord_est", sports: ["Football", "Hockey", "Natation"], coaches_count: 3, recruiters_count: 0, directors_count: 1, athletes_count: 11, is_active: true, is_private: false, status: "ACTIF", onboarding_completed: true, created_at: "2025-08-01T10:00:00Z",
+    contract: { id: "loi-006", institution_id: "s-006", institution_type: "ECOLE_SECONDAIRE", contract_version: "1.0", status: "ACCEPTE", rprp_nom: "Alain Bédard", rprp_courriel: "a.bedard@estacades.qc.ca", sent_at: "2025-08-01T10:00:00Z", accepted_at: "2025-08-05T14:00:00Z", accepted_by: "u-dir-006", expires_at: "2026-08-05T14:00:00Z", pdf_url: "/contracts/loi25-s006.pdf" },
+    audit_log: [
+      { date: "2025-08-01T10:00:00Z", action: "Contrat envoyé à a.bedard@estacades.qc.ca" },
+      { date: "2025-08-05T14:00:00Z", action: "Contrat accepté par Alain Bédard" },
+    ],
+  },
+  { id: "s-007", name: "Armand-Corbeil", type: "secondaire", city: "Terrebonne", region: "Lanaudière", conference: "sud_ouest", sports: ["Football", "Basketball"], coaches_count: 2, recruiters_count: 0, directors_count: 1, athletes_count: 8, is_active: true, is_private: false, status: "ACTIF", onboarding_completed: true, created_at: "2025-08-10T10:00:00Z",
+    contract: { id: "loi-007", institution_id: "s-007", institution_type: "ECOLE_SECONDAIRE", contract_version: "1.0", status: "ACCEPTE", rprp_nom: "Diane Pelletier", rprp_courriel: "d.pelletier@armand-corbeil.qc.ca", sent_at: "2025-08-10T10:00:00Z", accepted_at: "2025-08-12T11:00:00Z", accepted_by: "u-dir-007", expires_at: "2026-08-12T11:00:00Z", pdf_url: "/contracts/loi25-s007.pdf" },
+    audit_log: [
+      { date: "2025-08-10T10:00:00Z", action: "Contrat envoyé à d.pelletier@armand-corbeil.qc.ca" },
+      { date: "2025-08-12T11:00:00Z", action: "Contrat accepté par Diane Pelletier" },
+    ],
+  },
+  { id: "s-008", name: "L'Odyssée", type: "secondaire", city: "Chicoutimi", region: "Saguenay–Lac-Saint-Jean", conference: "nord_est", sports: ["Hockey", "Volleyball", "Athlétisme"], coaches_count: 3, recruiters_count: 0, directors_count: 1, athletes_count: 10, is_active: true, is_private: false, status: "ACTIF", onboarding_completed: true, created_at: "2025-08-20T10:00:00Z",
+    contract: { id: "loi-008", institution_id: "s-008", institution_type: "ECOLE_SECONDAIRE", contract_version: "1.0", status: "ACCEPTE", rprp_nom: "Pierre Lavoie", rprp_courriel: "p.lavoie@odyssee.qc.ca", sent_at: "2025-08-20T10:00:00Z", accepted_at: "2025-08-22T09:00:00Z", accepted_by: "u-dir-008", expires_at: "2026-08-22T09:00:00Z", pdf_url: "/contracts/loi25-s008.pdf" },
+    audit_log: [
+      { date: "2025-08-20T10:00:00Z", action: "Contrat envoyé à p.lavoie@odyssee.qc.ca" },
+      { date: "2025-08-22T09:00:00Z", action: "Contrat accepté par Pierre Lavoie" },
+    ],
+  },
+  { id: "s-009", name: "Le Sommet", type: "secondaire", city: "Sherbrooke", region: "Estrie", conference: "nord_est", sports: ["Football", "Soccer"], coaches_count: 2, recruiters_count: 0, directors_count: 1, athletes_count: 6, is_active: true, is_private: false, status: "ACTIF", onboarding_completed: true, created_at: "2025-09-01T10:00:00Z",
+    contract: { id: "loi-009", institution_id: "s-009", institution_type: "ECOLE_SECONDAIRE", contract_version: "1.0", status: "ACCEPTE", rprp_nom: "Martin Dubois", rprp_courriel: "m.dubois@lesommet.qc.ca", sent_at: "2025-09-01T10:00:00Z", accepted_at: "2025-09-03T15:00:00Z", accepted_by: "u-dir-009", expires_at: "2026-09-03T15:00:00Z", pdf_url: "/contracts/loi25-s009.pdf" },
+    audit_log: [
+      { date: "2025-09-01T10:00:00Z", action: "Contrat envoyé à m.dubois@lesommet.qc.ca" },
+      { date: "2025-09-03T15:00:00Z", action: "Contrat accepté par Martin Dubois" },
+    ],
+  },
+  { id: "s-010", name: "Louis-Riel", type: "secondaire", city: "Montréal", region: "Montréal", conference: "sud_ouest", sports: ["Basketball", "Soccer", "Volleyball", "Athlétisme"], coaches_count: 5, recruiters_count: 0, directors_count: 1, athletes_count: 20, is_active: true, is_private: false, status: "ACTIF", onboarding_completed: true, created_at: "2025-09-10T10:00:00Z",
+    contract: { id: "loi-010", institution_id: "s-010", institution_type: "ECOLE_SECONDAIRE", contract_version: "1.0", status: "ACCEPTE", rprp_nom: "Louise Gagnon", rprp_courriel: "l.gagnon@louis-riel.qc.ca", sent_at: "2025-09-10T10:00:00Z", accepted_at: "2025-09-12T10:00:00Z", accepted_by: "u-dir-010", expires_at: "2026-09-12T10:00:00Z", pdf_url: "/contracts/loi25-s010.pdf" },
+    audit_log: [
+      { date: "2025-09-10T10:00:00Z", action: "Contrat envoyé à l.gagnon@louis-riel.qc.ca" },
+      { date: "2025-09-12T10:00:00Z", action: "Contrat accepté par Louise Gagnon" },
+    ],
+  },
+
+  // EN_ATTENTE_CONTRAT (3)
+  { id: "s-011", name: "Curé-Antoine-Labelle", type: "secondaire", city: "Laval", region: "Laval", conference: "sud_ouest", sports: ["Football", "Basketball", "Hockey"], coaches_count: 4, recruiters_count: 0, directors_count: 1, athletes_count: 0, is_active: true, is_private: false, status: "EN_ATTENTE_CONTRAT", onboarding_completed: false, created_at: "2026-03-05T10:00:00Z",
+    contract: { id: "loi-011", institution_id: "s-011", institution_type: "ECOLE_SECONDAIRE", contract_version: "1.0", status: "EN_ATTENTE", rprp_nom: "Francine Roy", rprp_courriel: "f.roy@cal.qc.ca" },
+    audit_log: [
+      { date: "2026-03-05T10:00:00Z", action: "Établissement créé par l'administrateur" },
+    ],
+  },
+  { id: "s-012", name: "Saint-Joseph", type: "secondaire", city: "Saint-Hyacinthe", region: "Montérégie", conference: "sud_ouest", sports: ["Football", "Hockey"], coaches_count: 2, recruiters_count: 0, directors_count: 0, athletes_count: 0, is_active: true, is_private: true, status: "EN_ATTENTE_CONTRAT", onboarding_completed: false, created_at: "2026-03-08T10:00:00Z",
+    contract: { id: "loi-012", institution_id: "s-012", institution_type: "ECOLE_SECONDAIRE", contract_version: "1.0", status: "EN_ATTENTE", rprp_nom: "Robert Laflamme", rprp_courriel: "r.laflamme@st-joseph.qc.ca" },
+    audit_log: [
+      { date: "2026-03-08T10:00:00Z", action: "Établissement créé par l'administrateur" },
+    ],
+  },
+  { id: "s-013", name: "Thérèse-Martin", type: "secondaire", city: "Joliette", region: "Lanaudière", conference: "sud_ouest", sports: ["Hockey", "Volleyball"], coaches_count: 2, recruiters_count: 0, directors_count: 0, athletes_count: 0, is_active: true, is_private: false, status: "EN_ATTENTE_CONTRAT", onboarding_completed: false, created_at: "2026-03-10T10:00:00Z",
+    contract: { id: "loi-013", institution_id: "s-013", institution_type: "ECOLE_SECONDAIRE", contract_version: "1.0", status: "EN_ATTENTE", rprp_nom: "Hélène Tremblay", rprp_courriel: "h.tremblay@therese-martin.qc.ca" },
+    audit_log: [
+      { date: "2026-03-10T10:00:00Z", action: "Établissement créé par l'administrateur" },
+    ],
+  },
+
+  // ENVOYE (2)
+  { id: "s-014", name: "Le Tremplin", type: "secondaire", city: "Gatineau", region: "Outaouais", conference: "sud_ouest", sports: ["Football", "Basketball", "Rugby"], coaches_count: 3, recruiters_count: 0, directors_count: 1, athletes_count: 0, is_active: true, is_private: false, status: "EN_ATTENTE_CONTRAT", onboarding_completed: false, created_at: "2026-02-20T10:00:00Z",
+    contract: { id: "loi-014", institution_id: "s-014", institution_type: "ECOLE_SECONDAIRE", contract_version: "1.0", status: "ENVOYE", rprp_nom: "Josée Bélanger", rprp_courriel: "j.belanger@letremplin.qc.ca", sent_at: "2026-03-01T10:00:00Z" },
+    audit_log: [
+      { date: "2026-02-20T10:00:00Z", action: "Établissement créé par l'administrateur" },
+      { date: "2026-03-01T10:00:00Z", action: "Contrat envoyé à j.belanger@letremplin.qc.ca" },
+    ],
+  },
+  { id: "s-015", name: "Pierre-Laporte", type: "secondaire", city: "Montréal", region: "Montréal", conference: "sud_ouest", sports: ["Soccer", "Natation", "Athlétisme"], coaches_count: 3, recruiters_count: 0, directors_count: 1, athletes_count: 0, is_active: true, is_private: false, status: "EN_ATTENTE_CONTRAT", onboarding_completed: false, created_at: "2026-02-25T10:00:00Z",
+    contract: { id: "loi-015", institution_id: "s-015", institution_type: "ECOLE_SECONDAIRE", contract_version: "1.0", status: "ENVOYE", rprp_nom: "Caroline Gendron", rprp_courriel: "c.gendron@pierre-laporte.qc.ca", sent_at: "2026-03-15T10:00:00Z" },
+    audit_log: [
+      { date: "2026-02-25T10:00:00Z", action: "Établissement créé par l'administrateur" },
+      { date: "2026-03-15T10:00:00Z", action: "Contrat envoyé à c.gendron@pierre-laporte.qc.ca" },
+    ],
+  },
+
+  // ── CÉGEPs (12) ─────────────────────────────────────────────
+  // 8 ACCEPTE, 2 EN_ATTENTE, 1 ENVOYE, 1 EXPIRE
+
+  // ACCEPTE (8)
+  { id: "c-001", name: "CÉGEP Garneau", type: "cegep", city: "Québec", region: "Capitale-Nationale", conference: "nord_est", sports: ["Football", "Basketball", "Soccer", "Volleyball"], coaches_count: 0, recruiters_count: 4, directors_count: 2, athletes_count: 0, is_active: true, is_private: false, status: "ACTIF", onboarding_completed: true, subscription_status: "actif", created_at: "2025-06-01T10:00:00Z",
+    contract: { id: "loi-c01", institution_id: "c-001", institution_type: "CEGEP", contract_version: "1.0", status: "ACCEPTE", rprp_nom: "François Simard", rprp_courriel: "f.simard@cegep-garneau.qc.ca", rprp_telephone: "418-688-8310", sent_at: "2025-06-01T10:00:00Z", accepted_at: "2025-06-03T11:00:00Z", accepted_by: "u-031", expires_at: "2026-06-03T11:00:00Z", ip_address: "142.169.88.5", pdf_url: "/contracts/loi25-c001.pdf" },
+    audit_log: [
+      { date: "2025-06-01T10:00:00Z", action: "Contrat envoyé à f.simard@cegep-garneau.qc.ca" },
+      { date: "2025-06-03T11:00:00Z", action: "Contrat accepté par François Simard (IP: 142.169.88.5)" },
+    ],
+  },
+  { id: "c-002", name: "CÉGEP de Sainte-Foy", type: "cegep", city: "Québec", region: "Capitale-Nationale", conference: "nord_est", sports: ["Football", "Basketball", "Hockey"], coaches_count: 0, recruiters_count: 3, directors_count: 1, athletes_count: 0, is_active: true, is_private: false, status: "ACTIF", onboarding_completed: true, subscription_status: "actif", created_at: "2025-06-10T10:00:00Z",
+    contract: { id: "loi-c02", institution_id: "c-002", institution_type: "CEGEP", contract_version: "1.0", status: "ACCEPTE", rprp_nom: "Lucie Mercier", rprp_courriel: "l.mercier@cegep-ste-foy.qc.ca", sent_at: "2025-06-10T10:00:00Z", accepted_at: "2025-06-14T14:00:00Z", accepted_by: "u-dir-c02", expires_at: "2026-06-14T14:00:00Z", pdf_url: "/contracts/loi25-c002.pdf" },
+    audit_log: [
+      { date: "2025-06-10T10:00:00Z", action: "Contrat envoyé à l.mercier@cegep-ste-foy.qc.ca" },
+      { date: "2025-06-14T14:00:00Z", action: "Contrat accepté par Lucie Mercier" },
+    ],
+  },
+  { id: "c-003", name: "CÉGEP Limoilou", type: "cegep", city: "Québec", region: "Capitale-Nationale", conference: "nord_est", sports: ["Football", "Soccer", "Volleyball"], coaches_count: 0, recruiters_count: 3, directors_count: 1, athletes_count: 0, is_active: true, is_private: false, status: "ACTIF", onboarding_completed: true, subscription_status: "actif", created_at: "2025-07-01T10:00:00Z",
+    contract: { id: "loi-c03", institution_id: "c-003", institution_type: "CEGEP", contract_version: "1.0", status: "ACCEPTE", rprp_nom: "Jean-Marc Fortier", rprp_courriel: "jm.fortier@cegep-limoilou.qc.ca", sent_at: "2025-07-01T10:00:00Z", accepted_at: "2025-07-04T10:00:00Z", accepted_by: "u-dir-c03", expires_at: "2026-07-04T10:00:00Z", pdf_url: "/contracts/loi25-c003.pdf" },
+    audit_log: [
+      { date: "2025-07-01T10:00:00Z", action: "Contrat envoyé à jm.fortier@cegep-limoilou.qc.ca" },
+      { date: "2025-07-04T10:00:00Z", action: "Contrat accepté par Jean-Marc Fortier" },
+    ],
+  },
+  { id: "c-004", name: "CÉGEP du Vieux-Montréal", type: "cegep", city: "Montréal", region: "Montréal", conference: "sud_ouest", sports: ["Basketball", "Soccer", "Volleyball"], coaches_count: 0, recruiters_count: 3, directors_count: 1, athletes_count: 0, is_active: true, is_private: false, status: "ACTIF", onboarding_completed: true, subscription_status: "essai", created_at: "2025-07-15T10:00:00Z",
+    contract: { id: "loi-c04", institution_id: "c-004", institution_type: "CEGEP", contract_version: "1.0", status: "ACCEPTE", rprp_nom: "André Lévesque", rprp_courriel: "a.levesque@cvm.qc.ca", sent_at: "2025-07-15T10:00:00Z", accepted_at: "2025-07-18T09:00:00Z", accepted_by: "u-dir-c04", expires_at: "2026-07-18T09:00:00Z", pdf_url: "/contracts/loi25-c004.pdf" },
+    audit_log: [
+      { date: "2025-07-15T10:00:00Z", action: "Contrat envoyé à a.levesque@cvm.qc.ca" },
+      { date: "2025-07-18T09:00:00Z", action: "Contrat accepté par André Lévesque" },
+    ],
+  },
+  { id: "c-005", name: "CÉGEP André-Laurendeau", type: "cegep", city: "LaSalle", region: "Montréal", conference: "sud_ouest", sports: ["Football", "Basketball", "Hockey"], coaches_count: 0, recruiters_count: 4, directors_count: 1, athletes_count: 0, is_active: true, is_private: false, status: "ACTIF", onboarding_completed: true, subscription_status: "actif", created_at: "2025-08-01T10:00:00Z",
+    contract: { id: "loi-c05", institution_id: "c-005", institution_type: "CEGEP", contract_version: "1.0", status: "ACCEPTE", rprp_nom: "Sophie Larivière", rprp_courriel: "s.lariviere@claurendeau.qc.ca", sent_at: "2025-08-01T10:00:00Z", accepted_at: "2025-08-04T14:00:00Z", accepted_by: "u-dir-c05", expires_at: "2026-08-04T14:00:00Z", pdf_url: "/contracts/loi25-c005.pdf" },
+    audit_log: [
+      { date: "2025-08-01T10:00:00Z", action: "Contrat envoyé à s.lariviere@claurendeau.qc.ca" },
+      { date: "2025-08-04T14:00:00Z", action: "Contrat accepté par Sophie Larivière" },
+    ],
+  },
+  { id: "c-006", name: "CÉGEP Édouard-Montpetit", type: "cegep", city: "Longueuil", region: "Montérégie", conference: "sud_ouest", sports: ["Football", "Basketball", "Hockey", "Soccer"], coaches_count: 0, recruiters_count: 5, directors_count: 1, athletes_count: 0, is_active: true, is_private: false, status: "ACTIF", onboarding_completed: true, subscription_status: "actif", created_at: "2025-08-15T10:00:00Z",
+    contract: { id: "loi-c06", institution_id: "c-006", institution_type: "CEGEP", contract_version: "1.0", status: "ACCEPTE", rprp_nom: "Marc Thibodeau", rprp_courriel: "m.thibodeau@cegepmontpetit.ca", sent_at: "2025-08-15T10:00:00Z", accepted_at: "2025-08-18T11:00:00Z", accepted_by: "u-dir-c06", expires_at: "2026-08-18T11:00:00Z", pdf_url: "/contracts/loi25-c006.pdf" },
+    audit_log: [
+      { date: "2025-08-15T10:00:00Z", action: "Contrat envoyé à m.thibodeau@cegepmontpetit.ca" },
+      { date: "2025-08-18T11:00:00Z", action: "Contrat accepté par Marc Thibodeau" },
+    ],
+  },
+  { id: "c-007", name: "CÉGEP de Sherbrooke", type: "cegep", city: "Sherbrooke", region: "Estrie", conference: "nord_est", sports: ["Football", "Hockey", "Volleyball"], coaches_count: 0, recruiters_count: 3, directors_count: 1, athletes_count: 0, is_active: true, is_private: false, status: "ACTIF", onboarding_completed: true, subscription_status: "actif", created_at: "2025-09-01T10:00:00Z",
+    contract: { id: "loi-c07", institution_id: "c-007", institution_type: "CEGEP", contract_version: "1.0", status: "ACCEPTE", rprp_nom: "Isabelle Proulx", rprp_courriel: "i.proulx@cegepsherbrooke.qc.ca", sent_at: "2025-09-01T10:00:00Z", accepted_at: "2025-09-04T16:00:00Z", accepted_by: "u-dir-c07", expires_at: "2026-09-04T16:00:00Z", pdf_url: "/contracts/loi25-c007.pdf" },
+    audit_log: [
+      { date: "2025-09-01T10:00:00Z", action: "Contrat envoyé à i.proulx@cegepsherbrooke.qc.ca" },
+      { date: "2025-09-04T16:00:00Z", action: "Contrat accepté par Isabelle Proulx" },
+    ],
+  },
+  { id: "c-008", name: "CÉGEP de Jonquière", type: "cegep", city: "Jonquière", region: "Saguenay–Lac-Saint-Jean", conference: "nord_est", sports: ["Hockey", "Volleyball", "Basketball"], coaches_count: 0, recruiters_count: 2, directors_count: 1, athletes_count: 0, is_active: true, is_private: false, status: "ACTIF", onboarding_completed: true, subscription_status: "actif", created_at: "2025-09-10T10:00:00Z",
+    contract: { id: "loi-c08", institution_id: "c-008", institution_type: "CEGEP", contract_version: "1.0", status: "ACCEPTE", rprp_nom: "Daniel Tremblay", rprp_courriel: "d.tremblay@cegepjonquiere.ca", sent_at: "2025-09-10T10:00:00Z", accepted_at: "2025-09-13T10:00:00Z", accepted_by: "u-dir-c08", expires_at: "2026-09-13T10:00:00Z", pdf_url: "/contracts/loi25-c008.pdf" },
+    audit_log: [
+      { date: "2025-09-10T10:00:00Z", action: "Contrat envoyé à d.tremblay@cegepjonquiere.ca" },
+      { date: "2025-09-13T10:00:00Z", action: "Contrat accepté par Daniel Tremblay" },
+    ],
+  },
+
+  // EN_ATTENTE_CONTRAT (2)
+  { id: "c-009", name: "CÉGEP de Lévis", type: "cegep", city: "Lévis", region: "Chaudière-Appalaches", conference: "nord_est", sports: ["Football", "Hockey"], coaches_count: 0, recruiters_count: 2, directors_count: 0, athletes_count: 0, is_active: true, is_private: false, status: "EN_ATTENTE_CONTRAT", onboarding_completed: false, subscription_status: "essai", created_at: "2026-03-01T10:00:00Z",
+    contract: { id: "loi-c09", institution_id: "c-009", institution_type: "CEGEP", contract_version: "1.0", status: "EN_ATTENTE", rprp_nom: "Stéphane Côté", rprp_courriel: "s.cote@cegeplevis.qc.ca" },
+    audit_log: [
+      { date: "2026-03-01T10:00:00Z", action: "Établissement créé par l'administrateur" },
+    ],
+  },
+  { id: "c-010", name: "CÉGEP de Saint-Laurent", type: "cegep", city: "Montréal", region: "Montréal", conference: "sud_ouest", sports: ["Basketball", "Soccer", "Athlétisme"], coaches_count: 0, recruiters_count: 3, directors_count: 0, athletes_count: 0, is_active: true, is_private: false, status: "EN_ATTENTE_CONTRAT", onboarding_completed: false, subscription_status: "essai", created_at: "2026-03-05T10:00:00Z",
+    contract: { id: "loi-c10", institution_id: "c-010", institution_type: "CEGEP", contract_version: "1.0", status: "EN_ATTENTE", rprp_nom: "Nadia Bouchard", rprp_courriel: "n.bouchard@cegep-st-laurent.qc.ca" },
+    audit_log: [
+      { date: "2026-03-05T10:00:00Z", action: "Établissement créé par l'administrateur" },
+    ],
+  },
+
+  // ENVOYE (1)
+  { id: "c-011", name: "Collège de Bois-de-Boulogne", type: "cegep", city: "Montréal", region: "Montréal", conference: "sud_ouest", sports: ["Basketball", "Soccer"], coaches_count: 0, recruiters_count: 2, directors_count: 1, athletes_count: 0, is_active: true, is_private: false, status: "EN_ATTENTE_CONTRAT", onboarding_completed: false, subscription_status: "essai", created_at: "2026-02-15T10:00:00Z",
+    contract: { id: "loi-c11", institution_id: "c-011", institution_type: "CEGEP", contract_version: "1.0", status: "ENVOYE", rprp_nom: "Michel Gauthier", rprp_courriel: "m.gauthier@bdeb.qc.ca", sent_at: "2026-03-10T10:00:00Z" },
+    audit_log: [
+      { date: "2026-02-15T10:00:00Z", action: "Établissement créé par l'administrateur" },
+      { date: "2026-03-10T10:00:00Z", action: "Contrat envoyé à m.gauthier@bdeb.qc.ca" },
+    ],
+  },
+
+  // EXPIRE (1)
+  { id: "c-012", name: "Champlain Lennoxville", type: "cegep", city: "Sherbrooke", region: "Estrie", conference: "nord_est", sports: ["Football", "Rugby", "Soccer"], coaches_count: 0, recruiters_count: 2, directors_count: 1, athletes_count: 0, is_active: true, is_private: true, status: "ACTIF", onboarding_completed: true, subscription_status: "actif", created_at: "2025-01-15T10:00:00Z",
+    contract: { id: "loi-c12", institution_id: "c-012", institution_type: "CEGEP", contract_version: "1.0", status: "EXPIRE", rprp_nom: "James Wilson", rprp_courriel: "j.wilson@crcl.qc.ca", rprp_telephone: "819-564-3666", sent_at: "2025-01-15T10:00:00Z", accepted_at: "2025-01-18T14:00:00Z", accepted_by: "u-dir-c12", expires_at: "2026-01-18T14:00:00Z", ip_address: "70.24.88.102", pdf_url: "/contracts/loi25-c012.pdf" },
+    audit_log: [
+      { date: "2025-01-15T10:00:00Z", action: "Contrat envoyé à j.wilson@crcl.qc.ca" },
+      { date: "2025-01-18T14:00:00Z", action: "Contrat accepté par James Wilson (IP: 70.24.88.102)" },
+      { date: "2025-11-18T09:00:00Z", action: "Rappel de renouvellement envoyé (60 jours avant expiration)" },
+      { date: "2026-01-18T14:00:00Z", action: "Contrat expiré — renouvellement requis" },
+      { date: "2026-03-01T10:00:00Z", action: "Rappel de renouvellement envoyé par l'administrateur" },
+    ],
+  },
 ];
 
 // ── Sports ───────────────────────────────────────────────────
@@ -630,6 +861,16 @@ function generateAlerts(): SystemAlert[] {
     alerts.push({ id: `a-${String(id++).padStart(3, "0")}`, type: "system", message: `${suspended.length} utilisateur${suspended.length > 1 ? "s" : ""} suspendu${suspended.length > 1 ? "s" : ""} — révision recommandée`, severity: "info", created_at: new Date(now - 2 * 24 * 3600 * 1000).toISOString(), link: "/admin/users" });
   }
 
+  // Director ownership alerts
+  alerts.push({ id: `a-${String(id++).padStart(3, "0")}`, type: "ownership_transfer", message: "Demande de transfert de propriété — É.S. De Mortagne: Marie-Ève Lapointe → Luc Tremblay", severity: "warning", created_at: "2026-03-10T09:00:00Z", link: "/admin/users?tab=directors" });
+  alerts.push({ id: `a-${String(id++).padStart(3, "0")}`, type: "director_join", message: "Nouvelle demande de directeur — Jean Tremblay veut rejoindre É.S. Saint-Jean-Eudes", severity: "info", created_at: "2026-03-14T10:00:00Z", link: "/admin/users?tab=directors" });
+  alerts.push({ id: `a-${String(id++).padStart(3, "0")}`, type: "inactive_owner", message: "Directeur principal inactif depuis 47 jours — É.S. Saint-Jean-Eudes — Patrick Bergeron", severity: "critical", created_at: "2026-03-15T08:00:00Z", link: "/admin/users?tab=directors" });
+
+  // League alerts
+  alerts.push({ id: `a-${String(id++).padStart(3, "0")}`, type: "system", message: "Ligue sans coordonnateur — Élite Baseball Québec", severity: "warning", created_at: "2026-03-16T09:00:00Z", link: "/admin/schools" });
+  alerts.push({ id: `a-${String(id++).padStart(3, "0")}`, type: "system", message: "Ligue sans coordonnateur — Titans Rugby Montréal", severity: "warning", created_at: "2026-03-16T09:30:00Z", link: "/admin/schools" });
+  alerts.push({ id: `a-${String(id++).padStart(3, "0")}`, type: "pending_validation", message: "Entraîneur ligue en attente — Alain Tremblay, Remparts Hockey AAA", severity: "info", created_at: "2026-03-10T10:00:00Z", link: "/admin/users" });
+
   const sevOrder: Record<string, number> = { critical: 0, warning: 1, info: 2 };
   alerts.sort((a, b) => (sevOrder[a.severity] - sevOrder[b.severity]) || (new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
   return alerts;
@@ -779,3 +1020,238 @@ export const REVENUE_STATS: RevenueStats = {
     { month: "Mar 2026", cegep_revenue: 3245, school_revenue: 1225, athlete_revenue: 0 },
   ],
 };
+
+/* ═══════════════════════════════════════════════════════════════
+   DIRECTOR OWNERSHIP — Ownership hierarchy system
+   Each school/CÉGEP has ONE owner + zero or more collaborators
+═══════════════════════════════════════════════════════════════ */
+
+export interface DirectorAssignment {
+  user_id: string;
+  user_name: string;
+  user_email: string;
+  school_id: string;
+  school_name: string;
+  school_type: "secondaire" | "cegep";
+  director_role: "owner" | "collaborator";
+  claimed_at: string;
+  approved_by: string | null;
+  last_login_at: string | null;
+}
+
+export const DIRECTOR_ASSIGNMENTS: DirectorAssignment[] = [
+  // De Rochebelle — owner + 1 collaborator
+  { user_id: "u-030", user_name: "Nathalie Gagnon", user_email: "n.gagnon@rochebelle.qc.ca", school_id: "s-003", school_name: "De Rochebelle", school_type: "secondaire", director_role: "owner", claimed_at: "2025-01-08T10:00:00Z", approved_by: null, last_login_at: "2026-03-15T08:00:00Z" },
+  { user_id: "u-035", user_name: "Luc Tremblay", user_email: "l.tremblay@rochebelle.qc.ca", school_id: "s-003", school_name: "De Rochebelle", school_type: "secondaire", director_role: "collaborator", claimed_at: "2025-09-15T11:00:00Z", approved_by: "u-030", last_login_at: "2026-03-14T09:30:00Z" },
+
+  // CÉGEP Garneau — owner + 1 collaborator
+  { user_id: "u-031", user_name: "François Simard", user_email: "f.simard@cegep-garneau.qc.ca", school_id: "c-001", school_name: "CÉGEP Garneau", school_type: "cegep", director_role: "owner", claimed_at: "2025-01-20T11:00:00Z", approved_by: null, last_login_at: "2026-03-14T14:30:00Z" },
+  { user_id: "u-036", user_name: "Sylvie Côté", user_email: "s.cote@cegep-garneau.qc.ca", school_id: "c-001", school_name: "CÉGEP Garneau", school_type: "cegep", director_role: "collaborator", claimed_at: "2025-10-01T14:00:00Z", approved_by: "u-031", last_login_at: "2026-03-15T16:00:00Z" },
+
+  // Séminaire de Sherbrooke — owner only
+  { user_id: "u-032", user_name: "Josée Bélanger", user_email: "j.belanger@seminaire.qc.ca", school_id: "s-012", school_name: "Séminaire de Sherbrooke", school_type: "secondaire", director_role: "owner", claimed_at: "2025-02-12T09:00:00Z", approved_by: null, last_login_at: "2026-03-12T16:00:00Z" },
+
+  // De Mortagne — owner only
+  { user_id: "u-033", user_name: "Marie-Ève Lapointe", user_email: "me.lapointe@demortagne.qc.ca", school_id: "s-001", school_name: "De Mortagne", school_type: "secondaire", director_role: "owner", claimed_at: "2025-09-01T10:00:00Z", approved_by: null, last_login_at: "2026-03-16T10:00:00Z" },
+
+  // Saint-Jean-Eudes — owner (INACTIVE 47 days)
+  { user_id: "u-034", user_name: "Patrick Bergeron", user_email: "p.bergeron@sje.qc.ca", school_id: "s-002", school_name: "Saint-Jean-Eudes", school_type: "secondaire", director_role: "owner", claimed_at: "2025-03-15T09:00:00Z", approved_by: null, last_login_at: "2026-01-28T14:00:00Z" },
+];
+
+/* ── Ownership Transfer Requests ─────────────────────────────── */
+
+export interface OwnershipTransferRequest {
+  id: string;
+  school_id: string;
+  school_name: string;
+  school_type: "secondaire" | "cegep";
+  current_owner_id: string;
+  current_owner_name: string;
+  requested_new_owner_id: string;
+  requested_new_owner_name: string;
+  reason: string;
+  status: "pending" | "approved" | "rejected";
+  requested_at: string;
+  requested_by: "owner" | "admin";
+  reviewed_at: string | null;
+  reviewed_by: string | null;
+}
+
+export const OWNERSHIP_TRANSFER_REQUESTS: OwnershipTransferRequest[] = [
+  {
+    id: "ot-001",
+    school_id: "s-001", school_name: "De Mortagne", school_type: "secondaire",
+    current_owner_id: "u-033", current_owner_name: "Marie-Ève Lapointe",
+    requested_new_owner_id: "u-035", requested_new_owner_name: "Luc Tremblay",
+    reason: "Je quitte l'école en juin 2026. Luc Tremblay me remplace comme coordonnateur sportif.",
+    status: "pending", requested_at: "2026-03-10T09:00:00Z", requested_by: "owner",
+    reviewed_at: null, reviewed_by: null,
+  },
+  {
+    id: "ot-002",
+    school_id: "c-001", school_name: "CÉGEP Garneau", school_type: "cegep",
+    current_owner_id: "u-031", current_owner_name: "François Simard",
+    requested_new_owner_id: "u-036", requested_new_owner_name: "Sylvie Côté",
+    reason: "Rotation annuelle de la direction sportive. Sylvie prend le relais pour 2026-2027.",
+    status: "approved", requested_at: "2026-02-01T10:00:00Z", requested_by: "owner",
+    reviewed_at: "2026-02-03T14:00:00Z", reviewed_by: "u-001",
+  },
+  {
+    id: "ot-003",
+    school_id: "s-002", school_name: "Saint-Jean-Eudes", school_type: "secondaire",
+    current_owner_id: "u-034", current_owner_name: "Patrick Bergeron",
+    requested_new_owner_id: "", requested_new_owner_name: "(à déterminer)",
+    reason: "Directeur actuel inactif depuis 47 jours. Aucun collaborateur disponible.",
+    status: "pending", requested_at: "2026-03-15T08:00:00Z", requested_by: "admin",
+    reviewed_at: null, reviewed_by: null,
+  },
+];
+
+/* ── Director Join Requests ──────────────────────────────────── */
+
+export interface DirectorJoinRequest {
+  id: string;
+  user_id: string;
+  user_name: string;
+  user_email: string;
+  school_id: string;
+  school_name: string;
+  school_type: "secondaire" | "cegep";
+  current_owner_name: string | null;
+  status: "pending_owner" | "pending_admin" | "approved" | "rejected";
+  requested_at: string;
+  message: string;
+}
+
+export const DIRECTOR_JOIN_REQUESTS: DirectorJoinRequest[] = [
+  {
+    id: "dj-001",
+    user_id: "u-new-01", user_name: "Jean Tremblay", user_email: "j.tremblay@sje.qc.ca",
+    school_id: "s-002", school_name: "Saint-Jean-Eudes", school_type: "secondaire",
+    current_owner_name: "Patrick Bergeron",
+    status: "pending_admin",
+    requested_at: "2026-03-14T10:00:00Z",
+    message: "Je suis le nouveau coordonnateur sportif depuis janvier 2026, remplaçant M. Bergeron qui est en congé.",
+  },
+  {
+    id: "dj-002",
+    user_id: "u-new-02", user_name: "Catherine Morin", user_email: "c.morin@roger-comtois.qc.ca",
+    school_id: "s-004", school_name: "Roger-Comtois", school_type: "secondaire",
+    current_owner_name: null,
+    status: "pending_admin",
+    requested_at: "2026-03-12T14:00:00Z",
+    message: "Aucun directeur n'est assigné à notre école. Je suis la responsable du programme sport-études.",
+  },
+];
+
+// ── Leagues (Civil Leagues) ─────────────────────────────────
+
+export interface AdminLeagueRow {
+  id: string;
+  name: string;
+  sport: string;
+  city: string;
+  region: string;
+  level: "AAA" | "AA" | "A" | "Club" | "Civil";
+  website: string | null;
+  coordinator_name: string | null;
+  coordinator_id: string | null;
+  teams_count: number;
+  coaches_count: number;
+  athletes_count: number;
+  is_active: boolean;
+  status: "ACTIF" | "EN_ATTENTE_CONTRAT" | "INACTIF" | "DESACTIVE";
+  contract: Loi25Contract | null;
+  onboarding_completed: boolean;
+  audit_log: Loi25AuditEntry[];
+  created_at: string;
+}
+
+export interface LeagueTeam {
+  id: string;
+  league_id: string;
+  name: string;
+  category: string;
+  gender: "masculin" | "feminin" | "mixte";
+  season: string;
+  coach_name: string;
+  coach_id: string;
+  athletes_count: number;
+}
+
+export const ADMIN_LEAGUES: AdminLeagueRow[] = [
+  {
+    id: "lg-001", name: "Wildcats Lanaudière", sport: "Football", city: "Repentigny", region: "Lanaudière", level: "AAA",
+    website: "wildcatslanaudiere.ca", coordinator_name: "Patrick Roy", coordinator_id: "u-lc-001",
+    teams_count: 4, coaches_count: 6, athletes_count: 88, is_active: true, status: "ACTIF", onboarding_completed: true, created_at: "2025-05-01T10:00:00Z",
+    contract: { id: "loi-lg01", institution_id: "lg-001", institution_type: "ECOLE_SECONDAIRE", contract_version: "1.0", status: "ACCEPTE", rprp_nom: "Patrick Roy", rprp_courriel: "p.roy@wildcats.ca", sent_at: "2025-05-01T10:00:00Z", accepted_at: "2025-05-03T14:00:00Z", accepted_by: "u-lc-001", expires_at: "2026-05-03T14:00:00Z", pdf_url: "/contracts/loi25-lg001.pdf" },
+    audit_log: [{ date: "2025-05-01T10:00:00Z", action: "Ligue créée par l'administrateur" }, { date: "2025-05-03T14:00:00Z", action: "Contrat accepté par Patrick Roy" }],
+  },
+  {
+    id: "lg-002", name: "Élite Baseball Québec", sport: "Baseball", city: "Québec", region: "Capitale-Nationale", level: "AAA",
+    website: "elitebaseballqc.ca", coordinator_name: null, coordinator_id: null,
+    teams_count: 3, coaches_count: 4, athletes_count: 54, is_active: true, status: "ACTIF", onboarding_completed: true, created_at: "2025-06-15T10:00:00Z",
+    contract: { id: "loi-lg02", institution_id: "lg-002", institution_type: "ECOLE_SECONDAIRE", contract_version: "1.0", status: "ACCEPTE", rprp_nom: "Jean Simard", rprp_courriel: "j.simard@elitebaseball.ca", sent_at: "2025-06-15T10:00:00Z", accepted_at: "2025-06-18T11:00:00Z", accepted_by: "admin", expires_at: "2026-06-18T11:00:00Z", pdf_url: "/contracts/loi25-lg002.pdf" },
+    audit_log: [{ date: "2025-06-15T10:00:00Z", action: "Ligue créée par l'administrateur" }, { date: "2025-06-18T11:00:00Z", action: "Contrat accepté (contrat papier)" }],
+  },
+  {
+    id: "lg-003", name: "Remparts Hockey AAA", sport: "Hockey", city: "Québec", region: "Capitale-Nationale", level: "AAA",
+    website: "rempartsaaa.ca", coordinator_name: "Marie-Ève Tremblay", coordinator_id: "u-lc-002",
+    teams_count: 5, coaches_count: 8, athletes_count: 110, is_active: true, status: "ACTIF", onboarding_completed: true, created_at: "2025-04-10T10:00:00Z",
+    contract: { id: "loi-lg03", institution_id: "lg-003", institution_type: "ECOLE_SECONDAIRE", contract_version: "1.0", status: "ACCEPTE", rprp_nom: "Marie-Ève Tremblay", rprp_courriel: "me.tremblay@rempartsaaa.ca", sent_at: "2025-04-10T10:00:00Z", accepted_at: "2025-04-12T09:00:00Z", accepted_by: "u-lc-002", expires_at: "2026-04-12T09:00:00Z", pdf_url: "/contracts/loi25-lg003.pdf" },
+    audit_log: [{ date: "2025-04-10T10:00:00Z", action: "Ligue créée par l'administrateur" }, { date: "2025-04-12T09:00:00Z", action: "Contrat accepté par Marie-Ève Tremblay" }],
+  },
+  {
+    id: "lg-004", name: "Club Basketball Brookwood", sport: "Basketball", city: "Montréal", region: "Montréal", level: "AA",
+    website: null, coordinator_name: "James Wilson", coordinator_id: "u-lc-003",
+    teams_count: 6, coaches_count: 6, athletes_count: 72, is_active: true, status: "ACTIF", onboarding_completed: true, created_at: "2025-07-01T10:00:00Z",
+    contract: { id: "loi-lg04", institution_id: "lg-004", institution_type: "ECOLE_SECONDAIRE", contract_version: "1.0", status: "ACCEPTE", rprp_nom: "James Wilson", rprp_courriel: "j.wilson@brookwood.ca", sent_at: "2025-07-01T10:00:00Z", accepted_at: "2025-07-04T10:00:00Z", accepted_by: "u-lc-003", expires_at: "2026-07-04T10:00:00Z", pdf_url: "/contracts/loi25-lg004.pdf" },
+    audit_log: [{ date: "2025-07-01T10:00:00Z", action: "Ligue créée par l'administrateur" }, { date: "2025-07-04T10:00:00Z", action: "Contrat accepté par James Wilson" }],
+  },
+  {
+    id: "lg-005", name: "Storm Volleyball Québec", sport: "Volleyball", city: "Lévis", region: "Chaudière-Appalaches", level: "AA",
+    website: "stormvb.ca", coordinator_name: "Sylvie Morin", coordinator_id: "u-lc-004",
+    teams_count: 4, coaches_count: 4, athletes_count: 48, is_active: true, status: "ACTIF", onboarding_completed: true, created_at: "2025-08-01T10:00:00Z",
+    contract: { id: "loi-lg05", institution_id: "lg-005", institution_type: "ECOLE_SECONDAIRE", contract_version: "1.0", status: "ACCEPTE", rprp_nom: "Sylvie Morin", rprp_courriel: "s.morin@stormvb.ca", sent_at: "2025-08-01T10:00:00Z", accepted_at: "2025-08-04T14:00:00Z", accepted_by: "u-lc-004", expires_at: "2026-08-04T14:00:00Z", pdf_url: "/contracts/loi25-lg005.pdf" },
+    audit_log: [{ date: "2025-08-01T10:00:00Z", action: "Ligue créée par l'administrateur" }, { date: "2025-08-04T14:00:00Z", action: "Contrat accepté par Sylvie Morin" }],
+  },
+  {
+    id: "lg-006", name: "RSL Québec Academy", sport: "Soccer", city: "Québec", region: "Capitale-Nationale", level: "AAA",
+    website: "rslquebec.ca", coordinator_name: "Diego Martinez", coordinator_id: "u-lc-005",
+    teams_count: 8, coaches_count: 10, athletes_count: 160, is_active: true, status: "ACTIF", onboarding_completed: true, created_at: "2025-03-01T10:00:00Z",
+    contract: { id: "loi-lg06", institution_id: "lg-006", institution_type: "ECOLE_SECONDAIRE", contract_version: "1.0", status: "ACCEPTE", rprp_nom: "Diego Martinez", rprp_courriel: "d.martinez@rslquebec.ca", sent_at: "2025-03-01T10:00:00Z", accepted_at: "2025-03-04T10:00:00Z", accepted_by: "u-lc-005", expires_at: "2026-03-04T10:00:00Z", pdf_url: "/contracts/loi25-lg006.pdf" },
+    audit_log: [{ date: "2025-03-01T10:00:00Z", action: "Ligue créée par l'administrateur" }, { date: "2025-03-04T10:00:00Z", action: "Contrat accepté par Diego Martinez" }],
+  },
+  {
+    id: "lg-007", name: "Titans Rugby Montréal", sport: "Rugby", city: "Montréal", region: "Montréal", level: "Club",
+    website: null, coordinator_name: null, coordinator_id: null,
+    teams_count: 3, coaches_count: 3, athletes_count: 45, is_active: true, status: "ACTIF", onboarding_completed: true, created_at: "2025-09-01T10:00:00Z",
+    contract: { id: "loi-lg07", institution_id: "lg-007", institution_type: "ECOLE_SECONDAIRE", contract_version: "1.0", status: "ACCEPTE", rprp_nom: "Marc Leblanc", rprp_courriel: "m.leblanc@titansrugby.ca", sent_at: "2025-09-01T10:00:00Z", accepted_at: "2025-09-05T11:00:00Z", accepted_by: "admin", expires_at: "2026-09-05T11:00:00Z", pdf_url: "/contracts/loi25-lg007.pdf" },
+    audit_log: [{ date: "2025-09-01T10:00:00Z", action: "Ligue créée par l'administrateur" }, { date: "2025-09-05T11:00:00Z", action: "Contrat accepté (contrat papier)" }],
+  },
+  {
+    id: "lg-008", name: "FC Gatineau Élite", sport: "Soccer", city: "Gatineau", region: "Outaouais", level: "AA",
+    website: "fcgatineau.ca", coordinator_name: "François Leblanc", coordinator_id: "u-lc-006",
+    teams_count: 4, coaches_count: 5, athletes_count: 64, is_active: true, status: "ACTIF", onboarding_completed: true, created_at: "2025-07-15T10:00:00Z",
+    contract: { id: "loi-lg08", institution_id: "lg-008", institution_type: "ECOLE_SECONDAIRE", contract_version: "1.0", status: "ACCEPTE", rprp_nom: "François Leblanc", rprp_courriel: "f.leblanc@fcgatineau.ca", sent_at: "2025-07-15T10:00:00Z", accepted_at: "2025-07-18T10:00:00Z", accepted_by: "u-lc-006", expires_at: "2026-07-18T10:00:00Z", pdf_url: "/contracts/loi25-lg008.pdf" },
+    audit_log: [{ date: "2025-07-15T10:00:00Z", action: "Ligue créée par l'administrateur" }, { date: "2025-07-18T10:00:00Z", action: "Contrat accepté par François Leblanc" }],
+  },
+];
+
+export const LEAGUE_TEAMS: LeagueTeam[] = [
+  // Wildcats Lanaudière (4 teams)
+  { id: "lt-001", league_id: "lg-001", name: "U18 Division 1", category: "U18", gender: "masculin", season: "2025-2026", coach_name: "Luc Simard", coach_id: "u-lcoach-001", athletes_count: 25 },
+  { id: "lt-002", league_id: "lg-001", name: "U16 Division 1", category: "U16", gender: "masculin", season: "2025-2026", coach_name: "André Boucher", coach_id: "u-lcoach-002", athletes_count: 22 },
+  { id: "lt-003", league_id: "lg-001", name: "U15 Développement", category: "U15", gender: "masculin", season: "2025-2026", coach_name: "Stéphane Fortier", coach_id: "u-lcoach-003", athletes_count: 21 },
+  { id: "lt-004", league_id: "lg-001", name: "U18 Féminin", category: "U18", gender: "feminin", season: "2025-2026", coach_name: "Julie Bédard", coach_id: "u-lcoach-004", athletes_count: 20 },
+  // Élite Baseball Québec (3 teams)
+  { id: "lt-005", league_id: "lg-002", name: "U18 AAA", category: "U18", gender: "masculin", season: "2025-2026", coach_name: "Martin Gagné", coach_id: "u-lcoach-005", athletes_count: 20 },
+  { id: "lt-006", league_id: "lg-002", name: "U16 AAA", category: "U16", gender: "masculin", season: "2025-2026", coach_name: "Benoît Lavoie", coach_id: "u-lcoach-006", athletes_count: 18 },
+  { id: "lt-007", league_id: "lg-002", name: "U15 Élite", category: "U15", gender: "masculin", season: "2025-2026", coach_name: "François Gagnon", coach_id: "u-lcoach-007", athletes_count: 16 },
+  // Remparts Hockey AAA (5 teams)
+  { id: "lt-008", league_id: "lg-003", name: "U18 AAA", category: "U18", gender: "masculin", season: "2025-2026", coach_name: "Alain Tremblay", coach_id: "u-lcoach-008", athletes_count: 25 },
+  { id: "lt-009", league_id: "lg-003", name: "U17 AAA", category: "U17", gender: "masculin", season: "2025-2026", coach_name: "Pierre Côté", coach_id: "u-lcoach-009", athletes_count: 24 },
+  { id: "lt-010", league_id: "lg-003", name: "U16 AAA", category: "U16", gender: "masculin", season: "2025-2026", coach_name: "Marc Pelletier", coach_id: "u-lcoach-010", athletes_count: 22 },
+  { id: "lt-011", league_id: "lg-003", name: "U15 AAA", category: "U15", gender: "masculin", season: "2025-2026", coach_name: "Jean-Sébastien Roy", coach_id: "u-lcoach-011", athletes_count: 20 },
+  { id: "lt-012", league_id: "lg-003", name: "U18 Féminin", category: "U18", gender: "feminin", season: "2025-2026", coach_name: "Isabelle Gagnon", coach_id: "u-lcoach-012", athletes_count: 19 },
+];

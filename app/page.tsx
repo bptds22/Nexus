@@ -471,7 +471,7 @@ export default function Home() {
 
             <div className="flex items-center gap-3">
               <Image
-                src="/brand/Profile%20white%20trans@4x.png"
+                src="/brand/White%20red%20logo%20@4x.png"
                 alt="Nexus"
                 width={24}
                 height={24}
@@ -501,7 +501,7 @@ export default function Home() {
 
           </div>
 
-          <p className={`${label} text-[#2E3D55] text-center pt-5`}>© 2025 Nexus</p>
+          <p className={`${label} text-[#2E3D55] text-center pt-5`}>© 2026 Nexus — Propulsé par <img src="/brand/White%20red@4x.png" alt="WeLead" style={{height:16}} /></p>
 
         </div>
       </footer>

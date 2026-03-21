@@ -204,6 +204,8 @@ export default function OnboardingPage() {
         director_school: "/directeur-ecole/dashboard",
         director_cegep: "/directeur-cegep/dashboard",
         recruiter: "/recruteur/tableau-de-bord",
+        coach_league: "/coach/tableau-de-bord",
+        coordinator_league: "/directeur-ecole/dashboard",
       };
       router.replace(dashMap[parsed.role] || "/");
       return;
@@ -246,6 +248,8 @@ export default function OnboardingPage() {
       director_school: "/directeur-ecole/dashboard",
       director_cegep: "/directeur-cegep/dashboard",
       recruiter: "/recruteur/tableau-de-bord",
+      coach_league: "/coach/tableau-de-bord",
+      coordinator_league: "/directeur-ecole/dashboard",
     };
     setTimeout(() => {
       router.push(dashMap[user?.role || "coach"] || "/");
@@ -274,6 +278,8 @@ export default function OnboardingPage() {
     director_school: ["Profil", "École", "Invitations"],
     director_cegep: ["Profil", "CÉGEP", "Invitations"],
     recruiter: ["Profil", "Critères", "Besoins"],
+    coach_league: ["Profil", "Ligue", "Confirmer"],
+    coordinator_league: ["Profil", "Ligue", "Invitations"],
   };
   const stepLabels = stepLabelsMap[user.role] || ["1", "2", "3"];
 
@@ -288,7 +294,7 @@ export default function OnboardingPage() {
 
       {/* Logo */}
       <div className="relative z-10 pt-8 pb-2 flex justify-center">
-        <Image src="/brand/Profile%20white%20trans@4x.png" alt="Nexus" width={32} height={32} className="object-contain" />
+        <Image src="/brand/White%20red%20logo%20@4x.png" alt="Nexus" width={32} height={32} className="object-contain" />
       </div>
 
       {/* Wizard card */}
@@ -302,6 +308,8 @@ export default function OnboardingPage() {
             {user.role === "director_school" && <DirectorEcoleStep step={step} user={user} save={save} onFinish={finish} />}
             {user.role === "director_cegep" && <DirectorCegepStep step={step} user={user} save={save} onFinish={finish} />}
             {user.role === "recruiter" && <RecruiterStep step={step} user={user} save={save} onFinish={finish} />}
+            {user.role === "coach_league" && <LeagueCoachStep step={step} user={user} save={save} onFinish={finish} />}
+            {user.role === "coordinator_league" && <LeagueCoordinatorStep step={step} user={user} save={save} onFinish={finish} />}
           </div>
 
           {/* Navigation buttons */}
@@ -556,12 +564,133 @@ function CoachConfirmation({ user }: { user: NexusUser }) {
   );
 }
 
+/* ── Director School Step (ownership-aware) ──────────────── */
+
+const MOCK_SCHOOL_OWNERS: Record<string, { name: string; email: string; lastLogin: string }> = {
+  "Saint-Jean-Eudes": { name: "Patrick Bergeron", email: "p.b***@sje.qc.ca", lastLogin: "2026-01-28T14:00:00Z" },
+  "De Mortagne": { name: "Marie-Ève Lapointe", email: "m.l***@demortagne.qc.ca", lastLogin: "2026-03-16T10:00:00Z" },
+  "De Rochebelle": { name: "Nathalie Gagnon", email: "n.g***@rochebelle.qc.ca", lastLogin: "2026-03-15T08:00:00Z" },
+};
+
+function DirectorSchoolStep({ user, save, type }: { user: NexusUser; save: (u: Partial<NexusUser>) => void; type: "ecole" | "cegep" }) {
+  const [joinMessage, setJoinMessage] = useState("");
+  const [joinSent, setJoinSent] = useState(false);
+  const inst = user.institution as Record<string, unknown> | null;
+  const schoolName = inst?.name as string | undefined;
+  const owner = schoolName ? MOCK_SCHOOL_OWNERS[schoolName] : undefined;
+
+  // Check if owner is inactive (30+ days)
+  const ownerInactiveDays = owner ? Math.floor((Date.now() - new Date(owner.lastLogin).getTime()) / 86400000) : 0;
+  const ownerInactive = ownerInactiveDays > 30;
+
+  // If join request was sent, show confirmation
+  if (joinSent) {
+    return (
+      <div className="space-y-6 text-center py-8">
+        <div className="w-16 h-16 rounded-full bg-[#22C55E]/15 flex items-center justify-center mx-auto">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5" /></svg>
+        </div>
+        <h2 className="font-head text-xl font-black text-white uppercase">Ta demande a été envoyée!</h2>
+        <p className="text-sm text-[#9CA3AF] max-w-md mx-auto leading-relaxed">
+          {ownerInactive
+            ? "Un administrateur Nexus examinera ta demande."
+            : `Le directeur principal de ${schoolName} et un administrateur Nexus examineront ta demande.`
+          }
+        </p>
+        <p className="text-xs text-[#6B7280]">Tu recevras un courriel lorsque ta demande sera traitée.</p>
+        <a href="/" className="inline-flex items-center gap-2 px-6 py-3 bg-[#E63946] text-white rounded-lg font-head font-bold text-[13px] uppercase tracking-widest hover:bg-[#D42B22] transition-colors">
+          Retour à l&apos;accueil
+        </a>
+      </div>
+    );
+  }
+
+  // If school has no owner → show Case A (normal claim with crown)
+  if (schoolName && !owner) {
+    return (
+      <div className="space-y-4">
+        {type === "ecole" ? <SchoolStep user={user} save={save} /> : <CegepStep user={user} save={save} />}
+        {schoolName && (
+          <div className="bg-[#111317] border-l-4 border-[#DAB65A] rounded-r-lg p-4 flex items-start gap-3">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="#DAB65A" stroke="none" className="mt-0.5 shrink-0">
+              <path d="M2 20h20v2H2zm1-2l3-10 6 6 6-6 3 10z" />
+              <circle cx="5" cy="6" r="2" /><circle cx="12" cy="3" r="2" /><circle cx="19" cy="6" r="2" />
+            </svg>
+            <p className="text-sm text-[#DAB65A] font-bold">Tu seras le directeur principal de {schoolName}</p>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Case B/C — school has an owner
+  return (
+    <div className="space-y-5">
+      {type === "ecole" ? <SchoolStep user={user} save={save} /> : <CegepStep user={user} save={save} />}
+
+      {schoolName && owner && (
+        <>
+          {/* Owner info card */}
+          <div className={`bg-[#1A1D24] rounded-xl p-5 border-l-4 space-y-2 ${ownerInactive ? "border-[#E63946]" : "border-[#EAB308]"}`}>
+            <p className="text-[14px] font-bold text-white">
+              {ownerInactive
+                ? "Le directeur principal de cette école semble inactif"
+                : "Cette école a déjà un directeur principal"
+              }
+            </p>
+            <p className="text-[13px] text-[#9CA3AF]">{owner.name} · {owner.email}</p>
+            {ownerInactive && (
+              <p className="text-[12px] text-[#E63946] font-bold">Dernière connexion: il y a {ownerInactiveDays} jours</p>
+            )}
+            <p className="text-[12px] text-[#6B7280]">
+              {ownerInactive
+                ? "Ta demande sera envoyée directement à l'administrateur Nexus pour examen."
+                : "Tu seras ajouté comme directeur collaborateur si ta demande est approuvée."
+              }
+            </p>
+          </div>
+
+          {/* Join request form */}
+          <div className="space-y-3">
+            <label className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#6b7280] block">
+              Pourquoi veux-tu rejoindre cette école? <span className="text-[#E63946]">*</span>
+            </label>
+            <textarea
+              value={joinMessage}
+              onChange={(e) => setJoinMessage(e.target.value)}
+              rows={3}
+              placeholder="Ex: Je suis le nouveau coordonnateur sportif depuis septembre 2025, remplaçant M. Tremblay."
+              className="w-full bg-[#13151a] border border-[#2a2d36] rounded-lg px-4 py-2.5 text-[13px] text-[#e0e0e0] placeholder:text-[#4a4d56] focus:border-[#E63946] outline-none resize-none"
+            />
+            <button
+              type="button"
+              disabled={!joinMessage.trim()}
+              onClick={() => {
+                localStorage.setItem("nexus_join_request", JSON.stringify({
+                  school: schoolName,
+                  message: joinMessage,
+                  status: ownerInactive ? "pending_admin" : "pending_owner",
+                  date: new Date().toISOString(),
+                }));
+                setJoinSent(true);
+              }}
+              className="w-full py-3 bg-[#E63946] hover:bg-[#D42B22] disabled:opacity-40 disabled:cursor-not-allowed text-white font-head font-bold text-[13px] uppercase tracking-widest rounded-lg transition-colors"
+            >
+              Envoyer la demande
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 /* ═══════════════════════════════════════════════════════════════
    DIRECTEUR ÉCOLE ONBOARDING STEPS
 ═══════════════════════════════════════════════════════════════ */
 function DirectorEcoleStep({ step, user, save, onFinish }: { step: number; user: NexusUser; save: (u: Partial<NexusUser>) => void; onFinish: () => void }) {
   if (step === 0) return <DirectorProfile user={user} save={save} subtitle="En tant que directeur sportif, tu supervises les coachs et les athlètes de ton école." />;
-  if (step === 1) return <SchoolStep user={user} save={save} />;
+  if (step === 1) return <DirectorSchoolStep user={user} save={save} type="ecole" />;
   return <InviteStep role="coach" onFinish={onFinish} />;
 }
 
@@ -570,7 +699,7 @@ function DirectorEcoleStep({ step, user, save, onFinish }: { step: number; user:
 ═══════════════════════════════════════════════════════════════ */
 function DirectorCegepStep({ step, user, save, onFinish }: { step: number; user: NexusUser; save: (u: Partial<NexusUser>) => void; onFinish: () => void }) {
   if (step === 0) return <DirectorProfile user={user} save={save} subtitle="En tant que directeur sportif collégial, tu supervises le recrutement de ton CÉGEP." />;
-  if (step === 1) return <CegepStep user={user} save={save} />;
+  if (step === 1) return <DirectorSchoolStep user={user} save={save} type="cegep" />;
   return <InviteStep role="recruteur" onFinish={onFinish} />;
 }
 
@@ -1017,6 +1146,369 @@ function RecruiterNeeds({ user, save }: { user: NexusUser; save: (u: Partial<Nex
       <button type="button" onClick={() => {}} className="text-xs text-[#6B7280] hover:text-white transition-colors underline">
         Passer cette étape
       </button>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   LEAGUE DATA + SHARED COMPONENTS
+═══════════════════════════════════════════════════════════════ */
+
+const MOCK_LEAGUES = [
+  { name: "Wildcats Lanaudière", sport: "Football", city: "Repentigny", region: "Lanaudière", level: "AAA" },
+  { name: "Élite Baseball Québec", sport: "Baseball", city: "Québec", region: "Québec", level: "AAA" },
+  { name: "Remparts AAA U18", sport: "Hockey", city: "Québec", region: "Québec", level: "AAA" },
+  { name: "Club Basketball Brookwood", sport: "Basketball", city: "Montréal", region: "Montréal", level: "AA" },
+  { name: "Storm Volleyball Québec", sport: "Volleyball", city: "Québec", region: "Québec", level: "Club" },
+  { name: "RSL Québec Academy", sport: "Soccer", city: "Québec", region: "Québec", level: "AAA" },
+  { name: "Titans Rugby Montréal", sport: "Rugby", city: "Montréal", region: "Montréal", level: "Club" },
+  { name: "FC Gatineau Élite", sport: "Soccer", city: "Gatineau", region: "Outaouais", level: "AA" },
+];
+
+const LEAGUE_LEVELS = ["AAA", "AA", "A", "Club", "Civil"];
+const TEAM_CATEGORIES = ["U15", "U16", "U17", "U18", "Juvénile", "Cadet", "Midget", "Senior", "Autre"];
+
+/* ── League search + select (shared by coach + coordinator) ── */
+function LeagueSelectStep({ user, save, onRequestNew }: {
+  user: NexusUser;
+  save: (u: Partial<NexusUser>) => void;
+  onRequestNew: () => void;
+}) {
+  const [selected, setSelected] = useState<(typeof MOCK_LEAGUES)[0] | null>(
+    user.institution ? MOCK_LEAGUES.find((l) => l.name === (user.institution as Record<string, unknown>)?.name) || null : null
+  );
+
+  useEffect(() => {
+    if (selected) {
+      save({ institution: { name: selected.name, sport: selected.sport, city: selected.city, region: selected.region, level: selected.level, type: "ligue_civile" } });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selected]);
+
+  return (
+    <>
+      <SearchableDropdown
+        items={MOCK_LEAGUES}
+        value={selected?.name || ""}
+        onChange={(item) => setSelected(item)}
+        placeholder="Rechercher ta ligue ou ton club..."
+        renderItem={(item) => (
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-bold">{item.name}</p>
+              <p className="text-[10px] text-[#6B7280]">{item.city} — {item.region}</p>
+            </div>
+            <span className="px-2 py-0.5 rounded-full bg-[#E63946]/10 text-[9px] font-bold text-[#E63946] uppercase">{item.sport}</span>
+          </div>
+        )}
+      />
+
+      {selected && (
+        <div className="bg-[#111317] border border-white/10 rounded-lg p-5 space-y-3">
+          <div className="flex items-center gap-3">
+            <h3 className="font-head font-black text-lg text-white">{selected.name}</h3>
+            <span className="px-2 py-0.5 rounded-full bg-[#E63946]/10 text-[9px] font-bold text-[#E63946] uppercase border border-[#E63946]/20">{selected.sport}</span>
+          </div>
+          <p className="text-xs text-[#9CA3AF]">{selected.city}, {selected.region}</p>
+          <p className="text-xs text-[#6B7280]">Niveau: {selected.level}</p>
+          <p className="text-xs text-[#22C55E] font-bold flex items-center gap-1">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+            C&apos;est ma ligue
+          </p>
+        </div>
+      )}
+
+      {!selected && (
+        <button type="button" onClick={onRequestNew} className="text-xs text-[#9CA3AF] hover:text-white transition-colors underline">
+          Ma ligue n&apos;est pas dans la liste
+        </button>
+      )}
+    </>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   LEAGUE COACH ONBOARDING (3 steps)
+═══════════════════════════════════════════════════════════════ */
+function LeagueCoachStep({ step, user, save }: { step: number; user: NexusUser; save: (u: Partial<NexusUser>) => void; onFinish: () => void }) {
+  const p = (user.profile || {}) as Record<string, unknown>;
+  if (step === 0) return <CoachProfile profile={p} save={save} />;
+  if (step === 1) return <LeagueCoachLeagueStep user={user} save={save} />;
+  return <CoachConfirmation user={user} />;
+}
+
+function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Partial<NexusUser>) => void }) {
+  const [showCustom, setShowCustom] = useState(false);
+  const [customName, setCustomName] = useState("");
+  const [customSport, setCustomSport] = useState("");
+  const [customCity, setCustomCity] = useState("");
+  const [customRegion, setCustomRegion] = useState("");
+  const [customLevel, setCustomLevel] = useState("");
+  const [customSubmitted, setCustomSubmitted] = useState(false);
+
+  // Team info
+  const inst = user.institution as Record<string, unknown> | null;
+  const hasLeague = !!inst?.name;
+  const [teamName, setTeamName] = useState("");
+  const [teamCategory, setTeamCategory] = useState("");
+  const [teamGender, setTeamGender] = useState("");
+  const teamSeason = "2025-2026";
+
+  useEffect(() => {
+    if (hasLeague && teamName) {
+      const raw = localStorage.getItem("nexus_user");
+      if (!raw) return;
+      const current = JSON.parse(raw) as NexusUser;
+      const updated = {
+        ...current,
+        profile: { ...(current.profile || {}), league_team: { name: teamName, category: teamCategory, gender: teamGender, season: teamSeason } },
+      };
+      localStorage.setItem("nexus_user", JSON.stringify(updated));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [teamName, teamCategory, teamGender, hasLeague]);
+
+  return (
+    <div className="space-y-5">
+      <div>
+        <h2 className="font-head text-xl font-black text-white uppercase">Associe-toi à ta ligue ou ton club sportif</h2>
+        <p className="text-sm text-[#9CA3AF] mt-1">Ton équipe et tes athlètes seront liés à cette organisation.</p>
+      </div>
+
+      {!showCustom ? (
+        <LeagueSelectStep user={user} save={save} onRequestNew={() => setShowCustom(true)} />
+      ) : (
+        <>
+          {customSubmitted ? (
+            <div className="bg-[#111317] border border-[#22C55E]/20 rounded-lg p-5 text-center space-y-2">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2" strokeLinecap="round" className="mx-auto"><path d="M20 6L9 17l-5-5"/></svg>
+              <p className="text-sm text-[#22C55E] font-bold">Demande soumise!</p>
+              <p className="text-xs text-[#6B7280]">Un administrateur créera ta ligue. Tu pourras continuer entre-temps.</p>
+            </div>
+          ) : (
+            <div className="space-y-3 bg-[#111317] border border-white/10 rounded-lg p-4">
+              <p className="text-xs font-bold text-white uppercase tracking-wider mb-2">Soumettre une nouvelle ligue</p>
+              <input type="text" placeholder="Nom de la ligue / du club" value={customName} onChange={(e) => setCustomName(e.target.value)} className={inputClass} />
+              <select title="Sport" value={customSport} onChange={(e) => setCustomSport(e.target.value)} className={`${inputClass} appearance-none`}>
+                <option value="">Sport</option>
+                {SPORTS.map((s) => <option key={s} value={s}>{s}</option>)}
+              </select>
+              <div className="grid grid-cols-2 gap-3">
+                <input type="text" placeholder="Ville" value={customCity} onChange={(e) => setCustomCity(e.target.value)} className={inputClass} />
+                <select title="Région" value={customRegion} onChange={(e) => setCustomRegion(e.target.value)} className={`${inputClass} appearance-none`}>
+                  <option value="">Région</option>
+                  {REGIONS.map((r) => <option key={r} value={r}>{r}</option>)}
+                </select>
+              </div>
+              <select title="Niveau" value={customLevel} onChange={(e) => setCustomLevel(e.target.value)} className={`${inputClass} appearance-none`}>
+                <option value="">Niveau</option>
+                {LEAGUE_LEVELS.map((l) => <option key={l} value={l}>{l}</option>)}
+              </select>
+              <div className="flex gap-2">
+                <button type="button" onClick={() => setShowCustom(false)} className="h-10 px-4 rounded-lg border border-white/10 text-xs font-bold text-white hover:border-white/20 transition-colors">
+                  Annuler
+                </button>
+                <button type="button" disabled={!customName || !customSport} onClick={() => {
+                  save({ institution: { name: customName, sport: customSport, city: customCity, region: customRegion, level: customLevel, type: "ligue_civile", pending: true } });
+                  setCustomSubmitted(true);
+                }} className="h-10 px-6 rounded-lg bg-[#E63946] text-xs font-bold text-white hover:bg-[#D42B22] transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+                  Soumettre la demande
+                </button>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Team section — appears after league is selected */}
+      {hasLeague && (
+        <div className="space-y-4 pt-2 border-t border-white/5 animate-fade-slide-down">
+          <div>
+            <h3 className="font-head text-base font-black text-white uppercase">Ton équipe</h3>
+            <p className="text-xs text-[#9CA3AF] mt-0.5">Quelle équipe entraînes-tu dans cette ligue?</p>
+          </div>
+          <input type="text" placeholder="Ex: U18 Division 1" value={teamName} onChange={(e) => setTeamName(e.target.value)} className={inputClass} />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={`${label} text-[#9CA3AF] mb-1.5 block`}>Catégorie</label>
+              <select title="Catégorie" value={teamCategory} onChange={(e) => setTeamCategory(e.target.value)} className={`${inputClass} appearance-none`}>
+                <option value="">Sélectionner</option>
+                {TEAM_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className={`${label} text-[#9CA3AF] mb-1.5 block`}>Genre</label>
+              <div className="flex gap-2">
+                {["Masculin", "Féminin", "Mixte"].map((g) => (
+                  <button key={g} type="button" onClick={() => setTeamGender(g)} className={`flex-1 h-11 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${teamGender === g ? "bg-[rgba(230,57,70,0.1)] border border-[#E63946] text-white" : "bg-[#111317] border border-white/10 text-[#9CA3AF] hover:border-white/20"}`}>
+                    {g}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/5">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-[#6B7280]">Saison:</span>
+            <span className="text-sm text-white">{teamSeason}</span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   LEAGUE COORDINATOR ONBOARDING (3 steps)
+═══════════════════════════════════════════════════════════════ */
+function LeagueCoordinatorStep({ step, user, save, onFinish }: { step: number; user: NexusUser; save: (u: Partial<NexusUser>) => void; onFinish: () => void }) {
+  if (step === 0) return <DirectorProfile user={user} save={save} subtitle="En tant que coordonnateur, tu supervises les entraîneurs et les athlètes de ta ligue." />;
+  if (step === 1) return <CoordinatorLeagueStep user={user} save={save} />;
+  return <InviteStep role="coach" onFinish={onFinish} />;
+}
+
+function CoordinatorLeagueStep({ user, save }: { user: NexusUser; save: (u: Partial<NexusUser>) => void }) {
+  const [mode, setMode] = useState<"existing" | "create" | null>(null);
+
+  // Create form state
+  const [newName, setNewName] = useState("");
+  const [newSport, setNewSport] = useState("");
+  const [newCity, setNewCity] = useState("");
+  const [newRegion, setNewRegion] = useState("");
+  const [newLevel, setNewLevel] = useState("");
+  const [newWebsite, setNewWebsite] = useState("");
+  const [newCategories, setNewCategories] = useState<string[]>([]);
+  const [newGender, setNewGender] = useState("");
+
+  const handleCreate = () => {
+    save({
+      institution: {
+        name: newName, sport: newSport, city: newCity, region: newRegion,
+        level: newLevel, website: newWebsite, categories: newCategories,
+        gender: newGender, type: "ligue_civile", created_by_coordinator: true,
+      },
+    });
+  };
+
+  return (
+    <div className="space-y-5">
+      <div>
+        <h2 className="font-head text-xl font-black text-white uppercase">Configure ta ligue ou ton club</h2>
+        <p className="text-sm text-[#9CA3AF] mt-1">Associe-toi à une ligue existante ou crée la tienne.</p>
+      </div>
+
+      {/* Two option cards */}
+      {!mode && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <button type="button" onClick={() => setMode("existing")} className="flex flex-col items-center gap-3 p-6 rounded-xl border border-white/10 hover:border-[#E63946]/30 transition-all text-center">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="1.5" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            <span className="font-head font-black text-xs text-white uppercase tracking-wider">Ma ligue existe déjà</span>
+            <span className="text-[9px] text-[#6B7280]">Recherche et réclame ta ligue</span>
+          </button>
+          <button type="button" onClick={() => setMode("create")} className="flex flex-col items-center gap-3 p-6 rounded-xl border border-white/10 hover:border-[#E63946]/30 transition-all text-center">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="1.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <span className="font-head font-black text-xs text-white uppercase tracking-wider">Créer ma ligue</span>
+            <span className="text-[9px] text-[#6B7280]">Configure une nouvelle organisation</span>
+          </button>
+        </div>
+      )}
+
+      {/* Existing league search */}
+      {mode === "existing" && (
+        <div className="space-y-4 animate-fade-slide-down">
+          <button type="button" onClick={() => setMode(null)} className="text-xs text-[#9CA3AF] hover:text-white transition-colors flex items-center gap-1">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+            Retour
+          </button>
+          <LeagueSelectStep user={user} save={save} onRequestNew={() => setMode("create")} />
+          {/* Ownership notice */}
+          {!!(user.institution as Record<string, unknown>)?.name && (
+            <div className="bg-[#111317] border-l-4 border-[#DAB65A] rounded-r-lg p-4 flex items-start gap-3">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="#DAB65A" stroke="none" className="mt-0.5 shrink-0">
+                <path d="M2 20h20v2H2zm1-2l3-10 6 6 6-6 3 10z" />
+                <circle cx="5" cy="6" r="2" /><circle cx="12" cy="3" r="2" /><circle cx="19" cy="6" r="2" />
+              </svg>
+              <p className="text-sm text-[#DAB65A] font-bold">Tu seras le coordonnateur principal de cette ligue</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Create new league */}
+      {mode === "create" && (
+        <div className="space-y-4 animate-fade-slide-down">
+          <button type="button" onClick={() => setMode(null)} className="text-xs text-[#9CA3AF] hover:text-white transition-colors flex items-center gap-1">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+            Retour
+          </button>
+
+          <input type="text" placeholder="Nom de la ligue / du club" value={newName} onChange={(e) => setNewName(e.target.value)} className={inputClass} />
+
+          <div>
+            <label className={`${label} text-[#9CA3AF] mb-1.5 block`}>Sport principal</label>
+            <select title="Sport principal" value={newSport} onChange={(e) => setNewSport(e.target.value)} className={`${inputClass} appearance-none`}>
+              <option value="">Sélectionner...</option>
+              {SPORTS.map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <input type="text" placeholder="Ville" value={newCity} onChange={(e) => setNewCity(e.target.value)} className={inputClass} />
+            <select title="Région" value={newRegion} onChange={(e) => setNewRegion(e.target.value)} className={`${inputClass} appearance-none`}>
+              <option value="">Région</option>
+              {REGIONS.map((r) => <option key={r} value={r}>{r}</option>)}
+            </select>
+          </div>
+
+          <div>
+            <label className={`${label} text-[#9CA3AF] mb-1.5 block`}>Niveau principal</label>
+            <div className="flex flex-wrap gap-2">
+              {LEAGUE_LEVELS.map((l) => (
+                <button key={l} type="button" onClick={() => setNewLevel(l)} className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${newLevel === l ? "bg-[rgba(230,57,70,0.1)] border border-[#E63946] text-white" : "bg-[#1A1D24] border border-white/10 text-[#9CA3AF] hover:border-white/20"}`}>
+                  {l}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <input type="url" placeholder="Site web (optionnel)" value={newWebsite} onChange={(e) => setNewWebsite(e.target.value)} className={inputClass} />
+
+          <div>
+            <label className={`${label} text-[#9CA3AF] mb-2 block`}>Catégories offertes</label>
+            <div className="flex flex-wrap gap-2">
+              {TEAM_CATEGORIES.filter((c) => c !== "Autre").map((cat) => {
+                const isOn = newCategories.includes(cat);
+                return (
+                  <button key={cat} type="button" onClick={() => setNewCategories(isOn ? newCategories.filter((c) => c !== cat) : [...newCategories, cat])} className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${isOn ? "bg-[rgba(230,57,70,0.1)] border border-[#E63946] text-white" : "bg-[#1A1D24] border border-white/10 text-[#9CA3AF] hover:border-white/20"}`}>
+                    {cat}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div>
+            <label className={`${label} text-[#9CA3AF] mb-1.5 block`}>Genre</label>
+            <div className="flex gap-2">
+              {["Masculin", "Féminin", "Les deux"].map((g) => (
+                <button key={g} type="button" onClick={() => setNewGender(g)} className={`flex-1 h-11 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${newGender === g ? "bg-[rgba(230,57,70,0.1)] border border-[#E63946] text-white" : "bg-[#111317] border border-white/10 text-[#9CA3AF] hover:border-white/20"}`}>
+                  {g}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <button type="button" disabled={!newName || !newSport} onClick={handleCreate} className="w-full h-11 rounded-lg bg-[#E63946] text-sm font-bold text-white hover:bg-[#D42B22] transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+            Créer ma ligue
+          </button>
+
+          {!!(user.institution as Record<string, unknown>)?.created_by_coordinator && (
+            <div className="bg-[#111317] border-l-4 border-[#22C55E] rounded-r-lg p-4 flex items-start gap-3">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+              <p className="text-xs text-[#22C55E] font-bold">Ligue créée! Continue pour inviter tes entraîneurs.</p>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

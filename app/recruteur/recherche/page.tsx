@@ -91,8 +91,13 @@ function AthleteSearchCard({ a, onToggleFav }: { a: SearchAthlete; onToggleFav: 
           })()}
         </div>
 
-        {/* School */}
-        <p className="text-[14px] text-[#c0c4cc]">{a.school}</p>
+        {/* School / Org */}
+        <p className="text-[14px] text-[#c0c4cc] flex items-center gap-1.5">
+          {a.school}
+          {a.orgLevel && (
+            <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${a.orgLevel === "AAA" ? "bg-[#DAB65A]/15 text-[#DAB65A]" : a.orgLevel === "AA" ? "bg-[#B4BCC8]/15 text-[#B4BCC8]" : "bg-[#6b7280]/15 text-[#6b7280]"}`}>{a.orgLevel}</span>
+          )}
+        </p>
 
         {/* Region · Promotion */}
         <p className="text-[13px] text-[#9CA3AF]">
@@ -179,7 +184,12 @@ function AthleteSearchRow({ a, onToggleFav }: { a: SearchAthlete; onToggleFav: (
             return tracking ? <RecruitmentStatusBadge status={tracking.status} size="sm" /> : null;
           })()}
         </div>
-        <p className="text-[13px] text-[#9CA3AF] truncate">{a.school}</p>
+        <p className="text-[13px] text-[#9CA3AF] truncate flex items-center gap-1.5">
+          {a.school}
+          {a.orgLevel && (
+            <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold uppercase shrink-0 ${a.orgLevel === "AAA" ? "bg-[#DAB65A]/15 text-[#DAB65A]" : a.orgLevel === "AA" ? "bg-[#B4BCC8]/15 text-[#B4BCC8]" : "bg-[#6b7280]/15 text-[#6b7280]"}`}>{a.orgLevel}</span>
+          )}
+        </p>
       </div>
 
       {/* Position */}
@@ -251,6 +261,7 @@ export default function RecherchePage() {
   const [position, setPosition] = useState("");
   const [region, setRegion] = useState("");
   const [promotion, setPromotion] = useState("");
+  const [orgType, setOrgType] = useState("");
   const [verifiedOnly, setVerifiedOnly] = useState(false);
   const [withVideoOnly, setWithVideoOnly] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -271,9 +282,11 @@ export default function RecherchePage() {
     if (promotion) list = list.filter((a) => a.graduationYear === parseInt(promotion));
     if (verifiedOnly) list = list.filter((a) => a.isVerified);
     if (withVideoOnly) list = list.filter((a) => a.hasVideo);
+    if (orgType === "scolaire") list = list.filter((a) => !a.orgType || a.orgType === "scolaire");
+    if (orgType === "ligue_civile") list = list.filter((a) => a.orgType === "ligue_civile");
 
     return list.map((a) => ({ ...a, isFavorited: favorites.has(a.id) }));
-  }, [search, sport, position, region, promotion, verifiedOnly, withVideoOnly, favorites]);
+  }, [search, sport, position, region, promotion, verifiedOnly, withVideoOnly, orgType, favorites]);
 
   const toggleFav = (id: string) => {
     setFavorites((prev) => {
@@ -284,10 +297,10 @@ export default function RecherchePage() {
     });
   };
 
-  const hasFilters = sport || position || region || promotion || verifiedOnly || withVideoOnly;
+  const hasFilters = sport || position || region || promotion || verifiedOnly || withVideoOnly || orgType;
 
   const resetFilters = () => {
-    setSport(""); setPosition(""); setRegion(""); setPromotion(""); setVerifiedOnly(false); setWithVideoOnly(false);
+    setSport(""); setPosition(""); setRegion(""); setPromotion(""); setVerifiedOnly(false); setWithVideoOnly(false); setOrgType("");
   };
 
   return (
@@ -358,6 +371,12 @@ export default function RecherchePage() {
         <select value={promotion} onChange={(e) => setPromotion(e.target.value)} className={`nx-filter-select${promotion ? " nx-filter-active" : ""}`}>
           <option value="">Toutes les promotions</option>
           {PROMOTIONS.map((p) => <option key={p} value={p}>{p}</option>)}
+        </select>
+
+        <select value={orgType} onChange={(e) => setOrgType(e.target.value)} className={`nx-filter-select${orgType ? " nx-filter-active" : ""}`}>
+          <option value="">Toutes les organisations</option>
+          <option value="scolaire">Scolaire</option>
+          <option value="ligue_civile">Ligue civile</option>
         </select>
 
         {/* Divider */}

@@ -564,6 +564,12 @@ body.light-mode .nx-social-icon {
 }
 .animate-shake { animation: nxShake 0.4s ease-out; }
 
+@keyframes nxFadeSlideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-slide-down { animation: nxFadeSlideDown 0.25s ease-out; }
+
 @keyframes nxSlideIn {
   from { opacity: 0; transform: translateX(20px); }
   to { opacity: 1; transform: translateX(0); }

@@ -2,7 +2,13 @@
   "permissions": {
     "allow": [
       "Bash(curl -L -o \"c:/Users/bptds/OneDrive/Documents/Nexus/nexus-app/public/card-player.jpg\" \"https://images.unsplash.com/photo-1566577739112-5180d4bf9390?w=700&q=80&fit=crop\")",
-      "Bash(npx next build)"
+      "Bash(npx next build)",
+      "Bash(grep -n \"hasConsent\\\\|Consentement parental\" app/coach/athletes/[id]/page.tsx)",
+      "Bash(wc -l app/recruteur/athletes/[id]/page.tsx app/coach/athletes/[id]/page.tsx)",
+      "Bash(while read:*)",
+      "Bash(do echo:*)",
+      "Bash(done)",
+      "Bash(xargs sed:*)"
     ]
   }
 }

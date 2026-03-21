@@ -84,7 +84,7 @@ export default function RecruiterLayout({
             <div className="flex items-center gap-3">
               <Link href="/" className="flex items-center gap-2.5">
                 <Image
-                  src="/brand/Profile%20white%20trans@4x.png"
+                  src="/brand/White%20red%20logo%20@4x.png"
                   alt="Nexus"
                   width={28}
                   height={28}

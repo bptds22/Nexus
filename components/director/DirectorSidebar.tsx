@@ -106,6 +106,15 @@ const CEGEP_NAV_ITEMS: NavItem[] = [
   { label: "Inviter", href: "/directeur-cegep/inviter", icon: iconUserPlus },
 ];
 
+const LIGUE_NAV_ITEMS: NavItem[] = [
+  { label: "Tableau de bord", href: "/directeur-ecole/dashboard", icon: iconDashboard },
+  { label: "Mes entraîneurs", href: "/directeur-ecole/coachs", icon: iconUsers },
+  { label: "Placements", href: "/directeur-ecole/placements", icon: iconTrophy },
+  { label: "Stats recrutement", href: "/directeur-ecole/stats", icon: iconBarChart },
+  { label: "Activités", href: "/directeur-ecole/activites", badge: 2, icon: iconBell },
+  { label: "Inviter", href: "/directeur-ecole/inviter", icon: iconUserPlus },
+];
+
 /* ── Portal-specific config ── */
 
 const PORTAL_CONFIG = {
@@ -116,6 +125,8 @@ const PORTAL_CONFIG = {
     userInitials: "FB",
     userName: "François Bergeron",
     userSubtitle: "Dir. sportif — De Rochebelle",
+    ownerLabel: "Directeur principal",
+    collaboratorLabel: "Directeur collaborateur",
   },
   cegep: {
     navItems: CEGEP_NAV_ITEMS,
@@ -124,11 +135,23 @@ const PORTAL_CONFIG = {
     userInitials: "NF",
     userName: "Nathalie Fortin",
     userSubtitle: "Dir. sportif — CÉGEP Garneau",
+    ownerLabel: "Directeur principal",
+    collaboratorLabel: "Directeur collaborateur",
+  },
+  ligue: {
+    navItems: LIGUE_NAV_ITEMS,
+    portalLabel: "Coordonnateur — Ligue",
+    settingsHref: "/directeur-ecole/parametres",
+    userInitials: "PR",
+    userName: "Patrick Roy",
+    userSubtitle: "Coord. — Wildcats Lanaudière",
+    ownerLabel: "Coordonnateur principal",
+    collaboratorLabel: "Coordonnateur adjoint",
   },
 } as const;
 
 interface DirectorSidebarProps {
-  portalType: "ecole" | "cegep";
+  portalType: "ecole" | "cegep" | "ligue";
   mobileOpen: boolean;
   onClose: () => void;
 }
@@ -142,6 +165,8 @@ export default function DirectorSidebar({ portalType, mobileOpen, onClose }: Dir
   const [userSub, setUserSub] = useState<string>(config.userSubtitle);
   const [userInitials, setUserInitials] = useState<string>(config.userInitials);
 
+  const [isOwner, setIsOwner] = useState(true); // default to owner for POC
+
   useEffect(() => {
     try {
       const raw = localStorage.getItem("nexus_user");
@@ -151,9 +176,10 @@ export default function DirectorSidebar({ portalType, mobileOpen, onClose }: Dir
           setUserName(`${u.firstName} ${u.lastName}`);
           setUserInitials(`${u.firstName[0]}${u.lastName[0]}`);
           const inst = u.institution?.name || "";
-          const roleLabel = portalType === "ecole" ? "Dir. sportif" : "Dir. sportif";
+          const roleLabel = portalType === "ligue" ? "Coord." : "Dir. sportif";
           setUserSub(`${roleLabel}${inst ? ` \u2014 ${inst}` : ""}`);
         }
+        if (u.directorRole === "collaborator") setIsOwner(false);
       }
     } catch { /* use defaults */ }
   }, [portalType]);
@@ -169,7 +195,7 @@ export default function DirectorSidebar({ portalType, mobileOpen, onClose }: Dir
       <div className="px-5 py-6 border-b border-[#1e2128]">
         <Link href="/" className="flex items-center gap-3">
           <Image
-            src="/brand/Profile%20white%20trans@4x.png"
+            src="/brand/White%20red%20logo%20@4x.png"
             alt="Nexus"
             width={30}
             height={30}
@@ -250,7 +276,16 @@ export default function DirectorSidebar({ portalType, mobileOpen, onClose }: Dir
             <span className="text-[11px] font-bold text-[#8a8d96]">{userInitials}</span>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-semibold text-white truncate">{userName}</p>
+            <div className="flex items-center gap-1.5">
+              <p className="text-[13px] font-semibold text-white truncate">{userName}</p>
+              {isOwner && (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="#DAB65A" stroke="none" className="shrink-0">
+                  <path d="M2 20h20v2H2zm1-2l3-10 6 6 6-6 3 10z" />
+                  <circle cx="5" cy="6" r="2" /><circle cx="12" cy="3" r="2" /><circle cx="19" cy="6" r="2" />
+                </svg>
+              )}
+            </div>
+            <p className="text-[10px] text-[#6b7280] truncate">{isOwner ? config.ownerLabel : config.collaboratorLabel}</p>
             <p className="text-[11px] text-[#6b7280] truncate">{userSub}</p>
           </div>
         </div>

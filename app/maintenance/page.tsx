@@ -16,7 +16,7 @@ export default function MaintenancePage() {
         {/* Logo */}
         <div className="flex items-center gap-3 mb-10">
           <Image
-            src="/brand/Profile%20white%20trans@4x.png"
+            src="/brand/White%20red%20logo%20@4x.png"
             alt="Nexus"
             width={36}
             height={36}

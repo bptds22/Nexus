@@ -70,7 +70,7 @@ function ResetPasswordContent() {
       <nav className="sticky top-0 z-50 bg-[#060A14]/92 backdrop-blur-md border-b border-[#1E2D4A]">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3">
-            <Image src="/brand/Profile%20white%20trans@4x.png" alt="Nexus" width={32} height={32} className="object-contain nx-logo-dark" />
+            <Image src="/brand/White%20red%20logo%20@4x.png" alt="Nexus" width={32} height={32} className="object-contain nx-logo-dark" />
             <Image src="/brand/Profile%20trans@4x.png" alt="Nexus" width={32} height={32} className="object-contain nx-logo-light" />
             <span className="font-head font-black text-white text-base tracking-[0.06em] uppercase hidden sm:block">Nexus</span>
           </Link>
@@ -210,7 +210,7 @@ function ResetPasswordContent() {
         <div className="max-w-6xl mx-auto px-6 pt-10 pb-6">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6 pb-6 border-b border-[#1E2D4A]">
             <div className="flex items-center gap-3">
-              <Image src="/brand/Profile%20white%20trans@4x.png" alt="Nexus" width={24} height={24} className="object-contain opacity-60" />
+              <Image src="/brand/White%20red%20logo%20@4x.png" alt="Nexus" width={24} height={24} className="object-contain opacity-60" />
               <span className={`${label} text-[#475569]`}>Construit pour les étudiants-athlètes québécois</span>
             </div>
             <nav className="flex items-center gap-8">
@@ -226,7 +226,7 @@ function ResetPasswordContent() {
               ))}
             </div>
           </div>
-          <p className={`${label} text-[#2E3D55] text-center pt-5`}>&copy; 2025 Nexus</p>
+          <p className={`${label} text-[#2E3D55] text-center pt-5`}>&copy; 2026 Nexus — Propulsé par <img src="/brand/White%20red@4x.png" alt="WeLead" style={{height:16}} /></p>
         </div>
       </footer>
     </div>

@@ -29,48 +29,81 @@ const SOCIALS = [
   { name: "LinkedIn", href: "#", d: "M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" },
 ];
 
-const ROLES = [
+/* ── Context + Role selection (2-step) ── */
+
+const CONTEXTS = [
   {
-    value: "coach",
-    label: "Entraîneur secondaire",
+    value: "scolaire",
+    label: "ÉCOLE SECONDAIRE",
+    subtitle: "Entraîneur ou directeur sportif d'une école secondaire",
     icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" />
-        <rect x="9" y="3" width="6" height="4" rx="1" />
-        <path d="M9 14l2 2 4-4" />
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="4" y="2" width="16" height="20" rx="2" /><path d="M9 22V12h6v10" /><path d="M8 6h.01M16 6h.01M8 10h.01M16 10h.01" />
       </svg>
     ),
   },
   {
-    value: "director_school",
-    label: "Directeur secondaire",
+    value: "collegial",
+    label: "CÉGEP",
+    subtitle: "Recruteur ou directeur sportif d'un CÉGEP",
     icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M22 10v6M2 10l10-5 10 5-10 5z" /><path d="M6 12v5c0 1.66 2.69 3 6 3s6-1.34 6-3v-5" />
       </svg>
     ),
   },
   {
-    value: "director_cegep",
-    label: "Directeur collégial",
+    value: "ligue_civile",
+    label: "LIGUE CIVILE",
+    subtitle: "Entraîneur ou coordonnateur d'une ligue ou club sportif",
     icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
-        <path d="M6 12v5c0 1.66 2.69 3 6 3s6-1.34 6-3v-5" />
-      </svg>
-    ),
-  },
-  {
-    value: "recruiter",
-    label: "Recruteur collégial",
-    icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="11" cy="11" r="8" />
-        <path d="M21 21l-4.35-4.35" />
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M6 9H4a2 2 0 01-2-2V5a2 2 0 012-2h2" /><path d="M18 9h2a2 2 0 002-2V5a2 2 0 00-2-2h-2" /><path d="M6 3h12v6a6 6 0 01-12 0V3z" /><path d="M12 15v3M8 21h8" />
       </svg>
     ),
   },
 ];
+
+type ContextValue = "scolaire" | "collegial" | "ligue_civile";
+
+const CONTEXT_ROLES: Record<ContextValue, { value: string; label: string; icon: React.ReactNode }[]> = {
+  scolaire: [
+    {
+      value: "coach",
+      label: "Entraîneur",
+      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" /><rect x="9" y="3" width="6" height="4" rx="1" /><path d="M9 14l2 2 4-4" /></svg>,
+    },
+    {
+      value: "director_school",
+      label: "Directeur sportif",
+      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>,
+    },
+  ],
+  collegial: [
+    {
+      value: "recruiter",
+      label: "Recruteur",
+      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" /></svg>,
+    },
+    {
+      value: "director_cegep",
+      label: "Directeur sportif",
+      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>,
+    },
+  ],
+  ligue_civile: [
+    {
+      value: "coach_league",
+      label: "Entraîneur",
+      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" /><rect x="9" y="3" width="6" height="4" rx="1" /><path d="M9 14l2 2 4-4" /></svg>,
+    },
+    {
+      value: "coordinator_league",
+      label: "Coordonnateur",
+      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 20h20v2H2zm1-2l3-10 6 6 6-6 3 10z" /><circle cx="5" cy="6" r="2" /><circle cx="12" cy="3" r="2" /><circle cx="19" cy="6" r="2" /></svg>,
+    },
+  ],
+};
 
 /* ── Toast component ── */
 function Toast({ message, onClose }: { message: string; onClose: () => void }) {
@@ -110,6 +143,7 @@ function AuthContent() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPwd, setShowPwd] = useState(false);
   const [showConfirmPwd, setShowConfirmPwd] = useState(false);
+  const [selectedContext, setSelectedContext] = useState<ContextValue | "">("");
   const [selectedRole, setSelectedRole] = useState("");
   const [shakeFields, setShakeFields] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -148,12 +182,14 @@ function AuthContent() {
       setTimeout(() => setShakeFields(false), 600);
       return;
     }
+    const needsValidation = selectedRole === "recruiter" || selectedRole === "coach" || selectedRole === "coach_league";
     const user = {
       firstName,
       lastName,
       email,
+      context: selectedContext,
       role: selectedRole,
-      status: (selectedRole === "recruiter" || selectedRole === "coach") ? "pending_validation" : "active",
+      status: needsValidation ? "pending_validation" : "active",
       onboarding_complete: false,
       institution: null,
       profile: {},
@@ -162,7 +198,7 @@ function AuthContent() {
       first_athlete: null,
     };
     localStorage.setItem("nexus_user", JSON.stringify(user));
-    if (selectedRole === "recruiter" || selectedRole === "coach") {
+    if (needsValidation) {
       router.push("/auth/pending");
     } else {
       router.push("/onboarding");
@@ -190,6 +226,8 @@ function AuthContent() {
         director_school: "/directeur-ecole/dashboard",
         director_cegep: "/directeur-cegep/dashboard",
         recruiter: "/recruteur/tableau-de-bord",
+        coach_league: "/coach/tableau-de-bord",
+        coordinator_league: "/directeur-ecole/dashboard",
       };
       router.push(dashMap[user.role] || "/");
     } else {
@@ -225,7 +263,7 @@ function AuthContent() {
       <nav className="sticky top-0 z-50 bg-[#111317]/92 backdrop-blur-md border-b border-white/5">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3">
-            <Image src="/brand/Profile%20white%20trans@4x.png" alt="Nexus" width={32} height={32} className="object-contain" />
+            <Image src="/brand/White%20red%20logo%20@4x.png" alt="Nexus" width={32} height={32} className="object-contain" />
             <span className="font-head font-black text-white text-base tracking-[0.06em] uppercase hidden sm:block">Nexus</span>
           </Link>
           <ul className="hidden md:flex items-center gap-8 list-none">
@@ -339,30 +377,58 @@ function AuthContent() {
                       )}
                     </div>
 
-                    {/* Role selection — 2x2 grid */}
+                    {/* Step 1 — Context selection ("Ton milieu") */}
                     <div>
-                      <label className={`${label} text-[#9CA3AF] mb-2.5 block`}>Ton rôle <span className="text-[#EF4444]">*</span></label>
-                      <div className={`grid grid-cols-2 gap-3 ${submitted && !selectedRole ? "animate-shake" : ""}`}>
-                        {ROLES.map((r) => {
-                          const isSelected = selectedRole === r.value;
+                      <label className={`${label} text-[#9CA3AF] mb-2.5 block`}>Ton milieu <span className="text-[#EF4444]">*</span></label>
+                      <div className={`grid grid-cols-1 sm:grid-cols-3 gap-3 ${submitted && !selectedContext ? "animate-shake" : ""}`}>
+                        {CONTEXTS.map((ctx) => {
+                          const isSelected = selectedContext === ctx.value;
                           return (
                             <button
-                              key={r.value}
+                              key={ctx.value}
                               type="button"
-                              onClick={() => setSelectedRole(r.value)}
-                              className={`flex flex-col items-center justify-center gap-2 p-4 rounded-lg border transition-all text-center ${
+                              onClick={() => { setSelectedContext(ctx.value as ContextValue); setSelectedRole(""); }}
+                              className={`flex flex-col items-center justify-center gap-2 p-5 rounded-lg border transition-all text-center ${
                                 isSelected
-                                  ? "border-[#E63946] bg-[rgba(230,57,70,0.1)] text-white"
+                                  ? "border-[#E63946] bg-[rgba(230,57,70,0.08)] text-white"
                                   : "border-white/10 text-[#9CA3AF] hover:border-white/20 hover:text-white"
                               }`}
                             >
-                              <span className={isSelected ? "text-[#E63946]" : "text-[#6B7280]"}>{r.icon}</span>
-                              <span className="font-head font-black text-[10px] uppercase tracking-[0.15em] leading-tight">{r.label}</span>
+                              <span className={isSelected ? "text-[#E63946]" : "text-[#6B7280]"}>{ctx.icon}</span>
+                              <span className="font-head font-black text-[13px] uppercase tracking-[0.12em] leading-tight">{ctx.label}</span>
+                              <span className="text-[11px] text-[#6B7280] leading-snug">{ctx.subtitle}</span>
                             </button>
                           );
                         })}
                       </div>
                     </div>
+
+                    {/* Step 2 — Role selection (appears after context) */}
+                    {selectedContext && (
+                      <div className="animate-fade-slide-down">
+                        <label className={`${label} text-[#9CA3AF] mb-2.5 block`}>Ton rôle <span className="text-[#EF4444]">*</span></label>
+                        <div className={`grid grid-cols-2 gap-3 ${submitted && !selectedRole ? "animate-shake" : ""}`}>
+                          {CONTEXT_ROLES[selectedContext].map((r) => {
+                            const isSelected = selectedRole === r.value;
+                            return (
+                              <button
+                                key={r.value}
+                                type="button"
+                                onClick={() => setSelectedRole(r.value)}
+                                className={`flex flex-col items-center justify-center gap-2 p-4 rounded-lg border transition-all text-center ${
+                                  isSelected
+                                    ? "border-[#E63946] bg-[rgba(230,57,70,0.1)] text-white"
+                                    : "border-white/10 text-[#9CA3AF] hover:border-white/20 hover:text-white"
+                                }`}
+                              >
+                                <span className={isSelected ? "text-[#E63946]" : "text-[#6B7280]"}>{r.icon}</span>
+                                <span className="font-head font-black text-[10px] uppercase tracking-[0.15em] leading-tight">{r.label}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
 
                     {/* Recruiter warning */}
                     {selectedRole === "recruiter" && (
@@ -370,6 +436,16 @@ function AuthContent() {
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#EAB308" strokeWidth="2" strokeLinecap="round" className="shrink-0 mt-0.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
                         <p className="text-xs text-[#9CA3AF] leading-relaxed">
                           Ton compte devra être validé par un administrateur avant d&apos;accéder à la plateforme. Tu recevras un courriel de confirmation.
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Coordinator info */}
+                    {selectedRole === "coordinator_league" && (
+                      <div className="flex gap-3 p-4 bg-[#1A1D24] border-l-4 border-[#3B82F6] rounded-r-lg">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round" className="shrink-0 mt-0.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                        <p className="text-xs text-[#9CA3AF] leading-relaxed">
+                          En tant que coordonnateur, tu superviseras les entraîneurs et les athlètes de ta ligue sur Nexus.
                         </p>
                       </div>
                     )}
@@ -444,6 +520,13 @@ function AuthContent() {
                     Pas de compte?{" "}
                     <button type="button" onClick={() => switchMode("signup")} className="text-[#9CA3AF] font-bold hover:text-[#E63946] transition-colors">S&apos;inscrire</button>
                   </p>
+
+                  {/* Demo: athlete invite */}
+                  <p className="font-sans text-[11px] text-[#4a4d56] text-center mt-4">
+                    <a href="/auth/invite?athlete=Marc-Antoine+Tremblay&coach=Coach+Bergeron&school=Saint-Jean-Eudes" className="hover:text-[#9CA3AF] transition-colors underline">
+                      DÉMO : Simuler une invitation athlète
+                    </a>
+                  </p>
                 </>
               )}
 
@@ -457,7 +540,7 @@ function AuthContent() {
         <div className="max-w-6xl mx-auto px-6 pt-10 pb-6">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6 pb-6 border-b border-white/5">
             <div className="flex items-center gap-3">
-              <Image src="/brand/Profile%20white%20trans@4x.png" alt="Nexus" width={24} height={24} className="object-contain opacity-60" />
+              <Image src="/brand/White%20red%20logo%20@4x.png" alt="Nexus" width={24} height={24} className="object-contain opacity-60" />
               <span className={`${label} text-[#6B7280]`}>Construit pour les étudiants-athlètes québécois</span>
             </div>
             <nav className="flex items-center gap-8">
@@ -473,7 +556,7 @@ function AuthContent() {
               ))}
             </div>
           </div>
-          <p className={`${label} text-[#6B7280]/40 text-center pt-5`}>&copy; 2025 Nexus</p>
+          <p className={`${label} text-[#6B7280]/40 text-center pt-5`}>&copy; 2026 Nexus — Propulsé par <img src="/brand/White%20red@4x.png" alt="WeLead" style={{height:16}} /></p>
         </div>
       </footer>
     </div>

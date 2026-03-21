@@ -18,7 +18,7 @@ export default function MarketingNav() {
 
         <Link href="/" className="flex items-center gap-3">
           <Image
-            src="/brand/Profile%20white%20trans@4x.png"
+            src="/brand/White%20red%20logo%20@4x.png"
             alt="Nexus"
             width={32}
             height={32}

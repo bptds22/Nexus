@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import Link from "next/link";
 import { ADMIN_ATHLETES, ADMIN_SCHOOLS } from "@/lib/mock/admin";
 import type { AdminAthleteRow } from "@/lib/mock/admin";
 
@@ -234,7 +235,7 @@ export default function AdminAthletesPage() {
                     <span className="text-[18px] font-head font-black text-[#6b7280]">{a.full_name.split(" ").map((n) => n[0]).join("")}</span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[16px] font-bold text-white">{a.full_name}</p>
+                    <Link href={`/admin/athletes/${a.id}`} className="text-[16px] font-bold text-white hover:text-[#E63946] transition-colors">{a.full_name}</Link>
                     <p className="text-[13px] text-[#9CA3AF] mt-0.5">{a.school} · {a.sport} — {a.position} · {a.division}</p>
                     <p className="text-[12px] text-[#6b7280] mt-1">Soumis par <span className="text-white font-bold">{a.coach_name}</span> le {formatDate(a.created_at)}</p>
                     {/* Completion bar */}
@@ -274,7 +275,7 @@ export default function AdminAthletesPage() {
                   return (
                     <tr key={a.id} className={`border-b border-[#2D3748]/40 hover:bg-white/[0.03] transition-colors ${i % 2 === 0 ? "bg-[#1A1D24]" : "bg-[#111317]/50"}`}>
                       <td className="px-4 py-3">
-                        <p className="text-[13px] font-bold text-white whitespace-nowrap">{a.full_name}</p>
+                        <Link href={`/admin/athletes/${a.id}`} className="text-[13px] font-bold text-white whitespace-nowrap hover:text-[#E63946] hover:underline transition-colors">{a.full_name}</Link>
                         <p className="text-[11px] text-[#6b7280]">{a.graduation_year}</p>
                       </td>
                       <td className="px-4 py-3 text-[13px] text-[#9CA3AF] whitespace-nowrap">{a.school}</td>
@@ -318,10 +319,10 @@ export default function AdminAthletesPage() {
                             <>
                               <div className="fixed inset-0 z-40" onClick={() => setOpenMenu(null)} />
                               <div className="absolute right-0 top-8 z-50 bg-[#1A1D24] border border-[#2D3748] rounded-lg py-1.5 min-w-[220px] shadow-xl">
-                                <button type="button" onClick={() => { setOpenMenu(null); showToast("Voir le profil — POC"); }} className="w-full text-left px-4 py-2.5 text-[12px] text-[#9CA3AF] hover:text-white hover:bg-white/5 flex items-center gap-2.5">
+                                <Link href={`/admin/athletes/${a.id}`} onClick={() => setOpenMenu(null)} className="w-full text-left px-4 py-2.5 text-[12px] text-[#9CA3AF] hover:text-white hover:bg-white/5 flex items-center gap-2.5">
                                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
                                   Voir le profil
-                                </button>
+                                </Link>
                                 <button type="button" onClick={() => { setOpenMenu(null); showToast("Contacter le coach — POC"); }} className="w-full text-left px-4 py-2.5 text-[12px] text-[#9CA3AF] hover:text-white hover:bg-white/5 flex items-center gap-2.5">
                                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></svg>
                                   Contacter le coach
