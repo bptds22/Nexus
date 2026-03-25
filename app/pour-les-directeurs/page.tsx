@@ -16,9 +16,9 @@ export default function PourLesDirecteursPage() {
 
       <MarketingHero
         eyebrow="POUR LES DIRECTEURS SPORTIFS"
-        title="MESUREZ L'IMPACT DE VOS PROGRAMMES"
-        subtitle="Que vous soyez directeur d'une école secondaire ou d'un CÉGEP, Nexus vous donne les données de recrutement en temps réel pour piloter vos programmes sportifs."
-        ctaPrimary={{ label: "DEMANDER UNE DÉMO →", href: "/contact" }}
+        title="SUPERVISEZ VOTRE PROGRAMME SPORTIF — GRATUITEMENT"
+        subtitle="Vos entraîneurs vous invitent sur Nexus. Accédez au tableau de bord de votre école sans frais. Aucun abonnement requis."
+        ctaPrimary={{ label: "DEMANDER UNE INVITATION →", href: "#demander" }}
         ctaSecondary={{ label: "VOIR LES FONCTIONNALITÉS", href: "#features" }}
       />
 
@@ -129,21 +129,21 @@ export default function PourLesDirecteursPage() {
         steps={[
           {
             number: "01",
-            title: "Créez votre compte directeur",
+            title: "Un coach vous invite",
             description:
-              "Associez votre école ou CÉGEP. Invitez vos coachs ou entraîneurs.",
+              "Un entraîneur de votre école vous envoie un lien d'invitation par courriel.",
           },
           {
             number: "02",
-            title: "Vos équipes travaillent",
+            title: "Créez votre compte",
             description:
-              "Les coachs créent les profils, les recruteurs scoutent. Vous observez en temps réel.",
+              "Activez votre accès en 30 secondes. Aucun abonnement, aucune carte de crédit.",
           },
           {
             number: "03",
-            title: "Vous prenez les meilleures décisions",
+            title: "Supervisez",
             description:
-              "Données de recrutement à portée de clic. Budget justifié. Programmes optimisés.",
+              "Dashboard complet, stats de recrutement, gestion des coachs — tout est inclus gratuitement.",
           },
         ]}
       />
@@ -205,9 +205,9 @@ export default function PourLesDirecteursPage() {
       <CtaSection
         eyebrow="PRÊT À PILOTER ?"
         title="PILOTEZ VOS PROGRAMMES AVEC DES DONNÉES"
-        ctaPrimary={{ label: "DEMANDER UNE DÉMO →", href: "/contact" }}
-        ctaSecondary={{ label: "VOIR LES TARIFS", href: "/contact" }}
-        subtext="Le portail Directeur est disponible pour les établissements partenaires."
+        ctaPrimary={{ label: "DEMANDER UNE INVITATION →", href: "#demander" }}
+        ctaSecondary={{ label: "VOUS ÊTES AUSSI ENTRAÎNEUR ?", href: "/auth?mode=signup" }}
+        subtext="L'accès Directeur sportif est 100% gratuit. Demandez à un entraîneur de votre école de vous inviter."
       />
     </div>
   );

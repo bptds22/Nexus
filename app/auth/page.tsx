@@ -73,11 +73,6 @@ const CONTEXT_ROLES: Record<ContextValue, { value: string; label: string; icon: 
       label: "Entraîneur",
       icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" /><rect x="9" y="3" width="6" height="4" rx="1" /><path d="M9 14l2 2 4-4" /></svg>,
     },
-    {
-      value: "director_school",
-      label: "Directeur sportif",
-      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>,
-    },
   ],
   collegial: [
     {
@@ -428,31 +423,49 @@ function AuthContent() {
                     </div>
 
                     {/* Step 2 — Role selection (appears after context) */}
-                    {selectedContext && (
-                      <div className="animate-fade-slide-down">
-                        <label className={`${label} text-[#9CA3AF] mb-2.5 block`}>Ton rôle <span className="text-[#EF4444]">*</span></label>
-                        <div className={`grid grid-cols-2 gap-3 ${submitted && !selectedRole ? "animate-shake" : ""}`}>
-                          {CONTEXT_ROLES[selectedContext].map((r) => {
-                            const isSelected = selectedRole === r.value;
-                            return (
-                              <button
-                                key={r.value}
-                                type="button"
-                                onClick={() => setSelectedRole(r.value)}
-                                className={`flex flex-col items-center justify-center gap-2 p-4 rounded-lg border transition-all text-center ${
-                                  isSelected
-                                    ? "border-[#E63946] bg-[rgba(230,57,70,0.1)] text-white"
-                                    : "border-white/10 text-[#9CA3AF] hover:border-white/20 hover:text-white"
-                                }`}
-                              >
-                                <span className={isSelected ? "text-[#E63946]" : "text-[#6B7280]"}>{r.icon}</span>
-                                <span className="font-head font-black text-[10px] uppercase tracking-[0.15em] leading-tight">{r.label}</span>
-                              </button>
-                            );
-                          })}
+                    {selectedContext && (() => {
+                      const roles = CONTEXT_ROLES[selectedContext];
+                      const isSingleRole = roles.length === 1;
+                      // Auto-select if single role
+                      if (isSingleRole && selectedRole !== roles[0].value) {
+                        setTimeout(() => setSelectedRole(roles[0].value), 0);
+                      }
+                      return (
+                        <div className="animate-fade-slide-down">
+                          {!isSingleRole && (
+                            <>
+                              <label className={`${label} text-[#9CA3AF] mb-2.5 block`}>Ton rôle <span className="text-[#EF4444]">*</span></label>
+                              <div className={`grid grid-cols-2 gap-3 ${submitted && !selectedRole ? "animate-shake" : ""}`}>
+                                {roles.map((r) => {
+                                  const isSelected = selectedRole === r.value;
+                                  return (
+                                    <button
+                                      key={r.value}
+                                      type="button"
+                                      onClick={() => setSelectedRole(r.value)}
+                                      className={`flex flex-col items-center justify-center gap-2 p-4 rounded-lg border transition-all text-center ${
+                                        isSelected
+                                          ? "border-[#E63946] bg-[rgba(230,57,70,0.1)] text-white"
+                                          : "border-white/10 text-[#9CA3AF] hover:border-white/20 hover:text-white"
+                                      }`}
+                                    >
+                                      <span className={isSelected ? "text-[#E63946]" : "text-[#6B7280]"}>{r.icon}</span>
+                                      <span className="font-head font-black text-[10px] uppercase tracking-[0.15em] leading-tight">{r.label}</span>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </>
+                          )}
+                          {/* Director note for scolaire */}
+                          {selectedContext === "scolaire" && (
+                            <p className="text-[11px] text-[#4a4d56] mt-3 leading-relaxed">
+                              Tu es directeur sportif? Demande à un entraîneur de ton école de t&apos;inviter sur Nexus, ou inscris-toi comme entraîneur.
+                            </p>
+                          )}
                         </div>
-                      </div>
-                    )}
+                      );
+                    })()}
 
                     {/* Recruiter warning */}
                     {selectedRole === "recruiter" && (
@@ -545,10 +558,15 @@ function AuthContent() {
                     <button type="button" onClick={() => switchMode("signup")} className="text-[#9CA3AF] font-bold hover:text-[#E63946] transition-colors">S&apos;inscrire</button>
                   </p>
 
-                  {/* Demo: athlete invite */}
+                  {/* Demo links */}
                   <p className="font-sans text-[11px] text-[#4a4d56] text-center mt-4">
                     <a href="/auth/invite?athlete=Marc-Antoine+Tremblay&coach=Coach+Bergeron&school=Saint-Jean-Eudes" className="hover:text-[#9CA3AF] transition-colors underline">
                       DÉMO : Simuler une invitation athlète
+                    </a>
+                  </p>
+                  <p className="font-sans text-[11px] text-[#4a4d56] text-center mt-2">
+                    <a href="/auth/invite-admin?school=De+Mortagne&coach=Patrick+Tremblay&email=directeur@demo.qc.ca" className="hover:text-[#9CA3AF] transition-colors underline">
+                      DÉMO : Simuler une invitation directeur
                     </a>
                   </p>
 

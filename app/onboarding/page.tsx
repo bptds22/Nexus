@@ -70,6 +70,14 @@ interface NexusUser {
   search_criteria: Record<string, unknown> | null;
   team_needs: Record<string, unknown> | null;
   first_athlete: Record<string, unknown> | null;
+  // School admin fields
+  is_school_admin?: boolean;
+  is_also_coach?: boolean;
+  school_admin_type?: "owner" | "collaborator" | null;
+  pending_director_invite?: Record<string, unknown> | null;
+  subscription?: Record<string, unknown>;
+  tier?: string;
+  referral_code?: string | null;
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -198,10 +206,20 @@ export default function OnboardingPage() {
     const raw = localStorage.getItem("nexus_user");
     if (!raw) { router.replace("/auth"); return; }
     const parsed = JSON.parse(raw) as NexusUser;
+    // Redirect legacy director_school users to coach portal
+    if (parsed.role === "director_school") {
+      parsed.role = "coach";
+      parsed.is_school_admin = true;
+      parsed.is_also_coach = true;
+      localStorage.setItem("nexus_user", JSON.stringify(parsed));
+      if (parsed.onboarding_complete) {
+        router.replace("/coach/tableau-de-bord");
+        return;
+      }
+    }
     if (parsed.onboarding_complete) {
       const dashMap: Record<string, string> = {
         coach: "/coach/tableau-de-bord",
-        director_school: "/directeur-ecole/dashboard",
         director_cegep: "/directeur-cegep/dashboard",
         recruiter: "/recruteur/tableau-de-bord",
         coach_league: "/coach/tableau-de-bord",
@@ -222,7 +240,15 @@ export default function OnboardingPage() {
     localStorage.setItem("nexus_user", JSON.stringify(next));
   }, []);
 
-  const totalSteps = 3;
+  const totalStepsMap: Record<string, number> = {
+    coach: 4,           // profil, école, directeur, athlète
+    coach_league: 4,    // profil, ligue, coordonnateur, athlète
+    director_school: 3, // redirect below
+    director_cegep: 3,
+    recruiter: 3,
+    coordinator_league: 3,
+  };
+  const totalSteps = totalStepsMap[user?.role ?? ""] || 3;
   const progress = ((step + 1) / totalSteps) * 100;
 
   const next = () => {
@@ -274,11 +300,11 @@ export default function OnboardingPage() {
 
   /* ── Step labels per role ── */
   const stepLabelsMap: Record<string, string[]> = {
-    coach: ["Profil", "École", "Athlète"],
+    coach: ["Profil", "École", "Directeur", "Athlète"],
     director_school: ["Profil", "École", "Invitations"],
     director_cegep: ["Profil", "CÉGEP", "Invitations"],
     recruiter: ["Profil", "Critères", "Besoins"],
-    coach_league: ["Profil", "Ligue", "Confirmer"],
+    coach_league: ["Profil", "Ligue", "Coordonnateur", "Athlète"],
     coordinator_league: ["Profil", "Ligue", "Invitations"],
   };
   const stepLabels = stepLabelsMap[user.role] || ["1", "2", "3"];
@@ -359,7 +385,145 @@ function CoachStep({ step, user, save }: { step: number; user: NexusUser; save: 
 
   if (step === 0) return <CoachProfile profile={p} save={save} />;
   if (step === 1) return <SchoolStep user={user} save={save} />;
+  if (step === 2) return <DirectorChoiceStep user={user} save={save} type="school" />;
   return <CoachConfirmation user={user} />;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   DIRECTOR / COORDINATOR CHOICE STEP
+   "C'est moi" or "Inviter quelqu'un"
+   Used by school coach (Step 3) and league coach (Step 3).
+═══════════════════════════════════════════════════════════════ */
+
+function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: Partial<NexusUser>) => void; type: "school" | "league" }) {
+  const isLeague = type === "league";
+  const roleLabel = isLeague ? "coordonnateur" : "directeur sportif";
+  const RoleLabel = isLeague ? "Coordonnateur" : "Directeur sportif";
+  const orgName = user.institution
+    ? (user.institution as Record<string, string>)?.name || "ton organisation"
+    : "ton organisation";
+
+  const [choice, setChoice] = useState<"self" | "invite" | "">("");
+  const [selfEmail, setSelfEmail] = useState(user.email || "");
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteFirstName, setInviteFirstName] = useState("");
+  const [inviteLastName, setInviteLastName] = useState("");
+  const [inviteMessage, setInviteMessage] = useState("");
+
+  const inputCls = "w-full bg-[#111317] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white placeholder:text-[#6B7280] focus:border-[#E63946] outline-none transition-colors";
+  const labelCls = "block text-[10px] font-bold tracking-[0.25em] uppercase text-[#6B7280] mb-1.5";
+
+  useEffect(() => {
+    if (choice === "self") {
+      save({ is_school_admin: true, is_also_coach: true, school_admin_type: "owner" });
+    } else if (choice === "invite" && inviteEmail) {
+      save({
+        is_school_admin: true,
+        is_also_coach: true,
+        school_admin_type: "owner",
+        pending_director_invite: { email: inviteEmail, firstName: inviteFirstName, lastName: inviteLastName, message: inviteMessage, sent_at: new Date().toISOString() },
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [choice, selfEmail, inviteEmail, inviteFirstName, inviteLastName, inviteMessage]);
+
+  return (
+    <div className="space-y-5">
+      <div>
+        <h2 className="font-head text-xl font-black text-white uppercase">Qui est le {roleLabel}?</h2>
+        <p className="text-sm text-[#9CA3AF] mt-1">
+          Chaque {isLeague ? "ligue" : "école"} sur Nexus a besoin d&apos;un responsable. Le {roleLabel} supervise les {isLeague ? "entraîneurs" : "coachs"} et approuve les profils.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Card 1: C'EST MOI */}
+        <button
+          type="button"
+          onClick={() => setChoice("self")}
+          className={`flex flex-col items-center gap-3 p-5 rounded-xl border transition-all text-center ${
+            choice === "self"
+              ? "border-[#E63946] bg-[rgba(230,57,70,0.08)]"
+              : "border-white/10 hover:border-white/20"
+          }`}
+        >
+          <div className={`w-12 h-12 rounded-full flex items-center justify-center ${choice === "self" ? "bg-[#DAB65A]/15" : "bg-[#1A1D24]"}`}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#DAB65A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M2 20h20v2H2zm1-2l3-10 6 6 6-6 3 10z" /><circle cx="5" cy="6" r="2" /><circle cx="12" cy="3" r="2" /><circle cx="19" cy="6" r="2" />
+            </svg>
+          </div>
+          <span className="font-head font-black text-[13px] uppercase tracking-[0.1em] text-white">C&apos;est moi</span>
+          <span className="text-[11px] text-[#6B7280] leading-snug">Je supervise le programme sportif de mon {isLeague ? "club" : "école"}</span>
+        </button>
+
+        {/* Card 2: INVITER */}
+        <button
+          type="button"
+          onClick={() => setChoice("invite")}
+          className={`flex flex-col items-center gap-3 p-5 rounded-xl border transition-all text-center ${
+            choice === "invite"
+              ? "border-[#E63946] bg-[rgba(230,57,70,0.08)]"
+              : "border-white/10 hover:border-white/20"
+          }`}
+        >
+          <div className={`w-12 h-12 rounded-full flex items-center justify-center ${choice === "invite" ? "bg-[#E63946]/15" : "bg-[#1A1D24]"}`}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="8.5" cy="7" r="4" /><line x1="20" y1="8" x2="20" y2="14" /><line x1="23" y1="11" x2="17" y2="11" />
+            </svg>
+          </div>
+          <span className="font-head font-black text-[13px] uppercase tracking-[0.1em] text-white">Inviter quelqu&apos;un</span>
+          <span className="text-[11px] text-[#6B7280] leading-snug">J&apos;enverrai une invitation au {roleLabel}</span>
+        </button>
+      </div>
+
+      {/* C'EST MOI expanded */}
+      {choice === "self" && (
+        <div className="animate-fade-slide-down space-y-4 bg-[#111317]/60 rounded-xl p-5 border border-white/5">
+          <div>
+            <label className={labelCls}>Confirme ton courriel</label>
+            <input type="email" value={selfEmail} onChange={(e) => setSelfEmail(e.target.value)} className={inputCls} />
+          </div>
+          <p className="text-[12px] text-[#9CA3AF] leading-relaxed">
+            Tu seras Entraîneur ET {RoleLabel} de {orgName}. Tu pourras gérer les autres {isLeague ? "entraîneurs" : "coachs"}, voir les stats de recrutement, et superviser les profils athlètes.
+          </p>
+        </div>
+      )}
+
+      {/* INVITER expanded */}
+      {choice === "invite" && (
+        <div className="animate-fade-slide-down space-y-4 bg-[#111317]/60 rounded-xl p-5 border border-white/5">
+          <div>
+            <label className={labelCls}>Courriel du {roleLabel} <span className="text-[#EF4444]">*</span></label>
+            <input type="email" placeholder={`${roleLabel}@${isLeague ? "ligue" : "ecole"}.qc.ca`} value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} className={inputCls} />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={labelCls}>Prénom</label>
+              <input type="text" placeholder="Prénom" value={inviteFirstName} onChange={(e) => setInviteFirstName(e.target.value)} className={inputCls} />
+            </div>
+            <div>
+              <label className={labelCls}>Nom</label>
+              <input type="text" placeholder="Nom" value={inviteLastName} onChange={(e) => setInviteLastName(e.target.value)} className={inputCls} />
+            </div>
+          </div>
+          <div>
+            <label className={labelCls}>Message personnalisé</label>
+            <textarea
+              maxLength={300}
+              value={inviteMessage}
+              onChange={(e) => setInviteMessage(e.target.value)}
+              placeholder="Bonjour, je vous invite à rejoindre Nexus pour superviser notre programme sportif."
+              className={`${inputCls} h-20 resize-none`}
+            />
+            <p className="text-[10px] text-[#4a4d56] text-right mt-1">{inviteMessage.length}/300</p>
+          </div>
+          <p className="text-[12px] text-[#9CA3AF] leading-relaxed">
+            Le {roleLabel} recevra un lien pour créer son compte gratuit. En attendant, tu seras temporairement Admin {isLeague ? "Ligue" : "École"}.
+          </p>
+        </div>
+      )}
+    </div>
+  );
 }
 
 function CoachProfile({ profile, save }: { profile: Record<string, unknown>; save: (u: Partial<NexusUser>) => void }) {
@@ -1234,6 +1398,7 @@ function LeagueCoachStep({ step, user, save }: { step: number; user: NexusUser; 
   const p = (user.profile || {}) as Record<string, unknown>;
   if (step === 0) return <CoachProfile profile={p} save={save} />;
   if (step === 1) return <LeagueCoachLeagueStep user={user} save={save} />;
+  if (step === 2) return <DirectorChoiceStep user={user} save={save} type="league" />;
   return <CoachConfirmation user={user} />;
 }
 

@@ -82,8 +82,7 @@ export default function PendingPage() {
             </>
           ) : isCoach ? (
             <>
-              Le directeur sportif de ton école doit confirmer ton accès.
-              Si ton école n&apos;a pas encore de directeur sur Nexus, un administrateur s&apos;en occupera.
+              L&apos;administrateur de ton école ou un admin Nexus confirmera ton accès sous peu.
               {institutionName && (
                 <span className="block mt-2 text-white font-semibold">{institutionName}</span>
               )}

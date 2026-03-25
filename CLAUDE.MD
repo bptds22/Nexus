@@ -661,6 +661,33 @@ Page header (title + subtitle)
 
 ---
 
+## Coach Portal Structure (School Side)
+
+### Director École Merger
+- The Director École portal no longer exists as a separate portal
+- Director features are PRO features inside the Coach portal at /coach/ecole/*
+- PRO features are unlocked by: Coach Pro subscription ($14.99/mo) OR Admin École role (invited director, free access)
+- Every school MUST have an Admin École — enforced during onboarding
+- The sidebar shows a "GESTION ÉCOLE" section with PRO badge
+- Free coaches see Pro items at 0.6 opacity with lock icons
+- Clicking a Pro item shows the page with SchoolGate (blur + CTA)
+
+### Admin École Role
+- First coach to create a school = temporary Admin École
+- Onboarding forces "Who is the director?" choice (self or invite)
+- Invited director = free account, full school management access via /auth/invite-admin
+- Admin flag: is_school_admin (boolean) + school_admin_type (owner/collaborator)
+- Only one owner per school, collaborators possible
+- Transfer requires Nexus admin approval
+
+### CÉGEP Director Portal — UNCHANGED
+- /directeur-cegep/* is a SEPARATE portal and is NOT affected
+- CÉGEP directors still sign up through the public signup
+- CÉGEP directors still have their own onboarding flow
+- Do NOT merge CÉGEP director into coach portal
+
+---
+
 ## Phase 2 Notes (do not build yet)
 
 Phase 2 will add:
