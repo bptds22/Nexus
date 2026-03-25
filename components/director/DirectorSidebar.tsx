@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
+import SidebarUpgradeCard from "@/components/subscription/SidebarUpgradeCard";
 
 /* ─────────────────────────────────────────────────────────────────
    DirectorSidebar — vertical nav for the director portal.
@@ -268,6 +269,9 @@ export default function DirectorSidebar({ portalType, mobileOpen, onClose }: Dir
           );
         })()}
       </nav>
+
+      {/* Upgrade prompt */}
+      <SidebarUpgradeCard />
 
       {/* Bottom — user card */}
       <div className="px-4 py-5 border-t border-[#1e2128]">

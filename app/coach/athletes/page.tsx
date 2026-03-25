@@ -10,6 +10,7 @@ import RosterTable, { type SortKey } from "./_components/RosterTable";
 import RosterMobileCard from "./_components/RosterMobileCard";
 import RosterGridCard from "./_components/RosterGridCard";
 import RosterEmptyState from "./_components/RosterEmptyState";
+import UpgradePrompt from "@/components/subscription/UpgradePrompt";
 
 /* ─────────────────────────────────────────────────────────────────
    Mes Athlètes — Roster Workbench
@@ -157,6 +158,14 @@ function MesAthletesContent() {
 
   return (
     <div className="px-6 sm:px-10 py-8 max-w-[1280px] mx-auto space-y-6">
+
+      {/* Upgrade prompt — free tier, >5 athletes */}
+      {ROSTER_ATHLETES.length > 5 && (
+        <UpgradePrompt
+          dismissKey="nexus_upgrade_coach_roster"
+          message="Tu as atteint la limite de 5 profils. Passe à Coach Pro pour créer des profils illimités et débloquer l'évaluation détaillée."
+        />
+      )}
 
       {/* ── Header ──────────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">

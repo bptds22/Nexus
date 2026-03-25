@@ -7,6 +7,7 @@ import TrendingAthletes from "./_components/TrendingAthletes";
 import RecruiterActivityFeed from "./_components/RecruiterActivityFeed";
 import { ACTION_BAR, KPI, TRENDING_ATHLETES } from "../_data/mockDashboardData";
 import { MOCK_ACTIVITY_FEED } from "../_data/mockActivityFeed";
+import UpgradePrompt from "@/components/subscription/UpgradePrompt";
 
 /* ─────────────────────────────────────────────────────────────────
    Nexus — Recruiter Tableau de Bord
@@ -69,6 +70,12 @@ export default function RecruteurTableauDeBordPage() {
         </p>
         <p className="text-[12px] text-[#6b7280] mt-0.5 capitalize">{frenchDate()}</p>
       </div>
+
+      {/* Upgrade prompt — free tier */}
+      <UpgradePrompt
+        dismissKey="nexus_upgrade_recruiter_dash"
+        message="Tu utilises Nexus Gratuit. 45 athlètes te sont cachés. Passe à Recruteur Pro pour un accès illimité."
+      />
 
       {/* Zone 1: Action Bar */}
       <ActionBar data={ACTION_BAR} />

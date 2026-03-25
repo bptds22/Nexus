@@ -7,6 +7,7 @@ import type { SearchAthlete } from "../_data/mockSearchAthletes";
 import { getAthleteTracking } from "../_data/mockPipelineData";
 import RecruitmentStatusBadge from "../_components/RecruitmentStatusBadge";
 import NxIcon from "@/components/ui/NxIcon";
+import FeatureGate from "@/components/subscription/FeatureGate";
 
 /* ═══════════════════════════════════════════════════════════════
    Recherche d'athlètes — Filterable card grid
@@ -427,19 +428,41 @@ export default function RecherchePage() {
           </p>
         </div>
       ) : (
-        viewMode === "grid" ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-            {filtered.map((a) => (
-              <AthleteSearchCard key={a.id} a={a} onToggleFav={toggleFav} />
-            ))}
-          </div>
-        ) : (
-          <div className="flex flex-col gap-2">
-            {filtered.map((a) => (
-              <AthleteSearchRow key={a.id} a={a} onToggleFav={toggleFav} />
-            ))}
-          </div>
-        )
+        <>
+          {/* First 5 results — always visible */}
+          {viewMode === "grid" ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+              {filtered.slice(0, 5).map((a) => (
+                <AthleteSearchCard key={a.id} a={a} onToggleFav={toggleFav} />
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {filtered.slice(0, 5).map((a) => (
+                <AthleteSearchRow key={a.id} a={a} onToggleFav={toggleFav} />
+              ))}
+            </div>
+          )}
+
+          {/* Remaining results — gated behind Recruteur Pro */}
+          {filtered.length > 5 && (
+            <FeatureGate feature="unlimited_profiles" requiredTier="recruteur_pro">
+              {viewMode === "grid" ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                  {filtered.slice(5).map((a) => (
+                    <AthleteSearchCard key={a.id} a={a} onToggleFav={toggleFav} />
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {filtered.slice(5).map((a) => (
+                    <AthleteSearchRow key={a.id} a={a} onToggleFav={toggleFav} />
+                  ))}
+                </div>
+              )}
+            </FeatureGate>
+          )}
+        </>
       )}
     </div>
   );

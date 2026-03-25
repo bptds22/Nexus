@@ -368,10 +368,10 @@ export default function DirectorHSSettingsPage() {
                       <tr className="border-b border-[#2D3748]/40">
                         <td className="px-4 py-3 text-[13px] font-bold text-white flex items-center gap-1.5">
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="#DAB65A" stroke="none"><path d="M2 20h20v2H2zm1-2l3-10 6 6 6-6 3 10z" /><circle cx="5" cy="6" r="2" /><circle cx="12" cy="3" r="2" /><circle cx="19" cy="6" r="2" /></svg>
-                          {mockDirectorHS.profile.firstName} {mockDirectorHS.profile.lastName}
+                          {mockDirectorHS.firstName} {mockDirectorHS.lastName}
                         </td>
                         <td className="px-4 py-3"><span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DAB65A]/15 text-[#DAB65A]">Propriétaire</span></td>
-                        <td className="px-4 py-3 text-[12px] text-[#9CA3AF]">{mockDirectorHS.profile.email}</td>
+                        <td className="px-4 py-3 text-[12px] text-[#9CA3AF]">{mockDirectorHS.email}</td>
                         <td className="px-4 py-3 text-[12px] text-[#6b7280]">Jan. 2025</td>
                         <td className="px-4 py-3"></td>
                       </tr>

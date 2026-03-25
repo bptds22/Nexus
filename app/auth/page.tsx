@@ -135,6 +135,18 @@ function AuthContent() {
   const fadeRef = useRef<HTMLDivElement>(null);
   const [toast, setToast] = useState<string | null>(null);
 
+  /* ── Referral code capture ── */
+  const [referralCode, setReferralCode] = useState<string | null>(null);
+  useEffect(() => {
+    const urlRef = searchParams.get("ref");
+    const storedRef = localStorage.getItem("nexus_referral_code");
+    const code = urlRef || storedRef || null;
+    if (code) {
+      localStorage.setItem("nexus_referral_code", code);
+      setReferralCode(code);
+    }
+  }, [searchParams]);
+
   /* ── Signup state ── */
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -196,6 +208,10 @@ function AuthContent() {
       search_criteria: null,
       team_needs: null,
       first_athlete: null,
+      referral_code: referralCode,
+      referred_by: referralCode ? "ambassadeur" : null,
+      subscription: { tier: "free", status: "active", billing_cycle: null, current_period_end: null, trial_days_remaining: null, cancel_at_period_end: false },
+      tier: "free",
     };
     localStorage.setItem("nexus_user", JSON.stringify(user));
     if (needsValidation) {
@@ -314,6 +330,14 @@ function AuthContent() {
               {/* ══════════ INSCRIPTION ══════════ */}
               {mode === "signup" && (
                 <>
+                  {/* Referral banner */}
+                  {referralCode && (
+                    <div className="flex items-center gap-2.5 px-4 py-3 rounded-lg bg-[#22C55E]/5 border-l-2 border-[#22C55E] mb-5">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2" strokeLinecap="round" className="shrink-0"><path d="M20 6L9 17l-5-5" /></svg>
+                      <span className="text-[12px] text-[#22C55E] font-bold">Tu as été invité par un ambassadeur Nexus!</span>
+                    </div>
+                  )}
+
                   {/* Social login */}
                   <div className="flex flex-col gap-3 mb-6">
                     <button type="button" onClick={socialToast} className="flex items-center justify-center gap-3 h-11 w-full bg-[#111317] border border-white/10 rounded-lg text-sm text-white hover:border-white/20 transition-colors">
@@ -395,8 +419,8 @@ function AuthContent() {
                               }`}
                             >
                               <span className={isSelected ? "text-[#E63946]" : "text-[#6B7280]"}>{ctx.icon}</span>
-                              <span className="font-head font-black text-[13px] uppercase tracking-[0.12em] leading-tight">{ctx.label}</span>
-                              <span className="text-[11px] text-[#6B7280] leading-snug">{ctx.subtitle}</span>
+                              <span className="font-head font-black text-[15px] uppercase tracking-[0.12em] leading-tight">{ctx.label}</span>
+                              <span className="text-[13px] text-[#6B7280] leading-snug">{ctx.subtitle}</span>
                             </button>
                           );
                         })}
@@ -527,6 +551,15 @@ function AuthContent() {
                       DÉMO : Simuler une invitation athlète
                     </a>
                   </p>
+
+                  {/* Demo: referral */}
+                  {!referralCode && (
+                    <p className="font-sans text-[11px] text-[#4a4d56] text-center mt-2">
+                      <a href="/auth?mode=signup&ref=COACH-DEMO-01" className="hover:text-[#9CA3AF] transition-colors underline">
+                        DÉMO : Simuler un référal
+                      </a>
+                    </p>
+                  )}
                 </>
               )}
 

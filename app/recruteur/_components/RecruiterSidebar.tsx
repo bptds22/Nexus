@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
+import SidebarUpgradeCard from "@/components/subscription/SidebarUpgradeCard";
 
 /* ─────────────────────────────────────────────────────────────────
    RecruiterSidebar — vertical nav for the recruiter portal.
@@ -192,6 +193,9 @@ export default function RecruiterSidebar({ mobileOpen, onClose }: RecruiterSideb
           );
         })}
       </nav>
+
+      {/* Upgrade prompt */}
+      <SidebarUpgradeCard />
 
       {/* Bottom — user card */}
       <div className="px-4 py-5 border-t border-[#1e2128]">

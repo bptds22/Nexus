@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { athleteUser, athleteStats } from "@/lib/mock/athlete";
+import FeatureGate from "@/components/subscription/FeatureGate";
+import UpgradePrompt from "@/components/subscription/UpgradePrompt";
 
 /* ═══════════════════════════════════════════════════════════════
    Ma Visibilité — Recruiter activity on athlete profile
@@ -133,7 +135,29 @@ export default function VisibilitePage() {
         )}
       </div>
 
-      {/* Pro teaser removed — Phase 2 */}
+      {/* ── Section 6: Who viewed — Pro gated ────────────────── */}
+      <FeatureGate feature="who_viewed" requiredTier="athlete_pro">
+        <div className="bg-[#1A1D24] rounded-xl border border-white/5 p-5">
+          <h2 className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mb-4">Quels CÉGEPs consultent ton profil</h2>
+          <div className="space-y-3">
+            {[
+              { name: "CÉGEP de Sainte-Foy", views: 8, lastSeen: "il y a 2 jours" },
+              { name: "CÉGEP Garneau", views: 5, lastSeen: "il y a 4 jours" },
+              { name: "CÉGEP Limoilou", views: 3, lastSeen: "il y a 1 semaine" },
+              { name: "CÉGEP Édouard-Montpetit", views: 2, lastSeen: "il y a 2 semaines" },
+              { name: "CÉGEP André-Laurendeau", views: 1, lastSeen: "il y a 3 semaines" },
+            ].map((c) => (
+              <div key={c.name} className="flex items-center justify-between py-2 border-b border-[#2D3748]/40 last:border-0">
+                <div>
+                  <p className="text-[13px] font-bold text-white">{c.name}</p>
+                  <p className="text-[11px] text-[#6B7280]">{c.lastSeen}</p>
+                </div>
+                <span className="text-[13px] font-bold text-[#E63946]">{c.views} vues</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </FeatureGate>
     </div>
   );
 }

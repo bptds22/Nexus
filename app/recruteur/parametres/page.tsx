@@ -12,6 +12,8 @@ import ConfidentialiteSection from "./_components/ConfidentialiteSection";
 import DangerSection from "./_components/DangerSection";
 import ConfirmModal from "./_components/ConfirmModal";
 import SaveToast from "./_components/SaveToast";
+import SubscriptionSection from "@/components/subscription/SubscriptionSection";
+import AmbassadorDashboard from "@/components/ambassador/AmbassadorDashboard";
 
 /* ═══════════════════════════════════════════════════════════════
    Recruiter Settings — /recruteur/parametres
@@ -92,6 +94,8 @@ export default function RecruiterSettingsPage() {
                 onSave={handleSave}
               />
             )}
+            {section === "abonnement" && <SubscriptionSection portal="recruteur" />}
+            {section === "ambassadeur" && <AmbassadorDashboard isAmbassador={false} />}
             {section === "notifications" && (
               <NotificationsSection
                 form={form}
