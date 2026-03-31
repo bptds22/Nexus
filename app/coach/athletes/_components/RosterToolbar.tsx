@@ -3,7 +3,6 @@
    verification status selects
 ───────────────────────────────────────────────────────────────── */
 
-import { COACH_TEAMS } from "../_data/mockRosterData";
 import NxSelect, { type NxOption } from "../../components/NxSelect";
 
 export type FilterPreset = "tous" | "non_verifies" | "plus_consultes" | "favoris";
@@ -25,22 +24,9 @@ const PILLS: { key: FilterPreset; label: string; icon?: React.ReactNode }[] = [
 
 const GRAD_YEARS = [2026, 2027, 2028, 2029];
 
-// Derive unique sports from teams
-const SPORTS = [...new Set(COACH_TEAMS.map((t) => t.sport))];
-
-const TEAM_OPTIONS: NxOption[] = [
-  { value: "all", label: "Toutes les équipes" },
-  ...COACH_TEAMS.map((t) => ({ value: t.id, label: t.name })),
-];
-
 const GRAD_OPTIONS: NxOption[] = [
   { value: "all", label: "Toutes les années" },
   ...GRAD_YEARS.map((y) => ({ value: String(y), label: String(y) })),
-];
-
-const SPORT_OPTIONS: NxOption[] = [
-  { value: "all", label: "Tous les sports" },
-  ...SPORTS.map((s) => ({ value: s, label: s })),
 ];
 
 const VERIFICATION_OPTIONS: NxOption[] = [
@@ -64,6 +50,7 @@ interface RosterToolbarProps {
   onSportChange: (s: string) => void;
   selectedVerification: string;
   onVerificationChange: (v: string) => void;
+  sportsList?: string[];
 }
 
 export default function RosterToolbar({
@@ -73,7 +60,15 @@ export default function RosterToolbar({
   selectedTeamId, onTeamChange,
   selectedSport, onSportChange,
   selectedVerification, onVerificationChange,
+  sportsList = [],
 }: RosterToolbarProps) {
+  const SPORT_OPTIONS: NxOption[] = [
+    { value: "all", label: "Tous les sports" },
+    ...sportsList.map((s) => ({ value: s, label: s })),
+  ];
+  const TEAM_OPTIONS: NxOption[] = [
+    { value: "all", label: "Toutes les équipes" },
+  ];
   return (
     <div className="flex flex-col gap-3">
       {/* Row 1: Search + dropdowns */}

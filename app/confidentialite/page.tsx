@@ -132,19 +132,20 @@ const SECTIONS = [
   },
   {
     id: "droits",
-    title: "Vos droits",
+    title: "Loi 25 — Vos droits",
     content: [
-      "Conformément aux lois québécoises et canadiennes sur la protection des renseignements personnels, vous disposez des droits suivants :",
+      "Conformément à la Loi 25 sur la protection des renseignements personnels du Québec et aux lois canadiennes applicables, vous disposez des droits suivants :",
     ],
     bullets: [
-      "Droit d'accès : consulter les renseignements personnels que nous détenons à votre sujet",
-      "Droit de rectification : demander la correction de renseignements inexacts ou incomplets",
-      "Droit de suppression : demander la suppression de vos renseignements personnels",
-      "Droit de retrait du consentement : retirer votre consentement à tout moment",
-      "Droit de portabilité : obtenir une copie de vos données dans un format structuré",
+      "Droit d'accès : vous pouvez demander une copie de toutes les données personnelles que nous détenons à votre sujet",
+      "Droit de rectification : vous pouvez demander la correction de renseignements inexacts ou incomplets",
+      "Droit de suppression : vous pouvez demander la suppression de vos renseignements personnels",
+      "Droit de retrait du consentement : vous pouvez retirer votre consentement à tout moment, sans motif",
+      "Droit de portabilité : vous pouvez obtenir une copie de vos données dans un format structuré et couramment utilisé",
+      "Droit d'être informé : vous serez avisé de tout incident de confidentialité susceptible de vous causer un préjudice",
     ],
     after: [
-      "Pour exercer ces droits, contactez-nous à l'adresse indiquée dans la section « Nous contacter » ci-dessous.",
+      "Pour exercer ces droits, contactez notre responsable de la protection des renseignements personnels à support@nexus-sport.ca. Nous répondrons dans un délai de 30 jours.",
     ],
   },
   {
@@ -157,7 +158,7 @@ const SECTIONS = [
       "Chiffrement des données en transit (HTTPS/TLS) et au repos",
       "Contrôle d'accès basé sur les rôles (RBAC) pour limiter l'accès aux données",
       "Authentification sécurisée avec hachage des mots de passe",
-      "Hébergement des données au Canada, conforme aux exigences de résidence des données",
+      "Hébergement des données au Québec (OVHcloud Beauharnois), conforme aux exigences de résidence des données de la Loi 25",
       "Surveillance continue et journaux d'audit des accès",
     ],
     after: [
@@ -181,16 +182,20 @@ const SECTIONS = [
   },
   {
     id: "mineurs",
-    title: "Protection des mineurs",
+    title: "Protection des données des mineurs",
     content: [
-      "Nexus est conçu pour faciliter le recrutement d'étudiants-athlètes, dont certains sont mineurs. Nous prenons la protection de leurs données très au sérieux :",
+      "Nexus est conçu pour faciliter le recrutement d'étudiants-athlètes, dont certains sont mineurs. Conformément à la Loi 25, nous appliquons des mesures renforcées pour la protection de leurs données :",
     ],
     bullets: [
       "Les profils d'athlètes mineurs sont créés et gérés exclusivement par des entraîneurs autorisés et vérifiés",
+      "Le consentement parental est requis avant toute publication de profil d'athlète mineur sur la plateforme",
+      "Les parents ou tuteurs légaux peuvent retirer leur consentement à tout moment en contactant l'entraîneur ou Nexus directement",
       "Aucune donnée de naissance n'est recueillie dans la version actuelle de la plateforme",
       "Les coordonnées personnelles des athlètes ne sont pas accessibles directement aux recruteurs",
       "Un système de demandes de contact encadre toute communication entre recruteurs et entraîneurs",
       "Les profils doivent être approuvés par un administrateur avant d'être visibles aux recruteurs",
+      "Les données des athlètes sont supprimées 2 ans après leur année de graduation prévue",
+      "Les données sont hébergées au Québec (OVHcloud Beauharnois) et ne quittent pas le territoire canadien",
     ],
   },
   {

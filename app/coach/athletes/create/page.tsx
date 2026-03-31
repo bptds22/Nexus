@@ -9,6 +9,7 @@ import NxSelect from "../../components/NxSelect";
 import { getBadgesForSport, MAX_BADGES, type LeadershipBadge, type BadgeOption } from "@/lib/config/sportBadges";
 import FormModeToggle from "../../components/FormModeToggle";
 import NxIcon from "@/components/ui/NxIcon";
+import { createClient } from "@/lib/supabase/client";
 
 /* ─────────────────────────────────────────────────────────────────
    Nexus — Coach / Créer un profil athlète
@@ -353,8 +354,125 @@ export default function CreateAthletePage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
     if (!validateStep(7)) { setShowErrors(true); return; }
+
+    const supabase = createClient();
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+
+    if (!authUser) {
+      alert("Session expirée. Veuillez vous reconnecter.");
+      return;
+    }
+
+    // Get coach's school_id
+    const { data: coachProfile } = await supabase
+      .from("users")
+      .select("id, school_id")
+      .eq("id", authUser.id)
+      .single();
+
+    // Get sport_id from sports table
+    const { data: sportData } = await supabase
+      .from("sports")
+      .select("id")
+      .eq("nom", form.sports.primarySport)
+      .single();
+
+    // Get position_id from positions table
+    const { data: positionData } = await supabase
+      .from("positions")
+      .select("id")
+      .eq("nom", form.sports.primaryPosition)
+      .maybeSingle();
+
+    // Build athlete record
+    const athleteRecord = {
+      coach_id: authUser.id,
+      school_id: coachProfile?.school_id || null,
+
+      // Identity
+      first_name: form.identity.firstName,
+      last_name: form.identity.lastName,
+      date_naissance: form.identity.dateOfBirth || null,
+      genre: form.identity.gender || null,
+      photo_url: form.identity.photo || null,
+      email: form.identity.email || null,
+      annee_diplomation: form.identity.gradYear ? parseInt(form.identity.gradYear) : null,
+      consentement_parental: form.parentalConsent,
+      consentement_parental_date: form.parentalConsent ? new Date().toISOString() : null,
+
+      // Academic
+      moyenne_generale: form.academic.gpa ? parseFloat(form.academic.gpa) : null,
+      matieres_fortes: form.academic.strongSubjects || [],
+      mentions_academiques: form.academic.academicHonors || [],
+      ouvert_cegep_prive: form.academic.openToPrivate,
+      ouvert_cegep_anglophone: form.academic.openToAnglophone,
+      pret_changer_region: form.academic.openToRelocate,
+      regions_cegep_preferees: form.academic.cegepRegions || [],
+
+      // Physical
+      taille_pieds: form.physical.heightFeet ? parseInt(form.physical.heightFeet) : null,
+      taille_pouces: form.physical.heightInches ? parseInt(form.physical.heightInches) : null,
+      poids_lbs: form.physical.weightLbs ? parseFloat(form.physical.weightLbs) : null,
+      main_dominante: form.physical.dominantHand || null,
+      test_40_verges: form.physical.fortyYard || null,
+      saut_vertical: form.physical.verticalJump || null,
+      sprint_100m: form.physical.sprint100m || null,
+
+      // Sports
+      sport_id: sportData?.id || null,
+      position_id: positionData?.id || null,
+      numero_jersey: form.sports.jerseyNumber || null,
+      ouvert_entraineur_cegep: form.sports.openToCoaching,
+
+      // Media
+      video_faits_saillants_url: form.media.highlightVideo || null,
+      hudl_url: form.media.hudlLink || null,
+      youtube_url: form.media.youtubeLink || null,
+      instagram_url: form.media.instagramLink || null,
+      video_match_complet_url: form.media.fullGameVideo || null,
+
+      // Evaluation
+      cote_globale_entraineur: form.scouting.starRating || null,
+
+      // Status
+      status: "ACTIF",
+      verified: false,
+      profile_completion: 0,
+    };
+
+    const { data: newAthlete, error } = await supabase
+      .from("athletes")
+      .insert(athleteRecord)
+      .select("id")
+      .single();
+
+    if (error) {
+      console.error("Error creating athlete:", error);
+      alert("Erreur lors de la création du profil: " + error.message);
+      return;
+    }
+
+    // Save detailed evaluation if in detailed mode
+    if (form.scouting.evalMode === "detailed" && Object.keys(form.scouting.traitRatings).length > 0) {
+      const ratings = form.scouting.traitRatings;
+      await supabase.from("evaluations").insert({
+        coach_id: authUser.id,
+        athlete_id: newAthlete.id,
+        leadership: ratings.leadership || null,
+        discipline: ratings.discipline || null,
+        coachabilite: ratings.coachability || null,
+        intelligence_jeu: ratings.game_iq || null,
+        competitivite: ratings.competitiveness || null,
+        esprit_equipe: ratings.teamwork || null,
+        resilience: ratings.resilience || null,
+        attitude_mentalite: ratings.attitude || null,
+        distinctions: form.scouting.badges || [],
+        rapport_entraineur: form.scouting.coachEndorsement || null,
+      });
+    }
+
     setCompletedSteps((prev) => new Set([...prev, 7]));
     setSubmitted(true);
   }

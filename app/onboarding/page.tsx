@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { createClient } from "@/lib/supabase/client";
 import PlaybookBackground from "../components/PlaybookBackground";
 
 /* ─────────────────────────────────────────────────────────────────
@@ -62,6 +63,7 @@ interface NexusUser {
   firstName: string;
   lastName: string;
   email: string;
+  context?: string;
   role: string;
   status: string;
   onboarding_complete: boolean;
@@ -74,6 +76,11 @@ interface NexusUser {
   is_school_admin?: boolean;
   is_also_coach?: boolean;
   school_admin_type?: "owner" | "collaborator" | null;
+  // CÉGEP admin fields
+  is_cegep_admin?: boolean;
+  is_also_recruiter?: boolean;
+  cegep_admin_type?: "owner" | "collaborator" | null;
+  // Shared
   pending_director_invite?: Record<string, unknown> | null;
   subscription?: Record<string, unknown>;
   tier?: string;
@@ -201,34 +208,61 @@ export default function OnboardingPage() {
   const [slideDir, setSlideDir] = useState<"right" | "left">("right");
   const [showSuccess, setShowSuccess] = useState(false);
 
-  /* ── Load user from localStorage ── */
+  /* ── Load user from Supabase Auth ── */
   useEffect(() => {
-    const raw = localStorage.getItem("nexus_user");
-    if (!raw) { router.replace("/auth"); return; }
-    const parsed = JSON.parse(raw) as NexusUser;
-    // Redirect legacy director_school users to coach portal
-    if (parsed.role === "director_school") {
-      parsed.role = "coach";
-      parsed.is_school_admin = true;
-      parsed.is_also_coach = true;
-      localStorage.setItem("nexus_user", JSON.stringify(parsed));
-      if (parsed.onboarding_complete) {
-        router.replace("/coach/tableau-de-bord");
+    const loadUser = async () => {
+      const supabase = createClient();
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+
+      if (!authUser) {
+        router.replace("/auth");
         return;
       }
-    }
-    if (parsed.onboarding_complete) {
-      const dashMap: Record<string, string> = {
-        coach: "/coach/tableau-de-bord",
-        director_cegep: "/directeur-cegep/dashboard",
-        recruiter: "/recruteur/tableau-de-bord",
-        coach_league: "/coach/tableau-de-bord",
-        coordinator_league: "/directeur-ecole/dashboard",
+
+      const { data: profile } = await supabase
+        .from("users")
+        .select("*")
+        .eq("id", authUser.id)
+        .single();
+
+      if (!profile) {
+        router.replace("/auth");
+        return;
+      }
+
+      if (profile.onboarding_complete) {
+        if (profile.role === "COACH") router.replace("/coach/tableau-de-bord");
+        else if (profile.role === "RECRUTEUR") router.replace("/recruteur/tableau-de-bord");
+        else router.replace("/");
+        return;
+      }
+
+      // Map DB role to onboarding role
+      const roleMap: Record<string, string> = {
+        COACH: "coach",
+        RECRUTEUR: "recruiter",
       };
-      router.replace(dashMap[parsed.role] || "/");
-      return;
-    }
-    setUser(parsed);
+
+      const nexusUser: NexusUser = {
+        firstName: profile.first_name || "",
+        lastName: profile.last_name || "",
+        email: profile.email,
+        role: roleMap[profile.role] || "coach",
+        status: profile.status,
+        onboarding_complete: profile.onboarding_complete || false,
+        institution: null,
+        profile: {},
+        search_criteria: null,
+        team_needs: null,
+        first_athlete: null,
+      };
+
+      // Also keep localStorage in sync for the wizard steps
+      localStorage.setItem("nexus_user", JSON.stringify(nexusUser));
+      setUser(nexusUser);
+    };
+
+    loadUser();
   }, [router]);
 
   /* ── Save to localStorage (no state update to avoid re-render loops) ── */
@@ -244,8 +278,8 @@ export default function OnboardingPage() {
     coach: 4,           // profil, école, directeur, athlète
     coach_league: 4,    // profil, ligue, coordonnateur, athlète
     director_school: 3, // redirect below
-    director_cegep: 3,
-    recruiter: 3,
+    director_cegep: 3,  // redirect below
+    recruiter: 4,       // profil, cégep, directeur, critères
     coordinator_league: 3,
   };
   const totalSteps = totalStepsMap[user?.role ?? ""] || 3;
@@ -264,18 +298,66 @@ export default function OnboardingPage() {
     }
   };
 
-  const finish = () => {
+  const finish = async () => {
     save({ onboarding_complete: true });
-    // Also update local state for the redirect
     setUser((prev) => prev ? { ...prev, onboarding_complete: true } : prev);
+
+    const supabase = createClient();
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+
+    if (authUser) {
+      // Get the onboarding data from localStorage
+      const raw = localStorage.getItem("nexus_user");
+      const localUser = raw ? JSON.parse(raw) : {};
+
+      // Save profile data to users table
+      await supabase
+        .from("users")
+        .update({
+          onboarding_complete: true,
+          first_name: localUser.firstName || user?.firstName,
+          last_name: localUser.lastName || user?.lastName,
+          phone: localUser.profile?.phone || null,
+        })
+        .eq("id", authUser.id);
+
+      // Save school to users table if coach selected one
+      if (localUser.institution?.name && user?.role === "coach") {
+        const { data: school } = await supabase
+          .from("school_registry")
+          .select("id")
+          .ilike("name", `%${localUser.institution.name}%`)
+          .limit(1)
+          .single();
+
+        if (school) {
+          await supabase
+            .from("users")
+            .update({ school_id: null })
+            .eq("id", authUser.id);
+        }
+      }
+
+      // Save recruiter preferences if recruiter
+      if (user?.role === "recruiter" && localUser.search_criteria) {
+        const sc = localUser.search_criteria;
+        await supabase
+          .from("recruiter_preferences")
+          .upsert({
+            recruiter_id: authUser.id,
+            divisions: sc.divisions || [],
+            regions_preferees: sc.regions || [],
+            graduation_years: sc.grad_years || [],
+            moyenne_min: sc.min_gpa || 50,
+          });
+      }
+    }
+
     setShowSuccess(true);
     const dashMap: Record<string, string> = {
       coach: "/coach/tableau-de-bord",
-      director_school: "/directeur-ecole/dashboard",
-      director_cegep: "/directeur-cegep/dashboard",
       recruiter: "/recruteur/tableau-de-bord",
       coach_league: "/coach/tableau-de-bord",
-      coordinator_league: "/directeur-ecole/dashboard",
     };
     setTimeout(() => {
       router.push(dashMap[user?.role || "coach"] || "/");
@@ -303,7 +385,7 @@ export default function OnboardingPage() {
     coach: ["Profil", "École", "Directeur", "Athlète"],
     director_school: ["Profil", "École", "Invitations"],
     director_cegep: ["Profil", "CÉGEP", "Invitations"],
-    recruiter: ["Profil", "Critères", "Besoins"],
+    recruiter: ["Profil", "CÉGEP", "Directeur", "Critères"],
     coach_league: ["Profil", "Ligue", "Coordonnateur", "Athlète"],
     coordinator_league: ["Profil", "Ligue", "Invitations"],
   };
@@ -395,8 +477,9 @@ function CoachStep({ step, user, save }: { step: number; user: NexusUser; save: 
    Used by school coach (Step 3) and league coach (Step 3).
 ═══════════════════════════════════════════════════════════════ */
 
-function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: Partial<NexusUser>) => void; type: "school" | "league" }) {
+function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: Partial<NexusUser>) => void; type: "school" | "league" | "cegep" }) {
   const isLeague = type === "league";
+  const isCegep = type === "cegep";
   const roleLabel = isLeague ? "coordonnateur" : "directeur sportif";
   const RoleLabel = isLeague ? "Coordonnateur" : "Directeur sportif";
   const orgName = user.institution
@@ -414,14 +497,17 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
   const labelCls = "block text-[10px] font-bold tracking-[0.25em] uppercase text-[#6B7280] mb-1.5";
 
   useEffect(() => {
+    const adminKey = isCegep ? "is_cegep_admin" : "is_school_admin";
+    const coachKey = isCegep ? "is_also_recruiter" : "is_also_coach";
+    const typeKey = isCegep ? "cegep_admin_type" : "school_admin_type";
     if (choice === "self") {
-      save({ is_school_admin: true, is_also_coach: true, school_admin_type: "owner" });
+      save({ [adminKey]: true, [coachKey]: true, [typeKey]: "owner" });
     } else if (choice === "invite" && inviteEmail) {
       save({
-        is_school_admin: true,
-        is_also_coach: true,
-        school_admin_type: "owner",
-        pending_director_invite: { email: inviteEmail, firstName: inviteFirstName, lastName: inviteLastName, message: inviteMessage, sent_at: new Date().toISOString() },
+        [adminKey]: true,
+        [coachKey]: true,
+        [typeKey]: "owner",
+        pending_director_invite: { email: inviteEmail, firstName: inviteFirstName, lastName: inviteLastName, message: inviteMessage, sent_at: new Date().toISOString(), type: isCegep ? "cegep" : type },
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -432,7 +518,7 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
       <div>
         <h2 className="font-head text-xl font-black text-white uppercase">Qui est le {roleLabel}?</h2>
         <p className="text-sm text-[#9CA3AF] mt-1">
-          Chaque {isLeague ? "ligue" : "école"} sur Nexus a besoin d&apos;un responsable. Le {roleLabel} supervise les {isLeague ? "entraîneurs" : "coachs"} et approuve les profils.
+          Chaque {isCegep ? "CÉGEP" : isLeague ? "ligue" : "école"} sur Nexus a besoin d&apos;un responsable. Le {roleLabel} supervise les {isCegep ? "recruteurs" : isLeague ? "entraîneurs" : "coachs"} et {isCegep ? "les résultats de recrutement" : "approuve les profils"}.
         </p>
       </div>
 
@@ -453,7 +539,7 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
             </svg>
           </div>
           <span className="font-head font-black text-[13px] uppercase tracking-[0.1em] text-white">C&apos;est moi</span>
-          <span className="text-[11px] text-[#6B7280] leading-snug">Je supervise le programme sportif de mon {isLeague ? "club" : "école"}</span>
+          <span className="text-[11px] text-[#6B7280] leading-snug">Je supervise le {isCegep ? "programme de recrutement de mon CÉGEP" : `programme sportif de mon ${isLeague ? "club" : "école"}`}</span>
         </button>
 
         {/* Card 2: INVITER */}
@@ -478,13 +564,9 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
 
       {/* C'EST MOI expanded */}
       {choice === "self" && (
-        <div className="animate-fade-slide-down space-y-4 bg-[#111317]/60 rounded-xl p-5 border border-white/5">
-          <div>
-            <label className={labelCls}>Confirme ton courriel</label>
-            <input type="email" value={selfEmail} onChange={(e) => setSelfEmail(e.target.value)} className={inputCls} />
-          </div>
+        <div className="animate-fade-slide-down bg-[#111317]/60 rounded-xl p-5 border border-white/5">
           <p className="text-[12px] text-[#9CA3AF] leading-relaxed">
-            Tu seras Entraîneur ET {RoleLabel} de {orgName}. Tu pourras gérer les autres {isLeague ? "entraîneurs" : "coachs"}, voir les stats de recrutement, et superviser les profils athlètes.
+            Tu seras {isCegep ? "Recruteur" : "Entraîneur"} ET {RoleLabel} de {orgName}. Tu pourras gérer les autres {isCegep ? "recruteurs" : isLeague ? "entraîneurs" : "coachs"}, voir les stats {isCegep ? "globales de recrutement" : "de recrutement"}, et superviser {isCegep ? "le pipeline de tout le CÉGEP" : "les profils athlètes"}.
           </p>
         </div>
       )}
@@ -518,7 +600,7 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
             <p className="text-[10px] text-[#4a4d56] text-right mt-1">{inviteMessage.length}/300</p>
           </div>
           <p className="text-[12px] text-[#9CA3AF] leading-relaxed">
-            Le {roleLabel} recevra un lien pour créer son compte gratuit. En attendant, tu seras temporairement Admin {isLeague ? "Ligue" : "École"}.
+            Le {roleLabel} recevra un lien pour créer son compte gratuit. En attendant, tu seras temporairement Admin {isCegep ? "CÉGEP" : isLeague ? "Ligue" : "École"}.
           </p>
         </div>
       )}
@@ -602,8 +684,10 @@ function CoachProfile({ profile, save }: { profile: Record<string, unknown>; sav
 
 /* ── School step (shared by Coach + Director École) ── */
 function SchoolStep({ user, save }: { user: NexusUser; save: (u: Partial<NexusUser>) => void }) {
-  const [selected, setSelected] = useState<(typeof MOCK_SCHOOLS)[0] | null>(
-    user.institution ? MOCK_SCHOOLS.find((s) => s.name === (user.institution as Record<string, unknown>)?.name) || null : null
+  const [schools, setSchools] = useState<{ name: string; city: string; region: string; conference: string; sports: string[] }[]>([]);
+  const [schoolsLoading, setSchoolsLoading] = useState(true);
+  const [selected, setSelected] = useState<{ name: string; city: string; region: string; conference: string; sports: string[] } | null>(
+    user.institution ? { name: (user.institution as Record<string, string>).name, city: (user.institution as Record<string, string>).city || "", region: (user.institution as Record<string, string>).region || "", conference: "", sports: [] } : null
   );
   const [showCustom, setShowCustom] = useState(false);
   const [customName, setCustomName] = useState("");
@@ -611,11 +695,36 @@ function SchoolStep({ user, save }: { user: NexusUser; save: (u: Partial<NexusUs
   const [customRegion, setCustomRegion] = useState("");
 
   useEffect(() => {
+    const supabase = createClient();
+    supabase
+      .from("school_registry")
+      .select("name, city, region_admin")
+      .eq("has_secondaire", true)
+      .eq("status", "ACTIVE")
+      .order("name")
+      .then(({ data, error }) => {
+        console.log("Schools:", data?.length, error);
+        if (data) {
+          setSchools(data.map(s => ({
+            name: s.name,
+            city: s.city || "",
+            region: s.region_admin || "",
+            conference: "",
+            sports: [],
+          })));
+        }
+        setSchoolsLoading(false);
+      });
+  }, []);
+
+  useEffect(() => {
     if (selected) {
       save({ institution: { name: selected.name, city: selected.city, region: selected.region, conference: selected.conference, sports: selected.sports } });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected]);
+
+  if (schoolsLoading) return <p className="text-sm text-[#6B7280]">Chargement des écoles...</p>;
 
   return (
     <div className="space-y-5">
@@ -625,7 +734,7 @@ function SchoolStep({ user, save }: { user: NexusUser; save: (u: Partial<NexusUs
       </div>
 
       <SearchableDropdown
-        items={MOCK_SCHOOLS}
+        items={schools}
         value={selected?.name || ""}
         onChange={(item) => setSelected(item)}
         placeholder="Rechercher ton école..."
@@ -1068,8 +1177,9 @@ function InviteStep({ role }: { role: string; onFinish: () => void }) {
 ═══════════════════════════════════════════════════════════════ */
 function RecruiterStep({ step, user, save }: { step: number; user: NexusUser; save: (u: Partial<NexusUser>) => void; onFinish: () => void }) {
   if (step === 0) return <RecruiterProfile user={user} save={save} />;
-  if (step === 1) return <RecruiterCriteria user={user} save={save} />;
-  return <RecruiterNeeds user={user} save={save} />;
+  if (step === 1) return <RecruiterCegepStep user={user} save={save} />;
+  if (step === 2) return <DirectorChoiceStep user={user} save={save} type="cegep" />;
+  return <RecruiterCriteria user={user} save={save} />;
 }
 
 /* ── Recruiter profile ── */
@@ -1147,6 +1257,120 @@ function RecruiterProfile({ user, save }: { user: NexusUser; save: (u: Partial<N
 }
 
 /* ── Recruiter search criteria ── */
+/* ── Recruiter CÉGEP selection ── */
+
+function RecruiterCegepStep({ user, save }: { user: NexusUser; save: (u: Partial<NexusUser>) => void }) {
+  const inst = user.institution as Record<string, string> | null;
+  const [selected, setSelected] = useState(inst?.name || "");
+  const [search, setSearch] = useState("");
+  const [showCustom, setShowCustom] = useState(false);
+  const [customName, setCustomName] = useState("");
+  const [customCity, setCustomCity] = useState("");
+  const [customSubmitted, setCustomSubmitted] = useState(false);
+  const [cegeps, setCegeps] = useState<{ name: string; city: string; region: string }[]>([]);
+
+  const inputCls = "w-full bg-[#111317] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white placeholder:text-[#6B7280] focus:border-[#E63946] outline-none transition-colors";
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase
+      .from("school_registry")
+      .select("name, city, region_admin")
+      .eq("has_collegial", true)
+      .eq("status", "ACTIVE")
+      .order("name")
+      .then(({ data, error }) => {
+        console.log("CÉGEPs:", data?.length, error);
+        if (data) {
+          setCegeps(data.map(s => ({
+            name: s.name,
+            city: s.city || "",
+            region: s.region_admin || "",
+          })));
+        }
+      });
+  }, []);
+
+  const filtered = cegeps.filter((c) =>
+    c.name.toLowerCase().includes(search.toLowerCase()) || c.city.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const selectCegep = (c: { name: string; city: string; region: string }) => {
+    setSelected(c.name);
+    save({ institution: { name: c.name, city: c.city, region: c.region } });
+  };
+
+  return (
+    <div className="space-y-5">
+      <div>
+        <h2 className="font-head text-xl font-black text-white uppercase">Ton CÉGEP</h2>
+        <p className="text-sm text-[#9CA3AF] mt-1">Associe-toi à ton CÉGEP pour commencer le recrutement.</p>
+      </div>
+
+      {!selected && !showCustom && (
+        <>
+          <input
+            type="text"
+            placeholder="Rechercher un CÉGEP..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className={inputCls}
+          />
+          <div className="space-y-2 max-h-[280px] overflow-y-auto">
+            {filtered.map((c) => (
+              <button
+                key={c.name}
+                type="button"
+                onClick={() => selectCegep(c)}
+                className="w-full text-left bg-[#111317] border border-white/5 rounded-lg px-4 py-3 hover:border-[#E63946]/30 transition-colors"
+              >
+                <p className="text-[14px] font-bold text-white">{c.name}</p>
+                <p className="text-[12px] text-[#6B7280]">{c.city}, {c.region}</p>
+              </button>
+            ))}
+          </div>
+          <button type="button" onClick={() => setShowCustom(true)} className="text-[12px] text-[#E63946] font-bold hover:text-[#D42B22] transition-colors">
+            Mon CÉGEP n&apos;est pas dans la liste →
+          </button>
+        </>
+      )}
+
+      {selected && (
+        <div className="bg-[#111317] border border-[#22C55E]/30 rounded-xl p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-[15px] font-bold text-white">{selected}</p>
+              <p className="text-[12px] text-[#6B7280]">{[(inst as Record<string, string>)?.city, (inst as Record<string, string>)?.region].filter(Boolean).join(", ")}</p>
+            </div>
+            <span className="text-[12px] font-bold text-[#22C55E]">✓ Sélectionné</span>
+          </div>
+          <button type="button" onClick={() => { setSelected(""); save({ institution: null }); }} className="text-[11px] text-[#6B7280] hover:text-white mt-2 transition-colors">
+            Changer de CÉGEP
+          </button>
+        </div>
+      )}
+
+      {showCustom && !selected && (
+        <div className="bg-[#111317] border border-white/5 rounded-xl p-5 space-y-3">
+          <p className="text-[13px] font-bold text-white">Demander l&apos;ajout de ton CÉGEP</p>
+          <input type="text" placeholder="Nom du CÉGEP" value={customName} onChange={(e) => setCustomName(e.target.value)} className={inputCls} />
+          <input type="text" placeholder="Ville" value={customCity} onChange={(e) => setCustomCity(e.target.value)} className={inputCls} />
+          {!customSubmitted ? (
+            <button type="button" onClick={() => { setCustomSubmitted(true); if (customName) { setSelected(customName); save({ institution: { name: customName, city: customCity } }); } }} className="h-10 px-5 rounded-lg bg-[#E63946] text-white font-bold text-[12px] uppercase tracking-wider hover:bg-[#D42B22] transition-colors">
+              Soumettre
+            </button>
+          ) : (
+            <p className="text-[12px] text-[#22C55E] font-bold">✓ Demande soumise (POC)</p>
+          )}
+          <button type="button" onClick={() => setShowCustom(false)} className="text-[11px] text-[#6B7280] hover:text-white transition-colors block">
+            ← Retour à la liste
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function RecruiterCriteria({ user, save }: { user: NexusUser; save: (u: Partial<NexusUser>) => void }) {
   const sc = (user.search_criteria || {}) as Record<string, unknown>;
   const [positions, setPositions] = useState<string[]>((sc.positions as string[]) || []);
@@ -1154,15 +1378,33 @@ function RecruiterCriteria({ user, save }: { user: NexusUser; save: (u: Partial<
   const [regions, setRegions] = useState<string[]>((sc.regions as string[]) || [...REGIONS]);
   const [gradYears, setGradYears] = useState<number[]>((sc.grad_years as number[]) || [2026, 2027]);
   const [minGpa, setMinGpa] = useState((sc.min_gpa as number) || 70);
-  const [programs, setPrograms] = useState<string[]>((sc.programs as string[]) || []);
 
   const sportPrincipal = ((user.profile || {}) as Record<string, unknown>).sport_principal as string || "Football";
   const positionOptions = sportPrincipal === "Football" ? FOOTBALL_POSITIONS : ["Joueur", "Gardien", "Ailier", "Centre", "Défenseur"];
+  const [availableDivisions, setAvailableDivisions] = useState<string[]>(["D1", "D2", "D3"]);
 
   useEffect(() => {
-    save({ search_criteria: { positions, divisions, regions, grad_years: gradYears, min_gpa: minGpa, programs } });
+    if (!sportPrincipal || sportPrincipal === "Football") {
+      setAvailableDivisions(["D1", "D2", "D3"]);
+      return;
+    }
+    const supabase = createClient();
+    supabase
+      .from("ligues")
+      .select("division, sports!inner(nom)")
+      .eq("sports.nom", sportPrincipal)
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          const divs = [...new Set(data.map((l: Record<string, unknown>) => l.division as string).filter(Boolean))];
+          setAvailableDivisions(divs.length > 0 ? divs : ["D1", "D2", "D3"]);
+        }
+      });
+  }, [sportPrincipal]);
+
+  useEffect(() => {
+    save({ search_criteria: { positions, divisions, regions, grad_years: gradYears, min_gpa: minGpa } });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [positions, divisions, regions, gradYears, minGpa, programs]);
+  }, [positions, divisions, regions, gradYears, minGpa]);
 
   const toggleArr = <T,>(arr: T[], val: T, set: (a: T[]) => void) => {
     set(arr.includes(val) ? arr.filter((x) => x !== val) : [...arr, val]);
@@ -1175,9 +1417,9 @@ function RecruiterCriteria({ user, save }: { user: NexusUser; save: (u: Partial<
         <p className="text-sm text-[#9CA3AF] mt-1">On utilisera ces critères pour te montrer les athlètes les plus pertinents.</p>
       </div>
 
-      {/* Positions */}
+      {/* Positions — linked to sport */}
       <div>
-        <label className={`${label} text-[#9CA3AF] mb-2 block`}>Positions recherchées</label>
+        <label className={`${label} text-[#9CA3AF] mb-2 block`}>Positions recherchées — {sportPrincipal}</label>
         <PillToggle options={positionOptions} selected={positions} onToggle={(v) => toggleArr(positions, v, setPositions)} />
       </div>
 
@@ -1185,7 +1427,7 @@ function RecruiterCriteria({ user, save }: { user: NexusUser; save: (u: Partial<
       <div>
         <label className={`${label} text-[#9CA3AF] mb-2 block`}>Divisions</label>
         <div className="flex gap-3">
-          {["D1", "D2", "D3"].map((d) => (
+          {availableDivisions.map((d) => (
             <label key={d} className="flex items-center gap-2 cursor-pointer">
               <input type="checkbox" checked={divisions.includes(d)} onChange={() => toggleArr(divisions, d, setDivisions)} className="accent-[#E63946] w-4 h-4" />
               <span className="text-sm text-white">{d}</span>
@@ -1220,11 +1462,6 @@ function RecruiterCriteria({ user, save }: { user: NexusUser; save: (u: Partial<
         <div className="flex justify-between text-[9px] text-[#6B7280]"><span>50%</span><span>90%</span></div>
       </div>
 
-      {/* Programs */}
-      <div>
-        <label className={`${label} text-[#9CA3AF] mb-2 block`}>Programme préféré</label>
-        <PillToggle options={["Sport-études", "Sciences", "Général", "Tous les programmes"]} selected={programs} onToggle={(v) => toggleArr(programs, v, setPrograms)} />
-      </div>
     </div>
   );
 }

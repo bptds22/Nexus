@@ -199,7 +199,7 @@ export default function CegepActivitesPage() {
       {/* ── Header ──────────────────────────────────────── */}
       <h1
         className="text-[22px] font-bold uppercase tracking-wide text-white"
-        style={{ fontFamily: "var(--wl-font-head, Montserrat, sans-serif)" }}
+        style={{ fontFamily: "var(--wl-font-head, Outfit, sans-serif)" }}
       >
         Activit&eacute;s
       </h1>

@@ -1,16 +1,16 @@
 "use client";
 
-import { useState, useMemo, Suspense } from "react";
+import { useState, useMemo, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ROSTER_ATHLETES, COACH_TEAMS, type RosterAthlete } from "./_data/mockRosterData";
+import { createClient } from "@/lib/supabase/client";
+import { type RosterAthlete } from "./_data/mockRosterData";
 import RosterSummaryBar from "./_components/RosterSummaryBar";
 import RosterToolbar, { type FilterPreset } from "./_components/RosterToolbar";
 import RosterTable, { type SortKey } from "./_components/RosterTable";
 import RosterMobileCard from "./_components/RosterMobileCard";
 import RosterGridCard from "./_components/RosterGridCard";
 import RosterEmptyState from "./_components/RosterEmptyState";
-import UpgradePrompt from "@/components/subscription/UpgradePrompt";
 
 /* ─────────────────────────────────────────────────────────────────
    Mes Athlètes — Roster Workbench
@@ -56,9 +56,9 @@ function mapUrlFilter(param: string | null): FilterPreset {
   return "tous";
 }
 
-/** Get sport name for team ID */
+/** Get sport name — teamId now stores the sport name directly from Supabase */
 function getSport(teamId: string): string {
-  return COACH_TEAMS.find((t) => t.id === teamId)?.sport ?? "";
+  return teamId === "real" ? "" : teamId;
 }
 
 export default function MesAthletesPage() {
@@ -73,6 +73,8 @@ function MesAthletesContent() {
   const searchParams = useSearchParams();
   const urlFilter = searchParams.get("filtre");
 
+  const [realAthletes, setRealAthletes] = useState<RosterAthlete[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState<FilterPreset>(mapUrlFilter(urlFilter));
   const [selectedGradYear, setSelectedGradYear] = useState("all");
@@ -83,13 +85,109 @@ function MesAthletesContent() {
   const [sortKey, setSortKey] = useState<SortKey>("stage");
   const [sortAsc, setSortAsc] = useState(true);
 
+  useEffect(() => {
+    const supabase = createClient();
+
+    const loadAthletes = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) {
+        setLoading(false);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("athletes")
+        .select(`
+          id,
+          first_name,
+          last_name,
+          verified,
+          profile_completion,
+          verification_method,
+          verified_at,
+          verified_by,
+          video_faits_saillants_url,
+          annee_diplomation,
+          cote_globale_entraineur,
+          numero_jersey,
+          status,
+          sport_id,
+          position_id,
+          sports!sport_id(nom),
+          positions!position_id(nom, abreviation),
+          evaluations(cote_globale)
+        `)
+        .eq("coach_id", session.user.id)
+        .eq("status", "ACTIF");
+
+      console.log("Roster query result:", JSON.stringify(data), "error:", error, "uid:", session.user.id);
+
+      if (!data) { setLoading(false); return; }
+
+      const mapped: RosterAthlete[] = data.map((a: Record<string, unknown>) => {
+        // Handle FK joins — may be object or array
+        const posRaw = a.positions;
+        const pos = Array.isArray(posRaw) ? posRaw[0] : posRaw;
+        const posObj = pos as { nom?: string; abreviation?: string } | null;
+
+        const sportRaw = a.sports;
+        const sport = Array.isArray(sportRaw) ? sportRaw[0] : sportRaw;
+        const sportObj = sport as { nom?: string } | null;
+
+        const evalsRaw = a.evaluations;
+        const evals = Array.isArray(evalsRaw) ? evalsRaw : [];
+        const eval0 = evals[0] as { cote_globale?: number } | undefined;
+        const stars = eval0?.cote_globale || (a.cote_globale_entraineur as number) || 0;
+
+        const position = posObj?.abreviation || posObj?.nom || "";
+        const gradYear = (a.annee_diplomation as number) || 0;
+        const profilePct = (a.profile_completion as number) || 0;
+        const isVerified = !!(a.verified);
+
+        const athlete: RosterAthlete = {
+          id: a.id as string,
+          firstName: (a.first_name as string) || "",
+          lastName: (a.last_name as string) || "",
+          position,
+          gradYear,
+          teamId: sportObj?.nom || "real",
+          profilePercent: profilePct,
+          isVerified,
+          verification: {
+            isVerified,
+            method: (a.verification_method as "auto" | "manual_coach" | "manual_director") || null,
+            verifiedAt: (a.verified_at as string) || null,
+            verifiedBy: (a.verified_by as string) || null,
+            verifiedByName: null,
+            profilePercentAtVerification: profilePct || null,
+            autoEligible: profilePct >= 60,
+            manualOverrideActive: false,
+          },
+          views: 0,
+          favorites: 0,
+          stars: Math.round(stars),
+          commitmentStatus: "aucun" as const,
+          badgeIcons: [],
+        };
+
+        console.log("Mapped athlete:", athlete.firstName, athlete.lastName, "pos:", athlete.position, "grad:", athlete.gradYear, "verified:", athlete.isVerified, "stars:", athlete.stars);
+        return athlete;
+      });
+
+      setRealAthletes(mapped);
+      setLoading(false);
+    };
+
+    loadAthletes();
+  }, []);
+
   function handleSort(key: SortKey) {
     if (sortKey === key) setSortAsc(!sortAsc);
     else { setSortKey(key); setSortAsc(true); }
   }
 
   const filtered = useMemo(() => {
-    let list = [...ROSTER_ATHLETES];
+    let list = [...realAthletes];
 
     // Search filter
     if (search.trim().length >= 2) {
@@ -144,11 +242,18 @@ function MesAthletesContent() {
         break;
     }
 
+    console.log("Athletes loaded:", list.length, "Filter:", activeFilter);
     return sortAthletes(list, sortKey, sortAsc);
-  }, [search, activeFilter, selectedGradYear, selectedTeamId, selectedSport, selectedVerification, sortKey, sortAsc]);
+  }, [realAthletes, search, activeFilter, selectedGradYear, selectedTeamId, selectedSport, selectedVerification, sortKey, sortAsc]);
 
   // If the entire roster is empty (not just filtered)
-  if (ROSTER_ATHLETES.length === 0) {
+  if (loading) return (
+    <div className="px-6 sm:px-10 py-8 max-w-[1280px] mx-auto flex items-center justify-center">
+      <p className="text-[#6B7280] text-sm py-20">Chargement du roster...</p>
+    </div>
+  );
+
+  if (!loading && realAthletes.length === 0) {
     return (
       <div className="px-6 sm:px-10 py-8 max-w-[1280px] mx-auto">
         <RosterEmptyState />
@@ -158,14 +263,6 @@ function MesAthletesContent() {
 
   return (
     <div className="px-6 sm:px-10 py-8 max-w-[1280px] mx-auto space-y-6">
-
-      {/* Upgrade prompt — free tier, >5 athletes */}
-      {ROSTER_ATHLETES.length > 5 && (
-        <UpgradePrompt
-          dismissKey="nexus_upgrade_coach_roster"
-          message="Tu as atteint la limite de 5 profils. Passe à Coach Pro pour créer des profils illimités et débloquer l'évaluation détaillée."
-        />
-      )}
 
       {/* ── Header ──────────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -216,7 +313,7 @@ function MesAthletesContent() {
       </div>
 
       {/* ── Summary Bar ─────────────────────────────────────────── */}
-      <RosterSummaryBar athletes={ROSTER_ATHLETES} />
+      <RosterSummaryBar athletes={realAthletes} />
 
       {/* ── Toolbar ─────────────────────────────────────────────── */}
       <RosterToolbar
@@ -232,6 +329,7 @@ function MesAthletesContent() {
         onSportChange={setSelectedSport}
         selectedVerification={selectedVerification}
         onVerificationChange={setSelectedVerification}
+        sportsList={[...new Set(realAthletes.map((a) => getSport(a.teamId)).filter(Boolean))]}
       />
 
       {/* ── Content ─────────────────────────────────────────────── */}

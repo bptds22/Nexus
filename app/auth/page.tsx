@@ -4,6 +4,7 @@ import { useState, useRef, useCallback, useEffect, Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import PlaybookBackground from "../components/PlaybookBackground";
 
 /* ─────────────────────────────────────────────────────────────────
@@ -29,76 +30,6 @@ const SOCIALS = [
   { name: "LinkedIn", href: "#", d: "M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" },
 ];
 
-/* ── Context + Role selection (2-step) ── */
-
-const CONTEXTS = [
-  {
-    value: "scolaire",
-    label: "ÉCOLE SECONDAIRE",
-    subtitle: "Entraîneur ou directeur sportif d'une école secondaire",
-    icon: (
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="4" y="2" width="16" height="20" rx="2" /><path d="M9 22V12h6v10" /><path d="M8 6h.01M16 6h.01M8 10h.01M16 10h.01" />
-      </svg>
-    ),
-  },
-  {
-    value: "collegial",
-    label: "CÉGEP",
-    subtitle: "Recruteur ou directeur sportif d'un CÉGEP",
-    icon: (
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M22 10v6M2 10l10-5 10 5-10 5z" /><path d="M6 12v5c0 1.66 2.69 3 6 3s6-1.34 6-3v-5" />
-      </svg>
-    ),
-  },
-  {
-    value: "ligue_civile",
-    label: "LIGUE CIVILE",
-    subtitle: "Entraîneur ou coordonnateur d'une ligue ou club sportif",
-    icon: (
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M6 9H4a2 2 0 01-2-2V5a2 2 0 012-2h2" /><path d="M18 9h2a2 2 0 002-2V5a2 2 0 00-2-2h-2" /><path d="M6 3h12v6a6 6 0 01-12 0V3z" /><path d="M12 15v3M8 21h8" />
-      </svg>
-    ),
-  },
-];
-
-type ContextValue = "scolaire" | "collegial" | "ligue_civile";
-
-const CONTEXT_ROLES: Record<ContextValue, { value: string; label: string; icon: React.ReactNode }[]> = {
-  scolaire: [
-    {
-      value: "coach",
-      label: "Entraîneur",
-      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" /><rect x="9" y="3" width="6" height="4" rx="1" /><path d="M9 14l2 2 4-4" /></svg>,
-    },
-  ],
-  collegial: [
-    {
-      value: "recruiter",
-      label: "Recruteur",
-      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" /></svg>,
-    },
-    {
-      value: "director_cegep",
-      label: "Directeur sportif",
-      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>,
-    },
-  ],
-  ligue_civile: [
-    {
-      value: "coach_league",
-      label: "Entraîneur",
-      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" /><rect x="9" y="3" width="6" height="4" rx="1" /><path d="M9 14l2 2 4-4" /></svg>,
-    },
-    {
-      value: "coordinator_league",
-      label: "Coordonnateur",
-      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 20h20v2H2zm1-2l3-10 6 6 6-6 3 10z" /><circle cx="5" cy="6" r="2" /><circle cx="12" cy="3" r="2" /><circle cx="19" cy="6" r="2" /></svg>,
-    },
-  ],
-};
 
 /* ── Toast component ── */
 function Toast({ message, onClose }: { message: string; onClose: () => void }) {
@@ -150,20 +81,25 @@ function AuthContent() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPwd, setShowPwd] = useState(false);
   const [showConfirmPwd, setShowConfirmPwd] = useState(false);
-  const [selectedContext, setSelectedContext] = useState<ContextValue | "">("");
-  const [selectedRole, setSelectedRole] = useState("");
   const [shakeFields, setShakeFields] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [selectedSport, setSelectedSport] = useState("");
+  const [showAthleteForm, setShowAthleteForm] = useState(false);
+  const [consentPolicy, setConsentPolicy] = useState(false);
+  const [consentData, setConsentData] = useState(false);
+  const formRef = useRef<HTMLDivElement>(null);
 
   /* ── Login state ── */
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [showLoginPwd, setShowLoginPwd] = useState(false);
   const [loginSubmitted, setLoginSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const pwdMeetsMin = password.length >= 8;
   const pwdMismatch = confirmPassword.length > 0 && password !== confirmPassword;
-  const signupValid = firstName && lastName && email && pwdMeetsMin && !pwdMismatch && selectedRole;
+  const baseValid = firstName && lastName && email && pwdMeetsMin && !pwdMismatch;
+  const signupValid = baseValid && selectedSport && consentPolicy && consentData;
 
   /* Replay fade animation on mode switch */
   const switchMode = useCallback(
@@ -189,35 +125,24 @@ function AuthContent() {
       setTimeout(() => setShakeFields(false), 600);
       return;
     }
-    const needsValidation = selectedRole === "recruiter" || selectedRole === "coach" || selectedRole === "coach_league";
     const user = {
-      firstName,
-      lastName,
-      email,
-      context: selectedContext,
-      role: selectedRole,
-      status: needsValidation ? "pending_validation" : "active",
-      onboarding_complete: false,
-      institution: null,
-      profile: {},
-      search_criteria: null,
-      team_needs: null,
-      first_athlete: null,
+      firstName, lastName, email,
+      context: "athlete", role: "athlete", status: "active",
+      onboarding_complete: false, institution: null,
+      profile: { sport_principal: selectedSport },
+      search_criteria: null, team_needs: null, first_athlete: null,
       referral_code: referralCode,
       referred_by: referralCode ? "ambassadeur" : null,
       subscription: { tier: "free", status: "active", billing_cycle: null, current_period_end: null, trial_days_remaining: null, cancel_at_period_end: false },
       tier: "free",
+      privacy_consent: { privacy_policy_accepted: true, privacy_policy_version: "2026-03-v1.0", data_collection_accepted: true, accepted_at: new Date().toISOString() },
     };
     localStorage.setItem("nexus_user", JSON.stringify(user));
-    if (needsValidation) {
-      router.push("/auth/pending");
-    } else {
-      router.push("/onboarding");
-    }
+    router.push("/athlete/dashboard");
   };
 
   /* ── Login handler ── */
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginSubmitted(true);
     if (!loginEmail || !loginPassword) {
@@ -225,25 +150,53 @@ function AuthContent() {
       setTimeout(() => setShakeFields(false), 600);
       return;
     }
-    const stored = localStorage.getItem("nexus_user");
-    if (!stored) {
-      setToast("Créez un compte d’abord");
+
+    setLoading(true);
+    const supabase = createClient();
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: loginEmail,
+      password: loginPassword,
+    });
+
+    if (error) {
+      setToast(error.message);
+      setTimeout(() => setToast(null), 4000);
+      setLoading(false);
       return;
     }
-    const user = JSON.parse(stored);
-    if (user.onboarding_complete) {
-      const dashMap: Record<string, string> = {
-        coach: "/coach/tableau-de-bord",
-        director_school: "/directeur-ecole/dashboard",
-        director_cegep: "/directeur-cegep/dashboard",
-        recruiter: "/recruteur/tableau-de-bord",
-        coach_league: "/coach/tableau-de-bord",
-        coordinator_league: "/directeur-ecole/dashboard",
-      };
-      router.push(dashMap[user.role] || "/");
+
+    // Check if onboarding is complete
+    const { data: profile } = await supabase
+      .from("users")
+      .select("role, onboarding_complete")
+      .eq("id", data.user.id)
+      .single();
+
+    const role = profile?.role;
+    const onboardingComplete = profile?.onboarding_complete;
+
+    // Always go to onboarding if not complete
+    if (!onboardingComplete) {
+      router.push("/onboarding");
+      setLoading(false);
+      return;
+    }
+
+    // Onboarding done — go to correct portal
+    if (role === "COACH" || role === "DIRECTEUR_SECONDAIRE") {
+      router.push("/coach");
+    } else if (role === "RECRUTEUR" || role === "DIRECTEUR_CEGEP") {
+      router.push("/recruteur");
+    } else if (role === "ATHLETE") {
+      router.push("/athlete");
+    } else if (role === "ADMIN") {
+      router.push("/admin");
     } else {
       router.push("/onboarding");
     }
+
+    setLoading(false);
   };
 
   const socialToast = () => setToast("Connexion sociale — disponible en Phase 2");
@@ -302,12 +255,12 @@ function AuthContent() {
               <span className="w-6 h-px bg-[#E63946]" />
             </div>
             <h1 className="font-head text-4xl sm:text-5xl font-black text-white uppercase leading-[0.92] tracking-tight">
-              {mode === "login" ? "Connexion" : "Créer un compte"}
+              {mode === "login" ? "Connexion" : "Inscription"}
             </h1>
             <p className="font-sans text-sm text-[#9CA3AF] mt-3 max-w-xs mx-auto leading-relaxed">
               {mode === "login"
                 ? "Accède à ton espace et connecte-toi avec ton réseau."
-                : "Rejoins la plateforme #1 de recrutement au Québec."}
+                : "Rejoins la plateforme #1 de recrutement sportif au Québec."}
             </p>
           </div>
 
@@ -333,173 +286,158 @@ function AuthContent() {
                     </div>
                   )}
 
-                  {/* Social login */}
-                  <div className="flex flex-col gap-3 mb-6">
-                    <button type="button" onClick={socialToast} className="flex items-center justify-center gap-3 h-11 w-full bg-[#111317] border border-white/10 rounded-lg text-sm text-white hover:border-white/20 transition-colors">
-                      <svg width="18" height="18" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
-                      Continuer avec Google
-                    </button>
-                    <button type="button" onClick={socialToast} className="flex items-center justify-center gap-3 h-11 w-full bg-[#111317] border border-white/10 rounded-lg text-sm text-white hover:border-white/20 transition-colors">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="#1877F2"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
-                      Continuer avec Facebook
-                    </button>
-                  </div>
-
-                  {/* Divider */}
-                  <div className="flex items-center gap-4 mb-6">
-                    <div className="flex-1 h-px bg-white/5" />
-                    <span className={`${label} text-[#6B7280]`}>ou par courriel</span>
-                    <div className="flex-1 h-px bg-white/5" />
-                  </div>
-
-                  {/* Signup form */}
-                  <form onSubmit={handleSignup} className={`flex flex-col gap-4 ${shakeFields ? "animate-shake" : ""}`}>
-                    {/* Prénom + Nom */}
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className={`${label} text-[#9CA3AF] mb-1.5 block`}>Prénom <span className="text-[#EF4444]">*</span></label>
-                        <input type="text" placeholder="Jean" value={firstName} onChange={(e) => setFirstName(e.target.value)} className={`${inputClass} ${fieldErr(!!firstName)}`} />
+                  {/* ── CHOICE VIEW (no form visible) ── */}
+                  {!showAthleteForm && (
+                    <>
+                      {/* Athlete hero */}
+                      <div className="text-center mb-6">
+                        <h2 className="font-head text-2xl sm:text-3xl font-black text-white uppercase tracking-tight mt-2 leading-tight">Es-tu le prochain à être recruté?</h2>
+                        <p className="text-[13px] text-[#9CA3AF] mt-2 leading-relaxed max-w-[400px] mx-auto">Crée ton profil en 2 minutes. Sois visible par tous les recruteurs CÉGEP du Québec.</p>
                       </div>
-                      <div>
-                        <label className={`${label} text-[#9CA3AF] mb-1.5 block`}>Nom <span className="text-[#EF4444]">*</span></label>
-                        <input type="text" placeholder="Tremblay" value={lastName} onChange={(e) => setLastName(e.target.value)} className={`${inputClass} ${fieldErr(!!lastName)}`} />
+
+                      {/* Big athlete CTA */}
+                      <button type="button" onClick={() => { setShowAthleteForm(true); setTimeout(() => formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50); }}
+                        className="w-full h-14 rounded-xl bg-[#E63946] text-white font-head font-black text-[14px] uppercase tracking-widest hover:bg-[#D42B22] hover:shadow-[0_8px_28px_rgba(230,57,70,0.38)] hover:-translate-y-0.5 transition-all cursor-pointer"
+                      >
+                        Je suis le NEX &rarr;
+                      </button>
+
+                      {/* Separator */}
+                      <div className="flex items-center gap-3 mt-8 mb-4">
+                        <div className="flex-1 h-px bg-white/10" />
+                        <span className={`${label} text-[#6B7280]`}>Tu n&apos;es pas un athlète?</span>
+                        <div className="flex-1 h-px bg-white/10" />
                       </div>
-                    </div>
 
-                    {/* Email */}
-                    <div>
-                      <label className={`${label} text-[#9CA3AF] mb-1.5 block`}>Courriel <span className="text-[#EF4444]">*</span></label>
-                      <input type="email" placeholder="coach@ecole.qc.ca" value={email} onChange={(e) => setEmail(e.target.value)} className={`${inputClass} ${fieldErr(!!email)}`} />
-                    </div>
-
-                    {/* Password */}
-                    <div>
-                      <label className={`${label} text-[#9CA3AF] mb-1.5 block`}>Mot de passe <span className="text-[#EF4444]">*</span></label>
-                      <div className="relative">
-                        <input type={showPwd ? "text" : "password"} placeholder="Mot de passe" value={password} onChange={(e) => setPassword(e.target.value)} className={`${inputClass} pr-10 ${fieldErr(pwdMeetsMin)}`} />
-                        <EyeToggle show={showPwd} onClick={() => setShowPwd(!showPwd)} />
+                      {/* 3 secondary pro cards */}
+                      <div className="grid grid-cols-3 gap-2">
+                        {[
+                          { title: "Entraîneur", sub: "École secondaire", icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22V12h6v10"/></svg> },
+                          { title: "Ligue civile", sub: "Coach ou coord.", icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M6 9H4a2 2 0 01-2-2V5a2 2 0 012-2h2"/><path d="M18 9h2a2 2 0 002-2V5a2 2 0 00-2-2h-2"/><path d="M6 3h12v6a6 6 0 01-12 0V3z"/><path d="M12 15v3M8 21h8"/></svg> },
+                          { title: "Recruteur", sub: "CÉGEP", icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg> },
+                        ].map((c) => (
+                          <Link key={c.title} href="/auth/pro"
+                            className="flex flex-col items-center gap-1.5 py-4 px-3 rounded-lg border border-white/10 text-[#9CA3AF] hover:border-[#E63946]/50 hover:bg-[#E63946]/5 hover:text-white transition-all text-center"
+                          >
+                            <span className="text-[#6B7280]">{c.icon}</span>
+                            <span className="font-head font-bold text-[10px] uppercase tracking-[0.1em]">{c.title}</span>
+                            <span className="text-[9px] text-[#6B7280] leading-tight">{c.sub}</span>
+                          </Link>
+                        ))}
                       </div>
-                      <p className={`text-xs mt-1.5 transition-colors ${pwdMeetsMin ? "text-[#22C55E]" : "text-[#6B7280]"}`}>
-                        {pwdMeetsMin ? "✓" : "•"} Minimum 8 caractères
-                      </p>
-                    </div>
+                    </>
+                  )}
 
-                    {/* Confirm password */}
-                    <div>
-                      <label className={`${label} text-[#9CA3AF] mb-1.5 block`}>Confirmer le mot de passe <span className="text-[#EF4444]">*</span></label>
-                      <div className="relative">
-                        <input type={showConfirmPwd ? "text" : "password"} placeholder="Mot de passe" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className={`${inputClass} pr-10 ${pwdMismatch ? "border-[#EF4444]" : ""}`} />
-                        <EyeToggle show={showConfirmPwd} onClick={() => setShowConfirmPwd(!showConfirmPwd)} />
+                  {/* ── ATHLETE FORM (revealed after CTA click) ── */}
+                  {showAthleteForm && (
+                    <div ref={formRef}>
+                      {/* Back to choice */}
+                      <button type="button" onClick={() => setShowAthleteForm(false)}
+                        className="flex items-center gap-1.5 text-[12px] text-[#6B7280] hover:text-white transition-colors mb-4"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+                        Retour
+                      </button>
+
+                      {/* Compact hero reminder */}
+                      <div className="flex items-center gap-2 mb-5">
+                        <span className="font-head font-black text-[14px] text-white uppercase tracking-tight">Crée ton profil</span>
+                        <span className="text-[12px] text-[#6B7280]">— Es-tu le prochain à être recruté?</span>
                       </div>
-                      {pwdMismatch && (
-                        <p className="text-xs mt-1.5 text-[#EF4444]">Les mots de passe ne correspondent pas</p>
-                      )}
-                    </div>
 
-                    {/* Step 1 — Context selection ("Ton milieu") */}
-                    <div>
-                      <label className={`${label} text-[#9CA3AF] mb-2.5 block`}>Ton milieu <span className="text-[#EF4444]">*</span></label>
-                      <div className={`grid grid-cols-1 sm:grid-cols-3 gap-3 ${submitted && !selectedContext ? "animate-shake" : ""}`}>
-                        {CONTEXTS.map((ctx) => {
-                          const isSelected = selectedContext === ctx.value;
-                          return (
-                            <button
-                              key={ctx.value}
-                              type="button"
-                              onClick={() => { setSelectedContext(ctx.value as ContextValue); setSelectedRole(""); }}
-                              className={`flex flex-col items-center justify-center gap-2 p-5 rounded-lg border transition-all text-center ${
-                                isSelected
-                                  ? "border-[#E63946] bg-[rgba(230,57,70,0.08)] text-white"
-                                  : "border-white/10 text-[#9CA3AF] hover:border-white/20 hover:text-white"
-                              }`}
-                            >
-                              <span className={isSelected ? "text-[#E63946]" : "text-[#6B7280]"}>{ctx.icon}</span>
-                              <span className="font-head font-black text-[15px] uppercase tracking-[0.12em] leading-tight">{ctx.label}</span>
-                              <span className="text-[13px] text-[#6B7280] leading-snug">{ctx.subtitle}</span>
-                            </button>
-                          );
-                        })}
+                      {/* Social login */}
+                      <button type="button" onClick={socialToast} className="flex items-center justify-center gap-3 h-11 w-full bg-[#111317] border border-white/10 rounded-lg text-sm text-white hover:border-white/20 transition-colors mb-4">
+                        <svg width="18" height="18" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+                        Continuer avec Google
+                      </button>
+                      <div className="flex items-center gap-4 mb-4">
+                        <div className="flex-1 h-px bg-white/5" />
+                        <span className={`${label} text-[#6B7280]`}>ou par courriel</span>
+                        <div className="flex-1 h-px bg-white/5" />
                       </div>
-                    </div>
 
-                    {/* Step 2 — Role selection (appears after context) */}
-                    {selectedContext && (() => {
-                      const roles = CONTEXT_ROLES[selectedContext];
-                      const isSingleRole = roles.length === 1;
-                      // Auto-select if single role
-                      if (isSingleRole && selectedRole !== roles[0].value) {
-                        setTimeout(() => setSelectedRole(roles[0].value), 0);
-                      }
-                      return (
-                        <div className="animate-fade-slide-down">
-                          {!isSingleRole && (
-                            <>
-                              <label className={`${label} text-[#9CA3AF] mb-2.5 block`}>Ton rôle <span className="text-[#EF4444]">*</span></label>
-                              <div className={`grid grid-cols-2 gap-3 ${submitted && !selectedRole ? "animate-shake" : ""}`}>
-                                {roles.map((r) => {
-                                  const isSelected = selectedRole === r.value;
-                                  return (
-                                    <button
-                                      key={r.value}
-                                      type="button"
-                                      onClick={() => setSelectedRole(r.value)}
-                                      className={`flex flex-col items-center justify-center gap-2 p-4 rounded-lg border transition-all text-center ${
-                                        isSelected
-                                          ? "border-[#E63946] bg-[rgba(230,57,70,0.1)] text-white"
-                                          : "border-white/10 text-[#9CA3AF] hover:border-white/20 hover:text-white"
-                                      }`}
-                                    >
-                                      <span className={isSelected ? "text-[#E63946]" : "text-[#6B7280]"}>{r.icon}</span>
-                                      <span className="font-head font-black text-[10px] uppercase tracking-[0.15em] leading-tight">{r.label}</span>
-                                    </button>
-                                  );
-                                })}
-                              </div>
-                            </>
-                          )}
-                          {/* Director note for scolaire */}
-                          {selectedContext === "scolaire" && (
-                            <p className="text-[11px] text-[#4a4d56] mt-3 leading-relaxed">
-                              Tu es directeur sportif? Demande à un entraîneur de ton école de t&apos;inviter sur Nexus, ou inscris-toi comme entraîneur.
-                            </p>
+                      {/* Athlete form */}
+                      <form onSubmit={handleSignup} className={`flex flex-col gap-4 ${shakeFields ? "animate-shake" : ""}`}>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className={`${label} text-[#9CA3AF] mb-1.5 block`}>Prénom <span className="text-[#EF4444]">*</span></label>
+                            <input type="text" placeholder="Marc-Antoine" value={firstName} onChange={(e) => setFirstName(e.target.value)} className={`${inputClass} ${fieldErr(!!firstName)}`} />
+                          </div>
+                          <div>
+                            <label className={`${label} text-[#9CA3AF] mb-1.5 block`}>Nom <span className="text-[#EF4444]">*</span></label>
+                            <input type="text" placeholder="Tremblay" value={lastName} onChange={(e) => setLastName(e.target.value)} className={`${inputClass} ${fieldErr(!!lastName)}`} />
+                          </div>
+                        </div>
+                        <div>
+                          <label className={`${label} text-[#9CA3AF] mb-1.5 block`}>Courriel <span className="text-[#EF4444]">*</span></label>
+                          <input type="email" placeholder="marc-antoine@gmail.com" value={email} onChange={(e) => setEmail(e.target.value)} className={`${inputClass} ${fieldErr(!!email)}`} />
+                        </div>
+                        <div>
+                          <label className={`${label} text-[#9CA3AF] mb-1.5 block`}>Mot de passe <span className="text-[#EF4444]">*</span></label>
+                          <div className="relative">
+                            <input type={showPwd ? "text" : "password"} placeholder="Mot de passe" value={password} onChange={(e) => setPassword(e.target.value)} className={`${inputClass} pr-10 ${fieldErr(pwdMeetsMin)}`} />
+                            <EyeToggle show={showPwd} onClick={() => setShowPwd(!showPwd)} />
+                          </div>
+                          <p className={`text-xs mt-1.5 transition-colors ${pwdMeetsMin ? "text-[#22C55E]" : "text-[#6B7280]"}`}>{pwdMeetsMin ? "✓" : "•"} Minimum 8 caractères</p>
+                        </div>
+                        <div>
+                          <label className={`${label} text-[#9CA3AF] mb-1.5 block`}>Confirmer <span className="text-[#EF4444]">*</span></label>
+                          <div className="relative">
+                            <input type={showConfirmPwd ? "text" : "password"} placeholder="Mot de passe" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className={`${inputClass} pr-10 ${pwdMismatch ? "border-[#EF4444]" : ""}`} />
+                            <EyeToggle show={showConfirmPwd} onClick={() => setShowConfirmPwd(!showConfirmPwd)} />
+                          </div>
+                          {pwdMismatch && <p className="text-xs mt-1.5 text-[#EF4444]">Les mots de passe ne correspondent pas</p>}
+                        </div>
+
+                        {/* Sport pills */}
+                        <div>
+                          <label className={`${label} text-[#9CA3AF] mb-2 block`}>Ton sport principal <span className="text-[#EF4444]">*</span></label>
+                          <div className="grid grid-cols-4 gap-2">
+                            {["Football", "Hockey", "Basketball", "Soccer", "Volleyball", "Natation", "Athlétisme", "Rugby"].map((sport) => (
+                              <button key={sport} type="button" onClick={() => setSelectedSport(sport)}
+                                className={`py-2 rounded-lg text-[11px] font-bold transition-all ${
+                                  selectedSport === sport
+                                    ? "bg-[#E63946] text-white"
+                                    : "bg-[#111317] border border-white/10 text-[#9CA3AF] hover:border-white/20 hover:text-white"
+                                }`}
+                              >{sport}</button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Consent checkboxes */}
+                        <div className="space-y-2 mt-1">
+                          <label className={`flex items-start gap-2 cursor-pointer group ${submitted && !consentPolicy ? "animate-shake" : ""}`}>
+                            <input type="checkbox" checked={consentPolicy} onChange={(e) => setConsentPolicy(e.target.checked)} className="sr-only" />
+                            <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 mt-0.5 transition-colors ${consentPolicy ? "bg-[#E63946] border-[#E63946]" : submitted && !consentPolicy ? "border-[#EF4444]" : "border-[#6B7280] group-hover:border-white/30"}`}>
+                              {consentPolicy && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"><path d="M20 6L9 17l-5-5" /></svg>}
+                            </div>
+                            <span className="text-[10px] text-[#6B7280] leading-snug">J&apos;accepte la <a href="/confidentialite" target="_blank" rel="noopener noreferrer" className="text-[#E63946] hover:underline" onClick={(e) => e.stopPropagation()}>Politique de confidentialité</a> (Loi 25).</span>
+                          </label>
+                          <label className={`flex items-start gap-2 cursor-pointer group ${submitted && !consentData ? "animate-shake" : ""}`}>
+                            <input type="checkbox" checked={consentData} onChange={(e) => setConsentData(e.target.checked)} className="sr-only" />
+                            <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 mt-0.5 transition-colors ${consentData ? "bg-[#E63946] border-[#E63946]" : submitted && !consentData ? "border-[#EF4444]" : "border-[#6B7280] group-hover:border-white/30"}`}>
+                              {consentData && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"><path d="M20 6L9 17l-5-5" /></svg>}
+                            </div>
+                            <span className="text-[10px] text-[#6B7280] leading-snug">J&apos;accepte la collecte de mes données pour être visible par les recruteurs CÉGEP.</span>
+                          </label>
+                          {submitted && (!consentPolicy || !consentData) && (
+                            <p className="text-[10px] text-[#EF4444]">Tu dois accepter pour continuer.</p>
                           )}
                         </div>
-                      );
-                    })()}
 
-                    {/* Recruiter warning */}
-                    {selectedRole === "recruiter" && (
-                      <div className="flex gap-3 p-4 bg-[#1A1D24] border-l-4 border-[#EAB308] rounded-r-lg">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#EAB308" strokeWidth="2" strokeLinecap="round" className="shrink-0 mt-0.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                        <p className="text-xs text-[#9CA3AF] leading-relaxed">
-                          Ton compte devra être validé par un administrateur avant d&apos;accéder à la plateforme. Tu recevras un courriel de confirmation.
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Coordinator info */}
-                    {selectedRole === "coordinator_league" && (
-                      <div className="flex gap-3 p-4 bg-[#1A1D24] border-l-4 border-[#3B82F6] rounded-r-lg">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round" className="shrink-0 mt-0.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                        <p className="text-xs text-[#9CA3AF] leading-relaxed">
-                          En tant que coordonnateur, tu superviseras les entraîneurs et les athlètes de ta ligue sur Nexus.
-                        </p>
-                      </div>
-                    )}
-
-                    {/* CTA */}
-                    <button
-                      type="submit"
-                      disabled={false}
-                      className={`h-12 w-full rounded-lg font-head font-black text-sm uppercase tracking-widest mt-2 transition-all ${
-                        signupValid
-                          ? "bg-[#E63946] text-white hover:bg-[#D42B22] hover:shadow-[0_8px_28px_rgba(230,57,70,0.38)] hover:-translate-y-0.5 cursor-pointer"
-                          : "bg-[#E63946]/50 text-white/50 cursor-not-allowed"
-                      }`}
-                    >
-                      Créer mon compte &rarr;
-                    </button>
-                  </form>
+                        <button type="submit" disabled={!signupValid}
+                          className={`h-14 w-full rounded-xl font-head font-black text-[14px] uppercase tracking-widest mt-2 transition-all ${
+                            signupValid
+                              ? "bg-[#E63946] text-white hover:bg-[#D42B22] hover:shadow-[0_8px_28px_rgba(230,57,70,0.38)] hover:-translate-y-0.5 cursor-pointer"
+                              : "bg-[#E63946]/50 text-white/50 cursor-not-allowed"
+                          }`}
+                        >
+                          Créer mon profil athlète &rarr;
+                        </button>
+                      </form>
+                    </div>
+                  )}
 
                   {/* Switch to login */}
                   <p className="font-sans text-sm text-[#9CA3AF] text-center mt-6">
@@ -517,10 +455,6 @@ function AuthContent() {
                     <button type="button" onClick={socialToast} className="flex items-center justify-center gap-3 h-11 w-full bg-[#111317] border border-white/10 rounded-lg text-sm text-white hover:border-white/20 transition-colors">
                       <svg width="18" height="18" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
                       Continuer avec Google
-                    </button>
-                    <button type="button" onClick={socialToast} className="flex items-center justify-center gap-3 h-11 w-full bg-[#111317] border border-white/10 rounded-lg text-sm text-white hover:border-white/20 transition-colors">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="#1877F2"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
-                      Continuer avec Facebook
                     </button>
                   </div>
 
@@ -547,16 +481,16 @@ function AuthContent() {
                     <div className="flex justify-end -mt-1">
                       <button type="button" onClick={() => setToast("Disponible en Phase 2")} className={`${label} text-[#9CA3AF] hover:text-[#E63946] transition-colors`}>Mot de passe oublié?</button>
                     </div>
-                    <button type="submit" className="h-12 w-full bg-[#E63946] text-white rounded-lg font-head font-black text-sm uppercase tracking-widest hover:bg-[#D42B22] transition-all hover:shadow-[0_8px_28px_rgba(230,57,70,0.38)] hover:-translate-y-0.5 mt-2 cursor-pointer">
-                      Se connecter &rarr;
+                    <button type="submit" disabled={loading} className={`h-12 w-full rounded-lg font-head font-black text-sm uppercase tracking-widest mt-2 transition-all ${loading ? "bg-[#E63946]/50 text-white/50 cursor-wait" : "bg-[#E63946] text-white hover:bg-[#D42B22] hover:shadow-[0_8px_28px_rgba(230,57,70,0.38)] hover:-translate-y-0.5 cursor-pointer"}`}>
+                      {loading ? "Connexion..." : "Se connecter →"}
                     </button>
                   </form>
 
-                  {/* Switch to signup */}
-                  <p className="font-sans text-sm text-[#9CA3AF] text-center mt-6">
-                    Pas de compte?{" "}
-                    <button type="button" onClick={() => switchMode("signup")} className="text-[#9CA3AF] font-bold hover:text-[#E63946] transition-colors">S&apos;inscrire</button>
-                  </p>
+                  {/* Switch to signup — athlete CTA */}
+                  <button type="button" onClick={() => switchMode("signup")} className="w-full flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[#E63946]/5 border border-[#E63946]/20 mt-6 hover:bg-[#E63946]/10 transition-colors text-left">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2" strokeLinecap="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    <span className="text-[11px] text-[#9CA3AF]">Pas encore de compte? <span className="text-[#E63946] font-bold">Crée ton profil athlète en 2 minutes →</span></span>
+                  </button>
 
                   {/* Demo links */}
                   <p className="font-sans text-[11px] text-[#4a4d56] text-center mt-4">
@@ -565,8 +499,13 @@ function AuthContent() {
                     </a>
                   </p>
                   <p className="font-sans text-[11px] text-[#4a4d56] text-center mt-2">
-                    <a href="/auth/invite-admin?school=De+Mortagne&coach=Patrick+Tremblay&email=directeur@demo.qc.ca" className="hover:text-[#9CA3AF] transition-colors underline">
-                      DÉMO : Simuler une invitation directeur
+                    <a href="/auth/invite-admin?type=school&school=De+Mortagne&coach=Patrick+Tremblay&email=directeur@demo.qc.ca" className="hover:text-[#9CA3AF] transition-colors underline">
+                      DÉMO : Invitation directeur école
+                    </a>
+                  </p>
+                  <p className="font-sans text-[11px] text-[#4a4d56] text-center mt-2">
+                    <a href="/auth/invite-admin?type=cegep&cegep=Garneau&recruiter=Pierre+Dufour&email=directeur@cegep.qc.ca" className="hover:text-[#9CA3AF] transition-colors underline">
+                      DÉMO : Invitation directeur CÉGEP
                     </a>
                   </p>
 

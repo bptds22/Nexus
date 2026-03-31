@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { RosterAthlete } from "../_data/mockRosterData";
 import VerificationBadge from "./VerificationBadge";
 
@@ -14,46 +15,64 @@ export default function RosterSummaryBar({ athletes }: { athletes: RosterAthlete
   const totalViews = athletes.reduce((sum, a) => sum + a.views, 0);
 
   return (
-    <div className="flex flex-wrap items-center gap-x-6 gap-y-2 bg-[#1E2430] rounded-xl border border-[#2D3748] px-6 py-5">
-      {/* Total */}
-      <div className="flex items-baseline gap-2">
-        <span className="text-[26px] font-head font-black text-white">{total}</span>
-        <span className="text-[13px] text-[#9CA3AF] font-medium">athlètes</span>
+    <div>
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-2 bg-[#1E2430] rounded-xl border border-[#2D3748] px-6 py-5">
+        {/* Total */}
+        <div className="flex items-baseline gap-2">
+          <span className="text-[26px] font-head font-black text-white">{total}</span>
+          <span className="text-[13px] text-[#9CA3AF] font-medium">athlètes</span>
+        </div>
+
+        <div className="w-px h-6 bg-[#2D3748] hidden sm:block" />
+
+        {/* Verified */}
+        <div className="flex items-center gap-2">
+          <VerificationBadge isVerified={true} iconOnly size="md" />
+          <span className="text-[26px] font-head font-black text-white">{verified}</span>
+          <span className="text-[13px] text-[#3B82F6] font-medium">vérifiés</span>
+          {(autoVerified > 0 || manualVerified > 0) && (
+            <span className="text-[11px] text-[#6b7280] font-medium">
+              ({autoVerified} auto · {manualVerified} manuel)
+            </span>
+          )}
+        </div>
+
+        <div className="w-px h-6 bg-[#2D3748] hidden sm:block" />
+
+        {/* Non-verified */}
+        <div className="flex items-center gap-2">
+          <VerificationBadge isVerified={false} iconOnly size="md" />
+          <span className="text-[26px] font-head font-black text-white">{nonVerified}</span>
+          <span className="text-[13px] text-[#6B7280] font-medium">non vérifiés</span>
+        </div>
+
+        <div className="w-px h-6 bg-[#2D3748] hidden sm:block" />
+
+        {/* Views */}
+        <div className="flex items-center gap-2">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+            <circle cx="12" cy="12" r="3" />
+          </svg>
+          <span className="text-[26px] font-head font-black text-white">{totalViews}</span>
+          <span className="text-[13px] text-[#9CA3AF] font-medium">vues ce mois</span>
+        </div>
+
+        <div className="w-px h-6 bg-[#2D3748] hidden sm:block" />
+
+        {/* Contacts */}
+        <div className="flex items-center gap-2">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round">
+            <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+          </svg>
+          <span className="text-[26px] font-head font-black text-white">5</span>
+          <span className="text-[13px] text-[#9CA3AF] font-medium">contacts reçus</span>
+        </div>
       </div>
-
-      <div className="w-px h-6 bg-[#2D3748] hidden sm:block" />
-
-      {/* Verified */}
-      <div className="flex items-center gap-2">
-        <VerificationBadge isVerified={true} iconOnly size="md" />
-        <span className="text-[26px] font-head font-black text-white">{verified}</span>
-        <span className="text-[13px] text-[#3B82F6] font-medium">vérifiés</span>
-        {(autoVerified > 0 || manualVerified > 0) && (
-          <span className="text-[11px] text-[#6b7280] font-medium">
-            ({autoVerified} auto · {manualVerified} manuel)
-          </span>
-        )}
-      </div>
-
-      <div className="w-px h-6 bg-[#2D3748] hidden sm:block" />
-
-      {/* Non-verified */}
-      <div className="flex items-center gap-2">
-        <VerificationBadge isVerified={false} iconOnly size="md" />
-        <span className="text-[26px] font-head font-black text-white">{nonVerified}</span>
-        <span className="text-[13px] text-[#6B7280] font-medium">non vérifiés</span>
-      </div>
-
-      <div className="w-px h-6 bg-[#2D3748] hidden sm:block" />
-
-      {/* Views */}
-      <div className="flex items-center gap-2">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round">
-          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-          <circle cx="12" cy="12" r="3" />
-        </svg>
-        <span className="text-[26px] font-head font-black text-white">{totalViews}</span>
-        <span className="text-[13px] text-[#9CA3AF] font-medium">vues ce mois</span>
+      <div className="text-right mt-2">
+        <Link href="/coach/ecole/analytics" className="text-[11px] font-bold text-[#DAB65A] hover:text-[#e8c84e] transition-colors">
+          Voir l&apos;analytique complète →
+        </Link>
       </div>
     </div>
   );

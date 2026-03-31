@@ -4,15 +4,11 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 
 /* ═══════════════════════════════════════════════════════════════
-   SchoolGate — Wraps school management pages with Pro/Admin check
-   Renders children with blur overlay if user lacks access.
+   SchoolGate — Wraps school management pages
+   Access: Coach Pro OR Coach All Star OR Admin École
 ═══════════════════════════════════════════════════════════════ */
 
-interface Props {
-  children: React.ReactNode;
-}
-
-export default function SchoolGate({ children }: Props) {
+export default function SchoolGate({ children }: { children: React.ReactNode }) {
   const [hasAccess, setHasAccess] = useState(false);
   const [checked, setChecked] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
@@ -20,7 +16,8 @@ export default function SchoolGate({ children }: Props) {
   useEffect(() => {
     try {
       const user = JSON.parse(localStorage.getItem("nexus_user") || "{}");
-      if (user.subscription?.tier === "coach_pro" || user.is_school_admin === true) {
+      const tier = user.subscription?.tier || "free";
+      if (tier === "coach_pro" || tier === "coach_allstar" || user.is_school_admin === true) {
         setHasAccess(true);
       }
     } catch { /* noop */ }
@@ -38,8 +35,8 @@ export default function SchoolGate({ children }: Props) {
       <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] flex items-center justify-center z-10">
         <div className="bg-[#1A1D24] border border-white/10 rounded-xl p-6 max-w-sm mx-4 text-center shadow-2xl">
           <div className="flex justify-center mb-4">
-            <div className="w-14 h-14 rounded-full bg-[#E63946]/10 flex items-center justify-center">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <div className="w-14 h-14 rounded-full bg-[#DAB65A]/10 flex items-center justify-center">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#DAB65A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="3" y="11" width="18" height="11" rx="2" />
                 <path d="M7 11V7a5 5 0 0110 0v4" />
               </svg>
@@ -52,9 +49,9 @@ export default function SchoolGate({ children }: Props) {
           <button
             type="button"
             onClick={() => { setToast("Redirection vers Stripe Checkout (Phase 2)"); setTimeout(() => setToast(null), 3000); }}
-            className="w-full h-11 rounded-lg bg-[#E63946] text-white font-head font-bold text-[12px] uppercase tracking-wider hover:bg-[#D42B22] transition-colors mb-2"
+            className="w-full h-11 rounded-lg bg-[#DAB65A] text-[#111317] font-head font-bold text-[12px] uppercase tracking-wider hover:bg-[#c9a84f] transition-colors mb-2"
           >
-            Passer à Coach Pro →
+            Passer à Pro — 5,99$/mois →
           </button>
           <Link href="/tarifs" className="text-[12px] text-[#6B7280] hover:text-white transition-colors">
             Voir les plans

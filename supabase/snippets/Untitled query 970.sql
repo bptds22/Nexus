@@ -1,0 +1,1 @@
+SELECT id, email, role, status FROM users;

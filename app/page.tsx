@@ -397,9 +397,9 @@ export default function Home() {
                 ))}
               </ul>
 
-              <button className="h-11 px-8 bg-wl-red text-white font-head font-black text-xs uppercase tracking-widest hover:bg-wl-red-hover transition-colors">
+              <a href="/auth/pro" className="inline-flex items-center h-11 px-8 bg-wl-red text-white font-head font-black text-xs uppercase tracking-widest hover:bg-wl-red-hover transition-colors">
                 Créer mon Compte →
-              </button>
+              </a>
             </div>
 
             {/* RECRUITER */}
@@ -430,9 +430,9 @@ export default function Home() {
                 ))}
               </ul>
 
-              <button className="nx-ghost-btn h-11 px-8 border font-head font-black text-xs uppercase tracking-widest">
+              <a href="/auth?mode=signup" className="nx-ghost-btn h-11 px-8 border font-head font-black text-xs uppercase tracking-widest inline-flex items-center">
                 Explorer les Athlètes →
-              </button>
+              </a>
             </div>
 
           </div>
@@ -451,12 +451,12 @@ export default function Home() {
             </h2>
           </div>
           <div className="flex gap-3 flex-shrink-0">
-            <button className="h-12 px-8 bg-wl-red text-white font-head font-black text-xs uppercase tracking-widest hover:bg-wl-red-hover transition-colors hover:shadow-[0_8px_28px_rgba(232,72,72,0.38)] hover:-translate-y-0.5">
+            <a href="/auth?mode=signup" className="inline-flex items-center h-12 px-8 bg-wl-red text-white font-head font-black text-xs uppercase tracking-widest hover:bg-wl-red-hover transition-colors hover:shadow-[0_8px_28px_rgba(232,72,72,0.38)] hover:-translate-y-0.5">
               Explorer les Athlètes →
-            </button>
-            <button className="nx-ghost-btn h-12 px-8 border font-head font-black text-xs uppercase tracking-widest">
+            </a>
+            <a href="/auth/pro" className="nx-ghost-btn h-12 px-8 border font-head font-black text-xs uppercase tracking-widest inline-flex items-center">
               Je suis Coach
-            </button>
+            </a>
           </div>
         </div>
       </section>

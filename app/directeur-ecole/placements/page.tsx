@@ -14,7 +14,7 @@ export default function PlacementsPage() {
         <div>
           <h1
             className="flex items-center gap-2 text-[22px] font-bold uppercase tracking-wide text-white"
-            style={{ fontFamily: "var(--wl-font-head, Montserrat, sans-serif)" }}
+            style={{ fontFamily: "var(--wl-font-head, Outfit, sans-serif)" }}
           >
             {/* Trophy icon */}
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -36,7 +36,7 @@ export default function PlacementsPage() {
         <div className="w-20 h-20 rounded-full border-2 border-[#E63946] flex items-center justify-center flex-shrink-0">
           <span
             className="text-[48px] font-bold text-[#E63946] leading-none"
-            style={{ fontFamily: "var(--wl-font-head, Montserrat, sans-serif)" }}
+            style={{ fontFamily: "var(--wl-font-head, Outfit, sans-serif)" }}
           >
             {count}
           </span>

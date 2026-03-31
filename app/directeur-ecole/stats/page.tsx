@@ -76,7 +76,7 @@ export default function StatsPage() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h1
           className="text-[22px] font-bold uppercase tracking-wide text-white"
-          style={{ fontFamily: "var(--wl-font-head, Montserrat, sans-serif)" }}
+          style={{ fontFamily: "var(--wl-font-head, Outfit, sans-serif)" }}
         >
           Statistiques de recrutement
         </h1>
@@ -368,7 +368,7 @@ export default function StatsPage() {
               {/* views */}
               <span
                 className="text-[#E63946] font-bold text-[18px] flex-shrink-0"
-                style={{ fontFamily: "var(--wl-font-head, Montserrat, sans-serif)" }}
+                style={{ fontFamily: "var(--wl-font-head, Outfit, sans-serif)" }}
               >
                 {a.views}
               </span>

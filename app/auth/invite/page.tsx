@@ -38,12 +38,19 @@ function InviteContent() {
   const [showConfirmPwd, setShowConfirmPwd] = useState(false);
   const [activated, setActivated] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [consentPrivacy, setConsentPrivacy] = useState(false);
+  const [consentParental, setConsentParental] = useState(false);
+  const [consentUnderstand, setConsentUnderstand] = useState(false);
+  const [consentComms, setConsentComms] = useState(false);
+  const [attemptedSubmit, setAttemptedSubmit] = useState(false);
 
   const pwdValid = password.length >= 8;
   const pwdMatch = password === confirmPassword && confirmPassword.length > 0;
-  const canSubmit = pwdValid && pwdMatch;
+  const consentValid = consentPrivacy && consentParental && consentUnderstand;
+  const canSubmit = pwdValid && pwdMatch && consentValid;
 
   const handleSubmit = () => {
+    setAttemptedSubmit(true);
     if (!canSubmit) return;
 
     localStorage.setItem("nexus_user", JSON.stringify({
@@ -55,6 +62,15 @@ function InviteContent() {
       onboarding_complete: true,
       institution: { name: schoolName },
       profile: { coach: coachName },
+      privacy_consent: {
+        privacy_policy_accepted: true,
+        privacy_policy_version: "2026-03-v1",
+        data_collection_accepted: true,
+        parental_consent_acknowledged: true,
+        communications_opted_in: consentComms,
+        accepted_at: new Date().toISOString(),
+        ip_hint: "masked",
+      },
     }));
 
     setActivated(true);
@@ -180,10 +196,64 @@ function InviteContent() {
               </div>
             </div>
 
-            {/* Consent */}
-            <p className="text-[11px] text-[#4a4d56] leading-relaxed">
-              En créant ton compte, tu confirmes que ton parent ou tuteur a autorisé la publication de ton profil sur Nexus.
-            </p>
+            {/* ── Loi 25 Privacy + Parental Consent ── */}
+            <div className="bg-[#1A1D24] rounded-lg border-l-4 border-[#EAB308] p-4 space-y-3">
+              <div className="flex items-center gap-2 mb-1">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#EAB308" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><path d="M9 12l2 2 4-4" /></svg>
+                <span className="font-head font-bold text-[13px] text-white">Protection de tes données</span>
+              </div>
+
+              {/* Checkbox 1 — Privacy policy */}
+              <label className={`flex items-start gap-3 cursor-pointer group ${attemptedSubmit && !consentPrivacy ? "animate-shake" : ""}`}>
+                <input type="checkbox" checked={consentPrivacy} onChange={(e) => setConsentPrivacy(e.target.checked)} className="sr-only" />
+                <div className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 mt-0.5 transition-colors ${consentPrivacy ? "bg-[#E63946] border-[#E63946]" : attemptedSubmit && !consentPrivacy ? "border-[#EF4444]" : "border-[#6B7280] group-hover:border-white/30"}`}>
+                  {consentPrivacy && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"><path d="M20 6L9 17l-5-5" /></svg>}
+                </div>
+                <span className="text-[11px] text-[#9CA3AF] leading-snug">J&apos;ai lu et j&apos;accepte la <a href="/confidentialite" target="_blank" rel="noopener noreferrer" className="text-[#E63946] hover:underline" onClick={(e) => e.stopPropagation()}>Politique de confidentialité</a> et les <a href="/conditions" target="_blank" rel="noopener noreferrer" className="text-[#E63946] hover:underline" onClick={(e) => e.stopPropagation()}>Conditions d&apos;utilisation</a> de Nexus. <span className="text-[#EF4444]">*</span></span>
+              </label>
+
+              {/* Checkbox 2 — Parental consent */}
+              <label className={`flex items-start gap-3 cursor-pointer group ${attemptedSubmit && !consentParental ? "animate-shake" : ""}`}>
+                <input type="checkbox" checked={consentParental} onChange={(e) => setConsentParental(e.target.checked)} className="sr-only" />
+                <div className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 mt-0.5 transition-colors ${consentParental ? "bg-[#E63946] border-[#E63946]" : attemptedSubmit && !consentParental ? "border-[#EF4444]" : "border-[#6B7280] group-hover:border-white/30"}`}>
+                  {consentParental && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"><path d="M20 6L9 17l-5-5" /></svg>}
+                </div>
+                <span className="text-[11px] text-[#9CA3AF] leading-snug">Je confirme que mon parent ou tuteur légal a autorisé la publication de mon profil sur Nexus et la collecte de mes données personnelles. <span className="text-[#EF4444]">*</span></span>
+              </label>
+
+              {/* Checkbox 3 — Understanding */}
+              <label className={`flex items-start gap-3 cursor-pointer group ${attemptedSubmit && !consentUnderstand ? "animate-shake" : ""}`}>
+                <input type="checkbox" checked={consentUnderstand} onChange={(e) => setConsentUnderstand(e.target.checked)} className="sr-only" />
+                <div className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 mt-0.5 transition-colors ${consentUnderstand ? "bg-[#E63946] border-[#E63946]" : attemptedSubmit && !consentUnderstand ? "border-[#EF4444]" : "border-[#6B7280] group-hover:border-white/30"}`}>
+                  {consentUnderstand && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"><path d="M20 6L9 17l-5-5" /></svg>}
+                </div>
+                <div>
+                  <span className="text-[11px] text-[#9CA3AF] leading-snug">Je comprends que : <span className="text-[#EF4444]">*</span></span>
+                  <ul className="text-[10px] text-[#6B7280] mt-1 space-y-0.5 list-disc list-inside pl-1">
+                    <li>Mon profil sera visible par des recruteurs CÉGEP vérifiés</li>
+                    <li>Mon coach peut modifier mon profil</li>
+                    <li>Mon parent peut retirer le consentement à tout moment</li>
+                    <li>Je peux demander la suppression de mon compte</li>
+                  </ul>
+                </div>
+              </label>
+
+              {/* Checkbox 4 — Communications (optional) */}
+              <label className="flex items-start gap-3 cursor-pointer group">
+                <input type="checkbox" checked={consentComms} onChange={(e) => setConsentComms(e.target.checked)} className="sr-only" />
+                <div className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 mt-0.5 transition-colors ${consentComms ? "bg-[#E63946] border-[#E63946]" : "border-[#6B7280] group-hover:border-white/30"}`}>
+                  {consentComms && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"><path d="M20 6L9 17l-5-5" /></svg>}
+                </div>
+                <span className="text-[11px] text-[#6B7280] leading-snug">J&apos;accepte de recevoir des notifications par courriel concernant l&apos;activité sur mon profil. <span className="text-[10px]">(optionnel)</span></span>
+              </label>
+
+              {attemptedSubmit && !consentValid && (
+                <p className="text-[11px] text-[#EF4444]">Tu dois accepter toutes les conditions requises pour continuer.</p>
+              )}
+            </div>
+
+            {/* Age confirmation */}
+            <p className="text-[10px] text-[#4a4d56] text-center">En activant ton compte, tu confirmes avoir au moins 13 ans.</p>
 
             {/* CTA */}
             <button

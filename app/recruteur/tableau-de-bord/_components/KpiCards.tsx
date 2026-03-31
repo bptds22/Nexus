@@ -77,6 +77,7 @@ export default function KpiCards({ data }: { data: RecruiterKpiData }) {
         <div className="flex items-center justify-between mt-4 pt-3 border-t border-[#2D3748]/50">
           <span className="text-[12px] text-[#6b7280]">
             <span className="font-bold text-white">{totalActive}</span> athlète{totalActive !== 1 ? "s" : ""} actif{totalActive !== 1 ? "s" : ""} dans ton pipeline
+            <span className="text-[10px] text-[#6B7280] ml-2">· 50 max en gratuit</span>
           </span>
           {counts.retire > 0 && (
             <span className="text-[12px] text-[#6b7280]">
@@ -110,18 +111,9 @@ export default function KpiCards({ data }: { data: RecruiterKpiData }) {
               <path d="M20 18v-2a4 4 0 00-4-4H4" />
             </svg>
           </div>
-          <div className="flex items-center gap-2">
-            <div>
-              <p className="text-[26px] font-head font-black text-white leading-none">{data.responsesReceived}</p>
-              <p className="text-[11px] font-bold tracking-[0.15em] uppercase text-[#6b7280] mt-0.5">Réponses</p>
-            </div>
-            {data.responseRate !== 0 && (
-              <span className={`inline-flex items-center text-[11px] font-bold px-2 py-0.5 rounded-full ${
-                data.responseRate >= 50 ? "bg-[#22C55E]/15 text-[#22C55E]" : "bg-[#F59E0B]/15 text-[#F59E0B]"
-              }`}>
-                {data.responseRate}%
-              </span>
-            )}
+          <div>
+            <p className="text-[26px] font-head font-black text-white leading-none">{data.responsesReceived}</p>
+            <p className="text-[11px] font-bold tracking-[0.15em] uppercase text-[#6b7280] mt-0.5">Réponses reçues</p>
           </div>
         </div>
 

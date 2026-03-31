@@ -1,7 +1,8 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useState, useEffect } from "react";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
 import {
   ALL_RECRUITER_PROFILES,
   mockAthleteProfileFull,
@@ -178,15 +179,15 @@ function PlayerCard({ a }: { a: AthleteProfileRecruiterView }) {
             <img src={a.photoUrl} alt={`${a.firstName} ${a.lastName}`} className="absolute inset-0 w-full h-full object-cover z-[1]" />
           ) : (
             <div className="absolute inset-0 z-[1] flex items-center justify-center">
-              <span style={{ fontFamily: 'var(--font-bebas), sans-serif', fontSize: 120, color: 'rgba(255,255,255,0.06)', letterSpacing: '0.05em', lineHeight: 1 }}>
+              <span style={{ fontFamily: 'var(--font-outfit), sans-serif', fontSize: 120, fontWeight: 900, color: 'rgba(255,255,255,0.06)', letterSpacing: '0.05em', lineHeight: 1 }}>
                 {a.firstName[0]}{a.lastName[0]}
               </span>
             </div>
           )}
           <div className="absolute bottom-0 left-0 right-0 h-1/2 z-[2]" style={{ background: 'linear-gradient(to top, rgba(11,18,32,0.97) 0%, rgba(11,18,32,0.7) 35%, transparent 100%)' }} />
           <div className="absolute bottom-4 left-4 z-[3]">
-            <p style={{ fontFamily: 'var(--font-bebas), sans-serif', fontSize: 28, color: '#fff', letterSpacing: '0.04em', lineHeight: 1 }}>{a.firstName}</p>
-            <p style={{ fontFamily: 'var(--font-bebas), sans-serif', fontSize: 28, color: '#fff', letterSpacing: '0.04em', lineHeight: 1 }}>{a.lastName}</p>
+            <p style={{ fontFamily: 'var(--font-outfit), sans-serif', fontSize: 28, fontWeight: 900, color: '#fff', letterSpacing: '0.04em', lineHeight: 1, textTransform: 'uppercase' }}>{a.firstName}</p>
+            <p style={{ fontFamily: 'var(--font-outfit), sans-serif', fontSize: 28, fontWeight: 900, color: '#fff', letterSpacing: '0.04em', lineHeight: 1, textTransform: 'uppercase' }}>{a.lastName}</p>
           </div>
         </div>
 
@@ -196,12 +197,12 @@ function PlayerCard({ a }: { a: AthleteProfileRecruiterView }) {
             <div className="flex flex-col justify-between" style={{ background: '#1E2128', padding: '12px 14px 12px 16px', minWidth: 96, gap: 4 }}>
               {[
                 { lbl: "Sport", val: sportDisplay },
-                { lbl: "Pos", val: posAbbr },
-                { lbl: "Promo", val: String(a.graduationYear) },
+                { lbl: "Pos", val: posAbbr || "—" },
+                { lbl: "No.", val: a.jerseyNumber ? `#${a.jerseyNumber}` : "—" },
               ].map((r) => (
                 <div key={r.lbl}>
-                  <div style={{ fontFamily: 'var(--font-barlow-cond), sans-serif', fontSize: 7, fontWeight: 800, letterSpacing: '0.22em', textTransform: 'uppercase' as const, color: 'rgba(255,255,255,0.38)', marginBottom: 1 }}>{r.lbl}</div>
-                  <div style={{ fontFamily: 'var(--font-bebas), sans-serif', fontSize: 16, color: '#fff', letterSpacing: '0.06em', lineHeight: 1 }}>{r.val}</div>
+                  <div style={{ fontFamily: 'var(--font-outfit), sans-serif', fontSize: 7, fontWeight: 800, letterSpacing: '0.22em', textTransform: 'uppercase' as const, color: 'rgba(255,255,255,0.38)', marginBottom: 1 }}>{r.lbl}</div>
+                  <div style={{ fontFamily: 'var(--font-outfit), sans-serif', fontSize: 16, fontWeight: 900, color: '#fff', letterSpacing: '0.06em', lineHeight: 1 }}>{r.val}</div>
                 </div>
               ))}
             </div>
@@ -214,10 +215,11 @@ function PlayerCard({ a }: { a: AthleteProfileRecruiterView }) {
               <div style={{ display: 'inline-flex', alignItems: 'center', background: '#1E2128', borderRadius: 4, padding: '3px 5px', marginBottom: 6, width: 'fit-content' }}>
                 <StarRating rating={ratingValue} size="md" showNumber={false} className="!gap-0.5" />
               </div>
-              <div style={{ fontFamily: 'var(--font-barlow-cond), sans-serif', fontWeight: 700, fontSize: 16, letterSpacing: '0.1em', textTransform: 'uppercase' as const, color: '#1E2128', marginBottom: 2 }}>{a.schoolName}</div>
-              <div style={{ fontFamily: 'var(--font-barlow-cond), sans-serif', fontWeight: 700, fontSize: 14, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#9CA3AF' }}>{a.region}</div>
+              <div style={{ fontFamily: 'var(--font-outfit), sans-serif', fontWeight: 700, fontSize: 13, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#1E2128', marginBottom: 2, lineHeight: 1.2, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden' }}>{(a.schoolName || "").replace(/^École secondaire /i, "É.S. ").replace(/^École sec\. /i, "É.S. ")}</div>
+              <div style={{ fontFamily: 'var(--font-outfit), sans-serif', fontWeight: 700, fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase' as const, color: '#9CA3AF', lineHeight: 1.2, whiteSpace: 'nowrap' as const }}>{a.region}</div>
+              <div style={{ fontFamily: 'var(--font-outfit), sans-serif', fontWeight: 700, fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#E63946', marginTop: 4 }}>Promotion {a.graduationYear}</div>
             </div>
-            <div className="flex items-center justify-center flex-shrink-0" style={{ background: '#E63946', width: 24, writingMode: 'vertical-rl' as const, fontFamily: 'var(--font-bebas), sans-serif', fontSize: 10, letterSpacing: '0.22em', color: 'rgba(255,255,255,0.7)' }}>NEXUS</div>
+            <div className="flex items-center justify-center flex-shrink-0" style={{ background: '#E63946', width: 24, writingMode: 'vertical-rl' as const, fontFamily: 'var(--font-outfit), sans-serif', fontSize: 10, fontWeight: 700, letterSpacing: '0.22em', color: 'rgba(255,255,255,0.7)' }}>NEXUS</div>
           </div>
         </div>
       </div>
@@ -284,7 +286,127 @@ function CoachReputationCard({ rep, coachName }: { rep: NonNullable<AthleteProfi
 
 export default function RecruiterAthletePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const a: AthleteProfileRecruiterView = ALL_RECRUITER_PROFILES[id] || mockAthleteProfileFull;
+  const [a, setA] = useState<AthleteProfileRecruiterView>(ALL_RECRUITER_PROFILES[id] || mockAthleteProfileFull);
+  const [loadingAthlete, setLoadingAthlete] = useState(true);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase
+      .from("athletes")
+      .select(`
+        id,
+        first_name,
+        last_name,
+        photo_url,
+        verified,
+        profile_completion,
+        numero_jersey,
+        annee_diplomation,
+        video_faits_saillants_url,
+        hudl_url,
+        youtube_url,
+        instagram_url,
+        video_match_complet_url,
+        moyenne_generale,
+        matieres_fortes,
+        mentions_academiques,
+        ouvert_cegep_prive,
+        ouvert_cegep_anglophone,
+        pret_changer_region,
+        regions_cegep_preferees,
+        taille_pieds,
+        taille_pouces,
+        poids_lbs,
+        main_dominante,
+        test_40_verges,
+        saut_vertical,
+        sprint_100m,
+        bio,
+        genre,
+        cote_globale_entraineur,
+        consentement_parental,
+        sports!athletes_sport_id_fkey(nom),
+        positions!athletes_position_id_fkey(nom, abreviation),
+        evaluations(
+          leadership, discipline, coachabilite, intelligence_jeu,
+          competitivite, esprit_equipe, resilience, attitude_mentalite,
+          cote_globale, rapport_entraineur, distinctions
+        ),
+        users!athletes_coach_id_fkey(first_name, last_name)
+      `)
+      .eq("id", id)
+      .single()
+      .then(({ data, error }) => {
+        if (error || !data) { setLoadingAthlete(false); return; }
+
+        const d = data as Record<string, unknown>;
+        const evals = d.evaluations as Record<string, unknown>[] | null;
+        const eval0 = evals?.[0];
+        const coach = d.users as { first_name: string; last_name: string } | null;
+        const sportRel = Array.isArray(d.sports) ? d.sports[0] : d.sports;
+        const posRel = Array.isArray(d.positions) ? d.positions[0] : d.positions;
+        const sport = sportRel as { nom: string } | null;
+        const pos = posRel as { nom: string; abreviation: string } | null;
+
+        const heightFt = d.taille_pieds as number | null;
+        const heightIn = d.taille_pouces as number | null;
+        const heightDisplay = heightFt ? `${heightFt}'${heightIn || 0}"` : null;
+        const weightDisplay = d.poids_lbs ? `${d.poids_lbs} lbs` : null;
+
+        const traitRatings = eval0 ? {
+          leadership: (eval0.leadership as number) || 0,
+          discipline: (eval0.discipline as number) || 0,
+          coachability: (eval0.coachabilite as number) || 0,
+          gameIQ: (eval0.intelligence_jeu as number) || 0,
+          competitiveness: (eval0.competitivite as number) || 0,
+          teamwork: (eval0.esprit_equipe as number) || 0,
+          resilience: (eval0.resilience as number) || 0,
+          attitude: (eval0.attitude_mentalite as number) || 0,
+        } : null;
+
+        const mapped: AthleteProfileRecruiterView = {
+          ...mockAthleteProfileFull,
+          id: d.id as string,
+          firstName: d.first_name as string,
+          lastName: d.last_name as string,
+          photoUrl: (d.photo_url as string) || "",
+          isVerified: d.verified as boolean,
+          profileCompleteness: (d.profile_completion as number) || 0,
+          jerseyNumber: (d.numero_jersey as string) || "",
+          graduationYear: (d.annee_diplomation as number) || 0,
+          highlightVideoUrl: (d.video_faits_saillants_url as string) || "",
+          hudlUrl: (d.hudl_url as string) || "",
+          youtubeUrl: (d.youtube_url as string) || "",
+          instagramUrl: (d.instagram_url as string) || "",
+          fullGameUrl: (d.video_match_complet_url as string) || "",
+          gpa: (d.moyenne_generale as number) || undefined,
+          strongSubjects: (d.matieres_fortes as string[]) || [],
+          academicHonors: (d.mentions_academiques as string[]) || [],
+          openToPrivate: (d.ouvert_cegep_prive as boolean) || false,
+          openToAnglophone: (d.ouvert_cegep_anglophone as boolean) || false,
+          openToRelocate: (d.pret_changer_region as boolean) || false,
+          preferredRegions: (d.regions_cegep_preferees as string[]) || [],
+          heightDisplay: heightDisplay || "",
+          weightDisplay: weightDisplay || "",
+          dominantHand: (d.main_dominante as "Droite" | "Gauche" | "Ambidextre") || undefined,
+          fortyYard: (d.test_40_verges as string) || "",
+          verticalJump: (d.saut_vertical as string) || "",
+          sprint100m: (d.sprint_100m as string) || "",
+          primarySport: sport?.nom || "",
+          primaryPosition: pos?.abreviation ? `${pos.nom} (${pos.abreviation})` : pos?.nom || "",
+          coachReport: (eval0?.rapport_entraineur as string) || "",
+          coachName: coach ? `${coach.first_name} ${coach.last_name}` : "",
+          overallRating: (eval0?.cote_globale as number) || (d.cote_globale_entraineur as number) || 0,
+          traitRatings: traitRatings as AthleteProfileRecruiterView["traitRatings"],
+          distinctions: (eval0?.distinctions as AthleteProfileRecruiterView["distinctions"]) || [],
+          favoriteCount: 0,
+          viewsThisMonth: 0,
+        };
+
+        setA(mapped);
+        setLoadingAthlete(false);
+      });
+  }, [id]);
 
   const [mode, setMode] = useState<"simple" | "detailed">("simple");
   const isDetailed = mode === "detailed";

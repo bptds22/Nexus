@@ -4,6 +4,7 @@
    - Manual coach: blue circle-check + "Vérifié (coach)"
    - Manual director: blue circle-check + "Vérifié (directeur)"
    - Not verified: gray circle + "Non vérifié"
+   - onClick: optional — makes the badge clickable (for verify/unverify)
 ───────────────────────────────────────────────────────────────── */
 
 import type { AthleteVerification } from "../../../../lib/types/models";
@@ -11,14 +12,11 @@ import type { AthleteVerification } from "../../../../lib/types/models";
 interface VerificationBadgeProps {
   isVerified: boolean;
   verification?: AthleteVerification;
-  /** Show verification method label (default: true) */
   showMethod?: boolean;
-  /** Badge size: "sm" (12px icon), "md" (14px icon, default), "lg" (18px icon) */
   size?: "sm" | "md" | "lg";
-  /** Compact layout (narrower min-width) */
   compact?: boolean;
-  /** Show only the icon, no text label */
   iconOnly?: boolean;
+  onClick?: () => void;
 }
 
 const ICON_SIZES = { sm: 12, md: 14, lg: 18 } as const;
@@ -36,7 +34,10 @@ function getLabel(verification?: AthleteVerification, isVerified?: boolean, show
   }
 }
 
-function getTooltip(verification?: AthleteVerification): string | undefined {
+function getTooltip(verification?: AthleteVerification, onClick?: () => void): string | undefined {
+  if (onClick) {
+    return verification?.isVerified ? "Cliquer pour retirer la vérification" : "Cliquer pour vérifier";
+  }
   if (!verification?.isVerified) return undefined;
   const parts: string[] = [];
   if (verification.verifiedByName) parts.push(`Par: ${verification.verifiedByName}`);
@@ -60,15 +61,18 @@ export default function VerificationBadge({
   size = "md",
   compact,
   iconOnly,
+  onClick,
 }: VerificationBadgeProps) {
   const label = getLabel(verification, isVerified, showMethod);
-  const tooltip = getTooltip(verification);
+  const tooltip = getTooltip(verification, onClick);
   const iconSize = ICON_SIZES[size];
   const textSize = TEXT_SIZES[size];
 
   return (
-    <div
-      className={`flex items-center gap-2 ${compact ? "min-w-[80px]" : ""}`}
+    <button
+      type="button"
+      onClick={(e) => { e.stopPropagation(); console.log("Badge clicked, has onClick:", !!onClick); if (onClick) { console.log("Calling parent onClick"); onClick(); } }}
+      className={`flex items-center gap-2 cursor-pointer ${compact ? "min-w-[80px]" : ""} ${onClick ? "hover:opacity-80 transition-opacity" : ""}`}
       title={tooltip}
     >
       {isVerified ? (
@@ -86,6 +90,6 @@ export default function VerificationBadge({
           {label}
         </span>
       )}
-    </div>
+    </button>
   );
 }

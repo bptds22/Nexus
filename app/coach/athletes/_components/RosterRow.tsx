@@ -1,5 +1,9 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
 import StarRating from "@/components/ui/StarRating";
+import { createClient } from "@/lib/supabase/client";
 import type { RosterAthlete } from "../_data/mockRosterData";
 import { COMMITMENT_CONFIG } from "../_data/mockRosterData";
 import VerificationBadge from "./VerificationBadge";
@@ -14,12 +18,69 @@ import FavoriteSignal from "./FavoriteSignal";
 interface RosterRowProps {
   athlete: RosterAthlete;
   even: boolean;
+  onVerify?: (id: string) => void;
 }
 
-export default function RosterRow({ athlete: a, even }: RosterRowProps) {
+function ViewsTrend({ views }: { views: number }) {
+  // Mock trend based on view count ranges
+  if (views >= 15) return <span className="text-[#22C55E] text-[10px] ml-1">↑</span>;
+  if (views >= 5) return <span className="text-[#6B7280] text-[10px] ml-1">→</span>;
+  if (views > 0) return <span className="text-[#E63946] text-[10px] ml-1">↓</span>;
+  return null;
+}
+
+function AttentionDot({ views, profilePct }: { views: number; profilePct: number }) {
+  if (profilePct < 40) return <span className="inline-block w-2 h-2 rounded-full bg-[#EF4444] ml-1.5 shrink-0" title="Profil très incomplet" />;
+  if (views === 0) return <span className="inline-block w-2 h-2 rounded-full bg-[#EAB308] ml-1.5 shrink-0" title="Aucune vue depuis 14+ jours" />;
+  return null;
+}
+
+export default function RosterRow({ athlete: a, even, onVerify }: RosterRowProps) {
   const commitment = COMMITMENT_CONFIG[a.commitmentStatus];
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  async function handleToggleVerify() {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    if (a.isVerified) {
+      console.log("Unverifying athlete:", a.id);
+      const { error } = await supabase
+        .from("athletes")
+        .update({
+          verified: false,
+          verification_method: null,
+          verified_at: null,
+          verified_by: null,
+        })
+        .eq("id", a.id);
+      console.log("Unverify result:", error);
+    } else {
+      console.log("Verifying athlete:", a.id);
+      const { error } = await supabase
+        .from("athletes")
+        .update({
+          verified: true,
+          verification_method: "manuel_coach",
+          verified_at: new Date().toISOString(),
+          verified_by: user.id,
+        })
+        .eq("id", a.id);
+      console.log("Verify result:", error);
+    }
+
+    setShowConfirm(false);
+    if (onVerify) {
+      onVerify(a.id);
+    } else {
+      // No parent callback — force page reload to reflect change
+      window.location.reload();
+    }
+  }
 
   return (
+    <>
     <tr className={`group border-b border-[#2D3748]/40 hover:bg-[#252D3A] transition-colors ${even ? "bg-[#1E2430]" : "bg-[#1A1D24]"}`}>
       {/* Nom */}
       <td className="px-4 py-3.5">
@@ -28,9 +89,6 @@ export default function RosterRow({ athlete: a, even }: RosterRowProps) {
             <p className="text-[16px] font-bold text-white group-hover:text-[#E63946] transition-colors">
               {a.firstName} {a.lastName}
             </p>
-            {a.badgeIcons && a.badgeIcons.length > 0 && (
-              <span className="text-[12px] leading-none">{a.badgeIcons.join("")}</span>
-            )}
           </div>
           <StarRating rating={a.stars} size="sm" />
         </Link>
@@ -50,11 +108,13 @@ export default function RosterRow({ athlete: a, even }: RosterRowProps) {
         </span>
       </td>
 
-      {/* Statut */}
+      {/* Statut — clickable */}
       <td className="px-4 py-3.5">
+        {(() => { console.log("Athlete ID:", a.id); return null; })()}
         <VerificationBadge
           isVerified={a.isVerified}
           verification={a.verification}
+          onClick={() => { console.log("CLICK FIRED", a.id); setShowConfirm(true); }}
         />
       </td>
 
@@ -83,6 +143,7 @@ export default function RosterRow({ athlete: a, even }: RosterRowProps) {
             <span className="text-[13px] font-bold text-[#9CA3AF]">
               {a.views}
             </span>
+            <ViewsTrend views={a.views} />
           </div>
         ) : (
           <span className="text-[13px] text-[#2D3748]">&mdash;</span>
@@ -95,8 +156,8 @@ export default function RosterRow({ athlete: a, even }: RosterRowProps) {
       </td>
 
       {/* Actions */}
-      <td className="px-4 py-3.5">
-        <div className="flex items-center gap-1">
+      <td className="px-4 py-3.5 text-center">
+        <div className="inline-flex items-center justify-center gap-1">
           <Link
             href={`/coach/athletes/${a.id}/modifier`}
             className="w-8 h-8 rounded-lg flex items-center justify-center text-[#6b7280] hover:text-white hover:bg-white/5 transition-colors"
@@ -118,19 +179,39 @@ export default function RosterRow({ athlete: a, even }: RosterRowProps) {
               <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
             </svg>
           </Link>
-          {a.profilePercent < 100 && (
-            <Link
-              href={`/coach/athletes/${a.id}/modifier?step=missing`}
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-[#F59E0B] hover:text-[#FBBF24] hover:bg-[#F59E0B]/10 transition-colors"
-              title="Compléter le profil"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-              </svg>
-            </Link>
-          )}
         </div>
       </td>
     </tr>
+
+    {/* Confirmation modal — rendered via portal to avoid table nesting issues */}
+    {showConfirm && (() => { console.log("Modal visible", showConfirm); return null; })()}
+    {showConfirm && (
+      <tr style={{ display: "contents" }}>
+        <td style={{ display: "contents" }}>
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center" style={{ position: "fixed" }}>
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm cursor-pointer" onClick={() => setShowConfirm(false)} />
+            <div className="relative bg-[#1A1D24] border border-[#2D3748] rounded-xl p-6 max-w-sm w-full mx-4 shadow-2xl z-[10000]">
+              <h3 className="font-head text-[16px] font-black text-white uppercase tracking-tight">
+                {a.isVerified ? "Retirer la vérification?" : "Vérifier le profil?"}
+              </h3>
+              <p className="text-[13px] text-[#9CA3AF] mt-2 leading-relaxed">
+                {a.isVerified
+                  ? `Retirer la vérification de ${a.firstName} ${a.lastName}? Le badge bleu sera supprimé.`
+                  : `Vérifier le profil de ${a.firstName} ${a.lastName}? Le badge bleu sera affiché aux recruteurs.`}
+              </p>
+              <div className="flex items-center justify-end gap-3 mt-5">
+                <button type="button" onClick={() => setShowConfirm(false)} className="px-4 py-2 text-[13px] font-bold text-[#9CA3AF] hover:text-white transition-colors cursor-pointer">
+                  Annuler
+                </button>
+                <button type="button" onClick={handleToggleVerify} className={`px-5 py-2 text-white text-[13px] font-bold rounded-lg transition-colors cursor-pointer ${a.isVerified ? "bg-[#E63946] hover:bg-[#D42B22]" : "bg-[#3B82F6] hover:bg-[#2563EB]"}`}>
+                  Confirmer
+                </button>
+              </div>
+            </div>
+          </div>
+        </td>
+      </tr>
+    )}
+    </>
   );
 }

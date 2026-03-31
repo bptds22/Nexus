@@ -36,7 +36,7 @@ export default function RecrusCegepPage() {
         <div>
           <h1
             className="flex items-center gap-2 text-[22px] font-bold uppercase tracking-wide text-white"
-            style={{ fontFamily: "var(--wl-font-head, Montserrat, sans-serif)" }}
+            style={{ fontFamily: "var(--wl-font-head, Outfit, sans-serif)" }}
           >
             {/* Trophy icon */}
             <svg
@@ -69,7 +69,7 @@ export default function RecrusCegepPage() {
           <span
             className="text-[48px] font-bold text-[#E63946] leading-none"
             style={{
-              fontFamily: "var(--wl-font-head, Montserrat, sans-serif)",
+              fontFamily: "var(--wl-font-head, Outfit, sans-serif)",
               textShadow: "0 0 12px rgba(230,57,70,0.6), 0 0 24px rgba(230,57,70,0.3)",
             }}
           >

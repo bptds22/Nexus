@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { athleteUser, athleteStats } from "@/lib/mock/athlete";
 import FeatureGate from "@/components/subscription/FeatureGate";
-import UpgradePrompt from "@/components/subscription/UpgradePrompt";
+
 
 /* ═══════════════════════════════════════════════════════════════
    Ma Visibilité — Recruiter activity on athlete profile
@@ -136,7 +136,7 @@ export default function VisibilitePage() {
       </div>
 
       {/* ── Section 6: Who viewed — Pro gated ────────────────── */}
-      <FeatureGate feature="who_viewed" requiredTier="athlete_pro">
+      <FeatureGate feature="who_viewed" requiredTier="pro">
         <div className="bg-[#1A1D24] rounded-xl border border-white/5 p-5">
           <h2 className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mb-4">Quels CÉGEPs consultent ton profil</h2>
           <div className="space-y-3">

@@ -170,16 +170,22 @@ export default function AdminPipelinePage() {
           </p>
         </div>
 
-        {/* Time per stage */}
+        {/* Pipeline summary */}
         <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] p-6">
-          <p className="text-[12px] font-bold tracking-[0.15em] uppercase text-[#6b7280] mb-4">Temps moyen par étape</p>
+          <p className="text-[12px] font-bold tracking-[0.15em] uppercase text-[#6b7280] mb-4">Résumé du pipeline</p>
           <div className="space-y-3">
-            {stageDays.map((s) => (
-              <div key={s.from} className="flex items-center justify-between py-2 border-b border-[#2D3748]/30 last:border-b-0">
-                <span className="text-[13px] text-[#9CA3AF]">{s.from} → {s.to}</span>
-                <span className="text-[14px] font-bold text-white">{s.days} jours</span>
-              </div>
-            ))}
+            <div className="flex items-center justify-between py-2 border-b border-[#2D3748]/30">
+              <span className="text-[13px] text-[#9CA3AF]">Total actifs en pipeline</span>
+              <span className="text-[14px] font-bold text-white">{funnel.reduce((s, st) => s + st.count, 0)}</span>
+            </div>
+            <div className="flex items-center justify-between py-2 border-b border-[#2D3748]/30">
+              <span className="text-[13px] text-[#9CA3AF]">Phase commitment</span>
+              <span className="text-[14px] font-bold text-[#E63946]">{funnel.filter((f) => ["En discussion", "Visite planifiée", "Engagés", "Lettre signée"].includes(f.label_fr)).reduce((a, f) => a + f.count, 0)}</span>
+            </div>
+            <div className="flex items-center justify-between py-2">
+              <span className="text-[13px] text-[#9CA3AF]">Taux de conversion global</span>
+              <span className="text-[14px] font-bold text-white">{conversionRate}%</span>
+            </div>
           </div>
         </div>
       </div>

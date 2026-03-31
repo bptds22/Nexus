@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
 import { SEARCH_ATHLETES, SPORT_POSITIONS, REGIONS } from "../_data/mockSearchAthletes";
 import type { SearchAthlete } from "../_data/mockSearchAthletes";
 import { getAthleteTracking } from "../_data/mockPipelineData";
@@ -266,12 +267,71 @@ export default function RecherchePage() {
   const [verifiedOnly, setVerifiedOnly] = useState(false);
   const [withVideoOnly, setWithVideoOnly] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [favorites, setFavorites] = useState<Set<string>>(() => new Set(SEARCH_ATHLETES.filter((a) => a.isFavorited).map((a) => a.id)));
+  const [favorites, setFavorites] = useState<Set<string>>(new Set());
+  const [athletes, setAthletes] = useState<SearchAthlete[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const positions = sport && SPORT_POSITIONS[sport] ? SPORT_POSITIONS[sport] : [];
 
+  useEffect(() => {
+    const supabase = createClient();
+
+    supabase
+      .from("athletes")
+      .select(`
+        id,
+        first_name,
+        last_name,
+        photo_url,
+        verified,
+        profile_completion,
+        numero_jersey,
+        annee_diplomation,
+        video_faits_saillants_url,
+        consentement_parental,
+        sports!athletes_sport_id_fkey(nom),
+        positions!athletes_position_id_fkey(nom, abreviation)
+      `)
+      .eq("status", "ACTIF")
+      .eq("verified", true)
+      .then(({ data, error }) => {
+        console.log("Athletes loaded:", data?.length, error);
+        if (data) {
+          const mapped: SearchAthlete[] = data.map((a: Record<string, unknown>) => {
+            const sportRel = Array.isArray(a.sports) ? a.sports[0] : a.sports;
+            const posRel = Array.isArray(a.positions) ? a.positions[0] : a.positions;
+            return {
+              id: a.id as string,
+              firstName: a.first_name as string,
+              lastName: a.last_name as string,
+              photo: (a.photo_url as string) || "",
+              sport: ((sportRel as Record<string, string> | null)?.nom || "").toLowerCase().replace(/ /g, "_") as SearchAthlete["sport"],
+              position: (posRel as Record<string, string> | null)?.abreviation || "",
+              school: "",
+              region: "",
+              graduationYear: (a.annee_diplomation as number) || 0,
+              niveau: "Sec. 5" as const,
+              heightDisplay: "",
+              weightDisplay: "",
+              isVerified: a.verified as boolean,
+              isFavorited: favorites.has(a.id as string),
+              hasVideo: !!a.video_faits_saillants_url,
+              badges: [],
+              favorites: 0,
+              views: 0,
+              stars: 0,
+              commitmentStatus: "aucun",
+              orgType: "scolaire" as const,
+            };
+          });
+          setAthletes(mapped);
+        }
+        setLoading(false);
+      });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const filtered = useMemo(() => {
-    let list = [...SEARCH_ATHLETES];
+    let list = [...athletes];
 
     if (search.trim().length >= 3) {
       const q = search.toLowerCase();
@@ -289,13 +349,36 @@ export default function RecherchePage() {
     return list.map((a) => ({ ...a, isFavorited: favorites.has(a.id) }));
   }, [search, sport, position, region, promotion, verifiedOnly, withVideoOnly, orgType, favorites]);
 
-  const toggleFav = (id: string) => {
+  const toggleFav = async (id: string) => {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const isFav = favorites.has(id);
+
     setFavorites((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
       return next;
     });
+
+    if (isFav) {
+      await supabase
+        .from("pipeline")
+        .delete()
+        .eq("recruiter_id", user.id)
+        .eq("athlete_id", id);
+    } else {
+      await supabase
+        .from("pipeline")
+        .upsert({
+          recruiter_id: user.id,
+          athlete_id: id,
+          status: "IDENTIFIE",
+          favorited_at: new Date().toISOString(),
+        });
+    }
   };
 
   const hasFilters = sport || position || region || promotion || verifiedOnly || withVideoOnly || orgType;
@@ -414,6 +497,13 @@ export default function RecherchePage() {
         )}
       </div>
 
+      {/* Loading */}
+      {loading && (
+        <div className="flex items-center justify-center py-20">
+          <div className="text-[#6B7280] text-sm">Chargement des athlètes...</div>
+        </div>
+      )}
+
       {/* Results grid */}
       {filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -446,7 +536,7 @@ export default function RecherchePage() {
 
           {/* Remaining results — gated behind Recruteur Pro */}
           {filtered.length > 5 && (
-            <FeatureGate feature="unlimited_profiles" requiredTier="recruteur_pro">
+            <FeatureGate feature="unlimited_profiles" requiredTier="pro">
               {viewMode === "grid" ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
                   {filtered.slice(5).map((a) => (

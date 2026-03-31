@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useMemo, useCallback, Suspense } from "react";
+import { useState, useMemo, useCallback, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import type { RecruitmentStatus, RetireReason } from "@/lib/config/recruitmentStatuses";
 import { getStatusConfig, RECRUITMENT_STATUSES } from "@/lib/config/recruitmentStatuses";
 import { MOCK_PIPELINE } from "../_data/mockPipelineData";
@@ -160,11 +161,87 @@ function FavorisContent() {
   const initialFilter = (searchParams.get("filtre") as FilterKey) || "tous";
   const [filter, setFilter] = useState<FilterKey>(VALID_FILTERS.includes(initialFilter) ? initialFilter : "tous");
   const [showRetired, setShowRetired] = useState(false);
-  const [athletes, setAthletes] = useState<PipelineAthlete[]>(
-    MOCK_PIPELINE.filter((a) => a.tracking.status !== "none")
-  );
+  const [athletes, setAthletes] = useState<PipelineAthlete[]>([]);
   const [composeTarget, setComposeTarget] = useState<PipelineAthlete | null>(null);
   const [showCelebration, setShowCelebration] = useState(false);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
+      supabase
+        .from("pipeline")
+        .select(`
+          id,
+          status,
+          notes,
+          favorited_at,
+          contacted_at,
+          updated_at,
+          athletes!pipeline_athlete_id_fkey(
+            id,
+            first_name,
+            last_name,
+            verified,
+            profile_completion,
+            video_faits_saillants_url,
+            annee_diplomation,
+            cote_globale_entraineur,
+            sports!athletes_sport_id_fkey(nom),
+            positions!athletes_position_id_fkey(nom, abreviation)
+          )
+        `)
+        .eq("recruiter_id", user.id)
+        .neq("status", "NONE")
+        .then(({ data, error }) => {
+          console.log("Favoris loaded:", data?.length, error);
+          if (!data) return;
+
+          const mapped: PipelineAthlete[] = data.map((p: Record<string, unknown>) => {
+            const a = p.athletes as {
+              id: string;
+              first_name: string;
+              last_name: string;
+              verified: boolean;
+              profile_completion: number;
+              video_faits_saillants_url: string | null;
+              annee_diplomation: number | null;
+              cote_globale_entraineur: number | null;
+              sports: { nom: string } | null;
+              positions: { nom: string; abreviation: string } | null;
+            } | null;
+
+            return {
+              id: a?.id || (p.id as string),
+              firstName: a?.first_name || "Athlète",
+              lastName: a?.last_name || "Inconnu",
+              position: a?.positions?.abreviation || "",
+              sport: a?.sports?.nom || "",
+              school: "",
+              region: "",
+              niveau: "Sec. 5" as const,
+              graduationYear: a?.annee_diplomation || 0,
+              stars: a?.cote_globale_entraineur || 0,
+              isVerified: a?.verified || false,
+              hasVideo: !!a?.video_faits_saillants_url,
+              badges: [],
+              coachName: "",
+              coachLastName: "",
+              tracking: {
+                recruiterId: user.id,
+                athleteId: a?.id || (p.id as string),
+                status: (p.status as string).toLowerCase() as RecruitmentStatus,
+                favoritedAt: (p.favorited_at as string) || (p.updated_at as string),
+                statusChangedAt: (p.updated_at as string) || new Date().toISOString(),
+                firstContactedAt: (p.contacted_at as string) || undefined,
+                notes: (p.notes as string) || "",
+              },
+            };
+          });
+          setAthletes(mapped);
+        });
+    });
+  }, []);
 
   const retiredCount = athletes.filter((a) => a.tracking.status === "retire").length;
   const visibleCount = athletes.filter((a) => a.tracking.status !== "retire").length;
@@ -210,7 +287,19 @@ function FavorisContent() {
     return { commitment, discovery, exit };
   }, [filtered]);
 
-  const handleStatusChange = useCallback((id: string, newStatus: RecruitmentStatus, extra?: { visitDate?: string; retireReason?: RetireReason }) => {
+  const handleStatusChange = useCallback(async (id: string, newStatus: RecruitmentStatus, extra?: { visitDate?: string; retireReason?: RetireReason }) => {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      await supabase
+        .from("pipeline")
+        .update({
+          status: newStatus.toUpperCase(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("athlete_id", id)
+        .eq("recruiter_id", user.id);
+    }
     setAthletes((prev) => prev.map((a) => {
       if (a.id !== id) return a;
       return {
@@ -219,10 +308,6 @@ function FavorisContent() {
           ...a.tracking,
           status: newStatus,
           statusChangedAt: new Date().toISOString(),
-          ...(newStatus === "retire" ? { retiredAt: new Date().toISOString(), previousStatus: a.tracking.status, retireReason: extra?.retireReason } : {}),
-          ...(newStatus === "visite_planifiee" && extra?.visitDate ? { visitDate: extra.visitDate } : {}),
-          ...(newStatus === "engage" ? { engagedAt: new Date().toISOString() } : {}),
-          ...(newStatus === "lettre_signee" ? { letterSignedAt: new Date().toISOString() } : {}),
         },
       };
     }));

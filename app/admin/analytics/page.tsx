@@ -112,17 +112,17 @@ export default function AdminAnalyticsPage() {
         </div>
       </div>
 
-      {/* Response metrics */}
+      {/* Contact metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
         <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] p-6">
-          <p className="text-[48px] font-head font-black text-[#22C55E] leading-none">{d.response_rate}%</p>
-          <p className="text-[10px] font-bold tracking-[0.15em] uppercase text-[#6b7280] mt-2">Taux de réponse</p>
-          <p className="text-[13px] text-[#9CA3AF] mt-1">des demandes de contact reçoivent une réponse</p>
+          <p className="text-[48px] font-head font-black text-[#22C55E] leading-none">{d.conversion_funnel?.find((f: {step: string}) => f.step === "Contacté")?.count ?? 0}</p>
+          <p className="text-[10px] font-bold tracking-[0.15em] uppercase text-[#6b7280] mt-2">Athlètes contactés</p>
+          <p className="text-[13px] text-[#9CA3AF] mt-1">athlètes ayant reçu au moins un message</p>
         </div>
         <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] p-6">
-          <p className="text-[48px] font-head font-black text-white leading-none">{d.avg_response_time_hours}h</p>
-          <p className="text-[10px] font-bold tracking-[0.15em] uppercase text-[#6b7280] mt-2">Temps moyen de réponse</p>
-          <p className="text-[13px] text-[#9CA3AF] mt-1">délai moyen première réponse coach</p>
+          <p className="text-[48px] font-head font-black text-white leading-none">{d.conversion_funnel?.find((f: {step: string}) => f.step === "Vérifié")?.count ?? 0}</p>
+          <p className="text-[10px] font-bold tracking-[0.15em] uppercase text-[#6b7280] mt-2">Profils vérifiés</p>
+          <p className="text-[13px] text-[#9CA3AF] mt-1">profils complétés et approuvés</p>
         </div>
       </div>
 
@@ -181,7 +181,7 @@ export default function AdminAnalyticsPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead><tr className="border-b border-[#2D3748]">
-                {["Établissement", "Type", "Taux réponse", "Temps réponse", "Athlètes", "Vues (30j)", "Contactés"].map((h) => (
+                {["Établissement", "Type", "Athlètes", "Vues (30j)", "Contactés"].map((h) => (
                   <th key={h} className="px-5 py-3 text-[10px] font-bold tracking-[0.15em] uppercase text-[#6b7280]">{h}</th>
                 ))}
               </tr></thead>
@@ -202,8 +202,6 @@ export default function AdminAnalyticsPage() {
                           {s.type === "cegep" ? "CÉGEP" : "Sec."}
                         </span>
                       </td>
-                      <td className="px-5 py-3 text-[13px] font-bold text-[#22C55E]">{s.response_rate}%</td>
-                      <td className="px-5 py-3 text-[13px] text-[#9CA3AF]">{s.avg_response_time_hours}h</td>
                       <td className="px-5 py-3 text-[13px] text-white font-bold">{totalAthletes}</td>
                       <td className="px-5 py-3 text-[13px] text-[#9CA3AF]">{totalSchoolViews.toLocaleString()}</td>
                       <td className="px-5 py-3 text-[13px] text-[#9CA3AF]">{contacted?.count ?? 0}</td>

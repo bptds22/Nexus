@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useMemo, useCallback, memo } from "react";
+import { useState, useMemo, useCallback, memo, useEffect } from "react";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
 import {
   DndContext,
   DragOverlay,
@@ -611,7 +612,7 @@ function SlideOver({
 ═══════════════════════════════════════════════════════════════ */
 
 export default function PipelinePage() {
-  const [cards, setCards] = useState<PipelineKanbanCard[]>(MOCK_KANBAN);
+  const [cards, setCards] = useState<PipelineKanbanCard[]>([]);
   const [selectedCard, setSelectedCard] = useState<PipelineKanbanCard | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [mobileTab, setMobileTab] = useState<RecruitmentStatus>("identifie");
@@ -620,6 +621,83 @@ export default function PipelinePage() {
   const [activeCard, setActiveCard] = useState<PipelineKanbanCard | null>(null);
   const [pendingDrop, setPendingDrop] = useState<{ cardId: string; from: RecruitmentStatus; to: RecruitmentStatus } | null>(null);
   const [retireReason, setRetireReason] = useState("");
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
+      supabase
+        .from("pipeline")
+        .select(`
+          id,
+          status,
+          notes,
+          favorited_at,
+          contacted_at,
+          created_at,
+          updated_at,
+          athletes!pipeline_athlete_id_fkey(
+            id,
+            first_name,
+            last_name,
+            verified,
+            profile_completion,
+            video_faits_saillants_url,
+            annee_diplomation,
+            numero_jersey,
+            cote_globale_entraineur,
+            sports!athletes_sport_id_fkey(nom),
+            positions!athletes_position_id_fkey(nom, abreviation)
+          )
+        `)
+        .eq("recruiter_id", user.id)
+        .neq("status", "NONE")
+        .then(({ data, error }) => {
+          console.log("Pipeline loaded:", data?.length, error);
+          if (!data) return;
+
+          const mapped: PipelineKanbanCard[] = data.map((p: Record<string, unknown>) => {
+            const a = p.athletes as {
+              id: string;
+              first_name: string;
+              last_name: string;
+              verified: boolean;
+              profile_completion: number;
+              video_faits_saillants_url: string | null;
+              annee_diplomation: number | null;
+              numero_jersey: string | null;
+              cote_globale_entraineur: number | null;
+              sports: { nom: string } | null;
+              positions: { nom: string; abreviation: string } | null;
+            } | null;
+
+            const daysSince = p.updated_at
+              ? Math.floor((Date.now() - new Date(p.updated_at as string).getTime()) / 86400000)
+              : 0;
+
+            return {
+              id: a?.id || (p.id as string),
+              full_name: a ? `${a.first_name} ${a.last_name}` : "Athlète inconnu",
+              sport: a?.sports?.nom || "",
+              position: a?.positions?.abreviation || "",
+              school: "",
+              region: "",
+              division: "D1" as const,
+              graduation_year: a?.annee_diplomation || 0,
+              coach_rating: a?.cote_globale_entraineur || 0,
+              profile_completeness: a?.profile_completion || 0,
+              is_verified: a?.verified || false,
+              has_video: !!a?.video_faits_saillants_url,
+              status: (p.status as string).toLowerCase() as RecruitmentStatus,
+              days_in_status: daysSince,
+              notes: (p.notes as string) || "",
+              last_activity: p.updated_at ? `Mis à jour il y a ${Math.floor((Date.now() - new Date(p.updated_at as string).getTime()) / 86400000)} jours` : "",
+            };
+          });
+          setCards(mapped);
+        });
+    });
+  }, []);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -632,13 +710,25 @@ export default function PipelinePage() {
   }, []);
 
   /* Status change handler */
-  const handleStatusChange = useCallback((cardId: string, newStatus: RecruitmentStatus) => {
+  const handleStatusChange = useCallback(async (cardId: string, newStatus: RecruitmentStatus) => {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      await supabase
+        .from("pipeline")
+        .update({
+          status: newStatus.toUpperCase(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("athlete_id", cardId)
+        .eq("recruiter_id", user.id);
+    }
     setCards((prev) =>
       prev.map((c) => c.id === cardId ? { ...c, status: newStatus, days_in_status: 0 } : c)
     );
     setSelectedCard(null);
     const label = KANBAN_COLUMNS.find((col) => col.id === newStatus)?.label || newStatus;
-    showToast(`Statut changé → ${label} (POC)`);
+    showToast(`Statut changé → ${label}`);
   }, [showToast]);
 
   const handleSaveNotes = useCallback((cardId: string, notes: string) => {

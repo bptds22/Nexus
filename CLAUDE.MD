@@ -109,10 +109,12 @@ Both progress bar fill AND percentage text use these colors.
 - Success: #22C55E (green)
 
 ### Typography (NO EXCEPTIONS)
-- ALL headings: Nexa Bold
-- ALL body text: Nexa Regular
-- NEVER Inter, Montserrat, Arial, or any system font
-- If Nexa is not loaded, the component is broken — fix the font import
+- ALL text: Outfit (Google Font, loaded via next/font/google)
+- Headings: Outfit 700 (font-bold) via font-head
+- Body text: Outfit 400 (font-normal) via font-sans
+- Labels/buttons: Outfit 500-600 (font-medium / font-semibold)
+- font-head and font-sans both resolve to Outfit
+- NEVER use Nexa, Inter, Montserrat, or any other font
 
 ### Card Style
 - Background: #1A1D24
@@ -469,9 +471,9 @@ Unselected Chip
 
 ## Typography
 
-Font Families
-- Body: var(--wl-font-sans)
-- Headings: var(--wl-font-head)
+Font Families (all Outfit)
+- Body: var(--font-sans) → Outfit
+- Headings: var(--font-head) → Outfit
 
 Font Sizes
 - H1: var(--wl-h1)
@@ -680,11 +682,29 @@ Page header (title + subtitle)
 - Only one owner per school, collaborators possible
 - Transfer requires Nexus admin approval
 
-### CÉGEP Director Portal — UNCHANGED
-- /directeur-cegep/* is a SEPARATE portal and is NOT affected
-- CÉGEP directors still sign up through the public signup
-- CÉGEP directors still have their own onboarding flow
-- Do NOT merge CÉGEP director into coach portal
+### Recruiter Portal Structure (CÉGEP Side)
+- The Director CÉGEP portal no longer exists as a separate portal
+- Director features are PRO features inside the Recruiter portal at /recruteur/cegep/*
+- PRO features unlocked by: Recruteur Pro ($29/mo) OR Admin CÉGEP role (free)
+- Every CÉGEP MUST have an Admin — enforced during onboarding
+- The sidebar shows a "GESTION CÉGEP" section with PRO badge
+- Free recruiters see Pro items at 0.6 opacity with lock icons
+- Clicking a Pro item shows CegepGate (blur + CTA)
+
+### Admin CÉGEP Role
+- First recruiter at a CÉGEP = temporary Admin CÉGEP
+- Onboarding forces "Who is the director?" choice (self or invite)
+- Invited director = free account, full CÉGEP management access via /auth/invite-admin?type=cegep
+- Admin flag: is_cegep_admin (boolean) + cegep_admin_type (owner/collaborator)
+- Only one owner per CÉGEP
+- Transfer requires Nexus admin approval
+
+### No More Separate Director Portals
+- /app/directeur-ecole/ → original pages remain, copies at /coach/ecole/*
+- /app/directeur-cegep/ → original pages remain, copies at /recruteur/cegep/*
+- Directors are coaches/recruiters with admin flags, not separate roles
+- Two portals: Coach portal + Recruiter portal
+- Each portal has Free tier + Pro tier (which includes school/CÉGEP management)
 
 ---
 
