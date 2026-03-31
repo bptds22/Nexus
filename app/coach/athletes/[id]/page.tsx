@@ -1,12 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
-import {
-  ALL_RECRUITER_PROFILES,
-  mockAthleteProfileFull,
-} from "@/lib/mock/athleteProfileRecruiter";
+import { useParams, useRouter } from "next/navigation";
+import { loadAthleteRaw, mapToRecruiterView } from "../_data/loadAthleteFromSupabase";
+import { mockAthleteProfileFull } from "@/lib/mock/athleteProfileRecruiter";
 import type { AthleteProfileRecruiterView, AthleteTraitRatings } from "@/lib/types/models";
 import { SPORT_NAME_MAP } from "@/lib/config/sportBadges";
 import NxIcon from "@/components/ui/NxIcon";
@@ -203,13 +201,36 @@ function Toast({ message, onDone }: { message: string; onDone: () => void }) {
 
 export default function CoachAthleteProfilePage() {
   const params = useParams();
+  const router = useRouter();
   const id = params.id as string;
 
-  // Load profile — map to recruiter mock data
-  const a = ALL_RECRUITER_PROFILES[id] || mockAthleteProfileFull;
+  const [a, setA] = useState<AthleteProfileRecruiterView>(mockAthleteProfileFull);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadAthleteRaw(id).then(({ data, error }) => {
+      if (error || !data) {
+        console.log("Failed to load athlete, using fallback:", error);
+        setLoading(false);
+        return;
+      }
+      const raw = data as Record<string, unknown>;
+      console.log('Athlete loaded:', JSON.stringify({
+        sport_id: raw.sport_id,
+        sport_name: (raw.sports as Record<string, unknown> | null)?.nom,
+        position_id: raw.position_id,
+        position_name: (raw.positions as Record<string, unknown> | null)?.nom,
+        numero_jersey: raw.numero_jersey,
+        cote: raw.cote_globale_entraineur,
+        notes: raw.notes_coach,
+      }));
+      setA(mapToRecruiterView(raw));
+      setLoading(false);
+    });
+  }, [id]);
 
   const [mode, setMode] = useState<"simple" | "detailed">("simple");
-  const [consentGiven, setConsentGiven] = useState(true); // mock: most have consent
+  const [consentGiven, setConsentGiven] = useState(true);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
   const [toast, setToast] = useState<string | null>(null);

@@ -1,9 +1,11 @@
 "use client";
 
-import { use, useState, useCallback, Suspense } from "react";
+import { use, useState, useCallback, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ALL_PROFILES, MARC_ANTOINE, type AthleteProfile } from "../../_data/mockAthleteProfiles";
+import { createClient } from "@/lib/supabase/client";
+import { loadAthleteRaw, mapToAthleteProfile } from "../../_data/loadAthleteFromSupabase";
+import { MARC_ANTOINE, type AthleteProfile } from "../../_data/mockAthleteProfiles";
 import { getBadgesForSport, MAX_BADGES, type LeadershipBadge, type BadgeOption } from "@/lib/config/sportBadges";
 import StepIndicator from "../../../components/StepIndicator";
 import TagInput from "../../../components/TagInput";
@@ -93,9 +95,11 @@ interface AthleteFormData {
   scouting: {
     evalMode: "simple" | "detailed";
     starRating: number;
+    traitRatings: Record<string, number>;
     badges: LeadershipBadge[];
     coachEndorsement: string;
   };
+  parentalConsent: boolean;
   media: {
     mediaMode: "simple" | "detailed";
     hudlLink: string;
@@ -228,8 +232,9 @@ function buildFormFromProfile(a: AthleteProfile): AthleteFormData {
       openToCoaching: false,
     },
     scouting: {
-      evalMode: (a.stars && a.stars > 0) ? "detailed" : "simple",
+      evalMode: (a.stars && a.stars > 0) ? "simple" : "simple",
       starRating: a.stars || 0,
+      traitRatings: {},
       badges: [...a.badges],
       coachEndorsement: a.coachEndorsement || "",
     },
@@ -244,6 +249,7 @@ function buildFormFromProfile(a: AthleteProfile): AthleteFormData {
       recruitingStatus: "Ouvert aux offres",
       preferredDivision: "",
     },
+    parentalConsent: true,
   };
 }
 
@@ -281,13 +287,44 @@ function ModifierContent({ id }: { id: string }) {
   const searchParams = useSearchParams();
   const stepParam = searchParams.get("step");
 
-  const athlete: AthleteProfile = ALL_PROFILES[id] || MARC_ANTOINE;
+  const [athlete, setAthlete] = useState<AthleteProfile>(MARC_ANTOINE);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadAthleteRaw(id).then(({ data, error }) => {
+      if (error || !data) {
+        console.log("Modifier: failed to load, using fallback:", error);
+        setLoading(false);
+        return;
+      }
+      const raw = data as Record<string, unknown>;
+      console.log('Athlete loaded:', JSON.stringify({
+        sport_id: raw.sport_id,
+        sport_name: (raw.sports as Record<string, unknown> | null)?.nom,
+        position_id: raw.position_id,
+        position_name: (raw.positions as Record<string, unknown> | null)?.nom,
+        numero_jersey: raw.numero_jersey,
+        cote: raw.cote_globale_entraineur,
+        notes: raw.notes_coach,
+      }));
+      const mapped = mapToAthleteProfile(raw);
+      setAthlete(mapped);
+      setLoading(false);
+    });
+  }, [id]);
 
   const [form, setForm] = useState<AthleteFormData>(() => buildFormFromProfile(athlete));
   const [currentStep, setCurrentStep] = useState(mapStepParam(stepParam));
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
   const [showErrors, setShowErrors] = useState(false);
   const [saved, setSaved] = useState(false);
+
+  // Re-initialize form when athlete loads from Supabase
+  useEffect(() => {
+    if (!loading) {
+      setForm(buildFormFromProfile(athlete));
+    }
+  }, [loading, athlete]);
 
   /* ── Updaters ──────────────────────────────────────────────── */
 
@@ -315,7 +352,7 @@ function ModifierContent({ id }: { id: string }) {
     setForm((prev) => ({ ...prev, submission: { ...prev.submission, [field]: value } }));
   }, []);
 
-  const updateScouting = useCallback((field: string, value: string | number | LeadershipBadge[]) => {
+  const updateScouting = useCallback((field: string, value: string | number | LeadershipBadge[] | Record<string, number>) => {
     setForm((prev) => ({ ...prev, scouting: { ...prev.scouting, [field]: value } }));
   }, []);
 
@@ -390,8 +427,116 @@ function ModifierContent({ id }: { id: string }) {
     setShowErrors(false); setCurrentStep(step); window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  function handleSave() {
+  async function handleSave() {
     if (!validateStep(7)) { setShowErrors(true); return; }
+
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { console.log("handleSave: no user"); return; }
+
+    // Auto-calculate cote_globale from trait ratings if in detailed mode
+    let coteGlobale = form.scouting.starRating || null;
+    if (form.scouting.evalMode === "detailed") {
+      const traitValues = Object.values(form.scouting.traitRatings).filter((v) => v > 0);
+      if (traitValues.length > 0) {
+        coteGlobale = parseFloat((traitValues.reduce((a, b) => a + b, 0) / traitValues.length).toFixed(2));
+      }
+    }
+
+    // ── PERSONAL INFO ──
+    const personalData = {
+      first_name: form.identity.firstName,
+      last_name: form.identity.lastName,
+      date_naissance: form.identity.dateOfBirth || null,
+      genre: form.identity.gender || null,
+      annee_diplomation: form.identity.gradYear ? parseInt(form.identity.gradYear) : null,
+      email: form.identity.email || null,
+    };
+    console.log("Saving personal:", personalData);
+
+    // ── ACADEMIC ──
+    const academicData = {
+      moyenne_generale: form.academic.gpa ? parseFloat(form.academic.gpa) : null,
+      matieres_fortes: form.academic.strongSubjects || [],
+      mentions_academiques: form.academic.academicHonors || [],
+      programme_cegep_vise: form.academic.cegepType ? [form.academic.cegepType === "technique" && form.academic.cegepProgramDetail ? form.academic.cegepProgramDetail : form.academic.cegepType === "dec_general" ? "DEC général" : form.academic.cegepType] : [],
+      ouvert_cegep_prive: form.academic.openToPrivate,
+      ouvert_cegep_anglophone: form.academic.openToAnglophone,
+      pret_changer_region: form.academic.openToRelocate,
+      regions_cegep_preferees: form.academic.cegepRegions || [],
+    };
+    console.log("Saving academic:", academicData);
+
+    // ── PHYSICAL ──
+    const physicalData = {
+      taille_pieds: form.physical.heightFeet ? parseInt(form.physical.heightFeet) : null,
+      taille_pouces: form.physical.heightInches ? parseInt(form.physical.heightInches) : null,
+      poids_lbs: form.physical.weightLbs ? parseFloat(form.physical.weightLbs) : null,
+      envergure: form.physical.wingspan || null,
+      taille_mains: form.physical.handSize || null,
+      main_dominante: form.physical.dominantHand || null,
+      pied_dominant: form.physical.dominantFoot || null,
+      test_40_verges: form.physical.fortyYard || null,
+      saut_vertical: form.physical.verticalJump || null,
+      saut_longueur: form.physical.broadJump || null,
+      developpe_couche: form.physical.benchPress || null,
+      navette_agilite: form.physical.shuttleAgility || null,
+      sprint_100m: form.physical.sprint100m || null,
+    };
+    console.log("Saving physical:", physicalData);
+
+    // ── SPORT ──
+    const sportData = {
+      numero_jersey: form.sports.jerseyNumber ? parseInt(form.sports.jerseyNumber) : null,
+      ouvert_entraineur_cegep: form.sports.openToCoaching,
+    };
+    console.log("Saving sport:", sportData);
+
+    // ── EVALUATION ──
+    const evalData = {
+      cote_globale_entraineur: coteGlobale,
+      notes_coach: form.scouting.coachEndorsement || null,
+    };
+    console.log("Saving evaluation:", evalData);
+
+    // ── MEDIA ──
+    const mediaData = {
+      video_faits_saillants_url: form.media.highlightVideo || null,
+      hudl_url: form.media.hudlLink || null,
+      youtube_url: form.media.youtubeLink || null,
+      instagram_url: form.media.instagramLink || null,
+      video_match_complet_url: form.media.fullGameVideo || null,
+      video_entrainement_url: form.media.trainingVideo || null,
+    };
+    console.log("Saving media:", mediaData);
+
+    // ── CONSENT ──
+    const consentData = {
+      consentement_parental: form.parentalConsent,
+      consentement_parental_date: form.parentalConsent ? new Date().toISOString() : null,
+    };
+
+    // Merge all into one update
+    const updateData = {
+      ...personalData,
+      ...academicData,
+      ...physicalData,
+      ...sportData,
+      ...evalData,
+      ...mediaData,
+      ...consentData,
+    };
+
+    console.log("Full update payload:", JSON.stringify(updateData));
+    const { error } = await supabase.from("athletes").update(updateData).eq("id", id);
+    console.log("Save result:", error ? error.message : "SUCCESS");
+
+    if (error) {
+      console.error("Save failed:", error.message);
+      alert("Erreur lors de la sauvegarde: " + error.message);
+      return;
+    }
+
     setCompletedSteps((prev) => new Set([...prev, 7]));
     setSaved(true);
   }
@@ -643,8 +788,75 @@ function ModifierContent({ id }: { id: string }) {
 
         <FormModeToggle mode={sc.evalMode} onChange={(m) => updateScouting("evalMode", m)} />
 
-        {/* ── Star Rating (detailed only) ──────────── */}
-        {isDetailed && (
+        {/* ── Detailed: 11 trait ratings ──────────── */}
+        {isDetailed && (() => {
+          const TRAIT_GROUPS = [
+            { title: "Capacités athlétiques", traits: [
+              { key: "vitesse_explosivite", label: "Vitesse / Explosivité" },
+              { key: "force_puissance", label: "Force / Puissance" },
+              { key: "endurance_cardio", label: "Endurance / Cardio" },
+              { key: "agilite_coordination", label: "Agilité / Coordination" },
+            ]},
+            { title: "Intelligence sportive", traits: [
+              { key: "vision_jeu", label: "Vision du jeu" },
+              { key: "sens_tactique", label: "Sens tactique" },
+            ]},
+            { title: "Caractère", traits: [
+              { key: "ethique_travail", label: "Éthique de travail" },
+              { key: "coachabilite", label: "Coachabilité" },
+              { key: "leadership", label: "Leadership" },
+              { key: "esprit_equipe", label: "Esprit d'équipe" },
+              { key: "competitivite_resilience", label: "Compétitivité / Résilience" },
+            ]},
+          ];
+          const allRated = Object.values(sc.traitRatings).filter((v) => v > 0);
+          const autoAvg = allRated.length > 0 ? allRated.reduce((a, b) => a + b, 0) / allRated.length : 0;
+          return (
+            <div className="mb-8 space-y-4">
+              {/* Auto-calculated cote globale */}
+              <div className="bg-[#13151a] border border-[#2a2d36] rounded-xl p-4 flex items-center justify-between">
+                <div>
+                  <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#6b7280]">Cote globale (moyenne auto)</p>
+                  <p className="text-[28px] font-head font-black text-[#F59E0B] leading-none mt-1">{autoAvg > 0 ? autoAvg.toFixed(1) : "—"}<span className="text-[14px] text-[#6b7280] font-normal ml-1">/ 5</span></p>
+                </div>
+                <div className="flex gap-0.5">{Array.from({ length: 5 }, (_, i) => (
+                  <svg key={i} width="20" height="20" viewBox="0 0 24 24" fill={autoAvg >= i + 1 ? "#F59E0B" : autoAvg >= i + 0.5 ? "#F59E0B" : "#374151"} stroke="none">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                  </svg>
+                ))}</div>
+              </div>
+              {TRAIT_GROUPS.map((group) => (
+                <div key={group.title} className="bg-[#13151a] border border-[#2a2d36] rounded-xl p-5">
+                  <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#6b7280] mb-3">{group.title}</p>
+                  <div className="space-y-1">
+                    {group.traits.map((trait) => {
+                      const val = sc.traitRatings[trait.key] || 0;
+                      return (
+                        <div key={trait.key} className="flex items-center justify-between py-2 px-2 rounded-lg hover:bg-white/[0.02] transition-colors">
+                          <span className="text-[13px] text-[#c8c8cc]">{trait.label}</span>
+                          <div className="flex items-center gap-1">
+                            {Array.from({ length: 5 }, (_, i) => (
+                              <button key={i} type="button" title={`${i + 1} étoile${i > 0 ? "s" : ""}`} className="w-6 h-6 cursor-pointer hover:scale-110 transition-transform"
+                                onClick={() => updateScouting("traitRatings", { ...sc.traitRatings, [trait.key]: val === i + 1 ? 0 : i + 1 })}>
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill={val >= i + 1 ? "#F59E0B" : "#374151"} stroke="none">
+                                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                                </svg>
+                              </button>
+                            ))}
+                            <span className="text-[12px] font-bold text-[#6b7280] w-8 text-right">{val > 0 ? `${val}/5` : "—"}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          );
+        })()}
+
+        {/* ── Star Rating (simplified — always visible) ──────────── */}
+        {!isDetailed && (
         <div className="mb-8">
           <p className={sectionTitle}>Cote de l&apos;entraîneur</p>
           <p className="text-[12px] text-[#6b7280] mb-4 -mt-3">
@@ -724,7 +936,6 @@ function ModifierContent({ id }: { id: string }) {
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
                         )}
                       </div>
-                      <span className="text-[15px]">{opt.icon}</span>
                       <span className={`text-[14px] font-bold ${isSelected ? "text-white" : "text-[#8a8d96]"}`}>{opt.label}</span>
                     </button>
 
@@ -901,6 +1112,8 @@ function ModifierContent({ id }: { id: string }) {
   ══════════════════════════════════════════════════════════════ */
 
   const stepRenderers: Record<number, () => React.ReactNode> = { 1: renderStep1, 2: renderStep2, 3: renderStep3, 4: renderStep4, 5: renderStep5, 6: renderStep6, 7: renderStep7 };
+
+  if (loading) return <div className="px-6 sm:px-10 py-20 text-center text-[#6B7280] text-sm">Chargement du profil...</div>;
 
   return (
     <div className="px-6 sm:px-10 py-8 max-w-5xl mx-auto">

@@ -1,12 +1,9 @@
 "use client";
 
-import { use } from "react";
+import { use, useState, useEffect } from "react";
 import Link from "next/link";
-import {
-  ALL_PROFILES,
-  BRUNO,
-  type AthleteProfile,
-} from "../../_data/mockAthleteProfiles";
+import { loadAthleteRaw, mapToAthleteProfile } from "../../_data/loadAthleteFromSupabase";
+import { BRUNO, type AthleteProfile } from "../../_data/mockAthleteProfiles";
 import type { LeadershipBadge } from "@/lib/config/sportBadges";
 import { SPORT_NAME_MAP } from "@/lib/config/sportBadges";
 import NxIcon from "@/components/ui/NxIcon";
@@ -240,7 +237,22 @@ function PlayerCard({ a }: { a: AthleteProfile }) {
 
 export default function ApercuPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const athlete: AthleteProfile = ALL_PROFILES[id] || BRUNO;
+  const [athlete, setAthlete] = useState<AthleteProfile>(BRUNO);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadAthleteRaw(id).then(({ data, error }) => {
+      if (error || !data) {
+        console.log("Apercu: failed to load, using fallback:", error);
+        setLoading(false);
+        return;
+      }
+      setAthlete(mapToAthleteProfile(data as Record<string, unknown>));
+      setLoading(false);
+    });
+  }, [id]);
+
+  if (loading) return <div className="px-6 py-20 text-center text-[#6B7280] text-sm">Chargement...</div>;
   const a = athlete;
 
   /* Build the stat strip cells: height, weight, then badges */
