@@ -10,11 +10,13 @@ import type { ActivityEvent } from "@/lib/types/activityEvents";
 export interface ActionBarData {
   unreadMessages: number;
   incompleteProfiles: number;
+  newAthletes: number;
 }
 
 export const ACTION_BAR: ActionBarData = {
   unreadMessages: 3,
   incompleteProfiles: 5,
+  newAthletes: 0,
 };
 
 /* ── KPI Cards ──────────────────────────────────────────────────── */
@@ -26,6 +28,7 @@ export interface KpiData {
   completePct: number;
   recruiterViews: number;
   viewsTrend: number; // percent change vs last month
+  viewsTrendLabel?: string; // e.g. "Nouveau" when last month was 0
   activeConversations: number;
 }
 

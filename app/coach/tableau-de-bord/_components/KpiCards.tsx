@@ -74,17 +74,21 @@ export default function KpiCards({ data }: { data: KpiData }) {
           <span className="text-[32px] font-head font-black text-white leading-none">{data.recruiterViews}</span>
           <div className="flex items-center gap-2 mt-1">
             <p className="text-[13px] text-[#9CA3AF]">ce mois-ci</p>
-            {data.viewsTrend !== 0 && (
-              <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full ${
-                data.viewsTrend > 0 ? "bg-[#22C55E]/15 text-[#22C55E]" : "bg-[#E63946]/15 text-[#E63946]"
-              }`}>
+            <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full ${
+              data.viewsTrend > 0
+                ? "bg-[#22C55E]/15 text-[#22C55E]"
+                : data.viewsTrend < 0
+                  ? "bg-[#E63946]/15 text-[#E63946]"
+                  : "bg-[#6B7280]/15 text-[#6B7280]"
+            }`}>
+              {data.viewsTrend !== 0 && (
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"
                   className={data.viewsTrend < 0 ? "rotate-180" : ""}>
                   <path d="M12 19V5" /><path d="M5 12l7-7 7 7" />
                 </svg>
-                {data.viewsTrend > 0 ? "+" : ""}{data.viewsTrend}%
-              </span>
-            )}
+              )}
+              {data.viewsTrend === 0 ? "→ " : data.viewsTrend > 0 ? "+" : ""}{data.viewsTrend}%
+            </span>
           </div>
         </div>
       </div>

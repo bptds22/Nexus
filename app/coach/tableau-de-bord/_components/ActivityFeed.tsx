@@ -258,9 +258,9 @@ export default function ActivityFeed({ events }: { events: ActivityEvent[] }) {
   if (events.length === 0) {
     return (
       <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] p-8 text-center">
-        <p className="text-[16px] text-[#9CA3AF] font-semibold">Tout est à jour 👍</p>
+        <p className="text-[16px] text-[#9CA3AF] font-semibold">Aucune activité récente</p>
         <p className="text-[12px] text-[#6b7280] mt-2">
-          Ajoutez des athlètes pour commencer à recevoir de l&apos;activité
+          Les activités de vos athlètes apparaîtront ici
         </p>
       </div>
     );

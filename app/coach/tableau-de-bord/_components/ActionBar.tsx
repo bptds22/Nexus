@@ -109,6 +109,38 @@ export default function ActionBar({ data }: { data: ActionBarData }) {
           </div>
         )}
       </Link>
+
+      {/* ── New athletes added ────────────────────────────────── */}
+      {data.newAthletes > 0 && (
+        <Link
+          href="/coach/athletes"
+          className="group flex items-center gap-4 rounded-xl px-6 py-5 transition-all border-l-4 bg-[#22C55E]/[0.06] border-l-[#22C55E] hover:bg-[#22C55E]/[0.12]"
+        >
+          <div className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 bg-[#22C55E]/20">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+              <circle cx="8.5" cy="7" r="4" />
+              <path d="M20 8v6" />
+              <path d="M23 11h-6" />
+            </svg>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[15px] font-bold text-white">
+              {data.newAthletes} nouveau{data.newAthletes > 1 ? "x" : ""} athlète{data.newAthletes > 1 ? "s" : ""} ajouté{data.newAthletes > 1 ? "s" : ""} à ton roster
+            </p>
+            <p className="text-[13px] text-[#9CA3AF] mt-0.5">Cliquez pour consulter le roster</p>
+          </div>
+          <div className="flex items-center gap-3 shrink-0">
+            <span className="inline-flex items-center justify-center min-w-[28px] h-7 px-2 rounded-full bg-[#22C55E] text-white text-[13px] font-black">
+              {data.newAthletes}
+            </span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round"
+              className="opacity-0 group-hover:opacity-100 transition-opacity">
+              <path d="M5 12h14" /><path d="M12 5l7 7-7 7" />
+            </svg>
+          </div>
+        </Link>
+      )}
     </div>
   );
 }

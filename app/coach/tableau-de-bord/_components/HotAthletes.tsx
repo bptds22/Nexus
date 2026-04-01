@@ -21,9 +21,6 @@ const HeartIcon = () => (
 );
 
 export default function HotAthletes({ athletes }: { athletes: HotAthlete[] }) {
-  // Max views for bar scaling
-  const maxViews = Math.max(...athletes.map((a) => a.viewsThisWeek));
-
   return (
     <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] overflow-hidden">
       {/* Header */}
@@ -38,6 +35,20 @@ export default function HotAthletes({ athletes }: { athletes: HotAthlete[] }) {
         </div>
         <p className="text-[13px] text-[#9CA3AF] mt-1">Les plus consultés cette semaine</p>
       </div>
+
+      {/* Empty state */}
+      {athletes.length === 0 && (
+        <div className="px-5 pb-6 pt-2 text-center">
+          <div className="w-12 h-12 rounded-full bg-[#2D3748]/30 flex items-center justify-center mx-auto mb-3">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4a4d56" strokeWidth="1.5" strokeLinecap="round">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+          </div>
+          <p className="text-[14px] font-bold text-[#6b7280]">Aucun athlète consulté cette semaine</p>
+          <p className="text-[12px] text-[#4B5563] mt-1">Les vues recruteurs apparaîtront ici</p>
+        </div>
+      )}
 
       {/* Rows */}
       <div className="divide-y divide-[#2D3748]/50">
