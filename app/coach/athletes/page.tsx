@@ -124,6 +124,39 @@ function MesAthletesContent() {
 
       if (!data) { setLoading(false); return; }
 
+      // Batch-query pipeline for all athlete IDs
+      const athleteIds = data.map((a: Record<string, unknown>) => a.id as string);
+      const { data: pipelineRows } = await supabase
+        .from("pipeline")
+        .select("athlete_id, status")
+        .in("athlete_id", athleteIds);
+
+      // Build recruitment labels: find highest status + count of recruiters at that level or higher
+      const STATUS_ORDER: Record<string, number> = { IDENTIFIE: 1, CONTACTE: 2, EN_DISCUSSION: 3, VISITE_PLANIFIEE: 4, ENGAGE: 5, LETTRE_SIGNEE: 6 };
+      const STATUS_LABELS: Record<string, string> = { IDENTIFIE: "Identifié", CONTACTE: "Contacté", EN_DISCUSSION: "En discussion", VISITE_PLANIFIEE: "Visite", ENGAGE: "Engagé", LETTRE_SIGNEE: "Lettre signée" };
+      const recruitmentMap = new Map<string, string>();
+      if (pipelineRows) {
+        const byAthlete = new Map<string, { status: string }[]>();
+        for (const row of pipelineRows) {
+          const list = byAthlete.get(row.athlete_id) || [];
+          list.push(row);
+          byAthlete.set(row.athlete_id, list);
+        }
+        for (const [aid, rows] of byAthlete) {
+          // Find highest status
+          let maxOrder = 0;
+          let maxStatus = "";
+          for (const r of rows) {
+            const order = STATUS_ORDER[r.status] || 0;
+            if (order > maxOrder) { maxOrder = order; maxStatus = r.status; }
+          }
+          // Count recruiters at that status or higher
+          const count = rows.filter(r => (STATUS_ORDER[r.status] || 0) >= maxOrder).length;
+          const label = STATUS_LABELS[maxStatus] || maxStatus;
+          recruitmentMap.set(aid, `${label} (${count})`);
+        }
+      }
+
       const mapped: RosterAthlete[] = data.map((a: Record<string, unknown>) => {
         // Handle FK joins — may be object or array
         const posRaw = a.positions;
@@ -168,6 +201,7 @@ function MesAthletesContent() {
           stars: Math.round(stars),
           commitmentStatus: "aucun" as const,
           badgeIcons: [],
+          recruitmentLabel: recruitmentMap.get(a.id as string) || undefined,
         };
 
         console.log("Mapped athlete:", athlete.firstName, athlete.lastName, "pos:", athlete.position, "grad:", athlete.gradYear, "verified:", athlete.isVerified, "stars:", athlete.stars);

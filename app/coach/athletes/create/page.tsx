@@ -468,7 +468,7 @@ export default function CreateAthletePage() {
         esprit_equipe: ratings.teamwork || null,
         resilience: ratings.resilience || null,
         attitude_mentalite: ratings.attitude || null,
-        distinctions: form.scouting.badges || [],
+        distinctions: (form.scouting.badges || []).map((b) => b?.badgeId).filter((k): k is string => !!k),
         rapport_entraineur: form.scouting.coachEndorsement || null,
       });
     }

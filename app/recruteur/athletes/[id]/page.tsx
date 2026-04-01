@@ -75,7 +75,7 @@ function ProfileToggle({ mode, onChange }: { mode: "simple" | "detailed"; onChan
 /* ── Completeness Indicator ─────────────────────────────────── */
 
 function CompletenessBar({ percent }: { percent: number }) {
-  const color = percent >= 80 ? "#3B82F6" : percent >= 50 ? "#F59E0B" : "#EF4444";
+  const color = percent >= 90 ? "#3B82F6" : percent >= 60 ? "#22C55E" : percent >= 40 ? "#EAB308" : "#EF4444";
   return (
     <div className="flex items-center gap-3">
       <div className="flex-1 h-2 bg-[#2D3748] rounded-full overflow-hidden">

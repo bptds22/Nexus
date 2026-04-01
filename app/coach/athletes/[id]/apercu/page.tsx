@@ -259,7 +259,7 @@ export default function ApercuPage({ params }: { params: Promise<{ id: string }>
   const statCells: { top: string; mid: string; sub?: string; iconName?: string }[] = [
     { top: a.heightDisplay || "—", mid: "Taille" },
     { top: a.weightDisplay || "—", mid: "Poids" },
-    ...a.badges.map((b) => ({ top: "", mid: b.label, sub: b.detail, iconName: b.icon })),
+    ...(a.badges || []).filter((b) => b != null && b.label).map((b) => ({ top: "", mid: b.label, sub: b.detail, iconName: b.icon })),
   ];
 
   return (

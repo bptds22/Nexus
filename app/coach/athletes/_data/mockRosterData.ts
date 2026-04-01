@@ -45,6 +45,7 @@ export interface RosterAthlete {
   commitmentStatus: CommitmentStatus;
   placedAt?: string;
   badgeIcons?: string[];            // emoji icons from leadership badges
+  recruitmentLabel?: string;        // e.g. "Contacté (3)" from pipeline table
 }
 
 /* ── Helper to build verification objects ───────────────────── */

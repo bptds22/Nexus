@@ -4,7 +4,7 @@ import { use, useState, useCallback, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { loadAthleteRaw, mapToAthleteProfile } from "../../_data/loadAthleteFromSupabase";
+import { loadAthleteRaw, mapToAthleteProfile, buildFormFromRaw } from "../../_data/loadAthleteFromSupabase";
 import { MARC_ANTOINE, type AthleteProfile } from "../../_data/mockAthleteProfiles";
 import { getBadgesForSport, MAX_BADGES, type LeadershipBadge, type BadgeOption } from "@/lib/config/sportBadges";
 import StepIndicator from "../../../components/StepIndicator";
@@ -224,7 +224,7 @@ function buildFormFromProfile(a: AthleteProfile): AthleteFormData {
       currentTeam: COACH_TEAM.teams[0].name,
       teamLevel: COACH_TEAM.teams[0].level,
       teamDivision: COACH_TEAM.teams[0].division,
-      jerseyNumber: "12",
+      jerseyNumber: a.jerseyNumber || "",
       league: COACH_TEAM.teams[0].league,
       secondaryTeamId: "", secondaryTeam: "",
       secondaryTeamLevel: "", secondaryTeamDivision: "", secondaryLeague: "",
@@ -287,44 +287,38 @@ function ModifierContent({ id }: { id: string }) {
   const searchParams = useSearchParams();
   const stepParam = searchParams.get("step");
 
-  const [athlete, setAthlete] = useState<AthleteProfile>(MARC_ANTOINE);
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    loadAthleteRaw(id).then(({ data, error }) => {
-      if (error || !data) {
-        console.log("Modifier: failed to load, using fallback:", error);
-        setLoading(false);
-        return;
-      }
-      const raw = data as Record<string, unknown>;
-      console.log('Athlete loaded:', JSON.stringify({
-        sport_id: raw.sport_id,
-        sport_name: (raw.sports as Record<string, unknown> | null)?.nom,
-        position_id: raw.position_id,
-        position_name: (raw.positions as Record<string, unknown> | null)?.nom,
-        numero_jersey: raw.numero_jersey,
-        cote: raw.cote_globale_entraineur,
-        notes: raw.notes_coach,
-      }));
-      const mapped = mapToAthleteProfile(raw);
-      setAthlete(mapped);
-      setLoading(false);
-    });
-  }, [id]);
-
-  const [form, setForm] = useState<AthleteFormData>(() => buildFormFromProfile(athlete));
+  const [form, setForm] = useState<AthleteFormData>(() => buildFormFromProfile(MARC_ANTOINE));
   const [currentStep, setCurrentStep] = useState(mapStepParam(stepParam));
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
   const [showErrors, setShowErrors] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveToast, setSaveToast] = useState(false);
 
-  // Re-initialize form when athlete loads from Supabase
   useEffect(() => {
-    if (!loading) {
-      setForm(buildFormFromProfile(athlete));
-    }
-  }, [loading, athlete]);
+    loadAthleteRaw(id).then(({ data, error }) => {
+      if (error || !data) {
+        console.log("Modifier: failed to load:", error);
+        setLoading(false);
+        return;
+      }
+      const raw = data as Record<string, unknown>;
+      console.log("Modifier raw data:", JSON.stringify({
+        numero_jersey: raw.numero_jersey,
+        programme: raw.programme_cegep_vise,
+        ouvert_prive: raw.ouvert_cegep_prive,
+        ouvert_anglo: raw.ouvert_cegep_anglophone,
+        pret_demenager: raw.pret_changer_region,
+        cote: raw.cote_globale_entraineur,
+        notes: raw.notes_coach,
+      }));
+      // Build form directly from raw DB data — preserves all values
+      const formFromDB = buildFormFromRaw(raw) as unknown as AthleteFormData;
+      setForm(formFromDB);
+      setLoading(false);
+    });
+  }, [id]);
 
   /* ── Updaters ──────────────────────────────────────────────── */
 
@@ -427,12 +421,29 @@ function ModifierContent({ id }: { id: string }) {
     setShowErrors(false); setCurrentStep(step); window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
+  async function handleQuickSave() {
+    setSaving(true);
+    const ok = await saveToSupabase();
+    setSaving(false);
+    if (ok) {
+      setSaveToast(true);
+      setTimeout(() => setSaveToast(false), 2500);
+    }
+  }
+
   async function handleSave() {
     if (!validateStep(7)) { setShowErrors(true); return; }
+    const ok = await saveToSupabase();
+    if (ok) {
+      setCompletedSteps((prev) => new Set([...prev, 7]));
+      setSaved(true);
+    }
+  }
 
+  async function saveToSupabase(): Promise<boolean> {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { console.log("handleSave: no user"); return; }
+    if (!user) { console.log("handleSave: no user"); return false; }
 
     // Auto-calculate cote_globale from trait ratings if in detailed mode
     let coteGlobale = form.scouting.starRating || null;
@@ -485,12 +496,54 @@ function ModifierContent({ id }: { id: string }) {
     };
     console.log("Saving physical:", physicalData);
 
-    // ── SPORT ──
-    const sportData = {
+    // ── SPORT — look up UUIDs from names ──
+    let sportId = null;
+    let positionId = null;
+    if (form.sports.primarySport) {
+      const { data: sportRow } = await supabase.from("sports").select("id").eq("nom", form.sports.primarySport).maybeSingle();
+      sportId = sportRow?.id || null;
+      console.log("Sport save:", { dropdownValue: form.sports.primarySport, sport_id: sportId });
+    }
+    if (form.sports.primaryPosition) {
+      const { data: posRow } = await supabase.from("positions").select("id").eq("abreviation", form.sports.primaryPosition).maybeSingle();
+      if (!posRow) {
+        // Try matching by full name
+        const { data: posRow2 } = await supabase.from("positions").select("id").eq("nom", form.sports.primaryPosition).maybeSingle();
+        positionId = posRow2?.id || null;
+      } else {
+        positionId = posRow.id;
+      }
+      console.log("Position save:", { dropdownValue: form.sports.primaryPosition, position_id: positionId });
+    }
+
+    // ── SECONDARY SPORT/POSITION ──
+    let sportSecondaireId = null;
+    let positionSecondaireId = null;
+    if (form.sports.secondarySport && form.sports.secondarySport !== "Aucun") {
+      const { data: secSportRow } = await supabase.from("sports").select("id").eq("nom", form.sports.secondarySport).maybeSingle();
+      sportSecondaireId = secSportRow?.id || null;
+      console.log("Secondary sport save:", { dropdownValue: form.sports.secondarySport, sport_secondaire_id: sportSecondaireId });
+    }
+    if (form.sports.secondarySportPosition) {
+      const { data: secPosRow } = await supabase.from("positions").select("id").eq("abreviation", form.sports.secondarySportPosition).maybeSingle();
+      if (!secPosRow) {
+        const { data: secPosRow2 } = await supabase.from("positions").select("id").eq("nom", form.sports.secondarySportPosition).maybeSingle();
+        positionSecondaireId = secPosRow2?.id || null;
+      } else {
+        positionSecondaireId = secPosRow.id;
+      }
+      console.log("Secondary position save:", { dropdownValue: form.sports.secondarySportPosition, position_secondaire_id: positionSecondaireId });
+    }
+
+    const sportData: Record<string, unknown> = {
       numero_jersey: form.sports.jerseyNumber ? parseInt(form.sports.jerseyNumber) : null,
       ouvert_entraineur_cegep: form.sports.openToCoaching,
     };
-    console.log("Saving sport:", sportData);
+    if (sportId) sportData.sport_id = sportId;
+    if (positionId) sportData.position_id = positionId;
+    sportData.sport_secondaire_id = sportSecondaireId;
+    sportData.position_secondaire_id = positionSecondaireId;
+    console.log("Saving sport (full):", JSON.stringify(sportData));
 
     // ── EVALUATION ──
     const evalData = {
@@ -527,18 +580,59 @@ function ModifierContent({ id }: { id: string }) {
       ...consentData,
     };
 
-    console.log("Full update payload:", JSON.stringify(updateData));
+    console.log("FULL UPDATE PAYLOAD:", JSON.stringify(updateData));
     const { error } = await supabase.from("athletes").update(updateData).eq("id", id);
     console.log("Save result:", error ? error.message : "SUCCESS");
 
     if (error) {
       console.error("Save failed:", error.message);
       alert("Erreur lors de la sauvegarde: " + error.message);
-      return;
+      return false;
     }
 
-    setCompletedSteps((prev) => new Set([...prev, 7]));
-    setSaved(true);
+    // ── UPSERT evaluations table ──
+    const tr = form.scouting.traitRatings;
+    console.log("Trait ratings from form:", JSON.stringify(tr));
+
+    // Map UI trait keys → DB columns
+    const leadership = tr.leadership || null;
+    const discipline = tr.ethique_travail || null;
+    const coachabilite = tr.coachabilite || null;
+    const intelligence_jeu = tr.vision_jeu || null;
+    const competitivite = tr.competitivite_resilience || null;
+    const esprit_equipe = tr.esprit_equipe || null;
+    const resilience = tr.competitivite_resilience || null;
+    const attitude_mentalite = null; // no UI trait for this
+
+    // Distinctions — extract badge keys, filter nulls
+    const distinctionKeys = form.scouting.badges
+      .map((b) => b?.badgeId)
+      .filter((k): k is string => !!k);
+    console.log("Distinctions to save:", distinctionKeys);
+    console.log("Saving jersey:", form.sports.jerseyNumber);
+
+    const evalRecord = {
+      coach_id: user.id,
+      athlete_id: id,
+      leadership,
+      discipline,
+      coachabilite,
+      intelligence_jeu,
+      competitivite,
+      esprit_equipe,
+      resilience,
+      attitude_mentalite,
+      cote_globale: coteGlobale,
+      distinctions: distinctionKeys,
+      rapport_entraineur: form.scouting.coachEndorsement || null,
+    };
+    console.log("Saving evaluation:", JSON.stringify(evalRecord));
+    const { error: evalError } = await supabase
+      .from("evaluations")
+      .upsert(evalRecord, { onConflict: "coach_id,athlete_id" });
+    console.log("Evaluation upsert result:", evalError ? evalError.message : "SUCCESS");
+
+    return true;
   }
 
   /* ══════════════════════════════════════════════════════════════
@@ -1001,13 +1095,7 @@ function ModifierContent({ id }: { id: string }) {
     return (
       <div className={cardCls}>
         <h2 className="font-head text-xl sm:text-2xl font-black text-white uppercase tracking-tight mb-1">Vidéo &amp; Médias</h2>
-        <div className="flex items-center mb-6">
-          <p className="text-[14px] text-[#6b7280]">Liens vers les vidéos et profils en ligne</p>
-          <div className="flex items-center gap-3 ml-auto bg-[#E63946]/[0.06] border border-[#E63946]/[0.12] rounded-lg px-4 py-2.5 shrink-0">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="shrink-0"><path d="M9 21h6" stroke="#F5C518" strokeWidth="2" strokeLinecap="round" /><path d="M12 2a6 6 0 014 10.5V17a1 1 0 01-1 1h-6a1 1 0 01-1-1v-4.5A6 6 0 0112 2z" fill="#F5C518" fillOpacity="0.15" stroke="#F5C518" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
-            <span className="text-[12px] text-[#8a8d96]"><strong className="text-white font-bold">11x</strong> vues</span><span className="w-px h-3 bg-[#2a2d36]" /><span className="text-[12px] text-[#8a8d96]"><strong className="text-white font-bold">3x</strong> engagements</span><span className="w-px h-3 bg-[#2a2d36]" /><span className="text-[12px] text-[#8a8d96]"><strong className="text-white font-bold">80%</strong> contactés</span>
-          </div>
-        </div>
+        <p className="text-[14px] text-[#6b7280] mb-6">Liens vers les vidéos et profils en ligne</p>
 
         <FormModeToggle mode={d.mediaMode} onChange={(m) => updateMedia("mediaMode", m)} />
 
@@ -1101,7 +1189,7 @@ function ModifierContent({ id }: { id: string }) {
         <p className="text-[14px] text-[#8a8d96] mb-8 leading-relaxed">Le profil de <strong className="text-white">{form.identity.firstName} {form.identity.lastName}</strong> a été mis à jour avec succès.</p>
         <div className="flex items-center justify-center gap-4">
           <Link href="/coach/athletes" className="bg-[#1A1D24] border border-[#2a2d36] text-[#e0e0e0] rounded-lg px-6 py-3 font-head font-bold text-[12px] uppercase tracking-widest transition-colors hover:border-[#8a8d96]">Retour au roster</Link>
-          <Link href={`/coach/athletes/${athlete.id}/apercu`} className="bg-[#E63946] hover:bg-[#D42B22] text-white font-head font-bold text-[12px] uppercase tracking-widest rounded-lg px-6 py-3 transition-colors">Voir l&apos;aperçu</Link>
+          <Link href={`/coach/athletes/${id}`} className="bg-[#E63946] hover:bg-[#D42B22] text-white font-head font-bold text-[12px] uppercase tracking-widest rounded-lg px-6 py-3 transition-colors">Voir le profil</Link>
         </div>
       </div>
     );
@@ -1123,10 +1211,10 @@ function ModifierContent({ id }: { id: string }) {
 
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div>
-          <h1 className="font-head text-3xl sm:text-4xl font-black text-white uppercase tracking-tight">Modifier — {athlete.firstName} {athlete.lastName}</h1>
+          <h1 className="font-head text-3xl sm:text-4xl font-black text-white uppercase tracking-tight">Modifier — {form.identity.firstName} {form.identity.lastName}</h1>
           <p className="text-[15px] text-[#6b7280] mt-2">Mettez à jour les informations de cet athlète</p>
         </div>
-        <Link href={`/coach/athletes/${athlete.id}/apercu`} className="flex items-center gap-2 text-[14px] font-bold text-[#9CA3AF] hover:text-white transition-colors self-start">
+        <Link href={`/coach/athletes/${id}/apercu`} className="flex items-center gap-2 text-[14px] font-bold text-[#9CA3AF] hover:text-white transition-colors self-start">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
           Voir l&apos;aperçu recruteur
         </Link>
@@ -1145,6 +1233,14 @@ function ModifierContent({ id }: { id: string }) {
         </div>
       )}
 
+      {/* Save toast */}
+      {saveToast && (
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 bg-[#22C55E]/15 border border-[#22C55E]/30 rounded-lg px-5 py-3 shadow-lg animate-in fade-in slide-in-from-bottom-2">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5" /></svg>
+          <span className="text-[13px] font-bold text-[#22C55E]">Modifications enregistrées</span>
+        </div>
+      )}
+
       <div className="flex items-center justify-between mt-8 gap-4">
         <button type="button" onClick={goPrev} disabled={currentStep === 1}
           className={`flex items-center gap-2.5 bg-[#1A1D24] border border-[#2a2d36] text-[#e0e0e0] rounded-lg px-6 py-3.5 font-head font-bold text-[14px] uppercase tracking-widest transition-all duration-150 ${currentStep === 1 ? "opacity-40 cursor-not-allowed" : "hover:border-[#8a8d96] hover:bg-[#22252c] hover:-translate-x-0.5 active:scale-95 cursor-pointer"}`}>
@@ -1153,10 +1249,21 @@ function ModifierContent({ id }: { id: string }) {
         </button>
         <div className="flex items-center gap-3">
           {currentStep < 7 ? (
-            <button type="button" onClick={goNext}
-              className="flex items-center gap-2.5 bg-[#E63946] text-white rounded-lg px-6 py-3.5 font-head font-bold text-[14px] uppercase tracking-widest transition-all duration-150 hover:bg-[#D42B22] hover:translate-x-0.5 hover:shadow-[0_0_16px_rgba(230,57,70,0.35)] active:scale-95 cursor-pointer">
-              Suivant <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="M12 5l7 7-7 7" /></svg>
-            </button>
+            <>
+              <button type="button" onClick={handleQuickSave} disabled={saving}
+                className="flex items-center gap-2 border border-[#E63946] text-[#E63946] bg-transparent rounded-lg px-5 py-3.5 font-head font-bold text-[13px] uppercase tracking-widest transition-all duration-150 hover:bg-[#E63946]/10 active:scale-95 cursor-pointer disabled:opacity-50">
+                {saving ? (
+                  <svg className="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10" strokeDasharray="32" strokeDashoffset="12" /></svg>
+                ) : (
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" /><path d="M17 21v-8H7v8" /><path d="M7 3v5h8" /></svg>
+                )}
+                Enregistrer
+              </button>
+              <button type="button" onClick={goNext}
+                className="flex items-center gap-2.5 bg-[#E63946] text-white rounded-lg px-6 py-3.5 font-head font-bold text-[14px] uppercase tracking-widest transition-all duration-150 hover:bg-[#D42B22] hover:translate-x-0.5 hover:shadow-[0_0_16px_rgba(230,57,70,0.35)] active:scale-95 cursor-pointer">
+                Suivant <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="M12 5l7 7-7 7" /></svg>
+              </button>
+            </>
           ) : (
             <button type="button" onClick={handleSave}
               className="flex items-center gap-2.5 bg-[#E63946] text-white rounded-lg px-6 py-3.5 font-head font-bold text-[14px] uppercase tracking-widest transition-all duration-150 hover:bg-[#D42B22] hover:shadow-[0_0_16px_rgba(230,57,70,0.35)] active:scale-95 cursor-pointer">

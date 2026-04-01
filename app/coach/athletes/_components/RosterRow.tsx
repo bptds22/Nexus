@@ -5,7 +5,6 @@ import Link from "next/link";
 import StarRating from "@/components/ui/StarRating";
 import { createClient } from "@/lib/supabase/client";
 import type { RosterAthlete } from "../_data/mockRosterData";
-import { COMMITMENT_CONFIG } from "../_data/mockRosterData";
 import VerificationBadge from "./VerificationBadge";
 import FavoriteSignal from "./FavoriteSignal";
 
@@ -36,7 +35,6 @@ function AttentionDot({ views, profilePct }: { views: number; profilePct: number
 }
 
 export default function RosterRow({ athlete: a, even, onVerify }: RosterRowProps) {
-  const commitment = COMMITMENT_CONFIG[a.commitmentStatus];
   const [showConfirm, setShowConfirm] = useState(false);
 
   async function handleToggleVerify() {
@@ -84,7 +82,7 @@ export default function RosterRow({ athlete: a, even, onVerify }: RosterRowProps
     <tr className={`group border-b border-[#2D3748]/40 hover:bg-[#252D3A] transition-colors ${even ? "bg-[#1E2430]" : "bg-[#1A1D24]"}`}>
       {/* Nom */}
       <td className="px-4 py-3.5">
-        <Link href={`/coach/athletes/${a.id}/modifier`}>
+        <Link href={`/coach/athletes/${a.id}`}>
           <div className="flex items-center gap-2">
             <p className="text-[16px] font-bold text-white group-hover:text-[#E63946] transition-colors">
               {a.firstName} {a.lastName}
@@ -118,14 +116,11 @@ export default function RosterRow({ athlete: a, even, onVerify }: RosterRowProps
         />
       </td>
 
-      {/* Recrutement (Commitment Status) */}
+      {/* Recrutement (from pipeline table) */}
       <td className="px-4 py-3.5">
-        {a.commitmentStatus !== "aucun" ? (
-          <span
-            className={`inline-block px-3 py-1 rounded-full text-[12px] font-bold tracking-wider uppercase border ${commitment.bg}`}
-            style={{ color: commitment.color, borderColor: commitment.borderColor }}
-          >
-            {commitment.label}
+        {a.recruitmentLabel ? (
+          <span className="inline-block px-3 py-1 rounded-full text-[12px] font-bold tracking-wider uppercase border bg-white/10 text-white" style={{ borderColor: "rgba(255,255,255,0.30)" }}>
+            {a.recruitmentLabel}
           </span>
         ) : (
           <span className="text-[13px] text-[#2D3748]">&mdash;</span>
