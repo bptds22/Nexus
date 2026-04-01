@@ -294,7 +294,6 @@ function ModifierContent({ id }: { id: string }) {
   const [showErrors, setShowErrors] = useState(false);
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [saveToast, setSaveToast] = useState(false);
 
   useEffect(() => {
     loadAthleteRaw(id).then(({ data, error }) => {
@@ -396,7 +395,7 @@ function ModifierContent({ id }: { id: string }) {
       }
       case 5: return true;
       case 6: return true;
-      case 7: return !!form.submission.recruitingStatus;
+      case 7: return true;
       default: return true;
     }
   }
@@ -426,8 +425,7 @@ function ModifierContent({ id }: { id: string }) {
     const ok = await saveToSupabase();
     setSaving(false);
     if (ok) {
-      setSaveToast(true);
-      setTimeout(() => setSaveToast(false), 2500);
+      setSaved(true);
     }
   }
 
@@ -569,6 +567,13 @@ function ModifierContent({ id }: { id: string }) {
       consentement_parental_date: form.parentalConsent ? new Date().toISOString() : null,
     };
 
+    // ── RECRUITMENT OVERRIDE ──
+    const overrideValue = form.submission.recruitingStatus || null;
+    const overrideData: Record<string, unknown> = {
+      statut_recrutement_override: overrideValue,
+      recrutement_override_at: overrideValue ? new Date().toISOString() : null,
+    };
+
     // Merge all into one update
     const updateData = {
       ...personalData,
@@ -578,6 +583,7 @@ function ModifierContent({ id }: { id: string }) {
       ...evalData,
       ...mediaData,
       ...consentData,
+      ...overrideData,
     };
 
     console.log("FULL UPDATE PAYLOAD:", JSON.stringify(updateData));
@@ -1167,7 +1173,20 @@ function ModifierContent({ id }: { id: string }) {
         <div className="border-t border-[#1e2128] mt-6 pt-5">
           <p className={sectionTitle}>Finalisation</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            <div><label className={labelCls}>Statut de recrutement{req}</label><NxSelect value={submission.recruitingStatus} onChange={(v) => updateSubmission("recruitingStatus", v)} hasError={isFieldEmpty(submission.recruitingStatus)} options={[{ value: "Ouvert aux offres", label: "Ouvert aux offres" }, { value: "Engagé", label: "Engagé" }, { value: "Indécis", label: "Indécis" }]} /></div>
+            <div>
+              <label className={labelCls}>Statut de recrutement (correction)</label>
+              <p className="text-[11px] text-[#6b7280] mb-2 leading-relaxed">Ce statut sera automatiquement mis à jour par l&apos;activité des recruteurs. Utilisez cette option uniquement pour corriger une erreur.</p>
+              <NxSelect value={submission.recruitingStatus} onChange={(v) => updateSubmission("recruitingStatus", v)} options={[
+                { value: "", label: "— Automatique" },
+                { value: "Ouvert", label: "Ouvert" },
+                { value: "Identifié", label: "Identifié" },
+                { value: "Contacté", label: "Contacté" },
+                { value: "En discussion", label: "En discussion" },
+                { value: "Visite planifiée", label: "Visite planifiée" },
+                { value: "Engagé", label: "Engagé" },
+                { value: "Lettre signée", label: "Lettre signée" },
+              ]} />
+            </div>
             <div><label className={labelCls}>Division préférée</label><NxSelect value={submission.preferredDivision} onChange={(v) => updateSubmission("preferredDivision", v)} placeholder="—" options={[{ value: "D1", label: "D1" }, { value: "D2", label: "D2" }, { value: "D3", label: "D3" }]} /></div>
           </div>
         </div>
@@ -1230,14 +1249,6 @@ function ModifierContent({ id }: { id: string }) {
         <div className="mt-4 flex items-center gap-3 bg-[#E63946]/[0.08] border border-[#E63946]/25 rounded-lg px-5 py-3">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><circle cx="12" cy="12" r="10" /><path d="M12 8v4" /><path d="M12 16h.01" /></svg>
           <p className="text-[14px] text-[#E63946] font-medium">Veuillez remplir tous les champs obligatoires (<span className="font-bold">*</span>) avant de continuer.</p>
-        </div>
-      )}
-
-      {/* Save toast */}
-      {saveToast && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 bg-[#22C55E]/15 border border-[#22C55E]/30 rounded-lg px-5 py-3 shadow-lg animate-in fade-in slide-in-from-bottom-2">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5" /></svg>
-          <span className="text-[13px] font-bold text-[#22C55E]">Modifications enregistrées</span>
         </div>
       )}
 

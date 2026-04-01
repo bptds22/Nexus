@@ -236,13 +236,24 @@ export default function CoachAthleteProfilePage() {
       const supabase = createClient();
       const { data: pipeRows } = await supabase
         .from("pipeline")
-        .select("status")
+        .select("status, updated_at")
         .eq("athlete_id", id);
       console.log("Pipeline data:", pipeRows);
       if (pipeRows && pipeRows.length > 0) {
         const counts: Record<string, number> = {};
-        pipeRows.forEach((r: { status: string }) => { counts[r.status] = (counts[r.status] || 0) + 1; });
+        let maxAt = "";
+        pipeRows.forEach((r: { status: string; updated_at: string }) => {
+          counts[r.status] = (counts[r.status] || 0) + 1;
+          if (r.updated_at && r.updated_at > maxAt) maxAt = r.updated_at;
+        });
         setPipelineData(Object.entries(counts).map(([status, count]) => ({ status, count })));
+        setPipelineMaxAt(maxAt);
+      }
+      // Store coach override from raw athlete data
+      const overrideVal = raw.statut_recrutement_override as string | null;
+      const overrideAt = raw.recrutement_override_at as string | null;
+      if (overrideVal && overrideAt) {
+        setRecruitOverride({ value: overrideVal, at: overrideAt });
       }
 
       // Load full evaluation from evaluations table
@@ -274,6 +285,8 @@ export default function CoachAthleteProfilePage() {
   const [recruiterView, setRecruiterView] = useState(false);
   const [openMenu, setOpenMenu] = useState(false);
   const [pipelineData, setPipelineData] = useState<{ status: string; count: number }[]>([]);
+  const [pipelineMaxAt, setPipelineMaxAt] = useState("");
+  const [recruitOverride, setRecruitOverride] = useState<{ value: string; at: string } | null>(null);
   const [dbDistinctions, setDbDistinctions] = useState<string[]>([]);
 
   const isDetailed = mode === "detailed";
@@ -444,36 +457,65 @@ export default function CoachAthleteProfilePage() {
               </span>
             )}
 
-            {/* Recruitment status pill */}
+            {/* Recruitment status pill — override vs pipeline "last write wins" */}
             {(() => {
-              if (pipelineData.length === 0) {
+              const STATUS_HIERARCHY = ["LETTRE_SIGNEE", "ENGAGE", "VISITE_PLANIFIEE", "EN_DISCUSSION", "CONTACTE", "IDENTIFIE"];
+              const STATUS_CFG: Record<string, { style: "red" | "gray" | "white"; label: string }> = {
+                IDENTIFIE: { style: "gray", label: "Identifié" },
+                CONTACTE: { style: "white", label: "Contacté" },
+                EN_DISCUSSION: { style: "white", label: "En discussion" },
+                VISITE_PLANIFIEE: { style: "white", label: "Visite planifiée" },
+                ENGAGE: { style: "red", label: "Engagé" },
+                LETTRE_SIGNEE: { style: "red", label: "Lettre signée" },
+              };
+              // Label-to-style mapping for override values (French labels)
+              const OVERRIDE_STYLE: Record<string, "red" | "gray" | "white" | "ouvert"> = {
+                "Ouvert": "ouvert", "Identifié": "gray", "Contacté": "white",
+                "En discussion": "white", "Visite planifiée": "white", "Engagé": "red", "Lettre signée": "red",
+              };
+
+              const totalRecruiters = pipelineData.reduce((s, p) => s + p.count, 0);
+              const useOverride = recruitOverride && (!pipelineMaxAt || recruitOverride.at > pipelineMaxAt);
+
+              if (useOverride) {
+                // Coach override wins
+                const style = OVERRIDE_STYLE[recruitOverride.value] || "white";
+                const pillClass = style === "red"
+                  ? "bg-[#E63946] text-white border border-[#E63946]"
+                  : style === "gray"
+                    ? "bg-[#6B7280]/15 border border-[#6B7280]/30 text-[#9CA3AF]"
+                    : style === "ouvert"
+                      ? "border border-white/20 text-white/70"
+                      : "border border-white/20 text-white";
                 return (
-                  <span className="inline-flex items-center gap-1.5 text-[12px] font-bold px-3.5 py-2 rounded-full border border-[#6B7280]/30 text-[#6B7280]">
-                    Aucun recruteur
+                  <span className={`inline-flex items-center gap-1.5 text-[12px] font-bold px-3.5 py-2 rounded-full ${pillClass}`}>
+                    {recruitOverride.value}{totalRecruiters > 0 ? ` (${totalRecruiters})` : ""}
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="opacity-60"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
                   </span>
                 );
               }
-              const STATUS_HIERARCHY = ["LETTRE_SIGNEE", "VISITE_PLANIFIEE", "ENGAGE", "EN_DISCUSSION", "CONTACTE", "IDENTIFIE"];
-              const STATUS_CFG: Record<string, { solid: boolean; label: string }> = {
-                IDENTIFIE: { solid: false, label: "Identifié" },
-                CONTACTE: { solid: false, label: "Contacté" },
-                EN_DISCUSSION: { solid: false, label: "En discussion" },
-                ENGAGE: { solid: true, label: "Engagé" },
-                VISITE_PLANIFIEE: { solid: true, label: "Visite planifiée" },
-                LETTRE_SIGNEE: { solid: true, label: "Lettre signée" },
-              };
+
+              if (pipelineData.length === 0) {
+                return (
+                  <span className="inline-flex items-center gap-1.5 text-[12px] font-bold px-3.5 py-2 rounded-full border border-white/20 text-white/70">
+                    Ouvert
+                  </span>
+                );
+              }
+
+              // Pipeline auto status
               const allStatuses = pipelineData.map((p) => p.status);
               const highest = STATUS_HIERARCHY.find((s) => allStatuses.includes(s));
               if (!highest) return null;
               const cfg = STATUS_CFG[highest] || STATUS_CFG.IDENTIFIE;
-              const totalRecruiters = pipelineData.reduce((s, p) => s + p.count, 0);
+              const pillClass = cfg.style === "red"
+                ? "bg-[#E63946] text-white border border-[#E63946]"
+                : cfg.style === "gray"
+                  ? "bg-[#6B7280]/15 border border-[#6B7280]/30 text-[#9CA3AF]"
+                  : "border border-white/20 text-white";
               return (
-                <span className={`inline-flex items-center gap-1.5 text-[12px] font-bold px-3.5 py-2 rounded-full ${
-                  cfg.solid
-                    ? "bg-[#E63946] text-white border border-[#E63946]"
-                    : "border border-white/20 text-white"
-                }`}>
-                  {cfg.label}{totalRecruiters > 1 ? ` (${totalRecruiters})` : ""}
+                <span className={`inline-flex items-center gap-1.5 text-[12px] font-bold px-3.5 py-2 rounded-full ${pillClass}`}>
+                  {cfg.label} ({totalRecruiters})
                 </span>
               );
             })()}

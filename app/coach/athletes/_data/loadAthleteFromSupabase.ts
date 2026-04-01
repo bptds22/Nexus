@@ -48,6 +48,8 @@ const ATHLETE_SELECT = `
   programme_cegep_vise,
   consentement_parental,
   status,
+  statut_recrutement_override,
+  recrutement_override_at,
   school_id,
   coach_id,
   sports!sport_id(nom),
@@ -279,7 +281,7 @@ export function buildFormFromRaw(raw: Record<string, unknown>): Record<string, u
       trainingVideo: (raw.video_entrainement_url as string) || "",
     },
     submission: {
-      recruitingStatus: "Ouvert aux offres",
+      recruitingStatus: (raw.statut_recrutement_override as string) || "",
       preferredDivision: "",
     },
     parentalConsent: !!(raw.consentement_parental),

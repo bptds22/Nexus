@@ -111,6 +111,8 @@ function MesAthletesContent() {
           cote_globale_entraineur,
           numero_jersey,
           status,
+          statut_recrutement_override,
+          recrutement_override_at,
           sport_id,
           position_id,
           sports!sport_id(nom),
@@ -128,33 +130,50 @@ function MesAthletesContent() {
       const athleteIds = data.map((a: Record<string, unknown>) => a.id as string);
       const { data: pipelineRows } = await supabase
         .from("pipeline")
-        .select("athlete_id, status")
+        .select("athlete_id, status, updated_at")
         .in("athlete_id", athleteIds);
 
-      // Build recruitment labels: find highest status + count of recruiters at that level or higher
+      // Build recruitment data: override vs pipeline "last write wins"
       const STATUS_ORDER: Record<string, number> = { IDENTIFIE: 1, CONTACTE: 2, EN_DISCUSSION: 3, VISITE_PLANIFIEE: 4, ENGAGE: 5, LETTRE_SIGNEE: 6 };
-      const STATUS_LABELS: Record<string, string> = { IDENTIFIE: "Identifié", CONTACTE: "Contacté", EN_DISCUSSION: "En discussion", VISITE_PLANIFIEE: "Visite", ENGAGE: "Engagé", LETTRE_SIGNEE: "Lettre signée" };
-      const recruitmentMap = new Map<string, string>();
-      if (pipelineRows) {
-        const byAthlete = new Map<string, { status: string }[]>();
+      const STATUS_LABELS: Record<string, string> = { IDENTIFIE: "Identifié", CONTACTE: "Contacté", EN_DISCUSSION: "En discussion", VISITE_PLANIFIEE: "Visite planifiée", ENGAGE: "Engagé", LETTRE_SIGNEE: "Lettre signée" };
+      console.log("Pipeline data:", pipelineRows);
+
+      // Group pipeline rows by athlete, track max updated_at
+      const pipeByAthlete = new Map<string, { rows: { status: string; updated_at: string }[]; maxUpdatedAt: string }>();
+      if (pipelineRows && pipelineRows.length > 0) {
         for (const row of pipelineRows) {
-          const list = byAthlete.get(row.athlete_id) || [];
-          list.push(row);
-          byAthlete.set(row.athlete_id, list);
+          const entry = pipeByAthlete.get(row.athlete_id) || { rows: [], maxUpdatedAt: "" };
+          entry.rows.push(row);
+          if (row.updated_at && row.updated_at > entry.maxUpdatedAt) entry.maxUpdatedAt = row.updated_at;
+          pipeByAthlete.set(row.athlete_id, entry);
         }
-        for (const [aid, rows] of byAthlete) {
-          // Find highest status
+      }
+
+      // For each athlete, determine recruitment display
+      const recruitmentMap = new Map<string, { status: string; label: string; count: number; isOverride: boolean }>();
+      for (const a of data) {
+        const aid = a.id as string;
+        const override = a.statut_recrutement_override as string | null;
+        const overrideAt = a.recrutement_override_at as string | null;
+        const pipeEntry = pipeByAthlete.get(aid);
+        const pipeMaxAt = pipeEntry?.maxUpdatedAt || "";
+        const pipeCount = pipeEntry?.rows.length || 0;
+
+        // Check if override wins
+        if (override && overrideAt && (!pipeMaxAt || overrideAt > pipeMaxAt)) {
+          recruitmentMap.set(aid, { status: override, label: override, count: pipeCount, isOverride: true });
+        } else if (pipeEntry && pipeEntry.rows.length > 0) {
+          // Use highest pipeline status
           let maxOrder = 0;
           let maxStatus = "";
-          for (const r of rows) {
+          for (const r of pipeEntry.rows) {
             const order = STATUS_ORDER[r.status] || 0;
             if (order > maxOrder) { maxOrder = order; maxStatus = r.status; }
           }
-          // Count recruiters at that status or higher
-          const count = rows.filter(r => (STATUS_ORDER[r.status] || 0) >= maxOrder).length;
           const label = STATUS_LABELS[maxStatus] || maxStatus;
-          recruitmentMap.set(aid, `${label} (${count})`);
+          recruitmentMap.set(aid, { status: maxStatus, label, count: pipeCount, isOverride: false });
         }
+        // If neither → no entry in map → "Ouvert"
       }
 
       const mapped: RosterAthlete[] = data.map((a: Record<string, unknown>) => {
@@ -201,7 +220,7 @@ function MesAthletesContent() {
           stars: Math.round(stars),
           commitmentStatus: "aucun" as const,
           badgeIcons: [],
-          recruitmentLabel: recruitmentMap.get(a.id as string) || undefined,
+          recruitment: recruitmentMap.get(a.id as string) || undefined,
         };
 
         console.log("Mapped athlete:", athlete.firstName, athlete.lastName, "pos:", athlete.position, "grad:", athlete.gradYear, "verified:", athlete.isVerified, "stars:", athlete.stars);
