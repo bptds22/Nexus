@@ -51,12 +51,6 @@ export default function ReviewFeed({ reviews }: ReviewFeedProps) {
           <p className="text-[13px] text-[#4B5563] text-center max-w-sm">
             Les recruteurs pourront vous évaluer après un échange de messages.
           </p>
-          <a
-            href="#"
-            className="mt-2 inline-flex items-center bg-[#E63946] text-white text-[13px] font-bold px-5 py-2.5 rounded-lg hover:bg-[#d63040] transition-colors"
-          >
-            Compléter mon profil
-          </a>
         </div>
       ) : (
         /* ── Review list ── */

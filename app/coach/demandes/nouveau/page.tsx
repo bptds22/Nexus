@@ -3,156 +3,22 @@
 import { useState, useEffect, useMemo, useRef, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ROSTER_ATHLETES, type RosterAthlete } from "../../athletes/_data/mockRosterData";
-import { ALL_PROFILES, type AthleteProfile } from "../../athletes/_data/mockAthleteProfiles";
-import { MOCK_THREADS } from "../_data/mockThreadsData";
 import type { RecruiterProfile } from "../_data/mockThreadsData";
-import { SPORT_NAME_MAP } from "@/lib/config/sportBadges";
+import { createClient } from "@/lib/supabase/client";
 
 /* ═══════════════════════════════════════════════════════════════
    Nouveau Message — Compose Page (Coach)
    Select an athlete, then a recruiter, write a message.
 ═══════════════════════════════════════════════════════════════ */
 
-const SPORT_DISPLAY: Record<string, string> = Object.fromEntries(
-  Object.entries(SPORT_NAME_MAP).map(([display, key]) => [key, display])
-);
-
-const COACH_PROFILE = {
-  firstName: "Michel",
-  lastName: "Bergeron",
-  school: "É.S. Saint-Jean-Eudes",
-  sport: "Football",
-};
-
-/** Only verified athletes can be messaged about */
-const AVAILABLE_ATHLETES = ROSTER_ATHLETES.filter((a) => a.isVerified);
-
-/** All known recruiters from existing threads */
-const KNOWN_RECRUITERS: RecruiterProfile[] = (() => {
-  const seen = new Set<string>();
-  const list: RecruiterProfile[] = [];
-  for (const t of MOCK_THREADS) {
-    if (!seen.has(t.recruiter.id)) {
-      seen.add(t.recruiter.id);
-      list.push(t.recruiter);
-    }
-  }
-  return list;
-})();
-
-function generateTemplate(athlete: RosterAthlete, recruiter: RecruiterProfile): string {
-  return `Bonjour ${recruiter.firstName} ${recruiter.lastName},
-
-Je suis Coach ${COACH_PROFILE.firstName} ${COACH_PROFILE.lastName} de ${COACH_PROFILE.school}.
-
-Je souhaitais vous écrire au sujet de ${athlete.firstName} ${athlete.lastName} (${athlete.position}), un athlète de notre programme que je crois pourrait intéresser votre équipe${recruiter.cegepTeamName ? ` les ${recruiter.cegepTeamName}` : ""}.
-
-[Votre message personnalisé ici]
-
-Cordialement,
-Coach ${COACH_PROFILE.firstName} ${COACH_PROFILE.lastName}
-${COACH_PROFILE.school}`;
-}
-
-/* ── Mini Player Card (V30-inspired) ─────────────────────────── */
-
-function MiniPlayerCard({ a }: { a: AthleteProfile }) {
-  const stars = Math.round(a.stars);
-  const posAbbr = a.position.length > 4 ? a.position.slice(0, 3).toUpperCase() : a.position.toUpperCase();
-  const sportDisplay = SPORT_DISPLAY[a.sport] || a.sport;
-
-  return (
-    <div className="relative" style={{ width: 220, paddingBottom: 8 }}>
-      {a.profilePercent >= 50 && (
-        <div className="absolute z-30" style={{ top: 6, right: -10 }}>
-          <div className="rounded-full" style={{ border: "2px solid #1A1D24" }}>
-            <svg width="32" height="32" viewBox="0 0 54 54" fill="none">
-              <defs>
-                <radialGradient id="cc_bg" cx="38%" cy="28%" r="68%">
-                  <stop offset="0%" stopColor="#29AAFF" />
-                  <stop offset="55%" stopColor="#0094F0" />
-                  <stop offset="100%" stopColor="#0060C0" />
-                </radialGradient>
-              </defs>
-              <circle cx="27" cy="27" r="24" fill="url(#cc_bg)" />
-              <circle cx="27" cy="27" r="24" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" />
-              <path d="M16,27 L22,34 L38,18" stroke="#FFFFFF" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-            </svg>
-          </div>
-        </div>
-      )}
-
-      <div className="relative overflow-visible" style={{ width: 220, borderRadius: 8 }}>
-        <div className="relative overflow-hidden" style={{ width: 220, height: 270, borderRadius: 8, background: "#2F3440" }}>
-          {a.photo ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={a.photo} alt={`${a.firstName} ${a.lastName}`} className="absolute inset-0 w-full h-full object-cover z-[1]" />
-          ) : (
-            <div className="absolute inset-0 z-[1] flex items-center justify-center">
-              <span style={{ fontFamily: "var(--font-bebas), sans-serif", fontSize: 72, color: "rgba(255,255,255,0.06)", letterSpacing: "0.05em", lineHeight: 1 }}>
-                {a.firstName[0]}{a.lastName[0]}
-              </span>
-            </div>
-          )}
-          <div className="absolute bottom-0 left-0 right-0 h-1/2 z-[2]" style={{ background: "linear-gradient(to top, rgba(11,18,32,0.97) 0%, rgba(11,18,32,0.7) 35%, transparent 100%)" }} />
-          <div className="absolute bottom-3 left-3 z-[3]">
-            <p style={{ fontFamily: "var(--font-bebas), sans-serif", fontSize: 20, color: "#fff", letterSpacing: "0.04em", lineHeight: 1 }}>
-              {a.firstName}
-            </p>
-            <p style={{ fontFamily: "var(--font-bebas), sans-serif", fontSize: 20, color: "#fff", letterSpacing: "0.04em", lineHeight: 1 }}>
-              {a.lastName}
-            </p>
-          </div>
-        </div>
-
-        <div className="absolute z-[999] overflow-hidden" style={{ bottom: -8, right: -14, borderRadius: 3, border: "1px solid rgba(255,255,255,0.08)" }}>
-          <div className="flex" style={{ width: 234 }}>
-            <div className="flex flex-col justify-between" style={{ background: "#1E2128", padding: "6px 8px 6px 10px", minWidth: 64, gap: 2 }}>
-              {[
-                { lbl: "Sport", val: sportDisplay },
-                { lbl: "Pos", val: posAbbr },
-                { lbl: "No.", val: a.jerseyNumber ? `#${a.jerseyNumber}` : "—" },
-              ].map((r) => (
-                <div key={r.lbl}>
-                  <div style={{ fontFamily: "var(--font-barlow-cond), sans-serif", fontSize: 5, fontWeight: 800, letterSpacing: "0.22em", textTransform: "uppercase" as const, color: "rgba(255,255,255,0.38)", marginBottom: 1 }}>
-                    {r.lbl}
-                  </div>
-                  <div style={{ fontFamily: "var(--font-bebas), sans-serif", fontSize: 12, color: "#fff", letterSpacing: "0.06em", lineHeight: 1 }}>
-                    {r.val}
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="flex flex-col items-center justify-center" style={{ width: 8, background: "#E6E6E6", borderLeft: "1px dashed rgba(11,18,32,0.2)", borderRight: "1px dashed rgba(11,18,32,0.2)", gap: 2 }}>
-              {[...Array(5)].map((_, i) => (
-                <span key={i} className="flex-shrink-0" style={{ width: 2, height: 2, borderRadius: "50%", background: "rgba(11,18,32,0.2)" }} />
-              ))}
-            </div>
-            <div className="flex-1 flex flex-col justify-center" style={{ background: "#FFFFFF", padding: "6px 10px" }}>
-              <div style={{ display: "inline-flex", background: "#1E2128", borderRadius: 3, padding: "2px 5px", marginBottom: 3 }}>
-                <svg width="75" height="12" viewBox="0 0 75 12" fill="none" style={{ display: "block" }}>
-                  {[0, 15, 30, 45, 60].map((x, i) => (
-                    <path key={x} d="M6,0L7.3,4.3L12,4.3L8.4,7L9.7,11.3L6,8.7L2.3,11.3L3.6,7L0,4.3L4.7,4.3Z"
-                      fill={i < stars ? "#F5C518" : "#3D4452"} transform={`translate(${x},0)`} />
-                  ))}
-                </svg>
-              </div>
-              <div style={{ fontFamily: "var(--font-barlow-cond), sans-serif", fontWeight: 700, fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: "#1E2128" }}>
-                {a.school}
-              </div>
-              <div style={{ fontFamily: "var(--font-barlow-cond), sans-serif", fontWeight: 700, fontSize: 8, letterSpacing: "0.08em", textTransform: "uppercase" as const, color: "#E63946", marginTop: 1 }}>
-                Promotion {a.graduationYear}
-              </div>
-            </div>
-            <div className="flex items-center justify-center flex-shrink-0" style={{ background: "#E63946", width: 16, writingMode: "vertical-rl" as const, fontFamily: "var(--font-bebas), sans-serif", fontSize: 7, letterSpacing: "0.22em", color: "rgba(255,255,255,0.7)" }}>
-              NEXUS
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+interface RosterAthlete {
+  id: string;
+  firstName: string;
+  lastName: string;
+  position: string;
+  gradYear: number;
+  profilePercent: number;
+  isVerified: boolean;
 }
 
 /* ── Athlete Combobox ────────────────────────────────────────── */
@@ -161,24 +27,26 @@ function AthleteCombobox({
   selected,
   onSelect,
   onClear,
+  availableAthletes,
 }: {
   selected: RosterAthlete | null;
   onSelect: (a: RosterAthlete) => void;
   onClear: () => void;
+  availableAthletes: RosterAthlete[];
 }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   const results = useMemo(() => {
-    if (query.trim().length < 1) return AVAILABLE_ATHLETES;
+    if (query.trim().length < 1) return availableAthletes;
     const q = query.toLowerCase();
-    return AVAILABLE_ATHLETES.filter(
+    return availableAthletes.filter(
       (a) =>
         `${a.firstName} ${a.lastName}`.toLowerCase().includes(q) ||
         a.position.toLowerCase().includes(q)
     );
-  }, [query]);
+  }, [query, availableAthletes]);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -284,24 +152,26 @@ function RecruiterCombobox({
   selected,
   onSelect,
   onClear,
+  knownRecruiters,
 }: {
   selected: RecruiterProfile | null;
   onSelect: (r: RecruiterProfile) => void;
   onClear: () => void;
+  knownRecruiters: RecruiterProfile[];
 }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   const results = useMemo(() => {
-    if (query.trim().length < 1) return KNOWN_RECRUITERS;
+    if (query.trim().length < 1) return knownRecruiters;
     const q = query.toLowerCase();
-    return KNOWN_RECRUITERS.filter(
+    return knownRecruiters.filter(
       (r) =>
         `${r.firstName} ${r.lastName}`.toLowerCase().includes(q) ||
         r.cegep.toLowerCase().includes(q)
     );
-  }, [query]);
+  }, [query, knownRecruiters]);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -383,7 +253,7 @@ function RecruiterCombobox({
                     {r.firstName} {r.lastName}
                   </p>
                   <p className="text-[11px] text-[#6b7280] truncate">
-                    {r.title} &middot; {r.cegep} &middot; {r.division}
+                    {r.cegep} &middot; {r.division}
                   </p>
                 </div>
               </button>
@@ -431,27 +301,141 @@ function CoachNouveauMessageContent() {
   const [messageBody, setMessageBody] = useState("");
   const [showToast, setShowToast] = useState(false);
   const [sending, setSending] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  // Loaded data
+  const [coachProfile, setCoachProfile] = useState<{ firstName: string; lastName: string; school: string }>({ firstName: "", lastName: "", school: "" });
+  const [availableAthletes, setAvailableAthletes] = useState<RosterAthlete[]>([]);
+  const [knownRecruiters, setKnownRecruiters] = useState<RecruiterProfile[]>([]);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  // Load data from Supabase
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) { setLoading(false); return; }
+        setCurrentUserId(user.id);
+
+        // Coach profile
+        const { data: coachData, error: coachError } = await supabase
+          .from("users")
+          .select("first_name, last_name, schools!school_id(name)")
+          .eq("id", user.id)
+          .single();
+
+        console.log("[Nouveau] coach profile:", coachData, "error:", coachError);
+
+        if (coachData) {
+          const school = (coachData as any).schools;
+          setCoachProfile({
+            firstName: coachData.first_name || "",
+            lastName: coachData.last_name || "",
+            school: school?.name || "",
+          });
+        }
+
+        // Available athletes (verified, belonging to this coach)
+        const { data: athletes, error: athError } = await supabase
+          .from("athletes")
+          .select("id, first_name, last_name, verified, profile_completion, annee_diplomation, positions!position_id(nom, abreviation)")
+          .eq("coach_id", user.id)
+          .eq("verified", true);
+
+        console.log("[Nouveau] athletes:", athletes, "error:", athError);
+
+        if (athletes) {
+          const mapped: RosterAthlete[] = athletes.map((a: any) => ({
+            id: a.id,
+            firstName: a.first_name || "",
+            lastName: a.last_name || "",
+            position: a.positions?.abreviation || a.positions?.nom || "",
+            gradYear: a.annee_diplomation ?? 0,
+            profilePercent: a.profile_completion ?? 0,
+            isVerified: a.verified ?? false,
+          }));
+          setAvailableAthletes(mapped);
+        }
+
+        // Known recruiters from existing conversations
+        const { data: convs, error: convError } = await supabase
+          .from("conversations")
+          .select("users!recruiter_id(id, first_name, last_name, email, school_id, schools!school_id(name))")
+          .eq("coach_id", user.id);
+
+        console.log("[Nouveau] conversations for recruiters:", convs, "error:", convError);
+
+        if (convs) {
+          const seen = new Set<string>();
+          const recruiters: RecruiterProfile[] = [];
+          for (const c of convs) {
+            const rec = (c as any).users;
+            if (rec && !seen.has(rec.id)) {
+              seen.add(rec.id);
+              const school = rec.schools;
+              recruiters.push({
+                id: rec.id,
+                firstName: rec.first_name || "",
+                lastName: rec.last_name || "",
+                title: "",
+                cegep: school?.name || "",
+                cegepTeamName: "",
+                division: "Div. 1" as const,
+                sport: "",
+                region: "",
+                email: rec.email || "",
+                phone: "",
+              });
+            }
+          }
+          setKnownRecruiters(recruiters);
+        }
+      } catch (err) {
+        console.error("[Nouveau] Error loading data:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
+  }, []);
+
+  function generateTemplate(athlete: RosterAthlete, recruiter: RecruiterProfile): string {
+    return `Bonjour ${recruiter.firstName} ${recruiter.lastName},
+
+Je suis Coach ${coachProfile.firstName} ${coachProfile.lastName} de ${coachProfile.school}.
+
+Je souhaitais vous écrire au sujet de ${athlete.firstName} ${athlete.lastName} (${athlete.position}), un athlète de notre programme que je crois pourrait intéresser votre équipe${recruiter.cegepTeamName ? ` les ${recruiter.cegepTeamName}` : ""}.
+
+[Votre message personnalisé ici]
+
+Cordialement,
+Coach ${coachProfile.firstName} ${coachProfile.lastName}
+${coachProfile.school}`;
+  }
 
   // Pre-select from query params ?athlete=xxx&recruiter=yyy
   useEffect(() => {
+    if (loading || availableAthletes.length === 0) return;
     const athleteId = searchParams.get("athlete");
     if (athleteId) {
-      const found = AVAILABLE_ATHLETES.find((a) => a.id === athleteId);
+      const found = availableAthletes.find((a) => a.id === athleteId);
       if (found) setSelectedAthlete(found);
     }
     const recruiterId = searchParams.get("recruiter");
     if (recruiterId) {
-      const found = KNOWN_RECRUITERS.find((r) => r.id === recruiterId);
+      const found = knownRecruiters.find((r) => r.id === recruiterId);
       if (found) setSelectedRecruiter(found);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [loading, availableAthletes, knownRecruiters]);
 
   // Auto-generate template when both are selected
   useEffect(() => {
     if (selectedAthlete && selectedRecruiter) {
       setMessageBody(generateTemplate(selectedAthlete, selectedRecruiter));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedAthlete, selectedRecruiter]);
 
   const handleSelectAthlete = useCallback((a: RosterAthlete) => {
@@ -472,16 +456,62 @@ function CoachNouveauMessageContent() {
     setMessageBody("");
   }, []);
 
-  const handleSend = useCallback(() => {
-    if (!selectedAthlete || !selectedRecruiter || !messageBody.trim() || sending) return;
+  const handleSend = useCallback(async () => {
+    if (!selectedAthlete || !selectedRecruiter || !messageBody.trim() || sending || !currentUserId) return;
     setSending(true);
-    setShowToast(true);
-    setTimeout(() => {
-      router.push("/coach/demandes");
-    }, 1500);
-  }, [selectedAthlete, selectedRecruiter, messageBody, sending, router]);
+
+    try {
+      const supabase = createClient();
+
+      // Create conversation
+      const { data: conv, error: convError } = await supabase
+        .from("conversations")
+        .insert({
+          recruiter_id: selectedRecruiter.id,
+          coach_id: currentUserId,
+          athlete_id: selectedAthlete.id,
+          status: "envoye",
+          last_message_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
+
+      console.log("[Nouveau] Created conversation:", conv, "error:", convError);
+
+      if (conv) {
+        // Create message
+        const { data: msg, error: msgError } = await supabase
+          .from("messages")
+          .insert({
+            conversation_id: conv.id,
+            sender_id: currentUserId,
+            content: messageBody.trim(),
+          })
+          .select()
+          .single();
+
+        console.log("[Nouveau] Created message:", msg, "error:", msgError);
+      }
+
+      setShowToast(true);
+      setTimeout(() => {
+        router.push("/coach/demandes");
+      }, 1500);
+    } catch (err) {
+      console.error("[Nouveau] Error sending message:", err);
+      setSending(false);
+    }
+  }, [selectedAthlete, selectedRecruiter, messageBody, sending, currentUserId, router]);
 
   const canSend = selectedAthlete && selectedRecruiter && messageBody.trim().length > 10 && !sending;
+
+  if (loading) {
+    return (
+      <div className="px-6 sm:px-10 py-8 max-w-[1280px] mx-auto flex items-center justify-center py-20">
+        <div className="w-8 h-8 border-2 border-[#E63946] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <>
@@ -517,6 +547,7 @@ function CoachNouveauMessageContent() {
                 selected={selectedAthlete}
                 onSelect={handleSelectAthlete}
                 onClear={handleClearAthlete}
+                availableAthletes={availableAthletes}
               />
             </div>
 
@@ -529,6 +560,7 @@ function CoachNouveauMessageContent() {
                 selected={selectedRecruiter}
                 onSelect={handleSelectRecruiter}
                 onClear={handleClearRecruiter}
+                knownRecruiters={knownRecruiters}
               />
             </div>
 
@@ -583,7 +615,7 @@ function CoachNouveauMessageContent() {
             </div>
           </div>
 
-          {/* ── RIGHT: Player Card + Recruiter ────────────────── */}
+          {/* ── RIGHT: Athlete Preview + Recruiter ────────────────── */}
           <div className="space-y-5">
             {selectedAthlete ? (
               <>
@@ -592,33 +624,31 @@ function CoachNouveauMessageContent() {
                   {selectedAthlete.firstName} {selectedAthlete.lastName}
                 </h2>
 
-                {/* V30 Player Card */}
-                {(() => {
-                  const profile = ALL_PROFILES[selectedAthlete.id];
-                  if (profile) {
-                    return (
-                      <div className="flex justify-center">
-                        <MiniPlayerCard a={profile} />
-                      </div>
-                    );
-                  }
-                  // Fallback
-                  return (
-                    <div className="bg-[#1A1D24] border border-[#2D3748] rounded-xl p-5 space-y-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-full bg-[#E63946]/15 border-2 border-[#E63946]/30 flex items-center justify-center">
-                          <span className="text-[14px] font-bold text-[#E63946]">
-                            {selectedAthlete.firstName[0]}{selectedAthlete.lastName[0]}
-                          </span>
-                        </div>
-                        <div>
-                          <p className="text-[14px] text-[#9CA3AF]">{selectedAthlete.position} &middot; {selectedAthlete.gradYear}</p>
-                          <p className="text-[12px] text-[#6b7280]">Profil {selectedAthlete.profilePercent}%</p>
-                        </div>
+                {/* Simple athlete preview card */}
+                <div className="bg-[#1A1D24] border border-[#2D3748] rounded-xl p-5 space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-[#E63946]/15 border-2 border-[#E63946]/30 flex items-center justify-center">
+                      <span className="text-[14px] font-bold text-[#E63946]">
+                        {selectedAthlete.firstName[0]}{selectedAthlete.lastName[0]}
+                      </span>
+                    </div>
+                    <div>
+                      <p className="text-[14px] font-bold text-white">
+                        {selectedAthlete.firstName} {selectedAthlete.lastName}
+                      </p>
+                      <p className="text-[12px] text-[#9CA3AF]">{selectedAthlete.position} &middot; {selectedAthlete.gradYear}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-[11px] text-[#6b7280]">Profil {selectedAthlete.profilePercent}%</span>
+                        {selectedAthlete.isVerified && (
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="#3B82F6" stroke="none">
+                            <circle cx="12" cy="12" r="10" />
+                            <path d="M9 12l2 2 4-4" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                          </svg>
+                        )}
                       </div>
                     </div>
-                  );
-                })()}
+                  </div>
+                </div>
 
                 {/* Recruiter preview */}
                 {selectedRecruiter && (
@@ -637,7 +667,7 @@ function CoachNouveauMessageContent() {
                           {selectedRecruiter.firstName} {selectedRecruiter.lastName}
                         </p>
                         <p className="text-[12px] text-[#6b7280]">{selectedRecruiter.cegep}</p>
-                        <p className="text-[11px] text-[#4a4d56]">{selectedRecruiter.title} &middot; {selectedRecruiter.division}</p>
+                        <p className="text-[11px] text-[#4a4d56]">{selectedRecruiter.division}</p>
                       </div>
                     </div>
                   </div>

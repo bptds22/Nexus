@@ -2,15 +2,16 @@
 
 import { use, useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { getThread, MOCK_THREADS, STATUS_CONFIG, type Message, type ThreadStatus } from "../_data/mockThreadsData";
+import { STATUS_CONFIG, mapDbStatus, type Message, type ThreadStatus, type ConversationThread } from "../_data/mockThreadsData";
 import EntityLink from "@/components/shared/EntityLink";
+import { createClient } from "@/lib/supabase/client";
 
 /* ═══════════════════════════════════════════════════════════════
    Thread Detail — Conversation View
    2-column: messages left, context cards right.
 ═══════════════════════════════════════════════════════════════ */
 
-const NOW = new Date("2026-03-10T10:00:00");
+const NOW = new Date();
 
 function relativeTime(isoStr: string): string {
   const d = new Date(isoStr);
@@ -90,31 +91,161 @@ function DaySeparator({ date }: { date: string }) {
 
 export default function ThreadDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const thread = getThread(id) || MOCK_THREADS[0];
-  const r = thread.recruiter;
-  const a = thread.athlete;
 
-  const [messages, setMessages] = useState<Message[]>(thread.messages);
+  const [thread, setThread] = useState<ConversationThread | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [reply, setReply] = useState("");
-  const [status, setStatus] = useState<ThreadStatus>(thread.status);
+  const [status, setStatus] = useState<ThreadStatus>("envoye");
+  const [loading, setLoading] = useState(true);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    async function loadConversation() {
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) { setLoading(false); return; }
+        setCurrentUserId(user.id);
+
+        // Fetch conversation
+        const { data: conv, error: convError } = await supabase
+          .from("conversations")
+          .select("id, recruiter_id, coach_id, athlete_id, status, last_message_at, unread_count, created_at, users!recruiter_id(id, first_name, last_name, email, school_id, schools!school_id(name)), athletes!athlete_id(id, first_name, last_name, verified, cote_globale_entraineur, profile_completion, annee_diplomation, positions!position_id(nom, abreviation))")
+          .eq("id", id)
+          .single();
+
+        console.log("[ThreadDetail] conversation:", conv, "error:", convError);
+
+        if (!conv) { setLoading(false); return; }
+
+        // Fetch messages
+        const { data: msgs, error: msgsError } = await supabase
+          .from("messages")
+          .select("*")
+          .eq("conversation_id", id)
+          .order("created_at", { ascending: true });
+
+        console.log("[ThreadDetail] messages:", msgs, "error:", msgsError);
+
+        // Map conversation to thread
+        const recruiterUser = (conv as any).users;
+        const athleteData = (conv as any).athletes;
+        const position = athleteData?.positions;
+        const school = recruiterUser?.schools;
+
+        const mappedThread: ConversationThread = {
+          id: conv.id,
+          recruiter: {
+            id: recruiterUser?.id || conv.recruiter_id,
+            firstName: recruiterUser?.first_name || "",
+            lastName: recruiterUser?.last_name || "",
+            title: "",
+            cegep: school?.name || "",
+            cegepTeamName: "",
+            division: "Div. 1" as const,
+            sport: "",
+            region: "",
+            email: recruiterUser?.email || "",
+            phone: "",
+          },
+          athlete: {
+            id: athleteData?.id || conv.athlete_id,
+            firstName: athleteData?.first_name || "",
+            lastName: athleteData?.last_name || "",
+            position: position?.abreviation || position?.nom || "",
+            niveau: "Sec. 5" as const,
+            profilePercent: athleteData?.profile_completion ?? 0,
+            isVerified: athleteData?.verified ?? false,
+            views: 0,
+            favorites: 0,
+            stars: athleteData?.cote_globale_entraineur ?? 0,
+          },
+          messages: [],
+          status: mapDbStatus(conv.status),
+          lastMessagePreview: "",
+          lastMessageTime: conv.last_message_at || conv.created_at,
+          unread: (conv.unread_count ?? 0) > 0,
+        };
+
+        setThread(mappedThread);
+        setStatus(mappedThread.status);
+
+        // Map messages
+        const mappedMessages: Message[] = (msgs || []).map((m: any) => ({
+          id: m.id,
+          sender: m.sender_id === user.id ? "coach" as const : "recruiter" as const,
+          text: m.content || "",
+          timestamp: m.created_at,
+        }));
+        setMessages(mappedMessages);
+
+        // Mark unread messages as read
+        if (msgs && msgs.length > 0) {
+          const unreadIds = msgs
+            .filter((m: any) => !m.read_at && m.sender_id !== user.id)
+            .map((m: any) => m.id);
+
+          if (unreadIds.length > 0) {
+            await supabase
+              .from("messages")
+              .update({ read_at: new Date().toISOString() })
+              .in("id", unreadIds);
+
+            await supabase
+              .from("conversations")
+              .update({ unread_count: 0 })
+              .eq("id", id);
+
+            console.log("[ThreadDetail] Marked", unreadIds.length, "messages as read");
+          }
+        }
+      } catch (err) {
+        console.error("[ThreadDetail] Error loading conversation:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadConversation();
+  }, [id]);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  function handleSend() {
-    if (!reply.trim()) return;
+  async function handleSend() {
+    if (!reply.trim() || !currentUserId) return;
     const newMsg: Message = {
       id: `m-new-${Date.now()}`,
       sender: "coach",
       text: reply.trim(),
-      timestamp: NOW.toISOString(),
+      timestamp: new Date().toISOString(),
     };
     setMessages((prev) => [...prev, newMsg]);
     setReply("");
     if (status === "reponse_recue") {
       setStatus("envoye");
+    }
+
+    // Persist to Supabase
+    try {
+      const supabase = createClient();
+      const { data: insertedMsg, error: msgError } = await supabase
+        .from("messages")
+        .insert({ conversation_id: id, sender_id: currentUserId, content: reply.trim() })
+        .select()
+        .single();
+
+      console.log("[ThreadDetail] Inserted message:", insertedMsg, "error:", msgError);
+
+      const { error: convError } = await supabase
+        .from("conversations")
+        .update({ last_message_at: new Date().toISOString(), status: "envoye" })
+        .eq("id", id);
+
+      console.log("[ThreadDetail] Updated conversation status, error:", convError);
+    } catch (err) {
+      console.error("[ThreadDetail] Error sending message:", err);
     }
   }
 
@@ -129,6 +260,28 @@ export default function ThreadDetailPage({ params }: { params: Promise<{ id: str
       messageGroups.push({ date: msg.timestamp, msgs: [msg] });
     }
   });
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#111317] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-[#E63946] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!thread) {
+    return (
+      <div className="min-h-screen bg-[#111317] flex flex-col items-center justify-center gap-4">
+        <p className="text-[#9CA3AF] text-[14px]">Conversation introuvable</p>
+        <Link href="/coach/demandes" className="text-[#E63946] text-[14px] font-bold hover:text-[#ff4d5a]">
+          Retour aux demandes
+        </Link>
+      </div>
+    );
+  }
+
+  const r = thread.recruiter;
+  const a = thread.athlete;
 
   return (
     <div className="min-h-screen bg-[#111317] flex flex-col">

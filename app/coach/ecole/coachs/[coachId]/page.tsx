@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
 import SchoolGate from "@/components/subscription/SchoolGate";
 import StarRating from "@/components/ui/StarRating";
-import { mockCoachOverviews, mockDirectorActivitiesHS } from "@/lib/mock";
-import type { CoachOverview, DirectorActivity } from "@/lib/types/models";
+import type { CoachOverview } from "@/lib/types/models";
 
 /* ── Helpers ─────────────────────────────────────────────── */
 
@@ -26,6 +26,20 @@ function getRelativeTime(isoDate: string): string {
   if (diffD < 7) return `Il y a ${diffD} jour${diffD > 1 ? "s" : ""}`;
   if (diffW < 5) return `Il y a ${diffW} semaine${diffW > 1 ? "s" : ""}`;
   return `Il y a ${diffM} mois`;
+}
+
+function getDaysAgo(isoDate: string): number {
+  return Math.floor(
+    (Date.now() - new Date(isoDate).getTime()) / (1000 * 60 * 60 * 24)
+  );
+}
+
+function deriveStatus(updatedAt: string | null): CoachOverview["status"] {
+  if (!updatedAt) return "inactive_30d";
+  const days = getDaysAgo(updatedAt);
+  if (days < 7) return "active";
+  if (days < 30) return "inactive_7d";
+  return "inactive_30d";
 }
 
 const SPORT_COLORS: Record<string, string> = {
@@ -50,48 +64,9 @@ const STATUS_LABEL: Record<CoachOverview["status"], string> = {
   inactive_30d: "Inactif 30j+",
 };
 
-const ACTIVITY_DOT_COLOR: Record<string, string> = {
-  coach_added_athlete: "#3B82F6",
-  athlete_viewed: "#8B5CF6",
-  letter_of_intent: "#22C55E",
-  coach_inactive: "#F59E0B",
-  profile_verified: "#06B6D4",
-  recruit_confirmed: "#22C55E",
-  new_favorite: "#EC4899",
-  message_sent: "#60A5FA",
-  recruiter_inactive: "#F59E0B",
-  coach_joined: "#22C55E",
-  recruiter_joined: "#22C55E",
-};
+/* ── Athlete type for this page ── */
 
-function activityText(a: DirectorActivity): string {
-  switch (a.type) {
-    case "coach_added_athlete":
-      return `A ajoute l'athlete ${a.athleteName} (${a.sportName})`;
-    case "athlete_viewed":
-      return `${a.athleteName} consulte par ${a.recruiterName} (${a.cegepName})`;
-    case "letter_of_intent":
-      return `Lettre d'intention : ${a.athleteName} vers ${a.cegepName}`;
-    case "coach_inactive":
-      return `Inactif depuis ${a.daysInactive} jours`;
-    case "profile_verified":
-      return `Profil de ${a.athleteName} verifie (${a.sportName})`;
-    case "recruit_confirmed":
-      return `Recrue confirmee : ${a.athleteName}`;
-    case "new_favorite":
-      return `${a.athleteName} ajoute en favoris par ${a.recruiterName}`;
-    case "message_sent":
-      return `Message envoye a ${a.athleteName}`;
-    case "coach_joined":
-      return `A rejoint la plateforme`;
-    default:
-      return a.ctaLabel;
-  }
-}
-
-/* ── Mock athletes for coach detail ─────────────────────── */
-
-interface MockAthlete {
+interface CoachAthlete {
   id: string;
   name: string;
   position: string;
@@ -99,50 +74,6 @@ interface MockAthlete {
   stars: number;
   views30d: number;
   lastUpdate: string;
-}
-
-function getMockAthletes(coach: CoachOverview): MockAthlete[] {
-  const positions: Record<string, string[]> = {
-    Football: ["QB", "RB", "WR", "OL", "LB"],
-    Basketball: ["Meneur", "Arriere", "Ailier", "Ailier fort", "Pivot"],
-    Hockey: ["Centre", "Ailier G", "Ailier D", "Defenseur", "Gardien"],
-    Volleyball: ["Passeuse", "Attaquante", "Libero", "Centrale", "Opposes"],
-    Soccer: ["Gardien", "Defenseur", "Milieu", "Ailier", "Attaquant"],
-    Natation: ["Sprint", "Demi-fond", "Fond", "Papillon", "Dos"],
-    Badminton: ["Simple", "Double", "Mixte", "Simple", "Double"],
-  };
-
-  const names = [
-    "Olivier Nadeau",
-    "Emma Gagnon",
-    "Lucas Bernier",
-    "Sarah Lemieux",
-    "Nathan Dube",
-  ];
-
-  const sportPositions = positions[coach.sport] || [
-    "Pos 1",
-    "Pos 2",
-    "Pos 3",
-    "Pos 4",
-    "Pos 5",
-  ];
-
-  return names.map((name, i) => ({
-    id: `ath-${coach.id}-${i}`,
-    name,
-    position: sportPositions[i],
-    completude: [92, 78, 65, 45, 88][i],
-    stars: [5, 4, 3, 2, 4][i],
-    views30d: [18, 12, 5, 2, 14][i],
-    lastUpdate: [
-      "2026-03-12T08:00:00Z",
-      "2026-03-10T14:00:00Z",
-      "2026-03-08T09:00:00Z",
-      "2026-03-01T11:00:00Z",
-      "2026-03-11T16:00:00Z",
-    ][i],
-  }));
 }
 
 /* ── KPI Card ────────────────────────────────────────────── */
@@ -219,10 +150,100 @@ export default function CoachDetailPageWrapper() {
 function CoachDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const coachId = params.coachId as string;
 
-  const coach = mockCoachOverviews.find((c) => c.id === coachId);
+  const [coach, setCoach] = useState<CoachOverview | null>(null);
+  const [athletes, setAthletes] = useState<CoachAthlete[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  useEffect(() => {
+    async function loadCoach() {
+      const supabase = createClient();
+
+      // Get coach profile
+      const { data: profile } = await supabase
+        .from("users")
+        .select("id, first_name, last_name, email, phone, avatar_url, updated_at")
+        .eq("id", coachId)
+        .single();
+      console.log("Coach detail profile:", profile);
+
+      // Get school_coaches entry
+      const { data: schoolCoach } = await supabase
+        .from("school_coaches")
+        .select("role, sport, team_name")
+        .eq("coach_id", coachId)
+        .single();
+      console.log("Coach detail school_coaches:", schoolCoach);
+
+      // Get athletes for this coach
+      const { data: athleteRows } = await supabase
+        .from("athletes")
+        .select("id, first_name, last_name, profile_completion, verified, cote_globale_entraineur, updated_at, positions!position_id(nom, abreviation)")
+        .eq("coach_id", coachId);
+      console.log("Coach detail athletes:", athleteRows);
+
+      if (profile) {
+        const coachAthletes = athleteRows || [];
+        const completed = coachAthletes.filter((a: Record<string, unknown>) => ((a.profile_completion as number) || 0) >= 60).length;
+        const status = deriveStatus(profile.updated_at || null);
+
+        setCoach({
+          id: profile.id,
+          firstName: profile.first_name || "",
+          lastName: profile.last_name || "",
+          avatarUrl: profile.avatar_url || undefined,
+          sport: schoolCoach?.sport || "",
+          athleteCount: coachAthletes.length,
+          profilesCompleted: completed,
+          profileCompletionRate: coachAthletes.length > 0
+            ? Math.round((completed / coachAthletes.length) * 100)
+            : 0,
+          recruiterViews30d: 0,
+          viewsTrend: 0,
+          messagesReceived: 0,
+          lastLoginAt: profile.updated_at || new Date().toISOString(),
+          status,
+          accountStatus: "ACTIF" as "ACTIF" | "DESACTIVE",
+          deactivatedAt: null,
+          deactivatedBy: null,
+          deactivationReason: null,
+        });
+
+        setAthletes(coachAthletes.map((a: Record<string, unknown>) => {
+          const posRaw = a.positions;
+          const pos = Array.isArray(posRaw) ? posRaw[0] : posRaw;
+          const posObj = pos as { abreviation?: string; nom?: string } | null;
+          return {
+            id: a.id as string,
+            name: `${(a.first_name as string) || ""} ${(a.last_name as string) || ""}`.trim(),
+            position: posObj?.abreviation || posObj?.nom || "",
+            completude: (a.profile_completion as number) || 0,
+            stars: Math.round((a.cote_globale_entraineur as number) || 0),
+            views30d: 0,
+            lastUpdate: (a.updated_at as string) || new Date().toISOString(),
+          };
+        }));
+      }
+
+      setLoading(false);
+    }
+    loadCoach();
+  }, [coachId]);
+
+  const completionColor = (rate: number) => {
+    if (rate >= 60) return "bg-[#3B82F6]";
+    return "bg-[#6B7280]";
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="w-8 h-8 border-2 border-[#E63946] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   if (!coach) {
     return (
@@ -240,27 +261,6 @@ function CoachDetailPage() {
 
   const fullName = `${coach.firstName} ${coach.lastName}`;
   const initials = coach.firstName.charAt(0) + coach.lastName.charAt(0);
-  const athletes = getMockAthletes(coach);
-
-  /* Filter activities related to this coach */
-  const coachActivities = mockDirectorActivitiesHS
-    .filter(
-      (a) =>
-        a.coachName === fullName ||
-        a.coachName === `${coach.firstName} ${coach.lastName}`
-    )
-    .slice(0, 10);
-
-  /* If no matching activities, show most recent 10 as fallback */
-  const timeline =
-    coachActivities.length > 0
-      ? coachActivities
-      : mockDirectorActivitiesHS.slice(0, 10);
-
-  const completionColor = (rate: number) => {
-    if (rate >= 60) return "bg-[#3B82F6]";
-    return "bg-[#6B7280]";
-  };
 
   return (
     <div className="px-6 sm:px-10 py-8 max-w-[1400px] mx-auto space-y-6">
@@ -430,65 +430,71 @@ function CoachDetailPage() {
             Athletes de {fullName}
           </h2>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="bg-[#13151a]">
-                {["Athlete", "Position", "Completude", "Cote", "Vues 30j", "Dernier update"].map(
-                  (h) => (
-                    <th
-                      key={h}
-                      className="px-4 py-3 text-[11px] font-bold tracking-[0.2em] uppercase text-[#6B7280] whitespace-nowrap"
-                    >
-                      {h}
-                    </th>
-                  )
-                )}
-              </tr>
-            </thead>
-            <tbody>
-              {athletes.map((ath) => (
-                <tr
-                  key={ath.id}
-                  className="border-t border-[#1e2128] cursor-pointer transition-colors hover:bg-[rgba(255,255,255,0.04)]"
-                  onClick={() => window.location.href = `/coach/athletes/${ath.id}/apercu`}
-                >
-                  <td className="px-4 py-3 text-[13px] text-white font-medium">
-                    {ath.name}
-                  </td>
-                  <td className="px-4 py-3 text-[13px] text-[#9CA3AF]">
-                    {ath.position}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <div className="w-16 h-1.5 rounded bg-[#2A2D35] overflow-hidden">
-                        <div
-                          className={`h-full rounded ${completionColor(ath.completude)}`}
-                          style={{ width: `${ath.completude}%` }}
-                        />
-                      </div>
-                      <span className="text-[12px] text-[#9CA3AF]">
-                        {ath.completude}%
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <StarRating rating={ath.stars} size="sm" />
-                  </td>
-                  <td className="px-4 py-3 text-[13px] text-white">
-                    {ath.views30d}
-                  </td>
-                  <td className="px-4 py-3 text-[12px] text-[#9CA3AF] whitespace-nowrap">
-                    {getRelativeTime(ath.lastUpdate)}
-                  </td>
+        {athletes.length === 0 ? (
+          <div className="py-12 text-center text-[#6B7280] text-[14px]">
+            Aucun athlète pour ce coach
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="bg-[#13151a]">
+                  {["Athlete", "Position", "Completude", "Cote", "Vues 30j", "Dernier update"].map(
+                    (h) => (
+                      <th
+                        key={h}
+                        className="px-4 py-3 text-[11px] font-bold tracking-[0.2em] uppercase text-[#6B7280] whitespace-nowrap"
+                      >
+                        {h}
+                      </th>
+                    )
+                  )}
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {athletes.map((ath) => (
+                  <tr
+                    key={ath.id}
+                    className="border-t border-[#1e2128] cursor-pointer transition-colors hover:bg-[rgba(255,255,255,0.04)]"
+                    onClick={() => window.location.href = `/coach/athletes/${ath.id}`}
+                  >
+                    <td className="px-4 py-3 text-[13px] text-white font-medium">
+                      {ath.name}
+                    </td>
+                    <td className="px-4 py-3 text-[13px] text-[#9CA3AF]">
+                      {ath.position}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-16 h-1.5 rounded bg-[#2A2D35] overflow-hidden">
+                          <div
+                            className={`h-full rounded ${completionColor(ath.completude)}`}
+                            style={{ width: `${ath.completude}%` }}
+                          />
+                        </div>
+                        <span className="text-[12px] text-[#9CA3AF]">
+                          {ath.completude}%
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <StarRating rating={ath.stars} size="sm" />
+                    </td>
+                    <td className="px-4 py-3 text-[13px] text-white">
+                      {ath.views30d}
+                    </td>
+                    <td className="px-4 py-3 text-[12px] text-[#9CA3AF] whitespace-nowrap">
+                      {getRelativeTime(ath.lastUpdate)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
-      {/* Timeline */}
+      {/* Activity timeline — empty state until activities table is wired */}
       <div className="bg-[#1A1D24] rounded-xl border border-[#1e2128] overflow-hidden">
         <div className="px-5 py-4 border-b border-[#1e2128]">
           <h2
@@ -499,43 +505,9 @@ function CoachDetailPage() {
           </h2>
         </div>
         <div className="p-5">
-          <div className="relative">
-            {/* Vertical line */}
-            <div className="absolute left-[7px] top-2 bottom-2 border-l-2 border-[#2A2D35]" />
-
-            <div className="space-y-5">
-              {timeline.map((activity) => (
-                <div key={activity.id} className="flex items-start gap-4 relative">
-                  {/* Dot */}
-                  <div
-                    className="w-4 h-4 rounded-full border-2 border-[#1A1D24] shrink-0 z-10"
-                    style={{
-                      backgroundColor:
-                        ACTIVITY_DOT_COLOR[activity.type] || "#6B7280",
-                    }}
-                  />
-
-                  {/* Text */}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[13px] text-[#e0e0e0]">
-                      {activityText(activity)}
-                    </p>
-                  </div>
-
-                  {/* Relative date */}
-                  <span className="text-[11px] text-[#6B7280] whitespace-nowrap shrink-0">
-                    {getRelativeTime(activity.timestamp)}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {timeline.length === 0 && (
-            <p className="text-[13px] text-[#6B7280] text-center py-6">
-              Aucune activite recente
-            </p>
-          )}
+          <p className="text-[13px] text-[#6B7280] text-center py-6">
+            Aucune activite recente
+          </p>
         </div>
       </div>
     </div>

@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
+import { createClient } from "@/lib/supabase/client";
 import type { CoachProfile } from "../_data/mockSettingsData";
 
 /* ─────────────────────────────────────────────────────────────────
@@ -11,15 +12,82 @@ import type { CoachProfile } from "../_data/mockSettingsData";
 const label = "text-[12px] font-bold tracking-[0.25em] uppercase text-[#6b7280] mb-1.5";
 const input = "w-full bg-[#13151a] border border-[#2a2d36] rounded-lg px-4 py-2.5 text-[14px] text-[#e0e0e0] placeholder:text-[#4a4d56] focus:border-[#E63946] outline-none transition-colors";
 
-interface Props {
-  data: CoachProfile;
-}
+const ROLE_LABELS: Record<string, string> = {
+  COACH: "Coach",
+  DIRECTEUR: "Directeur sportif",
+  DIRECTEUR_INTERIM: "Directeur sportif intérimaire",
+  PENDING: "En attente",
+};
 
-export default function ProfileSection({ data }: Props) {
-  const [form, setForm] = useState({ ...data });
+export default function ProfileSection() {
+  const [form, setForm] = useState<CoachProfile>({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    role: "",
+    sport: "",
+    avatarInitials: "",
+  });
+  const [sports, setSports] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [coachEntryId, setCoachEntryId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    async function loadData() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setLoading(false); return; }
+
+      // Load user profile
+      const { data: profile, error: profileErr } = await supabase
+        .from("users")
+        .select("first_name, last_name, email, phone, avatar_url")
+        .eq("id", user.id)
+        .single();
+      console.log("ProfileSection — user profile:", profile, profileErr);
+
+      // Load coach entry
+      const { data: coachEntry, error: coachErr } = await supabase
+        .from("school_coaches")
+        .select("id, role, sport")
+        .eq("coach_id", user.id)
+        .single();
+      console.log("ProfileSection — school_coaches:", coachEntry, coachErr);
+
+      // Load sports list
+      const { data: sportsList, error: sportsErr } = await supabase
+        .from("sports")
+        .select("nom")
+        .order("nom");
+      console.log("ProfileSection — sports:", sportsList, sportsErr);
+
+      if (profile) {
+        const firstName = profile.first_name || "";
+        const lastName = profile.last_name || "";
+        setForm({
+          firstName,
+          lastName,
+          email: profile.email || user.email || "",
+          phone: profile.phone || "",
+          role: coachEntry?.role || "",
+          sport: coachEntry?.sport || "",
+          avatarInitials: `${firstName[0] || ""}${lastName[0] || ""}`.toUpperCase(),
+        });
+        if (profile.avatar_url) setAvatarUrl(profile.avatar_url);
+      }
+
+      if (coachEntry) setCoachEntryId(coachEntry.id);
+      if (sportsList) setSports(sportsList.map((s: { nom: string }) => s.nom));
+      setLoading(false);
+    }
+    loadData();
+  }, []);
 
   function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -30,13 +98,64 @@ export default function ProfileSection({ data }: Props) {
   }
 
   function update(field: keyof CoachProfile, value: string) {
-    setForm((prev) => ({ ...prev, [field]: value }));
+    setForm((prev) => {
+      const next = { ...prev, [field]: value };
+      if (field === "firstName" || field === "lastName") {
+        const f = field === "firstName" ? value : prev.firstName;
+        const l = field === "lastName" ? value : prev.lastName;
+        next.avatarInitials = `${f[0] || ""}${l[0] || ""}`.toUpperCase();
+      }
+      return next;
+    });
     setSaved(false);
+    setError(null);
   }
 
-  function handleSave() {
+  async function handleSave() {
+    setSaving(true);
+    setError(null);
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setSaving(false); setError("Non authentifié"); return; }
+
+    // Update users table
+    const { error: userErr } = await supabase
+      .from("users")
+      .update({
+        first_name: form.firstName,
+        last_name: form.lastName,
+        phone: form.phone,
+      })
+      .eq("id", user.id);
+    console.log("ProfileSection — save user:", userErr);
+
+    // Update school_coaches table
+    if (coachEntryId) {
+      const { error: coachErr } = await supabase
+        .from("school_coaches")
+        .update({
+          role: form.role,
+          sport: form.sport,
+        })
+        .eq("id", coachEntryId);
+      console.log("ProfileSection — save coach:", coachErr);
+
+      if (coachErr) { setSaving(false); setError("Erreur lors de la sauvegarde du rôle."); return; }
+    }
+
+    if (userErr) { setSaving(false); setError("Erreur lors de la sauvegarde du profil."); return; }
+
+    setSaving(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="w-8 h-8 border-2 border-[#E63946] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
   }
 
   return (
@@ -94,17 +213,17 @@ export default function ProfileSection({ data }: Props) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
               <p className={label}>Prénom</p>
-              <input type="text" value={form.firstName} onChange={(e) => update("firstName", e.target.value)} className={input} />
+              <input type="text" title="Prénom" value={form.firstName} onChange={(e) => update("firstName", e.target.value)} className={input} />
             </div>
             <div>
               <p className={label}>Nom</p>
-              <input type="text" value={form.lastName} onChange={(e) => update("lastName", e.target.value)} className={input} />
+              <input type="text" title="Nom" value={form.lastName} onChange={(e) => update("lastName", e.target.value)} className={input} />
             </div>
           </div>
 
           <div>
             <p className={label}>Courriel</p>
-            <input type="email" value={form.email} onChange={(e) => update("email", e.target.value)} className={input} />
+            <input type="email" value={form.email} readOnly className={`${input} opacity-60 cursor-not-allowed`} />
           </div>
 
           <div>
@@ -115,11 +234,26 @@ export default function ProfileSection({ data }: Props) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
               <p className={label}>Rôle</p>
-              <input type="text" value={form.role} onChange={(e) => update("role", e.target.value)} className={input} />
+              <select title="Rôle" value={form.role} onChange={(e) => update("role", e.target.value)} className={input}>
+                <option value="">— Sélectionner —</option>
+                <option value="COACH">Coach</option>
+                <option value="DIRECTEUR">Directeur sportif</option>
+                <option value="DIRECTEUR_INTERIM">Directeur sportif intérimaire</option>
+              </select>
             </div>
             <div>
               <p className={label}>Sport</p>
-              <input type="text" value={form.sport} readOnly className={`${input} opacity-60 cursor-not-allowed`} />
+              <select
+                title="Sport"
+                value={form.sport}
+                onChange={(e) => update("sport", e.target.value)}
+                className={input}
+              >
+                <option value="">— Sélectionner —</option>
+                {sports.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
             </div>
           </div>
 
@@ -128,13 +262,19 @@ export default function ProfileSection({ data }: Props) {
             <button
               type="button"
               onClick={handleSave}
-              className="bg-[#E63946] hover:bg-[#D42B22] text-white text-[14px] font-bold px-6 py-2.5 rounded-lg transition-colors"
+              disabled={saving}
+              className="bg-[#E63946] hover:bg-[#D42B22] text-white text-[14px] font-bold px-6 py-2.5 rounded-lg transition-colors disabled:opacity-50"
             >
-              Enregistrer
+              {saving ? "Enregistrement..." : "Enregistrer"}
             </button>
             {saved && (
               <span className="text-[14px] font-semibold text-[#22C55E] animate-pulse">
                 Modifications enregistrées
+              </span>
+            )}
+            {error && (
+              <span className="text-[14px] font-semibold text-[#EF4444]">
+                {error}
               </span>
             )}
           </div>
@@ -149,14 +289,14 @@ export default function ProfileSection({ data }: Props) {
                 <Image src={avatarUrl} alt="Avatar" fill className="object-cover" />
               ) : (
                 <span className="text-[18px] font-black text-[#E63946]">
-                  {form.firstName[0]}{form.lastName[0]}
+                  {form.avatarInitials || "??"}
                 </span>
               )}
             </div>
             <p className="font-head text-[16px] font-black text-white uppercase tracking-tight">
               {form.firstName} {form.lastName}
             </p>
-            <p className="text-[12px] text-[#9CA3AF] mt-1">{form.role}</p>
+            <p className="text-[12px] text-[#9CA3AF] mt-1">{ROLE_LABELS[form.role] || form.role}</p>
             <p className="text-[12px] text-[#6b7280] mt-0.5">{form.sport}</p>
 
             <div className="w-full h-px bg-[#2D3748] my-4" />

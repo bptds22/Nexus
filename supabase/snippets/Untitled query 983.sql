@@ -1,3 +1,2 @@
-SELECT count(*) FROM sports;
-SELECT count(*) FROM school_registry;
-SELECT count(*) FROM pg_tables WHERE schemaname = 'public';
+SELECT column_name FROM information_schema.columns 
+WHERE table_name = 'users' AND (column_name ILIKE '%school%' OR column_name ILIKE '%cegep%');

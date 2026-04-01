@@ -1,18 +1,19 @@
 "use client";
 
-import { useState, useMemo, Suspense } from "react";
+import { useState, useEffect, useMemo, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import StarRating from "@/components/ui/StarRating";
-import { MOCK_THREADS, STATUS_CONFIG, type ConversationThread, type ThreadStatus } from "./_data/mockThreadsData";
+import { STATUS_CONFIG, mapDbStatus, type ConversationThread, type ThreadStatus } from "./_data/mockThreadsData";
 import EntityLink from "@/components/shared/EntityLink";
+import { createClient } from "@/lib/supabase/client";
 
 /* ═══════════════════════════════════════════════════════════════
    Gérer les Demandes — Thread List
    Triage tool for recruiter conversations.
 ═══════════════════════════════════════════════════════════════ */
 
-const NOW = new Date("2026-03-10T10:00:00");
+const NOW = new Date();
 
 function relativeTime(isoStr: string): string {
   const d = new Date(isoStr);
@@ -157,11 +158,108 @@ function DemandesContent() {
 
   const [search, setSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState<FilterPreset>(mapUrlFilter(urlFilter));
+  const [threads, setThreads] = useState<ConversationThread[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const unreadCount = MOCK_THREADS.filter((t) => t.unread).length;
+  useEffect(() => {
+    async function loadThreads() {
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) { setLoading(false); return; }
+
+        // Fetch conversations for this coach
+        const { data: conversations, error: convError } = await supabase
+          .from("conversations")
+          .select("id, recruiter_id, coach_id, athlete_id, status, last_message_at, unread_count, created_at, users!recruiter_id(id, first_name, last_name, email, school_id, schools!school_id(name)), athletes!athlete_id(id, first_name, last_name, verified, cote_globale_entraineur, profile_completion, annee_diplomation, positions!position_id(nom, abreviation))")
+          .eq("coach_id", user.id)
+          .order("last_message_at", { ascending: false });
+
+        console.log("[Demandes] conversations:", conversations, "error:", convError);
+
+        if (!conversations || conversations.length === 0) {
+          setThreads([]);
+          setLoading(false);
+          return;
+        }
+
+        // Get latest message per conversation
+        const conversationIds = conversations.map((c: any) => c.id);
+        const { data: latestMessages, error: msgError } = await supabase
+          .from("messages")
+          .select("content, created_at, conversation_id")
+          .in("conversation_id", conversationIds)
+          .order("created_at", { ascending: false });
+
+        console.log("[Demandes] messages:", latestMessages, "error:", msgError);
+
+        // Build a map: conversation_id -> first (latest) message
+        const latestMsgMap: Record<string, { content: string; created_at: string }> = {};
+        if (latestMessages) {
+          for (const msg of latestMessages) {
+            if (!latestMsgMap[msg.conversation_id]) {
+              latestMsgMap[msg.conversation_id] = msg;
+            }
+          }
+        }
+
+        // Map to ConversationThread
+        const mapped: ConversationThread[] = conversations.map((c: any) => {
+          const recruiterUser = c.users;
+          const athleteData = c.athletes;
+          const position = athleteData?.positions;
+          const school = recruiterUser?.schools;
+          const latestMsg = latestMsgMap[c.id];
+
+          return {
+            id: c.id,
+            recruiter: {
+              id: recruiterUser?.id || c.recruiter_id,
+              firstName: recruiterUser?.first_name || "",
+              lastName: recruiterUser?.last_name || "",
+              title: "",
+              cegep: school?.name || "",
+              cegepTeamName: "",
+              division: "Div. 1" as const,
+              sport: "",
+              region: "",
+              email: recruiterUser?.email || "",
+              phone: "",
+            },
+            athlete: {
+              id: athleteData?.id || c.athlete_id,
+              firstName: athleteData?.first_name || "",
+              lastName: athleteData?.last_name || "",
+              position: position?.abreviation || position?.nom || "",
+              niveau: "Sec. 5" as const,
+              profilePercent: athleteData?.profile_completion ?? 0,
+              isVerified: athleteData?.verified ?? false,
+              views: 0,
+              favorites: 0,
+              stars: athleteData?.cote_globale_entraineur ?? 0,
+            },
+            messages: [],
+            status: mapDbStatus(c.status),
+            lastMessagePreview: latestMsg?.content ? latestMsg.content.slice(0, 80) + (latestMsg.content.length > 80 ? "..." : "") : "",
+            lastMessageTime: latestMsg?.created_at || c.last_message_at || c.created_at,
+            unread: (c.unread_count ?? 0) > 0,
+          };
+        });
+
+        setThreads(mapped);
+      } catch (err) {
+        console.error("[Demandes] Error loading threads:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadThreads();
+  }, []);
+
+  const unreadCount = threads.filter((t) => t.unread).length;
 
   const filtered = useMemo(() => {
-    let list = [...MOCK_THREADS];
+    let list = [...threads];
 
     // Search
     if (search.trim().length >= 2) {
@@ -198,7 +296,7 @@ function DemandesContent() {
     });
 
     return list;
-  }, [search, activeFilter]);
+  }, [search, activeFilter, threads]);
 
   return (
     <div className="px-6 sm:px-10 py-8 max-w-[1280px] mx-auto space-y-6">
@@ -271,7 +369,11 @@ function DemandesContent() {
       </div>
 
       {/* ── Thread List ─────────────────────────────────────── */}
-      {filtered.length === 0 ? (
+      {loading ? (
+        <div className="flex items-center justify-center py-20">
+          <div className="w-8 h-8 border-2 border-[#E63946] border-t-transparent rounded-full animate-spin" />
+        </div>
+      ) : filtered.length === 0 ? (
         /* Empty state */
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <div className="w-20 h-20 rounded-full bg-[#1A1D24] border border-[#2D3748] flex items-center justify-center mb-6">

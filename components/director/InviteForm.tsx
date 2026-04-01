@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 
 /* ── style constants (matching recruiter settings) ── */
 const labelCls =
@@ -45,15 +46,49 @@ export default function InviteForm({ portalType, sports }: InviteFormProps) {
     return Object.keys(e).length === 0;
   };
 
-  const handleSubmit = (ev: React.FormEvent) => {
+  const handleSubmit = async (ev: React.FormEvent) => {
     ev.preventDefault();
     if (!validate()) return;
 
-    // Show toast
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data: userRow } = await supabase
+      .from("users")
+      .select("school_id")
+      .eq("id", user.id)
+      .single();
+
+    if (!userRow?.school_id) {
+      setToast("École introuvable.");
+      setTimeout(() => setToast(null), 3000);
+      return;
+    }
+
+    const { error } = await supabase
+      .from("director_invitations")
+      .insert({
+        school_id: userRow.school_id,
+        invited_by: user.id,
+        email: email.trim(),
+        first_name: firstName.trim(),
+        last_name: lastName.trim(),
+        sports: selectedSports,
+        message: message.trim() || null,
+        status: "PENDING",
+      });
+
+    if (error) {
+      console.error("Invite error:", error);
+      setToast("Erreur lors de l'envoi.");
+      setTimeout(() => setToast(null), 3000);
+      return;
+    }
+
     setToast(`Invitation envoyée à ${email}`);
     setTimeout(() => setToast(null), 3000);
 
-    // Reset form
     setEmail("");
     setFirstName("");
     setLastName("");
@@ -61,6 +96,8 @@ export default function InviteForm({ portalType, sports }: InviteFormProps) {
     setRole(ROLE_OPTIONS[0]);
     setMessage("");
     setErrors({});
+
+    window.dispatchEvent(new Event("invitation-sent"));
   };
 
   return (

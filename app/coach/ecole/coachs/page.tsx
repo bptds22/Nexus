@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
 import SchoolGate from "@/components/subscription/SchoolGate";
-import { mockCoachOverviews } from "@/lib/mock";
 import type { CoachOverview } from "@/lib/types/models";
 
 /* ── Helpers ─────────────────────────────────────────────── */
@@ -91,6 +91,14 @@ const STATUS_FILTER = [
   { value: "inactive_30d", label: "Inactif 30j+" },
 ];
 
+function deriveStatus(updatedAt: string | null): CoachOverview["status"] {
+  if (!updatedAt) return "inactive_30d";
+  const days = getDaysAgo(updatedAt);
+  if (days < 7) return "active";
+  if (days < 30) return "inactive_7d";
+  return "inactive_30d";
+}
+
 /* ── Component ───────────────────────────────────────────── */
 
 export default function CoachesListPageWrapper() {
@@ -98,6 +106,8 @@ export default function CoachesListPageWrapper() {
 }
 
 function CoachesListPage() {
+  const [coaches, setCoaches] = useState<CoachOverview[]>([]);
+  const [loading, setLoading] = useState(true);
   const [sortKey, setSortKey] = useState<SortKey>("name");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [sportFilter, setSportFilter] = useState("Tous");
@@ -105,10 +115,89 @@ function CoachesListPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [toast, setToast] = useState<string | null>(null);
 
+  useEffect(() => {
+    async function loadCoaches() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setLoading(false); return; }
+
+      // Get current user's school_id from school_coaches
+      const { data: mySchool } = await supabase
+        .from("school_coaches")
+        .select("school_id")
+        .eq("coach_id", user.id)
+        .limit(1)
+        .single();
+      console.log("My school:", mySchool);
+
+      if (!mySchool) { setLoading(false); return; }
+
+      // Get all coaches in the same school
+      const { data: schoolCoaches, error } = await supabase
+        .from("school_coaches")
+        .select("coach_id, role, sport, team_name, created_at")
+        .eq("school_id", mySchool.school_id);
+      console.log("School coaches:", schoolCoaches, error);
+
+      if (error || !schoolCoaches) { setLoading(false); return; }
+
+      const coachIds = schoolCoaches.map(sc => sc.coach_id);
+
+      // Get user profiles for all coaches
+      const { data: userProfiles } = await supabase
+        .from("users")
+        .select("id, first_name, last_name, email, avatar_url, status, updated_at")
+        .in("id", coachIds);
+
+      // Get athlete counts per coach
+      const { data: athletes } = await supabase
+        .from("athletes")
+        .select("id, coach_id, profile_completion, verified")
+        .in("coach_id", coachIds);
+      console.log("Athletes for coaches:", athletes);
+
+      const mapped: CoachOverview[] = schoolCoaches.map(sc => {
+        const profile = userProfiles?.find(u => u.id === sc.coach_id);
+        const coachAthletes = athletes?.filter(a => a.coach_id === sc.coach_id) || [];
+        const completedProfiles = coachAthletes.filter(a => (a.profile_completion || 0) >= 60).length;
+        const totalAthletes = coachAthletes.length;
+        const completionRate = totalAthletes > 0
+          ? Math.round((completedProfiles / totalAthletes) * 100)
+          : 0;
+
+        const status = deriveStatus(profile?.updated_at || null);
+        const accountStatus = profile?.status === "DESACTIVE" ? "DESACTIVE" : "ACTIF";
+
+        return {
+          id: sc.coach_id,
+          firstName: profile?.first_name || "",
+          lastName: profile?.last_name || "",
+          avatarUrl: profile?.avatar_url || undefined,
+          sport: sc.sport || "",
+          athleteCount: totalAthletes,
+          profilesCompleted: completedProfiles,
+          profileCompletionRate: completionRate,
+          recruiterViews30d: 0,
+          viewsTrend: 0,
+          messagesReceived: 0,
+          lastLoginAt: profile?.updated_at || new Date().toISOString(),
+          status,
+          accountStatus: accountStatus as "ACTIF" | "DESACTIVE",
+          deactivatedAt: null,
+          deactivatedBy: null,
+          deactivationReason: null,
+        };
+      });
+
+      setCoaches(mapped);
+      setLoading(false);
+    }
+    loadCoaches();
+  }, []);
+
   /* ── Filter + Sort ── */
-  /* Separate active from deactivated */
-  const activeCoaches = mockCoachOverviews.filter((c) => c.accountStatus === "ACTIF");
-  const deactivatedCoaches = mockCoachOverviews.filter((c) => c.accountStatus === "DESACTIVE");
+  const activeCoaches = coaches.filter((c) => c.accountStatus === "ACTIF");
+  const deactivatedCoaches = coaches.filter((c) => c.accountStatus === "DESACTIVE");
 
   const filtered = useMemo(() => {
     let list = [...activeCoaches];
@@ -166,7 +255,7 @@ function CoachesListPage() {
     });
 
     return list;
-  }, [sortKey, sortDir, sportFilter, statusFilter, searchQuery]);
+  }, [activeCoaches, sortKey, sortDir, sportFilter, statusFilter, searchQuery]);
 
   function toggleSort(key: SortKey) {
     if (sortKey === key) {
@@ -198,6 +287,14 @@ function CoachesListPage() {
     return "bg-[#6B7280]";
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="w-8 h-8 border-2 border-[#E63946] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   /* ── Render ── */
   return (
     <div className="px-6 sm:px-10 py-8 max-w-[1400px] mx-auto space-y-6">
@@ -211,7 +308,7 @@ function CoachesListPage() {
             MES COACHS
           </h1>
           <p className="text-[14px] text-[#6B7280] mt-1">
-            {mockCoachOverviews.length} entraineurs dans votre ecole
+            {coaches.length} entraineurs dans votre ecole
           </p>
         </div>
         <Link
@@ -225,7 +322,6 @@ function CoachesListPage() {
 
       {/* Filters bar */}
       <div className="flex flex-wrap items-center gap-3">
-        {/* Sport dropdown */}
         <select
           value={sportFilter}
           onChange={(e) => setSportFilter(e.target.value)}
@@ -238,7 +334,6 @@ function CoachesListPage() {
           ))}
         </select>
 
-        {/* Status dropdown */}
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
@@ -251,7 +346,6 @@ function CoachesListPage() {
           ))}
         </select>
 
-        {/* Search */}
         <div className="relative flex-1 min-w-[200px]">
           <svg
             className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6B7280]"
@@ -278,7 +372,6 @@ function CoachesListPage() {
 
       {/* Table card */}
       <div className="bg-[#1A1D24] rounded-xl border border-[#1e2128] overflow-hidden">
-        {/* Empty state */}
         {filtered.length === 0 ? (
           <div className="py-16 text-center text-[#6B7280] text-[14px]">
             Aucun coach trouve
@@ -292,31 +385,11 @@ function CoachesListPage() {
                     [
                       { key: "name" as SortKey, label: "Coach", w: "20%" },
                       { key: "sport" as SortKey, label: "Sport", w: "15%" },
-                      {
-                        key: "athleteCount" as SortKey,
-                        label: "Athletes",
-                        w: "10%",
-                      },
-                      {
-                        key: "profileCompletionRate" as SortKey,
-                        label: "Profils completes",
-                        w: "15%",
-                      },
-                      {
-                        key: "recruiterViews30d" as SortKey,
-                        label: "Vues recruteurs",
-                        w: "12%",
-                      },
-                      {
-                        key: "messagesReceived" as SortKey,
-                        label: "Messages recus",
-                        w: "10%",
-                      },
-                      {
-                        key: "lastLoginAt" as SortKey,
-                        label: "Derniere connexion",
-                        w: "10%",
-                      },
+                      { key: "athleteCount" as SortKey, label: "Athletes", w: "10%" },
+                      { key: "profileCompletionRate" as SortKey, label: "Profils completes", w: "15%" },
+                      { key: "recruiterViews30d" as SortKey, label: "Vues recruteurs", w: "12%" },
+                      { key: "messagesReceived" as SortKey, label: "Messages recus", w: "10%" },
+                      { key: "lastLoginAt" as SortKey, label: "Derniere connexion", w: "10%" },
                       { key: "status" as SortKey, label: "Statut", w: "8%" },
                     ] as const
                   ).map((col) => (
@@ -346,7 +419,6 @@ function CoachesListPage() {
                       className="contents"
                     >
                       <tr className="border-t border-[#1e2128] hover:bg-[#22262E] cursor-pointer transition-colors">
-                        {/* Coach */}
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-full bg-[#2A2D35] flex items-center justify-center text-[11px] font-bold text-[#9CA3AF] shrink-0">
@@ -357,8 +429,6 @@ function CoachesListPage() {
                             </span>
                           </div>
                         </td>
-
-                        {/* Sport */}
                         <td className="px-4 py-3">
                           <span
                             className={`inline-block px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${SPORT_COLORS[coach.sport] || "bg-[#374151]/30 text-[#9CA3AF]"}`}
@@ -366,21 +436,15 @@ function CoachesListPage() {
                             {coach.sport}
                           </span>
                         </td>
-
-                        {/* Athletes */}
                         <td className="px-4 py-3 text-[13px] font-bold text-white">
                           {coach.athleteCount}
                         </td>
-
-                        {/* Profils completes */}
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
                             <div className="w-20 h-1.5 rounded bg-[#2A2D35] overflow-hidden">
                               <div
                                 className={`h-full rounded ${completionColor(coach.profileCompletionRate)}`}
-                                style={{
-                                  width: `${coach.profileCompletionRate}%`,
-                                }}
+                                style={{ width: `${coach.profileCompletionRate}%` }}
                               />
                             </div>
                             <span className="text-[12px] text-[#9CA3AF]">
@@ -388,8 +452,6 @@ function CoachesListPage() {
                             </span>
                           </div>
                         </td>
-
-                        {/* Vues recruteurs */}
                         <td className="px-4 py-3">
                           <span className="text-[13px] font-bold text-white">
                             {coach.recruiterViews30d}
@@ -403,8 +465,6 @@ function CoachesListPage() {
                             </span>
                           )}
                         </td>
-
-                        {/* Messages recus */}
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-1.5">
                             <svg
@@ -425,22 +485,16 @@ function CoachesListPage() {
                             </span>
                           </div>
                         </td>
-
-                        {/* Derniere connexion */}
                         <td
                           className={`px-4 py-3 text-[12px] whitespace-nowrap ${getLoginColor(coach.lastLoginAt)}`}
                         >
                           {getRelativeTime(coach.lastLoginAt)}
                         </td>
-
-                        {/* Statut */}
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
                             <span
                               className="inline-block w-2 h-2 rounded-full shrink-0"
-                              style={{
-                                backgroundColor: STATUS_DOT[coach.status],
-                              }}
+                              style={{ backgroundColor: STATUS_DOT[coach.status] }}
                             />
                             <span className="text-[12px] text-[#9CA3AF] whitespace-nowrap">
                               {STATUS_LABEL[coach.status]}

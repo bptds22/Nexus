@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { createClient } from "@/lib/supabase/client";
 
 /* ── Props ── */
 interface CareerToggleProps {
@@ -69,12 +70,55 @@ export default function CareerToggle({
   };
 
   /* ── Save ── */
-  const handleSave = () => {
-    // In real app, this would call an API
+  const handleSave = async () => {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { error } = await supabase
+      .from("coach_career_preferences")
+      .upsert({
+        user_id: user.id,
+        is_open: isOpen,
+        target_sports: selectedSports,
+        target_regions: selectedRegions,
+        role_type: role || null,
+        bio: bio,
+      }, { onConflict: "user_id" });
+
+    if (error) {
+      console.error("CareerToggle save error:", error);
+      return;
+    }
+
     if (toastTimer.current) clearTimeout(toastTimer.current);
     setShowToast(true);
     toastTimer.current = setTimeout(() => setShowToast(false), 3000);
   };
+
+  /* ── Load existing preferences ── */
+  useEffect(() => {
+    async function loadPrefs() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data } = await supabase
+        .from("coach_career_preferences")
+        .select("*")
+        .eq("user_id", user.id)
+        .single();
+
+      if (data) {
+        setIsOpen(data.is_open);
+        setSelectedSports(data.target_sports || []);
+        setSelectedRegions(data.target_regions || []);
+        setRole(data.role_type);
+        setBio(data.bio || "");
+      }
+    }
+    loadPrefs();
+  }, []);
 
   useEffect(() => {
     return () => {

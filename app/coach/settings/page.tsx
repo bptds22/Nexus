@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createClient } from "@/lib/supabase/client";
 import SettingsNav from "./_components/SettingsNav";
 import ProfileSection from "./_components/ProfileSection";
 import SchoolSection from "./_components/SchoolSection";
@@ -8,25 +9,172 @@ import NotificationsSection from "./_components/NotificationsSection";
 import AccountSection from "./_components/AccountSection";
 import type { SettingsSection } from "./_components/SettingsNav";
 import SubscriptionSection from "@/components/subscription/SubscriptionSection";
-import AmbassadorDashboard from "@/components/ambassador/AmbassadorDashboard";
 import SchoolGate from "@/components/subscription/SchoolGate";
-import {
-  MOCK_COACH_PROFILE,
-  MOCK_SCHOOL_INFO,
-  MOCK_NOTIFICATIONS,
-  MOCK_ACCOUNT,
-} from "./_data/mockSettingsData";
 
 /* ═══════════════════════════════════════════════════════════════
    Coach Settings — Paramètres
-   Left nav + content panel, 7 sections.
+   Left nav + content panel, 6 sections.
 ═══════════════════════════════════════════════════════════════ */
 
 /* ── Admin École section ──────────────────────────────────── */
 
+interface Director {
+  id: string;
+  user_id: string;
+  role: string;
+  added_at: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+}
+
 function AdminEcoleSection() {
   const [toast, setToast] = useState<string | null>(null);
+  const [directors, setDirectors] = useState<Director[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviting, setInviting] = useState(false);
+  const [showTransferModal, setShowTransferModal] = useState(false);
+  const [transferTarget, setTransferTarget] = useState("");
+  const [transferring, setTransferring] = useState(false);
+
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
+
+  useEffect(() => {
+    async function loadDirectors() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setLoading(false); return; }
+
+      const { data: userRow } = await supabase
+        .from("users")
+        .select("school_id")
+        .eq("id", user.id)
+        .single();
+
+      if (!userRow?.school_id) { setLoading(false); return; }
+
+      const { data, error } = await supabase
+        .from("school_directors")
+        .select("id, user_id, role, added_at, users!inner(first_name, last_name, email)")
+        .eq("school_id", userRow.school_id);
+      console.log("AdminEcoleSection — directors:", data, error);
+
+      if (data) {
+        const mapped: Director[] = data.map((d: Record<string, unknown>) => {
+          const u = d.users as Record<string, unknown>;
+          return {
+            id: d.id as string,
+            user_id: d.user_id as string,
+            role: d.role as string,
+            added_at: d.added_at as string,
+            first_name: (u?.first_name as string) || "",
+            last_name: (u?.last_name as string) || "",
+            email: (u?.email as string) || "",
+          };
+        });
+        setDirectors(mapped);
+      }
+      setLoading(false);
+    }
+    loadDirectors();
+  }, []);
+
+  async function handleRemove(directorId: string, role: string) {
+    if (role === "proprietaire") { showToast("Impossible de retirer le propriétaire."); return; }
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("school_directors")
+      .delete()
+      .eq("id", directorId)
+      .eq("role", "collaborateur");
+    console.log("AdminEcoleSection — remove:", error);
+
+    if (error) { showToast("Erreur lors du retrait."); return; }
+    setDirectors((prev) => prev.filter((d) => d.id !== directorId));
+    showToast("Directeur retiré avec succès.");
+  }
+
+  async function handleInvite() {
+    if (!inviteEmail.trim()) return;
+    setInviting(true);
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setInviting(false); showToast("Non authentifié."); return; }
+
+    const { data: userRow } = await supabase
+      .from("users")
+      .select("school_id")
+      .eq("id", user.id)
+      .single();
+
+    if (!userRow?.school_id) { setInviting(false); showToast("École introuvable."); return; }
+
+    const { error } = await supabase
+      .from("director_invitations")
+      .insert({
+        school_id: userRow.school_id,
+        invited_by: user.id,
+        email: inviteEmail.trim(),
+        status: "pending",
+      });
+    console.log("AdminEcoleSection — invite:", error);
+
+    setInviting(false);
+    if (error) { showToast("Erreur lors de l'envoi de l'invitation."); return; }
+    setInviteEmail("");
+    showToast("Invitation envoyée avec succès.");
+  }
+
+  async function handleTransfer() {
+    if (!transferTarget) return;
+    setTransferring(true);
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setTransferring(false); showToast("Non authentifié."); return; }
+
+    const { data: userRow } = await supabase
+      .from("users")
+      .select("school_id")
+      .eq("id", user.id)
+      .single();
+
+    if (!userRow?.school_id) { setTransferring(false); showToast("École introuvable."); return; }
+
+    const { error } = await supabase
+      .from("admin_transfer_requests")
+      .insert({
+        school_id: userRow.school_id,
+        from_user_id: user.id,
+        to_user_id: transferTarget,
+        status: "pending",
+      });
+    console.log("AdminEcoleSection — transfer:", error);
+
+    setTransferring(false);
+    setShowTransferModal(false);
+    if (error) { showToast("Erreur lors de la demande de transfert."); return; }
+    showToast("Demande de transfert envoyée.");
+  }
+
+  function formatMonth(iso: string): string {
+    if (!iso) return "—";
+    const d = new Date(iso);
+    const months = ["Jan.", "Fév.", "Mars", "Avr.", "Mai", "Juin", "Juil.", "Août", "Sep.", "Oct.", "Nov.", "Déc."];
+    return `${months[d.getMonth()]} ${d.getFullYear()}`;
+  }
+
+  const collaborators = directors.filter((d) => d.role === "collaborateur");
+
+  if (loading) {
+    return (
+      <SchoolGate>
+        <div className="flex items-center justify-center py-20">
+          <div className="w-8 h-8 border-2 border-[#E63946] border-t-transparent rounded-full animate-spin" />
+        </div>
+      </SchoolGate>
+    );
+  }
 
   return (
     <SchoolGate>
@@ -44,25 +192,37 @@ function AdminEcoleSection() {
                 </tr>
               </thead>
               <tbody>
-                <tr className="border-b border-[#2D3748]/40 bg-[#111317]/40">
-                  <td className="px-4 py-3 text-[13px] font-bold text-white flex items-center gap-1.5">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="#DAB65A" stroke="none"><path d="M2 20h20v2H2zm1-2l3-10 6 6 6-6 3 10z" /><circle cx="5" cy="6" r="2" /><circle cx="12" cy="3" r="2" /><circle cx="19" cy="6" r="2" /></svg>
-                    François Bergeron
-                  </td>
-                  <td className="px-4 py-3"><span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DAB65A]/15 text-[#DAB65A]">Propriétaire</span></td>
-                  <td className="px-4 py-3 text-[12px] text-[#9CA3AF]">f.bergeron@ecole.qc.ca</td>
-                  <td className="px-4 py-3 text-[12px] text-[#6b7280]">Jan. 2025</td>
-                  <td className="px-4 py-3"></td>
-                </tr>
-                <tr className="border-b border-[#2D3748]/40">
-                  <td className="px-4 py-3 text-[13px] text-white">Marie Côté</td>
-                  <td className="px-4 py-3"><span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#6B7280]/15 text-[#6B7280]">Collaborateur</span></td>
-                  <td className="px-4 py-3 text-[12px] text-[#9CA3AF]">m.cote@ecole.qc.ca</td>
-                  <td className="px-4 py-3 text-[12px] text-[#6b7280]">Oct. 2025</td>
-                  <td className="px-4 py-3">
-                    <button type="button" onClick={() => showToast("Directeur retiré (POC)")} className="text-[11px] text-[#E63946] hover:text-[#D42B22] transition-colors font-bold">Retirer</button>
-                  </td>
-                </tr>
+                {directors.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="px-4 py-6 text-center text-[13px] text-[#6b7280]">Aucun directeur trouvé.</td>
+                  </tr>
+                )}
+                {directors.map((d) => (
+                  <tr key={d.id} className="border-b border-[#2D3748]/40">
+                    <td className="px-4 py-3 text-[13px] font-bold text-white flex items-center gap-1.5">
+                      {d.role === "proprietaire" && (
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="#DAB65A" stroke="none"><path d="M2 20h20v2H2zm1-2l3-10 6 6 6-6 3 10z" /><circle cx="5" cy="6" r="2" /><circle cx="12" cy="3" r="2" /><circle cx="19" cy="6" r="2" /></svg>
+                      )}
+                      {d.first_name} {d.last_name}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                        d.role === "proprietaire"
+                          ? "bg-[#DAB65A]/15 text-[#DAB65A]"
+                          : "bg-[#6B7280]/15 text-[#6B7280]"
+                      }`}>
+                        {d.role === "proprietaire" ? "Propriétaire" : "Collaborateur"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-[12px] text-[#9CA3AF]">{d.email}</td>
+                    <td className="px-4 py-3 text-[12px] text-[#6b7280]">{formatMonth(d.added_at)}</td>
+                    <td className="px-4 py-3">
+                      {d.role === "collaborateur" && (
+                        <button type="button" onClick={() => handleRemove(d.id, d.role)} className="text-[11px] text-[#E63946] hover:text-[#D42B22] transition-colors font-bold">Retirer</button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
@@ -74,10 +234,22 @@ function AdminEcoleSection() {
           <div className="max-w-md space-y-4">
             <div>
               <label className="block text-[12px] font-bold tracking-[0.25em] uppercase text-[#6B7280] mb-1.5">Courriel du directeur</label>
-              <input type="email" placeholder="directeur@ecole.qc.ca" className="w-full bg-[#13151a] border border-[#2a2d36] rounded-lg px-4 py-2.5 text-[14px] text-[#e0e0e0] placeholder:text-[#4a4d56] focus:border-[#E63946] outline-none transition-colors" />
+              <input
+                type="email"
+                title="Courriel du directeur"
+                placeholder="directeur@ecole.qc.ca"
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
+                className="w-full bg-[#13151a] border border-[#2a2d36] rounded-lg px-4 py-2.5 text-[14px] text-[#e0e0e0] placeholder:text-[#4a4d56] focus:border-[#E63946] outline-none transition-colors"
+              />
             </div>
-            <button type="button" onClick={() => showToast("Invitation envoyée (POC)")} className="h-10 px-5 rounded-lg bg-[#E63946] text-white font-bold text-[12px] uppercase tracking-wider hover:bg-[#D42B22] transition-colors">
-              Envoyer l&apos;invitation
+            <button
+              type="button"
+              onClick={handleInvite}
+              disabled={inviting}
+              className="h-10 px-5 rounded-lg bg-[#E63946] text-white font-bold text-[12px] uppercase tracking-wider hover:bg-[#D42B22] transition-colors disabled:opacity-50"
+            >
+              {inviting ? "Envoi..." : "Envoyer l\u2019invitation"}
             </button>
             <p className="text-[11px] text-[#4a4d56]">Le directeur invité aura accès gratuit à toutes les fonctionnalités de gestion d&apos;école.</p>
           </div>
@@ -87,9 +259,55 @@ function AdminEcoleSection() {
         <div className="border-t border-[#2D3748]/40 pt-6">
           <h2 className="font-head text-lg font-black text-white uppercase tracking-tight mb-2">Transfert d&apos;administration</h2>
           <p className="text-[13px] text-[#9CA3AF] mb-4">Transfère le rôle de propriétaire à un autre directeur. Cette demande sera traitée par l&apos;administration Nexus.</p>
-          <button type="button" onClick={() => showToast("Demande de transfert envoyée (POC)")} className="h-10 px-5 rounded-lg border border-[#E63946]/30 text-[#E63946] font-bold text-[12px] uppercase tracking-wider hover:bg-[#E63946]/5 transition-colors">
-            Demander un transfert
-          </button>
+
+          {!showTransferModal ? (
+            <button
+              type="button"
+              onClick={() => setShowTransferModal(true)}
+              disabled={collaborators.length === 0}
+              className="h-10 px-5 rounded-lg border border-[#E63946]/30 text-[#E63946] font-bold text-[12px] uppercase tracking-wider hover:bg-[#E63946]/5 transition-colors disabled:opacity-40"
+            >
+              Demander un transfert
+            </button>
+          ) : (
+            <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] p-5 max-w-md space-y-4">
+              <div>
+                <label className="block text-[12px] font-bold tracking-[0.25em] uppercase text-[#6B7280] mb-1.5">Transférer à</label>
+                <select
+                  title="Sélectionner un collaborateur"
+                  value={transferTarget}
+                  onChange={(e) => setTransferTarget(e.target.value)}
+                  className="w-full bg-[#13151a] border border-[#2a2d36] rounded-lg px-4 py-2.5 text-[14px] text-[#e0e0e0] focus:border-[#E63946] outline-none transition-colors"
+                >
+                  <option value="">— Sélectionner —</option>
+                  {collaborators.map((c) => (
+                    <option key={c.user_id} value={c.user_id}>{c.first_name} {c.last_name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={handleTransfer}
+                  disabled={transferring || !transferTarget}
+                  className="h-10 px-5 rounded-lg bg-[#E63946] text-white font-bold text-[12px] uppercase tracking-wider hover:bg-[#D42B22] transition-colors disabled:opacity-50"
+                >
+                  {transferring ? "Envoi..." : "Confirmer le transfert"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setShowTransferModal(false); setTransferTarget(""); }}
+                  className="text-[12px] font-bold text-[#9CA3AF] hover:text-white transition-colors"
+                >
+                  Annuler
+                </button>
+              </div>
+            </div>
+          )}
+
+          {collaborators.length === 0 && !showTransferModal && (
+            <p className="text-[11px] text-[#4a4d56] mt-2">Aucun collaborateur disponible pour le transfert. Invite d&apos;abord un directeur.</p>
+          )}
         </div>
 
         {toast && (
@@ -102,75 +320,30 @@ function AdminEcoleSection() {
   );
 }
 
-/* ── Demo access toggle ───────────────────────────────────── */
-
-function DemoAccessToggle() {
-  const [current, setCurrent] = useState("free");
-
-  useEffect(() => {
-    try {
-      const user = JSON.parse(localStorage.getItem("nexus_user") || "{}");
-      if (user.subscription?.tier === "coach_pro") setCurrent("pro");
-      else if (user.is_school_admin) setCurrent("admin");
-      else setCurrent("free");
-    } catch { /* noop */ }
-  }, []);
-
-  const setAccess = (mode: string) => {
-    const raw = localStorage.getItem("nexus_user");
-    const user = raw ? JSON.parse(raw) : {};
-    if (mode === "free") {
-      user.subscription = { tier: "free", status: "active", billing_cycle: null, current_period_end: null, trial_days_remaining: null, cancel_at_period_end: false };
-      user.tier = "free";
-      user.is_school_admin = false;
-      user.is_also_coach = true;
-    } else if (mode === "pro") {
-      user.subscription = { tier: "coach_pro", status: "active", billing_cycle: "monthly", current_period_end: "2026-04-15", trial_days_remaining: null, cancel_at_period_end: false };
-      user.tier = "coach_pro";
-      user.is_school_admin = false;
-      user.is_also_coach = true;
-    } else {
-      user.subscription = { tier: "free", status: "active", billing_cycle: null, current_period_end: null, trial_days_remaining: null, cancel_at_period_end: false };
-      user.tier = "free";
-      user.is_school_admin = true;
-      user.is_also_coach = true;
-      user.school_admin_type = "owner";
-    }
-    localStorage.setItem("nexus_user", JSON.stringify(user));
-    window.location.reload();
-  };
-
-  return (
-    <div className="mt-8 pt-4 border-t border-[#2D3748]/20">
-      <p className="text-[10px] text-[#4a4d56]/60 mb-2">DÉMO : Changer d&apos;accès</p>
-      <div className="flex gap-2">
-        {[
-          { key: "free", label: "Coach Gratuit" },
-          { key: "pro", label: "Coach Pro" },
-          { key: "admin", label: "Admin École" },
-        ].map((t) => (
-          <button
-            key={t.key}
-            type="button"
-            onClick={() => setAccess(t.key)}
-            className={`px-3 py-1.5 rounded text-[10px] font-bold transition-colors ${
-              current === t.key ? "bg-[#E63946]/15 text-[#E63946]" : "text-[#4a4d56] hover:text-[#6b7280]"
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 /* ═══════════════════════════════════════════════════════════
    MAIN PAGE
 ═══════════════════════════════════════════════════════════ */
 
 export default function CoachSettingsPage() {
   const [section, setSection] = useState<SettingsSection>("profil");
+  const [isSchoolAdmin, setIsSchoolAdmin] = useState(false);
+
+  useEffect(() => {
+    async function checkAdmin() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data } = await supabase
+        .from("users")
+        .select("is_school_admin")
+        .eq("id", user.id)
+        .single();
+      console.log("CoachSettingsPage — isSchoolAdmin:", data?.is_school_admin);
+      if (data?.is_school_admin) setIsSchoolAdmin(true);
+    }
+    checkAdmin();
+  }, []);
 
   return (
     <div className="px-6 sm:px-10 py-8 max-w-[1280px] mx-auto space-y-6">
@@ -188,23 +361,19 @@ export default function CoachSettingsPage() {
       <div className="flex flex-col lg:flex-row gap-8">
         {/* Left nav */}
         <div className="lg:w-[240px] shrink-0">
-          <SettingsNav active={section} onChange={setSection} />
+          <SettingsNav active={section} onChange={setSection} isSchoolAdmin={isSchoolAdmin} />
         </div>
 
         {/* Content panel */}
         <div className="flex-1 min-w-0">
           <div className="bg-[#111317]/60 backdrop-blur-sm rounded-xl border border-[#1e2128] p-6 sm:p-8">
-            {section === "profil" && <ProfileSection data={MOCK_COACH_PROFILE} />}
-            {section === "ecole" && <SchoolSection data={MOCK_SCHOOL_INFO} />}
+            {section === "profil" && <ProfileSection />}
+            {section === "ecole" && <SchoolSection />}
             {section === "abonnement" && <SubscriptionSection portal="coach" />}
             {section === "admin_ecole" && <AdminEcoleSection />}
-            {section === "ambassadeur" && <AmbassadorDashboard isAmbassador={true} />}
-            {section === "notifications" && <NotificationsSection data={MOCK_NOTIFICATIONS} />}
-            {section === "compte" && <AccountSection data={MOCK_ACCOUNT} />}
+            {section === "notifications" && <NotificationsSection />}
+            {section === "compte" && <AccountSection />}
           </div>
-
-          {/* Demo toggle */}
-          <DemoAccessToggle />
         </div>
       </div>
     </div>

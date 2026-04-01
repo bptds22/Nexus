@@ -3,7 +3,7 @@
 import InviteForm from "@/components/director/InviteForm";
 import InvitationsList from "@/components/director/InvitationsList";
 import CegepGate from "@/components/subscription/CegepGate";
-import { mockInvitations, RSEQ_SPORTS } from "@/lib/mock";
+import { RSEQ_SPORTS } from "@/lib/mock";
 
 export default function InviterRecruteurWrapper() {
   return <CegepGate><InviterRecruteurPage /></CegepGate>;
@@ -26,7 +26,7 @@ function InviterRecruteurPage() {
         <p className="text-[12px] text-[#6B7280] leading-relaxed">Les directeurs invités seront ajoutés comme collaborateurs. Le directeur principal peut être changé via les paramètres ou en contactant l&apos;administration.</p>
       </div>
       <InviteForm portalType="cegep" sports={RSEQ_SPORTS} />
-      <InvitationsList invitations={mockInvitations} />
+      <InvitationsList />
     </div>
   );
 }

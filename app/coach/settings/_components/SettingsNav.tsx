@@ -4,11 +4,12 @@
    SettingsNav — Left sidebar navigation for settings sections
 ───────────────────────────────────────────────────────────────── */
 
-export type SettingsSection = "profil" | "ecole" | "abonnement" | "admin_ecole" | "ambassadeur" | "notifications" | "compte";
+export type SettingsSection = "profil" | "ecole" | "abonnement" | "admin_ecole" | "notifications" | "compte";
 
 interface Props {
   active: SettingsSection;
   onChange: (s: SettingsSection) => void;
+  isSchoolAdmin?: boolean;
 }
 
 const SECTIONS: { key: SettingsSection; label: string; icon: React.ReactNode }[] = [
@@ -51,15 +52,6 @@ const SECTIONS: { key: SettingsSection; label: string; icon: React.ReactNode }[]
     ),
   },
   {
-    key: "ambassadeur",
-    label: "Ambassadeur",
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
-      </svg>
-    ),
-  },
-  {
     key: "notifications",
     label: "Notifications",
     icon: (
@@ -81,10 +73,12 @@ const SECTIONS: { key: SettingsSection; label: string; icon: React.ReactNode }[]
   },
 ];
 
-export default function SettingsNav({ active, onChange }: Props) {
+export default function SettingsNav({ active, onChange, isSchoolAdmin }: Props) {
+  const visibleSections = isSchoolAdmin ? SECTIONS : SECTIONS.filter((s) => s.key !== "admin_ecole");
+
   return (
     <nav className="flex flex-row lg:flex-col gap-1 overflow-x-auto lg:overflow-x-visible pb-2 lg:pb-0">
-      {SECTIONS.map((s) => {
+      {visibleSections.map((s) => {
         const isActive = active === s.key;
         return (
           <button

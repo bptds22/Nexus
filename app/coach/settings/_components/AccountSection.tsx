@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import type { AccountInfo } from "../_data/mockSettingsData";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 
 /* ─────────────────────────────────────────────────────────────────
    AccountSection — Account info, password, 2FA, danger zone
@@ -24,14 +25,106 @@ function formatDateTime(iso: string): string {
   return `${formatDate(iso)} à ${d.getHours().toString().padStart(2, "0")}h${d.getMinutes().toString().padStart(2, "0")}`;
 }
 
-interface Props {
-  data: AccountInfo;
-}
+export default function AccountSection() {
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [createdAt, setCreatedAt] = useState("");
+  const [lastLogin, setLastLogin] = useState("");
+  const [loading, setLoading] = useState(true);
 
-export default function AccountSection({ data }: Props) {
   const [showPasswordForm, setShowPasswordForm] = useState(false);
-  const [twoFactor, setTwoFactor] = useState(data.twoFactorEnabled ?? false);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordSaving, setPasswordSaving] = useState(false);
+  const [passwordMsg, setPasswordMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  const [twoFactor, setTwoFactor] = useState(false);
+
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteInput, setDeleteInput] = useState("");
+  const [deleteReason, setDeleteReason] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function loadData() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      console.log("AccountSection — auth user:", user);
+      if (!user) { setLoading(false); return; }
+
+      setEmail(user.email || "");
+      setCreatedAt(user.created_at || "");
+      setLastLogin(user.last_sign_in_at || "");
+      setLoading(false);
+    }
+    loadData();
+  }, []);
+
+  async function handlePasswordChange() {
+    if (newPassword.length < 8) {
+      setPasswordMsg({ type: "error", text: "Le mot de passe doit contenir au moins 8 caractères." });
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordMsg({ type: "error", text: "Les mots de passe ne correspondent pas." });
+      return;
+    }
+    setPasswordSaving(true);
+    setPasswordMsg(null);
+    const supabase = createClient();
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    console.log("AccountSection — password update:", error);
+
+    if (error) {
+      setPasswordSaving(false);
+      setPasswordMsg({ type: "error", text: "Erreur lors de la mise à jour du mot de passe." });
+      return;
+    }
+    setPasswordSaving(false);
+    setPasswordMsg({ type: "success", text: "Mot de passe mis à jour." });
+    setNewPassword("");
+    setConfirmPassword("");
+    setTimeout(() => { setPasswordMsg(null); setShowPasswordForm(false); }, 2500);
+  }
+
+  async function handleDeleteAccount() {
+    if (deleteInput !== "SUPPRIMER") {
+      setDeleteError("Tape SUPPRIMER pour confirmer.");
+      return;
+    }
+    setDeleting(true);
+    setDeleteError(null);
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setDeleting(false); setDeleteError("Non authentifié"); return; }
+
+    const { error: insertErr } = await supabase
+      .from("deletion_requests")
+      .insert({
+        user_id: user.id,
+        reason: deleteReason || null,
+        status: "pending",
+      });
+    console.log("AccountSection — deletion request:", insertErr);
+
+    if (insertErr) {
+      setDeleting(false);
+      setDeleteError("Erreur lors de la demande de suppression.");
+      return;
+    }
+
+    await supabase.auth.signOut();
+    router.push("/");
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="w-8 h-8 border-2 border-[#E63946] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 max-w-2xl">
@@ -46,15 +139,15 @@ export default function AccountSection({ data }: Props) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <p className={label}>Courriel</p>
-            <p className="text-[14px] text-[#e0e0e0]">{data.email}</p>
+            <p className="text-[14px] text-[#e0e0e0]">{email}</p>
           </div>
           <div>
             <p className={label}>Membre depuis</p>
-            <p className="text-[14px] text-[#e0e0e0]">{formatDate(data.createdAt)}</p>
+            <p className="text-[14px] text-[#e0e0e0]">{createdAt ? formatDate(createdAt) : "—"}</p>
           </div>
           <div>
             <p className={label}>Dernière connexion</p>
-            <p className="text-[14px] text-[#e0e0e0]">{formatDateTime(data.lastLogin)}</p>
+            <p className="text-[14px] text-[#e0e0e0]">{lastLogin ? formatDateTime(lastLogin) : "—"}</p>
           </div>
         </div>
       </div>
@@ -65,7 +158,7 @@ export default function AccountSection({ data }: Props) {
           <h3 className="text-[12px] font-bold tracking-[0.2em] uppercase text-[#9CA3AF]">Mot de passe</h3>
           <button
             type="button"
-            onClick={() => setShowPasswordForm(!showPasswordForm)}
+            onClick={() => { setShowPasswordForm(!showPasswordForm); setPasswordMsg(null); }}
             className="text-[12px] font-bold text-[#E63946] hover:text-[#D42B22] transition-colors"
           >
             {showPasswordForm ? "Annuler" : "Modifier"}
@@ -75,22 +168,39 @@ export default function AccountSection({ data }: Props) {
         {showPasswordForm && (
           <div className="space-y-4 pt-2">
             <div>
-              <p className={label}>Mot de passe actuel</p>
-              <input type="password" placeholder="••••••••" className={input} />
-            </div>
-            <div>
               <p className={label}>Nouveau mot de passe</p>
-              <input type="password" placeholder="Minimum 8 caractères" className={input} />
+              <input
+                type="password"
+                title="Nouveau mot de passe"
+                placeholder="Minimum 8 caractères"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className={input}
+              />
             </div>
             <div>
               <p className={label}>Confirmer le nouveau mot de passe</p>
-              <input type="password" placeholder="Confirmer" className={input} />
+              <input
+                type="password"
+                title="Confirmer le nouveau mot de passe"
+                placeholder="Confirmer"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className={input}
+              />
             </div>
+            {passwordMsg && (
+              <p className={`text-[13px] font-semibold ${passwordMsg.type === "success" ? "text-[#22C55E]" : "text-[#EF4444]"}`}>
+                {passwordMsg.text}
+              </p>
+            )}
             <button
               type="button"
-              className="bg-[#E63946] hover:bg-[#D42B22] text-white text-[14px] font-bold px-6 py-2.5 rounded-lg transition-colors"
+              onClick={handlePasswordChange}
+              disabled={passwordSaving}
+              className="bg-[#E63946] hover:bg-[#D42B22] text-white text-[14px] font-bold px-6 py-2.5 rounded-lg transition-colors disabled:opacity-50"
             >
-              Mettre à jour
+              {passwordSaving ? "Mise à jour..." : "Mettre à jour"}
             </button>
           </div>
         )}
@@ -111,6 +221,7 @@ export default function AccountSection({ data }: Props) {
           </div>
           <button
             type="button"
+            title="Activer ou désactiver l'authentification à deux facteurs"
             onClick={() => setTwoFactor(!twoFactor)}
             className={`relative w-12 h-[26px] rounded-full transition-colors ${
               twoFactor ? "bg-[#22C55E]" : "bg-[#2D3748]"
@@ -148,18 +259,44 @@ export default function AccountSection({ data }: Props) {
         {showDeleteConfirm && (
           <div className="bg-red-950/30 border border-red-900/50 rounded-lg p-4 space-y-3">
             <p className="text-[14px] text-[#e0e0e0]">
-              Es-tu sûr de vouloir supprimer ton compte? Cette action ne peut pas être annulée.
+              Es-tu sûr de vouloir supprimer ton compte? Tape <span className="font-black text-[#E63946]">SUPPRIMER</span> pour confirmer.
             </p>
+            <div>
+              <p className={label}>Raison (optionnel)</p>
+              <input
+                type="text"
+                title="Raison de suppression"
+                placeholder="Pourquoi souhaites-tu supprimer ton compte?"
+                value={deleteReason}
+                onChange={(e) => setDeleteReason(e.target.value)}
+                className={input}
+              />
+            </div>
+            <div>
+              <input
+                type="text"
+                title="Confirmation de suppression"
+                placeholder="Tape SUPPRIMER"
+                value={deleteInput}
+                onChange={(e) => { setDeleteInput(e.target.value); setDeleteError(null); }}
+                className={input}
+              />
+            </div>
+            {deleteError && (
+              <p className="text-[13px] font-semibold text-[#EF4444]">{deleteError}</p>
+            )}
             <div className="flex items-center gap-3">
               <button
                 type="button"
-                className="bg-[#E63946] hover:bg-[#D42B22] text-white text-[12px] font-bold px-5 py-2 rounded-lg transition-colors"
+                onClick={handleDeleteAccount}
+                disabled={deleting}
+                className="bg-[#E63946] hover:bg-[#D42B22] text-white text-[12px] font-bold px-5 py-2 rounded-lg transition-colors disabled:opacity-50"
               >
-                Oui, supprimer
+                {deleting ? "Suppression..." : "Oui, supprimer"}
               </button>
               <button
                 type="button"
-                onClick={() => setShowDeleteConfirm(false)}
+                onClick={() => { setShowDeleteConfirm(false); setDeleteInput(""); setDeleteError(null); }}
                 className="text-[12px] font-bold text-[#9CA3AF] hover:text-white transition-colors"
               >
                 Annuler

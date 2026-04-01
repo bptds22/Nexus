@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import Link from "next/link";
-import { COACH_SUGGESTIONS } from "./_data/mockSuggestions";
+import { createClient } from "@/lib/supabase/client";
+import { mapDbStatus } from "./_data/mockSuggestions";
 import type { CoachSuggestion } from "./_data/mockSuggestions";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -85,18 +86,13 @@ function SuggestionCard({
 
       {/* Comparison: current → proposed */}
       <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr] gap-3 sm:gap-4 items-center mb-4">
-        {/* Current value */}
         <div className="bg-[#111317] rounded-lg p-4">
           <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mb-1.5">Valeur actuelle</p>
           <p className="text-[16px] font-bold text-white">{s.current_value || <span className="text-[#4a4d56] italic">Aucune</span>}</p>
         </div>
-
-        {/* Arrow */}
         <div className="hidden sm:flex items-center justify-center">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4a4d56" strokeWidth="2" strokeLinecap="round"><path d="M5 12h14" /><path d="M12 5l7 7-7 7" /></svg>
         </div>
-
-        {/* Proposed value */}
         <div className="rounded-lg p-4 border" style={{ backgroundColor: "rgba(234,179,8,0.05)", borderColor: "rgba(234,179,8,0.20)" }}>
           <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#EAB308] mb-1.5">Valeur proposée</p>
           <p className="text-[16px] font-bold text-[#EAB308]">{s.proposed_value}</p>
@@ -178,12 +174,57 @@ function SuggestionCard({
 ═══════════════════════════════════════════════════════════════ */
 
 export default function CoachSuggestionsPage() {
-  const [suggestions, setSuggestions] = useState(COACH_SUGGESTIONS);
+  const [suggestions, setSuggestions] = useState<CoachSuggestion[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterKey>("pending");
   const [athleteFilter, setAthleteFilter] = useState("");
   const [toast, setToast] = useState<string | null>(null);
 
   const showToast = useCallback((msg: string) => { setToast(msg); setTimeout(() => setToast(null), 3000); }, []);
+
+  useEffect(() => {
+    const supabase = createClient();
+    async function load() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setLoading(false); return; }
+      setUserId(user.id);
+
+      const { data, error } = await supabase
+        .from("profile_changes")
+        .select("*, athletes(first_name, last_name, sport_id, verified, sports!sport_id(nom))")
+        .eq("coach_id", user.id)
+        .order("created_at", { ascending: false });
+
+      console.log("Suggestions data:", data, "error:", error);
+
+      if (data) {
+        const mapped: CoachSuggestion[] = data.map((row: Record<string, unknown>) => {
+          const athleteRaw = row.athletes as Record<string, unknown> | null;
+          const sportRaw = athleteRaw?.sports;
+          const sport = Array.isArray(sportRaw) ? sportRaw[0] : sportRaw;
+          const sportObj = sport as { nom?: string } | null;
+
+          return {
+            id: row.id as string,
+            athlete_id: row.athlete_id as string,
+            athlete_name: athleteRaw ? `${(athleteRaw.first_name as string) || ""} ${(athleteRaw.last_name as string) || ""}`.trim() : "Athlète",
+            athlete_sport: sportObj?.nom || "",
+            athlete_verified: !!(athleteRaw?.verified),
+            field: (row.field_name as string) || "",
+            current_value: (row.old_value as string) || null,
+            proposed_value: (row.new_value as string) || "",
+            message: (row.message as string) || null,
+            status: mapDbStatus((row.status as string) || ""),
+            submitted_at: (row.created_at as string) || "",
+          };
+        });
+        setSuggestions(mapped);
+      }
+      setLoading(false);
+    }
+    load();
+  }, []);
 
   const pendingCount = suggestions.filter((s) => s.status === "pending").length;
   const approvedCount = suggestions.filter((s) => s.status === "approved").length;
@@ -202,20 +243,50 @@ export default function CoachSuggestionsPage() {
     return list;
   }, [suggestions, filter, athleteFilter]);
 
-  const handleApprove = useCallback((id: string) => {
-    setSuggestions((prev) => prev.map((s) => s.id === id ? { ...s, status: "approved" as const, reviewed_at: new Date().toISOString() } : s));
-    showToast("Suggestion approuvée (POC)");
+  const handleApprove = useCallback(async (id: string) => {
+    const supabase = createClient();
+    const { error } = await supabase.from("profile_changes").update({ status: "ACKNOWLEDGED" }).eq("id", id);
+    console.log("Approve result:", error);
+    if (!error) {
+      setSuggestions((prev) => prev.map((s) => s.id === id ? { ...s, status: "approved" as const, reviewed_at: new Date().toISOString() } : s));
+      showToast("Suggestion approuvée");
+    }
   }, [showToast]);
 
-  const handleReject = useCallback((id: string, reason: string) => {
-    setSuggestions((prev) => prev.map((s) => s.id === id ? { ...s, status: "rejected" as const, reviewed_at: new Date().toISOString(), rejection_reason: reason } : s));
-    showToast("Suggestion rejetée (POC)");
-  }, [showToast]);
+  const handleReject = useCallback(async (id: string, reason: string) => {
+    const supabase = createClient();
+    // Find the suggestion to get old_value and field_name
+    const suggestion = suggestions.find((s) => s.id === id);
+    if (suggestion && suggestion.current_value) {
+      // Revert the athlete field to old value
+      const { error: revertError } = await supabase
+        .from("athletes")
+        .update({ [suggestion.field]: suggestion.current_value })
+        .eq("id", suggestion.athlete_id);
+      console.log("Revert athlete field:", suggestion.field, "→", suggestion.current_value, "error:", revertError);
+    }
+    const { error } = await supabase.from("profile_changes").update({ status: "REVERTED" }).eq("id", id);
+    console.log("Reject result:", error);
+    if (!error) {
+      setSuggestions((prev) => prev.map((s) => s.id === id ? { ...s, status: "rejected" as const, reviewed_at: new Date().toISOString(), rejection_reason: reason } : s));
+      showToast("Suggestion rejetée");
+    }
+  }, [showToast, suggestions]);
 
-  const handleApproveAll = useCallback(() => {
-    setSuggestions((prev) => prev.map((s) => s.status === "pending" ? { ...s, status: "approved" as const, reviewed_at: new Date().toISOString() } : s));
-    showToast(`${pendingCount} suggestions approuvées (POC)`);
-  }, [pendingCount, showToast]);
+  const handleApproveAll = useCallback(async () => {
+    if (!userId) return;
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("profile_changes")
+      .update({ status: "ACKNOWLEDGED" })
+      .eq("coach_id", userId)
+      .eq("status", "PENDING");
+    console.log("Approve all result:", error);
+    if (!error) {
+      setSuggestions((prev) => prev.map((s) => s.status === "pending" ? { ...s, status: "approved" as const, reviewed_at: new Date().toISOString() } : s));
+      showToast(`${pendingCount} suggestions approuvées`);
+    }
+  }, [userId, pendingCount, showToast]);
 
   const TABS: { key: FilterKey; label: string; count: number; color: string }[] = [
     { key: "pending", label: "En attente", count: pendingCount, color: "#EAB308" },
@@ -223,6 +294,14 @@ export default function CoachSuggestionsPage() {
     { key: "rejected", label: "Rejetées", count: rejectedCount, color: "#E63946" },
     { key: "all", label: "Toutes", count: suggestions.length, color: "#9CA3AF" },
   ];
+
+  if (loading) {
+    return (
+      <div className="px-6 sm:px-10 py-8 max-w-[1000px] mx-auto flex items-center justify-center">
+        <p className="text-[#6B7280] text-sm py-20">Chargement des suggestions...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="px-6 sm:px-10 py-8 max-w-[1000px] mx-auto space-y-5">
