@@ -77,6 +77,8 @@ export default function SportPositionSelect({
           disabled={disabled}
           className={`${inputCls} ${disabled ? "opacity-50 cursor-not-allowed" : ""} ${hasError ? "!border-[#E63946]/60" : ""}`}
         />
+      ) : positions.length === 0 && !noSport ? (
+        <p className="text-[12px] text-[#6b7280] py-2.5">Aucune position pour ce sport</p>
       ) : (
         <NxSelect
           value={value}

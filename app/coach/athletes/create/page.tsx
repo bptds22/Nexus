@@ -313,7 +313,7 @@ export default function CreateAthletePage() {
       case 4: {
         const s = form.sports;
         // Simplified: sport, position, jersey
-        const base = !!(s.primarySport && s.primaryPosition && s.jerseyNumber);
+        const base = !!(s.primarySport && s.jerseyNumber);
         if (s.sportsMode === "detailed") return base && !!(s.selectedTeamId || s.currentTeam);
         return base;
       }
@@ -383,7 +383,7 @@ export default function CreateAthletePage() {
     const { data: positionData } = await supabase
       .from("positions")
       .select("id")
-      .eq("nom", form.sports.primaryPosition)
+      .eq("abreviation", form.sports.primaryPosition)
       .maybeSingle();
 
     // Build athlete record
@@ -398,14 +398,28 @@ export default function CreateAthletePage() {
       genre: form.identity.gender || null,
       photo_url: form.identity.photo || null,
       email: form.identity.email || null,
+      telephone: form.identity.phone || null,
+      nom_parent: form.identity.parentName || null,
+      telephone_parent: form.identity.parentPhone || null,
       annee_diplomation: form.identity.gradYear ? parseInt(form.identity.gradYear) : null,
       consentement_parental: form.parentalConsent,
       consentement_parental_date: form.parentalConsent ? new Date().toISOString() : null,
 
       // Academic
-      moyenne_generale: form.academic.gpa ? parseFloat(form.academic.gpa) : null,
+      moyenne_generale: (() => {
+        const val = form.academic.gpa ? parseFloat(form.academic.gpa) : null;
+        if (val !== null && (val < 0 || val > 100)) return null;
+        return val;
+      })(),
       matieres_fortes: form.academic.strongSubjects || [],
       mentions_academiques: form.academic.academicHonors || [],
+      programme_cegep_vise: (() => {
+        const type = form.academic.cegepType;
+        if (type === "dec_general") return ["DEC général"];
+        if (type === "technique" && form.academic.cegepProgramDetail) return ["Technique — " + form.academic.cegepProgramDetail];
+        if (type === "technique") return ["Programme technique"];
+        return [];
+      })(),
       ouvert_cegep_prive: form.academic.openToPrivate,
       ouvert_cegep_anglophone: form.academic.openToAnglophone,
       pret_changer_region: form.academic.openToRelocate,
@@ -416,13 +430,21 @@ export default function CreateAthletePage() {
       taille_pouces: form.physical.heightInches ? parseInt(form.physical.heightInches) : null,
       poids_lbs: form.physical.weightLbs ? parseFloat(form.physical.weightLbs) : null,
       main_dominante: form.physical.dominantHand || null,
+      pied_dominant: form.physical.dominantFoot || null,
+      envergure: form.physical.wingspan || null,
+      taille_mains: form.physical.handSize || null,
       test_40_verges: form.physical.fortyYard || null,
       saut_vertical: form.physical.verticalJump || null,
+      saut_longueur: form.physical.broadJump || null,
       sprint_100m: form.physical.sprint100m || null,
+      developpe_couche: form.physical.benchPress || null,
+      navette_agilite: form.physical.shuttleAgility || null,
 
       // Sports
       sport_id: sportData?.id || null,
       position_id: positionData?.id || null,
+      sport_secondaire_id: null,
+      position_secondaire_id: null,
       numero_jersey: form.sports.jerseyNumber || null,
       ouvert_entraineur_cegep: form.sports.openToCoaching,
 
@@ -432,9 +454,11 @@ export default function CreateAthletePage() {
       youtube_url: form.media.youtubeLink || null,
       instagram_url: form.media.instagramLink || null,
       video_match_complet_url: form.media.fullGameVideo || null,
+      video_entrainement_url: form.media.trainingVideo || null,
 
       // Evaluation
       cote_globale_entraineur: form.scouting.starRating || null,
+      notes_coach: form.scouting.coachEndorsement || null,
 
       // Status
       status: "ACTIF",
@@ -454,23 +478,38 @@ export default function CreateAthletePage() {
       return;
     }
 
-    // Save detailed evaluation if in detailed mode
-    if (form.scouting.evalMode === "detailed" && Object.keys(form.scouting.traitRatings).length > 0) {
-      const ratings = form.scouting.traitRatings;
-      await supabase.from("evaluations").insert({
+    // Always save evaluation record — both simple and detailed modes
+    if (newAthlete?.id) {
+      const ratings = form.scouting.traitRatings || {};
+      const hasDetailedRatings = form.scouting.evalMode === "detailed" && Object.keys(ratings).length > 0;
+
+      const evalRecord: Record<string, unknown> = {
         coach_id: authUser.id,
         athlete_id: newAthlete.id,
-        leadership: ratings.leadership || null,
-        discipline: ratings.discipline || null,
-        coachabilite: ratings.coachability || null,
-        intelligence_jeu: ratings.game_iq || null,
-        competitivite: ratings.competitiveness || null,
-        esprit_equipe: ratings.teamwork || null,
-        resilience: ratings.resilience || null,
-        attitude_mentalite: ratings.attitude || null,
+        cote_globale: form.scouting.starRating || null,
         distinctions: (form.scouting.badges || []).map((b) => b?.badgeId).filter((k): k is string => !!k),
         rapport_entraineur: form.scouting.coachEndorsement || null,
-      });
+      };
+
+      if (hasDetailedRatings) {
+        Object.assign(evalRecord, {
+          leadership: ratings.leadership || null,
+          discipline: ratings.discipline || ratings.ethique_travail || null,
+          coachabilite: ratings.coachabilite || ratings.coachability || null,
+          intelligence_jeu: ratings.intelligence_jeu || ratings.vision_jeu || ratings.game_iq || null,
+          competitivite: ratings.competitivite || ratings.competitiveness || null,
+          esprit_equipe: ratings.esprit_equipe || ratings.teamwork || null,
+          resilience: ratings.resilience || ratings.competitivite_resilience || null,
+          attitude_mentalite: ratings.attitude_mentalite || ratings.attitude || null,
+        });
+      }
+
+      const { error: evalError } = await supabase.from("evaluations").insert(evalRecord);
+      if (evalError) {
+        console.error("Evaluation insert error:", JSON.stringify(evalError));
+      } else {
+        console.log("Evaluation saved for athlete:", newAthlete.id);
+      }
     }
 
     setCompletedSteps((prev) => new Set([...prev, 7]));

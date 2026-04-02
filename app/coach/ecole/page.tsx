@@ -1,20 +1,13 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
 import SchoolGate from "@/components/subscription/SchoolGate";
 import KpiCard from "@/components/director/KpiCard";
 import KpiCardRow from "@/components/director/KpiCardRow";
 import FunnelChart from "@/components/director/FunnelChart";
-import {
-  mockHSDashboardStats,
-  mockViewsBySport,
-  mockViewsTrend,
-  mockFunnelData,
-  mockCoachOverviews,
-  mockDirectorActivitiesHS,
-} from "@/lib/mock";
-import type { DirectorActivity } from "@/lib/types/models";
+import type { CoachOverview } from "@/lib/types/models";
 import {
   BarChart,
   Bar,
@@ -28,158 +21,9 @@ import {
 
 /* ─── Helpers ──────────────────────────────────────────────── */
 
-function relativeTime(isoDate: string): string {
-  const now = new Date();
-  const date = new Date(isoDate);
-  const diffMs = now.getTime() - date.getTime();
-  const diffMin = Math.floor(diffMs / 60_000);
-  const diffH = Math.floor(diffMs / 3_600_000);
-  const diffD = Math.floor(diffMs / 86_400_000);
-
-  if (diffMin < 1) return "A l'instant";
-  if (diffMin < 60) return `Il y a ${diffMin} min`;
-  if (diffH < 24) return `Il y a ${diffH}h`;
-  if (diffD === 1) return "Hier";
-  if (diffD < 7) return `Il y a ${diffD} jours`;
-  if (diffD < 30) return `Il y a ${Math.floor(diffD / 7)} sem.`;
-  return `Il y a ${Math.floor(diffD / 30)} mois`;
-}
-
 function completionColor(pct: number): string {
   if (pct >= 60) return "#3B82F6";
   return "#6B7280";
-}
-
-function activityIcon(type: DirectorActivity["type"]): React.ReactNode {
-  const base = "w-8 h-8 rounded-full flex items-center justify-center shrink-0";
-  switch (type) {
-    case "coach_added_athlete":
-      return (
-        <span className={`${base} bg-[rgba(59,130,246,0.15)]`}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="8.5" cy="7" r="4" /><line x1="20" y1="8" x2="20" y2="14" /><line x1="23" y1="11" x2="17" y2="11" />
-          </svg>
-        </span>
-      );
-    case "athlete_viewed":
-      return (
-        <span className={`${base} bg-[rgba(255,255,255,0.08)]`}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" />
-          </svg>
-        </span>
-      );
-    case "letter_of_intent":
-      return (
-        <span className={`${base} bg-[rgba(230,57,70,0.15)]`}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" /><line x1="4" y1="22" x2="4" y2="15" />
-          </svg>
-        </span>
-      );
-    case "coach_inactive":
-      return (
-        <span className={`${base} bg-[rgba(245,158,11,0.15)]`}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
-          </svg>
-        </span>
-      );
-    case "profile_verified":
-      return (
-        <span className={`${base} bg-[rgba(34,197,94,0.15)]`}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M20 6L9 17l-5-5" />
-          </svg>
-        </span>
-      );
-    case "coach_joined":
-      return (
-        <span className={`${base} bg-[rgba(59,130,246,0.15)]`}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" />
-          </svg>
-        </span>
-      );
-    default:
-      return (
-        <span className={`${base} bg-[rgba(255,255,255,0.08)]`}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 01-3.46 0" />
-          </svg>
-        </span>
-      );
-  }
-}
-
-function activityHref(a: DirectorActivity): string {
-  return a.ctaRoute || "/coach/ecole/activites";
-}
-
-function AthleteLink({ id, name }: { id?: string; name?: string }) {
-  if (!name) return null;
-  if (!id) return <span className="text-white font-medium">{name}</span>;
-  return (
-    <Link
-      href={`/coach/ecole/athletes/${id}`}
-      className="text-white font-medium hover:text-[#E63946] transition-colors underline decoration-transparent hover:decoration-[#E63946]"
-      onClick={(e) => e.stopPropagation()}
-    >
-      {name}
-    </Link>
-  );
-}
-
-function activityText(a: DirectorActivity): React.ReactNode {
-  switch (a.type) {
-    case "coach_added_athlete":
-      return (
-        <>
-          <span className="text-white font-medium">{a.coachName}</span>{" "}
-          a ajout&eacute; <AthleteLink id={a.athleteId} name={a.athleteName} />{" "}
-          ({a.sportName})
-        </>
-      );
-    case "athlete_viewed":
-      return (
-        <>
-          Le profil de <AthleteLink id={a.athleteId} name={a.athleteName} />{" "}
-          a &eacute;t&eacute; consult&eacute; par{" "}
-          <span className="text-white font-medium">{a.cegepName}</span>
-        </>
-      );
-    case "letter_of_intent":
-      return (
-        <>
-          <AthleteLink id={a.athleteId} name={a.athleteName} />{" "}
-          a &eacute;t&eacute; recrut&eacute; par{" "}
-          <span className="text-white font-medium">{a.cegepName}</span> !
-        </>
-      );
-    case "coach_inactive":
-      return (
-        <>
-          <span className="text-white font-medium">{a.coachName}</span>{" "}
-          ne s&apos;est pas connect&eacute; depuis {a.daysInactive} jours
-        </>
-      );
-    case "profile_verified":
-      return (
-        <>
-          <AthleteLink id={a.athleteId} name={a.athleteName} />{" "}
-          est maintenant un profil v&eacute;rifi&eacute;
-        </>
-      );
-    case "coach_joined":
-      return (
-        <>
-          <span className="text-white font-medium">{a.coachName}</span>{" "}
-          a rejoint la plateforme
-        </>
-      );
-    default:
-      return <span>{a.type}</span>;
-  }
 }
 
 /* ─── Custom Recharts Tooltip ──────────────────────────────── */
@@ -211,15 +55,196 @@ export default function SchoolDashboardPage() {
 }
 
 function SchoolDashboardContent() {
-  const stats = mockHSDashboardStats;
+  const [loading, setLoading] = useState(true);
+  const [schoolName, setSchoolName] = useState("");
+  const [stats, setStats] = useState({
+    totalAthletes: 0,
+    avgProfileCompletion: 0,
+    recruiterViews30d: 0,
+    placementsSeason: 0,
+    athletesTrend: 0,
+    completionTrend: 0,
+    viewsTrend: 0,
+  });
+  const [viewsBySport, setViewsBySport] = useState<{ sport: string; views: number }[]>([]);
+  const [viewsTrendData, setViewsTrendData] = useState<{ month: string; views: number }[]>([]);
+  const [funnelData, setFunnelData] = useState<{ stage: string; value: number; color: string }[]>([]);
+  const [rankedCoaches, setRankedCoaches] = useState<CoachOverview[]>([]);
 
-  /* Coach ranking: top 5 by recruiterViews30d */
-  const rankedCoaches = [...mockCoachOverviews]
-    .sort((a, b) => b.recruiterViews30d - a.recruiterViews30d)
-    .slice(0, 5);
+  useEffect(() => {
+    async function loadDashboard() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setLoading(false); return; }
 
-  /* Recent activity: first 5 */
-  const recentActivities = mockDirectorActivitiesHS.slice(0, 5);
+      // Get my school from school_coaches
+      const { data: mySchool } = await supabase
+        .from("school_coaches")
+        .select("school_id")
+        .eq("coach_id", user.id)
+        .limit(1)
+        .single();
+      console.log("École dashboard — my school:", mySchool);
+
+      if (!mySchool) { setLoading(false); return; }
+
+      // Get school name — try from users.school_id → schools
+      const { data: userRow } = await supabase
+        .from("users")
+        .select("school_id")
+        .eq("id", user.id)
+        .single();
+      if (userRow?.school_id) {
+        const { data: school } = await supabase
+          .from("schools")
+          .select("name")
+          .eq("id", userRow.school_id)
+          .single();
+        if (school) setSchoolName(school.name);
+      }
+
+      // Get all coaches at my school
+      const { data: schoolCoaches } = await supabase
+        .from("school_coaches")
+        .select("coach_id, role, sport")
+        .eq("school_id", mySchool.school_id);
+      const coachIds = schoolCoaches?.map(sc => sc.coach_id) || [];
+
+      // Get all athletes for these coaches
+      const { data: athletes } = await supabase
+        .from("athletes")
+        .select("id, first_name, last_name, sport_id, coach_id, profile_completion")
+        .in("coach_id", coachIds);
+      console.log("École dashboard — athletes:", athletes?.length);
+      const athleteList = athletes || [];
+      const athleteIds = athleteList.map(a => a.id);
+
+      // KPI 1: Total athletes
+      const totalAthletes = athleteList.length;
+
+      // KPI 2: Avg profile completion
+      const avgCompletion = totalAthletes > 0
+        ? Math.round(athleteList.reduce((sum, a) => sum + ((a.profile_completion as number) || 0), 0) / totalAthletes)
+        : 0;
+
+      // KPI 4: Placements (LETTRE_SIGNEE)
+      let placementsCount = 0;
+      if (athleteIds.length > 0) {
+        const { count } = await supabase
+          .from("pipeline")
+          .select("id", { count: "exact", head: true })
+          .in("athlete_id", athleteIds)
+          .eq("status", "LETTRE_SIGNEE");
+        placementsCount = count || 0;
+      }
+      console.log("École dashboard — placements:", placementsCount);
+
+      setStats({
+        totalAthletes,
+        avgProfileCompletion: avgCompletion,
+        recruiterViews30d: 0,
+        placementsSeason: placementsCount,
+        athletesTrend: 0,
+        completionTrend: 0,
+        viewsTrend: 0,
+      });
+
+      // Views by sport — zero for now
+      const sportIds = [...new Set(athleteList.map(a => a.sport_id).filter(Boolean))];
+      if (sportIds.length > 0) {
+        const { data: sports } = await supabase
+          .from("sports")
+          .select("id, nom")
+          .in("id", sportIds);
+        if (sports) setViewsBySport(sports.map(s => ({ sport: s.nom, views: 0 })));
+      }
+
+      // Views trend — last 6 months with zeros
+      const MONTHS = ["Jan.", "Fév.", "Mars", "Avr.", "Mai", "Juin", "Juil.", "Août", "Sep.", "Oct.", "Nov.", "Déc."];
+      const now = new Date();
+      const trend = [];
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        trend.push({ month: MONTHS[d.getMonth()], views: 0 });
+      }
+      setViewsTrendData(trend);
+
+      // Funnel — count pipeline by status
+      if (athleteIds.length > 0) {
+        const { data: pipelineEntries } = await supabase
+          .from("pipeline")
+          .select("status")
+          .in("athlete_id", athleteIds);
+
+        const counts: Record<string, number> = {};
+        (pipelineEntries || []).forEach((p: { status: string }) => {
+          if (p.status !== "NONE" && p.status !== "RETIRE") {
+            counts[p.status] = (counts[p.status] || 0) + 1;
+          }
+        });
+        console.log("École dashboard — funnel:", counts);
+
+        setFunnelData([
+          { stage: "Identifiés", value: counts["IDENTIFIE"] || 0, color: "#3B82F6" },
+          { stage: "Contactés", value: counts["CONTACTE"] || 0, color: "#8B5CF6" },
+          { stage: "En discussion", value: counts["EN_DISCUSSION"] || 0, color: "#F59E0B" },
+          { stage: "Visite planifiée", value: counts["VISITE_PLANIFIEE"] || 0, color: "#F97316" },
+          { stage: "Engagés", value: counts["ENGAGE"] || 0, color: "#22C55E" },
+          { stage: "Lettre signée", value: counts["LETTRE_SIGNEE"] || 0, color: "#E63946" },
+        ]);
+      }
+
+      // Coach ranking
+      if (coachIds.length > 0) {
+        const { data: coachProfiles } = await supabase
+          .from("users")
+          .select("id, first_name, last_name, avatar_url")
+          .in("id", coachIds);
+
+        const coachOverviews: CoachOverview[] = (schoolCoaches || []).map(sc => {
+          const profile = coachProfiles?.find(u => u.id === sc.coach_id);
+          const coachAthletes = athleteList.filter(a => a.coach_id === sc.coach_id);
+          const completed = coachAthletes.filter(a => ((a.profile_completion as number) || 0) >= 60).length;
+          const total = coachAthletes.length;
+
+          return {
+            id: sc.coach_id,
+            firstName: profile?.first_name || "",
+            lastName: profile?.last_name || "",
+            avatarUrl: profile?.avatar_url || undefined,
+            sport: sc.sport || "",
+            athleteCount: total,
+            profilesCompleted: completed,
+            profileCompletionRate: total > 0 ? Math.round((completed / total) * 100) : 0,
+            recruiterViews30d: 0,
+            viewsTrend: 0,
+            messagesReceived: 0,
+            lastLoginAt: new Date().toISOString(),
+            status: "active" as const,
+            accountStatus: "ACTIF" as "ACTIF" | "DESACTIVE",
+            deactivatedAt: null,
+            deactivatedBy: null,
+            deactivationReason: null,
+          };
+        });
+
+        setRankedCoaches(
+          coachOverviews.sort((a, b) => b.athleteCount - a.athleteCount).slice(0, 5)
+        );
+      }
+
+      setLoading(false);
+    }
+    loadDashboard();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="w-8 h-8 border-2 border-[#E63946] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="px-6 sm:px-10 py-8 max-w-[1400px] mx-auto space-y-6">
@@ -235,9 +260,11 @@ function SchoolDashboardContent() {
         </div>
 
         <div className="flex items-center gap-3">
-          <span className="hidden sm:inline-flex items-center gap-2 bg-[#1A1D24] border border-[#2A2D35] rounded-full px-4 py-1.5 text-[13px] text-[#9CA3AF]">
-            &Eacute;cole sec. De Rochebelle
-          </span>
+          {schoolName && (
+            <span className="hidden sm:inline-flex items-center gap-2 bg-[#1A1D24] border border-[#2A2D35] rounded-full px-4 py-1.5 text-[13px] text-[#9CA3AF]">
+              {schoolName}
+            </span>
+          )}
           <button className="relative p-2 text-[#6B7280] hover:text-white transition-colors">
             <svg
               width={20}
@@ -252,17 +279,15 @@ function SchoolDashboardContent() {
               <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
               <path d="M13.73 21a2 2 0 0 1-3.46 0" />
             </svg>
-            <span className="absolute top-1 right-1 w-2 h-2 bg-[#E63946] rounded-full" />
           </button>
         </div>
       </div>
 
       {/* ── Section 1: KPI Cards ───────────────────────────── */}
       <KpiCardRow>
-        {/* 1 — Athletes inscrits */}
         <KpiCard
           label="Athl&egrave;tes inscrits"
-          value={stats.totalAthletes ?? 0}
+          value={stats.totalAthletes}
           href="/coach/ecole/athletes"
           icon={
             <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
@@ -277,32 +302,30 @@ function SchoolDashboardContent() {
           trendLabel="vs mois dernier"
         />
 
-        {/* 2 — Profils completes */}
         <KpiCard
           label="Profils compl&eacute;t&eacute;s"
-          value={`${stats.avgProfileCompletion ?? 0}%`}
+          value={`${stats.avgProfileCompletion}%`}
           href="/coach/ecole/athletes?statut=completes"
           icon={
-            <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={completionColor(stats.avgProfileCompletion ?? 0)} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+            <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={completionColor(stats.avgProfileCompletion)} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
               <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
               <polyline points="22 4 12 14.01 9 11.01" />
             </svg>
           }
           iconBgColor={
-            (stats.avgProfileCompletion ?? 0) >= 60
+            stats.avgProfileCompletion >= 60
               ? "rgba(37,99,235,0.15)"
               : "rgba(107,114,128,0.15)"
           }
           trend={stats.completionTrend}
           trendLabel="%"
           progressPercent={stats.avgProfileCompletion}
-          progressColor={completionColor(stats.avgProfileCompletion ?? 0)}
+          progressColor={completionColor(stats.avgProfileCompletion)}
         />
 
-        {/* 3 — Vues recruteurs */}
         <KpiCard
           label="Vues recruteurs (30j)"
-          value={stats.recruiterViews30d ?? 0}
+          value={stats.recruiterViews30d}
           href="/coach/ecole/athletes?statut=vus"
           icon={
             <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
@@ -314,10 +337,9 @@ function SchoolDashboardContent() {
           trend={stats.viewsTrend}
         />
 
-        {/* 4 — Placements saison */}
         <KpiCard
           label="Placements cette année"
-          value={stats.placementsSeason ?? 0}
+          value={stats.placementsSeason}
           href="/coach/ecole/placements"
           icon={
             <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
@@ -337,14 +359,13 @@ function SchoolDashboardContent() {
 
       {/* ── Section 2: Charts ──────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
-        {/* Left — Vues par sport */}
         <div className="bg-[#1A1D24] rounded-xl border border-[#1e2128] p-5 sm:p-6">
           <h3 className="font-head text-[15px] font-bold text-white mb-4">
             Vues par sport (30 derniers jours)
           </h3>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart
-              data={mockViewsBySport}
+              data={viewsBySport}
               layout="vertical"
               margin={{ top: 0, right: 12, left: 0, bottom: 0 }}
             >
@@ -363,14 +384,13 @@ function SchoolDashboardContent() {
           </ResponsiveContainer>
         </div>
 
-        {/* Right — Vues recruteurs trend */}
         <div className="bg-[#1A1D24] rounded-xl border border-[#1e2128] p-5 sm:p-6">
           <h3 className="font-head text-[15px] font-bold text-white mb-4">
             Vues recruteurs &mdash; 6 derniers mois
           </h3>
           <ResponsiveContainer width="100%" height={220}>
             <AreaChart
-              data={mockViewsTrend}
+              data={viewsTrendData}
               margin={{ top: 0, right: 12, left: 0, bottom: 0 }}
             >
               <defs>
@@ -404,7 +424,7 @@ function SchoolDashboardContent() {
       {/* ── Section 3: Funnel ──────────────────────────────── */}
       <FunnelChart
         title="Pipeline de recrutement &mdash; Saison 2025-2026"
-        data={mockFunnelData}
+        data={funnelData}
       />
 
       {/* ── Section 4: Coach ranking table ─────────────────── */}
@@ -414,7 +434,7 @@ function SchoolDashboardContent() {
             Performance des coachs
           </h3>
           <p className="text-[12px] text-[#6B7280] mt-0.5">
-            Class&eacute; par activit&eacute; de recrutement
+            Class&eacute; par nombre d&apos;athlètes
           </p>
         </div>
 
@@ -505,28 +525,9 @@ function SchoolDashboardContent() {
         </div>
 
         <div className="space-y-0">
-          {recentActivities.map((a) => (
-            <Link
-              key={a.id}
-              href={activityHref(a)}
-              className={`flex items-start gap-3 py-3 border-b border-[#2A2D35] last:border-0 cursor-pointer rounded-lg transition-colors duration-150 hover:bg-[rgba(255,255,255,0.04)] ${
-                !a.isRead ? "border-l-[3px] border-l-[#E63946] pl-3" : ""
-              } ${a.isHighlighted ? "bg-[rgba(230,57,70,0.06)] px-3 -mx-3 hover:bg-[rgba(230,57,70,0.10)]" : ""}`}
-            >
-              {activityIcon(a.type)}
-              <div className="flex-1 min-w-0">
-                <p className="text-[13px] text-[#9CA3AF] leading-snug">
-                  {activityText(a)}
-                </p>
-                <p className="text-[12px] text-[#6B7280] mt-0.5">
-                  {relativeTime(a.timestamp)}
-                </p>
-              </div>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4B5563" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <path d="M9 18l6-6-6-6" />
-              </svg>
-            </Link>
-          ))}
+          <div className="py-8 text-center text-[13px] text-[#6B7280]">
+            Aucune activité récente
+          </div>
         </div>
       </div>
     </div>

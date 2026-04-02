@@ -1,2 +1,3 @@
-SELECT column_name FROM information_schema.columns 
-WHERE table_name = 'users' AND (column_name ILIKE '%school%' OR column_name ILIKE '%cegep%');
+SELECT cote_globale, distinctions, rapport_entraineur 
+FROM evaluations 
+ORDER BY created_at DESC LIMIT 1;

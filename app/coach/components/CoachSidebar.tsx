@@ -4,36 +4,28 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import SidebarUpgradeCard from "@/components/subscription/SidebarUpgradeCard";
+import { createClient } from "@/lib/supabase/client";
 
 /* ─────────────────────────────────────────────────────────────────
    CoachSidebar — vertical nav for the coach portal.
-   Free section (top) + Pro "Gestion École" section + bottom nav.
-   Adapts for Admin École (invited director) vs Coach Pro vs Free.
+   Core section (always visible) + Gestion École (admin only) + bottom nav.
+   Data loaded from Supabase auth + users table.
 ───────────────────────────────────────────────────────────────── */
 
-type NavItem = { label: string; href: string; badge?: number; icon: React.ReactNode };
+type NavItem = { label: string; href: string; icon: React.ReactNode };
 
-const COACH_ITEMS: NavItem[] = [
+const CORE_ITEMS: NavItem[] = [
   {
     label: "Tableau de bord", href: "/coach/tableau-de-bord",
     icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /></svg>,
   },
   {
     label: "Mes athlètes", href: "/coach/athletes",
-    icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4-4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" /></svg>,
+    icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" /></svg>,
   },
   {
-    label: "Créer un profil", href: "/coach/athletes/create",
-    icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14" /><path d="M5 12h14" /></svg>,
-  },
-  {
-    label: "Demandes", href: "/coach/demandes",
+    label: "Messages", href: "/coach/demandes",
     icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" /></svg>,
-  },
-  {
-    label: "Suggestions", href: "/coach/suggestions", badge: 4,
-    icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>,
   },
 ];
 
@@ -66,10 +58,6 @@ const SCHOOL_ITEMS: NavItem[] = [
 
 const BOTTOM_ITEMS: NavItem[] = [
   {
-    label: "Activités", href: "/coach/activites", badge: 3,
-    icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 01-3.46 0" /></svg>,
-  },
-  {
     label: "Ma réputation", href: "/coach/reputation",
     icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>,
   },
@@ -79,13 +67,6 @@ const BOTTOM_ITEMS: NavItem[] = [
   },
 ];
 
-/* ── Lock icon (10px) ─────────────────────────────────────── */
-const LockIcon = () => (
-  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-    <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0110 0v4" />
-  </svg>
-);
-
 interface CoachSidebarProps {
   mobileOpen: boolean;
   onClose: () => void;
@@ -94,47 +75,67 @@ interface CoachSidebarProps {
 export default function CoachSidebar({ mobileOpen, onClose }: CoachSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const [userName, setUserName] = useState("Jean Dupont");
-  const [userSub, setUserSub] = useState("Coach \u2014 De Mortagne");
-  const [userInitials, setUserInitials] = useState("JD");
-  const [hasProAccess, setHasProAccess] = useState(false);
+  const [userName, setUserName] = useState("");
+  const [userSub, setUserSub] = useState("");
+  const [userInitials, setUserInitials] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
-  const [isAlsoCoach, setIsAlsoCoach] = useState(true);
   const [portalLabel, setPortalLabel] = useState("Portail coach");
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem("nexus_user");
-      if (raw) {
-        const u = JSON.parse(raw);
-        if (u.firstName && u.lastName) {
-          setUserName(`${u.firstName} ${u.lastName}`);
-          setUserInitials(`${u.firstName[0]}${u.lastName[0]}`);
-          const inst = u.institution?.name || "";
-          setUserSub(`Coach${inst ? ` \u2014 ${inst}` : ""}`);
+    async function loadUser() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profile } = await supabase
+        .from("users")
+        .select("first_name, last_name, is_school_admin, school_id")
+        .eq("id", user.id)
+        .single();
+
+      if (profile) {
+        const fn = profile.first_name || "";
+        const ln = profile.last_name || "";
+        setUserName(`${fn} ${ln}`.trim());
+        setUserInitials(`${fn[0] || ""}${ln[0] || ""}`.toUpperCase());
+        setIsAdmin(profile.is_school_admin || false);
+
+        if (profile.school_id) {
+          const { data: school } = await supabase
+            .from("schools")
+            .select("name")
+            .eq("id", profile.school_id)
+            .single();
+          if (school) {
+            setUserSub(`Coach — ${school.name}`);
+          }
         }
-        const pro = u.subscription?.tier === "coach_pro";
-        const admin = u.is_school_admin === true;
-        setHasProAccess(pro || admin);
-        setIsAdmin(admin);
-        setIsAlsoCoach(u.is_also_coach !== false);
-        if (admin && u.is_also_coach === false) {
-          setPortalLabel("Directeur sportif");
-          setUserSub(`Directeur${u.institution?.name ? ` \u2014 ${u.institution.name}` : ""}`);
+
+        const { data: coachEntry } = await supabase
+          .from("school_coaches")
+          .select("role, sport")
+          .eq("coach_id", user.id)
+          .single();
+        if (coachEntry) {
+          const ROLE_LABELS: Record<string, string> = {
+            COACH: "Coach",
+            DIRECTEUR: "Directeur sportif",
+            DIRECTEUR_INTERIM: "Directeur sportif intérimaire",
+          };
+          setPortalLabel(ROLE_LABELS[coachEntry.role] || "Coach");
         }
       }
-    } catch { /* use defaults */ }
+    }
+    loadUser();
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem("nexus_user");
+  const handleLogout = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
     router.push("/");
   };
 
-  // Director-only mode: hide coach-only items
-  const showCoachItems = isAlsoCoach || !isAdmin;
-
-  function renderNavItem(item: NavItem, locked = false) {
+  function renderNavItem(item: NavItem) {
     const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
     return (
       <Link
@@ -146,23 +147,14 @@ export default function CoachSidebar({ mobileOpen, onClose }: CoachSidebarProps)
           text-[13px] font-bold uppercase tracking-[0.12em] transition-all
           ${isActive
             ? "bg-[#E63946]/12 text-[#E63946]"
-            : locked
-              ? "text-[#8a8d96]/60 hover:text-[#8a8d96]/80 hover:bg-white/[0.02]"
-              : "text-[#8a8d96] hover:text-white hover:bg-white/5"
+            : "text-[#8a8d96] hover:text-white hover:bg-white/5"
           }
         `}
-        title={locked ? "Fonctionnalité Coach Pro" : undefined}
       >
-        <span className={isActive ? "text-[#E63946]" : locked ? "text-[#6b7280]/50" : "text-[#6b7280]"}>
+        <span className={isActive ? "text-[#E63946]" : "text-[#6b7280]"}>
           {item.icon}
         </span>
         <span className="flex-1">{item.label}</span>
-        {locked && <LockIcon />}
-        {!locked && item.badge !== undefined && item.badge > 0 && (
-          <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-[#E63946] text-white text-[10px] font-black">
-            {item.badge}
-          </span>
-        )}
       </Link>
     );
   }
@@ -182,25 +174,24 @@ export default function CoachSidebar({ mobileOpen, onClose }: CoachSidebarProps)
 
       {/* Nav links */}
       <nav className="flex-1 px-3 py-5 space-y-1 overflow-y-auto">
-        {/* ── Free section (coach items) ── */}
-        {showCoachItems && COACH_ITEMS.map((item) => renderNavItem(item))}
+        {/* ── Core section ── */}
+        {CORE_ITEMS.map((item) => renderNavItem(item))}
 
-        {/* ── Pro section separator ── */}
-        <div className="pt-3 pb-1 px-1">
-          <div className="flex items-center gap-2">
-            <div className="flex-1 border-t border-[#1e2128]" />
-            <span className="text-[9px] font-bold tracking-[0.25em] uppercase text-[#6B7280] shrink-0">
-              Gestion école
-            </span>
-            <span className="shrink-0 px-1.5 py-0.5 rounded-full bg-[#DAB65A]/15 text-[#DAB65A] text-[8px] font-black uppercase tracking-wider">
-              Pro
-            </span>
-            <div className="flex-1 border-t border-[#1e2128]" />
-          </div>
-        </div>
-
-        {/* ── Pro section (school items) ── */}
-        {SCHOOL_ITEMS.map((item) => renderNavItem(item, !hasProAccess))}
+        {/* ── Gestion École section (admin only) ── */}
+        {isAdmin && (
+          <>
+            <div className="pt-3 pb-1 px-1">
+              <div className="flex items-center gap-2">
+                <div className="flex-1 border-t border-[#1e2128]" />
+                <span className="text-[9px] font-bold tracking-[0.25em] uppercase text-[#6B7280] shrink-0">
+                  Gestion école
+                </span>
+                <div className="flex-1 border-t border-[#1e2128]" />
+              </div>
+            </div>
+            {SCHOOL_ITEMS.map((item) => renderNavItem(item))}
+          </>
+        )}
 
         {/* ── Bottom section separator ── */}
         <div className="pt-2" />
@@ -208,9 +199,6 @@ export default function CoachSidebar({ mobileOpen, onClose }: CoachSidebarProps)
         {/* ── Bottom items ── */}
         {BOTTOM_ITEMS.map((item) => renderNavItem(item))}
       </nav>
-
-      {/* Upgrade prompt (only for free tier) */}
-      {!hasProAccess && <SidebarUpgradeCard />}
 
       {/* Bottom — user card */}
       <div className="px-4 py-5 border-t border-[#1e2128]">
@@ -223,7 +211,7 @@ export default function CoachSidebar({ mobileOpen, onClose }: CoachSidebarProps)
             <p className="text-[11px] text-[#6b7280] truncate">{userSub}</p>
           </div>
         </div>
-        <button type="button" onClick={handleLogout} className="mt-3 text-[10px] font-bold uppercase tracking-[0.2em] text-[#6b7280] hover:text-[#E63946] transition-colors">
+        <button type="button" onClick={handleLogout} className="mt-3 text-[10px] font-bold uppercase tracking-[0.2em] text-[#6b7280] hover:text-[#E63946] transition-colors cursor-pointer">
           Déconnexion
         </button>
       </div>
