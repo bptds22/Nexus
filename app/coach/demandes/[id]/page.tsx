@@ -438,7 +438,7 @@ export default function ThreadDetailPage({ params }: { params: Promise<{ id: str
                 <span className="text-[11px] font-bold text-[#6b7280]">{a.firstName[0]}{a.lastName[0]}</span>
               </div>
               <div>
-                <Link href={`/coach/athletes/${a.id}/apercu`} className="text-[14px] font-bold text-white hover:text-[#E63946] transition-colors">
+                <Link href={`/coach/athletes/${a.id}`} className="text-[14px] font-bold text-white hover:text-[#E63946] transition-colors">
                   {a.firstName} {a.lastName}
                 </Link>
                 <div className="flex items-center gap-2 mt-0.5">
@@ -499,7 +499,7 @@ export default function ThreadDetailPage({ params }: { params: Promise<{ id: str
 
             {/* Action links */}
             <div className="flex items-center gap-3 pt-3 border-t border-[#2D3748]">
-              <Link href={`/coach/athletes/${a.id}/apercu`} className="text-[11px] font-bold text-[#E63946] hover:text-[#ff4d5a] transition-colors">
+              <Link href={`/coach/athletes/${a.id}`} className="text-[11px] font-bold text-[#E63946] hover:text-[#ff4d5a] transition-colors">
                 Voir le profil →
               </Link>
               <Link href={`/coach/athletes/${a.id}/modifier`} className="text-[11px] font-bold text-[#6b7280] hover:text-white transition-colors flex items-center gap-1">

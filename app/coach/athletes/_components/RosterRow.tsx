@@ -181,7 +181,7 @@ export default function RosterRow({ athlete: a, even, onVerify }: RosterRowProps
             </svg>
           </Link>
           <Link
-            href={`/coach/athletes/${a.id}/apercu`}
+            href={`/coach/athletes/${a.id}`}
             className="w-8 h-8 rounded-lg flex items-center justify-center text-[#6b7280] hover:text-white hover:bg-white/5 transition-colors"
             title="Aperçu recruteur"
           >

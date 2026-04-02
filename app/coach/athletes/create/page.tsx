@@ -384,6 +384,7 @@ export default function CreateAthletePage() {
       .from("positions")
       .select("id")
       .eq("abreviation", form.sports.primaryPosition)
+      .eq("sport_id", sportData?.id)
       .maybeSingle();
 
     // Build athlete record
@@ -629,25 +630,22 @@ export default function CreateAthletePage() {
                   <svg className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6b7280]" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0110 0v4" /></svg>
                 </div>
               </div>
-              <div className="opacity-45 pointer-events-none">
-                <label className={labelCls}>Téléphone <span className="ml-2 inline-block px-1.5 py-0.5 text-[8px] font-bold tracking-[0.15em] uppercase bg-[#2a2d36]/60 text-[#6b7280] rounded border border-[#2a2d36]">Bientôt disponible</span></label>
-                <input type="tel" disabled placeholder="(514) 000-0000" aria-label="Téléphone" className="w-full bg-[#13151a] border border-dashed border-[#2a2d36] rounded-lg px-4 py-3 text-[15px] text-[#6b7280] placeholder:text-[#3a3d46] outline-none cursor-not-allowed" />
+              <div>
+                <label className={labelCls}>Téléphone</label>
+                <input type="tel" value={form.identity.phone} onChange={(e) => updateIdentity("phone", e.target.value)} placeholder="(514) 000-0000" aria-label="Téléphone" className={inputCls} />
               </div>
             </div>
 
-            <div className="border-t border-dashed border-[#1e2128] mt-6 pt-5 opacity-45 pointer-events-none">
-              <div className="flex items-center gap-3 mb-4">
-                <p className={sectionTitle} style={{ marginBottom: 0 }}>Contact parent</p>
-                <span className="inline-block px-2 py-0.5 text-[8px] font-bold tracking-[0.15em] uppercase bg-[#2a2d36]/60 text-[#6b7280] rounded border border-[#2a2d36]">Bientôt disponible</span>
-              </div>
+            <div className="border-t border-[#1e2128] mt-6 pt-5">
+              <p className={sectionTitle}>Contact parent</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div>
                   <label className={labelCls}>Nom du parent</label>
-                  <input type="text" disabled placeholder="Nom complet" aria-label="Nom du parent" className="w-full bg-[#13151a] border border-dashed border-[#2a2d36] rounded-lg px-4 py-3 text-[15px] text-[#6b7280] placeholder:text-[#3a3d46] outline-none cursor-not-allowed" />
+                  <input type="text" value={form.identity.parentName} onChange={(e) => updateIdentity("parentName", e.target.value)} placeholder="Nom complet" aria-label="Nom du parent" className={inputCls} />
                 </div>
                 <div>
                   <label className={labelCls}>Téléphone du parent</label>
-                  <input type="tel" disabled placeholder="(514) 000-0000" aria-label="Téléphone du parent" className="w-full bg-[#13151a] border border-dashed border-[#2a2d36] rounded-lg px-4 py-3 text-[15px] text-[#6b7280] placeholder:text-[#3a3d46] outline-none cursor-not-allowed" />
+                  <input type="tel" value={form.identity.parentPhone} onChange={(e) => updateIdentity("parentPhone", e.target.value)} placeholder="(514) 000-0000" aria-label="Téléphone du parent" className={inputCls} />
                 </div>
               </div>
             </div>

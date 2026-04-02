@@ -65,7 +65,7 @@ export default function RosterMobileCard({ athlete: a }: { athlete: RosterAthlet
               <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
             </svg>
           </Link>
-          <Link href={`/coach/athletes/${a.id}/apercu`}
+          <Link href={`/coach/athletes/${a.id}`}
             className="w-8 h-8 rounded-lg flex items-center justify-center text-[#6b7280] hover:text-white hover:bg-white/5 transition-colors"
             title="Aperçu">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

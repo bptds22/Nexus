@@ -8,6 +8,7 @@ import type { AthleteProfileRecruiterView, AthleteTraitRatings } from "@/lib/typ
 import { SPORT_NAME_MAP } from "@/lib/config/sportBadges";
 import NxIcon from "@/components/ui/NxIcon";
 import StarRating from "@/components/ui/StarRating";
+import { createClient } from "@/lib/supabase/client";
 
 /* ═══════════════════════════════════════════════════════════════
    Coach Athlete Profile — Same design as recruiter view
@@ -62,12 +63,20 @@ function CompletenessBar({ percent }: { percent: number }) {
   );
 }
 
-function VerifiedBadge({ isVerified }: { isVerified: boolean }) {
+function VerifiedBadge({ isVerified, onClick }: { isVerified: boolean; onClick?: () => void }) {
   return (
-    <span className={pillBase} style={{ backgroundColor: "rgba(255,255,255,0.10)", borderColor: "rgba(255,255,255,0.25)", color: "#FFFFFF" }}>
+    <button
+      type="button"
+      onClick={onClick}
+      className={`inline-flex items-center gap-1.5 text-[12px] font-bold px-3.5 py-2 rounded-full border transition-colors ${
+        isVerified
+          ? "border-[#3B82F6]/30 text-[#3B82F6] bg-[#3B82F6]/10"
+          : "border-[#6B7280]/30 text-[#6B7280] bg-[#6B7280]/10 hover:border-[#3B82F6]/50 hover:text-[#3B82F6] cursor-pointer"
+      }`}
+    >
       <span className="w-2 h-2 rounded-full" style={{ backgroundColor: isVerified ? "#3B82F6" : "#6B7280" }} />
       {isVerified ? "Vérifié" : "Non vérifié"}
-    </span>
+    </button>
   );
 }
 
@@ -283,6 +292,7 @@ export default function CoachAthleteProfilePage() {
   const [inviteEmail, setInviteEmail] = useState("");
   const [toast, setToast] = useState<string | null>(null);
   const [recruiterView, setRecruiterView] = useState(false);
+  const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [openMenu, setOpenMenu] = useState(false);
   const [pipelineData, setPipelineData] = useState<{ status: string; count: number }[]>([]);
   const [pipelineMaxAt, setPipelineMaxAt] = useState("");
@@ -320,19 +330,25 @@ export default function CoachAthleteProfilePage() {
   const BADGE_DISPLAY: Record<string, { char: string; label: string }> = {
     captain: { char: "C", label: "Capitaine" },
     allstar: { char: "★", label: "Étoile provinciale" },
-    target: { char: "◎", label: "Meilleur pointeur" },
-    champion: { char: "♛", label: "Meilleur passeur" },
-    trending: { char: "↑", label: "Progression marquée" },
+    team_leader: { char: "MVP", label: "Meilleur joueur d'équipe" },
+    league_leader: { char: "⬆", label: "Meilleur de la ligue" },
+    progression: { char: "↗", label: "Progression marquée" },
+    offensive_leader: { char: "⚡", label: "Meilleur joueur offensif" },
+    defensive_leader: { char: "🛡", label: "Meilleur joueur défensif" },
+    scoring_leader: { char: "🎯", label: "Meilleur pointeur" },
+    assists_leader: { char: "🅰", label: "Meilleur passeur" },
+    goals_leader: { char: "⚽", label: "Meilleur buteur" },
+    points_leader: { char: "🏅", label: "Meilleur pointeur" },
+    best_time: { char: "⏱", label: "Meilleur chrono" },
+    school_record: { char: "🏆", label: "Record d'école" },
+    best_mark: { char: "🏆", label: "Meilleure marque" },
+    singles_leader: { char: "🎯", label: "Meilleur en simple" },
+    specialist: { char: "⭐", label: "Spécialiste" },
   };
   const statCells: { top?: string; mid: string; sub?: string; iconName?: string; isBadge?: boolean; badgeChar?: string }[] = [
     { top: a.heightDisplay, mid: "Taille" },
     { top: a.weightDisplay, mid: "Poids" },
   ];
-  // Add dbDistinctions as badge cells
-  dbDistinctions.filter((d) => d != null && BADGE_DISPLAY[d]).forEach((d) => {
-    const b = BADGE_DISPLAY[d];
-    statCells.push({ mid: b.label, isBadge: true, badgeChar: b.char });
-  });
 
   return (
     <div className="px-5 md:px-8 lg:px-10 py-6 max-w-7xl mx-auto space-y-6">
@@ -386,12 +402,6 @@ export default function CoachAthleteProfilePage() {
               Modifier
             </Link>
 
-            {/* Aperçu recruteur */}
-            <button type="button" onClick={() => setRecruiterView(true)} className="flex items-center gap-2 px-4 py-2 border border-[#2D3748] text-[#9CA3AF] rounded-lg text-[11px] font-bold uppercase tracking-wider hover:text-white hover:border-[#4a4d56] transition-colors">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
-              Aperçu recruteur
-            </button>
-
             {/* 3-dot menu */}
             <div className="relative">
               <button type="button" title="Plus d'actions" onClick={() => setOpenMenu(!openMenu)} className="w-9 h-9 rounded-lg border border-[#2D3748] flex items-center justify-center text-[#6b7280] hover:text-white transition-colors">
@@ -420,6 +430,30 @@ export default function CoachAthleteProfilePage() {
         </div>
       )}
 
+      {/* Unverified warning banner */}
+      {!recruiterView && !a.isVerified && (
+        <div className="bg-[#F59E0B]/10 border border-[#F59E0B]/30 rounded-xl px-5 py-4 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+              <line x1="12" y1="9" x2="12" y2="13" />
+              <line x1="12" y1="17" x2="12.01" y2="17" />
+            </svg>
+            <div>
+              <p className="text-[13px] font-bold text-[#F59E0B]">Profil non vérifié</p>
+              <p className="text-[12px] text-[#9CA3AF]">Ce profil n&apos;est pas visible par les recruteurs tant qu&apos;il n&apos;est pas vérifié.</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowVerifyModal(true)}
+            className="shrink-0 px-5 py-2.5 rounded-lg bg-[#3B82F6] text-white font-bold text-[12px] uppercase tracking-[0.1em] hover:bg-[#2563EB] transition-colors cursor-pointer"
+          >
+            Vérifier maintenant
+          </button>
+        </div>
+      )}
+
       {/* ── Toggle + Completeness ─────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <ProfileToggle mode={mode} onChange={setMode} />
@@ -430,8 +464,8 @@ export default function CoachAthleteProfilePage() {
       </div>
 
       {/* ══════════ HERO — same 2-column layout as recruiter ══════════ */}
-      <section className="flex flex-col lg:flex-row gap-8 lg:gap-12 items-start">
-        <div className="shrink-0 flex justify-center lg:justify-start" style={{ minHeight: 480 }}>
+      <section className="flex flex-col lg:flex-row gap-8 lg:gap-12 items-stretch">
+        <div className="shrink-0 flex justify-center lg:justify-start">
           <PlayerCard a={a} />
         </div>
 
@@ -443,7 +477,10 @@ export default function CoachAthleteProfilePage() {
 
           <div className="flex flex-wrap items-center gap-2">
             {/* Vérifié badge */}
-            <VerifiedBadge isVerified={a.isVerified} />
+            <VerifiedBadge
+              isVerified={a.isVerified}
+              onClick={() => { if (!a.isVerified) setShowVerifyModal(true); }}
+            />
 
             {/* Account status pill */}
             {a.isOpenToOffers !== undefined && (
@@ -574,6 +611,26 @@ export default function CoachAthleteProfilePage() {
                   </div>
                 ))}
               </div>
+              {dbDistinctions.filter((d) => d != null && BADGE_DISPLAY[d]).length > 0 && (
+                <div className={`grid divide-x divide-[#2D3748]/50 border-t border-[#2D3748]/50 ${(() => { const n = dbDistinctions.filter(d => d != null && BADGE_DISPLAY[d]).length; return n === 1 ? "grid-cols-1" : n === 2 ? "grid-cols-2" : "grid-cols-3"; })()}`}>
+                  {dbDistinctions
+                    .filter((d) => d != null && BADGE_DISPLAY[d])
+                    .map((d) => {
+                      const b = BADGE_DISPLAY[d];
+                      return (
+                        <div
+                          key={d}
+                          className="p-4 text-center flex flex-col items-center justify-center min-h-[90px]"
+                        >
+                          <span className="w-9 h-9 rounded-full bg-[#E63946]/15 border border-[#E63946]/25 flex items-center justify-center text-[14px] font-bold text-[#E63946] mb-2 shadow-[0_0_12px_rgba(230,57,70,0.25)]">
+                            {b.char}
+                          </span>
+                          <p className="text-[11px] font-bold tracking-[0.15em] uppercase text-white">{b.label}</p>
+                        </div>
+                      );
+                    })}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -877,6 +934,56 @@ export default function CoachAthleteProfilePage() {
       )}
 
       {toast && <Toast message={toast} onDone={() => setToast(null)} />}
+
+      {/* Verification modal */}
+      {showVerifyModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="relative bg-[#1A1D24] border border-[#2D3748] rounded-xl p-6 max-w-sm w-full mx-4 shadow-2xl">
+            <h3 className="font-head text-[16px] font-bold text-white mb-2">Vérifier cet athlète ?</h3>
+            <p className="text-[13px] text-[#9CA3AF] mb-5">
+              En vérifiant ce profil, tu confirmes que les informations sont exactes. Le profil recevra le badge vérifié visible par les recruteurs.
+            </p>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={async () => {
+                  const supabase = createClient();
+                  const { data: { user } } = await supabase.auth.getUser();
+                  if (!user) return;
+
+                  const { error } = await supabase
+                    .from("athletes")
+                    .update({
+                      verified: true,
+                      verification_method: "manuel_coach",
+                      verified_at: new Date().toISOString(),
+                      verified_by: user.id,
+                    })
+                    .eq("id", id);
+
+                  if (error) {
+                    console.error("Verification error:", error);
+                    return;
+                  }
+
+                  setA((prev) => prev ? { ...prev, isVerified: true } : prev);
+                  setShowVerifyModal(false);
+                }}
+                className="flex-1 bg-[#3B82F6] text-white font-bold text-[13px] py-2.5 rounded-lg hover:bg-[#2563EB] transition-colors cursor-pointer"
+              >
+                Vérifier
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowVerifyModal(false)}
+                className="flex-1 border border-[#2D3748] text-[#9CA3AF] font-bold text-[13px] py-2.5 rounded-lg hover:bg-white/5 transition-colors cursor-pointer"
+              >
+                Annuler
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <style jsx>{`
         @keyframes fadeInUp {

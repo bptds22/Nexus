@@ -16,15 +16,15 @@ export default function ActionBar({ data }: { data: ActionBarData }) {
         className={`group flex items-center gap-4 rounded-xl px-6 py-5 transition-all border-l-4 ${
           data.unreadMessages > 0
             ? "bg-[#E63946]/[0.08] border-l-[#E63946] hover:bg-[#E63946]/[0.14]"
-            : "bg-[#1A1D24] border-l-[#2D3748] hover:bg-[#22252c]"
+            : "bg-[#22C55E]/[0.06] border-l-[#22C55E] hover:bg-[#22C55E]/[0.10]"
         }`}
       >
         {/* Icon */}
         <div className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 ${
-          data.unreadMessages > 0 ? "bg-[#E63946]/20" : "bg-[#2D3748]/50"
+          data.unreadMessages > 0 ? "bg-[#E63946]/20" : "bg-[#22C55E]/20"
         }`}>
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
-            stroke={data.unreadMessages > 0 ? "#E63946" : "#6b7280"}
+            stroke={data.unreadMessages > 0 ? "#E63946" : "#22C55E"}
             strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
             <polyline points="22,6 12,13 2,6" />
@@ -33,7 +33,7 @@ export default function ActionBar({ data }: { data: ActionBarData }) {
 
         {/* Text */}
         <div className="flex-1 min-w-0">
-          <p className={`text-[15px] font-bold ${data.unreadMessages > 0 ? "text-white" : "text-[#6b7280]"}`}>
+          <p className={`text-[15px] font-bold ${data.unreadMessages > 0 ? "text-white" : "text-[#22C55E]"}`}>
             {data.unreadMessages > 0
               ? `${data.unreadMessages} nouvelle${data.unreadMessages > 1 ? "s" : ""} demande${data.unreadMessages > 1 ? "s" : ""} de recruteurs`
               : "Aucune nouvelle demande"
@@ -63,16 +63,16 @@ export default function ActionBar({ data }: { data: ActionBarData }) {
         href="/coach/athletes?filtre=non_verifies"
         className={`group flex items-center gap-4 rounded-xl px-6 py-5 transition-all border-l-4 ${
           data.incompleteProfiles > 0
-            ? "bg-[#6B7280]/[0.06] border-l-[#6B7280] hover:bg-[#6B7280]/[0.12]"
+            ? "bg-[#3B82F6]/[0.06] border-l-[#3B82F6] hover:bg-[#3B82F6]/[0.10]"
             : "bg-[#3B82F6]/[0.06] border-l-[#3B82F6]"
         }`}
       >
         {/* Icon */}
         <div className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 ${
-          data.incompleteProfiles > 0 ? "bg-[#6B7280]/20" : "bg-[#3B82F6]/20"
+          data.incompleteProfiles > 0 ? "bg-[#3B82F6]/20" : "bg-[#3B82F6]/20"
         }`}>
           {data.incompleteProfiles > 0 ? (
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="2">
               <circle cx="12" cy="12" r="10" />
             </svg>
           ) : (
@@ -99,7 +99,7 @@ export default function ActionBar({ data }: { data: ActionBarData }) {
         {/* Count badge + arrow */}
         {data.incompleteProfiles > 0 && (
           <div className="flex items-center gap-3 shrink-0">
-            <span className="inline-flex items-center justify-center min-w-[28px] h-7 px-2 rounded-full bg-[#6B7280] text-white text-[13px] font-black">
+            <span className="inline-flex items-center justify-center min-w-[28px] h-7 px-2 rounded-full bg-[#3B82F6] text-white text-[13px] font-black">
               {data.incompleteProfiles}
             </span>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round"
