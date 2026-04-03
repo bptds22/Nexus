@@ -338,6 +338,15 @@ export default function OnboardingPage() {
         }
       }
 
+      // Save league data for league coaches — set context
+      if (user?.role === "coach_league") {
+        const { error: ctxError } = await supabase
+          .from("users")
+          .update({ context: "ligue_civile" })
+          .eq("id", authUser.id);
+        console.log("[finish] Set context to ligue_civile:", ctxError);
+      }
+
       // Save recruiter preferences if recruiter
       if (user?.role === "recruiter" && localUser.search_criteria) {
         const sc = localUser.search_criteria;
@@ -741,7 +750,9 @@ function SchoolStep({ user, save }: { user: NexusUser; save: (u: Partial<NexusUs
         renderItem={(item) => (
           <div>
             <p className="font-bold">{item.name}</p>
-            <p className="text-[10px] text-[#6B7280]">{item.city} — {item.region}</p>
+            {[item.city, item.region].filter(Boolean).join(" — ") && (
+              <p className="text-[10px] text-[#6B7280]">{[item.city, item.region].filter(Boolean).join(" — ")}</p>
+            )}
           </div>
         )}
       />
@@ -750,8 +761,10 @@ function SchoolStep({ user, save }: { user: NexusUser; save: (u: Partial<NexusUs
       {selected && (
         <div className="bg-[#111317] border border-white/10 rounded-lg p-5 space-y-3">
           <h3 className="font-head font-black text-lg text-white">{selected.name}</h3>
-          <p className="text-xs text-[#9CA3AF]">{selected.city}, {selected.region}</p>
-          <p className="text-xs text-[#6B7280]">Conférence RSEQ: {selected.conference}</p>
+          {[selected.city, selected.region].filter(Boolean).join(", ") && (
+            <p className="text-xs text-[#9CA3AF]">{[selected.city, selected.region].filter(Boolean).join(", ")}</p>
+          )}
+          {selected.conference && <p className="text-xs text-[#6B7280]">Conférence RSEQ: {selected.conference}</p>}
           <div className="flex flex-wrap gap-2">
             {selected.sports.map((s) => (
               <span key={s} className="px-3 py-1 rounded-full bg-[rgba(230,57,70,0.1)] border border-[#E63946]/20 text-[10px] font-bold text-[#E63946] uppercase tracking-wider">{s}</span>
@@ -802,7 +815,7 @@ function CoachConfirmation({ user }: { user: NexusUser }) {
     p.experience_years ? { label: "Expérience", value: `${p.experience_years} ans` } : null,
     p.phone ? { label: "Téléphone", value: p.phone as string } : null,
     inst.name ? { label: "École", value: inst.name as string } : null,
-    inst.city ? { label: "Ville", value: `${inst.city}, ${inst.region || ""}` } : null,
+    [inst.city, inst.region].filter(Boolean).join(", ") ? { label: "Ville", value: [inst.city, inst.region].filter(Boolean).join(", ") } : null,
     inst.conference ? { label: "Conférence RSEQ", value: inst.conference as string } : null,
   ].filter(Boolean) as { label: string; value: string }[];
 
@@ -1046,7 +1059,9 @@ function CegepStep({ user, save }: { user: NexusUser; save: (u: Partial<NexusUse
         renderItem={(item) => (
           <div>
             <p className="font-bold">{item.name}</p>
-            <p className="text-[10px] text-[#6B7280]">{item.city} — {item.region}</p>
+            {[item.city, item.region].filter(Boolean).join(" — ") && (
+              <p className="text-[10px] text-[#6B7280]">{[item.city, item.region].filter(Boolean).join(" — ")}</p>
+            )}
           </div>
         )}
       />
@@ -1057,7 +1072,9 @@ function CegepStep({ user, save }: { user: NexusUser; save: (u: Partial<NexusUse
             <h3 className="font-head font-black text-lg text-white">{selected.name}</h3>
             <span className="px-2 py-0.5 rounded text-[9px] font-bold uppercase bg-[#3B82F6]/10 text-[#3B82F6] border border-[#3B82F6]/20">{selected.type}</span>
           </div>
-          <p className="text-xs text-[#9CA3AF]">{selected.city}, {selected.region} — {selected.conference}</p>
+          {[selected.city, selected.region, selected.conference].filter(Boolean).join(", ") && (
+            <p className="text-xs text-[#9CA3AF]">{[selected.city, selected.region].filter(Boolean).join(", ")}{selected.conference ? ` — ${selected.conference}` : ""}</p>
+          )}
           <div className="flex flex-wrap gap-1.5">
             {selected.programs.map((p) => (
               <span key={p} className="px-2 py-1 rounded bg-white/5 text-[9px] text-[#9CA3AF]">{p}</span>
@@ -1325,7 +1342,9 @@ function RecruiterCegepStep({ user, save }: { user: NexusUser; save: (u: Partial
                 className="w-full text-left bg-[#111317] border border-white/5 rounded-lg px-4 py-3 hover:border-[#E63946]/30 transition-colors"
               >
                 <p className="text-[14px] font-bold text-white">{c.name}</p>
-                <p className="text-[12px] text-[#6B7280]">{c.city}, {c.region}</p>
+                {[c.city, c.region].filter(Boolean).join(", ") && (
+                  <p className="text-[12px] text-[#6B7280]">{[c.city, c.region].filter(Boolean).join(", ")}</p>
+                )}
               </button>
             ))}
           </div>
@@ -1555,17 +1574,6 @@ function RecruiterNeeds({ user, save }: { user: NexusUser; save: (u: Partial<Nex
    LEAGUE DATA + SHARED COMPONENTS
 ═══════════════════════════════════════════════════════════════ */
 
-const MOCK_LEAGUES = [
-  { name: "Wildcats Lanaudière", sport: "Football", city: "Repentigny", region: "Lanaudière", level: "AAA" },
-  { name: "Élite Baseball Québec", sport: "Baseball", city: "Québec", region: "Québec", level: "AAA" },
-  { name: "Remparts AAA U18", sport: "Hockey", city: "Québec", region: "Québec", level: "AAA" },
-  { name: "Club Basketball Brookwood", sport: "Basketball", city: "Montréal", region: "Montréal", level: "AA" },
-  { name: "Storm Volleyball Québec", sport: "Volleyball", city: "Québec", region: "Québec", level: "Club" },
-  { name: "RSL Québec Academy", sport: "Soccer", city: "Québec", region: "Québec", level: "AAA" },
-  { name: "Titans Rugby Montréal", sport: "Rugby", city: "Montréal", region: "Montréal", level: "Club" },
-  { name: "FC Gatineau Élite", sport: "Soccer", city: "Gatineau", region: "Outaouais", level: "AA" },
-];
-
 const LEAGUE_LEVELS = ["AAA", "AA", "A", "Club", "Civil"];
 const TEAM_CATEGORIES = ["U15", "U16", "U17", "U18", "Juvénile", "Cadet", "Midget", "Senior", "Autre"];
 
@@ -1575,34 +1583,72 @@ function LeagueSelectStep({ user, save, onRequestNew }: {
   save: (u: Partial<NexusUser>) => void;
   onRequestNew: () => void;
 }) {
-  const [selected, setSelected] = useState<(typeof MOCK_LEAGUES)[0] | null>(
-    user.institution ? MOCK_LEAGUES.find((l) => l.name === (user.institution as Record<string, unknown>)?.name) || null : null
-  );
+  const [leagues, setLeagues] = useState<{ id: string; name: string; sport: string; city: string; region: string; level: string }[]>([]);
+  const [selected, setSelected] = useState<{ id: string; name: string; sport: string; city: string; region: string; level: string } | null>(null);
+  const [loadingLeagues, setLoadingLeagues] = useState(true);
+
+  // Load leagues from Supabase on mount
+  useEffect(() => {
+    async function loadLeagues() {
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from("leagues")
+        .select("id, name, sport, city, region, level")
+        .order("name");
+      console.log("[LeagueSelectStep] Loaded leagues:", data, error);
+      if (data) setLeagues(data);
+      setLoadingLeagues(false);
+    }
+    loadLeagues();
+  }, []);
+
+  // Restore selection from user.institution if available
+  useEffect(() => {
+    if (leagues.length > 0 && user.institution) {
+      const inst = user.institution as Record<string, unknown>;
+      const match = leagues.find((l) => l.id === inst?.id || l.name === inst?.name);
+      if (match) setSelected(match);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [leagues]);
 
   useEffect(() => {
     if (selected) {
-      save({ institution: { name: selected.name, sport: selected.sport, city: selected.city, region: selected.region, level: selected.level, type: "ligue_civile" } });
+      save({ institution: { id: selected.id, name: selected.name, sport: selected.sport, city: selected.city, region: selected.region, level: selected.level, type: "ligue_civile" } });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected]);
 
   return (
     <>
-      <SearchableDropdown
-        items={MOCK_LEAGUES}
-        value={selected?.name || ""}
-        onChange={(item) => setSelected(item)}
-        placeholder="Rechercher ta ligue ou ton club..."
-        renderItem={(item) => (
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-bold">{item.name}</p>
-              <p className="text-[10px] text-[#6B7280]">{item.city} — {item.region}</p>
+      {loadingLeagues ? (
+        <div className="text-center py-4 text-sm text-[#6B7280]">Chargement des ligues...</div>
+      ) : leagues.length === 0 ? (
+        <div className="text-center py-4 space-y-2">
+          <p className="text-sm text-[#6B7280]">Aucune ligue trouvée dans la base de données.</p>
+          <button type="button" onClick={onRequestNew} className="text-xs text-[#E63946] hover:text-white transition-colors underline">
+            Créer une nouvelle ligue
+          </button>
+        </div>
+      ) : (
+        <SearchableDropdown
+          items={leagues}
+          value={selected?.name || ""}
+          onChange={(item) => setSelected(item)}
+          placeholder="Rechercher ta ligue ou ton club..."
+          renderItem={(item) => (
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-bold">{item.name}</p>
+                {[item.city, item.region].filter(Boolean).join(" — ") && (
+                  <p className="text-[10px] text-[#6B7280]">{[item.city, item.region].filter(Boolean).join(" — ")}</p>
+                )}
+              </div>
+              <span className="px-2 py-0.5 rounded-full bg-[#E63946]/10 text-[9px] font-bold text-[#E63946] uppercase">{item.sport}</span>
             </div>
-            <span className="px-2 py-0.5 rounded-full bg-[#E63946]/10 text-[9px] font-bold text-[#E63946] uppercase">{item.sport}</span>
-          </div>
-        )}
-      />
+          )}
+        />
+      )}
 
       {selected && (
         <div className="bg-[#111317] border border-white/10 rounded-lg p-5 space-y-3">
@@ -1610,8 +1656,10 @@ function LeagueSelectStep({ user, save, onRequestNew }: {
             <h3 className="font-head font-black text-lg text-white">{selected.name}</h3>
             <span className="px-2 py-0.5 rounded-full bg-[#E63946]/10 text-[9px] font-bold text-[#E63946] uppercase border border-[#E63946]/20">{selected.sport}</span>
           </div>
-          <p className="text-xs text-[#9CA3AF]">{selected.city}, {selected.region}</p>
-          <p className="text-xs text-[#6B7280]">Niveau: {selected.level}</p>
+          {[selected.city, selected.region].filter(Boolean).join(", ") && (
+            <p className="text-xs text-[#9CA3AF]">{[selected.city, selected.region].filter(Boolean).join(", ")}</p>
+          )}
+          {selected.level && <p className="text-xs text-[#6B7280]">Niveau: {selected.level}</p>}
           <p className="text-xs text-[#22C55E] font-bold flex items-center gap-1">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
             C&apos;est ma ligue
@@ -1619,7 +1667,7 @@ function LeagueSelectStep({ user, save, onRequestNew }: {
         </div>
       )}
 
-      {!selected && (
+      {!selected && !loadingLeagues && leagues.length > 0 && (
         <button type="button" onClick={onRequestNew} className="text-xs text-[#9CA3AF] hover:text-white transition-colors underline">
           Ma ligue n&apos;est pas dans la liste
         </button>
@@ -1647,28 +1695,95 @@ function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Part
   const [customRegion, setCustomRegion] = useState("");
   const [customLevel, setCustomLevel] = useState("");
   const [customSubmitted, setCustomSubmitted] = useState(false);
+  const [customSaving, setCustomSaving] = useState(false);
 
   // Team info
   const inst = user.institution as Record<string, unknown> | null;
   const hasLeague = !!inst?.name;
+  const selectedLeagueId = (inst?.id as string) || null;
   const [teamName, setTeamName] = useState("");
   const [teamCategory, setTeamCategory] = useState("");
   const [teamGender, setTeamGender] = useState("");
   const teamSeason = "2025-2026";
+  const [teamSaved, setTeamSaved] = useState(false);
+  const [teamSaving, setTeamSaving] = useState(false);
 
+  // Save team to Supabase when all fields are filled
   useEffect(() => {
-    if (hasLeague && teamName) {
-      const raw = localStorage.getItem("nexus_user");
-      if (!raw) return;
-      const current = JSON.parse(raw) as NexusUser;
-      const updated = {
-        ...current,
-        profile: { ...(current.profile || {}), league_team: { name: teamName, category: teamCategory, gender: teamGender, season: teamSeason } },
-      };
-      localStorage.setItem("nexus_user", JSON.stringify(updated));
-    }
+    if (!hasLeague || !teamName || !selectedLeagueId || teamSaved || teamSaving) return;
+
+    const debounce = setTimeout(async () => {
+      setTeamSaving(true);
+      try {
+        const supabase = createClient();
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        if (!authUser) return;
+
+        // Insert league_team
+        const { data: newTeam, error: teamError } = await supabase
+          .from("league_teams")
+          .insert({
+            league_id: selectedLeagueId,
+            name: teamName,
+            division: teamCategory || null,
+            gender: teamGender || null,
+            season: teamSeason,
+            owner_id: authUser.id,
+          })
+          .select()
+          .single();
+
+        console.log("[LeagueCoachLeagueStep] Created league_team:", newTeam, teamError);
+
+        if (newTeam) {
+          // Insert league_coaches record
+          const { data: coachEntry, error: coachError } = await supabase
+            .from("league_coaches")
+            .insert({
+              coach_id: authUser.id,
+              league_id: selectedLeagueId,
+              league_team_id: newTeam.id,
+              role: "ADMIN",
+            })
+            .select()
+            .single();
+
+          console.log("[LeagueCoachLeagueStep] Created league_coach:", coachEntry, coachError);
+
+          // Store IDs in localStorage for finish()
+          const raw = localStorage.getItem("nexus_user");
+          if (raw) {
+            const current = JSON.parse(raw) as NexusUser;
+            const updated = {
+              ...current,
+              profile: {
+                ...(current.profile || {}),
+                league_team: { id: newTeam.id, name: teamName, category: teamCategory, gender: teamGender, season: teamSeason },
+                league_id: selectedLeagueId,
+                league_team_id: newTeam.id,
+              },
+            };
+            localStorage.setItem("nexus_user", JSON.stringify(updated));
+          }
+
+          setTeamSaved(true);
+        }
+      } catch (err) {
+        console.error("[LeagueCoachLeagueStep] Error saving team:", err);
+      } finally {
+        setTeamSaving(false);
+      }
+    }, 800);
+
+    return () => clearTimeout(debounce);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [teamName, teamCategory, teamGender, hasLeague]);
+  }, [teamName, teamCategory, teamGender, hasLeague, selectedLeagueId, teamSaved]);
+
+  // Reset teamSaved when team fields change after initial save
+  useEffect(() => {
+    if (teamSaved) setTeamSaved(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [teamName, teamCategory, teamGender]);
 
   return (
     <div className="space-y-5">
@@ -1710,9 +1825,40 @@ function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Part
                 <button type="button" onClick={() => setShowCustom(false)} className="h-10 px-4 rounded-lg border border-white/10 text-xs font-bold text-white hover:border-white/20 transition-colors">
                   Annuler
                 </button>
-                <button type="button" disabled={!customName || !customSport} onClick={() => {
-                  save({ institution: { name: customName, sport: customSport, city: customCity, region: customRegion, level: customLevel, type: "ligue_civile", pending: true } });
-                  setCustomSubmitted(true);
+                <button type="button" disabled={!customName || !customSport || customSaving} onClick={async () => {
+                  setCustomSaving(true);
+                  try {
+                    const supabase = createClient();
+                    const { data: { user: authUser } } = await supabase.auth.getUser();
+                    if (!authUser) { setCustomSaving(false); return; }
+
+                    const { data: newLeague, error } = await supabase
+                      .from("leagues")
+                      .insert({
+                        name: customName,
+                        sport: customSport,
+                        city: customCity || null,
+                        region: customRegion || null,
+                        level: customLevel || null,
+                        created_by: authUser.id,
+                      })
+                      .select()
+                      .single();
+
+                    console.log("[LeagueCoachLeagueStep] Created league:", newLeague, error);
+
+                    if (newLeague) {
+                      save({ institution: { id: newLeague.id, name: newLeague.name, sport: newLeague.sport, city: newLeague.city, region: newLeague.region, level: newLeague.level, type: "ligue_civile" } });
+                    } else {
+                      save({ institution: { name: customName, sport: customSport, city: customCity, region: customRegion, level: customLevel, type: "ligue_civile", pending: true } });
+                    }
+                  } catch (err) {
+                    console.error("[LeagueCoachLeagueStep] Error creating league:", err);
+                    save({ institution: { name: customName, sport: customSport, city: customCity, region: customRegion, level: customLevel, type: "ligue_civile", pending: true } });
+                  } finally {
+                    setCustomSaving(false);
+                    setCustomSubmitted(true);
+                  }
                 }} className="h-10 px-6 rounded-lg bg-[#E63946] text-xs font-bold text-white hover:bg-[#D42B22] transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
                   Soumettre la demande
                 </button>

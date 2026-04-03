@@ -114,6 +114,8 @@ function InfoRow({ label, value, icon }: { label: string; value?: string | numbe
 function PlayerCard({ a }: { a: AthleteProfileRecruiterView }) {
   const ratingValue = a.overallRating;
   const posAbbr = positionAbbr(a.primaryPosition);
+  const secPosAbbr = a.secondaryPosition ? positionAbbr(a.secondaryPosition) : "";
+  const posDisplay = secPosAbbr ? `${posAbbr} / ${secPosAbbr}` : (posAbbr || "—");
   const sportKey = SPORT_NAME_MAP[a.primarySport];
   const sportDisplay = sportKey ? (SPORT_DISPLAY[sportKey] || a.primarySport) : a.primarySport;
 
@@ -160,7 +162,7 @@ function PlayerCard({ a }: { a: AthleteProfileRecruiterView }) {
             <div className="flex flex-col justify-between" style={{ background: '#1E2128', padding: '12px 14px 12px 16px', minWidth: 96, gap: 4 }}>
               {[
                 { lbl: "Sport", val: sportDisplay },
-                { lbl: "Pos", val: posAbbr || "—" },
+                { lbl: "Pos", val: posDisplay },
                 { lbl: "No.", val: a.jerseyNumber ? `#${a.jerseyNumber}` : "—" },
               ].map((r) => (
                 <div key={r.lbl}>
@@ -692,12 +694,6 @@ export default function CoachAthleteProfilePage() {
                           );
                         })}
                       </div>
-                      {traitAvg !== null && (
-                        <div className="mt-4 pt-4 border-t border-[#2D3748]/50 flex items-center justify-between">
-                          <span className="text-[13px] font-bold text-[#9CA3AF] uppercase tracking-wider">Moyenne des traits</span>
-                          <StarRating rating={traitAvg} size="md" />
-                        </div>
-                      )}
                     </div>
                   )}
 

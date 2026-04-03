@@ -3,10 +3,8 @@
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { SEARCH_ATHLETES, SPORT_POSITIONS, REGIONS } from "../_data/mockSearchAthletes";
+import { SPORT_POSITIONS } from "../_data/mockSearchAthletes";
 import type { SearchAthlete } from "../_data/mockSearchAthletes";
-import { getAthleteTracking } from "../_data/mockPipelineData";
-import RecruitmentStatusBadge from "../_components/RecruitmentStatusBadge";
 import NxIcon from "@/components/ui/NxIcon";
 import FeatureGate from "@/components/subscription/FeatureGate";
 
@@ -29,6 +27,11 @@ const SPORTS = [
 ];
 
 const PROMOTIONS = ["2026", "2027", "2028"];
+
+const sportLabel = (value: string): string => {
+  const found = SPORTS.find((s) => s.value === value);
+  return found ? found.label : value;
+};
 
 /* Filter classes — styled via globals.css .nx-filter-* */
 
@@ -65,7 +68,7 @@ function AthleteSearchCard({ a, onToggleFav }: { a: SearchAthlete; onToggleFav: 
         {/* Position chip */}
         <div className="absolute bottom-3 left-3 z-10">
           <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-[#E63946] text-white text-[12px] font-bold uppercase tracking-wider">
-            {a.position}
+            {sportLabel(a.sport)}{a.position ? ` · ${a.position}` : ""}
           </span>
         </div>
 
@@ -87,18 +90,12 @@ function AthleteSearchCard({ a, onToggleFav }: { a: SearchAthlete; onToggleFav: 
           <Link href={`/recruteur/athletes/${a.id}`} className="text-[17px] font-bold text-white hover:text-[#E63946] transition-colors">
             {a.firstName} {a.lastName}
           </Link>
-          {(() => {
-            const tracking = getAthleteTracking(a.id);
-            return tracking ? <RecruitmentStatusBadge status={tracking.status} size="sm" /> : null;
-          })()}
+          {null}
         </div>
 
         {/* School / Org */}
         <p className="text-[14px] text-[#c0c4cc] flex items-center gap-1.5">
           {a.school}
-          {a.orgLevel && (
-            <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${a.orgLevel === "AAA" ? "bg-[#DAB65A]/15 text-[#DAB65A]" : a.orgLevel === "AA" ? "bg-[#B4BCC8]/15 text-[#B4BCC8]" : "bg-[#6b7280]/15 text-[#6b7280]"}`}>{a.orgLevel}</span>
-          )}
         </p>
 
         {/* Region · Promotion */}
@@ -181,22 +178,16 @@ function AthleteSearchRow({ a, onToggleFav }: { a: SearchAthlete; onToggleFav: (
           <Link href={`/recruteur/athletes/${a.id}`} className="text-[15px] font-bold text-white hover:text-[#E63946] transition-colors truncate">
             {a.firstName} {a.lastName}
           </Link>
-          {(() => {
-            const tracking = getAthleteTracking(a.id);
-            return tracking ? <RecruitmentStatusBadge status={tracking.status} size="sm" /> : null;
-          })()}
+          {null}
         </div>
         <p className="text-[13px] text-[#9CA3AF] truncate flex items-center gap-1.5">
           {a.school}
-          {a.orgLevel && (
-            <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold uppercase shrink-0 ${a.orgLevel === "AAA" ? "bg-[#DAB65A]/15 text-[#DAB65A]" : a.orgLevel === "AA" ? "bg-[#B4BCC8]/15 text-[#B4BCC8]" : "bg-[#6b7280]/15 text-[#6b7280]"}`}>{a.orgLevel}</span>
-          )}
         </p>
       </div>
 
       {/* Position */}
       <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-full bg-[#E63946] text-white text-[11px] font-bold uppercase tracking-wider">
-        {a.position}
+        {sportLabel(a.sport)}{a.position ? ` · ${a.position}` : ""}
       </span>
 
       {/* Region */}
@@ -261,7 +252,6 @@ export default function RecherchePage() {
   const [search, setSearch] = useState("");
   const [sport, setSport] = useState("");
   const [position, setPosition] = useState("");
-  const [region, setRegion] = useState("");
   const [promotion, setPromotion] = useState("");
   const [orgType, setOrgType] = useState("");
   const [verifiedOnly, setVerifiedOnly] = useState(false);
@@ -270,6 +260,7 @@ export default function RecherchePage() {
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [athletes, setAthletes] = useState<SearchAthlete[]>([]);
   const [loading, setLoading] = useState(true);
+  const [favCounts, setFavCounts] = useState<Record<string, number>>({});
 
   const positions = sport && SPORT_POSITIONS[sport] ? SPORT_POSITIONS[sport] : [];
 
@@ -289,17 +280,32 @@ export default function RecherchePage() {
         annee_diplomation,
         video_faits_saillants_url,
         consentement_parental,
-        sports!athletes_sport_id_fkey(nom),
-        positions!athletes_position_id_fkey(nom, abreviation)
+        cote_globale_entraineur,
+        genre,
+        school_id,
+        league_team_id,
+        sports!sport_id(nom),
+        positions!position_id(nom, abreviation),
+        schools!school_id(name, region),
+        evaluations(distinctions)
       `)
       .eq("status", "ACTIF")
-      .eq("verified", true)
       .then(({ data, error }) => {
         console.log("Athletes loaded:", data?.length, error);
         if (data) {
           const mapped: SearchAthlete[] = data.map((a: Record<string, unknown>) => {
             const sportRel = Array.isArray(a.sports) ? a.sports[0] : a.sports;
             const posRel = Array.isArray(a.positions) ? a.positions[0] : a.positions;
+            const schoolRel = Array.isArray(a.schools) ? a.schools[0] : a.schools;
+            const evalRel = Array.isArray(a.evaluations) ? a.evaluations[0] : a.evaluations;
+            const distinctions: string[] = ((evalRel as Record<string, unknown> | null)?.distinctions as string[]) || [];
+
+            const badgeMap: Record<string, { label: string; icon: string }> = {
+              captain: { label: "Capitaine", icon: "shield" },
+              allstar: { label: "Équipe d'étoiles", icon: "star" },
+              team_leader: { label: "Leader", icon: "award" },
+            };
+
             return {
               id: a.id as string,
               firstName: a.first_name as string,
@@ -307,28 +313,68 @@ export default function RecherchePage() {
               photo: (a.photo_url as string) || "",
               sport: ((sportRel as Record<string, string> | null)?.nom || "").toLowerCase().replace(/ /g, "_") as SearchAthlete["sport"],
               position: (posRel as Record<string, string> | null)?.abreviation || "",
-              school: "",
-              region: "",
+              school: (schoolRel as Record<string, string> | null)?.name || "",
+              region: (schoolRel as Record<string, string> | null)?.region || "",
               graduationYear: (a.annee_diplomation as number) || 0,
               niveau: "Sec. 5" as const,
               heightDisplay: "",
               weightDisplay: "",
               isVerified: a.verified as boolean,
-              isFavorited: favorites.has(a.id as string),
+              isFavorited: false,
               hasVideo: !!a.video_faits_saillants_url,
-              badges: [],
+              badges: distinctions
+                .filter((d) => d != null && badgeMap[d])
+                .map((d) => ({ badgeId: d, label: badgeMap[d].label, icon: badgeMap[d].icon })),
               favorites: 0,
               views: 0,
-              stars: 0,
+              stars: (a.cote_globale_entraineur as number) || 0,
               commitmentStatus: "aucun",
-              orgType: "scolaire" as const,
+              orgType: (a.school_id ? "scolaire" : "ligue_civile") as "scolaire" | "ligue_civile",
             };
           });
           setAthletes(mapped);
         }
         setLoading(false);
       });
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Load user's favorites
+  useEffect(() => {
+    const loadFavorites = async () => {
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+
+      const { data } = await supabase
+        .from("recruiter_favorites")
+        .select("athlete_id")
+        .eq("recruiter_id", session.user.id);
+
+      if (data) {
+        setFavorites(new Set(data.map((f: { athlete_id: string }) => f.athlete_id)));
+      }
+    };
+    loadFavorites();
+  }, []);
+
+  // Load favorite counts per athlete
+  useEffect(() => {
+    const loadFavCounts = async () => {
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("recruiter_favorites")
+        .select("athlete_id");
+
+      if (data) {
+        const counts: Record<string, number> = {};
+        data.forEach((f: { athlete_id: string }) => {
+          counts[f.athlete_id] = (counts[f.athlete_id] || 0) + 1;
+        });
+        setFavCounts(counts);
+      }
+    };
+    loadFavCounts();
+  }, []);
 
   const filtered = useMemo(() => {
     let list = [...athletes];
@@ -339,20 +385,19 @@ export default function RecherchePage() {
     }
     if (sport) list = list.filter((a) => a.sport === sport);
     if (position) list = list.filter((a) => a.position === position);
-    if (region) list = list.filter((a) => a.region === region);
     if (promotion) list = list.filter((a) => a.graduationYear === parseInt(promotion));
     if (verifiedOnly) list = list.filter((a) => a.isVerified);
     if (withVideoOnly) list = list.filter((a) => a.hasVideo);
     if (orgType === "scolaire") list = list.filter((a) => !a.orgType || a.orgType === "scolaire");
     if (orgType === "ligue_civile") list = list.filter((a) => a.orgType === "ligue_civile");
 
-    return list.map((a) => ({ ...a, isFavorited: favorites.has(a.id) }));
-  }, [search, sport, position, region, promotion, verifiedOnly, withVideoOnly, orgType, favorites]);
+    return list.map((a) => ({ ...a, isFavorited: favorites.has(a.id), favorites: favCounts[a.id] || 0 }));
+  }, [search, sport, position, promotion, verifiedOnly, withVideoOnly, orgType, favorites, athletes, favCounts]);
 
   const toggleFav = async (id: string) => {
     const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) return;
 
     const isFav = favorites.has(id);
 
@@ -363,28 +408,31 @@ export default function RecherchePage() {
       return next;
     });
 
+    setFavCounts((prev) => ({
+      ...prev,
+      [id]: (prev[id] || 0) + (isFav ? -1 : 1),
+    }));
+
     if (isFav) {
       await supabase
-        .from("pipeline")
+        .from("recruiter_favorites")
         .delete()
-        .eq("recruiter_id", user.id)
+        .eq("recruiter_id", session.user.id)
         .eq("athlete_id", id);
     } else {
       await supabase
-        .from("pipeline")
-        .upsert({
-          recruiter_id: user.id,
+        .from("recruiter_favorites")
+        .insert({
+          recruiter_id: session.user.id,
           athlete_id: id,
-          status: "IDENTIFIE",
-          favorited_at: new Date().toISOString(),
         });
     }
   };
 
-  const hasFilters = sport || position || region || promotion || verifiedOnly || withVideoOnly || orgType;
+  const hasFilters = sport || position || promotion || verifiedOnly || withVideoOnly || orgType;
 
   const resetFilters = () => {
-    setSport(""); setPosition(""); setRegion(""); setPromotion(""); setVerifiedOnly(false); setWithVideoOnly(false); setOrgType("");
+    setSport(""); setPosition(""); setPromotion(""); setVerifiedOnly(false); setWithVideoOnly(false); setOrgType("");
   };
 
   return (
@@ -445,11 +493,6 @@ export default function RecherchePage() {
         <select value={position} onChange={(e) => setPosition(e.target.value)} className={`nx-filter-select${position ? " nx-filter-active" : ""}`} disabled={!sport}>
           <option value="">{sport ? "Toutes les positions" : "Sélectionner un sport d\u0027abord"}</option>
           {positions.map((p) => <option key={p.abbr} value={p.abbr}>{p.abbr} — {p.label}</option>)}
-        </select>
-
-        <select value={region} onChange={(e) => setRegion(e.target.value)} className={`nx-filter-select${region ? " nx-filter-active" : ""}`}>
-          <option value="">Toutes les régions</option>
-          {REGIONS.map((r) => <option key={r} value={r}>{r}</option>)}
         </select>
 
         <select value={promotion} onChange={(e) => setPromotion(e.target.value)} className={`nx-filter-select${promotion ? " nx-filter-active" : ""}`}>

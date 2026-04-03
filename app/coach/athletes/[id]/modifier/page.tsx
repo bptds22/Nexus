@@ -4,8 +4,7 @@ import { use, useState, useCallback, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { loadAthleteRaw, mapToAthleteProfile, buildFormFromRaw } from "../../_data/loadAthleteFromSupabase";
-import { MARC_ANTOINE, type AthleteProfile } from "../../_data/mockAthleteProfiles";
+import { loadAthleteRaw, buildFormFromRaw } from "../../_data/loadAthleteFromSupabase";
 import { getBadgesForSport, MAX_BADGES, type LeadershipBadge, type BadgeOption } from "@/lib/config/sportBadges";
 import StepIndicator from "../../../components/StepIndicator";
 import TagInput from "../../../components/TagInput";
@@ -160,96 +159,16 @@ const COACH_TEAM = {
    HELPERS — build form data from existing profile
 ══════════════════════════════════════════════════════════════ */
 
-function parseHeight(display: string): { feet: string; inches: string } {
-  const m = display.match(/(\d+)'(\d+)/);
-  return m ? { feet: m[1], inches: m[2] } : { feet: "", inches: "" };
-}
-
-function parseWeight(display: string): string {
-  const m = display.match(/(\d+)/);
-  return m ? m[1] : "";
-}
-
-function buildFormFromProfile(a: AthleteProfile): AthleteFormData {
-  const h = parseHeight(a.heightDisplay);
-
+function emptyForm(): AthleteFormData {
   return {
-    identity: {
-      identityMode: "detailed",
-      photo: a.photo || "",
-      firstName: a.firstName,
-      lastName: a.lastName,
-      gender: "M",
-      dateOfBirth: a.dateOfBirth,
-      gradYear: String(a.graduationYear),
-      school: a.school,
-      city: a.region.split(",")[0]?.trim() || "",
-      region: a.region,
-      phone: "", email: "",
-      parentName: "", parentPhone: "",
-    },
-    academic: {
-      academicMode: "simple",
-      gpa: a.gpa ? String(a.gpa) : "",
-      strongSubjects: [],
-      academicHonors: [],
-      cegepType: "",
-      cegepProgramDetail: "",
-      openToPrivate: false,
-      openToAnglophone: false,
-      openToRelocate: false,
-      cegepRegions: [],
-    },
-    physical: {
-      physicalMode: "simple",
-      heightFeet: h.feet,
-      heightInches: h.inches,
-      weightLbs: parseWeight(a.weightDisplay),
-      wingspan: "", handSize: "",
-      dominantHand: "", dominantFoot: "",
-      fortyYard: a.fortyYard?.replace("s", "") || "",
-      verticalJump: "", broadJump: "",
-      benchPress: a.bench?.replace(" lbs", "") || "",
-      shuttleAgility: "", sprint100m: "",
-    },
-    sports: {
-      sportsMode: "detailed",
-      primarySport: "Football",
-      primarySportDetail: "",
-      secondarySport: "", secondarySportDetail: "",
-      primaryPosition: a.position,
-      secondaryPosition: "",
-      secondarySportPosition: "",
-      selectedTeamId: "t1",
-      currentTeam: COACH_TEAM.teams[0].name,
-      teamLevel: COACH_TEAM.teams[0].level,
-      teamDivision: COACH_TEAM.teams[0].division,
-      jerseyNumber: a.jerseyNumber || "",
-      league: COACH_TEAM.teams[0].league,
-      secondaryTeamId: "", secondaryTeam: "",
-      secondaryTeamLevel: "", secondaryTeamDivision: "", secondaryLeague: "",
-      recruitingLevel: "",
-      openToCoaching: false,
-    },
-    scouting: {
-      evalMode: (a.stars && a.stars > 0) ? "simple" : "simple",
-      starRating: a.stars || 0,
-      traitRatings: {},
-      badges: [...a.badges],
-      coachEndorsement: a.coachEndorsement || "",
-    },
-    media: {
-      mediaMode: "simple",
-      hudlLink: "",
-      youtubeLink: a.videoUrl || "",
-      instagramLink: "",
-      highlightVideo: "", fullGameVideo: "", trainingVideo: "",
-    },
-    submission: {
-      recruitingStatus: "Ouvert aux offres",
-      preferredDivision: "",
-    },
-    parentalConsent: true,
+    identity: { identityMode: "simple", photo: "", firstName: "", lastName: "", gender: "", dateOfBirth: "", gradYear: "", school: "", city: "", region: "", phone: "", email: "", parentName: "", parentPhone: "" },
+    academic: { academicMode: "simple", gpa: "", strongSubjects: [], academicHonors: [], cegepType: "", cegepProgramDetail: "", openToPrivate: false, openToAnglophone: false, openToRelocate: false, cegepRegions: [] },
+    physical: { physicalMode: "simple", heightFeet: "", heightInches: "", weightLbs: "", wingspan: "", handSize: "", dominantHand: "", dominantFoot: "", fortyYard: "", verticalJump: "", broadJump: "", benchPress: "", shuttleAgility: "", sprint100m: "" },
+    sports: { sportsMode: "simple", primarySport: "", primarySportDetail: "", secondarySport: "", secondarySportDetail: "", primaryPosition: "", secondaryPosition: "", secondarySportPosition: "", selectedTeamId: "", currentTeam: "", teamLevel: "", teamDivision: "", jerseyNumber: "", league: "", secondaryTeamId: "", secondaryTeam: "", secondaryTeamLevel: "", secondaryTeamDivision: "", secondaryLeague: "", recruitingLevel: "", openToCoaching: false },
+    scouting: { evalMode: "simple", starRating: 0, traitRatings: {}, badges: [], coachEndorsement: "" },
+    media: { mediaMode: "simple", hudlLink: "", youtubeLink: "", instagramLink: "", highlightVideo: "", fullGameVideo: "", trainingVideo: "" },
+    submission: { recruitingStatus: "", preferredDivision: "" },
+    parentalConsent: false,
   };
 }
 
@@ -288,7 +207,7 @@ function ModifierContent({ id }: { id: string }) {
   const stepParam = searchParams.get("step");
 
   const [loading, setLoading] = useState(true);
-  const [form, setForm] = useState<AthleteFormData>(() => buildFormFromProfile(MARC_ANTOINE));
+  const [form, setForm] = useState<AthleteFormData>(emptyForm);
   const [currentStep, setCurrentStep] = useState(mapStepParam(stepParam));
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
   const [showErrors, setShowErrors] = useState(false);
@@ -460,6 +379,7 @@ function ModifierContent({ id }: { id: string }) {
       genre: form.identity.gender || null,
       annee_diplomation: form.identity.gradYear ? parseInt(form.identity.gradYear) : null,
       email: form.identity.email || null,
+      photo_url: form.identity.photo || null,
     };
     console.log("Saving personal:", personalData);
 
@@ -522,15 +442,11 @@ function ModifierContent({ id }: { id: string }) {
       sportSecondaireId = secSportRow?.id || null;
       console.log("Secondary sport save:", { dropdownValue: form.sports.secondarySport, sport_secondaire_id: sportSecondaireId });
     }
-    if (form.sports.secondarySportPosition) {
-      const { data: secPosRow } = await supabase.from("positions").select("id").eq("abreviation", form.sports.secondarySportPosition).maybeSingle();
-      if (!secPosRow) {
-        const { data: secPosRow2 } = await supabase.from("positions").select("id").eq("nom", form.sports.secondarySportPosition).maybeSingle();
-        positionSecondaireId = secPosRow2?.id || null;
-      } else {
-        positionSecondaireId = secPosRow.id;
-      }
-      console.log("Secondary position save:", { dropdownValue: form.sports.secondarySportPosition, position_secondaire_id: positionSecondaireId });
+    // Secondary position = same sport, different position (e.g. OG / LB)
+    if (form.sports.secondaryPosition && sportId) {
+      const { data: secPosRow } = await supabase.from("positions").select("id").eq("abreviation", form.sports.secondaryPosition).eq("sport_id", sportId).maybeSingle();
+      positionSecondaireId = secPosRow?.id || null;
+      console.log("Secondary position save:", { dropdownValue: form.sports.secondaryPosition, position_secondaire_id: positionSecondaireId });
     }
 
     const sportData: Record<string, unknown> = {
@@ -667,7 +583,20 @@ function ModifierContent({ id }: { id: string }) {
             )}
             <label className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" /><circle cx="12" cy="13" r="4" /></svg>
-              <input type="file" accept="image/*" className="hidden" title="Téléverser une photo" onChange={(e) => { const f = e.target.files?.[0]; if (f) updateIdentity("photo", URL.createObjectURL(f)); }} />
+              <input type="file" accept="image/*" className="hidden" title="Téléverser une photo" onChange={async (e) => {
+                const f = e.target.files?.[0];
+                if (!f) return;
+                updateIdentity("photo", URL.createObjectURL(f));
+                const supabase = (await import("@/lib/supabase/client")).createClient();
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) return;
+                const fileExt = f.name.split('.').pop();
+                const filePath = `athletes/${user.id}/${Date.now()}.${fileExt}`;
+                const { error: uploadError } = await supabase.storage.from("avatars").upload(filePath, f, { upsert: true });
+                if (uploadError) { console.error("Photo upload error:", JSON.stringify(uploadError), uploadError.message, uploadError.statusCode); return; }
+                const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(filePath);
+                updateIdentity("photo", urlData.publicUrl);
+              }} />
             </label>
           </div>
           <div>
@@ -827,6 +756,7 @@ function ModifierContent({ id }: { id: string }) {
           <div><label className={labelCls}>Sport principal{req}</label><NxSelect value={d.primarySport} onChange={(v) => { updateSports("primarySport", v); if (v !== "Autre") updateSports("primarySportDetail", ""); }} hasError={isFieldEmpty(d.primarySport)} options={SPORTS.map((s) => ({ value: s, label: s }))} />{d.primarySport === "Autre" && <input type="text" value={d.primarySportDetail} onChange={(e) => updateSports("primarySportDetail", e.target.value)} placeholder="Précisez le sport…" className={`${inputCls} mt-2`} />}</div>
           <SportPositionSelect sport={d.primarySport === "Autre" && d.primarySportDetail ? "Autre" : d.primarySport} value={d.primaryPosition} onChange={(v) => updateSports("primaryPosition", v)} label="Position principale" required hasError={isFieldEmpty(d.primaryPosition)} />
           <div><label className={labelCls}>Numéro de chandail{req}</label><input type="text" inputMode="numeric" value={d.jerseyNumber} onChange={(e) => updateSports("jerseyNumber", e.target.value.replace(/\D/g, ""))} placeholder="#" className={`${inputCls} ${isFieldEmpty(d.jerseyNumber) ? errBorder : ""}`} /></div>
+          <SportPositionSelect sport={d.primarySport === "Autre" && d.primarySportDetail ? "Autre" : d.primarySport} value={d.secondaryPosition} onChange={(v) => updateSports("secondaryPosition", v)} label="Position secondaire" />
         </div>
 
         {isDetailed && (
@@ -834,7 +764,6 @@ function ModifierContent({ id }: { id: string }) {
             <p className={sectionTitle}>Détails additionnels</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
               <div><label className={labelCls}>Sport secondaire</label><NxSelect value={d.secondarySport} onChange={(v) => { const val = v === "Aucun" ? "" : v; updateSports("secondarySport", val); if (val !== "Autre") updateSports("secondarySportDetail", ""); if (!val) { updateSports("secondarySportPosition", ""); updateSports("secondaryTeamId", ""); updateSports("secondaryTeam", ""); updateSports("secondaryTeamLevel", ""); updateSports("secondaryTeamDivision", ""); updateSports("secondaryLeague", ""); } }} placeholder="Aucun" options={[{ value: "Aucun", label: "Aucun" }, ...SPORTS.map((s) => ({ value: s, label: s }))]} />{d.secondarySport === "Autre" && <input type="text" value={d.secondarySportDetail} onChange={(e) => updateSports("secondarySportDetail", e.target.value)} placeholder="Précisez le sport…" className={`${inputCls} mt-2`} />}</div>
-              <SportPositionSelect sport={d.primarySport === "Autre" && d.primarySportDetail ? "Autre" : d.primarySport} value={d.secondaryPosition} onChange={(v) => updateSports("secondaryPosition", v)} label="Position secondaire" />
               {d.secondarySport && d.secondarySport !== "" && (
                 <SportPositionSelect sport={d.secondarySport === "Autre" && d.secondarySportDetail ? "Autre" : d.secondarySport} value={d.secondarySportPosition} onChange={(v) => updateSports("secondarySportPosition", v)} label={`Position — ${d.secondarySport === "Autre" && d.secondarySportDetail ? d.secondarySportDetail : d.secondarySport}`} />
               )}

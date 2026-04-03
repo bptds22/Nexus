@@ -111,18 +111,46 @@ export default function CoachSidebar({ mobileOpen, onClose }: CoachSidebarProps)
           }
         }
 
-        const { data: coachEntry } = await supabase
-          .from("school_coaches")
-          .select("role, sport")
-          .eq("coach_id", user.id)
+        // Check for league context
+        const { data: userCtx } = await supabase
+          .from("users")
+          .select("context")
+          .eq("id", user.id)
           .single();
-        if (coachEntry) {
-          const ROLE_LABELS: Record<string, string> = {
-            COACH: "Coach",
-            DIRECTEUR: "Directeur sportif",
-            DIRECTEUR_INTERIM: "Directeur sportif intérimaire",
-          };
-          setPortalLabel(ROLE_LABELS[coachEntry.role] || "Coach");
+
+        console.log("[CoachSidebar] User context:", userCtx?.context);
+
+        if (userCtx?.context === "ligue_civile") {
+          // Get league info for subtitle
+          const { data: leagueCoach } = await supabase
+            .from("league_coaches")
+            .select("league_id, league_team_id, leagues(name), league_teams(name)")
+            .eq("coach_id", user.id)
+            .limit(1)
+            .maybeSingle();
+
+          console.log("[CoachSidebar] League coach data:", leagueCoach);
+
+          if (leagueCoach) {
+            const leagueName = (leagueCoach as any).leagues?.name || "";
+            const teamName = (leagueCoach as any).league_teams?.name || "";
+            setUserSub(teamName ? `${teamName} — ${leagueName}` : leagueName);
+          }
+        } else {
+          // School context — check school_coaches for role label
+          const { data: coachEntry } = await supabase
+            .from("school_coaches")
+            .select("role, sport")
+            .eq("coach_id", user.id)
+            .single();
+          if (coachEntry) {
+            const ROLE_LABELS: Record<string, string> = {
+              COACH: "Coach",
+              DIRECTEUR: "Directeur sportif",
+              DIRECTEUR_INTERIM: "Directeur sportif intérimaire",
+            };
+            setPortalLabel(ROLE_LABELS[coachEntry.role] || "Coach");
+          }
         }
       }
     }

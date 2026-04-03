@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import StepIndicator from "../../components/StepIndicator";
 import TagInput from "../../components/TagInput";
 import DatePicker from "../../components/DatePicker";
@@ -241,6 +241,45 @@ export default function CreateAthletePage() {
   const [showErrors, setShowErrors] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
+  // League context state
+  const [userContext, setUserContext] = useState<string | null>(null);
+  const [leagueTeamId, setLeagueTeamId] = useState<string | null>(null);
+  const [leagueTeamName, setLeagueTeamName] = useState("");
+
+  // Detect league context on mount
+  useEffect(() => {
+    async function detectContext() {
+      const supabase = createClient();
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser) return;
+
+      const { data: userProfile } = await supabase
+        .from("users")
+        .select("context")
+        .eq("id", authUser.id)
+        .single();
+
+      console.log("[CreateAthlete] User context:", userProfile?.context);
+
+      if (userProfile?.context === "ligue_civile") {
+        setUserContext("ligue_civile");
+
+        const { data: teams } = await supabase
+          .from("league_teams")
+          .select("id, name, league_id, leagues(name, city, region)")
+          .eq("owner_id", authUser.id);
+
+        console.log("[CreateAthlete] League teams for user:", teams);
+
+        if (teams && teams.length > 0) {
+          setLeagueTeamId(teams[0].id);
+          setLeagueTeamName(teams[0].name || "");
+        }
+      }
+    }
+    detectContext();
+  }, []);
+
   /* ── Updaters ──────────────────────────────────────────────── */
 
   const updateIdentity = useCallback((field: string, value: string) => {
@@ -319,7 +358,7 @@ export default function CreateAthletePage() {
       }
       case 5: return true;
       case 6: return true;
-      case 7: return !!form.submission.recruitingStatus && form.parentalConsent;
+      case 7: return form.parentalConsent;
       default: return true;
     }
   }
@@ -387,10 +426,23 @@ export default function CreateAthletePage() {
       .eq("sport_id", sportData?.id)
       .maybeSingle();
 
+    // Get secondary position_id (same sport, different position)
+    let secondaryPositionId = null;
+    if (form.sports.secondaryPosition && sportData?.id) {
+      const { data: secPosData } = await supabase
+        .from("positions")
+        .select("id")
+        .eq("abreviation", form.sports.secondaryPosition)
+        .eq("sport_id", sportData.id)
+        .maybeSingle();
+      secondaryPositionId = secPosData?.id || null;
+    }
+
     // Build athlete record
     const athleteRecord = {
       coach_id: authUser.id,
-      school_id: coachProfile?.school_id || null,
+      school_id: leagueTeamId ? null : (coachProfile?.school_id || null),
+      league_team_id: leagueTeamId || null,
 
       // Identity
       first_name: form.identity.firstName,
@@ -445,7 +497,7 @@ export default function CreateAthletePage() {
       sport_id: sportData?.id || null,
       position_id: positionData?.id || null,
       sport_secondaire_id: null,
-      position_secondaire_id: null,
+      position_secondaire_id: secondaryPositionId,
       numero_jersey: form.sports.jerseyNumber || null,
       ouvert_entraineur_cegep: form.sports.openToCoaching,
 
@@ -460,6 +512,10 @@ export default function CreateAthletePage() {
       // Evaluation
       cote_globale_entraineur: form.scouting.starRating || null,
       notes_coach: form.scouting.coachEndorsement || null,
+
+      // Recruitment override
+      statut_recrutement_override: form.submission.recruitingStatus || null,
+      recrutement_override_at: form.submission.recruitingStatus ? new Date().toISOString() : null,
 
       // Status
       status: "ACTIF",
@@ -554,7 +610,20 @@ export default function CreateAthletePage() {
                 <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" /><circle cx="12" cy="13" r="4" />
               </svg>
               <input type="file" accept="image/*" className="hidden" title="Téléverser une photo"
-                onChange={(e) => { const f = e.target.files?.[0]; if (f) updateIdentity("photo", URL.createObjectURL(f)); }} />
+                onChange={async (e) => {
+                  const f = e.target.files?.[0];
+                  if (!f) return;
+                  updateIdentity("photo", URL.createObjectURL(f));
+                  const supabase = (await import("@/lib/supabase/client")).createClient();
+                  const { data: { user } } = await supabase.auth.getUser();
+                  if (!user) return;
+                  const fileExt = f.name.split('.').pop();
+                  const filePath = `athletes/${user.id}/${Date.now()}.${fileExt}`;
+                  const { error: uploadError } = await supabase.storage.from("avatars").upload(filePath, f, { upsert: true });
+                  if (uploadError) { console.error("Photo upload error:", JSON.stringify(uploadError), uploadError.message, uploadError.statusCode); return; }
+                  const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(filePath);
+                  updateIdentity("photo", urlData.publicUrl);
+                }} />
             </label>
           </div>
           <div>
@@ -852,6 +921,7 @@ export default function CreateAthletePage() {
             <label className={labelCls}>Numéro de chandail{req}</label>
             <input type="text" inputMode="numeric" value={d.jerseyNumber} onChange={(e) => { const v = e.target.value.replace(/\D/g, ""); updateSports("jerseyNumber", v); }} placeholder="#" className={`${inputCls} ${isFieldEmpty(d.jerseyNumber) ? errBorder : ""}`} />
           </div>
+          <SportPositionSelect sport={d.primarySport === "Autre" && d.primarySportDetail ? "Autre" : d.primarySport} value={d.secondaryPosition} onChange={(v) => updateSports("secondaryPosition", v)} label="Position secondaire" />
         </div>
 
         {isDetailed && (
@@ -870,7 +940,6 @@ export default function CreateAthletePage() {
                   placeholder="Aucun" options={[{ value: "Aucun", label: "Aucun" }, ...SPORTS.map((s) => ({ value: s, label: s }))]} />
                 {d.secondarySport === "Autre" && <input type="text" value={d.secondarySportDetail} onChange={(e) => updateSports("secondarySportDetail", e.target.value)} placeholder="Précisez le sport…" className={`${inputCls} mt-2`} />}
               </div>
-              <SportPositionSelect sport={d.primarySport === "Autre" && d.primarySportDetail ? "Autre" : d.primarySport} value={d.secondaryPosition} onChange={(v) => updateSports("secondaryPosition", v)} label="Position secondaire" />
               {d.secondarySport && d.secondarySport !== "" && (
                 <SportPositionSelect sport={d.secondarySport === "Autre" && d.secondarySportDetail ? "Autre" : d.secondarySport} value={d.secondarySportPosition} onChange={(v) => updateSports("secondarySportPosition", v)}
                   label={`Position — ${d.secondarySport === "Autre" && d.secondarySportDetail ? d.secondarySportDetail : d.secondarySport}`} />
@@ -1306,8 +1375,8 @@ export default function CreateAthletePage() {
           <p className={sectionTitle}>Finalisation</p>
           <div>
             <label className={labelCls}>Statut de recrutement{req}</label>
-            <NxSelect value={submission.recruitingStatus} onChange={(v) => updateSubmission("recruitingStatus", v)} hasError={isFieldEmpty(submission.recruitingStatus)}
-              options={[{ value: "Ouvert aux offres", label: "Ouvert aux offres" }, { value: "Committed", label: "Committed" }, { value: "En visite", label: "En visite" }]} />
+            <NxSelect value={submission.recruitingStatus} onChange={(v) => { console.log("Recruitment status selected:", v); updateSubmission("recruitingStatus", v); }}
+              options={[{ value: "OUVERT", label: "Ouvert aux offres" }, { value: "ENGAGE", label: "Engagé / Committé" }, { value: "FERME", label: "Fermé / Non disponible" }]} />
           </div>
         </div>
 
