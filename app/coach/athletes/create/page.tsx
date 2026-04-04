@@ -438,6 +438,14 @@ export default function CreateAthletePage() {
       secondaryPositionId = secPosData?.id || null;
     }
 
+    // Secondary sport lookup
+    let sportSecondaireId = null;
+    if (form.sports.secondarySport && form.sports.secondarySport !== "Aucun") {
+      const { data: secSportRow } = await supabase.from("sports").select("id").eq("nom", form.sports.secondarySport).maybeSingle();
+      sportSecondaireId = secSportRow?.id || null;
+      console.log("Secondary sport lookup:", form.sports.secondarySport, "→", sportSecondaireId);
+    }
+
     // Build athlete record
     const athleteRecord = {
       coach_id: authUser.id,
@@ -496,7 +504,7 @@ export default function CreateAthletePage() {
       // Sports
       sport_id: sportData?.id || null,
       position_id: positionData?.id || null,
-      sport_secondaire_id: null,
+      sport_secondaire_id: sportSecondaireId,
       position_secondaire_id: secondaryPositionId,
       numero_jersey: form.sports.jerseyNumber || null,
       ouvert_entraineur_cegep: form.sports.openToCoaching,
@@ -522,6 +530,8 @@ export default function CreateAthletePage() {
       verified: false,
       profile_completion: 0,
     };
+
+    console.log("Academic honors being saved:", form.academic.academicHonors);
 
     const { data: newAthlete, error } = await supabase
       .from("athletes")

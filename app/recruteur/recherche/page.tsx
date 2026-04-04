@@ -3,9 +3,10 @@
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { SPORT_POSITIONS } from "../_data/mockSearchAthletes";
 import type { SearchAthlete } from "../_data/mockSearchAthletes";
 import NxIcon from "@/components/ui/NxIcon";
+
+type ExtendedAthlete = SearchAthlete & { academicBadges: string[]; stars: number; recruitmentStatus: string | null };
 import FeatureGate from "@/components/subscription/FeatureGate";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -16,14 +17,21 @@ import FeatureGate from "@/components/subscription/FeatureGate";
 const SPORTS = [
   { value: "", label: "Tous les sports" },
   { value: "football", label: "Football" },
-  { value: "volleyball", label: "Volleyball" },
   { value: "basketball", label: "Basketball" },
   { value: "soccer", label: "Soccer" },
   { value: "hockey", label: "Hockey" },
-  { value: "cross_country", label: "Cross-country" },
-  { value: "natation", label: "Natation" },
-  { value: "athletisme", label: "Athlétisme" },
+  { value: "volleyball", label: "Volleyball" },
+  { value: "athlétisme", label: "Athlétisme" },
   { value: "badminton", label: "Badminton" },
+  { value: "baseball", label: "Baseball" },
+  { value: "cheerleading", label: "Cheerleading" },
+  { value: "cross-country", label: "Cross-country" },
+  { value: "flag_football", label: "Flag football" },
+  { value: "futsal", label: "Futsal" },
+  { value: "natation", label: "Natation" },
+  { value: "rugby", label: "Rugby" },
+  { value: "ultimate_frisbee", label: "Ultimate frisbee" },
+  { value: "autre", label: "Autre" },
 ];
 
 const PROMOTIONS = ["2026", "2027", "2028"];
@@ -37,13 +45,12 @@ const sportLabel = (value: string): string => {
 
 /* ── Athlete Search Card ──────────────────────────────────── */
 
-function AthleteSearchCard({ a, onToggleFav }: { a: SearchAthlete; onToggleFav: (id: string) => void }) {
+function AthleteSearchCard({ a, onToggleFav }: { a: ExtendedAthlete; onToggleFav: (id: string) => void }) {
   return (
     <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] overflow-hidden hover:border-[#E63946]/30 hover:shadow-[0_0_24px_rgba(230,57,70,0.12)] hover:-translate-y-1.5 hover:scale-[1.02] transition-all duration-300 ease-out group flex flex-col">
       {/* Photo area */}
       <div className="relative h-[180px] bg-[#2F3440] overflow-hidden">
         {a.photo ? (
-          // eslint-disable-next-line @next/next/no-img-element
           <img src={a.photo} alt={`${a.firstName} ${a.lastName}`} className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
@@ -54,49 +61,69 @@ function AthleteSearchCard({ a, onToggleFav }: { a: SearchAthlete; onToggleFav: 
         )}
         <div className="absolute bottom-0 left-0 right-0 h-1/2" style={{ background: "linear-gradient(to top, rgba(26,29,36,0.95), transparent)" }} />
 
-        {/* Favorite */}
-        <button
-          type="button"
-          onClick={(e) => { e.preventDefault(); onToggleFav(a.id); }}
-          className="absolute top-3 right-3 w-9 h-9 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center hover:bg-black/60 transition-colors z-10"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill={a.isFavorited ? "#E63946" : "none"} stroke={a.isFavorited ? "#E63946" : "#6B7280"} strokeWidth="2" strokeLinecap="round">
-            <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
+        {/* Top left — verified check + favorite heart */}
+        <div className="absolute top-3 left-3 z-10 flex items-center gap-2">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill={a.isVerified ? "#3B82F6" : "#4a4d56"} stroke="none">
+            <circle cx="12" cy="12" r="10" />
+            <path d="M9 12l2 2 4-4" stroke={a.isVerified ? "#fff" : "#6b7280"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
           </svg>
-        </button>
-
-        {/* Position chip */}
-        <div className="absolute bottom-3 left-3 z-10">
-          <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-[#E63946] text-white text-[12px] font-bold uppercase tracking-wider">
-            {sportLabel(a.sport)}{a.position ? ` · ${a.position}` : ""}
-          </span>
+          <button
+            type="button"
+            title="Favori"
+            onClick={(e) => { e.preventDefault(); onToggleFav(a.id); }}
+            className="w-7 h-7 rounded-full flex items-center justify-center"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill={a.isFavorited ? "#E63946" : "none"} stroke={a.isFavorited ? "#E63946" : "#6B7280"} strokeWidth="2" strokeLinecap="round">
+              <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
+            </svg>
+          </button>
         </div>
 
-        {/* Verified badge */}
-        {a.isVerified && (
-          <div className="absolute top-3 left-3 z-10">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="#3B82F6" stroke="none">
-              <circle cx="12" cy="12" r="10" />
-              <path d="M9 12l2 2 4-4" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+        {/* Top right — star rating always visible */}
+        <div className="absolute top-3 right-3 z-10 flex items-center gap-0.5 bg-black/70 backdrop-blur-md rounded-full px-2.5 py-1.5">
+          {Array.from({ length: 5 }, (_, i) => (
+            <svg key={i} width="14" height="14" viewBox="0 0 24 24" fill={a.stars >= i + 1 ? "#F59E0B" : a.stars >= i + 0.5 ? "#F59E0B" : "#4a4d56"} stroke="none">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
             </svg>
-          </div>
-        )}
+          ))}
+        </div>
+
       </div>
 
       {/* Info */}
       <div className="p-4 flex flex-col flex-1 gap-1">
-        {/* Name */}
+        {/* Name + position */}
         <div className="flex items-center gap-2 flex-wrap">
           <Link href={`/recruteur/athletes/${a.id}`} className="text-[17px] font-bold text-white hover:text-[#E63946] transition-colors">
             {a.firstName} {a.lastName}
           </Link>
-          {null}
+          {a.position && (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-[#2D3748] text-[#c0c4cc] text-[12px] font-bold uppercase tracking-wider">
+              {a.position}
+            </span>
+          )}
+          {a.recruitmentStatus && (
+            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider ${
+              a.recruitmentStatus === 'LETTRE_SIGNEE' || a.recruitmentStatus === 'Lettre signée' ? 'bg-[#22C55E]/15 text-[#22C55E] border border-[#22C55E]/30' :
+              a.recruitmentStatus === 'ENGAGE' || a.recruitmentStatus === 'Engagé' ? 'bg-[#3B82F6]/15 text-[#3B82F6] border border-[#3B82F6]/30' :
+              a.recruitmentStatus === 'VISITE_PLANIFIEE' || a.recruitmentStatus === 'Visite planifiée' ? 'bg-[#8B5CF6]/15 text-[#8B5CF6] border border-[#8B5CF6]/30' :
+              a.recruitmentStatus === 'EN_DISCUSSION' || a.recruitmentStatus === 'En discussion' ? 'bg-[#F59E0B]/15 text-[#F59E0B] border border-[#F59E0B]/30' :
+              a.recruitmentStatus === 'CONTACTE' || a.recruitmentStatus === 'Contacté' ? 'bg-[#6366F1]/15 text-[#6366F1] border border-[#6366F1]/30' :
+              'bg-[#9CA3AF]/15 text-[#9CA3AF] border border-[#9CA3AF]/30'
+            }`}>
+              {a.recruitmentStatus === 'LETTRE_SIGNEE' ? 'Lettre signée' :
+               a.recruitmentStatus === 'VISITE_PLANIFIEE' ? 'Visite planifiée' :
+               a.recruitmentStatus === 'EN_DISCUSSION' ? 'En discussion' :
+               a.recruitmentStatus === 'CONTACTE' ? 'Contacté' :
+               a.recruitmentStatus === 'IDENTIFIE' ? 'Identifié' :
+               a.recruitmentStatus === 'ENGAGE' ? 'Engagé' :
+               a.recruitmentStatus}
+            </span>
+          )}
         </div>
 
-        {/* School / Org */}
-        <p className="text-[14px] text-[#c0c4cc] flex items-center gap-1.5">
-          {a.school}
-        </p>
+        {/* School */}
+        <p className="text-[14px] text-[#c0c4cc]">{a.school}</p>
 
         {/* Region · Promotion */}
         <p className="text-[13px] text-[#9CA3AF]">
@@ -106,24 +133,18 @@ function AthleteSearchCard({ a, onToggleFav }: { a: SearchAthlete; onToggleFav: 
         {/* Badges */}
         <div className="flex flex-wrap gap-2 mt-1.5 min-h-[28px]">
           {a.badges.slice(0, 2).map((b) => (
-            <span key={b.badgeId} className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#2D3748] text-[12px] font-semibold text-white">
-              <NxIcon name={b.icon} size={13} className="text-[#9CA3AF]" /> {b.label}
+            <span key={b.badgeId} className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#E63946]/15 border border-[#E63946]/30 text-[13px] font-bold text-[#E63946]">
+              <NxIcon name={b.icon} size={14} className="text-[#E63946]" /> {b.label}
             </span>
           ))}
         </div>
 
-        {/* Footer — pinned bottom */}
+        {/* Footer */}
         <div className="flex items-center justify-between pt-3 mt-auto border-t border-[#2D3748]/60">
-          {a.favorites > 0 ? (
-            <div className="flex items-center gap-1.5">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="#E63946" stroke="none">
-                <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
-              </svg>
-              <span className="text-[13px] font-bold text-[#c0c4cc]">{a.favorites}</span>
-            </div>
-          ) : <div />}
-
-          <Link href={`/recruteur/athletes/${a.id}`} className="text-[13px] font-bold text-[#E63946] hover:text-[#D42B22] transition-colors flex items-center gap-1">
+          <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-[#2D3748] text-[#9CA3AF] text-[12px] font-bold uppercase tracking-wider">
+            {sportLabel(a.sport)}
+          </span>
+          <Link href={`/recruteur/athletes/${a.id}`} className="text-[13px] font-semibold text-[#9CA3AF] hover:text-white transition-colors flex items-center gap-1">
             Voir le profil
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
               <path d="M5 12h14" /><path d="M12 5l7 7-7 7" />
@@ -141,20 +162,14 @@ function AthleteSearchCard({ a, onToggleFav }: { a: SearchAthlete; onToggleFav: 
 
 /* ── Athlete Search Row (list view) ─────────────────────────── */
 
-function AthleteSearchRow({ a, onToggleFav }: { a: SearchAthlete; onToggleFav: (id: string) => void }) {
+function AthleteSearchRow({ a, onToggleFav }: { a: ExtendedAthlete; onToggleFav: (id: string) => void }) {
   return (
-    <div
-      className="bg-[#1A1D24] rounded-lg border border-[#2D3748] hover:border-[#E63946]/30 hover:shadow-[0_0_24px_rgba(230,57,70,0.12)] transition-all duration-300 ease-out items-center px-4 py-3 gap-x-4"
-      style={{
-        display: "grid",
-        gridTemplateColumns: "48px 1fr 72px 110px 56px 200px 52px 32px 64px",
-      }}
-    >
-      {/* Avatar — verified badge on top-right, visible */}
+    <div className="bg-[#1A1D24] rounded-lg border border-[#2D3748] hover:border-[#E63946]/30 hover:shadow-[0_0_24px_rgba(230,57,70,0.12)] transition-all duration-300 ease-out flex items-center px-4 py-3 gap-4">
+
+      {/* Avatar + verified badge */}
       <div className="relative w-12 h-12 rounded-full bg-[#2F3440] shrink-0" style={{ overflow: "visible" }}>
         <div className="w-full h-full rounded-full overflow-hidden">
           {a.photo ? (
-            // eslint-disable-next-line @next/next/no-img-element
             <img src={a.photo} alt={`${a.firstName} ${a.lastName}`} className="w-full h-full object-cover" />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
@@ -162,63 +177,77 @@ function AthleteSearchRow({ a, onToggleFav }: { a: SearchAthlete; onToggleFav: (
             </div>
           )}
         </div>
-        {a.isVerified && (
-          <div className="absolute -top-1 -right-1 z-10">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="#3B82F6" stroke="none">
-              <circle cx="12" cy="12" r="10" />
-              <path d="M9 12l2 2 4-4" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-            </svg>
-          </div>
+        <div className="absolute -top-1 -right-1 z-10">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill={a.isVerified ? "#3B82F6" : "#4a4d56"} stroke="none">
+            <circle cx="12" cy="12" r="10" />
+            <path d="M9 12l2 2 4-4" stroke={a.isVerified ? "#fff" : "#6b7280"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+          </svg>
+        </div>
+      </div>
+
+      {/* Name + school + stars */}
+      <div className="min-w-[180px] max-w-[220px]">
+        <Link href={`/recruteur/athletes/${a.id}`} className="text-[15px] font-bold text-white hover:text-[#E63946] transition-colors truncate block">
+          {a.firstName} {a.lastName}
+        </Link>
+        <p className="text-[13px] text-[#9CA3AF] truncate">{a.school}</p>
+        <div className="flex items-center gap-2 mt-0.5">
+          {a.stars > 0 && (
+            <div className="flex items-center gap-0.5">
+              {Array.from({ length: 5 }, (_, i) => (
+                <svg key={i} width="11" height="11" viewBox="0 0 24 24" fill={a.stars >= i + 1 ? "#F59E0B" : "#374151"} stroke="none">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                </svg>
+              ))}
+              <span className="text-[11px] font-bold text-[#F59E0B] ml-0.5">{a.stars.toFixed(1)}</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Sport + Position pills */}
+      <div className="flex items-center gap-1 shrink-0">
+        <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-[#E63946] text-white text-[11px] font-bold uppercase tracking-wider">
+          {sportLabel(a.sport)}
+        </span>
+        {a.position && (
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-[#2D3748] text-[#c0c4cc] text-[11px] font-bold uppercase tracking-wider">
+            {a.position}
+          </span>
+        )}
+        {a.recruitmentStatus && (
+          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+            a.recruitmentStatus === 'LETTRE_SIGNEE' || a.recruitmentStatus === 'Lettre signée' ? 'bg-[#22C55E]/15 text-[#22C55E] border border-[#22C55E]/30' :
+            a.recruitmentStatus === 'ENGAGE' || a.recruitmentStatus === 'Engagé' ? 'bg-[#3B82F6]/15 text-[#3B82F6] border border-[#3B82F6]/30' :
+            a.recruitmentStatus === 'VISITE_PLANIFIEE' || a.recruitmentStatus === 'Visite planifiée' ? 'bg-[#8B5CF6]/15 text-[#8B5CF6] border border-[#8B5CF6]/30' :
+            a.recruitmentStatus === 'EN_DISCUSSION' || a.recruitmentStatus === 'En discussion' ? 'bg-[#F59E0B]/15 text-[#F59E0B] border border-[#F59E0B]/30' :
+            a.recruitmentStatus === 'CONTACTE' || a.recruitmentStatus === 'Contacté' ? 'bg-[#6366F1]/15 text-[#6366F1] border border-[#6366F1]/30' :
+            'bg-[#9CA3AF]/15 text-[#9CA3AF] border border-[#9CA3AF]/30'
+          }`}>
+            {a.recruitmentStatus === 'LETTRE_SIGNEE' ? 'Lettre signée' :
+             a.recruitmentStatus === 'VISITE_PLANIFIEE' ? 'Visite planifiée' :
+             a.recruitmentStatus === 'EN_DISCUSSION' ? 'En discussion' :
+             a.recruitmentStatus === 'CONTACTE' ? 'Contacté' :
+             a.recruitmentStatus === 'IDENTIFIE' ? 'Identifié' :
+             a.recruitmentStatus === 'ENGAGE' ? 'Engagé' :
+             a.recruitmentStatus}
+          </span>
         )}
       </div>
-
-      {/* Name + school */}
-      <div className="min-w-0">
-        <div className="flex items-center gap-2 flex-wrap">
-          <Link href={`/recruteur/athletes/${a.id}`} className="text-[15px] font-bold text-white hover:text-[#E63946] transition-colors truncate">
-            {a.firstName} {a.lastName}
-          </Link>
-          {null}
-        </div>
-        <p className="text-[13px] text-[#9CA3AF] truncate flex items-center gap-1.5">
-          {a.school}
-        </p>
-      </div>
-
-      {/* Position */}
-      <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-full bg-[#E63946] text-white text-[11px] font-bold uppercase tracking-wider">
-        {sportLabel(a.sport)}{a.position ? ` · ${a.position}` : ""}
-      </span>
 
       {/* Region */}
-      <span className="text-[13px] text-[#9CA3AF] truncate">{a.region}</span>
+      <span className="text-[13px] text-[#9CA3AF] min-w-[120px] shrink-0">{a.region}</span>
 
       {/* Promotion */}
-      <span className="text-[13px] text-[#9CA3AF]">{a.graduationYear}</span>
+      <span className="text-[13px] text-[#9CA3AF] shrink-0 w-[50px]">{a.graduationYear}</span>
 
       {/* Badges */}
-      <div className="flex gap-1.5">
+      <div className="flex gap-1.5 flex-1 min-w-0">
         {a.badges.slice(0, 2).map((b) => (
-          <span key={b.badgeId} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#2D3748] text-[11px] font-semibold text-white whitespace-nowrap">
-            <NxIcon name={b.icon} size={12} className="text-[#9CA3AF]" /> {b.label}
+          <span key={b.badgeId} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#E63946]/15 border border-[#E63946]/30 text-[11px] font-bold text-[#E63946] whitespace-nowrap">
+            <NxIcon name={b.icon} size={12} className="text-[#E63946]" /> {b.label}
           </span>
         ))}
-      </div>
-
-      {/* Favorites count */}
-      <div className="flex items-center gap-1 justify-center">
-        {a.favorites > 0 ? (
-          <>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="#E63946" stroke="none">
-              <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
-            </svg>
-            <span className="text-[12px] font-bold text-[#c0c4cc]">{a.favorites}</span>
-          </>
-        ) : (
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#4a4d56" strokeWidth="2" strokeLinecap="round">
-            <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
-          </svg>
-        )}
       </div>
 
       {/* Fav toggle */}
@@ -226,7 +255,7 @@ function AthleteSearchRow({ a, onToggleFav }: { a: SearchAthlete; onToggleFav: (
         type="button"
         title="Favori"
         onClick={(e) => { e.preventDefault(); onToggleFav(a.id); }}
-        className="w-8 h-8 rounded-full bg-[#13151a] border border-[#2D3748] flex items-center justify-center hover:bg-[#2D3748] transition-colors"
+        className="w-8 h-8 rounded-full bg-[#13151a] border border-[#2D3748] flex items-center justify-center hover:bg-[#2D3748] transition-colors shrink-0"
       >
         <svg width="14" height="14" viewBox="0 0 24 24" fill={a.isFavorited ? "#E63946" : "none"} stroke={a.isFavorited ? "#E63946" : "#6b7280"} strokeWidth="2" strokeLinecap="round">
           <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
@@ -234,7 +263,7 @@ function AthleteSearchRow({ a, onToggleFav }: { a: SearchAthlete; onToggleFav: (
       </button>
 
       {/* View link */}
-      <Link href={`/recruteur/athletes/${a.id}`} className="text-[13px] font-bold text-[#E63946] hover:text-[#D42B22] transition-colors flex items-center gap-1 justify-end">
+      <Link href={`/recruteur/athletes/${a.id}`} className="text-[13px] font-bold text-[#E63946] hover:text-[#D42B22] transition-colors flex items-center gap-1 shrink-0">
         Voir
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
           <path d="M5 12h14" /><path d="M12 5l7 7-7 7" />
@@ -252,129 +281,159 @@ export default function RecherchePage() {
   const [search, setSearch] = useState("");
   const [sport, setSport] = useState("");
   const [position, setPosition] = useState("");
+  const [region, setRegion] = useState("");
   const [promotion, setPromotion] = useState("");
   const [orgType, setOrgType] = useState("");
   const [verifiedOnly, setVerifiedOnly] = useState(false);
   const [withVideoOnly, setWithVideoOnly] = useState(false);
+  const [minRating, setMinRating] = useState("");
+  const [withSportBadge, setWithSportBadge] = useState(false);
+  const [withAcademicBadge, setWithAcademicBadge] = useState(false);
+  const [hideFavorites, setHideFavorites] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
-  const [athletes, setAthletes] = useState<SearchAthlete[]>([]);
+  const [athletes, setAthletes] = useState<ExtendedAthlete[]>([]);
   const [loading, setLoading] = useState(true);
   const [favCounts, setFavCounts] = useState<Record<string, number>>({});
+  const [regions, setRegions] = useState<string[]>([]);
+  const [dynamicPositions, setDynamicPositions] = useState<{ abbr: string; label: string }[]>([]);
 
-  const positions = sport && SPORT_POSITIONS[sport] ? SPORT_POSITIONS[sport] : [];
-
+  // Load athletes + pipeline favorites in parallel
   useEffect(() => {
-    const supabase = createClient();
-
-    supabase
-      .from("athletes")
-      .select(`
-        id,
-        first_name,
-        last_name,
-        photo_url,
-        verified,
-        profile_completion,
-        numero_jersey,
-        annee_diplomation,
-        video_faits_saillants_url,
-        consentement_parental,
-        cote_globale_entraineur,
-        genre,
-        school_id,
-        league_team_id,
-        sports!sport_id(nom),
-        positions!position_id(nom, abreviation),
-        schools!school_id(name, region),
-        evaluations(distinctions)
-      `)
-      .eq("status", "ACTIF")
-      .then(({ data, error }) => {
-        console.log("Athletes loaded:", data?.length, error);
-        if (data) {
-          const mapped: SearchAthlete[] = data.map((a: Record<string, unknown>) => {
-            const sportRel = Array.isArray(a.sports) ? a.sports[0] : a.sports;
-            const posRel = Array.isArray(a.positions) ? a.positions[0] : a.positions;
-            const schoolRel = Array.isArray(a.schools) ? a.schools[0] : a.schools;
-            const evalRel = Array.isArray(a.evaluations) ? a.evaluations[0] : a.evaluations;
-            const distinctions: string[] = ((evalRel as Record<string, unknown> | null)?.distinctions as string[]) || [];
-
-            const badgeMap: Record<string, { label: string; icon: string }> = {
-              captain: { label: "Capitaine", icon: "shield" },
-              allstar: { label: "Équipe d'étoiles", icon: "star" },
-              team_leader: { label: "Leader", icon: "award" },
-            };
-
-            return {
-              id: a.id as string,
-              firstName: a.first_name as string,
-              lastName: a.last_name as string,
-              photo: (a.photo_url as string) || "",
-              sport: ((sportRel as Record<string, string> | null)?.nom || "").toLowerCase().replace(/ /g, "_") as SearchAthlete["sport"],
-              position: (posRel as Record<string, string> | null)?.abreviation || "",
-              school: (schoolRel as Record<string, string> | null)?.name || "",
-              region: (schoolRel as Record<string, string> | null)?.region || "",
-              graduationYear: (a.annee_diplomation as number) || 0,
-              niveau: "Sec. 5" as const,
-              heightDisplay: "",
-              weightDisplay: "",
-              isVerified: a.verified as boolean,
-              isFavorited: false,
-              hasVideo: !!a.video_faits_saillants_url,
-              badges: distinctions
-                .filter((d) => d != null && badgeMap[d])
-                .map((d) => ({ badgeId: d, label: badgeMap[d].label, icon: badgeMap[d].icon })),
-              favorites: 0,
-              views: 0,
-              stars: (a.cote_globale_entraineur as number) || 0,
-              commitmentStatus: "aucun",
-              orgType: (a.school_id ? "scolaire" : "ligue_civile") as "scolaire" | "ligue_civile",
-            };
-          });
-          setAthletes(mapped);
-        }
-        setLoading(false);
-      });
-  }, []);
-
-  // Load user's favorites
-  useEffect(() => {
-    const loadFavorites = async () => {
+    const loadData = async () => {
       const supabase = createClient();
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) return;
+      const userId = session?.user?.id;
 
-      const { data } = await supabase
-        .from("recruiter_favorites")
-        .select("athlete_id")
-        .eq("recruiter_id", session.user.id);
+      const athletePromise = supabase
+        .from("athletes")
+        .select(`
+          id, first_name, last_name, photo_url, verified,
+          annee_diplomation, video_faits_saillants_url, school_id,
+          cote_globale_entraineur,
+          mentions_academiques,
+          statut_recrutement_override,
+          sports!sport_id(nom),
+          positions!position_id(nom, abreviation),
+          schools!school_id(name, region),
+          evaluations(distinctions)
+        `)
+        .eq("status", "ACTIF");
 
-      if (data) {
-        setFavorites(new Set(data.map((f: { athlete_id: string }) => f.athlete_id)));
-      }
-    };
-    loadFavorites();
-  }, []);
+      const pipelinePromise = userId
+        ? supabase.from("pipeline").select("athlete_id, status, favorited_at").eq("recruiter_id", userId)
+        : Promise.resolve({ data: [] as { athlete_id: string; status: string; favorited_at: string | null }[] });
 
-  // Load favorite counts per athlete
-  useEffect(() => {
-    const loadFavCounts = async () => {
-      const supabase = createClient();
-      const { data } = await supabase
-        .from("recruiter_favorites")
-        .select("athlete_id");
+      const favCountPromise = supabase.from("recruiter_favorites").select("athlete_id");
 
-      if (data) {
-        const counts: Record<string, number> = {};
-        data.forEach((f: { athlete_id: string }) => {
-          counts[f.athlete_id] = (counts[f.athlete_id] || 0) + 1;
+      const [{ data: athleteData, error }, { data: pipelineData }, { data: favData }] = await Promise.all([
+        athletePromise,
+        pipelinePromise,
+        favCountPromise,
+      ]);
+      console.log("Athletes loaded:", athleteData?.length, error);
+
+      // Build pipeline map
+      const pipelineMap = new Map<string, { status: string; favorited: boolean }>();
+      ((pipelineData as { athlete_id: string; status: string; favorited_at: string | null }[]) || []).forEach((p) => {
+        pipelineMap.set(p.athlete_id, { status: p.status, favorited: p.favorited_at !== null });
+      });
+
+      // Build favorites set
+      const favSet = new Set<string>();
+      pipelineMap.forEach((val, key) => { if (val.favorited) favSet.add(key); });
+      setFavorites(favSet);
+
+      // Build fav counts
+      const counts: Record<string, number> = {};
+      ((favData as { athlete_id: string }[]) || []).forEach((f) => {
+        counts[f.athlete_id] = (counts[f.athlete_id] || 0) + 1;
+      });
+      setFavCounts(counts);
+
+      if (athleteData) {
+        const badgeMap: Record<string, { label: string; icon: string }> = {
+          captain: { label: "Capitaine", icon: "shield" },
+          allstar: { label: "Équipe d'étoiles", icon: "star" },
+          team_leader: { label: "Leader", icon: "award" },
+        };
+
+        const mapped: ExtendedAthlete[] = athleteData.map((a: Record<string, unknown>) => {
+          const sportRel = Array.isArray(a.sports) ? a.sports[0] : a.sports;
+          const posRel = Array.isArray(a.positions) ? a.positions[0] : a.positions;
+          const schoolRel = Array.isArray(a.schools) ? a.schools[0] : a.schools;
+          const evalRel = Array.isArray(a.evaluations) ? a.evaluations[0] : a.evaluations;
+          const distinctions: string[] = ((evalRel as Record<string, unknown> | null)?.distinctions as string[]) || [];
+          const pipeline = pipelineMap.get(a.id as string);
+
+          return {
+            id: a.id as string,
+            firstName: a.first_name as string,
+            lastName: a.last_name as string,
+            photo: (a.photo_url as string) || "",
+            sport: ((sportRel as Record<string, string> | null)?.nom || "").toLowerCase().replace(/ /g, "_") as any,
+            position: (posRel as Record<string, string> | null)?.abreviation || "",
+            school: (schoolRel as Record<string, string> | null)?.name || "",
+            region: (schoolRel as Record<string, string> | null)?.region || "",
+            graduationYear: (a.annee_diplomation as number) || 0,
+            niveau: "Sec. 5" as const,
+            heightDisplay: "",
+            weightDisplay: "",
+            isVerified: a.verified as boolean,
+            isFavorited: pipeline?.favorited ?? false,
+            hasVideo: !!a.video_faits_saillants_url,
+            badges: distinctions
+              .filter((d) => d != null && badgeMap[d])
+              .map((d) => ({ badgeId: d, label: badgeMap[d].label, icon: badgeMap[d].icon })),
+            favorites: counts[a.id as string] || 0,
+            views: 0,
+            stars: (a.cote_globale_entraineur as number) || 0,
+            academicBadges: (a.mentions_academiques as string[]) || [],
+            recruitmentStatus: (a.statut_recrutement_override as string) || null,
+            commitmentStatus: "aucun",
+            orgType: (a.school_id ? "scolaire" : "ligue_civile") as "scolaire" | "ligue_civile",
+          };
         });
-        setFavCounts(counts);
+        setAthletes(mapped);
+
+        // Derive unique regions
+        const uniqueRegions = Array.from(new Set(mapped.map((a) => a.region).filter(Boolean))).sort();
+        setRegions(uniqueRegions);
+      }
+
+      setLoading(false);
+    };
+    loadData();
+  }, []);
+
+  // Load positions dynamically when sport changes
+  useEffect(() => {
+    if (!sport) { setDynamicPositions([]); setPosition(""); return; }
+
+    const loadPositions = async () => {
+      const supabase = createClient();
+      const { data: sportRow } = await supabase
+        .from("sports")
+        .select("id")
+        .ilike("nom", sport.replace(/_/g, " "))
+        .single();
+      if (!sportRow) return;
+
+      const { data: posRows } = await supabase
+        .from("positions")
+        .select("nom, abreviation")
+        .eq("sport_id", sportRow.id)
+        .order("nom");
+
+      if (posRows) {
+        setDynamicPositions(posRows.map((p: { nom: string; abreviation: string }) => ({
+          abbr: p.abreviation,
+          label: p.nom,
+        })));
       }
     };
-    loadFavCounts();
-  }, []);
+    loadPositions();
+  }, [sport]);
 
   const filtered = useMemo(() => {
     let list = [...athletes];
@@ -385,14 +444,19 @@ export default function RecherchePage() {
     }
     if (sport) list = list.filter((a) => a.sport === sport);
     if (position) list = list.filter((a) => a.position === position);
+    if (region) list = list.filter((a) => a.region === region);
     if (promotion) list = list.filter((a) => a.graduationYear === parseInt(promotion));
     if (verifiedOnly) list = list.filter((a) => a.isVerified);
     if (withVideoOnly) list = list.filter((a) => a.hasVideo);
     if (orgType === "scolaire") list = list.filter((a) => !a.orgType || a.orgType === "scolaire");
     if (orgType === "ligue_civile") list = list.filter((a) => a.orgType === "ligue_civile");
+    if (minRating) list = list.filter((a) => a.stars >= parseFloat(minRating));
+    if (withSportBadge) list = list.filter((a) => a.badges.length > 0);
+    if (withAcademicBadge) list = list.filter((a) => a.academicBadges && a.academicBadges.length > 0);
+    if (hideFavorites) list = list.filter((a) => !favorites.has(a.id));
 
     return list.map((a) => ({ ...a, isFavorited: favorites.has(a.id), favorites: favCounts[a.id] || 0 }));
-  }, [search, sport, position, promotion, verifiedOnly, withVideoOnly, orgType, favorites, athletes, favCounts]);
+  }, [search, sport, position, region, promotion, verifiedOnly, withVideoOnly, orgType, minRating, withSportBadge, withAcademicBadge, hideFavorites, favorites, athletes, favCounts]);
 
   const toggleFav = async (id: string) => {
     const supabase = createClient();
@@ -429,10 +493,10 @@ export default function RecherchePage() {
     }
   };
 
-  const hasFilters = sport || position || promotion || verifiedOnly || withVideoOnly || orgType;
+  const hasFilters = sport || position || region || promotion || verifiedOnly || withVideoOnly || orgType || minRating || withSportBadge || withAcademicBadge || hideFavorites;
 
   const resetFilters = () => {
-    setSport(""); setPosition(""); setPromotion(""); setVerifiedOnly(false); setWithVideoOnly(false); setOrgType("");
+    setSport(""); setPosition(""); setRegion(""); setPromotion(""); setVerifiedOnly(false); setWithVideoOnly(false); setOrgType(""); setMinRating(""); setWithSportBadge(false); setWithAcademicBadge(false); setHideFavorites(false);
   };
 
   return (
@@ -492,7 +556,12 @@ export default function RecherchePage() {
 
         <select value={position} onChange={(e) => setPosition(e.target.value)} className={`nx-filter-select${position ? " nx-filter-active" : ""}`} disabled={!sport}>
           <option value="">{sport ? "Toutes les positions" : "Sélectionner un sport d\u0027abord"}</option>
-          {positions.map((p) => <option key={p.abbr} value={p.abbr}>{p.abbr} — {p.label}</option>)}
+          {dynamicPositions.map((p) => <option key={p.abbr} value={p.abbr}>{p.abbr} — {p.label}</option>)}
+        </select>
+
+        <select value={region} onChange={(e) => setRegion(e.target.value)} className={`nx-filter-select${region ? " nx-filter-active" : ""}`}>
+          <option value="">Toutes les régions</option>
+          {regions.map((r) => <option key={r} value={r}>{r}</option>)}
         </select>
 
         <select value={promotion} onChange={(e) => setPromotion(e.target.value)} className={`nx-filter-select${promotion ? " nx-filter-active" : ""}`}>
@@ -506,10 +575,39 @@ export default function RecherchePage() {
           <option value="ligue_civile">Ligue civile</option>
         </select>
 
+        <select value={minRating} onChange={(e) => setMinRating(e.target.value)} className={`nx-filter-select${minRating ? " nx-filter-active" : ""}`}>
+          <option value="">Toutes les cotes</option>
+          <option value="1">★ 1+</option>
+          <option value="2">★★ 2+</option>
+          <option value="3">★★★ 3+</option>
+          <option value="4">★★★★ 4+</option>
+          <option value="5">★★★★★ 5</option>
+        </select>
+
         {/* Divider */}
         <div className="w-px h-6 bg-[#2D3748] mx-1 hidden sm:block" />
 
         {/* Toggle checkboxes */}
+        <label className="flex items-center gap-2 cursor-pointer group">
+          <input type="checkbox" checked={withSportBadge} onChange={(e) => setWithSportBadge(e.target.checked)} className="sr-only" />
+          <div className={`nx-filter-checkbox${withSportBadge ? " checked" : ""}`}>
+            {withSportBadge && (
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="4" strokeLinecap="round"><path d="M20 6L9 17l-5-5" /></svg>
+            )}
+          </div>
+          <span className={`text-[13px] font-semibold transition-colors ${withSportBadge ? "text-white" : "text-[#9CA3AF] group-hover:text-[#c0c0c0]"}`}>Avec distinction sportive</span>
+        </label>
+
+        <label className="flex items-center gap-2 cursor-pointer group">
+          <input type="checkbox" checked={withAcademicBadge} onChange={(e) => setWithAcademicBadge(e.target.checked)} className="sr-only" />
+          <div className={`nx-filter-checkbox${withAcademicBadge ? " checked" : ""}`}>
+            {withAcademicBadge && (
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="4" strokeLinecap="round"><path d="M20 6L9 17l-5-5" /></svg>
+            )}
+          </div>
+          <span className={`text-[13px] font-semibold transition-colors ${withAcademicBadge ? "text-white" : "text-[#9CA3AF] group-hover:text-[#c0c0c0]"}`}>Mention académique</span>
+        </label>
+
         <label className="flex items-center gap-2 cursor-pointer group">
           <input type="checkbox" checked={verifiedOnly} onChange={(e) => setVerifiedOnly(e.target.checked)} className="sr-only" />
           <div className={`nx-filter-checkbox${verifiedOnly ? " checked" : ""}`}>
@@ -528,6 +626,16 @@ export default function RecherchePage() {
             )}
           </div>
           <span className={`text-[13px] font-semibold transition-colors ${withVideoOnly ? "text-white" : "text-[#9CA3AF] group-hover:text-[#c0c0c0]"}`}>Avec vidéo</span>
+        </label>
+
+        <label className="flex items-center gap-2 cursor-pointer group">
+          <input type="checkbox" checked={hideFavorites} onChange={(e) => setHideFavorites(e.target.checked)} className="sr-only" />
+          <div className={`nx-filter-checkbox${hideFavorites ? " checked" : ""}`}>
+            {hideFavorites && (
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="4" strokeLinecap="round"><path d="M20 6L9 17l-5-5" /></svg>
+            )}
+          </div>
+          <span className={`text-[13px] font-semibold transition-colors ${hideFavorites ? "text-white" : "text-[#9CA3AF] group-hover:text-[#c0c0c0]"}`}>Masquer mes favoris</span>
         </label>
 
         {hasFilters && (
@@ -564,31 +672,31 @@ export default function RecherchePage() {
         <>
           {/* First 5 results — always visible */}
           {viewMode === "grid" ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-              {filtered.slice(0, 5).map((a) => (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 items-start">
+              {filtered.slice(0, 6).map((a) => (
                 <AthleteSearchCard key={a.id} a={a} onToggleFav={toggleFav} />
               ))}
             </div>
           ) : (
             <div className="flex flex-col gap-2">
-              {filtered.slice(0, 5).map((a) => (
+              {filtered.slice(0, 6).map((a) => (
                 <AthleteSearchRow key={a.id} a={a} onToggleFav={toggleFav} />
               ))}
             </div>
           )}
 
           {/* Remaining results — gated behind Recruteur Pro */}
-          {filtered.length > 5 && (
+          {filtered.length > 6 && (
             <FeatureGate feature="unlimited_profiles" requiredTier="pro">
               {viewMode === "grid" ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-                  {filtered.slice(5).map((a) => (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 items-start">
+                  {filtered.slice(6).map((a) => (
                     <AthleteSearchCard key={a.id} a={a} onToggleFav={toggleFav} />
                   ))}
                 </div>
               ) : (
                 <div className="flex flex-col gap-2">
-                  {filtered.slice(5).map((a) => (
+                  {filtered.slice(6).map((a) => (
                     <AthleteSearchRow key={a.id} a={a} onToggleFav={toggleFav} />
                   ))}
                 </div>
