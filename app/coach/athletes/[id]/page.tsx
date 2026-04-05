@@ -829,7 +829,7 @@ export default function CoachAthleteProfilePage() {
           })()}
 
           {/* ── INFORMATIONS SPORTIVES DÉTAILLÉES ── */}
-          {(a.secondarySport || a.teamName || a.leagueName) && (
+          {a.primarySport && (
             <section>
               <h2 className={sectionLabel}>Informations sportives</h2>
               <div className={`${cardBase} p-5`}>
@@ -846,10 +846,27 @@ export default function CoachAthleteProfilePage() {
           )}
 
           {/* ── DÉTAILS ACADÉMIQUES (matières, mentions, régions) ── */}
-          {(a.strongSubjects?.length > 0 || a.academicHonors?.length > 0 || a.preferredRegions?.length > 0) && (
+          {(a.strongSubjects?.length > 0 || a.academicHonors?.length > 0 || a.preferredRegions?.length > 0 || (Array.isArray(a.targetCegepProgram) && a.targetCegepProgram.length > 0)) && (
             <section>
               <h2 className={sectionLabel}>Détails académiques</h2>
               <div className={`${cardBase} p-5 space-y-4`}>
+                {(() => {
+                  let prog = a.targetCegepProgram;
+                  if (typeof prog === "string") { try { prog = JSON.parse(prog as unknown as string); } catch { prog = []; } }
+                  if (Array.isArray(prog) && prog.length > 0) {
+                    return (
+                      <div>
+                        <p className="text-[11px] font-bold tracking-[0.15em] uppercase text-[#6b7280] mb-2">Programme CÉGEP visé</p>
+                        <div className="flex flex-wrap gap-2">
+                          {prog.map((p: string) => (
+                            <span key={p} className="text-[12px] font-bold px-3 py-1.5 rounded-full bg-[#3B82F6]/10 text-[#3B82F6] border border-[#3B82F6]/20">{p}</span>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
                 {a.strongSubjects?.length > 0 && (
                   <div>
                     <p className="text-[11px] font-bold tracking-[0.15em] uppercase text-[#6b7280] mb-2">Matières fortes</p>
@@ -904,6 +921,24 @@ export default function CoachAthleteProfilePage() {
                     </a>
                   ))}
                 </div>
+              </div>
+            </section>
+          )}
+
+          {/* ── RÉPUTATION DU COACH ── */}
+          {a.coachName && (
+            <section>
+              <h2 className={sectionLabel}>Réputation du coach</h2>
+              <div className={`${cardBase} p-5`}>
+                <div className="flex items-center justify-between mb-4">
+                  <p className="text-[14px] text-[#9CA3AF]">{a.coachName}</p>
+                  <span className="text-[11px] font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-[#6B7280]/15 text-[#6B7280] border border-[#6B7280]/30">
+                    À venir
+                  </span>
+                </div>
+                <p className="text-[13px] text-[#4a4d56] italic">
+                  La réputation du coach sera calculée automatiquement lorsque les recruteurs commenceront à évaluer les coachs sur la plateforme.
+                </p>
               </div>
             </section>
           )}

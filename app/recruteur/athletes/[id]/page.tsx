@@ -4,7 +4,6 @@ import { use, useState, useEffect } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import {
-  ALL_RECRUITER_PROFILES,
   mockAthleteProfileFull,
 } from "@/lib/mock/athleteProfileRecruiter";
 import type { AthleteProfileRecruiterView, AthleteTraitRatings } from "@/lib/types/models";
@@ -286,7 +285,7 @@ function CoachReputationCard({ rep, coachName }: { rep: NonNullable<AthleteProfi
 
 export default function RecruiterAthletePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const [a, setA] = useState<AthleteProfileRecruiterView>(ALL_RECRUITER_PROFILES[id] || mockAthleteProfileFull);
+  const [a, setA] = useState<AthleteProfileRecruiterView>(mockAthleteProfileFull);
   const [loadingAthlete, setLoadingAthlete] = useState(true);
 
   useEffect(() => {
@@ -302,14 +301,18 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
         profile_completion,
         numero_jersey,
         annee_diplomation,
+        date_naissance,
+        genre,
         video_faits_saillants_url,
         hudl_url,
         youtube_url,
         instagram_url,
         video_match_complet_url,
+        video_entrainement_url,
         moyenne_generale,
         matieres_fortes,
         mentions_academiques,
+        programme_cegep_vise,
         ouvert_cegep_prive,
         ouvert_cegep_anglophone,
         pret_changer_region,
@@ -317,16 +320,27 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
         taille_pieds,
         taille_pouces,
         poids_lbs,
+        envergure,
+        taille_mains,
         main_dominante,
+        pied_dominant,
         test_40_verges,
         saut_vertical,
+        saut_longueur,
+        developpe_couche,
+        navette_agilite,
         sprint_100m,
         bio,
-        genre,
         cote_globale_entraineur,
         consentement_parental,
+        statut_recrutement_override,
+        notes_coach,
+        ouvert_entraineur_cegep,
+        sport_secondaire_id,
+        position_secondaire_id,
         sports!athletes_sport_id_fkey(nom),
         positions!athletes_position_id_fkey(nom, abreviation),
+        schools!school_id(name, region, city),
         evaluations(
           leadership, discipline, coachabilite, intelligence_jeu,
           competitivite, esprit_equipe, resilience, attitude_mentalite,
@@ -336,17 +350,46 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
       `)
       .eq("id", id)
       .single()
-      .then(({ data, error }) => {
+      .then(async ({ data, error }) => {
         if (error || !data) { setLoadingAthlete(false); return; }
 
         const d = data as Record<string, unknown>;
         const evals = d.evaluations as Record<string, unknown>[] | null;
         const eval0 = evals?.[0];
+        console.log("DEBUG evaluations raw:", JSON.stringify(d.evaluations));
+        console.log("DEBUG eval0:", JSON.stringify(eval0));
+        console.log("DEBUG distinctions:", eval0?.distinctions);
+        console.log("DEBUG cote_globale:", eval0?.cote_globale);
+        console.log("DEBUG school:", JSON.stringify(d.schools));
+        console.log("DEBUG programme:", JSON.stringify(d.programme_cegep_vise));
         const coach = d.users as { first_name: string; last_name: string } | null;
         const sportRel = Array.isArray(d.sports) ? d.sports[0] : d.sports;
         const posRel = Array.isArray(d.positions) ? d.positions[0] : d.positions;
         const sport = sportRel as { nom: string } | null;
         const pos = posRel as { nom: string; abreviation: string } | null;
+
+        // School info
+        const schoolRel = Array.isArray(d.schools) ? d.schools[0] : d.schools;
+        const school = schoolRel as { name: string; region: string; city: string } | null;
+
+        // Age from birth date
+        const birthDate = d.date_naissance as string | null;
+        const age = birthDate ? Math.floor((Date.now() - new Date(birthDate).getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : null;
+
+        // Secondary sport/position lookup
+        let secondarySportName = "";
+        let secondaryPositionName = "";
+        if (d.sport_secondaire_id) {
+          const { data: secSport } = await supabase.from("sports").select("nom").eq("id", d.sport_secondaire_id as string).maybeSingle();
+          secondarySportName = secSport?.nom || "";
+        }
+        if (d.position_secondaire_id) {
+          const { data: secPos } = await supabase.from("positions").select("nom, abreviation").eq("id", d.position_secondaire_id as string).maybeSingle();
+          secondaryPositionName = secPos ? (secPos.abreviation ? `${secPos.nom} (${secPos.abreviation})` : secPos.nom) : "";
+        }
+
+        // Programme CÉGEP
+        const progArr = (d.programme_cegep_vise as string[]) || [];
 
         const heightFt = d.taille_pieds as number | null;
         const heightIn = d.taille_pouces as number | null;
@@ -379,26 +422,59 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
           youtubeUrl: (d.youtube_url as string) || "",
           instagramUrl: (d.instagram_url as string) || "",
           fullGameUrl: (d.video_match_complet_url as string) || "",
+          practiceVideoUrl: (d.video_entrainement_url as string) || "",
           gpa: (d.moyenne_generale as number) || undefined,
           strongSubjects: (d.matieres_fortes as string[]) || [],
           academicHonors: (d.mentions_academiques as string[]) || [],
+          program: progArr.length > 0 ? progArr.join(", ") : "",
+          targetCegepProgram: progArr,
+          wantsDEC: progArr.some(p => p.toLowerCase().includes("dec") || p.toLowerCase().includes("général")),
           openToPrivate: (d.ouvert_cegep_prive as boolean) || false,
           openToAnglophone: (d.ouvert_cegep_anglophone as boolean) || false,
           openToRelocate: (d.pret_changer_region as boolean) || false,
           preferredRegions: (d.regions_cegep_preferees as string[]) || [],
           heightDisplay: heightDisplay || "",
           weightDisplay: weightDisplay || "",
+          wingspan: (d.envergure as string) || "",
+          handSize: (d.taille_mains as string) || "",
           dominantHand: (d.main_dominante as "Droite" | "Gauche" | "Ambidextre") || undefined,
+          dominantFoot: (d.pied_dominant as "Gauche" | "Droit" | "Les deux") || undefined,
           fortyYard: (d.test_40_verges as string) || "",
           verticalJump: (d.saut_vertical as string) || "",
+          broadJump: (d.saut_longueur as string) || "",
+          benchPress: (d.developpe_couche as string) || "",
+          shuttleAgility: (d.navette_agilite as string) || "",
           sprint100m: (d.sprint_100m as string) || "",
           primarySport: sport?.nom || "",
           primaryPosition: pos?.abreviation ? `${pos.nom} (${pos.abreviation})` : pos?.nom || "",
+          secondarySport: secondarySportName,
+          secondaryPosition: secondaryPositionName,
+          schoolName: school?.name || "",
+          region: school?.region || "",
+          city: school?.city || "",
+          age: age || 0,
+          gender: (d.genre as "M" | "F" | "Autre") || "M",
+          commitmentStatus: (d.statut_recrutement_override as string) || "ouvert",
           coachReport: (eval0?.rapport_entraineur as string) || "",
           coachName: coach ? `${coach.first_name} ${coach.last_name}` : "",
-          overallRating: (eval0?.cote_globale as number) || (d.cote_globale_entraineur as number) || 0,
+          coachSchool: school?.name || "",
+          coachReputation: undefined,
+          overallRating: (eval0?.cote_globale as number) ?? (d.cote_globale_entraineur as number) ?? 0,
           traitRatings: traitRatings as AthleteProfileRecruiterView["traitRatings"],
-          distinctions: (eval0?.distinctions as AthleteProfileRecruiterView["distinctions"]) || [],
+          distinctions: (() => {
+            const raw = (eval0?.distinctions as string[]) || [];
+            const badgeMap: Record<string, { label: string; icon: string }> = {
+              captain: { label: "Capitaine", icon: "shield" },
+              allstar: { label: "Équipe d'étoiles", icon: "star" },
+              team_leader: { label: "Leader", icon: "award" },
+              mvp: { label: "MVP", icon: "trophy" },
+              rookie: { label: "Recrue de l'année", icon: "zap" },
+              scholar: { label: "Étudiant-athlète", icon: "book" },
+              iron_man: { label: "Iron Man", icon: "heart" },
+              most_improved: { label: "Joueur le plus amélioré", icon: "trending-up" },
+            };
+            return raw.filter((d) => d && badgeMap[d]).map((d) => ({ badgeId: d, label: badgeMap[d].label, icon: badgeMap[d].icon }));
+          })(),
           favoriteCount: 0,
           viewsThisMonth: 0,
         };
@@ -411,7 +487,31 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
   const [mode, setMode] = useState<"simple" | "detailed">("simple");
   const isDetailed = mode === "detailed";
 
-  const [isFavorited, setIsFavorited] = useState(true);
+  const [isFavorited, setIsFavorited] = useState(false);
+  const [favCount, setFavCount] = useState(0);
+
+  useEffect(() => {
+    const checkFav = async () => {
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+      const { data } = await supabase.from("recruiter_favorites").select("id").eq("recruiter_id", session.user.id).eq("athlete_id", id).maybeSingle();
+      setIsFavorited(!!data);
+    };
+    checkFav();
+  }, [id]);
+
+  useEffect(() => {
+    const loadCount = async () => {
+      const supabase = createClient();
+      const { data } = await supabase.from("recruiter_favorites").select("id").eq("athlete_id", id);
+      setFavCount(data?.length || 0);
+    };
+    loadCount();
+  }, [id, isFavorited]);
+
+  useEffect(() => { setA(prev => ({ ...prev, favoriteCount: favCount })); }, [favCount]);
+
   const [showFlagModal, setShowFlagModal] = useState(false);
   const [flagReason, setFlagReason] = useState("");
   const [flagDetails, setFlagDetails] = useState("");
@@ -427,10 +527,10 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
     setPipelineStatus(newStatus);
   }
 
-  // Trait average (moved up for coteGlobale calc)
-  const traitAvg = a.traitRatings
-    ? (Object.values(a.traitRatings).reduce((s, v) => s + v, 0) / Object.values(a.traitRatings).length)
-    : null;
+  // Trait average — only average non-zero (rated) traits
+  const traitEntries = a.traitRatings ? Object.entries(a.traitRatings) as [keyof AthleteTraitRatings, number][] : [];
+  const ratedTraits = traitEntries.filter(([, v]) => v > 0);
+  const traitAvg = ratedTraits.length > 0 ? ratedTraits.reduce((s, [, v]) => s + v, 0) / ratedTraits.length : null;
 
   // Cote Globale — auto-avg from 8 traits if available, else overallRating
   const coteGlobale = traitAvg ?? a.overallRating;
@@ -439,7 +539,6 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
   const statCells: { top: string; mid: string; sub?: string; iconName?: string }[] = [
     { top: a.heightDisplay || "—", mid: "Taille" },
     { top: a.weightDisplay || "—", mid: "Poids" },
-    ...a.distinctions.map((b) => ({ top: "", mid: b.label, sub: b.detail, iconName: b.icon })),
   ];
 
   // Athletic tests data
@@ -497,7 +596,18 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
             </button>
             <button
               type="button"
-              onClick={() => setIsFavorited(!isFavorited)}
+              onClick={async () => {
+                const supabase = createClient();
+                const { data: { session } } = await supabase.auth.getSession();
+                if (!session?.user) return;
+                const newState = !isFavorited;
+                setIsFavorited(newState);
+                if (newState) {
+                  await supabase.from("recruiter_favorites").insert({ recruiter_id: session.user.id, athlete_id: id });
+                } else {
+                  await supabase.from("recruiter_favorites").delete().eq("recruiter_id", session.user.id).eq("athlete_id", id);
+                }
+              }}
               className="flex items-center gap-1.5 text-[12px] font-bold transition-colors"
               style={{ color: isFavorited ? "#E63946" : "#9CA3AF" }}
             >
@@ -535,9 +645,24 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
 
             <div className="flex flex-wrap items-center gap-2">
               <VerifiedBadge isVerified={a.isVerified} />
-              <FavoritesBadge count={a.favoriteCount} />
-              <RecruitmentStatusPill status={a.commitmentStatus || "ouvert"} />
-              <RecruitmentStatusBadge status={pipelineStatus} size="md" />
+              <span className={`${pillBase}`} style={{ backgroundColor: "rgba(255,255,255,0.10)", borderColor: "rgba(255,255,255,0.25)", color: "#22C55E" }}>
+                <span className="w-2 h-2 rounded-full bg-[#22C55E]" />
+                Actif
+              </span>
+              {a.commitmentStatus && a.commitmentStatus !== "ouvert" && (
+                <span className={`${pillBase} ${
+                  a.commitmentStatus === 'LETTRE_SIGNEE' || a.commitmentStatus === 'Lettre signée' ? 'bg-[#22C55E]/15 text-[#22C55E] border-[#22C55E]/30' :
+                  a.commitmentStatus === 'ENGAGE' || a.commitmentStatus === 'Engagé' ? 'bg-[#3B82F6]/15 text-[#3B82F6] border-[#3B82F6]/30' :
+                  a.commitmentStatus === 'VISITE_PLANIFIEE' || a.commitmentStatus === 'Visite planifiée' ? 'bg-[#8B5CF6]/15 text-[#8B5CF6] border-[#8B5CF6]/30' :
+                  a.commitmentStatus === 'EN_DISCUSSION' || a.commitmentStatus === 'En discussion' ? 'bg-[#F59E0B]/15 text-[#F59E0B] border-[#F59E0B]/30' :
+                  a.commitmentStatus === 'CONTACTE' || a.commitmentStatus === 'Contacté' ? 'bg-[#6366F1]/15 text-[#6366F1] border-[#6366F1]/30' :
+                  a.commitmentStatus === 'OUVERT' || a.commitmentStatus === 'Ouvert' ? 'bg-[#06B6D4]/15 text-[#06B6D4] border-[#06B6D4]/30' :
+                  a.commitmentStatus === 'IDENTIFIE' || a.commitmentStatus === 'Identifié' ? 'bg-[#9CA3AF]/15 text-[#9CA3AF] border-[#9CA3AF]/30' :
+                  'bg-[#9CA3AF]/15 text-[#9CA3AF] border-[#9CA3AF]/30'
+                }`}>
+                  {a.commitmentStatus}
+                </span>
+              )}
             </div>
 
             {pipelineStatus !== "none" && (
@@ -606,6 +731,19 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
                     </div>
                   ))}
                 </div>
+              {a.distinctions.length > 0 && (
+                <div className="grid divide-x divide-[#2D3748]/50 border-t border-[#2D3748]/50" style={{ gridTemplateColumns: `repeat(${a.distinctions.length}, minmax(0, 1fr))` }}>
+                  {a.distinctions.map((d, i) => (
+                    <div key={i} className="p-4 text-center flex flex-col items-center justify-center min-h-[90px] bg-[#E63946]/[0.04]">
+                      <div className="w-9 h-9 rounded-full bg-[#E63946]/15 border border-[#E63946]/25 flex items-center justify-center mb-2">
+                        <NxIcon name={d.icon} size={16} className="text-[#E63946]" />
+                      </div>
+                      <p className="text-[11px] font-bold tracking-[0.15em] uppercase text-white">{d.label}</p>
+                      {d.detail && <p className="text-[11px] text-[#9CA3AF] mt-0.5">{d.detail}</p>}
+                    </div>
+                  ))}
+                </div>
+              )}
               </div>
             </div>
           </div>
@@ -670,25 +808,6 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
                       </div>
                     )}
 
-                    {/* Distinctions in detailed coach report */}
-                    {a.distinctions.length > 0 && (
-                      <div className="border-t border-[#2D3748]/50 pt-4 mt-4">
-                        <p className="text-[11px] font-bold tracking-[0.15em] uppercase text-[#6b7280] mb-3">Distinctions</p>
-                        <div className="flex flex-wrap gap-3">
-                          {a.distinctions.map((d, i) => (
-                            <div key={i} className="flex items-center gap-3 bg-[#E63946]/[0.06] border border-[#E63946]/20 rounded-lg px-4 py-2.5">
-                              <div className="w-8 h-8 rounded-full bg-[#E63946]/10 flex items-center justify-center flex-shrink-0">
-                                <NxIcon name={d.icon} size={16} className="text-[#E63946]" />
-                              </div>
-                              <div>
-                                <p className="text-[13px] font-bold text-white">{d.label}</p>
-                                {d.detail && <p className="text-[11px] text-[#9CA3AF]">{d.detail}</p>}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
                   </div>
                 )}
               </div>
@@ -700,17 +819,15 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
         <section>
           <h2 className={sectionLabel}>Profil académique</h2>
           <div className={`${cardBase} overflow-hidden`}>
-            <div className={`grid grid-cols-1 ${isDetailed ? "sm:grid-cols-3" : "sm:grid-cols-2"} divide-y sm:divide-y-0 sm:divide-x divide-[#2D3748]/50`}>
+            <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-[#2D3748]/50">
               <div className="p-5 text-center">
                 <p className="text-[28px] font-head font-black text-white leading-none">{a.gpa ? `${a.gpa}%` : "—"}</p>
                 <p className="text-[12px] font-bold tracking-[0.2em] uppercase text-[#9CA3AF] mt-2">Moyenne générale</p>
               </div>
-              {isDetailed && (
-                <div className="p-5 text-center">
-                  <p className="text-[18px] font-bold text-white leading-none mt-1">{a.program || "—"}</p>
-                  <p className="text-[12px] font-bold tracking-[0.2em] uppercase text-[#9CA3AF] mt-2">Programme</p>
-                </div>
-              )}
+              <div className="p-5 text-center">
+                <p className="text-[18px] font-bold text-white leading-none mt-1">{a.program || "—"}</p>
+                <p className="text-[12px] font-bold tracking-[0.2em] uppercase text-[#9CA3AF] mt-2">Programme visé</p>
+              </div>
               <div className="p-5 text-center">
                 <p className="text-[18px] font-bold text-white leading-none mt-1">Juin {a.graduationYear}</p>
                 <p className="text-[12px] font-bold tracking-[0.2em] uppercase text-[#9CA3AF] mt-2">Graduation</p>
@@ -719,7 +836,6 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
             <div className="border-t border-[#2D3748]/50 px-5 py-3.5 flex flex-wrap gap-2">
               <PreferencePill active={a.openToRelocate} label="Ouvert à déménager" />
               <PreferencePill active={a.openToPrivate} label="Ouvert au privé" />
-              <PreferencePill active={a.wantsDEC} label="Veut faire un DEC" />
               <PreferencePill active={a.openToAnglophone} label="Ouvert anglophone" />
             </div>
           </div>
@@ -879,9 +995,20 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
             )}
 
             {/* ── Coach Reputation ─────────────────────────── */}
-            {a.coachReputation && (
+            {a.coachName && (
               <section className="nx-slide-section">
-                <CoachReputationCard rep={a.coachReputation} coachName={a.coachName} />
+                <h2 className={sectionLabel}>Réputation du coach</h2>
+                <div className={`${cardBase} p-5`}>
+                  <div className="flex items-center justify-between mb-4">
+                    <p className="text-[14px] text-[#9CA3AF]">{a.coachName}</p>
+                    <span className="text-[11px] font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-[#6B7280]/15 text-[#6B7280] border border-[#6B7280]/30">
+                      À venir
+                    </span>
+                  </div>
+                  <p className="text-[13px] text-[#4a4d56] italic">
+                    La réputation du coach sera calculée automatiquement lorsque les recruteurs commenceront à évaluer les coachs sur la plateforme.
+                  </p>
+                </div>
               </section>
             )}
 
