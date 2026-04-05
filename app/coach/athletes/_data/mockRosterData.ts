@@ -30,6 +30,7 @@ export const COACH_TEAMS: CoachTeam[] = [
 
 export interface RosterAthlete {
   id: string;
+  photo?: string;
   firstName: string;
   lastName: string;
   position: string;
@@ -46,6 +47,13 @@ export interface RosterAthlete {
   placedAt?: string;
   badgeIcons?: string[];            // emoji icons from leadership badges
   recruitment?: { status: string; label: string; count: number; isOverride: boolean }; // from pipeline table
+  school?: string;
+  region?: string;
+  sport?: string;
+  hasVideo?: boolean;
+  badges?: { badgeId: string; label: string; icon: string }[];
+  academicBadges?: string[];
+  heightWeight?: string;
 }
 
 /* ── Helper to build verification objects ───────────────────── */

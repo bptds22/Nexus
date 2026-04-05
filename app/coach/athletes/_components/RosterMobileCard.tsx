@@ -11,11 +11,20 @@ import FavoriteSignal from "./FavoriteSignal";
 export default function RosterMobileCard({ athlete: a }: { athlete: RosterAthlete }) {
   return (
     <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] p-4 space-y-3">
-      {/* Top row: name + position + favorite */}
+      {/* Top row: photo + name + position + favorite */}
       <div className="flex items-start justify-between">
-        <div>
+        <div className="flex items-start gap-3">
+          {a.photo ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={a.photo} alt="" className="w-12 h-12 rounded-full object-cover shrink-0" />
+          ) : (
+            <div className="w-12 h-12 rounded-full bg-[#2F3440] flex items-center justify-center shrink-0">
+              <span className="text-[14px] font-bold text-white/20">{a.firstName[0]}{a.lastName[0]}</span>
+            </div>
+          )}
+          <div>
           <div className="flex items-center gap-2">
-            <Link href={`/coach/athletes/${a.id}/modifier`} className="text-[16px] font-bold text-white hover:text-[#E63946] transition-colors">
+            <Link href={`/coach/athletes/${a.id}`} className="text-[16px] font-bold text-white hover:text-[#E63946] transition-colors">
               {a.firstName} {a.lastName}
             </Link>
             {a.badgeIcons && a.badgeIcons.length > 0 && (
@@ -28,6 +37,7 @@ export default function RosterMobileCard({ athlete: a }: { athlete: RosterAthlet
             </span>
             <span className="text-[12px] text-[#6b7280] font-semibold">{a.gradYear}</span>
           </div>
+        </div>
         </div>
         <FavoriteSignal count={a.favorites} />
       </div>

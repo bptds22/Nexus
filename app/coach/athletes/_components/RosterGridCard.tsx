@@ -16,11 +16,16 @@ export default function RosterGridCard({ athlete: a }: { athlete: RosterAthlete 
     <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] overflow-hidden hover:border-[#E63946]/30 hover:shadow-[0_0_24px_rgba(230,57,70,0.12)] hover:-translate-y-1.5 hover:scale-[1.02] transition-all duration-300 ease-out flex flex-col">
       {/* Avatar area */}
       <div className="relative h-[140px] bg-[#2F3440] overflow-hidden">
-        <div className="w-full h-full flex items-center justify-center">
-          <span className="text-[48px] font-head font-black text-white/5 tracking-wide">
-            {a.firstName[0]}{a.lastName[0]}
-          </span>
-        </div>
+        {a.photo ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={a.photo} alt={`${a.firstName} ${a.lastName}`} className="w-full h-full object-cover" />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center">
+            <span className="text-[48px] font-head font-black text-white/5 tracking-wide">
+              {a.firstName[0]}{a.lastName[0]}
+            </span>
+          </div>
+        )}
         <div className="absolute bottom-0 left-0 right-0 h-1/2" style={{ background: "linear-gradient(to top, rgba(26,29,36,0.95), transparent)" }} />
 
         {/* Position chip */}

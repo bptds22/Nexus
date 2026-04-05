@@ -83,12 +83,22 @@ export default function RosterRow({ athlete: a, even, onVerify }: RosterRowProps
       {/* Nom */}
       <td className="px-4 py-3.5">
         <Link href={`/coach/athletes/${a.id}`}>
-          <div className="flex items-center gap-2">
-            <p className="text-[16px] font-bold text-white group-hover:text-[#E63946] transition-colors">
-              {a.firstName} {a.lastName}
-            </p>
+          <div className="flex items-center gap-3">
+            {a.photo ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={a.photo} alt="" className="w-10 h-10 rounded-full object-cover shrink-0" />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-[#2F3440] flex items-center justify-center shrink-0">
+                <span className="text-[12px] font-bold text-white/20">{a.firstName[0]}{a.lastName[0]}</span>
+              </div>
+            )}
+            <div>
+              <p className="text-[16px] font-bold text-white group-hover:text-[#E63946] transition-colors">
+                {a.firstName} {a.lastName}
+              </p>
+              <StarRating rating={a.stars} size="sm" />
+            </div>
           </div>
-          <StarRating rating={a.stars} size="sm" />
         </Link>
       </td>
 
