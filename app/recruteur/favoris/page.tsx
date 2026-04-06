@@ -6,9 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { RecruitmentStatus, RetireReason } from "@/lib/config/recruitmentStatuses";
 import { getStatusConfig, RECRUITMENT_STATUSES } from "@/lib/config/recruitmentStatuses";
-import { MOCK_PIPELINE } from "../_data/mockPipelineData";
 import type { PipelineAthlete } from "../_data/mockPipelineData";
-import { RECRUITER_PROFILE } from "../_data/mockRecruiterProfile";
 import RecruitmentStatusBadge from "../_components/RecruitmentStatusBadge";
 import StatusChangeDropdown from "../_components/StatusChangeDropdown";
 import NxIcon from "@/components/ui/NxIcon";
@@ -164,21 +162,39 @@ function FavorisContent() {
   const [athletes, setAthletes] = useState<PipelineAthlete[]>([]);
   const [composeTarget, setComposeTarget] = useState<PipelineAthlete | null>(null);
   const [showCelebration, setShowCelebration] = useState(false);
+  const [recruiterProfile, setRecruiterProfile] = useState({ firstName: "", lastName: "", title: "Recruteur", cegep: "", teamName: "", division: "" });
 
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) return;
+
+      // Load recruiter profile
+      const { data: profile } = await supabase
+        .from("users")
+        .select("first_name, last_name, schools!school_id(name)")
+        .eq("id", user.id)
+        .single();
+      if (profile) {
+        const schoolRaw = profile.schools;
+        const school = Array.isArray(schoolRaw) ? schoolRaw[0] : schoolRaw;
+        setRecruiterProfile({
+          firstName: (profile.first_name as string) || "",
+          lastName: (profile.last_name as string) || "",
+          title: "Recruteur",
+          cegep: (school as { name?: string } | null)?.name || "",
+          teamName: "",
+          division: "",
+        });
+      }
+
       supabase
-        .from("pipeline")
+        .from("recruiter_favorites")
         .select(`
           id,
-          status,
-          notes,
-          favorited_at,
-          contacted_at,
-          updated_at,
-          athletes!pipeline_athlete_id_fkey(
+          athlete_id,
+          created_at,
+          athletes!athlete_id(
             id,
             first_name,
             last_name,
@@ -187,57 +203,63 @@ function FavorisContent() {
             video_faits_saillants_url,
             annee_diplomation,
             cote_globale_entraineur,
-            sports!athletes_sport_id_fkey(nom),
-            positions!athletes_position_id_fkey(nom, abreviation)
+            taille_pieds,
+            taille_pouces,
+            poids_lbs,
+            statut_recrutement_override,
+            sports!sport_id(nom),
+            positions!position_id(nom, abreviation),
+            schools!school_id(name, region),
+            evaluations(distinctions, cote_globale)
           )
         `)
         .eq("recruiter_id", user.id)
-        .neq("status", "NONE")
         .then(({ data, error }) => {
           console.log("Favoris loaded:", data?.length, error);
           if (!data) return;
 
           const mapped: PipelineAthlete[] = data.map((p: Record<string, unknown>) => {
-            const a = p.athletes as {
-              id: string;
-              first_name: string;
-              last_name: string;
-              verified: boolean;
-              profile_completion: number;
-              video_faits_saillants_url: string | null;
-              annee_diplomation: number | null;
-              cote_globale_entraineur: number | null;
-              sports: { nom: string } | null;
-              positions: { nom: string; abreviation: string } | null;
-            } | null;
+            const aRaw = p.athletes;
+            const a = (Array.isArray(aRaw) ? aRaw[0] : aRaw) as Record<string, unknown> | null;
+            const sportRel = a?.sports;
+            const sport = (Array.isArray(sportRel) ? sportRel[0] : sportRel) as { nom?: string } | null;
+            const posRel = a?.positions;
+            const pos = (Array.isArray(posRel) ? posRel[0] : posRel) as { nom?: string; abreviation?: string } | null;
+            const schoolRel = a?.schools;
+            const school = (Array.isArray(schoolRel) ? schoolRel[0] : schoolRel) as { name?: string; region?: string } | null;
+            const evalRel = a?.evaluations;
+            const eval0 = (Array.isArray(evalRel) ? evalRel[0] : evalRel) as Record<string, unknown> | null;
+            const override = (a?.statut_recrutement_override as string) || "";
+            const statusKey = override ? override.toLowerCase().replace(/ /g, "_") : "identifie";
 
             return {
-              id: a?.id || (p.id as string),
-              firstName: a?.first_name || "Athlète",
-              lastName: a?.last_name || "Inconnu",
-              position: a?.positions?.abreviation || "",
-              sport: a?.sports?.nom || "",
-              school: "",
-              region: "",
+              id: (a?.id as string) || (p.athlete_id as string),
+              firstName: (a?.first_name as string) || "Athlète",
+              lastName: (a?.last_name as string) || "Inconnu",
+              position: pos?.abreviation || "",
+              sport: sport?.nom || "",
+              school: school?.name || "",
+              region: school?.region || "",
               niveau: "Sec. 5" as const,
-              graduationYear: a?.annee_diplomation || 0,
-              stars: a?.cote_globale_entraineur || 0,
-              isVerified: a?.verified || false,
-              hasVideo: !!a?.video_faits_saillants_url,
+              graduationYear: (a?.annee_diplomation as number) || 0,
+              stars: (eval0?.cote_globale as number) || (a?.cote_globale_entraineur as number) || 0,
+              isVerified: !!(a?.verified),
+              hasVideo: !!(a?.video_faits_saillants_url),
               badges: [],
               coachName: "",
               coachLastName: "",
               tracking: {
                 recruiterId: user.id,
-                athleteId: a?.id || (p.id as string),
-                status: (p.status as string).toLowerCase() as RecruitmentStatus,
-                favoritedAt: (p.favorited_at as string) || (p.updated_at as string),
-                statusChangedAt: (p.updated_at as string) || new Date().toISOString(),
-                firstContactedAt: (p.contacted_at as string) || undefined,
-                notes: (p.notes as string) || "",
+                athleteId: (a?.id as string) || (p.athlete_id as string),
+                status: statusKey as RecruitmentStatus,
+                favoritedAt: (p.created_at as string) || new Date().toISOString(),
+                statusChangedAt: (p.created_at as string) || new Date().toISOString(),
+                firstContactedAt: undefined,
+                notes: "",
               },
             };
           });
+          console.log("Favoris mapped:", mapped.length, mapped.map(m => `${m.firstName} ${m.lastName} (${m.tracking.status})`));
           setAthletes(mapped);
         });
     });
@@ -287,19 +309,9 @@ function FavorisContent() {
     return { commitment, discovery, exit };
   }, [filtered]);
 
-  const handleStatusChange = useCallback(async (id: string, newStatus: RecruitmentStatus, extra?: { visitDate?: string; retireReason?: RetireReason }) => {
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      await supabase
-        .from("pipeline")
-        .update({
-          status: newStatus.toUpperCase(),
-          updated_at: new Date().toISOString(),
-        })
-        .eq("athlete_id", id)
-        .eq("recruiter_id", user.id);
-    }
+  const handleStatusChange = useCallback(async (id: string, newStatus: RecruitmentStatus, _extra?: { visitDate?: string; retireReason?: RetireReason }) => {
+    // Status changes are local only — recruiter_favorites doesn't track stages
+    // In future: write to recruiter_pipeline table
     setAthletes((prev) => prev.map((a) => {
       if (a.id !== id) return a;
       return {
@@ -418,12 +430,12 @@ function FavorisContent() {
       {composeTarget && (
         <ComposeIntroModal
           recruiter={{
-            firstName: RECRUITER_PROFILE.firstName,
-            lastName: RECRUITER_PROFILE.lastName,
-            title: RECRUITER_PROFILE.title,
-            cegep: RECRUITER_PROFILE.cegep,
-            teamName: RECRUITER_PROFILE.teamName,
-            division: RECRUITER_PROFILE.division,
+            firstName: recruiterProfile.firstName,
+            lastName: recruiterProfile.lastName,
+            title: recruiterProfile.title,
+            cegep: recruiterProfile.cegep,
+            teamName: recruiterProfile.teamName,
+            division: recruiterProfile.division,
           }}
           athlete={{
             firstName: composeTarget.firstName,

@@ -1,721 +1,502 @@
-# CLAUDE.md — Nexus (Recruitment Platform) Coding Rules
+# CLAUDE.md — Nexus (Quebec Sports Recruitment SaaS)
 
-This file contains non-negotiable rules for Claude while building Nexus.
-Follow these instructions exactly.
+This file contains all project context, rules, and conventions for Claude Code.
+Follow these instructions exactly. Updated April 2026.
 
 ---
 
-## STRICT DESIGN RULES — NEVER OVERRIDE
+## PROJECT OVERVIEW
 
-### Backgrounds
-- Page background: #111317 — everywhere, every portal, every page
-- Card / Surface: #1A1D24 — all cards, modals, sidebar, dropdowns
-- Card border: border-white/5 (#FFFFFF0D) — subtle, consistent
-- Never white, never pure black, never any other dark color
+**Nexus** connects Quebec secondary school athletes with CÉGEP recruiters through the RSEQ network. Core insight: athletes are the product — more athletes = more recruiter value = more revenue.
 
-### Accent Colors (only 3 primary accents)
-- Red #E63946: Nexus brand — CTAs, favorite hearts, sidebar active,
-  commitment-phase pipeline (EN_DISCUSSION, VISITE, ENGAGÉ, LETTRE),
-  suspended status, labels on landing pages, Admin badge, Recruteur badge
-- Blue #3B82F6: verification ONLY — verified badge (≥60%), profile
-  completion ≥70%, Coach role badge, École revenue chart
-- Green #22C55E: positive status — active user pill, Athlète role badge,
-  CÉGEP revenue chart, success toasts
-- #EF4444: ONLY for error/critical alerts, profile completion <40%,
-  Entreprise tier badge. Nowhere else.
+**Stakeholders:** Coaches (distribution channel, free tier), Athletes (supply, primary product), CÉGEP Recruiters (demand, paying customers), School/CÉGEP Directors (admin roles with free Pro access).
 
-### Two Reds Rule
-- #E63946 = brand red (95% of all red usage)
-- #EF4444 = error/danger red (5% — critical alerts, completion <40%,
-  Entreprise tier ONLY)
-- Default is ALWAYS #E63946. Use #EF4444 only for the 3 cases above.
+**Founder:** Bruno-Philippe Desfosses Simard (sole developer, direct recruiter contacts as GTM entry point).
 
-### Verification Badge
-- Verified (profile_completeness ≥ 60%): Blue checkmark #3B82F6. Always.
-- Not verified (< 60%): Gray circle #6B7280. Always.
-- Binary — NO intermediate states.
+---
+
+## TECH STACK
+
+- **Framework:** Next.js 14, TypeScript, Tailwind CSS
+- **Database:** Supabase (self-hosted via Docker/CLI locally)
+- **Font:** Outfit (Google Fonts) — weights: 700 headings, 600 buttons, 500 sidebar, 400 body
+- **Dev server:** `npx next dev --port 3002`
+- **Local project:** `C:\Users\bptds\OneDrive\Documents\Nexus`
+- **Hosting:** OVHcloud Beauharnois (production, Loi 25), Coolify (replaces Vercel), Vercel (demo only)
+- **Demo:** `nexus-brown-zeta.vercel.app` (mock data, stable)
+
+---
+
+## DATABASE SCHEMA (Supabase — as of April 2026)
+
+### Core Tables
+
+**athletes** — main table, contains all athlete data
+- id, user_id, school_id, coach_id, first_name, last_name, date_naissance, genre
+- photo_url, email, telephone, nom_parent, telephone_parent
+- consentement_parental, consentement_parental_date
+- annee_diplomation, moyenne_generale, matieres_fortes (JSONB), mentions_academiques (JSONB)
+- programme_cegep_vise (JSONB), ouvert_cegep_prive, ouvert_cegep_anglophone
+- pret_changer_region, regions_cegep_preferees (JSONB)
+- taille_pieds, taille_pouces, poids_lbs, envergure, taille_mains
+- main_dominante, pied_dominant
+- test_40_verges, saut_vertical, saut_longueur, developpe_couche, navette_agilite, sprint_100m
+- sport_id (FK → sports), position_id (FK → positions), numero_jersey
+- sport_secondaire_id (FK → sports), position_secondaire_id (FK → positions)
+- equipe_id, ligue_id, league_team_id, numero_association
+- ouvert_entraineur_cegep
+- video_faits_saillants_url, hudl_url, youtube_url, instagram_url, video_match_complet_url, video_entrainement_url
+- verified, verification_method, verified_at, verified_by
+- profile_completion, cote_globale_entraineur, status, notes_coach, bio
+- statut_recrutement_override, recrutement_override_at
+- modified_since_verification, last_verified_state_at
+- created_at, updated_at
+
+**schools** — pre-seeded from MEQ open data (Données Québec)
+- id, name, region, city, (+ other fields)
+- Coaches join existing schools, never create them
+
+**sports** — 16 sports
+- id, nom, categorie, created_at
+- Football, Basketball, Soccer, Hockey, Volleyball, Athlétisme, Badminton, Baseball, Cheerleading, Cross-country, Flag football, Futsal, Natation, Rugby, Ultimate frisbee, Autre
+
+**positions** — per sport
+- id, nom, abreviation, sport_id (FK → sports)
+
+**evaluations** — coach evaluates athlete (8 criteria)
+- coach_id, athlete_id (unique constraint on this pair)
+- leadership, discipline, coachabilite, intelligence_jeu, competitivite, esprit_equipe, resilience, attitude_mentalite
+- cote_globale, distinctions (JSONB array of strings: "captain", "allstar", "team_leader", etc.)
+- rapport_entraineur
+
+**leagues** — coach-declared civil leagues (no open data source exists)
+- id, name, abbreviation, sport_id, city, region, level, website, logo_url, is_active
+- federation, saison, created_by
+- RLS: everyone reads, authenticated users create
+
+### Recruiter Tables (created April 2026)
+
+**recruiter_favorites** — red heart, unique per recruiter-athlete pair
+- id, recruiter_id (FK → auth.users), athlete_id (FK → athletes), created_at
+- UNIQUE(recruiter_id, athlete_id)
+- RLS: recruiters manage own rows only
+
+**recruiter_pipeline** — kanban stages per athlete
+- id, recruiter_id, athlete_id, stage (default 'IDENTIFIE'), notes, moved_at, created_at, updated_at
+- UNIQUE(recruiter_id, athlete_id)
+- RLS: recruiters manage own rows only
+
+**recruiter_notes** — private notes on athletes
+- id, recruiter_id, athlete_id, content, created_at, updated_at
+- RLS: recruiters manage own rows only
+
+**recruiter_athlete_views** — view tracking for analytics
+- id, recruiter_id, athlete_id, viewed_at
+- RLS: recruiters manage own rows only
+
+### Key DB Identifiers (test environment)
+- Test athlete UUID: f35a5cdb-76ac-413f-8bce-26f4ee4f7a0f
+- Coach account: bpdesfosses@gmail.com / user ID: 51ec6dbe-ded9-4abb-a2e5-0b92d3409d87
+- School: Saint-Jean-Eudes (4f0e52ad-e9c7-4797-9b7b-92b25ed1307b)
+
+### RLS Policies
+- athletes: coaches CRUD own, recruiters SELECT active athletes (status = 'ACTIF')
+- recruiter_favorites/pipeline/notes/views: each recruiter sees only their own rows
+- leagues: public read, authenticated insert
+- Note: old "recruiters can read verified athletes" policy was replaced with "recruiters can read active athletes" — verified filter is client-side
+
+### Supabase Join Syntax
+- Use `sports!sport_id(nom)` and `positions!position_id(nom, abreviation)` — short FK hints, not full fkey names
+- Use `schools!school_id(name, region, city)` for school joins
+- Use `evaluations(distinctions, cote_globale, rapport_entraineur)` — joins on athlete_id automatically
+
+---
+
+## BADGE SYSTEM (Canonical — apply consistently)
+
+### Verification (BINARY)
+- Blue check #3B82F6 = verified (coach manually verified)
+- Gray check #4a4d56 = not verified
+- Profile completion % is a quality signal for recruiters only, NOT a verification gate
+- Both verified and non-verified athletes visible to recruiters (filter available)
 
 ### Favorite Heart
-- Favorited: Filled heart #E63946. Always.
-- Not favorited: Outline heart #6B7280. Always.
+- Filled red #E63946 = recruiter favorited
+- Outline gray #6B7280 = not favorited
 
 ### Star Ratings
-- Filled stars: #F59E0B (gold/amber). Always.
-- Empty stars: #374151 dark gray fill with #F59E0B star-shaped outline.
+- Filled: #F59E0B (gold)
+- Empty: #4a4d56 (dark gray)
+- Cote globale = average of non-zero trait ratings (skip unrated traits, don't count as 0)
 
-### Pipeline Status Badges (2 AUTO + 4 MANUAL)
+### Distinctions (from evaluations.distinctions JSONB)
+- captain → "Capitaine" (icon: shield)
+- allstar → "Équipe d'étoiles" (icon: star)
+- team_leader → "Leader" (icon: award)
+- Display as red pills: bg-[#E63946]/15 border-[#E63946]/30 text-[#E63946]
 
-Auto-tracking statuses (gray #6B7280 — triggered by actions):
-- IDENTIFIE: gray — auto on favorite
-- CONTACTE: gray — auto on first message sent
+### Recruitment Status (on athlete, last-write-wins)
+- Field: athletes.statut_recrutement_override
+- Hierarchy: IDENTIFIE → CONTACTE → EN_DISCUSSION → VISITE_PLANIFIEE → ENGAGE → LETTRE_SIGNEE
+- Any of coach/athlete/recruiter can update — last write wins
+- Color coding: LETTRE_SIGNEE=green, ENGAGE=blue, VISITE=purple, EN_DISCUSSION=amber, CONTACTE=indigo, IDENTIFIE/OUVERT=gray
 
-Commitment statuses (red #E63946 — manual recruiter decision):
-- EN_DISCUSSION: red — recruiter manually sets "actively pursuing"
-- VISITE_PLANIFIEE: red — manual
-- ENGAGE: red — manual
-- LETTRE_SIGNEE: red — manual
-
-Withdrawn:
-- RETIRE: gray #6B7280 — can be set from any status, final state
-
-Movement rules:
-- Forward only EXCEPT: EN_DISCUSSION can go back to CONTACTÉ
-  (re-engage a cold conversation). No other backward movement.
-- Auto-triggers (favorite → IDENTIFIÉ, message → CONTACTÉ) do NOT
-  override manual statuses.
-- Cards in LETTRE_SIGNÉE can only go to RETIRÉ.
-- Cards in RETIRÉ cannot move anywhere.
-
-### User Status Pills
-- Actif: green #22C55E bg/10, green text
-- En attente: yellow #EAB308 bg/10, yellow text
-- Suspendu: red #E63946 bg/10, red text
-- Inactif / Expiré: gray #6B7280 bg/10, gray text
-
-### Role Badges
-- Admin: #E63946 (red)
-- Coach: #3B82F6 (blue)
-- Recruteur: #E63946 (red)
-- Directeur: #EAB308 (yellow/amber)
-- Athlète: #22C55E (green)
-
-### Profile Completeness Colors
-- < 40%: #EF4444 (bright red — incomplete)
-- 40% — 69%: #6B7280 (gray — in progress)
-- ≥ 70%: #3B82F6 (blue — ready)
-Both progress bar fill AND percentage text use these colors.
-
-### Subscription Tier Badges (Medal System)
-- Gratuit / Découverte / Essentiel: Bronze #A48261
-- Standard / Pro: Silver #B4BCC8
-- Premium / Élite: Gold #DAB65A
-- Entreprise: #EF4444
-
-### Revenue Chart Colors
-- CÉGEP revenue: #E63946 (red)
-- École revenue: #3B82F6 (blue)
-- Athlète revenue (Phase 2): #22C55E (green)
-
-### Text Colors
-- Headings: #FFFFFF (white)
-- Body text: #9CA3AF (muted gray)
-- Red labels (landing pages): #E63946, uppercase, 12px, letter-spacing 2px
-- Muted / disabled: #6B7280
-
-### Alert Indicators
-- Info: #9CA3AF (gray)
-- Warning: #EAB308 (yellow)
-- Critical / Error: #EF4444 (bright red)
-- Success: #22C55E (green)
-
-### Typography (NO EXCEPTIONS)
-- ALL text: Outfit (Google Font, loaded via next/font/google)
-- Headings: Outfit 700 (font-bold) via font-head
-- Body text: Outfit 400 (font-normal) via font-sans
-- Labels/buttons: Outfit 500-600 (font-medium / font-semibold)
-- font-head and font-sans both resolve to Outfit
-- NEVER use Nexa, Inter, Montserrat, or any other font
-
-### Card Style
-- Background: #1A1D24
-- Border: border-white/5
-- Radius: rounded-xl
+### Account Status Enum
+- ACTIF, DESACTIVE, EN_ATTENTE, DIPLOME
 
 ---
 
-## Always Do First (every session)
+## WIRING STATUS (as of April 2026)
 
-1. Ask: **“What phase are we in (Phase 1 MVP or Phase 2)?”** Default to **Phase 1 MVP**.
-2. Confirm: **Tech stack** + **DB provider** (default: Next.js + Supabase Postgres).
-3. Confirm: **Which app area** we’re working on:
-   - Database schema / RLS
-   - Auth + roles
-   - Coach portal
-   - Director portal
-   - Recruiter portal
-   - Admin approval
-4. Output changes as:
-   - ✅ files to create/edit
-   - ✅ exact code blocks for each file
-   - ✅ commands to run
-   - ✅ what to test manually
-5. Invoke the 'frontend-Design' /skill before writting any frontend code, every session, no exceptions.
+### Recruiter Recherche Page (/recruteur/recherche) — FULLY WIRED
+- Supabase query: athletes + sports + positions + schools + evaluations
+- All data from DB, no mock data (only TypeScript type imported from mock file)
+- Filters: sport (16), position (dynamic from DB), promotion, region (dynamic), rating, GPA, height, badges, academic, verified, video, hide favorites, sort
+- Two-tier filter UI: primary filters always visible, advanced behind toggle
+- Quick preset chips for common filters
+- Cards show: photo, name, position, school, promotion, height/weight, stars, verified badge, favorite heart, distinction badges, recruitment status
+- Grid and list views
+- Favorites read/write from recruiter_favorites table
+- FeatureGate on results beyond first 6
 
-Do not generate large features without completing the above checklist.
+### Recruiter Athlete Profile (/recruteur/athletes/[id]) — MOSTLY WIRED
+- Full Supabase query with all fields
+- Distinctions mapped from string array to display objects
+- Coach report, trait ratings, academic details, physical measurements all from DB
+- Favorites toggle wired to recruiter_favorites
+- Status pills: Vérifié + Actif + recruitment status from DB
+- Coach reputation section: placeholder ("À venir") — no real coach_reviews table yet
+- Known issue: still falls back to mockAthleteProfileFull for unmapped fields
 
----
+### Coach Roster (/coach/athletes) — WIRED WITH NEW CARD DESIGN
+- Supabase query by coach_id with photos, schools, evaluations
+- Card design matches recruiter cards (same layout)
+- Shows favorite count (from recruiter_favorites), not toggle
+- Has "Modifier" + "Voir" links in footer
+- Filters: sport, position, region, promotion, rating, badges, verified, video
 
-## Project Summary
+### Coach Athlete Profile (/coach/athletes/[id]) — WIRED
+- Uses loadAthleteRaw + mapToRecruiterView helpers
+- All sections: identity, academic, physical, sport info, coach report, distinctions
+- Simplified/Detailed toggle
+- Verify/invite/modify actions
+- Sport info section shows primary sport/position/team/league
+- Academic details: matières fortes, programme CÉGEP visé, régions préférées
+- Coach reputation: placeholder
 
-**Nexus** is a web recruiting platform for Quebec:
-- **Coaches** submit “top recruits” (athlete profiles)
-- **Directors** manage their organization (coaches/recruiters + oversight)
-- **Recruiters (CEGEP)** search/filter athletes and send contact requests
-- **Platform Admin** approves profiles and manages reference data (sports/divisions/etc.)
-- **Athlete role** exists as a profile in Phase 1; becomes real authenticated users in Phase 2
+### Coach Create Athlete (/coach/athletes/create) — WIRED
+- All fields save correctly to Supabase
+- sport_secondaire_id properly looks up UUID from sport name
+- mentions_academiques saves correctly
+- Position, jersey number, physical stats all save on creation
 
-Phase 1 goals:
-- Structured athlete database
-- Approvals workflow
-- Search + filters
-- Favorites + contact requests
-- External links only (Hudl/YouTube). **NO uploads.**
-
----
-
-## Non-Negotiable MVP Rules
-
-### Media
-- ✅ Only external links (Hudl, YouTube, other URL).
-- ❌ No file uploads.
-- ❌ No images/documents storage.
-- Do not create storage buckets in MVP.
-
-### Privacy
-- Athletes are minors: minimize sensitive data.
-- ✅ Do NOT store DOB in Phase 1.
-- Recruiters should not automatically see private personal contact info.
-- Use **Contact Requests** as the controlled workflow.
-
-### Data Integrity
-- No duplicated “division/age group” fields in `teams`.
-- Division + age group must be tied to a **competition context** (season-based).
+### Coach Modify Athlete (/coach/athletes/[id]/modifier) — WIRED
+- 7-step wizard, loads from DB, saves to DB
+- Evaluations upsert to evaluations table
+- Sport/position UUID lookups on save
 
 ---
 
-## Roles (RBAC)
+## DESIGN SYSTEM
 
-### Global Role
-- `platform_admin`: full access to platform operations.
+### Colors
+- Page background: #111317
+- Card/surface: #1A1D24
+- Card border: border-[#2D3748] or border-white/5
+- Red accent: #E63946 (both coach and recruiter portals)
+- Blue: #3B82F6 (verification only)
+- Green: #22C55E (positive status, active)
+- Gold: #F59E0B (star ratings)
+- Error red: #EF4444 (critical alerts only)
 
-### Organization Roles
-- `director`: org admin for their high school/CEGEP
-- `coach`: manages athlete data for their org
-- `recruiter`: searches + favorites + contact requests
-- `athlete` (Phase 1: no login) → Phase 2: authenticated user who can manage their profile
+### Typography
+- ALL text: Outfit (Google Font)
+- Headings: font-head (Outfit 700), uppercase, tracking-tight
+- Body: font-sans (Outfit 400)
+- Labels: font-bold, tracking-wider, uppercase, text-[12px], text-[#6b7280]
 
-### Key Permission Rules
-- Coaches can only create/manage data within their organization.
-- Directors can manage all users in their organization (invite/disable).
-- Recruiters can only browse **approved** profiles.
-- Platform admin can approve/reject any profile and manage reference tables.
+### Card Design (Athlete Cards — both portals)
+- Photo area: 180px height, gradient overlay
+- Top-left: verified check (28px) + favorite heart/count
+- Top-right: 5 star rating in bg-black/70 backdrop-blur pill
+- Info: Name + position pill + recruitment status pill
+- School · Promotion year
+- Height/weight (if available)
+- Red distinction badges
+- Footer: region (left) + action links (right)
 
----
-
-## Tech Stack Defaults (unless user overrides)
-
-- Next.js (App Router) + TypeScript
-- TailwindCSS
-- Supabase (Postgres + Auth) OR Clerk + Supabase DB
-- Zod for validation
-- React Hook Form for forms
-- TanStack Query optional (only if needed)
-
----
-
-## Database Model (Phase 1)
-
-### Sports Structure (Season-Based)
-
-#### sports
-- id (uuid pk), name, created_by, created_at
-
-#### divisions
-- id, sport_id, code (D1), label (Division 1), created_by, created_at
-
-#### age_groups
-- id, sport_id, code (cadet/juvenile/u16), label, created_by, created_at
-
-#### competitions
-Represents “league bucket” like Soccer / Juvenile / D1 / 2025
-- id, sport_id, season_year, age_group_id, division_id, league_name, created_by, created_at
-
-#### teams
-Represents actual school team entity (Team A / Team B)
-- id, organization_id, sport_id, team_name, created_by, created_at
-
-#### team_competition_entries
-Links a team to a competition for that season
-- id, team_id, competition_id, squad_label, created_by, created_at
-Constraints:
-- UNIQUE(team_id, competition_id)
+### Filter UI (Two-tier)
+- Always visible: search bar, sport, position, promotion, sort dropdown
+- Quick chips: "4+ étoiles", "Vérifié", "Avec vidéo", "Avec distinction", "Masquer favoris"
+- Advanced (collapsible): region, organisation, rating dropdown, GPA, height, academic badge
+- Filter classes: nx-filter-select, nx-filter-active, nx-filter-checkbox
 
 ---
 
-### Athletes
+## BUSINESS RULES
 
-#### athletes
-Stable identity (no DOB in Phase 1)
-- id, first_name, last_name, grad_year
-- height_cm, weight_kg
-- primary_position, secondary_position
-- handedness (left/right/both)
-- hometown_city, hometown_region
-- created_at, updated_at
+### Athlete Self-Registration
+- Athletes self-register with self-reported data
+- Must select school and coach
+- Profiles marked "Non vérifié" until coach verifies
+- Parent notification for minors (14-17) with 7-14 day response window
 
-#### athlete_team_profiles
-Recruiting card per season/team context
-- id, athlete_id, team_competition_entry_id
-- coach_owner_user_id
-- recruiting_level (D1/D2/D3/unknown)
-- status (draft/pending_approval/approved/rejected/archived)
-- jersey_number, bio, coach_notes
-- created_at, updated_at
-Constraints:
-- UNIQUE(athlete_id, team_competition_entry_id)
+### School Registry
+- Pre-seeded from MEQ open data (Données Québec)
+- Coaches join existing schools, never create them
 
-#### athlete_metrics
-Flexible stats per sport
-- id, athlete_team_profile_id
-- key, value, unit, source, created_at
-Constraints:
-- UNIQUE(athlete_team_profile_id, key)
+### Civil Leagues
+- No centralized open data source exists
+- Coach self-declaration populates leagues table organically
 
-#### athlete_links (external only)
-- id, athlete_team_profile_id
-- type (hudl/youtube/other)
-- url, title, created_at
+### Director Roles
+- No separate director portals
+- Directors are coaches/recruiters with admin flags (is_school_admin / is_cegep_admin)
+- Free Pro/All Star access via role flag
+
+### Two Separate Evaluation Systems — NEVER CONFLATE
+- Coaches evaluate athletes → evaluations table (8 criteria + distinctions)
+- Recruiters evaluate coaches → CoachReview (not yet built) → feeds coach reputation
+
+### Pipeline Status
+- recruiter_pipeline.stage: IDENTIFIE → CONTACTE → EN_DISCUSSION → VISITE_PLANIFIEE → ENGAGE → LETTRE_SIGNEE
+- Separate from athlete's statut_recrutement_override
+- Both can coexist — athlete override is the "source of truth" shown on profile
 
 ---
 
-### Recruiter Actions
+## SUBSCRIPTION MODEL
 
-#### favorites
-- id, user_id, athlete_team_profile_id, created_at
-Constraints:
-- UNIQUE(user_id, athlete_team_profile_id)
-
-#### contact_requests
-- id, requester_user_id, athlete_team_profile_id
-- message, status (open/approved/declined/closed)
-- created_at, updated_at
+- Recruiter: Free / Pro / All Star
+- Coach: Free / Pro / All Star
+- Athlete: Free / Pro
+- Feature gating: blur overlays (FeatureGate component), not banners
+- Pro items in sidebar: 0.6 opacity with lock icons
+- "Passe à Pro" sidebar element: small gold card with icon
+- Recherche page: first 6 results free, rest behind FeatureGate
 
 ---
 
-## App Screens (Phase 1 MVP)
+## DEBUGGING PHILOSOPHY (Bruno-Philippe's 3-step method)
 
-### Coach
-- Create team
-- Create athlete
-- Create athlete profile (recruiting card)
-- Add metrics + links
-- Submit for approval
+1. Identify the field in the UI
+2. Tag it to the correct SQL table and column
+3. Map it so data flows through to display
 
-### Director (Org Admin)
-- Invite/disable coaches (high school org)
-- Invite/disable recruiters (cegep org)
-- Org overview dashboard (basic counts)
+If something doesn't show, narrow to:
+- (a) mapping not done in code
+- (b) data not saved in SQL
+- (c) no UI element to display it
 
-### Recruiter
-- Search/filter athletes (approved only)
-- View athlete profile
-- Favorite
-- Send contact request
-
-### Platform Admin
-- Approve/reject athlete_team_profiles
-- Manage sports/divisions/age_groups/competitions
+Do the field-by-field audit BEFORE jumping to code fixes.
 
 ---
 
-## Implementation Order (do not skip)
+## DEV COMMANDS
 
-1. DB schema + constraints
-2. Auth + roles + org membership
-3. RLS policies (Supabase) or server authorization checks
-4. Admin approval workflow
-5. Coach portal (create/submit)
-6. Recruiter search + filters + favorites
-7. Contact requests workflow
-8. Director org admin pages
+```bash
+npx next dev --port 3002          # dev server
+taskkill /F /IM node.exe           # clear ports (Windows)
+Remove-Item .next\dev\lock         # stuck lock file
+rd /s /q .next && npx next dev --port 3002  # full rebuild
+```
 
 ---
 
-## DATA FLOW RULE: Coach Input → Recruiter Display
+## GIT WORKFLOW
+
+- Commit before each major restructure
+- Tag stable UI state as v1.0-ui-only
+- Branch strategy: feature branches off main
+- GitHub push protection: Supabase keys in .gitignore
+
+---
+
+## FILE STRUCTURE (key files)
+
+```
+app/recruteur/recherche/page.tsx       — Recruiter search (fully wired)
+app/recruteur/athletes/[id]/page.tsx   — Recruiter athlete profile
+app/coach/athletes/page.tsx            — Coach roster (wired, matching cards)
+app/coach/athletes/[id]/page.tsx       — Coach athlete profile
+app/coach/athletes/[id]/modifier/      — Coach edit athlete (7-step wizard)
+app/coach/athletes/create/page.tsx     — Coach create athlete
+app/coach/athletes/_data/loadAthleteFromSupabase.ts — Shared data loader
+app/coach/athletes/_data/mockRosterData.ts — RosterAthlete type definition
+lib/supabase/client.ts                 — Supabase client
+lib/types/models.ts                    — Shared TypeScript types
+lib/config/sportBadges.ts              — Badge configuration
+```
+
+---
+
+## SUBSCRIPTION PRICING (confirmed — exact numbers)
+
+### Coach Tiers
+- **Free:** Profile creation, evaluations, verification (always free — coaches are the distribution channel)
+- **Pro:** $5.99/mo or $29.99/yr — unlocks Mon École, Stats École, Placement, Ma Réputation, Analytics
+- **All Star:** $29.99/mo or $200/yr — everything including school management
+
+### Recruiter Tiers
+- **Free:** Anonymized athlete profiles (stats, school, sport, rating visible; name, photo, position, jersey hidden)
+- **Starter:** $9.99/mo or $89/yr — full profile reveal, basic pipeline (2 statuses), auto-messaging, unlimited favorites
+- **Pro:** $29.99/mo or $269/yr — full pipeline (8 statuses), full inbox, analytics, trends, custom prospect lists, export
+- Custom prospect lists are EXCLUSIVELY Pro — Free and Starter have no access
+
+### Athlete Tiers
+- **Free:** Basic profile
+- **Pro:** $9.99/mo or $79/yr — enhanced features
+
+### Pricing Notes
+- Annual pricing ≈ 75% of annualized monthly cost (standard discount)
+- 60% option available as aggressive launch promotion
+- CÉGEP management features require All Star (sidebar label: red "ALL STAR" not gold "PRO")
+
+---
+
+## AMBASSADOR PROGRAM
+
+### Coach Ambassadors
+- One per RSEQ region
+- Reward: Pro free for 12 months + 1 bonus month per active referral
+- 15% commission on paying referrals for 12 months
+- Escalates to 20% commission + lifetime Pro at Elite status (20+ referrals)
+
+### Recruiter Ambassadors
+- 5-10 total
+- Same reward structure as coach ambassadors
+
+---
+
+## DATA FLOW RULE (Critical — apply everywhere)
 
 The coach's form mode (Simplifié/Détaillé) controls **DATA ENTRY** depth.
 The recruiter's toggle (Simplifié/Détaillé) controls **DATA DISPLAY** depth.
 These are **INDEPENDENT**.
 
-### Simplified recruiter view ALWAYS benefits from detailed coach input:
-- 8 trait criteria → condensed to 1 **Cote Globale** (auto-calculated average)
-- Full mensurations → condensed to **taille + poids** only
-- All academic fields → condensed to **moyenne + programme + graduation** + preference pills
-- All media links → condensed to **1 CTA button** (if highlight video exists)
-- Full sport info → condensed to sport + position on the player card (no separate section)
-- Coach report → **quote + Cote Globale stars** only
+### Simplified recruiter view benefits from detailed coach input:
+- 8 trait criteria → condensed to 1 Cote Globale (auto-calculated average)
+- Full mensurations → condensed to taille + poids only
+- All academic fields → condensed to moyenne + programme + graduation + preference pills
+- All media links → condensed to 1 CTA button (if highlight video exists)
+- Full sport info → sport + position on player card (no separate section)
+- Coach report → quote + Cote Globale stars only
 
 ### Detailed recruiter view shows EVERYTHING the coach entered:
 - All 8 trait criteria individually with stars
 - Full mensurations grid + all athletic tests
 - Matières fortes, honneurs, régions préférées, programme CÉGEP visé
-- All media link cards (Hudl, YouTube, Instagram, match complet, entraînement)
+- All media link cards
 - Sport info section with secondary sport, team, league
 - Coach reputation mini-card
 
 ### Empty field handling:
-If a field is empty (coach used simplified), show **nothing** — no empty state,
-no placeholder, just skip that field cleanly.
-
-### Section-by-section breakdown:
-
-**Évaluation du coach**
-- Coach detailed → 8 individual star criteria
-- Recruiter simplified → 1 Cote Globale (average of 8) with stars
-- Recruiter detailed → all 8 criteria individually with stars
-- Coach simplified (overall rating only) → both views show same single score, no breakdown
-
-**Profil physique**
-- Coach detailed → taille, poids, envergure, taille des mains, main/pied dominants + 6 athletic tests
-- Recruiter simplified → only taille + poids (e.g. 6'2" | 195 lbs)
-- Recruiter detailed → full mensurations grid + all tests with progress bars
-- Coach simplified (taille + poids only) → simplified same, detailed shows taille/poids + "Aucun test athlétique enregistré"
-
-**Profil académique**
-- Coach detailed → moyenne, matières fortes, mentions, programme visé, ouvert privé/anglophone/déménager, régions préférées
-- Recruiter simplified → 82% | Sport-études | Juin 2026 + preference tags
-- Recruiter detailed → everything: matières fortes chips, mentions, régions préférées checkboxes
-- Coach simplified (moyenne + programme only) → simplified shows 3 stats, detailed shows those + empty states for rest
-
-**Informations sportives**
-- Coach detailed → sport principal, position, numéro, sport secondaire, position secondaire, équipe/ligue
-- Recruiter simplified → sport + position + numéro already on the player card, no separate section
-- Recruiter detailed → full section with secondary sport, team name, league
-- Coach simplified (sport + position + numéro only) → same card, detailed shows no secondary sport
-
-**Médias**
-- Coach detailed → highlight video + Hudl + YouTube + Instagram + match complet + entraînement
-- Recruiter simplified → only ▶ VOIR LES FAITS SAILLANTS CTA button (if highlight video exists)
-- Recruiter detailed → embedded player + all link cards
-- Coach simplified (highlight video only) → simplified CTA button, detailed shows player + no additional links
-
-**Rapport de l'entraîneur**
-- Coach detailed → 8 star criteria + distinctions + texte libre
-- Recruiter simplified → texte libre quote + Cote Globale stars only
-- Recruiter detailed → quote + full 8-criteria grid + distinctions
-- Coach simplified (texte libre + overall rating only) → both views show quote + score, no breakdown
+If a field is empty (coach used simplified), show nothing — no placeholder, just skip cleanly.
 
 ---
 
-## Coding Standards
+## COACH REPUTATION SYSTEM
 
-- Use TypeScript everywhere.
-- Use Zod schema validation at boundaries (forms + API).
-- Keep database access server-side only.
-- No client-side secrets or service role keys.
-- Prefer simple, explicit code over abstractions.
+### Ma Réputation page IS the coach's public profile
+- When a recruiter clicks a coach name, they see this page
+- No separate coach profile page exists
 
-Folder suggestions:
-- `app/` routes
-- `lib/` (db client, auth helpers, rbac helpers)
-- `db/` (migrations, schema notes)
-- `components/` reusable UI
-- `types/` shared TS types
-- `constants/` enums and lists
+### Badge Thresholds
+- **Évalué:** 3 reviews (color: #3B82F6 blue)
+- **Recommandé:** 5 reviews (color: #FFFFFF white)
+- **Coach Élite:** 15 reviews (color: #E63946 red)
+- **Placeur:** 5 athletes with LETTRE_SIGNEE pipeline status (color: #FFFFFF white)
 
----
-
-## Output Format Requirements (for Claude responses)
-
-When generating code, always provide:
-
-1. **Files changed**
-2. **Code blocks per file** (complete file content if new, patch if existing)
-3. **Commands to run**
-4. **Manual test steps**
-5. **Notes/assumptions**
-
-Do not include vague steps. Be concrete.
-
----
----
-
-## UI / UX Design System (Match Reference Screens)
-
-Goal: **Very clean, SportsRecruits-inspired** layout.
-If screenshots/reference are provided, **match layout, spacing, typography, and color closely**. Do not “improve” the design. Use placeholder content where needed.
-
-### Core Layout Colors
-- App Background: var(--wl-bg)
-- Card / Surface Background: var(--wl-surface-2)
-- Secondary Surface: var(--wl-surface)
-- Primary Text: var(--wl-text)
-- Secondary Text: var(--wl-text-muted)
-- Borders / Dividers: var(--wl-border)
-
-### Brand Colors
-- Primary Brand Color: var(--wl-red-500)
-- Dark Brand Base (nav / footer): var(--wl-charcoal-900)
-
-### Semantic Colors
-- Success: var(--wl-success)
-- Info / Highlight: var(--wl-info)
-- Warning: var(--wl-warning)
-- Error: var(--wl-error)
+### Coach Review System (not yet built)
+- Recruiters evaluate coaches on 4 criteria → stored in CoachReview table
+- Review widget appears inline in messaging thread (not popup)
+- Triggers 24 hours after exchange with ≥1 recruiter message + ≥1 coach reply
+- Maximum 2 dismissals before permanent hiding
+- Feeds CoachReputationStats → visible on Ma Réputation page
 
 ---
 
-## Chips / Pills
+## CIVIL LEAGUE SUPPORT (planned migration)
 
-Selected Chip
-- Background: var(--wl-red-500)
-- Text: #FFFFFF
-- Border radius: var(--wl-radius-pill)
+### Additional Tables (from migration prompt, may not be created yet)
+- **league_teams** — teams within a league (name, league_id, level, division, gender)
+- **league_coaches** — links coaches to leagues (coach_id, league_id, role)
+- **users.context** — 'scolaire' | 'ligue_civile' | null
 
-Unselected Chip
-- Background: transparent
-- Border: var(--wl-border)
-- Text: var(--wl-text)
-
----
-
-## Typography
-
-Font Families (all Outfit)
-- Body: var(--font-sans) → Outfit
-- Headings: var(--font-head) → Outfit
-
-Font Sizes
-- H1: var(--wl-h1)
-- H2: var(--wl-h2)
-- H3: var(--wl-h3)
-- Body: var(--wl-body)
-- Caption: var(--wl-caption)
-
-Font Weights
-- Regular: var(--wl-weight-regular)
-- Medium: var(--wl-weight-medium)
-- Semibold: var(--wl-weight-semibold)
-- Bold: var(--wl-weight-bold)
+### League Coach Onboarding
+- Context check: if coach selects "Ligue civile" during onboarding → different flow
+- Select/create league → create team → first athlete
+- Athlete creation sets league_team_id instead of school_id
+- Sidebar subtitle shows league/team name instead of school name
 
 ---
 
-## Spacing System
+## LOI 25 COMPLIANCE
 
-Use the 8-point grid system.
+### RPRP (Responsable de la Protection des Renseignements Personnels)
+- Designated: Bruno-Philippe Desfosses Simard
+- Contact: confidentialite@nexus-sport.ca
+- Address: 856 Basile-Routhier, Repentigny, Quebec
 
-Spacing tokens:
-
-- var(--wl-space-1) → 8px
-- var(--wl-space-2) → 16px
-- var(--wl-space-3) → 24px
-- var(--wl-space-4) → 32px
-- var(--wl-space-5) → 48px
-- var(--wl-space-6) → 64px
-
-Standard Usage
-- Card padding: var(--wl-space-2) to var(--wl-space-3)
-- Section spacing: var(--wl-space-3)
-- Page margins: var(--wl-space-4)
+### Key Decisions
+- OVHcloud Beauharnois for 100% Quebec data residency (Coolify replaces Vercel)
+- Coach attestation (checkbox + PDF template) as MVP consent mechanism for minors
+- Parent notification model for 14-17 year old self-registering athletes (7-14 day response window)
+- ÉFVP is a one-time Nexus-level document, not per-athlete or per-CÉGEP
+- Institutional contract acceptance required as hard gate before athlete data is accessible
+- Privacy policy finalized with real RPRP details, must be used verbatim on /confidentialite
 
 ---
 
-## Border Radius
+## MARKETING & BRAND
 
-Use WeLead radius tokens:
+### Tagline
+- "Be the Next" (playing on NEXT embedded in NEXUS) — assessed as strongest option
+- Alternative: "Where talent meets opportunity"
 
-- Small components: var(--wl-radius-sm)
-- Cards / containers: var(--wl-radius-lg)
-- Pills / chips: var(--wl-radius-pill)
+### Logo
+- Working with designer named Cody
+- Current direction: torch/flame concepts fused with N or X letterform
+- Goal: the letter's strokes should BECOME the flame (not carry it as a passenger)
+- Reference quality: Chowpow dog logo (inseparable symbol)
 
----
+### Video Campaign (11 videos, 4 phases)
+1. **Teaser:** Coming Soon (anticipation, mystery)
+2. **Launch:** Nexus is live, platform overview
+3. **How-to series:** One per role (athlete, coach, recruiter, director, CÉGEP ROI)
+4. **Credibility:** Coach testimonial, "Try for Greatness" inspiration, senior dev credibility (Loi 25, encryption, experience)
 
-## Shadows
+### Platform Strategy (per channel)
+- **TikTok/Instagram Reels:** Athletes — POV format, trending audio, 15-30s
+- **Facebook:** Coaches/parents — screen recording tutorials
+- **LinkedIn:** Recruiters — Bruno-Philippe's personal brand, professional credibility
+- **YouTube:** Long-form tutorials
 
-- Cards: var(--wl-shadow-sm)
-- Elevated panels / modals: var(--wl-shadow-md)
+### Marketing Budget (Phase 1)
+- ~$105 one-time + ~$27/month — entirely organic
 
-Avoid heavy shadows.
-
----
-
-## Buttons
-
-Primary Button
-- Background: var(--wl-btn-primary-bg)
-- Text: var(--wl-btn-primary-fg)
-- Hover: var(--wl-btn-primary-hover)
-- Height: var(--wl-btn-height)
-- Padding X: var(--wl-btn-padding-x)
-- Font: var(--wl-btn-font)
-- Radius: var(--wl-radius-sm)
-
-Secondary Button
-- Background: var(--wl-btn-secondary-bg)
-- Text: var(--wl-btn-secondary-fg)
-- Border: var(--wl-btn-secondary-border)
-
-Ghost Button
-- Background: var(--wl-btn-ghost-bg)
-- Text: var(--wl-btn-ghost-fg)
-- Border: var(--wl-btn-ghost-border)
+### Competition
+- **Pipeline Recruiting (pipelinerecruiting.ca):** English-first, generic North American platform, no RSEQ integration, monetizes athletes not recruiters, questionable privacy for minors, AI-generated feel. Nexus advantage: French-first, Quebec institutional integration, deeper product (evaluations, pipeline, verification), Loi 25 compliant. Threat: their speed to market awareness, not product quality.
 
 ---
 
-## Focus & Glow
+## PLATFORM SCOPE
 
-- Focus ring: var(--wl-focus-ring)
-- Accent glow: var(--wl-glow-red)
-
-Apply only on:
-- active cards
-- hover states
-- selected items
-
-Avoid overuse.
+- **Total pages:** ~70 (56 across portals + 14 admin)
+- **Portals:** Coach, Recruiter (each with Free/Pro/All Star tiers)
+- **Director portals merged:** Directors are coaches/recruiters with admin flags, not separate roles
+- **Admin portal:** 14 pages, Phase 2A/2B/2C prioritization
 
 ---
 
-## Icons
+## WHAT'S NEXT (TODO)
 
-- Use simple line icons
-- Consistent stroke width
-- Minimal color usage
-- Prefer var(--wl-text-muted) or var(--wl-text)
-
----
-
-## UI Component Rules
-
-Cards
-- Background: var(--wl-surface-2)
-- Border radius: var(--wl-radius-lg)
-- Shadow: var(--wl-shadow-sm)
-- Padding: var(--wl-space-2) to var(--wl-space-3)
-
-Tabs
-- Active indicator: var(--wl-red-500)
-- Text: var(--wl-text)
-
-Checkboxes
-- Align to right side in filter lists
-- Use brand red for checked state
-
----
-
-## Layout Philosophy
-
-Design should feel:
-- Elite sports performance
-- Modern SaaS
-- Clean grid-based layout
-- Structured information hierarchy
-
-Key design principles:
-- Strong whitespace
-- Clear card grouping
-- Minimal clutter
-- High readability
-
----
-
-## Reference-First Implementation Rule
-
-When implementing UI:
-
-1. Create layout structure first (top navigation / sidebar / main content)
-2. Implement grid and spacing system using WeLead spacing tokens
-3. Build reusable card components
-4. Implement filters, chips, and buttons
-5. Connect real data last
-
-If no reference image is available for a screen, keep the same design language (clean cards, left filters, top dark nav, blue + green accents).
-
----
-
-## Official Design Patterns
-
-### Settings Page with Sub-Navigation
-
-**Reference file:** `app/admin/settings/page.tsx`
-**When to use:** Any page with multiple configuration sections (settings, preferences, parameters).
-
-**Structure:**
-```
-Page header (title + subtitle)
-├── Left sub-nav (lg:w-[240px])
-│   └── Buttons: icon + label, red active state (bg-[#E63946]/12 text-[#E63946])
-│   └── Horizontal scroll on mobile, vertical stack on desktop
-└── Content panel (flex-1)
-    └── bg-[#111317]/60 backdrop-blur-sm rounded-xl border border-[#1e2128] p-6 sm:p-8
-    └── Section-based rendering (useState, no routing)
-```
-
-**Specs:**
-- Nav button active: `bg-[#E63946]/12 text-[#E63946]`, icon matches
-- Nav button idle: `text-[#8a8d96] hover:text-white hover:bg-white/5`
-- Label class: `text-[12px] font-bold tracking-[0.25em] uppercase text-[#6b7280]`
-- Input class: `bg-[#13151a] border border-[#2a2d36] rounded-lg px-4 py-2.5 text-[14px] text-[#e0e0e0] focus:border-[#E63946]`
-- Rule cards: green dot indicator (w-2 h-2 bg-[#22C55E]) left + label + badge/value right
-- Toggle switches: `w-12 h-7 rounded-full` with `w-5 h-5` white circle, green (#22C55E) for on, gray (#2D3748) for off
-- Danger sections: `border-[#E63946]/30` border, red title text
-- Save buttons: `bg-[#E63946] hover:bg-[#D42B22] text-white font-bold rounded-lg`
-- Responsive: `flex flex-col lg:flex-row gap-8`
-
-**Brand red:** Always use `#E63946` for the active nav state and accent color across all settings pages.
-
-**Existing pages using this pattern:**
-- `app/admin/settings/page.tsx` ← canonical reference
-- `app/coach/settings/page.tsx`
-- `app/recruteur/parametres/page.tsx`
-- `app/directeur-ecole/parametres/page.tsx`
-- `app/directeur-cegep/parametres/page.tsx`
-
----
-
-## Coach Portal Structure (School Side)
-
-### Director École Merger
-- The Director École portal no longer exists as a separate portal
-- Director features are PRO features inside the Coach portal at /coach/ecole/*
-- PRO features are unlocked by: Coach Pro subscription ($14.99/mo) OR Admin École role (invited director, free access)
-- Every school MUST have an Admin École — enforced during onboarding
-- The sidebar shows a "GESTION ÉCOLE" section with PRO badge
-- Free coaches see Pro items at 0.6 opacity with lock icons
-- Clicking a Pro item shows the page with SchoolGate (blur + CTA)
-
-### Admin École Role
-- First coach to create a school = temporary Admin École
-- Onboarding forces "Who is the director?" choice (self or invite)
-- Invited director = free account, full school management access via /auth/invite-admin
-- Admin flag: is_school_admin (boolean) + school_admin_type (owner/collaborator)
-- Only one owner per school, collaborators possible
-- Transfer requires Nexus admin approval
-
-### Recruiter Portal Structure (CÉGEP Side)
-- The Director CÉGEP portal no longer exists as a separate portal
-- Director features are PRO features inside the Recruiter portal at /recruteur/cegep/*
-- PRO features unlocked by: Recruteur Pro ($29/mo) OR Admin CÉGEP role (free)
-- Every CÉGEP MUST have an Admin — enforced during onboarding
-- The sidebar shows a "GESTION CÉGEP" section with PRO badge
-- Free recruiters see Pro items at 0.6 opacity with lock icons
-- Clicking a Pro item shows CegepGate (blur + CTA)
-
-### Admin CÉGEP Role
-- First recruiter at a CÉGEP = temporary Admin CÉGEP
-- Onboarding forces "Who is the director?" choice (self or invite)
-- Invited director = free account, full CÉGEP management access via /auth/invite-admin?type=cegep
-- Admin flag: is_cegep_admin (boolean) + cegep_admin_type (owner/collaborator)
-- Only one owner per CÉGEP
-- Transfer requires Nexus admin approval
-
-### No More Separate Director Portals
-- /app/directeur-ecole/ → original pages remain, copies at /coach/ecole/*
-- /app/directeur-cegep/ → original pages remain, copies at /recruteur/cegep/*
-- Directors are coaches/recruiters with admin flags, not separate roles
-- Two portals: Coach portal + Recruiter portal
-- Each portal has Free tier + Pro tier (which includes school/CÉGEP management)
-
----
-
-## Phase 2 Notes (do not build yet)
-
-Phase 2 will add:
-- Athlete authentication + claim profile
-- Messaging
-- Scheduling
-- Analytics dashboards
-- Subscription enforcement
-- (Optional) controlled media uploads
-
-Unless explicitly requested, stay in Phase 1.
+- Wire recruiter pipeline page to recruiter_pipeline table
+- Wire recruiter favorites page (Mes Favoris)
+- Google OAuth (deferred until OVHcloud VPS — needs public redirect URL)
+- Stripe integration: Billing, Customer Portal, Tax (TPS/TVQ)
+- Supabase feature-flag system: subscriptions table + useSubscription hook
+- Ambassador program launch
+- Clean up old pipeline table references (replace with recruiter_favorites/recruiter_pipeline)
+- Coach reputation system (coach_reviews table — not yet built)
+- Logo redesign
