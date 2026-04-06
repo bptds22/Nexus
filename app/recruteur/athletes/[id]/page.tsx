@@ -604,6 +604,14 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
                 setIsFavorited(newState);
                 if (newState) {
                   await supabase.from("recruiter_favorites").insert({ recruiter_id: session.user.id, athlete_id: id });
+                  // Auto-insert into pipeline at IDENTIFIE (no-op if already exists)
+                  const { error: pipeErr } = await supabase
+                    .from("recruiter_pipeline")
+                    .upsert(
+                      { recruiter_id: session.user.id, athlete_id: id, stage: "IDENTIFIE", moved_at: new Date().toISOString() },
+                      { onConflict: "recruiter_id,athlete_id", ignoreDuplicates: true }
+                    );
+                  console.log("[Pipeline auto-insert]", { athlete_id: id, stage: "IDENTIFIE", error: pipeErr });
                 } else {
                   await supabase.from("recruiter_favorites").delete().eq("recruiter_id", session.user.id).eq("athlete_id", id);
                 }

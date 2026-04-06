@@ -644,7 +644,7 @@ export default function CoachAthleteProfilePage() {
       )}
 
       {/* ══════════ COACH REPORT ══════════ */}
-      {(a.coachReport || coteGlobale > 0) && (
+      {(a.coachReport || coteGlobale >= 0) && (
         <section>
           <h2 className={sectionLabel}>Rapport de l&apos;entraîneur</h2>
           <div className={`relative ${cardBase} p-6 sm:p-8 pl-8 sm:pl-10 overflow-hidden`}>

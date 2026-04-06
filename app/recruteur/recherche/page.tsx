@@ -192,16 +192,14 @@ function AthleteSearchRow({ a, onToggleFav }: { a: ExtendedAthlete; onToggleFav:
         </Link>
         <p className="text-[13px] text-[#9CA3AF] truncate">{a.school}</p>
         <div className="flex items-center gap-2 mt-0.5">
-          {a.stars > 0 && (
-            <div className="flex items-center gap-0.5">
-              {Array.from({ length: 5 }, (_, i) => (
-                <svg key={i} width="11" height="11" viewBox="0 0 24 24" fill={a.stars >= i + 1 ? "#F59E0B" : "#374151"} stroke="none">
-                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                </svg>
-              ))}
-              <span className="text-[11px] font-bold text-[#F59E0B] ml-0.5">{a.stars.toFixed(1)}</span>
-            </div>
-          )}
+          <div className="flex items-center gap-0.5">
+            {Array.from({ length: 5 }, (_, i) => (
+              <svg key={i} width="11" height="11" viewBox="0 0 24 24" fill={a.stars >= i + 1 ? "#F59E0B" : "#374151"} stroke="none">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+              </svg>
+            ))}
+            <span className="text-[11px] font-bold text-[#F59E0B] ml-0.5">{a.stars.toFixed(1)}</span>
+          </div>
         </div>
       </div>
 
@@ -533,6 +531,14 @@ export default function RecherchePage() {
           recruiter_id: session.user.id,
           athlete_id: id,
         });
+      // Auto-insert into pipeline at IDENTIFIE (no-op if already exists)
+      const { error: pipeErr } = await supabase
+        .from("recruiter_pipeline")
+        .upsert(
+          { recruiter_id: session.user.id, athlete_id: id, stage: "IDENTIFIE", moved_at: new Date().toISOString() },
+          { onConflict: "recruiter_id,athlete_id", ignoreDuplicates: true }
+        );
+      console.log("[Pipeline auto-insert]", { athlete_id: id, stage: "IDENTIFIE", error: pipeErr });
     }
   };
 

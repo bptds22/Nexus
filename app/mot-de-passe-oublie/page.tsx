@@ -3,7 +3,7 @@
 import { useState, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import ThemeToggle from "../components/ThemeToggle";
+import MarketingNav from "@/components/marketing/MarketingNav";
 import PlaybookBackground from "../components/PlaybookBackground";
 
 /* ─────────────────────────────────────────────────────────────────
@@ -14,12 +14,6 @@ import PlaybookBackground from "../components/PlaybookBackground";
 
 const label = "text-[10px] font-bold tracking-[0.25em] uppercase";
 
-const NAV_LINKS = [
-  { label: "Comment ça marche", href: "/comment-ca-marche" },
-  { label: "Coaches & Recruteurs", href: "/#roles" },
-  { label: "Athlètes", href: "/#athletes" },
-  { label: "Roadmap", href: "/roadmap" },
-];
 
 const SOCIALS = [
   {
@@ -72,54 +66,7 @@ export default function ForgotPasswordPage() {
     <div className="hero-playbook nx-no-glow bg-[#060A14] min-h-screen flex flex-col">
       <PlaybookBackground />
 
-      {/* ══════════════════════════════════════════
-          NAV — identical to auth page
-      ══════════════════════════════════════════ */}
-      <nav className="sticky top-0 z-50 bg-[#060A14]/92 backdrop-blur-md border-b border-[#1E2D4A]">
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-
-          <Link href="/" className="flex items-center gap-3">
-            <Image
-              src="/brand/White%20red%20logo%20@4x.png"
-              alt="Nexus"
-              width={32}
-              height={32}
-              className="object-contain nx-logo-dark"
-            />
-            <Image
-              src="/brand/Profile%20trans@4x.png"
-              alt="Nexus"
-              width={32}
-              height={32}
-              className="object-contain nx-logo-light"
-            />
-            <span className="font-head font-black text-white text-base tracking-[0.06em] uppercase hidden sm:block">
-              Nexus
-            </span>
-          </Link>
-
-          <ul className="hidden md:flex items-center gap-8 list-none">
-            {NAV_LINKS.map((l) => (
-              <li key={l.href}>
-                <Link href={l.href} className={`${label} text-[#9AA3B2] hover:text-white transition-colors`}>
-                  {l.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-
-          <div className="flex items-center gap-2">
-            <ThemeToggle />
-            <Link href="/auth" className={`hidden sm:block ${label} text-wl-red transition-colors px-4 h-9 leading-9 hover:drop-shadow-[0_0_8px_rgba(232,72,72,0.6)]`}>
-              Connexion
-            </Link>
-            <Link href="/auth?mode=signup" className="nx-ghost-btn h-9 px-5 border font-head font-black text-xs uppercase tracking-widest inline-flex items-center">
-              S&apos;inscrire
-            </Link>
-          </div>
-
-        </div>
-      </nav>
+      <MarketingNav />
 
       {/* ══════════════════════════════════════════
           FORGOT PASSWORD CARD
