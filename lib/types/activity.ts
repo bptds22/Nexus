@@ -67,17 +67,17 @@ export const ACTIVITY_TYPE_CONFIG: Record<ActivityType, ActivityTypeConfig> = {
   message_received:        { icon: "message-circle", borderColor: "#22C55E", label: "Messages" },
   athlete_favorited:       { icon: "heart",          borderColor: "#E63329", label: "Favoris" },
   video_added:             { icon: "film",           borderColor: "#22C55E", label: "Vidéos" },
-  badge_earned:            { icon: "award",          borderColor: "#F59E0B", label: "Badges" },
-  profile_verified:        { icon: "check-circle",   borderColor: "#22C55E", label: "Vérifications" },
-  scouting_report:         { icon: "file-text",      borderColor: "#E63329", label: "Rapports" },
+  badge_earned:            { icon: "award",          borderColor: "#E63329", label: "Badges" },
+  profile_verified:        { icon: "check-circle",   borderColor: "#3B82F6", label: "Vérifications" },
+  scouting_report:         { icon: "file-text",      borderColor: "#6B7280", label: "Notes" },
   athlete_added:           { icon: "user-plus",      borderColor: "#6B7280", label: "Nouveaux athlètes" },
   letter_of_intent:        { icon: "pen-tool",       borderColor: "#E63329", label: "Lettres d'intention" },
-  profile_viewed:          { icon: "eye",            borderColor: "#F59E0B", label: "Consultations" },
+  profile_viewed:          { icon: "eye",            borderColor: "#6B7280", label: "Consultations" },
   profile_incomplete:      { icon: "alert-triangle", borderColor: "#F59E0B", label: "Profils incomplets" },
   new_athlete_in_sport:    { icon: "user-plus",      borderColor: "#E63329", label: "Nouveaux athlètes" },
   favorite_profile_updated:{ icon: "refresh-cw",     borderColor: "#E63329", label: "Mises à jour" },
   favorite_stats_updated:  { icon: "bar-chart-3",    borderColor: "#22C55E", label: "Statistiques" },
-  coach_response:          { icon: "reply",          borderColor: "#6B7280", label: "Réponses" },
+  coach_response:          { icon: "reply",          borderColor: "#22C55E", label: "Réponses" },
 };
 
 /* ── Time grouping helper ──────────────────────────────────── */
