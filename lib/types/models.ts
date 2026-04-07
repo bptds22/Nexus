@@ -25,6 +25,35 @@ export interface AthleteVerification {
 }
 
 /* ══════════════════════════════════════════════════════════════
+   GLOBAL RECRUITMENT STATUS — LinkedIn-style visibility
+══════════════════════════════════════════════════════════════ */
+
+export type GlobalRecruitmentStatus = 'OUVERT' | 'EN_PROCESSUS' | 'RECRUTE' | 'RETIRE';
+
+export const RECRUITMENT_STATUS_CONFIG: Record<GlobalRecruitmentStatus, {
+  label: string;
+  color: string;
+  bgColor: string;
+  dotColor: string;
+}> = {
+  OUVERT: { label: 'Ouvert', color: 'text-green-400', bgColor: 'bg-green-400/10', dotColor: '#22C55E' },
+  EN_PROCESSUS: { label: 'En processus', color: 'text-yellow-400', bgColor: 'bg-yellow-400/10', dotColor: '#F59E0B' },
+  RECRUTE: { label: 'Recruté', color: 'text-red-400', bgColor: 'bg-red-400/10', dotColor: '#E63946' },
+  RETIRE: { label: 'Retiré', color: 'text-gray-500', bgColor: 'bg-gray-500/10', dotColor: '#6B7280' },
+};
+
+export interface CommitmentRequest {
+  id: string;
+  athlete_id: string;
+  requested_by: string;
+  school_id: string;
+  status: 'PENDING' | 'CONFIRMED' | 'DENIED';
+  open_to_offers: boolean | null;
+  created_at: string;
+  responded_at: string | null;
+}
+
+/* ══════════════════════════════════════════════════════════════
    ATHLETE — core profile used across coach + recruiter portals
 ══════════════════════════════════════════════════════════════ */
 

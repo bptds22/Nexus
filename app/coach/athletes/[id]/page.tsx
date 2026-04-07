@@ -9,6 +9,8 @@ import { SPORT_NAME_MAP } from "@/lib/config/sportBadges";
 import NxIcon from "@/components/ui/NxIcon";
 import StarRating from "@/components/ui/StarRating";
 import { createClient } from "@/lib/supabase/client";
+import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
+import type { GlobalRecruitmentStatus } from "@/lib/types/models";
 
 /* ═══════════════════════════════════════════════════════════════
    Coach Athlete Profile — Same design as recruiter view
@@ -284,6 +286,28 @@ export default function CoachAthleteProfilePage() {
         console.log("Distinctions filtered:", filtered);
         setDbDistinctions(filtered);
       }
+
+      // Engagement metrics
+      const { count: vc } = await supabase
+        .from("recruiter_athlete_views")
+        .select("*", { count: "exact", head: true })
+        .eq("athlete_id", id);
+
+      const { count: fc } = await supabase
+        .from("recruiter_favorites")
+        .select("*", { count: "exact", head: true })
+        .eq("athlete_id", id);
+
+      console.log("Engagement metrics:", { viewCount: vc, favoriteCount: fc });
+      setViewCount(vc || 0);
+      setFavoriteCount(fc || 0);
+
+      // Global recruitment status
+      setGlobalRecruitmentStatus((raw.recruitment_status as string) || "OUVERT");
+      const committedSchoolRel = raw.committed_school;
+      const cs = (Array.isArray(committedSchoolRel) ? committedSchoolRel[0] : committedSchoolRel) as { name?: string } | null;
+      setCommittedSchoolName(cs?.name || "");
+      setOpenToOffers((raw.open_to_offers as boolean | null) ?? null);
     };
     load();
   }, [id]);
@@ -300,6 +324,11 @@ export default function CoachAthleteProfilePage() {
   const [pipelineMaxAt, setPipelineMaxAt] = useState("");
   const [recruitOverride, setRecruitOverride] = useState<{ value: string; at: string } | null>(null);
   const [dbDistinctions, setDbDistinctions] = useState<string[]>([]);
+  const [viewCount, setViewCount] = useState(0);
+  const [favoriteCount, setFavoriteCount] = useState(0);
+  const [globalRecruitmentStatus, setGlobalRecruitmentStatus] = useState<string>("OUVERT");
+  const [committedSchoolName, setCommittedSchoolName] = useState("");
+  const [openToOffers, setOpenToOffers] = useState<boolean | null>(null);
 
   const isDetailed = mode === "detailed";
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
@@ -477,87 +506,34 @@ export default function CoachAthleteProfilePage() {
             {a.jerseyNumber && <span className="text-[#E63946] ml-3">#{a.jerseyNumber}</span>}
           </h1>
 
-          <div className="flex flex-wrap items-center gap-2">
-            {/* Vérifié badge */}
-            <VerifiedBadge
-              isVerified={a.isVerified}
-              onClick={() => { if (!a.isVerified) setShowVerifyModal(true); }}
-            />
-
-            {/* Account status pill */}
-            {a.isOpenToOffers !== undefined && (
-              <span className={`inline-flex items-center gap-1.5 text-[12px] font-bold px-3.5 py-2 rounded-full border ${
-                a.commitmentStatus === "DESACTIVE"
-                  ? "border-[#E63946]/40 text-[#E63946]"
-                  : "border-[#22C55E]/30 text-[#22C55E]"
-              }`}>
-                <span className={`w-2 h-2 rounded-full ${a.commitmentStatus === "DESACTIVE" ? "bg-[#E63946]" : "bg-[#22C55E]"}`} />
-                {a.commitmentStatus === "DESACTIVE" ? "Désactivé" : "Actif"}
-              </span>
-            )}
-
-            {/* Recruitment status pill — override vs pipeline "last write wins" */}
-            {(() => {
-              const STATUS_HIERARCHY = ["LETTRE_SIGNEE", "ENGAGE", "VISITE_PLANIFIEE", "EN_DISCUSSION", "CONTACTE", "IDENTIFIE"];
-              const STATUS_CFG: Record<string, { style: "red" | "gray" | "white"; label: string }> = {
-                IDENTIFIE: { style: "gray", label: "Identifié" },
-                CONTACTE: { style: "white", label: "Contacté" },
-                EN_DISCUSSION: { style: "white", label: "En discussion" },
-                VISITE_PLANIFIEE: { style: "white", label: "Visite planifiée" },
-                ENGAGE: { style: "red", label: "Engagé" },
-                LETTRE_SIGNEE: { style: "red", label: "Lettre signée" },
-              };
-              // Label-to-style mapping for override values (French labels)
-              const OVERRIDE_STYLE: Record<string, "red" | "gray" | "white" | "ouvert"> = {
-                "Ouvert": "ouvert", "Identifié": "gray", "Contacté": "white",
-                "En discussion": "white", "Visite planifiée": "white", "Engagé": "red", "Lettre signée": "red",
-              };
-
-              const totalRecruiters = pipelineData.reduce((s, p) => s + p.count, 0);
-              const useOverride = recruitOverride && (!pipelineMaxAt || recruitOverride.at > pipelineMaxAt);
-
-              if (useOverride) {
-                // Coach override wins
-                const style = OVERRIDE_STYLE[recruitOverride.value] || "white";
-                const pillClass = style === "red"
-                  ? "bg-[#E63946] text-white border border-[#E63946]"
-                  : style === "gray"
-                    ? "bg-[#6B7280]/15 border border-[#6B7280]/30 text-[#9CA3AF]"
-                    : style === "ouvert"
-                      ? "border border-white/20 text-white/70"
-                      : "border border-white/20 text-white";
-                return (
-                  <span className={`inline-flex items-center gap-1.5 text-[12px] font-bold px-3.5 py-2 rounded-full ${pillClass}`}>
-                    {recruitOverride.value}{totalRecruiters > 0 ? ` (${totalRecruiters})` : ""}
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="opacity-60"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
-                  </span>
-                );
-              }
-
-              if (pipelineData.length === 0) {
-                return (
-                  <span className="inline-flex items-center gap-1.5 text-[12px] font-bold px-3.5 py-2 rounded-full border border-white/20 text-white/70">
-                    Ouvert
-                  </span>
-                );
-              }
-
-              // Pipeline auto status
-              const allStatuses = pipelineData.map((p) => p.status);
-              const highest = STATUS_HIERARCHY.find((s) => allStatuses.includes(s));
-              if (!highest) return null;
-              const cfg = STATUS_CFG[highest] || STATUS_CFG.IDENTIFIE;
-              const pillClass = cfg.style === "red"
-                ? "bg-[#E63946] text-white border border-[#E63946]"
-                : cfg.style === "gray"
-                  ? "bg-[#6B7280]/15 border border-[#6B7280]/30 text-[#9CA3AF]"
-                  : "border border-white/20 text-white";
-              return (
-                <span className={`inline-flex items-center gap-1.5 text-[12px] font-bold px-3.5 py-2 rounded-full ${pillClass}`}>
-                  {cfg.label} ({totalRecruiters})
+          {/* Engagement metrics + global status */}
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="bg-[#111317] rounded-lg px-4 py-2 flex items-center gap-2">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+              <span className="text-[16px] font-bold text-white">{viewCount}</span>
+              <span className="text-[11px] text-[#6b7280]">vues</span>
+            </div>
+            <div className="bg-[#111317] rounded-lg px-4 py-2 flex items-center gap-2">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="#E63946" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" /></svg>
+              <span className="text-[16px] font-bold text-white">{favoriteCount}</span>
+              <span className="text-[11px] text-[#6b7280]">favoris</span>
+            </div>
+            <div className="bg-[#111317] rounded-lg px-4 py-2">
+              <span className="text-[8px] font-bold uppercase tracking-[0.2em] text-[#6b7280] block mb-1">Statut recrutement</span>
+              <RecruitmentStatusBadge
+                status={globalRecruitmentStatus as GlobalRecruitmentStatus}
+                committedSchoolName={committedSchoolName || undefined}
+                size="sm"
+              />
+            </div>
+            {globalRecruitmentStatus === "RECRUTE" && openToOffers !== null && (
+              <div className="bg-[#111317] rounded-lg px-4 py-2 flex items-center gap-2">
+                <span className={`w-2 h-2 rounded-full ${openToOffers ? "bg-[#22C55E]" : "bg-[#6B7280]"}`} />
+                <span className={`text-[13px] font-bold ${openToOffers ? "text-[#22C55E]" : "text-[#6B7280]"}`}>
+                  {openToOffers ? "Ouvert aux offres" : "Fermé aux offres"}
                 </span>
-              );
-            })()}
+              </div>
+            )}
           </div>
 
           {a.viewsThisMonth > 0 && (

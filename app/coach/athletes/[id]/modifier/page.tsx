@@ -12,6 +12,8 @@ import DatePicker from "../../../components/DatePicker";
 import SportPositionSelect from "../../../components/SportPositionSelect";
 import NxSelect from "../../../components/NxSelect";
 import FormModeToggle from "../../../components/FormModeToggle";
+import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
+import type { GlobalRecruitmentStatus } from "@/lib/types/models";
 
 /* ═══════════════════════════════════════════════════════════════
    MODIFIER — Coach Edit View (7-Step Form Wizard)
@@ -214,7 +216,21 @@ function ModifierContent({ id }: { id: string }) {
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  // ── Recruitment status fields ──
+  const [recruitmentStatus, setRecruitmentStatus] = useState<string>("OUVERT");
+  const [committedSchoolId, setCommittedSchoolId] = useState<string>("");
+  const [openToOffers, setOpenToOffers] = useState<boolean | null>(null);
+  const [schoolsList, setSchoolsList] = useState<{ id: string; name: string }[]>([]);
+  const [schoolsSearch, setSchoolsSearch] = useState<string>("");
+
   useEffect(() => {
+    // Fetch schools for committed school selector
+    const supabase = createClient();
+    supabase.from("schools").select("id, name").order("name").then(({ data: schoolsData, error: schoolsErr }) => {
+      console.log("Schools loaded:", schoolsData?.length, schoolsErr);
+      if (schoolsData) setSchoolsList(schoolsData);
+    });
+
     loadAthleteRaw(id).then(({ data, error }) => {
       if (error || !data) {
         console.log("Modifier: failed to load:", error);
@@ -234,6 +250,13 @@ function ModifierContent({ id }: { id: string }) {
       // Build form directly from raw DB data — preserves all values
       const formFromDB = buildFormFromRaw(raw) as unknown as AthleteFormData;
       setForm(formFromDB);
+
+      // Load recruitment status fields from athlete record
+      console.log('Recruitment status fields:', { recruitment_status: raw.recruitment_status, committed_school_id: raw.committed_school_id, open_to_offers: raw.open_to_offers });
+      if (raw.recruitment_status) setRecruitmentStatus(raw.recruitment_status as string);
+      if (raw.committed_school_id) setCommittedSchoolId(raw.committed_school_id as string);
+      if (raw.open_to_offers != null) setOpenToOffers(raw.open_to_offers as boolean);
+
       setLoading(false);
     });
   }, [id]);
@@ -490,6 +513,16 @@ function ModifierContent({ id }: { id: string }) {
       recrutement_override_at: overrideValue ? new Date().toISOString() : null,
     };
 
+    // ── RECRUITMENT STATUS ──
+    console.log('Saving recruitment status:', { recruitmentStatus, committedSchoolId, openToOffers });
+    const recruitmentData: Record<string, unknown> = {
+      recruitment_status: recruitmentStatus,
+      committed_school_id: recruitmentStatus === 'RECRUTE' ? committedSchoolId || null : null,
+      open_to_offers: recruitmentStatus === 'RECRUTE' ? openToOffers : null,
+      recruitment_status_changed_by: user.id,
+      recruitment_status_changed_at: new Date().toISOString(),
+    };
+
     // Merge all into one update
     const updateData = {
       ...personalData,
@@ -500,6 +533,7 @@ function ModifierContent({ id }: { id: string }) {
       ...mediaData,
       ...consentData,
       ...overrideData,
+      ...recruitmentData,
     };
 
     console.log("FULL UPDATE PAYLOAD:", JSON.stringify(updateData));
@@ -565,7 +599,20 @@ function ModifierContent({ id }: { id: string }) {
   function renderStep1() {
     const d = form.identity;
     const isDetailed = d.identityMode === "detailed";
+
+    const RECRUITMENT_STATUS_OPTIONS = [
+      { value: "OUVERT", label: "Ouvert" },
+      { value: "EN_PROCESSUS", label: "En processus" },
+      { value: "RECRUTE", label: "Recruté" },
+      { value: "RETIRE", label: "Retiré" },
+    ];
+
+    const filteredSchools = schoolsList.filter((s) =>
+      schoolsSearch ? s.name.toLowerCase().includes(schoolsSearch.toLowerCase()) : true
+    ).slice(0, 50);
+
     return (
+      <>
       <div className={cardCls}>
         <h2 className="font-head text-xl sm:text-2xl font-black text-white uppercase tracking-tight mb-1">Identité de l&apos;étudiant-athlète</h2>
         <p className="text-[15px] text-[#6b7280] mb-8">Informations personnelles de base</p>
@@ -634,6 +681,97 @@ function ModifierContent({ id }: { id: string }) {
           </div>
         )}
       </div>
+
+      {/* ── Statut de recrutement ── */}
+      <div className={`${cardCls} mt-6`}>
+        <h2 className="font-head text-xl sm:text-2xl font-black text-white uppercase tracking-tight mb-1">Statut de recrutement</h2>
+        <p className="text-[15px] text-[#6b7280] mb-8">Situation actuelle de l&apos;athlète dans le processus de recrutement</p>
+
+        <div className="space-y-6">
+          <div>
+            <label className={labelCls}>Statut de recrutement</label>
+            <select
+              title="Statut de recrutement"
+              value={recruitmentStatus}
+              onChange={(e) => {
+                const val = e.target.value;
+                setRecruitmentStatus(val);
+                if (val !== "RECRUTE") {
+                  setCommittedSchoolId("");
+                  setOpenToOffers(null);
+                }
+              }}
+              className={inputCls}
+            >
+              {RECRUITMENT_STATUS_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+          </div>
+
+          {recruitmentStatus === "RECRUTE" && (
+            <div className="border-t border-[#1e2128] pt-5 space-y-6">
+              <div>
+                <label className={labelCls}>CÉGEP d&apos;engagement</label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={schoolsSearch}
+                    onChange={(e) => setSchoolsSearch(e.target.value)}
+                    placeholder="Rechercher un CÉGEP..."
+                    className={inputCls}
+                  />
+                  {committedSchoolId && !schoolsSearch && (
+                    <div className="flex items-center justify-between mt-2 px-3 py-2 bg-[#E63946]/10 border border-[#E63946]/25 rounded-lg">
+                      <span className="text-[13px] text-[#e0e0e0]">
+                        {schoolsList.find((s) => s.id === committedSchoolId)?.name || committedSchoolId}
+                      </span>
+                      <button type="button" onClick={() => { setCommittedSchoolId(""); }} className="text-[12px] text-[#E63946] hover:underline ml-3">Retirer</button>
+                    </div>
+                  )}
+                  {schoolsSearch && (
+                    <div className="absolute z-20 left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-[#13151a] border border-[#2a2d36] rounded-lg shadow-lg">
+                      {filteredSchools.length === 0 && (
+                        <div className="px-4 py-3 text-[13px] text-[#6b7280]">Aucun résultat</div>
+                      )}
+                      {filteredSchools.map((school) => (
+                        <button
+                          key={school.id}
+                          type="button"
+                          onClick={() => {
+                            setCommittedSchoolId(school.id);
+                            setSchoolsSearch("");
+                          }}
+                          className={`w-full text-left px-4 py-2.5 text-[13px] transition-colors hover:bg-[#1A1D24] ${committedSchoolId === school.id ? "text-[#E63946] font-bold" : "text-[#e0e0e0]"}`}
+                        >
+                          {school.name}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className={labelCls}>Ouvert à d&apos;autres offres?</label>
+                <div className="flex items-center gap-3 mt-1">
+                  {([{ value: true, label: "Oui" }, { value: false, label: "Non" }] as const).map((opt) => (
+                    <button
+                      key={String(opt.value)}
+                      type="button"
+                      onClick={() => setOpenToOffers(opt.value)}
+                      className={`px-5 py-2.5 rounded-lg border text-[14px] font-bold transition-colors ${openToOffers === opt.value ? "border-[#E63946] bg-[#E63946]/10 text-[#E63946]" : "border-[#2a2d36] text-[#8a8d96] hover:border-[#6b7280]"}`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+      </>
     );
   }
 
@@ -1097,23 +1235,25 @@ function ModifierContent({ id }: { id: string }) {
         {summaryCard("Médias", 6, (<div>{infoRow("Hudl", media.hudlLink)}{infoRow("YouTube", media.youtubeLink)}{infoRow("Instagram", media.instagramLink)}</div>))}
 
         <div className="border-t border-[#1e2128] mt-6 pt-5">
-          <p className={sectionTitle}>Finalisation</p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            <div>
-              <label className={labelCls}>Statut de recrutement (correction)</label>
-              <p className="text-[11px] text-[#6b7280] mb-2 leading-relaxed">Ce statut sera automatiquement mis à jour par l&apos;activité des recruteurs. Utilisez cette option uniquement pour corriger une erreur.</p>
-              <NxSelect value={submission.recruitingStatus} onChange={(v) => updateSubmission("recruitingStatus", v)} options={[
-                { value: "", label: "— Automatique" },
-                { value: "Ouvert", label: "Ouvert" },
-                { value: "Identifié", label: "Identifié" },
-                { value: "Contacté", label: "Contacté" },
-                { value: "En discussion", label: "En discussion" },
-                { value: "Visite planifiée", label: "Visite planifiée" },
-                { value: "Engagé", label: "Engagé" },
-                { value: "Lettre signée", label: "Lettre signée" },
-              ]} />
-            </div>
-            <div><label className={labelCls}>Division préférée</label><NxSelect value={submission.preferredDivision} onChange={(v) => updateSubmission("preferredDivision", v)} placeholder="—" options={[{ value: "D1", label: "D1" }, { value: "D2", label: "D2" }, { value: "D3", label: "D3" }]} /></div>
+          <div className="bg-[#1A1D24] border border-[#2A2D35] rounded-lg p-4">
+            <p className="text-[11px] text-[#6b7280] uppercase tracking-wider font-semibold mb-3">Statut de recrutement</p>
+            <RecruitmentStatusBadge
+              status={recruitmentStatus as GlobalRecruitmentStatus}
+              size="md"
+            />
+            {recruitmentStatus === "RECRUTE" && (
+              <>
+                <p className="text-[14px] text-[#d1d5db] mt-2">
+                  Engagé à: {schoolsList.find(s => s.id === committedSchoolId)?.name || "Non spécifié"}
+                </p>
+                <p className="text-[12px] text-[#6b7280] mt-1">
+                  Ouvert aux offres: {openToOffers === true ? "Oui" : openToOffers === false ? "Non" : "Non spécifié"}
+                </p>
+              </>
+            )}
+            {recruitmentStatus === "RETIRE" && (
+              <p className="text-[14px] text-[#6b7280] mt-2">Athlète retiré du recrutement</p>
+            )}
           </div>
         </div>
       </div>

@@ -6,6 +6,8 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { type RosterAthlete } from "./_data/mockRosterData";
 import NxIcon from "@/components/ui/NxIcon";
+import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
+import type { GlobalRecruitmentStatus } from "@/lib/types/models";
 
 /* ═══════════════════════════════════════════════════════════════
    Mes Athlètes — Card/list layout matching recruiter search
@@ -33,33 +35,11 @@ const SPORTS = [
 
 const PROMOTIONS = ["2026", "2027", "2028"];
 
-const sportLabel = (value: string): string => {
-  const found = SPORTS.find((s) => s.value === value);
-  return found ? found.label : value;
-};
-
 /* ── Recruitment status config ─────────────────────────────────── */
-const STATUS_LABELS: Record<string, string> = { IDENTIFIE: "Identifié", CONTACTE: "Contacté", EN_DISCUSSION: "En discussion", VISITE_PLANIFIEE: "Visite planifiée", ENGAGE: "Engagé", LETTRE_SIGNEE: "Lettre signée" };
 
-/* ── Recruitment status pill classes ────────────────────────── */
-function recruitmentPillClass(status: string): string {
-  switch (status) {
-    case "LETTRE_SIGNEE": case "Lettre signée": return "bg-[#22C55E]/15 text-[#22C55E] border border-[#22C55E]/30";
-    case "ENGAGE": case "Engagé": return "bg-[#3B82F6]/15 text-[#3B82F6] border border-[#3B82F6]/30";
-    case "VISITE_PLANIFIEE": case "Visite planifiée": return "bg-[#8B5CF6]/15 text-[#8B5CF6] border border-[#8B5CF6]/30";
-    case "EN_DISCUSSION": case "En discussion": return "bg-[#F59E0B]/15 text-[#F59E0B] border border-[#F59E0B]/30";
-    case "CONTACTE": case "Contacté": return "bg-[#6366F1]/15 text-[#6366F1] border border-[#6366F1]/30";
-    default: return "bg-[#9CA3AF]/15 text-[#9CA3AF] border border-[#9CA3AF]/30";
-  }
-}
-
-function recruitmentPillLabel(status: string): string {
-  return STATUS_LABELS[status] || status;
-}
 
 /* ── Coach Athlete Card (grid view) ─────────────────────────── */
 function CoachAthleteCard({ a }: { a: RosterAthlete }) {
-  const recruitStatus = a.recruitment?.label || a.recruitment?.status || null;
   return (
     <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] overflow-hidden hover:border-[#E63946]/30 hover:shadow-[0_0_24px_rgba(230,57,70,0.12)] hover:-translate-y-1.5 hover:scale-[1.02] transition-all duration-300 ease-out group flex flex-col">
       {/* Photo area */}
@@ -113,21 +93,18 @@ function CoachAthleteCard({ a }: { a: RosterAthlete }) {
               {a.position}
             </span>
           )}
-          {recruitStatus && (
-            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider ${recruitmentPillClass(recruitStatus)}`}>
-              {recruitmentPillLabel(recruitStatus)}
-            </span>
-          )}
+          <RecruitmentStatusBadge
+            status={(a.recruitmentStatus || "OUVERT") as GlobalRecruitmentStatus}
+            committedSchoolName={a.committedSchoolName || undefined}
+            openToOffers={a.openToOffers}
+            size="sm"
+          />
         </div>
 
-        {/* School */}
-        {a.school && <p className="text-[14px] text-[#c0c4cc]">{a.school}</p>}
-
-        {/* Promotion · Height/Weight */}
-        <p className="text-[13px] text-[#9CA3AF]">
-          Promotion {a.gradYear}
-          {a.heightWeight && <><span className="mx-1 text-[#4a4d56]">·</span> {a.heightWeight}</>}
-        </p>
+        {/* Height/Weight */}
+        {a.heightWeight && (
+          <p className="text-[13px] text-[#9CA3AF] mt-0.5">{a.heightWeight}</p>
+        )}
 
         {/* Badges */}
         {a.badges && a.badges.length > 0 && (
@@ -140,10 +117,10 @@ function CoachAthleteCard({ a }: { a: RosterAthlete }) {
           </div>
         )}
 
-        {/* Footer */}
+        {/* Footer — school · year left, actions right */}
         <div className="flex items-center justify-between pt-3 mt-auto border-t border-[#2D3748]/60">
-          <span className="text-[12px] text-[#6b7280]">{a.region}</span>
-          <div className="flex items-center gap-3">
+          <span className="text-[12px] text-[#6b7280] truncate">{a.school} <span className="text-[#4a4d56]">·</span> {a.gradYear}</span>
+          <div className="flex items-center gap-3 shrink-0">
             <Link href={`/coach/athletes/${a.id}/modifier`} className="text-[13px] font-semibold text-[#E63946] hover:text-[#D42B22] transition-colors flex items-center gap-1">
               Modifier
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
@@ -165,103 +142,99 @@ function CoachAthleteCard({ a }: { a: RosterAthlete }) {
 
 /* ── Coach Athlete Row (list view) ──────────────────────────── */
 function CoachAthleteRow({ a }: { a: RosterAthlete }) {
-  const recruitStatus = a.recruitment?.label || a.recruitment?.status || null;
   return (
-    <div className="bg-[#1A1D24] rounded-lg border border-[#2D3748] hover:border-[#E63946]/30 hover:shadow-[0_0_24px_rgba(230,57,70,0.12)] transition-all duration-300 ease-out flex items-center px-4 py-3 gap-4">
+    <div className="bg-[#1A1D24] rounded-lg border border-[#2D3748] hover:border-[#E63946]/30 hover:shadow-[0_0_24px_rgba(230,57,70,0.12)] transition-all duration-300 ease-out flex items-center px-4 py-3 gap-3">
 
-      {/* Avatar + verified badge */}
-      <div className="relative w-12 h-12 rounded-full bg-[#2F3440] shrink-0" style={{ overflow: "visible" }}>
+      {/* Avatar + verified */}
+      <div className="relative w-10 h-10 rounded-full bg-[#2F3440] shrink-0" style={{ overflow: "visible" }}>
         <div className="w-full h-full rounded-full overflow-hidden">
           {a.photo ? (
             <img src={a.photo} alt={`${a.firstName} ${a.lastName}`} className="w-full h-full object-cover" />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
-              <span className="text-[14px] font-head font-black text-white/10">{a.firstName[0]}{a.lastName[0]}</span>
+              <span className="text-[13px] font-head font-black text-white/10">{a.firstName[0]}{a.lastName[0]}</span>
             </div>
           )}
         </div>
-        <div className="absolute -top-1 -right-1 z-10">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill={a.isVerified ? "#3B82F6" : "#4a4d56"} stroke="none">
+        <div className="absolute -top-0.5 -right-0.5 z-10">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill={a.isVerified ? "#3B82F6" : "#4a4d56"} stroke="none">
             <circle cx="12" cy="12" r="10" />
             <path d="M9 12l2 2 4-4" stroke={a.isVerified ? "#fff" : "#6b7280"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
           </svg>
         </div>
       </div>
 
-      {/* Name + school + stars */}
-      <div className="min-w-[180px] max-w-[220px]">
-        <Link href={`/coach/athletes/${a.id}`} className="text-[15px] font-bold text-white hover:text-[#E63946] transition-colors truncate block">
+      {/* Name + school — fixed */}
+      <div className="w-[180px] shrink-0">
+        <Link href={`/coach/athletes/${a.id}`} className="text-[14px] font-bold text-white hover:text-[#E63946] transition-colors truncate block">
           {a.firstName} {a.lastName}
         </Link>
-        {a.school && <p className="text-[13px] text-[#9CA3AF] truncate">{a.school}</p>}
-        <div className="flex items-center gap-2 mt-0.5">
-          <div className="flex items-center gap-0.5">
-            {Array.from({ length: 5 }, (_, i) => (
-              <svg key={i} width="11" height="11" viewBox="0 0 24 24" fill={a.stars >= i + 1 ? "#F59E0B" : "#374151"} stroke="none">
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-              </svg>
-            ))}
-            <span className="text-[11px] font-bold text-[#F59E0B] ml-0.5">{a.stars.toFixed(1)}</span>
-          </div>
+        <p className="text-[12px] text-[#6b7280] truncate">{a.school || "—"}</p>
+      </div>
+
+      {/* Position — fixed */}
+      <div className="w-[50px] shrink-0">
+        {a.position ? (
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-[#2D3748] text-[#c0c4cc] text-[11px] font-bold uppercase tracking-wider">{a.position}</span>
+        ) : <span className="text-[#4a4d56]">—</span>}
+      </div>
+
+      {/* Recruitment status — fixed */}
+      <div className="w-[140px] shrink-0">
+        <RecruitmentStatusBadge
+          status={(a.recruitmentStatus || "OUVERT") as GlobalRecruitmentStatus}
+          committedSchoolName={a.committedSchoolName || undefined}
+          openToOffers={a.openToOffers}
+          size="sm"
+        />
+      </div>
+
+      {/* Region + height — fixed */}
+      <div className="w-[130px] shrink-0">
+        <span className="text-[12px] text-[#9CA3AF] block truncate">{a.region || "—"}</span>
+        {a.heightWeight && <span className="text-[11px] text-[#6b7280]">{a.heightWeight}</span>}
+      </div>
+
+      {/* Year — fixed */}
+      <div className="w-[45px] shrink-0">
+        <span className="text-[13px] text-[#9CA3AF]">{a.gradYear || "—"}</span>
+      </div>
+
+      {/* Stars — fixed */}
+      <div className="w-[110px] shrink-0">
+        <div className="flex items-center gap-0.5">
+          {Array.from({ length: 5 }, (_, i) => (
+            <svg key={i} width="11" height="11" viewBox="0 0 24 24" fill={a.stars >= i + 1 ? "#F59E0B" : "#374151"} stroke="none">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+            </svg>
+          ))}
+          <span className="text-[11px] font-bold text-[#F59E0B] ml-0.5">{a.stars.toFixed(1)}</span>
         </div>
       </div>
 
-      {/* Sport + Position pills + recruitment status */}
-      <div className="flex items-center gap-1 shrink-0">
-        <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-[#E63946] text-white text-[11px] font-bold uppercase tracking-wider">
-          {a.sport ? sportLabel(a.sport) : sportLabel(a.teamId)}
-        </span>
-        {a.position && (
-          <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-[#2D3748] text-[#c0c4cc] text-[11px] font-bold uppercase tracking-wider">
-            {a.position}
-          </span>
-        )}
-        {recruitStatus && (
-          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${recruitmentPillClass(recruitStatus)}`}>
-            {recruitmentPillLabel(recruitStatus)}
-          </span>
-        )}
-      </div>
-
-      {/* Region */}
-      <span className="text-[13px] text-[#9CA3AF] min-w-[140px] shrink-0">
-        {a.region || "—"}
-        {a.heightWeight && <span className="block text-[11px] text-[#6b7280] mt-0.5">{a.heightWeight}</span>}
-      </span>
-
-      {/* Promotion */}
-      <span className="text-[13px] text-[#9CA3AF] shrink-0 w-[50px]">{a.gradYear || "—"}</span>
-
-      {/* Badges */}
+      {/* Badges — flex */}
       <div className="flex gap-1.5 flex-1 min-w-0">
         {a.badges?.slice(0, 2).map((b) => (
-          <span key={b.badgeId} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#E63946]/15 border border-[#E63946]/30 text-[11px] font-bold text-[#E63946] whitespace-nowrap">
-            <NxIcon name={b.icon} size={12} className="text-[#E63946]" /> {b.label}
+          <span key={b.badgeId} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#E63946]/15 border border-[#E63946]/30 text-[11px] font-bold text-[#E63946] whitespace-nowrap">
+            <NxIcon name={b.icon} size={11} className="text-[#E63946]" /> {b.label}
           </span>
         ))}
       </div>
 
-      {/* Favorites count (read-only) */}
-      {a.favorites > 0 && (
-        <div className="w-8 h-8 rounded-full bg-[#13151a] border border-[#2D3748] flex items-center justify-center shrink-0" title={`${a.favorites} favori${a.favorites > 1 ? "s" : ""} recruteur`}>
-          <div className="flex items-center gap-0.5">
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="#E63946" stroke="none">
-              <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
-            </svg>
+      {/* Favorites */}
+      <div className="w-[30px] shrink-0">
+        {a.favorites > 0 ? (
+          <div className="flex items-center gap-0.5" title={`${a.favorites} favori${a.favorites > 1 ? "s" : ""}`}>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="#E63946" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" /></svg>
             <span className="text-[10px] font-bold text-[#E63946]">{a.favorites}</span>
           </div>
-        </div>
-      )}
+        ) : <span />}
+      </div>
 
-      {/* Action links */}
-      <Link href={`/coach/athletes/${a.id}/modifier`} className="text-[13px] font-bold text-[#E63946] hover:text-[#D42B22] transition-colors flex items-center gap-1 shrink-0">
-        Modifier
-      </Link>
+      {/* Actions */}
+      <Link href={`/coach/athletes/${a.id}/modifier`} className="text-[13px] font-bold text-[#E63946] hover:text-[#D42B22] transition-colors shrink-0">Modifier</Link>
       <Link href={`/coach/athletes/${a.id}`} className="text-[13px] font-bold text-[#9CA3AF] hover:text-white transition-colors flex items-center gap-1 shrink-0">
-        Voir
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-          <path d="M5 12h14" /><path d="M12 5l7 7-7 7" />
-        </svg>
+        Voir <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M5 12h14" /><path d="M12 5l7 7-7 7" /></svg>
       </Link>
     </div>
   );
@@ -338,18 +311,21 @@ function MesAthletesContent() {
           status,
           statut_recrutement_override,
           recrutement_override_at,
+          recruitment_status, committed_school_id, open_to_offers,
           sport_id,
           position_id,
           mentions_academiques,
           sports!sport_id(nom),
           positions!position_id(nom, abreviation),
           schools!school_id(name, region),
+          committed_school:schools!committed_school_id(name),
           evaluations(cote_globale, distinctions)
         `)
         .eq("coach_id", session.user.id)
         .eq("status", "ACTIF");
 
-      console.log("Roster query result:", JSON.stringify(data), "error:", error, "uid:", session.user.id);
+      console.log("Roster query result:", data?.length, "error:", error);
+      console.log("Coach athletes first row:", data?.[0]);
 
       if (!data) { setLoading(false); return; }
 
@@ -388,6 +364,9 @@ function MesAthletesContent() {
         const schoolRaw = a.schools;
         const school = Array.isArray(schoolRaw) ? schoolRaw[0] : schoolRaw;
         const schoolObj = school as { name?: string; region?: string } | null;
+
+        const committedSchoolRaw = a.committed_school;
+        const committedSchool = (Array.isArray(committedSchoolRaw) ? committedSchoolRaw[0] : committedSchoolRaw) as { name?: string } | null;
 
         const evalsRaw = a.evaluations;
         const evals = Array.isArray(evalsRaw) ? evalsRaw : [];
@@ -449,6 +428,9 @@ function MesAthletesContent() {
             .filter((d) => d != null && badgeMap[d])
             .map((d) => ({ badgeId: d, label: badgeMap[d].label, icon: badgeMap[d].icon })),
           academicBadges: (a.mentions_academiques as string[]) || [],
+          recruitmentStatus: (a.recruitment_status as string) || "OUVERT",
+          committedSchoolName: committedSchool?.name || "",
+          openToOffers: (a.open_to_offers as boolean | null) ?? null,
         };
 
         return athlete;

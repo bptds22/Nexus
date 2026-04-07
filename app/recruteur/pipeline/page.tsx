@@ -17,8 +17,10 @@ import {
   closestCenter,
 } from "@dnd-kit/core";
 import type { RecruitmentStatus } from "@/lib/config/recruitmentStatuses";
-import { isValidMove, isBackwardException, isTerminalStatus } from "@/lib/config/recruitmentStatuses";
+// Pipeline movement is now unrestricted — no validation imports needed
+import type { GlobalRecruitmentStatus } from "@/lib/types/models";
 import StarRating from "@/components/ui/StarRating";
+import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
 import {
   KANBAN_COLUMNS,
   getCardsByStatus,
@@ -131,8 +133,6 @@ function useClientNow(): number {
 
 /* ── Filter types ────────────────────────────────────────────── */
 
-type PipelineFilter = "tous" | "a_activer" | "aujourdhui" | "inactifs";
-
 /* ── Toast ────────────────────────────────────────────────────── */
 
 function Toast({ message, onDone }: { message: string; onDone: () => void }) {
@@ -239,11 +239,8 @@ function GripIcon() {
   );
 }
 
-function LockIcon() {
-  return <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0110 0v4" /></svg>;
-}
 function ArrowIcon() {
-  return <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2" strokeLinecap="round"><path d="M5 12h14" /><path d="M12 5l7 7-7 7" /></svg>;
+  return <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2" strokeLinecap="round"><path d="M5 12h14" /><path d="M12 5l7 7-7 7" /></svg>;
 }
 function TrashIcon() {
   return <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2" strokeLinecap="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" /></svg>;
@@ -385,10 +382,11 @@ const DraggableKanbanCard = memo(function DraggableKanbanCard({
 
         {/* Card body */}
         <div className={`px-3.5 pb-3.5 pt-1.5 ${isDraggable ? "pl-8" : ""}`}>
-          {/* Name + Jersey */}
+          {/* Name + Jersey + Priority */}
           <div className="flex items-center gap-1.5">
+            {card.flagged && <span className="w-2 h-2 rounded-full bg-[#E63946] shrink-0" title="Prioritaire" />}
             <span className="text-[14px] font-semibold text-white truncate">{card.full_name}</span>
-            {card.jersey && <span className="text-[12px] font-bold text-[#4a4d56] shrink-0">#{card.jersey}</span>}
+            {card.jersey && <span className="text-[12px] font-black text-[#E63946] shrink-0">#{card.jersey}</span>}
           </div>
 
           {/* School + Year */}
@@ -396,6 +394,26 @@ const DraggableKanbanCard = memo(function DraggableKanbanCard({
             {card.school}
             {card.graduation_year > 0 && <> <span className="text-[#4a4d56]">·</span> {card.graduation_year}</>}
           </p>
+
+          {/* Global recruitment status */}
+          <div className="mt-1.5">
+            <RecruitmentStatusBadge
+              status={(card.recruitment_status || "OUVERT") as GlobalRecruitmentStatus}
+              committedSchoolName={card.committed_school_name || undefined}
+              openToOffers={card.open_to_offers}
+              size="sm"
+            />
+          </div>
+          {card.recruitment_status === 'RECRUTE' && ['identifie', 'contacte', 'en_discussion', 'visite_planifiee'].includes(card.status) && (
+            <div className="mt-1.5 px-2 py-1 rounded bg-[#F59E0B]/10 border-l-2 border-[#F59E0B]">
+              <span className="text-[10px] font-bold text-[#F59E0B]">⚠ Athlète recruté ailleurs</span>
+            </div>
+          )}
+          {card.recruitment_status === 'RETIRE' && (
+            <div className="mt-1.5 px-2 py-1 rounded bg-[#6B7280]/10 border-l-2 border-[#6B7280]">
+              <span className="text-[10px] font-bold text-[#6B7280]">⚠ Athlète retiré</span>
+            </div>
+          )}
 
           {/* Competitor warning */}
           {compAhead && (
@@ -461,12 +479,11 @@ function KanbanColumn({
   const { isOver, setNodeRef } = useDroppable({ id: colDef.id });
   const isExit = colDef.phase === "exit";
   const isCommitment = colDef.phase === "commitment";
-  const isDraggable = !isTerminalStatus(colDef.id);
-  const isValidTarget = activeCardStatus ? isValidMove(activeCardStatus, colDef.id) : false;
-  const isBackward = activeCardStatus ? isBackwardException(activeCardStatus, colDef.id) : false;
+  const isDraggable = true;
+  const isValidTarget = activeCardStatus ? activeCardStatus !== colDef.id : false;
   const dropHighlight = isOver && isValidTarget;
-  const dropBorderColor = dropHighlight ? (isBackward ? ORANGE : isExit ? GRAY : GREEN) : "transparent";
-  const HeaderIcon = colDef.isAuto ? LockIcon : isExit ? TrashIcon : ArrowIcon;
+  const dropBorderColor = dropHighlight ? (isExit ? GRAY : GREEN) : "transparent";
+  const HeaderIcon = isExit ? TrashIcon : ArrowIcon;
   const tooltip = colDef.isAuto
     ? colDef.id === "contacte" ? "Statut automatique, mais accepte un retour depuis En discussion" : "Statut automatique — favori"
     : isExit ? "Retirer du pipeline" : "Glisser un athlète ici";
@@ -494,7 +511,7 @@ function KanbanColumn({
         {dropHighlight && (
           <div className="text-center py-1.5">
             <span className="text-[10px] font-bold uppercase tracking-[0.2em]" style={{ color: `${dropBorderColor}90` }}>
-              {isExit ? "Retirer" : isBackward ? "Retour" : "Déposer ici"}
+              {isExit ? "Retirer" : "Déposer ici"}
             </span>
           </div>
         )}
@@ -512,21 +529,65 @@ function KanbanColumn({
 
 /* ── Slide-Over Panel ─────────────────────────────────────────── */
 
+interface NoteEntry {
+  id: string;
+  content: string;
+  created_at: string;
+}
+
 function SlideOver({
-  card, onClose, onStatusChange, onSaveNotes,
+  card, onClose, onStatusChange, onTogglePriority,
 }: {
   card: PipelineKanbanCard; onClose: () => void;
   onStatusChange: (cardId: string, newStatus: RecruitmentStatus) => void;
-  onSaveNotes: (cardId: string, notes: string) => void;
+  onTogglePriority: (cardId: string, value: boolean) => void;
 }) {
-  const [notes, setNotes] = useState(card.notes);
+  const [noteText, setNoteText] = useState("");
+  const [noteHistory, setNoteHistory] = useState<NoteEntry[]>([]);
+  const [posting, setPosting] = useState(false);
   const [pendingStatus, setPendingStatus] = useState<RecruitmentStatus | null>(null);
   const [retireReason, setRetireReason] = useState("");
   const currentCol = KANBAN_COLUMNS.find((c) => c.id === card.status);
 
+  // Load note history from recruiter_notes
+  useEffect(() => {
+    async function loadNotes() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase
+        .from("recruiter_notes")
+        .select("id, content, created_at")
+        .eq("recruiter_id", user.id)
+        .eq("athlete_id", card.id)
+        .order("created_at", { ascending: false });
+      if (data) setNoteHistory(data);
+    }
+    loadNotes();
+  }, [card.id]);
+
+  // Post a new note
+  const handlePostNote = async () => {
+    if (!noteText.trim()) return;
+    setPosting(true);
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setPosting(false); return; }
+    const { data, error } = await supabase
+      .from("recruiter_notes")
+      .insert({ recruiter_id: user.id, athlete_id: card.id, content: noteText.trim() })
+      .select("id, content, created_at")
+      .single();
+    console.log("[Note posted]", { athlete: card.full_name, error });
+    if (data) {
+      setNoteHistory(prev => [data, ...prev]);
+    }
+    setNoteText("");
+    setPosting(false);
+  };
+
   const handleStatusClick = (status: RecruitmentStatus) => {
     if (status === card.status) return;
-    if (!isValidMove(card.status, status)) return;
     setPendingStatus(status);
   };
 
@@ -539,7 +600,6 @@ function SlideOver({
   };
 
   const pctColor = completenessColor(card.profile_completeness);
-  const pendingIsBackward = pendingStatus ? isBackwardException(card.status, pendingStatus) : false;
   const pendingIsRetire = pendingStatus === "retire";
   const pendingLabel = pendingStatus ? KANBAN_COLUMNS.find((c) => c.id === pendingStatus)?.label : "";
 
@@ -575,23 +635,78 @@ function SlideOver({
               </div>
             </div>
           </div>
+          {/* Priority toggle */}
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#6b7280]">Prioritaire</span>
+            <button
+              type="button"
+              onClick={() => onTogglePriority(card.id, !card.flagged)}
+              aria-label={card.flagged ? "Retirer la priorité" : "Marquer comme prioritaire"}
+              className={`w-10 h-5 rounded-full transition-colors relative ${card.flagged ? "bg-[#E63946]" : "bg-[#2D3748]"}`}
+            >
+              <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${card.flagged ? "left-[22px]" : "left-0.5"}`} />
+            </button>
+          </div>
+
+          {/* Notes — ServiceNow-style work notes + activity feed */}
           <div>
-            <h3 className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mb-2">Notes internes</h3>
-            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={4} placeholder="Ajoutez vos notes privées..." className="w-full bg-[#13151a] border border-[#2a2d36] rounded-lg px-4 py-2.5 text-[13px] text-[#e0e0e0] placeholder:text-[#4a4d56] focus:border-[#E63946] outline-none transition-colors resize-none" />
-            <button type="button" onClick={() => onSaveNotes(card.id, notes)} className="mt-2 px-4 py-2 bg-[#E63946] hover:bg-[#D42B22] text-white text-[12px] font-bold rounded-lg transition-colors">Sauvegarder</button>
+            <h3 className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mb-2">Notes de suivi</h3>
+            {/* Input */}
+            <div className="flex gap-2">
+              <textarea
+                value={noteText}
+                onChange={(e) => setNoteText(e.target.value)}
+                rows={2}
+                placeholder="Ajouter une note..."
+                className="flex-1 bg-[#13151a] border border-[#2a2d36] rounded-lg px-3 py-2 text-[13px] text-[#e0e0e0] placeholder:text-[#4a4d56] focus:border-[#E63946] outline-none transition-colors resize-none"
+                onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handlePostNote(); } }}
+              />
+              <button
+                type="button"
+                onClick={handlePostNote}
+                disabled={posting || !noteText.trim()}
+                className="self-end px-3 py-2 bg-[#E63946] hover:bg-[#D42B22] disabled:bg-[#2D3748] disabled:text-[#4a4d56] text-white text-[11px] font-bold uppercase tracking-wider rounded-lg transition-colors shrink-0"
+              >
+                {posting ? "..." : "Poster"}
+              </button>
+            </div>
+
+            {/* Activity timeline */}
+            {noteHistory.length > 0 && (
+              <div className="mt-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#6b7280]">Activités</span>
+                  <span className="text-[10px] text-[#4a4d56]">{noteHistory.length}</span>
+                </div>
+                <div className="space-y-0">
+                  {noteHistory.map((note, idx) => {
+                    const d = new Date(note.created_at);
+                    const dateStr = d.toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" });
+                    const timeStr = d.toLocaleTimeString("fr-CA", { hour: "2-digit", minute: "2-digit" });
+                    return (
+                      <div key={note.id} className={`relative pl-5 pb-4 ${idx < noteHistory.length - 1 ? "border-l border-[#2D3748]" : "border-l border-transparent"} ml-1.5`}>
+                        {/* Timeline dot */}
+                        <div className="absolute left-[-4px] top-1 w-2 h-2 rounded-full bg-[#E63946]" />
+                        <div className="flex items-baseline justify-between gap-2 mb-1">
+                          <span className="text-[11px] font-bold text-[#9CA3AF]">{dateStr}</span>
+                          <span className="text-[10px] text-[#4a4d56]">{timeStr}</span>
+                        </div>
+                        <p className="text-[13px] text-[#e0e0e0] leading-relaxed whitespace-pre-wrap">{note.content}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
           <div>
             <h3 className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mb-3">Changer le statut</h3>
             <div className="grid grid-cols-2 gap-2">
               {KANBAN_COLUMNS.map((col) => {
                 const isActive = col.id === card.status;
-                const canMove = isValidMove(card.status, col.id);
-                const backward = isBackwardException(card.status, col.id);
-                const disabled = !canMove && !isActive;
-                if (backward) return <button key={col.id} type="button" onClick={() => handleStatusClick(col.id)} className="px-3 py-2 rounded-lg text-[11px] font-bold uppercase tracking-wider border transition-all bg-[#EAB308]/10 border-[#EAB308]/40 text-[#EAB308] hover:bg-[#EAB308]/20">↩ Retour à {col.label}</button>;
                 return (
-                  <button key={col.id} type="button" onClick={() => !disabled && handleStatusClick(col.id)} disabled={disabled} className={`px-3 py-2 rounded-lg text-[11px] font-bold uppercase tracking-wider border transition-all ${isActive ? (col.phase === "commitment" ? "bg-[#E63946]/15 border-[#E63946] text-[#E63946]" : "bg-[#6B7280]/15 border-[#6B7280] text-[#6B7280]") : disabled ? "bg-transparent border-[#2D3748] text-[#3a3d46] cursor-not-allowed" : "bg-transparent border-[#2D3748] text-[#6b7280] hover:border-[#4a4d56] hover:text-[#9CA3AF]"}`} title={col.isAuto && disabled ? "Statut automatique" : undefined}>
-                    {col.isAuto && disabled && <span className="mr-1">🔒</span>}{col.label}
+                  <button key={col.id} type="button" onClick={() => handleStatusClick(col.id)} className={`px-3 py-2 rounded-lg text-[11px] font-bold uppercase tracking-wider border transition-all ${isActive ? (col.phase === "commitment" ? "bg-[#E63946]/15 border-[#E63946] text-[#E63946]" : col.phase === "exit" ? "bg-[#6B7280]/15 border-[#6B7280] text-[#6B7280]" : "bg-[#6B7280]/15 border-[#6B7280] text-[#6B7280]") : "bg-transparent border-[#2D3748] text-[#6b7280] hover:border-[#4a4d56] hover:text-[#9CA3AF]"}`}>
+                    {col.label}
                   </button>
                 );
               })}
@@ -617,10 +732,10 @@ function SlideOver({
       </div>
       {pendingStatus && (
         <ConfirmModal
-          title={pendingIsRetire ? `Retirer ${card.full_name} ?` : pendingIsBackward ? "Remettre à Contacté ?" : `Confirmer le passage à ${pendingLabel} ?`}
-          message={pendingIsRetire ? "Il ne sera plus dans ton suivi actif." : pendingIsBackward ? "La conversation sera marquée comme inactive." : "Cette action indique un engagement concret dans le processus de recrutement."}
-          confirmLabel={pendingIsRetire ? "Retirer" : pendingIsBackward ? "Confirmer le retour" : "Confirmer"}
-          confirmColor={pendingIsRetire ? "#EF4444" : pendingIsBackward ? ORANGE : RED}
+          title={pendingIsRetire ? `Retirer ${card.full_name} ?` : `Déplacer vers ${pendingLabel} ?`}
+          message={pendingIsRetire ? "Il ne sera plus dans ton suivi actif." : `${card.full_name} sera déplacé vers ${pendingLabel}.`}
+          confirmLabel={pendingIsRetire ? "Retirer" : "Confirmer"}
+          confirmColor={pendingIsRetire ? "#EF4444" : RED}
           textarea={pendingIsRetire ? { placeholder: "Raison du retrait (optionnel)", value: retireReason, onChange: setRetireReason } : undefined}
           onConfirm={confirmStatus}
           onCancel={() => { setPendingStatus(null); setRetireReason(""); }}
@@ -642,9 +757,9 @@ export default function PipelinePage() {
   const [activeCard, setActiveCard] = useState<PipelineKanbanCard | null>(null);
   const [pendingDrop, setPendingDrop] = useState<{ cardId: string; from: RecruitmentStatus; to: RecruitmentStatus } | null>(null);
   const [retireReason, setRetireReason] = useState("");
-  const [pipelineFilter, setPipelineFilter] = useState<PipelineFilter>("tous");
   const [actionPopover, setActionPopover] = useState<PipelineKanbanCard | null>(null);
   const [competitorMap, setCompetitorMap] = useState<Record<string, number>>({});
+  const [sportFilter, setSportFilter] = useState("");
   const now = useClientNow();
 
   /* ── Supabase fetch ──────────────────────────────────────── */
@@ -681,15 +796,21 @@ export default function PipelinePage() {
             annee_diplomation,
             numero_jersey,
             cote_globale_entraineur,
+            recruitment_status,
+            committed_school_id,
+            open_to_offers,
             sports!sport_id(nom),
             positions!position_id(nom, abreviation),
-            schools!school_id(name, region)
+            schools!school_id(name, region),
+            committed_school:schools!committed_school_id(name)
           )
         `)
         .eq("recruiter_id", user.id)
         .order("moved_at", { ascending: false });
 
       console.log("[Pipeline fetch]", { count: data?.length, error });
+      console.log('Pipeline athlete data:', data);
+      console.log('Pipeline card data:', data?.[0]);
       if (data?.[0]) {
         const sample = data[0].athletes;
         const sAthl = Array.isArray(sample) ? sample[0] : sample;
@@ -704,9 +825,13 @@ export default function PipelinePage() {
               profile_completion: number; video_faits_saillants_url: string | null;
               annee_diplomation: number | null; numero_jersey: string | null;
               cote_globale_entraineur: number | null;
+              recruitment_status: string | null;
+              committed_school_id: string | null;
+              open_to_offers: boolean | null;
               sports: { nom: string } | { nom: string }[] | null;
               positions: { nom: string; abreviation: string } | { nom: string; abreviation: string }[] | null;
               schools: { name: string; region: string } | { name: string; region: string }[] | null;
+              committed_school: { name: string } | { name: string }[] | null;
             } | null;
 
             const sportRel = a?.sports;
@@ -715,6 +840,8 @@ export default function PipelinePage() {
             const pos = (Array.isArray(posRel) ? posRel[0] : posRel) as { abreviation?: string } | null;
             const schoolRel = a?.schools;
             const school = (Array.isArray(schoolRel) ? schoolRel[0] : schoolRel) as { name?: string; region?: string } | null;
+            const committedSchoolRel = a?.committed_school;
+            const committedSchool = (Array.isArray(committedSchoolRel) ? committedSchoolRel[0] : committedSchoolRel) as { name?: string } | null;
 
             const movedAt = (p.moved_at as string) || (p.updated_at as string) || null;
             const daysSinceMove = movedAt ? Math.floor((Date.now() - new Date(movedAt).getTime()) / 86400000) : 0;
@@ -736,6 +863,9 @@ export default function PipelinePage() {
               is_verified: a?.verified || false,
               has_video: !!a?.video_faits_saillants_url,
               jersey: a?.numero_jersey ? String(a.numero_jersey) : "",
+              recruitment_status: (a?.recruitment_status as string) || "OUVERT",
+              committed_school_name: committedSchool?.name || "",
+              open_to_offers: (a?.open_to_offers as boolean | null) ?? null,
               status: stageRaw as RecruitmentStatus,
               days_in_status: daysSinceMove,
               notes: (p.notes as string) || "",
@@ -797,21 +927,37 @@ export default function PipelinePage() {
         .eq("athlete_id", cardId)
         .eq("recruiter_id", user.id);
       console.log("[Pipeline PATCH]", { id: cardId, field: "stage", newValue: newStatus, error });
+
+      // Re-fetch the athlete's global recruitment_status (trigger may have updated it)
+      const { data: updatedAthlete } = await supabase
+        .from("athletes")
+        .select("recruitment_status")
+        .eq("id", cardId)
+        .single();
+      if (updatedAthlete) {
+        setCards((prev) => prev.map((c) => c.id === cardId
+          ? { ...c, status: newStatus, days_in_status: 0, moved_at: new Date().toISOString(), recruitment_status: updatedAthlete.recruitment_status || "OUVERT" }
+          : c
+        ));
+      } else {
+        setCards((prev) => prev.map((c) => c.id === cardId ? { ...c, status: newStatus, days_in_status: 0, moved_at: new Date().toISOString() } : c));
+      }
+    } else {
+      setCards((prev) => prev.map((c) => c.id === cardId ? { ...c, status: newStatus, days_in_status: 0, moved_at: new Date().toISOString() } : c));
     }
-    setCards((prev) => prev.map((c) => c.id === cardId ? { ...c, status: newStatus, days_in_status: 0, moved_at: new Date().toISOString() } : c));
     setSelectedCard(null);
     showToast(`Statut changé → ${KANBAN_COLUMNS.find((col) => col.id === newStatus)?.label || newStatus}`);
   }, [showToast]);
 
-  const handleSaveNotes = useCallback(async (cardId: string, notes: string) => {
+  const handleTogglePriority = useCallback(async (cardId: string, value: boolean) => {
+    setCards((prev) => prev.map((c) => c.id === cardId ? { ...c, flagged: value } : c));
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
-      const { error } = await supabase.from("recruiter_pipeline").update({ notes }).eq("athlete_id", cardId).eq("recruiter_id", user.id);
-      console.log("[Pipeline PATCH]", { id: cardId, field: "notes", newValue: notes, error });
+      const { error } = await supabase.from("recruiter_pipeline").update({ flagged: value }).eq("athlete_id", cardId).eq("recruiter_id", user.id);
+      console.log("[Pipeline PATCH]", { id: cardId, field: "flagged", newValue: value, error });
     }
-    setCards((prev) => prev.map((c) => (c.id === cardId ? { ...c, notes } : c)));
-    showToast("Notes sauvegardées");
+    showToast(value ? "Marqué prioritaire" : "Priorité retirée");
   }, [showToast]);
 
   /* ── Save next action ───────────────────────────────────────── */
@@ -830,36 +976,15 @@ export default function PipelinePage() {
     setSelectedCard(fresh);
   }, [cards]);
 
-  /* ── Filter logic ─────────────────────────────────────────── */
-  const filterCounts = useMemo(() => {
-    if (!now) return { aActiver: 0, aujourdhui: 0, inactifs: 0 };
-    let aActiver = 0;
-    let aujourdhui = 0;
-    let inactifs = 0;
-    for (const c of cards) {
-      const stale = isStale(c.status, c.moved_at, now);
-      const compAhead = isCompetitorAhead(c.id, c.status, competitorMap);
-      if (compAhead || stale) aActiver++;
-      if (isToday(c.next_action_at, now)) aujourdhui++;
-      if (stale && !compAhead) inactifs++;
-    }
-    return { aActiver, aujourdhui, inactifs };
-  }, [cards, now, competitorMap]);
+  const sports = useMemo(() => {
+    const s = new Set(cards.map(c => c.sport).filter(Boolean));
+    return Array.from(s).sort();
+  }, [cards]);
 
   const filteredCards = useMemo(() => {
-    if (pipelineFilter === "tous") return cards;
-    if (!now) return cards;
-    return cards.filter((c) => {
-      const stale = isStale(c.status, c.moved_at, now);
-      const compAhead = isCompetitorAhead(c.id, c.status, competitorMap);
-      switch (pipelineFilter) {
-        case "a_activer": return compAhead || stale;
-        case "aujourdhui": return isToday(c.next_action_at, now);
-        case "inactifs": return stale && !compAhead;
-        default: return true;
-      }
-    });
-  }, [cards, pipelineFilter, now, competitorMap]);
+    if (!sportFilter) return cards;
+    return cards.filter(c => c.sport === sportFilter);
+  }, [cards, sportFilter]);
 
   /* ── DnD Handlers ──────────────────────────────────────────── */
   const handleDragStart = useCallback((event: DragStartEvent) => {
@@ -876,11 +1001,6 @@ export default function PipelinePage() {
     const targetCol = over.id as RecruitmentStatus;
     if (!KANBAN_COLUMNS.some((c) => c.id === targetCol)) return;
     if (card.status === targetCol) return;
-    if (!isValidMove(card.status, targetCol)) {
-      const targetIsAuto = KANBAN_COLUMNS.find((c) => c.id === targetCol)?.isAuto;
-      showToast(targetIsAuto ? "Ce statut est assigné automatiquement" : "Le pipeline avance uniquement vers l'avant");
-      return;
-    }
     setPendingDrop({ cardId: card.id, from: card.status, to: targetCol });
   }, [showToast]);
 
@@ -893,7 +1013,6 @@ export default function PipelinePage() {
 
   const cancelDrop = useCallback(() => { setPendingDrop(null); setRetireReason(""); }, []);
 
-  const dropIsBackward = pendingDrop ? isBackwardException(pendingDrop.from, pendingDrop.to) : false;
   const dropIsRetire = pendingDrop?.to === "retire";
   const dropLabel = pendingDrop ? KANBAN_COLUMNS.find((c) => c.id === pendingDrop.to)?.label : "";
   const dropCardName = pendingDrop ? cards.find((c) => c.id === pendingDrop.cardId)?.full_name : "";
@@ -907,31 +1026,25 @@ export default function PipelinePage() {
 
       <FunnelSummary cards={cards} />
 
-      {/* TASK 6: Filter chip bar */}
-      <div className="flex items-center gap-2 flex-wrap">
-        {([
-          { key: "tous" as PipelineFilter, label: "Tous", count: cards.length, dot: null, title: "" },
-          { key: "a_activer" as PipelineFilter, label: "Action requise", count: filterCounts.aActiver, dot: RED, title: "Flaggé ou sans mouvement" },
-          { key: "aujourdhui" as PipelineFilter, label: "Suivi aujourd\u2019hui", count: filterCounts.aujourdhui, dot: ORANGE, title: "Relance prévue aujourd\u2019hui" },
-          { key: "inactifs" as PipelineFilter, label: "Sans nouvelles", count: filterCounts.inactifs, dot: GRAY, title: "Aucun mouvement récent" },
-        ]).map((chip) => {
-          const isActive = pipelineFilter === chip.key;
-          return (
-            <button
-              key={chip.key}
-              type="button"
-              onClick={() => setPipelineFilter(chip.key)}
-              title={chip.title || undefined}
-              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wider border transition-all ${
-                isActive ? "border-white/20 bg-white/10 text-white" : "border-transparent bg-transparent text-[#6b7280] hover:text-[#9CA3AF]"
-              }`}
-            >
-              {chip.dot && <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: chip.dot, opacity: chip.count > 0 ? 1 : 0.3 }} />}
-              {chip.label} <span className={isActive ? "text-white/60" : "text-[#4a4d56]"}>{chip.count}</span>
+      {/* Sport filter */}
+      {sports.length > 1 && (
+        <div className="flex items-center gap-3">
+          <select
+            value={sportFilter}
+            onChange={(e) => setSportFilter(e.target.value)}
+            aria-label="Filtrer par sport"
+            className={`bg-[#13151a] border rounded-lg px-3 py-2 text-[13px] outline-none transition-colors ${sportFilter ? "border-[#E63946] text-[#E63946]" : "border-[#2a2d36] text-[#6b7280]"}`}
+          >
+            <option value="">Tous les sports</option>
+            {sports.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+          {sportFilter && (
+            <button type="button" onClick={() => setSportFilter("")} className="text-[12px] font-bold text-[#E63946] hover:text-[#D42B22] transition-colors">
+              Réinitialiser
             </button>
-          );
-        })}
-      </div>
+          )}
+        </div>
+      )}
 
       {/* Mobile tab bar */}
       <p className="lg:hidden text-[12px] text-[#6b7280] text-center">Appuie sur une carte pour changer son statut</p>
@@ -980,7 +1093,7 @@ export default function PipelinePage() {
 
       {/* Slide-Over */}
       {selectedCard && (
-        <SlideOver key={selectedCard.id} card={selectedCard} onClose={() => setSelectedCard(null)} onStatusChange={handleStatusChange} onSaveNotes={handleSaveNotes} />
+        <SlideOver key={selectedCard.id} card={selectedCard} onClose={() => setSelectedCard(null)} onStatusChange={handleStatusChange} onTogglePriority={handleTogglePriority} />
       )}
 
       {/* TASK 5: Next action popover */}
@@ -991,10 +1104,10 @@ export default function PipelinePage() {
       {/* Drop Confirmation Modal */}
       {pendingDrop && (
         <ConfirmModal
-          title={dropIsRetire ? `Retirer ${dropCardName} ?` : dropIsBackward ? "Remettre à Contacté ?" : `Confirmer le passage à ${dropLabel} ?`}
-          message={dropIsRetire ? "Il ne sera plus dans ton suivi actif." : dropIsBackward ? "La conversation sera marquée comme inactive." : "Cette action indique un engagement concret dans le processus de recrutement."}
-          confirmLabel={dropIsRetire ? "Retirer" : dropIsBackward ? "Confirmer le retour" : "Confirmer"}
-          confirmColor={dropIsRetire ? "#EF4444" : dropIsBackward ? ORANGE : RED}
+          title={dropIsRetire ? `Retirer ${dropCardName} ?` : `Déplacer vers ${dropLabel} ?`}
+          message={dropIsRetire ? "Il ne sera plus dans ton suivi actif." : `${dropCardName} sera déplacé vers ${dropLabel}.`}
+          confirmLabel={dropIsRetire ? "Retirer" : "Confirmer"}
+          confirmColor={dropIsRetire ? "#EF4444" : RED}
           textarea={dropIsRetire ? { placeholder: "Raison du retrait (optionnel)", value: retireReason, onChange: setRetireReason } : undefined}
           onConfirm={confirmDrop}
           onCancel={cancelDrop}

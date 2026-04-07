@@ -47,6 +47,9 @@ export interface RosterAthlete {
   placedAt?: string;
   badgeIcons?: string[];            // emoji icons from leadership badges
   recruitment?: { status: string; label: string; count: number; isOverride: boolean }; // from pipeline table
+  recruitmentStatus?: string;
+  committedSchoolName?: string;
+  openToOffers?: boolean | null;
   school?: string;
   region?: string;
   sport?: string;

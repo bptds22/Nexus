@@ -2,26 +2,67 @@
 
 import { use, useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { getRecruiterThread, RECRUITER_STATUS_CONFIG, type RecruiterMessage, type RecruiterThreadStatus } from "../../_data/mockMessages";
-import EntityLink from "@/components/shared/EntityLink";
-import { REVIEW_WIDGET_STATES, SUBMITTED_REVIEWS } from "@/lib/mock/reviewWidget";
-import ReviewWidgetTeaser from "@/components/review/ReviewWidgetTeaser";
-import ReviewWidgetForm from "@/components/review/ReviewWidgetForm";
-import ReviewWidgetConfirmation from "@/components/review/ReviewWidgetConfirmation";
+import { createClient } from "@/lib/supabase/client";
 import StarRating from "@/components/ui/StarRating";
+import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
+import type { GlobalRecruitmentStatus } from "@/lib/types/models";
 
 /* ═══════════════════════════════════════════════════════════════
    Thread Detail — Recruiter side
-   2-column: conversation left, context cards right
-   Layout mirrors coach/demandes/[id] with roles flipped.
+   Wired to Supabase: conversations + messages
 ═══════════════════════════════════════════════════════════════ */
 
-const NOW = new Date("2026-03-10T10:00:00");
+interface MessageData {
+  id: string;
+  senderId: string;
+  content: string;
+  createdAt: string;
+}
+
+interface ThreadContext {
+  conversationId: string;
+  coachId: string;
+  coachName: string;
+  coachInitials: string;
+  coachSchool: string;
+  coachRegion: string;
+  coachEmail: string;
+  coachPhone: string;
+  athleteId: string;
+  athleteName: string;
+  athleteInitials: string;
+  athletePosition: string;
+  athleteSport: string;
+  athleteVerified: boolean;
+  athleteStars: number;
+  athleteSchool: string;
+  athleteRegion: string;
+  athleteGradYear: number;
+  athleteJersey: string;
+  athleteRecruitmentStatus: string;
+  athleteCommittedSchool: string;
+  athleteOpenToOffers: boolean | null;
+  athleteGpa: number;
+  athleteProgramme: string;
+  athleteOpenRelocate: boolean;
+  athleteOpenPrivate: boolean;
+  athleteOpenAnglophone: boolean;
+  athleteDistinctions: string[];
+  status: string;
+}
+
+const STATUS_CONFIG: Record<string, { label: string; bg: string; textColor: string }> = {
+  reponse_recue: { label: "Réponse reçue", bg: "bg-[#22C55E]/15", textColor: "text-[#22C55E]" },
+  envoye: { label: "Envoyé", bg: "bg-[#3B82F6]/15", textColor: "text-[#3B82F6]" },
+  lu: { label: "Lu", bg: "bg-[#6B7280]/15", textColor: "text-[#6B7280]" },
+  archive: { label: "Archivé", bg: "bg-[#374151]/30", textColor: "text-[#6B7280]" },
+};
 
 function relativeTime(isoStr: string): string {
   const d = new Date(isoStr);
-  const diffMs = NOW.getTime() - d.getTime();
+  const diffMs = Date.now() - d.getTime();
   const mins = Math.floor(diffMs / 60000);
+  if (mins < 1) return "À l'instant";
   if (mins < 60) return `Il y a ${mins} min`;
   const hours = Math.floor(mins / 60);
   if (hours < 24) return `Il y a ${hours}h`;
@@ -31,8 +72,7 @@ function relativeTime(isoStr: string): string {
     const dayNames = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
     return dayNames[d.getDay()];
   }
-  const opts: Intl.DateTimeFormatOptions = { day: "numeric", month: "long", year: "numeric" };
-  return d.toLocaleDateString("fr-CA", opts);
+  return d.toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" });
 }
 
 function formatDay(isoStr: string): string {
@@ -42,43 +82,21 @@ function formatDay(isoStr: string): string {
   return `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
 }
 
-function getDateKey(isoStr: string): string {
-  return new Date(isoStr).toISOString().split("T")[0];
+function StatusBadge({ status }: { status: string }) {
+  const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.envoye;
+  return <span className={`inline-block px-3 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase ${cfg.bg} ${cfg.textColor}`}>{cfg.label}</span>;
 }
 
-/* ── Status Badge ──────────────────────────────────────────── */
-
-function StatusBadge({ status }: { status: RecruiterThreadStatus }) {
-  const cfg = RECRUITER_STATUS_CONFIG[status];
+function MessageBubble({ msg, isMe, coachName }: { msg: MessageData; isMe: boolean; coachName: string }) {
   return (
-    <span className={`inline-block px-3 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase ${cfg.bg} ${cfg.textColor}`}>
-      {cfg.label}
-    </span>
-  );
-}
-
-/* ── Message Bubble ────────────────────────────────────────── */
-
-function MessageBubble({ msg, coachName }: { msg: RecruiterMessage; coachName?: string }) {
-  const isRecruiter = msg.sender === "recruiter";
-
-  return (
-    <div className={`flex flex-col ${isRecruiter ? "items-end" : "items-start"}`}>
-      <p className="text-[11px] text-[#6b7280] mb-1.5">
-        {isRecruiter ? "Vous" : coachName} · {relativeTime(msg.timestamp)}
-      </p>
-      <div className={`max-w-[80%] sm:max-w-[70%] rounded-2xl px-4 py-3 ${
-        isRecruiter
-          ? "bg-[#1E3A5F] rounded-br-md"
-          : "bg-[#1E293B] rounded-bl-md"
-      }`}>
-        <p className="text-[14px] text-white leading-relaxed whitespace-pre-wrap">{msg.text}</p>
+    <div className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}>
+      <p className="text-[11px] text-[#6b7280] mb-1.5">{isMe ? "Vous" : coachName} · {relativeTime(msg.createdAt)}</p>
+      <div className={`max-w-[80%] sm:max-w-[70%] rounded-2xl px-4 py-3 ${isMe ? "bg-[#1E3A5F] rounded-br-md" : "bg-[#1E293B] rounded-bl-md"}`}>
+        <p className="text-[14px] text-white leading-relaxed whitespace-pre-wrap">{msg.content}</p>
       </div>
     </div>
   );
 }
-
-/* ── Day Separator ─────────────────────────────────────────── */
 
 function DaySeparator({ date }: { date: string }) {
   return (
@@ -90,39 +108,149 @@ function DaySeparator({ date }: { date: string }) {
   );
 }
 
-/* ── Review widget state machine ──────────────────────────── */
-type WidgetView = "hidden" | "teaser" | "form" | "confirmation";
-
-/* ═══════════════════════════════════════════════════════════════
-   MAIN PAGE
-═══════════════════════════════════════════════════════════════ */
-
 export default function RecruiterThreadPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const thread = getRecruiterThread(id);
-
-  const [messages, setMessages] = useState<RecruiterMessage[]>(thread?.messages ?? []);
+  const [ctx, setCtx] = useState<ThreadContext | null>(null);
+  const [messages, setMessages] = useState<MessageData[]>([]);
   const [reply, setReply] = useState("");
-  const [status, setStatus] = useState<RecruiterThreadStatus>(thread?.status ?? "envoye");
+  const [userId, setUserId] = useState("");
+  const [loading, setLoading] = useState(true);
   const endRef = useRef<HTMLDivElement>(null);
 
-  // Review widget state
-  const widgetState = REVIEW_WIDGET_STATES[id];
-  const submittedReview = SUBMITTED_REVIEWS[id];
-  const initialView: WidgetView =
-    widgetState?.reviewSubmitted && submittedReview ? "confirmation" :
-    widgetState?.showWidget ? "teaser" :
-    "hidden";
-  const [widgetView, setWidgetView] = useState<WidgetView>(initialView);
-  const [dismissCount, setDismissCount] = useState(widgetState?.dismissCount ?? 0);
-  const [submittedScore, setSubmittedScore] = useState(submittedReview?.overallScore ?? 0);
-  const [submittedRecommend, setSubmittedRecommend] = useState(submittedReview?.wouldRecommend ?? true);
+  useEffect(() => {
+    async function load() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setLoading(false); return; }
+      setUserId(user.id);
+
+      // Load conversation with joins
+      const { data: conv, error } = await supabase
+        .from("conversations")
+        .select(`
+          id, status, recruiter_id, coach_id, athlete_id, created_at,
+          coach:users!coach_id(id, first_name, last_name, schools!school_id(name, region)),
+          athlete:athletes!athlete_id(
+            id, first_name, last_name, verified, cote_globale_entraineur,
+            annee_diplomation, numero_jersey, recruitment_status, committed_school_id, open_to_offers,
+            moyenne_generale, programme_cegep_vise, pret_changer_region, ouvert_cegep_prive, ouvert_cegep_anglophone,
+            sports!sport_id(nom),
+            positions!position_id(nom, abreviation),
+            schools!school_id(name, region),
+            committed_school:schools!committed_school_id(name),
+            evaluations(distinctions)
+          )
+        `)
+        .eq("id", id)
+        .single();
+
+      if (conv) {
+        const coachRaw = conv.coach;
+        const coach = (Array.isArray(coachRaw) ? coachRaw[0] : coachRaw) as Record<string, unknown> | null;
+        const coachSchoolRaw = coach?.schools;
+        const coachSchool = (Array.isArray(coachSchoolRaw) ? coachSchoolRaw[0] : coachSchoolRaw) as { name?: string; region?: string } | null;
+        const athleteRaw = conv.athlete;
+        const athlete = (Array.isArray(athleteRaw) ? athleteRaw[0] : athleteRaw) as Record<string, unknown> | null;
+        const posRaw = athlete?.positions;
+        const pos = (Array.isArray(posRaw) ? posRaw[0] : posRaw) as { abreviation?: string } | null;
+        const athSchoolRaw = athlete?.schools;
+        const athSchool = (Array.isArray(athSchoolRaw) ? athSchoolRaw[0] : athSchoolRaw) as { name?: string; region?: string } | null;
+        const sportRaw = athlete?.sports;
+        const sport = (Array.isArray(sportRaw) ? sportRaw[0] : sportRaw) as { nom?: string } | null;
+        const committedSchoolRaw = athlete?.committed_school;
+        const committedSchool = (Array.isArray(committedSchoolRaw) ? committedSchoolRaw[0] : committedSchoolRaw) as { name?: string } | null;
+        const evalRaw = athlete?.evaluations;
+        const eval0 = (Array.isArray(evalRaw) ? evalRaw[0] : evalRaw) as { distinctions?: string[] } | null;
+        const distinctions = (eval0?.distinctions || []).filter((d): d is string => d != null && d !== "");
+
+        const cf = (coach?.first_name as string) || "";
+        const cl = (coach?.last_name as string) || "";
+        const af = (athlete?.first_name as string) || "";
+        const al = (athlete?.last_name as string) || "";
+
+        setCtx({
+          conversationId: conv.id,
+          coachId: (coach?.id as string) || "",
+          coachName: `${cf} ${cl}`.trim(),
+          coachInitials: `${cf[0] || ""}${cl[0] || ""}`.toUpperCase(),
+          coachSchool: coachSchool?.name || "",
+          coachRegion: coachSchool?.region || "",
+          coachEmail: "",
+          coachPhone: "",
+          athleteId: (athlete?.id as string) || "",
+          athleteName: `${af} ${al}`.trim(),
+          athleteInitials: `${af[0] || ""}${al[0] || ""}`.toUpperCase(),
+          athletePosition: pos?.abreviation || "",
+          athleteSport: sport?.nom || "",
+          athleteVerified: !!(athlete?.verified),
+          athleteStars: (athlete?.cote_globale_entraineur as number) || 0,
+          athleteSchool: athSchool?.name || "",
+          athleteRegion: athSchool?.region || "",
+          athleteGradYear: (athlete?.annee_diplomation as number) || 0,
+          athleteJersey: athlete?.numero_jersey ? String(athlete.numero_jersey) : "",
+          athleteRecruitmentStatus: (athlete?.recruitment_status as string) || "OUVERT",
+          athleteCommittedSchool: committedSchool?.name || "",
+          athleteOpenToOffers: (athlete?.open_to_offers as boolean | null) ?? null,
+          athleteGpa: (athlete?.moyenne_generale as number) || 0,
+          athleteProgramme: (athlete?.programme_cegep_vise as string) || "",
+          athleteOpenRelocate: !!(athlete?.pret_changer_region),
+          athleteOpenPrivate: !!(athlete?.ouvert_cegep_prive),
+          athleteOpenAnglophone: !!(athlete?.ouvert_cegep_anglophone),
+          athleteDistinctions: distinctions,
+          status: (conv.status as string) || "envoye",
+        });
+      }
+
+      // Load messages
+      const { data: msgData } = await supabase
+        .from("messages")
+        .select("id, sender_id, content, created_at")
+        .eq("conversation_id", id)
+        .order("created_at", { ascending: true });
+
+      console.log("[Thread data]", { conversation: conv, messageCount: msgData?.length });
+
+      if (msgData) {
+        setMessages(msgData.map(m => ({
+          id: m.id,
+          senderId: m.sender_id,
+          content: m.content,
+          createdAt: m.created_at,
+        })));
+      }
+
+      // Mark as read
+      await supabase.from("conversations").update({ unread_count: 0 }).eq("id", id);
+
+      setLoading(false);
+    }
+    load();
+  }, [id]);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  if (!thread) {
+  async function handleSend() {
+    if (!reply.trim() || !ctx) return;
+    const supabase = createClient();
+    const { data: newMsg } = await supabase
+      .from("messages")
+      .insert({ conversation_id: ctx.conversationId, sender_id: userId, content: reply.trim() })
+      .select("id, sender_id, content, created_at")
+      .single();
+
+    if (newMsg) {
+      setMessages(prev => [...prev, { id: newMsg.id, senderId: newMsg.sender_id, content: newMsg.content, createdAt: newMsg.created_at }]);
+      await supabase.from("conversations").update({ last_message_at: newMsg.created_at, status: "en_attente", updated_at: new Date().toISOString() }).eq("id", ctx.conversationId);
+      console.log("[Message sent]", { newMsg });
+    }
+    setReply("");
+  }
+
+  if (loading) return <div className="px-6 sm:px-10 py-8 max-w-[1280px] mx-auto text-[#6b7280]">Chargement...</div>;
+
+  if (!ctx) {
     return (
       <div className="px-6 sm:px-10 py-8 max-w-[1280px] mx-auto">
         <p className="text-[14px] text-[#9CA3AF]">Conversation introuvable.</p>
@@ -131,108 +259,48 @@ export default function RecruiterThreadPage({ params }: { params: Promise<{ id: 
     );
   }
 
-  const c = thread.coach;
-  const a = thread.athlete;
-  const coachFullName = `Coach ${c.lastName}`;
-
-  function handleSend() {
-    if (!reply.trim()) return;
-    const newMsg: RecruiterMessage = {
-      id: `rm-new-${Date.now()}`,
-      sender: "recruiter",
-      text: reply.trim(),
-      timestamp: NOW.toISOString(),
-    };
-    setMessages((prev) => [...prev, newMsg]);
-    setReply("");
-    if (status === "reponse_recue") {
-      setStatus("envoye");
-    }
-  }
-
-  function handleDismiss() {
-    const next = dismissCount + 1;
-    setDismissCount(next);
-    setWidgetView("hidden");
-  }
-
-  function handleSubmit(data: {
-    profileQuality: number;
-    responsiveness: number;
-    evaluationHonesty: number;
-    professionalism: number;
-    wouldRecommend: boolean;
-    comment: string;
-  }) {
-    const avg = (data.profileQuality + data.responsiveness + data.evaluationHonesty + data.professionalism) / 4;
-    setSubmittedScore(Math.round(avg * 10) / 10);
-    setSubmittedRecommend(data.wouldRecommend);
-    setWidgetView("confirmation");
-  }
-
-  // Group messages by day for separators
-  const messageGroups: { date: string; msgs: RecruiterMessage[] }[] = [];
-  messages.forEach((msg) => {
-    const dk = getDateKey(msg.timestamp);
+  // Group messages by day
+  const messageGroups: { date: string; msgs: MessageData[] }[] = [];
+  messages.forEach(msg => {
+    const dk = new Date(msg.createdAt).toISOString().split("T")[0];
     const last = messageGroups[messageGroups.length - 1];
-    if (last && last.date === dk) {
+    if (last && new Date(last.date).toISOString().split("T")[0] === dk) {
       last.msgs.push(msg);
     } else {
-      messageGroups.push({ date: msg.timestamp, msgs: [msg] });
+      messageGroups.push({ date: msg.createdAt, msgs: [msg] });
     }
   });
 
   return (
     <div className="min-h-screen bg-[#111317] flex flex-col">
-      {/* ── Header ──────────────────────────────────────────── */}
+      {/* Header */}
       <div className="bg-[#1A1D24]/80 backdrop-blur-sm border-b border-[#2D3748] sticky top-0 z-30">
         <div className="max-w-[1280px] mx-auto px-6 py-3 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
             <Link href="/recruteur/messages" className="text-[13px] text-[#6b7280] hover:text-white transition-colors flex items-center gap-1.5 shrink-0">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                <path d="M19 12H5" /><path d="M12 19l-7-7 7-7" />
-              </svg>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M19 12H5" /><path d="M12 19l-7-7 7-7" /></svg>
               Retour
             </Link>
-            <div className="min-w-0">
-              <p className="text-[14px] font-bold text-white truncate">
-                <EntityLink type="coach" id={c.id} name={`${c.firstName} ${c.lastName}`} portal="recruiter" className="text-[14px]" />
-                {" "}— à propos de{" "}
-                <EntityLink type="athlete" id={a.id} name={`${a.firstName} ${a.lastName}`} portal="recruiter" className="text-[14px]" />
-              </p>
-            </div>
+            <p className="text-[14px] font-bold text-white truncate">
+              {ctx.coachName} — à propos de {ctx.athleteName}
+            </p>
           </div>
-
-          <div className="flex items-center gap-3 shrink-0">
-            <StatusBadge status={status} />
-            <select
-              value={status}
-              onChange={(e) => setStatus(e.target.value as RecruiterThreadStatus)}
-              aria-label="Changer le statut"
-              className="bg-[#111317] border border-[#2D3748] rounded-lg px-3 py-1.5 text-[12px] text-[#9CA3AF] focus:border-[#3B82F6] outline-none cursor-pointer"
-            >
-              <option value="reponse_recue">Réponse reçue</option>
-              <option value="envoye">Envoyé</option>
-              <option value="lu">Lu</option>
-              <option value="archive">Archivé</option>
-            </select>
-          </div>
+          <StatusBadge status={ctx.status} />
         </div>
       </div>
 
-      {/* ── 2-Column Layout ─────────────────────────────────── */}
+      {/* 2-Column Layout */}
       <div className="flex-1 max-w-[1280px] mx-auto w-full flex flex-col xl:flex-row gap-0 xl:gap-6 px-6 py-6">
 
-        {/* ── Messages Column ───────────────────────────────── */}
+        {/* Messages Column */}
         <div className="flex-1 flex flex-col min-w-0">
-          {/* Messages scroll area */}
           <div className="flex-1 overflow-y-auto space-y-4 pb-4" style={{ maxHeight: "calc(100vh - 220px)" }}>
             {messageGroups.map((group, gi) => (
               <div key={gi}>
                 <DaySeparator date={group.date} />
                 <div className="space-y-4">
-                  {group.msgs.map((msg) => (
-                    <MessageBubble key={msg.id} msg={msg} coachName={`${c.firstName} ${c.lastName}`} />
+                  {group.msgs.map(msg => (
+                    <MessageBubble key={msg.id} msg={msg} isMe={msg.senderId === userId} coachName={ctx.coachName} />
                   ))}
                 </div>
               </div>
@@ -240,196 +308,155 @@ export default function RecruiterThreadPage({ params }: { params: Promise<{ id: 
             <div ref={endRef} />
           </div>
 
-          {/* ── Review widget (between messages and composer) ── */}
-          {widgetView === "teaser" && (
-            <ReviewWidgetTeaser
-              coachName={coachFullName}
-              coachId={c.id}
-              onExpand={() => setWidgetView("form")}
-              onDismiss={handleDismiss}
-            />
-          )}
-          {widgetView === "form" && (
-            <ReviewWidgetForm
-              coachName={coachFullName}
-              coachId={c.id}
-              athleteName={`${a.firstName} ${a.lastName}`}
-              athletePosition={a.position}
-              onSubmit={handleSubmit}
-              onDismiss={handleDismiss}
-            />
-          )}
-          {widgetView === "confirmation" && (
-            <ReviewWidgetConfirmation
-              coachName={coachFullName}
-              coachId={c.id}
-              overallScore={submittedScore}
-              wouldRecommend={submittedRecommend}
-            />
-          )}
-
           {/* Reply composer */}
           <div className="bg-[#1A1D24] border-t border-[#2D3748] p-4 rounded-b-xl">
             <div className="flex items-end gap-3">
               <textarea
                 value={reply}
                 onChange={(e) => setReply(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && e.ctrlKey) {
-                    e.preventDefault();
-                    handleSend();
-                  }
-                }}
+                onKeyDown={(e) => { if (e.key === "Enter" && e.ctrlKey) { e.preventDefault(); handleSend(); } }}
                 placeholder="Écrire une réponse..."
                 rows={2}
                 className="flex-1 bg-[#111317] border border-[#2D3748] rounded-xl px-4 py-3 text-[14px] text-[#e0e0e0] placeholder:text-[#6b7280] focus:border-[#3B82F6] outline-none transition-colors resize-none"
               />
-              <button
-                type="button"
-                onClick={handleSend}
-                disabled={!reply.trim()}
-                aria-label="Envoyer"
-                className="shrink-0 w-11 h-11 rounded-xl bg-[#3B82F6] flex items-center justify-center text-white
-                  transition-all hover:bg-[#3B82F6] active:scale-95 disabled:opacity-40 disabled:hover:bg-[#3B82F6]"
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none">
-                  <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
-                </svg>
+              <button type="button" onClick={handleSend} disabled={!reply.trim()} aria-label="Envoyer" className="shrink-0 w-11 h-11 rounded-xl bg-[#3B82F6] flex items-center justify-center text-white transition-all active:scale-95 disabled:opacity-40">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" /></svg>
               </button>
             </div>
             <p className="text-[10px] text-[#4a4d56] mt-2">Ctrl + Entrée pour envoyer</p>
           </div>
         </div>
 
-        {/* ── Sidebar: Context Cards ────────────────────────── */}
-        <div className="xl:w-[320px] shrink-0 space-y-4 mt-6 xl:mt-0">
-
-          {/* ── Coach card ── */}
+        {/* Sidebar */}
+        <div className="xl:w-[340px] shrink-0 space-y-4 mt-6 xl:mt-0">
+          {/* Coach card */}
           <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] p-5">
             <p className="text-[10px] font-bold tracking-[0.25em] uppercase text-[#6b7280] mb-3">Coach</p>
             <div className="flex items-center gap-3 mb-3">
               <div className="w-12 h-12 rounded-full bg-[#2D3748] flex items-center justify-center shrink-0">
-                <span className="text-[14px] font-bold text-[#9CA3AF]">{c.firstName[0]}{c.lastName[0]}</span>
+                <span className="text-[14px] font-bold text-[#9CA3AF]">{ctx.coachInitials}</span>
               </div>
               <div>
-                <EntityLink
-                  type="coach"
-                  id={c.id}
-                  name={`${c.firstName} ${c.lastName}`}
-                  portal="recruiter"
-                  className="text-[15px]"
-                />
-                <p className="text-[12px] text-[#9CA3AF]">{c.title}</p>
+                <span className="text-[15px] font-bold text-white">{ctx.coachName}</span>
+                <p className="text-[12px] text-[#9CA3AF]">{ctx.coachSchool}</p>
               </div>
             </div>
             <div className="space-y-2 text-[13px]">
-              <div className="flex items-center gap-2">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round">
-                  <rect x="4" y="2" width="16" height="20" rx="2" />
-                  <path d="M9 22V12h6v10" />
-                </svg>
-                <span className="text-[#e0e0e0]">{c.school}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                {c.division && (
-                  <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase ${
-                    c.division === "Div. 1" ? "bg-[#3B82F6]/15 text-[#3B82F6]" : "bg-[#4B5563]/15 text-[#9CA3AF]"
-                  }`}>
-                    {c.division}
-                  </span>
+              {ctx.coachRegion && <p className="text-[12px] text-[#6b7280]">{ctx.coachRegion}</p>}
+            </div>
+            {(ctx.coachEmail || ctx.coachPhone) && (
+              <div className="mt-3 pt-3 border-t border-[#2D3748] space-y-2">
+                {ctx.coachEmail && (
+                  <a href={`mailto:${ctx.coachEmail}`} className="flex items-center gap-2 group/link">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round"><rect x="2" y="4" width="20" height="16" rx="2" /><path d="M22 7l-10 7L2 7" /></svg>
+                    <span className="text-[12px] text-[#9CA3AF] group-hover/link:text-white transition-colors">{ctx.coachEmail}</span>
+                  </a>
                 )}
-                <span className="text-[#6b7280]">{c.sport}</span>
+                {ctx.coachPhone && (
+                  <a href={`tel:${ctx.coachPhone}`} className="flex items-center gap-2 group/link">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z" /></svg>
+                    <span className="text-[12px] text-[#9CA3AF] group-hover/link:text-white transition-colors">{ctx.coachPhone}</span>
+                  </a>
+                )}
               </div>
-              <p className="text-[12px] text-[#6b7280]">{c.region}</p>
-            </div>
-
-            {/* Contact info */}
-            <div className="mt-3 pt-3 border-t border-[#2D3748] space-y-2">
-              <a href={`mailto:${c.email}`} className="flex items-center gap-2 group/link">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round">
-                  <rect x="2" y="4" width="20" height="16" rx="2" />
-                  <path d="M22 7l-10 7L2 7" />
-                </svg>
-                <span className="text-[12px] text-[#9CA3AF] group-hover/link:text-white transition-colors">{c.email}</span>
-              </a>
-              <a href={`tel:${c.phone}`} className="flex items-center gap-2 group/link">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round">
-                  <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z" />
-                </svg>
-                <span className="text-[12px] text-[#9CA3AF] group-hover/link:text-white transition-colors">{c.phone}</span>
-              </a>
-            </div>
-
-            {/* Action link */}
-            <div className="mt-3 pt-3 border-t border-[#2D3748]">
-              <Link href={`/recruteur/coach/${c.id}`} className="text-[11px] font-bold text-[#E63946] hover:text-[#ff4d5a] transition-colors">
-                Voir le profil →
-              </Link>
-            </div>
+            )}
           </div>
 
-          {/* ── Athlete card ── */}
+          {/* Athlete card */}
           <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] p-5">
             <p className="text-[10px] font-bold tracking-[0.25em] uppercase text-[#6b7280] mb-3">Athlète concerné</p>
             <div className="flex items-center gap-3 mb-3">
               <div className="w-10 h-10 rounded-full bg-[#111317] border border-[#2D3748] flex items-center justify-center shrink-0">
-                <span className="text-[11px] font-bold text-[#6b7280]">{a.firstName[0]}{a.lastName[0]}</span>
+                <span className="text-[11px] font-bold text-[#6b7280]">{ctx.athleteInitials}</span>
               </div>
               <div>
-                <EntityLink
-                  type="athlete"
-                  id={a.id}
-                  name={`${a.firstName} ${a.lastName}`}
-                  portal="recruiter"
-                  className="text-[14px]"
-                />
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[14px] font-bold text-white">{ctx.athleteName}</span>
+                  {ctx.athleteJersey && <span className="text-[12px] font-black text-[#E63946]">#{ctx.athleteJersey}</span>}
+                </div>
                 <div className="flex items-center gap-2 mt-0.5">
-                  <span className="text-[11px] text-[#6b7280] font-bold uppercase">{a.position}</span>
-                  {a.gradYear && <span className="text-[11px] text-[#6b7280]">Promotion {a.gradYear}</span>}
+                  {ctx.athletePosition && <span className="text-[11px] text-[#6b7280] font-bold uppercase">{ctx.athletePosition}</span>}
+                  {ctx.athleteSport && <span className="text-[11px] text-[#6b7280]">{ctx.athleteSport}</span>}
+                  {ctx.athleteGradYear > 0 && <span className="text-[11px] text-[#6b7280]">· {ctx.athleteGradYear}</span>}
                 </div>
               </div>
             </div>
 
+            {/* Recruitment status — prominent */}
+            <div className="mb-3">
+              <RecruitmentStatusBadge
+                status={ctx.athleteRecruitmentStatus as GlobalRecruitmentStatus}
+                committedSchoolName={ctx.athleteCommittedSchool || undefined}
+                openToOffers={ctx.athleteOpenToOffers}
+                size="md"
+              />
+            </div>
+
             {/* Badges */}
             <div className="flex flex-wrap items-center gap-1.5 mb-3">
-              {a.isVerified ? (
+              {ctx.athleteVerified && (
                 <span className="inline-flex items-center gap-1 bg-[#3B82F6]/15 text-[#3B82F6] text-[10px] font-bold px-2 py-0.5 rounded-full">
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="#3B82F6" stroke="none">
-                    <circle cx="12" cy="12" r="10" />
-                    <path d="M9 12l2 2 4-4" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-                  </svg>
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="#3B82F6" stroke="none"><circle cx="12" cy="12" r="10" /><path d="M9 12l2 2 4-4" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none" /></svg>
                   Vérifié
                 </span>
-              ) : (
-                <span className="inline-flex items-center gap-1 bg-[#6B7280]/15 text-[#6B7280] text-[10px] font-bold px-2 py-0.5 rounded-full">
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2">
-                    <circle cx="12" cy="12" r="8" />
-                  </svg>
-                  Non vérifié
-                </span>
-              )}
-              {a.jerseyNumber && (
-                <span className="inline-flex items-center gap-1 bg-[#E63946]/15 text-[#E63946] text-[10px] font-bold px-2 py-0.5 rounded-full">
-                  #{a.jerseyNumber}
-                </span>
               )}
             </div>
 
-            {/* Stars */}
-            <div className="mb-3">
-              <StarRating rating={a.stars} size="sm" />
-            </div>
+            <StarRating rating={ctx.athleteStars} size="sm" />
+            {ctx.athleteSchool && <p className="text-[12px] text-[#6b7280] mt-2">{ctx.athleteSchool} · {ctx.athleteRegion}</p>}
 
-            {/* School */}
-            {a.school && (
-              <p className="text-[12px] text-[#6b7280] mb-3">{a.school}</p>
+            {/* Academic */}
+            {(ctx.athleteGpa > 0 || ctx.athleteProgramme) && (
+              <div className="mt-3 pt-3 border-t border-[#2D3748] space-y-1.5">
+                <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#6b7280]">Académique</p>
+                {ctx.athleteGpa > 0 && <p className="text-[14px] font-bold text-white">{ctx.athleteGpa}%</p>}
+                {ctx.athleteProgramme && <p className="text-[12px] text-[#9CA3AF]">{ctx.athleteProgramme}</p>}
+                {ctx.athleteGradYear > 0 && <p className="text-[12px] text-[#6b7280]">Graduation: Juin {ctx.athleteGradYear}</p>}
+              </div>
             )}
 
-            {/* Action link */}
-            <div className="pt-3 border-t border-[#2D3748]">
-              <Link href={`/recruteur/athletes/${a.id}`} className="text-[11px] font-bold text-[#E63946] hover:text-[#ff4d5a] transition-colors">
-                Voir le profil →
-              </Link>
+            {/* Distinctions */}
+            {ctx.athleteDistinctions.length > 0 && (
+              <div className="mt-3 pt-3 border-t border-[#2D3748]">
+                <div className="flex flex-wrap gap-1.5">
+                  {ctx.athleteDistinctions.map(d => {
+                    const labels: Record<string, string> = { captain: "Capitaine", allstar: "Équipe d'étoiles", team_leader: "Leader", mvp: "MVP" };
+                    return (
+                      <span key={d} className="inline-flex items-center px-2.5 py-1 rounded-full bg-[#E63946]/15 border border-[#E63946]/30 text-[11px] font-bold text-[#E63946]">
+                        {labels[d] || d}
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Preferences */}
+            {(ctx.athleteOpenRelocate || ctx.athleteOpenPrivate || ctx.athleteOpenAnglophone) && (
+              <div className="mt-3 pt-3 border-t border-[#2D3748] space-y-1.5">
+                {ctx.athleteOpenRelocate && (
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#22C55E]" />
+                    <span className="text-[11px] text-[#22C55E]">Ouvert à déménager</span>
+                  </div>
+                )}
+                {ctx.athleteOpenPrivate && (
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#22C55E]" />
+                    <span className="text-[11px] text-[#22C55E]">Ouvert au privé</span>
+                  </div>
+                )}
+                {ctx.athleteOpenAnglophone && (
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#22C55E]" />
+                    <span className="text-[11px] text-[#22C55E]">Ouvert anglophone</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="pt-3 mt-3 border-t border-[#2D3748]">
+              <Link href={`/recruteur/athletes/${ctx.athleteId}`} className="text-[11px] font-bold text-[#E63946] hover:text-[#ff4d5a] transition-colors">Voir le profil →</Link>
             </div>
           </div>
         </div>

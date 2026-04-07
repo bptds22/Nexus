@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
 import type { RecruitmentStatus } from "@/lib/config/recruitmentStatuses";
-import { getStatusConfig } from "@/lib/config/recruitmentStatuses";
 import StarRating from "@/components/ui/StarRating";
-import { MOCK_LISTS, AVAILABLE_ATHLETES } from "./_data/mockListsData";
+import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
+import type { GlobalRecruitmentStatus } from "@/lib/types/models";
 import type { ProspectList, ProspectListAthlete } from "./_data/mockListsData";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -74,20 +75,6 @@ function ConfirmModal({
 
 /* Stars: use shared StarRating component */
 
-/* ── Pipeline Status Badge (inline) ───────────────────────────── */
-
-function StatusBadge({ status }: { status: RecruitmentStatus }) {
-  if (status === "none") return null;
-  const cfg = getStatusConfig(status);
-  return (
-    <span
-      className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase"
-      style={{ backgroundColor: cfg.bgColor, borderWidth: 1, borderStyle: "solid", borderColor: cfg.borderColor, color: cfg.color }}
-    >
-      {cfg.shortLabel}
-    </span>
-  );
-}
 
 /* ── Sport breakdown pills ────────────────────────────────────── */
 
@@ -273,42 +260,77 @@ function AddAthleteModal({
   onAdd: (athlete: ProspectListAthlete, note: string) => void;
 }) {
   const [search, setSearch] = useState("");
-  const [schoolFilter, setSchoolFilter] = useState("");
-  const [noteFor, setNoteFor] = useState<string | null>(null);
-  const [noteText, setNoteText] = useState("");
+  const [available, setAvailable] = useState<ProspectListAthlete[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  /* Unique schools from available athletes */
-  const schools = useMemo(() => {
-    const all = AVAILABLE_ATHLETES.filter((a) => !existingIds.has(a.id));
-    const set = new Set(all.map((a) => a.school));
-    return Array.from(set).sort();
+  // Load favorited athletes from Supabase
+  useEffect(() => {
+    async function loadFavs() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setLoading(false); return; }
+
+      const { data } = await supabase
+        .from("recruiter_favorites")
+        .select(`
+          athlete_id,
+          athletes!athlete_id(
+            id, first_name, last_name, photo_url, verified, annee_diplomation,
+            numero_jersey, cote_globale_entraineur,
+            sports!sport_id(nom),
+            positions!position_id(nom, abreviation),
+            schools!school_id(name)
+          )
+        `)
+        .eq("recruiter_id", user.id);
+
+      if (data) {
+        const mapped: ProspectListAthlete[] = data
+          .map((f: Record<string, unknown>) => {
+            const aRaw = f.athletes;
+            const a = (Array.isArray(aRaw) ? aRaw[0] : aRaw) as Record<string, unknown> | null;
+            if (!a) return null;
+            const sportRel = a.sports;
+            const sport = (Array.isArray(sportRel) ? sportRel[0] : sportRel) as { nom?: string } | null;
+            const posRel = a.positions;
+            const pos = (Array.isArray(posRel) ? posRel[0] : posRel) as { abreviation?: string } | null;
+            const schoolRel = a.schools;
+            const school = (Array.isArray(schoolRel) ? schoolRel[0] : schoolRel) as { name?: string } | null;
+            return {
+              id: a.id as string,
+              full_name: `${a.first_name} ${a.last_name}`,
+              photo_url: (a.photo_url as string) || "",
+              jersey: a.numero_jersey != null && a.numero_jersey !== "" ? String(a.numero_jersey) : "",
+              sport: sport?.nom || "",
+              position: pos?.abreviation || "",
+              school: school?.name || "",
+              division: "D1" as const,
+              graduation_year: (a.annee_diplomation as number) || 0,
+              coach_rating: (a.cote_globale_entraineur as number) || 0,
+              is_verified: !!(a.verified),
+              pipeline_status: "identifie" as RecruitmentStatus,
+              added_at: "",
+              recruiter_note: "",
+              priority: false,
+            };
+          })
+          .filter(Boolean) as ProspectListAthlete[];
+        setAvailable(mapped.filter(a => !existingIds.has(a.id)));
+      }
+      setLoading(false);
+    }
+    loadFavs();
   }, [existingIds]);
 
-  const available = useMemo(() => {
-    let list = AVAILABLE_ATHLETES.filter((a) => !existingIds.has(a.id));
-    if (schoolFilter) list = list.filter((a) => a.school === schoolFilter);
-    if (search.trim().length >= 2) {
-      const q = search.toLowerCase();
-      list = list.filter((a) => a.full_name.toLowerCase().includes(q) || a.sport.toLowerCase().includes(q));
-    }
-    return list;
-  }, [search, schoolFilter, existingIds]);
+  const filtered = useMemo(() => {
+    if (search.trim().length < 2) return available;
+    const q = search.toLowerCase();
+    return available.filter(a => a.full_name.toLowerCase().includes(q) || a.sport.toLowerCase().includes(q));
+  }, [search, available]);
 
   const handleAdd = (athlete: ProspectListAthlete) => {
-    if (noteFor === athlete.id) {
-      onAdd(athlete, noteText);
-      setNoteFor(null);
-      setNoteText("");
-    } else {
-      setNoteFor(athlete.id);
-      setNoteText("");
-    }
-  };
-
-  const handleConfirmAdd = (athlete: ProspectListAthlete) => {
-    onAdd(athlete, noteText);
-    setNoteFor(null);
-    setNoteText("");
+    onAdd(athlete, "");
+    setAvailable(prev => prev.filter(a => a.id !== athlete.id));
   };
 
   return (
@@ -334,70 +356,51 @@ function AddAthleteModal({
           />
         </div>
 
-        {/* School filter */}
-        {schools.length > 1 && (
-          <select
-            value={schoolFilter}
-            onChange={(e) => setSchoolFilter(e.target.value)}
-            aria-label="Filtrer par école"
-            className={`mt-3 w-full bg-[#13151a] border rounded-lg px-3 py-2 text-[13px] outline-none transition-colors ${
-              schoolFilter ? "border-[#E63946] text-[#E63946]" : "border-[#2a2d36] text-[#6b7280]"
-            }`}
-          >
-            <option value="">Toutes les écoles</option>
-            {schools.map((s) => (
-              <option key={s} value={s}>{s.replace("É.S. ", "")}</option>
-            ))}
-          </select>
-        )}
-
         {/* Athletes list */}
         <div className="mt-3 flex-1 overflow-y-auto space-y-1 min-h-0">
-          {available.length === 0 ? (
+          {loading ? (
+            <p className="text-[13px] text-[#4a4d56] text-center py-8">Chargement...</p>
+          ) : filtered.length === 0 ? (
             <p className="text-[13px] text-[#4a4d56] text-center py-8">
               {search ? "Aucun athlète trouvé" : "Tous les favoris sont déjà dans cette liste"}
             </p>
           ) : (
-            available.map((a) => (
+            filtered.map((a) => (
               <div key={a.id} className="bg-[#13151a] rounded-lg border border-[#2a2d36] p-3">
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-8 h-8 rounded-full bg-[#2F3440] border border-[#2D3748] flex items-center justify-center shrink-0">
-                      <span className="text-[10px] font-bold text-white/20">{a.full_name.split(" ").map((w) => w[0]).join("")}</span>
+                    <div className="w-8 h-8 rounded-full bg-[#2F3440] border border-[#2D3748] shrink-0 overflow-hidden">
+                      {a.photo_url ? (
+                        <img src={a.photo_url} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <span className="text-[10px] font-bold text-white/20">{a.full_name.split(" ").map((w) => w[0]).join("")}</span>
+                        </div>
+                      )}
                     </div>
                     <div className="min-w-0">
-                      <p className="text-[13px] font-bold text-white truncate">{a.full_name}</p>
-                      <p className="text-[11px] text-[#6b7280]">{a.sport} · {a.position} · {a.school}</p>
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-[13px] font-bold text-white truncate">{a.full_name}</p>
+                        {a.jersey && <span className="text-[12px] font-black text-[#E63946]">#{a.jersey}</span>}
+                      </div>
+                      <p className="text-[11px] text-[#6b7280]">{a.position && <>{a.position} · </>}{a.school}</p>
+                      <div className="flex items-center gap-0.5 mt-0.5">
+                        {Array.from({ length: 5 }, (_, i) => (
+                          <svg key={i} width="10" height="10" viewBox="0 0 24 24" fill={a.coach_rating >= i + 1 ? "#F59E0B" : "#374151"} stroke="none">
+                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                          </svg>
+                        ))}
+                      </div>
                     </div>
                   </div>
-                  {noteFor === a.id ? (
-                    <button
-                      type="button"
-                      onClick={() => handleConfirmAdd(a)}
-                      className="px-3 py-1.5 bg-[#E63946] hover:bg-[#D42B22] text-white text-[11px] font-bold rounded-lg transition-colors shrink-0"
-                    >
-                      Confirmer
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => handleAdd(a)}
-                      className="px-3 py-1.5 border border-[#E63946] text-[#E63946] text-[11px] font-bold rounded-lg hover:bg-[#E63946]/10 transition-colors shrink-0"
-                    >
-                      Ajouter
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => handleAdd(a)}
+                    className="px-3 py-1.5 border border-[#E63946] text-[#E63946] text-[11px] font-bold rounded-lg hover:bg-[#E63946]/10 transition-colors shrink-0"
+                  >
+                    Ajouter
+                  </button>
                 </div>
-                {noteFor === a.id && (
-                  <textarea
-                    value={noteText}
-                    onChange={(e) => setNoteText(e.target.value)}
-                    placeholder="Note (optionnel)"
-                    rows={2}
-                    className="w-full mt-2 bg-[#111317] border border-[#2a2d36] rounded-lg px-3 py-2 text-[12px] text-[#e0e0e0] placeholder:text-[#4a4d56] focus:border-[#E63946] outline-none transition-colors resize-none"
-                    autoFocus
-                  />
-                )}
               </div>
             ))
           )}
@@ -469,6 +472,103 @@ function ListCard({
 
 /* ── Expanded List View ───────────────────────────────────────── */
 
+/* ── Note entry for activity feed ─────────────────────────────── */
+interface NoteEntry { id: string; content: string; created_at: string; }
+
+function NoteCard({ note, initials, fullName }: { note: NoteEntry; initials: string; fullName: string }) {
+  const d = new Date(note.created_at);
+  const dateStr = d.toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" });
+  const timeStr = d.toLocaleTimeString("fr-CA", { hour: "2-digit", minute: "2-digit" });
+  return (
+    <div className="bg-[#13151a] border border-[#2A2D35] rounded-lg p-4 mb-3">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-full bg-[#E63946] flex items-center justify-center shrink-0">
+            <span className="text-[11px] font-bold text-white">{initials}</span>
+          </div>
+          <span className="text-[13px] font-bold text-white">{fullName}</span>
+        </div>
+        <span className="text-[11px] text-[#6b7280] shrink-0">Note ajoutée · {dateStr} {timeStr}</span>
+      </div>
+      <p className="text-[13px] text-[#d1d5db] leading-relaxed whitespace-pre-wrap mt-2 ml-[42px]">{note.content}</p>
+    </div>
+  );
+}
+
+function AthleteNotesPanel({ athleteId, athleteName }: { athleteId: string; athleteName: string }) {
+  const [notes, setNotes] = useState<NoteEntry[]>([]);
+  const [noteText, setNoteText] = useState("");
+  const [posting, setPosting] = useState(false);
+  const [userName, setUserName] = useState({ initials: "", fullName: "" });
+
+  useEffect(() => {
+    async function load() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: userData } = await supabase.from("users").select("first_name, last_name").eq("id", user.id).single();
+      if (userData) {
+        setUserName({
+          initials: `${(userData.first_name || "")[0] || ""}${(userData.last_name || "")[0] || ""}`.toUpperCase(),
+          fullName: `${userData.first_name || ""} ${userData.last_name || ""}`.trim(),
+        });
+      }
+
+      const { data } = await supabase
+        .from("recruiter_notes")
+        .select("id, content, created_at")
+        .eq("recruiter_id", user.id)
+        .eq("athlete_id", athleteId)
+        .order("created_at", { ascending: false });
+      if (data) setNotes(data);
+    }
+    load();
+  }, [athleteId]);
+
+  const handlePost = async () => {
+    if (!noteText.trim()) return;
+    setPosting(true);
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setPosting(false); return; }
+    const { data } = await supabase
+      .from("recruiter_notes")
+      .insert({ recruiter_id: user.id, athlete_id: athleteId, content: noteText.trim() })
+      .select("id, content, created_at")
+      .single();
+    if (data) setNotes(prev => [data, ...prev]);
+    setNoteText("");
+    setPosting(false);
+  };
+
+  return (
+    <div className="px-5 py-4">
+      <h4 className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mb-3">Notes — {athleteName}</h4>
+      <textarea
+        value={noteText}
+        onChange={(e) => setNoteText(e.target.value)}
+        rows={2}
+        placeholder="Ajouter une note..."
+        className="w-full bg-[#111317] border border-[#2a2d36] rounded-lg px-3 py-2 text-[13px] text-[#e0e0e0] placeholder:text-[#4a4d56] focus:border-[#E63946] outline-none transition-colors resize-none"
+        onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handlePost(); } }}
+      />
+      <div className="flex justify-end mt-2">
+        <button type="button" onClick={handlePost} disabled={posting || !noteText.trim()} className="px-4 py-2 bg-[#E63946] hover:bg-[#D42B22] disabled:bg-[#2D3748] disabled:text-[#4a4d56] text-white text-[11px] font-bold uppercase tracking-wider rounded-lg transition-colors">
+          {posting ? "..." : "Poster"}
+        </button>
+      </div>
+      {notes.length > 0 && (
+        <div className="mt-4">
+          <p className="text-[13px] font-bold text-white mb-3">Activités: {notes.length}</p>
+          {notes.map(note => <NoteCard key={note.id} note={note} initials={userName.initials} fullName={userName.fullName} />)}
+        </div>
+      )}
+      {notes.length === 0 && <p className="text-[12px] text-[#4a4d56] italic mt-3">Aucune note pour cet athlète.</p>}
+    </div>
+  );
+}
+
 function ExpandedListView({
   list,
   onBack,
@@ -485,6 +585,61 @@ function ExpandedListView({
   onToast: (msg: string) => void;
 }) {
   const [showAddModal, setShowAddModal] = useState(false);
+  const [expandedNotes, setExpandedNotes] = useState<string | null>(null);
+
+  // List-level notes
+  const [listNotes, setListNotes] = useState<{ id: string; content: string; created_at: string }[]>([]);
+  const [listNoteText, setListNoteText] = useState("");
+  const [listNotePosting, setListNotePosting] = useState(false);
+  const [listNotesOpen, setListNotesOpen] = useState(false);
+  const [listUserName, setListUserName] = useState({ initials: "", fullName: "" });
+
+  useEffect(() => {
+    async function loadListNotes() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: userData } = await supabase.from("users").select("first_name, last_name").eq("id", user.id).single();
+      if (userData) {
+        setListUserName({
+          initials: `${(userData.first_name || "")[0] || ""}${(userData.last_name || "")[0] || ""}`.toUpperCase(),
+          fullName: `${userData.first_name || ""} ${userData.last_name || ""}`.trim(),
+        });
+      }
+
+      const { data } = await supabase
+        .from("recruiter_list_notes")
+        .select("id, content, created_at")
+        .eq("list_id", list.id)
+        .eq("recruiter_id", user.id)
+        .order("created_at", { ascending: false });
+      if (data) {
+        setListNotes(data);
+        if (data.length > 0) setListNotesOpen(true);
+      }
+    }
+    loadListNotes();
+  }, [list.id]);
+
+  const handlePostListNote = async () => {
+    if (!listNoteText.trim()) return;
+    setListNotePosting(true);
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setListNotePosting(false); return; }
+    const { data } = await supabase
+      .from("recruiter_list_notes")
+      .insert({ list_id: list.id, recruiter_id: user.id, content: listNoteText.trim() })
+      .select("id, content, created_at")
+      .single();
+    if (data) {
+      setListNotes(prev => [data, ...prev]);
+      setListNotesOpen(true);
+    }
+    setListNoteText("");
+    setListNotePosting(false);
+  };
   const [editingNote, setEditingNote] = useState<string | null>(null);
   const [editNoteText, setEditNoteText] = useState("");
   const [removeTarget, setRemoveTarget] = useState<string | null>(null);
@@ -554,7 +709,7 @@ function ExpandedListView({
         </span>
       </div>
 
-      {/* Table */}
+      {/* Athletes */}
       {list.athletes.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <div className="w-16 h-16 rounded-full bg-[#1A1D24] border border-[#2D3748] flex items-center justify-center mb-4">
@@ -571,155 +726,118 @@ function ExpandedListView({
           </button>
         </div>
       ) : (
-        <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] overflow-hidden">
-          {/* Desktop table */}
-          <div className="hidden md:block overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="border-b border-[#2D3748]">
-                  {["Athlète", "Sport / Pos.", "École", "Div.", "Note coach", "Pipeline", "Ajouté le", "Note", ""].map((h) => (
-                    <th key={h} className="px-4 py-3 text-[10px] font-bold uppercase tracking-[0.2em] text-[#6b7280] whitespace-nowrap">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {list.athletes.map((a) => (
-                  <tr key={a.id} className="border-b border-[#2D3748]/40 hover:bg-white/[0.02] transition-colors">
-                    {/* Athlete */}
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <Link href={`/recruteur/athletes/${a.id}`} className="text-[14px] font-bold text-white hover:text-[#E63946] transition-colors">
-                          {a.full_name}
-                        </Link>
-                        {a.is_verified && (
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill={BLUE} stroke="none">
-                            <circle cx="12" cy="12" r="10" />
-                            <path d="M9 12l2 2 4-4" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-                          </svg>
-                        )}
-                      </div>
-                      <p className="text-[11px] text-[#6b7280] mt-0.5">{a.graduation_year}</p>
-                    </td>
-                    {/* Sport + position */}
-                    <td className="px-4 py-3">
-                      <span className="text-[13px] text-[#9CA3AF]">{a.sport}</span>
-                      <span className="text-[#2D3748] mx-1">·</span>
-                      <span className="text-[13px] font-bold text-[#9CA3AF] uppercase">{a.position}</span>
-                    </td>
-                    {/* School */}
-                    <td className="px-4 py-3 text-[13px] text-[#9CA3AF] max-w-[160px] truncate">{a.school}</td>
-                    {/* Division */}
-                    <td className="px-4 py-3">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded bg-[#2D3748]/50 text-[11px] font-bold text-[#9CA3AF]">{a.division}</span>
-                    </td>
-                    {/* Coach rating */}
-                    <td className="px-4 py-3"><StarRating rating={a.coach_rating} size="sm" /></td>
-                    {/* Pipeline */}
-                    <td className="px-4 py-3"><StatusBadge status={a.pipeline_status} /></td>
-                    {/* Added date */}
-                    <td className="px-4 py-3 text-[12px] text-[#6b7280] whitespace-nowrap">{formatDate(a.added_at)}</td>
-                    {/* Note */}
-                    <td className="px-4 py-3 max-w-[200px]">
-                      {editingNote === a.id ? (
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="text"
-                            value={editNoteText}
-                            onChange={(e) => setEditNoteText(e.target.value)}
-                            className="flex-1 bg-[#13151a] border border-[#2a2d36] rounded px-2 py-1 text-[12px] text-[#e0e0e0] focus:border-[#E63946] outline-none"
-                            autoFocus
-                            onKeyDown={(e) => { if (e.key === "Enter") handleSaveNote(a.id); if (e.key === "Escape") setEditingNote(null); }}
-                          />
-                          <button type="button" onClick={() => handleSaveNote(a.id)} className="text-[#22C55E] hover:text-[#16A34A]">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5" /></svg>
-                          </button>
-                        </div>
+        <div className="flex flex-col gap-2">
+          {list.athletes.map((a) => (
+            <React.Fragment key={a.id}>
+              <div className={`bg-[#1A1D24] rounded-lg border border-[#2D3748] hover:border-[#E63946]/30 hover:shadow-[0_0_24px_rgba(230,57,70,0.12)] transition-all duration-300 ease-out ${expandedNotes === a.id ? "border-[#E63946]/20" : ""}`}>
+                <div className="flex items-center px-4 py-3 gap-3">
+                  {/* Avatar + check */}
+                  <div className="relative w-10 h-10 rounded-full bg-[#2F3440] shrink-0" style={{ overflow: "visible" }}>
+                    <div className="w-full h-full rounded-full overflow-hidden">
+                      {a.photo_url ? (
+                        <img src={a.photo_url} alt="" className="w-full h-full object-cover" />
                       ) : (
-                        <button
-                          type="button"
-                          onClick={() => handleStartEditNote(a.id, a.recruiter_note)}
-                          className="text-[12px] text-[#6b7280] hover:text-[#9CA3AF] transition-colors truncate block max-w-full text-left"
-                          title={a.recruiter_note || "Ajouter une note"}
-                        >
-                          {a.recruiter_note || <span className="italic text-[#4a4d56]">—</span>}
-                        </button>
-                      )}
-                    </td>
-                    {/* Actions */}
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-1">
-                        <Link href={`/recruteur/athletes/${a.id}`} className="w-7 h-7 rounded-lg flex items-center justify-center text-[#6b7280] hover:text-white hover:bg-white/5 transition-colors" title="Voir le profil">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" />
-                          </svg>
-                        </Link>
-                        <button
-                          type="button"
-                          onClick={() => handleStartEditNote(a.id, a.recruiter_note)}
-                          className="w-7 h-7 rounded-lg flex items-center justify-center text-[#6b7280] hover:text-white hover:bg-white/5 transition-colors"
-                          title="Modifier la note"
-                        >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                            <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
-                          </svg>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setRemoveTarget(a.id)}
-                          className="w-7 h-7 rounded-lg flex items-center justify-center text-[#6b7280] hover:text-[#EF4444] hover:bg-[#EF4444]/5 transition-colors"
-                          title="Retirer de la liste"
-                        >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                            <path d="M18 6L6 18" /><path d="M6 6l12 12" />
-                          </svg>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Mobile cards */}
-          <div className="md:hidden divide-y divide-[#2D3748]/40">
-            {list.athletes.map((a) => (
-              <div key={a.id} className="p-4 space-y-2">
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <div className="flex items-center gap-1.5">
-                      <Link href={`/recruteur/athletes/${a.id}`} className="text-[15px] font-bold text-white hover:text-[#E63946] transition-colors">
-                        {a.full_name}
-                      </Link>
-                      {a.is_verified && (
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill={BLUE} stroke="none">
-                          <circle cx="12" cy="12" r="10" />
-                          <path d="M9 12l2 2 4-4" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-                        </svg>
+                        <div className="w-full h-full flex items-center justify-center">
+                          <span className="text-[13px] font-head font-black text-white/10">{a.full_name.split(" ").map(w => w[0]).join("")}</span>
+                        </div>
                       )}
                     </div>
-                    <p className="text-[12px] text-[#6b7280] mt-0.5">{a.sport} · {a.position} · {a.school}</p>
+                    <div className="absolute -top-0.5 -right-0.5 z-10">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill={a.is_verified ? "#3B82F6" : "#4a4d56"} stroke="none">
+                        <circle cx="12" cy="12" r="10" />
+                        <path d="M9 12l2 2 4-4" stroke={a.is_verified ? "#fff" : "#6b7280"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                      </svg>
+                    </div>
                   </div>
-                  <StatusBadge status={a.pipeline_status} />
+
+                  {/* Name + jersey + school — fixed width */}
+                  <div className="w-[200px] shrink-0">
+                    <div className="flex items-center gap-1.5">
+                      <Link href={`/recruteur/athletes/${a.id}`} className="text-[14px] font-bold text-white hover:text-[#E63946] transition-colors truncate">
+                        {a.full_name}
+                      </Link>
+                      {a.jersey && <span className="text-[13px] font-black text-[#E63946]">#{a.jersey}</span>}
+                      {a.priority && <span className="w-2 h-2 rounded-full bg-[#E63946] shrink-0" title="Prioritaire" />}
+                    </div>
+                    <p className="text-[12px] text-[#6b7280] truncate">{a.school} · {a.graduation_year}</p>
+                  </div>
+
+                  {/* Position pill — fixed width */}
+                  <div className="w-[50px] shrink-0">
+                    {a.position ? (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-[#2D3748] text-[#c0c4cc] text-[11px] font-bold uppercase tracking-wider">{a.position}</span>
+                    ) : <span />}
+                  </div>
+
+                  {/* Recruitment status — fixed width */}
+                  <div className="w-[140px] shrink-0">
+                    <RecruitmentStatusBadge status={(a.pipeline_status || "ouvert").toUpperCase() as GlobalRecruitmentStatus} size="sm" />
+                  </div>
+
+                  {/* Stars — fixed width */}
+                  <div className="w-[120px] shrink-0">
+                    <StarRating rating={a.coach_rating} size="sm" />
+                  </div>
+
+                  {/* Added date — fixed width */}
+                  <div className="w-[90px] shrink-0">
+                    <span className="text-[12px] text-[#6b7280] whitespace-nowrap">{a.added_at ? formatDate(a.added_at) : ""}</span>
+                  </div>
+
+                  {/* Spacer */}
+                  <div className="flex-1" />
+
+                  {/* Notes + Actions */}
+                  <button type="button" onClick={() => setExpandedNotes(expandedNotes === a.id ? null : a.id)} className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-colors shrink-0 ${expandedNotes === a.id ? "bg-[#E63946]/15 text-[#E63946]" : "text-[#6b7280] hover:text-white hover:bg-white/5"}`}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" /></svg>
+                    Notes
+                  </button>
+                  <Link href={`/recruteur/athletes/${a.id}`} className="w-7 h-7 rounded-lg flex items-center justify-center text-[#6b7280] hover:text-white hover:bg-white/5 transition-colors shrink-0" title="Voir le profil">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+                  </Link>
+                  <button type="button" onClick={() => setRemoveTarget(a.id)} className="w-7 h-7 rounded-lg flex items-center justify-center text-[#6b7280] hover:text-[#EF4444] hover:bg-[#EF4444]/5 transition-colors shrink-0" title="Retirer">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6L6 18" /><path d="M6 6l12 12" /></svg>
+                  </button>
                 </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-[11px] text-[#6b7280]">{a.division}</span>
-                  <span className="text-[11px] text-[#6b7280]">{a.graduation_year}</span>
-                  <StarRating rating={a.coach_rating} size="sm" />
-                </div>
-                {a.recruiter_note && (
-                  <p className="text-[12px] text-[#9CA3AF] italic">&ldquo;{a.recruiter_note}&rdquo;</p>
+
+                {/* Expandable notes panel */}
+                {expandedNotes === a.id && (
+                  <div className="border-t border-[#2D3748]">
+                    <AthleteNotesPanel athleteId={a.id} athleteName={a.full_name} />
+                  </div>
                 )}
-                <div className="flex items-center gap-2 pt-1">
-                  <Link href={`/recruteur/athletes/${a.id}`} className="text-[11px] font-bold text-[#E63946]">Voir profil</Link>
-                  <span className="text-[#2D3748]">·</span>
-                  <button type="button" onClick={() => setRemoveTarget(a.id)} className="text-[11px] font-bold text-[#6b7280] hover:text-[#EF4444] transition-colors">Retirer</button>
-                </div>
               </div>
-            ))}
-          </div>
+            </React.Fragment>
+          ))}
         </div>
       )}
+
+      {/* List-level notes — at bottom */}
+      <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] overflow-hidden">
+        <button type="button" onClick={() => setListNotesOpen(!listNotesOpen)} className="w-full flex items-center justify-between px-5 py-3 hover:bg-white/[0.02] transition-colors">
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#6b7280]">Notes de liste</span>
+            {listNotes.length > 0 && <span className="inline-flex items-center justify-center min-w-[20px] h-[20px] px-1 rounded-full bg-[#E63946] text-[10px] font-black text-white">{listNotes.length}</span>}
+          </div>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round" className={`transition-transform ${listNotesOpen ? "rotate-180" : ""}`}><path d="M6 9l6 6 6-6" /></svg>
+        </button>
+        {listNotesOpen && (
+          <div className="px-5 pb-5 border-t border-[#2D3748]">
+            <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mt-4 mb-2">Notes</p>
+            <textarea value={listNoteText} onChange={(e) => setListNoteText(e.target.value)} rows={2} placeholder="Ajouter une note à cette liste..." className="w-full bg-[#111317] border border-[#2a2d36] rounded-lg px-3 py-2 text-[13px] text-[#e0e0e0] placeholder:text-[#4a4d56] focus:border-[#E63946] outline-none transition-colors resize-none" onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handlePostListNote(); } }} />
+            <div className="flex justify-end mt-2">
+              <button type="button" onClick={handlePostListNote} disabled={listNotePosting || !listNoteText.trim()} className="px-4 py-2 bg-[#E63946] hover:bg-[#D42B22] disabled:bg-[#2D3748] disabled:text-[#4a4d56] text-white text-[11px] font-bold uppercase tracking-wider rounded-lg transition-colors">{listNotePosting ? "..." : "Poster"}</button>
+            </div>
+            {listNotes.length > 0 && (
+              <div className="mt-4">
+                <p className="text-[13px] font-bold text-white mb-3">Activités: {listNotes.length}</p>
+                {listNotes.map(note => <NoteCard key={note.id} note={note} initials={listUserName.initials} fullName={listUserName.fullName} />)}
+              </div>
+            )}
+            {listNotes.length === 0 && <p className="text-[12px] text-[#4a4d56] italic mt-3">Aucune note pour cette liste.</p>}
+          </div>
+        )}
+      </div>
 
       {/* Add Athlete Modal */}
       {showAddModal && (
@@ -781,11 +899,12 @@ function EmptyState({ onCreate }: { onCreate: () => void }) {
 ═══════════════════════════════════════════════════════════════ */
 
 export default function ListesPage() {
-  const [lists, setLists] = useState<ProspectList[]>(MOCK_LISTS);
+  const [lists, setLists] = useState<ProspectList[]>([]);
   const [selectedListId, setSelectedListId] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const selectedList = useMemo(() => lists.find((l) => l.id === selectedListId) || null, [lists, selectedListId]);
 
@@ -794,28 +913,134 @@ export default function ListesPage() {
     setTimeout(() => setToast(null), 3000);
   }, []);
 
+  /* ── Load lists from Supabase ─────────────────────────────── */
+  useEffect(() => {
+    async function load() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setLoading(false); return; }
+
+      // 1. Fetch lists
+      const { data: listsData, error: listsErr } = await supabase
+        .from("recruiter_lists")
+        .select("id, name, description, created_at, updated_at")
+        .eq("recruiter_id", user.id)
+        .order("updated_at", { ascending: false });
+
+      console.log("[Lists fetch]", { count: listsData?.length, error: listsErr });
+      if (!listsData) { setLoading(false); return; }
+
+      // 2. Fetch all list-athlete links
+      const listIds = listsData.map(l => l.id);
+      let athleteLinks: { list_id: string; athlete_id: string; added_at: string }[] = [];
+      if (listIds.length > 0) {
+        const { data: linksData, error: linksErr } = await supabase
+          .from("recruiter_list_members")
+          .select("list_id, athlete_id, added_at")
+          .in("list_id", listIds);
+        console.log("[List members raw]", linksData, linksErr);
+        athleteLinks = linksData || [];
+      }
+
+      // 3. Fetch athlete details for all linked athletes
+      const athleteIds = [...new Set(athleteLinks.map(l => l.athlete_id))];
+      let athleteMap = new Map<string, ProspectListAthlete>();
+      if (athleteIds.length > 0) {
+        const { data: athData } = await supabase
+          .from("athletes")
+          .select(`
+            id, first_name, last_name, photo_url, verified, annee_diplomation,
+            numero_jersey, cote_globale_entraineur,
+            recruitment_status,
+            sports!sport_id(nom),
+            positions!position_id(nom, abreviation),
+            schools!school_id(name, region)
+          `)
+          .in("id", athleteIds);
+
+        if (athData) {
+          for (const a of athData as Record<string, unknown>[]) {
+            const sportRel = a.sports;
+            const sport = (Array.isArray(sportRel) ? sportRel[0] : sportRel) as { nom?: string } | null;
+            const posRel = a.positions;
+            const pos = (Array.isArray(posRel) ? posRel[0] : posRel) as { abreviation?: string } | null;
+            const schoolRel = a.schools;
+            const school = (Array.isArray(schoolRel) ? schoolRel[0] : schoolRel) as { name?: string } | null;
+
+            athleteMap.set(a.id as string, {
+              id: a.id as string,
+              full_name: `${a.first_name} ${a.last_name}`,
+              photo_url: (a.photo_url as string) || "",
+              jersey: a.numero_jersey != null && a.numero_jersey !== "" ? String(a.numero_jersey) : "",
+              sport: sport?.nom || "",
+              position: pos?.abreviation || "",
+              school: school?.name || "",
+              division: "D1",
+              graduation_year: (a.annee_diplomation as number) || 0,
+              coach_rating: (a.cote_globale_entraineur as number) || 0,
+              is_verified: !!(a.verified),
+              pipeline_status: ((a.recruitment_status as string) || "OUVERT").toLowerCase() as RecruitmentStatus,
+              added_at: "",
+              recruiter_note: "",
+              priority: false,
+            });
+          }
+        }
+      }
+
+      // 4. Assemble lists
+      const assembled: ProspectList[] = listsData.map(l => ({
+        id: l.id,
+        name: l.name,
+        description: l.description || "",
+        created_at: l.created_at,
+        updated_at: l.updated_at,
+        athletes: athleteLinks
+          .filter(link => link.list_id === l.id)
+          .map(link => {
+            const base = athleteMap.get(link.athlete_id);
+            if (!base) return null;
+            return { ...base, added_at: link.added_at, priority: false };
+          })
+          .filter(Boolean) as ProspectListAthlete[],
+      }));
+
+      setLists(assembled);
+      setLoading(false);
+    }
+    load();
+  }, []);
+
   /* Create list */
-  const handleCreateList = useCallback((name: string, description: string) => {
-    const newList: ProspectList = {
-      id: `list-${Date.now()}`,
-      name,
-      description,
-      athletes: [],
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-    setLists((prev) => [newList, ...prev]);
+  const handleCreateList = useCallback(async (name: string, description: string) => {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from("recruiter_lists")
+      .insert({ recruiter_id: user.id, name, description })
+      .select("id, name, description, created_at, updated_at")
+      .single();
+
+    console.log("[List create]", { data, error });
+    if (data) {
+      const newList: ProspectList = { ...data, description: data.description || "", athletes: [] };
+      setLists(prev => [newList, ...prev]);
+      setSelectedListId(data.id);
+    }
     setShowCreateModal(false);
-    setSelectedListId(newList.id);
-    showToast("Liste créée (POC)");
+    showToast("Liste créée");
   }, [showToast]);
 
   /* Delete list */
-  const handleDeleteList = useCallback((listId: string) => {
-    setLists((prev) => prev.filter((l) => l.id !== listId));
+  const handleDeleteList = useCallback(async (listId: string) => {
+    const supabase = createClient();
+    await supabase.from("recruiter_lists").delete().eq("id", listId);
+    setLists(prev => prev.filter(l => l.id !== listId));
     if (selectedListId === listId) setSelectedListId(null);
     setDeleteTarget(null);
-    showToast("Liste supprimée (POC)");
+    showToast("Liste supprimée");
   }, [selectedListId, showToast]);
 
   /* Menu actions */
@@ -825,37 +1050,31 @@ export default function ListesPage() {
     } else if (action === "share") {
       showToast("Partage — Phase 2");
     } else {
-      showToast("Action simulée — POC");
+      showToast("À venir");
     }
   }, [showToast]);
 
   /* Remove athlete from list */
-  const handleRemoveAthlete = useCallback((listId: string, athleteId: string) => {
-    setLists((prev) =>
-      prev.map((l) =>
-        l.id === listId ? { ...l, athletes: l.athletes.filter((a) => a.id !== athleteId), updated_at: new Date().toISOString() } : l
-      )
-    );
+  const handleRemoveAthlete = useCallback(async (listId: string, athleteId: string) => {
+    const supabase = createClient();
+    await supabase.from("recruiter_list_members").delete().eq("list_id", listId).eq("athlete_id", athleteId);
+    setLists(prev => prev.map(l =>
+      l.id === listId ? { ...l, athletes: l.athletes.filter(a => a.id !== athleteId) } : l
+    ));
   }, []);
 
   /* Add athlete to list */
-  const handleAddAthlete = useCallback((listId: string, athlete: ProspectListAthlete) => {
-    setLists((prev) =>
-      prev.map((l) =>
-        l.id === listId ? { ...l, athletes: [...l.athletes, athlete], updated_at: new Date().toISOString() } : l
-      )
-    );
+  const handleAddAthlete = useCallback(async (listId: string, athlete: ProspectListAthlete) => {
+    const supabase = createClient();
+    await supabase.from("recruiter_list_members").insert({ list_id: listId, athlete_id: athlete.id });
+    setLists(prev => prev.map(l =>
+      l.id === listId ? { ...l, athletes: [...l.athletes, { ...athlete, added_at: new Date().toISOString() }] } : l
+    ));
   }, []);
 
-  /* Edit note */
-  const handleEditNote = useCallback((listId: string, athleteId: string, note: string) => {
-    setLists((prev) =>
-      prev.map((l) =>
-        l.id === listId
-          ? { ...l, athletes: l.athletes.map((a) => (a.id === athleteId ? { ...a, recruiter_note: note } : a)), updated_at: new Date().toISOString() }
-          : l
-      )
-    );
+  /* Edit note — uses recruiter_notes table via insert */
+  const handleEditNote = useCallback((_listId: string, _athleteId: string, _note: string) => {
+    // Notes are now handled by the activity feed in ExpandedListView
   }, []);
 
   return (

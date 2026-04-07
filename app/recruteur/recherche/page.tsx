@@ -5,8 +5,10 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import type { SearchAthlete } from "../_data/mockSearchAthletes";
 import NxIcon from "@/components/ui/NxIcon";
+import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
+import type { GlobalRecruitmentStatus } from "@/lib/types/models";
 
-type ExtendedAthlete = SearchAthlete & { academicBadges: string[]; stars: number; recruitmentStatus: string | null; heightWeight: string; gpa: number };
+type ExtendedAthlete = SearchAthlete & { academicBadges: string[]; stars: number; recruitmentStatus: string | null; heightWeight: string; gpa: number; committedSchoolName: string | null; openToOffers: boolean | null; jersey: string; sportName: string };
 import FeatureGate from "@/components/subscription/FeatureGate";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -46,6 +48,7 @@ const sportLabel = (value: string): string => {
 /* ── Athlete Search Card ──────────────────────────────────── */
 
 function AthleteSearchCard({ a, onToggleFav }: { a: ExtendedAthlete; onToggleFav: (id: string) => void }) {
+  console.log('CARD RENDER:', a.firstName, { sport: a.sport, sportName: a.sportName, position: a.position, jersey: a.jersey });
   return (
     <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] overflow-hidden hover:border-[#E63946]/30 hover:shadow-[0_0_24px_rgba(230,57,70,0.12)] hover:-translate-y-1.5 hover:scale-[1.02] transition-all duration-300 ease-out group flex flex-col">
       {/* Photo area */}
@@ -91,8 +94,8 @@ function AthleteSearchCard({ a, onToggleFav }: { a: ExtendedAthlete; onToggleFav
       </div>
 
       {/* Info */}
-      <div className="p-4 flex flex-col flex-1 gap-1">
-        {/* Name + position */}
+      <div className="p-4 flex flex-col flex-1">
+        {/* Name + position pill + jersey */}
         <div className="flex items-center gap-2 flex-wrap">
           <Link href={`/recruteur/athletes/${a.id}`} className="text-[17px] font-bold text-white hover:text-[#E63946] transition-colors">
             {a.firstName} {a.lastName}
@@ -102,49 +105,39 @@ function AthleteSearchCard({ a, onToggleFav }: { a: ExtendedAthlete; onToggleFav
               {a.position}
             </span>
           )}
-          {a.recruitmentStatus && (
-            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider ${
-              a.recruitmentStatus === 'LETTRE_SIGNEE' || a.recruitmentStatus === 'Lettre signée' ? 'bg-[#22C55E]/15 text-[#22C55E] border border-[#22C55E]/30' :
-              a.recruitmentStatus === 'ENGAGE' || a.recruitmentStatus === 'Engagé' ? 'bg-[#3B82F6]/15 text-[#3B82F6] border border-[#3B82F6]/30' :
-              a.recruitmentStatus === 'VISITE_PLANIFIEE' || a.recruitmentStatus === 'Visite planifiée' ? 'bg-[#8B5CF6]/15 text-[#8B5CF6] border border-[#8B5CF6]/30' :
-              a.recruitmentStatus === 'EN_DISCUSSION' || a.recruitmentStatus === 'En discussion' ? 'bg-[#F59E0B]/15 text-[#F59E0B] border border-[#F59E0B]/30' :
-              a.recruitmentStatus === 'CONTACTE' || a.recruitmentStatus === 'Contacté' ? 'bg-[#6366F1]/15 text-[#6366F1] border border-[#6366F1]/30' :
-              'bg-[#9CA3AF]/15 text-[#9CA3AF] border border-[#9CA3AF]/30'
-            }`}>
-              {a.recruitmentStatus === 'LETTRE_SIGNEE' ? 'Lettre signée' :
-               a.recruitmentStatus === 'VISITE_PLANIFIEE' ? 'Visite planifiée' :
-               a.recruitmentStatus === 'EN_DISCUSSION' ? 'En discussion' :
-               a.recruitmentStatus === 'CONTACTE' ? 'Contacté' :
-               a.recruitmentStatus === 'IDENTIFIE' ? 'Identifié' :
-               a.recruitmentStatus === 'ENGAGE' ? 'Engagé' :
-               a.recruitmentStatus}
-            </span>
-          )}
+          {a.jersey && <span className="text-[13px] font-black text-[#E63946]">#{a.jersey}</span>}
         </div>
 
-        {/* School · Promotion */}
-        <p className="text-[14px] text-[#c0c4cc]">
-          {a.school} <span className="mx-1 text-[#4a4d56]">·</span> Promotion {a.graduationYear}
-        </p>
-
-        {/* Height / Weight */}
+        {/* Height/Weight */}
         {a.heightWeight && (
-          <p className="text-[13px] text-[#9CA3AF]">{a.heightWeight}</p>
+          <p className="text-[13px] text-[#9CA3AF] mt-0.5">{a.heightWeight}</p>
         )}
 
-        {/* Badges */}
-        <div className="flex flex-wrap gap-2 mt-1.5 min-h-[28px]">
-          {a.badges.slice(0, 2).map((b) => (
-            <span key={b.badgeId} className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#E63946]/15 border border-[#E63946]/30 text-[13px] font-bold text-[#E63946]">
-              <NxIcon name={b.icon} size={14} className="text-[#E63946]" /> {b.label}
-            </span>
-          ))}
+        {/* Recruitment Status */}
+        <div className="mt-1.5">
+          <RecruitmentStatusBadge
+            status={a.recruitmentStatus as GlobalRecruitmentStatus}
+            committedSchoolName={a.committedSchoolName ?? undefined}
+            openToOffers={a.openToOffers}
+            size="sm"
+          />
         </div>
 
-        {/* Footer — region left, voir le profil right */}
+        {/* Badges */}
+        {a.badges.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mt-2">
+            {a.badges.slice(0, 2).map((b) => (
+              <span key={b.badgeId} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#E63946]/15 border border-[#E63946]/30 text-[12px] font-bold text-[#E63946]">
+                <NxIcon name={b.icon} size={12} className="text-[#E63946]" /> {b.label}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Footer — school · year left, voir le profil right */}
         <div className="flex items-center justify-between pt-3 mt-auto border-t border-[#2D3748]/60">
-          <span className="text-[12px] text-[#6b7280]">{a.region}</span>
-          <Link href={`/recruteur/athletes/${a.id}`} className="text-[13px] font-semibold text-[#9CA3AF] hover:text-white transition-colors flex items-center gap-1">
+          <span className="text-[12px] text-[#6b7280] truncate">{a.school} <span className="text-[#4a4d56]">·</span> {a.graduationYear}</span>
+          <Link href={`/recruteur/athletes/${a.id}`} className="text-[13px] font-semibold text-[#9CA3AF] hover:text-white transition-colors flex items-center gap-1 shrink-0">
             Voir le profil
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
               <path d="M5 12h14" /><path d="M12 5l7 7-7 7" />
@@ -211,24 +204,6 @@ function AthleteSearchRow({ a, onToggleFav }: { a: ExtendedAthlete; onToggleFav:
         {a.position && (
           <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-[#2D3748] text-[#c0c4cc] text-[11px] font-bold uppercase tracking-wider">
             {a.position}
-          </span>
-        )}
-        {a.recruitmentStatus && (
-          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-            a.recruitmentStatus === 'LETTRE_SIGNEE' || a.recruitmentStatus === 'Lettre signée' ? 'bg-[#22C55E]/15 text-[#22C55E] border border-[#22C55E]/30' :
-            a.recruitmentStatus === 'ENGAGE' || a.recruitmentStatus === 'Engagé' ? 'bg-[#3B82F6]/15 text-[#3B82F6] border border-[#3B82F6]/30' :
-            a.recruitmentStatus === 'VISITE_PLANIFIEE' || a.recruitmentStatus === 'Visite planifiée' ? 'bg-[#8B5CF6]/15 text-[#8B5CF6] border border-[#8B5CF6]/30' :
-            a.recruitmentStatus === 'EN_DISCUSSION' || a.recruitmentStatus === 'En discussion' ? 'bg-[#F59E0B]/15 text-[#F59E0B] border border-[#F59E0B]/30' :
-            a.recruitmentStatus === 'CONTACTE' || a.recruitmentStatus === 'Contacté' ? 'bg-[#6366F1]/15 text-[#6366F1] border border-[#6366F1]/30' :
-            'bg-[#9CA3AF]/15 text-[#9CA3AF] border border-[#9CA3AF]/30'
-          }`}>
-            {a.recruitmentStatus === 'LETTRE_SIGNEE' ? 'Lettre signée' :
-             a.recruitmentStatus === 'VISITE_PLANIFIEE' ? 'Visite planifiée' :
-             a.recruitmentStatus === 'EN_DISCUSSION' ? 'En discussion' :
-             a.recruitmentStatus === 'CONTACTE' ? 'Contacté' :
-             a.recruitmentStatus === 'IDENTIFIE' ? 'Identifié' :
-             a.recruitmentStatus === 'ENGAGE' ? 'Engagé' :
-             a.recruitmentStatus}
           </span>
         )}
       </div>
@@ -313,7 +288,7 @@ export default function RecherchePage() {
         .from("athletes")
         .select(`
           id, first_name, last_name, photo_url, verified,
-          annee_diplomation, video_faits_saillants_url, school_id,
+          annee_diplomation, numero_jersey, video_faits_saillants_url, school_id,
           cote_globale_entraineur,
           taille_pieds,
           taille_pouces,
@@ -321,35 +296,33 @@ export default function RecherchePage() {
           mentions_academiques,
           moyenne_generale,
           statut_recrutement_override,
+          recruitment_status, committed_school_id, open_to_offers,
           sports!sport_id(nom),
           positions!position_id(nom, abreviation),
           schools!school_id(name, region),
+          committed_school:schools!committed_school_id(name),
           evaluations(distinctions)
         `)
         .eq("status", "ACTIF");
 
-      const pipelinePromise = userId
-        ? supabase.from("pipeline").select("athlete_id, status, favorited_at").eq("recruiter_id", userId)
-        : Promise.resolve({ data: [] as { athlete_id: string; status: string; favorited_at: string | null }[] });
+      // Load MY favorites from recruiter_favorites
+      const myFavsPromise = userId
+        ? supabase.from("recruiter_favorites").select("athlete_id").eq("recruiter_id", userId)
+        : Promise.resolve({ data: [] as { athlete_id: string }[] });
 
+      // Load ALL fav counts
       const favCountPromise = supabase.from("recruiter_favorites").select("athlete_id");
 
-      const [{ data: athleteData, error }, { data: pipelineData }, { data: favData }] = await Promise.all([
+      const [{ data: athleteData, error }, { data: myFavsData }, { data: favData }] = await Promise.all([
         athletePromise,
-        pipelinePromise,
+        myFavsPromise,
         favCountPromise,
       ]);
       console.log("Athletes loaded:", athleteData?.length, error);
 
-      // Build pipeline map
-      const pipelineMap = new Map<string, { status: string; favorited: boolean }>();
-      ((pipelineData as { athlete_id: string; status: string; favorited_at: string | null }[]) || []).forEach((p) => {
-        pipelineMap.set(p.athlete_id, { status: p.status, favorited: p.favorited_at !== null });
-      });
-
-      // Build favorites set
+      // Build favorites set from recruiter_favorites
       const favSet = new Set<string>();
-      pipelineMap.forEach((val, key) => { if (val.favorited) favSet.add(key); });
+      ((myFavsData as { athlete_id: string }[]) || []).forEach((f) => favSet.add(f.athlete_id));
       setFavorites(favSet);
 
       // Build fav counts
@@ -370,10 +343,9 @@ export default function RecherchePage() {
           const sportRel = Array.isArray(a.sports) ? a.sports[0] : a.sports;
           const posRel = Array.isArray(a.positions) ? a.positions[0] : a.positions;
           const schoolRel = Array.isArray(a.schools) ? a.schools[0] : a.schools;
+          const committedSchoolRel = Array.isArray(a.committed_school) ? a.committed_school[0] : a.committed_school;
           const evalRel = Array.isArray(a.evaluations) ? a.evaluations[0] : a.evaluations;
           const distinctions: string[] = ((evalRel as Record<string, unknown> | null)?.distinctions as string[]) || [];
-          const pipeline = pipelineMap.get(a.id as string);
-
           return {
             id: a.id as string,
             firstName: a.first_name as string,
@@ -388,7 +360,7 @@ export default function RecherchePage() {
             heightDisplay: "",
             weightDisplay: "",
             isVerified: a.verified as boolean,
-            isFavorited: pipeline?.favorited ?? false,
+            isFavorited: favSet.has(a.id as string),
             hasVideo: !!a.video_faits_saillants_url,
             badges: distinctions
               .filter((d) => d != null && badgeMap[d])
@@ -407,11 +379,16 @@ export default function RecherchePage() {
             })(),
             gpa: (a.moyenne_generale as number) || 0,
             academicBadges: (a.mentions_academiques as string[]) || [],
-            recruitmentStatus: (a.statut_recrutement_override as string) || null,
+            jersey: a?.numero_jersey != null && a.numero_jersey !== "" ? String(a.numero_jersey) : "",
+            sportName: (sportRel as Record<string, string> | null)?.nom || "",
+            recruitmentStatus: (a?.recruitment_status as string) || "OUVERT",
+            committedSchoolName: (committedSchoolRel as Record<string, string> | null)?.name || null,
+            openToOffers: (a?.open_to_offers as boolean | null) ?? null,
             commitmentStatus: "aucun",
             orgType: (a.school_id ? "scolaire" : "ligue_civile") as "scolaire" | "ligue_civile",
           };
         });
+        if (mapped[0]) console.log("AFTER MAP:", { name: mapped[0].firstName, jersey: mapped[0].jersey, sport: mapped[0].sport, sportName: mapped[0].sportName, position: mapped[0].position });
         setAthletes(mapped);
 
         // Derive unique regions
@@ -503,42 +480,39 @@ export default function RecherchePage() {
     const supabase = createClient();
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user) return;
+    const userId = session.user.id;
 
-    const isFav = favorites.has(id);
+    // Check if already favorited
+    const { data: existing } = await supabase
+      .from("recruiter_favorites")
+      .select("id")
+      .eq("recruiter_id", userId)
+      .eq("athlete_id", id)
+      .maybeSingle();
 
-    setFavorites((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-
-    setFavCounts((prev) => ({
-      ...prev,
-      [id]: (prev[id] || 0) + (isFav ? -1 : 1),
-    }));
-
-    if (isFav) {
-      await supabase
-        .from("recruiter_favorites")
-        .delete()
-        .eq("recruiter_id", session.user.id)
-        .eq("athlete_id", id);
+    if (existing) {
+      // Already favorited → DELETE (unfavorite)
+      await supabase.from("recruiter_favorites").delete().eq("id", existing.id);
+      setFavorites((prev) => { const next = new Set(prev); next.delete(id); return next; });
+      setFavCounts((prev) => ({ ...prev, [id]: Math.max(0, (prev[id] || 0) - 1) }));
     } else {
-      await supabase
-        .from("recruiter_favorites")
-        .insert({
-          recruiter_id: session.user.id,
-          athlete_id: id,
-        });
+      // Not favorited → INSERT (favorite)
+      await supabase.from("recruiter_favorites").insert({ recruiter_id: userId, athlete_id: id });
+      setFavorites((prev) => { const next = new Set(prev); next.add(id); return next; });
+      setFavCounts((prev) => ({ ...prev, [id]: (prev[id] || 0) + 1 }));
       // Auto-insert into pipeline at IDENTIFIE (no-op if already exists)
-      const { error: pipeErr } = await supabase
+      const { data: existingPipeline } = await supabase
         .from("recruiter_pipeline")
-        .upsert(
-          { recruiter_id: session.user.id, athlete_id: id, stage: "IDENTIFIE", moved_at: new Date().toISOString() },
-          { onConflict: "recruiter_id,athlete_id", ignoreDuplicates: true }
-        );
-      console.log("[Pipeline auto-insert]", { athlete_id: id, stage: "IDENTIFIE", error: pipeErr });
+        .select("id")
+        .eq("recruiter_id", userId)
+        .eq("athlete_id", id)
+        .maybeSingle();
+      if (!existingPipeline) {
+        const { error: pipeErr } = await supabase
+          .from("recruiter_pipeline")
+          .insert({ recruiter_id: userId, athlete_id: id, stage: "IDENTIFIE", moved_at: new Date().toISOString() });
+        console.log("[Pipeline auto-insert]", { athlete_id: id, stage: "IDENTIFIE", error: pipeErr });
+      }
     }
   };
 

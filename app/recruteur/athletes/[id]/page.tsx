@@ -6,8 +6,9 @@ import { createClient } from "@/lib/supabase/client";
 import {
   mockAthleteProfileFull,
 } from "@/lib/mock/athleteProfileRecruiter";
-import type { AthleteProfileRecruiterView, AthleteTraitRatings } from "@/lib/types/models";
+import type { AthleteProfileRecruiterView, AthleteTraitRatings, GlobalRecruitmentStatus } from "@/lib/types/models";
 import { BADGE_COLORS } from "@/lib/types/models";
+import RecruitmentStatusBadgeGlobal from "@/components/ui/RecruitmentStatusBadge";
 import { SPORT_NAME_MAP } from "@/lib/config/sportBadges";
 import type { RecruitmentStatus, RetireReason } from "@/lib/config/recruitmentStatuses";
 import { getAthleteTracking } from "@/app/recruteur/_data/mockPipelineData";
@@ -88,15 +89,6 @@ function CompletenessBar({ percent }: { percent: number }) {
 /* Stars: use shared StarRating component */
 
 /* ── Badge Pill Components ──────────────────────────────────── */
-
-function VerifiedBadge({ isVerified }: { isVerified: boolean }) {
-  return (
-    <span className={pillBase} style={{ backgroundColor: "rgba(255,255,255,0.10)", borderColor: "rgba(255,255,255,0.25)", color: "#FFFFFF" }}>
-      <span className="w-2 h-2 rounded-full" style={{ backgroundColor: isVerified ? "#3B82F6" : "#6B7280" }} />
-      {isVerified ? "Vérifié" : "Non vérifié"}
-    </span>
-  );
-}
 
 function FavoritesBadge({ count }: { count: number }) {
   if (count === 0) return null;
@@ -287,6 +279,10 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
   const { id } = use(params);
   const [a, setA] = useState<AthleteProfileRecruiterView>(mockAthleteProfileFull);
   const [loadingAthlete, setLoadingAthlete] = useState(true);
+  const [recruitmentStatus, setRecruitmentStatus] = useState<GlobalRecruitmentStatus>("OUVERT");
+  const [committedSchoolName, setCommittedSchoolName] = useState("");
+  const [openToOffers, setOpenToOffers] = useState<boolean | null>(null);
+  const [myPipelineStage, setMyPipelineStage] = useState<string | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
@@ -336,11 +332,15 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
         statut_recrutement_override,
         notes_coach,
         ouvert_entraineur_cegep,
+        recruitment_status,
+        committed_school_id,
+        open_to_offers,
         sport_secondaire_id,
         position_secondaire_id,
         sports!athletes_sport_id_fkey(nom),
         positions!athletes_position_id_fkey(nom, abreviation),
         schools!school_id(name, region, city),
+        committed_school:schools!committed_school_id(name),
         evaluations(
           leadership, discipline, coachabilite, intelligence_jeu,
           competitivite, esprit_equipe, resilience, attitude_mentalite,
@@ -352,6 +352,7 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
       .single()
       .then(async ({ data, error }) => {
         if (error || !data) { setLoadingAthlete(false); return; }
+        console.log('Profile athlete data:', data);
 
         const d = data as Record<string, unknown>;
         const evals = d.evaluations as Record<string, unknown>[] | null;
@@ -362,6 +363,15 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
         console.log("DEBUG cote_globale:", eval0?.cote_globale);
         console.log("DEBUG school:", JSON.stringify(d.schools));
         console.log("DEBUG programme:", JSON.stringify(d.programme_cegep_vise));
+
+        // Extract global recruitment fields
+        const recruitmentStatusRaw = (d.recruitment_status as string) || "OUVERT";
+        const committedSchoolRel = d.committed_school as { name: string } | null;
+        const committedSchoolNameVal = committedSchoolRel?.name || "";
+        const openToOffersVal = d.open_to_offers as boolean | null;
+        setRecruitmentStatus(recruitmentStatusRaw as GlobalRecruitmentStatus);
+        setCommittedSchoolName(committedSchoolNameVal);
+        setOpenToOffers(openToOffersVal ?? null);
         const coach = d.users as { first_name: string; last_name: string } | null;
         const sportRel = Array.isArray(d.sports) ? d.sports[0] : d.sports;
         const posRel = Array.isArray(d.positions) ? d.positions[0] : d.positions;
@@ -502,6 +512,23 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
   }, [id]);
 
   useEffect(() => {
+    const loadPipeline = async () => {
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+      const { data: pipelineData } = await supabase
+        .from("recruiter_pipeline")
+        .select("stage")
+        .eq("recruiter_id", session.user.id)
+        .eq("athlete_id", id)
+        .maybeSingle();
+      console.log('My pipeline status:', pipelineData);
+      setMyPipelineStage(pipelineData?.stage || null);
+    };
+    loadPipeline();
+  }, [id]);
+
+  useEffect(() => {
     const loadCount = async () => {
       const supabase = createClient();
       const { data } = await supabase.from("recruiter_favorites").select("id").eq("athlete_id", id);
@@ -600,20 +627,39 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
                 const supabase = createClient();
                 const { data: { session } } = await supabase.auth.getSession();
                 if (!session?.user) return;
-                const newState = !isFavorited;
-                setIsFavorited(newState);
-                if (newState) {
-                  await supabase.from("recruiter_favorites").insert({ recruiter_id: session.user.id, athlete_id: id });
-                  // Auto-insert into pipeline at IDENTIFIE (no-op if already exists)
-                  const { error: pipeErr } = await supabase
-                    .from("recruiter_pipeline")
-                    .upsert(
-                      { recruiter_id: session.user.id, athlete_id: id, stage: "IDENTIFIE", moved_at: new Date().toISOString() },
-                      { onConflict: "recruiter_id,athlete_id", ignoreDuplicates: true }
-                    );
-                  console.log("[Pipeline auto-insert]", { athlete_id: id, stage: "IDENTIFIE", error: pipeErr });
+                const userId = session.user.id;
+
+                // Check if already favorited
+                const { data: existing } = await supabase
+                  .from("recruiter_favorites")
+                  .select("id")
+                  .eq("recruiter_id", userId)
+                  .eq("athlete_id", id)
+                  .maybeSingle();
+
+                if (existing) {
+                  // Already favorited → unfavorite (DELETE)
+                  await supabase.from("recruiter_favorites").delete().eq("id", existing.id);
+                  setIsFavorited(false);
+                  console.log("Unfavorited:", id);
                 } else {
-                  await supabase.from("recruiter_favorites").delete().eq("recruiter_id", session.user.id).eq("athlete_id", id);
+                  // Not favorited → favorite (INSERT)
+                  await supabase.from("recruiter_favorites").insert({ recruiter_id: userId, athlete_id: id });
+                  setIsFavorited(true);
+                  console.log("Favorited:", id);
+                  // Auto-insert into pipeline at IDENTIFIE (no-op if already exists)
+                  const { data: existingPipeline } = await supabase
+                    .from("recruiter_pipeline")
+                    .select("id")
+                    .eq("recruiter_id", userId)
+                    .eq("athlete_id", id)
+                    .maybeSingle();
+                  if (!existingPipeline) {
+                    const { error: pipeErr } = await supabase
+                      .from("recruiter_pipeline")
+                      .insert({ recruiter_id: userId, athlete_id: id, stage: "IDENTIFIE", moved_at: new Date().toISOString() });
+                    console.log("[Pipeline auto-insert]", { athlete_id: id, stage: "IDENTIFIE", error: pipeErr });
+                  }
                 }
               }}
               className="flex items-center gap-1.5 text-[12px] font-bold transition-colors"
@@ -651,26 +697,24 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
               {a.jerseyNumber && <span className="text-[#E63946] ml-3">#{a.jerseyNumber}</span>}
             </h1>
 
-            <div className="flex flex-wrap items-center gap-2">
-              <VerifiedBadge isVerified={a.isVerified} />
-              <span className={`${pillBase}`} style={{ backgroundColor: "rgba(255,255,255,0.10)", borderColor: "rgba(255,255,255,0.25)", color: "#22C55E" }}>
-                <span className="w-2 h-2 rounded-full bg-[#22C55E]" />
-                Actif
-              </span>
-              {a.commitmentStatus && a.commitmentStatus !== "ouvert" && (
-                <span className={`${pillBase} ${
-                  a.commitmentStatus === 'LETTRE_SIGNEE' || a.commitmentStatus === 'Lettre signée' ? 'bg-[#22C55E]/15 text-[#22C55E] border-[#22C55E]/30' :
-                  a.commitmentStatus === 'ENGAGE' || a.commitmentStatus === 'Engagé' ? 'bg-[#3B82F6]/15 text-[#3B82F6] border-[#3B82F6]/30' :
-                  a.commitmentStatus === 'VISITE_PLANIFIEE' || a.commitmentStatus === 'Visite planifiée' ? 'bg-[#8B5CF6]/15 text-[#8B5CF6] border-[#8B5CF6]/30' :
-                  a.commitmentStatus === 'EN_DISCUSSION' || a.commitmentStatus === 'En discussion' ? 'bg-[#F59E0B]/15 text-[#F59E0B] border-[#F59E0B]/30' :
-                  a.commitmentStatus === 'CONTACTE' || a.commitmentStatus === 'Contacté' ? 'bg-[#6366F1]/15 text-[#6366F1] border-[#6366F1]/30' :
-                  a.commitmentStatus === 'OUVERT' || a.commitmentStatus === 'Ouvert' ? 'bg-[#06B6D4]/15 text-[#06B6D4] border-[#06B6D4]/30' :
-                  a.commitmentStatus === 'IDENTIFIE' || a.commitmentStatus === 'Identifié' ? 'bg-[#9CA3AF]/15 text-[#9CA3AF] border-[#9CA3AF]/30' :
-                  'bg-[#9CA3AF]/15 text-[#9CA3AF] border-[#9CA3AF]/30'
-                }`}>
-                  {a.commitmentStatus}
-                </span>
-              )}
+            <div className="flex items-center gap-3 mt-2">
+              <div className="bg-[#111317] rounded-lg px-3 py-2">
+                <span className="text-[8px] font-bold uppercase tracking-[0.2em] text-[#6b7280] block mb-1">Mon statut</span>
+                {myPipelineStage ? (
+                  <span className="text-[12px] font-bold text-white uppercase tracking-wider">
+                    {({
+                      IDENTIFIE: "Identifié", CONTACTE: "Contacté", EN_DISCUSSION: "En discussion",
+                      VISITE_PLANIFIEE: "Visite planifiée", ENGAGE: "Engagé", LETTRE_SIGNEE: "Lettre signée",
+                    } as Record<string, string>)[myPipelineStage.toUpperCase()] || myPipelineStage.replace(/_/g, " ")}
+                  </span>
+                ) : (
+                  <span className="text-[12px] text-[#6b7280]">Pas dans le pipeline</span>
+                )}
+              </div>
+              <div className="bg-[#111317] rounded-lg px-3 py-2">
+                <span className="text-[8px] font-bold uppercase tracking-[0.2em] text-[#6b7280] block mb-1">Statut global</span>
+                <RecruitmentStatusBadgeGlobal status={recruitmentStatus as GlobalRecruitmentStatus} committedSchoolName={committedSchoolName} openToOffers={openToOffers} size="sm" />
+              </div>
             </div>
 
             {pipelineStatus !== "none" && (
