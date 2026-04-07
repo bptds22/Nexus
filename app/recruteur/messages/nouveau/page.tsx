@@ -264,24 +264,31 @@ ${recruiterName.first || (profile?.first_name as string) || ""} ${recruiterName.
       .eq("athlete_id", selectedAthlete.id)
       .maybeSingle();
 
+    console.log("[NEW CONV] user.id:", user.id);
+    console.log("[NEW CONV] coach_id:", selectedAthlete.coachId);
+    console.log("[NEW CONV] athlete_id:", selectedAthlete.id);
+
     let convId: string;
     if (existingConv) {
       convId = existingConv.id;
+      console.log("[NEW CONV] existing conversation found:", convId);
     } else {
-      const { data: newConv } = await supabase
+      const payload = {
+        recruiter_id: user.id,
+        coach_id: selectedAthlete.coachId,
+        athlete_id: selectedAthlete.id,
+        status: "ACTIVE",
+        last_message_at: new Date().toISOString(),
+      };
+      console.log("[NEW CONV] insert payload:", payload);
+      const { data: newConv, error: convErr } = await supabase
         .from("conversations")
-        .insert({
-          recruiter_id: user.id,
-          coach_id: selectedAthlete.coachId,
-          athlete_id: selectedAthlete.id,
-          status: "envoye",
-          last_message_at: new Date().toISOString(),
-        })
+        .insert(payload)
         .select("id")
         .single();
+      console.log("[NEW CONV] result:", { newConv, error: convErr });
       if (!newConv) { setSending(false); return; }
       convId = newConv.id;
-      console.log("[New conversation]", { conversationId: convId });
     }
 
     // Insert message
@@ -295,7 +302,7 @@ ${recruiterName.first || (profile?.first_name as string) || ""} ${recruiterName.
     // Update conversation
     await supabase.from("conversations").update({
       last_message_at: new Date().toISOString(),
-      status: "envoye",
+      status: "ACTIVE",
     }).eq("id", convId);
 
     setShowToast(true);

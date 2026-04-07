@@ -5,6 +5,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import StarRating from "@/components/ui/StarRating";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
+import CoachReviewModal from "@/components/ui/CoachReviewModal";
 import type { GlobalRecruitmentStatus } from "@/lib/types/models";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -52,10 +53,8 @@ interface ThreadContext {
 }
 
 const STATUS_CONFIG: Record<string, { label: string; bg: string; textColor: string }> = {
-  reponse_recue: { label: "Réponse reçue", bg: "bg-[#22C55E]/15", textColor: "text-[#22C55E]" },
-  envoye: { label: "Envoyé", bg: "bg-[#3B82F6]/15", textColor: "text-[#3B82F6]" },
-  lu: { label: "Lu", bg: "bg-[#6B7280]/15", textColor: "text-[#6B7280]" },
-  archive: { label: "Archivé", bg: "bg-[#374151]/30", textColor: "text-[#6B7280]" },
+  ACTIVE: { label: "Actif", bg: "bg-[#22C55E]/15", textColor: "text-[#22C55E]" },
+  ARCHIVE: { label: "Archivé", bg: "bg-[#374151]/30", textColor: "text-[#6B7280]" },
 };
 
 function relativeTime(isoStr: string): string {
@@ -83,7 +82,7 @@ function formatDay(isoStr: string): string {
 }
 
 function StatusBadge({ status }: { status: string }) {
-  const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.envoye;
+  const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.ACTIVE;
   return <span className={`inline-block px-3 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase ${cfg.bg} ${cfg.textColor}`}>{cfg.label}</span>;
 }
 
@@ -115,6 +114,10 @@ export default function RecruiterThreadPage({ params }: { params: Promise<{ id: 
   const [reply, setReply] = useState("");
   const [userId, setUserId] = useState("");
   const [loading, setLoading] = useState(true);
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [coachAvgRating, setCoachAvgRating] = useState<number | null>(null);
+  const [coachReviewCount, setCoachReviewCount] = useState(0);
+  const [hasMyReview, setHasMyReview] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -197,8 +200,23 @@ export default function RecruiterThreadPage({ params }: { params: Promise<{ id: 
           athleteOpenPrivate: !!(athlete?.ouvert_cegep_prive),
           athleteOpenAnglophone: !!(athlete?.ouvert_cegep_anglophone),
           athleteDistinctions: distinctions,
-          status: (conv.status as string) || "envoye",
+          status: (conv.status as string) || "ACTIVE",
         });
+      }
+
+      // Load coach review stats
+      if (conv) {
+        const coachIdVal = (conv.coach_id as string) || "";
+        const { data: reviewStats } = await supabase
+          .from("coach_reviews")
+          .select("note_globale, recruiter_id")
+          .eq("coach_id", coachIdVal);
+        if (reviewStats && reviewStats.length > 0) {
+          const avg = reviewStats.reduce((s: number, r: { note_globale: number }) => s + Number(r.note_globale), 0) / reviewStats.length;
+          setCoachAvgRating(Math.round(avg * 10) / 10);
+          setCoachReviewCount(reviewStats.length);
+          setHasMyReview(reviewStats.some((r: { recruiter_id: string }) => r.recruiter_id === user.id));
+        }
       }
 
       // Load messages
@@ -242,7 +260,7 @@ export default function RecruiterThreadPage({ params }: { params: Promise<{ id: 
 
     if (newMsg) {
       setMessages(prev => [...prev, { id: newMsg.id, senderId: newMsg.sender_id, content: newMsg.content, createdAt: newMsg.created_at }]);
-      await supabase.from("conversations").update({ last_message_at: newMsg.created_at, status: "en_attente", updated_at: new Date().toISOString() }).eq("id", ctx.conversationId);
+      await supabase.from("conversations").update({ last_message_at: newMsg.created_at, updated_at: new Date().toISOString() }).eq("id", ctx.conversationId);
       console.log("[Message sent]", { newMsg });
     }
     setReply("");
@@ -360,6 +378,32 @@ export default function RecruiterThreadPage({ params }: { params: Promise<{ id: 
                 )}
               </div>
             )}
+            {/* Coach rating + review button */}
+            <div className="mt-3 pt-3 border-t border-[#2D3748]">
+              {coachAvgRating !== null ? (
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="flex items-center gap-0.5">
+                    {Array.from({ length: 5 }, (_, i) => (
+                      <svg key={i} width="13" height="13" viewBox="0 0 24 24" fill={coachAvgRating >= i + 1 ? "#F59E0B" : "#4a4d56"} stroke="none">
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                      </svg>
+                    ))}
+                  </div>
+                  <span className="text-[14px] font-bold text-white">{coachAvgRating}/5</span>
+                  <span className="text-[11px] text-[#6b7280]">({coachReviewCount} avis)</span>
+                </div>
+              ) : (
+                <p className="text-[11px] text-[#6b7280] italic mb-3">Aucun avis</p>
+              )}
+              <button
+                type="button"
+                onClick={() => setShowReviewModal(true)}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-[#F59E0B] text-[#F59E0B] text-[13px] font-bold rounded-lg hover:bg-[#F59E0B]/10 transition-colors"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="#F59E0B" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
+                {hasMyReview ? "Modifier mon avis" : "Laisser un avis"}
+              </button>
+            </div>
           </div>
 
           {/* Athlete card */}
@@ -461,6 +505,31 @@ export default function RecruiterThreadPage({ params }: { params: Promise<{ id: 
           </div>
         </div>
       </div>
+
+      {/* Coach review modal */}
+      {showReviewModal && ctx && (
+        <CoachReviewModal
+          coachId={ctx.coachId}
+          coachName={ctx.coachName}
+          athleteId={ctx.athleteId}
+          athleteName={ctx.athleteName}
+          onClose={() => setShowReviewModal(false)}
+          onSubmitted={async () => {
+            const supabase = createClient();
+            const { data: { user } } = await supabase.auth.getUser();
+            const { data: reviewStats } = await supabase
+              .from("coach_reviews")
+              .select("note_globale, recruiter_id")
+              .eq("coach_id", ctx.coachId);
+            if (reviewStats && reviewStats.length > 0) {
+              const avg = reviewStats.reduce((s: number, r: { note_globale: number }) => s + Number(r.note_globale), 0) / reviewStats.length;
+              setCoachAvgRating(Math.round(avg * 10) / 10);
+              setCoachReviewCount(reviewStats.length);
+              setHasMyReview(reviewStats.some((r: { recruiter_id: string }) => r.recruiter_id === user?.id));
+            }
+          }}
+        />
+      )}
     </div>
   );
 }

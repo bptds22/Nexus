@@ -31,20 +31,17 @@ interface ThreadData {
   status: string;
 }
 
-type FilterPreset = "tous" | "reponse_recue" | "en_attente" | "archive";
+type FilterPreset = "tous" | "non_lu" | "archive";
 
 const PILLS: { key: FilterPreset; label: string }[] = [
   { key: "tous", label: "Tous" },
-  { key: "reponse_recue", label: "Réponse reçue" },
-  { key: "en_attente", label: "En attente" },
+  { key: "non_lu", label: "Non lu" },
   { key: "archive", label: "Archivé" },
 ];
 
 const STATUS_CONFIG: Record<string, { label: string; bg: string; textColor: string }> = {
-  reponse_recue: { label: "Réponse reçue", bg: "bg-[#22C55E]/15", textColor: "text-[#22C55E]" },
-  envoye: { label: "Envoyé", bg: "bg-[#3B82F6]/15", textColor: "text-[#3B82F6]" },
-  lu: { label: "Lu", bg: "bg-[#6B7280]/15", textColor: "text-[#6B7280]" },
-  archive: { label: "Archivé", bg: "bg-[#374151]/30", textColor: "text-[#6B7280]" },
+  ACTIVE: { label: "Actif", bg: "bg-[#22C55E]/15", textColor: "text-[#22C55E]" },
+  ARCHIVE: { label: "Archivé", bg: "bg-[#374151]/30", textColor: "text-[#6B7280]" },
 };
 
 function relativeTime(isoStr: string): string {
@@ -65,7 +62,7 @@ function relativeTime(isoStr: string): string {
 }
 
 function StatusBadge({ status }: { status: string }) {
-  const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.envoye;
+  const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.ACTIVE;
   return (
     <span className={`inline-block px-3 py-1.5 rounded-full text-[12px] font-bold tracking-wide uppercase ${cfg.bg} ${cfg.textColor}`}>
       {cfg.label}
@@ -209,7 +206,7 @@ export default function MessagesPage() {
             lastMessage: lastMsgMap.get(c.id as string) || "",
             lastMessageAt: (c.last_message_at as string) || (c.created_at as string) || "",
             unreadCount: (c.unread_count as number) || 0,
-            status: (c.status as string) || "envoye",
+            status: (c.status as string) || "ACTIVE",
           };
         });
         setThreads(mapped);
@@ -234,9 +231,8 @@ export default function MessagesPage() {
     }
 
     switch (activeFilter) {
-      case "reponse_recue": list = list.filter(t => t.status === "reponse_recue"); break;
-      case "en_attente": list = list.filter(t => t.status === "envoye" || t.status === "lu"); break;
-      case "archive": list = list.filter(t => t.status === "archive"); break;
+      case "non_lu": list = list.filter(t => t.unreadCount > 0); break;
+      case "archive": list = list.filter(t => t.status === "ARCHIVE"); break;
     }
 
     return list;

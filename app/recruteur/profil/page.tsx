@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
-import { RECRUITER_PROFILE } from "../_data/mockRecruiterProfile";
+import { createClient } from "@/lib/supabase/client";
 
 /* ═══════════════════════════════════════════════════════════════
    Recruiter Profile — Form + Live Preview
+   Wired to Supabase: users + schools
 ═══════════════════════════════════════════════════════════════ */
 
 const TITLES = [
@@ -13,17 +14,6 @@ const TITLES = [
   "Entraîneur adjoint",
   "Coordonnateur recrutement",
   "Responsable des sports",
-];
-
-const CEGEPS = [
-  "CÉGEP Garneau", "CÉGEP du Vieux Montréal", "CÉGEP Limoilou", "CÉGEP Saint-Jean-sur-Richelieu",
-  "Collège André-Grasset", "CÉGEP de Sherbrooke", "CÉGEP de Trois-Rivières", "CÉGEP André-Laurendeau",
-  "CÉGEP Saint-Laurent", "CÉGEP de Jonquière", "CÉGEP de l'Outaouais", "CÉGEP Édouard-Montpetit",
-  "CÉGEP de Victoriaville", "CÉGEP de Drummondville", "CÉGEP Beauce-Appalaches", "CÉGEP de Lévis",
-  "CÉGEP de Sainte-Foy", "CÉGEP de Rimouski", "Collège de Valleyfield", "CÉGEP de Granby",
-  "Collège Montmorency", "CÉGEP de l'Abitibi-Témiscamingue", "CÉGEP de Chicoutimi", "CÉGEP de Matane",
-  "CÉGEP de Sept-Îles", "CÉGEP de Baie-Comeau", "Collège Laflèche", "Collège Dawson",
-  "Collège John Abbott", "Vanier College", "Champlain College", "Heritage College",
 ];
 
 const DIVISIONS = ["Division 1", "Division 2", "Division 3"];
@@ -40,7 +30,8 @@ interface FormData {
   firstName: string;
   lastName: string;
   title: string;
-  cegep: string;
+  schoolId: string;
+  schoolName: string;
   division: string;
   teamName: string;
   sport: string;
@@ -49,20 +40,63 @@ interface FormData {
 
 export default function RecruiterProfilPage() {
   const [form, setForm] = useState<FormData>({
-    firstName: RECRUITER_PROFILE.firstName,
-    lastName: RECRUITER_PROFILE.lastName,
-    title: RECRUITER_PROFILE.title,
-    cegep: RECRUITER_PROFILE.cegep,
-    division: RECRUITER_PROFILE.division,
-    teamName: RECRUITER_PROFILE.teamName,
-    sport: RECRUITER_PROFILE.sport,
-    region: RECRUITER_PROFILE.region,
+    firstName: "", lastName: "", title: "", schoolId: "", schoolName: "",
+    division: "", teamName: "", sport: "", region: "",
   });
-
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [schools, setSchools] = useState<{ id: string; name: string }[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const update = (key: keyof FormData, val: string) => setForm((prev) => ({ ...prev, [key]: val }));
+  const update = (key: keyof FormData, val: string) => setForm(prev => ({ ...prev, [key]: val }));
+
+  // Load profile + schools
+  useEffect(() => {
+    async function load() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setLoading(false); return; }
+
+      // Load schools for dropdown
+      const { data: schoolsData } = await supabase.from("schools").select("id, name").order("name");
+      if (schoolsData) setSchools(schoolsData);
+
+      // Load profile
+      const { data: profile, error } = await supabase
+        .from("users")
+        .select("first_name, last_name, role, school_id, photo_url, title, division, team_name, sport, region")
+        .eq("id", user.id)
+        .single();
+
+      console.log("[Profile load]", { profile, error });
+
+      if (profile) {
+        // Get school name
+        let schoolName = "";
+        if (profile.school_id && schoolsData) {
+          const found = schoolsData.find((s: { id: string }) => s.id === profile.school_id);
+          schoolName = found?.name || "";
+        }
+
+        setForm({
+          firstName: (profile.first_name as string) || "",
+          lastName: (profile.last_name as string) || "",
+          title: (profile.title as string) || "",
+          schoolId: (profile.school_id as string) || "",
+          schoolName,
+          division: (profile.division as string) || "",
+          teamName: (profile.team_name as string) || "",
+          sport: (profile.sport as string) || "",
+          region: (profile.region as string) || "",
+        });
+        if (profile.photo_url) setAvatarUrl(profile.photo_url as string);
+      }
+      setLoading(false);
+    }
+    load();
+  }, []);
 
   function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -78,8 +112,48 @@ export default function RecruiterProfilPage() {
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
-  const requiredFilled = form.firstName && form.lastName && form.title && form.cegep && form.division && form.sport;
+  async function handleSave() {
+    setSaving(true);
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setSaving(false); return; }
+
+    const payload = {
+      first_name: form.firstName || "",
+      last_name: form.lastName || "",
+      school_id: form.schoolId || null,
+      title: form.title || null,
+      division: form.division || null,
+      team_name: form.teamName || null,
+      sport: form.sport || null,
+      region: form.region || null,
+    };
+    console.log("[SAVE] user:", user.id, "payload:", payload);
+
+    const { data, error } = await supabase
+      .from("users")
+      .update(payload)
+      .eq("id", user.id)
+      .select();
+
+    console.log("[SAVE] result:", data, "error:", error);
+    console.log("[SAVE] full result:", JSON.stringify(data));
+
+    if (error) {
+      alert("Erreur: " + error.message);
+    } else {
+      setToast("Profil sauvegardé");
+      setTimeout(() => setToast(null), 3000);
+    }
+    setSaving(false);
+  }
+
+  const requiredFilled = form.firstName && form.lastName && form.schoolId;
   const initials = (form.firstName[0] || "") + (form.lastName[0] || "");
+
+  if (loading) {
+    return <div className="px-6 sm:px-10 py-8 max-w-[1280px] mx-auto text-[#6b7280]">Chargement...</div>;
+  }
 
   return (
     <div className="px-6 sm:px-10 py-8 max-w-[1280px] mx-auto space-y-6">
@@ -88,8 +162,18 @@ export default function RecruiterProfilPage() {
         <p className="text-[14px] text-[#9CA3AF] mt-1">Ton identité visible par les coachs</p>
       </div>
 
+      {/* Toast */}
+      {toast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100]">
+          <div className="bg-[#1A1D24] border border-[#2D3748] rounded-lg px-5 py-3 shadow-lg flex items-center gap-3">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5" /></svg>
+            <span className="text-[13px] font-bold text-white">{toast}</span>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-        {/* LEFT: Form (60%) */}
+        {/* LEFT: Form */}
         <div className="lg:col-span-3 space-y-5">
           <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] p-6 space-y-5">
             {/* Photo upload */}
@@ -121,23 +205,13 @@ export default function RecruiterProfilPage() {
                     </div>
                   )}
                 </div>
-                <input ref={fileInputRef} type="file" accept="image/*" onChange={handleAvatarChange} className="hidden" />
+                <input ref={fileInputRef} type="file" accept="image/*" onChange={handleAvatarChange} className="hidden" title="Photo de profil" />
                 <div className="flex flex-col gap-2">
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="text-[13px] font-bold text-[#E63946] hover:text-[#D42B22] transition-colors"
-                  >
+                  <button type="button" onClick={() => fileInputRef.current?.click()} className="text-[13px] font-bold text-[#E63946] hover:text-[#D42B22] transition-colors">
                     {avatarUrl ? "Changer la photo" : "Ajouter une photo"}
                   </button>
                   {avatarUrl && (
-                    <button
-                      type="button"
-                      onClick={removeAvatar}
-                      className="text-[12px] text-[#6b7280] hover:text-[#E63946] transition-colors"
-                    >
-                      Supprimer
-                    </button>
+                    <button type="button" onClick={removeAvatar} className="text-[12px] text-[#6b7280] hover:text-[#E63946] transition-colors">Supprimer</button>
                   )}
                   <p className="text-[11px] text-[#4B5563]">JPG ou PNG, max 2 Mo</p>
                 </div>
@@ -147,36 +221,45 @@ export default function RecruiterProfilPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className={labelCls}>Prénom *</label>
-                <input type="text" value={form.firstName} onChange={(e) => update("firstName", e.target.value)} className={inputCls} />
+                <input type="text" value={form.firstName} onChange={(e) => update("firstName", e.target.value)} placeholder="Prénom" className={inputCls} />
               </div>
               <div>
                 <label className={labelCls}>Nom *</label>
-                <input type="text" value={form.lastName} onChange={(e) => update("lastName", e.target.value)} className={inputCls} />
+                <input type="text" value={form.lastName} onChange={(e) => update("lastName", e.target.value)} placeholder="Nom" className={inputCls} />
               </div>
             </div>
 
             <div>
-              <label className={labelCls}>Titre *</label>
-              <select value={form.title} onChange={(e) => update("title", e.target.value)} className={inputCls}>
+              <label className={labelCls}>Titre</label>
+              <select title="Titre" value={form.title} onChange={(e) => update("title", e.target.value)} className={inputCls}>
                 <option value="">Sélectionner un titre</option>
-                {TITLES.map((t) => <option key={t} value={t}>{t}</option>)}
+                {TITLES.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
             </div>
 
             <div>
-              <label className={labelCls}>CÉGEP *</label>
-              <select value={form.cegep} onChange={(e) => update("cegep", e.target.value)} className={inputCls}>
-                <option value="">Sélectionner un CÉGEP</option>
-                {CEGEPS.map((c) => <option key={c} value={c}>{c}</option>)}
+              <label className={labelCls}>CÉGEP / École *</label>
+              <select
+                title="CÉGEP / École"
+                value={form.schoolId}
+                onChange={(e) => {
+                  const id = e.target.value;
+                  const name = schools.find(s => s.id === id)?.name || "";
+                  setForm(prev => ({ ...prev, schoolId: id, schoolName: name }));
+                }}
+                className={inputCls}
+              >
+                <option value="">Sélectionner un établissement</option>
+                {schools.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className={labelCls}>Division *</label>
-                <select value={form.division} onChange={(e) => update("division", e.target.value)} className={inputCls}>
+                <label className={labelCls}>Division</label>
+                <select title="Division" value={form.division} onChange={(e) => update("division", e.target.value)} className={inputCls}>
                   <option value="">Sélectionner</option>
-                  {DIVISIONS.map((d) => <option key={d} value={d}>{d}</option>)}
+                  {DIVISIONS.map(d => <option key={d} value={d}>{d}</option>)}
                 </select>
               </div>
               <div>
@@ -187,36 +270,36 @@ export default function RecruiterProfilPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className={labelCls}>Sport *</label>
-                <select value={form.sport} onChange={(e) => update("sport", e.target.value)} className={inputCls}>
+                <label className={labelCls}>Sport</label>
+                <select title="Sport" value={form.sport} onChange={(e) => update("sport", e.target.value)} className={inputCls}>
                   <option value="">Sélectionner</option>
-                  {SPORTS.map((s) => <option key={s} value={s}>{s}</option>)}
+                  {SPORTS.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
               <div>
                 <label className={labelCls}>Région</label>
-                <input type="text" value={form.region} onChange={(e) => update("region", e.target.value)} className={inputCls} />
+                <input type="text" value={form.region} onChange={(e) => update("region", e.target.value)} placeholder="ex: Capitale-Nationale" className={inputCls} />
               </div>
             </div>
 
             <div className="pt-2">
               <button
                 type="button"
+                onClick={handleSave}
                 className="flex items-center gap-2 bg-[#E63946] text-white rounded-lg px-6 py-3 font-bold text-[14px] uppercase tracking-wider transition-all hover:bg-[#D42B22] active:scale-95 disabled:opacity-50"
-                disabled={!requiredFilled}
+                disabled={!requiredFilled || saving}
               >
-                Sauvegarder le profil
+                {saving ? "Sauvegarde..." : "Sauvegarder le profil"}
               </button>
             </div>
           </div>
         </div>
 
-        {/* RIGHT: Live preview (40%) */}
+        {/* RIGHT: Live preview */}
         <div className="lg:col-span-2">
           <div className="sticky top-8">
             <p className="text-[12px] font-bold tracking-[0.2em] uppercase text-[#6b7280] mb-3">Aperçu en temps réel</p>
             <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] p-6">
-              {/* Avatar */}
               <div className="flex items-center gap-4 mb-5">
                 <div className="relative w-16 h-16 rounded-full overflow-hidden bg-[#E63946]/15 border-2 border-[#E63946]/30 flex items-center justify-center">
                   {avatarUrl ? (
@@ -226,60 +309,37 @@ export default function RecruiterProfilPage() {
                   )}
                 </div>
                 <div>
-                  <p className="text-[18px] font-bold text-white">
-                    {form.firstName || "Prénom"} {form.lastName || "Nom"}
-                  </p>
+                  <p className="text-[18px] font-bold text-white">{form.firstName || "Prénom"} {form.lastName || "Nom"}</p>
                   <p className="text-[14px] text-[#9CA3AF]">{form.title || "Titre"}</p>
                 </div>
               </div>
 
-              {/* Details */}
               <div className="space-y-3 border-t border-[#2D3748] pt-4">
                 <div className="flex items-center gap-3">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round">
-                    <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" /><polyline points="9 22 9 12 15 12 15 22" />
-                  </svg>
-                  <span className="text-[14px] text-[#e0e0e0]">{form.cegep || "—"}{form.teamName ? ` — ${form.teamName}` : ""}</span>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round"><rect x="4" y="2" width="16" height="20" rx="2" /><path d="M9 22V12h6v10" /></svg>
+                  <span className="text-[10px] font-bold text-[#6b7280] uppercase tracking-wider w-[60px] shrink-0">CÉGEP</span>
+                  <span className="text-[14px] text-[#e0e0e0]">{form.schoolName || "—"}{form.teamName ? ` — ${form.teamName}` : ""}</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round">
-                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                  </svg>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" /><line x1="4" y1="22" x2="4" y2="15" /></svg>
+                  <span className="text-[10px] font-bold text-[#6b7280] uppercase tracking-wider w-[60px] shrink-0">Division</span>
                   <span className="text-[14px] text-[#e0e0e0]">{form.division || "—"}</span>
-                  {form.division === "Division 1" && (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-[#E63946]/15 text-[10px] font-bold text-[#E63946]">D1</span>
-                  )}
-                  {form.division === "Division 2" && (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-[#6B7280]/15 text-[10px] font-bold text-[#6B7280]">D2</span>
-                  )}
-                  {form.division === "Division 3" && (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-[#374151]/30 text-[10px] font-bold text-[#374151]">D3</span>
-                  )}
+                  {form.division === "Division 1" && <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-[#E63946]/15 text-[10px] font-bold text-[#E63946]">D1</span>}
+                  {form.division === "Division 2" && <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-[#6B7280]/15 text-[10px] font-bold text-[#6B7280]">D2</span>}
+                  {form.division === "Division 3" && <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-[#374151]/30 text-[10px] font-bold text-[#374151]">D3</span>}
                 </div>
                 <div className="flex items-center gap-3">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round">
-                    <circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" />
-                  </svg>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><path d="M8 12h8" /><path d="M12 8v8" /></svg>
+                  <span className="text-[10px] font-bold text-[#6b7280] uppercase tracking-wider w-[60px] shrink-0">Sport</span>
                   <span className="text-[14px] text-[#e0e0e0]">{form.sport || "—"}</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round">
-                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" /><circle cx="12" cy="10" r="3" />
-                  </svg>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" /><circle cx="12" cy="10" r="3" /></svg>
+                  <span className="text-[10px] font-bold text-[#6b7280] uppercase tracking-wider w-[60px] shrink-0">Région</span>
                   <span className="text-[14px] text-[#e0e0e0]">{form.region || "—"}</span>
                 </div>
               </div>
 
-              {/* Verified badge */}
-              {requiredFilled && (
-                <div className="flex items-center gap-2 mt-4 pt-3 border-t border-[#2D3748]">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="#3B82F6" stroke="none">
-                    <circle cx="12" cy="12" r="10" />
-                    <path d="M9 12l2 2 4-4" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-                  </svg>
-                  <span className="text-[12px] font-bold text-[#3B82F6]">Profil vérifié</span>
-                </div>
-              )}
             </div>
           </div>
         </div>
