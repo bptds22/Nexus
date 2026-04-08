@@ -15,9 +15,10 @@ interface Props {
   onUpdate: <K extends keyof RecruiterSettings>(key: K, value: RecruiterSettings[K]) => void;
   onSave: () => void;
   onPasswordModal: () => void;
+  onPhotoUpload?: (file: File) => void;
 }
 
-export default function CompteSection({ form, original, onUpdate, onSave, onPasswordModal }: Props) {
+export default function CompteSection({ form, original, onUpdate, onSave, onPasswordModal, onPhotoUpload }: Props) {
   const dirty = form.firstName !== original.firstName || form.lastName !== original.lastName || (form.phone ?? "") !== (original.phone ?? "");
 
   return (
@@ -42,7 +43,7 @@ export default function CompteSection({ form, original, onUpdate, onSave, onPass
               <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" /><circle cx="12" cy="13" r="4" />
             </svg>
             <input type="file" accept="image/*" className="hidden" title="Téléverser une photo"
-              onChange={(e) => { const f = e.target.files?.[0]; if (f && f.size <= 2 * 1024 * 1024) onUpdate("avatarUrl", URL.createObjectURL(f)); }} />
+              onChange={(e) => { const f = e.target.files?.[0]; if (f && f.size <= 2 * 1024 * 1024) { onUpdate("avatarUrl", URL.createObjectURL(f)); if (onPhotoUpload) onPhotoUpload(f); } }} />
           </label>
         </div>
         <div>

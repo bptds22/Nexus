@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -98,16 +97,32 @@ export default function RecruiterProfilPage() {
     load();
   }, []);
 
-  function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith("image/")) return;
-    const reader = new FileReader();
-    reader.onload = () => setAvatarUrl(reader.result as string);
-    reader.readAsDataURL(file);
+    if (file.size > 2 * 1024 * 1024) return;
+
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const fileExt = file.name.split(".").pop();
+    const filePath = `${user.id}/avatar.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage.from("avatars").upload(filePath, file, { upsert: true });
+    if (uploadError) { console.log("[Photo upload error]", uploadError); return; }
+
+    const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(filePath);
+    await supabase.from("users").update({ photo_url: urlData.publicUrl }).eq("id", user.id);
+    console.log("[Photo upload]", { url: urlData.publicUrl });
+    setAvatarUrl(urlData.publicUrl);
   }
 
-  function removeAvatar() {
+  async function removeAvatar() {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) await supabase.from("users").update({ photo_url: null }).eq("id", user.id);
     setAvatarUrl(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
@@ -187,7 +202,7 @@ export default function RecruiterProfilPage() {
                 >
                   {avatarUrl ? (
                     <>
-                      <Image src={avatarUrl} alt="Avatar" fill className="object-cover" />
+                      <img src={avatarUrl} alt="Avatar" className="absolute inset-0 w-full h-full object-cover" />
                       <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round">
                           <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
@@ -303,7 +318,7 @@ export default function RecruiterProfilPage() {
               <div className="flex items-center gap-4 mb-5">
                 <div className="relative w-16 h-16 rounded-full overflow-hidden bg-[#E63946]/15 border-2 border-[#E63946]/30 flex items-center justify-center">
                   {avatarUrl ? (
-                    <Image src={avatarUrl} alt="Avatar" fill className="object-cover" />
+                    <img src={avatarUrl} alt="Avatar" className="absolute inset-0 w-full h-full object-cover" />
                   ) : (
                     <span className="text-[20px] font-bold text-[#E63946]">{initials || "?"}</span>
                   )}

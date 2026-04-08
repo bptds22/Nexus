@@ -157,9 +157,17 @@ export default function RecrutementSection({ form, original, onUpdate, onSave }:
               onChange={(e) => { if (e.target.value && !form.targetPositions.includes(e.target.value)) onUpdate("targetPositions", [...form.targetPositions, e.target.value]); }}
               className={inputCls}>
               <option value="">Ajouter une position...</option>
-              {getAvailablePositions().filter((p) => !form.targetPositions.includes(p.abbr)).map((p) => (
-                <option key={p.abbr} value={p.abbr}>{p.abbr} — {p.label}</option>
-              ))}
+              {form.sportIds.map(sport => {
+                const sportPositions = (POSITIONS[sport] || []).filter((p: { abbr: string }) => !form.targetPositions.includes(p.abbr));
+                if (sportPositions.length === 0) return null;
+                return (
+                  <optgroup key={sport} label={`── ${sport} ──`}>
+                    {sportPositions.map((p: { abbr: string; label: string }) => (
+                      <option key={`${sport}-${p.abbr}`} value={p.abbr}>{p.abbr} — {p.label}</option>
+                    ))}
+                  </optgroup>
+                );
+              })}
             </select>
           ) : (
             <p className="text-[12px] text-[#4a4d56]">Sélectionnez un sport dans la section Établissement pour voir les positions.</p>
@@ -179,8 +187,8 @@ export default function RecrutementSection({ form, original, onUpdate, onSave }:
           value={form.minCoteGlobale}
           onChange={(v) => onUpdate("minCoteGlobale", v)}
           min={1} max={5} step={0.1}
-          label="Cote globale minimum"
-          sublabel="Moyenne des 11 critères d'évaluation coach"
+          label="⭐ Cote globale minimum"
+          sublabel="Moyenne des critères d'évaluation coach (étoiles)"
         />
 
         {/* Alert toggle */}

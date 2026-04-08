@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { mockRecruiterSettings } from "@/lib/mock/recruiterSettings";
 import type { RecruiterSettings } from "@/lib/types/models";
+import { createClient } from "@/lib/supabase/client";
 import RecruiterSettingsNav, { type SectionKey } from "./_components/RecruiterSettingsNav";
 import CompteSection from "./_components/CompteSection";
 import EtablissementSection from "./_components/EtablissementSection";
@@ -21,80 +21,520 @@ import CegepGate from "@/components/subscription/CegepGate";
    Left nav (click-to-switch) + content panel, 6 sections.
 ═══════════════════════════════════════════════════════════════ */
 
-/* ── Admin CÉGEP section ──────────────────────────────────── */
+/* ── Password Change Modal ────────────────────────────────── */
 
-function AdminCegepSection() {
-  const [sToast, setSToast] = useState<string | null>(null);
-  const showToast = (msg: string) => { setSToast(msg); setTimeout(() => setSToast(null), 3000); };
+function PasswordChangeModal({ onClose }: { onClose: () => void }) {
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
+
+  const hasMinLength = newPassword.length >= 8;
+  const hasUppercase = /[A-Z]/.test(newPassword);
+  const hasLowercase = /[a-z]/.test(newPassword);
+  const hasNumber = /[0-9]/.test(newPassword);
+  const hasSpecial = /[^A-Za-z0-9]/.test(newPassword);
+  const passwordsMatch = newPassword === confirmPassword && confirmPassword.length > 0;
+  const isValid = hasMinLength && hasUppercase && hasLowercase && hasNumber && hasSpecial && passwordsMatch;
+
+  async function handleSubmit() {
+    if (!isValid) return;
+    setSaving(true);
+    setError("");
+
+    const supabase = createClient();
+    const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
+
+    if (updateError) {
+      setError(updateError.message);
+      setSaving(false);
+    } else {
+      setSuccess(true);
+      setTimeout(onClose, 2000);
+    }
+  }
+
+  const inputCls = "w-full bg-[#13151a] border border-[#2a2d36] rounded-lg px-4 pr-12 py-2.5 text-[14px] text-[#e0e0e0] placeholder:text-[#4a4d56] focus:border-[#E63946] outline-none transition-colors";
+  const labelCls = "block text-[12px] font-bold tracking-[0.25em] uppercase text-[#6B7280] mb-1.5";
+
+  function Rule({ met, label }: { met: boolean; label: string }) {
+    return (
+      <div className="flex items-center gap-1.5">
+        {met ? (
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5" /></svg>
+        ) : (
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#4a4d56" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10" /></svg>
+        )}
+        <span className={`text-[11px] ${met ? "text-[#22C55E]" : "text-[#6b7280]"}`}>{label}</span>
+      </div>
+    );
+  }
+
+  const eyeIcon = (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+  const eyeOffIcon = (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24" />
+      <line x1="1" y1="1" x2="23" y2="23" />
+    </svg>
+  );
 
   return (
-    <CegepGate>
-      <div className="space-y-8">
-        <div>
-          <h2 className="font-head text-lg font-black text-white uppercase tracking-tight mb-4">Directeurs du CÉGEP</h2>
-          <div className="bg-[#1A1D24] rounded-xl border border-white/5 overflow-hidden">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-[#2D3748]">
-                  {["Nom", "Rôle", "Courriel", "Depuis", "Actions"].map((h) => (
-                    <th key={h} className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-[0.15em] text-[#6b7280]">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                <tr className="border-b border-[#2D3748]/40 bg-[#111317]/40">
-                  <td className="px-4 py-3 text-[13px] font-bold text-white flex items-center gap-1.5">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="#DAB65A" stroke="none"><path d="M2 20h20v2H2zm1-2l3-10 6 6 6-6 3 10z" /><circle cx="5" cy="6" r="2" /><circle cx="12" cy="3" r="2" /><circle cx="19" cy="6" r="2" /></svg>
-                    François Simard
-                  </td>
-                  <td className="px-4 py-3"><span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DAB65A]/15 text-[#DAB65A]">Propriétaire</span></td>
-                  <td className="px-4 py-3 text-[12px] text-[#9CA3AF]">f.simard@cegep-garneau.qc.ca</td>
-                  <td className="px-4 py-3 text-[12px] text-[#6b7280]">Jan. 2025</td>
-                  <td className="px-4 py-3"></td>
-                </tr>
-                <tr className="border-b border-[#2D3748]/40">
-                  <td className="px-4 py-3 text-[13px] text-white">Sylvie Côté</td>
-                  <td className="px-4 py-3"><span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#6B7280]/15 text-[#6B7280]">Collaborateur</span></td>
-                  <td className="px-4 py-3 text-[12px] text-[#9CA3AF]">s.cote@cegep-garneau.qc.ca</td>
-                  <td className="px-4 py-3 text-[12px] text-[#6b7280]">Oct. 2025</td>
-                  <td className="px-4 py-3">
-                    <button type="button" onClick={() => showToast("Directeur retiré (POC)")} className="text-[11px] text-[#E63946] hover:text-[#D42B22] transition-colors font-bold">Retirer</button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <div className="border-t border-[#2D3748]/40 pt-6">
-          <h2 className="font-head text-lg font-black text-white uppercase tracking-tight mb-4">Inviter un directeur sportif</h2>
-          <div className="max-w-md space-y-4">
-            <div>
-              <label className="block text-[12px] font-bold tracking-[0.25em] uppercase text-[#6B7280] mb-1.5">Courriel du directeur</label>
-              <input type="email" placeholder="directeur@cegep.qc.ca" className="w-full bg-[#13151a] border border-[#2a2d36] rounded-lg px-4 py-2.5 text-[14px] text-[#e0e0e0] placeholder:text-[#4a4d56] focus:border-[#E63946] outline-none transition-colors" />
-            </div>
-            <button type="button" onClick={() => showToast("Invitation envoyée (POC)")} className="h-10 px-5 rounded-lg bg-[#E63946] text-white font-bold text-[12px] uppercase tracking-wider hover:bg-[#D42B22] transition-colors">
-              Envoyer l&apos;invitation
-            </button>
-            <p className="text-[11px] text-[#4a4d56]">Le directeur invité aura accès gratuit à toutes les fonctionnalités de gestion de CÉGEP.</p>
-          </div>
-        </div>
-
-        <div className="border-t border-[#2D3748]/40 pt-6">
-          <h2 className="font-head text-lg font-black text-white uppercase tracking-tight mb-2">Transfert d&apos;administration</h2>
-          <p className="text-[13px] text-[#9CA3AF] mb-4">Transfère le rôle de propriétaire à un autre directeur. Cette demande sera traitée par l&apos;administration Nexus.</p>
-          <button type="button" onClick={() => showToast("Demande de transfert envoyée (POC)")} className="h-10 px-5 rounded-lg border border-[#E63946]/30 text-[#E63946] font-bold text-[12px] uppercase tracking-wider hover:bg-[#E63946]/5 transition-colors">
-            Demander un transfert
+    <div className="fixed inset-0 z-[90] flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-[#1A1D24] border border-[#2D3748] rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl">
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="font-head text-[18px] font-black text-white uppercase tracking-tight">Modifier le mot de passe</h3>
+          <button type="button" aria-label="Fermer" onClick={onClose} className="w-8 h-8 rounded-full bg-[#111317] border border-[#2D3748] flex items-center justify-center text-[#6b7280] hover:text-white transition-colors">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6L6 18" /><path d="M6 6l12 12" /></svg>
           </button>
         </div>
 
-        {sToast && (
-          <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 bg-[#1A1D24] border border-[#E63946]/30 text-white font-head font-bold text-sm uppercase tracking-wider px-6 py-3 rounded-lg shadow-xl">
-            {sToast}
+        {success ? (
+          <div className="py-8 text-center">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2" strokeLinecap="round" className="mx-auto mb-3"><path d="M22 11.08V12a10 10 0 11-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>
+            <p className="text-[15px] font-bold text-white">Mot de passe modifié avec succès</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div>
+              <label className={labelCls}>Nouveau mot de passe</label>
+              <div className="relative">
+                <input type={showPassword ? "text" : "password"} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Créer un mot de passe sécurisé" className={inputCls} />
+                <button type="button" aria-label="Afficher le mot de passe" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6b7280] hover:text-white transition-colors">
+                  {showPassword ? eyeOffIcon : eyeIcon}
+                </button>
+              </div>
+
+              {/* Password rules */}
+              {newPassword.length > 0 && (
+                <div className="grid grid-cols-2 gap-1 mt-2">
+                  <Rule met={hasMinLength} label="8 caractères min." />
+                  <Rule met={hasUppercase} label="Une majuscule" />
+                  <Rule met={hasLowercase} label="Une minuscule" />
+                  <Rule met={hasNumber} label="Un chiffre" />
+                  <Rule met={hasSpecial} label="Un caractère spécial" />
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label className={labelCls}>Confirmer le mot de passe</label>
+              <div className="relative">
+                <input type={showConfirm ? "text" : "password"} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Répéter le mot de passe" className={inputCls} />
+                <button type="button" aria-label="Afficher la confirmation" onClick={() => setShowConfirm(!showConfirm)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6b7280] hover:text-white transition-colors">
+                  {showConfirm ? eyeOffIcon : eyeIcon}
+                </button>
+              </div>
+              {confirmPassword.length > 0 && !passwordsMatch && (
+                <p className="text-[11px] text-[#E63946] mt-1">Les mots de passe ne correspondent pas.</p>
+              )}
+              {passwordsMatch && (
+                <p className="text-[11px] text-[#22C55E] mt-1 flex items-center gap-1">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="3" strokeLinecap="round"><path d="M20 6L9 17l-5-5" /></svg>
+                  Les mots de passe correspondent.
+                </p>
+              )}
+            </div>
+
+            {error && (
+              <div className="bg-[#E63946]/10 border border-[#E63946]/30 rounded-lg px-4 py-2.5">
+                <p className="text-[12px] text-[#E63946]">{error}</p>
+              </div>
+            )}
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button type="button" onClick={onClose} className="px-4 py-2.5 text-[13px] font-bold text-[#9CA3AF] hover:text-white transition-colors">Annuler</button>
+              <button
+                type="button"
+                onClick={handleSubmit}
+                disabled={!isValid || saving}
+                className={`px-5 py-2.5 text-[13px] font-bold rounded-lg transition-colors ${isValid && !saving ? "bg-[#E63946] hover:bg-[#D42B22] text-white" : "bg-[#2D3748] text-[#4a4d56] cursor-not-allowed"}`}
+              >
+                {saving ? "Modification..." : "Modifier le mot de passe"}
+              </button>
+            </div>
           </div>
         )}
       </div>
-    </CegepGate>
+    </div>
+  );
+}
+
+/* ── Admin CÉGEP section ──────────────────────────────────── */
+
+function AdminCegepSection() {
+  const [members, setMembers] = useState<{ id: string; name: string; initials: string; email: string; role: string; isAdmin: boolean; joinedAt: string; isCurrentUser: boolean }[]>([]);
+  const [schoolName, setSchoolName] = useState("");
+  const [schoolId, setSchoolId] = useState("");
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState("RECRUTEUR");
+  const [inviteMsg, setInviteMsg] = useState("");
+  const [sToast, setSToast] = useState<string | null>(null);
+  const [removeTarget, setRemoveTarget] = useState<{ id: string; name: string } | null>(null);
+
+  const showToast = (msg: string) => { setSToast(msg); setTimeout(() => setSToast(null), 3000); };
+
+  useEffect(() => {
+    async function load() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setLoading(false); return; }
+
+      const { data: currentUser } = await supabase.from("users").select("school_id, is_school_admin").eq("id", user.id).single();
+      if (!currentUser?.school_id) { setLoading(false); return; }
+      setIsAdmin(!!(currentUser.is_school_admin));
+      setSchoolId(currentUser.school_id);
+
+      const { data: school } = await supabase.from("schools").select("name").eq("id", currentUser.school_id).single();
+      setSchoolName(school?.name || "");
+
+      const { data: team } = await supabase.from("users").select("id, first_name, last_name, email, role, is_school_admin, created_at").eq("school_id", currentUser.school_id).order("created_at", { ascending: true });
+      console.log("[Admin CEGEP]", { school: school?.name, teamCount: team?.length });
+
+      if (team) {
+        setMembers(team.map(m => ({
+          id: m.id,
+          name: `${m.first_name || ""} ${m.last_name || ""}`.trim() || "Sans nom",
+          initials: `${(m.first_name || "")[0] || ""}${(m.last_name || "")[0] || ""}`.toUpperCase(),
+          email: (m.email as string) || "",
+          role: (m.role as string) || "RECRUTEUR",
+          isAdmin: !!(m.is_school_admin),
+          joinedAt: m.created_at,
+          isCurrentUser: m.id === user.id,
+        })));
+      }
+      setLoading(false);
+    }
+    load();
+  }, []);
+
+  async function handleInvite() {
+    if (!inviteEmail.trim()) return;
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { error } = await supabase.from("invitations").insert({ invited_by: user.id, email: inviteEmail.trim(), role: inviteRole, school_id: schoolId, message: inviteMsg.trim() || null });
+    if (error) { showToast("Erreur: " + error.message); } else { showToast("Invitation envoyée"); setInviteEmail(""); setInviteMsg(""); }
+  }
+
+  async function handleRemove(memberId: string) {
+    const supabase = createClient();
+    await supabase.from("users").update({ school_id: null }).eq("id", memberId);
+    setMembers(prev => prev.filter(m => m.id !== memberId));
+    setRemoveTarget(null);
+    showToast("Membre retiré du CÉGEP");
+  }
+
+  const months = ["jan.", "fév.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
+  function formatJoined(iso: string) { const d = new Date(iso); return `${months[d.getMonth()]} ${d.getFullYear()}`; }
+
+  if (loading) return <p className="text-[#6b7280]">Chargement...</p>;
+
+  if (!isAdmin) {
+    return (
+      <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] p-8 text-center">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#4a4d56" strokeWidth="1.5" strokeLinecap="round" className="mx-auto mb-3"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0110 0v4" /></svg>
+        <p className="text-[14px] text-[#9CA3AF]">Cette section est réservée aux directeurs sportifs.</p>
+        <p className="text-[12px] text-[#6b7280] mt-1">Contactez votre directeur pour obtenir l&apos;accès.</p>
+      </div>
+    );
+  }
+
+  const directors = members.filter(m => m.isAdmin);
+  const recruiters = members.filter(m => !m.isAdmin);
+  const inputCls = "w-full bg-[#13151a] border border-[#2a2d36] rounded-lg px-4 py-2.5 text-[14px] text-[#e0e0e0] placeholder:text-[#4a4d56] focus:border-[#E63946] outline-none transition-colors";
+  const labelCls = "block text-[12px] font-bold tracking-[0.25em] uppercase text-[#6B7280] mb-1.5";
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="font-head text-xl font-black text-white uppercase tracking-tight">Gestion de mon CÉGEP</h2>
+        <p className="text-[14px] text-[#6b7280] mt-1">{schoolName} — {members.length} membre{members.length !== 1 ? "s" : ""}</p>
+      </div>
+
+      {/* Directors */}
+      <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] p-5">
+        <p className="text-[10px] font-bold tracking-[0.25em] uppercase text-[#6b7280] mb-4">Directeurs sportifs</p>
+        <div className="space-y-3">
+          {directors.map(m => (
+            <div key={m.id} className="flex items-center gap-3 bg-[#13151a] rounded-lg p-3">
+              <div className="w-10 h-10 rounded-full bg-[#E63946]/15 border border-[#E63946]/30 flex items-center justify-center shrink-0">
+                <span className="text-[12px] font-bold text-[#E63946]">{m.initials}</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-[14px] font-bold text-white">{m.name}</span>
+                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-[#DAB65A]/15 text-[#DAB65A]">Directeur</span>
+                  {m.isCurrentUser && <span className="text-[10px] text-[#6b7280]">(vous)</span>}
+                </div>
+                <p className="text-[12px] text-[#6b7280]">{m.email} · Membre depuis {formatJoined(m.joinedAt)}</p>
+              </div>
+            </div>
+          ))}
+          {directors.length === 0 && <p className="text-[12px] text-[#4a4d56] italic">Aucun directeur</p>}
+        </div>
+      </div>
+
+      {/* Recruiters */}
+      <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] p-5">
+        <p className="text-[10px] font-bold tracking-[0.25em] uppercase text-[#6b7280] mb-4">Recruteurs</p>
+        <div className="space-y-3">
+          {recruiters.map(m => (
+            <div key={m.id} className="flex items-center gap-3 bg-[#13151a] rounded-lg p-3">
+              <div className="w-10 h-10 rounded-full bg-[#3B82F6]/15 border border-[#3B82F6]/30 flex items-center justify-center shrink-0">
+                <span className="text-[12px] font-bold text-[#3B82F6]">{m.initials}</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-[14px] font-bold text-white">{m.name}</span>
+                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-[#6B7280]/15 text-[#6B7280]">Recruteur</span>
+                  {m.isCurrentUser && <span className="text-[10px] text-[#6b7280]">(vous)</span>}
+                </div>
+                <p className="text-[12px] text-[#6b7280]">{m.email} · Membre depuis {formatJoined(m.joinedAt)}</p>
+              </div>
+              {!m.isCurrentUser && (
+                <button type="button" onClick={() => setRemoveTarget({ id: m.id, name: m.name })} className="text-[11px] font-bold text-[#E63946] hover:text-[#D42B22] transition-colors shrink-0">Retirer</button>
+              )}
+            </div>
+          ))}
+          {recruiters.length === 0 && <p className="text-[12px] text-[#4a4d56] italic">Aucun recruteur pour le moment.</p>}
+        </div>
+      </div>
+
+      {/* Invite */}
+      <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] p-5">
+        <p className="text-[10px] font-bold tracking-[0.25em] uppercase text-[#6b7280] mb-4">Inviter un membre</p>
+        <div className="max-w-md space-y-4">
+          <div>
+            <label className={labelCls}>Rôle</label>
+            <select title="Rôle" value={inviteRole} onChange={(e) => setInviteRole(e.target.value)} className={inputCls}>
+              <option value="DIRECTEUR">Directeur sportif</option>
+              <option value="RECRUTEUR">Recruteur</option>
+            </select>
+          </div>
+          <div>
+            <label className={labelCls}>Courriel</label>
+            <input type="email" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} placeholder="nom@cegep.qc.ca" className={inputCls} />
+          </div>
+          <div>
+            <label className={labelCls}>Message <span className="font-normal text-[#4a4d56]">(optionnel)</span></label>
+            <textarea value={inviteMsg} onChange={(e) => setInviteMsg(e.target.value)} rows={2} placeholder="Message personnalisé..." className={`${inputCls} resize-none`} />
+          </div>
+          <button type="button" onClick={handleInvite} disabled={!inviteEmail.trim()} className="px-5 py-2.5 rounded-lg bg-[#E63946] hover:bg-[#D42B22] disabled:bg-[#2D3748] disabled:text-[#4a4d56] text-white font-bold text-[12px] uppercase tracking-widest transition-colors">
+            Envoyer l&apos;invitation
+          </button>
+          <p className="text-[11px] text-[#4a4d56]">L&apos;invité recevra un courriel avec un lien d&apos;inscription Nexus pré-associé à votre CÉGEP.</p>
+        </div>
+      </div>
+
+      {/* Remove confirmation */}
+      {removeTarget && (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setRemoveTarget(null)} />
+          <div className="relative bg-[#1A1D24] border border-[#2D3748] rounded-xl p-6 max-w-sm w-full mx-4 shadow-2xl">
+            <h3 className="font-head text-[16px] font-black text-white uppercase tracking-tight">Retirer {removeTarget.name}?</h3>
+            <p className="text-[13px] text-[#9CA3AF] mt-2">Ses favoris et pipeline seront conservés mais dissociés du CÉGEP.</p>
+            <div className="flex items-center justify-end gap-3 mt-5">
+              <button type="button" onClick={() => setRemoveTarget(null)} className="px-4 py-2 text-[13px] font-bold text-[#9CA3AF] hover:text-white transition-colors">Annuler</button>
+              <button type="button" onClick={() => handleRemove(removeTarget.id)} className="px-5 py-2 bg-[#EF4444] hover:bg-[#DC2626] text-white text-[13px] font-bold rounded-lg transition-colors">Retirer</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {sToast && (
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 bg-[#1A1D24] border border-[#2D3748] text-white font-bold text-sm px-6 py-3 rounded-lg shadow-xl flex items-center gap-2">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5" /></svg>
+          {sToast}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Recruiter Pricing Section ────────────────────────────── */
+
+function RecruiterPricingSection() {
+  const [annual, setAnnual] = useState(false);
+  const currentTier = "free"; // TODO: read from subscriptions table
+
+  const tiers = [
+    {
+      id: "free",
+      name: "Gratuit",
+      monthly: 0,
+      yearly: 0,
+      border: "border-[#2D3748]",
+      glow: "",
+      badge: null,
+      ctaBg: "",
+      ctaText: "",
+      features: [
+        { label: "6 profils visibles", included: true },
+        { label: "Recherche de base", included: true },
+        { label: "1 liste de prospects", included: true },
+        { label: "Pipeline complet", included: false },
+        { label: "Messagerie", included: false },
+        { label: "Listes illimitées", included: false },
+        { label: "Notes & suivi", included: false },
+        { label: "Alertes personnalisées", included: false },
+      ],
+    },
+    {
+      id: "pro",
+      name: "Pro",
+      monthly: 29,
+      yearly: 290,
+      border: "border-[#F59E0B]",
+      glow: "shadow-[0_0_20px_rgba(245,158,11,0.1)]",
+      badge: { label: "POPULAIRE", color: "bg-[#F59E0B] text-black" },
+      ctaBg: "bg-[#F59E0B] hover:bg-[#D97706] text-black",
+      ctaText: "Passer à Pro",
+      features: [
+        { label: "Tout du plan Gratuit +", included: true, header: true },
+        { label: "Profils illimités", included: true },
+        { label: "Pipeline complet", included: true },
+        { label: "Messagerie avec coachs", included: true },
+        { label: "Listes illimitées", included: true },
+        { label: "Notes & suivi par athlète", included: true },
+        { label: "Alertes personnalisées", included: true },
+        { label: "Évaluations de coachs", included: true },
+      ],
+    },
+    {
+      id: "allstar",
+      name: "All Star",
+      monthly: 79,
+      yearly: 790,
+      border: "border-[#E63946]",
+      glow: "shadow-[0_0_20px_rgba(230,57,70,0.1)]",
+      badge: { label: "COMPLET", color: "bg-[#E63946] text-white" },
+      ctaBg: "bg-[#E63946] hover:bg-[#D42B22] text-white",
+      ctaText: "Passer à All Star",
+      features: [
+        { label: "Tout du plan Pro +", included: true, header: true },
+        { label: "Gestion CÉGEP complète", included: true },
+        { label: "Messages groupés", included: true },
+        { label: "Analytics avancés", included: true },
+        { label: "Export PDF / CSV", included: true },
+        { label: "Recrues confirmées", included: true },
+        { label: "Réassignation d'athlètes", included: true },
+        { label: "Multi-recruteurs", included: true },
+      ],
+    },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="font-head text-xl font-black text-white uppercase tracking-tight">Abonnement</h2>
+        <p className="text-[14px] text-[#6b7280] mt-1">Gère ton plan et ta facturation</p>
+      </div>
+
+      {/* Current plan bar */}
+      <div className="bg-[#22C55E]/10 border border-[#22C55E]/30 rounded-xl px-5 py-3">
+        <div className="flex items-center gap-2">
+          <span className="w-2.5 h-2.5 rounded-full bg-[#22C55E]" />
+          <span className="text-[14px] font-bold text-white">Tu es actuellement sur le plan <span className="uppercase">{currentTier === "free" ? "Gratuit" : currentTier === "pro" ? "Pro" : "All Star"}</span></span>
+        </div>
+        {currentTier === "free" && <p className="text-[13px] text-[#9CA3AF] mt-1 ml-[18px]">Passe à Pro pour débloquer tout le potentiel de Nexus</p>}
+      </div>
+
+      {/* Annual/Monthly toggle */}
+      <div className="flex justify-center">
+        <div className="flex items-center gap-1 bg-[#13151a] rounded-xl p-1.5">
+          <button type="button" onClick={() => setAnnual(false)} className={`px-5 py-2.5 rounded-lg text-[12px] font-bold uppercase tracking-[0.12em] transition-all ${!annual ? "bg-[#E63946] text-white shadow-[0_0_10px_rgba(230,57,70,0.25)]" : "text-[#6b7280] hover:text-white"}`}>Mensuel</button>
+          <button type="button" onClick={() => setAnnual(true)} className={`px-5 py-2.5 rounded-lg text-[12px] font-bold uppercase tracking-[0.12em] transition-all ${annual ? "bg-[#E63946] text-white shadow-[0_0_10px_rgba(230,57,70,0.25)]" : "text-[#6b7280] hover:text-white"}`}>
+            Annuel <span className="text-[10px] font-normal ml-1 opacity-80">(économise 17%)</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Pricing cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        {tiers.map(tier => {
+          const isCurrent = currentTier === tier.id;
+          const price = annual ? tier.yearly : tier.monthly;
+          const period = annual ? "/an" : "/mois";
+
+          return (
+            <div key={tier.id} className={`bg-[#1A1D24] rounded-xl border ${tier.border} ${tier.glow} p-6 flex flex-col relative`}>
+              {/* Badge */}
+              {tier.badge && (
+                <span className={`absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest ${tier.badge.color}`}>
+                  {tier.badge.label}
+                </span>
+              )}
+
+              {/* Tier name */}
+              <h3 className="font-head text-[18px] font-black text-white uppercase tracking-tight mt-1">
+                {tier.id !== "free" && <span className="text-[#F59E0B] mr-1">{tier.id === "pro" ? "★" : "★★"}</span>}
+                {tier.name}
+              </h3>
+
+              {/* Price */}
+              <div className="mt-3">
+                <div className="flex items-baseline gap-1">
+                  <span className="text-[32px] font-black text-white leading-none">{price === 0 ? "0" : `${price}`}$</span>
+                  {price > 0 && <span className="text-[14px] text-[#6b7280]">{period}</span>}
+                </div>
+                {price > 0 && annual && (
+                  <p className="text-[12px] text-[#22C55E] mt-1 font-bold">Économise 2 mois</p>
+                )}
+                {price > 0 && !annual && tier.yearly > 0 && (
+                  <p className="text-[11px] text-[#6b7280] mt-1">ou {tier.yearly}$/an</p>
+                )}
+              </div>
+
+              {/* Divider */}
+              <div className="h-px bg-[#2D3748] my-4" />
+
+              {/* Features */}
+              <div className="space-y-2.5 flex-1">
+                {tier.features.map((f, i) => (
+                  <div key={i} className="flex items-start gap-2">
+                    {(f as { header?: boolean }).header ? (
+                      <span className="text-[12px] font-bold text-[#F59E0B] uppercase tracking-wider">{f.label}</span>
+                    ) : f.included ? (
+                      <>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2.5" strokeLinecap="round" className="shrink-0 mt-0.5"><path d="M20 6L9 17l-5-5" /></svg>
+                        <span className="text-[13px] text-[#e0e0e0]">{f.label}</span>
+                      </>
+                    ) : (
+                      <>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4a4d56" strokeWidth="2" strokeLinecap="round" className="shrink-0 mt-0.5"><path d="M18 6L6 18" /><path d="M6 6l12 12" /></svg>
+                        <span className="text-[13px] text-[#4a4d56] line-through">{f.label}</span>
+                      </>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* CTA */}
+              <div className="mt-5">
+                {isCurrent ? (
+                  <button type="button" disabled className="w-full py-2.5 rounded-lg text-[13px] font-bold bg-[#2D3748] text-[#6b7280] cursor-not-allowed">Plan actuel</button>
+                ) : (
+                  <button type="button" className={`w-full py-2.5 rounded-lg text-[13px] font-bold transition-all flex items-center justify-center gap-2 ${tier.ctaBg}`}>
+                    {tier.ctaText}
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M5 12h14" /><path d="M12 5l7 7-7 7" /></svg>
+                  </button>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
@@ -107,7 +547,7 @@ function DemoRecruiterAccessToggle() {
     try {
       const user = JSON.parse(localStorage.getItem("nexus_user") || "{}");
       if (user.subscription?.tier === "recruteur_pro") setCurrent("pro");
-      else if (user.is_cegep_admin) setCurrent("admin");
+      else if (user.is_school_admin) setCurrent("admin");
       else setCurrent("free");
     } catch { /* noop */ }
   }, []);
@@ -118,17 +558,17 @@ function DemoRecruiterAccessToggle() {
     if (mode === "free") {
       user.subscription = { tier: "free", status: "active", billing_cycle: null, current_period_end: null, trial_days_remaining: null, cancel_at_period_end: false };
       user.tier = "free";
-      user.is_cegep_admin = false;
+      user.is_school_admin = false;
       user.is_also_recruiter = true;
     } else if (mode === "pro") {
       user.subscription = { tier: "recruteur_pro", status: "active", billing_cycle: "monthly", current_period_end: "2026-04-15", trial_days_remaining: null, cancel_at_period_end: false };
       user.tier = "recruteur_pro";
-      user.is_cegep_admin = false;
+      user.is_school_admin = false;
       user.is_also_recruiter = true;
     } else {
       user.subscription = { tier: "free", status: "active", billing_cycle: null, current_period_end: null, trial_days_remaining: null, cancel_at_period_end: false };
       user.tier = "free";
-      user.is_cegep_admin = true;
+      user.is_school_admin = true;
       user.is_also_recruiter = true;
       user.cegep_admin_type = "owner";
     }
@@ -163,8 +603,25 @@ function DemoRecruiterAccessToggle() {
 
 export default function RecruiterSettingsPage() {
   /* ── Form state ─────────────────────────────────────────────── */
-  const [form, setForm] = useState<RecruiterSettings>(() => JSON.parse(JSON.stringify(mockRecruiterSettings)));
-  const [original] = useState<RecruiterSettings>(() => JSON.parse(JSON.stringify(mockRecruiterSettings)));
+  const emptySettings: RecruiterSettings = {
+    accountId: "", firstName: "", lastName: "", email: "", phone: "", avatarUrl: "",
+    locale: "fr", cegepId: "", roleTitle: "", sportIds: [], divisions: [], programIds: [],
+    targetRegions: [], targetGradYears: [], targetPositions: [],
+    minMoyenne: 75, minCoteGlobale: 3, alertNewProfiles: true,
+    notifications: {
+      newAthleteInSport: { inApp: true, email: false },
+      favoriteUpdated: { inApp: true, email: false },
+      coachResponse: { inApp: true, email: true },
+      scoutingReport: { inApp: true, email: false },
+      letterOfIntentSigned: { inApp: true, email: true },
+      profileVerified: { inApp: true, email: false },
+      weeklyDigest: false, emailFrequency: "realtime",
+    },
+    visibility: { profileVisible: true, showConsultationHistory: true, showFullName: true },
+    accountStatus: "active",
+  };
+  const [form, setForm] = useState<RecruiterSettings>(emptySettings);
+  const [original, setOriginal] = useState<RecruiterSettings>(emptySettings);
 
   /* ── UI state ───────────────────────────────────────────────── */
   const [section, setSection] = useState<SectionKey>("compte");
@@ -175,9 +632,157 @@ export default function RecruiterSettingsPage() {
   const [deleteModal, setDeleteModal] = useState(false);
   const [exportToast, setExportToast] = useState(false);
 
+  /* ── Load from Supabase ────────────────────────────────────── */
+  useEffect(() => {
+    async function load() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profile } = await supabase
+        .from("users")
+        .select("first_name, last_name, phone, photo_url, school_id, title, sport, division, recruitment_preferences, notification_preferences, privacy_preferences")
+        .eq("id", user.id)
+        .single();
+
+      console.log("[Parametres - Mon Compte]", { profile, email: user.email });
+
+      // Set email from auth immediately (not dependent on profile fetch)
+      setForm(prev => ({ ...prev, email: user.email || "" }));
+      setOriginal(prev => ({ ...prev, email: user.email || "" }));
+
+      if (profile) {
+        // Get school name for Etablissement
+        let schoolName = "";
+        if (profile.school_id) {
+          const { data: school } = await supabase.from("schools").select("name, region").eq("id", profile.school_id).single();
+          schoolName = school ? `${school.name} (${school.region})` : "";
+        }
+        console.log("[Parametres - Etablissement]", { schoolName, title: profile.title, sport: profile.sport, division: profile.division });
+
+        // Map sport to sportIds array
+        const sportIds = (profile.sport as string) ? [(profile.sport as string)] : [];
+        // Map division to divisions array
+        const divisions = (profile.division as string) ? [(profile.division as string).replace("Division ", "D") as "D1" | "D2" | "D3"] : [] as ("D1" | "D2" | "D3")[];
+
+        // Load recruitment preferences
+        const prefs = (profile.recruitment_preferences as Record<string, unknown>) || {};
+        console.log("[Recrutement prefs load]", prefs);
+
+        const updates: Partial<RecruiterSettings> = {
+          firstName: (profile.first_name as string) || "",
+          lastName: (profile.last_name as string) || "",
+          email: user.email || "",
+          phone: (profile.phone as string) || "",
+          avatarUrl: (profile.photo_url as string) || "",
+          roleTitle: (profile.title as string) || "",
+          sportIds,
+          divisions,
+          targetRegions: (prefs.regions as string[]) || [],
+          targetGradYears: (prefs.graduation_years as number[]) || [],
+          targetPositions: (prefs.positions as string[]) || [],
+          minMoyenne: (prefs.min_gpa as number) || 75,
+          minCoteGlobale: (prefs.min_cote as number) || 3,
+          alertNewProfiles: (prefs.alerts_enabled as boolean) ?? true,
+        };
+
+        // Load notification preferences
+        const notifPrefs = (profile.notification_preferences as Record<string, unknown>) || {};
+        if (Object.keys(notifPrefs).length > 0) {
+          updates.notifications = {
+            newAthleteInSport: { inApp: notifPrefs.app_new_athlete !== false, email: !!(notifPrefs.email_new_athlete) },
+            favoriteUpdated: { inApp: notifPrefs.app_favorite_update !== false, email: !!(notifPrefs.email_favorite_update) },
+            coachResponse: { inApp: notifPrefs.app_coach_reply !== false, email: notifPrefs.email_coach_reply !== false },
+            scoutingReport: { inApp: notifPrefs.app_scouting_report !== false, email: !!(notifPrefs.email_scouting_report) },
+            letterOfIntentSigned: { inApp: notifPrefs.app_lettre_intention !== false, email: notifPrefs.email_lettre_intention !== false },
+            profileVerified: { inApp: notifPrefs.app_profile_verified !== false, email: !!(notifPrefs.email_profile_verified) },
+            weeklyDigest: !!(notifPrefs.email_weekly_digest),
+            emailFrequency: ((notifPrefs.email_frequency as string) || "realtime") as "realtime" | "daily" | "weekly" | "disabled",
+          };
+        }
+        console.log("[Notifications load]", notifPrefs);
+
+        // Load privacy preferences
+        const privPrefs = (profile.privacy_preferences as Record<string, unknown>) || {};
+        if (Object.keys(privPrefs).length > 0) {
+          updates.visibility = {
+            profileVisible: privPrefs.profile_visible !== false,
+            showConsultationHistory: privPrefs.show_consultations !== false,
+            showFullName: privPrefs.show_full_name !== false,
+          };
+        }
+
+        setForm(prev => ({ ...prev, ...updates }));
+        setOriginal(prev => ({ ...prev, ...updates }));
+      }
+    }
+    load();
+  }, []);
+
   /* ── Helpers ────────────────────────────────────────────────── */
-  function handleSave() {
-    setToast(true);
+  async function handleSave() {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    // Map divisions back: ["D1"] → "Division 1"
+    const divisionStr = form.divisions.length > 0 ? form.divisions[0].replace("D", "Division ") : null;
+    // Map sportIds back: ["Football"] → "Football"
+    const sportStr = form.sportIds.length > 0 ? form.sportIds[0] : null;
+
+    const recruitmentPrefs = {
+      regions: form.targetRegions || [],
+      graduation_years: form.targetGradYears || [],
+      positions: form.targetPositions || [],
+      min_gpa: form.minMoyenne || null,
+      min_cote: form.minCoteGlobale || null,
+      alerts_enabled: form.alertNewProfiles ?? true,
+    };
+
+    const payload = {
+      first_name: form.firstName || "",
+      last_name: form.lastName || "",
+      phone: form.phone || null,
+      title: form.roleTitle || null,
+      sport: sportStr,
+      division: divisionStr,
+      recruitment_preferences: recruitmentPrefs,
+      notification_preferences: {
+        app_new_athlete: form.notifications.newAthleteInSport.inApp,
+        app_favorite_update: form.notifications.favoriteUpdated.inApp,
+        app_coach_reply: form.notifications.coachResponse.inApp,
+        app_scouting_report: form.notifications.scoutingReport.inApp,
+        app_lettre_intention: form.notifications.letterOfIntentSigned.inApp,
+        app_profile_verified: form.notifications.profileVerified.inApp,
+        email_new_athlete: form.notifications.newAthleteInSport.email,
+        email_favorite_update: form.notifications.favoriteUpdated.email,
+        email_coach_reply: form.notifications.coachResponse.email,
+        email_scouting_report: form.notifications.scoutingReport.email,
+        email_lettre_intention: form.notifications.letterOfIntentSigned.email,
+        email_profile_verified: form.notifications.profileVerified.email,
+        email_weekly_digest: form.notifications.weeklyDigest,
+        email_frequency: form.notifications.emailFrequency,
+      },
+      privacy_preferences: {
+        profile_visible: form.visibility.profileVisible,
+        show_consultations: form.visibility.showConsultationHistory,
+        show_full_name: form.visibility.showFullName,
+      },
+    };
+    console.log("[Parametres SAVE] payload:", JSON.stringify(payload));
+
+    const { data, error } = await supabase
+      .from("users")
+      .update(payload)
+      .eq("id", user.id)
+      .select();
+
+    console.log("[Parametres save]", { data, error });
+
+    if (!error) {
+      setOriginal(prev => ({ ...prev, firstName: form.firstName, lastName: form.lastName, phone: form.phone, roleTitle: form.roleTitle, sportIds: form.sportIds, divisions: form.divisions }));
+      setToast(true);
+    }
   }
 
   function updateField<K extends keyof RecruiterSettings>(key: K, value: RecruiterSettings[K]) {
@@ -216,6 +821,19 @@ export default function RecruiterSettingsPage() {
                 onUpdate={updateField}
                 onSave={handleSave}
                 onPasswordModal={() => setPasswordModal(true)}
+                onPhotoUpload={async (file: File) => {
+                  const supabase = createClient();
+                  const { data: { user } } = await supabase.auth.getUser();
+                  if (!user) return;
+                  const fileExt = file.name.split(".").pop();
+                  const filePath = `${user.id}/avatar.${fileExt}`;
+                  const { error: uploadError } = await supabase.storage.from("avatars").upload(filePath, file, { upsert: true });
+                  if (uploadError) { console.log("[Photo upload error]", uploadError); return; }
+                  const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(filePath);
+                  await supabase.from("users").update({ photo_url: urlData.publicUrl }).eq("id", user.id);
+                  console.log("[Photo upload]", { url: urlData.publicUrl });
+                  updateField("avatarUrl", urlData.publicUrl);
+                }}
               />
             )}
             {section === "etablissement" && (
@@ -235,9 +853,8 @@ export default function RecruiterSettingsPage() {
                 onSave={handleSave}
               />
             )}
-            {section === "abonnement" && <SubscriptionSection portal="recruteur" />}
+            {section === "abonnement" && <RecruiterPricingSection />}
             {section === "admin_cegep" && <AdminCegepSection />}
-            {section === "ambassadeur" && <AmbassadorDashboard isAmbassador={false} />}
             {section === "notifications" && (
               <NotificationsSection
                 form={form}
@@ -252,6 +869,7 @@ export default function RecruiterSettingsPage() {
                 original={original}
                 onUpdateVisibility={(vis) => setForm((prev) => ({ ...prev, visibility: vis }))}
                 onSave={handleSave}
+                onSectionChange={(s) => setSection(s as SectionKey)}
               />
             )}
             {section === "danger" && (
@@ -269,15 +887,7 @@ export default function RecruiterSettingsPage() {
       </div>
 
       {/* ── Modals ──────────────────────────────────────────────── */}
-      <ConfirmModal
-        open={passwordModal}
-        onClose={() => setPasswordModal(false)}
-        onConfirm={() => {/* mock */}}
-        title="Modifier le mot de passe"
-        message="Cette fonctionnalité sera disponible prochainement."
-        confirmLabel="Compris"
-        variant="default"
-      />
+      {passwordModal && <PasswordChangeModal onClose={() => setPasswordModal(false)} />}
 
       <ConfirmModal
         open={!!cegepModal}
