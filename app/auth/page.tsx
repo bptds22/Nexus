@@ -113,7 +113,7 @@ function AuthContent() {
   );
 
   /* ── Signup handler ── */
-  const handleSignup = (e: React.FormEvent) => {
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitted(true);
     if (!signupValid) {
@@ -121,27 +121,43 @@ function AuthContent() {
       setTimeout(() => setShakeFields(false), 600);
       return;
     }
-    const user = {
-      firstName, lastName, email,
-      context: "athlete", role: "athlete", status: "active",
-      onboarding_complete: false, institution: null,
-      profile: { sport_principal: selectedSport },
-      search_criteria: null, team_needs: null, first_athlete: null,
-      referral_code: referralCode,
-      referred_by: referralCode ? "ambassadeur" : null,
-      subscription: { tier: "free", status: "active", billing_cycle: null, current_period_end: null, trial_days_remaining: null, cancel_at_period_end: false },
-      tier: "free",
-      privacy_consent: {
-        privacy_policy_accepted: true,
-        privacy_policy_version: "2026-04-v1.0",
-        data_collection_accepted: true,
-        consent_privacy_policy: new Date().toISOString(),
-        consent_data_collection: new Date().toISOString(),
-        consent_marketing: consentMarketing ? new Date().toISOString() : null,
+    setLoading(true);
+
+    const supabase = createClient();
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          first_name: firstName,
+          last_name: lastName,
+          sport: selectedSport,
+          role: "ATHLETE",
+        },
       },
-    };
-    localStorage.setItem("nexus_user", JSON.stringify(user));
-    router.push("/athlete/dashboard");
+    });
+
+    if (error) {
+      setToast(error.message);
+      setLoading(false);
+      return;
+    }
+
+    console.log("[Athlete signup]", { userId: data.user?.id, email });
+
+    // Create users row
+    if (data.user) {
+      await supabase.from("users").upsert({
+        id: data.user.id,
+        first_name: firstName,
+        last_name: lastName,
+        role: "ATHLETE",
+        onboarding_complete: false,
+      }, { onConflict: "id" });
+    }
+
+    setLoading(false);
+    router.push("/athlete/onboarding");
   };
 
   /* ── Login handler ── */

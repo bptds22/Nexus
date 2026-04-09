@@ -150,7 +150,7 @@ export default function DatePicker({
 
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-[#1e2128]">
-            <button type="button" onClick={() => mode === "days" ? prevMonth() : setViewYear(yearStart - 12)}
+            <button type="button" onClick={() => mode === "days" ? prevMonth() : setViewYear(viewYear - 1)}
               className="w-7 h-7 rounded-md flex items-center justify-center text-[#8a8d96] hover:text-white hover:bg-white/5 transition-colors">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M15 18l-6-6 6-6" />
@@ -167,7 +167,7 @@ export default function DatePicker({
               {mode === "years" && `${yearStart} — ${yearStart + 11}`}
             </button>
 
-            <button type="button" onClick={() => mode === "days" ? nextMonth() : setViewYear(yearStart + 12)}
+            <button type="button" onClick={() => mode === "days" ? nextMonth() : setViewYear(viewYear + 1)}
               className="w-7 h-7 rounded-md flex items-center justify-center text-[#8a8d96] hover:text-white hover:bg-white/5 transition-colors">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M9 18l6-6-6-6" />

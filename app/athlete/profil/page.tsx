@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { mockAthleteProfileFull } from "@/lib/mock/athleteProfileRecruiter";
-import { athleteUser, athleteSuggestions, profileChecklist } from "@/lib/mock/athlete";
+import { useState, useEffect } from "react";
+import { createClient } from "@/lib/supabase/client";
+import DatePicker from "@/app/coach/components/DatePicker";
 import type { AthleteSuggestion } from "@/lib/mock/athlete";
 import type { AthleteTraitRatings } from "@/lib/types/models";
 import StarRating from "@/components/ui/StarRating";
@@ -81,14 +81,14 @@ function EditableField({ label, value, onSave, type = "text", recruiterView }: {
         {editing ? (
           <div className="flex items-center gap-2">
             {type === "textarea" ? (
-              <textarea value={draft} onChange={(e) => setDraft(e.target.value)} rows={2}
+              <textarea value={draft} onChange={(e) => setDraft(e.target.value)} rows={2} title={label} placeholder={label}
                 className="bg-[#13151a] border border-[#22C55E]/40 rounded px-2 py-1 text-[13px] text-white w-48 focus:border-[#22C55E] outline-none resize-none" autoFocus />
             ) : (
-              <input type={type} value={draft} onChange={(e) => setDraft(e.target.value)}
+              <input type={type} value={draft} onChange={(e) => setDraft(e.target.value)} title={label} placeholder={label}
                 className="bg-[#13151a] border border-[#22C55E]/40 rounded px-2 py-1 text-[13px] text-white w-40 text-right focus:border-[#22C55E] outline-none" autoFocus
                 onKeyDown={(e) => { if (e.key === "Enter") { onSave(draft); setEditing(false); } if (e.key === "Escape") { setDraft(value); setEditing(false); } }} />
             )}
-            <button type="button" onClick={() => { onSave(draft); setEditing(false); }} className="text-[#22C55E]">
+            <button type="button" onClick={() => { onSave(draft); setEditing(false); }} className="text-[#22C55E]" aria-label="Enregistrer">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5" /></svg>
             </button>
           </div>
@@ -103,6 +103,172 @@ function EditableField({ label, value, onSave, type = "text", recruiterView }: {
 }
 
 /* ── Suggestible field wrapper (yellow) ────────────────────────── */
+
+const FIELD_PLACEHOLDERS: Record<string, string> = {
+  "Taille": "Ex: 6'2\"",
+  "Poids": "Ex: 185 lbs",
+  "Envergure": "Ex: 74\"",
+  "Taille mains": "Ex: 9.5\"",
+  "Ville": "Ex: Québec",
+  "Position": "Ex: Quart-arrière (QB)",
+  "Position secondaire": "Ex: Receveur (WR)",
+  "Sport secondaire": "Ex: Basketball",
+  "Numéro": "Ex: #12",
+  "Programme": "Ex: Sciences humaines",
+  "Moyenne générale": "Ex: 82%",
+  "40 yards": "Ex: 4.65s",
+  "Saut vertical": "Ex: 32\"",
+  "Saut longueur": "Ex: 9'6\"",
+  "Développé couché": "Ex: 225 lbs",
+  "Navette": "Ex: 4.35s",
+  "Sprint 100m": "Ex: 11.2s",
+};
+
+/* ── Structured input per field type ── */
+
+const DROPDOWN_FIELDS: Record<string, string[]> = {
+  "Main dominante": ["Droite", "Gauche", "Ambidextre"],
+  "Pied dominant": ["Droit", "Gauche", "Ambidextre"],
+};
+
+const UNIT_FIELDS: Record<string, { unit: string; type: "number" }> = {
+  "Poids": { unit: "lbs", type: "number" },
+  "Envergure": { unit: '"', type: "number" },
+  "Taille mains": { unit: '"', type: "number" },
+  "40 yards": { unit: "s", type: "number" },
+  "Saut vertical": { unit: '"', type: "number" },
+  "Développé couché": { unit: "lbs", type: "number" },
+  "Navette": { unit: "s", type: "number" },
+  "Sprint 100m": { unit: "s", type: "number" },
+};
+
+const DUAL_FIELDS = new Set(["Taille", "Saut longueur"]);
+
+const DB_SPORT_FIELDS = new Set(["Sport principal", "Sport secondaire"]);
+const DB_POSITION_FIELDS = new Set(["Position", "Position secondaire"]);
+
+function StructuredInput({ fieldKey, proposed, setProposed, inputCls }: { fieldKey: string; proposed: string; setProposed: (v: string) => void; inputCls: string }) {
+  const [sports, setSports] = useState<{ id: string; nom: string }[]>([]);
+  const [positions, setPositions] = useState<{ id: string; nom: string }[]>([]);
+
+  // Load sports from DB for sport fields
+  useEffect(() => {
+    if (!DB_SPORT_FIELDS.has(fieldKey) && !DB_POSITION_FIELDS.has(fieldKey)) return;
+    const loadSports = async () => {
+      const supabase = createClient();
+      const { data } = await supabase.from("sports").select("id, nom").order("nom");
+      if (data) setSports(data);
+    };
+    loadSports();
+  }, [fieldKey]);
+
+  // Load positions when a sport is selected (for position fields)
+  useEffect(() => {
+    if (!DB_POSITION_FIELDS.has(fieldKey) || !proposed) return;
+    // For position fields, we need the sport context. Use the proposed sport or load from athlete.
+    // Positions load is handled inline when sport changes
+  }, [fieldKey, proposed]);
+
+  // Sport dropdown
+  if (DB_SPORT_FIELDS.has(fieldKey)) {
+    return (
+      <select title={fieldKey} value={proposed} onChange={(e) => setProposed(e.target.value)} className={inputCls}>
+        <option value="">Sélectionner un sport</option>
+        {sports.map((s) => <option key={s.id} value={s.nom}>{s.nom}</option>)}
+      </select>
+    );
+  }
+
+  // Position dropdown — loads positions based on current sport
+  if (DB_POSITION_FIELDS.has(fieldKey)) {
+    return <PositionDropdown fieldKey={fieldKey} proposed={proposed} setProposed={setProposed} inputCls={inputCls} />;
+  }
+
+  // Static dropdown fields
+  if (DROPDOWN_FIELDS[fieldKey]) {
+    return (
+      <select title={fieldKey} value={proposed} onChange={(e) => setProposed(e.target.value)} className={inputCls}>
+        <option value="">Sélectionner</option>
+        {DROPDOWN_FIELDS[fieldKey].map((o) => <option key={o} value={o}>{o}</option>)}
+      </select>
+    );
+  }
+
+  // Dual input: feet + inches
+  if (DUAL_FIELDS.has(fieldKey)) {
+    const match = proposed.match(/^(\d+)'(\d+)"?$/);
+    const ft = match ? match[1] : "";
+    const inc = match ? match[2] : "";
+    const update = (f: string, i: string) => setProposed(f && i !== "" ? `${f}'${i}"` : "");
+    return (
+      <div className="flex items-center gap-2">
+        <select title="Pieds" value={ft} onChange={(e) => update(e.target.value, inc || "0")} className={`${inputCls} w-20`}>
+          <option value="">—</option>
+          {[4,5,6,7,8,9].map((v) => <option key={v} value={String(v)}>{v}&apos;</option>)}
+        </select>
+        <select title="Pouces" value={inc} onChange={(e) => update(ft || "5", e.target.value)} className={`${inputCls} w-20`}>
+          <option value="">—</option>
+          {Array.from({ length: 12 }, (_, i) => <option key={i} value={String(i)}>{i}&quot;</option>)}
+        </select>
+      </div>
+    );
+  }
+
+  // Number + unit suffix
+  if (UNIT_FIELDS[fieldKey]) {
+    const cfg = UNIT_FIELDS[fieldKey];
+    const numVal = proposed.replace(/[^\d.]/g, "");
+    return (
+      <div className="flex items-center gap-2">
+        <input type="number" value={numVal} onChange={(e) => setProposed(e.target.value ? `${e.target.value} ${cfg.unit}`.trim() : "")}
+          placeholder={FIELD_PLACEHOLDERS[fieldKey]?.replace("Ex: ", "") || ""} className={`${inputCls} flex-1`} step="any" />
+        <span className="text-[13px] text-[#6b7280] font-bold shrink-0">{cfg.unit}</span>
+      </div>
+    );
+  }
+
+  // Numéro — text with # prefix
+  if (fieldKey === "Numéro") {
+    const num = proposed.replace("#", "");
+    return (
+      <div className="flex items-center gap-1">
+        <span className="text-[16px] font-bold text-[#E63946]">#</span>
+        <input type="text" value={num} onChange={(e) => setProposed(e.target.value ? `#${e.target.value}` : "")} placeholder="14" className={inputCls} />
+      </div>
+    );
+  }
+
+  // Default — plain text input
+  return (
+    <input type="text" value={proposed} onChange={(e) => setProposed(e.target.value)} placeholder={FIELD_PLACEHOLDERS[fieldKey] || `Nouvelle valeur pour ${fieldKey}`} aria-label="Valeur proposée" className={inputCls} />
+  );
+}
+
+/* Position dropdown — loads positions from DB based on athlete's current sport */
+function PositionDropdown({ fieldKey, proposed, setProposed, inputCls }: { fieldKey: string; proposed: string; setProposed: (v: string) => void; inputCls: string }) {
+  const [positions, setPositions] = useState<{ id: string; nom: string; abreviation: string }[]>([]);
+
+  useEffect(() => {
+    async function load() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      // Get athlete's current sport_id
+      const { data: athlete } = await supabase.from("athletes").select("sport_id").eq("user_id", user.id).maybeSingle();
+      if (!athlete?.sport_id) return;
+      const { data: pos } = await supabase.from("positions").select("id, nom, abreviation").eq("sport_id", athlete.sport_id).order("nom");
+      if (pos) setPositions(pos);
+    }
+    load();
+  }, [fieldKey]);
+
+  return (
+    <select title={fieldKey} value={proposed} onChange={(e) => setProposed(e.target.value)} className={inputCls}>
+      <option value="">Sélectionner une position</option>
+      {positions.map((p) => <option key={p.id} value={p.nom}>{p.abreviation} — {p.nom}</option>)}
+    </select>
+  );
+}
 
 function SuggestibleField({ label, value, fieldKey, pending, onSubmit, recruiterView }: {
   label: string; value: string; fieldKey: string; pending?: AthleteSuggestion; onSubmit: (field: string, proposed: string, message: string) => void; recruiterView: boolean;
@@ -151,8 +317,7 @@ function SuggestibleField({ label, value, fieldKey, pending, onSubmit, recruiter
           <div>
             <p className="text-[11px] text-[#6b7280] line-through mb-1">Actuel: {value}</p>
             <label className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#EAB308] block mb-1">Nouvelle valeur proposée</label>
-            <input type="text" value={proposed} onChange={(e) => setProposed(e.target.value)} placeholder="Ex: 6'3&quot;" aria-label="Valeur proposée"
-              className="w-full bg-[#111317] border border-[#2a2d36] rounded px-3 py-2 text-[13px] text-white focus:border-[#EAB308] outline-none" />
+            <StructuredInput fieldKey={fieldKey} proposed={proposed} setProposed={setProposed} inputCls="w-full bg-[#111317] border border-[#2a2d36] rounded px-3 py-2 text-[13px] text-white focus:border-[#EAB308] outline-none" />
           </div>
           <div>
             <label className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#6b7280] block mb-1">Message pour ton coach (optionnel)</label>
@@ -177,7 +342,7 @@ function SuggestibleField({ label, value, fieldKey, pending, onSubmit, recruiter
 function LockedField({ label, value, recruiterView, children }: {
   label: string; value?: string | number | null; recruiterView: boolean; children?: React.ReactNode;
 }) {
-  const [showTooltip, setShowTooltip] = useState(false);
+  const [hovered, setHovered] = useState(false);
 
   if (recruiterView) {
     if (!value && !children) return null;
@@ -190,20 +355,24 @@ function LockedField({ label, value, recruiterView, children }: {
   }
 
   return (
-    <div className="group relative py-2.5 border-b border-[#2D3748]/40 last:border-b-0">
-      <div className="flex items-center justify-between cursor-pointer" onClick={() => setShowTooltip(!showTooltip)}>
+    <div
+      className="relative py-2.5 border-b border-[#2D3748]/40 last:border-b-0"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      <div className="flex items-center justify-between">
         <span className="text-[13px] text-[#9CA3AF] flex items-center gap-1.5">
           {label}
-          <span className="opacity-0 group-hover:opacity-100 transition-opacity"><LockIcon size={12} /></span>
+          <span className={`transition-opacity duration-200 ${hovered ? "opacity-100" : "opacity-0"}`}><LockIcon size={12} /></span>
         </span>
-        {children || <span className="text-[14px] font-bold text-white text-right">{value}</span>}
+        {children || <span className="text-[14px] font-bold text-white text-right">{value || <span className="text-[#4a4d56]">Non renseigné</span>}</span>}
       </div>
-      {showTooltip && (
-        <div className="absolute right-0 top-full mt-1 z-20 bg-[#111317] border border-[#2D3748] rounded-lg px-4 py-3 shadow-xl max-w-[260px]">
-          <p className="text-[12px] text-white font-bold mb-1">Seul ton coach peut modifier cette information</p>
-          <p className="text-[11px] text-[#6b7280]">Contacte ton coach si tu penses qu&apos;une mise à jour est nécessaire.</p>
-        </div>
-      )}
+      <div
+        className="absolute right-0 bottom-full mb-1 z-20 bg-[#111317] border border-[#2D3748] rounded-lg px-3 py-2 shadow-xl max-w-[240px] pointer-events-none"
+        style={{ opacity: hovered ? 1 : 0, transition: "opacity 0.2s ease-in-out" }}
+      >
+        <p className="text-[11px] text-white font-bold">Seul ton coach peut modifier cette information</p>
+      </div>
     </div>
   );
 }
@@ -228,27 +397,402 @@ function pctColor(pct: number): string {
    MAIN PAGE
 ═══════════════════════════════════════════════════════════════ */
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyProfile = Record<string, any>;
+
+/* ── Edit Form Components ─────────────────────────────────────── */
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type EditFormProps = { raw: any; inputCls: string; lblCls: string; onSave: (u: Record<string, unknown>) => void; onCancel: () => void; saving: boolean };
+
+function PersonalEditForm({ raw, inputCls, lblCls, onSave, onCancel, saving }: EditFormProps) {
+  const [genre, setGenre] = useState(raw?.genre || "");
+  const [dob, setDob] = useState(raw?.date_naissance || "");
+  const [tel, setTel] = useState(raw?.telephone || "");
+  return (
+    <div className="space-y-3">
+      <div><label className={lblCls}>Genre</label><select title="Genre" value={genre} onChange={(e) => setGenre(e.target.value)} className={inputCls}><option value="">—</option><option value="M">Masculin</option><option value="F">Féminin</option><option value="X">Autre</option></select></div>
+      <div><label className={lblCls}>Date de naissance</label><DatePicker value={dob} onChange={setDob} placeholder="Sélectionner une date" /></div>
+      <div><label className={lblCls}>Téléphone</label><input type="tel" value={tel} onChange={(e) => setTel(e.target.value)} placeholder="514-000-0000" className={inputCls} /></div>
+      <div className="flex items-center gap-3 mt-3">
+        <button type="button" onClick={() => onSave({ genre: genre || null, date_naissance: dob || null, telephone: tel || null })} disabled={saving} className="px-5 py-2 bg-[#E63946] hover:bg-[#D42B22] text-white text-[11px] font-bold uppercase tracking-wider rounded-lg transition-colors disabled:opacity-50">{saving ? "..." : "Enregistrer"}</button>
+        <button type="button" onClick={onCancel} className="text-[12px] text-[#6b7280] hover:text-white transition-colors">Annuler</button>
+      </div>
+    </div>
+  );
+}
+
+function SportEditForm({ raw, inputCls, lblCls, onSave, onCancel, saving }: EditFormProps) {
+  const [jersey, setJersey] = useState(raw?.numero_jersey || "");
+  return (
+    <div className="space-y-3">
+      <div><label className={lblCls}>Numéro de jersey</label><input type="text" value={jersey} onChange={(e) => setJersey(e.target.value)} placeholder="#12" className={inputCls} /></div>
+      <p className="text-[10px] text-[#4a4d56] italic">Sport principal, position, équipe et ligue sont gérés par ton coach.</p>
+      <div className="flex items-center gap-3 mt-3">
+        <button type="button" onClick={() => onSave({ numero_jersey: jersey || null })} disabled={saving} className="px-5 py-2 bg-[#E63946] hover:bg-[#D42B22] text-white text-[11px] font-bold uppercase tracking-wider rounded-lg transition-colors disabled:opacity-50">{saving ? "..." : "Enregistrer"}</button>
+        <button type="button" onClick={onCancel} className="text-[12px] text-[#6b7280] hover:text-white transition-colors">Annuler</button>
+      </div>
+    </div>
+  );
+}
+
+function PhysicalEditForm({ raw, inputCls, lblCls, onSave, onCancel, saving }: EditFormProps) {
+  const [hf, setHf] = useState(String(raw?.taille_pieds || ""));
+  const [hp, setHp] = useState(String(raw?.taille_pouces || ""));
+  const [wt, setWt] = useState(String(raw?.poids_lbs || ""));
+  const [ws, setWs] = useState(raw?.envergure || "");
+  const [dh, setDh] = useState(raw?.main_dominante || "");
+  const [df, setDf] = useState(raw?.pied_dominant || "");
+  const [t40, setT40] = useState(raw?.test_40_verges || "");
+  const [sv, setSv] = useState(raw?.saut_vertical || "");
+  const [sl, setSl] = useState(raw?.saut_longueur || "");
+  const [bp, setBp] = useState(raw?.developpe_couche || "");
+  const [na, setNa] = useState(raw?.navette_agilite || "");
+  const [sp, setSp] = useState(raw?.sprint_100m || "");
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-3 gap-3">
+        <div><label className={lblCls}>Pieds</label><select title="Pieds" value={hf} onChange={(e) => setHf(e.target.value)} className={inputCls}><option value="">—</option>{[4,5,6,7].map(v=><option key={v} value={String(v)}>{v}&apos;</option>)}</select></div>
+        <div><label className={lblCls}>Pouces</label><select title="Pouces" value={hp} onChange={(e) => setHp(e.target.value)} className={inputCls}><option value="">—</option>{Array.from({length:12},(_,i)=><option key={i} value={String(i)}>{i}&quot;</option>)}</select></div>
+        <div><label className={lblCls}>Poids (lbs)</label><input type="number" value={wt} onChange={(e) => setWt(e.target.value)} placeholder="185" className={inputCls} /></div>
+      </div>
+      <div className="grid grid-cols-3 gap-3">
+        <div><label className={lblCls}>Envergure</label><input type="text" value={ws} onChange={(e) => setWs(e.target.value)} placeholder='74"' className={inputCls} /></div>
+        <div><label className={lblCls}>Main dom.</label><select title="Main dominante" value={dh} onChange={(e) => setDh(e.target.value)} className={inputCls}><option value="">—</option><option value="Droite">Droite</option><option value="Gauche">Gauche</option><option value="Ambidextre">Ambidextre</option></select></div>
+        <div><label className={lblCls}>Pied dom.</label><select title="Pied dominant" value={df} onChange={(e) => setDf(e.target.value)} className={inputCls}><option value="">—</option><option value="Droit">Droit</option><option value="Gauche">Gauche</option><option value="Les deux">Les deux</option></select></div>
+      </div>
+      <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#6b7280] mt-2">Tests athlétiques</p>
+      <div className="grid grid-cols-3 gap-3">
+        <div><label className={lblCls}>40 verges</label><input type="text" value={t40} onChange={(e) => setT40(e.target.value)} placeholder="4.65s" className={inputCls} /></div>
+        <div><label className={lblCls}>Saut vertical</label><input type="text" value={sv} onChange={(e) => setSv(e.target.value)} placeholder='32"' className={inputCls} /></div>
+        <div><label className={lblCls}>Saut longueur</label><input type="text" value={sl} onChange={(e) => setSl(e.target.value)} placeholder="9'6&quot;" className={inputCls} /></div>
+      </div>
+      <div className="grid grid-cols-3 gap-3">
+        <div><label className={lblCls}>Bench press</label><input type="text" value={bp} onChange={(e) => setBp(e.target.value)} placeholder="225 lbs" className={inputCls} /></div>
+        <div><label className={lblCls}>Navette</label><input type="text" value={na} onChange={(e) => setNa(e.target.value)} placeholder="4.35s" className={inputCls} /></div>
+        <div><label className={lblCls}>Sprint 100m</label><input type="text" value={sp} onChange={(e) => setSp(e.target.value)} placeholder="11.2s" className={inputCls} /></div>
+      </div>
+      <div className="flex items-center gap-3 mt-3">
+        <button type="button" onClick={() => onSave({
+          taille_pieds: hf ? parseInt(hf) : null, taille_pouces: hp ? parseInt(hp) : null, poids_lbs: wt ? parseFloat(wt) : null,
+          envergure: ws || null, main_dominante: dh || null, pied_dominant: df || null,
+          test_40_verges: t40 || null, saut_vertical: sv || null, saut_longueur: sl || null,
+          developpe_couche: bp || null, navette_agilite: na || null, sprint_100m: sp || null,
+        })} disabled={saving} className="px-5 py-2 bg-[#E63946] hover:bg-[#D42B22] text-white text-[11px] font-bold uppercase tracking-wider rounded-lg transition-colors disabled:opacity-50">{saving ? "..." : "Enregistrer"}</button>
+        <button type="button" onClick={onCancel} className="text-[12px] text-[#6b7280] hover:text-white transition-colors">Annuler</button>
+      </div>
+    </div>
+  );
+}
+
+function AcademicEditForm({ raw, inputCls, lblCls, onSave, onCancel, saving }: EditFormProps) {
+  const [gpa, setGpa] = useState(String(raw?.moyenne_generale || ""));
+  const [prog, setProg] = useState((raw?.programme_cegep_vise as string[])?.join(", ") || "");
+  const [subjects, setSubjects] = useState((raw?.matieres_fortes as string[])?.join(", ") || "");
+  const [honors, setHonors] = useState((raw?.mentions_academiques as string[])?.join(", ") || "");
+  const [prive, setPrive] = useState(raw?.ouvert_cegep_prive === true);
+  const [anglo, setAnglo] = useState(raw?.ouvert_cegep_anglophone === true);
+  const [relocate, setRelocate] = useState(raw?.pret_changer_region === true);
+  const [regions, setRegions] = useState((raw?.regions_cegep_preferees as string[])?.join(", ") || "");
+  const [bio, setBio] = useState(raw?.bio || "");
+
+  const toggleCls = (on: boolean) => `px-3 py-1.5 rounded-full text-[11px] font-bold transition-colors cursor-pointer ${on ? "bg-[#E63946]/15 text-[#E63946] border border-[#E63946]/30" : "bg-[#13151a] text-[#6b7280] border border-[#2D3748]"}`;
+
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-2 gap-3">
+        <div><label className={lblCls}>Moyenne (%)</label><input type="number" value={gpa} onChange={(e) => setGpa(e.target.value)} placeholder="82" min="0" max="100" className={inputCls} /></div>
+        <div><label className={lblCls}>Programme CÉGEP visé</label><input type="text" value={prog} onChange={(e) => setProg(e.target.value)} placeholder="Sciences humaines" className={inputCls} /></div>
+      </div>
+      <div><label className={lblCls}>Matières fortes (séparées par virgule)</label><input type="text" value={subjects} onChange={(e) => setSubjects(e.target.value)} placeholder="Mathématiques, Éducation physique" className={inputCls} /></div>
+      <div><label className={lblCls}>Mentions académiques</label><input type="text" value={honors} onChange={(e) => setHonors(e.target.value)} placeholder="Tableau d'honneur" className={inputCls} /></div>
+      <div className="flex flex-wrap gap-2">
+        <button type="button" onClick={() => setPrive(!prive)} className={toggleCls(prive)}>Ouvert au privé</button>
+        <button type="button" onClick={() => setAnglo(!anglo)} className={toggleCls(anglo)}>Ouvert anglophone</button>
+        <button type="button" onClick={() => setRelocate(!relocate)} className={toggleCls(relocate)}>Ouvert à déménager</button>
+      </div>
+      {relocate && <div><label className={lblCls}>Régions préférées (séparées par virgule)</label><input type="text" value={regions} onChange={(e) => setRegions(e.target.value)} placeholder="Montréal, Québec" className={inputCls} /></div>}
+      <div>
+        <label className={lblCls}>Bio <span className="text-[#4a4d56] normal-case tracking-normal">({bio.length}/500)</span></label>
+        <textarea value={bio} onChange={(e) => { if (e.target.value.length <= 500) setBio(e.target.value); }} rows={3} placeholder="Parle de toi, tes objectifs..." className={`${inputCls} h-auto py-2 resize-none`} />
+      </div>
+      <div className="flex items-center gap-3 mt-3">
+        <button type="button" onClick={() => onSave({
+          moyenne_generale: gpa ? parseFloat(gpa) : null,
+          programme_cegep_vise: prog ? prog.split(",").map(s => s.trim()).filter(Boolean) : [],
+          matieres_fortes: subjects ? subjects.split(",").map(s => s.trim()).filter(Boolean) : [],
+          mentions_academiques: honors ? honors.split(",").map(s => s.trim()).filter(Boolean) : [],
+          ouvert_cegep_prive: prive, ouvert_cegep_anglophone: anglo, pret_changer_region: relocate,
+          regions_cegep_preferees: regions ? regions.split(",").map(s => s.trim()).filter(Boolean) : [],
+          bio: bio || null,
+        })} disabled={saving} className="px-5 py-2 bg-[#E63946] hover:bg-[#D42B22] text-white text-[11px] font-bold uppercase tracking-wider rounded-lg transition-colors disabled:opacity-50">{saving ? "..." : "Enregistrer"}</button>
+        <button type="button" onClick={onCancel} className="text-[12px] text-[#6b7280] hover:text-white transition-colors">Annuler</button>
+      </div>
+    </div>
+  );
+}
+
 export default function AthleteProfilPage() {
-  const a = mockAthleteProfileFull;
-  const u = athleteUser;
-  const recruiterView = false; // always edit mode — aperçu opens in new tab
-  const [suggestions, setSuggestions] = useState(athleteSuggestions);
+  const [loading, setLoading] = useState(true);
+  const [a, setA] = useState<AnyProfile>({});
+  const [athleteId, setAthleteId] = useState<string | null>(null);
+  const recruiterView = false;
+  const [suggestions, setSuggestions] = useState<AthleteSuggestion[]>([]);
   const [sugTab, setSugTab] = useState<"pending" | "approved" | "rejected">("pending");
   const [toast, setToast] = useState<string | null>(null);
 
-  // Editable fields (green — immediate save)
   const [editableFields, setEditableFields] = useState({
-    highlightVideo: a.highlightVideoUrl || "",
-    hudl: a.hudlUrl || "",
-    youtube: a.youtubeUrl || "",
-    instagram: a.instagramUrl || "",
-    fullGame: a.fullGameUrl || "",
+    highlightVideo: "", hudl: "", youtube: "", instagram: "", fullGame: "",
   });
+
+  useEffect(() => {
+    async function load() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setLoading(false); return; }
+
+      const { data: raw } = await supabase
+        .from("athletes")
+        .select(`
+          *,
+          sports!sport_id(nom),
+          positions!position_id(nom, abreviation),
+          schools!school_id(name, region, city),
+          evaluations(leadership, discipline, coachabilite, intelligence_jeu, competitivite, esprit_equipe, resilience, attitude_mentalite, cote_globale, rapport_entraineur),
+          users!athletes_coach_id_fkey(first_name, last_name)
+        `)
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      console.log("[Athlete Profile] loaded:", raw?.first_name, raw?.last_name);
+      if (!raw) { setLoading(false); return; }
+
+      setAthleteId(raw.id);
+
+      // Secondary sport/position lookups
+      let secondarySportName = "";
+      let secondaryPositionName = "";
+      if (raw.sport_secondaire_id) {
+        const { data: ss } = await supabase.from("sports").select("nom").eq("id", raw.sport_secondaire_id).maybeSingle();
+        secondarySportName = ss?.nom || "";
+      }
+      if (raw.position_secondaire_id) {
+        const { data: sp } = await supabase.from("positions").select("nom").eq("id", raw.position_secondaire_id).maybeSingle();
+        secondaryPositionName = sp?.nom || "";
+      }
+
+      const sportRel = Array.isArray(raw.sports) ? raw.sports[0] : raw.sports;
+      const posRel = Array.isArray(raw.positions) ? raw.positions[0] : raw.positions;
+      const schoolRel = Array.isArray(raw.schools) ? raw.schools[0] : raw.schools;
+      const evalRel = Array.isArray(raw.evaluations) ? raw.evaluations[0] : raw.evaluations;
+      const coachRel = Array.isArray(raw.users) ? raw.users[0] : raw.users;
+
+      const heightFt = raw.taille_pieds;
+      const heightIn = raw.taille_pouces;
+      const heightDisplay = heightFt ? `${heightFt}'${heightIn || 0}"` : "";
+      const weightDisplay = raw.poids_lbs ? `${raw.poids_lbs} lbs` : "";
+
+      // Age from date_naissance
+      let age = 0;
+      if (raw.date_naissance) {
+        const bd = new Date(raw.date_naissance);
+        const now = new Date();
+        age = now.getFullYear() - bd.getFullYear();
+        if (now.getMonth() < bd.getMonth() || (now.getMonth() === bd.getMonth() && now.getDate() < bd.getDate())) age--;
+      }
+
+      // Trait ratings
+      const traitRatings: AthleteTraitRatings | undefined = evalRel ? {
+        leadership: evalRel.leadership || 0,
+        discipline: evalRel.discipline || 0,
+        coachability: evalRel.coachabilite || 0,
+        gameIQ: evalRel.intelligence_jeu || 0,
+        competitiveness: evalRel.competitivite || 0,
+        teamwork: evalRel.esprit_equipe || 0,
+        resilience: evalRel.resilience || 0,
+        attitude: evalRel.attitude_mentalite || 0,
+      } : undefined;
+
+      // Profile completion
+      const fields = [raw.first_name, raw.last_name, raw.school_id, raw.sport_id, raw.date_naissance, raw.annee_diplomation, raw.taille_pieds, raw.poids_lbs, raw.video_faits_saillants_url, raw.photo_url];
+      const filled = fields.filter(Boolean).length;
+      const profileCompleteness = Math.round((filled / fields.length) * 100);
+
+      const mapped: AnyProfile = {
+        id: raw.id,
+        firstName: raw.first_name || "",
+        lastName: raw.last_name || "",
+        isVerified: raw.verified === true,
+        profileCompleteness,
+        primarySport: sportRel?.nom || "",
+        primaryPosition: posRel?.nom || posRel?.abreviation || "",
+        secondarySport: secondarySportName,
+        secondaryPosition: secondaryPositionName,
+        schoolName: schoolRel?.name || "",
+        city: schoolRel?.city || "",
+        region: schoolRel?.region || "",
+        graduationYear: raw.annee_diplomation || "",
+        age,
+        gender: raw.genre || "",
+        telephone: raw.telephone || "",
+        jerseyNumber: raw.numero_jersey || "",
+        teamName: "",
+        leagueName: "",
+        heightDisplay,
+        weightDisplay,
+        wingspan: raw.envergure || "",
+        handSize: raw.taille_mains || "",
+        dominantHand: raw.main_dominante || "",
+        dominantFoot: raw.pied_dominant || "",
+        fortyYard: raw.test_40_verges || "",
+        verticalJump: raw.saut_vertical || "",
+        broadJump: raw.saut_longueur || "",
+        benchPress: raw.developpe_couche || "",
+        shuttleAgility: raw.navette_agilite || "",
+        sprint100m: raw.sprint_100m || "",
+        gpa: raw.moyenne_generale,
+        targetCegepProgram: raw.programme_cegep_vise || [],
+        strongSubjects: raw.matieres_fortes || [],
+        academicHonors: raw.mentions_academiques || [],
+        openToRelocate: raw.pret_changer_region,
+        openToPrivate: raw.ouvert_cegep_prive,
+        openToAnglophone: raw.ouvert_cegep_anglophone,
+        wantsDEC: undefined,
+        preferredRegions: raw.regions_cegep_preferees || [],
+        coachReport: evalRel?.rapport_entraineur || "",
+        coachName: coachRel ? `${coachRel.first_name || ""} ${coachRel.last_name || ""}`.trim() : "",
+        overallRating: evalRel?.cote_globale || 0,
+        traitRatings,
+        highlightVideoUrl: raw.video_faits_saillants_url || "",
+        hudlUrl: raw.hudl_url || "",
+        youtubeUrl: raw.youtube_url || "",
+        instagramUrl: raw.instagram_url || "",
+        fullGameUrl: raw.video_match_complet_url || "",
+        photoUrl: raw.photo_url || "",
+      };
+
+      setA(mapped);
+      setEditableFields({
+        highlightVideo: mapped.highlightVideoUrl || "",
+        hudl: mapped.hudlUrl || "",
+        youtube: mapped.youtubeUrl || "",
+        instagram: mapped.instagramUrl || "",
+        fullGame: mapped.fullGameUrl || "",
+      });
+      setLoading(false);
+    }
+    load();
+  }, []);
+
+  // Re-fetch helper for after saves
+  async function reloadProfile() {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { data: raw } = await supabase.from("athletes").select("*, sports!sport_id(nom), positions!position_id(nom, abreviation), schools!school_id(name, region, city), evaluations(leadership, discipline, coachabilite, intelligence_jeu, competitivite, esprit_equipe, resilience, attitude_mentalite, cote_globale, rapport_entraineur), users!athletes_coach_id_fkey(first_name, last_name)").eq("user_id", user.id).maybeSingle();
+    if (!raw) return;
+    // Re-run the same mapping (simplified — just update key display fields)
+    const sportRel = Array.isArray(raw.sports) ? raw.sports[0] : raw.sports;
+    const posRel = Array.isArray(raw.positions) ? raw.positions[0] : raw.positions;
+    const schoolRel = Array.isArray(raw.schools) ? raw.schools[0] : raw.schools;
+    const evalRel = Array.isArray(raw.evaluations) ? raw.evaluations[0] : raw.evaluations;
+    const coachRel = Array.isArray(raw.users) ? raw.users[0] : raw.users;
+    const heightDisplay = raw.taille_pieds ? `${raw.taille_pieds}'${raw.taille_pouces || 0}"` : "";
+    const weightDisplay = raw.poids_lbs ? `${raw.poids_lbs} lbs` : "";
+    let age = 0;
+    if (raw.date_naissance) { const bd = new Date(raw.date_naissance); const now = new Date(); age = now.getFullYear() - bd.getFullYear(); if (now.getMonth() < bd.getMonth() || (now.getMonth() === bd.getMonth() && now.getDate() < bd.getDate())) age--; }
+    const fields = [raw.first_name, raw.last_name, raw.school_id, raw.sport_id, raw.date_naissance, raw.annee_diplomation, raw.taille_pieds, raw.poids_lbs, raw.video_faits_saillants_url, raw.photo_url];
+    const profileCompleteness = Math.round((fields.filter(Boolean).length / fields.length) * 100);
+    const traitRatings = evalRel ? { leadership: evalRel.leadership||0, discipline: evalRel.discipline||0, coachability: evalRel.coachabilite||0, gameIQ: evalRel.intelligence_jeu||0, competitiveness: evalRel.competitivite||0, teamwork: evalRel.esprit_equipe||0, resilience: evalRel.resilience||0, attitude: evalRel.attitude_mentalite||0 } : undefined;
+    setA({
+      ...a,
+      firstName: raw.first_name||"", lastName: raw.last_name||"", isVerified: raw.verified===true, profileCompleteness,
+      primarySport: sportRel?.nom||"", primaryPosition: posRel?.nom||posRel?.abreviation||"",
+      schoolName: schoolRel?.name||"", city: schoolRel?.city||"", region: schoolRel?.region||"",
+      graduationYear: raw.annee_diplomation||"", age, gender: raw.genre||"", telephone: raw.telephone||"", jerseyNumber: raw.numero_jersey||"",
+      heightDisplay, weightDisplay, wingspan: raw.envergure||"", handSize: raw.taille_mains||"",
+      dominantHand: raw.main_dominante||"", dominantFoot: raw.pied_dominant||"",
+      fortyYard: raw.test_40_verges||"", verticalJump: raw.saut_vertical||"", broadJump: raw.saut_longueur||"",
+      benchPress: raw.developpe_couche||"", shuttleAgility: raw.navette_agilite||"", sprint100m: raw.sprint_100m||"",
+      gpa: raw.moyenne_generale, targetCegepProgram: raw.programme_cegep_vise||[],
+      strongSubjects: raw.matieres_fortes||[], academicHonors: raw.mentions_academiques||[],
+      openToRelocate: raw.pret_changer_region, openToPrivate: raw.ouvert_cegep_prive, openToAnglophone: raw.ouvert_cegep_anglophone,
+      preferredRegions: raw.regions_cegep_preferees||[], bio: raw.bio||"",
+      coachReport: evalRel?.rapport_entraineur||"", coachName: coachRel ? `${coachRel.first_name||""} ${coachRel.last_name||""}`.trim() : "",
+      overallRating: evalRel?.cote_globale||0, traitRatings,
+      highlightVideoUrl: raw.video_faits_saillants_url||"", hudlUrl: raw.hudl_url||"", youtubeUrl: raw.youtube_url||"",
+      instagramUrl: raw.instagram_url||"", fullGameUrl: raw.video_match_complet_url||"", photoUrl: raw.photo_url||"",
+      // Raw values for edit forms
+      _raw: raw,
+    });
+  }
+
+  const [editSection, setEditSection] = useState<string | null>(null);
+  const [editSaving, setEditSaving] = useState(false);
+
+  async function saveSection(updates: Record<string, unknown>) {
+    if (!athleteId) return;
+    setEditSaving(true);
+    const supabase = createClient();
+    const { error } = await supabase.from("athletes").update(updates).eq("id", athleteId);
+    if (error) { console.error("[Profile save]", error); setEditSaving(false); return; }
+    await reloadProfile();
+    setEditSection(null);
+    setEditSaving(false);
+    showToast("Profil mis à jour!");
+  }
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
 
-  const saveField = (key: string, value: string) => {
+  const inputCls = "w-full h-10 px-3 bg-[#111317] border border-[#2D3748] rounded-lg text-[13px] text-white placeholder:text-[#4a4d56] focus:border-[#E63946] outline-none transition-colors";
+  const lblCls = "text-[10px] font-bold uppercase tracking-[0.15em] text-[#6b7280] mb-1 block";
+
+  function SectionHeader({ title, sectionKey, mode = "direct" }: { title: string; sectionKey: string; mode?: "direct" | "suggestion" }) {
+    const isDirect = mode === "direct";
+    return (
+      <div className="mb-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#6b7280]">{title}</h3>
+          {editSection !== sectionKey && (
+            <button type="button" onClick={() => setEditSection(sectionKey)}
+              className={`px-3 py-1 rounded-lg border text-[10px] font-bold uppercase tracking-wider transition-colors ${
+                isDirect
+                  ? "border-[#E63946]/30 text-[#E63946] hover:bg-[#E63946]/10"
+                  : "border-[#EAB308]/30 text-[#EAB308] hover:bg-[#EAB308]/10"
+              }`}>
+              {isDirect ? "Modifier" : "Proposer"}
+            </button>
+          )}
+        </div>
+        {!isDirect && editSection !== sectionKey && (
+          <p className="text-[10px] text-[#4a4d56] mt-1">Modifications soumises à ton coach</p>
+        )}
+      </div>
+    );
+  }
+
+  function EditButtons({ sectionKey, onSave }: { sectionKey: string; onSave: () => void }) {
+    return (
+      <div className="flex items-center gap-3 mt-4 pt-3 border-t border-[#2D3748]/40">
+        <button type="button" onClick={onSave} disabled={editSaving} className="px-5 py-2 bg-[#E63946] hover:bg-[#D42B22] text-white text-[11px] font-bold uppercase tracking-wider rounded-lg transition-colors disabled:opacity-50">
+          {editSaving ? "..." : "Enregistrer"}
+        </button>
+        <button type="button" onClick={() => setEditSection(null)} className="text-[12px] text-[#6b7280] hover:text-white transition-colors">Annuler</button>
+      </div>
+    );
+  }
+
+  const saveField = async (key: string, value: string) => {
     setEditableFields((prev) => ({ ...prev, [key]: value }));
+    if (athleteId) {
+      const supabase = createClient();
+      const dbMap: Record<string, string> = {
+        highlightVideo: "video_faits_saillants_url", hudl: "hudl_url",
+        youtube: "youtube_url", instagram: "instagram_url", fullGame: "video_match_complet_url",
+      };
+      const col = dbMap[key];
+      if (col) await supabase.from("athletes").update({ [col]: value || null }).eq("id", athleteId);
+    }
     showToast("Mis à jour!");
   };
 
@@ -268,9 +812,24 @@ export default function AthleteProfilPage() {
   const getPending = (field: string) => pendingSugs.find((s) => s.field === field);
 
   const traitEntries = a.traitRatings ? Object.entries(a.traitRatings) as [keyof AthleteTraitRatings, number][] : [];
-  const traitAvg = traitEntries.length > 0 ? traitEntries.reduce((s, [, v]) => s + v, 0) / traitEntries.length : a.overallRating;
-  const color = pctColor(a.profileCompleteness);
-  const incomplete = profileChecklist.filter((i) => !i.done);
+  const traitAvg = traitEntries.length > 0 ? traitEntries.reduce((s, [, v]) => s + v, 0) / traitEntries.length : (a.overallRating || 0);
+  const color = pctColor(a.profileCompleteness || 0);
+
+  // Compute incomplete fields for the sidebar
+  const incomplete: { label: string; boost: number }[] = [];
+  if (!a.photoUrl) incomplete.push({ label: "Ajouter une photo", boost: 10 });
+  if (!a.heightDisplay) incomplete.push({ label: "Ajouter ta taille", boost: 5 });
+  if (!a.weightDisplay) incomplete.push({ label: "Ajouter ton poids", boost: 5 });
+  if (!a.highlightVideoUrl) incomplete.push({ label: "Ajouter une vidéo", boost: 15 });
+  if (!a.gpa) incomplete.push({ label: "Ajouter ta moyenne", boost: 5 });
+
+  if (loading) {
+    return (
+      <div className="px-6 sm:px-10 py-8 max-w-[1200px] mx-auto flex items-center justify-center py-20">
+        <div className="w-8 h-8 border-2 border-[#E63946] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="px-6 sm:px-10 py-8 max-w-[1200px] mx-auto space-y-5">
@@ -281,10 +840,10 @@ export default function AthleteProfilPage() {
           <h1 className="font-head text-2xl font-black text-white uppercase tracking-tight">Mon profil</h1>
           <p className="text-[14px] text-[#9CA3AF] mt-1">C&apos;est ce que les recruteurs voient quand ils consultent ton profil</p>
         </div>
-        <a href="/recruteur/athletes/r-001" target="_blank" rel="noopener noreferrer"
+        <a href={athleteId ? `/coach/athletes/${athleteId}?preview=true` : "#"} target="_blank" rel="noopener noreferrer"
           className="px-4 py-2.5 rounded-lg text-[12px] font-bold uppercase tracking-wider border border-[#2D3748] text-[#9CA3AF] hover:text-white hover:border-[#4a4d56] transition-colors flex items-center gap-2">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
-          Aperçu recruteur
+          Aperçu
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>
         </a>
       </div>
@@ -308,8 +867,28 @@ export default function AthleteProfilPage() {
           {/* Header card */}
           <div className="bg-[#1A1D24] rounded-xl border border-white/5 p-6">
             <div className="flex items-start gap-5">
-              <div className="w-16 h-16 rounded-xl bg-[#2F3440] border border-[#2D3748] flex items-center justify-center shrink-0">
-                <span className="text-[20px] font-head font-black text-white/15">{a.firstName[0]}{a.lastName[0]}</span>
+              <div className="relative group shrink-0">
+                {a.photoUrl ? (
+                  <img src={a.photoUrl} alt="" className="w-16 h-16 rounded-xl object-cover border border-[#2D3748]" />
+                ) : (
+                  <div className="w-16 h-16 rounded-xl bg-[#2F3440] border border-[#2D3748] flex items-center justify-center">
+                    <span className="text-[20px] font-head font-black text-white/15">{(a.firstName || "")[0]}{(a.lastName || "")[0]}</span>
+                  </div>
+                )}
+                <label className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" /><circle cx="12" cy="13" r="4" /></svg>
+                  <input type="file" accept="image/*" className="hidden" title="Photo" onChange={async (e) => {
+                    const f = e.target.files?.[0]; if (!f || !athleteId) return;
+                    const supabase = createClient();
+                    const { data: { user } } = await supabase.auth.getUser(); if (!user) return;
+                    const path = `athletes/${user.id}/${Date.now()}.${f.name.split(".").pop()}`;
+                    await supabase.storage.from("avatars").upload(path, f, { upsert: true });
+                    const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
+                    await supabase.from("athletes").update({ photo_url: urlData.publicUrl }).eq("id", athleteId);
+                    setA((prev: AnyProfile) => ({ ...prev, photoUrl: urlData.publicUrl }));
+                    showToast("Photo mise à jour!");
+                  }} />
+                </label>
               </div>
               <div className="flex-1">
                 <div className="flex items-center gap-2">
@@ -330,58 +909,99 @@ export default function AthleteProfilPage() {
             </div>
           </div>
 
-          {/* Personal Info — SUGGESTIBLE */}
+          {/* ═══ PERSONAL INFO ═══ */}
           <div className="bg-[#1A1D24] rounded-xl border border-white/5 p-5">
-            <h3 className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mb-4">Informations personnelles</h3>
-            <LockedField label="Âge" value={`${a.age} ans`} recruiterView={recruiterView} />
-            <LockedField label="Genre" value={a.gender === "M" ? "Masculin" : a.gender === "F" ? "Féminin" : "Autre"} recruiterView={recruiterView} />
-            <SuggestibleField label="Ville" value={a.city} fieldKey="Ville" pending={getPending("Ville")} onSubmit={submitSuggestion} recruiterView={recruiterView} />
-            <LockedField label="Région" value={a.region} recruiterView={recruiterView} />
-            <LockedField label="École" value={a.schoolName} recruiterView={recruiterView} />
-            <LockedField label="Graduation" value={String(a.graduationYear)} recruiterView={recruiterView} />
-          </div>
-
-          {/* Sport Info — SUGGESTIBLE */}
-          <div className="bg-[#1A1D24] rounded-xl border border-white/5 p-5">
-            <h3 className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mb-4">Informations sportives</h3>
-            <LockedField label="Sport principal" value={a.primarySport} recruiterView={recruiterView} />
-            <SuggestibleField label="Position principale" value={a.primaryPosition} fieldKey="Position" pending={getPending("Position")} onSubmit={submitSuggestion} recruiterView={recruiterView} />
-            {a.secondarySport && <SuggestibleField label="Sport secondaire" value={a.secondarySport} fieldKey="Sport secondaire" pending={getPending("Sport secondaire")} onSubmit={submitSuggestion} recruiterView={recruiterView} />}
-            {a.secondaryPosition && <SuggestibleField label="Position secondaire" value={a.secondaryPosition} fieldKey="Position secondaire" pending={getPending("Position secondaire")} onSubmit={submitSuggestion} recruiterView={recruiterView} />}
-            {a.jerseyNumber && <LockedField label="Numéro" value={`#${a.jerseyNumber}`} recruiterView={recruiterView} />}
-            {a.teamName && <LockedField label="Équipe" value={a.teamName} recruiterView={recruiterView} />}
-            {a.leagueName && <LockedField label="Ligue" value={a.leagueName} recruiterView={recruiterView} />}
-          </div>
-
-          {/* Physical — SUGGESTIBLE */}
-          <div className="bg-[#1A1D24] rounded-xl border border-white/5 p-5">
-            <h3 className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mb-4">Profil physique</h3>
-            <SuggestibleField label="Taille" value={a.heightDisplay} fieldKey="Taille" pending={getPending("Taille")} onSubmit={submitSuggestion} recruiterView={recruiterView} />
-            <SuggestibleField label="Poids" value={a.weightDisplay} fieldKey="Poids" pending={getPending("Poids")} onSubmit={submitSuggestion} recruiterView={recruiterView} />
-            {a.wingspan && <SuggestibleField label="Envergure" value={a.wingspan} fieldKey="Envergure" pending={getPending("Envergure")} onSubmit={submitSuggestion} recruiterView={recruiterView} />}
-            {a.handSize && <SuggestibleField label="Taille des mains" value={a.handSize} fieldKey="Taille mains" pending={getPending("Taille mains")} onSubmit={submitSuggestion} recruiterView={recruiterView} />}
-            {a.dominantHand && <LockedField label="Main dominante" value={a.dominantHand} recruiterView={recruiterView} />}
-            {a.dominantFoot && <LockedField label="Pied dominant" value={a.dominantFoot} recruiterView={recruiterView} />}
-
-            {/* Athletic tests — SUGGESTIBLE */}
-            {(a.fortyYard || a.verticalJump || a.broadJump) && (
-              <div className="mt-4 pt-3 border-t border-[#2D3748]/40">
-                <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mb-3">Tests athlétiques</h4>
-                {a.fortyYard && <SuggestibleField label="40 yards" value={a.fortyYard} fieldKey="40 yards" pending={getPending("40 yards")} onSubmit={submitSuggestion} recruiterView={recruiterView} />}
-                {a.verticalJump && <SuggestibleField label="Saut vertical" value={a.verticalJump} fieldKey="Saut vertical" pending={getPending("Saut vertical")} onSubmit={submitSuggestion} recruiterView={recruiterView} />}
-                {a.broadJump && <SuggestibleField label="Saut en longueur" value={a.broadJump} fieldKey="Saut longueur" pending={getPending("Saut longueur")} onSubmit={submitSuggestion} recruiterView={recruiterView} />}
-                {a.benchPress && <SuggestibleField label="Développé couché" value={a.benchPress} fieldKey="Développé couché" pending={getPending("Développé couché")} onSubmit={submitSuggestion} recruiterView={recruiterView} />}
-                {a.shuttleAgility && <SuggestibleField label="Navette" value={a.shuttleAgility} fieldKey="Navette" pending={getPending("Navette")} onSubmit={submitSuggestion} recruiterView={recruiterView} />}
-                {a.sprint100m && <SuggestibleField label="Sprint 100m" value={a.sprint100m} fieldKey="Sprint 100m" pending={getPending("Sprint 100m")} onSubmit={submitSuggestion} recruiterView={recruiterView} />}
-              </div>
+            <SectionHeader title="Informations personnelles" sectionKey="personal" mode="direct" />
+            {editSection === "personal" ? (
+              <PersonalEditForm raw={a._raw} inputCls={inputCls} lblCls={lblCls} onSave={(u) => saveSection(u)} onCancel={() => setEditSection(null)} saving={editSaving} />
+            ) : (
+              <>
+                <LockedField label="Âge" value={a.age ? `${a.age} ans` : null} recruiterView={recruiterView} />
+                <LockedField label="Genre" value={a.gender === "M" ? "Masculin" : a.gender === "F" ? "Féminin" : a.gender === "X" ? "Autre" : null} recruiterView={recruiterView} />
+                <LockedField label="Ville" value={a.city} recruiterView={recruiterView} />
+                <LockedField label="Région" value={a.region} recruiterView={recruiterView} />
+                <LockedField label="École" value={a.schoolName} recruiterView={recruiterView} />
+                <LockedField label="Graduation" value={a.graduationYear ? String(a.graduationYear) : null} recruiterView={recruiterView} />
+                <LockedField label="Téléphone" value={a.telephone} recruiterView={recruiterView} />
+              </>
             )}
           </div>
 
-          {/* Academic — SUGGESTIBLE */}
+          {/* ═══ SPORT INFO ═══ */}
           <div className="bg-[#1A1D24] rounded-xl border border-white/5 p-5">
-            <h3 className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mb-4">Profil académique</h3>
-            <SuggestibleField label="Moyenne générale" value={a.gpa ? `${a.gpa}%` : "—"} fieldKey="Moyenne générale" pending={getPending("Moyenne générale")} onSubmit={submitSuggestion} recruiterView={recruiterView} />
-            <SuggestibleField label="Programme visé" value={a.targetCegepProgram?.join(", ") || "—"} fieldKey="Programme" pending={getPending("Programme")} onSubmit={submitSuggestion} recruiterView={recruiterView} />
+            <SectionHeader title="Informations sportives" sectionKey="sport" mode="suggestion" />
+            {editSection === "sport" ? (
+              <div className="space-y-1">
+                <SuggestibleField label="Sport principal" value={a.primarySport || "—"} fieldKey="Sport principal" pending={getPending("Sport principal")} onSubmit={submitSuggestion} recruiterView={recruiterView} />
+                <SuggestibleField label="Position principale" value={a.primaryPosition || "—"} fieldKey="Position" pending={getPending("Position")} onSubmit={submitSuggestion} recruiterView={recruiterView} />
+                <SuggestibleField label="Sport secondaire" value={a.secondarySport || "—"} fieldKey="Sport secondaire" pending={getPending("Sport secondaire")} onSubmit={submitSuggestion} recruiterView={recruiterView} />
+                <SuggestibleField label="Position secondaire" value={a.secondaryPosition || "—"} fieldKey="Position secondaire" pending={getPending("Position secondaire")} onSubmit={submitSuggestion} recruiterView={recruiterView} />
+                <SuggestibleField label="Numéro" value={a.jerseyNumber ? `#${a.jerseyNumber}` : "—"} fieldKey="Numéro" pending={getPending("Numéro")} onSubmit={submitSuggestion} recruiterView={recruiterView} />
+                <div className="pt-2"><button type="button" onClick={() => setEditSection(null)} className="text-[12px] text-[#6b7280] hover:text-white transition-colors">Fermer</button></div>
+              </div>
+            ) : (
+              <>
+                <LockedField label="Sport principal" value={a.primarySport} recruiterView={recruiterView} />
+                <LockedField label="Position principale" value={a.primaryPosition} recruiterView={recruiterView} />
+                {a.secondarySport && <LockedField label="Sport secondaire" value={a.secondarySport} recruiterView={recruiterView} />}
+                {a.secondaryPosition && <LockedField label="Position secondaire" value={a.secondaryPosition} recruiterView={recruiterView} />}
+                <LockedField label="Numéro" value={a.jerseyNumber ? `#${a.jerseyNumber}` : null} recruiterView={recruiterView} />
+              </>
+            )}
+          </div>
+
+          {/* ═══ PHYSICAL + TESTS ═══ */}
+          <div className="bg-[#1A1D24] rounded-xl border border-white/5 p-5">
+            <SectionHeader title="Profil physique & Tests" sectionKey="physical" mode="suggestion" />
+            {editSection === "physical" ? (
+              <div className="space-y-1">
+                <SuggestibleField label="Taille" value={a.heightDisplay || "—"} fieldKey="Taille" pending={getPending("Taille")} onSubmit={submitSuggestion} recruiterView={recruiterView} />
+                <SuggestibleField label="Poids" value={a.weightDisplay || "—"} fieldKey="Poids" pending={getPending("Poids")} onSubmit={submitSuggestion} recruiterView={recruiterView} />
+                <SuggestibleField label="Envergure" value={a.wingspan || "—"} fieldKey="Envergure" pending={getPending("Envergure")} onSubmit={submitSuggestion} recruiterView={recruiterView} />
+                <SuggestibleField label="Main dominante" value={a.dominantHand || "—"} fieldKey="Main dominante" pending={getPending("Main dominante")} onSubmit={submitSuggestion} recruiterView={recruiterView} />
+                <SuggestibleField label="Pied dominant" value={a.dominantFoot || "—"} fieldKey="Pied dominant" pending={getPending("Pied dominant")} onSubmit={submitSuggestion} recruiterView={recruiterView} />
+                <div className="mt-3 pt-3 border-t border-[#2D3748]/40">
+                  <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mb-3">Tests athlétiques</h4>
+                  <SuggestibleField label="40 verges" value={a.fortyYard || "—"} fieldKey="40 yards" pending={getPending("40 yards")} onSubmit={submitSuggestion} recruiterView={recruiterView} />
+                  <SuggestibleField label="Saut vertical" value={a.verticalJump || "—"} fieldKey="Saut vertical" pending={getPending("Saut vertical")} onSubmit={submitSuggestion} recruiterView={recruiterView} />
+                  <SuggestibleField label="Saut en longueur" value={a.broadJump || "—"} fieldKey="Saut longueur" pending={getPending("Saut longueur")} onSubmit={submitSuggestion} recruiterView={recruiterView} />
+                  <SuggestibleField label="Développé couché" value={a.benchPress || "—"} fieldKey="Développé couché" pending={getPending("Développé couché")} onSubmit={submitSuggestion} recruiterView={recruiterView} />
+                  <SuggestibleField label="Navette" value={a.shuttleAgility || "—"} fieldKey="Navette" pending={getPending("Navette")} onSubmit={submitSuggestion} recruiterView={recruiterView} />
+                  <SuggestibleField label="Sprint 100m" value={a.sprint100m || "—"} fieldKey="Sprint 100m" pending={getPending("Sprint 100m")} onSubmit={submitSuggestion} recruiterView={recruiterView} />
+                </div>
+                <div className="pt-2"><button type="button" onClick={() => setEditSection(null)} className="text-[12px] text-[#6b7280] hover:text-white transition-colors">Fermer</button></div>
+              </div>
+            ) : (
+              <>
+                <LockedField label="Taille" value={a.heightDisplay} recruiterView={recruiterView} />
+                <LockedField label="Poids" value={a.weightDisplay} recruiterView={recruiterView} />
+                <LockedField label="Envergure" value={a.wingspan} recruiterView={recruiterView} />
+                <LockedField label="Main dominante" value={a.dominantHand} recruiterView={recruiterView} />
+                <LockedField label="Pied dominant" value={a.dominantFoot} recruiterView={recruiterView} />
+                {(a.fortyYard || a.verticalJump || a.broadJump || a.benchPress || a.shuttleAgility || a.sprint100m) && (
+                  <div className="mt-3 pt-3 border-t border-[#2D3748]/40">
+                    <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mb-3">Tests athlétiques</h4>
+                    <LockedField label="40 verges" value={a.fortyYard} recruiterView={recruiterView} />
+                    <LockedField label="Saut vertical" value={a.verticalJump} recruiterView={recruiterView} />
+                    <LockedField label="Saut en longueur" value={a.broadJump} recruiterView={recruiterView} />
+                    <LockedField label="Développé couché" value={a.benchPress} recruiterView={recruiterView} />
+                    <LockedField label="Navette" value={a.shuttleAgility} recruiterView={recruiterView} />
+                    <LockedField label="Sprint 100m" value={a.sprint100m} recruiterView={recruiterView} />
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* ═══ ACADEMIC ═══ */}
+          <div className="bg-[#1A1D24] rounded-xl border border-white/5 p-5">
+            <SectionHeader title="Profil académique" sectionKey="academic" mode="direct" />
+            {editSection === "academic" ? (
+              <AcademicEditForm raw={a._raw} inputCls={inputCls} lblCls={lblCls} onSave={(u) => saveSection(u)} onCancel={() => setEditSection(null)} saving={editSaving} />
+            ) : (
+              <>
+                <LockedField label="Moyenne générale" value={a.gpa ? `${a.gpa}%` : null} recruiterView={recruiterView} />
+                <LockedField label="Programme visé" value={a.targetCegepProgram?.join(", ")} recruiterView={recruiterView} />
 
             {/* Strong subjects — EDITABLE (green) */}
             {a.strongSubjects.length > 0 && (
@@ -391,7 +1011,7 @@ export default function AthleteProfilPage() {
                   Matières fortes
                 </span>
                 <div className="flex gap-1.5 flex-wrap mt-2">
-                  {a.strongSubjects.map((s) => (
+                  {(a.strongSubjects as string[]).map((s: string) => (
                     <span key={s} className="px-2.5 py-1 rounded-full bg-[#2D3748]/50 text-[11px] text-[#9CA3AF]">{s}</span>
                   ))}
                 </div>
@@ -403,7 +1023,7 @@ export default function AthleteProfilPage() {
               <div className="py-2.5 border-b border-[#2D3748]/40">
                 <span className="text-[13px] text-[#9CA3AF]">Mentions</span>
                 <div className="flex gap-1.5 flex-wrap mt-2">
-                  {a.academicHonors.map((h) => (
+                  {(a.academicHonors as string[]).map((h: string) => (
                     <span key={h} className="px-2.5 py-1 rounded-full bg-[#22C55E]/10 text-[11px] text-[#22C55E]">{h}</span>
                   ))}
                 </div>
@@ -418,13 +1038,12 @@ export default function AthleteProfilPage() {
               </h4>
               <div className="flex flex-wrap gap-2">
                 {[
-                  { label: "Ouvert à déménager", active: a.openToRelocate },
-                  { label: "Ouvert au privé", active: a.openToPrivate },
-                  { label: "Veut faire un DEC", active: a.wantsDEC },
-                  { label: "Ouvert anglophone", active: a.openToAnglophone },
-                ].filter((p) => p.active !== undefined).map((p) => (
-                  <span key={p.label} className="inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-1.5 rounded-full border" style={{ backgroundColor: "rgba(255,255,255,0.06)", borderColor: "rgba(255,255,255,0.15)", color: "#fff" }}>
-                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: p.active ? "#22C55E" : "#6B7280" }} />
+                  { label: "Ouvert à déménager", active: !!a.openToRelocate },
+                  { label: "Ouvert au privé", active: !!a.openToPrivate },
+                  { label: "Ouvert anglophone", active: !!a.openToAnglophone },
+                ].map((p) => (
+                  <span key={p.label} className="inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-1.5 rounded-full border border-white/15 bg-white/[0.06] text-white">
+                    <span className={`w-2 h-2 rounded-full ${p.active ? "bg-[#22C55E]" : "bg-[#6B7280]"}`} />
                     {p.label}
                   </span>
                 ))}
@@ -439,11 +1058,13 @@ export default function AthleteProfilPage() {
                   Régions préférées
                 </span>
                 <div className="flex gap-1.5 flex-wrap mt-2">
-                  {a.preferredRegions.map((r) => (
+                  {(a.preferredRegions as string[]).map((r: string) => (
                     <span key={r} className="px-2.5 py-1 rounded-full bg-[#2D3748]/50 text-[11px] text-[#9CA3AF]">{r}</span>
                   ))}
                 </div>
               </div>
+            )}
+            </>
             )}
           </div>
 
@@ -500,10 +1121,10 @@ export default function AthleteProfilPage() {
                   <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
                     <path d="M18 2.0845a 15.9155 15.9155 0 0 1 0 31.831a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#2D3748" strokeWidth="3" />
                     <path d="M18 2.0845a 15.9155 15.9155 0 0 1 0 31.831a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke={color} strokeWidth="3"
-                      strokeDasharray={`${a.profileCompleteness}, 100`} strokeLinecap="round" />
+                      strokeDasharray={`${a.profileCompleteness || 0}, 100`} strokeLinecap="round" />
                   </svg>
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="font-head text-[20px] font-black" style={{ color }}>{a.profileCompleteness}%</span>
+                    <span className="font-head text-[20px] font-black" style={{ color }}>{a.profileCompleteness || 0}%</span>
                   </div>
                 </div>
               </div>

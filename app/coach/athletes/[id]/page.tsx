@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { loadAthleteRaw, mapToRecruiterView } from "../_data/loadAthleteFromSupabase";
 import type { AthleteProfileRecruiterView, AthleteTraitRatings } from "@/lib/types/models";
 import { SPORT_NAME_MAP } from "@/lib/config/sportBadges";
@@ -317,6 +317,8 @@ export default function CoachAthleteProfilePage() {
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
   const [toast, setToast] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+  const isPreview = searchParams.get("preview") === "true";
   const [recruiterView, setRecruiterView] = useState(false);
   const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [openMenu, setOpenMenu] = useState(false);
@@ -385,18 +387,29 @@ export default function CoachAthleteProfilePage() {
     <div className="px-5 md:px-8 lg:px-10 py-6 max-w-7xl mx-auto space-y-6">
 
       {/* ── Breadcrumb ────────────────────────────────────────── */}
-      <div className="flex items-center gap-2 text-[12px] text-[#6b7280]">
-        <Link href="/coach" className="hover:text-white transition-colors">Nexus</Link>
-        <span>/</span>
-        <Link href="/coach" className="hover:text-white transition-colors">Coach</Link>
-        <span>/</span>
-        <Link href="/coach/athletes" className="hover:text-white transition-colors">Mes Athlètes</Link>
-        <span>/</span>
-        <span className="text-white font-semibold">{a.firstName} {a.lastName}</span>
-      </div>
+      {isPreview ? (
+        <div className="flex items-center gap-2 text-[12px] text-[#6b7280]">
+          <Link href="/athlete/profil" className="hover:text-white transition-colors flex items-center gap-1">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M19 12H5" /><path d="M12 19l-7-7 7-7" /></svg>
+            Retour à mon profil
+          </Link>
+          <span>/</span>
+          <span className="text-white font-semibold">{a.firstName} {a.lastName}</span>
+        </div>
+      ) : (
+        <div className="flex items-center gap-2 text-[12px] text-[#6b7280]">
+          <Link href="/coach" className="hover:text-white transition-colors">Nexus</Link>
+          <span>/</span>
+          <Link href="/coach" className="hover:text-white transition-colors">Coach</Link>
+          <span>/</span>
+          <Link href="/coach/athletes" className="hover:text-white transition-colors">Mes Athlètes</Link>
+          <span>/</span>
+          <span className="text-white font-semibold">{a.firstName} {a.lastName}</span>
+        </div>
+      )}
 
       {/* ── Coach Action Bar ──────────────────────────────────── */}
-      {!recruiterView && (
+      {!recruiterView && !isPreview && (
         <div className={`${cardBase} p-4 sm:p-5`}>
           <div className="flex flex-wrap items-center gap-4">
 
@@ -462,7 +475,7 @@ export default function CoachAthleteProfilePage() {
       )}
 
       {/* Unverified warning banner */}
-      {!recruiterView && !a.isVerified && (
+      {!recruiterView && !isPreview && !a.isVerified && (
         <div className="bg-[#F59E0B]/10 border border-[#F59E0B]/30 rounded-xl px-5 py-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
