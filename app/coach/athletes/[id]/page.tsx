@@ -968,13 +968,16 @@ export default function CoachAthleteProfilePage() {
                     })
                     .eq("id", id);
 
+                  console.log("[Verify athlete]", { athleteId: id, error });
+
                   if (error) {
-                    console.error("Verification error:", error);
+                    alert("Erreur lors de la vérification: " + error.message);
                     return;
                   }
 
                   setA((prev) => prev ? { ...prev, isVerified: true } : prev);
                   setShowVerifyModal(false);
+                  showToast("Profil vérifié avec succès ✓");
                 }}
                 className="flex-1 bg-[#3B82F6] text-white font-bold text-[13px] py-2.5 rounded-lg hover:bg-[#2563EB] transition-colors cursor-pointer"
               >

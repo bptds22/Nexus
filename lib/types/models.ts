@@ -835,7 +835,7 @@ export interface AthleteProfileRecruiterView {
   coachReport?: string;
   traitRatings?: AthleteTraitRatings;
   overallRating: number;
-  distinctions: { badgeId: string; label: string; icon: string; detail?: string }[];
+  distinctions: { badgeId: string; label: string; icon: string; char?: string; detail?: string }[];
 
   // Media
   highlightVideoUrl?: string;

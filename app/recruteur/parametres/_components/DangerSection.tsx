@@ -12,7 +12,7 @@ interface Props {
 
 export default function DangerSection({ onDeactivate, onExport, onDelete }: Props) {
   return (
-    <div className="space-y-8">
+    <div id="zone-danger" className="space-y-8">
       <div>
         <h2 className="font-head text-xl font-black text-white uppercase tracking-tight">Zone danger</h2>
         <p className="text-[14px] text-[#9CA3AF] mt-1">

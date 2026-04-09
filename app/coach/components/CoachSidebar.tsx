@@ -191,7 +191,7 @@ export default function CoachSidebar({ mobileOpen, onClose }: CoachSidebarProps)
     <div className="flex flex-col h-full">
       {/* Logo + portal label */}
       <div className="px-5 py-6 border-b border-[#1e2128]">
-        <Link href="/" className="flex items-center gap-3">
+        <Link href="/coach" className="flex items-center gap-3">
           <Image src="/brand/White%20red%20logo%20@4x.png" alt="Nexus" width={30} height={30} className="object-contain" />
           <span className="font-head font-black text-white text-base tracking-[0.06em] uppercase">Nexus</span>
         </Link>

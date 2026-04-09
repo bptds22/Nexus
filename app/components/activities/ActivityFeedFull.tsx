@@ -15,7 +15,6 @@ import ActivityEmptyState from "./ActivityEmptyState";
    Used by both /coach/activites and /recruteur/activites.
 ───────────────────────────────────────────────────────────────── */
 
-const NOW = new Date("2026-03-11T10:00:00");
 const PAGE_SIZE = 15;
 
 interface Props {
@@ -73,7 +72,7 @@ export default function ActivityFeedFull({ activities, portal, title, subtitle }
     for (const tg of TIME_GROUP_ORDER) grouped.set(tg, []);
 
     for (const a of filtered) {
-      const group = getTimeGroup(a.timestamp, NOW);
+      const group = getTimeGroup(a.timestamp, new Date());
       grouped.get(group)?.push(a);
     }
 

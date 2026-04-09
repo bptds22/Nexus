@@ -1,14 +1,15 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { SearchAthlete } from "../_data/mockSearchAthletes";
 import NxIcon from "@/components/ui/NxIcon";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
 import type { GlobalRecruitmentStatus } from "@/lib/types/models";
 
-type ExtendedAthlete = SearchAthlete & { academicBadges: string[]; stars: number; recruitmentStatus: string | null; heightWeight: string; gpa: number; committedSchoolName: string | null; openToOffers: boolean | null; jersey: string; sportName: string };
+type ExtendedAthlete = SearchAthlete & { academicBadges: string[]; stars: number; recruitmentStatus: string | null; heightWeight: string; gpa: number; committedSchoolName: string | null; openToOffers: boolean | null; jersey: string; sportName: string; ouvertDemenager: boolean; ouvertPrive: boolean; ouvertAnglophone: boolean; createdAt: string };
 import FeatureGate from "@/components/subscription/FeatureGate";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -254,6 +255,11 @@ function AthleteSearchRow({ a, onToggleFav }: { a: ExtendedAthlete; onToggleFav:
 ═══════════════════════════════════════════════════════════════ */
 
 export default function RecherchePage() {
+  return <Suspense><RechercheContent /></Suspense>;
+}
+
+function RechercheContent() {
+  const searchParams = useSearchParams();
   const [search, setSearch] = useState("");
   const [sport, setSport] = useState("");
   const [position, setPosition] = useState("");
@@ -266,6 +272,10 @@ export default function RecherchePage() {
   const [withSportBadge, setWithSportBadge] = useState(false);
   const [withAcademicBadge, setWithAcademicBadge] = useState(false);
   const [hideFavorites, setHideFavorites] = useState(false);
+  const [filterOuvertDemenager, setFilterOuvertDemenager] = useState(false);
+  const [filterOuvertPrive, setFilterOuvertPrive] = useState(false);
+  const [filterOuvertAnglophone, setFilterOuvertAnglophone] = useState(false);
+  const [filterNewOnly, setFilterNewOnly] = useState(searchParams.get("nouveau") === "true");
   const [minGpa, setMinGpa] = useState("");
   const [sortBy, setSortBy] = useState("rating_desc");
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -297,6 +307,7 @@ export default function RecherchePage() {
           moyenne_generale,
           statut_recrutement_override,
           recruitment_status, committed_school_id, open_to_offers,
+          pret_changer_region, ouvert_cegep_prive, ouvert_cegep_anglophone, created_at,
           sports!sport_id(nom),
           positions!position_id(nom, abreviation),
           schools!school_id(name, region),
@@ -386,6 +397,10 @@ export default function RecherchePage() {
             openToOffers: (a?.open_to_offers as boolean | null) ?? null,
             commitmentStatus: "aucun",
             orgType: (a.school_id ? "scolaire" : "ligue_civile") as "scolaire" | "ligue_civile",
+            ouvertDemenager: a.pret_changer_region === true,
+            ouvertPrive: a.ouvert_cegep_prive === true,
+            ouvertAnglophone: a.ouvert_cegep_anglophone === true,
+            createdAt: (a.created_at as string) || "",
           };
         });
         if (mapped[0]) console.log("AFTER MAP:", { name: mapped[0].firstName, jersey: mapped[0].jersey, sport: mapped[0].sport, sportName: mapped[0].sportName, position: mapped[0].position });
@@ -450,6 +465,13 @@ export default function RecherchePage() {
     if (withAcademicBadge) list = list.filter((a) => a.academicBadges && a.academicBadges.length > 0);
     if (minGpa) list = list.filter((a) => a.gpa >= parseFloat(minGpa));
     if (hideFavorites) list = list.filter((a) => !favorites.has(a.id));
+    if (filterOuvertDemenager) list = list.filter((a) => a.ouvertDemenager);
+    if (filterOuvertPrive) list = list.filter((a) => a.ouvertPrive);
+    if (filterOuvertAnglophone) list = list.filter((a) => a.ouvertAnglophone);
+    if (filterNewOnly) {
+      const tenDaysAgo = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
+      list = list.filter((a) => a.createdAt >= tenDaysAgo);
+    }
 
     // Sort
     switch (sortBy) {
@@ -474,7 +496,7 @@ export default function RecherchePage() {
     }
 
     return list.map((a) => ({ ...a, isFavorited: favorites.has(a.id), favorites: favCounts[a.id] || 0 }));
-  }, [search, sport, position, region, promotion, verifiedOnly, withVideoOnly, orgType, minRating, withSportBadge, withAcademicBadge, minGpa, hideFavorites, sortBy, favorites, athletes, favCounts]);
+  }, [search, sport, position, region, promotion, verifiedOnly, withVideoOnly, orgType, minRating, withSportBadge, withAcademicBadge, minGpa, hideFavorites, filterOuvertDemenager, filterOuvertPrive, filterOuvertAnglophone, filterNewOnly, sortBy, favorites, athletes, favCounts]);
 
   const toggleFav = async (id: string) => {
     const supabase = createClient();
@@ -516,10 +538,10 @@ export default function RecherchePage() {
     }
   };
 
-  const hasFilters = sport || position || region || promotion || verifiedOnly || withVideoOnly || orgType || minRating || withSportBadge || withAcademicBadge || minGpa || hideFavorites || sortBy !== "rating_desc";
+  const hasFilters = sport || position || region || promotion || verifiedOnly || withVideoOnly || orgType || minRating || withSportBadge || withAcademicBadge || minGpa || hideFavorites || filterOuvertDemenager || filterOuvertPrive || filterOuvertAnglophone || filterNewOnly || sortBy !== "rating_desc";
 
   const resetFilters = () => {
-    setSport(""); setPosition(""); setRegion(""); setPromotion(""); setVerifiedOnly(false); setWithVideoOnly(false); setOrgType(""); setMinRating(""); setWithSportBadge(false); setWithAcademicBadge(false); setMinGpa(""); setHideFavorites(false); setSortBy("rating_desc");
+    setSport(""); setPosition(""); setRegion(""); setPromotion(""); setVerifiedOnly(false); setWithVideoOnly(false); setOrgType(""); setMinRating(""); setWithSportBadge(false); setWithAcademicBadge(false); setMinGpa(""); setHideFavorites(false); setFilterOuvertDemenager(false); setFilterOuvertPrive(false); setFilterOuvertAnglophone(false); setFilterNewOnly(false); setSortBy("rating_desc");
   };
 
   return (
@@ -704,6 +726,44 @@ export default function RecherchePage() {
                 )}
               </div>
               <span className={`text-[13px] font-semibold transition-colors ${withAcademicBadge ? "text-white" : "text-[#9CA3AF] group-hover:text-[#c0c0c0]"}`}>Mention académique</span>
+            </label>
+
+            <div className="w-px h-6 bg-[#2D3748] mx-1" />
+            <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#4a4d56]">Préférences</span>
+
+            <label className="flex items-center gap-2 cursor-pointer group">
+              <input type="checkbox" checked={filterOuvertDemenager} onChange={(e) => setFilterOuvertDemenager(e.target.checked)} className="sr-only" />
+              <div className={`nx-filter-checkbox${filterOuvertDemenager ? " checked" : ""}`}>
+                {filterOuvertDemenager && <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="4" strokeLinecap="round"><path d="M20 6L9 17l-5-5" /></svg>}
+              </div>
+              <span className={`text-[13px] font-semibold transition-colors ${filterOuvertDemenager ? "text-white" : "text-[#9CA3AF] group-hover:text-[#c0c0c0]"}`}>Ouvert à déménager</span>
+            </label>
+
+            <label className="flex items-center gap-2 cursor-pointer group">
+              <input type="checkbox" checked={filterOuvertPrive} onChange={(e) => setFilterOuvertPrive(e.target.checked)} className="sr-only" />
+              <div className={`nx-filter-checkbox${filterOuvertPrive ? " checked" : ""}`}>
+                {filterOuvertPrive && <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="4" strokeLinecap="round"><path d="M20 6L9 17l-5-5" /></svg>}
+              </div>
+              <span className={`text-[13px] font-semibold transition-colors ${filterOuvertPrive ? "text-white" : "text-[#9CA3AF] group-hover:text-[#c0c0c0]"}`}>Ouvert au privé</span>
+            </label>
+
+            <label className="flex items-center gap-2 cursor-pointer group">
+              <input type="checkbox" checked={filterOuvertAnglophone} onChange={(e) => setFilterOuvertAnglophone(e.target.checked)} className="sr-only" />
+              <div className={`nx-filter-checkbox${filterOuvertAnglophone ? " checked" : ""}`}>
+                {filterOuvertAnglophone && <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="4" strokeLinecap="round"><path d="M20 6L9 17l-5-5" /></svg>}
+              </div>
+              <span className={`text-[13px] font-semibold transition-colors ${filterOuvertAnglophone ? "text-white" : "text-[#9CA3AF] group-hover:text-[#c0c0c0]"}`}>Ouvert anglophone</span>
+            </label>
+
+            <div className="w-px h-6 bg-[#2D3748] mx-1" />
+            <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#4a4d56]">Nouveautés</span>
+
+            <label className="flex items-center gap-2 cursor-pointer group">
+              <input type="checkbox" checked={filterNewOnly} onChange={(e) => setFilterNewOnly(e.target.checked)} className="sr-only" />
+              <div className={`nx-filter-checkbox${filterNewOnly ? " checked" : ""}`}>
+                {filterNewOnly && <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="4" strokeLinecap="round"><path d="M20 6L9 17l-5-5" /></svg>}
+              </div>
+              <span className={`text-[13px] font-semibold transition-colors ${filterNewOnly ? "text-white" : "text-[#9CA3AF] group-hover:text-[#c0c0c0]"}`}>Nouveaux profils (10 derniers jours)</span>
             </label>
           </div>
         )}

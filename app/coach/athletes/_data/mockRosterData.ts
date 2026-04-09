@@ -57,6 +57,11 @@ export interface RosterAthlete {
   badges?: { badgeId: string; label: string; icon: string }[];
   academicBadges?: string[];
   heightWeight?: string;
+  gpa?: number;
+  ouvertDemenager?: boolean;
+  ouvertPrive?: boolean;
+  ouvertAnglophone?: boolean;
+  createdAt?: string;
 }
 
 /* ── Helper to build verification objects ───────────────────── */

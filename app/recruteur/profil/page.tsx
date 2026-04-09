@@ -18,8 +18,11 @@ const TITLES = [
 const DIVISIONS = ["Division 1", "Division 2", "Division 3"];
 
 const SPORTS = [
-  "Football", "Volleyball", "Basketball", "Soccer", "Hockey",
-  "Cross-country", "Natation", "Athlétisme", "Badminton", "Rugby",
+  "Athlétisme", "Badminton", "Baseball", "Basketball", "Cheerleading",
+  "Cross-country", "Danse", "Flag football", "Escrime", "Football",
+  "Futsal", "Golf", "Gymnastique", "Hockey", "Judo", "Karaté", "Natation",
+  "Rugby", "Ski alpin", "Ski de fond", "Soccer", "Softball", "Tennis",
+  "Tennis de table", "Ultimate frisbee", "Volleyball", "Water-polo",
 ];
 
 const inputCls = "w-full bg-[#13151a] border border-[#2a2d36] rounded-lg px-4 py-2.5 text-[14px] text-[#e0e0e0] placeholder:text-[#6b7280] focus:border-[#E63946] outline-none transition-colors";

@@ -72,6 +72,7 @@ export default function ProSignupPage() {
   const [toast, setToast] = useState<string | null>(null);
   const [consentPolicy, setConsentPolicy] = useState(false);
   const [consentData, setConsentData] = useState(false);
+  const [consentMarketing, setConsentMarketing] = useState(false);
 
   const pwdMeetsMin = password.length >= 8;
   const pwdMismatch = confirmPassword.length > 0 && password !== confirmPassword;
@@ -212,17 +213,24 @@ export default function ProSignupPage() {
                       <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 mt-0.5 transition-colors ${consentPolicy ? "bg-[#E63946] border-[#E63946]" : submitted && !consentPolicy ? "border-[#EF4444]" : "border-[#6B7280] group-hover:border-white/30"}`}>
                         {consentPolicy && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"><path d="M20 6L9 17l-5-5" /></svg>}
                       </div>
-                      <span className="text-[10px] text-[#6B7280] leading-snug">J&apos;accepte la <a href="/confidentialite" target="_blank" rel="noopener noreferrer" className="text-[#E63946] hover:underline" onClick={(e) => e.stopPropagation()}>Politique de confidentialité</a> (Loi 25).</span>
+                      <span className="text-[10px] text-[#6B7280] leading-snug">J&apos;ai lu et j&apos;accepte la <a href="/confidentialite" target="_blank" rel="noopener noreferrer" className="text-[#E63946] hover:underline" onClick={(e) => e.stopPropagation()}>Politique de confidentialité</a> et les <a href="/conditions" target="_blank" rel="noopener noreferrer" className="text-[#E63946] hover:underline" onClick={(e) => e.stopPropagation()}>Conditions d&apos;utilisation</a> de Nexus. <span className="text-[#EF4444]">*</span></span>
                     </label>
                     <label className={`flex items-start gap-2 cursor-pointer group ${submitted && !consentData ? "animate-shake" : ""}`}>
                       <input type="checkbox" checked={consentData} onChange={(e) => setConsentData(e.target.checked)} className="sr-only" />
                       <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 mt-0.5 transition-colors ${consentData ? "bg-[#E63946] border-[#E63946]" : submitted && !consentData ? "border-[#EF4444]" : "border-[#6B7280] group-hover:border-white/30"}`}>
                         {consentData && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"><path d="M20 6L9 17l-5-5" /></svg>}
                       </div>
-                      <span className="text-[10px] text-[#6B7280] leading-snug">J&apos;accepte la collecte de mes données pour fournir les services de la plateforme.</span>
+                      <span className="text-[10px] text-[#6B7280] leading-snug">J&apos;accepte la <a href="/collecte-donnees" target="_blank" rel="noopener noreferrer" className="text-[#E63946] hover:underline" onClick={(e) => e.stopPropagation()}>collecte et le traitement de mes données</a> par Nexus aux fins décrites. <span className="text-[#EF4444]">*</span></span>
+                    </label>
+                    <label className="flex items-start gap-2 cursor-pointer group">
+                      <input type="checkbox" checked={consentMarketing} onChange={(e) => setConsentMarketing(e.target.checked)} className="sr-only" />
+                      <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 mt-0.5 transition-colors ${consentMarketing ? "bg-[#E63946] border-[#E63946]" : "border-[#6B7280] group-hover:border-white/30"}`}>
+                        {consentMarketing && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"><path d="M20 6L9 17l-5-5" /></svg>}
+                      </div>
+                      <span className="text-[10px] text-[#6B7280] leading-snug">J&apos;accepte de recevoir des <a href="/communications-marketing" target="_blank" rel="noopener noreferrer" className="text-[#E63946] hover:underline" onClick={(e) => e.stopPropagation()}>communications marketing</a> de Nexus (nouvelles fonctionnalités, conseils, promotions). Maximum 2 courriels par mois. <span className="text-[10px] text-[#4a4d56]">(optionnel)</span></span>
                     </label>
                     {submitted && (!consentPolicy || !consentData) && (
-                      <p className="text-[10px] text-[#EF4444]">Tu dois accepter pour continuer.</p>
+                      <p className="text-[10px] text-[#EF4444]">Tu dois accepter les deux premiers consentements pour continuer.</p>
                     )}
                   </div>
 

@@ -170,9 +170,6 @@ export function relativeTimeFromNow(isoStr: string, now: Date): string {
   if (hours < 24) return `Il y a ${hours}h`;
   const days = Math.floor(hours / 24);
   if (days === 1) return "Hier";
-  if (days < 7) {
-    const dayNames = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
-    return dayNames[d.getDay()];
-  }
-  return d.toLocaleDateString("fr-CA", { day: "numeric", month: "short" });
+  if (days < 7) return `Il y a ${days} jours`;
+  return d.toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" });
 }

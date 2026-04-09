@@ -1,7 +1,7 @@
 "use client";
 
 import type { RecruiterSettings } from "@/lib/types/models";
-import { CEGEP_LIST, RSEQ_SPORTS } from "@/lib/mock/recruiterSettings";
+import { RSEQ_SPORTS } from "@/lib/mock/recruiterSettings";
 import { POSITIONS } from "@/lib/sports-data";
 
 /* ─────────────────────────────────────────────────────────────────
@@ -17,10 +17,10 @@ interface Props {
   onUpdate: <K extends keyof RecruiterSettings>(key: K, value: RecruiterSettings[K]) => void;
   onSave: () => void;
   onCegepChange: (newId: string) => void;
+  schools?: { id: string; name: string }[];
 }
 
-export default function EtablissementSection({ form, original, onUpdate, onSave, onCegepChange }: Props) {
-  const selectedCegep = CEGEP_LIST.find((c) => c.id === form.cegepId);
+export default function EtablissementSection({ form, original, onUpdate, onSave, onCegepChange, schools = [] }: Props) {
   const dirty = form.cegepId !== original.cegepId || form.roleTitle !== original.roleTitle ||
     JSON.stringify(form.sportIds) !== JSON.stringify(original.sportIds) ||
     JSON.stringify(form.divisions) !== JSON.stringify(original.divisions) ||
@@ -36,30 +36,16 @@ export default function EtablissementSection({ form, original, onUpdate, onSave,
       <div className="space-y-5 max-w-2xl">
         {/* CÉGEP */}
         <div>
-          <label className={labelCls}>CÉGEP</label>
+          <label className={labelCls}>CÉGEP / École</label>
           <select aria-label="CÉGEP" value={form.cegepId}
             onChange={(e) => { if (e.target.value !== form.cegepId) onCegepChange(e.target.value); }}
             className={inputCls}>
-            {CEGEP_LIST.map((c) => (
-              <option key={c.id} value={c.id}>{c.name} ({c.region})</option>
+            <option value="">Sélectionner un établissement</option>
+            {schools.map((s) => (
+              <option key={s.id} value={s.id}>{s.name}</option>
             ))}
           </select>
         </div>
-
-        {/* Campus */}
-        {selectedCegep?.campuses && (
-          <div>
-            <label className={labelCls}>Campus</label>
-            <select aria-label="Campus" value={form.campusId ?? ""}
-              onChange={(e) => onUpdate("campusId", e.target.value || undefined)}
-              className={inputCls}>
-              <option value="">Sélectionner un campus</option>
-              {selectedCegep.campuses.map((c) => (
-                <option key={c.id} value={c.id}>{c.label}</option>
-              ))}
-            </select>
-          </div>
-        )}
 
         {/* Role */}
         <div>

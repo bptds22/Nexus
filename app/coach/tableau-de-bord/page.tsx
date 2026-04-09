@@ -76,9 +76,9 @@ export default function TableauDeBordPage() {
       let unreadMessages = 0;
       if (coachAthleteIds.length > 0) {
         const { count } = await supabase
-          .from("pipeline")
+          .from("recruiter_pipeline")
           .select("id", { count: "exact", head: true })
-          .eq("status", "CONTACTE")
+          .eq("stage", "CONTACTE")
           .in("athlete_id", coachAthleteIds);
         unreadMessages = count || 0;
         console.log("Dashboard unread contacts:", count);
@@ -112,7 +112,7 @@ export default function TableauDeBordPage() {
       let viewsLastMonth = 0;
       if (coachAthleteIds.length > 0) {
         const { count: thisMonthCount } = await supabase
-          .from("athlete_views")
+          .from("recruiter_athlete_views")
           .select("id", { count: "exact", head: true })
           .in("athlete_id", coachAthleteIds)
           .gte("viewed_at", firstOfThisMonth)
@@ -121,7 +121,7 @@ export default function TableauDeBordPage() {
         console.log("Dashboard views this month:", thisMonthCount);
 
         const { count: lastMonthCount } = await supabase
-          .from("athlete_views")
+          .from("recruiter_athlete_views")
           .select("id", { count: "exact", head: true })
           .in("athlete_id", coachAthleteIds)
           .gte("viewed_at", firstOfLastMonth)
@@ -145,10 +145,10 @@ export default function TableauDeBordPage() {
       let activeConversations = 0;
       if (coachAthleteIds.length > 0) {
         const { data: activeRows } = await supabase
-          .from("pipeline")
+          .from("recruiter_pipeline")
           .select("recruiter_id")
           .in("athlete_id", coachAthleteIds)
-          .in("status", ["CONTACTE", "EN_DISCUSSION", "VISITE_PLANIFIEE", "ENGAGE"]);
+          .in("stage", ["CONTACTE", "EN_DISCUSSION", "VISITE_PLANIFIEE", "ENGAGE"]);
         console.log("Dashboard active pipeline rows:", activeRows);
         if (activeRows) {
           const uniqueRecruiters = new Set(activeRows.map((r: { recruiter_id: string }) => r.recruiter_id));
@@ -179,7 +179,7 @@ export default function TableauDeBordPage() {
 
         // Views this week per athlete
         const { data: viewRows } = await supabase
-          .from("athlete_views")
+          .from("recruiter_athlete_views")
           .select("athlete_id")
           .in("athlete_id", coachAthleteIds)
           .gte("viewed_at", startOfWeek);
@@ -192,16 +192,16 @@ export default function TableauDeBordPage() {
           }
         }
 
-        // Pipeline count per athlete (total recruiters interested)
-        const { data: pipeRows } = await supabase
-          .from("pipeline")
+        // Favorite count per athlete (distinct recruiters who favorited)
+        const { data: favRows } = await supabase
+          .from("recruiter_favorites")
           .select("athlete_id")
           .in("athlete_id", coachAthleteIds);
 
-        const pipeCounts = new Map<string, number>();
-        if (pipeRows) {
-          for (const r of pipeRows) {
-            pipeCounts.set(r.athlete_id, (pipeCounts.get(r.athlete_id) || 0) + 1);
+        const favCounts = new Map<string, number>();
+        if (favRows) {
+          for (const r of favRows) {
+            favCounts.set(r.athlete_id, (favCounts.get(r.athlete_id) || 0) + 1);
           }
         }
 
@@ -235,131 +235,83 @@ export default function TableauDeBordPage() {
               position: posObj?.abreviation || posObj?.nom || "",
               stars: Math.round((p?.cote_globale_entraineur as number) || 0),
               viewsThisWeek: views,
-              uniqueRecruiters: pipeCounts.get(aid) || 0,
+              uniqueRecruiters: favCounts.get(aid) || 0,
             };
           });
           setHotAthletes(hotList);
         }
       }
 
-      // ── Activities feed ──
-      const { data: activityRows } = await supabase
-        .from("activities")
-        .select("*, athletes(first_name, last_name)")
-        .eq("coach_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(20);
-      console.log("Dashboard activities:", activityRows);
+      // ── Activities feed (from recruiter_activity_log for coach's athletes) ──
+      let activityRows: Record<string, unknown>[] | null = null;
+      if (coachAthleteIds.length > 0) {
+        const { data } = await supabase
+          .from("recruiter_activity_log")
+          .select("id, action_type, details, created_at, athlete_id")
+          .in("athlete_id", coachAthleteIds)
+          .order("created_at", { ascending: false })
+          .limit(20);
+        activityRows = data;
+      }
+      console.log("Dashboard activities:", activityRows?.length);
 
       if (activityRows && activityRows.length > 0) {
-        const todayStr = new Date().toDateString();
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-        const yesterdayStr = yesterday.toDateString();
-
-        // Start of week (Monday)
-        const dayOfWeek = new Date().getDay();
-        const mondayOff = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-        const weekStart = new Date();
-        weekStart.setDate(weekStart.getDate() - mondayOff);
-        weekStart.setHours(0, 0, 0, 0);
-
-        const TYPE_CONFIG: Record<string, { icon: string; iconColor: string; priority: 1 | 2; message: string; actionLabel: string }> = {
-          PROFILE_MODIFIED: { icon: "file-text", iconColor: "#F59E0B", priority: 2, message: "{athlete} a mis à jour son profil.", actionLabel: "Voir le profil" },
-          PROFILE_VERIFIED: { icon: "check-circle", iconColor: "#2563EB", priority: 2, message: "{athlete} est maintenant un profil vérifié.", actionLabel: "Voir le profil" },
-          NEW_MESSAGE: { icon: "message-circle", iconColor: "#22C55E", priority: 1, message: "Nouveau message de {recruiter}, {cegep}, concernant {athlete}.", actionLabel: "Voir la conversation" },
-          FAVORITED: { icon: "heart", iconColor: "#E63946", priority: 1, message: "{athlete} a été ajouté aux favoris par des recruteurs.", actionLabel: "Voir le profil" },
-          STATUS_CHANGED: { icon: "pen-tool", iconColor: "#E63946", priority: 1, message: "{athlete} a changé de statut.", actionLabel: "Voir le profil" },
-          ATHLETE_ADDED: { icon: "user-plus", iconColor: "#22C55E", priority: 2, message: "{athlete} a été ajouté à la plateforme.", actionLabel: "Voir le profil" },
-          VIDEO_ADDED: { icon: "film", iconColor: "#22C55E", priority: 1, message: "{athlete} a ajouté une nouvelle vidéo highlights.", actionLabel: "Regarder la vidéo" },
-          BADGE_EARNED: { icon: "award", iconColor: "#F97316", priority: 2, message: "{athlete} a reçu un badge.", actionLabel: "Voir le profil" },
+        const TYPE_CONFIG: Record<string, { icon: string; iconColor: string; priority: 1 | 2; label: string }> = {
+          PROFILE_VIEWED: { icon: "eye", iconColor: "#6B7280", priority: 2, label: "profil consulté par un recruteur" },
+          FAVORITED: { icon: "heart", iconColor: "#E63946", priority: 1, label: "ajouté en favori" },
+          PIPELINE_CHANGED: { icon: "activity", iconColor: "#F59E0B", priority: 1, label: "mouvement dans un pipeline" },
+          ATHLETE_VERIFIED: { icon: "check-circle", iconColor: "#3B82F6", priority: 2, label: "profil vérifié" },
+          VIDEO_ADDED: { icon: "film", iconColor: "#8B5CF6", priority: 2, label: "vidéo ajoutée" },
+          PROFILE_UPDATED: { icon: "file-text", iconColor: "#6B7280", priority: 2, label: "profil mis à jour" },
+          UNFAVORITED: { icon: "heart", iconColor: "#6B7280", priority: 2, label: "retiré des favoris" },
         };
 
-        const mapped: ActivityEvent[] = activityRows.map((row: Record<string, unknown>) => {
-          const type = (row.type as string) || "";
-          const cfg = TYPE_CONFIG[type] || { icon: "circle", iconColor: "#6B7280", priority: 2 as const, message: "Activité.", actionLabel: "Voir" };
-          const meta = (row.metadata as Record<string, unknown>) || {};
-          const athleteJoin = row.athletes as { first_name?: string; last_name?: string } | null;
-          const athleteName = athleteJoin ? `${athleteJoin.first_name || ""} ${athleteJoin.last_name || ""}`.trim() : "";
+        const mapped: ActivityEvent[] = activityRows.map((row) => {
+          const actionType = (row.action_type as string) || "";
+          const details = (row.details as Record<string, unknown>) || {};
+          const cfg = TYPE_CONFIG[actionType] || { icon: "circle", iconColor: "#6B7280", priority: 2 as const, label: actionType.replace(/_/g, " ").toLowerCase() };
+          const athleteName = `${(details.first_name as string) || ""} ${(details.last_name as string) || ""}`.trim();
           const createdAt = new Date(row.created_at as string);
-          const createdDateStr = createdAt.toDateString();
 
           // Time group
-          let timeGroup: ActivityEvent["timeGroup"] = "Cette semaine";
-          if (createdDateStr === todayStr) timeGroup = "Aujourd'hui";
-          else if (createdDateStr === yesterdayStr) timeGroup = "Hier";
-          else if (createdAt >= weekStart) timeGroup = "Cette semaine";
-          else timeGroup = "Semaine dernière";
+          const now = new Date();
+          const diffMs = now.getTime() - createdAt.getTime();
+          const diffDays = Math.floor(diffMs / 86400000);
+          let timeGroup: ActivityEvent["timeGroup"] = "Semaine dernière";
+          if (diffDays === 0) timeGroup = "Aujourd'hui";
+          else if (diffDays === 1) timeGroup = "Hier";
+          else if (diffDays < 7) timeGroup = "Cette semaine";
 
           // Relative time
-          const diffMs = Date.now() - createdAt.getTime();
           const diffMin = Math.floor(diffMs / 60000);
-          const diffH = Math.floor(diffMin / 60);
-          let relativeTime = "";
-          if (timeGroup === "Aujourd'hui") {
-            if (diffMin < 60) relativeTime = `Il y a ${diffMin} min`;
-            else relativeTime = `Il y a ${diffH}h`;
-          } else if (timeGroup === "Hier") {
-            relativeTime = `Hier, ${createdAt.getHours()}h${createdAt.getMinutes().toString().padStart(2, "0")}`;
-          } else {
-            const dayNames = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
-            relativeTime = dayNames[createdAt.getDay()];
-          }
+          let relativeTime = "À l'instant";
+          if (diffMin >= 1 && diffMin < 60) relativeTime = `Il y a ${diffMin} min`;
+          else if (diffMin >= 60 && diffDays === 0) relativeTime = `Il y a ${Math.floor(diffMin / 60)}h`;
+          else if (diffDays === 1) relativeTime = "Hier";
+          else if (diffDays > 1 && diffDays < 7) relativeTime = `Il y a ${diffDays}j`;
+          else if (diffDays >= 7) relativeTime = `Il y a ${Math.floor(diffDays / 7)} sem.`;
 
-          // Build message with metadata
-          let message = cfg.message;
-          let actionLabel = cfg.actionLabel;
-          let actionUrl = `/coach/athletes/${row.athlete_id as string}`;
-          if (type === "NEW_MESSAGE") {
-            message = `Nouveau message de {recruiter}, {cegep}, concernant {athlete}.`;
-            actionUrl = "/coach/demandes";
-            actionLabel = "Voir la conversation";
-          } else if (type === "FAVORITED" && meta.count) {
-            message = `{athlete} a été ajouté aux favoris par ${meta.count} recruteurs cette semaine.`;
-          } else if (type === "STATUS_CHANGED" && meta.new_status === "LETTRE_SIGNEE") {
-            message = "{athlete} a signé sa lettre d'intention!";
-          } else if (type === "STATUS_CHANGED" && meta.new_status) {
-            message = `{athlete} est passé au statut ${meta.new_status as string}.`;
-          } else if (type === "ATHLETE_ADDED" && meta.position) {
-            message = `{athlete} (${meta.position as string}) a été ajouté à la plateforme.`;
-          } else if (type === "BADGE_EARNED" && meta.badge_name) {
-            message = `{athlete} a reçu le badge ${meta.badge_name as string}.`;
-          } else if (type === "VIDEO_ADDED") {
-            actionLabel = "Regarder la vidéo";
-          }
-
-          const ev: ActivityEvent = {
+          return {
             id: row.id as string,
-            type: (type === "NEW_MESSAGE" ? "coach_replied"
-              : type === "FAVORITED" ? "competitor_favorited"
-              : type === "STATUS_CHANGED" ? "status_lettre_signee"
-              : type === "ATHLETE_ADDED" ? "new_athlete"
-              : type === "VIDEO_ADDED" ? "video_added"
-              : type === "BADGE_EARNED" ? "badge_added"
-              : type === "PROFILE_VERIFIED" ? "profile_verified"
-              : type === "PROFILE_MODIFIED" ? "scouting_report_updated"
-              : "profile_updated_bulk") as ActivityEvent["type"],
+            type: (actionType === "FAVORITED" ? "competitor_favorited"
+              : actionType === "PIPELINE_CHANGED" ? "status_engage"
+              : actionType === "ATHLETE_VERIFIED" ? "profile_verified"
+              : actionType === "VIDEO_ADDED" ? "video_added"
+              : actionType === "PROFILE_VIEWED" ? "profile_updated_bulk"
+              : "scouting_report_updated") as ActivityEvent["type"],
             priority: cfg.priority,
-            direction: "inbound",
+            direction: "inbound" as const,
             athleteId: (row.athlete_id as string) || undefined,
-            athleteName,
-            recruiterId: (meta.recruiter_id as string) || undefined,
-            recruiterName: (meta.recruiter_name as string) || undefined,
-            cegepName: (meta.cegep_name as string) || undefined,
-            message,
+            athleteName: athleteName || undefined,
+            message: athleteName ? `${athleteName} — ${cfg.label}` : cfg.label,
             icon: cfg.icon,
             iconColor: cfg.iconColor,
-            actionLabel,
-            actionUrl,
+            actionLabel: "Voir",
+            actionUrl: row.athlete_id ? `/coach/athletes/${row.athlete_id as string}` : undefined,
             timestamp: row.created_at as string,
             relativeTime,
             timeGroup,
-            metadata: {
-              badgeName: (meta.badge_name as string) || undefined,
-              favCount: (meta.count as number) || undefined,
-            },
           };
-          return ev;
         });
 
         setActivities(mapped);

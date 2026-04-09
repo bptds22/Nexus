@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import PlaybookBackground from "../components/PlaybookBackground";
 import { athleteUser, athleteNotifications, athleteSuggestions } from "@/lib/mock/athlete";
 
@@ -158,6 +159,44 @@ function AthleteSidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose:
 
 export default function AthleteLayout({ children }: { children: React.ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [onboardingChecked, setOnboardingChecked] = useState(false);
+  const pathname = usePathname();
+  const layoutRouter = useRouter();
+
+  // Onboarding guard — redirect to /athlete/onboarding if profile incomplete
+  useEffect(() => {
+    if (pathname.startsWith("/athlete/onboarding")) {
+      setOnboardingChecked(true);
+      return;
+    }
+    async function checkOnboarding() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setOnboardingChecked(true); return; }
+
+      const { data: athlete } = await supabase
+        .from("athletes")
+        .select("first_name, last_name, school_id, sport_id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (!athlete || !athlete.first_name || !athlete.last_name || !athlete.school_id || !athlete.sport_id) {
+        layoutRouter.replace("/athlete/onboarding");
+        return;
+      }
+      setOnboardingChecked(true);
+    }
+    checkOnboarding();
+  }, [pathname, layoutRouter]);
+
+  if (!onboardingChecked && !pathname.startsWith("/athlete/onboarding")) {
+    return (
+      <div className="hero-playbook nx-no-glow bg-[#111317] min-h-screen flex items-center justify-center">
+        <PlaybookBackground />
+        <div className="w-8 h-8 border-2 border-[#E63946] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="hero-playbook nx-no-glow bg-[#111317] min-h-screen flex">

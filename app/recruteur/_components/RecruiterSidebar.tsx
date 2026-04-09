@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import SidebarUpgradeCard from "@/components/subscription/SidebarUpgradeCard";
 
 /* ─────────────────────────────────────────────────────────────────
@@ -32,11 +33,11 @@ const RECRUITER_ITEMS: NavItem[] = [
     icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><line x1="9" y1="3" x2="9" y2="21" /><line x1="15" y1="3" x2="15" y2="21" /></svg>,
   },
   {
-    label: "Listes", href: "/recruteur/listes", badge: 5,
+    label: "Listes", href: "/recruteur/listes",
     icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" /></svg>,
   },
   {
-    label: "Messages", href: "/recruteur/messages", badge: 2,
+    label: "Messages", href: "/recruteur/messages",
     icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></svg>,
   },
 ];
@@ -74,7 +75,7 @@ const BOTTOM_ITEMS: NavItem[] = [
     icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>,
   },
   {
-    label: "Activités", href: "/recruteur/activites", badge: 4,
+    label: "Activités", href: "/recruteur/activites",
     icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 01-3.46 0" /></svg>,
   },
   {
@@ -129,6 +130,44 @@ export default function RecruiterSidebar({ mobileOpen, onClose }: RecruiterSideb
     } catch { /* use defaults */ }
   }, []);
 
+  // Real badge counts from Supabase
+  const [msgBadge, setMsgBadge] = useState(0);
+  const [actBadge, setActBadge] = useState(0);
+
+  useEffect(() => {
+    async function loadBadges() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Unread messages: conversations where recruiter has unread replies
+      const { data: convs } = await supabase
+        .from("conversations")
+        .select("id")
+        .eq("recruiter_id", user.id)
+        .eq("status", "ACTIVE");
+      const convIds = convs?.map((c) => c.id) || [];
+      if (convIds.length > 0) {
+        const { count } = await supabase
+          .from("messages")
+          .select("*", { count: "exact", head: true })
+          .in("conversation_id", convIds)
+          .neq("sender_id", user.id)
+          .eq("is_read", false);
+        setMsgBadge(count ?? 0);
+      }
+
+      // Unread activities
+      const { count: actCount } = await supabase
+        .from("recruiter_activity_log")
+        .select("*", { count: "exact", head: true })
+        .eq("recruiter_id", user.id)
+        .eq("is_read", false);
+      setActBadge(actCount ?? 0);
+    }
+    loadBadges();
+  }, []);
+
   const handleLogout = () => {
     localStorage.removeItem("nexus_user");
     router.push("/");
@@ -173,7 +212,7 @@ export default function RecruiterSidebar({ mobileOpen, onClose }: RecruiterSideb
     <div className="flex flex-col h-full">
       {/* Logo + portal label */}
       <div className="px-5 py-6 border-b border-[#1e2128]">
-        <Link href="/" className="flex items-center gap-3">
+        <Link href="/recruteur/tableau-de-bord" className="flex items-center gap-3">
           <Image src="/brand/White%20red%20logo%20@4x.png" alt="Nexus" width={30} height={30} className="object-contain" />
           <span className="font-head font-black text-white text-base tracking-[0.06em] uppercase">Nexus</span>
         </Link>
@@ -185,7 +224,10 @@ export default function RecruiterSidebar({ mobileOpen, onClose }: RecruiterSideb
       {/* Nav links */}
       <nav className="flex-1 px-3 py-5 space-y-1 overflow-y-auto">
         {/* ── Free section (recruiter items) ── */}
-        {showRecruiterItems && RECRUITER_ITEMS.map((item) => renderNavItem(item))}
+        {showRecruiterItems && RECRUITER_ITEMS.map((item) => {
+          const badgeOverride = item.href === "/recruteur/messages" ? msgBadge : item.badge;
+          return renderNavItem({ ...item, badge: badgeOverride });
+        })}
 
         {/* ── Pro section separator ── */}
         <div className="pt-3 pb-1 px-1">
@@ -206,7 +248,10 @@ export default function RecruiterSidebar({ mobileOpen, onClose }: RecruiterSideb
 
         {/* ── Bottom section ── */}
         <div className="pt-2" />
-        {showRecruiterItems && BOTTOM_ITEMS.filter((i) => i.label !== "Paramètres").map((item) => renderNavItem(item))}
+        {showRecruiterItems && BOTTOM_ITEMS.filter((i) => i.label !== "Paramètres").map((item) => {
+          const badgeOverride = item.href === "/recruteur/activites" ? actBadge : item.badge;
+          return renderNavItem({ ...item, badge: badgeOverride });
+        })}
         {BOTTOM_ITEMS.filter((i) => i.label === "Paramètres").map((item) => renderNavItem(item))}
       </nav>
 

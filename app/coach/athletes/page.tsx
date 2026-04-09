@@ -268,6 +268,14 @@ function MesAthletesContent() {
   const [minRating, setMinRating] = useState("");
   const [withSportBadge, setWithSportBadge] = useState(false);
   const [withAcademicBadge, setWithAcademicBadge] = useState(false);
+  const [sortBy, setSortBy] = useState("rating_desc");
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [minGpa, setMinGpa] = useState("");
+  const [orgType, setOrgType] = useState("");
+  const [filterOuvertDemenager, setFilterOuvertDemenager] = useState(false);
+  const [filterOuvertPrive, setFilterOuvertPrive] = useState(false);
+  const [filterOuvertAnglophone, setFilterOuvertAnglophone] = useState(false);
+  const [filterNewOnly, setFilterNewOnly] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [regions, setRegions] = useState<string[]>([]);
   const [dynamicPositions, setDynamicPositions] = useState<{ abbr: string; label: string }[]>([]);
@@ -315,6 +323,11 @@ function MesAthletesContent() {
           sport_id,
           position_id,
           mentions_academiques,
+          moyenne_generale,
+          pret_changer_region,
+          ouvert_cegep_prive,
+          ouvert_cegep_anglophone,
+          created_at,
           sports!sport_id(nom),
           positions!position_id(nom, abreviation),
           schools!school_id(name, region),
@@ -431,6 +444,11 @@ function MesAthletesContent() {
           recruitmentStatus: (a.recruitment_status as string) || "OUVERT",
           committedSchoolName: committedSchool?.name || "",
           openToOffers: (a.open_to_offers as boolean | null) ?? null,
+          gpa: (a.moyenne_generale as number) || 0,
+          ouvertDemenager: a.pret_changer_region === true,
+          ouvertPrive: a.ouvert_cegep_prive === true,
+          ouvertAnglophone: a.ouvert_cegep_anglophone === true,
+          createdAt: (a.created_at as string) || "",
         };
 
         return athlete;
@@ -506,14 +524,32 @@ function MesAthletesContent() {
     if (minRating) list = list.filter((a) => a.stars >= parseFloat(minRating));
     if (withSportBadge) list = list.filter((a) => a.badges && a.badges.length > 0);
     if (withAcademicBadge) list = list.filter((a) => a.academicBadges && a.academicBadges.length > 0);
+    if (minGpa) list = list.filter((a) => (a.gpa || 0) >= parseFloat(minGpa));
+    if (filterOuvertDemenager) list = list.filter((a) => a.ouvertDemenager);
+    if (filterOuvertPrive) list = list.filter((a) => a.ouvertPrive);
+    if (filterOuvertAnglophone) list = list.filter((a) => a.ouvertAnglophone);
+    if (filterNewOnly) {
+      const tenDaysAgo = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
+      list = list.filter((a) => (a.createdAt || "") >= tenDaysAgo);
+    }
+
+    // Sort
+    switch (sortBy) {
+      case "rating_desc": list.sort((a, b) => b.stars - a.stars); break;
+      case "rating_asc": list.sort((a, b) => a.stars - b.stars); break;
+      case "favorites_desc": list.sort((a, b) => b.favorites - a.favorites); break;
+      case "grad_asc": list.sort((a, b) => a.gradYear - b.gradYear); break;
+      case "grad_desc": list.sort((a, b) => b.gradYear - a.gradYear); break;
+      case "name_asc": list.sort((a, b) => `${a.lastName} ${a.firstName}`.localeCompare(`${b.lastName} ${b.firstName}`)); break;
+    }
 
     return list;
-  }, [realAthletes, search, sport, position, region, promotion, verifiedOnly, withVideoOnly, minRating, withSportBadge, withAcademicBadge, urlFilter]);
+  }, [realAthletes, search, sport, position, region, promotion, verifiedOnly, withVideoOnly, minRating, withSportBadge, withAcademicBadge, minGpa, filterOuvertDemenager, filterOuvertPrive, filterOuvertAnglophone, filterNewOnly, sortBy, urlFilter]);
 
-  const hasFilters = sport || position || region || promotion || verifiedOnly || withVideoOnly || minRating || withSportBadge || withAcademicBadge;
+  const hasFilters = sport || position || region || promotion || verifiedOnly || withVideoOnly || minRating || withSportBadge || withAcademicBadge || minGpa || filterOuvertDemenager || filterOuvertPrive || filterOuvertAnglophone || filterNewOnly || sortBy !== "rating_desc";
 
   const resetFilters = () => {
-    setSport(""); setPosition(""); setRegion(""); setPromotion(""); setVerifiedOnly(false); setWithVideoOnly(false); setMinRating(""); setWithSportBadge(false); setWithAcademicBadge(false);
+    setSport(""); setPosition(""); setRegion(""); setPromotion(""); setVerifiedOnly(false); setWithVideoOnly(false); setMinRating(""); setWithSportBadge(false); setWithAcademicBadge(false); setMinGpa(""); setOrgType(""); setFilterOuvertDemenager(false); setFilterOuvertPrive(false); setFilterOuvertAnglophone(false); setFilterNewOnly(false); setSortBy("rating_desc");
   };
 
   // Loading state
@@ -618,79 +654,53 @@ function MesAthletesContent() {
         />
       </div>
 
-      {/* ── Filter bar ──────────────────────────────────────────── */}
+      {/* ── Primary filters — always visible ─────────────────── */}
       <div className="flex flex-wrap items-center gap-2.5">
-        <select title="Filtrer par sport" value={sport} onChange={(e) => { setSport(e.target.value); setPosition(""); }} className={`nx-filter-select${sport ? " nx-filter-active" : ""}`}>
+        <select title="Sport" value={sport} onChange={(e) => { setSport(e.target.value); setPosition(""); }} className={`nx-filter-select${sport ? " nx-filter-active" : ""}`}>
           {SPORTS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
         </select>
 
-        <select title="Filtrer par position" value={position} onChange={(e) => setPosition(e.target.value)} className={`nx-filter-select${position ? " nx-filter-active" : ""}`} disabled={!sport}>
+        <select title="Position" value={position} onChange={(e) => setPosition(e.target.value)} className={`nx-filter-select${position ? " nx-filter-active" : ""}`} disabled={!sport}>
           <option value="">{sport ? "Toutes les positions" : "Sélectionner un sport d\u0027abord"}</option>
           {dynamicPositions.map((p) => <option key={p.abbr} value={p.abbr}>{p.abbr} — {p.label}</option>)}
         </select>
 
-        <select title="Filtrer par région" value={region} onChange={(e) => setRegion(e.target.value)} className={`nx-filter-select${region ? " nx-filter-active" : ""}`}>
-          <option value="">Toutes les régions</option>
-          {regions.map((r) => <option key={r} value={r}>{r}</option>)}
-        </select>
-
-        <select title="Filtrer par promotion" value={promotion} onChange={(e) => setPromotion(e.target.value)} className={`nx-filter-select${promotion ? " nx-filter-active" : ""}`}>
+        <select title="Promotion" value={promotion} onChange={(e) => setPromotion(e.target.value)} className={`nx-filter-select${promotion ? " nx-filter-active" : ""}`}>
           <option value="">Toutes les promotions</option>
           {PROMOTIONS.map((p) => <option key={p} value={p}>{p}</option>)}
         </select>
 
-        <select title="Filtrer par cote" value={minRating} onChange={(e) => setMinRating(e.target.value)} className={`nx-filter-select${minRating ? " nx-filter-active" : ""}`}>
-          <option value="">Toutes les cotes</option>
-          <option value="1">&#9733; 1+</option>
-          <option value="2">&#9733;&#9733; 2+</option>
-          <option value="3">&#9733;&#9733;&#9733; 3+</option>
-          <option value="4">&#9733;&#9733;&#9733;&#9733; 4+</option>
-          <option value="5">&#9733;&#9733;&#9733;&#9733;&#9733; 5</option>
-        </select>
-
-        {/* Divider */}
         <div className="w-px h-6 bg-[#2D3748] mx-1 hidden sm:block" />
 
-        {/* Toggle checkboxes */}
-        <label className="flex items-center gap-2 cursor-pointer group">
-          <input type="checkbox" checked={withSportBadge} onChange={(e) => setWithSportBadge(e.target.checked)} className="sr-only" />
-          <div className={`nx-filter-checkbox${withSportBadge ? " checked" : ""}`}>
-            {withSportBadge && (
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="4" strokeLinecap="round"><path d="M20 6L9 17l-5-5" /></svg>
-            )}
-          </div>
-          <span className={`text-[13px] font-semibold transition-colors ${withSportBadge ? "text-white" : "text-[#9CA3AF] group-hover:text-[#c0c0c0]"}`}>Avec distinction sportive</span>
-        </label>
+        <select title="Trier" value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="nx-filter-select">
+          <option value="rating_desc">Trier: Meilleure cote</option>
+          <option value="rating_asc">Trier: Cote croissante</option>
+          <option value="favorites_desc">Trier: Plus favorisés</option>
+          <option value="grad_asc">Trier: Graduation proche</option>
+          <option value="grad_desc">Trier: Graduation éloignée</option>
+          <option value="name_asc">Trier: Nom A-Z</option>
+        </select>
 
-        <label className="flex items-center gap-2 cursor-pointer group">
-          <input type="checkbox" checked={withAcademicBadge} onChange={(e) => setWithAcademicBadge(e.target.checked)} className="sr-only" />
-          <div className={`nx-filter-checkbox${withAcademicBadge ? " checked" : ""}`}>
-            {withAcademicBadge && (
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="4" strokeLinecap="round"><path d="M20 6L9 17l-5-5" /></svg>
-            )}
-          </div>
-          <span className={`text-[13px] font-semibold transition-colors ${withAcademicBadge ? "text-white" : "text-[#9CA3AF] group-hover:text-[#c0c0c0]"}`}>Mention académique</span>
-        </label>
+        <div className="w-px h-6 bg-[#2D3748] mx-1 hidden sm:block" />
 
-        <label className="flex items-center gap-2 cursor-pointer group">
-          <input type="checkbox" checked={verifiedOnly} onChange={(e) => setVerifiedOnly(e.target.checked)} className="sr-only" />
-          <div className={`nx-filter-checkbox${verifiedOnly ? " checked" : ""}`}>
-            {verifiedOnly && (
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="4" strokeLinecap="round"><path d="M20 6L9 17l-5-5" /></svg>
-            )}
-          </div>
-          <span className={`text-[13px] font-semibold transition-colors ${verifiedOnly ? "text-white" : "text-[#9CA3AF] group-hover:text-[#c0c0c0]"}`}>Vérifié seulement</span>
-        </label>
-
-        <label className="flex items-center gap-2 cursor-pointer group">
-          <input type="checkbox" checked={withVideoOnly} onChange={(e) => setWithVideoOnly(e.target.checked)} className="sr-only" />
-          <div className={`nx-filter-checkbox${withVideoOnly ? " checked" : ""}`}>
-            {withVideoOnly && (
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="4" strokeLinecap="round"><path d="M20 6L9 17l-5-5" /></svg>
-            )}
-          </div>
-          <span className={`text-[13px] font-semibold transition-colors ${withVideoOnly ? "text-white" : "text-[#9CA3AF] group-hover:text-[#c0c0c0]"}`}>Avec vidéo</span>
-        </label>
+        <button
+          type="button"
+          onClick={() => setShowAdvanced(!showAdvanced)}
+          className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-[13px] font-semibold transition-colors ${
+            showAdvanced ? "bg-[#E63946]/10 text-[#E63946] border border-[#E63946]/30" : "text-[#9CA3AF] hover:text-white border border-[#2D3748]"
+          }`}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <line x1="4" y1="21" x2="4" y2="14" /><line x1="4" y1="10" x2="4" y2="3" />
+            <line x1="12" y1="21" x2="12" y2="12" /><line x1="12" y1="8" x2="12" y2="3" />
+            <line x1="20" y1="21" x2="20" y2="16" /><line x1="20" y1="12" x2="20" y2="3" />
+            <line x1="1" y1="14" x2="7" y2="14" /><line x1="9" y1="8" x2="15" y2="8" /><line x1="17" y1="16" x2="23" y2="16" />
+          </svg>
+          Filtres avancés
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className={`transition-transform ${showAdvanced ? "rotate-180" : ""}`}>
+            <path d="M6 9l6 6 6-6" />
+          </svg>
+        </button>
 
         {hasFilters && (
           <button type="button" onClick={resetFilters} className="nx-filter-reset flex items-center gap-1.5 text-[13px] font-bold text-[#E63946] hover:text-[#D42B22] transition-colors ml-1">
@@ -701,6 +711,106 @@ function MesAthletesContent() {
           </button>
         )}
       </div>
+
+      {/* Quick preset chips */}
+      <div className="flex flex-wrap items-center gap-2">
+        <button type="button" onClick={() => setMinRating(minRating === "4" ? "" : "4")}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-bold transition-colors ${minRating === "4" ? "bg-[#F59E0B]/15 text-[#F59E0B] border border-[#F59E0B]/30" : "bg-[#13151a] text-[#6b7280] border border-[#2D3748] hover:text-white hover:border-[#4a4d56]"}`}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill={minRating === "4" ? "#F59E0B" : "#6b7280"} stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
+          4+ étoiles
+        </button>
+        <button type="button" onClick={() => setVerifiedOnly(!verifiedOnly)}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-bold transition-colors ${verifiedOnly ? "bg-[#3B82F6]/15 text-[#3B82F6] border border-[#3B82F6]/30" : "bg-[#13151a] text-[#6b7280] border border-[#2D3748] hover:text-white hover:border-[#4a4d56]"}`}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill={verifiedOnly ? "#3B82F6" : "none"} stroke={verifiedOnly ? "#3B82F6" : "#6b7280"} strokeWidth="2" strokeLinecap="round"><path d="M20 6L9 17l-5-5" /></svg>
+          Vérifié
+        </button>
+        <button type="button" onClick={() => setWithVideoOnly(!withVideoOnly)}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-bold transition-colors ${withVideoOnly ? "bg-[#E63946]/15 text-[#E63946] border border-[#E63946]/30" : "bg-[#13151a] text-[#6b7280] border border-[#2D3748] hover:text-white hover:border-[#4a4d56]"}`}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={withVideoOnly ? "#E63946" : "#6b7280"} strokeWidth="2" strokeLinecap="round"><polygon points="23 7 16 12 23 17 23 7" /><rect x="1" y="5" width="15" height="14" rx="2" /></svg>
+          Avec vidéo
+        </button>
+        <button type="button" onClick={() => setWithSportBadge(!withSportBadge)}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-bold transition-colors ${withSportBadge ? "bg-[#E63946]/15 text-[#E63946] border border-[#E63946]/30" : "bg-[#13151a] text-[#6b7280] border border-[#2D3748] hover:text-white hover:border-[#4a4d56]"}`}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={withSportBadge ? "#E63946" : "#6b7280"} strokeWidth="2" strokeLinecap="round"><path d="M12 2L15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26z" /></svg>
+          Avec distinction
+        </button>
+      </div>
+
+      {/* Advanced filters — collapsible */}
+      {showAdvanced && (
+        <div className="flex flex-wrap items-center gap-2.5 bg-[#13151a] border border-[#2a2d36] rounded-lg p-3">
+          <select title="Région" value={region} onChange={(e) => setRegion(e.target.value)} className={`nx-filter-select${region ? " nx-filter-active" : ""}`}>
+            <option value="">Toutes les régions</option>
+            {regions.map((r) => <option key={r} value={r}>{r}</option>)}
+          </select>
+
+          <select title="Cote" value={minRating} onChange={(e) => setMinRating(e.target.value)} className={`nx-filter-select${minRating ? " nx-filter-active" : ""}`}>
+            <option value="">Toutes les cotes</option>
+            <option value="1">★ 1+</option>
+            <option value="2">★★ 2+</option>
+            <option value="3">★★★ 3+</option>
+            <option value="4">★★★★ 4+</option>
+            <option value="5">★★★★★ 5</option>
+          </select>
+
+          <select title="Moyenne" value={minGpa} onChange={(e) => setMinGpa(e.target.value)} className={`nx-filter-select${minGpa ? " nx-filter-active" : ""}`}>
+            <option value="">Toutes les moyennes</option>
+            <option value="60">60%+</option>
+            <option value="70">70%+</option>
+            <option value="80">80%+</option>
+            <option value="85">85%+</option>
+            <option value="90">90%+</option>
+          </select>
+
+          <div className="w-px h-6 bg-[#2D3748] mx-1" />
+
+          <label className="flex items-center gap-2 cursor-pointer group">
+            <input type="checkbox" checked={withAcademicBadge} onChange={(e) => setWithAcademicBadge(e.target.checked)} className="sr-only" />
+            <div className={`nx-filter-checkbox${withAcademicBadge ? " checked" : ""}`}>
+              {withAcademicBadge && <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="4" strokeLinecap="round"><path d="M20 6L9 17l-5-5" /></svg>}
+            </div>
+            <span className={`text-[13px] font-semibold transition-colors ${withAcademicBadge ? "text-white" : "text-[#9CA3AF] group-hover:text-[#c0c0c0]"}`}>Mention académique</span>
+          </label>
+
+          <div className="w-px h-6 bg-[#2D3748] mx-1" />
+          <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#4a4d56]">Préférences</span>
+
+          <label className="flex items-center gap-2 cursor-pointer group">
+            <input type="checkbox" checked={filterOuvertDemenager} onChange={(e) => setFilterOuvertDemenager(e.target.checked)} className="sr-only" />
+            <div className={`nx-filter-checkbox${filterOuvertDemenager ? " checked" : ""}`}>
+              {filterOuvertDemenager && <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="4" strokeLinecap="round"><path d="M20 6L9 17l-5-5" /></svg>}
+            </div>
+            <span className={`text-[13px] font-semibold transition-colors ${filterOuvertDemenager ? "text-white" : "text-[#9CA3AF] group-hover:text-[#c0c0c0]"}`}>Ouvert à déménager</span>
+          </label>
+
+          <label className="flex items-center gap-2 cursor-pointer group">
+            <input type="checkbox" checked={filterOuvertPrive} onChange={(e) => setFilterOuvertPrive(e.target.checked)} className="sr-only" />
+            <div className={`nx-filter-checkbox${filterOuvertPrive ? " checked" : ""}`}>
+              {filterOuvertPrive && <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="4" strokeLinecap="round"><path d="M20 6L9 17l-5-5" /></svg>}
+            </div>
+            <span className={`text-[13px] font-semibold transition-colors ${filterOuvertPrive ? "text-white" : "text-[#9CA3AF] group-hover:text-[#c0c0c0]"}`}>Ouvert au privé</span>
+          </label>
+
+          <label className="flex items-center gap-2 cursor-pointer group">
+            <input type="checkbox" checked={filterOuvertAnglophone} onChange={(e) => setFilterOuvertAnglophone(e.target.checked)} className="sr-only" />
+            <div className={`nx-filter-checkbox${filterOuvertAnglophone ? " checked" : ""}`}>
+              {filterOuvertAnglophone && <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="4" strokeLinecap="round"><path d="M20 6L9 17l-5-5" /></svg>}
+            </div>
+            <span className={`text-[13px] font-semibold transition-colors ${filterOuvertAnglophone ? "text-white" : "text-[#9CA3AF] group-hover:text-[#c0c0c0]"}`}>Ouvert anglophone</span>
+          </label>
+
+          <div className="w-px h-6 bg-[#2D3748] mx-1" />
+          <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#4a4d56]">Nouveautés</span>
+
+          <label className="flex items-center gap-2 cursor-pointer group">
+            <input type="checkbox" checked={filterNewOnly} onChange={(e) => setFilterNewOnly(e.target.checked)} className="sr-only" />
+            <div className={`nx-filter-checkbox${filterNewOnly ? " checked" : ""}`}>
+              {filterNewOnly && <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="4" strokeLinecap="round"><path d="M20 6L9 17l-5-5" /></svg>}
+            </div>
+            <span className={`text-[13px] font-semibold transition-colors ${filterNewOnly ? "text-white" : "text-[#9CA3AF] group-hover:text-[#c0c0c0]"}`}>Nouveaux profils (10 derniers jours)</span>
+          </label>
+        </div>
+      )}
 
       {/* ── Results ─────────────────────────────────────────────── */}
       {filtered.length === 0 ? (

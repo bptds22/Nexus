@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import CegepGate from "@/components/subscription/CegepGate";
-import { mockTrainerOverviews } from "@/lib/mock";
+import { createClient } from "@/lib/supabase/client";
 import type { TrainerOverview } from "@/lib/types/models";
 
 /* ── Helpers ─────────────────────────────────────────────── */
@@ -105,12 +105,60 @@ function TrainersListPage() {
   const [sportFilter, setSportFilter] = useState("Tous");
   const [statusFilter, setStatusFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
-
   const [toast, setToast] = useState<string | null>(null);
+  const [allTrainers, setAllTrainers] = useState<TrainerOverview[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  /* Separate active from deactivated */
-  const activeTrainers = mockTrainerOverviews.filter((t) => t.accountStatus === "ACTIF");
-  const deactivatedTrainers = mockTrainerOverviews.filter((t) => t.accountStatus === "DESACTIVE");
+  useEffect(() => {
+    async function load() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setLoading(false); return; }
+
+      const { data: currentUser } = await supabase.from("users").select("school_id").eq("id", user.id).single();
+      if (!currentUser?.school_id) { setLoading(false); return; }
+
+      const { data: team } = await supabase
+        .from("users")
+        .select("id, first_name, last_name, role, sport, division, created_at, is_school_admin")
+        .eq("school_id", currentUser.school_id);
+
+      if (!team) { setLoading(false); return; }
+
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+
+      const trainers: TrainerOverview[] = await Promise.all(
+        team.map(async (t) => {
+          const [favRes, msgRes, recruesRes] = await Promise.all([
+            supabase.from("recruiter_favorites").select("*", { count: "exact", head: true }).eq("recruiter_id", t.id),
+            supabase.from("messages").select("*", { count: "exact", head: true }).eq("sender_id", t.id).gte("created_at", thirtyDaysAgo),
+            supabase.from("recruiter_pipeline").select("*", { count: "exact", head: true }).eq("recruiter_id", t.id).eq("stage", "LETTRE_SIGNEE"),
+          ]);
+          return {
+            id: t.id,
+            firstName: (t.first_name as string) || "",
+            lastName: (t.last_name as string) || "",
+            sports: (t.sport as string) ? [(t.sport as string)] : [],
+            division: (t.division as string) ? [(t.division as string).replace("Division ", "D") as "D1" | "D2" | "D3"] : [] as ("D1" | "D2" | "D3")[],
+            activeFavorites: favRes.count ?? 0,
+            messagesSent30d: msgRes.count ?? 0,
+            recruitsConfirmed: recruesRes.count ?? 0,
+            lastLoginAt: (t.created_at as string) || new Date().toISOString(),
+            status: "active" as const,
+            accountStatus: "ACTIF" as const,
+          };
+        })
+      );
+
+      console.log("[Recruteurs] loaded", trainers.length, "team members");
+      setAllTrainers(trainers);
+      setLoading(false);
+    }
+    load();
+  }, []);
+
+  const activeTrainers = allTrainers.filter((t) => t.accountStatus === "ACTIF");
+  const deactivatedTrainers = allTrainers.filter((t) => t.accountStatus === "DESACTIVE");
 
   /* ── Filter + Sort ── */
   const filtered = useMemo(() => {
@@ -202,8 +250,7 @@ function TrainersListPage() {
             MES ENTRAÎNEURS
           </h1>
           <p className="text-[14px] text-[#6B7280] mt-1">
-            {mockTrainerOverviews.length} entraîneurs-recruteurs dans votre
-            CÉGEP
+            {loading ? "Chargement..." : `${allTrainers.length} membre${allTrainers.length !== 1 ? "s" : ""} dans votre CÉGEP`}
           </p>
         </div>
         <Link

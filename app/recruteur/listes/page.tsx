@@ -475,12 +475,13 @@ function ListCard({
 /* ── Note entry for activity feed ─────────────────────────────── */
 interface NoteEntry { id: string; content: string; created_at: string; }
 
-function NoteCard({ note, initials, fullName }: { note: NoteEntry; initials: string; fullName: string }) {
+function NoteCard({ note, initials, fullName, onDelete }: { note: NoteEntry; initials: string; fullName: string; onDelete?: (id: string) => void }) {
+  const [confirming, setConfirming] = useState(false);
   const d = new Date(note.created_at);
   const dateStr = d.toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" });
   const timeStr = d.toLocaleTimeString("fr-CA", { hour: "2-digit", minute: "2-digit" });
   return (
-    <div className="bg-[#13151a] border border-[#2A2D35] rounded-lg p-4 mb-3">
+    <div className="bg-[#13151a] border border-[#2A2D35] rounded-lg p-4 mb-3 relative group">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-full bg-[#E63946] flex items-center justify-center shrink-0">
@@ -488,9 +489,28 @@ function NoteCard({ note, initials, fullName }: { note: NoteEntry; initials: str
           </div>
           <span className="text-[13px] font-bold text-white">{fullName}</span>
         </div>
-        <span className="text-[11px] text-[#6b7280] shrink-0">Note ajoutée · {dateStr} {timeStr}</span>
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="text-[11px] text-[#6b7280]">Note ajoutée · {dateStr} {timeStr}</span>
+          {onDelete && !confirming && (
+            <button
+              type="button"
+              onClick={() => setConfirming(true)}
+              className="w-6 h-6 flex items-center justify-center rounded text-[#6b7280] hover:text-[#EF4444] hover:bg-[#EF4444]/10 transition-colors opacity-0 group-hover:opacity-100"
+              aria-label="Supprimer cette note"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6L6 18" /><path d="M6 6l12 12" /></svg>
+            </button>
+          )}
+        </div>
       </div>
       <p className="text-[13px] text-[#d1d5db] leading-relaxed whitespace-pre-wrap mt-2 ml-[42px]">{note.content}</p>
+      {confirming && (
+        <div className="flex items-center gap-2 mt-2 ml-[42px]">
+          <span className="text-[11px] text-[#9CA3AF]">Supprimer cette note ?</span>
+          <button type="button" onClick={() => { onDelete?.(note.id); setConfirming(false); }} className="text-[11px] font-bold text-[#EF4444] hover:text-[#DC2626] transition-colors">Supprimer</button>
+          <button type="button" onClick={() => setConfirming(false)} className="text-[11px] font-bold text-[#6b7280] hover:text-white transition-colors">Annuler</button>
+        </div>
+      )}
     </div>
   );
 }
@@ -561,7 +581,7 @@ function AthleteNotesPanel({ athleteId, athleteName }: { athleteId: string; athl
       {notes.length > 0 && (
         <div className="mt-4">
           <p className="text-[13px] font-bold text-white mb-3">Activités: {notes.length}</p>
-          {notes.map(note => <NoteCard key={note.id} note={note} initials={userName.initials} fullName={userName.fullName} />)}
+          {notes.map(note => <NoteCard key={note.id} note={note} initials={userName.initials} fullName={userName.fullName} onDelete={async (id) => { const supabase = createClient(); await supabase.from("recruiter_notes").delete().eq("id", id); setNotes(prev => prev.filter(n => n.id !== id)); }} />)}
         </div>
       )}
       {notes.length === 0 && <p className="text-[12px] text-[#4a4d56] italic mt-3">Aucune note pour cet athlète.</p>}
@@ -831,7 +851,7 @@ function ExpandedListView({
             {listNotes.length > 0 && (
               <div className="mt-4">
                 <p className="text-[13px] font-bold text-white mb-3">Activités: {listNotes.length}</p>
-                {listNotes.map(note => <NoteCard key={note.id} note={note} initials={listUserName.initials} fullName={listUserName.fullName} />)}
+                {listNotes.map(note => <NoteCard key={note.id} note={note} initials={listUserName.initials} fullName={listUserName.fullName} onDelete={async (id) => { const supabase = createClient(); await supabase.from("recruiter_list_notes").delete().eq("id", id); setListNotes(prev => prev.filter(n => n.id !== id)); }} />)}
               </div>
             )}
             {listNotes.length === 0 && <p className="text-[12px] text-[#4a4d56] italic mt-3">Aucune note pour cette liste.</p>}

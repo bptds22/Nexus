@@ -283,6 +283,17 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
   const [committedSchoolName, setCommittedSchoolName] = useState("");
   const [openToOffers, setOpenToOffers] = useState<boolean | null>(null);
   const [myPipelineStage, setMyPipelineStage] = useState<string | null>(null);
+  const [coachId, setCoachId] = useState<string | null>(null);
+  const [isAllStar, setIsAllStar] = useState(false);
+  const [coachRepData, setCoachRepData] = useState<{
+    reviewCount: number;
+    avgRating: number;
+    avgQualite: number;
+    avgReactivite: number;
+    avgHonnetete: number;
+    avgPro: number;
+    recommandePct: number;
+  } | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
@@ -332,6 +343,7 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
         statut_recrutement_override,
         notes_coach,
         ouvert_entraineur_cegep,
+        coach_id,
         recruitment_status,
         committed_school_id,
         open_to_offers,
@@ -473,23 +485,37 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
           traitRatings: traitRatings as AthleteProfileRecruiterView["traitRatings"],
           distinctions: (() => {
             const raw = (eval0?.distinctions as string[]) || [];
-            const badgeMap: Record<string, { label: string; icon: string }> = {
-              captain: { label: "Capitaine", icon: "shield" },
-              allstar: { label: "Équipe d'étoiles", icon: "star" },
-              team_leader: { label: "Leader", icon: "award" },
-              mvp: { label: "MVP", icon: "trophy" },
-              rookie: { label: "Recrue de l'année", icon: "zap" },
-              scholar: { label: "Étudiant-athlète", icon: "book" },
-              iron_man: { label: "Iron Man", icon: "heart" },
-              most_improved: { label: "Joueur le plus amélioré", icon: "trending-up" },
+            const badgeMap: Record<string, { label: string; icon: string; char: string }> = {
+              captain: { label: "Capitaine", icon: "shield", char: "C" },
+              allstar: { label: "Étoile provinciale", icon: "star", char: "★" },
+              team_leader: { label: "Meilleur joueur d'équipe", icon: "award", char: "MVP" },
+              mvp: { label: "MVP", icon: "trophy", char: "🏆" },
+              rookie: { label: "Recrue de l'année", icon: "zap", char: "⚡" },
+              scholar: { label: "Étudiant-athlète", icon: "book", char: "📚" },
+              iron_man: { label: "Iron Man", icon: "heart", char: "💪" },
+              most_improved: { label: "Joueur le plus amélioré", icon: "trending-up", char: "↗" },
+              scoring_leader: { label: "Meilleur pointeur", icon: "target", char: "🎯" },
+              league_leader: { label: "Meilleur de la ligue", icon: "award", char: "⬆" },
+              progression: { label: "Progression marquée", icon: "trending-up", char: "↗" },
+              offensive_leader: { label: "Meilleur joueur offensif", icon: "zap", char: "⚡" },
+              defensive_leader: { label: "Meilleur joueur défensif", icon: "shield", char: "🛡" },
+              assists_leader: { label: "Meilleur passeur", icon: "activity", char: "🅰" },
+              goals_leader: { label: "Meilleur buteur", icon: "target", char: "⚽" },
+              points_leader: { label: "Meilleur pointeur", icon: "award", char: "🏅" },
+              best_time: { label: "Meilleur chrono", icon: "clock", char: "⏱" },
+              school_record: { label: "Record d'école", icon: "trophy", char: "🏆" },
+              best_mark: { label: "Meilleure marque", icon: "trophy", char: "🏆" },
+              singles_leader: { label: "Meilleur en simple", icon: "target", char: "🎯" },
+              specialist: { label: "Spécialiste", icon: "star", char: "⭐" },
             };
-            return raw.filter((d) => d && badgeMap[d]).map((d) => ({ badgeId: d, label: badgeMap[d].label, icon: badgeMap[d].icon }));
+            return raw.filter((d) => d && badgeMap[d]).map((d) => ({ badgeId: d, label: badgeMap[d].label, icon: badgeMap[d].icon, char: badgeMap[d].char }));
           })(),
           favoriteCount: 0,
           viewsThisMonth: 0,
         };
 
         setA(mapped);
+        setCoachId((d.coach_id as string) || null);
         setLoadingAthlete(false);
       });
   }, [id]);
@@ -499,6 +525,7 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
 
   const [isFavorited, setIsFavorited] = useState(false);
   const [favCount, setFavCount] = useState(0);
+  const [viewCount, setViewCount] = useState(0);
 
   useEffect(() => {
     const checkFav = async () => {
@@ -528,13 +555,67 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
     loadPipeline();
   }, [id]);
 
+  // Record profile view (fire and forget)
   useEffect(() => {
-    const loadCount = async () => {
+    const recordView = async () => {
       const supabase = createClient();
-      const { data } = await supabase.from("recruiter_favorites").select("id").eq("athlete_id", id);
-      setFavCount(data?.length || 0);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      await supabase.from("recruiter_athlete_views").upsert(
+        { recruiter_id: user.id, athlete_id: id, viewed_at: new Date().toISOString() },
+        { onConflict: "recruiter_id,athlete_id,view_date" }
+      );
     };
-    loadCount();
+    recordView();
+  }, [id]);
+
+  // Load coach reputation
+  useEffect(() => {
+    if (!coachId) return;
+    const loadReputation = async () => {
+      const supabase = createClient();
+
+      // Check if current user has All Star access (is_school_admin as proxy)
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: userRow } = await supabase.from("users").select("is_school_admin").eq("id", user.id).single();
+        setIsAllStar(userRow?.is_school_admin === true);
+      }
+
+      const { data: reviews } = await supabase
+        .from("coach_reviews")
+        .select("note_globale, qualite_profils, reactivite, honnetete_evaluations, professionnalisme, recommande")
+        .eq("coach_id", coachId);
+
+      const reviewCount = reviews?.length || 0;
+      console.log("[Coach reputation]", { coachId, reviewCount, isAllStar });
+      if (reviewCount === 0) { setCoachRepData(null); return; }
+
+      const avg = (field: string) => reviews!.reduce((s, r) => s + Number((r as Record<string, unknown>)[field] || 0), 0) / reviewCount;
+      setCoachRepData({
+        reviewCount,
+        avgRating: avg("note_globale"),
+        avgQualite: avg("qualite_profils"),
+        avgReactivite: avg("reactivite"),
+        avgHonnetete: avg("honnetete_evaluations"),
+        avgPro: avg("professionnalisme"),
+        recommandePct: Math.round((reviews!.filter((r) => r.recommande).length / reviewCount) * 100),
+      });
+    };
+    loadReputation();
+  }, [coachId]);
+
+  useEffect(() => {
+    const loadCounts = async () => {
+      const supabase = createClient();
+      const [favRes, viewRes] = await Promise.all([
+        supabase.from("recruiter_favorites").select("*", { count: "exact", head: true }).eq("athlete_id", id),
+        supabase.from("recruiter_athlete_views").select("*", { count: "exact", head: true }).eq("athlete_id", id),
+      ]);
+      setFavCount(favRes.count ?? 0);
+      setViewCount(viewRes.count ?? 0);
+    };
+    loadCounts();
   }, [id, isFavorited]);
 
   useEffect(() => { setA(prev => ({ ...prev, favoriteCount: favCount })); }, [favCount]);
@@ -697,8 +778,19 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
               {a.jerseyNumber && <span className="text-[#E63946] ml-3">#{a.jerseyNumber}</span>}
             </h1>
 
-            <div className="flex items-center gap-3 mt-2">
-              <div className="bg-[#111317] rounded-lg px-3 py-2">
+            {/* Engagement metrics + status boxes */}
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="bg-[#111317] rounded-lg px-4 py-2 flex items-center gap-2">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+                <span className="text-[16px] font-bold text-white">{viewCount}</span>
+                <span className="text-[11px] text-[#6b7280]">vues</span>
+              </div>
+              <div className="bg-[#111317] rounded-lg px-4 py-2 flex items-center gap-2">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="#E63946" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" /></svg>
+                <span className="text-[16px] font-bold text-white">{favCount}</span>
+                <span className="text-[11px] text-[#6b7280]">favoris</span>
+              </div>
+              <div className="bg-[#111317] rounded-lg px-4 py-2">
                 <span className="text-[8px] font-bold uppercase tracking-[0.2em] text-[#6b7280] block mb-1">Mon statut</span>
                 {myPipelineStage ? (
                   <span className="text-[12px] font-bold text-white uppercase tracking-wider">
@@ -711,8 +803,8 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
                   <span className="text-[12px] text-[#6b7280]">Pas dans le pipeline</span>
                 )}
               </div>
-              <div className="bg-[#111317] rounded-lg px-3 py-2">
-                <span className="text-[8px] font-bold uppercase tracking-[0.2em] text-[#6b7280] block mb-1">Statut global</span>
+              <div className="bg-[#111317] rounded-lg px-4 py-2">
+                <span className="text-[8px] font-bold uppercase tracking-[0.2em] text-[#6b7280] block mb-1">Statut recrutement</span>
                 <RecruitmentStatusBadgeGlobal status={recruitmentStatus as GlobalRecruitmentStatus} committedSchoolName={committedSchoolName} openToOffers={openToOffers} size="sm" />
               </div>
             </div>
@@ -727,15 +819,6 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
                   onComposeIntro={() => setShowComposeIntro(true)}
                   onCelebrate={() => setShowCelebration(true)}
                 />
-              </div>
-            )}
-
-            {a.viewsThisMonth > 0 && (
-              <div className="flex items-center gap-1.5 text-[#6b7280]">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" />
-                </svg>
-                <span className="text-[13px]">{a.viewsThisMonth} vues ce mois</span>
               </div>
             )}
 
@@ -784,14 +867,13 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
                   ))}
                 </div>
               {a.distinctions.length > 0 && (
-                <div className="grid divide-x divide-[#2D3748]/50 border-t border-[#2D3748]/50" style={{ gridTemplateColumns: `repeat(${a.distinctions.length}, minmax(0, 1fr))` }}>
+                <div className={`grid divide-x divide-[#2D3748]/50 border-t border-[#2D3748]/50 ${(() => { const n = a.distinctions.length; return n === 1 ? "grid-cols-1" : n === 2 ? "grid-cols-2" : "grid-cols-3"; })()}`}>
                   {a.distinctions.map((d, i) => (
-                    <div key={i} className="p-4 text-center flex flex-col items-center justify-center min-h-[90px] bg-[#E63946]/[0.04]">
-                      <div className="w-9 h-9 rounded-full bg-[#E63946]/15 border border-[#E63946]/25 flex items-center justify-center mb-2">
-                        <NxIcon name={d.icon} size={16} className="text-[#E63946]" />
-                      </div>
+                    <div key={i} className="p-4 text-center flex flex-col items-center justify-center min-h-[90px]">
+                      <span className="w-9 h-9 rounded-full bg-[#E63946]/15 border border-[#E63946]/25 flex items-center justify-center text-[14px] font-bold text-[#E63946] mb-2 shadow-[0_0_12px_rgba(230,57,70,0.25)]">
+                        {d.char || <NxIcon name={d.icon} size={16} className="text-[#E63946]" />}
+                      </span>
                       <p className="text-[11px] font-bold tracking-[0.15em] uppercase text-white">{d.label}</p>
-                      {d.detail && <p className="text-[11px] text-[#9CA3AF] mt-0.5">{d.detail}</p>}
                     </div>
                   ))}
                 </div>
@@ -802,16 +884,22 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
         </section>
 
         {/* ══════════ COACH REPORT (both modes — content varies) ══════════ */}
-        {a.coachReport && (
+        {(a.coachReport || coteGlobale >= 0) && (
           <section>
             <h2 className={sectionLabel}>Rapport de l&apos;entraîneur</h2>
             <div className={`relative ${cardBase} p-6 sm:p-8 pl-8 sm:pl-10 overflow-hidden`}>
-              <span className="absolute top-3 left-3 text-[60px] font-serif text-[#E63946]/10 leading-none select-none">&ldquo;</span>
-              <div className="relative">
-                <p className="text-[18px] sm:text-[20px] text-white italic leading-relaxed pl-5" style={{ borderLeft: "3px solid #E63946" }}>
-                  &ldquo;{a.coachReport}&rdquo;
-                </p>
-                <p className="text-[14px] font-bold text-[#9CA3AF] mt-4 pl-5">-- {a.coachName}, {a.coachSchool}</p>
+              {a.coachReport && (
+                <>
+                  <span className="absolute top-3 left-3 text-[60px] font-serif text-[#E63946]/10 leading-none select-none">&ldquo;</span>
+                  <div className="relative">
+                    <p className="text-[18px] sm:text-[20px] text-white italic leading-relaxed pl-5" style={{ borderLeft: "3px solid #E63946" }}>
+                      &ldquo;{a.coachReport}&rdquo;
+                    </p>
+                    <p className="text-[14px] font-bold text-[#9CA3AF] mt-4 pl-5">-- {a.coachName}{a.coachSchool ? `, ${a.coachSchool}` : ""}</p>
+                  </div>
+                </>
+              )}
+              <div className={a.coachReport ? "mt-3" : ""}>
 
                 {/* Simplified: single Cote Globale score + stars */}
                 {!isDetailed && (
@@ -822,7 +910,7 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
                   </div>
                 )}
 
-                {/* Detailed: Cote Globale + full 8-trait grid */}
+                {/* Detailed: Cote Globale + full 8-trait grid + distinctions */}
                 {isDetailed && (
                   <div className="mt-5 pl-5">
                     <div className="flex items-center gap-3 mb-4">
@@ -836,14 +924,14 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
                         <p className="text-[11px] font-bold tracking-[0.15em] uppercase text-[#6b7280] mb-3">Détail par trait</p>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1">
                           {CHARACTER_TRAITS.map((trait) => {
-                            const val = a.traitRatings![trait.key];
+                            const val = a.traitRatings ? a.traitRatings[trait.key] : 0;
                             return (
                               <div key={trait.key} className="flex items-center justify-between py-2.5 border-b border-[#2D3748]/30">
                                 <span className="text-[13px] text-[#c8c8cc] flex items-center gap-2">
                                   <NxIcon name={trait.iconName} size={15} className="text-[#6B7280]" />
                                   {trait.label}
                                 </span>
-                                <StarRating rating={val} size="sm" />
+                                {val > 0 ? <StarRating rating={val} size="sm" /> : <span className="text-[13px] text-[#4a4d56]">—</span>}
                               </div>
                             );
                           })}
@@ -857,6 +945,25 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
                             </div>
                           </div>
                         )}
+                      </div>
+                    )}
+
+                    {a.distinctions && a.distinctions.filter((d) => d != null && d.label).length > 0 && (
+                      <div className="border-t border-[#2D3748]/50 pt-4 mt-4">
+                        <p className="text-[11px] font-bold tracking-[0.15em] uppercase text-[#6b7280] mb-3">Distinctions</p>
+                        <div className="flex flex-wrap gap-3">
+                          {a.distinctions.filter((d) => d != null && d.label).map((d, i) => (
+                            <div key={i} className="flex items-center gap-3 bg-[#E63946]/[0.06] border border-[#E63946]/20 rounded-lg px-4 py-2.5">
+                              <div className="w-8 h-8 rounded-full bg-[#E63946]/10 flex items-center justify-center flex-shrink-0">
+                                {d.char ? <span className="text-[13px] font-bold text-[#E63946]">{d.char}</span> : d.icon && <NxIcon name={d.icon} size={16} className="text-[#E63946]" />}
+                              </div>
+                              <div>
+                                <p className="text-[13px] font-bold text-white">{d.label}</p>
+                                {d.detail && <p className="text-[11px] text-[#9CA3AF]">{d.detail}</p>}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
 
@@ -877,7 +984,17 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
                 <p className="text-[12px] font-bold tracking-[0.2em] uppercase text-[#9CA3AF] mt-2">Moyenne générale</p>
               </div>
               <div className="p-5 text-center">
-                <p className="text-[18px] font-bold text-white leading-none mt-1">{a.program || "—"}</p>
+                {(() => {
+                  let display = "—";
+                  if (a.program && typeof a.program === "string" && a.program.length > 0) {
+                    display = a.program;
+                  } else {
+                    let arr = a.targetCegepProgram;
+                    if (typeof arr === "string") { try { arr = JSON.parse(arr as unknown as string); } catch { arr = []; } }
+                    if (Array.isArray(arr) && arr.length > 0) display = arr.join(", ");
+                  }
+                  return <p className="text-[18px] font-bold text-white leading-none mt-1">{display}</p>;
+                })()}
                 <p className="text-[12px] font-bold tracking-[0.2em] uppercase text-[#9CA3AF] mt-2">Programme visé</p>
               </div>
               <div className="p-5 text-center">
@@ -972,23 +1089,40 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
             </section>
 
             {/* ── Academic Details (extended) ──────────────── */}
-            {(a.strongSubjects.length > 0 || a.academicHonors.length > 0 || a.targetCegepProgram.length > 0 || a.preferredRegions.length > 0) && (
+            {(a.strongSubjects?.length > 0 || a.academicHonors?.length > 0 || a.preferredRegions?.length > 0 || (Array.isArray(a.targetCegepProgram) && a.targetCegepProgram.length > 0)) && (
               <section className="nx-slide-section">
                 <h2 className={sectionLabel}>Détails académiques</h2>
                 <div className={`${cardBase} p-5 space-y-4`}>
-                  {a.strongSubjects.length > 0 && (
+                  {(() => {
+                    let prog = a.targetCegepProgram;
+                    if (typeof prog === "string") { try { prog = JSON.parse(prog as unknown as string); } catch { prog = []; } }
+                    if (Array.isArray(prog) && prog.length > 0) {
+                      return (
+                        <div>
+                          <p className="text-[11px] font-bold tracking-[0.15em] uppercase text-[#6b7280] mb-2">Programme CÉGEP visé</p>
+                          <div className="flex flex-wrap gap-2">
+                            {prog.map((p: string) => (
+                              <span key={p} className="text-[12px] font-bold px-3 py-1.5 rounded-full bg-[#3B82F6]/10 text-[#3B82F6] border border-[#3B82F6]/20">{p}</span>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
+                  {a.strongSubjects?.length > 0 && (
                     <div>
                       <p className="text-[11px] font-bold tracking-[0.15em] uppercase text-[#6b7280] mb-2">Matières fortes</p>
                       <div className="flex flex-wrap gap-2">
                         {a.strongSubjects.map((s) => (
-                          <span key={s} className="text-[12px] font-bold px-3 py-1.5 rounded-full bg-[#22C55E]/10 text-[#22C55E] border border-[#22C55E]/20">{s}</span>
+                          <span key={s} className="text-[12px] font-bold px-3 py-1.5 rounded-full bg-white/5 text-white border border-[#2D3748]">{s}</span>
                         ))}
                       </div>
                     </div>
                   )}
-                  {a.academicHonors.length > 0 && (
+                  {a.academicHonors?.length > 0 && (
                     <div>
-                      <p className="text-[11px] font-bold tracking-[0.15em] uppercase text-[#6b7280] mb-2">Honneurs</p>
+                      <p className="text-[11px] font-bold tracking-[0.15em] uppercase text-[#6b7280] mb-2">Mentions académiques</p>
                       <div className="flex flex-wrap gap-2">
                         {a.academicHonors.map((h) => (
                           <span key={h} className="text-[12px] font-bold px-3 py-1.5 rounded-full bg-[#F59E0B]/10 text-[#F59E0B] border border-[#F59E0B]/20">{h}</span>
@@ -996,19 +1130,9 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
                       </div>
                     </div>
                   )}
-                  {a.targetCegepProgram.length > 0 && (
+                  {a.preferredRegions?.length > 0 && (
                     <div>
-                      <p className="text-[11px] font-bold tracking-[0.15em] uppercase text-[#6b7280] mb-2">Programme cégep visé</p>
-                      <div className="flex flex-wrap gap-2">
-                        {a.targetCegepProgram.map((p) => (
-                          <span key={p} className="text-[12px] font-bold px-3 py-1.5 rounded-full bg-[#3B82F6]/10 text-[#3B82F6] border border-[#3B82F6]/20">{p}</span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {a.preferredRegions.length > 0 && (
-                    <div>
-                      <p className="text-[11px] font-bold tracking-[0.15em] uppercase text-[#6b7280] mb-2">Régions préférées</p>
+                      <p className="text-[11px] font-bold tracking-[0.15em] uppercase text-[#6b7280] mb-2">Régions CÉGEP préférées</p>
                       <div className="flex flex-wrap gap-2">
                         {a.preferredRegions.map((r) => (
                           <span key={r} className="text-[12px] font-bold px-3 py-1.5 rounded-full bg-white/5 text-[#c8c8cc] border border-[#2D3748]">{r}</span>
@@ -1051,15 +1175,66 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
               <section className="nx-slide-section">
                 <h2 className={sectionLabel}>Réputation du coach</h2>
                 <div className={`${cardBase} p-5`}>
-                  <div className="flex items-center justify-between mb-4">
-                    <p className="text-[14px] text-[#9CA3AF]">{a.coachName}</p>
-                    <span className="text-[11px] font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-[#6B7280]/15 text-[#6B7280] border border-[#6B7280]/30">
-                      À venir
-                    </span>
-                  </div>
-                  <p className="text-[13px] text-[#4a4d56] italic">
-                    La réputation du coach sera calculée automatiquement lorsque les recruteurs commenceront à évaluer les coachs sur la plateforme.
-                  </p>
+                  <p className="text-[14px] font-bold text-[#9CA3AF] mb-3">{a.coachName}</p>
+                  {coachRepData && coachRepData.reviewCount > 0 ? (
+                    <div className="space-y-4">
+                      {/* Overall rating — always visible */}
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <StarRating rating={coachRepData.avgRating} size="md" showNumber={false} />
+                        <span className="text-[18px] font-head font-black text-white">{coachRepData.avgRating.toFixed(1)}<span className="text-[14px] text-[#6B7280] font-normal">/5</span></span>
+                        <span className="text-[12px] text-[#6B7280]">({coachRepData.reviewCount} avis)</span>
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#22C55E]/10 border border-[#22C55E]/20">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5" /></svg>
+                          <span className="text-[11px] font-bold text-[#22C55E]">{coachRepData.recommandePct}% recommandé</span>
+                        </span>
+                      </div>
+                      {/* Per-criteria bars — gated behind All Star */}
+                      {isAllStar ? (
+                        <div className="space-y-2.5 border-t border-[#2D3748]/50 pt-4">
+                          {[
+                            { label: "Qualité des profils", value: coachRepData.avgQualite },
+                            { label: "Réactivité", value: coachRepData.avgReactivite },
+                            { label: "Honnêteté évaluations", value: coachRepData.avgHonnetete },
+                            { label: "Professionnalisme", value: coachRepData.avgPro },
+                          ].map((c) => (
+                            <div key={c.label} className="flex items-center gap-3">
+                              <span className="text-[12px] text-[#9CA3AF] w-[170px] shrink-0">{c.label}</span>
+                              <div className="flex-1 h-2.5 rounded-full bg-[#2A2D35] overflow-hidden">
+                                <div className="h-full rounded-full bg-[#E63946] transition-all" style={{ width: `${(c.value / 5) * 100}%` }} />
+                              </div>
+                              <span className="text-[13px] font-bold text-white w-[30px] text-right">{c.value.toFixed(1)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="relative border-t border-[#2D3748]/50 pt-4">
+                          {/* Blurred preview */}
+                          <div className="space-y-2.5 blur-sm select-none pointer-events-none" aria-hidden>
+                            {["Qualité des profils", "Réactivité", "Honnêteté évaluations", "Professionnalisme"].map((label) => (
+                              <div key={label} className="flex items-center gap-3">
+                                <span className="text-[12px] text-[#9CA3AF] w-[170px] shrink-0">{label}</span>
+                                <div className="flex-1 h-2.5 rounded-full bg-[#2A2D35] overflow-hidden">
+                                  <div className="h-full rounded-full bg-[#E63946]" style={{ width: "60%" }} />
+                                </div>
+                                <span className="text-[13px] font-bold text-white w-[30px] text-right">3.0</span>
+                              </div>
+                            ))}
+                          </div>
+                          {/* Lock overlay */}
+                          <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#1A1D24]/80 rounded-lg">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mb-2">
+                              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0110 0v4" />
+                            </svg>
+                            <p className="text-[12px] font-bold text-[#F59E0B] text-center px-4">Passe à All Star pour voir la réputation détaillée des coaches</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-[13px] text-[#4a4d56] italic">
+                      Aucune évaluation reçue pour le moment.
+                    </p>
+                  )}
                 </div>
               </section>
             )}

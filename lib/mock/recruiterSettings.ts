@@ -73,11 +73,11 @@ export const CEGEP_LIST: CegepEntry[] = [
 ══════════════════════════════════════════════════════════════ */
 
 export const RSEQ_SPORTS = [
-  "Football", "Basketball", "Soccer", "Hockey", "Volleyball",
-  "Athlétisme", "Flag football", "Rugby", "Cheerleading",
-  "Natation", "Badminton", "Cross-country", "Futsal",
-  "Baseball", "Ultimate frisbee", "Golf", "Tennis",
-  "Ski alpin", "Ski de fond", "Judo", "Handball", "Water-polo",
+  "Athlétisme", "Badminton", "Baseball", "Basketball", "Cheerleading",
+  "Cross-country", "Danse", "Flag football", "Escrime", "Football",
+  "Futsal", "Golf", "Gymnastique", "Hockey", "Judo", "Karaté", "Natation",
+  "Rugby", "Ski alpin", "Ski de fond", "Soccer", "Softball", "Tennis",
+  "Tennis de table", "Ultimate frisbee", "Volleyball", "Water-polo",
 ];
 
 /* ══════════════════════════════════════════════════════════════

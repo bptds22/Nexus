@@ -13,12 +13,10 @@ import RichActivityMessage from "./RichActivityMessage";
    Letter of intent = red glow highlight.
 ───────────────────────────────────────────────────────────────── */
 
-const NOW = new Date("2026-03-11T10:00:00");
-
 export default function ActivityCard({ activity }: { activity: Activity }) {
   const config = ACTIVITY_TYPE_CONFIG[activity.type];
   const msg = getActivityMessage(activity);
-  const relTime = relativeTimeFromNow(activity.timestamp, NOW);
+  const relTime = relativeTimeFromNow(activity.timestamp, new Date());
   const isLettre = activity.type === "letter_of_intent";
 
   let containerBg = activity.isRead ? "#1A1D24" : "#1E2430";
@@ -38,12 +36,15 @@ export default function ActivityCard({ activity }: { activity: Activity }) {
       className="flex items-start gap-3.5 px-5 py-4 rounded-lg transition-colors hover:brightness-110"
       style={{ backgroundColor: containerBg, borderLeft }}
     >
-      {/* Icon */}
-      <div className="shrink-0 mt-0.5">
+      {/* Icon in colored circle */}
+      <div
+        className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center"
+        style={{ backgroundColor: `${activity.isRead ? "#6B7280" : config.borderColor}20` }}
+      >
         <ActivityIcon
           name={config.icon}
           color={activity.isRead ? "#6B7280" : config.borderColor}
-          size={activity.isRead ? 20 : 22}
+          size={18}
         />
       </div>
 

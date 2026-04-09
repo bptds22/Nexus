@@ -1,18 +1,53 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { getStatusConfig } from "@/lib/config/recruitmentStatuses";
 import CegepGate from "@/components/subscription/CegepGate";
 import StarRating from "@/components/ui/StarRating";
+import { createClient } from "@/lib/supabase/client";
 import type { RecruitmentStatus } from "@/lib/config/recruitmentStatuses";
-import {
-  MOCK_RECRUITERS,
-  MOCK_REASSIGN_ATHLETES,
-  MOCK_TRANSFER_HISTORY,
-  getAthletesByRecruiter,
-  getWorkloadLevel,
-} from "./_data/mockReassignData";
-import type { ReassignRecruiter, ReassignAthlete, TransferRecord } from "./_data/mockReassignData";
+
+/* ── Local types (replaces mock imports) ── */
+
+interface ReassignRecruiter {
+  id: string;
+  firstName: string;
+  lastName: string;
+  initials: string;
+  sports: string[];
+  status: "active" | "inactive" | "departing";
+  departureDate?: string;
+}
+
+interface ReassignAthlete {
+  id: string;
+  full_name: string;
+  recruiterId: string;
+  sport: string;
+  position: string;
+  school: string;
+  pipeline_status: RecruitmentStatus;
+  days_in_status: number;
+  coach_rating: number;
+  is_verified: boolean;
+}
+
+interface TransferRecord {
+  id: string;
+  date: string;
+  fromName: string;
+  toName: string;
+  athleteCount: number;
+  sport: string;
+  reason: string;
+  performedBy: string;
+}
+
+function getWorkloadLevel(count: number): { label: string; color: string } {
+  if (count <= 5) return { label: "Léger", color: "#22C55E" };
+  if (count <= 15) return { label: "Modéré", color: "#F59E0B" };
+  return { label: "Élevé", color: "#E63946" };
+}
 
 /* ═══════════════════════════════════════════════════════════════
    Réassignation des Prospects — CÉGEP Director
@@ -225,8 +260,9 @@ export default function ReassignationWrapper() {
 }
 
 function ReassignationPage() {
-  const [athletes, setAthletes] = useState(MOCK_REASSIGN_ATHLETES);
-  const [recruiters, setRecruiters] = useState(MOCK_RECRUITERS);
+  const [athletes, setAthletes] = useState<ReassignAthlete[]>([]);
+  const [recruiters, setRecruiters] = useState<ReassignRecruiter[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const [sourceId, setSourceId] = useState<string>("");
   const [destId, setDestId] = useState<string>("");
@@ -240,7 +276,78 @@ function ReassignationPage() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [transferActivity, setTransferActivity] = useState<string | null>(null);
-  const [transferHistory, setTransferHistory] = useState(MOCK_TRANSFER_HISTORY);
+  const [transferHistory, setTransferHistory] = useState<TransferRecord[]>([]);
+
+  useEffect(() => {
+    async function load() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setLoading(false); return; }
+
+      const { data: currentUser } = await supabase.from("users").select("school_id, first_name, last_name").eq("id", user.id).single();
+      if (!currentUser?.school_id) { setLoading(false); return; }
+
+      // All team members
+      const { data: team } = await supabase
+        .from("users")
+        .select("id, first_name, last_name, role, sport")
+        .eq("school_id", currentUser.school_id);
+
+      const recs: ReassignRecruiter[] = (team || []).map((t) => ({
+        id: t.id,
+        firstName: (t.first_name as string) || "",
+        lastName: (t.last_name as string) || "",
+        initials: `${((t.first_name as string) || "")[0] || ""}${((t.last_name as string) || "")[0] || ""}`.toUpperCase(),
+        sports: (t.sport as string) ? [(t.sport as string)] : [],
+        status: "active" as const,
+      }));
+      setRecruiters(recs);
+
+      const teamIds = recs.map((r) => r.id);
+      if (teamIds.length === 0) { setLoading(false); return; }
+
+      // All pipeline entries with athlete details
+      const { data: pipelineData } = await supabase
+        .from("recruiter_pipeline")
+        .select("recruiter_id, athlete_id, stage, created_at, updated_at, athletes!athlete_id(first_name, last_name, verified, sports!sport_id(nom), positions!position_id(abreviation), schools!school_id(name), evaluations(cote_globale))")
+        .in("recruiter_id", teamIds);
+
+      const athList: ReassignAthlete[] = (pipelineData || []).map((p) => {
+        const ath = p.athletes as unknown as {
+          first_name?: string; last_name?: string; verified?: boolean;
+          sports?: { nom?: string } | { nom?: string }[] | null;
+          positions?: { abreviation?: string } | { abreviation?: string }[] | null;
+          schools?: { name?: string } | { name?: string }[] | null;
+          evaluations?: { cote_globale?: number }[] | { cote_globale?: number } | null;
+        } | null;
+        const sRel = ath?.sports; const sObj = Array.isArray(sRel) ? sRel[0] : sRel;
+        const pRel = ath?.positions; const pObj = Array.isArray(pRel) ? pRel[0] : pRel;
+        const schRel = ath?.schools; const schObj = Array.isArray(schRel) ? schRel[0] : schRel;
+        const eRel = ath?.evaluations; const eObj = Array.isArray(eRel) ? eRel[0] : eRel;
+        const STAGE_TO_STATUS: Record<string, RecruitmentStatus> = {
+          IDENTIFIE: "identifie", CONTACTE: "contacte", EN_DISCUSSION: "en_discussion",
+          VISITE_PLANIFIEE: "visite_planifiee", ENGAGE: "engage", LETTRE_SIGNEE: "lettre_signee",
+        };
+        const daysInStatus = p.updated_at ? Math.floor((Date.now() - new Date(p.updated_at as string).getTime()) / 86400000) : 0;
+        return {
+          id: p.athlete_id,
+          full_name: `${ath?.first_name || ""} ${ath?.last_name || ""}`.trim(),
+          recruiterId: p.recruiter_id,
+          sport: sObj?.nom || "",
+          position: pObj?.abreviation || "",
+          school: schObj?.name || "",
+          pipeline_status: STAGE_TO_STATUS[p.stage as string] || ("identifie" as RecruitmentStatus),
+          days_in_status: daysInStatus,
+          coach_rating: (eObj?.cote_globale as number) || 0,
+          is_verified: ath?.verified === true,
+        };
+      });
+      setAthletes(athList);
+      console.log("[Reassignation] loaded", recs.length, "recruiters,", athList.length, "athletes");
+      setLoading(false);
+    }
+    load();
+  }, []);
 
   const showToast = useCallback((msg: string) => {
     setToast(msg);
@@ -321,15 +428,57 @@ function ReassignationPage() {
   };
 
   /* Execute transfer */
-  const executeTransfer = useCallback(() => {
+  const executeTransfer = useCallback(async () => {
     if (!sourceRec || !destRec || selected.size === 0) return;
 
-    // Move athletes
+    const supabase = createClient();
+    const athleteIds = Array.from(selected);
+
+    // Transfer pipeline entries in DB
+    for (const athleteId of athleteIds) {
+      await supabase
+        .from("recruiter_pipeline")
+        .update({ recruiter_id: destId })
+        .eq("recruiter_id", sourceId)
+        .eq("athlete_id", athleteId);
+    }
+
+    // Transfer favorites
+    for (const athleteId of athleteIds) {
+      const { data: fav } = await supabase
+        .from("recruiter_favorites")
+        .select("id")
+        .eq("recruiter_id", sourceId)
+        .eq("athlete_id", athleteId)
+        .maybeSingle();
+      if (fav) {
+        await supabase.from("recruiter_favorites").upsert(
+          { recruiter_id: destId, athlete_id: athleteId },
+          { onConflict: "recruiter_id,athlete_id" }
+        );
+      }
+    }
+
+    // Transfer notes
+    for (const athleteId of athleteIds) {
+      const { data: noteRows } = await supabase
+        .from("recruiter_notes")
+        .select("content")
+        .eq("recruiter_id", sourceId)
+        .eq("athlete_id", athleteId);
+      for (const n of noteRows || []) {
+        await supabase.from("recruiter_notes").insert({ recruiter_id: destId, athlete_id: athleteId, content: n.content });
+      }
+    }
+
+    console.log("[Reassignation] transferred", athleteIds.length, "athletes from", sourceId, "to", destId);
+
+    // Move athletes in local state
     setAthletes((prev) =>
       prev.map((a) => selected.has(a.id) ? { ...a, recruiterId: destId } : a)
     );
 
-    // Log
+    // Log locally
     const newRecord: TransferRecord = {
       id: `th-${Date.now()}`,
       date: new Date().toISOString(),
@@ -342,18 +491,16 @@ function ReassignationPage() {
     };
     setTransferHistory((prev) => [newRecord, ...prev]);
 
-    // Activity banner
     setTransferActivity(
       `✓ ${selected.size} athlète${selected.size > 1 ? "s" : ""} transféré${selected.size > 1 ? "s" : ""} de ${sourceRec.firstName} ${sourceRec.lastName} à ${destRec.firstName} ${destRec.lastName} le ${formatDate(new Date())}`
     );
     setTimeout(() => setTransferActivity(null), 5000);
 
-    // Reset
     setSelected(new Set());
     setNotes("");
     setShowConfirm(false);
-    showToast("Transfert effectué (POC)");
-  }, [sourceRec, destRec, destId, selected, selectedAthletes, notes, showToast]);
+    showToast("Transfert effectué");
+  }, [sourceRec, destRec, sourceId, destId, selected, selectedAthletes, notes, showToast]);
 
   /* Unique sports in source */
   const sourceSports = useMemo(() => {
@@ -361,6 +508,10 @@ function ReassignationPage() {
     const sports = new Set(athletes.filter((a) => a.recruiterId === sourceId).map((a) => a.sport));
     return Array.from(sports);
   }, [athletes, sourceId]);
+
+  if (loading) {
+    return <div className="px-6 sm:px-10 py-8 max-w-[1400px] mx-auto"><p className="text-[#6b7280] text-sm">Chargement...</p></div>;
+  }
 
   return (
     <div className="px-6 sm:px-10 py-8 max-w-[1400px] mx-auto space-y-6">

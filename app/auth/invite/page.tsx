@@ -64,10 +64,12 @@ function InviteContent() {
       profile: { coach: coachName },
       privacy_consent: {
         privacy_policy_accepted: true,
-        privacy_policy_version: "2026-03-v1",
+        privacy_policy_version: "2026-04-v1",
         data_collection_accepted: true,
         parental_consent_acknowledged: true,
-        communications_opted_in: consentComms,
+        consent_privacy_policy: new Date().toISOString(),
+        consent_data_collection: new Date().toISOString(),
+        consent_marketing: consentComms ? new Date().toISOString() : null,
         accepted_at: new Date().toISOString(),
         ip_hint: "masked",
       },
@@ -238,13 +240,13 @@ function InviteContent() {
                 </div>
               </label>
 
-              {/* Checkbox 4 — Communications (optional) */}
+              {/* Checkbox 4 — Communications marketing (optional) */}
               <label className="flex items-start gap-3 cursor-pointer group">
                 <input type="checkbox" checked={consentComms} onChange={(e) => setConsentComms(e.target.checked)} className="sr-only" />
                 <div className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 mt-0.5 transition-colors ${consentComms ? "bg-[#E63946] border-[#E63946]" : "border-[#6B7280] group-hover:border-white/30"}`}>
                   {consentComms && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"><path d="M20 6L9 17l-5-5" /></svg>}
                 </div>
-                <span className="text-[11px] text-[#6B7280] leading-snug">J&apos;accepte de recevoir des notifications par courriel concernant l&apos;activité sur mon profil. <span className="text-[10px]">(optionnel)</span></span>
+                <span className="text-[11px] text-[#6B7280] leading-snug">J&apos;accepte de recevoir des <a href="/communications-marketing" target="_blank" rel="noopener noreferrer" className="text-[#E63946] hover:underline" onClick={(e) => e.stopPropagation()}>communications marketing</a> de Nexus (nouvelles fonctionnalités, conseils, promotions). Maximum 2 courriels par mois. <span className="text-[10px] text-[#4a4d56]">(optionnel)</span></span>
               </label>
 
               {attemptedSubmit && !consentValid && (

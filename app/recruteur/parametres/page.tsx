@@ -9,12 +9,10 @@ import EtablissementSection from "./_components/EtablissementSection";
 import RecrutementSection from "./_components/RecrutementSection";
 import NotificationsSection from "./_components/NotificationsSection";
 import ConfidentialiteSection from "./_components/ConfidentialiteSection";
+import TransfertSection from "./_components/TransfertSection";
 import DangerSection from "./_components/DangerSection";
 import ConfirmModal from "./_components/ConfirmModal";
 import SaveToast from "./_components/SaveToast";
-import SubscriptionSection from "@/components/subscription/SubscriptionSection";
-import AmbassadorDashboard from "@/components/ambassador/AmbassadorDashboard";
-import CegepGate from "@/components/subscription/CegepGate";
 
 /* ═══════════════════════════════════════════════════════════════
    Recruiter Settings — /recruteur/parametres
@@ -632,10 +630,24 @@ export default function RecruiterSettingsPage() {
   const [deleteModal, setDeleteModal] = useState(false);
   const [exportToast, setExportToast] = useState(false);
 
+  const [schoolsList, setSchoolsList] = useState<{ id: string; name: string }[]>([]);
+  const [signupDate, setSignupDate] = useState("");
+  const [consentPrivacyDate, setConsentPrivacyDate] = useState("");
+  const [consentDataDate, setConsentDataDate] = useState("");
+  const [consentMarketingDate, setConsentMarketingDate] = useState<string | null>(null);
+  const [consentPrivacyIso, setConsentPrivacyIso] = useState<string | null>(null);
+  const [consentDataIso, setConsentDataIso] = useState<string | null>(null);
+  const [consentMarketingIso, setConsentMarketingIso] = useState<string | null>(null);
+  const [marketingConsent, setMarketingConsent] = useState(false);
+
   /* ── Load from Supabase ────────────────────────────────────── */
   useEffect(() => {
     async function load() {
       const supabase = createClient();
+
+      // Load schools for Établissement dropdown
+      const { data: schoolsData } = await supabase.from("schools").select("id, name").order("name");
+      if (schoolsData) setSchoolsList(schoolsData);
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
@@ -647,9 +659,10 @@ export default function RecruiterSettingsPage() {
 
       console.log("[Parametres - Mon Compte]", { profile, email: user.email });
 
-      // Set email from auth immediately (not dependent on profile fetch)
+      // Set email and signup date from auth
       setForm(prev => ({ ...prev, email: user.email || "" }));
       setOriginal(prev => ({ ...prev, email: user.email || "" }));
+      if (user.created_at) setSignupDate(new Date(user.created_at).toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" }));
 
       if (profile) {
         // Get school name for Etablissement
@@ -669,12 +682,15 @@ export default function RecruiterSettingsPage() {
         const prefs = (profile.recruitment_preferences as Record<string, unknown>) || {};
         console.log("[Recrutement prefs load]", prefs);
 
+        console.log("[Etablissement load]", { school_id: profile.school_id, title: profile.title, sport: profile.sport, division: profile.division });
+
         const updates: Partial<RecruiterSettings> = {
           firstName: (profile.first_name as string) || "",
           lastName: (profile.last_name as string) || "",
           email: user.email || "",
           phone: (profile.phone as string) || "",
           avatarUrl: (profile.photo_url as string) || "",
+          cegepId: (profile.school_id as string) || "",
           roleTitle: (profile.title as string) || "",
           sportIds,
           divisions,
@@ -701,6 +717,7 @@ export default function RecruiterSettingsPage() {
           };
         }
         console.log("[Notifications load]", notifPrefs);
+        setMarketingConsent(!!(notifPrefs.marketing_emails));
 
         // Load privacy preferences
         const privPrefs = (profile.privacy_preferences as Record<string, unknown>) || {};
@@ -710,6 +727,21 @@ export default function RecruiterSettingsPage() {
             showConsultationHistory: privPrefs.show_consultations !== false,
             showFullName: privPrefs.show_full_name !== false,
           };
+        }
+
+        // Load per-consent dates
+        const fmtDate = (iso: unknown) => iso ? new Date(iso as string).toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" }) : "";
+        if (privPrefs.consent_privacy_policy) {
+          setConsentPrivacyDate(fmtDate(privPrefs.consent_privacy_policy));
+          setConsentPrivacyIso(privPrefs.consent_privacy_policy as string);
+        }
+        if (privPrefs.consent_data_collection) {
+          setConsentDataDate(fmtDate(privPrefs.consent_data_collection));
+          setConsentDataIso(privPrefs.consent_data_collection as string);
+        }
+        if (privPrefs.consent_marketing) {
+          setConsentMarketingDate(fmtDate(privPrefs.consent_marketing));
+          setConsentMarketingIso(privPrefs.consent_marketing as string);
         }
 
         setForm(prev => ({ ...prev, ...updates }));
@@ -743,6 +775,7 @@ export default function RecruiterSettingsPage() {
       first_name: form.firstName || "",
       last_name: form.lastName || "",
       phone: form.phone || null,
+      school_id: form.cegepId || null,
       title: form.roleTitle || null,
       sport: sportStr,
       division: divisionStr,
@@ -762,11 +795,15 @@ export default function RecruiterSettingsPage() {
         email_profile_verified: form.notifications.profileVerified.email,
         email_weekly_digest: form.notifications.weeklyDigest,
         email_frequency: form.notifications.emailFrequency,
+        marketing_emails: marketingConsent,
       },
       privacy_preferences: {
         profile_visible: form.visibility.profileVisible,
         show_consultations: form.visibility.showConsultationHistory,
         show_full_name: form.visibility.showFullName,
+        consent_privacy_policy: consentPrivacyIso || new Date().toISOString(),
+        consent_data_collection: consentDataIso || new Date().toISOString(),
+        consent_marketing: marketingConsent ? (consentMarketingIso || new Date().toISOString()) : null,
       },
     };
     console.log("[Parametres SAVE] payload:", JSON.stringify(payload));
@@ -843,6 +880,7 @@ export default function RecruiterSettingsPage() {
                 onUpdate={updateField}
                 onSave={handleSave}
                 onCegepChange={(id) => setCegepModal(id)}
+                schools={schoolsList}
               />
             )}
             {section === "recrutement" && (
@@ -870,6 +908,19 @@ export default function RecruiterSettingsPage() {
                 onUpdateVisibility={(vis) => setForm((prev) => ({ ...prev, visibility: vis }))}
                 onSave={handleSave}
                 onSectionChange={(s) => setSection(s as SectionKey)}
+                signupDate={signupDate}
+                consentPrivacyDate={consentPrivacyDate}
+                consentDataDate={consentDataDate}
+                consentMarketingDate={consentMarketingDate}
+                marketingConsent={marketingConsent}
+                onMarketingConsentChange={setMarketingConsent}
+              />
+            )}
+            {section === "transfert" && (
+              <TransfertSection
+                currentSchoolId={form.cegepId}
+                currentSchoolName={schoolsList.find((s) => s.id === form.cegepId)?.name || "Non défini"}
+                schools={schoolsList}
               />
             )}
             {section === "danger" && (
