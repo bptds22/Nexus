@@ -1,0 +1,58 @@
+.distinction-badge-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.distinction-badge-glow {
+  position: absolute;
+  inset: -6px;
+  background: #E63946;
+  filter: blur(12px);
+  border-radius: 50%;
+  opacity: 0;
+  animation: badgeGlowPulse 3s ease-in-out infinite;
+  z-index: 0;
+}
+
+.distinction-badge-svg {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+}
+
+@keyframes badgeGlowPulse {
+  0%, 100% { opacity: 0; }
+  50% { opacity: 0.15; }
+}
+
+@keyframes svgSweep {
+  0%, 100% { transform: translateX(-150px) rotate(12deg); }
+  50% { transform: translateX(150px) rotate(12deg); }
+}
+
+.badge-shimmer {
+  animation: svgSweep 4s ease-in-out infinite;
+}
+
+/* Star shimmer on player card ticket */
+.card-star-shimmer {
+  background: linear-gradient(
+    105deg,
+    transparent 0%,
+    transparent 35%,
+    rgba(255,255,255,0.35) 45%,
+    rgba(255,255,255,0.5) 50%,
+    rgba(255,255,255,0.35) 55%,
+    transparent 65%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: starSweep 4s ease-in-out infinite;
+}
+
+@keyframes starSweep {
+  0%, 100% { background-position: 200% 0; }
+  50% { background-position: -100% 0; }
+}

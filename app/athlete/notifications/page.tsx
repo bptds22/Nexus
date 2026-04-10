@@ -1,68 +1,118 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
-import { athleteNotifications } from "@/lib/mock/athlete";
-import type { AthleteNotification } from "@/lib/mock/athlete";
+import { createClient } from "@/lib/supabase/client";
+import { relativeTimeFr } from "@/lib/utils/relativeTime";
 
 /* ═══════════════════════════════════════════════════════════════
-   Notifications — Athlete activity alerts
+   Notifications — Athlete activity alerts (wired to Supabase)
 ═══════════════════════════════════════════════════════════════ */
 
-const DOT_COLOR: Record<AthleteNotification["type"], string> = {
-  profile_viewed: "#9CA3AF",
-  new_favorite: "#E63946",
-  suggestion_approved: "#22C55E",
-  suggestion_rejected: "#E63946",
-  coach_update: "#3B82F6",
-  milestone: "#F59E0B",
-  completion_reminder: "#EAB308",
+type NotifType = "PROFILE_VIEWED" | "ADDED_TO_FAVORITES" | "SUGGESTION_APPROVED" | "SUGGESTION_REJECTED" | "COACH_REPORT_UPDATED" | "COACH_VERIFIED" | "COACH_MODIFIED_PROFILE" | "COACH_DISTINCTION_ADDED" | "COACH_EVALUATION_UPDATED" | "PROFILE_MILESTONE" | "PROFILE_TIP";
+
+interface AthleteNotif {
+  id: string;
+  type: NotifType;
+  title: string;
+  message: string | null;
+  metadata: Record<string, unknown>;
+  read: boolean;
+  created_at: string;
+}
+
+const DOT_COLOR: Record<NotifType, string> = {
+  PROFILE_VIEWED: "#9CA3AF",
+  ADDED_TO_FAVORITES: "#E63946",
+  SUGGESTION_APPROVED: "#22C55E",
+  SUGGESTION_REJECTED: "#E63946",
+  COACH_REPORT_UPDATED: "#3B82F6",
+  COACH_VERIFIED: "#2563EB",
+  COACH_MODIFIED_PROFILE: "#F97316",
+  COACH_DISTINCTION_ADDED: "#F59E0B",
+  COACH_EVALUATION_UPDATED: "#22C55E",
+  PROFILE_MILESTONE: "#F59E0B",
+  PROFILE_TIP: "#F97316",
 };
 
-const TYPE_ICON: Record<AthleteNotification["type"], React.ReactNode> = {
-  profile_viewed: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>,
-  new_favorite: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" /></svg>,
-  suggestion_approved: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M20 6L9 17l-5-5" /></svg>,
-  suggestion_rejected: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6L6 18" /><path d="M6 6l12 12" /></svg>,
-  coach_update: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" /></svg>,
-  milestone: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M6 9l6 6 6-6" /></svg>,
-  completion_reminder: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" /></svg>,
+const TYPE_ICON: Record<NotifType, React.ReactNode> = {
+  PROFILE_VIEWED: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>,
+  ADDED_TO_FAVORITES: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" /></svg>,
+  SUGGESTION_APPROVED: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M20 6L9 17l-5-5" /></svg>,
+  SUGGESTION_REJECTED: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6L6 18" /><path d="M6 6l12 12" /></svg>,
+  COACH_REPORT_UPDATED: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" /></svg>,
+  COACH_VERIFIED: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><path d="M9 12l2 2 4-4" /></svg>,
+  COACH_MODIFIED_PROFILE: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>,
+  COACH_DISTINCTION_ADDED: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>,
+  COACH_EVALUATION_UPDATED: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 20V10" /><path d="M12 20V4" /><path d="M6 20v-6" /></svg>,
+  PROFILE_MILESTONE: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M6 9H4.5a2.5 2.5 0 010-5C7 4 7 7 7 7" /><path d="M18 9h1.5a2.5 2.5 0 000-5C17 4 17 7 17 7" /><path d="M4 22h16" /><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20 7 22" /><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20 17 22" /><path d="M18 2H6v7a6 6 0 0012 0V2Z" /></svg>,
+  PROFILE_TIP: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" /></svg>,
 };
 
 type FilterKey = "all" | "unread" | "profile" | "suggestions" | "coach";
 
-function relativeTime(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const min = Math.floor(diff / 60000);
-  if (min < 1) return "À l'instant";
-  if (min < 60) return `Il y a ${min} min`;
-  const h = Math.floor(min / 60);
-  if (h < 24) return `Il y a ${h}h`;
-  const d = Math.floor(h / 24);
-  if (d === 1) return "Hier";
-  if (d < 7) return `Il y a ${d} jours`;
-  return new Date(iso).toLocaleDateString("fr-CA", { day: "numeric", month: "long" });
-}
-
 export default function NotificationsPage() {
-  const [notifs, setNotifs] = useState(athleteNotifications);
+  const [notifs, setNotifs] = useState<AthleteNotif[]>([]);
+  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<FilterKey>("all");
   const [toast, setToast] = useState<string | null>(null);
+  const [athleteId, setAthleteId] = useState<string | null>(null);
+
+  // Load notifications from Supabase
+  useEffect(() => {
+    const load = async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setLoading(false); return; }
+
+      const { data: athlete } = await supabase
+        .from("athletes")
+        .select("id")
+        .eq("user_id", user.id)
+        .single();
+      if (!athlete) { setLoading(false); return; }
+
+      setAthleteId(athlete.id);
+
+      const { data } = await supabase
+        .from("athlete_notifications")
+        .select("*")
+        .eq("athlete_id", athlete.id)
+        .order("created_at", { ascending: false })
+        .limit(50);
+
+      setNotifs((data || []) as AthleteNotif[]);
+      setLoading(false);
+    };
+    load();
+  }, []);
 
   const unreadCount = notifs.filter((n) => !n.read).length;
 
   const filtered = useMemo(() => {
     switch (filter) {
       case "unread": return notifs.filter((n) => !n.read);
-      case "profile": return notifs.filter((n) => n.type === "profile_viewed" || n.type === "new_favorite");
-      case "suggestions": return notifs.filter((n) => n.type === "suggestion_approved" || n.type === "suggestion_rejected");
-      case "coach": return notifs.filter((n) => n.type === "coach_update");
+      case "profile": return notifs.filter((n) => ["PROFILE_VIEWED", "ADDED_TO_FAVORITES", "PROFILE_MILESTONE", "PROFILE_TIP"].includes(n.type));
+      case "suggestions": return notifs.filter((n) => ["SUGGESTION_APPROVED", "SUGGESTION_REJECTED"].includes(n.type));
+      case "coach": return notifs.filter((n) => ["COACH_REPORT_UPDATED", "COACH_VERIFIED", "COACH_MODIFIED_PROFILE", "COACH_DISTINCTION_ADDED", "COACH_EVALUATION_UPDATED"].includes(n.type));
       default: return notifs;
     }
   }, [notifs, filter]);
 
-  const markRead = (id: string) => setNotifs((prev) => prev.map((n) => n.id === id ? { ...n, read: true } : n));
-  const markAllRead = () => { setNotifs((prev) => prev.map((n) => ({ ...n, read: true }))); setToast("Tout marqué comme lu"); setTimeout(() => setToast(null), 2000); };
+  const markRead = async (id: string) => {
+    setNotifs((prev) => prev.map((n) => n.id === id ? { ...n, read: true } : n));
+    const supabase = createClient();
+    supabase.from("athlete_notifications").update({ read: true }).eq("id", id).then(() => {});
+  };
+
+  const markAllRead = async () => {
+    if (!athleteId) return;
+    setNotifs((prev) => prev.map((n) => ({ ...n, read: true })));
+    setToast("Tout marqué comme lu");
+    setTimeout(() => setToast(null), 2000);
+    const supabase = createClient();
+    supabase.from("athlete_notifications").update({ read: true }).eq("athlete_id", athleteId).eq("read", false).then(() => {});
+  };
 
   const FILTERS: { key: FilterKey; label: string; count?: number; color?: string }[] = [
     { key: "all", label: "Toutes", count: notifs.length },
@@ -71,6 +121,18 @@ export default function NotificationsPage() {
     { key: "suggestions", label: "Suggestions" },
     { key: "coach", label: "Coach" },
   ];
+
+  if (loading) {
+    return (
+      <div className="px-6 sm:px-10 py-8 max-w-[900px] mx-auto">
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-[#1A1D24] rounded w-48" />
+          <div className="h-10 bg-[#1A1D24] rounded w-full" />
+          {[1, 2, 3, 4].map((i) => <div key={i} className="h-16 bg-[#1A1D24] rounded-lg" />)}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="px-6 sm:px-10 py-8 max-w-[900px] mx-auto space-y-5">
@@ -92,9 +154,10 @@ export default function NotificationsPage() {
             }`}>
             {f.label}
             {f.count !== undefined && f.count > 0 && (
-              <span className={`ml-1.5 inline-flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full text-[9px] font-black ${
-                f.color ? `bg-[${f.color}] text-white` : "bg-[#2D3748] text-[#9CA3AF]"
-              }`} style={f.color ? { backgroundColor: f.color } : undefined}>{f.count}</span>
+              <span className="ml-1.5 inline-flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full text-[9px] font-black"
+                style={f.color ? { backgroundColor: f.color, color: "#fff" } : { backgroundColor: "#2D3748", color: "#9CA3AF" }}>
+                {f.count}
+              </span>
             )}
           </button>
         ))}
@@ -109,28 +172,34 @@ export default function NotificationsPage() {
               <path d="M9 12l2 2 4-4" stroke="#22C55E" strokeWidth="2" />
             </svg>
           </div>
-          <h3 className="font-head text-lg font-black text-white uppercase mb-1">Aucune notification non lue</h3>
+          <h3 className="font-head text-lg font-black text-white uppercase mb-1">
+            {filter === "unread" ? "Aucune notification non lue" : "Aucune notification"}
+          </h3>
           <p className="text-[13px] text-[#9CA3AF]">Tu es à jour! Reviens bientôt pour voir l&apos;activité sur ton profil.</p>
         </div>
       ) : (
         <div className="space-y-2">
-          {filtered.map((n) => (
-            <button key={n.id} type="button" onClick={() => markRead(n.id)}
-              className={`w-full text-left rounded-lg border p-4 transition-all hover:border-[#2D3748] ${
-                n.read ? "bg-[#1A1D24] border-white/5" : "bg-[#1A1D24] border-[#2D3748]"
-              }`}>
-              <div className="flex items-start gap-3">
-                {!n.read && <span className="w-2 h-2 rounded-full bg-[#E63946] shrink-0 mt-2" />}
-                <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: `${DOT_COLOR[n.type]}15` }}>
-                  <span style={{ color: DOT_COLOR[n.type] }}>{TYPE_ICON[n.type]}</span>
+          {filtered.map((n) => {
+            const color = DOT_COLOR[n.type] || "#9CA3AF";
+            return (
+              <button key={n.id} type="button" onClick={() => markRead(n.id)}
+                className={`w-full text-left rounded-lg border p-4 transition-all hover:border-[#2D3748] ${
+                  n.read ? "bg-[#1A1D24] border-white/5" : "bg-[#1A1D24] border-[#2D3748]"
+                }`}>
+                <div className="flex items-start gap-3">
+                  {!n.read && <span className="w-2 h-2 rounded-full bg-[#E63946] shrink-0 mt-2" />}
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: `${color}15` }}>
+                    <span style={{ color }}>{TYPE_ICON[n.type]}</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-[13px] leading-relaxed ${n.read ? "text-[#9CA3AF]" : "text-white font-semibold"}`}>{n.title}</p>
+                    {n.message && <p className="text-[12px] text-[#6b7280] mt-0.5">{n.message}</p>}
+                    <p className="text-[11px] text-[#4a4d56] mt-1" title={new Date(n.created_at).toLocaleString("fr-CA")}>{relativeTimeFr(n.created_at)}</p>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className={`text-[13px] leading-relaxed ${n.read ? "text-[#9CA3AF]" : "text-white font-semibold"}`}>{n.message}</p>
-                  <p className="text-[11px] text-[#4a4d56] mt-1" title={new Date(n.time).toLocaleString("fr-CA")}>{relativeTime(n.time)}</p>
-                </div>
-              </div>
-            </button>
-          ))}
+              </button>
+            );
+          })}
         </div>
       )}
 

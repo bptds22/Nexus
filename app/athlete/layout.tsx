@@ -6,15 +6,10 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import PlaybookBackground from "../components/PlaybookBackground";
-import { athleteUser, athleteNotifications, athleteSuggestions } from "@/lib/mock/athlete";
-
 /* ─────────────────────────────────────────────────────────────────
    Nexus — Athlete Portal Layout
    Sidebar nav + main content. Simplified for 16-18 year old athletes.
 ───────────────────────────────────────────────────────────────── */
-
-const pendingSuggestions = athleteSuggestions.filter((s) => s.status === "pending").length;
-const unreadNotifs = athleteNotifications.filter((n) => !n.read).length;
 
 const NAV_ITEMS = [
   {
@@ -30,7 +25,7 @@ const NAV_ITEMS = [
   {
     label: "Mon profil",
     href: "/athlete/profil",
-    badge: pendingSuggestions > 0 ? pendingSuggestions : 0,
+    badgeKey: "profil" as const,
     icon: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" />
@@ -40,7 +35,6 @@ const NAV_ITEMS = [
   {
     label: "Ma visibilité",
     href: "/athlete/visibilite",
-    badge: 5,
     icon: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" />
@@ -50,7 +44,7 @@ const NAV_ITEMS = [
   {
     label: "Notifications",
     href: "/athlete/notifications",
-    badge: unreadNotifs,
+    badgeKey: "notifications" as const,
     icon: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 01-3.46 0" />
@@ -72,7 +66,52 @@ const NAV_ITEMS = [
 function AthleteSidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
-  const u = athleteUser;
+  const [badges, setBadges] = useState<Record<string, number>>({});
+  const [userInfo, setUserInfo] = useState<{ firstName: string; lastName: string; school: string; sport: string; position: string; verified: boolean }>({ firstName: "", lastName: "", school: "", sport: "", position: "", verified: false });
+
+  useEffect(() => {
+    const loadBadges = async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: athlete } = await supabase
+        .from("athletes")
+        .select("id, first_name, last_name, verified, sports!sport_id(nom), positions!position_id(abreviation), schools!school_id(name)")
+        .eq("user_id", user.id)
+        .single();
+      if (!athlete) return;
+
+      setUserInfo({
+        firstName: (athlete as any).first_name || "",
+        lastName: (athlete as any).last_name || "",
+        school: (athlete as any).schools?.name || "",
+        sport: (athlete as any).sports?.nom || "",
+        position: (athlete as any).positions?.abreviation || "",
+        verified: (athlete as any).verified || false,
+      });
+
+      // Unread notifications count
+      const { count: unreadNotifs } = await supabase
+        .from("athlete_notifications")
+        .select("id", { count: "exact", head: true })
+        .eq("athlete_id", athlete.id)
+        .eq("read", false);
+
+      // Pending suggestions count
+      const { count: pendingSuggs } = await supabase
+        .from("athlete_suggestions")
+        .select("id", { count: "exact", head: true })
+        .eq("athlete_id", athlete.id)
+        .eq("status", "EN_ATTENTE");
+
+      setBadges({
+        notifications: unreadNotifs || 0,
+        profil: pendingSuggs || 0,
+      });
+    };
+    loadBadges();
+  }, [pathname]);
 
   const handleLogout = () => router.push("/");
 
@@ -102,8 +141,8 @@ function AthleteSidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose:
             >
               <span className={isActive ? "text-[#E63946]" : "text-[#6b7280]"}>{item.icon}</span>
               <span className="flex-1">{item.label}</span>
-              {item.badge !== undefined && item.badge > 0 && (
-                <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-[#E63946] text-white text-[10px] font-black">{item.badge}</span>
+              {(item as any).badgeKey && badges[(item as any).badgeKey] > 0 && (
+                <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-[#E63946] text-white text-[10px] font-black">{badges[(item as any).badgeKey]}</span>
               )}
             </Link>
           );
@@ -114,23 +153,25 @@ function AthleteSidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose:
       <div className="px-4 py-5 border-t border-[#1e2128]">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-[#2F3440] border border-[#2D3748] flex items-center justify-center">
-            <span className="text-[12px] font-bold text-white/30">{u.firstName[0]}{u.lastName[0]}</span>
+            <span className="text-[12px] font-bold text-white/30">{userInfo.firstName?.[0] || ""}{userInfo.lastName?.[0] || ""}</span>
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5">
-              <p className="text-[13px] font-semibold text-white truncate">{u.firstName} {u.lastName}</p>
-              {u.is_verified && (
+              <p className="text-[13px] font-semibold text-white truncate">{userInfo.firstName} {userInfo.lastName}</p>
+              {userInfo.verified && (
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="#3B82F6" stroke="none" className="shrink-0">
                   <circle cx="12" cy="12" r="10" />
                   <path d="M9 12l2 2 4-4" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
                 </svg>
               )}
             </div>
-            <p className="text-[11px] text-[#6b7280] truncate">{u.school}</p>
-            <div className="flex items-center gap-1.5 mt-1">
-              <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-[#E63946]/15 text-[#E63946]">{u.sport}</span>
-              <span className="text-[10px] font-bold text-[#9CA3AF]">{u.position}</span>
-            </div>
+            <p className="text-[11px] text-[#6b7280] truncate">{userInfo.school}</p>
+            {(userInfo.sport || userInfo.position) && (
+              <div className="flex items-center gap-1.5 mt-1">
+                {userInfo.sport && <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-[#E63946]/15 text-[#E63946]">{userInfo.sport}</span>}
+                {userInfo.position && <span className="text-[10px] font-bold text-[#9CA3AF]">{userInfo.position}</span>}
+              </div>
+            )}
           </div>
         </div>
         <button type="button" onClick={handleLogout} className="mt-3 text-[10px] font-bold uppercase tracking-[0.2em] text-[#6b7280] hover:text-[#E63946] transition-colors">

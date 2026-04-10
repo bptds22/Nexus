@@ -1072,7 +1072,7 @@ function ModifierContent({ id }: { id: string }) {
         <div className="mb-8">
           <p className={sectionTitle}>Distinctions</p>
           <p className="text-[12px] text-[#6b7280] mb-4 -mt-3">
-            Sélectionne les reconnaissances qui s&apos;appliquent à cet athlète cette saison. Maximum {MAX_BADGES}.
+            Sélectionne les reconnaissances qui s&apos;appliquent à cet athlète cette saison.
           </p>
 
           {!sportName && (
@@ -1122,7 +1122,7 @@ function ModifierContent({ id }: { id: string }) {
 
           {badgeOptions.length > 0 && (
             <p className="text-[12px] text-[#4a4d56] mt-3">
-              {sc.badges.length}/{MAX_BADGES} sélectionnée{sc.badges.length !== 1 ? "s" : ""}
+              {sc.badges.length} sélectionnée{sc.badges.length !== 1 ? "s" : ""}
             </p>
           )}
         </div>

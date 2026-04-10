@@ -88,6 +88,70 @@ interface NexusUser {
 }
 
 /* ═══════════════════════════════════════════════════════════════
+   PHOTO UPLOAD — reusable across onboarding steps
+═══════════════════════════════════════════════════════════════ */
+function PhotoUpload({ photoUrl, onUploaded, sublabel = "Optionnel — visible par les recruteurs" }: { photoUrl: string; onUploaded: (url: string) => void; sublabel?: string }) {
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState("");
+
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    setError("");
+
+    // Validate
+    if (f.size > 5 * 1024 * 1024) { setError("Fichier trop volumineux (max 5 Mo)"); return; }
+    if (!["image/jpeg", "image/png"].includes(f.type)) { setError("Format accepté : JPG ou PNG"); return; }
+
+    setUploading(true);
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setUploading(false); return; }
+
+    const ext = f.name.split(".").pop() || "jpg";
+    const path = `onboarding/${user.id}_${Date.now()}.${ext}`;
+    const { error: upErr } = await supabase.storage.from("avatars").upload(path, f, { upsert: true });
+    if (upErr) { console.error("[Photo upload]", upErr); setError("Erreur lors du téléversement"); setUploading(false); return; }
+
+    const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
+    onUploaded(urlData.publicUrl);
+
+    // Also save to users table
+    await supabase.from("users").update({ photo_url: urlData.publicUrl }).eq("id", user.id);
+    setUploading(false);
+  }
+
+  return (
+    <div>
+      <label className="flex items-center gap-4 cursor-pointer group">
+        <div className="relative w-16 h-16 rounded-full shrink-0 overflow-hidden">
+          {photoUrl ? (
+            <img src={photoUrl} alt="" className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full bg-[#111317] border-2 border-dashed border-white/10 flex items-center justify-center group-hover:border-[#E63946]/40 transition-colors">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2" strokeLinecap="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            </div>
+          )}
+          {uploading && (
+            <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+              <div className="w-5 h-5 border-2 border-[#E63946] border-t-transparent rounded-full animate-spin" />
+            </div>
+          )}
+        </div>
+        <div>
+          <p className="text-xs font-bold text-white uppercase tracking-wider group-hover:text-[#E63946] transition-colors">
+            {photoUrl ? "Changer la photo" : "Photo de profil"}
+          </p>
+          <p className="text-[10px] text-[#6B7280]">{sublabel}</p>
+        </div>
+        <input type="file" accept="image/jpeg,image/png" className="hidden" title="Photo de profil" onChange={handleFile} />
+      </label>
+      {error && <p className="text-[10px] text-[#EF4444] mt-1 ml-20">{error}</p>}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
    STEP INDICATOR
 ═══════════════════════════════════════════════════════════════ */
 function StepIndicator({ steps, current }: { steps: string[]; current: number }) {
@@ -140,7 +204,7 @@ function SearchableDropdown<T extends { name: string }>({
 }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
-  const filtered = items.filter((i) => i.name.toLowerCase().includes(query.toLowerCase()));
+  const filtered = items.filter((i) => i.name.toLowerCase().includes(query.toLowerCase())).slice(0, 15);
 
   return (
     <div className="relative">
@@ -285,12 +349,82 @@ export default function OnboardingPage() {
   const totalSteps = totalStepsMap[user?.role ?? ""] || 3;
   const progress = ((step + 1) / totalSteps) * 100;
 
-  const next = () => {
-    if (step < totalSteps - 1) {
-      setSlideDir("right");
-      setStep((s) => s + 1);
+  const [stepSaving, setStepSaving] = useState(false);
+
+  const next = async () => {
+    if (step >= totalSteps - 1) return;
+
+    setStepSaving(true);
+    try {
+      const supabase = createClient();
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (authUser) {
+        const raw = localStorage.getItem("nexus_user");
+        const localUser = raw ? JSON.parse(raw) : {};
+        const profileData = localUser.profile || {};
+        const institution = localUser.institution || {};
+        const role = user?.role || "";
+
+        // Step 0 for coach/recruiter = Profile step
+        if (step === 0) {
+          const { error } = await supabase.from("users").update({
+            first_name: localUser.firstName || null,
+            last_name: localUser.lastName || null,
+            phone: profileData.phone || null,
+            photo_url: profileData.photo_url || null,
+            sport: profileData.sport_principal || null,
+            profile_data: {
+              bio: profileData.bio || null,
+              sports_secondaires: profileData.sports_secondaires || [],
+              experience_years: profileData.experience_years || null,
+            },
+          }).eq("id", authUser.id);
+          if (error) { console.error("[Onboarding] step 0 save error:", error); setStepSaving(false); return; }
+        }
+
+        // Step 1 = School/CÉGEP selection
+        if (step === 1 && institution.name) {
+          // Find the school_id from schools table
+          const { data: schoolRow } = await supabase.from("schools").select("id").eq("name", institution.name).maybeSingle();
+          if (schoolRow) {
+            // Save school_id to users table
+            await supabase.from("users").update({ school_id: schoolRow.id, region: institution.region || null }).eq("id", authUser.id);
+
+            // Upsert into school_coaches for coach roles
+            if (role === "coach" || role === "coach_league") {
+              await supabase.from("school_coaches").upsert({
+                coach_id: authUser.id,
+                school_id: schoolRow.id,
+                role: "COACH",
+                sport: profileData.sport_principal || null,
+              }, { onConflict: "coach_id,school_id" }).then(({ error: scErr }) => {
+                if (scErr) console.error("[Onboarding] school_coaches upsert:", scErr);
+              });
+            }
+          }
+        }
+
+        // Step 2+ = Director / Invite / Criteria steps
+        if (step === 2) {
+          // For directors, save is_school_admin
+          if (role === "director_school" || role === "director_cegep") {
+            await supabase.from("users").update({ is_school_admin: true }).eq("id", authUser.id);
+          }
+        }
+
+        console.log("[Onboarding] step", step, "saved to Supabase for role:", role);
+      }
+    } catch (err) {
+      console.error("[Onboarding] step save error:", err);
+      setStepSaving(false);
+      return;
     }
+    setStepSaving(false);
+
+    setSlideDir("right");
+    setStep((s) => s + 1);
   };
+
   const prev = () => {
     if (step > 0) {
       setSlideDir("left");
@@ -322,19 +456,35 @@ export default function OnboardingPage() {
         .eq("id", authUser.id);
 
       // Save school to users table if coach selected one
-      if (localUser.institution?.name && user?.role === "coach") {
+      if (localUser.institution?.name && (user?.role === "coach" || user?.role === "director_school")) {
         const { data: school } = await supabase
-          .from("school_registry")
+          .from("schools")
           .select("id")
-          .ilike("name", `%${localUser.institution.name}%`)
-          .limit(1)
-          .single();
+          .eq("name", localUser.institution.name)
+          .maybeSingle();
 
         if (school) {
-          await supabase
-            .from("users")
-            .update({ school_id: null })
-            .eq("id", authUser.id);
+          await supabase.from("users").update({ school_id: school.id }).eq("id", authUser.id);
+          // Also upsert school_coaches
+          await supabase.from("school_coaches").upsert({
+            coach_id: authUser.id,
+            school_id: school.id,
+            role: "COACH",
+            sport: localUser.profile?.sport_principal || null,
+          }, { onConflict: "coach_id,school_id" });
+        }
+      }
+
+      // Save CÉGEP to users table for recruiter/director_cegep
+      if (localUser.institution?.name && (user?.role === "recruiter" || user?.role === "director_cegep")) {
+        const { data: cegep } = await supabase
+          .from("schools")
+          .select("id")
+          .eq("name", localUser.institution.name)
+          .maybeSingle();
+
+        if (cegep) {
+          await supabase.from("users").update({ school_id: cegep.id }).eq("id", authUser.id);
         }
       }
 
@@ -437,8 +587,8 @@ export default function OnboardingPage() {
               </button>
             ) : <div />}
             {step < totalSteps - 1 ? (
-              <button type="button" onClick={next} className="h-11 px-8 rounded-lg bg-[#E63946] text-sm font-bold text-white hover:bg-[#D42B22] transition-colors">
-                Suivant &rarr;
+              <button type="button" onClick={next} disabled={stepSaving} className="h-11 px-8 rounded-lg bg-[#E63946] text-sm font-bold text-white hover:bg-[#D42B22] transition-colors disabled:opacity-50">
+                {stepSaving ? "Enregistrement..." : "Suivant →"}
               </button>
             ) : (
               <button type="button" onClick={finish} className="h-11 px-6 rounded-lg bg-[#E63946] text-sm font-bold text-white hover:bg-[#D42B22] transition-colors">
@@ -623,11 +773,12 @@ function CoachProfile({ profile, save }: { profile: Record<string, unknown>; sav
   const [secondary, setSecondary] = useState<string[]>((profile.sports_secondaires as string[]) || []);
   const [experience, setExperience] = useState((profile.experience_years as number) || 0);
   const [phone, setPhone] = useState((profile.phone as string) || "");
+  const [photoUrl, setPhotoUrl] = useState((profile.photo_url as string) || "");
 
   useEffect(() => {
-    save({ profile: { ...profile, bio, sport_principal: sport, sports_secondaires: secondary, experience_years: experience, phone } });
+    save({ profile: { ...profile, bio, sport_principal: sport, sports_secondaires: secondary, experience_years: experience, phone, photo_url: photoUrl } });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bio, sport, secondary, experience, phone]);
+  }, [bio, sport, secondary, experience, phone, photoUrl]);
 
   return (
     <div className="space-y-5">
@@ -636,16 +787,7 @@ function CoachProfile({ profile, save }: { profile: Record<string, unknown>; sav
         <p className="text-sm text-[#9CA3AF] mt-1">Ces informations seront visibles par les recruteurs qui consultent tes athlètes.</p>
       </div>
 
-      {/* Photo placeholder */}
-      <div className="flex items-center gap-4">
-        <div className="w-16 h-16 rounded-full bg-[#111317] border-2 border-dashed border-white/10 flex items-center justify-center">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2" strokeLinecap="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
-        </div>
-        <div>
-          <p className="text-xs font-bold text-white uppercase tracking-wider">Photo de profil</p>
-          <p className="text-[10px] text-[#6B7280]">Optionnel — visible par les recruteurs</p>
-        </div>
-      </div>
+      <PhotoUpload photoUrl={photoUrl} onUploaded={setPhotoUrl} sublabel="Optionnel — visible par les recruteurs" />
 
       {/* Bio */}
       <div>
@@ -706,10 +848,9 @@ function SchoolStep({ user, save }: { user: NexusUser; save: (u: Partial<NexusUs
   useEffect(() => {
     const supabase = createClient();
     supabase
-      .from("school_registry")
-      .select("name, city, region_admin")
-      .eq("has_secondaire", true)
-      .eq("status", "ACTIVE")
+      .from("schools")
+      .select("id, name, city, region")
+      .eq("type", "SECONDAIRE")
       .order("name")
       .then(({ data, error }) => {
         console.log("Schools:", data?.length, error);
@@ -717,7 +858,7 @@ function SchoolStep({ user, save }: { user: NexusUser; save: (u: Partial<NexusUs
           setSchools(data.map(s => ({
             name: s.name,
             city: s.city || "",
-            region: s.region_admin || "",
+            region: s.region || "",
             conference: "",
             sports: [],
           })));
@@ -1008,15 +1149,7 @@ function DirectorProfile({ user, save, subtitle }: { user: NexusUser; save: (u: 
       </div>
 
       {/* Photo */}
-      <div className="flex items-center gap-4">
-        <div className="w-16 h-16 rounded-full bg-[#111317] border-2 border-dashed border-white/10 flex items-center justify-center">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2" strokeLinecap="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
-        </div>
-        <div>
-          <p className="text-xs font-bold text-white uppercase tracking-wider">Photo de profil</p>
-          <p className="text-[10px] text-[#6B7280]">Optionnel</p>
-        </div>
-      </div>
+      <PhotoUpload photoUrl="" onUploaded={() => {}} sublabel="Optionnel" />
 
       <div>
         <label className={`${label} text-[#9CA3AF] mb-1.5 block`}>Titre / Poste</label>
@@ -1033,16 +1166,34 @@ function DirectorProfile({ user, save, subtitle }: { user: NexusUser; save: (u: 
 
 /* ── CÉGEP step ── */
 function CegepStep({ user, save }: { user: NexusUser; save: (u: Partial<NexusUser>) => void }) {
-  const [selected, setSelected] = useState<(typeof MOCK_CEGEPS)[0] | null>(
-    user.institution ? MOCK_CEGEPS.find((c) => c.name === (user.institution as Record<string, unknown>)?.name) || null : null
-  );
+  const [cegeps, setCegeps] = useState<{ id: string; name: string; city: string; region: string }[]>([]);
+  const [cegepsLoading, setCegepsLoading] = useState(true);
+  const [selected, setSelected] = useState<{ id: string; name: string; city: string; region: string } | null>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.from("schools").select("id, name, city, region").eq("type", "CEGEP").order("name").then(({ data }) => {
+      if (data) {
+        setCegeps(data);
+        // Pre-select if user already has institution
+        if (user.institution) {
+          const instName = (user.institution as Record<string, string>)?.name;
+          const found = data.find((c) => c.name === instName);
+          if (found) setSelected(found);
+        }
+      }
+      setCegepsLoading(false);
+    });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (selected) {
-      save({ institution: { name: selected.name, city: selected.city, region: selected.region, conference: selected.conference, type: selected.type, programs: selected.programs, sports: selected.sports } });
+      save({ institution: { name: selected.name, city: selected.city, region: selected.region } });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected]);
+
+  if (cegepsLoading) return <p className="text-sm text-[#6B7280]">Chargement des CÉGEPs...</p>;
 
   return (
     <div className="space-y-5">
@@ -1052,44 +1203,27 @@ function CegepStep({ user, save }: { user: NexusUser; save: (u: Partial<NexusUse
       </div>
 
       <SearchableDropdown
-        items={MOCK_CEGEPS}
+        items={cegeps}
         value={selected?.name || ""}
         onChange={(item) => setSelected(item)}
         placeholder="Rechercher ton CÉGEP..."
         renderItem={(item) => (
           <div>
             <p className="font-bold">{item.name}</p>
-            {[item.city, item.region].filter(Boolean).join(" — ") && (
-              <p className="text-[10px] text-[#6B7280]">{[item.city, item.region].filter(Boolean).join(" — ")}</p>
-            )}
+            {item.city && <p className="text-[10px] text-[#6B7280]">{item.city}{item.region ? ` — ${item.region}` : ""}</p>}
           </div>
         )}
       />
 
       {selected && (
-        <div className="bg-[#111317] border border-white/10 rounded-lg p-5 space-y-3">
-          <div className="flex items-center gap-3">
-            <h3 className="font-head font-black text-lg text-white">{selected.name}</h3>
-            <span className="px-2 py-0.5 rounded text-[9px] font-bold uppercase bg-[#3B82F6]/10 text-[#3B82F6] border border-[#3B82F6]/20">{selected.type}</span>
-          </div>
-          {[selected.city, selected.region, selected.conference].filter(Boolean).join(", ") && (
-            <p className="text-xs text-[#9CA3AF]">{[selected.city, selected.region].filter(Boolean).join(", ")}{selected.conference ? ` — ${selected.conference}` : ""}</p>
+        <div className="bg-[#111317] border border-white/10 rounded-lg p-5 space-y-2">
+          <h3 className="font-head font-black text-lg text-white">{selected.name}</h3>
+          {(selected.city || selected.region) && (
+            <p className="text-xs text-[#9CA3AF]">{[selected.city, selected.region].filter(Boolean).join(" — ")}</p>
           )}
-          <div className="flex flex-wrap gap-1.5">
-            {selected.programs.map((p) => (
-              <span key={p} className="px-2 py-1 rounded bg-white/5 text-[9px] text-[#9CA3AF]">{p}</span>
-            ))}
-          </div>
-          <div className="flex flex-wrap gap-2 pt-1">
-            {selected.sports.map((s) => (
-              <span key={s.sport} className="px-3 py-1 rounded-full bg-[rgba(230,57,70,0.1)] border border-[#E63946]/20 text-[10px] font-bold text-[#E63946] uppercase tracking-wider">
-                {s.sport} {s.division}
-              </span>
-            ))}
-          </div>
           <p className="text-xs text-[#22C55E] font-bold flex items-center gap-1">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
-            Réclamer ce CÉGEP
+            CÉGEP sélectionné
           </p>
         </div>
       )}
@@ -1230,15 +1364,7 @@ function RecruiterProfile({ user, save }: { user: NexusUser; save: (u: Partial<N
       )}
 
       {/* Photo */}
-      <div className="flex items-center gap-4">
-        <div className="w-16 h-16 rounded-full bg-[#111317] border-2 border-dashed border-white/10 flex items-center justify-center">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2" strokeLinecap="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
-        </div>
-        <div>
-          <p className="text-xs font-bold text-white uppercase tracking-wider">Photo de profil</p>
-          <p className="text-[10px] text-[#6B7280]">Optionnel</p>
-        </div>
-      </div>
+      <PhotoUpload photoUrl="" onUploaded={() => {}} sublabel="Optionnel" />
 
       <div>
         <label className={`${label} text-[#9CA3AF] mb-1.5 block`}>Bio courte</label>

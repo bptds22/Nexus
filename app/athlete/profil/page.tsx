@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { calculateProfileCompletion, getIncompleteFields } from "@/lib/utils/calculateProfileCompletion";
 import DatePicker from "@/app/coach/components/DatePicker";
 import type { AthleteSuggestion } from "@/lib/mock/athlete";
 import type { AthleteTraitRatings } from "@/lib/types/models";
@@ -103,6 +104,26 @@ function EditableField({ label, value, onSave, type = "text", recruiterView }: {
 }
 
 /* ── Suggestible field wrapper (yellow) ────────────────────────── */
+
+const MESSAGE_PLACEHOLDERS: Record<string, string> = {
+  "Taille": "Ex: Je me suis fait mesurer à la clinique la semaine dernière",
+  "Poids": "Ex: Poids pris ce matin après l'entraînement",
+  "Envergure": "Ex: Mesurée lors du combine de l'école",
+  "Taille mains": "Ex: Mesurée par le thérapeute sportif",
+  "Main dominante": "Ex: Je lance de la droite mais j'écris de la gauche",
+  "Pied dominant": "Ex: Je botte toujours du droit",
+  "40 yards": "Ex: Chrono officiel du combine RSEQ",
+  "Saut vertical": "Ex: Mesuré au gym avec l'entraîneur",
+  "Saut longueur": "Ex: Résultat du test de la semaine dernière",
+  "Développé couché": "Ex: Nouveau record personnel au gym",
+  "Navette": "Ex: Temps du dernier test en équipe",
+  "Sprint 100m": "Ex: Chrono de la compétition d'athlétisme",
+  "Sport principal": "Ex: J'ai changé de sport cette saison",
+  "Position": "Ex: Le coach m'a déplacé à cette position",
+  "Sport secondaire": "Ex: Je joue aussi au basketball en parascolaire",
+  "Position secondaire": "Ex: Je joue meneur quand je suis au basketball",
+  "Numéro": "Ex: J'ai changé de numéro cette saison",
+};
 
 const FIELD_PLACEHOLDERS: Record<string, string> = {
   "Taille": "Ex: 6'2\"",
@@ -321,7 +342,7 @@ function SuggestibleField({ label, value, fieldKey, pending, onSubmit, recruiter
           </div>
           <div>
             <label className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#6b7280] block mb-1">Message pour ton coach (optionnel)</label>
-            <textarea value={message} onChange={(e) => setMessage(e.target.value)} rows={2} placeholder="Ex: Mon bulletin de janvier montre 85%" aria-label="Message"
+            <textarea value={message} onChange={(e) => setMessage(e.target.value)} rows={2} placeholder={MESSAGE_PLACEHOLDERS[fieldKey] || "Ex: Explique pourquoi tu proposes ce changement"} aria-label="Message"
               className="w-full bg-[#111317] border border-[#2a2d36] rounded px-3 py-2 text-[12px] text-[#e0e0e0] focus:border-[#EAB308] outline-none resize-none" />
           </div>
           <div className="flex items-center gap-3">
@@ -614,9 +635,7 @@ export default function AthleteProfilPage() {
       } : undefined;
 
       // Profile completion
-      const fields = [raw.first_name, raw.last_name, raw.school_id, raw.sport_id, raw.date_naissance, raw.annee_diplomation, raw.taille_pieds, raw.poids_lbs, raw.video_faits_saillants_url, raw.photo_url];
-      const filled = fields.filter(Boolean).length;
-      const profileCompleteness = Math.round((filled / fields.length) * 100);
+      const profileCompleteness = calculateProfileCompletion(raw);
 
       const mapped: AnyProfile = {
         id: raw.id,
@@ -679,6 +698,28 @@ export default function AthleteProfilPage() {
         instagram: mapped.instagramUrl || "",
         fullGame: mapped.fullGameUrl || "",
       });
+      // Load existing suggestions
+      if (raw.id) {
+        const { data: sugs } = await supabase
+          .from("athlete_suggestions")
+          .select("id, champ, valeur_actuelle, valeur_proposee, status, message, raison_rejet, created_at")
+          .eq("athlete_id", raw.id)
+          .order("created_at", { ascending: false });
+        if (sugs) {
+          const STATUS_MAP: Record<string, string> = { EN_ATTENTE: "pending", APPROUVEE: "approved", REJETEE: "rejected" };
+          setSuggestions(sugs.map((s) => ({
+            id: s.id,
+            field: s.champ,
+            current_value: s.valeur_actuelle,
+            proposed_value: s.valeur_proposee,
+            message: s.message || "",
+            status: (STATUS_MAP[s.status] || "pending") as "pending" | "approved" | "rejected",
+            submitted_at: s.created_at,
+            rejection_reason: s.raison_rejet || undefined,
+          })));
+        }
+      }
+
       setLoading(false);
     }
     load();
@@ -701,8 +742,7 @@ export default function AthleteProfilPage() {
     const weightDisplay = raw.poids_lbs ? `${raw.poids_lbs} lbs` : "";
     let age = 0;
     if (raw.date_naissance) { const bd = new Date(raw.date_naissance); const now = new Date(); age = now.getFullYear() - bd.getFullYear(); if (now.getMonth() < bd.getMonth() || (now.getMonth() === bd.getMonth() && now.getDate() < bd.getDate())) age--; }
-    const fields = [raw.first_name, raw.last_name, raw.school_id, raw.sport_id, raw.date_naissance, raw.annee_diplomation, raw.taille_pieds, raw.poids_lbs, raw.video_faits_saillants_url, raw.photo_url];
-    const profileCompleteness = Math.round((fields.filter(Boolean).length / fields.length) * 100);
+    const profileCompleteness = calculateProfileCompletion(raw);
     const traitRatings = evalRel ? { leadership: evalRel.leadership||0, discipline: evalRel.discipline||0, coachability: evalRel.coachabilite||0, gameIQ: evalRel.intelligence_jeu||0, competitiveness: evalRel.competitivite||0, teamwork: evalRel.esprit_equipe||0, resilience: evalRel.resilience||0, attitude: evalRel.attitude_mentalite||0 } : undefined;
     setA({
       ...a,
@@ -736,6 +776,12 @@ export default function AthleteProfilPage() {
     const supabase = createClient();
     const { error } = await supabase.from("athletes").update(updates).eq("id", athleteId);
     if (error) { console.error("[Profile save]", error); setEditSaving(false); return; }
+    // Recalculate and persist profile_completion
+    const { data: freshRow } = await supabase.from("athletes").select("*").eq("id", athleteId).single();
+    if (freshRow) {
+      const completion = calculateProfileCompletion(freshRow);
+      await supabase.from("athletes").update({ profile_completion: completion }).eq("id", athleteId);
+    }
     await reloadProfile();
     setEditSection(null);
     setEditSaving(false);
@@ -796,10 +842,50 @@ export default function AthleteProfilPage() {
     showToast("Mis à jour!");
   };
 
-  const submitSuggestion = (field: string, proposed: string, message: string) => {
+  const submitSuggestion = async (field: string, proposed: string, message: string) => {
+    if (!athleteId) return;
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    // Get the current value for this field from the raw athlete data
+    const fieldMap: Record<string, string> = {
+      "Taille": "taille_pieds", "Poids": "poids_lbs", "Envergure": "envergure",
+      "Taille mains": "taille_mains", "Main dominante": "main_dominante", "Pied dominant": "pied_dominant",
+      "40 yards": "test_40_verges", "Saut vertical": "saut_vertical", "Saut longueur": "saut_longueur",
+      "Développé couché": "developpe_couche", "Navette": "navette_agilite", "Sprint 100m": "sprint_100m",
+      "Sport principal": "sport_id", "Position": "position_id", "Sport secondaire": "sport_secondaire_id",
+      "Position secondaire": "position_secondaire_id", "Numéro": "numero_jersey",
+    };
+    const dbField = fieldMap[field] || field;
+    const currentVal = a._raw ? String(a._raw[dbField] || "") : "";
+
+    // Look up coach_id from athlete record
+    let coachId: string | null = a._raw?.coach_id || null;
+    if (!coachId && athleteId) {
+      const { data: athRow } = await supabase.from("athletes").select("coach_id").eq("id", athleteId).single();
+      coachId = athRow?.coach_id || null;
+    }
+
+    const { data: inserted, error } = await supabase.from("athlete_suggestions").insert({
+      athlete_id: athleteId,
+      submitted_by: user.id,
+      coach_id: coachId,
+      champ: field,
+      valeur_actuelle: currentVal,
+      valeur_proposee: proposed,
+      status: "EN_ATTENTE",
+      message: message || null,
+    }).select("id, champ, valeur_actuelle, valeur_proposee, status, message, created_at").single();
+
+    if (error) { console.error("[Suggestion] insert error:", JSON.stringify(error), error.message, error.code, error.details); showToast("Erreur lors de l'envoi"); return; }
+
+    console.log("[Suggestion] saved:", inserted);
+
+    // Add to local state for immediate UI update
     const newSug: AthleteSuggestion = {
-      id: `s-new-${Date.now()}`, field, current_value: null, proposed_value: proposed,
-      message, status: "pending", submitted_at: new Date().toISOString(),
+      id: inserted.id, field, current_value: currentVal, proposed_value: proposed,
+      message, status: "pending", submitted_at: inserted.created_at,
     };
     setSuggestions((prev) => [newSug, ...prev]);
     showToast("Suggestion envoyée à ton coach");
@@ -816,12 +902,7 @@ export default function AthleteProfilPage() {
   const color = pctColor(a.profileCompleteness || 0);
 
   // Compute incomplete fields for the sidebar
-  const incomplete: { label: string; boost: number }[] = [];
-  if (!a.photoUrl) incomplete.push({ label: "Ajouter une photo", boost: 10 });
-  if (!a.heightDisplay) incomplete.push({ label: "Ajouter ta taille", boost: 5 });
-  if (!a.weightDisplay) incomplete.push({ label: "Ajouter ton poids", boost: 5 });
-  if (!a.highlightVideoUrl) incomplete.push({ label: "Ajouter une vidéo", boost: 15 });
-  if (!a.gpa) incomplete.push({ label: "Ajouter ta moyenne", boost: 5 });
+  const incomplete = a._raw ? getIncompleteFields(a._raw) : [];
 
   if (loading) {
     return (
@@ -893,8 +974,13 @@ export default function AthleteProfilPage() {
               <div className="flex-1">
                 <div className="flex items-center gap-2">
                   <h2 className="font-head text-[20px] font-black text-white uppercase tracking-tight">{a.firstName} {a.lastName}</h2>
-                  {a.isVerified && (
+                  {a.isVerified ? (
                     <svg width="20" height="20" viewBox="0 0 24 24" fill={BLUE} stroke="none"><circle cx="12" cy="12" r="10" /><path d="M9 12l2 2 4-4" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" /></svg>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#4a4d56]/20 border border-[#4a4d56]/30 text-[10px] font-bold text-[#6b7280] uppercase tracking-wider">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="#4a4d56" stroke="none"><circle cx="12" cy="12" r="10" /><path d="M9 12l2 2 4-4" stroke="#6b7280" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" /></svg>
+                      Non vérifié
+                    </span>
                   )}
                 </div>
                 <div className="flex items-center gap-2 mt-1.5 flex-wrap">

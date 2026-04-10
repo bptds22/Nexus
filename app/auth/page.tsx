@@ -192,17 +192,23 @@ function AuthContent() {
       .eq("id", data.user.id)
       .single();
 
-    const role = profile?.role;
+    // Use profile from DB, fallback to auth metadata
+    const role = profile?.role || (data.user.user_metadata?.role as string);
     const onboardingComplete = profile?.onboarding_complete;
 
-    // Always go to onboarding if not complete
-    if (!onboardingComplete) {
+    // If we couldn't load profile at all, use metadata role to route
+    if (!profile) {
+      console.warn("[Login] profile query returned null, using metadata role:", role);
+    }
+
+    // Only redirect to onboarding if profile explicitly exists with onboarding_complete = false
+    if (profile && !onboardingComplete) {
       router.push("/onboarding");
       setLoading(false);
       return;
     }
 
-    // Onboarding done — go to correct portal
+    // Route to correct portal
     if (role === "COACH" || role === "DIRECTEUR_SECONDAIRE") {
       router.push("/coach");
     } else if (role === "RECRUTEUR" || role === "DIRECTEUR_CEGEP") {

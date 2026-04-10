@@ -43,7 +43,7 @@ function CoachAthleteCard({ a }: { a: RosterAthlete }) {
   return (
     <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] overflow-hidden hover:border-[#E63946]/30 hover:shadow-[0_0_24px_rgba(230,57,70,0.12)] hover:-translate-y-1.5 hover:scale-[1.02] transition-all duration-300 ease-out group flex flex-col">
       {/* Photo area */}
-      <div className="relative h-[180px] bg-[#2F3440] overflow-hidden">
+      <Link href={`/coach/athletes/${a.id}`} className="relative block h-[180px] bg-[#2F3440] overflow-hidden cursor-pointer">
         {a.photo ? (
           <img src={a.photo} alt={`${a.firstName} ${a.lastName}`} className="w-full h-full object-cover" />
         ) : (
@@ -79,7 +79,7 @@ function CoachAthleteCard({ a }: { a: RosterAthlete }) {
             </svg>
           ))}
         </div>
-      </div>
+      </Link>
 
       {/* Info */}
       <div className="p-4 flex flex-col flex-1 gap-1">
@@ -146,7 +146,7 @@ function CoachAthleteRow({ a }: { a: RosterAthlete }) {
     <div className="bg-[#1A1D24] rounded-lg border border-[#2D3748] hover:border-[#E63946]/30 hover:shadow-[0_0_24px_rgba(230,57,70,0.12)] transition-all duration-300 ease-out flex items-center px-4 py-3 gap-3">
 
       {/* Avatar + verified */}
-      <div className="relative w-10 h-10 rounded-full bg-[#2F3440] shrink-0" style={{ overflow: "visible" }}>
+      <Link href={`/coach/athletes/${a.id}`} className="relative w-10 h-10 rounded-full bg-[#2F3440] shrink-0 block" style={{ overflow: "visible" }}>
         <div className="w-full h-full rounded-full overflow-hidden">
           {a.photo ? (
             <img src={a.photo} alt={`${a.firstName} ${a.lastName}`} className="w-full h-full object-cover" />
@@ -162,7 +162,7 @@ function CoachAthleteRow({ a }: { a: RosterAthlete }) {
             <path d="M9 12l2 2 4-4" stroke={a.isVerified ? "#fff" : "#6b7280"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
           </svg>
         </div>
-      </div>
+      </Link>
 
       {/* Name + school — fixed */}
       <div className="w-[180px] shrink-0">
@@ -277,6 +277,11 @@ function MesAthletesContent() {
   const [filterOuvertAnglophone, setFilterOuvertAnglophone] = useState(false);
   const [filterNewOnly, setFilterNewOnly] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [activeTab, setActiveTab] = useState<"roster" | "traiter">("roster");
+  const [unverifiedAthletes, setUnverifiedAthletes] = useState<{ id: string; firstName: string; lastName: string; sport: string; position: string; gradYear: number; createdAt: string }[]>([]);
+  const [pendingSuggestions, setPendingSuggestions] = useState<{ id: string; athleteName: string; champ: string; valeurActuelle: string; valeurProposee: string; message: string; createdAt: string }[]>([]);
+  const [rejectingId, setRejectingId] = useState<string | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
   const [regions, setRegions] = useState<string[]>([]);
   const [dynamicPositions, setDynamicPositions] = useState<{ abbr: string; label: string }[]>([]);
 
@@ -460,6 +465,40 @@ function MesAthletesContent() {
       const uniqueRegions = Array.from(new Set(mapped.map((a) => a.region).filter(Boolean))).sort() as string[];
       setRegions(uniqueRegions);
 
+      // Load "À traiter" data
+      // Unverified athletes
+      const unverified = mapped.filter((a) => !a.isVerified);
+      setUnverifiedAthletes(unverified.map((a) => ({
+        id: a.id, firstName: a.firstName, lastName: a.lastName,
+        sport: a.sport || "", position: a.position || "",
+        gradYear: a.gradYear, createdAt: "",
+      })));
+
+      // Pending suggestions
+      const rosterAthleteIds = mapped.map((a) => a.id);
+      if (rosterAthleteIds.length > 0) {
+        const { data: sugs } = await supabase
+          .from("athlete_suggestions")
+          .select("id, champ, valeur_actuelle, valeur_proposee, message, created_at, athlete_id, athletes!athlete_id(first_name, last_name)")
+          .in("athlete_id", rosterAthleteIds)
+          .eq("status", "EN_ATTENTE")
+          .order("created_at", { ascending: false });
+        if (sugs) {
+          setPendingSuggestions(sugs.map((s) => {
+            const ath = (Array.isArray(s.athletes) ? s.athletes[0] : s.athletes) as { first_name?: string; last_name?: string } | null;
+            return {
+              id: s.id,
+              athleteName: ath ? `${ath.first_name || ""} ${ath.last_name || ""}`.trim() : "",
+              champ: s.champ || "",
+              valeurActuelle: (s.valeur_actuelle as string) || "",
+              valeurProposee: (s.valeur_proposee as string) || "",
+              message: (s.message as string) || "",
+              createdAt: s.created_at || "",
+            };
+          }));
+        }
+      }
+
       setLoading(false);
     };
 
@@ -552,6 +591,34 @@ function MesAthletesContent() {
     setSport(""); setPosition(""); setRegion(""); setPromotion(""); setVerifiedOnly(false); setWithVideoOnly(false); setMinRating(""); setWithSportBadge(false); setWithAcademicBadge(false); setMinGpa(""); setOrgType(""); setFilterOuvertDemenager(false); setFilterOuvertPrive(false); setFilterOuvertAnglophone(false); setFilterNewOnly(false); setSortBy("rating_desc");
   };
 
+  const totalPending = unverifiedAthletes.length + pendingSuggestions.length;
+
+  async function verifyAthlete(athleteId: string) {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { error } = await supabase.from("athletes").update({ verified: true, verification_method: "manuel_coach", verified_at: new Date().toISOString(), verified_by: user.id }).eq("id", athleteId);
+    if (error) { console.error("[Verify]", error); return; }
+    setUnverifiedAthletes((prev) => prev.filter((a) => a.id !== athleteId));
+    setRealAthletes((prev) => prev.map((a) => a.id === athleteId ? { ...a, isVerified: true } : a));
+  }
+
+  async function approveSuggestion(suggestionId: string) {
+    const supabase = createClient();
+    const { error } = await supabase.from("athlete_suggestions").update({ status: "APPROUVEE" }).eq("id", suggestionId);
+    if (error) { console.error("[Approve]", error); return; }
+    setPendingSuggestions((prev) => prev.filter((s) => s.id !== suggestionId));
+  }
+
+  async function rejectSuggestion(suggestionId: string) {
+    const supabase = createClient();
+    const { error } = await supabase.from("athlete_suggestions").update({ status: "REJETEE", raison_rejet: rejectReason || null }).eq("id", suggestionId);
+    if (error) { console.error("[Reject]", error); return; }
+    setPendingSuggestions((prev) => prev.filter((s) => s.id !== suggestionId));
+    setRejectingId(null);
+    setRejectReason("");
+  }
+
   // Loading state
   if (loading) return (
     <div className="px-6 sm:px-10 py-8 max-w-[1280px] mx-auto flex items-center justify-center">
@@ -639,6 +706,117 @@ function MesAthletesContent() {
           </Link>
         </div>
       </div>
+
+      {/* ── Tabs ─────────────────────────────────────────────────── */}
+      <div className="flex items-center gap-1 bg-[#13151a] rounded-xl p-1.5 w-fit">
+        <button type="button" onClick={() => setActiveTab("roster")}
+          className={`px-5 py-2.5 rounded-lg text-[12px] font-bold uppercase tracking-[0.12em] transition-all ${activeTab === "roster" ? "bg-[#E63946] text-white shadow-[0_0_10px_rgba(230,57,70,0.25)]" : "text-[#6b7280] hover:text-white"}`}>
+          Roster
+        </button>
+        <button type="button" onClick={() => setActiveTab("traiter")}
+          className={`px-5 py-2.5 rounded-lg text-[12px] font-bold uppercase tracking-[0.12em] transition-all flex items-center gap-2 ${activeTab === "traiter" ? "bg-[#E63946] text-white shadow-[0_0_10px_rgba(230,57,70,0.25)]" : "text-[#6b7280] hover:text-white"}`}>
+          À traiter
+          {totalPending > 0 && (
+            <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-[#EAB308] text-[#111317] text-[10px] font-black">{totalPending}</span>
+          )}
+        </button>
+      </div>
+
+      {/* ══════════ À TRAITER TAB ══════════ */}
+      {activeTab === "traiter" && (
+        <div className="space-y-6">
+          {/* Section A: Profils à vérifier */}
+          <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] p-5">
+            <h3 className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mb-4 flex items-center gap-2">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>
+              Profils à vérifier ({unverifiedAthletes.length})
+            </h3>
+            {unverifiedAthletes.length === 0 ? (
+              <p className="text-[13px] text-[#22C55E] font-bold flex items-center gap-2 py-4">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5" /></svg>
+                Tous les profils sont vérifiés
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {unverifiedAthletes.map((a) => (
+                  <div key={a.id} className="flex items-center justify-between bg-[#13151a] rounded-lg border border-[#2D3748] px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-[#2F3440] flex items-center justify-center text-[11px] font-bold text-white/30 shrink-0">
+                        {a.firstName[0]}{a.lastName[0]}
+                      </div>
+                      <div>
+                        <p className="text-[13px] font-bold text-white">{a.firstName} {a.lastName}</p>
+                        <p className="text-[11px] text-[#6b7280]">{a.sport} · {a.position} · Promotion {a.gradYear}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Link href={`/coach/athletes/${a.id}`} className="text-[10px] font-bold text-[#9CA3AF] hover:text-white transition-colors uppercase tracking-wider">Voir</Link>
+                      <button type="button" onClick={() => verifyAthlete(a.id)} className="px-3 py-1.5 bg-[#22C55E] hover:bg-[#16A34A] text-white text-[10px] font-bold uppercase tracking-wider rounded-lg transition-colors">Vérifier</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Section B: Suggestions en attente */}
+          <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] p-5">
+            <h3 className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mb-4 flex items-center gap-2">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#EAB308" strokeWidth="2" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
+              Suggestions en attente ({pendingSuggestions.length})
+            </h3>
+            {pendingSuggestions.length === 0 ? (
+              <p className="text-[13px] text-[#4a4d56] italic py-4">Aucune suggestion en attente</p>
+            ) : (
+              <div className="space-y-2">
+                {pendingSuggestions.map((s) => {
+                  const diffMs = Date.now() - new Date(s.createdAt).getTime();
+                  const diffMin = Math.floor(diffMs / 60000);
+                  const relTime = diffMin < 60 ? `Il y a ${diffMin} min` : diffMin < 1440 ? `Il y a ${Math.floor(diffMin / 60)}h` : `Il y a ${Math.floor(diffMin / 1440)}j`;
+
+                  return (
+                    <div key={s.id} className="bg-[#13151a] rounded-lg border border-[#EAB308]/10 p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-[13px] font-bold text-white">{s.athleteName}</span>
+                            <span className="text-[11px] text-[#6b7280]">·</span>
+                            <span className="text-[12px] font-bold text-[#EAB308]">{s.champ}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {s.valeurActuelle && <span className="text-[12px] text-[#6b7280] line-through">{s.valeurActuelle}</span>}
+                            <span className="text-[12px] text-[#6b7280]">→</span>
+                            <span className="text-[13px] font-bold text-white">{s.valeurProposee}</span>
+                          </div>
+                          {s.message && <p className="text-[11px] text-[#6b7280] italic mt-1">&ldquo;{s.message}&rdquo;</p>}
+                          <p className="text-[10px] text-[#4a4d56] mt-1">{relTime}</p>
+                        </div>
+                        {rejectingId === s.id ? (
+                          <div className="flex flex-col gap-2 shrink-0">
+                            <input type="text" value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} placeholder="Raison (optionnel)" className="bg-[#111317] border border-[#2D3748] rounded px-2 py-1 text-[11px] text-white w-40 focus:border-[#E63946] outline-none" />
+                            <div className="flex gap-2">
+                              <button type="button" onClick={() => rejectSuggestion(s.id)} className="px-3 py-1 bg-[#E63946] text-white text-[10px] font-bold rounded hover:bg-[#D42B22] transition-colors">Confirmer</button>
+                              <button type="button" onClick={() => { setRejectingId(null); setRejectReason(""); }} className="text-[10px] text-[#6b7280] hover:text-white transition-colors">Annuler</button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2 shrink-0">
+                            <button type="button" onClick={() => approveSuggestion(s.id)} className="px-3 py-1.5 bg-[#22C55E] hover:bg-[#16A34A] text-white text-[10px] font-bold uppercase tracking-wider rounded-lg transition-colors">Approuver</button>
+                            <button type="button" onClick={() => setRejectingId(s.id)} className="px-3 py-1.5 border border-[#E63946]/30 text-[#E63946] text-[10px] font-bold uppercase tracking-wider rounded-lg hover:bg-[#E63946]/10 transition-colors">Rejeter</button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ══════════ ROSTER TAB ══════════ */}
+      {activeTab === "roster" && <>
 
       {/* ── Search bar ──────────────────────────────────────────── */}
       <div className="relative">
@@ -838,6 +1016,8 @@ function MesAthletesContent() {
           ))}
         </div>
       )}
+
+      </>}
     </div>
   );
 }

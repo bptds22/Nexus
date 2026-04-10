@@ -2,7 +2,6 @@ import Image from "next/image";
 import Link from "next/link";
 import PlaybookBackground from "./components/PlaybookBackground";
 import MarketingNav from "@/components/marketing/MarketingNav";
-import IntroOverlay from "./components/IntroOverlay";
 
 /* ─────────────────────────────────────────────────────────────────
    Nexus — Landing Page
@@ -74,7 +73,6 @@ const SOCIALS = [
 export default function Home() {
   return (
     <div className="hero-playbook bg-[#060A14] min-h-screen">
-      <IntroOverlay />
       <PlaybookBackground />
 
       <MarketingNav />

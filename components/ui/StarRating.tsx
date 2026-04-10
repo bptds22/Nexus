@@ -66,18 +66,18 @@ export default function StarRating({
                   <rect x="0" y="0" width="12" height="24" />
                 </clipPath>
               </defs>
-              {/* Empty star background */}
-              <path d={STAR_PATH} fill={EMPTY_FILL} stroke={GOLD} strokeWidth="1.5" />
+              {/* Empty star background — plain gray */}
+              <path d={STAR_PATH} fill={EMPTY_FILL} />
               {/* Gold half overlay */}
               <path d={STAR_PATH} fill={GOLD} clipPath={`url(#${clipId})`} />
             </svg>
           );
         }
 
-        // Empty star
+        // Empty star — plain gray, no outline
         return (
           <svg key={i} width={cfg.star} height={cfg.star} viewBox="0 0 24 24" className="shrink-0">
-            <path d={STAR_PATH} fill={EMPTY_FILL} stroke={GOLD} strokeWidth="1.5" />
+            <path d={STAR_PATH} fill={EMPTY_FILL} />
           </svg>
         );
       })}

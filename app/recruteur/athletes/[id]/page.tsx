@@ -9,6 +9,7 @@ import {
 import type { AthleteProfileRecruiterView, AthleteTraitRatings, GlobalRecruitmentStatus } from "@/lib/types/models";
 import { BADGE_COLORS } from "@/lib/types/models";
 import RecruitmentStatusBadgeGlobal from "@/components/ui/RecruitmentStatusBadge";
+import DistinctionBadge, { DISTINCTION_TO_BADGE } from "@/components/badges/DistinctionBadge";
 import { SPORT_NAME_MAP } from "@/lib/config/sportBadges";
 import type { RecruitmentStatus, RetireReason } from "@/lib/config/recruitmentStatuses";
 import { getAthleteTracking } from "@/app/recruteur/_data/mockPipelineData";
@@ -18,6 +19,7 @@ import ComposeIntroModal from "@/app/recruteur/_components/ComposeIntroModal";
 import CelebrationToast from "@/app/recruteur/_components/CelebrationToast";
 import NxIcon from "@/components/ui/NxIcon";
 import StarRating from "@/components/ui/StarRating";
+import VideoEmbed from "@/components/ui/VideoEmbed";
 
 /* ═══════════════════════════════════════════════════════════════
    Recruiter Athlete Profile — Simplified / Detailed toggle
@@ -203,8 +205,13 @@ function PlayerCard({ a }: { a: AthleteProfileRecruiterView }) {
               ))}
             </div>
             <div className="flex-1 flex flex-col justify-center" style={{ background: '#FFFFFF', padding: '12px 16px' }}>
-              <div style={{ display: 'inline-flex', alignItems: 'center', background: '#1E2128', borderRadius: 4, padding: '3px 5px', marginBottom: 6, width: 'fit-content' }}>
-                <StarRating rating={ratingValue} size="md" showNumber={false} className="!gap-0.5" />
+              <div className="relative overflow-hidden" style={{ display: 'inline-flex', alignItems: 'center', gap: 3, marginBottom: 6 }}>
+                {Array.from({ length: 5 }, (_, i) => (
+                  <svg key={i} width="28" height="28" viewBox="0 0 24 24" fill={ratingValue >= i + 1 ? "#F59E0B" : ratingValue >= i + 0.5 ? "#F59E0B" : "#D1D5DB"} stroke="none">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                  </svg>
+                ))}
+                <div className="card-star-shimmer absolute inset-0 pointer-events-none" />
               </div>
               <div style={{ fontFamily: 'var(--font-outfit), sans-serif', fontWeight: 700, fontSize: 13, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#1E2128', marginBottom: 2, lineHeight: 1.2, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden' }}>{(a.schoolName || "").replace(/^École secondaire /i, "É.S. ").replace(/^École sec\. /i, "É.S. ")}</div>
               <div style={{ fontFamily: 'var(--font-outfit), sans-serif', fontWeight: 700, fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase' as const, color: '#9CA3AF', lineHeight: 1.2, whiteSpace: 'nowrap' as const }}>{a.region}</div>
@@ -488,25 +495,25 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
             const badgeMap: Record<string, { label: string; icon: string; char: string }> = {
               captain: { label: "Capitaine", icon: "shield", char: "C" },
               allstar: { label: "Étoile provinciale", icon: "star", char: "★" },
-              team_leader: { label: "Meilleur joueur d'équipe", icon: "award", char: "MVP" },
-              mvp: { label: "MVP", icon: "trophy", char: "🏆" },
-              rookie: { label: "Recrue de l'année", icon: "zap", char: "⚡" },
-              scholar: { label: "Étudiant-athlète", icon: "book", char: "📚" },
-              iron_man: { label: "Iron Man", icon: "heart", char: "💪" },
-              most_improved: { label: "Joueur le plus amélioré", icon: "trending-up", char: "↗" },
-              scoring_leader: { label: "Meilleur pointeur", icon: "target", char: "🎯" },
-              league_leader: { label: "Meilleur de la ligue", icon: "award", char: "⬆" },
-              progression: { label: "Progression marquée", icon: "trending-up", char: "↗" },
-              offensive_leader: { label: "Meilleur joueur offensif", icon: "zap", char: "⚡" },
-              defensive_leader: { label: "Meilleur joueur défensif", icon: "shield", char: "🛡" },
-              assists_leader: { label: "Meilleur passeur", icon: "activity", char: "🅰" },
-              goals_leader: { label: "Meilleur buteur", icon: "target", char: "⚽" },
-              points_leader: { label: "Meilleur pointeur", icon: "award", char: "🏅" },
-              best_time: { label: "Meilleur chrono", icon: "clock", char: "⏱" },
-              school_record: { label: "Record d'école", icon: "trophy", char: "🏆" },
-              best_mark: { label: "Meilleure marque", icon: "trophy", char: "🏆" },
-              singles_leader: { label: "Meilleur en simple", icon: "target", char: "🎯" },
-              specialist: { label: "Spécialiste", icon: "star", char: "⭐" },
+              team_leader: { label: "Meilleur joueur d'équipe", icon: "award", char: "M" },
+              mvp: { label: "MVP", icon: "trophy", char: "M" },
+              rookie: { label: "Recrue de l'année", icon: "zap", char: "R" },
+              scholar: { label: "Étudiant-athlète", icon: "book", char: "É" },
+              iron_man: { label: "Iron Man", icon: "heart", char: "I" },
+              most_improved: { label: "Joueur le plus amélioré", icon: "trending-up", char: "+" },
+              scoring_leader: { label: "Meilleur pointeur", icon: "target", char: "S" },
+              league_leader: { label: "Meilleur de la ligue", icon: "award", char: "L" },
+              progression: { label: "Progression marquée", icon: "trending-up", char: "P" },
+              offensive_leader: { label: "Meilleur joueur offensif", icon: "zap", char: "O" },
+              defensive_leader: { label: "Meilleur joueur défensif", icon: "shield", char: "D" },
+              assists_leader: { label: "Meilleur passeur", icon: "activity", char: "A" },
+              goals_leader: { label: "Meilleur buteur", icon: "target", char: "B" },
+              points_leader: { label: "Meilleur pointeur", icon: "award", char: "P" },
+              best_time: { label: "Meilleur chrono", icon: "clock", char: "T" },
+              school_record: { label: "Record d'école", icon: "trophy", char: "R" },
+              best_mark: { label: "Meilleure marque", icon: "trophy", char: "R" },
+              singles_leader: { label: "Meilleur en simple", icon: "target", char: "S" },
+              specialist: { label: "Spécialiste", icon: "star", char: "★" },
             };
             return raw.filter((d) => d && badgeMap[d]).map((d) => ({ badgeId: d, label: badgeMap[d].label, icon: badgeMap[d].icon, char: badgeMap[d].char }));
           })(),
@@ -561,10 +568,16 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      await supabase.from("recruiter_athlete_views").upsert(
+      // Legacy view tracking
+      supabase.from("recruiter_athlete_views").upsert(
         { recruiter_id: user.id, athlete_id: id, viewed_at: new Date().toISOString() },
         { onConflict: "recruiter_id,athlete_id,view_date" }
       );
+      // New profile_views table (dedup handled by unique index)
+      supabase.from("profile_views").insert({
+        athlete_id: id,
+        recruiter_id: user.id,
+      });
     };
     recordView();
   }, [id]);
@@ -767,8 +780,8 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
         </div>
 
         {/* ══════════ HERO — 2 Columns ══════════ */}
-        <section className="flex flex-col lg:flex-row gap-8 lg:gap-12 items-start">
-          <div className="shrink-0 flex justify-center lg:justify-start" style={{ minHeight: 480 }}>
+        <section className="flex flex-col lg:flex-row gap-8 lg:gap-12 items-stretch">
+          <div className="shrink-0 flex justify-center lg:justify-start">
             <PlayerCard a={a} />
           </div>
 
@@ -807,6 +820,7 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
                 <span className="text-[8px] font-bold uppercase tracking-[0.2em] text-[#6b7280] block mb-1">Statut recrutement</span>
                 <RecruitmentStatusBadgeGlobal status={recruitmentStatus as GlobalRecruitmentStatus} committedSchoolName={committedSchoolName} openToOffers={openToOffers} size="sm" />
               </div>
+
             </div>
 
             {pipelineStatus !== "none" && (
@@ -822,64 +836,50 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
               </div>
             )}
 
-            {/* Video CTA */}
+            {/* Profil Athlète */}
             <div>
-              {a.highlightVideoUrl ? (
-                <a href={a.highlightVideoUrl} target="_blank" rel="noopener noreferrer"
-                  className="inline-flex items-center gap-3 bg-[#1A1D24] border border-[#2D3748] rounded-lg px-5 py-3 text-white font-bold text-[14px] uppercase tracking-wider transition-all hover:border-[#E63946] hover:shadow-[0_0_16px_rgba(230,57,70,0.2)] hover:-translate-y-0.5 group">
-                  <span className="w-8 h-8 rounded-full bg-[#E63946] flex items-center justify-center shrink-0">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="white" stroke="none"><polygon points="8 5 19 12 8 19 8 5" /></svg>
-                  </span>
-                  Voir les faits saillants
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="text-[#6b7280] group-hover:text-white transition-colors">
-                    <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" />
-                  </svg>
-                </a>
-              ) : (
-                <div className="inline-flex items-center gap-2.5 bg-[#1A1D24]/50 border border-[#2D3748] rounded-lg px-5 py-3">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2D3748" strokeWidth="1.5" strokeLinecap="round">
-                    <polygon points="23 7 16 12 23 17 23 7" /><rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
-                  </svg>
-                  <span className="text-[14px] text-[#6b7280]">Aucun lien vidéo</span>
+              <h3 className="text-[11px] font-semibold tracking-[2px] uppercase text-[#555] mb-6">Profil athlète</h3>
+
+              <div className="flex items-center gap-12 mb-8">
+                {a.heightDisplay && (
+                  <div className="text-center">
+                    <p className="text-[40px] font-head font-[800] text-white leading-none">{a.heightDisplay}</p>
+                    <p className="text-[11px] font-semibold tracking-[2px] uppercase text-[#555] mt-1.5">Taille</p>
+                  </div>
+                )}
+                {a.heightDisplay && a.weightDisplay && (
+                  <div className="w-px h-12 bg-[#555]" />
+                )}
+                {a.weightDisplay && (
+                  <div className="text-center">
+                    <p className="text-[40px] font-head font-[800] text-white leading-none">
+                      {a.weightDisplay.replace(" lbs", "")}<span className="text-[20px] font-semibold text-[#555]"> lbs</span>
+                    </p>
+                    <p className="text-[11px] font-semibold tracking-[2px] uppercase text-[#555] mt-1.5">Poids</p>
+                  </div>
+                )}
+              </div>
+
+              {a.distinctions.length > 0 && (
+                <div className="flex items-end gap-9">
+                  {a.distinctions.map((d, i) => {
+                    const badgeType = DISTINCTION_TO_BADGE[d.badgeId];
+                    if (badgeType) {
+                      return <DistinctionBadge key={i} type={badgeType} size="lg" />;
+                    }
+                    return (
+                      <div key={i} className="flex flex-col items-center gap-2">
+                        <span className="w-[60px] h-[60px] rounded-full bg-[#E63946]/15 flex items-center justify-center text-[22px] font-bold text-[#E63946]">
+                          {d.char || <NxIcon name={d.icon} size={20} className="text-[#E63946]" />}
+                        </span>
+                        <p className="text-[10px] font-bold tracking-[1.5px] uppercase text-[#E63946]">{d.label}</p>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
 
-            {/* Stat Strip */}
-            <div>
-              <h3 className={sectionLabel}>Profil athlète</h3>
-              <div className={`${cardBase} overflow-hidden`}>
-                <div className="grid divide-x divide-[#2D3748]/50" style={{ gridTemplateColumns: `repeat(${statCells.length}, minmax(0, 1fr))` }}>
-                  {statCells.map((cell, i) => (
-                    <div key={i} className={`p-4 text-center flex flex-col items-center justify-center min-h-[100px] ${cell.iconName ? "bg-[#E63946]/[0.04]" : ""}`}>
-                      {cell.iconName ? (
-                        <div className="flex items-center justify-center min-h-[36px]">
-                          <div className="w-10 h-10 rounded-full bg-[#E63946]/10 flex items-center justify-center">
-                            <NxIcon name={cell.iconName} size={22} className="text-[#E63946]" />
-                          </div>
-                        </div>
-                      ) : (
-                        <p className="text-[26px] sm:text-[30px] font-head font-black text-white leading-none flex items-center justify-center min-h-[36px]">{cell.top}</p>
-                      )}
-                      <p className={`text-[12px] font-bold tracking-[0.2em] uppercase mt-2 ${cell.iconName ? "text-white" : "text-[#9CA3AF]"}`}>{cell.mid}</p>
-                      {cell.sub && <p className="text-[11px] text-[#9CA3AF] mt-0.5">{cell.sub}</p>}
-                    </div>
-                  ))}
-                </div>
-              {a.distinctions.length > 0 && (
-                <div className={`grid divide-x divide-[#2D3748]/50 border-t border-[#2D3748]/50 ${(() => { const n = a.distinctions.length; return n === 1 ? "grid-cols-1" : n === 2 ? "grid-cols-2" : "grid-cols-3"; })()}`}>
-                  {a.distinctions.map((d, i) => (
-                    <div key={i} className="p-4 text-center flex flex-col items-center justify-center min-h-[90px]">
-                      <span className="w-9 h-9 rounded-full bg-[#E63946]/15 border border-[#E63946]/25 flex items-center justify-center text-[14px] font-bold text-[#E63946] mb-2 shadow-[0_0_12px_rgba(230,57,70,0.25)]">
-                        {d.char || <NxIcon name={d.icon} size={16} className="text-[#E63946]" />}
-                      </span>
-                      <p className="text-[11px] font-bold tracking-[0.15em] uppercase text-white">{d.label}</p>
-                    </div>
-                  ))}
-                </div>
-              )}
-              </div>
-            </div>
           </div>
         </section>
 
@@ -973,6 +973,26 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
             </div>
           </section>
         )}
+
+        {/* ══════════ FAITS SAILLANTS (VIDEO) ══════════ */}
+        <section>
+          <h2 className={sectionLabel}>Faits saillants</h2>
+          {a.highlightVideoUrl || a.fullGameUrl ? (
+            <div className="flex flex-col gap-4">
+              {a.highlightVideoUrl && (
+                <VideoEmbed url={a.highlightVideoUrl} title="Faits saillants" />
+              )}
+              {a.fullGameUrl && (
+                <div>
+                  <p className="text-[11px] font-semibold tracking-[2px] uppercase text-[#555] mb-3">Match complet</p>
+                  <VideoEmbed url={a.fullGameUrl} title="Match complet" />
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="text-[13px] text-[#555]">Aucune vidéo ajoutée</p>
+          )}
+        </section>
 
         {/* ══════════ ACADEMIC PROFILE (both modes) ══════════ */}
         <section>

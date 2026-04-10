@@ -35,8 +35,8 @@ export interface LeadershipBadge {
   detail?: string;
 }
 
-/** Max badges per athlete */
-export const MAX_BADGES = 3;
+/** Max badges per athlete (no limit) */
+export const MAX_BADGES = Infinity;
 
 /** Map UI sport names (French, from form) to NexusSport keys */
 export const SPORT_NAME_MAP: Record<string, NexusSport> = {

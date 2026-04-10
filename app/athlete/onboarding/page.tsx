@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
+import { calculateProfileCompletion } from "@/lib/utils/calculateProfileCompletion";
 import SportPositionSelect from "@/app/coach/components/SportPositionSelect";
 import DatePicker from "@/app/coach/components/DatePicker";
 
@@ -62,8 +63,8 @@ export default function AthleteOnboardingPage() {
   const [email, setEmail] = useState("");
   // School
   const [schoolSearch, setSchoolSearch] = useState("");
-  const [schools, setSchools] = useState<{ id: string; name: string; region: string }[]>([]);
-  const [filteredSchools, setFilteredSchools] = useState<{ id: string; name: string; region: string }[]>([]);
+  const [schools, setSchools] = useState<{ id: string; name: string; region: string; city: string }[]>([]);
+  const [filteredSchools, setFilteredSchools] = useState<{ id: string; name: string; region: string; city: string }[]>([]);
   const [selectedSchoolId, setSelectedSchoolId] = useState("");
   const [selectedSchoolName, setSelectedSchoolName] = useState("");
 
@@ -127,23 +128,69 @@ export default function AthleteOnboardingPage() {
 
       console.log("[Onboarding] pre-fill from metadata:", { first_name: meta.first_name, last_name: meta.last_name, sport: meta.sport });
 
-      // Check if athlete row exists
+      // Check if athlete row exists — pre-fill all saved fields
       const { data: existing } = await supabase
         .from("athletes")
-        .select("id, first_name, last_name, school_id, sport_id")
+        .select("*, schools!school_id(name), sports!sport_id(nom)")
         .eq("user_id", user.id)
         .maybeSingle();
 
       if (existing) {
         setExistingAthleteId(existing.id);
+        // If profile is complete, skip to dashboard
         if (existing.first_name && existing.last_name && existing.school_id && existing.sport_id) {
           router.replace("/athlete/dashboard");
           return;
         }
+        // Pre-fill from saved data
+        if (existing.first_name) setFirstName(existing.first_name);
+        if (existing.last_name) setLastName(existing.last_name);
+        if (existing.date_naissance) setDateOfBirth(existing.date_naissance);
+        if (existing.genre) setGender(existing.genre);
+        if (existing.photo_url) setPhoto(existing.photo_url);
+        if (existing.telephone) setPhone(existing.telephone);
+        if (existing.annee_diplomation) setGradYear(String(existing.annee_diplomation));
+        if (existing.school_id) {
+          setSelectedSchoolId(existing.school_id);
+          const schoolRel = Array.isArray(existing.schools) ? existing.schools[0] : existing.schools;
+          if (schoolRel?.name) setSelectedSchoolName(schoolRel.name);
+        }
+        if (existing.parent_first_name) setParentFirstName(existing.parent_first_name);
+        if (existing.parent_last_name) setParentLastName(existing.parent_last_name);
+        if (existing.parent_email) setParentEmail(existing.parent_email);
+        if (existing.telephone_parent) setParentPhone(existing.telephone_parent);
+        if (existing.parent_relationship) setParentRelationship(existing.parent_relationship);
+        if (existing.consentement_parental) { setConsentProfile(true); setConsentVisibility(true); }
+        if (existing.moyenne_generale) setGpa(String(existing.moyenne_generale));
+        if (existing.matieres_fortes) setStrongSubjects(existing.matieres_fortes);
+        if (existing.mentions_academiques) setAcademicHonors(existing.mentions_academiques);
+        if (existing.ouvert_cegep_prive) setOpenToPrivate(true);
+        if (existing.ouvert_cegep_anglophone) setOpenToAnglophone(true);
+        if (existing.pret_changer_region) setOpenToRelocate(true);
+        if (existing.regions_cegep_preferees) setCegepRegions(existing.regions_cegep_preferees);
+        if (existing.taille_pieds) setHeightFeet(String(existing.taille_pieds));
+        if (existing.taille_pouces) setHeightInches(String(existing.taille_pouces));
+        if (existing.poids_lbs) setWeightLbs(String(existing.poids_lbs));
+        if (existing.main_dominante) setDominantHand(existing.main_dominante);
+        if (existing.pied_dominant) setDominantFoot(existing.pied_dominant);
+        if (existing.numero_jersey) setJerseyNumber(existing.numero_jersey);
+        const sportRel = Array.isArray(existing.sports) ? existing.sports[0] : existing.sports;
+        if (sportRel?.nom) setPrimarySport(sportRel.nom);
+        if (existing.video_faits_saillants_url) setHighlightVideo(existing.video_faits_saillants_url);
+        if (existing.hudl_url) setHudlLink(existing.hudl_url);
+        if (existing.youtube_url) setYoutubeLink(existing.youtube_url);
+        if (existing.instagram_url) setInstagramLink(existing.instagram_url);
+        // Resume at first incomplete step
+        if (existing.first_name && existing.school_id && existing.consentement_parental) {
+          if (existing.taille_pieds || existing.poids_lbs) setStep(4);
+          else if (existing.moyenne_generale || (existing.matieres_fortes && existing.matieres_fortes.length > 0)) setStep(3);
+          else setStep(2);
+        }
+        console.log("[Onboarding] resumed from saved data, step:", step);
       }
 
       // Load schools
-      const { data: schoolData } = await supabase.from("schools").select("id, name, region").order("name");
+      const { data: schoolData } = await supabase.from("schools").select("id, name, region, city").eq("type", "SECONDAIRE").order("name");
       if (schoolData) {
         setSchools(schoolData);
         setFilteredSchools(schoolData.slice(0, 15));
@@ -160,17 +207,85 @@ export default function AthleteOnboardingPage() {
       setFilteredSchools(schools.slice(0, 15));
     } else {
       const q = schoolSearch.toLowerCase();
-      setFilteredSchools(schools.filter((s) => (s.name && s.name.toLowerCase().includes(q)) || (s.region && s.region.toLowerCase().includes(q))).slice(0, 15));
+      setFilteredSchools(schools.filter((s) => (s.name && s.name.toLowerCase().includes(q)) || (s.city && s.city.toLowerCase().includes(q)) || (s.region && s.region.toLowerCase().includes(q))).slice(0, 15));
     }
   }, [schoolSearch, schools]);
 
   function canProceed(): boolean {
     switch (step) {
       case 1: return !!(firstName.trim() && lastName.trim() && selectedSchoolId && gradYear && parentFirstName.trim() && parentLastName.trim() && parentEmail.trim() && consentProfile && consentVisibility);
-      case 2: return true; // academic is optional
-      case 3: return true; // physical is optional
+      case 2: return true;
+      case 3: return true;
       case 4: return !!primarySport;
       default: return false;
+    }
+  }
+
+  // Save current step's data to Supabase before advancing
+  async function saveStepAndAdvance() {
+    if (!canProceed() || !userId) return;
+    setSaving(true);
+
+    const supabase = createClient();
+
+    // Build partial payload for current step
+    let payload: Record<string, unknown> = { user_id: userId };
+
+    if (step === 1) {
+      payload = {
+        ...payload,
+        first_name: firstName.trim(), last_name: lastName.trim(),
+        date_naissance: dateOfBirth || null, genre: gender || null,
+        photo_url: photo || null, email: email || null, telephone: phone || null,
+        annee_diplomation: gradYear ? parseInt(gradYear) : null,
+        school_id: selectedSchoolId || null,
+        nom_parent: `${parentFirstName.trim()} ${parentLastName.trim()}`.trim() || null,
+        parent_first_name: parentFirstName.trim() || null, parent_last_name: parentLastName.trim() || null,
+        parent_email: parentEmail.trim() || null, telephone_parent: parentPhone.trim() || null,
+        parent_relationship: parentRelationship || null,
+        consentement_parental: consentProfile && consentVisibility,
+        consentement_parental_date: (consentProfile && consentVisibility) ? new Date().toISOString() : null,
+        status: "ACTIF", verified: false,
+      };
+    } else if (step === 2) {
+      payload = {
+        ...payload,
+        moyenne_generale: gpa ? parseFloat(gpa) : null,
+        matieres_fortes: strongSubjects, mentions_academiques: academicHonors,
+        programme_cegep_vise: (() => {
+          if (cegepType === "dec_general") return ["DEC général"];
+          if (cegepType === "technique" && cegepProgramDetail) return ["Technique — " + cegepProgramDetail];
+          if (cegepType === "technique") return ["Programme technique"];
+          return [];
+        })(),
+        ouvert_cegep_prive: openToPrivate, ouvert_cegep_anglophone: openToAnglophone,
+        pret_changer_region: openToRelocate, regions_cegep_preferees: cegepRegions,
+      };
+    } else if (step === 3) {
+      payload = {
+        ...payload,
+        taille_pieds: heightFeet ? parseInt(heightFeet) : null,
+        taille_pouces: heightInches ? parseInt(heightInches) : null,
+        poids_lbs: weightLbs ? parseFloat(weightLbs) : null,
+        main_dominante: dominantHand || null, pied_dominant: dominantFoot || null,
+      };
+    }
+
+    try {
+      if (existingAthleteId) {
+        const { error } = await supabase.from("athletes").update(payload).eq("id", existingAthleteId);
+        if (error) { console.error("[Onboarding step save] update:", error); setSaving(false); return; }
+      } else {
+        const { data, error } = await supabase.from("athletes").insert(payload).select("id").single();
+        if (error) { console.error("[Onboarding step save] insert:", error); setSaving(false); return; }
+        if (data) setExistingAthleteId(data.id);
+      }
+      console.log("[Onboarding] step", step, "saved");
+      setSaving(false);
+      setStep(step + 1);
+    } catch (err) {
+      console.error("[Onboarding step save] unexpected:", err);
+      setSaving(false);
     }
   }
 
@@ -250,6 +365,27 @@ export default function AthleteOnboardingPage() {
       const { error } = await supabase.from("athletes").insert(athleteRecord);
       console.log("[Onboarding] insert:", error);
       if (error) { console.error("[Onboarding] insert failed:", error); setSaving(false); return; }
+    }
+
+    // Update profile_completion in DB
+    const { data: freshAthlete } = await supabase.from("athletes").select("*").eq("user_id", userId).single();
+    if (freshAthlete) {
+      const completion = calculateProfileCompletion(freshAthlete);
+      await supabase.from("athletes").update({ profile_completion: completion }).eq("user_id", userId);
+    }
+
+    // Auto-link to coach at the same school (DB trigger also handles this as safety net)
+    if (selectedSchoolId) {
+      const { data: coaches } = await supabase
+        .from("users")
+        .select("id")
+        .eq("school_id", selectedSchoolId)
+        .eq("role", "COACH")
+        .limit(1);
+      if (coaches && coaches.length > 0) {
+        await supabase.from("athletes").update({ coach_id: coaches[0].id }).eq("user_id", userId);
+        console.log("[Onboarding] linked to coach:", coaches[0].id);
+      }
     }
 
     await supabase.from("users").update({ onboarding_complete: true }).eq("id", userId);
@@ -370,7 +506,7 @@ export default function AthleteOnboardingPage() {
               {filteredSchools.map((s) => (
                 <button key={s.id} type="button" onClick={() => { setSelectedSchoolId(s.id); setSelectedSchoolName(s.name); }}
                   className={`w-full text-left px-3 py-2.5 rounded-lg transition-colors text-[13px] ${selectedSchoolId === s.id ? "bg-[#E63946]/10 border border-[#E63946]/30 text-white font-bold" : "bg-[#111317] border border-[#2D3748] text-[#9CA3AF] hover:border-[#4a4d56]"}`}>
-                  {s.name} <span className="text-[11px] text-[#4a4d56]">· {s.region}</span>
+                  {s.name} <span className="text-[11px] text-[#4a4d56]">· {s.city || s.region}</span>
                 </button>
               ))}
             </div>
@@ -552,11 +688,11 @@ export default function AthleteOnboardingPage() {
             </button>
           )}
           {step < 4 ? (
-            <button type="button" onClick={() => setStep(step + 1)} disabled={!canProceed()}
+            <button type="button" onClick={saveStepAndAdvance} disabled={!canProceed() || saving}
               className={`flex-1 py-3.5 rounded-lg font-head font-bold text-[13px] uppercase tracking-widest transition-all ${
-                canProceed() ? "bg-[#E63946] text-white hover:bg-[#D42B22]" : "bg-[#2D3748] text-[#6b7280] cursor-not-allowed"
+                canProceed() && !saving ? "bg-[#E63946] text-white hover:bg-[#D42B22]" : "bg-[#2D3748] text-[#6b7280] cursor-not-allowed"
               }`}>
-              Suivant
+              {saving ? "Enregistrement..." : "Suivant"}
             </button>
           ) : (
             <button type="button" onClick={handleSubmit} disabled={saving || !canProceed()}

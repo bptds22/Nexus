@@ -10,6 +10,7 @@ import type { AthleteProfileRecruiterView } from "@/lib/types/models";
 
 const ATHLETE_SELECT = `
   id,
+  user_id,
   first_name,
   last_name,
   date_naissance,

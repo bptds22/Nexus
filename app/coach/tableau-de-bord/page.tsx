@@ -28,7 +28,7 @@ function frenchDate(): string {
 export default function TableauDeBordPage() {
   const [coachName, setCoachName] = useState("");
   const [schoolName, setSchoolName] = useState("");
-  const [actionBar, setActionBar] = useState<ActionBarData>({ unreadMessages: 0, incompleteProfiles: 0, newAthletes: 0 });
+  const [actionBar, setActionBar] = useState<ActionBarData>({ unreadMessages: 0, incompleteProfiles: 0, newAthletes: 0, pendingSuggestions: 0 });
   const [kpi, setKpi] = useState<KpiData>({ totalAthletes: 0, completeProfiles: 0, totalProfiles: 0, completePct: 0, recruiterViews: 0, viewsTrend: 0, activeConversations: 0 });
   const [hotAthletes, setHotAthletes] = useState<HotAthlete[]>([]);
   const [activities, setActivities] = useState<ActivityEvent[]>([]);
@@ -96,10 +96,22 @@ export default function TableauDeBordPage() {
         .eq("read", false);
       console.log("Dashboard new athletes (unread):", newAthletesCount);
 
+      // Banner 4: pending athlete suggestions
+      let pendingSuggestions = 0;
+      if (coachAthleteIds.length > 0) {
+        const { count: sugCount } = await supabase
+          .from("athlete_suggestions")
+          .select("id", { count: "exact", head: true })
+          .in("athlete_id", coachAthleteIds)
+          .eq("status", "EN_ATTENTE");
+        pendingSuggestions = sugCount || 0;
+      }
+
       setActionBar({
         unreadMessages,
         incompleteProfiles: unverifiedCount,
         newAthletes: newAthletesCount || 0,
+        pendingSuggestions,
       });
 
       // ── KPI 3: Recruiter views (this month vs last month) ──
@@ -177,19 +189,18 @@ export default function TableauDeBordPage() {
         monday.setHours(0, 0, 0, 0);
         const startOfWeek = monday.toISOString();
 
-        // Views this week per athlete
-        const { data: viewRows } = await supabase
-          .from("recruiter_athlete_views")
-          .select("athlete_id")
-          .in("athlete_id", coachAthleteIds)
-          .gte("viewed_at", startOfWeek);
-        console.log("Hot athletes view rows this week:", viewRows);
+        // Views this week per athlete (from both legacy + new tables)
+        const [{ data: viewRows1 }, { data: viewRows2 }] = await Promise.all([
+          supabase.from("recruiter_athlete_views").select("athlete_id").in("athlete_id", coachAthleteIds).gte("viewed_at", startOfWeek),
+          supabase.from("profile_views").select("athlete_id").in("athlete_id", coachAthleteIds).gte("viewed_at", startOfWeek),
+        ]);
 
         const viewCounts = new Map<string, number>();
-        if (viewRows) {
-          for (const r of viewRows) {
-            viewCounts.set(r.athlete_id, (viewCounts.get(r.athlete_id) || 0) + 1);
-          }
+        for (const r of (viewRows1 || [])) {
+          viewCounts.set(r.athlete_id, (viewCounts.get(r.athlete_id) || 0) + 1);
+        }
+        for (const r of (viewRows2 || [])) {
+          viewCounts.set(r.athlete_id, (viewCounts.get(r.athlete_id) || 0) + 1);
         }
 
         // Favorite count per athlete (distinct recruiters who favorited)

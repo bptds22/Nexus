@@ -10,6 +10,8 @@ import NxIcon from "@/components/ui/NxIcon";
 import StarRating from "@/components/ui/StarRating";
 import { createClient } from "@/lib/supabase/client";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
+import DistinctionBadge, { DISTINCTION_TO_BADGE } from "@/components/badges/DistinctionBadge";
+import VideoEmbed from "@/components/ui/VideoEmbed";
 import type { GlobalRecruitmentStatus } from "@/lib/types/models";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -179,11 +181,16 @@ function PlayerCard({ a }: { a: AthleteProfileRecruiterView }) {
               ))}
             </div>
             <div className="flex-1 flex flex-col justify-center" style={{ background: '#FFFFFF', padding: '12px 16px' }}>
-              <div style={{ display: 'inline-flex', alignItems: 'center', background: '#1E2128', borderRadius: 4, padding: '3px 5px', marginBottom: 6, width: 'fit-content' }}>
-                <StarRating rating={ratingValue} size="md" showNumber={false} className="!gap-0.5" />
+              <div className="relative overflow-hidden" style={{ display: 'inline-flex', alignItems: 'center', gap: 3, marginBottom: 6 }}>
+                {Array.from({ length: 5 }, (_, i) => (
+                  <svg key={i} width="28" height="28" viewBox="0 0 24 24" fill={ratingValue >= i + 1 ? "#F59E0B" : ratingValue >= i + 0.5 ? "#F59E0B" : "#D1D5DB"} stroke="none">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                  </svg>
+                ))}
+                <div className="card-star-shimmer absolute inset-0 pointer-events-none" />
               </div>
-              <div style={{ fontFamily: 'var(--font-barlow-cond), sans-serif', fontWeight: 700, fontSize: 16, letterSpacing: '0.1em', textTransform: 'uppercase' as const, color: '#1E2128', marginBottom: 2 }}>{a.schoolName}</div>
-              <div style={{ fontFamily: 'var(--font-barlow-cond), sans-serif', fontWeight: 700, fontSize: 14, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#9CA3AF' }}>{a.region}</div>
+              <div style={{ fontFamily: 'var(--font-barlow-cond), sans-serif', fontWeight: 700, fontSize: 13, letterSpacing: '0.1em', textTransform: 'uppercase' as const, color: '#1E2128', marginBottom: 2, lineHeight: 1.2 }}>{a.schoolName}</div>
+              <div style={{ fontFamily: 'var(--font-barlow-cond), sans-serif', fontWeight: 700, fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#9CA3AF', lineHeight: 1.2 }}>{a.region}</div>
               <div style={{ fontFamily: 'var(--font-barlow-cond), sans-serif', fontWeight: 700, fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#E63946', marginTop: 4 }}>Promotion {a.graduationYear}</div>
             </div>
             <div className="flex items-center justify-center flex-shrink-0" style={{ background: '#E63946', width: 24, writingMode: 'vertical-rl' as const, fontFamily: 'var(--font-bebas), sans-serif', fontSize: 10, letterSpacing: '0.22em', color: 'rgba(255,255,255,0.7)' }}>NEXUS</div>
@@ -242,6 +249,7 @@ export default function CoachAthleteProfilePage() {
       const mapped = mapToRecruiterView(raw);
       console.log("Mapped profile:", mapped.firstName, mapped.lastName, "completion:", mapped.profileCompleteness);
       setA(mapped);
+      setAthleteHasAccount(!!raw.user_id);
       setLoading(false);
 
       // Load pipeline data (how many recruiters are interested)
@@ -310,11 +318,80 @@ export default function CoachAthleteProfilePage() {
       setOpenToOffers((raw.open_to_offers as boolean | null) ?? null);
     };
     load();
+
+    // Load pending suggestions
+    const loadSuggestions = async () => {
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("athlete_suggestions")
+        .select("id, champ, valeur_actuelle, valeur_proposee, message, created_at")
+        .eq("athlete_id", id)
+        .eq("status", "EN_ATTENTE")
+        .order("created_at", { ascending: false });
+      if (data) setPendingSuggestions(data.map((s) => ({ ...s, valeur_actuelle: s.valeur_actuelle || "", valeur_proposee: s.valeur_proposee || "", message: s.message || "" })));
+      console.log("[Coach] pending suggestions:", data?.length);
+    };
+    loadSuggestions();
   }, [id]);
+
+  async function approveSuggestion(suggestionId: string) {
+    const supabase = createClient();
+
+    // First verify we can see the row
+    const { data: check } = await supabase.from("athlete_suggestions").select("id, status").eq("id", suggestionId).single();
+    console.log("[Approve] pre-check:", check);
+
+    if (!check) {
+      console.error("[Approve] cannot find suggestion — RLS SELECT blocking");
+      showToast("Erreur: suggestion introuvable");
+      return;
+    }
+
+    // Use RPC or direct update without .select() to avoid double-RLS issue
+    const { error } = await supabase
+      .from("athlete_suggestions")
+      .update({ status: "APPROUVEE" })
+      .eq("id", suggestionId);
+
+    console.log("[Approve] update error:", error);
+
+    if (error) {
+      console.error("[Suggestion approve] error:", JSON.stringify(error));
+      showToast("Erreur: " + (error.message || "Impossible d'approuver"));
+      return;
+    }
+
+    // Verify it actually changed
+    const { data: verify } = await supabase.from("athlete_suggestions").select("id, status, reviewed_at").eq("id", suggestionId).single();
+    console.log("[Approve] verify:", verify);
+
+    if (verify?.status !== "APPROUVEE") {
+      console.error("[Approve] status not changed:", verify?.status);
+      showToast("Erreur: la mise à jour n'a pas fonctionné");
+      return;
+    }
+
+    setPendingSuggestions((prev) => prev.filter((s) => s.id !== suggestionId));
+    // Re-fetch athlete data so the profile updates with the approved value
+    const { data: refreshed } = await loadAthleteRaw(id);
+    if (refreshed) setA(mapToRecruiterView(refreshed as Record<string, unknown>));
+    showToast("Suggestion approuvée — valeur mise à jour");
+  }
+
+  async function rejectSuggestion(suggestionId: string) {
+    const supabase = createClient();
+    const { error } = await supabase.from("athlete_suggestions").update({ status: "REJETEE", raison_rejet: rejectReason || null }).eq("id", suggestionId);
+    if (error) { console.error("[Suggestion reject]", error); return; }
+    setPendingSuggestions((prev) => prev.filter((s) => s.id !== suggestionId));
+    setRejectingId(null);
+    setRejectReason("");
+    showToast("Suggestion rejetée");
+  }
 
   const [mode, setMode] = useState<"simple" | "detailed">("simple");
   const [consentGiven, setConsentGiven] = useState(true);
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const [athleteHasAccount, setAthleteHasAccount] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
   const [toast, setToast] = useState<string | null>(null);
   const searchParams = useSearchParams();
@@ -331,6 +408,9 @@ export default function CoachAthleteProfilePage() {
   const [globalRecruitmentStatus, setGlobalRecruitmentStatus] = useState<string>("OUVERT");
   const [committedSchoolName, setCommittedSchoolName] = useState("");
   const [openToOffers, setOpenToOffers] = useState<boolean | null>(null);
+  const [pendingSuggestions, setPendingSuggestions] = useState<{ id: string; champ: string; valeur_actuelle: string; valeur_proposee: string; message: string; created_at: string }[]>([]);
+  const [rejectingId, setRejectingId] = useState<string | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
 
   const isDetailed = mode === "detailed";
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
@@ -363,20 +443,20 @@ export default function CoachAthleteProfilePage() {
   const BADGE_DISPLAY: Record<string, { char: string; label: string }> = {
     captain: { char: "C", label: "Capitaine" },
     allstar: { char: "★", label: "Étoile provinciale" },
-    team_leader: { char: "MVP", label: "Meilleur joueur d'équipe" },
-    league_leader: { char: "⬆", label: "Meilleur de la ligue" },
-    progression: { char: "↗", label: "Progression marquée" },
-    offensive_leader: { char: "⚡", label: "Meilleur joueur offensif" },
-    defensive_leader: { char: "🛡", label: "Meilleur joueur défensif" },
-    scoring_leader: { char: "🎯", label: "Meilleur pointeur" },
-    assists_leader: { char: "🅰", label: "Meilleur passeur" },
-    goals_leader: { char: "⚽", label: "Meilleur buteur" },
-    points_leader: { char: "🏅", label: "Meilleur pointeur" },
-    best_time: { char: "⏱", label: "Meilleur chrono" },
-    school_record: { char: "🏆", label: "Record d'école" },
-    best_mark: { char: "🏆", label: "Meilleure marque" },
-    singles_leader: { char: "🎯", label: "Meilleur en simple" },
-    specialist: { char: "⭐", label: "Spécialiste" },
+    team_leader: { char: "M", label: "Meilleur joueur d'équipe" },
+    league_leader: { char: "L", label: "Meilleur de la ligue" },
+    progression: { char: "P", label: "Progression marquée" },
+    offensive_leader: { char: "O", label: "Meilleur joueur offensif" },
+    defensive_leader: { char: "D", label: "Meilleur joueur défensif" },
+    scoring_leader: { char: "S", label: "Meilleur pointeur" },
+    assists_leader: { char: "A", label: "Meilleur passeur" },
+    goals_leader: { char: "B", label: "Meilleur buteur" },
+    points_leader: { char: "P", label: "Meilleur pointeur" },
+    best_time: { char: "T", label: "Meilleur chrono" },
+    school_record: { char: "R", label: "Record d'école" },
+    best_mark: { char: "R", label: "Meilleure marque" },
+    singles_leader: { char: "S", label: "Meilleur en simple" },
+    specialist: { char: "★", label: "Spécialiste" },
   };
   const statCells: { top?: string; mid: string; sub?: string; iconName?: string; isBadge?: boolean; badgeChar?: string }[] = [
     { top: a.heightDisplay, mid: "Taille" },
@@ -430,15 +510,17 @@ export default function CoachAthleteProfilePage() {
             <div className="flex-1" />
 
             {/* Invite */}
-            <button type="button" onClick={() => consentGiven ? setShowInviteModal(true) : null}
-              disabled={!consentGiven}
-              title={!consentGiven ? "Confirme le consentement parental d'abord" : undefined}
-              className={`flex items-center gap-2 px-4 py-2 border rounded-lg text-[11px] font-bold uppercase tracking-wider transition-colors ${
-                consentGiven ? "border-[#E63946] text-[#E63946] hover:bg-[#E63946]/10" : "border-[#2D3748] text-[#4a4d56] cursor-not-allowed"
-              }`}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="8.5" cy="7" r="4" /><line x1="20" y1="8" x2="20" y2="14" /><line x1="23" y1="11" x2="17" y2="11" /></svg>
-              Inviter l&apos;athlète
-            </button>
+            {!athleteHasAccount && (
+              <button type="button" onClick={() => consentGiven ? setShowInviteModal(true) : null}
+                disabled={!consentGiven}
+                title={!consentGiven ? "Confirme le consentement parental d'abord" : undefined}
+                className={`flex items-center gap-2 px-4 py-2 border rounded-lg text-[11px] font-bold uppercase tracking-wider transition-colors ${
+                  consentGiven ? "border-[#E63946] text-[#E63946] hover:bg-[#E63946]/10" : "border-[#2D3748] text-[#4a4d56] cursor-not-allowed"
+                }`}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="8.5" cy="7" r="4" /><line x1="20" y1="8" x2="20" y2="14" /><line x1="23" y1="11" x2="17" y2="11" /></svg>
+                Inviter l&apos;athlète
+              </button>
+            )}
 
             {/* Edit */}
             <Link href={`/coach/athletes/${id}/modifier`} className="flex items-center gap-2 px-4 py-2 border border-[#E63946] text-[#E63946] rounded-lg text-[11px] font-bold uppercase tracking-wider hover:bg-[#E63946]/10 transition-colors">
@@ -498,6 +580,60 @@ export default function CoachAthleteProfilePage() {
         </div>
       )}
 
+      {/* ── Pending Suggestions ──────────────────────────────── */}
+      {!recruiterView && !isPreview && pendingSuggestions.length > 0 && (
+        <div className="bg-[#1A1D24] rounded-xl border border-[#EAB308]/20 p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#EAB308" strokeWidth="2" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
+            <h3 className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#EAB308]">
+              {pendingSuggestions.length} suggestion{pendingSuggestions.length > 1 ? "s" : ""} en attente
+            </h3>
+          </div>
+          <div className="space-y-3">
+            {pendingSuggestions.map((s) => {
+              const diffMs = Date.now() - new Date(s.created_at).getTime();
+              const diffMin = Math.floor(diffMs / 60000);
+              const relTime = diffMin < 60 ? `Il y a ${diffMin} min` : diffMin < 1440 ? `Il y a ${Math.floor(diffMin / 60)}h` : `Il y a ${Math.floor(diffMin / 1440)}j`;
+
+              return (
+                <div key={s.id} className="bg-[#13151a] rounded-lg border border-[#EAB308]/10 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[13px] font-bold text-white">{s.champ}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        {s.valeur_actuelle && <span className="text-[12px] text-[#6b7280] line-through">{s.valeur_actuelle}</span>}
+                        <span className="text-[12px] text-[#6b7280]">→</span>
+                        <span className="text-[13px] font-bold text-[#EAB308]">{s.valeur_proposee}</span>
+                      </div>
+                      {s.message && <p className="text-[11px] text-[#6b7280] italic mt-1">&ldquo;{s.message}&rdquo;</p>}
+                      <p className="text-[10px] text-[#4a4d56] mt-1">{relTime}</p>
+                    </div>
+                    {rejectingId === s.id ? (
+                      <div className="flex flex-col gap-2 shrink-0">
+                        <input type="text" value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} placeholder="Raison (optionnel)" className="bg-[#111317] border border-[#2D3748] rounded px-2 py-1 text-[11px] text-white w-40 focus:border-[#E63946] outline-none" />
+                        <div className="flex gap-2">
+                          <button type="button" onClick={() => rejectSuggestion(s.id)} className="px-3 py-1 bg-[#E63946] text-white text-[10px] font-bold rounded hover:bg-[#D42B22] transition-colors">Confirmer</button>
+                          <button type="button" onClick={() => { setRejectingId(null); setRejectReason(""); }} className="text-[10px] text-[#6b7280] hover:text-white transition-colors">Annuler</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button type="button" onClick={() => approveSuggestion(s.id)} className="px-3 py-1.5 bg-[#22C55E] hover:bg-[#16A34A] text-white text-[10px] font-bold uppercase tracking-wider rounded-lg transition-colors">
+                          Approuver
+                        </button>
+                        <button type="button" onClick={() => setRejectingId(s.id)} className="px-3 py-1.5 border border-[#E63946]/30 text-[#E63946] text-[10px] font-bold uppercase tracking-wider rounded-lg hover:bg-[#E63946]/10 transition-colors">
+                          Rejeter
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* ── Toggle + Completeness ─────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <ProfileToggle mode={mode} onChange={setMode} />
@@ -547,90 +683,58 @@ export default function CoachAthleteProfilePage() {
                 </span>
               </div>
             )}
+
           </div>
 
-          {a.viewsThisMonth > 0 && (
-            <div className="flex items-center gap-1.5 text-[#6b7280]">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
-              <span className="text-[13px]">{a.viewsThisMonth} vues ce mois</span>
-            </div>
-          )}
-
-          {/* Video CTA */}
+          {/* Profil Athlète */}
           <div>
-            {a.highlightVideoUrl ? (
-              <a href={a.highlightVideoUrl} target="_blank" rel="noopener noreferrer"
-                className="inline-flex items-center gap-3 bg-[#1A1D24] border border-[#2D3748] rounded-lg px-5 py-3 text-white font-bold text-[14px] uppercase tracking-wider transition-all hover:border-[#E63946] hover:shadow-[0_0_16px_rgba(230,57,70,0.2)] hover:-translate-y-0.5 group">
-                <span className="w-8 h-8 rounded-full bg-[#E63946] flex items-center justify-center shrink-0">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="white" stroke="none"><polygon points="8 5 19 12 8 19 8 5" /></svg>
-                </span>
-                Voir les faits saillants
-              </a>
-            ) : (
-              <div className="inline-flex items-center gap-2.5 bg-[#1A1D24]/50 border border-[#2D3748] rounded-lg px-5 py-3">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2D3748" strokeWidth="1.5" strokeLinecap="round"><polygon points="23 7 16 12 23 17 23 7" /><rect x="1" y="5" width="15" height="14" rx="2" ry="2" /></svg>
-                <span className="text-[14px] text-[#6b7280]">Aucun lien vidéo</span>
-                <a href={`/coach/athletes/${id}/modifier`} className="text-[13px] text-[#E63946] hover:text-[#D42B22] font-semibold ml-1 transition-colors">Ajouter</a>
+            <h3 className="text-[11px] font-semibold tracking-[2px] uppercase text-[#555] mb-6">Profil athlète</h3>
+
+            <div className="flex items-center gap-12 mb-8">
+              {a.heightDisplay && (
+                <div className="text-center">
+                  <p className="text-[40px] font-head font-[800] text-white leading-none">{a.heightDisplay}</p>
+                  <p className="text-[11px] font-semibold tracking-[2px] uppercase text-[#555] mt-1.5">Taille</p>
+                </div>
+              )}
+              {a.heightDisplay && a.weightDisplay && (
+                <div className="w-px h-12 bg-[#555]" />
+              )}
+              {a.weightDisplay && (
+                <div className="text-center">
+                  <p className="text-[40px] font-head font-[800] text-white leading-none">
+                    {a.weightDisplay.replace(" lbs", "")}<span className="text-[20px] font-semibold text-[#555]"> lbs</span>
+                  </p>
+                  <p className="text-[11px] font-semibold tracking-[2px] uppercase text-[#555] mt-1.5">Poids</p>
+                </div>
+              )}
+            </div>
+
+            {dbDistinctions.filter((d) => d != null && BADGE_DISPLAY[d]).length > 0 && (
+              <div className="flex items-end gap-9">
+                {dbDistinctions
+                  .filter((d) => d != null && BADGE_DISPLAY[d])
+                  .map((d) => {
+                    const badgeType = DISTINCTION_TO_BADGE[d];
+                    if (badgeType) {
+                      return <DistinctionBadge key={d} type={badgeType} size="lg" />;
+                    }
+                    const b = BADGE_DISPLAY[d];
+                    return (
+                      <div key={d} className="flex flex-col items-center gap-2">
+                        <span className="w-[60px] h-[60px] rounded-full bg-[#E63946]/15 flex items-center justify-center text-[22px] font-bold text-[#E63946]">
+                          {b.char}
+                        </span>
+                        <p className="text-[10px] font-bold tracking-[1.5px] uppercase text-[#E63946]">{b.label}</p>
+                      </div>
+                    );
+                  })}
               </div>
             )}
           </div>
 
-          {/* Stat Strip */}
-          <div>
-            <h3 className={sectionLabel}>Profil athlète</h3>
-            <div className={`${cardBase} overflow-hidden`}>
-              <div className="grid divide-x divide-[#2D3748]/50" style={{ gridTemplateColumns: `repeat(${statCells.length}, minmax(0, 1fr))` }}>
-                {statCells.map((cell, i) => (
-                  <div key={i} className={`p-4 text-center flex flex-col items-center justify-center min-h-[100px] ${cell.isBadge ? "bg-[#E63946]/[0.04] border-l border-[#E63946]/20" : cell.iconName ? "bg-[#E63946]/[0.04]" : ""}`}>
-                    {cell.isBadge ? (
-                      <div className="flex items-center justify-center min-h-[36px]">
-                        <div className="w-9 h-9 rounded-full bg-[#E63946]/15 border border-[#E63946]/30 flex items-center justify-center">
-                          <span className="text-[16px] font-bold text-[#E63946]">{cell.badgeChar}</span>
-                        </div>
-                      </div>
-                    ) : cell.iconName ? (
-                      <div className="flex items-center justify-center min-h-[36px]">
-                        <div className="w-10 h-10 rounded-full bg-[#E63946]/10 flex items-center justify-center">
-                          <NxIcon name={cell.iconName} size={22} className="text-[#E63946]" />
-                        </div>
-                      </div>
-                    ) : (
-                      <p className="text-[26px] sm:text-[30px] font-head font-black text-white leading-none flex items-center justify-center min-h-[36px]">{cell.top}</p>
-                    )}
-                    <p className={`text-[12px] font-bold tracking-[0.2em] uppercase mt-2 ${cell.isBadge || cell.iconName ? "text-white" : "text-[#9CA3AF]"}`}>{cell.mid}</p>
-                    {cell.sub && <p className="text-[11px] text-[#9CA3AF] mt-0.5">{cell.sub}</p>}
-                  </div>
-                ))}
-              </div>
-              {dbDistinctions.filter((d) => d != null && BADGE_DISPLAY[d]).length > 0 && (
-                <div className={`grid divide-x divide-[#2D3748]/50 border-t border-[#2D3748]/50 ${(() => { const n = dbDistinctions.filter(d => d != null && BADGE_DISPLAY[d]).length; return n === 1 ? "grid-cols-1" : n === 2 ? "grid-cols-2" : "grid-cols-3"; })()}`}>
-                  {dbDistinctions
-                    .filter((d) => d != null && BADGE_DISPLAY[d])
-                    .map((d) => {
-                      const b = BADGE_DISPLAY[d];
-                      return (
-                        <div
-                          key={d}
-                          className="p-4 text-center flex flex-col items-center justify-center min-h-[90px]"
-                        >
-                          <span className="w-9 h-9 rounded-full bg-[#E63946]/15 border border-[#E63946]/25 flex items-center justify-center text-[14px] font-bold text-[#E63946] mb-2 shadow-[0_0_12px_rgba(230,57,70,0.25)]">
-                            {b.char}
-                          </span>
-                          <p className="text-[11px] font-bold tracking-[0.15em] uppercase text-white">{b.label}</p>
-                        </div>
-                      );
-                    })}
-                </div>
-              )}
-            </div>
-          </div>
         </div>
       </section>
-
-      {/* Distinctions moved into stat strip below */}
-      {false && (
-        <section />
-      )}
 
       {/* ══════════ COACH REPORT ══════════ */}
       {(a.coachReport || coteGlobale >= 0) && (
@@ -710,6 +814,26 @@ export default function CoachAthleteProfilePage() {
           </div>
         </section>
       )}
+
+      {/* ══════════ FAITS SAILLANTS (VIDEO) ══════════ */}
+      <section>
+        <h2 className={sectionLabel}>Faits saillants</h2>
+        {a.highlightVideoUrl || a.fullGameUrl ? (
+          <div className="flex flex-col gap-4">
+            {a.highlightVideoUrl && (
+              <VideoEmbed url={a.highlightVideoUrl} title="Faits saillants" />
+            )}
+            {a.fullGameUrl && (
+              <div>
+                <p className="text-[11px] font-semibold tracking-[2px] uppercase text-[#555] mb-3">Match complet</p>
+                <VideoEmbed url={a.fullGameUrl} title="Match complet" />
+              </div>
+            )}
+          </div>
+        ) : (
+          <p className="text-[13px] text-[#555]">Aucune vidéo ajoutée</p>
+        )}
+      </section>
 
       {/* ══════════ ACADEMIC PROFILE ══════════ */}
       {(() => { console.log("PROGRAMME DEBUG:", { program: a.program, targetCegepProgram: a.targetCegepProgram, gpa: a.gpa, prefs: { relocate: a.openToRelocate, prive: a.openToPrivate, anglo: a.openToAnglophone } }); return null; })()}

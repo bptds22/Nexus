@@ -11,12 +11,14 @@ export interface ActionBarData {
   unreadMessages: number;
   incompleteProfiles: number;
   newAthletes: number;
+  pendingSuggestions: number;
 }
 
 export const ACTION_BAR: ActionBarData = {
   unreadMessages: 3,
   incompleteProfiles: 5,
   newAthletes: 0,
+  pendingSuggestions: 0,
 };
 
 /* ── KPI Cards ──────────────────────────────────────────────────── */
