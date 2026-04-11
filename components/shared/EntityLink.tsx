@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import DeactivatedBadge from "./DeactivatedBadge";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -19,6 +22,7 @@ export interface EntityLinkProps {
   className?: string;
   isDeactivated?: boolean;
   deactivatedAt?: string | null;
+  nested?: boolean;
 }
 
 function getEntityRoute(type: EntityType, id: string, portal: Portal): string {
@@ -55,7 +59,8 @@ function getEntityRoute(type: EntityType, id: string, portal: Portal): string {
   }
 }
 
-export default function EntityLink({ type, id, name, portal, className = "", isDeactivated, deactivatedAt }: EntityLinkProps) {
+export default function EntityLink({ type, id, name, portal, className = "", isDeactivated, deactivatedAt, nested }: EntityLinkProps) {
+  const router = useRouter();
   const deactivatedTooltip = isDeactivated && deactivatedAt
     ? `Cet entraîneur a été désactivé le ${new Date(deactivatedAt).toLocaleDateString("fr-CA")}`
     : undefined;
@@ -76,6 +81,23 @@ export default function EntityLink({ type, id, name, portal, className = "", isD
       <span className={`font-bold ${isDeactivated ? "text-[#6B7280]" : "text-white"} ${className}`} title={deactivatedTooltip}>
         {name}
         {isDeactivated && <DeactivatedBadge className="ml-2" />}
+      </span>
+    );
+  }
+
+  if (nested) {
+    return (
+      <span className="inline-flex items-center gap-2" title={deactivatedTooltip}>
+        <span
+          role="button"
+          tabIndex={0}
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(route); }}
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); router.push(route); } }}
+          className={`font-bold cursor-pointer ${isDeactivated ? "text-[#6B7280] hover:text-[#9CA3AF]" : "text-white hover:text-[#E63946]"} hover:underline transition-colors duration-150 ${className}`}
+        >
+          {name}
+        </span>
+        {isDeactivated && <DeactivatedBadge />}
       </span>
     );
   }

@@ -209,7 +209,38 @@ function NouveauMessageContent() {
         // Pre-select from URL
         const athleteId = searchParams.get("athlete");
         if (athleteId) {
-          const found = mapped.find(a => a.id === athleteId);
+          let found = mapped.find(a => a.id === athleteId);
+          // If not in pipeline, load directly from athletes table
+          if (!found) {
+            const { data: directAthlete } = await supabase
+              .from("athletes")
+              .select("id, first_name, last_name, verified, coach_id, numero_jersey, recruitment_status, cote_globale_entraineur, positions!position_id(abreviation), schools!school_id(name), users!coach_id(id, first_name, last_name)")
+              .eq("id", athleteId)
+              .single();
+            if (directAthlete) {
+              const posRel = (directAthlete as any).positions;
+              const pos = (Array.isArray(posRel) ? posRel[0] : posRel) as { abreviation?: string } | null;
+              const schoolRel = (directAthlete as any).schools;
+              const school = (Array.isArray(schoolRel) ? schoolRel[0] : schoolRel) as { name?: string } | null;
+              const coachRel = (directAthlete as any).users;
+              const coach = (Array.isArray(coachRel) ? coachRel[0] : coachRel) as { id?: string; first_name?: string; last_name?: string } | null;
+              found = {
+                id: directAthlete.id as string,
+                firstName: (directAthlete.first_name as string) || "",
+                lastName: (directAthlete.last_name as string) || "",
+                position: pos?.abreviation || "",
+                school: school?.name || "",
+                jersey: directAthlete.numero_jersey != null ? String(directAthlete.numero_jersey) : "",
+                recruitmentStatus: (directAthlete.recruitment_status as string) || "OUVERT",
+                stars: (directAthlete.cote_globale_entraineur as number) || 0,
+                isVerified: !!(directAthlete.verified),
+                coachId: (coach?.id as string) || (directAthlete.coach_id as string) || "",
+                coachFirstName: (coach?.first_name as string) || "",
+                coachLastName: (coach?.last_name as string) || "",
+              };
+              setAthletes(prev => [found!, ...prev]);
+            }
+          }
           if (found) {
             setSelectedAthlete(found);
             setMessageBody(genTemplate(found, profile));

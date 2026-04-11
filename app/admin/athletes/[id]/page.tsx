@@ -104,6 +104,8 @@ function posAbbr(pos: string) { return POS_MAP[pos] || pos; }
 /* ── Trait Labels ─────────────────────────────────────────────── */
 
 const TRAIT_LABELS: Record<keyof AthleteTraitRatings, string> = {
+  speed: "Vitesse / Explosivité", power: "Force / Puissance", endurance: "Endurance / Cardio", agility: "Agilité / Coordination",
+  gameVision: "Vision du jeu", tactics: "Sens tactique",
   leadership: "Leadership", discipline: "Discipline", coachability: "Coachabilité",
   gameIQ: "QI sportif", competitiveness: "Compétitivité", teamwork: "Esprit d'équipe",
   resilience: "Résilience", attitude: "Attitude",

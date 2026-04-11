@@ -3,7 +3,7 @@
    7 threads across all status types.
 ───────────────────────────────────────────────────────────────── */
 
-export type ThreadStatus = "reponse_recue" | "envoye" | "archive";
+export type ThreadStatus = "nouveau" | "repondu" | "reponse_recue" | "envoye" | "archive";
 
 export interface RecruiterProfile {
   id: string;
@@ -54,15 +54,18 @@ export interface ConversationThread {
 /* ── Status config ───────────────────────────────────────────── */
 
 export const STATUS_CONFIG: Record<ThreadStatus, { label: string; color: string; bg: string; textColor: string }> = {
-  reponse_recue: { label: "Réponse reçue",  color: "#22C55E", bg: "bg-[#22C55E]",   textColor: "text-black" },
+  nouveau:       { label: "Nouveau",         color: "#E63946", bg: "bg-[#E63946]",   textColor: "text-white" },
+  repondu:       { label: "Répondu",         color: "#22C55E", bg: "bg-[#22C55E]",   textColor: "text-black" },
+  reponse_recue: { label: "Réponse reçue",  color: "#3B82F6", bg: "bg-[#3B82F6]",   textColor: "text-white" },
   envoye:        { label: "Envoyé",          color: "#FFFFFF", bg: "bg-white",        textColor: "text-black" },
   archive:       { label: "Archivé",         color: "#FFFFFF", bg: "bg-white/20",     textColor: "text-white/60" },
 };
 
 /* ── Helper: map DB status to ThreadStatus ─────────────────── */
-export function mapDbStatus(dbStatus: string | null): ThreadStatus {
+export function mapDbStatus(dbStatus: string | null, coachReplied?: boolean, recruiterReplied?: boolean): ThreadStatus {
   const s = (dbStatus || "").toLowerCase();
-  if (s === "reponse_recue") return "reponse_recue";
-  if (s === "archive") return "archive";
-  return "envoye";
+  if (s === "archived" || s === "archive") return "archive";
+  if (coachReplied && recruiterReplied) return "reponse_recue";
+  if (coachReplied) return "repondu";
+  return "nouveau";
 }

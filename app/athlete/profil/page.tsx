@@ -401,6 +401,8 @@ function LockedField({ label, value, recruiterView, children }: {
 /* ── Trait labels ──────────────────────────────────────────────── */
 
 const TRAIT_LABELS: Record<keyof AthleteTraitRatings, string> = {
+  speed: "Vitesse / Explosivité", power: "Force / Puissance", endurance: "Endurance / Cardio", agility: "Agilité / Coordination",
+  gameVision: "Vision du jeu", tactics: "Sens tactique",
   leadership: "Leadership", discipline: "Discipline", coachability: "Coachabilité",
   gameIQ: "QI sportif", competitiveness: "Compétitivité", teamwork: "Esprit d'équipe",
   resilience: "Résilience", attitude: "Attitude",
@@ -624,6 +626,12 @@ export default function AthleteProfilPage() {
 
       // Trait ratings
       const traitRatings: AthleteTraitRatings | undefined = evalRel ? {
+        speed: evalRel.vitesse_explosivite || 0,
+        power: evalRel.force_puissance || 0,
+        endurance: evalRel.endurance_cardio || 0,
+        agility: evalRel.agilite_coordination || 0,
+        gameVision: evalRel.vision_du_jeu || 0,
+        tactics: evalRel.sens_tactique || 0,
         leadership: evalRel.leadership || 0,
         discipline: evalRel.discipline || 0,
         coachability: evalRel.coachabilite || 0,
@@ -921,7 +929,7 @@ export default function AthleteProfilPage() {
           <h1 className="font-head text-2xl font-black text-white uppercase tracking-tight">Mon profil</h1>
           <p className="text-[14px] text-[#9CA3AF] mt-1">C&apos;est ce que les recruteurs voient quand ils consultent ton profil</p>
         </div>
-        <a href={athleteId ? `/coach/athletes/${athleteId}?preview=true` : "#"} target="_blank" rel="noopener noreferrer"
+        <a href={athleteId ? `/recruteur/athletes/${athleteId}` : "#"} target="_blank" rel="noopener noreferrer"
           className="px-4 py-2.5 rounded-lg text-[12px] font-bold uppercase tracking-wider border border-[#2D3748] text-[#9CA3AF] hover:text-white hover:border-[#4a4d56] transition-colors flex items-center gap-2">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
           Aperçu

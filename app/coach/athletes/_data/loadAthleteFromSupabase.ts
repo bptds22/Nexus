@@ -72,7 +72,10 @@ const ATHLETE_SELECT = `
   schools!school_id(name, city, region),
   committed_school:schools!committed_school_id(name),
   evaluations(
-    cote_globale, leadership, discipline, coachabilite, intelligence_jeu,
+    cote_globale,
+    vitesse_explosivite, force_puissance, endurance_cardio, agilite_coordination,
+    vision_du_jeu, sens_tactique,
+    leadership, discipline, coachabilite, intelligence_jeu,
     competitivite, esprit_equipe, resilience, attitude_mentalite,
     rapport_entraineur, distinctions
   ),
@@ -265,29 +268,44 @@ export function buildFormFromRaw(raw: Record<string, unknown>): Record<string, u
       evalMode: "simple",
       starRating: (eval0?.cote_globale as number) || (raw.cote_globale_entraineur as number) || 0,
       traitRatings: eval0 ? {
+        // Keys match DB columns directly
+        vitesse_explosivite: (eval0.vitesse_explosivite as number) || 0,
+        force_puissance: (eval0.force_puissance as number) || 0,
+        endurance_cardio: (eval0.endurance_cardio as number) || 0,
+        agilite_coordination: (eval0.agilite_coordination as number) || 0,
+        vision_du_jeu: (eval0.vision_du_jeu as number) || 0,
+        sens_tactique: (eval0.sens_tactique as number) || 0,
         leadership: (eval0.leadership as number) || 0,
-        ethique_travail: (eval0.discipline as number) || 0,
+        discipline: (eval0.discipline as number) || 0,
         coachabilite: (eval0.coachabilite as number) || 0,
-        vision_jeu: (eval0.intelligence_jeu as number) || 0,
+        intelligence_jeu: (eval0.intelligence_jeu as number) || 0,
+        competitivite: (eval0.competitivite as number) || 0,
         esprit_equipe: (eval0.esprit_equipe as number) || 0,
-        competitivite_resilience: (eval0.competitivite as number) || (eval0.resilience as number) || 0,
-        vitesse_explosivite: 0,
-        force_puissance: 0,
-        endurance_cardio: 0,
-        agilite_coordination: 0,
-        sens_tactique: 0,
+        resilience: (eval0.resilience as number) || 0,
+        attitude_mentalite: (eval0.attitude_mentalite as number) || 0,
       } : {},
       badges: (() => {
         const rawDist = eval0?.distinctions;
         if (!rawDist) return [];
         const arr = Array.isArray(rawDist) ? rawDist : [];
-        // DB stores string keys OR badge objects — handle both
         const BADGE_LABELS: Record<string, { label: string; icon: string }> = {
           captain: { label: "Capitaine", icon: "captain" },
           allstar: { label: "Étoile provinciale", icon: "allstar" },
-          target: { label: "Meilleur joueur d'équipe", icon: "target" },
-          champion: { label: "Meilleur joueur de la ligue", icon: "champion" },
-          trending: { label: "Progression marquée", icon: "trending" },
+          team_leader: { label: "Meilleur joueur d'équipe", icon: "target" },
+          league_leader: { label: "Meilleur joueur de la ligue", icon: "chart" },
+          scoring_leader: { label: "Meilleur pointeur", icon: "target" },
+          points_leader: { label: "Meilleur pointeur", icon: "target" },
+          goals_leader: { label: "Meilleur buteur", icon: "goal" },
+          assists_leader: { label: "Meilleur passeur", icon: "target" },
+          offensive_leader: { label: "Meilleur joueur offensif", icon: "trending" },
+          defensive_leader: { label: "Meilleur joueur défensif", icon: "shield" },
+          progression: { label: "Progression marquée", icon: "trending" },
+          best_time: { label: "Meilleur chrono d'équipe", icon: "timer" },
+          school_record: { label: "Record d'école", icon: "trophy" },
+          best_mark: { label: "Meilleure marque d'équipe", icon: "trophy" },
+          singles_leader: { label: "Meilleur en simple", icon: "target" },
+          specialist: { label: "Spécialiste", icon: "target" },
+          mvp: { label: "MVP", icon: "target" },
         };
         return arr
           .filter((d: unknown) => d != null)
@@ -301,7 +319,7 @@ export function buildFormFromRaw(raw: Record<string, unknown>): Record<string, u
           })
           .filter((b: unknown) => b != null);
       })(),
-      coachEndorsement: (raw.notes_coach as string) || (eval0?.rapport_entraineur as string) || "",
+      coachEndorsement: (eval0?.rapport_entraineur as string) || (raw.notes_coach as string) || "",
     },
     media: {
       mediaMode: "simple",
@@ -353,6 +371,12 @@ export function mapToRecruiterView(raw: Record<string, unknown>): AthleteProfile
   const primaryPosition = posAbbr ? `${posName} (${posAbbr})` : posName;
 
   const traitRatings = eval0 ? {
+    speed: (eval0.vitesse_explosivite as number) || 0,
+    power: (eval0.force_puissance as number) || 0,
+    endurance: (eval0.endurance_cardio as number) || 0,
+    agility: (eval0.agilite_coordination as number) || 0,
+    gameVision: (eval0.vision_du_jeu as number) || 0,
+    tactics: (eval0.sens_tactique as number) || 0,
     leadership: (eval0.leadership as number) || 0,
     discipline: (eval0.discipline as number) || 0,
     coachability: (eval0.coachabilite as number) || 0,

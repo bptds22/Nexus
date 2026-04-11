@@ -253,18 +253,19 @@ function CegepDashboardContent() {
       // === KPIs (parallel) ===
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
-      const [recruesRes, pipelineRes, messagesRes, viewsRes] = await Promise.all([
+      const [recruesRes, pipelineRes, messagesRes, viewsRes1, viewsRes2] = await Promise.all([
         supabase.from("recruiter_pipeline").select("*", { count: "exact", head: true }).in("recruiter_id", recruiterIds).eq("stage", "LETTRE_SIGNEE"),
         supabase.from("recruiter_pipeline").select("athlete_id").in("recruiter_id", recruiterIds),
         supabase.from("messages").select("*", { count: "exact", head: true }).in("sender_id", recruiterIds).gte("created_at", thirtyDaysAgo),
         supabase.from("recruiter_athlete_views").select("*", { count: "exact", head: true }).in("recruiter_id", recruiterIds).gte("viewed_at", thirtyDaysAgo),
+        supabase.from("profile_views").select("*", { count: "exact", head: true }).in("recruiter_id", recruiterIds).gte("viewed_at", thirtyDaysAgo),
       ]);
 
       setRecruesCount(recruesRes.count ?? 0);
       const uniqueAthletes = new Set(pipelineRes.data?.map((p) => p.athlete_id) || []);
       setPipelineCount(uniqueAthletes.size);
       setMessagesCount(messagesRes.count ?? 0);
-      setViewsCount(viewsRes.count ?? 0);
+      setViewsCount((viewsRes1.count ?? 0) + (viewsRes2.count ?? 0));
 
       // === Pipeline par sport ===
       const { data: pipelineSports } = await supabase

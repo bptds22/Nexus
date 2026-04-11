@@ -764,6 +764,15 @@ export interface CegepSeasonComparison {
 ══════════════════════════════════════════════════════════════ */
 
 export interface AthleteTraitRatings {
+  // Capacités athlétiques
+  speed: number;
+  power: number;
+  endurance: number;
+  agility: number;
+  // Intelligence sportive
+  gameVision: number;
+  tactics: number;
+  // Caractère
   leadership: number;
   discipline: number;
   coachability: number;

@@ -15,16 +15,16 @@ export default function ActionBar({ data }: { data: RecruiterActionBarData }) {
         href="/recruteur/messages?filtre=reponse"
         className={`group flex items-center gap-4 rounded-xl px-6 py-5 transition-all border-l-4 ${
           data.coachReplies > 0
-            ? "bg-[#E63946]/[0.08] border-l-[#E63946] hover:bg-[#E63946]/[0.14]"
+            ? "bg-[#22C55E]/[0.08] border-l-[#22C55E] hover:bg-[#22C55E]/[0.14]"
             : "bg-[#1A1D24] border-l-[#2D3748] hover:bg-[#22252c]"
         }`}
       >
         {/* Icon */}
         <div className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 ${
-          data.coachReplies > 0 ? "bg-[#E63946]/20" : "bg-[#2D3748]/50"
+          data.coachReplies > 0 ? "bg-[#22C55E]/20" : "bg-[#2D3748]/50"
         }`}>
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
-            stroke={data.coachReplies > 0 ? "#E63946" : "#6b7280"}
+            stroke={data.coachReplies > 0 ? "#22C55E" : "#6b7280"}
             strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
           </svg>
@@ -46,7 +46,7 @@ export default function ActionBar({ data }: { data: RecruiterActionBarData }) {
         {/* Count badge + arrow */}
         {data.coachReplies > 0 && (
           <div className="flex items-center gap-3 shrink-0">
-            <span className="inline-flex items-center justify-center min-w-[28px] h-7 px-2 rounded-full bg-[#E63946] text-white text-[13px] font-black">
+            <span className="inline-flex items-center justify-center min-w-[28px] h-7 px-2 rounded-full bg-[#22C55E] text-white text-[13px] font-black">
               {data.coachReplies}
             </span>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round"

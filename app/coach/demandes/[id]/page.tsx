@@ -4,6 +4,7 @@ import { use, useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { STATUS_CONFIG, mapDbStatus, type Message, type ThreadStatus, type ConversationThread } from "../_data/mockThreadsData";
 import EntityLink from "@/components/shared/EntityLink";
+import StarRating from "@/components/ui/StarRating";
 import { createClient } from "@/lib/supabase/client";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -111,13 +112,25 @@ export default function ThreadDetailPage({ params }: { params: Promise<{ id: str
         // Fetch conversation
         const { data: conv, error: convError } = await supabase
           .from("conversations")
-          .select("id, recruiter_id, coach_id, athlete_id, status, last_message_at, unread_count, created_at, users!recruiter_id(id, first_name, last_name, email, school_id, schools!school_id(name)), athletes!athlete_id(id, first_name, last_name, verified, cote_globale_entraineur, profile_completion, annee_diplomation, positions!position_id(nom, abreviation))")
+          .select("id, recruiter_id, coach_id, athlete_id, status, last_message_at, unread_count, created_at, athletes!athlete_id(id, first_name, last_name, verified, cote_globale_entraineur, profile_completion, annee_diplomation, numero_jersey, moyenne_generale, programme_cegep_vise, pret_changer_region, ouvert_cegep_prive, ouvert_cegep_anglophone, recruitment_status, photo_url, positions!position_id(nom, abreviation), sports!sport_id(nom), schools!school_id(name, region), evaluations(distinctions, cote_globale))")
           .eq("id", id)
           .single();
 
         console.log("[ThreadDetail] conversation:", conv, "error:", convError);
 
         if (!conv) { setLoading(false); return; }
+
+        // Load recruiter info separately (avoids ambiguous FK)
+        const { data: recruiterUser } = await supabase
+          .from("users")
+          .select("id, first_name, last_name, email, school_id")
+          .eq("id", conv.recruiter_id)
+          .single();
+        let recruiterSchoolName = "";
+        if (recruiterUser?.school_id) {
+          const { data: school } = await supabase.from("schools").select("name").eq("id", recruiterUser.school_id).single();
+          recruiterSchoolName = school?.name || "";
+        }
 
         // Fetch messages
         const { data: msgs, error: msgsError } = await supabase
@@ -129,24 +142,22 @@ export default function ThreadDetailPage({ params }: { params: Promise<{ id: str
         console.log("[ThreadDetail] messages:", msgs, "error:", msgsError);
 
         // Map conversation to thread
-        const recruiterUser = (conv as any).users;
         const athleteData = (conv as any).athletes;
         const position = athleteData?.positions;
-        const school = recruiterUser?.schools;
 
         const mappedThread: ConversationThread = {
           id: conv.id,
           recruiter: {
-            id: recruiterUser?.id || conv.recruiter_id,
-            firstName: recruiterUser?.first_name || "",
-            lastName: recruiterUser?.last_name || "",
+            id: conv.recruiter_id,
+            firstName: (recruiterUser?.first_name as string) || "",
+            lastName: (recruiterUser?.last_name as string) || "",
             title: "",
-            cegep: school?.name || "",
+            cegep: recruiterSchoolName,
             cegepTeamName: "",
             division: "Div. 1" as const,
             sport: "",
             region: "",
-            email: recruiterUser?.email || "",
+            email: (recruiterUser?.email as string) || "",
             phone: "",
           },
           athlete: {
@@ -161,12 +172,25 @@ export default function ThreadDetailPage({ params }: { params: Promise<{ id: str
             favorites: 0,
             stars: athleteData?.cote_globale_entraineur ?? 0,
           },
+          // Extra athlete context for sidebar card
+          _athletePhoto: athleteData?.photo_url || "",
+          _athleteJersey: athleteData?.numero_jersey || "",
+          _athleteSport: (() => { const s = athleteData?.sports; const r = Array.isArray(s) ? s[0] : s; return r?.nom || ""; })(),
+          _athleteGradYear: athleteData?.annee_diplomation || 0,
+          _athleteSchool: (() => { const s = athleteData?.schools; const r = Array.isArray(s) ? s[0] : s; return r?.name || ""; })(),
+          _athleteRegion: (() => { const s = athleteData?.schools; const r = Array.isArray(s) ? s[0] : s; return r?.region || ""; })(),
+          _athleteGpa: athleteData?.moyenne_generale || 0,
+          _athleteProgramme: (() => { const p = athleteData?.programme_cegep_vise; if (Array.isArray(p) && p.length > 0) return p[0]; if (typeof p === "string") return p; return ""; })(),
+          _athleteRelocate: athleteData?.pret_changer_region || false,
+          _athletePrivate: athleteData?.ouvert_cegep_prive || false,
+          _athleteAnglophone: athleteData?.ouvert_cegep_anglophone || false,
+          _athleteDistinctions: (() => { const e = athleteData?.evaluations; const ev = Array.isArray(e) ? e[0] : e; return (ev?.distinctions as string[]) || []; })(),
           messages: [],
-          status: mapDbStatus(conv.status),
+          status: mapDbStatus(conv.status, (msgs || []).some((m: any) => m.sender_id === conv.coach_id), (msgs || []).some((m: any) => m.sender_id === conv.recruiter_id)),
           lastMessagePreview: "",
           lastMessageTime: conv.last_message_at || conv.created_at,
           unread: (conv.unread_count ?? 0) > 0,
-        };
+        } as any;
 
         setThread(mappedThread);
         setStatus(mappedThread.status);
@@ -430,72 +454,91 @@ export default function ThreadDetailPage({ params }: { params: Promise<{ id: str
             </div>
           </div>
 
-          {/* Athlete context card */}
+          {/* Athlete context card — enhanced */}
           <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] p-5">
             <p className="text-[10px] font-bold tracking-[0.25em] uppercase text-[#6b7280] mb-3">Athlète concerné</p>
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-full bg-[#111317] border border-[#2D3748] flex items-center justify-center shrink-0">
-                <span className="text-[11px] font-bold text-[#6b7280]">{a.firstName[0]}{a.lastName[0]}</span>
-              </div>
+              {(thread as any)._athletePhoto ? (
+                <img src={(thread as any)._athletePhoto} alt="" className="w-10 h-10 rounded-full object-cover shrink-0" />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-[#111317] border border-[#2D3748] flex items-center justify-center shrink-0">
+                  <span className="text-[11px] font-bold text-[#6b7280]">{a.firstName[0]}{a.lastName[0]}</span>
+                </div>
+              )}
               <div>
-                <Link href={`/coach/athletes/${a.id}`} className="text-[14px] font-bold text-white hover:text-[#E63946] transition-colors">
-                  {a.firstName} {a.lastName}
-                </Link>
+                <div className="flex items-center gap-1.5">
+                  <Link href={`/coach/athletes/${a.id}`} className="text-[14px] font-bold text-white hover:text-[#E63946] transition-colors">
+                    {a.firstName} {a.lastName}
+                  </Link>
+                  {(thread as any)._athleteJersey && <span className="text-[12px] font-black text-[#E63946]">#{(thread as any)._athleteJersey}</span>}
+                </div>
                 <div className="flex items-center gap-2 mt-0.5">
-                  <span className="text-[11px] text-[#6b7280] font-bold uppercase">{a.position}</span>
-                  <span className="text-[11px] text-[#6b7280]">{a.niveau}</span>
+                  {a.position && <span className="text-[11px] text-[#6b7280] font-bold uppercase">{a.position}</span>}
+                  {(thread as any)._athleteSport && <span className="text-[11px] text-[#6b7280]">{(thread as any)._athleteSport}</span>}
+                  {(thread as any)._athleteGradYear && <span className="text-[11px] text-[#6b7280]">· {(thread as any)._athleteGradYear}</span>}
                 </div>
               </div>
             </div>
 
-            {/* Badges — binary verification */}
+            {/* Star rating */}
+            {a.stars > 0 && <div className="mb-3"><StarRating rating={a.stars} size="sm" /></div>}
+
+            {/* School + region */}
+            {(thread as any)._athleteSchool && (
+              <p className="text-[12px] text-[#6b7280] mb-3">{(thread as any)._athleteSchool}{(thread as any)._athleteRegion ? ` · ${(thread as any)._athleteRegion}` : ""}</p>
+            )}
+
+            {/* Badges */}
             <div className="flex flex-wrap items-center gap-1.5 mb-3">
-              {a.isVerified ? (
+              {a.isVerified && (
                 <span className="inline-flex items-center gap-1 bg-[#3B82F6]/15 text-[#3B82F6] text-[10px] font-bold px-2 py-0.5 rounded-full">
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="#3B82F6" stroke="none">
-                    <circle cx="12" cy="12" r="10" />
-                    <path d="M9 12l2 2 4-4" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-                  </svg>
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="#3B82F6" stroke="none"><circle cx="12" cy="12" r="10" /><path d="M9 12l2 2 4-4" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none" /></svg>
                   Vérifié
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-1 bg-[#6B7280]/15 text-[#6B7280] text-[10px] font-bold px-2 py-0.5 rounded-full">
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2">
-                    <circle cx="12" cy="12" r="8" />
-                  </svg>
-                  Non vérifié
-                </span>
-              )}
-              {a.favorites > 0 && (
-                <span className="inline-flex items-center gap-1 bg-[#E63946]/15 text-[#E63946] text-[10px] font-bold px-2 py-0.5 rounded-full">
-                  <svg width="9" height="9" viewBox="0 0 24 24" fill="#E63946" stroke="none">
-                    <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
-                  </svg>
-                  {a.favorites}
                 </span>
               )}
             </div>
 
-            {/* Views */}
-            {a.views > 0 && (
-              <p className="text-[11px] text-[#6b7280] mb-3">{a.views} vues ce mois</p>
+            {/* Academic */}
+            {((thread as any)._athleteGpa > 0 || (thread as any)._athleteProgramme) && (
+              <div className="pt-3 border-t border-[#2D3748] mb-3 space-y-1.5">
+                <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#6b7280]">Académique</p>
+                {(thread as any)._athleteGpa > 0 && <p className="text-[14px] font-bold text-white">{(thread as any)._athleteGpa}%</p>}
+                {(thread as any)._athleteProgramme && <p className="text-[12px] text-[#9CA3AF]">{(thread as any)._athleteProgramme}</p>}
+              </div>
+            )}
+
+            {/* Distinctions */}
+            {(thread as any)._athleteDistinctions?.length > 0 && (
+              <div className="pt-3 border-t border-[#2D3748] mb-3">
+                <div className="flex flex-wrap gap-1.5">
+                  {((thread as any)._athleteDistinctions as string[]).map((d: string) => {
+                    const labels: Record<string, string> = { captain: "Capitaine", allstar: "Étoile", team_leader: "Leader", points_leader: "Pointeur", mvp: "MVP", progression: "Progression" };
+                    return (
+                      <span key={d} className="inline-flex items-center px-2.5 py-1 rounded-full bg-[#E63946]/15 border border-[#E63946]/30 text-[11px] font-bold text-[#E63946]">
+                        {labels[d] || d}
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Preferences */}
+            {((thread as any)._athleteRelocate || (thread as any)._athletePrivate || (thread as any)._athleteAnglophone) && (
+              <div className="pt-3 border-t border-[#2D3748] mb-3 space-y-1">
+                {(thread as any)._athleteRelocate && <div className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-[#22C55E]" /><span className="text-[11px] text-[#22C55E]">Ouvert à déménager</span></div>}
+                {(thread as any)._athletePrivate && <div className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-[#22C55E]" /><span className="text-[11px] text-[#22C55E]">Ouvert au privé</span></div>}
+                {(thread as any)._athleteAnglophone && <div className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-[#22C55E]" /><span className="text-[11px] text-[#22C55E]">Ouvert anglophone</span></div>}
+              </div>
             )}
 
             {/* Profile percent */}
             <div className="flex items-center gap-2 mb-3">
               <div className="flex-1 h-1 rounded-full bg-[#2D3748] overflow-hidden">
-                <div className="h-full rounded-full" style={{
-                  width: `${a.profilePercent}%`,
-                  backgroundColor: a.isVerified ? "#3B82F6" : "#6B7280",
-                }} />
+                <div className="h-full rounded-full" style={{ width: `${a.profilePercent}%`, backgroundColor: a.isVerified ? "#3B82F6" : "#6B7280" }} />
               </div>
               <span className="text-[11px] font-bold text-[#9CA3AF]">{a.profilePercent}%</span>
             </div>
-
-            {/* Missing fields hint */}
-            {a.missingFields && a.missingFields.length > 0 && (
-              <p className="text-[10px] text-[#9CA3AF] mb-3">Manque: {a.missingFields.join(", ")}</p>
-            )}
 
             {/* Action links */}
             <div className="flex items-center gap-3 pt-3 border-t border-[#2D3748]">

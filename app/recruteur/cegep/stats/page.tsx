@@ -194,13 +194,13 @@ function CegepStatsPage() {
         return sObj?.nom || "Autre";
       };
 
-      // Consultés = unique athletes viewed per sport
-      const { data: viewsBySport } = await supabase
-        .from("recruiter_athlete_views")
-        .select("athlete_id, athletes!athlete_id(sports!sport_id(nom))")
-        .in("recruiter_id", teamIds);
+      // Consultés = unique athletes viewed per sport (both tables)
+      const [{ data: viewsBySport1 }, { data: viewsBySport2 }] = await Promise.all([
+        supabase.from("recruiter_athlete_views").select("athlete_id, athletes!athlete_id(sports!sport_id(nom))").in("recruiter_id", teamIds),
+        supabase.from("profile_views").select("athlete_id, athletes!athlete_id(sports!sport_id(nom))").in("recruiter_id", teamIds),
+      ]);
       const viewedByAthlete = new Set<string>();
-      for (const v of viewsBySport || []) {
+      for (const v of [...(viewsBySport1 || []), ...(viewsBySport2 || [])]) {
         const key = `${v.athlete_id}`;
         if (viewedByAthlete.has(key)) continue;
         viewedByAthlete.add(key);

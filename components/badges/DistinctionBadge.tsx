@@ -45,6 +45,7 @@ function ShieldSVG() {
       <path d="M40 7L71 17.5V52C71 68 55 80.5 40 88C25 80.5 9 68 9 52V17.5L40 7Z" fill="#E63946" />
       <path d="M40 7L71 17.5V52C71 68 55 80.5 40 88" fill="#D32F2F" opacity=".3" />
       <path d="M40 13L65 21.5V50C65 64 52 75 40 82C28 75 15 64 15 50V21.5L40 13Z" stroke="#fff" strokeWidth=".8" fill="none" opacity=".15" />
+      <text x="40" y="56" textAnchor="middle" fill="#8B1A1A" fontSize="32" fontWeight="800" fontFamily="var(--font-outfit), sans-serif" style={{ letterSpacing: '0.04em' }}>C</text>
       <g clipPath="url(#shield-clip)">
         <rect className="badge-shimmer" x="-20" y="-10" width="30" height="120" fill="url(#shimmer-grad-shield)" opacity=".8" />
       </g>
@@ -166,9 +167,11 @@ export default function DistinctionBadge({ type, size = "lg" }: Props) {
   const label = LABELS[type][size];
   const svgWidth = size === "lg" ? 64 : 44;
 
+  const svgHeight = size === "lg" ? 72 : 50;
+
   return (
     <div className="flex flex-col items-center" style={{ gap: size === "lg" ? 10 : 6 }}>
-      <div className="distinction-badge-wrap" style={{ width: svgWidth }}>
+      <div className="distinction-badge-wrap flex items-center justify-center" style={{ width: svgWidth, height: svgHeight }}>
         <div className="distinction-badge-glow" />
         <div className="distinction-badge-svg">
           <SVGComponent />

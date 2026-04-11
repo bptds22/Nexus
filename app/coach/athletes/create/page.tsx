@@ -148,18 +148,12 @@ const SPORTS = [
   "Baseball", "Ultimate frisbee", "Autre",
 ];
 
-const COACH_TEAM = {
-  school: "École sec. De Mortagne",
-  city: "Boucherville",
-  region: "Montérégie",
-  teams: [
-    { id: "t1", name: "Lynx Juvénile D1", level: "Juvénile D1", division: "D1", sport: "Football", league: "RSEQ", gender: "M" as const },
-    { id: "t2", name: "Lynx Cadet D2", level: "Cadet D2", division: "D2", sport: "Football", league: "RSEQ", gender: "M" as const },
-    { id: "t3", name: "Lynx Basketball Juvénile", level: "Juvénile D1", division: "D1", sport: "Basketball", league: "RSEQ", gender: "M" as const },
-    { id: "t4", name: "Lynx Basketball Féminin", level: "Juvénile D1", division: "D1", sport: "Basketball", league: "RSEQ", gender: "F" as const },
-    { id: "t5", name: "Lynx Flag Football", level: "Juvénile D1", division: "D1", sport: "Flag football", league: "RSEQ", gender: "F" as const },
-  ],
-};
+interface CoachTeamData {
+  school: string;
+  city: string;
+  region: string;
+  teams: { id: string; name: string; level: string; division: string; sport: string; league: string; gender: "M" | "F" }[];
+}
 
 const CHARACTER_TRAITS: { key: string; label: string; iconName: string }[] = [
   { key: "leadership", label: "Leadership", iconName: "leadership" },
@@ -181,7 +175,7 @@ const INITIAL_FORM: AthleteFormData = {
     identityMode: "simple",
     photo: "",
     firstName: "", lastName: "", gender: "", dateOfBirth: "", gradYear: "",
-    school: COACH_TEAM.school, city: COACH_TEAM.city, region: COACH_TEAM.region,
+    school: "", city: "", region: "",
     phone: "", email: "",
     parentName: "", parentPhone: "",
   },
@@ -245,6 +239,7 @@ export default function CreateAthletePage() {
   const [userContext, setUserContext] = useState<string | null>(null);
   const [leagueTeamId, setLeagueTeamId] = useState<string | null>(null);
   const [leagueTeamName, setLeagueTeamName] = useState("");
+  const [coachTeam, setCoachTeam] = useState<CoachTeamData>({ school: "", city: "", region: "", teams: [] });
 
   // Detect league context on mount
   useEffect(() => {
@@ -255,11 +250,54 @@ export default function CreateAthletePage() {
 
       const { data: userProfile } = await supabase
         .from("users")
-        .select("context")
+        .select("context, school_id, schools!school_id(name, city, region)")
         .eq("id", authUser.id)
         .single();
 
       console.log("[CreateAthlete] User context:", userProfile?.context);
+
+      // Load coach's school + teams
+      if (userProfile?.school_id) {
+        const schoolRel = (userProfile as any).schools;
+        const school = Array.isArray(schoolRel) ? schoolRel[0] : schoolRel;
+        const schoolName = school?.name || "";
+        const cityName = school?.city || "";
+        const regionName = school?.region || "";
+
+        const { data: teams } = await supabase
+          .from("teams")
+          .select("id, name, division, league, age_group, season, sport_id, sports!sport_id(nom)")
+          .eq("school_id", userProfile.school_id)
+          .eq("is_active", true);
+
+        console.log("[CreateAthlete] Loaded teams:", teams?.length);
+
+        setCoachTeam({
+          school: schoolName,
+          city: cityName,
+          region: regionName,
+          teams: (teams || []).map((t: any) => {
+            const sportRel = t.sports;
+            const sport = Array.isArray(sportRel) ? sportRel[0] : sportRel;
+            const level = [t.age_group, t.division].filter(Boolean).join(" ");
+            return {
+              id: t.id,
+              name: t.name || "",
+              level: level || "",
+              division: t.division || "",
+              sport: sport?.nom || "",
+              league: t.league || "RSEQ",
+              gender: "M" as "M" | "F",
+            };
+          }),
+        });
+
+        // Set school info on the form
+        setForm((prev) => ({
+          ...prev,
+          identity: { ...prev.identity, school: schoolName, city: cityName, region: regionName },
+        }));
+      }
 
       if (userProfile?.context === "ligue_civile") {
         setUserContext("ligue_civile");
@@ -957,19 +995,12 @@ export default function CreateAthletePage() {
 
               <div className="sm:col-span-2">
                 <label className={labelCls}>Équipe{req}
-                  {d.selectedTeamId && (() => { const t = COACH_TEAM.teams.find((t) => t.id === d.selectedTeamId); return t ? <span className="ml-1.5 text-[#E63946] normal-case tracking-normal">({t.gender === "M" ? "Masculin" : "Féminin"})</span> : null; })()}
+                  {d.selectedTeamId && (() => { const t = coachTeam.teams.find((t) => t.id === d.selectedTeamId); return t ? <span className="ml-1.5 text-[#E63946] normal-case tracking-normal">({t.gender === "M" ? "Masculin" : "Féminin"})</span> : null; })()}
                 </label>
-                {COACH_TEAM.teams.length === 1 ? (
-                  <div className="relative">
-                    <input type="text" readOnly value={COACH_TEAM.teams[0].name} aria-label="Équipe" className={`${inputCls} !bg-[#0d0f13] cursor-not-allowed opacity-80`} />
-                    <svg className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6b7280]" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0110 0v4" /></svg>
-                  </div>
-                ) : (
-                  <NxSelect aria-label="Équipe" value={d.selectedTeamId}
-                    onChange={(v) => { const team = COACH_TEAM.teams.find((t) => t.id === v); updateSports("selectedTeamId", v); updateSports("currentTeam", team?.name || ""); updateSports("teamLevel", team?.level || ""); updateSports("teamDivision", team?.division || ""); updateSports("league", team?.league || ""); }}
-                    hasError={isFieldEmpty(d.selectedTeamId)} placeholder="Sélectionner une équipe"
-                    options={COACH_TEAM.teams.map((t) => ({ value: t.id, label: `${t.name} — ${t.level}`, group: t.gender === "M" ? "Masculin" : "Féminin" }))} />
-                )}
+                <NxSelect aria-label="Équipe" value={d.selectedTeamId}
+                  onChange={(v) => { const team = coachTeam.teams.find((t) => t.id === v); updateSports("selectedTeamId", v); updateSports("currentTeam", team?.name || ""); updateSports("teamLevel", team?.level || ""); updateSports("teamDivision", team?.division || ""); updateSports("league", team?.league || ""); }}
+                  placeholder="Sélectionner une équipe"
+                  options={coachTeam.teams.map((t) => ({ value: t.id, label: `${t.name}${t.level ? ` — ${t.level}` : ""}` }))} />
               </div>
 
               {d.selectedTeamId && (

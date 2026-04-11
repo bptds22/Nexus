@@ -188,16 +188,21 @@ export default function RecruteurTableauDeBordPage() {
       });
       console.log("[Dashboard] kpi:", { messagesSent, responsesReceived });
 
-      // === Trending Athletes (most viewed this week) ===
-      const { data: viewsData } = await supabase
-        .from("recruiter_athlete_views")
-        .select("athlete_id, athletes!athlete_id(first_name, last_name, cote_globale_entraineur, sports!sport_id(nom), positions!position_id(abreviation), schools!school_id(name))")
-        .gte("viewed_at", sevenDaysAgo);
+      // === Trending Athletes (most viewed this week — both tables) ===
+      const [{ data: viewsData }, { data: newViewsData }] = await Promise.all([
+        supabase.from("recruiter_athlete_views")
+          .select("athlete_id, athletes!athlete_id(first_name, last_name, cote_globale_entraineur, sports!sport_id(nom), positions!position_id(abreviation), schools!school_id(name))")
+          .gte("viewed_at", sevenDaysAgo),
+        supabase.from("profile_views")
+          .select("athlete_id, athletes!athlete_id(first_name, last_name, cote_globale_entraineur, sports!sport_id(nom), positions!position_id(abreviation), schools!school_id(name))")
+          .gte("viewed_at", sevenDaysAgo),
+      ]);
 
-      if (viewsData && viewsData.length > 0) {
+      const allViews = [...(viewsData || []), ...(newViewsData || [])];
+      if (allViews.length > 0) {
         // Group by athlete_id, count views
-        const viewMap = new Map<string, { count: number; row: typeof viewsData[0] }>();
-        for (const v of viewsData) {
+        const viewMap = new Map<string, { count: number; row: typeof allViews[0] }>();
+        for (const v of allViews) {
           const existing = viewMap.get(v.athlete_id);
           if (existing) { existing.count++; }
           else { viewMap.set(v.athlete_id, { count: 1, row: v }); }

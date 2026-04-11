@@ -34,15 +34,27 @@ const SPORT_DISPLAY: Record<string, string> = Object.fromEntries(
   Object.entries(SPORT_NAME_MAP).map(([display, key]) => [key, display])
 );
 
-const CHARACTER_TRAITS: { key: keyof AthleteTraitRatings; label: string; iconName: string }[] = [
-  { key: "leadership", label: "Leadership", iconName: "leadership" },
-  { key: "discipline", label: "Discipline", iconName: "discipline" },
-  { key: "coachability", label: "Coachabilité", iconName: "coachability" },
-  { key: "gameIQ", label: "Intelligence de jeu", iconName: "gameIQ" },
-  { key: "competitiveness", label: "Compétitivité", iconName: "competitiveness" },
-  { key: "teamwork", label: "Esprit d'équipe", iconName: "teamwork" },
-  { key: "resilience", label: "Résilience", iconName: "resilience" },
-  { key: "attitude", label: "Attitude", iconName: "attitude" },
+const TRAIT_GROUPS: { title: string; traits: { key: keyof AthleteTraitRatings; label: string }[] }[] = [
+  { title: "Capacités athlétiques", traits: [
+    { key: "speed", label: "Vitesse / Explosivité" },
+    { key: "power", label: "Force / Puissance" },
+    { key: "endurance", label: "Endurance / Cardio" },
+    { key: "agility", label: "Agilité / Coordination" },
+  ]},
+  { title: "Intelligence sportive", traits: [
+    { key: "gameVision", label: "Vision du jeu" },
+    { key: "tactics", label: "Sens tactique" },
+  ]},
+  { title: "Caractère", traits: [
+    { key: "leadership", label: "Leadership" },
+    { key: "discipline", label: "Discipline" },
+    { key: "coachability", label: "Coachabilité" },
+    { key: "gameIQ", label: "Intelligence de jeu" },
+    { key: "competitiveness", label: "Compétitivité" },
+    { key: "teamwork", label: "Esprit d'équipe" },
+    { key: "resilience", label: "Résilience" },
+    { key: "attitude", label: "Attitude / Mentalité" },
+  ]},
 ];
 
 const FLAG_REASONS = [
@@ -621,12 +633,13 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
   useEffect(() => {
     const loadCounts = async () => {
       const supabase = createClient();
-      const [favRes, viewRes] = await Promise.all([
+      const [favRes, viewRes1, viewRes2] = await Promise.all([
         supabase.from("recruiter_favorites").select("*", { count: "exact", head: true }).eq("athlete_id", id),
         supabase.from("recruiter_athlete_views").select("*", { count: "exact", head: true }).eq("athlete_id", id),
+        supabase.from("profile_views").select("*", { count: "exact", head: true }).eq("athlete_id", id),
       ]);
       setFavCount(favRes.count ?? 0);
-      setViewCount(viewRes.count ?? 0);
+      setViewCount((viewRes1.count ?? 0) + (viewRes2.count ?? 0));
     };
     loadCounts();
   }, [id, isFavorited]);
@@ -920,22 +933,27 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
                     </div>
 
                     {a.traitRatings && (
-                      <div className="border-t border-[#2D3748]/50 pt-4">
-                        <p className="text-[11px] font-bold tracking-[0.15em] uppercase text-[#6b7280] mb-3">Détail par trait</p>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1">
-                          {CHARACTER_TRAITS.map((trait) => {
-                            const val = a.traitRatings ? a.traitRatings[trait.key] : 0;
-                            return (
-                              <div key={trait.key} className="flex items-center justify-between py-2.5 border-b border-[#2D3748]/30">
-                                <span className="text-[13px] text-[#c8c8cc] flex items-center gap-2">
-                                  <NxIcon name={trait.iconName} size={15} className="text-[#6B7280]" />
-                                  {trait.label}
-                                </span>
-                                {val > 0 ? <StarRating rating={val} size="sm" /> : <span className="text-[13px] text-[#4a4d56]">—</span>}
+                      <div className="border-t border-[#2D3748]/50 pt-4 space-y-5">
+                        {TRAIT_GROUPS.map((group) => {
+                          const hasAny = group.traits.some((t) => (a.traitRatings?.[t.key] || 0) > 0);
+                          if (!hasAny) return null;
+                          return (
+                            <div key={group.title}>
+                              <p className="text-[11px] font-bold tracking-[0.15em] uppercase text-[#6b7280] mb-3">{group.title}</p>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1">
+                                {group.traits.map((trait) => {
+                                  const val = a.traitRatings ? a.traitRatings[trait.key] : 0;
+                                  return (
+                                    <div key={trait.key} className="flex items-center justify-between py-2.5 border-b border-[#2D3748]/30">
+                                      <span className="text-[13px] text-[#c8c8cc]">{trait.label}</span>
+                                      {val > 0 ? <StarRating rating={val} size="sm" /> : <span className="text-[13px] text-[#4a4d56]">—</span>}
+                                    </div>
+                                  );
+                                })}
                               </div>
-                            );
-                          })}
-                        </div>
+                            </div>
+                          );
+                        })}
                         {traitAvg !== null && (
                           <div className="mt-4 pt-4 border-t border-[#2D3748]/50 flex items-center justify-between">
                             <span className="text-[13px] font-bold text-[#9CA3AF] uppercase tracking-wider">Moyenne des traits</span>
@@ -1263,24 +1281,70 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
         )}
       </div>
 
-      {/* ══════════ STICKY CTA — CONTACTER LE COACH ══════════ */}
+      {/* ══════════ STICKY CTA BAR ══════════ */}
       <div className="fixed bottom-0 left-0 right-0 z-40 md:bottom-6 md:left-auto md:right-6 md:w-auto">
-        <div className="md:hidden bg-[#111317]/95 backdrop-blur-sm border-t border-[#2D3748] px-4 py-3">
-          <Link href={`/recruteur/messages/new?athlete=${a.id}`}
-            className="w-full flex items-center justify-center gap-2.5 bg-[#E63946] text-white rounded-xl px-6 py-3.5 font-head font-bold text-[14px] uppercase tracking-widest transition-all hover:bg-[#D42B22] active:scale-[0.98] shadow-[0_0_20px_rgba(230,57,70,0.3)]">
+        {/* Mobile — full-width bar */}
+        <div className="md:hidden bg-[#111317]/95 backdrop-blur-sm border-t border-[#2D3748] px-4 py-3 flex items-center gap-2">
+          <Link href={`/recruteur/messages/nouveau?athlete=${a.id}`}
+            className="flex-1 flex items-center justify-center gap-2.5 bg-[#E63946] text-white rounded-xl px-6 py-3.5 font-head font-bold text-[14px] uppercase tracking-widest transition-all hover:bg-[#D42B22] active:scale-[0.98] shadow-[0_0_20px_rgba(230,57,70,0.3)]">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
               <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" />
             </svg>
             Contacter le coach
           </Link>
+          <button type="button" onClick={async () => {
+            const supabase = createClient();
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session?.user) return;
+            const userId = session.user.id;
+            const { data: existing } = await supabase.from("recruiter_favorites").select("id").eq("recruiter_id", userId).eq("athlete_id", id).maybeSingle();
+            if (existing) { await supabase.from("recruiter_favorites").delete().eq("id", existing.id); setIsFavorited(false); }
+            else { await supabase.from("recruiter_favorites").insert({ recruiter_id: userId, athlete_id: id }); setIsFavorited(true); }
+          }} title={isFavorited ? "Retirer des favoris" : "Ajouter aux favoris"}
+            className={`w-12 h-12 rounded-xl flex items-center justify-center border transition-colors ${isFavorited ? "bg-[#E63946]/10 border-[#E63946]/30" : "bg-[#1A1D24] border-[#2D3748]"}`}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill={isFavorited ? "#E63946" : "none"} stroke={isFavorited ? "#E63946" : "#6B7280"} strokeWidth="2" strokeLinecap="round">
+              <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
+            </svg>
+          </button>
+          <button type="button" onClick={() => { if (!flagSubmitted) setShowFlagModal(true); }}
+            title={flagSubmitted ? "Signalé" : "Signaler"}
+            className={`w-12 h-12 rounded-xl flex items-center justify-center border transition-colors ${flagSubmitted ? "bg-[#F59E0B]/10 border-[#F59E0B]/30" : "bg-[#1A1D24] border-[#2D3748]"}`}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill={flagSubmitted ? "#F59E0B" : "none"} stroke={flagSubmitted ? "#F59E0B" : "#6B7280"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" /><line x1="4" y1="22" x2="4" y2="15" />
+            </svg>
+          </button>
         </div>
-        <Link href={`/recruteur/messages/new?athlete=${a.id}`}
-          className="hidden md:flex items-center gap-2.5 bg-[#E63946] text-white rounded-xl px-8 py-4 font-head font-bold text-[14px] uppercase tracking-widest min-w-[220px] justify-center transition-all hover:bg-[#D42B22] hover:-translate-y-0.5 hover:shadow-[0_0_30px_rgba(230,57,70,0.4)] active:scale-[0.98] shadow-[0_4px_20px_rgba(230,57,70,0.3)]">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" />
-          </svg>
-          Contacter le coach
-        </Link>
+        {/* Desktop — floating pill */}
+        <div className="hidden md:flex items-center gap-2">
+          <Link href={`/recruteur/messages/nouveau?athlete=${a.id}`}
+            className="flex items-center gap-2.5 bg-[#E63946] text-white rounded-xl px-8 py-4 font-head font-bold text-[14px] uppercase tracking-widest justify-center transition-all hover:bg-[#D42B22] hover:-translate-y-0.5 hover:shadow-[0_0_30px_rgba(230,57,70,0.4)] active:scale-[0.98] shadow-[0_4px_20px_rgba(230,57,70,0.3)]">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" />
+            </svg>
+            Contacter le coach
+          </Link>
+          <button type="button" onClick={async () => {
+            const supabase = createClient();
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session?.user) return;
+            const userId = session.user.id;
+            const { data: existing } = await supabase.from("recruiter_favorites").select("id").eq("recruiter_id", userId).eq("athlete_id", id).maybeSingle();
+            if (existing) { await supabase.from("recruiter_favorites").delete().eq("id", existing.id); setIsFavorited(false); }
+            else { await supabase.from("recruiter_favorites").insert({ recruiter_id: userId, athlete_id: id }); setIsFavorited(true); }
+          }} className={`w-12 h-12 rounded-xl flex items-center justify-center border transition-all hover:-translate-y-0.5 ${isFavorited ? "bg-[#E63946]/10 border-[#E63946]/30" : "bg-[#1A1D24] border-[#2D3748] hover:border-[#E63946]/30"}`}
+            title={isFavorited ? "Retirer des favoris" : "Ajouter aux favoris"}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill={isFavorited ? "#E63946" : "none"} stroke={isFavorited ? "#E63946" : "#6B7280"} strokeWidth="2" strokeLinecap="round">
+              <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
+            </svg>
+          </button>
+          <button type="button" onClick={() => { if (!flagSubmitted) setShowFlagModal(true); }}
+            className={`w-12 h-12 rounded-xl flex items-center justify-center border transition-all hover:-translate-y-0.5 ${flagSubmitted ? "bg-[#F59E0B]/10 border-[#F59E0B]/30" : "bg-[#1A1D24] border-[#2D3748] hover:border-[#F59E0B]/30"}`}
+            title={flagSubmitted ? "Signalé" : "Signaler"}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill={flagSubmitted ? "#F59E0B" : "none"} stroke={flagSubmitted ? "#F59E0B" : "#6B7280"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" /><line x1="4" y1="22" x2="4" y2="15" />
+            </svg>
+          </button>
+        </div>
       </div>
 
       {/* ══════════ COMPOSE INTRO MODAL ══════════ */}

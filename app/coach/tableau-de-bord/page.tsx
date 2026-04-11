@@ -123,23 +123,14 @@ export default function TableauDeBordPage() {
       let viewsThisMonth = 0;
       let viewsLastMonth = 0;
       if (coachAthleteIds.length > 0) {
-        const { count: thisMonthCount } = await supabase
-          .from("recruiter_athlete_views")
-          .select("id", { count: "exact", head: true })
-          .in("athlete_id", coachAthleteIds)
-          .gte("viewed_at", firstOfThisMonth)
-          .lt("viewed_at", firstOfNextMonth);
-        viewsThisMonth = thisMonthCount || 0;
-        console.log("Dashboard views this month:", thisMonthCount);
-
-        const { count: lastMonthCount } = await supabase
-          .from("recruiter_athlete_views")
-          .select("id", { count: "exact", head: true })
-          .in("athlete_id", coachAthleteIds)
-          .gte("viewed_at", firstOfLastMonth)
-          .lt("viewed_at", firstOfThisMonth);
-        viewsLastMonth = lastMonthCount || 0;
-        console.log("Dashboard views last month:", lastMonthCount);
+        const [{ count: legacyThis }, { count: newThis }, { count: legacyLast }, { count: newLast }] = await Promise.all([
+          supabase.from("recruiter_athlete_views").select("id", { count: "exact", head: true }).in("athlete_id", coachAthleteIds).gte("viewed_at", firstOfThisMonth).lt("viewed_at", firstOfNextMonth),
+          supabase.from("profile_views").select("id", { count: "exact", head: true }).in("athlete_id", coachAthleteIds).gte("viewed_at", firstOfThisMonth).lt("viewed_at", firstOfNextMonth),
+          supabase.from("recruiter_athlete_views").select("id", { count: "exact", head: true }).in("athlete_id", coachAthleteIds).gte("viewed_at", firstOfLastMonth).lt("viewed_at", firstOfThisMonth),
+          supabase.from("profile_views").select("id", { count: "exact", head: true }).in("athlete_id", coachAthleteIds).gte("viewed_at", firstOfLastMonth).lt("viewed_at", firstOfThisMonth),
+        ]);
+        viewsThisMonth = (legacyThis || 0) + (newThis || 0);
+        viewsLastMonth = (legacyLast || 0) + (newLast || 0);
       }
 
       // Calculate trend — always produce a value

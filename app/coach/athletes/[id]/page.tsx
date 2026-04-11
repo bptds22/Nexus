@@ -27,15 +27,27 @@ const SPORT_DISPLAY: Record<string, string> = Object.fromEntries(
   Object.entries(SPORT_NAME_MAP).map(([display, key]) => [key, display])
 );
 
-const CHARACTER_TRAITS: { key: keyof AthleteTraitRatings; label: string; iconName: string }[] = [
-  { key: "leadership", label: "Leadership", iconName: "leadership" },
-  { key: "discipline", label: "Discipline", iconName: "discipline" },
-  { key: "coachability", label: "Coachabilité", iconName: "coachability" },
-  { key: "gameIQ", label: "Intelligence de jeu", iconName: "gameIQ" },
-  { key: "competitiveness", label: "Compétitivité", iconName: "competitiveness" },
-  { key: "teamwork", label: "Esprit d'équipe", iconName: "teamwork" },
-  { key: "resilience", label: "Résilience", iconName: "resilience" },
-  { key: "attitude", label: "Attitude", iconName: "attitude" },
+const TRAIT_GROUPS: { title: string; traits: { key: keyof AthleteTraitRatings; label: string }[] }[] = [
+  { title: "Capacités athlétiques", traits: [
+    { key: "speed", label: "Vitesse / Explosivité" },
+    { key: "power", label: "Force / Puissance" },
+    { key: "endurance", label: "Endurance / Cardio" },
+    { key: "agility", label: "Agilité / Coordination" },
+  ]},
+  { title: "Intelligence sportive", traits: [
+    { key: "gameVision", label: "Vision du jeu" },
+    { key: "tactics", label: "Sens tactique" },
+  ]},
+  { title: "Caractère", traits: [
+    { key: "leadership", label: "Leadership" },
+    { key: "discipline", label: "Discipline" },
+    { key: "coachability", label: "Coachabilité" },
+    { key: "gameIQ", label: "Intelligence de jeu" },
+    { key: "competitiveness", label: "Compétitivité" },
+    { key: "teamwork", label: "Esprit d'équipe" },
+    { key: "resilience", label: "Résilience" },
+    { key: "attitude", label: "Attitude / Mentalité" },
+  ]},
 ];
 
 /* ── Shared components (same as recruiter view) ───────────────── */
@@ -295,19 +307,16 @@ export default function CoachAthleteProfilePage() {
         setDbDistinctions(filtered);
       }
 
-      // Engagement metrics
-      const { count: vc } = await supabase
-        .from("recruiter_athlete_views")
-        .select("*", { count: "exact", head: true })
-        .eq("athlete_id", id);
+      // Engagement metrics (from both legacy + new view tables)
+      const [{ count: vc1 }, { count: vc2 }, { count: fc }] = await Promise.all([
+        supabase.from("recruiter_athlete_views").select("*", { count: "exact", head: true }).eq("athlete_id", id),
+        supabase.from("profile_views").select("*", { count: "exact", head: true }).eq("athlete_id", id),
+        supabase.from("recruiter_favorites").select("*", { count: "exact", head: true }).eq("athlete_id", id),
+      ]);
 
-      const { count: fc } = await supabase
-        .from("recruiter_favorites")
-        .select("*", { count: "exact", head: true })
-        .eq("athlete_id", id);
-
-      console.log("Engagement metrics:", { viewCount: vc, favoriteCount: fc });
-      setViewCount(vc || 0);
+      const totalViews = (vc1 || 0) + (vc2 || 0);
+      console.log("Engagement metrics:", { legacyViews: vc1, newViews: vc2, totalViews, favoriteCount: fc });
+      setViewCount(totalViews);
       setFavoriteCount(fc || 0);
 
       // Global recruitment status
@@ -771,22 +780,27 @@ export default function CoachAthleteProfilePage() {
                   </div>
 
                   {a.traitRatings && (
-                    <div className="border-t border-[#2D3748]/50 pt-4">
-                      <p className="text-[11px] font-bold tracking-[0.15em] uppercase text-[#6b7280] mb-3">Détail par trait</p>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1">
-                        {CHARACTER_TRAITS.map((trait) => {
-                          const val = a.traitRatings ? a.traitRatings[trait.key] : 0;
-                          return (
-                            <div key={trait.key} className="flex items-center justify-between py-2.5 border-b border-[#2D3748]/30">
-                              <span className="text-[13px] text-[#c8c8cc] flex items-center gap-2">
-                                <NxIcon name={trait.iconName} size={15} className="text-[#6B7280]" />
-                                {trait.label}
-                              </span>
-                              {val > 0 ? <StarRating rating={val} size="sm" /> : <span className="text-[13px] text-[#4a4d56]">—</span>}
+                    <div className="border-t border-[#2D3748]/50 pt-4 space-y-5">
+                      {TRAIT_GROUPS.map((group) => {
+                        const hasAny = group.traits.some((t) => (a.traitRatings?.[t.key] || 0) > 0);
+                        if (!hasAny) return null;
+                        return (
+                          <div key={group.title}>
+                            <p className="text-[11px] font-bold tracking-[0.15em] uppercase text-[#6b7280] mb-3">{group.title}</p>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1">
+                              {group.traits.map((trait) => {
+                                const val = a.traitRatings ? a.traitRatings[trait.key] : 0;
+                                return (
+                                  <div key={trait.key} className="flex items-center justify-between py-2.5 border-b border-[#2D3748]/30">
+                                    <span className="text-[13px] text-[#c8c8cc]">{trait.label}</span>
+                                    {val > 0 ? <StarRating rating={val} size="sm" /> : <span className="text-[13px] text-[#4a4d56]">—</span>}
+                                  </div>
+                                );
+                              })}
                             </div>
-                          );
-                        })}
-                      </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
 

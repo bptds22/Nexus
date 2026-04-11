@@ -127,9 +127,9 @@ function AthleteSearchCard({ a, onToggleFav }: { a: ExtendedAthlete; onToggleFav
         {/* Badges */}
         {a.badges.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mt-2">
-            {a.badges.slice(0, 2).map((b) => (
-              <span key={b.badgeId} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#E63946]/15 border border-[#E63946]/30 text-[12px] font-bold text-[#E63946]">
-                <NxIcon name={b.icon} size={12} className="text-[#E63946]" /> {b.label}
+            {a.badges.map((b) => (
+              <span key={b.badgeId} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#E63946]/15 border border-[#E63946]/30 text-[10px] font-bold text-[#E63946]">
+                <NxIcon name={b.icon} size={10} className="text-[#E63946]" /> {b.label}
               </span>
             ))}
           </div>
@@ -220,9 +220,9 @@ function AthleteSearchRow({ a, onToggleFav }: { a: ExtendedAthlete; onToggleFav:
 
       {/* Badges */}
       <div className="flex gap-1.5 flex-1 min-w-0">
-        {a.badges.slice(0, 2).map((b) => (
-          <span key={b.badgeId} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#E63946]/15 border border-[#E63946]/30 text-[11px] font-bold text-[#E63946] whitespace-nowrap">
-            <NxIcon name={b.icon} size={12} className="text-[#E63946]" /> {b.label}
+        {a.badges.map((b) => (
+          <span key={b.badgeId} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#E63946]/15 border border-[#E63946]/30 text-[10px] font-bold text-[#E63946] whitespace-nowrap">
+            <NxIcon name={b.icon} size={10} className="text-[#E63946]" /> {b.label}
           </span>
         ))}
       </div>

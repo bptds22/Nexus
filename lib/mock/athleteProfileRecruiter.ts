@@ -65,14 +65,8 @@ export const mockAthleteProfileFull: AthleteProfileRecruiterView = {
   coachSchool: "É.S. Saint-Jean-Eudes",
   coachReport: "Marc-Antoine a mené notre ligue avec 18 touchés cette saison. Capitaine unanime, premier au gymnase, dernier à quitter. Il lit les défenses comme un vétéran. Je le recommande sans hésitation pour tout programme D1.",
   traitRatings: {
-    leadership: 5,
-    discipline: 4,
-    coachability: 5,
-    gameIQ: 4,
-    competitiveness: 5,
-    teamwork: 4,
-    resilience: 4,
-    attitude: 5,
+    speed: 4, power: 4, endurance: 3, agility: 5, gameVision: 4, tactics: 4,
+    leadership: 5, discipline: 4, coachability: 5, gameIQ: 4, competitiveness: 5, teamwork: 4, resilience: 4, attitude: 5,
   },
   overallRating: 5,
   distinctions: [
@@ -250,14 +244,8 @@ export const mockBrunoProfile: AthleteProfileRecruiterView = {
   coachSchool: "É.S. Saint-Jean-Eudes",
   coachReport: "Bruno a mené notre ligue avec 58 plaques cette saison. Capitaine unanime, premier au gymnase, dernier à quitter. Il lit les offensives comme un vétéran. Je le recommande sans hésitation pour tout programme D1.",
   traitRatings: {
-    leadership: 5,
-    discipline: 5,
-    coachability: 5,
-    gameIQ: 5,
-    competitiveness: 5,
-    teamwork: 5,
-    resilience: 4,
-    attitude: 5,
+    speed: 4, power: 5, endurance: 4, agility: 4, gameVision: 5, tactics: 4,
+    leadership: 5, discipline: 5, coachability: 5, gameIQ: 5, competitiveness: 5, teamwork: 5, resilience: 4, attitude: 5,
   },
   overallRating: 5,
   distinctions: [

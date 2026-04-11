@@ -32,17 +32,19 @@ function relativeTime(isoStr: string): string {
   return d.toLocaleDateString("fr-CA", opts);
 }
 
-type FilterPreset = "tous" | "reponse_recue" | "envoye" | "archive";
+type FilterPreset = "tous" | "nouveau" | "reponse_recue" | "envoye" | "archive";
 
 const PILLS: { key: FilterPreset; label: string }[] = [
   { key: "tous", label: "Tous" },
+  { key: "nouveau", label: "Nouveau" },
   { key: "reponse_recue", label: "Réponse reçue" },
   { key: "envoye", label: "Envoyé" },
   { key: "archive", label: "Archivé" },
 ];
 
 function mapUrlFilter(p: string | null): FilterPreset {
-  if (p === "nouveau" || p === "reponse_recue") return "reponse_recue";
+  if (p === "nouveau") return "nouveau";
+  if (p === "reponse_recue") return "reponse_recue";
   if (p === "envoye") return "envoye";
   if (p === "archive") return "archive";
   return "tous";
@@ -87,6 +89,7 @@ function ThreadCard({ thread: t }: { thread: ConversationThread }) {
               id={r.id}
               name={`${r.firstName} ${r.lastName}`}
               portal="coach"
+              nested
               className={`text-[15px] truncate ${t.unread ? "" : "!text-[#e0e0e0]"}`}
             />
             <span className="text-[12px] text-[#6b7280] shrink-0 hidden sm:inline">{r.cegep} · {r.division}</span>
@@ -97,15 +100,20 @@ function ThreadCard({ thread: t }: { thread: ConversationThread }) {
 
       {/* Athlete context */}
       <div className="hidden md:flex items-center gap-2 shrink-0 w-[200px]">
-        <div className="w-8 h-8 rounded-full bg-[#111317] border border-[#2D3748] flex items-center justify-center shrink-0">
-          <span className="text-[9px] font-bold text-[#6b7280]">{a.firstName[0]}{a.lastName[0]}</span>
-        </div>
+        {(a as any).photoUrl ? (
+          <img src={(a as any).photoUrl} alt="" className="w-8 h-8 rounded-full object-cover shrink-0" />
+        ) : (
+          <div className="w-8 h-8 rounded-full bg-[#111317] border border-[#2D3748] flex items-center justify-center shrink-0">
+            <span className="text-[9px] font-bold text-[#6b7280]">{a.firstName[0]}{a.lastName[0]}</span>
+          </div>
+        )}
         <div className="min-w-0">
           <EntityLink
             type="athlete"
             id={a.id}
             name={`${a.firstName} ${a.lastName}`}
             portal="coach"
+            nested
             className="text-[13px] !font-semibold !text-[#9CA3AF] truncate"
           />
           <div className="flex items-center gap-1.5">
@@ -171,7 +179,7 @@ function DemandesContent() {
         // Fetch conversations for this coach
         const { data: conversations, error: convError } = await supabase
           .from("conversations")
-          .select("id, recruiter_id, coach_id, athlete_id, status, last_message_at, unread_count, created_at, users!recruiter_id(id, first_name, last_name, email, school_id, schools!school_id(name)), athletes!athlete_id(id, first_name, last_name, verified, cote_globale_entraineur, profile_completion, annee_diplomation, positions!position_id(nom, abreviation))")
+          .select("id, recruiter_id, coach_id, athlete_id, status, last_message_at, unread_count, created_at, athletes!athlete_id(id, first_name, last_name, verified, cote_globale_entraineur, profile_completion, annee_diplomation, photo_url, positions!position_id(nom, abreviation))")
           .eq("coach_id", user.id)
           .order("last_message_at", { ascending: false });
 
@@ -187,38 +195,68 @@ function DemandesContent() {
         const conversationIds = conversations.map((c: any) => c.id);
         const { data: latestMessages, error: msgError } = await supabase
           .from("messages")
-          .select("content, created_at, conversation_id")
+          .select("content, created_at, conversation_id, sender_id")
           .in("conversation_id", conversationIds)
           .order("created_at", { ascending: false });
 
         console.log("[Demandes] messages:", latestMessages, "error:", msgError);
 
-        // Build a map: conversation_id -> first (latest) message
+        // Build maps: latest message + who replied per conversation
         const latestMsgMap: Record<string, { content: string; created_at: string }> = {};
+        const coachRepliedMap: Record<string, boolean> = {};
+        const recruiterRepliedMap: Record<string, boolean> = {};
         if (latestMessages) {
-          for (const msg of latestMessages) {
+          for (const msg of latestMessages as any[]) {
             if (!latestMsgMap[msg.conversation_id]) {
               latestMsgMap[msg.conversation_id] = msg;
             }
+            // Track who has sent messages
+            const conv = conversations.find((c: any) => c.id === msg.conversation_id);
+            if (conv && msg.sender_id === (conv as any).coach_id) coachRepliedMap[msg.conversation_id] = true;
+            if (conv && msg.sender_id === (conv as any).recruiter_id) recruiterRepliedMap[msg.conversation_id] = true;
+          }
+        }
+
+        // Load recruiter info separately (avoids ambiguous FK on users)
+        const recruiterIds = [...new Set(conversations.map((c: any) => c.recruiter_id).filter(Boolean))];
+        const recruiterMap = new Map<string, { first_name: string; last_name: string; email: string; school_name: string }>();
+        if (recruiterIds.length > 0) {
+          const { data: recruiters } = await supabase
+            .from("users")
+            .select("id, first_name, last_name, email, school_id")
+            .in("id", recruiterIds);
+          // Load school names separately
+          const schoolIds = [...new Set((recruiters || []).map((r: any) => r.school_id).filter(Boolean))];
+          const schoolNameMap = new Map<string, string>();
+          if (schoolIds.length > 0) {
+            const { data: schools } = await supabase.from("schools").select("id, name").in("id", schoolIds);
+            for (const s of schools || []) schoolNameMap.set(s.id, s.name);
+          }
+          for (const r of recruiters || []) {
+            recruiterMap.set(r.id, {
+              first_name: (r.first_name as string) || "",
+              last_name: (r.last_name as string) || "",
+              email: (r.email as string) || "",
+              school_name: schoolNameMap.get(r.school_id) || "",
+            });
           }
         }
 
         // Map to ConversationThread
         const mapped: ConversationThread[] = conversations.map((c: any) => {
-          const recruiterUser = c.users;
+          const recruiterUser = recruiterMap.get(c.recruiter_id);
           const athleteData = c.athletes;
           const position = athleteData?.positions;
-          const school = recruiterUser?.schools;
           const latestMsg = latestMsgMap[c.id];
 
           return {
             id: c.id,
             recruiter: {
-              id: recruiterUser?.id || c.recruiter_id,
+              id: c.recruiter_id,
               firstName: recruiterUser?.first_name || "",
               lastName: recruiterUser?.last_name || "",
               title: "",
-              cegep: school?.name || "",
+              cegep: recruiterUser?.school_name || "",
               cegepTeamName: "",
               division: "Div. 1" as const,
               sport: "",
@@ -230,6 +268,7 @@ function DemandesContent() {
               id: athleteData?.id || c.athlete_id,
               firstName: athleteData?.first_name || "",
               lastName: athleteData?.last_name || "",
+              photoUrl: athleteData?.photo_url || "",
               position: position?.abreviation || position?.nom || "",
               niveau: "Sec. 5" as const,
               profilePercent: athleteData?.profile_completion ?? 0,
@@ -239,7 +278,7 @@ function DemandesContent() {
               stars: athleteData?.cote_globale_entraineur ?? 0,
             },
             messages: [],
-            status: mapDbStatus(c.status),
+            status: mapDbStatus(c.status, coachRepliedMap[c.id], recruiterRepliedMap[c.id]),
             lastMessagePreview: latestMsg?.content ? latestMsg.content.slice(0, 80) + (latestMsg.content.length > 80 ? "..." : "") : "",
             lastMessageTime: latestMsg?.created_at || c.last_message_at || c.created_at,
             unread: (c.unread_count ?? 0) > 0,
@@ -274,20 +313,23 @@ function DemandesContent() {
 
     // Filter
     switch (activeFilter) {
+      case "nouveau":
+        list = list.filter((t) => t.status === "nouveau");
+        break;
       case "reponse_recue":
         list = list.filter((t) => t.status === "reponse_recue");
         break;
       case "envoye":
-        list = list.filter((t) => t.status === "envoye");
+        list = list.filter((t) => t.status === "envoye" || t.status === "repondu");
         break;
       case "archive":
         list = list.filter((t) => t.status === "archive");
         break;
     }
 
-    // Sort: reponse_recue first, then by most recent
+    // Sort: nouveau first, then reponse_recue, then by most recent
     const statusPriority: Record<ThreadStatus, number> = {
-      reponse_recue: 0, envoye: 1, archive: 2,
+      nouveau: 0, reponse_recue: 1, repondu: 2, envoye: 3, archive: 4,
     };
     list.sort((a, b) => {
       const sp = statusPriority[a.status] - statusPriority[b.status];
