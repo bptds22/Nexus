@@ -490,12 +490,10 @@ export default function ThreadDetailPage({ params }: { params: Promise<{ id: str
 
             {/* Badges */}
             <div className="flex flex-wrap items-center gap-1.5 mb-3">
-              {a.isVerified && (
-                <span className="inline-flex items-center gap-1 bg-[#3B82F6]/15 text-[#3B82F6] text-[10px] font-bold px-2 py-0.5 rounded-full">
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="#3B82F6" stroke="none"><circle cx="12" cy="12" r="10" /><path d="M9 12l2 2 4-4" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none" /></svg>
-                  Vérifié
-                </span>
-              )}
+              <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${a.isVerified ? "bg-[#3B82F6]/15 text-[#3B82F6]" : "bg-[#6B7280]/15 text-[#6B7280]"}`} title={a.isVerified ? "Profil vérifié" : "Profil non vérifié"}>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill={a.isVerified ? "#3B82F6" : "#6B7280"} stroke="none"><circle cx="12" cy="12" r="10" /><path d="M9 12l2 2 4-4" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none" /></svg>
+                {a.isVerified ? "Vérifié" : "Non vérifié"}
+              </span>
             </div>
 
             {/* Academic */}

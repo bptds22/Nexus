@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import RecruiterSidebar from "./_components/RecruiterSidebar";
 import PlaybookBackground from "../components/PlaybookBackground";
 
@@ -16,16 +17,20 @@ export default function RecruteurLayout({
   children: React.ReactNode;
 }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const searchParams = useSearchParams();
+  const isPreview = searchParams?.get("preview") === "true";
 
   return (
     <div className="hero-playbook nx-no-glow bg-[#111317] min-h-screen flex">
       <PlaybookBackground />
 
-      {/* Sidebar */}
-      <RecruiterSidebar
-        mobileOpen={mobileMenuOpen}
-        onClose={() => setMobileMenuOpen(false)}
-      />
+      {/* Sidebar — hidden in preview mode */}
+      {!isPreview && (
+        <RecruiterSidebar
+          mobileOpen={mobileMenuOpen}
+          onClose={() => setMobileMenuOpen(false)}
+        />
+      )}
 
       {/* Main column */}
       <div className="flex-1 flex flex-col min-h-screen">

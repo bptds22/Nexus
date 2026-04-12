@@ -82,7 +82,7 @@ export default function RecruiterLayout({
 
             {/* Logo + portal label */}
             <div className="flex items-center gap-3">
-              <Link href="/" className="flex items-center gap-2.5">
+              <Link href="/recruiter/dashboard" className="flex items-center gap-2.5">
                 <Image
                   src="/brand/White%20red%20logo%20@4x.png"
                   alt="Nexus"

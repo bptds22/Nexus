@@ -118,12 +118,10 @@ function ThreadCard({ thread: t }: { thread: ConversationThread }) {
           />
           <div className="flex items-center gap-1.5">
             <span className="text-[11px] text-[#6b7280] font-bold uppercase">{a.position}</span>
-            {a.isVerified && (
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="#3B82F6" stroke="none">
-                <circle cx="12" cy="12" r="10" />
-                <path d="M9 12l2 2 4-4" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-              </svg>
-            )}
+            <svg width="11" height="11" viewBox="0 0 24 24" fill={a.isVerified ? "#3B82F6" : "#6B7280"} stroke="none" aria-label={a.isVerified ? "Profil vérifié" : "Profil non vérifié"}>
+              <circle cx="12" cy="12" r="10" />
+              <path d="M9 12l2 2 4-4" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+            </svg>
             {a.favorites > 0 && (
               <div className="flex items-center gap-0.5">
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="#E63946" stroke="none">

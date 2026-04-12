@@ -1,12 +1,13 @@
 import React from "react";
 import "./distinction-badges.css";
 
-type BadgeType = "capitaine" | "etoile" | "pointeur" | "progression";
+type BadgeType = "capitaine" | "etoile" | "pointeur" | "progression" | "medaille";
 type BadgeSize = "sm" | "lg";
 
 interface Props {
   type: BadgeType;
   size?: BadgeSize;
+  customLabel?: string;
 }
 
 const LABELS: Record<BadgeType, { lg: string; sm: string }> = {
@@ -14,6 +15,7 @@ const LABELS: Record<BadgeType, { lg: string; sm: string }> = {
   etoile: { lg: "Étoile provinciale", sm: "Étoile" },
   pointeur: { lg: "Meilleur pointeur", sm: "Pointeur" },
   progression: { lg: "Progression", sm: "Progression" },
+  medaille: { lg: "Distinction", sm: "Distinction" },
 };
 
 export const DISTINCTION_TO_BADGE: Record<string, BadgeType> = {
@@ -155,16 +157,77 @@ function RocketSVG() {
   );
 }
 
+function MedalSVG() {
+  return (
+    <svg viewBox="0 0 80 96" fill="none">
+      <defs>
+        <clipPath id="medal-clip">
+          <path d="M24 2L40 32L56 2H66L48 38L78 38L62 52L78 66L48 66L66 96H56L40 68L24 96H14L32 66L2 66L18 52L2 38L32 38L14 2Z" />
+          <circle cx="40" cy="60" r="26" />
+        </clipPath>
+        <radialGradient id="medal-radial" cx="35%" cy="30%" r="75%">
+          <stop offset="0%" stopColor="#FF6B75" />
+          <stop offset="40%" stopColor="#E63946" />
+          <stop offset="80%" stopColor="#B71C1C" />
+          <stop offset="100%" stopColor="#8B1A1A" />
+        </radialGradient>
+        <radialGradient id="medal-rim" cx="40%" cy="35%" r="65%">
+          <stop offset="0%" stopColor="#FF8A94" />
+          <stop offset="100%" stopColor="#7A1515" />
+        </radialGradient>
+        <linearGradient id="shimmer-grad-medal" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="white" stopOpacity="0" />
+          <stop offset="40%" stopColor="white" stopOpacity="0.08" />
+          <stop offset="50%" stopColor="white" stopOpacity="0.25" />
+          <stop offset="60%" stopColor="white" stopOpacity="0.08" />
+          <stop offset="100%" stopColor="white" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+
+      {/* Ribbon tails (left + right, angled) */}
+      <path d="M18 2L30 2L36 20L32 34L14 12Z" fill="#7A1515" />
+      <path d="M20 4L28 4L33 20L30 30L18 14Z" fill="#9B2020" />
+      <path d="M62 2L50 2L44 20L48 34L66 12Z" fill="#7A1515" />
+      <path d="M60 4L52 4L47 20L50 30L62 14Z" fill="#9B2020" />
+
+      {/* Outer rim (slightly bigger circle for depth) */}
+      <circle cx="40" cy="60" r="28" fill="#8B1A1A" opacity="0.5" />
+      <circle cx="40" cy="60" r="27" fill="url(#medal-rim)" />
+
+      {/* Main disc */}
+      <circle cx="40" cy="60" r="24" fill="url(#medal-radial)" />
+
+      {/* Edge highlight */}
+      <circle cx="40" cy="60" r="24" fill="none" stroke="rgba(255,255,255,0.35)" strokeWidth="0.8" />
+      <circle cx="40" cy="60" r="22" fill="none" stroke="rgba(0,0,0,0.2)" strokeWidth="0.6" />
+
+      {/* Inner decorative ring */}
+      <circle cx="40" cy="60" r="17" fill="none" stroke="#8B1A1A" strokeWidth="1" opacity="0.7" />
+      <circle cx="40" cy="60" r="17" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="0.5" />
+
+      {/* Center emblem — 5-point star in dark red */}
+      <polygon points="40,44 43,55 54,55 45,61.5 48,72 40,65 32,72 35,61.5 26,55 37,55" fill="#8B1A1A" />
+      <polygon points="40,44 43,55 54,55 45,61.5 48,72 40,65 40,44" fill="#7A1515" />
+
+      {/* Shimmer sweep */}
+      <g clipPath="url(#medal-clip)">
+        <rect className="badge-shimmer" x="-20" y="-10" width="30" height="120" fill="url(#shimmer-grad-medal)" opacity=".8" />
+      </g>
+    </svg>
+  );
+}
+
 const SVG_MAP: Record<BadgeType, React.FC> = {
   capitaine: ShieldSVG,
   etoile: StarSVG,
   pointeur: CrownSVG,
   progression: RocketSVG,
+  medaille: MedalSVG,
 };
 
-export default function DistinctionBadge({ type, size = "lg" }: Props) {
+export default function DistinctionBadge({ type, size = "lg", customLabel }: Props) {
   const SVGComponent = SVG_MAP[type];
-  const label = LABELS[type][size];
+  const label = customLabel || LABELS[type][size];
   const svgWidth = size === "lg" ? 64 : 44;
 
   const svgHeight = size === "lg" ? 72 : 50;
@@ -179,7 +242,7 @@ export default function DistinctionBadge({ type, size = "lg" }: Props) {
       </div>
       <span
         className="font-head font-bold uppercase text-[#E63946] text-center"
-        style={{ fontSize: size === "lg" ? 12 : 9, letterSpacing: "1.5px" }}
+        style={{ fontSize: size === "lg" ? 12 : 9, letterSpacing: "1.5px", maxWidth: size === "lg" ? 110 : 80 }}
       >
         {label}
       </span>

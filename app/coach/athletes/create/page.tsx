@@ -389,10 +389,8 @@ export default function CreateAthletePage() {
       case 3: return true;
       case 4: {
         const s = form.sports;
-        // Simplified: sport, position, jersey
-        const base = !!(s.primarySport && s.jerseyNumber);
-        if (s.sportsMode === "detailed") return base && !!(s.selectedTeamId || s.currentTeam);
-        return base;
+        // Sport, position, jersey, and team are required in both modes
+        return !!(s.primarySport && s.jerseyNumber && (s.selectedTeamId || s.currentTeam));
       }
       case 5: return true;
       case 6: return true;
@@ -598,14 +596,23 @@ export default function CreateAthletePage() {
 
       if (hasDetailedRatings) {
         Object.assign(evalRecord, {
+          // Capacités athlétiques
+          vitesse_explosivite: ratings.vitesse_explosivite || null,
+          force_puissance: ratings.force_puissance || null,
+          endurance_cardio: ratings.endurance_cardio || null,
+          agilite_coordination: ratings.agilite_coordination || null,
+          // Intelligence sportive
+          vision_du_jeu: ratings.vision_du_jeu || null,
+          sens_tactique: ratings.sens_tactique || null,
+          // Caractère
           leadership: ratings.leadership || null,
-          discipline: ratings.discipline || ratings.ethique_travail || null,
-          coachabilite: ratings.coachabilite || ratings.coachability || null,
-          intelligence_jeu: ratings.intelligence_jeu || ratings.vision_jeu || ratings.game_iq || null,
-          competitivite: ratings.competitivite || ratings.competitiveness || null,
-          esprit_equipe: ratings.esprit_equipe || ratings.teamwork || null,
-          resilience: ratings.resilience || ratings.competitivite_resilience || null,
-          attitude_mentalite: ratings.attitude_mentalite || ratings.attitude || null,
+          discipline: ratings.discipline || null,
+          coachabilite: ratings.coachabilite || null,
+          intelligence_jeu: ratings.intelligence_jeu || null,
+          competitivite: ratings.competitivite || null,
+          esprit_equipe: ratings.esprit_equipe || null,
+          resilience: ratings.resilience || null,
+          attitude_mentalite: ratings.attitude_mentalite || null,
         });
       }
 
@@ -614,6 +621,25 @@ export default function CreateAthletePage() {
         console.error("Evaluation insert error:", JSON.stringify(evalError));
       } else {
         console.log("Evaluation saved for athlete:", newAthlete.id);
+      }
+
+      // ── Insert team_athletes assignment if a team was selected ──
+      const selectedTeamId = form.sports.selectedTeamId;
+      console.log("[Create] Attempting team_athletes insert:", { team_id: selectedTeamId, athlete_id: newAthlete.id });
+      if (selectedTeamId) {
+        const { error: teamErr } = await supabase.from("team_athletes").insert({
+          team_id: selectedTeamId,
+          athlete_id: newAthlete.id,
+          jersey_number: form.sports.jerseyNumber || null,
+          joined_at: new Date().toISOString(),
+        });
+        if (teamErr) {
+          console.error("[Create] team_athletes insert failed:", teamErr);
+        } else {
+          console.log("[Create] team_athletes insert SUCCESS:", { team_id: selectedTeamId, athlete_id: newAthlete.id });
+        }
+      } else {
+        console.log("[Create] No team selected — skipping team_athletes insert");
       }
     }
 
@@ -970,6 +996,16 @@ export default function CreateAthletePage() {
             <input type="text" inputMode="numeric" value={d.jerseyNumber} onChange={(e) => { const v = e.target.value.replace(/\D/g, ""); updateSports("jerseyNumber", v); }} placeholder="#" className={`${inputCls} ${isFieldEmpty(d.jerseyNumber) ? errBorder : ""}`} />
           </div>
           <SportPositionSelect sport={d.primarySport === "Autre" && d.primarySportDetail ? "Autre" : d.primarySport} value={d.secondaryPosition} onChange={(v) => updateSports("secondaryPosition", v)} label="Position secondaire" />
+
+          {/* Équipe — always visible (Simplifiée + Détaillée) */}
+          <div className="sm:col-span-2">
+            <label className={labelCls}>Équipe{req}</label>
+            <NxSelect aria-label="Équipe" value={d.selectedTeamId}
+              onChange={(v) => { const team = coachTeam.teams.find((t) => t.id === v); updateSports("selectedTeamId", v); updateSports("currentTeam", team?.name || ""); updateSports("teamLevel", team?.level || ""); updateSports("teamDivision", team?.division || ""); updateSports("league", team?.league || ""); }}
+              hasError={isFieldEmpty(d.selectedTeamId)}
+              placeholder={coachTeam.teams.length === 0 ? "Aucune équipe — créez-en une dans Mes équipes" : "Sélectionner une équipe"}
+              options={coachTeam.teams.map((t) => ({ value: t.id, label: `${t.name}${t.level ? ` — ${t.level}` : ""}` }))} />
+          </div>
         </div>
 
         {isDetailed && (
@@ -992,16 +1028,6 @@ export default function CreateAthletePage() {
                 <SportPositionSelect sport={d.secondarySport === "Autre" && d.secondarySportDetail ? "Autre" : d.secondarySport} value={d.secondarySportPosition} onChange={(v) => updateSports("secondarySportPosition", v)}
                   label={`Position — ${d.secondarySport === "Autre" && d.secondarySportDetail ? d.secondarySportDetail : d.secondarySport}`} />
               )}
-
-              <div className="sm:col-span-2">
-                <label className={labelCls}>Équipe{req}
-                  {d.selectedTeamId && (() => { const t = coachTeam.teams.find((t) => t.id === d.selectedTeamId); return t ? <span className="ml-1.5 text-[#E63946] normal-case tracking-normal">({t.gender === "M" ? "Masculin" : "Féminin"})</span> : null; })()}
-                </label>
-                <NxSelect aria-label="Équipe" value={d.selectedTeamId}
-                  onChange={(v) => { const team = coachTeam.teams.find((t) => t.id === v); updateSports("selectedTeamId", v); updateSports("currentTeam", team?.name || ""); updateSports("teamLevel", team?.level || ""); updateSports("teamDivision", team?.division || ""); updateSports("league", team?.league || ""); }}
-                  placeholder="Sélectionner une équipe"
-                  options={coachTeam.teams.map((t) => ({ value: t.id, label: `${t.name}${t.level ? ` — ${t.level}` : ""}` }))} />
-              </div>
 
               {d.selectedTeamId && (
                 <>
@@ -1193,7 +1219,6 @@ export default function CreateAthletePage() {
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
                         )}
                       </div>
-                      <span className="text-[15px]">{opt.icon}</span>
                       <span className={`text-[14px] font-bold ${isSelected ? "text-white" : "text-[#8a8d96]"}`}>{opt.label}</span>
                     </button>
 

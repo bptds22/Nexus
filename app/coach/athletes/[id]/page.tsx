@@ -27,27 +27,15 @@ const SPORT_DISPLAY: Record<string, string> = Object.fromEntries(
   Object.entries(SPORT_NAME_MAP).map(([display, key]) => [key, display])
 );
 
-const TRAIT_GROUPS: { title: string; traits: { key: keyof AthleteTraitRatings; label: string }[] }[] = [
-  { title: "Capacités athlétiques", traits: [
-    { key: "speed", label: "Vitesse / Explosivité" },
-    { key: "power", label: "Force / Puissance" },
-    { key: "endurance", label: "Endurance / Cardio" },
-    { key: "agility", label: "Agilité / Coordination" },
-  ]},
-  { title: "Intelligence sportive", traits: [
-    { key: "gameVision", label: "Vision du jeu" },
-    { key: "tactics", label: "Sens tactique" },
-  ]},
-  { title: "Caractère", traits: [
-    { key: "leadership", label: "Leadership" },
-    { key: "discipline", label: "Discipline" },
-    { key: "coachability", label: "Coachabilité" },
-    { key: "gameIQ", label: "Intelligence de jeu" },
-    { key: "competitiveness", label: "Compétitivité" },
-    { key: "teamwork", label: "Esprit d'équipe" },
-    { key: "resilience", label: "Résilience" },
-    { key: "attitude", label: "Attitude / Mentalité" },
-  ]},
+const TRAIT_LIST: { key: keyof AthleteTraitRatings; label: string }[] = [
+  { key: "leadership", label: "Leadership" },
+  { key: "discipline", label: "Discipline" },
+  { key: "coachability", label: "Coachabilité" },
+  { key: "gameIQ", label: "Intelligence de jeu" },
+  { key: "competitiveness", label: "Compétitivité" },
+  { key: "teamwork", label: "Esprit d'équipe" },
+  { key: "resilience", label: "Résilience" },
+  { key: "attitude", label: "Attitude / Mentalité" },
 ];
 
 /* ── Shared components (same as recruiter view) ───────────────── */
@@ -137,9 +125,9 @@ function PlayerCard({ a }: { a: AthleteProfileRecruiterView }) {
 
   return (
     <div className="nx-v30-wrap relative" style={{ width: 300, paddingTop: 6, paddingBottom: 10 }}>
-      {a.isVerified && (
-        <div className="nx-v30-badge absolute z-30" style={{ top: 10, right: -12 }}>
-          <div className="rounded-full" style={{ border: '3px solid #111317' }}>
+      <div className="nx-v30-badge absolute z-30" style={{ top: 10, right: -12 }} title={a.isVerified ? "Profil vérifié" : "Profil non vérifié"}>
+        <div className="rounded-full" style={{ border: '3px solid #111317' }}>
+          {a.isVerified ? (
             <svg width="48" height="48" viewBox="0 0 54 54" fill="none">
               <defs>
                 <radialGradient id="cc_bg" cx="38%" cy="28%" r="68%"><stop offset="0%" stopColor="#29AAFF" /><stop offset="55%" stopColor="#0094F0" /><stop offset="100%" stopColor="#0060C0" /></radialGradient>
@@ -149,9 +137,16 @@ function PlayerCard({ a }: { a: AthleteProfileRecruiterView }) {
               <circle cx="27" cy="27" r="24" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" />
               <path d="M16,27 L22,34 L38,18" stroke="#FFFFFF" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
             </svg>
-          </div>
+          ) : (
+            <svg width="48" height="48" viewBox="0 0 54 54" fill="none">
+              <circle cx="27" cy="27" r="26" fill="#4B5563" opacity="0.35" />
+              <circle cx="27" cy="27" r="24" fill="#6B7280" />
+              <circle cx="27" cy="27" r="24" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5" />
+              <path d="M16,27 L22,34 L38,18" stroke="#FFFFFF" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+            </svg>
+          )}
         </div>
-      )}
+      </div>
 
       <div className="nx-v30-card relative overflow-visible" style={{ width: 300, borderRadius: 10 }}>
         <div className="relative overflow-hidden" style={{ width: 300, height: 420, borderRadius: 10, background: '#2F3440' }}>
@@ -307,6 +302,14 @@ export default function CoachAthleteProfilePage() {
         setDbDistinctions(filtered);
       }
 
+      // Load custom distinctions for this athlete
+      const { data: customData } = await supabase
+        .from("custom_distinctions")
+        .select("id, title")
+        .eq("athlete_id", id)
+        .order("created_at", { ascending: true });
+      if (customData) setCustomDistinctions(customData);
+
       // Engagement metrics (from both legacy + new view tables)
       const [{ count: vc1 }, { count: vc2 }, { count: fc }] = await Promise.all([
         supabase.from("recruiter_athlete_views").select("*", { count: "exact", head: true }).eq("athlete_id", id),
@@ -412,6 +415,7 @@ export default function CoachAthleteProfilePage() {
   const [pipelineMaxAt, setPipelineMaxAt] = useState("");
   const [recruitOverride, setRecruitOverride] = useState<{ value: string; at: string } | null>(null);
   const [dbDistinctions, setDbDistinctions] = useState<string[]>([]);
+  const [customDistinctions, setCustomDistinctions] = useState<{ id: string; title: string }[]>([]);
   const [viewCount, setViewCount] = useState(0);
   const [favoriteCount, setFavoriteCount] = useState(0);
   const [globalRecruitmentStatus, setGlobalRecruitmentStatus] = useState<string>("OUVERT");
@@ -719,8 +723,8 @@ export default function CoachAthleteProfilePage() {
               )}
             </div>
 
-            {dbDistinctions.filter((d) => d != null && BADGE_DISPLAY[d]).length > 0 && (
-              <div className="flex items-end gap-9">
+            {(dbDistinctions.filter((d) => d != null && BADGE_DISPLAY[d]).length > 0 || customDistinctions.length > 0) && (
+              <div className="flex items-end gap-9 flex-wrap">
                 {dbDistinctions
                   .filter((d) => d != null && BADGE_DISPLAY[d])
                   .map((d) => {
@@ -738,6 +742,9 @@ export default function CoachAthleteProfilePage() {
                       </div>
                     );
                   })}
+                {customDistinctions.map((cd) => (
+                  <DistinctionBadge key={cd.id} type="medaille" size="lg" customLabel={cd.title} />
+                ))}
               </div>
             )}
           </div>
@@ -780,27 +787,19 @@ export default function CoachAthleteProfilePage() {
                   </div>
 
                   {a.traitRatings && (
-                    <div className="border-t border-[#2D3748]/50 pt-4 space-y-5">
-                      {TRAIT_GROUPS.map((group) => {
-                        const hasAny = group.traits.some((t) => (a.traitRatings?.[t.key] || 0) > 0);
-                        if (!hasAny) return null;
-                        return (
-                          <div key={group.title}>
-                            <p className="text-[11px] font-bold tracking-[0.15em] uppercase text-[#6b7280] mb-3">{group.title}</p>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1">
-                              {group.traits.map((trait) => {
-                                const val = a.traitRatings ? a.traitRatings[trait.key] : 0;
-                                return (
-                                  <div key={trait.key} className="flex items-center justify-between py-2.5 border-b border-[#2D3748]/30">
-                                    <span className="text-[13px] text-[#c8c8cc]">{trait.label}</span>
-                                    {val > 0 ? <StarRating rating={val} size="sm" /> : <span className="text-[13px] text-[#4a4d56]">—</span>}
-                                  </div>
-                                );
-                              })}
+                    <div className="border-t border-[#2D3748]/50 pt-4">
+                      <p className="text-[11px] font-bold tracking-[0.15em] uppercase text-[#6b7280] mb-3">Détail par trait</p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1">
+                        {TRAIT_LIST.map((trait) => {
+                          const val = a.traitRatings ? a.traitRatings[trait.key] : 0;
+                          return (
+                            <div key={trait.key} className="flex items-center justify-between py-2.5 border-b border-[#2D3748]/30">
+                              <span className="text-[13px] text-[#c8c8cc]">{trait.label}</span>
+                              {val > 0 ? <StarRating rating={val} size="sm" /> : <span className="text-[13px] text-[#4a4d56]">—</span>}
                             </div>
-                          </div>
-                        );
-                      })}
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
 

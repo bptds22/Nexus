@@ -46,6 +46,72 @@ function Toast({ message, onDone }: { message: string; onDone: () => void }) {
   );
 }
 
+/* ── Typed display for suggestion values ──────────────────── */
+
+const BADGE_LABELS: Record<string, string> = {
+  captain: "Capitaine", allstar: "Étoile provinciale", team_leader: "Leader",
+  league_leader: "Meilleur de la ligue", scoring_leader: "Meilleur pointeur",
+  points_leader: "Meilleur pointeur", goals_leader: "Meilleur buteur",
+  assists_leader: "Meilleur passeur", offensive_leader: "Meilleur offensif",
+  defensive_leader: "Meilleur défensif", progression: "Progression",
+  best_time: "Meilleur chrono", school_record: "Record d'école",
+  best_mark: "Meilleure marque", singles_leader: "Meilleur en simple",
+  specialist: "Spécialiste", mvp: "MVP",
+};
+
+function SuggestionValueDisplay({ field, value, muted }: { field: string; value: string | null | undefined; muted?: boolean }) {
+  if (!value) return <span className={`text-[14px] italic ${muted ? "text-[#4a4d56]" : "text-[#EAB308]/60"}`}>Aucune</span>;
+
+  // Star rating display for Cote globale
+  if (field === "Cote globale") {
+    const rating = parseFloat(value);
+    if (!isNaN(rating)) {
+      return (
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-0.5">
+            {Array.from({ length: 5 }, (_, i) => (
+              <svg key={i} width="14" height="14" viewBox="0 0 24 24" fill={rating >= i + 1 ? (muted ? "#6b7280" : "#EAB308") : rating >= i + 0.5 ? (muted ? "#6b7280" : "#EAB308") : "#2D3748"} stroke="none">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+              </svg>
+            ))}
+          </div>
+          <span className={`text-[14px] font-bold ${muted ? "text-white" : "text-[#EAB308]"}`}>{rating.toFixed(1)}/5</span>
+        </div>
+      );
+    }
+  }
+
+  // Badges display for Distinctions
+  if (field === "Distinctions") {
+    let arr: string[] = [];
+    try { arr = JSON.parse(value); } catch { arr = []; }
+    if (arr.length === 0) return <span className={`text-[14px] italic ${muted ? "text-[#4a4d56]" : "text-[#EAB308]/60"}`}>Aucune</span>;
+    return (
+      <div className="flex flex-wrap gap-1.5">
+        {arr.map((d) => (
+          <span key={d} className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold ${muted ? "bg-[#6b7280]/15 text-[#9CA3AF] border border-[#6b7280]/30" : "bg-[#EAB308]/15 text-[#EAB308] border border-[#EAB308]/30"}`}>
+            {BADGE_LABELS[d] || d}
+          </span>
+        ))}
+      </div>
+    );
+  }
+
+  // Custom distinction — medal badge display
+  if (field === "Distinction personnalisée") {
+    return (
+      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] font-bold ${muted ? "bg-[#6b7280]/15 text-[#9CA3AF] border border-[#6b7280]/30" : "bg-[#F59E0B]/15 text-[#F59E0B] border border-[#F59E0B]/30"}`}>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="17" r="5" /><path d="M12 18v-2" /><path d="M8 7h8" /><path d="M7.21 15 2.66 7.14" /><path d="M16.79 15 21.34 7.14" />
+        </svg>
+        {value}
+      </span>
+    );
+  }
+
+  return <p className={`text-[16px] font-bold ${muted ? "text-white" : "text-[#EAB308]"}`}>{value}</p>;
+}
+
 /* ── Suggestion Card ──────────────────────────────────────────── */
 
 function SuggestionCard({
@@ -88,14 +154,14 @@ function SuggestionCard({
       <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr] gap-3 sm:gap-4 items-center mb-4">
         <div className="bg-[#111317] rounded-lg p-4">
           <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mb-1.5">Valeur actuelle</p>
-          <p className="text-[16px] font-bold text-white">{s.current_value || <span className="text-[#4a4d56] italic">Aucune</span>}</p>
+          <SuggestionValueDisplay field={s.field} value={s.current_value} muted />
         </div>
         <div className="hidden sm:flex items-center justify-center">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4a4d56" strokeWidth="2" strokeLinecap="round"><path d="M5 12h14" /><path d="M12 5l7 7-7 7" /></svg>
         </div>
         <div className="rounded-lg p-4 border" style={{ backgroundColor: "rgba(234,179,8,0.05)", borderColor: "rgba(234,179,8,0.20)" }}>
           <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#EAB308] mb-1.5">Valeur proposée</p>
-          <p className="text-[16px] font-bold text-[#EAB308]">{s.proposed_value}</p>
+          <SuggestionValueDisplay field={s.field} value={s.proposed_value} />
         </div>
       </div>
 

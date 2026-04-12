@@ -765,6 +765,11 @@ body.light-mode .nx-social-auth-btn:hover {
   to   { opacity: 1; transform: scale(1); }
 }
 
+@keyframes slideInRight {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
+}
+
 /* ── Filter bar (recruiter search) ───────────────────────── */
 .nx-filter-select {
   background-color: #1A1D24;

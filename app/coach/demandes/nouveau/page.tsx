@@ -131,12 +131,10 @@ function AthleteCombobox({
                     {a.position} &middot; {a.gradYear} &middot; Profil {a.profilePercent}%
                   </p>
                 </div>
-                {a.isVerified && (
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="#3B82F6" stroke="none" className="shrink-0">
-                    <circle cx="12" cy="12" r="10" />
-                    <path d="M9 12l2 2 4-4" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-                  </svg>
-                )}
+                <svg width="12" height="12" viewBox="0 0 24 24" fill={a.isVerified ? "#3B82F6" : "#6B7280"} stroke="none" className="shrink-0" aria-label={a.isVerified ? "Profil vérifié" : "Profil non vérifié"}>
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M9 12l2 2 4-4" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                </svg>
               </button>
             ))
           )}

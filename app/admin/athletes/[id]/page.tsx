@@ -369,12 +369,10 @@ export default function AdminAthleteDetailPage({
                 ) : (
                   <h1 className="font-head text-[24px] font-black text-white uppercase tracking-tight">{a.firstName} {a.lastName}</h1>
                 )}
-                {isVerified && (
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="#3B82F6" stroke="none">
-                    <circle cx="12" cy="12" r="10" />
-                    <path d="M9 12l2 2 4-4" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-                  </svg>
-                )}
+                <svg width="22" height="22" viewBox="0 0 24 24" fill={isVerified ? "#3B82F6" : "#6B7280"} stroke="none" aria-label={isVerified ? "Profil vérifié" : "Profil non vérifié"}>
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M9 12l2 2 4-4" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                </svg>
                 <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold`} style={{ backgroundColor: STATUS_OPTIONS.find((o) => o.value === status)!.color + "20", color: STATUS_OPTIONS.find((o) => o.value === status)!.color }}>
                   {STATUS_OPTIONS.find((o) => o.value === status)!.label}
                 </span>

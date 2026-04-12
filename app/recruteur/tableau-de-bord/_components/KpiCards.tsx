@@ -23,7 +23,7 @@ export default function KpiCards({ data, pipelineCounts }: { data: RecruiterKpiD
       {/* ── Pipeline Funnel ─────────────────────────────────── */}
       <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] p-5">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-[12px] font-bold tracking-[0.2em] uppercase text-[#6b7280]">Pipeline de recrutement</h2>
+          <h2 className="text-[12px] font-bold tracking-[0.2em] uppercase text-[#6b7280]">Mon processus de recrutement</h2>
           <Link href="/recruteur/pipeline" className="text-[12px] font-bold text-[#E63946] hover:text-[#60A5FA] transition-colors flex items-center gap-1">
             Voir tout
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">

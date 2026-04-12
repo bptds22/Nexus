@@ -1020,7 +1020,7 @@ export default function PipelinePage() {
   return (
     <div className="px-4 sm:px-6 lg:px-10 py-8 max-w-[1600px] mx-auto space-y-5">
       <div>
-        <h1 className="font-head text-2xl sm:text-3xl font-black text-white uppercase tracking-tight">Pipeline de recrutement</h1>
+        <h1 className="font-head text-2xl sm:text-3xl font-black text-white uppercase tracking-tight">Mon processus de recrutement</h1>
         <p className="text-[14px] text-[#9CA3AF] mt-1">Saison 2025-2026 · Suivez vos prospects de l&apos;identification à la signature</p>
       </div>
 

@@ -8,6 +8,7 @@ import type { AthleteSuggestion } from "@/lib/mock/athlete";
 import type { AthleteTraitRatings } from "@/lib/types/models";
 import StarRating from "@/components/ui/StarRating";
 import NxIcon from "@/components/ui/NxIcon";
+import { getBadgesForSport } from "@/lib/config/sportBadges";
 
 /* ═══════════════════════════════════════════════════════════════
    Athlete Profile — Co-creation page
@@ -398,6 +399,257 @@ function LockedField({ label, value, recruiterView, children }: {
   );
 }
 
+/* ── Cote Globale — athlete can suggest ──────────────────── */
+
+function CoteGlobaleSuggest({ currentValue, pending, onSubmit }: {
+  currentValue: number;
+  pending?: { proposed_value: string };
+  onSubmit: (field: string, proposed: string, message: string) => Promise<void>;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [rating, setRating] = useState(currentValue);
+  const [saving, setSaving] = useState(false);
+
+  async function handleSubmit() {
+    if (rating <= 0) return;
+    setSaving(true);
+    await onSubmit("Cote globale", rating.toFixed(1), "");
+    setSaving(false);
+    setEditing(false);
+  }
+
+  return (
+    <div className="py-3 border-b border-[#2D3748]/40">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-[13px] text-[#9CA3AF] flex items-center gap-2">
+          Cote Globale
+          <span className="text-[9px] font-bold tracking-wider uppercase px-1.5 py-0.5 rounded bg-[#EAB308]/15 text-[#EAB308]">Suggestion</span>
+        </span>
+        <div className="flex items-center gap-2">
+          <StarRating rating={currentValue} size="md" showNumber={false} />
+          <span className="text-[14px] font-bold text-white">{currentValue > 0 ? `${currentValue.toFixed(1)}/5` : "—"}</span>
+          {!editing && !pending && (
+            <button type="button" onClick={() => { setRating(currentValue); setEditing(true); }} className="ml-2 text-[11px] font-bold text-[#EAB308] hover:text-[#FDE047] transition-colors">Suggérer</button>
+          )}
+        </div>
+      </div>
+
+      <p className="text-[11px] text-[#4a4d56] italic">Ta cote sera soumise à ton entraîneur pour approbation</p>
+
+      {pending && (
+        <div className="mt-2 flex items-center gap-2 px-3 py-2 rounded bg-[#EAB308]/10 border border-[#EAB308]/30">
+          <span className="text-[11px]">⏳</span>
+          <span className="text-[12px] font-bold text-[#EAB308]">En attente: {pending.proposed_value}/5</span>
+        </div>
+      )}
+
+      {editing && (
+        <div className="mt-3 flex items-center gap-3">
+          <div className="flex items-center gap-1">
+            {Array.from({ length: 5 }, (_, i) => {
+              const starIndex = i + 1;
+              const filled = rating >= starIndex;
+              const half = rating >= starIndex - 0.5 && rating < starIndex;
+              return (
+                <button key={i} type="button" className="relative w-7 h-7 cursor-pointer"
+                  onClick={(e) => {
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const isLeftHalf = x < rect.width / 2;
+                    const value = isLeftHalf ? starIndex - 0.5 : starIndex;
+                    setRating(rating === value ? 0 : value);
+                  }}>
+                  <svg className="absolute inset-0 w-7 h-7" viewBox="0 0 24 24" fill="#2D3748" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
+                  {filled && <svg className="absolute inset-0 w-7 h-7" viewBox="0 0 24 24" fill="#EAB308" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>}
+                  {half && (
+                    <svg className="absolute inset-0 w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="none">
+                      <defs><clipPath id={`cgs-${i}`}><rect x="0" y="0" width="12" height="24" /></clipPath></defs>
+                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" fill="#EAB308" clipPath={`url(#cgs-${i})`} />
+                    </svg>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+          <span className="text-[13px] font-bold text-white">{rating > 0 ? `${rating.toFixed(1)}/5` : "—"}</span>
+          <div className="flex-1" />
+          <button type="button" onClick={() => setEditing(false)} className="text-[11px] text-[#6b7280] hover:text-white transition-colors">Annuler</button>
+          <button type="button" onClick={handleSubmit} disabled={saving || rating <= 0} className="px-3 py-1.5 bg-[#EAB308] hover:bg-[#CA8A04] disabled:opacity-40 text-black text-[11px] font-bold rounded transition-colors">
+            {saving ? "..." : "Envoyer"}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Distinctions — athlete can suggest ──────────────────── */
+
+function DistinctionsSuggest({ sportName, currentDistinctions, existingCustom, pending, pendingCustom, onSubmit }: {
+  sportName: string;
+  currentDistinctions: string[];
+  existingCustom: { id: string; title: string }[];
+  pending?: { proposed_value: string };
+  pendingCustom: { id: string; proposed_value: string }[];
+  onSubmit: (field: string, proposed: string, message: string) => Promise<void>;
+}) {
+  const badgeOptions = getBadgesForSport(sportName);
+  const [editing, setEditing] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set(currentDistinctions));
+  const [customTitle, setCustomTitle] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  if (!sportName || badgeOptions.length === 0) return null;
+
+  const totalCount = selected.size + existingCustom.length + pendingCustom.length;
+
+  function toggle(badgeId: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(badgeId)) next.delete(badgeId);
+      else if (next.size + existingCustom.length + pendingCustom.length < 5) next.add(badgeId);
+      return next;
+    });
+  }
+
+  async function handleSubmit() {
+    setSaving(true);
+    await onSubmit("Distinctions", JSON.stringify(Array.from(selected)), "");
+    setSaving(false);
+    setEditing(false);
+  }
+
+  async function handleSubmitCustom() {
+    const title = customTitle.trim().slice(0, 50);
+    if (!title || totalCount >= 5) return;
+    setSaving(true);
+    await onSubmit("Distinction personnalisée", title, "");
+    setCustomTitle("");
+    setSaving(false);
+  }
+
+  const pendingArr: string[] = pending ? (() => { try { return JSON.parse(pending.proposed_value); } catch { return []; } })() : [];
+
+  return (
+    <div className="mt-4 pt-4 border-t border-[#2D3748]/40">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-[13px] text-[#9CA3AF] flex items-center gap-2">
+          Distinctions
+          <span className="text-[9px] font-bold tracking-wider uppercase px-1.5 py-0.5 rounded bg-[#EAB308]/15 text-[#EAB308]">Suggestion</span>
+        </span>
+        {!editing && !pending && (
+          <button type="button" onClick={() => { setSelected(new Set(currentDistinctions)); setEditing(true); }} className="text-[11px] font-bold text-[#EAB308] hover:text-[#FDE047] transition-colors">Suggérer</button>
+        )}
+      </div>
+      <p className="text-[11px] text-[#4a4d56] italic mb-3">Tes distinctions seront soumises à ton entraîneur pour approbation</p>
+
+      {/* Current coach-set distinctions + custom */}
+      {!editing && (currentDistinctions.length > 0 || existingCustom.length > 0) && (
+        <div className="flex flex-wrap gap-2">
+          {currentDistinctions.map((d) => {
+            const opt = badgeOptions.find((o) => o.badgeId === d);
+            return (
+              <span key={d} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#E63946]/15 border border-[#E63946]/30 text-[11px] font-bold text-[#E63946]">
+                {opt?.label || d}
+              </span>
+            );
+          })}
+          {existingCustom.map((cd) => (
+            <span key={cd.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#F59E0B]/15 border border-[#F59E0B]/30 text-[11px] font-bold text-[#F59E0B]">
+              {cd.title}
+            </span>
+          ))}
+        </div>
+      )}
+      {!editing && currentDistinctions.length === 0 && existingCustom.length === 0 && !pending && pendingCustom.length === 0 && (
+        <p className="text-[12px] text-[#4a4d56]">Aucune distinction</p>
+      )}
+
+      {/* Pending custom distinctions */}
+      {!editing && pendingCustom.length > 0 && (
+        <div className="mt-2 px-3 py-2 rounded bg-[#EAB308]/10 border border-[#EAB308]/30">
+          <p className="text-[11px] font-bold text-[#EAB308] mb-1.5">⏳ Distinctions personnalisées en attente:</p>
+          <div className="flex flex-wrap gap-1.5">
+            {pendingCustom.map((pc) => (
+              <span key={pc.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#EAB308]/15 border border-[#EAB308]/30 text-[11px] font-bold text-[#EAB308]">
+                {pc.proposed_value}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Pending suggestion */}
+      {pending && pendingArr.length > 0 && (
+        <div className="mt-2 px-3 py-2 rounded bg-[#EAB308]/10 border border-[#EAB308]/30">
+          <p className="text-[11px] font-bold text-[#EAB308] mb-1.5">⏳ En attente d&apos;approbation:</p>
+          <div className="flex flex-wrap gap-1.5">
+            {pendingArr.map((d) => {
+              const opt = badgeOptions.find((o) => o.badgeId === d);
+              return (
+                <span key={d} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#EAB308]/15 border border-[#EAB308]/30 text-[11px] font-bold text-[#EAB308]">
+                  {opt?.label || d}
+                </span>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Editing UI */}
+      {editing && (
+        <div className="space-y-2">
+          {badgeOptions.map((opt) => {
+            const isSelected = selected.has(opt.badgeId);
+            const isDisabled = !isSelected && selected.size >= 5;
+            return (
+              <button key={opt.badgeId} type="button" onClick={() => !isDisabled && toggle(opt.badgeId)} disabled={isDisabled}
+                className={`w-full flex items-center gap-3 px-3 py-2 rounded border transition-colors ${isSelected ? "border-[#EAB308]/50 bg-[#EAB308]/[0.08]" : "border-[#2a2d36] hover:border-[#4a4d56]"} ${isDisabled ? "opacity-40 cursor-not-allowed" : ""}`}>
+                <span className={`w-4 h-4 rounded border flex items-center justify-center ${isSelected ? "bg-[#EAB308] border-[#EAB308]" : "border-[#4a4d56]"}`}>
+                  {isSelected && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>}
+                </span>
+                <span className={`text-[13px] font-bold ${isSelected ? "text-white" : "text-[#8a8d96]"}`}>{opt.label}</span>
+              </button>
+            );
+          })}
+          <p className="text-[11px] text-[#6b7280]">{totalCount} / 5 sélectionnée{totalCount !== 1 ? "s" : ""}</p>
+
+          {/* Custom distinction input */}
+          <div className="mt-2 pt-3 border-t border-[#2D3748]/40">
+            <p className="text-[11px] font-bold tracking-wider uppercase text-[#EAB308] mb-2">Distinction personnalisée</p>
+            {totalCount >= 5 ? (
+              <p className="text-[11px] text-[#4a4d56] italic">Maximum atteint — retire une distinction pour en proposer une personnalisée.</p>
+            ) : (
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={customTitle}
+                  onChange={(e) => setCustomTitle(e.target.value.slice(0, 50))}
+                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleSubmitCustom(); } }}
+                  placeholder="Ex: MVP de la saison"
+                  maxLength={50}
+                  className="flex-1 bg-[#13151a] border border-[#2a2d36] rounded px-3 py-2 text-[13px] text-white placeholder-[#4a4d56] focus:outline-none focus:border-[#EAB308]/50"
+                />
+                <button type="button" onClick={handleSubmitCustom} disabled={saving || !customTitle.trim()}
+                  className="px-3 py-2 bg-[#EAB308] hover:bg-[#CA8A04] disabled:opacity-40 text-black text-[11px] font-bold rounded transition-colors">
+                  Proposer
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2 justify-end mt-3">
+            <button type="button" onClick={() => setEditing(false)} className="text-[11px] text-[#6b7280] hover:text-white transition-colors">Annuler</button>
+            <button type="button" onClick={handleSubmit} disabled={saving} className="px-3 py-1.5 bg-[#EAB308] hover:bg-[#CA8A04] disabled:opacity-40 text-black text-[11px] font-bold rounded transition-colors">
+              {saving ? "..." : "Envoyer la suggestion"}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ── Trait labels ──────────────────────────────────────────────── */
 
 const TRAIT_LABELS: Record<keyof AthleteTraitRatings, string> = {
@@ -560,7 +812,9 @@ export default function AthleteProfilPage() {
   const [a, setA] = useState<AnyProfile>({});
   const [athleteId, setAthleteId] = useState<string | null>(null);
   const recruiterView = false;
+  const [showPreview, setShowPreview] = useState(false);
   const [suggestions, setSuggestions] = useState<AthleteSuggestion[]>([]);
+  const [existingCustomDistinctions, setExistingCustomDistinctions] = useState<{ id: string; title: string }[]>([]);
   const [sugTab, setSugTab] = useState<"pending" | "approved" | "rejected">("pending");
   const [toast, setToast] = useState<string | null>(null);
 
@@ -581,7 +835,7 @@ export default function AthleteProfilPage() {
           sports!sport_id(nom),
           positions!position_id(nom, abreviation),
           schools!school_id(name, region, city),
-          evaluations(leadership, discipline, coachabilite, intelligence_jeu, competitivite, esprit_equipe, resilience, attitude_mentalite, cote_globale, rapport_entraineur),
+          evaluations(vitesse_explosivite, force_puissance, endurance_cardio, agilite_coordination, vision_du_jeu, sens_tactique, leadership, discipline, coachabilite, intelligence_jeu, competitivite, esprit_equipe, resilience, attitude_mentalite, cote_globale, rapport_entraineur, distinctions),
           users!athletes_coach_id_fkey(first_name, last_name)
         `)
         .eq("user_id", user.id)
@@ -591,6 +845,14 @@ export default function AthleteProfilPage() {
       if (!raw) { setLoading(false); return; }
 
       setAthleteId(raw.id);
+
+      // Load existing custom distinctions (coach-approved)
+      const { data: customData } = await supabase
+        .from("custom_distinctions")
+        .select("id, title")
+        .eq("athlete_id", raw.id)
+        .order("created_at", { ascending: true });
+      if (customData) setExistingCustomDistinctions(customData);
 
       // Secondary sport/position lookups
       let secondarySportName = "";
@@ -689,6 +951,7 @@ export default function AthleteProfilPage() {
         coachReport: evalRel?.rapport_entraineur || "",
         coachName: coachRel ? `${coachRel.first_name || ""} ${coachRel.last_name || ""}`.trim() : "",
         overallRating: evalRel?.cote_globale || 0,
+        coachDistinctions: (evalRel?.distinctions as string[]) || [],
         traitRatings,
         highlightVideoUrl: raw.video_faits_saillants_url || "",
         hudlUrl: raw.hudl_url || "",
@@ -738,7 +1001,7 @@ export default function AthleteProfilPage() {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    const { data: raw } = await supabase.from("athletes").select("*, sports!sport_id(nom), positions!position_id(nom, abreviation), schools!school_id(name, region, city), evaluations(leadership, discipline, coachabilite, intelligence_jeu, competitivite, esprit_equipe, resilience, attitude_mentalite, cote_globale, rapport_entraineur), users!athletes_coach_id_fkey(first_name, last_name)").eq("user_id", user.id).maybeSingle();
+    const { data: raw } = await supabase.from("athletes").select("*, sports!sport_id(nom), positions!position_id(nom, abreviation), schools!school_id(name, region, city), evaluations(vitesse_explosivite, force_puissance, endurance_cardio, agilite_coordination, vision_du_jeu, sens_tactique, leadership, discipline, coachabilite, intelligence_jeu, competitivite, esprit_equipe, resilience, attitude_mentalite, cote_globale, rapport_entraineur, distinctions), users!athletes_coach_id_fkey(first_name, last_name)").eq("user_id", user.id).maybeSingle();
     if (!raw) return;
     // Re-run the same mapping (simplified — just update key display fields)
     const sportRel = Array.isArray(raw.sports) ? raw.sports[0] : raw.sports;
@@ -751,7 +1014,22 @@ export default function AthleteProfilPage() {
     let age = 0;
     if (raw.date_naissance) { const bd = new Date(raw.date_naissance); const now = new Date(); age = now.getFullYear() - bd.getFullYear(); if (now.getMonth() < bd.getMonth() || (now.getMonth() === bd.getMonth() && now.getDate() < bd.getDate())) age--; }
     const profileCompleteness = calculateProfileCompletion(raw);
-    const traitRatings = evalRel ? { leadership: evalRel.leadership||0, discipline: evalRel.discipline||0, coachability: evalRel.coachabilite||0, gameIQ: evalRel.intelligence_jeu||0, competitiveness: evalRel.competitivite||0, teamwork: evalRel.esprit_equipe||0, resilience: evalRel.resilience||0, attitude: evalRel.attitude_mentalite||0 } : undefined;
+    const traitRatings = evalRel ? {
+      speed: evalRel.vitesse_explosivite || 0,
+      power: evalRel.force_puissance || 0,
+      endurance: evalRel.endurance_cardio || 0,
+      agility: evalRel.agilite_coordination || 0,
+      gameVision: evalRel.vision_du_jeu || 0,
+      tactics: evalRel.sens_tactique || 0,
+      leadership: evalRel.leadership || 0,
+      discipline: evalRel.discipline || 0,
+      coachability: evalRel.coachabilite || 0,
+      gameIQ: evalRel.intelligence_jeu || 0,
+      competitiveness: evalRel.competitivite || 0,
+      teamwork: evalRel.esprit_equipe || 0,
+      resilience: evalRel.resilience || 0,
+      attitude: evalRel.attitude_mentalite || 0,
+    } : undefined;
     setA({
       ...a,
       firstName: raw.first_name||"", lastName: raw.last_name||"", isVerified: raw.verified===true, profileCompleteness,
@@ -929,13 +1207,34 @@ export default function AthleteProfilPage() {
           <h1 className="font-head text-2xl font-black text-white uppercase tracking-tight">Mon profil</h1>
           <p className="text-[14px] text-[#9CA3AF] mt-1">C&apos;est ce que les recruteurs voient quand ils consultent ton profil</p>
         </div>
-        <a href={athleteId ? `/recruteur/athletes/${athleteId}` : "#"} target="_blank" rel="noopener noreferrer"
+        <button type="button" onClick={() => setShowPreview(true)}
           className="px-4 py-2.5 rounded-lg text-[12px] font-bold uppercase tracking-wider border border-[#2D3748] text-[#9CA3AF] hover:text-white hover:border-[#4a4d56] transition-colors flex items-center gap-2">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
-          Aperçu
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>
-        </a>
+          Aperçu recruteur
+        </button>
       </div>
+
+      {/* Slide-out preview panel */}
+      {showPreview && athleteId && (
+        <>
+          <div className="fixed inset-0 bg-black/60 z-40" onClick={() => setShowPreview(false)} />
+          <div className="fixed top-0 right-0 h-full w-full md:w-[85vw] max-w-[1400px] z-50 bg-[#111317] overflow-hidden shadow-2xl flex flex-col animate-[slideInRight_0.3s_ease-out]">
+            <div className="sticky top-0 z-10 bg-[#111317] border-b border-[#2a2d36] px-6 py-3 flex items-center justify-between shrink-0">
+              <button type="button" onClick={() => setShowPreview(false)}
+                className="flex items-center gap-2 text-[12px] font-bold uppercase tracking-wider text-[#E63946] hover:text-[#ff4d5a] transition-colors">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M19 12H5" /><path d="M12 19l-7-7 7-7" /></svg>
+                Retour à mon profil
+              </button>
+              <span className="text-[11px] font-bold tracking-[0.25em] uppercase text-[#6b7280]">Aperçu recruteur</span>
+            </div>
+            <iframe
+              src={`/recruteur/athletes/${athleteId}?preview=true`}
+              title="Aperçu recruteur"
+              className="flex-1 w-full border-0 bg-[#111317]"
+            />
+          </div>
+        </>
+      )}
 
       {/* Pending suggestions banner */}
       {!recruiterView && pendingSugs.length > 0 && (
@@ -1162,7 +1461,7 @@ export default function AthleteProfilPage() {
             )}
           </div>
 
-          {/* Coach Report — LOCKED */}
+          {/* Coach Report — rapport stays locked, Cote + Distinctions are suggestible */}
           <div className="bg-[#1A1D24] rounded-xl border border-white/5 p-5">
             <h3 className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mb-4 flex items-center gap-2">
               Rapport de l&apos;entraîneur
@@ -1174,12 +1473,25 @@ export default function AthleteProfilPage() {
                 <p className="text-[14px] text-[#9CA3AF] leading-relaxed italic">&ldquo;{a.coachReport}&rdquo;</p>
               </div>
             )}
-            <LockedField label="Cote Globale" recruiterView={recruiterView}>
-              <div className="flex items-center gap-2">
-                <StarRating rating={traitAvg} size="md" showNumber={false} />
-                <span className="text-[16px] font-head font-black text-white">{traitAvg.toFixed(1)}/5</span>
+
+            {/* Cote Globale — suggestible (not locked) */}
+            {!recruiterView ? (
+              <CoteGlobaleSuggest
+                currentValue={a.overallRating || 0}
+                pending={getPending("Cote globale")}
+                onSubmit={submitSuggestion}
+              />
+            ) : (
+              <div className="py-2.5 border-b border-[#2D3748]/40 flex items-center justify-between">
+                <span className="text-[13px] text-[#9CA3AF]">Cote Globale</span>
+                <div className="flex items-center gap-2">
+                  <StarRating rating={traitAvg} size="md" showNumber={false} />
+                  <span className="text-[16px] font-head font-black text-white">{traitAvg.toFixed(1)}/5</span>
+                </div>
               </div>
-            </LockedField>
+            )}
+
+            {/* Detailed traits — stay locked */}
             {traitEntries.length > 0 && (
               <div className="grid grid-cols-2 gap-2 mt-3">
                 {traitEntries.map(([key, val]) => (
@@ -1189,6 +1501,18 @@ export default function AthleteProfilPage() {
                   </div>
                 ))}
               </div>
+            )}
+
+            {/* Distinctions — suggestible */}
+            {!recruiterView && (
+              <DistinctionsSuggest
+                sportName={a.primarySport || ""}
+                currentDistinctions={((a as unknown) as { coachDistinctions?: string[] }).coachDistinctions || []}
+                existingCustom={existingCustomDistinctions}
+                pending={getPending("Distinctions")}
+                pendingCustom={pendingSugs.filter((s) => s.field === "Distinction personnalisée").map((s) => ({ id: s.id, proposed_value: s.proposed_value }))}
+                onSubmit={submitSuggestion}
+              />
             )}
           </div>
 

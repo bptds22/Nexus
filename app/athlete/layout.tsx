@@ -119,7 +119,7 @@ function AthleteSidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose:
     <div className="flex flex-col h-full">
       {/* Logo + portal label */}
       <div className="px-5 py-6 border-b border-[#1e2128]">
-        <Link href="/" className="flex items-center gap-3">
+        <Link href="/athlete/dashboard" className="flex items-center gap-3">
           <Image src="/brand/White%20red%20logo%20@4x.png" alt="Nexus" width={30} height={30} className="object-contain" />
           <span className="font-head font-black text-white text-base tracking-[0.06em] uppercase">Nexus</span>
         </Link>
@@ -158,12 +158,10 @@ function AthleteSidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose:
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5">
               <p className="text-[13px] font-semibold text-white truncate">{userInfo.firstName} {userInfo.lastName}</p>
-              {userInfo.verified && (
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="#3B82F6" stroke="none" className="shrink-0">
-                  <circle cx="12" cy="12" r="10" />
-                  <path d="M9 12l2 2 4-4" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-                </svg>
-              )}
+              <svg width="14" height="14" viewBox="0 0 24 24" fill={userInfo.verified ? "#3B82F6" : "#6B7280"} stroke="none" className="shrink-0" aria-label={userInfo.verified ? "Profil vérifié" : "Profil non vérifié"}>
+                <circle cx="12" cy="12" r="10" />
+                <path d="M9 12l2 2 4-4" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+              </svg>
             </div>
             <p className="text-[11px] text-[#6b7280] truncate">{userInfo.school}</p>
             {(userInfo.sport || userInfo.position) && (
