@@ -27,7 +27,7 @@ export default function PreviewSplit({
       <p className="font-head text-[12px] font-bold uppercase tracking-[2px] text-[#E63946] mb-3">
         {eyebrow}
       </p>
-      <h2 className="font-head text-2xl md:text-3xl font-black text-white leading-tight mb-4">
+      <h2 className="nx-display text-2xl md:text-3xl font-black text-white leading-tight mb-4">
         {title}
       </h2>
       <p className="text-base text-[#9CA3AF] leading-relaxed mb-6 max-w-[420px]">

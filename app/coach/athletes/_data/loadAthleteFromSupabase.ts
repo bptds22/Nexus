@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { AthleteProfile } from "./mockAthleteProfiles";
 import type { AthleteProfileRecruiterView } from "@/lib/types/models";
 import { parseDistinctions } from "@/lib/config/badges";
+import { calculateCompletion, type AthleteLike, type EvalLike } from "@/lib/utils/profileCompletion";
 
 /* ═══════════════════════════════════════════════════════════════
    Shared Supabase loader for coach athlete pages.
@@ -19,6 +20,7 @@ const ATHLETE_SELECT = `
   photo_url,
   verified,
   profile_completion,
+  last_profile_validation,
   verification_method,
   verified_at,
   verified_by,
@@ -425,7 +427,8 @@ export function mapToRecruiterView(raw: Record<string, unknown>): AthleteProfile
     fullGameUrl: (raw.video_match_complet_url as string) || "",
     practiceVideoUrl: (raw.video_entrainement_url as string) || "",
     isVerified: !!(raw.verified),
-    profileCompleteness: (raw.profile_completion as number) || 0,
+    lastValidation: (raw.last_profile_validation as string) || null,
+    profileCompleteness: calculateCompletion(raw as AthleteLike, (eval0 as EvalLike) || null, null).percentage,
     favoriteCount: 0,
     viewsThisMonth: 0,
     isOpenToOffers: true,

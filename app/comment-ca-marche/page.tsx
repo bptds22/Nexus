@@ -133,7 +133,7 @@ export default function CommentCaMarche() {
             <span className="w-6 h-px bg-wl-red"/>
           </div>
 
-          <h1 className="font-head text-6xl xl:text-7xl font-black text-white uppercase leading-[0.92] tracking-tight mb-6">
+          <h1 className="nx-display text-6xl xl:text-7xl font-black text-white uppercase leading-[0.92] tracking-tight mb-6">
             Comment<br />
             <span className="text-wl-red">ça marche</span>
           </h1>
@@ -188,7 +188,7 @@ export default function CommentCaMarche() {
                 <div className={`${label} mb-1`} style={{ color: role.color }}>
                   {role.tag}
                 </div>
-                <h2 className="font-head text-3xl font-black text-white uppercase tracking-tight leading-tight">
+                <h2 className="nx-display text-3xl font-black text-white uppercase tracking-tight leading-tight">
                   {role.tag === "ENTRAÎNEUR" && "Pour les entraîneurs du secondaire"}
                   {role.tag === "ÉTUDIANT-ATHLÈTE" && <>Pour les étudiants-athlètes <span className="text-[#9AA3B2] font-normal text-xl normal-case tracking-normal">(à venir)</span></>}
                   {role.tag === "DIRECTEUR"  && "Pour les directeurs d'organisation"}
@@ -209,7 +209,7 @@ export default function CommentCaMarche() {
                   />
 
                   {/* Ghost step number */}
-                  <div className="nx-step-num font-head text-8xl font-black text-white/30 leading-none mb-4 select-none" aria-hidden>
+                  <div className="nx-step-num nx-display text-8xl font-black text-white/30 leading-none mb-4 select-none" aria-hidden>
                     {step.n}
                   </div>
 
@@ -217,7 +217,7 @@ export default function CommentCaMarche() {
                     Étape {step.n}
                   </div>
 
-                  <h3 className="font-head text-lg font-black text-white uppercase tracking-tight leading-tight mb-3">
+                  <h3 className="nx-display text-lg font-black text-white uppercase tracking-tight leading-tight mb-3">
                     {step.title}
                   </h3>
 
@@ -246,7 +246,7 @@ export default function CommentCaMarche() {
 
           <div className="text-center mb-14">
             <div className={`${label} text-wl-red mb-4`}>Foire aux questions</div>
-            <h2 className="font-head text-4xl font-black text-white uppercase leading-tight">
+            <h2 className="nx-display text-4xl font-black text-white uppercase leading-tight">
               Tes questions,<br />nos réponses
             </h2>
           </div>
@@ -257,7 +257,7 @@ export default function CommentCaMarche() {
                 <div className="flex items-start gap-4">
                   <span className="w-5 h-px bg-wl-red mt-3 flex-shrink-0"/>
                   <div>
-                    <h3 className="font-head font-black text-white uppercase tracking-tight text-base mb-2 group-hover:text-wl-red transition-colors">
+                    <h3 className="nx-display font-black text-white uppercase tracking-tight text-base mb-2 group-hover:text-wl-red transition-colors">
                       {item.q}
                     </h3>
                     <p className="font-sans text-sm text-[#9AA3B2] leading-relaxed">
@@ -279,7 +279,7 @@ export default function CommentCaMarche() {
         <div className="max-w-6xl mx-auto px-6 py-16 flex flex-col md:flex-row items-center justify-between gap-8">
           <div>
             <div className={`${label} text-wl-red mb-3`}>Prêt à jouer?</div>
-            <h2 className="font-head text-4xl font-black text-white uppercase leading-tight">
+            <h2 className="nx-display text-4xl font-black text-white uppercase leading-tight">
               Commence à recruter aujourd&apos;hui
             </h2>
           </div>

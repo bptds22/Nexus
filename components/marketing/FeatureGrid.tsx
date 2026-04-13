@@ -13,7 +13,7 @@ export default function FeatureGrid({ title, features, id }: FeatureGridProps) {
   return (
     <section id={id} className="py-20 bg-transparent">
       <div className="max-w-6xl mx-auto px-6">
-        <h2 className="font-head text-3xl font-black text-white uppercase tracking-tight mb-12 text-center">
+        <h2 className="nx-display text-3xl font-black text-white uppercase tracking-tight mb-12 text-center">
           {title}
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">

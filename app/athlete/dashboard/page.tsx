@@ -5,6 +5,7 @@ import Link from "next/link";
 import { athleteUser, athleteStats, athleteActivity, profileChecklist } from "@/lib/mock/athlete";
 import type { AthleteActivityItem } from "@/lib/mock/athlete";
 import { createClient } from "@/lib/supabase/client";
+import { isValidationExpired } from "@/lib/utils/profileValidation";
 
 /* ═══════════════════════════════════════════════════════════════
    Athlete Dashboard — "Salut Marc-Antoine!"
@@ -29,7 +30,9 @@ const ACTIVITY_DOT: Record<AthleteActivityItem["type"], string> = {
 
 export default function AthleteDashboardPage() {
   const [firstName, setFirstName] = useState<string>(athleteUser.firstName);
-  const u = { ...athleteUser, firstName };
+  const [verified, setVerified] = useState<boolean>(athleteUser.is_verified);
+  const [lastValidation, setLastValidation] = useState<string | null>(null);
+  const u = { ...athleteUser, firstName, is_verified: verified };
   const s = athleteStats;
   const [activities, setActivities] = useState(athleteActivity);
 
@@ -40,16 +43,21 @@ export default function AthleteDashboardPage() {
       if (!user) return;
       const { data } = await supabase
         .from("athletes")
-        .select("first_name")
+        .select("first_name, verified, last_profile_validation")
         .eq("user_id", user.id)
         .maybeSingle();
       const fn = (data?.first_name as string | undefined)
         || (user.user_metadata?.first_name as string | undefined)
         || (user.email?.split("@")[0]);
       if (fn) setFirstName(fn);
+      if (data) {
+        setVerified(!!data.verified);
+        setLastValidation((data.last_profile_validation as string) || null);
+      }
     };
     load();
   }, []);
+  const badgeActive = verified && !isValidationExpired({ verified, last_profile_validation: lastValidation });
   const pctColor = completenessColor(s.profile_completeness);
   const viewsTrend = s.views_last_month > 0 ? Math.round(((s.views_this_month - s.views_last_month) / s.views_last_month) * 100) : 0;
   const unreadCount = activities.filter((a) => !a.read).length;
@@ -67,9 +75,9 @@ export default function AthleteDashboardPage() {
           Salut {u.firstName}!
         </h1>
         {u.is_verified && (
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="#3B82F6" stroke="none">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill={badgeActive ? "#3B82F6" : "#4a4d56"} stroke="none" aria-label={badgeActive ? "Profil vérifié" : "Badge désactivé"}>
             <circle cx="12" cy="12" r="10" />
-            <path d="M9 12l2 2 4-4" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+            <path d="M9 12l2 2 4-4" stroke={badgeActive ? "#fff" : "#6b7280"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
           </svg>
         )}
       </div>

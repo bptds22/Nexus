@@ -26,7 +26,7 @@ export default function SplitComparison({
             {eyebrow}
           </p>
         )}
-        <h2 className="font-head text-3xl sm:text-4xl font-black text-white uppercase tracking-tight mb-12 text-center">
+        <h2 className="nx-display text-3xl sm:text-4xl font-black text-white uppercase tracking-tight mb-12 text-center">
           {title}
         </h2>
         <div className="relative grid grid-cols-1 md:grid-cols-2">
@@ -36,7 +36,7 @@ export default function SplitComparison({
           {/* Left column */}
           <div className="bg-[#1A1D24] rounded-t-xl md:rounded-l-xl md:rounded-tr-none border border-[#1e2128] p-8">
             <span className="text-[32px] block mb-4">{left.icon}</span>
-            <h3 className="font-head text-[20px] font-bold text-[#E63946] uppercase mb-2">
+            <h3 className="nx-display text-[18px] font-bold text-[#E63946] uppercase mb-2">
               {left.title}
             </h3>
             <p className="text-[14px] text-[#9CA3AF] mb-6">
@@ -57,7 +57,7 @@ export default function SplitComparison({
           {/* Right column */}
           <div className="bg-[#1A1D24] rounded-b-xl md:rounded-r-xl md:rounded-bl-none border border-[#1e2128] md:border-l-0 p-8">
             <span className="text-[32px] block mb-4">{right.icon}</span>
-            <h3 className="font-head text-[20px] font-bold text-[#E63946] uppercase mb-2">
+            <h3 className="nx-display text-[18px] font-bold text-[#E63946] uppercase mb-2">
               {right.title}
             </h3>
             <p className="text-[14px] text-[#9CA3AF] mb-6">

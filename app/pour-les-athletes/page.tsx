@@ -63,7 +63,7 @@ function ShowcaseSplit({
       <p className="font-head text-[12px] font-bold uppercase tracking-[2px] text-[#E63946] mb-3">
         {eyebrow}
       </p>
-      <h2 className="font-head text-2xl md:text-3xl font-black text-white leading-tight mb-4">
+      <h2 className="nx-display text-2xl md:text-3xl font-black text-white leading-tight mb-4">
         {title}
       </h2>
       <p className="text-base text-[#9CA3AF] leading-relaxed max-w-[420px]">
@@ -122,7 +122,7 @@ export default function PourLesAthletes() {
               <p className="font-head text-[12px] font-bold uppercase tracking-[2px] text-[#E63946] mb-3">
                 POUR LES ÉTUDIANTS-ATHLÈTES
               </p>
-              <h1 className="font-head text-3xl sm:text-5xl font-black text-white uppercase leading-[1.05] tracking-tight mb-6">
+              <h1 className="nx-display text-3xl sm:text-5xl font-black text-white uppercase leading-[1.05] tracking-tight mb-6">
                 Les recruteurs
                 <br />
                 te cherchent.
@@ -214,7 +214,7 @@ export default function PourLesAthletes() {
                             <div style={{ fontFamily: 'var(--font-barlow-cond), sans-serif', fontSize: 7, fontWeight: 800, letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.38)', marginBottom: 2 }}>
                               {r.lbl}
                             </div>
-                            <div style={{ fontFamily: 'var(--font-bebas), sans-serif', fontSize: 18, color: '#fff', letterSpacing: '0.06em', lineHeight: 1 }}>
+                            <div style={{ fontFamily: 'var(--font-heading), sans-serif', fontSize: 18, color: '#fff', letterSpacing: '0.06em', lineHeight: 1 }}>
                               {r.val}
                             </div>
                           </div>
@@ -256,7 +256,7 @@ export default function PourLesAthletes() {
                           background: '#E63946',
                           width: 26,
                           writingMode: 'vertical-rl',
-                          fontFamily: 'var(--font-bebas), sans-serif',
+                          fontFamily: 'var(--font-heading), sans-serif',
                           fontSize: 11,
                           letterSpacing: '0.22em',
                           color: 'rgba(255,255,255,0.7)',
@@ -282,7 +282,7 @@ export default function PourLesAthletes() {
             <div>
               <span
                 ref={stat1.ref}
-                className="block font-head text-[72px] sm:text-[80px] font-black text-white leading-none"
+                className="block nx-display text-[68px] sm:text-[76px] font-black text-white leading-none"
               >
                 {stat1.value}
               </span>
@@ -291,7 +291,7 @@ export default function PourLesAthletes() {
             <div>
               <span
                 ref={stat2.ref}
-                className="block font-head text-[72px] sm:text-[80px] font-black text-white leading-none"
+                className="block nx-display text-[68px] sm:text-[76px] font-black text-white leading-none"
               >
                 {stat2.value}
               </span>
@@ -302,7 +302,7 @@ export default function PourLesAthletes() {
             <div>
               <span
                 ref={stat3.ref}
-                className="block font-head text-[72px] sm:text-[80px] font-black text-[#E63946] leading-none"
+                className="block nx-display text-[68px] sm:text-[76px] font-black text-[#E63946] leading-none"
               >
                 {stat3.value}
               </span>
@@ -360,7 +360,7 @@ export default function PourLesAthletes() {
           <p className="font-head text-[12px] font-bold uppercase tracking-[2px] text-[#E63946] mb-3">
             À VENIR
           </p>
-          <h2 className="font-head text-2xl md:text-3xl font-black text-white leading-tight mb-4">
+          <h2 className="nx-display text-2xl md:text-3xl font-black text-white leading-tight mb-4">
             Ton tableau de bord personnel
           </h2>
           <p className="text-base text-[#9CA3AF] leading-relaxed max-w-[550px] mx-auto mb-12">
@@ -403,7 +403,7 @@ export default function PourLesAthletes() {
 
               {/* Overlay label */}
               <div className="absolute inset-0 flex items-center justify-center">
-                <span className="font-head text-xl sm:text-2xl font-black text-white uppercase tracking-[0.15em] animate-[label-pulse_2s_ease-in-out_infinite]">
+                <span className="nx-display text-xl sm:text-2xl font-black text-white uppercase tracking-[0.15em] animate-[label-pulse_2s_ease-in-out_infinite]">
                   Bientôt disponible
                 </span>
               </div>
@@ -418,7 +418,7 @@ export default function PourLesAthletes() {
         <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-[#E63946]/[0.07] blur-[120px] rounded-full pointer-events-none" />
 
         <div className="max-w-6xl mx-auto px-6 text-center relative z-10">
-          <h2 className="font-head text-3xl sm:text-4xl font-black text-white uppercase tracking-tight mb-4">
+          <h2 className="nx-display text-3xl sm:text-4xl font-black text-white uppercase tracking-tight mb-4">
             Prêt à te faire repérer?
           </h2>
           <p className="text-lg text-[#9CA3AF] mb-8 max-w-[500px] mx-auto">

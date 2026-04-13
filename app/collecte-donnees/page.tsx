@@ -219,7 +219,7 @@ export default function CollecteDonneesPage() {
             <span className={`${label} text-wl-red`}>Document juridique</span>
             <span className="w-6 h-px bg-wl-red" />
           </div>
-          <h1 className="font-head text-5xl xl:text-6xl font-black text-white uppercase leading-[0.92] tracking-tight mb-6">
+          <h1 className="nx-display text-5xl xl:text-6xl font-black text-white uppercase leading-[0.92] tracking-tight mb-6">
             Collecte et traitement<br />
             <span className="text-wl-red">des données</span>
           </h1>
@@ -289,10 +289,10 @@ export default function CollecteDonneesPage() {
                   className="nx-policy-section scroll-mt-24 pb-12 mb-12 border-b border-[#1E2D4A] last:border-b-0 last:mb-0 last:pb-0"
                 >
                   <div className="flex items-center gap-4 mb-6">
-                    <span className="nx-step-num font-head text-5xl font-black text-white/[0.08] leading-none select-none" aria-hidden>
+                    <span className="nx-step-num nx-display text-5xl font-black text-white/[0.08] leading-none select-none" aria-hidden>
                       {String(i + 1).padStart(2, "0")}
                     </span>
-                    <h2 className="font-head text-2xl font-black text-white uppercase tracking-tight leading-tight">
+                    <h2 className="nx-display text-2xl font-black text-white uppercase tracking-tight leading-tight">
                       {section.title}
                     </h2>
                   </div>
@@ -329,7 +329,7 @@ export default function CollecteDonneesPage() {
         <div className="max-w-6xl mx-auto px-6 py-16 flex flex-col md:flex-row items-center justify-between gap-8">
           <div>
             <div className={`${label} text-wl-red mb-3`}>Des questions?</div>
-            <h2 className="font-head text-4xl font-black text-white uppercase leading-tight">Contacte-nous</h2>
+            <h2 className="nx-display text-4xl font-black text-white uppercase leading-tight">Contacte-nous</h2>
           </div>
           <div className="flex gap-3 flex-shrink-0">
             <a href="mailto:confidentialite@nexus-sport.ca" className="h-12 px-8 bg-wl-red text-white font-head font-black text-xs uppercase tracking-widest hover:bg-wl-red-hover transition-colors hover:shadow-[0_8px_28px_rgba(232,72,72,0.38)] hover:-translate-y-0.5 inline-flex items-center">

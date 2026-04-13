@@ -858,6 +858,7 @@ export interface AthleteProfileRecruiterView {
 
   // Meta
   isVerified: boolean;
+  lastValidation?: string | null;
   profileCompleteness: number;
   favoriteCount: number;
   viewsThisMonth: number;

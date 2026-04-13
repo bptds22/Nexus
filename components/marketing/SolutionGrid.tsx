@@ -21,7 +21,7 @@ export default function SolutionGrid({
         <p className="text-[14px] font-head font-bold uppercase tracking-[0.2em] text-[#E63946] mb-4">
           {eyebrow}
         </p>
-        <h2 className="font-head text-3xl sm:text-4xl font-black text-white uppercase tracking-tight mb-12">
+        <h2 className="nx-display text-3xl sm:text-4xl font-black text-white uppercase tracking-tight mb-12">
           {title}
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -33,7 +33,7 @@ export default function SolutionGrid({
               <div className="w-12 h-12 bg-[rgba(230,57,70,0.1)] rounded-full flex items-center justify-center">
                 <span className="text-[24px]">{solution.icon}</span>
               </div>
-              <h3 className="font-head text-[16px] font-bold text-white mt-4 mb-2">
+              <h3 className="nx-display text-[16px] font-bold text-white mt-4 mb-2">
                 {solution.title}
               </h3>
               <p className="text-[14px] text-[#9CA3AF] leading-relaxed">

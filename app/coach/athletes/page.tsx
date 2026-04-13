@@ -9,6 +9,8 @@ import NxIcon from "@/components/ui/NxIcon";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
 import type { GlobalRecruitmentStatus } from "@/lib/types/models";
 import { BADGE_CONFIG, parseDistinctions } from "@/lib/config/badges";
+import { calculateCompletion, type AthleteLike, type EvalLike } from "@/lib/utils/profileCompletion";
+import { isValidationExpired } from "@/lib/utils/profileValidation";
 
 /* ═══════════════════════════════════════════════════════════════
    Mes Athlètes — Card/list layout matching recruiter search
@@ -58,10 +60,15 @@ function CoachAthleteCard({ a }: { a: RosterAthlete }) {
 
         {/* Top left — verified check + favorites */}
         <div className="absolute top-3 left-3 z-10 flex items-center gap-2">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill={a.isVerified ? "#3B82F6" : "#4a4d56"} stroke="none">
-            <circle cx="12" cy="12" r="10" />
-            <path d="M9 12l2 2 4-4" stroke={a.isVerified ? "#fff" : "#6b7280"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-          </svg>
+          {(() => {
+            const active = a.isVerified && !isValidationExpired({ verified: !!a.isVerified, last_profile_validation: a.lastValidation ?? null });
+            return (
+              <svg width="28" height="28" viewBox="0 0 24 24" fill={active ? "#3B82F6" : "#4a4d56"} stroke="none" aria-label={active ? "Profil vérifié" : a.isVerified ? "Badge désactivé" : "Profil non vérifié"}>
+                <circle cx="12" cy="12" r="10" />
+                <path d="M9 12l2 2 4-4" stroke={active ? "#fff" : "#6b7280"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+              </svg>
+            );
+          })()}
           {a.favorites > 0 && (
             <div className="flex items-center gap-1">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="#E63946" stroke="none">
@@ -162,10 +169,15 @@ function CoachAthleteRow({ a }: { a: RosterAthlete }) {
           )}
         </div>
         <div className="absolute -top-0.5 -right-0.5 z-10">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill={a.isVerified ? "#3B82F6" : "#4a4d56"} stroke="none">
-            <circle cx="12" cy="12" r="10" />
-            <path d="M9 12l2 2 4-4" stroke={a.isVerified ? "#fff" : "#6b7280"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-          </svg>
+          {(() => {
+            const active = a.isVerified && !isValidationExpired({ verified: !!a.isVerified, last_profile_validation: a.lastValidation ?? null });
+            return (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill={active ? "#3B82F6" : "#4a4d56"} stroke="none">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M9 12l2 2 4-4" stroke={active ? "#fff" : "#6b7280"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+              </svg>
+            );
+          })()}
         </div>
       </Link>
 
@@ -320,12 +332,21 @@ function MesAthletesContent() {
           last_name,
           verified,
           profile_completion,
+          last_profile_validation,
           verification_method,
           verified_at,
           verified_by,
           video_faits_saillants_url,
+          hudl_url,
+          youtube_url,
+          instagram_url,
           annee_diplomation,
           cote_globale_entraineur,
+          date_naissance,
+          genre,
+          telephone,
+          bio,
+          school_id,
           taille_pieds,
           taille_pouces,
           poids_lbs,
@@ -337,6 +358,8 @@ function MesAthletesContent() {
           sport_id,
           position_id,
           mentions_academiques,
+          matieres_fortes,
+          programme_cegep_vise,
           moyenne_generale,
           pret_changer_region,
           ouvert_cegep_prive,
@@ -346,7 +369,7 @@ function MesAthletesContent() {
           positions!position_id(nom, abreviation),
           schools!school_id(name, region),
           committed_school:schools!committed_school_id(name),
-          evaluations(cote_globale, distinctions)
+          evaluations(cote_globale, rapport_entraineur, distinctions)
         `)
         .eq("coach_id", session.user.id)
         .eq("status", "ACTIF");
@@ -396,8 +419,9 @@ function MesAthletesContent() {
 
         const position = posObj?.abreviation || posObj?.nom || "";
         const gradYear = (a.annee_diplomation as number) || 0;
-        const profilePct = (a.profile_completion as number) || 0;
+        const profilePct = calculateCompletion(a as AthleteLike, (eval0 as EvalLike) || null, null).percentage;
         const isVerified = !!(a.verified);
+        const lastValidation = (a.last_profile_validation as string) || null;
         const sportName = (sportObj?.nom || "").toLowerCase().replace(/ /g, "_");
 
         const athlete: RosterAthlete = {
@@ -410,6 +434,7 @@ function MesAthletesContent() {
           teamId: sportObj?.nom || "real",
           profilePercent: profilePct,
           isVerified,
+          lastValidation,
           verification: {
             isVerified,
             method: (a.verification_method as "auto" | "manual_coach" | "manual_director") || null,

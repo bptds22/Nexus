@@ -93,7 +93,7 @@ export default function Home() {
             </div>
 
             {/* Headline — condensed, all-caps game style */}
-            <h1 className="font-head text-6xl xl:text-7xl font-black text-white uppercase leading-[0.92] tracking-tight mb-6">
+            <h1 className="nx-display text-6xl xl:text-7xl font-black text-white uppercase leading-[0.92] tracking-tight mb-6">
               La Plateforme{" "}
               <span className="text-wl-red">#1</span>
               <br />
@@ -126,7 +126,7 @@ export default function Home() {
                 { num: "30",  label: "Recruteurs CÉGEP" },
               ].map((s) => (
                 <div key={s.label} className="px-7 first:pl-0 last:pr-0">
-                  <div className="nx-stat-num font-head text-4xl font-black text-white leading-none">
+                  <div className="nx-stat-num nx-display text-4xl font-black text-white leading-none">
                     {s.num}<span className="text-wl-red">+</span>
                   </div>
                   <div className={`${label} text-[#9AA3B2] mt-1.5`}>{s.label}</div>
@@ -207,7 +207,7 @@ export default function Home() {
                           <div style={{ fontFamily: 'var(--font-barlow-cond), sans-serif', fontSize: 7, fontWeight: 800, letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.38)', marginBottom: 2 }}>
                             {r.lbl}
                           </div>
-                          <div style={{ fontFamily: 'var(--font-bebas), sans-serif', fontSize: 18, color: '#fff', letterSpacing: '0.06em', lineHeight: 1 }}>
+                          <div style={{ fontFamily: 'var(--font-heading), sans-serif', fontSize: 18, color: '#fff', letterSpacing: '0.06em', lineHeight: 1 }}>
                             {r.val}
                           </div>
                         </div>
@@ -249,7 +249,7 @@ export default function Home() {
                         background: '#E63946',
                         width: 26,
                         writingMode: 'vertical-rl',
-                        fontFamily: 'var(--font-bebas), sans-serif',
+                        fontFamily: 'var(--font-heading), sans-serif',
                         fontSize: 11,
                         letterSpacing: '0.22em',
                         color: 'rgba(255,255,255,0.7)',
@@ -311,7 +311,7 @@ export default function Home() {
 
           <div className="mb-14">
             <div className={`${label} text-wl-red mb-3`}>Comment ça marche</div>
-            <h2 className="font-head text-5xl font-black text-white uppercase leading-[1] tracking-tight">
+            <h2 className="nx-display text-5xl font-black text-white uppercase leading-[1] tracking-tight">
               Du Secondaire au CÉGEP<br/>
               <span className="text-wl-red">en 3 étapes</span>
             </h2>
@@ -326,12 +326,12 @@ export default function Home() {
                 <div className="absolute top-0 left-8 right-8 md:left-0 md:right-auto md:top-0 md:bottom-0 md:w-px md:h-full h-px bg-wl-red scale-0 group-hover:scale-100 transition-transform origin-top-left" aria-hidden/>
 
                 {/* Giant watermark step number */}
-                <div className="nx-step-num font-head text-8xl font-black text-white/30 leading-none mb-3 select-none" aria-hidden>
+                <div className="nx-step-num nx-display text-8xl font-black text-white/30 leading-none mb-3 select-none" aria-hidden>
                   {step.n}
                 </div>
 
                 <div className={`${label} text-wl-red mb-3`}>{step.role}</div>
-                <h3 className="font-head text-2xl font-black text-white uppercase leading-tight mb-3">
+                <h3 className="nx-display text-2xl font-black text-white uppercase leading-tight mb-3">
                   {step.title}
                 </h3>
                 <p className="font-sans text-sm text-[#D8E1EA] leading-relaxed">
@@ -358,7 +358,7 @@ export default function Home() {
           {/* Header */}
           <div className="text-center mb-16">
             <div className={`${label} text-wl-red mb-4`}>Rejoins Nexus</div>
-            <h2 className="font-head text-6xl font-black text-white uppercase tracking-tight leading-[1]">
+            <h2 className="nx-display text-6xl font-black text-white uppercase tracking-tight leading-[1]">
               Choisis ton Parcours
             </h2>
           </div>
@@ -370,7 +370,7 @@ export default function Home() {
             <div className="relative overflow-hidden bg-[#0A1428] border border-[#1E2D4A] p-12 group hover:bg-[#0D1A38] transition-colors cursor-pointer">
 
               {/* Giant watermark number */}
-              <div className="absolute -right-8 -bottom-4 font-head text-[220px] font-black text-white/[0.03] leading-none select-none pointer-events-none" aria-hidden>
+              <div className="absolute -right-8 -bottom-4 nx-display text-[200px] font-black text-white/[0.03] leading-none select-none pointer-events-none" aria-hidden>
                 01
               </div>
 
@@ -379,7 +379,7 @@ export default function Home() {
 
               <span className={`${label} text-wl-red`}>Coach / Entraîneur</span>
 
-              <h3 className="font-head text-5xl font-black text-white uppercase leading-[1] mt-4 mb-2">
+              <h3 className="nx-display text-5xl font-black text-white uppercase leading-[1] mt-4 mb-2">
                 Valorise
                 <br />
                 tes Athlètes
@@ -405,7 +405,7 @@ export default function Home() {
             {/* RECRUITER */}
             <div className="relative overflow-hidden bg-[#070D1C] border border-[#1E2D4A] md:border-l-0 p-12 group hover:bg-[#0A1228] transition-colors cursor-pointer">
 
-              <div className="absolute -right-8 -bottom-4 font-head text-[220px] font-black text-white/[0.03] leading-none select-none pointer-events-none" aria-hidden>
+              <div className="absolute -right-8 -bottom-4 nx-display text-[200px] font-black text-white/[0.03] leading-none select-none pointer-events-none" aria-hidden>
                 02
               </div>
 
@@ -413,7 +413,7 @@ export default function Home() {
 
               <span className={`${label} text-[#9AA3B2]`}>Recruteur CÉGEP</span>
 
-              <h3 className="font-head text-5xl font-black text-white uppercase leading-[1] mt-4 mb-2">
+              <h3 className="nx-display text-5xl font-black text-white uppercase leading-[1] mt-4 mb-2">
                 Découvre
                 <br />
                 les Meilleurs
@@ -446,7 +446,7 @@ export default function Home() {
         <div className="max-w-6xl mx-auto px-6 py-16 flex flex-col md:flex-row items-center justify-between gap-8">
           <div>
             <div className={`${label} text-wl-red mb-3`}>Prêt à jouer?</div>
-            <h2 className="font-head text-4xl font-black text-white uppercase leading-tight">
+            <h2 className="nx-display text-4xl font-black text-white uppercase leading-tight">
               Commence à recruter aujourd&apos;hui
             </h2>
           </div>

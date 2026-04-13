@@ -39,6 +39,7 @@ export interface RosterAthlete {
   teamId: string;                   // links to CoachTeam.id
   profilePercent: number;           // 0–100
   isVerified: boolean;              // true if verified (auto or manual)
+  lastValidation?: string | null;   // last_profile_validation (monthly revalidation)
   verification: AthleteVerification;
   views: number;
   favorites: number;

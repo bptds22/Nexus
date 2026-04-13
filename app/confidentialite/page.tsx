@@ -272,7 +272,7 @@ export default function ConfidentialitePage() {
             <span className="w-6 h-px bg-wl-red" />
           </div>
 
-          <h1 className="font-head text-5xl xl:text-6xl font-black text-white uppercase leading-[0.92] tracking-tight mb-6">
+          <h1 className="nx-display text-5xl xl:text-6xl font-black text-white uppercase leading-[0.92] tracking-tight mb-6">
             Politique de<br />
             <span className="text-wl-red">confidentialité</span>
           </h1>
@@ -358,10 +358,10 @@ export default function ConfidentialitePage() {
                 >
                   {/* Section number + title */}
                   <div className="flex items-center gap-4 mb-6">
-                    <span className="nx-step-num font-head text-5xl font-black text-white/[0.08] leading-none select-none" aria-hidden>
+                    <span className="nx-step-num nx-display text-5xl font-black text-white/[0.08] leading-none select-none" aria-hidden>
                       {String(i + 1).padStart(2, "0")}
                     </span>
-                    <h2 className="font-head text-2xl font-black text-white uppercase tracking-tight leading-tight">
+                    <h2 className="nx-display text-2xl font-black text-white uppercase tracking-tight leading-tight">
                       {section.title}
                     </h2>
                   </div>
@@ -413,7 +413,7 @@ export default function ConfidentialitePage() {
         <div className="max-w-6xl mx-auto px-6 py-16 flex flex-col md:flex-row items-center justify-between gap-8">
           <div>
             <div className={`${label} text-wl-red mb-3`}>Des questions?</div>
-            <h2 className="font-head text-4xl font-black text-white uppercase leading-tight">
+            <h2 className="nx-display text-4xl font-black text-white uppercase leading-tight">
               Contacte-nous
             </h2>
           </div>

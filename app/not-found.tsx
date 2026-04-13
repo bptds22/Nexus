@@ -81,8 +81,8 @@ export default function NotFound() {
 
         {/* Ghost watermark */}
         <div className="absolute inset-0 flex items-center justify-center select-none pointer-events-none" aria-hidden>
-          <span className="font-head font-black leading-none text-wl-red opacity-[0.20]"
-            style={{ fontSize: "clamp(200px, 40vw, 520px)" }}>
+          <span className="nx-display font-black leading-none text-wl-red opacity-[0.20]"
+            style={{ fontSize: "clamp(188px, 38vw, 484px)" }}>
             404
           </span>
         </div>
@@ -90,8 +90,8 @@ export default function NotFound() {
         <div className="relative z-10 text-center max-w-lg mx-auto">
           <div className={`${label} text-wl-red mb-6`}>Erreur 404</div>
 
-          <h1 className="font-head font-black text-white uppercase leading-none mb-5"
-            style={{ fontSize: "clamp(56px, 10vw, 96px)" }}>
+          <h1 className="nx-display font-black text-white uppercase leading-none mb-5"
+            style={{ fontSize: "clamp(52px, 10vw, 90px)" }}>
             Hors Jeu
           </h1>
 

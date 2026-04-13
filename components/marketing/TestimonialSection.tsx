@@ -27,7 +27,7 @@ export default function TestimonialSection({
   return (
     <section className="py-20 bg-transparent">
       <div className="max-w-6xl mx-auto px-6">
-        <h2 className="font-head text-3xl sm:text-4xl font-black text-white uppercase tracking-tight mb-12 text-center">
+        <h2 className="nx-display text-3xl sm:text-4xl font-black text-white uppercase tracking-tight mb-12 text-center">
           {title}
         </h2>
         <div className={`grid grid-cols-1 gap-6 mb-12 ${testimonials.length === 2 ? "md:grid-cols-2" : "md:grid-cols-3"}`}>
@@ -37,7 +37,7 @@ export default function TestimonialSection({
               className="bg-[#22262E] rounded-xl p-6 sm:p-7 relative"
             >
               {/* Giant guillemet */}
-              <span className="absolute top-4 left-6 text-[60px] text-[#E63946] opacity-15 font-head leading-none select-none pointer-events-none">
+              <span className="absolute top-4 left-6 text-[56px] text-[#E63946] opacity-15 nx-display leading-none select-none pointer-events-none">
                 &laquo;
               </span>
               <p className="text-[14px] text-[#D1D5DB] italic leading-relaxed mt-8 mb-6">
@@ -66,7 +66,7 @@ export default function TestimonialSection({
           <div className="flex justify-center gap-12 mt-12 pt-8 border-t border-[#1e2128]">
             {stats.map((stat, index) => (
               <div key={index} className="text-center">
-                <p className="font-head text-3xl font-black text-white">
+                <p className="nx-display text-3xl font-black text-white">
                   {stat.value}
                 </p>
                 <p className="text-[12px] text-[#6B7280] uppercase tracking-wide mt-1">

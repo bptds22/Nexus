@@ -14,6 +14,7 @@ import DistinctionBadge from "@/components/shared/DistinctionBadge";
 import { parseDistinctions, type DistinctionEntry } from "@/lib/config/badges";
 import VideoEmbed from "@/components/ui/VideoEmbed";
 import type { GlobalRecruitmentStatus } from "@/lib/types/models";
+import { isValidationExpired } from "@/lib/utils/profileValidation";
 
 /* ═══════════════════════════════════════════════════════════════
    Coach Athlete Profile — Same design as recruiter view
@@ -126,9 +127,9 @@ function PlayerCard({ a }: { a: AthleteProfileRecruiterView }) {
 
   return (
     <div className="nx-v30-wrap relative" style={{ width: 300, paddingTop: 6, paddingBottom: 10 }}>
-      <div className="nx-v30-badge absolute z-30" style={{ top: 10, right: -12 }} title={a.isVerified ? "Profil vérifié" : "Profil non vérifié"}>
+      <div className="nx-v30-badge absolute z-30" style={{ top: 10, right: -12 }} title={a.isVerified && !isValidationExpired({ verified: !!a.isVerified, last_profile_validation: a.lastValidation ?? null }) ? "Profil vérifié" : a.isVerified ? "Badge désactivé — confirmation requise" : "Profil non vérifié"}>
         <div className="rounded-full" style={{ border: '3px solid #111317' }}>
-          {a.isVerified ? (
+          {a.isVerified && !isValidationExpired({ verified: !!a.isVerified, last_profile_validation: a.lastValidation ?? null }) ? (
             <svg width="48" height="48" viewBox="0 0 54 54" fill="none">
               <defs>
                 <radialGradient id="cc_bg" cx="38%" cy="28%" r="68%"><stop offset="0%" stopColor="#29AAFF" /><stop offset="55%" stopColor="#0094F0" /><stop offset="100%" stopColor="#0060C0" /></radialGradient>
@@ -156,15 +157,15 @@ function PlayerCard({ a }: { a: AthleteProfileRecruiterView }) {
             <img src={a.photoUrl} alt={`${a.firstName} ${a.lastName}`} className="absolute inset-0 w-full h-full object-cover z-[1]" />
           ) : (
             <div className="absolute inset-0 z-[1] flex items-center justify-center">
-              <span style={{ fontFamily: 'var(--font-bebas), sans-serif', fontSize: 120, color: 'rgba(255,255,255,0.06)', letterSpacing: '0.05em', lineHeight: 1 }}>
+              <span style={{ fontFamily: 'var(--font-heading), sans-serif', fontSize: 120, color: 'rgba(255,255,255,0.06)', letterSpacing: '0.05em', lineHeight: 1 }}>
                 {a.firstName[0]}{a.lastName[0]}
               </span>
             </div>
           )}
           <div className="absolute bottom-0 left-0 right-0 h-1/2 z-[2]" style={{ background: 'linear-gradient(to top, rgba(11,18,32,0.97) 0%, rgba(11,18,32,0.7) 35%, transparent 100%)' }} />
           <div className="absolute bottom-4 left-4 z-[3]">
-            <p style={{ fontFamily: 'var(--font-bebas), sans-serif', fontSize: 28, color: '#fff', letterSpacing: '0.04em', lineHeight: 1 }}>{a.firstName}</p>
-            <p style={{ fontFamily: 'var(--font-bebas), sans-serif', fontSize: 28, color: '#fff', letterSpacing: '0.04em', lineHeight: 1 }}>{a.lastName}</p>
+            <p style={{ fontFamily: 'var(--font-heading), sans-serif', fontSize: 28, color: '#fff', letterSpacing: '0.04em', lineHeight: 1 }}>{a.firstName}</p>
+            <p style={{ fontFamily: 'var(--font-heading), sans-serif', fontSize: 28, color: '#fff', letterSpacing: '0.04em', lineHeight: 1 }}>{a.lastName}</p>
           </div>
         </div>
 
@@ -179,7 +180,7 @@ function PlayerCard({ a }: { a: AthleteProfileRecruiterView }) {
               ].map((r) => (
                 <div key={r.lbl}>
                   <div style={{ fontFamily: 'var(--font-barlow-cond), sans-serif', fontSize: 7, fontWeight: 800, letterSpacing: '0.22em', textTransform: 'uppercase' as const, color: 'rgba(255,255,255,0.38)', marginBottom: 1 }}>{r.lbl}</div>
-                  <div style={{ fontFamily: 'var(--font-bebas), sans-serif', fontSize: 16, color: '#fff', letterSpacing: '0.06em', lineHeight: 1 }}>{r.val}</div>
+                  <div style={{ fontFamily: 'var(--font-heading), sans-serif', fontSize: 16, color: '#fff', letterSpacing: '0.06em', lineHeight: 1 }}>{r.val}</div>
                 </div>
               ))}
             </div>
@@ -201,7 +202,7 @@ function PlayerCard({ a }: { a: AthleteProfileRecruiterView }) {
               <div style={{ fontFamily: 'var(--font-barlow-cond), sans-serif', fontWeight: 700, fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#9CA3AF', lineHeight: 1.2 }}>{a.region}</div>
               <div style={{ fontFamily: 'var(--font-barlow-cond), sans-serif', fontWeight: 700, fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#E63946', marginTop: 4 }}>Promotion {a.graduationYear}</div>
             </div>
-            <div className="flex items-center justify-center flex-shrink-0" style={{ background: '#E63946', width: 24, writingMode: 'vertical-rl' as const, fontFamily: 'var(--font-bebas), sans-serif', fontSize: 10, letterSpacing: '0.22em', color: 'rgba(255,255,255,0.7)' }}>NEXUS</div>
+            <div className="flex items-center justify-center flex-shrink-0" style={{ background: '#E63946', width: 24, writingMode: 'vertical-rl' as const, fontFamily: 'var(--font-heading), sans-serif', fontSize: 10, letterSpacing: '0.22em', color: 'rgba(255,255,255,0.7)' }}>NEXUS</div>
           </div>
         </div>
       </div>

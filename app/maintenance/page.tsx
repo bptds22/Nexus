@@ -38,7 +38,7 @@ export default function MaintenancePage() {
         </div>
 
         {/* Heading */}
-        <h1 className="font-head text-3xl sm:text-4xl font-black text-white uppercase tracking-tight leading-tight">
+        <h1 className="nx-display text-3xl sm:text-4xl font-black text-white uppercase tracking-tight leading-tight">
           Nexus est en maintenance
         </h1>
 

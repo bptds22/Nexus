@@ -1,243 +1,225 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { PIPELINE_AGGREGATED, PIPELINE_RETIRED, PIPELINE_STAGE_DAYS, PIPELINE_BY_SCHOOL } from "@/lib/mock/admin";
-import type { PipelineAggregated } from "@/lib/mock/admin";
+import { useEffect, useMemo, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+import AdminTable, { AdminColumn } from "../_components/AdminTable";
 
-const selectBase = "bg-[#111317] border border-[#2D3748] rounded-lg px-3 py-2.5 text-[13px] text-white focus:outline-none focus:border-[#E63946]/50";
+/* ─────────────────────────────────────────────────────────────────
+   Admin Pipeline — Vue plateforme de tous les pipelines recruteurs.
+   Source: recruiter_pipeline + athletes + users + schools.
+───────────────────────────────────────────────────────────────── */
+
+const STAGE_OPTIONS = [
+  { value: "IDENTIFIE", label: "Identifié" },
+  { value: "CONTACTE", label: "Contacté" },
+  { value: "EN_DISCUSSION", label: "En discussion" },
+  { value: "VISITE_PLANIFIEE", label: "Visite planifiée" },
+  { value: "ENGAGE", label: "Engagé" },
+  { value: "LETTRE_SIGNEE", label: "Lettre signée" },
+];
+
+const STAGE_COLORS: Record<string, string> = {
+  IDENTIFIE: "bg-[#6b7280]/15 text-[#9CA3AF]",
+  CONTACTE: "bg-[#3B82F6]/15 text-[#3B82F6]",
+  EN_DISCUSSION: "bg-[#F59E0B]/15 text-[#F59E0B]",
+  VISITE_PLANIFIEE: "bg-[#A855F7]/15 text-[#A855F7]",
+  ENGAGE: "bg-[#3B82F6]/15 text-[#3B82F6]",
+  LETTRE_SIGNEE: "bg-[#22C55E]/15 text-[#22C55E]",
+};
+
+interface PipelineRow {
+  id: string;
+  athlete_name: string;
+  recruiter_name: string;
+  stage: string;
+  updated: string;
+  updated_fmt: string;
+  school_to_cegep: string;
+}
+
+interface RawRow {
+  id: string;
+  stage: string;
+  updated_at: string | null;
+  moved_at: string | null;
+  athlete: { id: string; first_name: string | null; last_name: string | null; school_id: string | null } | null;
+  recruiter: { id: string; first_name: string | null; last_name: string | null; school_id: string | null } | null;
+}
+
+function fmt(iso: string | null) {
+  if (!iso) return "";
+  return new Date(iso).toLocaleDateString("fr-CA", { year: "numeric", month: "short", day: "numeric" });
+}
 
 export default function AdminPipelinePage() {
-  const [typeFilter, setTypeFilter] = useState<"all" | "secondaire" | "cegep">("all");
-  const [schoolFilter, setSchoolFilter] = useState<string>("all");
+  const supabase = useMemo(() => createClient(), []);
+  const [rows, setRows] = useState<PipelineRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [stageFilter, setStageFilter] = useState<string>("all");
+  const [toast, setToast] = useState<string | null>(null);
 
-  const schoolsForType = useMemo(() => {
-    if (typeFilter === "all") return PIPELINE_BY_SCHOOL;
-    return PIPELINE_BY_SCHOOL.filter((s) => s.type === typeFilter);
-  }, [typeFilter]);
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
+      const [pipeRes, schoolRes] = await Promise.all([
+        supabase
+          .from("recruiter_pipeline")
+          .select(
+            `id, stage, moved_at, updated_at,
+             athlete:athlete_id(id, first_name, last_name, school_id),
+             recruiter:recruiter_id(id, first_name, last_name, school_id)`,
+          )
+          .order("updated_at", { ascending: false }),
+        supabase.from("schools").select("id,name"),
+      ]);
 
-  // Active data based on filters
-  const selectedSchool = schoolFilter !== "all" ? PIPELINE_BY_SCHOOL.find((s) => s.schoolId === schoolFilter) : null;
+      const schoolMap = new Map<string, string>(
+        (schoolRes.data || []).map((s: { id: string; name: string }) => [s.id, s.name]),
+      );
 
-  const funnel: PipelineAggregated[] = selectedSchool ? selectedSchool.funnel : PIPELINE_AGGREGATED;
-  const retired = selectedSchool ? selectedSchool.retired : PIPELINE_RETIRED;
-  const stageDays = selectedSchool ? selectedSchool.stageDays : PIPELINE_STAGE_DAYS;
-  const conversionRate = selectedSchool ? selectedSchool.conversionRate : 9.4;
-  const conversionTrend = selectedSchool ? selectedSchool.conversionTrend : 2.1;
+      const data = (pipeRes.data || []) as unknown as RawRow[];
+      const mapped: PipelineRow[] = data.map((r) => {
+        const athleteName =
+          [r.athlete?.first_name, r.athlete?.last_name].filter(Boolean).join(" ") || "—";
+        const recruiterName =
+          [r.recruiter?.first_name, r.recruiter?.last_name].filter(Boolean).join(" ") || "—";
+        const aSchool = r.athlete?.school_id ? schoolMap.get(r.athlete.school_id) : null;
+        const rSchool = r.recruiter?.school_id ? schoolMap.get(r.recruiter.school_id) : null;
+        const school_to_cegep = aSchool && rSchool
+          ? `${aSchool} → ${rSchool}`
+          : aSchool
+          ? `${aSchool} → —`
+          : rSchool
+          ? `— → ${rSchool}`
+          : "—";
 
-  const maxCount = funnel[0].count;
-  const subtitle = selectedSchool
-    ? `Saison 2025-2026 · ${selectedSchool.schoolName}`
-    : "Saison 2025-2026 · Tous les recruteurs";
+        return {
+          id: r.id,
+          athlete_name: athleteName,
+          recruiter_name: recruiterName,
+          stage: r.stage,
+          updated: r.updated_at ?? "",
+          updated_fmt: fmt(r.updated_at),
+          school_to_cegep,
+        };
+      });
 
-  const secCount = PIPELINE_BY_SCHOOL.filter((s) => s.type === "secondaire").length;
-  const cegCount = PIPELINE_BY_SCHOOL.filter((s) => s.type === "cegep").length;
+      setRows(mapped);
+      setLoading(false);
+    })();
+  }, [supabase]);
+
+  const filtered = useMemo(
+    () => (stageFilter === "all" ? rows : rows.filter((r) => r.stage === stageFilter)),
+    [rows, stageFilter],
+  );
+
+  function showToast(msg: string) {
+    setToast(msg);
+    setTimeout(() => setToast(null), 2500);
+  }
+
+  async function bumpMovedAt(id: string) {
+    const { error } = await supabase
+      .from("recruiter_pipeline")
+      .update({ moved_at: new Date().toISOString() })
+      .eq("id", id);
+    if (error) showToast(`Erreur: ${error.message}`);
+  }
+
+  const columns: AdminColumn<PipelineRow>[] = [
+    {
+      key: "athlete_name",
+      label: "Athlète",
+      readonly: true,
+      render: (r) => <span className="text-[13px] font-bold text-white">{r.athlete_name}</span>,
+    },
+    {
+      key: "recruiter_name",
+      label: "Recruteur",
+      readonly: true,
+      render: (r) => <span className="text-[13px] text-[#9CA3AF]">{r.recruiter_name}</span>,
+    },
+    {
+      key: "stage",
+      label: "Stage",
+      type: "select",
+      options: STAGE_OPTIONS,
+      render: (r) => {
+        const opt = STAGE_OPTIONS.find((o) => o.value === r.stage);
+        const cls = STAGE_COLORS[r.stage] || "bg-[#2D3748] text-[#9CA3AF]";
+        return (
+          <span className={`inline-flex px-2.5 py-1 rounded-full text-[11px] font-bold ${cls}`}>
+            {opt?.label ?? r.stage}
+          </span>
+        );
+      },
+    },
+    { key: "updated_fmt", label: "Mis à jour", readonly: true },
+    {
+      key: "school_to_cegep",
+      label: "École → CÉGEP",
+      readonly: true,
+      render: (r) => <span className="text-[13px] text-[#9CA3AF]">{r.school_to_cegep}</span>,
+    },
+  ];
+
+  const selectBase =
+    "bg-[#111317] border border-[#2D3748] rounded-lg px-3 py-2.5 text-[13px] text-white focus:outline-none focus:border-[#E63946]/50";
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
+    <div className="max-w-7xl mx-auto px-6 py-8 space-y-6">
       <div>
-        <h1 className="font-head text-2xl font-black text-white uppercase tracking-tight">Pipeline de recrutement — Vue globale</h1>
-        <p className="text-[13px] text-[#6b7280] mt-1">{subtitle}</p>
+        <h1 className="font-head text-2xl font-black text-white uppercase tracking-tight">
+          Pipeline — Vue plateforme
+        </h1>
+        <p className="text-[13px] text-[#6b7280] mt-1">
+          {rows.length} entrée{rows.length > 1 ? "s" : ""} de pipeline tous recruteurs confondus
+        </p>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-wrap gap-3 items-center">
-        {/* Type tabs */}
-        <div className="flex gap-1 bg-[#111317] rounded-lg border border-[#2D3748] p-1">
-          {([
-            ["all", "Tous"] as const,
-            ["secondaire", `Secondaires (${secCount})`] as const,
-            ["cegep", `CÉGEPs (${cegCount})`] as const,
-          ]).map(([key, label]) => (
-            <button
-              key={key}
-              type="button"
-              onClick={() => { setTypeFilter(key); setSchoolFilter("all"); }}
-              className="nx-pill-tab"
-              data-active={typeFilter === key}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-
-        {/* School dropdown */}
+      <div className="flex flex-wrap gap-3">
         <select
-          title="Établissement"
-          value={schoolFilter}
-          onChange={(e) => setSchoolFilter(e.target.value)}
-          className={selectBase + " min-w-[240px]"}
+          title="Stage"
+          value={stageFilter}
+          onChange={(e) => setStageFilter(e.target.value)}
+          className={selectBase}
         >
-          <option value="all">Tous les établissements</option>
-          {schoolsForType.map((s) => (
-            <option key={s.schoolId} value={s.schoolId}>{s.schoolName}</option>
+          <option value="all">Tous les stages</option>
+          {STAGE_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
           ))}
         </select>
-
-        {/* Clear filter */}
-        {schoolFilter !== "all" && (
-          <button
-            type="button"
-            onClick={() => { setSchoolFilter("all"); setTypeFilter("all"); }}
-            className="px-3 py-2 rounded-lg text-[12px] font-bold text-[#E63946] hover:bg-[#E63946]/10 transition-colors"
-          >
-            ✕ Réinitialiser
-          </button>
-        )}
       </div>
 
-      {/* Funnel */}
-      <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] p-6 sm:p-8">
-        <div className="flex items-center justify-between mb-6">
-          <p className="text-[12px] font-bold tracking-[0.15em] uppercase text-[#6b7280]">Entonnoir de recrutement</p>
-          {selectedSchool && (
-            <span className={`px-3 py-1 rounded-full text-[11px] font-bold ${selectedSchool.type === "cegep" ? "bg-[#A855F7]/15 text-[#A855F7]" : "bg-[#3B82F6]/15 text-[#3B82F6]"}`}>
-              {selectedSchool.type === "cegep" ? "CÉGEP" : "Secondaire"}
-            </span>
-          )}
-        </div>
-
-        <div className="space-y-2">
-          {funnel.map((stage, i) => {
-            const widthPct = maxCount > 0 ? Math.max((stage.count / maxCount) * 100, 12) : 12;
-            const next = funnel[i + 1];
-            const convRate = next && stage.count > 0 ? Math.round((next.count / stage.count) * 100) : null;
-
-            return (
-              <div key={stage.status}>
-                {/* Bar row */}
-                <div className="flex items-center gap-4">
-                  <span className="text-[13px] font-bold text-[#9CA3AF] w-[140px] shrink-0 text-right">{stage.label_fr}</span>
-                  <div className="flex-1 relative">
-                    <div
-                      className="h-10 rounded-lg flex items-center px-4 transition-all"
-                      style={{ width: `${widthPct}%`, backgroundColor: stage.color }}
-                    >
-                      <span className="text-[14px] font-head font-black text-white">{stage.count}</span>
-                    </div>
-                  </div>
-                  <div className="w-[120px] shrink-0 flex items-center gap-2">
-                    <span className="text-[13px] text-[#9CA3AF] font-bold">{stage.percentage}%</span>
-                    {stage.trend > 0 ? (
-                      <span className="text-[12px] text-[#22C55E] font-bold">↑{stage.trend}</span>
-                    ) : stage.trend < 0 ? (
-                      <span className="text-[12px] text-[#E63946] font-bold">↓{Math.abs(stage.trend)}</span>
-                    ) : (
-                      <span className="text-[12px] text-[#6b7280] font-bold">—</span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Conversion rate between stages */}
-                {convRate !== null && (
-                  <div className="flex items-center gap-4 py-1">
-                    <span className="w-[140px]" />
-                    <div className="flex items-center gap-2 pl-4">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14M19 12l-7 7-7-7" /></svg>
-                      <span className="text-[11px] text-[#6b7280] font-bold">{convRate}% conversion</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Retired */}
-        <div className="mt-6 pt-4 border-t border-[#2D3748]/50 flex items-center gap-4">
-          <span className="text-[13px] font-bold text-[#9CA3AF] w-[140px] shrink-0 text-right">Retirés</span>
-          <div className="flex items-center gap-3">
-            <span className="text-[20px] font-head font-black text-[#6B7280]">{retired.count}</span>
-            {retired.trend > 0 ? (
-              <span className="text-[12px] text-[#6B7280] font-bold">↑{retired.trend}</span>
-            ) : retired.trend < 0 ? (
-              <span className="text-[12px] text-[#22C55E] font-bold">↓{Math.abs(retired.trend)}</span>
-            ) : (
-              <span className="text-[12px] text-[#6b7280] font-bold">—</span>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Bottom stats */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Global conversion */}
-        <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] p-6">
-          <p className="text-[12px] font-bold tracking-[0.15em] uppercase text-[#6b7280] mb-4">Taux de conversion global</p>
-          <p className="text-[56px] font-head font-black text-[#E63946] leading-none">{conversionRate}%</p>
-          <p className="text-[14px] text-[#9CA3AF] mt-2">Identifiés → Lettre signée</p>
-          <p className={`text-[13px] font-bold mt-1 ${conversionTrend >= 0 ? "text-[#22C55E]" : "text-[#EF4444]"}`}>
-            {conversionTrend >= 0 ? "↑" : "↓"} {Math.abs(conversionTrend)} pts vs l&apos;an dernier
-          </p>
-        </div>
-
-        {/* Pipeline summary */}
-        <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] p-6">
-          <p className="text-[12px] font-bold tracking-[0.15em] uppercase text-[#6b7280] mb-4">Résumé du pipeline</p>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between py-2 border-b border-[#2D3748]/30">
-              <span className="text-[13px] text-[#9CA3AF]">Total actifs en pipeline</span>
-              <span className="text-[14px] font-bold text-white">{funnel.reduce((s, st) => s + st.count, 0)}</span>
-            </div>
-            <div className="flex items-center justify-between py-2 border-b border-[#2D3748]/30">
-              <span className="text-[13px] text-[#9CA3AF]">Phase commitment</span>
-              <span className="text-[14px] font-bold text-[#E63946]">{funnel.filter((f) => ["En discussion", "Visite planifiée", "Engagés", "Lettre signée"].includes(f.label_fr)).reduce((a, f) => a + f.count, 0)}</span>
-            </div>
-            <div className="flex items-center justify-between py-2">
-              <span className="text-[13px] text-[#9CA3AF]">Taux de conversion global</span>
-              <span className="text-[14px] font-bold text-white">{conversionRate}%</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* School comparison table (only when viewing all) */}
-      {schoolFilter === "all" && (
-        <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748]">
-          <div className="p-6 pb-4">
-            <p className="text-[12px] font-bold tracking-[0.15em] uppercase text-[#6b7280]">Comparaison par établissement</p>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="border-b border-[#2D3748]">
-                  {["Établissement", "Type", "Identifiés", "Contactés", "Discussion", "Visite", "Engagés", "Signés", "Retirés", "Conversion"].map((h) => (
-                    <th key={h} className="px-4 py-3 text-[10px] font-bold tracking-[0.15em] uppercase text-[#6b7280]">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {(typeFilter === "all" ? PIPELINE_BY_SCHOOL : PIPELINE_BY_SCHOOL.filter((s) => s.type === typeFilter)).map((s, i) => (
-                  <tr
-                    key={s.schoolId}
-                    className={`border-b border-[#2D3748]/40 hover:bg-white/[0.03] transition-colors cursor-pointer ${i % 2 === 0 ? "bg-[#1A1D24]" : "bg-[#111317]/50"}`}
-                    onClick={() => { setSchoolFilter(s.schoolId); setTypeFilter(s.type); }}
-                  >
-                    <td className="px-4 py-3">
-                      <span className="text-[13px] font-bold text-white hover:text-[#E63946] transition-colors">{s.schoolName}</span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${s.type === "cegep" ? "bg-[#A855F7]/15 text-[#A855F7]" : "bg-[#3B82F6]/15 text-[#3B82F6]"}`}>
-                        {s.type === "cegep" ? "CÉGEP" : "Sec."}
-                      </span>
-                    </td>
-                    {s.funnel.map((f) => (
-                      <td key={f.status} className="px-4 py-3 text-[13px] font-bold text-white">{f.count}</td>
-                    ))}
-                    <td className="px-4 py-3 text-[13px] font-bold text-[#6B7280]">{s.retired.count}</td>
-                    <td className="px-4 py-3">
-                      <span className={`text-[13px] font-bold ${s.conversionRate > 0 ? "text-[#22C55E]" : "text-[#6b7280]"}`}>
-                        {s.conversionRate}%
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+      {loading ? (
+        <div className="text-center py-12 text-[#6b7280]">Chargement…</div>
+      ) : rows.length === 0 ? (
+        <div className="text-center py-12 text-[#6b7280]">Aucune entrée de pipeline</div>
+      ) : (
+        <AdminTable<PipelineRow>
+          rows={filtered}
+          columns={columns}
+          table="recruiter_pipeline"
+          searchFields={["athlete_name", "recruiter_name", "school_to_cegep"]}
+          searchPlaceholder="Rechercher par athlète, recruteur, école…"
+          onSaved={(id, patch) => {
+            setRows((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)));
+            if (patch.stage) {
+              bumpMovedAt(String(id));
+              showToast("Stage mis à jour");
+            }
+          }}
+        />
       )}
 
-      <p className="text-[12px] text-[#4B5563] text-center italic">Vue agrégée — les pipelines individuels sont gérés par chaque recruteur dans leur portail.</p>
+      {toast && (
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 bg-[#1A1D24] border border-[#E63946]/30 text-white font-head font-bold text-sm uppercase tracking-wider px-6 py-3 rounded-lg shadow-xl">
+          {toast}
+        </div>
+      )}
     </div>
   );
 }

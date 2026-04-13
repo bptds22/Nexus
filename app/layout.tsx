@@ -1,11 +1,18 @@
 import type { Metadata } from "next";
-import { Outfit } from "next/font/google";
+import { Barlow_Condensed, Outfit } from "next/font/google";
 import "./globals.css";
 
 const outfit = Outfit({
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700"],
   variable: "--font-outfit",
+  display: "swap",
+});
+
+const barlowCondensed = Barlow_Condensed({
+  subsets: ["latin"],
+  weight: ["800", "900"],
+  variable: "--font-heading",
   display: "swap",
 });
 
@@ -28,7 +35,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr" data-theme="dark">
-      <body className={`${outfit.variable} antialiased`}>
+      <body className={`${outfit.variable} ${barlowCondensed.variable} antialiased`}>
         {children}
       </body>
     </html>

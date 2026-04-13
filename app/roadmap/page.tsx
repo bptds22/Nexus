@@ -208,7 +208,7 @@ export default function RoadmapPage() {
           <span className="w-6 h-px bg-wl-red" />
         </div>
 
-        <h1 className="font-head text-4xl sm:text-5xl font-black text-white uppercase leading-[0.92] tracking-tight">
+        <h1 className="nx-display text-4xl sm:text-5xl font-black text-white uppercase leading-[0.92] tracking-tight">
           Product Roadmap
         </h1>
 
@@ -341,7 +341,7 @@ export default function RoadmapPage() {
                       </span>
 
                       {/* Title */}
-                      <h2 className="font-head text-xl sm:text-2xl font-black text-white uppercase tracking-tight leading-tight">
+                      <h2 className="nx-display text-xl sm:text-2xl font-black text-white uppercase tracking-tight leading-tight">
                         {phase.title}
                       </h2>
 
@@ -458,7 +458,7 @@ export default function RoadmapPage() {
       ══════════════════════════════════════════ */}
       <section className="relative z-10 px-6 pb-16">
         <div className="max-w-4xl mx-auto nx-auth-card bg-[#0A1428] border border-[#1E2D4A] p-8 sm:p-10 text-center">
-          <h2 className="font-head text-2xl sm:text-3xl font-black text-white uppercase tracking-tight mb-3">
+          <h2 className="nx-display text-2xl sm:text-3xl font-black text-white uppercase tracking-tight mb-3">
             Une idée? Une suggestion?
           </h2>
           <p className="font-sans text-sm text-[#9AA3B2] leading-relaxed max-w-md mx-auto mb-6">

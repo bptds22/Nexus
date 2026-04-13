@@ -8,8 +8,9 @@ import type { SearchAthlete } from "../_data/mockSearchAthletes";
 import NxIcon from "@/components/ui/NxIcon";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
 import type { GlobalRecruitmentStatus } from "@/lib/types/models";
+import { isValidationExpired } from "@/lib/utils/profileValidation";
 
-type ExtendedAthlete = SearchAthlete & { academicBadges: string[]; stars: number; recruitmentStatus: string | null; heightWeight: string; gpa: number; committedSchoolName: string | null; openToOffers: boolean | null; jersey: string; sportName: string; ouvertDemenager: boolean; ouvertPrive: boolean; ouvertAnglophone: boolean; createdAt: string };
+type ExtendedAthlete = SearchAthlete & { academicBadges: string[]; stars: number; recruitmentStatus: string | null; heightWeight: string; gpa: number; committedSchoolName: string | null; openToOffers: boolean | null; jersey: string; sportName: string; ouvertDemenager: boolean; ouvertPrive: boolean; ouvertAnglophone: boolean; createdAt: string; lastValidation?: string | null };
 import FeatureGate from "@/components/subscription/FeatureGate";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -67,10 +68,15 @@ function AthleteSearchCard({ a, onToggleFav }: { a: ExtendedAthlete; onToggleFav
 
         {/* Top left — verified check + favorite heart */}
         <div className="absolute top-3 left-3 z-10 flex items-center gap-2">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill={a.isVerified ? "#3B82F6" : "#4a4d56"} stroke="none">
-            <circle cx="12" cy="12" r="10" />
-            <path d="M9 12l2 2 4-4" stroke={a.isVerified ? "#fff" : "#6b7280"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-          </svg>
+          {(() => {
+            const active = a.isVerified && !isValidationExpired({ verified: !!a.isVerified, last_profile_validation: a.lastValidation ?? null });
+            return (
+              <svg width="28" height="28" viewBox="0 0 24 24" fill={active ? "#3B82F6" : "#4a4d56"} stroke="none">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M9 12l2 2 4-4" stroke={active ? "#fff" : "#6b7280"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+              </svg>
+            );
+          })()}
           <button
             type="button"
             title="Favori"
@@ -172,10 +178,15 @@ function AthleteSearchRow({ a, onToggleFav }: { a: ExtendedAthlete; onToggleFav:
           )}
         </div>
         <div className="absolute -top-1 -right-1 z-10">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill={a.isVerified ? "#3B82F6" : "#4a4d56"} stroke="none">
-            <circle cx="12" cy="12" r="10" />
-            <path d="M9 12l2 2 4-4" stroke={a.isVerified ? "#fff" : "#6b7280"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-          </svg>
+          {(() => {
+            const active = a.isVerified && !isValidationExpired({ verified: !!a.isVerified, last_profile_validation: a.lastValidation ?? null });
+            return (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill={active ? "#3B82F6" : "#4a4d56"} stroke="none">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M9 12l2 2 4-4" stroke={active ? "#fff" : "#6b7280"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+              </svg>
+            );
+          })()}
         </div>
       </Link>
 
@@ -297,7 +308,7 @@ function RechercheContent() {
       const athletePromise = supabase
         .from("athletes")
         .select(`
-          id, first_name, last_name, photo_url, verified,
+          id, first_name, last_name, photo_url, verified, last_profile_validation,
           annee_diplomation, numero_jersey, video_faits_saillants_url, school_id,
           cote_globale_entraineur,
           taille_pieds,
@@ -371,6 +382,7 @@ function RechercheContent() {
             heightDisplay: "",
             weightDisplay: "",
             isVerified: a.verified as boolean,
+            lastValidation: (a.last_profile_validation as string) || null,
             isFavorited: favSet.has(a.id as string),
             hasVideo: !!a.video_faits_saillants_url,
             badges: distinctions

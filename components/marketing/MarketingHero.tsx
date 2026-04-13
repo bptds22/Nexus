@@ -21,7 +21,7 @@ export default function MarketingHero({
         <p className="text-[14px] font-head font-bold uppercase tracking-[0.2em] text-[#E63946] mb-4">
           {eyebrow}
         </p>
-        <h1 className="font-head text-4xl sm:text-5xl lg:text-[56px] font-black text-white uppercase leading-[0.95] tracking-tight mb-6 max-w-[700px]">
+        <h1 className="nx-display text-4xl sm:text-5xl lg:text-[52px] font-black text-white uppercase leading-[0.95] tracking-tight mb-6 max-w-[700px]">
           {title}
         </h1>
         <p className="text-[18px] text-[#9CA3AF] max-w-[560px] leading-relaxed mb-8">

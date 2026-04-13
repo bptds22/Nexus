@@ -22,6 +22,8 @@ import CelebrationToast from "@/app/recruteur/_components/CelebrationToast";
 import NxIcon from "@/components/ui/NxIcon";
 import StarRating from "@/components/ui/StarRating";
 import VideoEmbed from "@/components/ui/VideoEmbed";
+import { calculateCompletion, type AthleteLike, type EvalLike } from "@/lib/utils/profileCompletion";
+import { isValidationExpired } from "@/lib/utils/profileValidation";
 
 /* ═══════════════════════════════════════════════════════════════
    Recruiter Athlete Profile — Simplified / Detailed toggle
@@ -144,12 +146,13 @@ function PlayerCard({ a }: { a: AthleteProfileRecruiterView }) {
   const posAbbr = positionAbbr(a.primaryPosition);
   const sportKey = SPORT_NAME_MAP[a.primarySport];
   const sportDisplay = sportKey ? (SPORT_DISPLAY[sportKey] || a.primarySport) : a.primarySport;
+  const badgeActive = a.isVerified && !isValidationExpired({ verified: !!a.isVerified, last_profile_validation: a.lastValidation ?? null });
 
   return (
     <div className="nx-v30-wrap relative" style={{ width: 300, paddingTop: 6, paddingBottom: 10 }}>
-      <div className="nx-v30-badge absolute z-30" style={{ top: 10, right: -12 }} title={a.isVerified ? "Profil vérifié" : "Profil non vérifié"}>
+      <div className="nx-v30-badge absolute z-30" style={{ top: 10, right: -12 }} title={badgeActive ? "Profil vérifié" : a.isVerified ? "Badge désactivé — confirmation requise" : "Profil non vérifié"}>
         <div className="rounded-full" style={{ border: '3px solid #111317' }}>
-          {a.isVerified ? (
+          {badgeActive ? (
             <svg width="48" height="48" viewBox="0 0 54 54" fill="none">
               <defs>
                 <radialGradient id="rc_bg" cx="38%" cy="28%" r="68%">
@@ -324,6 +327,7 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
         photo_url,
         verified,
         profile_completion,
+        last_profile_validation,
         numero_jersey,
         annee_diplomation,
         date_naissance,
@@ -462,7 +466,8 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
           lastName: d.last_name as string,
           photoUrl: (d.photo_url as string) || "",
           isVerified: d.verified as boolean,
-          profileCompleteness: (d.profile_completion as number) || 0,
+          lastValidation: (d.last_profile_validation as string) || null,
+          profileCompleteness: calculateCompletion(d as AthleteLike, (eval0 as EvalLike) || null, null).percentage,
           jerseyNumber: (d.numero_jersey as string) || "",
           graduationYear: (d.annee_diplomation as number) || 0,
           highlightVideoUrl: (d.video_faits_saillants_url as string) || "",

@@ -104,7 +104,7 @@ export default function ContactPage() {
           <span className={`${label} text-wl-red`}>Nous joindre</span>
           <span className="w-6 h-px bg-wl-red" />
         </div>
-        <h1 className="font-head text-4xl sm:text-5xl font-black text-white uppercase leading-[0.92] tracking-tight">
+        <h1 className="nx-display text-4xl sm:text-5xl font-black text-white uppercase leading-[0.92] tracking-tight">
           Contactez-nous
         </h1>
         <p className="font-sans text-sm text-[#9AA3B2] mt-3 max-w-md mx-auto leading-relaxed">
@@ -121,7 +121,7 @@ export default function ContactPage() {
           {/* ── Left: Contact Info Card ── */}
           <div className="md:col-span-2">
             <div className="nx-auth-card bg-[#0A1428] border border-[#1E2D4A] p-8 h-full">
-              <h2 className="font-head text-lg font-black text-white uppercase tracking-tight mb-6">
+              <h2 className="nx-display text-lg font-black text-white uppercase tracking-tight mb-6">
                 Informations
               </h2>
 
@@ -243,7 +243,7 @@ export default function ContactPage() {
                       </svg>
                     </div>
 
-                    <h2 className="font-head text-2xl font-black text-white uppercase tracking-tight mb-3">
+                    <h2 className="nx-display text-2xl font-black text-white uppercase tracking-tight mb-3">
                       Message envoyé
                     </h2>
                     <p className="font-sans text-sm text-[#9AA3B2] leading-relaxed mb-6 max-w-xs mx-auto">

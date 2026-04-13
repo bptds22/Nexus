@@ -3,6 +3,9 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { calculateProfileCompletion, getIncompleteFields } from "@/lib/utils/calculateProfileCompletion";
+import { calculateCompletionForRole, SECTION_IDS } from "@/lib/utils/profileCompletion";
+import { isValidationDue, isValidationExpired, formatDeadlineFr, currentMonthKey } from "@/lib/utils/profileValidation";
+import VerifiedBadge from "@/components/ui/VerifiedBadge";
 import DatePicker from "@/app/coach/components/DatePicker";
 import type { AthleteSuggestion } from "@/lib/mock/athlete";
 import type { AthleteTraitRatings } from "@/lib/types/models";
@@ -901,6 +904,7 @@ export default function AthleteProfilPage() {
   const [suggestions, setSuggestions] = useState<AthleteSuggestion[]>([]);
   const [sugTab, setSugTab] = useState<"pending" | "approved" | "rejected">("pending");
   const [toast, setToast] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState(false);
 
   const [editableFields, setEditableFields] = useState({
     highlightVideo: "", hudl: "", youtube: "", instagram: "", fullGame: "",
@@ -1035,6 +1039,7 @@ export default function AthleteProfilPage() {
         instagramUrl: raw.instagram_url || "",
         fullGameUrl: raw.video_match_complet_url || "",
         photoUrl: raw.photo_url || "",
+        _raw: raw,
       };
 
       setA(mapped);
@@ -1257,10 +1262,77 @@ export default function AthleteProfilPage() {
 
   const traitEntries = a.traitRatings ? Object.entries(a.traitRatings) as [keyof AthleteTraitRatings, number][] : [];
   const traitAvg = traitEntries.length > 0 ? traitEntries.reduce((s, [, v]) => s + v, 0) / traitEntries.length : (a.overallRating || 0);
-  const color = pctColor(a.profileCompleteness || 0);
+  // Compute completion via shared util (richer: sections + evaluation signals)
+  const _rawEval = a._raw?.evaluations;
+  const _evalRow = Array.isArray(_rawEval) ? _rawEval[0] : _rawEval;
+  const completionResult = a._raw
+    ? calculateCompletionForRole(a._raw, _evalRow || null, null, "athlete")
+    : { percentage: 0, missing: [], checks: [] };
+  const pctValue = completionResult.percentage;
+  const missingTop = completionResult.missing.slice(0, 6);
+  if (typeof window !== "undefined") {
+    console.log("Completion check:", {
+      percentage: pctValue,
+      missing: completionResult.missing,
+      totalChecks: completionResult.checks.length,
+    });
+  }
+  const encouragement =
+    pctValue === 100 ? "Profil complet — bravo !" :
+    pctValue >= 90 ? `Profil complété à ${pctValue}% — presque parfait !` :
+    pctValue >= 70 ? `Profil complété à ${pctValue}% — continue comme ça !` :
+    pctValue >= 50 ? `Profil complété à ${pctValue}% — bon début !` :
+    `Profil complété à ${pctValue}% — complète ton profil pour attirer les recruteurs`;
+  void getIncompleteFields;
 
-  // Compute incomplete fields for the sidebar
-  const incomplete = a._raw ? getIncompleteFields(a._raw) : [];
+  // Monthly re-validation banner
+  const validationPair = { verified: a._raw?.verified === true, last_profile_validation: a._raw?.last_profile_validation };
+  const needsValidation = isValidationDue(validationPair);
+  const validationExpired = isValidationExpired(validationPair);
+
+  // One-shot: log a notification the first time we detect expired state this month.
+  useEffect(() => {
+    if (!athleteId || !validationExpired) return;
+    const month = currentMonthKey();
+    (async () => {
+      const supabase = createClient();
+      const { data: existing } = await supabase
+        .from("athlete_notifications")
+        .select("id")
+        .eq("athlete_id", athleteId)
+        .eq("type", "PROFILE_TIP")
+        .contains("metadata", { kind: "monthly_validation_expired", month })
+        .maybeSingle();
+      if (existing) return;
+      await supabase.from("athlete_notifications").insert({
+        athlete_id: athleteId,
+        type: "PROFILE_TIP",
+        title: "⚠️ Ton badge vérifié a été désactivé",
+        message: "Confirme tes informations pour le réactiver.",
+        metadata: { kind: "monthly_validation_expired", month },
+      });
+    })();
+  }, [athleteId, validationExpired]);
+
+  async function confirmValidation() {
+    if (!athleteId) return;
+    setConfirming(true);
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("athletes")
+      .update({ last_profile_validation: new Date().toISOString() })
+      .eq("id", athleteId);
+    if (error) { console.error("[Validation confirm]", error); setConfirming(false); return; }
+    await supabase.from("athlete_notifications").insert({
+      athlete_id: athleteId,
+      type: "PROFILE_TIP",
+      title: "Tes informations ont été confirmées pour ce mois.",
+      metadata: { kind: "monthly_validation_confirmed", month: currentMonthKey() },
+    });
+    await reloadProfile();
+    setConfirming(false);
+    showToast("Informations confirmées!");
+  }
 
   if (loading) {
     return (
@@ -1272,6 +1344,33 @@ export default function AthleteProfilPage() {
 
   return (
     <div className="px-6 sm:px-10 py-8 max-w-[1200px] mx-auto space-y-5">
+
+      {/* ── Monthly re-validation banner ──────────────────────── */}
+      {!recruiterView && needsValidation && (
+        <div className={`rounded-xl border px-5 py-4 flex flex-col sm:flex-row sm:items-center gap-3 ${validationExpired ? "bg-[#E63946]/10 border-[#E63946]/30" : "bg-[#F59E0B]/10 border-[#F59E0B]/30"}`}>
+          <div className="flex items-start gap-3 flex-1">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={validationExpired ? "#E63946" : "#F59E0B"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+              <line x1="12" y1="9" x2="12" y2="13" />
+              <line x1="12" y1="17" x2="12.01" y2="17" />
+            </svg>
+            <div>
+              <p className={`text-[14px] font-bold ${validationExpired ? "text-[#E63946]" : "text-[#F59E0B]"}`}>
+                {validationExpired ? "Profil non confirmé — ton badge vérifié est désactivé" : "Confirmation mensuelle requise"}
+              </p>
+              <p className="text-[13px] text-[#9CA3AF] mt-0.5">
+                {validationExpired
+                  ? "Confirme tes informations pour réactiver ton badge."
+                  : `Confirme que tes informations sont toujours à jour avant le ${formatDeadlineFr()}.`}
+              </p>
+            </div>
+          </div>
+          <button type="button" onClick={confirmValidation} disabled={confirming}
+            className="px-5 py-2.5 rounded-lg text-[12px] font-bold uppercase tracking-wider bg-[#E63946] hover:bg-[#D42B22] text-white transition-colors disabled:opacity-50 shrink-0">
+            {confirming ? "..." : "Confirmer mes informations"}
+          </button>
+        </div>
+      )}
 
       {/* ── Header ────────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -1353,12 +1452,12 @@ export default function AthleteProfilPage() {
               <div className="flex-1">
                 <div className="flex items-center gap-2">
                   <h2 className="font-head text-[20px] font-black text-white uppercase tracking-tight">{a.firstName} {a.lastName}</h2>
-                  {a.isVerified ? (
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill={BLUE} stroke="none"><circle cx="12" cy="12" r="10" /><path d="M9 12l2 2 4-4" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" /></svg>
+                  {a.isVerified && !isValidationExpired({ verified: a.isVerified, last_profile_validation: a._raw?.last_profile_validation }) ? (
+                    <VerifiedBadge verified={a.isVerified} lastValidation={a._raw?.last_profile_validation} size={20} />
                   ) : (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#4a4d56]/20 border border-[#4a4d56]/30 text-[10px] font-bold text-[#6b7280] uppercase tracking-wider">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="#4a4d56" stroke="none"><circle cx="12" cy="12" r="10" /><path d="M9 12l2 2 4-4" stroke="#6b7280" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" /></svg>
-                      Non vérifié
+                      <VerifiedBadge verified={false} size={12} />
+                      {a.isVerified ? "Badge désactivé" : "Non vérifié"}
                     </span>
                   )}
                 </div>
@@ -1375,7 +1474,7 @@ export default function AthleteProfilPage() {
           </div>
 
           {/* ═══ PERSONAL INFO ═══ */}
-          <div className="bg-[#1A1D24] rounded-xl border border-white/5 p-5">
+          <div id={SECTION_IDS.identity} className="bg-[#1A1D24] rounded-xl border border-white/5 p-5">
             <SectionHeader title="Informations personnelles" sectionKey="personal" mode="direct" />
             {editSection === "personal" ? (
               <PersonalEditForm raw={a._raw} inputCls={inputCls} lblCls={lblCls} onSave={(u) => saveSection(u)} onCancel={() => setEditSection(null)} saving={editSaving} />
@@ -1393,7 +1492,7 @@ export default function AthleteProfilPage() {
           </div>
 
           {/* ═══ SPORT INFO ═══ */}
-          <div className="bg-[#1A1D24] rounded-xl border border-white/5 p-5">
+          <div id={SECTION_IDS.sport} className="bg-[#1A1D24] rounded-xl border border-white/5 p-5">
             <SectionHeader title="Informations sportives" sectionKey="sport" mode="suggestion" />
             {editSection === "sport" ? (
               <div className="space-y-1">
@@ -1416,7 +1515,7 @@ export default function AthleteProfilPage() {
           </div>
 
           {/* ═══ PHYSICAL + TESTS ═══ */}
-          <div className="bg-[#1A1D24] rounded-xl border border-white/5 p-5">
+          <div id={SECTION_IDS.physical} className="bg-[#1A1D24] rounded-xl border border-white/5 p-5">
             <SectionHeader title="Profil physique & Tests" sectionKey="physical" mode="suggestion" />
             {editSection === "physical" ? (
               <div className="space-y-1">
@@ -1459,7 +1558,7 @@ export default function AthleteProfilPage() {
           </div>
 
           {/* ═══ ACADEMIC ═══ */}
-          <div className="bg-[#1A1D24] rounded-xl border border-white/5 p-5">
+          <div id={SECTION_IDS.academic} className="bg-[#1A1D24] rounded-xl border border-white/5 p-5">
             <SectionHeader title="Profil académique" sectionKey="academic" mode="direct" />
             {editSection === "academic" ? (
               <AcademicEditForm raw={a._raw} inputCls={inputCls} lblCls={lblCls} onSave={(u) => saveSection(u)} onCancel={() => setEditSection(null)} saving={editSaving} />
@@ -1534,7 +1633,7 @@ export default function AthleteProfilPage() {
           </div>
 
           {/* Coach Report — rapport stays locked, Cote + Distinctions are suggestible */}
-          <div className="bg-[#1A1D24] rounded-xl border border-white/5 p-5">
+          <div id={SECTION_IDS.evaluation} className="bg-[#1A1D24] rounded-xl border border-white/5 p-5">
             <h3 className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mb-4 flex items-center gap-2">
               Rapport de l&apos;entraîneur
               {!recruiterView && <LockIcon size={12} />}
@@ -1587,7 +1686,7 @@ export default function AthleteProfilPage() {
           </div>
 
           {/* Media — GREEN (editable) */}
-          <div className="bg-[#1A1D24] rounded-xl border border-white/5 p-5">
+          <div id={SECTION_IDS.media} className="bg-[#1A1D24] rounded-xl border border-white/5 p-5">
             <h3 className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mb-4 flex items-center gap-2">
               Médias &amp; liens
               {!recruiterView && <PencilIcon color={GREEN} size={12} />}
@@ -1608,26 +1707,36 @@ export default function AthleteProfilPage() {
                 <div className="relative w-24 h-24">
                   <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
                     <path d="M18 2.0845a 15.9155 15.9155 0 0 1 0 31.831a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#2D3748" strokeWidth="3" />
-                    <path d="M18 2.0845a 15.9155 15.9155 0 0 1 0 31.831a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke={color} strokeWidth="3"
-                      strokeDasharray={`${a.profileCompleteness || 0}, 100`} strokeLinecap="round" />
+                    <path d="M18 2.0845a 15.9155 15.9155 0 0 1 0 31.831a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke={pctColor(pctValue)} strokeWidth="3"
+                      strokeDasharray={`${pctValue}, 100`} strokeLinecap="round" />
                   </svg>
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="font-head text-[20px] font-black" style={{ color }}>{a.profileCompleteness || 0}%</span>
+                    <span className="font-head text-[20px] font-black" style={{ color: pctColor(pctValue) }}>{pctValue}%</span>
                   </div>
                 </div>
               </div>
               <p className="text-center text-[12px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mb-4">Complétion du profil</p>
 
-              {incomplete.length > 0 && (
-                <div className="space-y-2.5">
-                  {incomplete.map((item) => (
-                    <div key={item.label} className="flex items-center gap-2.5 text-[12px]">
-                      <div className="w-4 h-4 rounded-full border-2 border-[#4a4d56] shrink-0" />
-                      <span className="text-[#9CA3AF] flex-1">{item.label}</span>
-                      <span className="text-[#22C55E] font-bold shrink-0">+{item.boost}%</span>
-                    </div>
+              <p className="text-center text-[12px] text-[#6b7280] mb-3">{encouragement}</p>
+
+              {missingTop.length > 0 && (
+                <ul className="space-y-2.5">
+                  {missingTop.map((item) => (
+                    <li key={item.key}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const el = document.getElementById(SECTION_IDS[item.section]);
+                          el?.scrollIntoView({ behavior: "smooth", block: "start" });
+                        }}
+                        className="w-full flex items-center gap-2.5 text-[12px] text-left hover:bg-[#2D3748]/30 rounded px-1.5 py-1 transition-colors"
+                      >
+                        <span className="text-[#22C55E] font-bold shrink-0">+{item.weight}%</span>
+                        <span className="text-[#9CA3AF] flex-1 truncate">— {item.label}</span>
+                      </button>
+                    </li>
                   ))}
-                </div>
+                </ul>
               )}
             </div>
           </div>

@@ -34,13 +34,13 @@ export default function HowItWorks({
 
               {/* Giant watermark step number */}
               <div
-                className="nx-step-num font-head text-[120px] font-black text-white/30 leading-none mb-3 select-none"
+                className="nx-step-num nx-display text-[112px] font-black text-white/30 leading-none mb-3 select-none"
                 aria-hidden
               >
                 {step.number}
               </div>
 
-              <h3 className="font-head text-2xl font-black text-white uppercase leading-tight mb-3">
+              <h3 className="nx-display text-2xl font-black text-white uppercase leading-tight mb-3">
                 {step.title}
               </h3>
               <p className="font-sans text-sm text-[#9CA3AF] leading-relaxed">

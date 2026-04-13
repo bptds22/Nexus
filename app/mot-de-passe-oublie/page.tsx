@@ -81,7 +81,7 @@ export default function ForgotPasswordPage() {
               <span className={`${label} text-wl-red`}>Réinitialisation</span>
               <span className="w-6 h-px bg-wl-red" />
             </div>
-            <h1 className="font-head text-4xl sm:text-5xl font-black text-white uppercase leading-[0.92] tracking-tight">
+            <h1 className="nx-display text-4xl sm:text-5xl font-black text-white uppercase leading-[0.92] tracking-tight">
               Mot de passe oublié?
             </h1>
             <p className="font-sans text-sm text-[#9AA3B2] mt-3 max-w-xs mx-auto leading-relaxed">
@@ -129,7 +129,7 @@ export default function ForgotPasswordPage() {
                     </svg>
                   </div>
 
-                  <h2 className="font-head text-2xl font-black text-white uppercase tracking-tight mb-3">
+                  <h2 className="nx-display text-2xl font-black text-white uppercase tracking-tight mb-3">
                     Courriel envoyé
                   </h2>
                   <p className="font-sans text-sm text-[#9AA3B2] leading-relaxed mb-6">

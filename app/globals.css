@@ -106,6 +106,21 @@ body {
   font-family: var(--font-outfit), 'Outfit', sans-serif;
 }
 
+/* ── Marketing display font (Barlow Condensed, heavy) ─────
+   OPT-IN ONLY. Reach Barlow Condensed ONLY by:
+     1. Adding class `nx-display` to a specific element, OR
+     2. Wrapping a landing section in `.landing-page` (headings auto-styled)
+   Everything else across the app stays on Outfit.
+───────────────────────────────────────────────────────────── */
+.nx-display,
+.landing-page h1,
+.landing-page h2,
+.landing-page h3 {
+  font-family: var(--font-heading), "Barlow Condensed", "Oswald", "Impact Condensed", "Impact", sans-serif;
+  letter-spacing: 0.05em;
+  font-weight: 900;
+}
+
 /* ── Hero playbook background ──────────────────────────────── */
 .hero-playbook {
   position: relative;
