@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import Image from "next/image";
+import NexusLogo from "@/components/ui/NexusLogo";
 import Link from "next/link";
 import MarketingNav from "@/components/marketing/MarketingNav";
 import PlaybookBackground from "../components/PlaybookBackground";
@@ -482,13 +482,7 @@ export default function RoadmapPage() {
           <div className="flex flex-col md:flex-row items-center justify-between gap-6 pb-6 border-b border-[#1E2D4A]">
 
             <div className="flex items-center gap-3">
-              <Image
-                src="/brand/White%20red%20logo%20@4x.png"
-                alt="Nexus"
-                width={24}
-                height={24}
-                className="object-contain opacity-60"
-              />
+              <NexusLogo variant="white" height={22} href="/" className="opacity-80" />
               <span className={`${label} text-[#475569]`}>
                 Construit pour les étudiants-athlètes québécois
               </span>

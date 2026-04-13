@@ -1,7 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
+import NexusLogo from "@/components/ui/NexusLogo";
 
 /* ══════════════════════════════════════════════════════════════
    PAGE 5 — Compte désactivé
@@ -25,13 +25,7 @@ export default function CompteDesactivePage() {
       <div className="max-w-[480px] w-full text-center space-y-8">
         {/* Logo */}
         <div className="flex justify-center">
-          <Image
-            src="/brand/White%20red%20logo%20@4x.png"
-            alt="Nexus"
-            width={48}
-            height={48}
-            className="object-contain"
-          />
+          <NexusLogo variant="white" height={40} href="/" />
         </div>
 
         {/* Lock icon */}

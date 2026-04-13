@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
+import NexusLogo from "@/components/ui/NexusLogo";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import PlaybookBackground from "@/app/components/PlaybookBackground";
@@ -122,10 +122,7 @@ export default function ProSignupPage() {
 
       {/* Logo */}
       <div className="relative z-10 pt-8 pb-4 flex justify-center">
-        <Link href="/" className="flex items-center gap-3">
-          <Image src="/brand/White%20red%20logo%20@4x.png" alt="Nexus" width={32} height={32} className="object-contain" />
-          <span className="font-head font-black text-white text-base tracking-[0.06em] uppercase hidden sm:block">Nexus</span>
-        </Link>
+        <NexusLogo variant="white" height={36} href="/" priority />
       </div>
 
       {/* Card */}

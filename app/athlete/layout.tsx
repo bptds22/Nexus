@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
+import NexusLogo from "@/components/ui/NexusLogo";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import PlaybookBackground from "../components/PlaybookBackground";
@@ -119,10 +119,7 @@ function AthleteSidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose:
     <div className="flex flex-col h-full">
       {/* Logo + portal label */}
       <div className="px-5 py-6 border-b border-[#1e2128]">
-        <Link href="/athlete/dashboard" className="flex items-center gap-3">
-          <Image src="/brand/White%20red%20logo%20@4x.png" alt="Nexus" width={30} height={30} className="object-contain" />
-          <span className="font-head font-black text-white text-base tracking-[0.06em] uppercase">Nexus</span>
-        </Link>
+        <NexusLogo variant="white" height={34} href="/athlete/dashboard" priority />
         <p className="text-[11px] font-bold tracking-[0.25em] uppercase text-[#6b7280] mt-2">Mon espace athlète</p>
       </div>
 

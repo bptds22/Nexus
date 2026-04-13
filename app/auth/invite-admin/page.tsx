@@ -2,7 +2,7 @@
 
 import { useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import Image from "next/image";
+import NexusLogo from "@/components/ui/NexusLogo";
 import Link from "next/link";
 import PlaybookBackground from "@/app/components/PlaybookBackground";
 
@@ -156,10 +156,9 @@ function InviteAdminContent() {
       <div className="relative z-10 w-full max-w-[520px]">
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
-          <Link href="/" className="flex items-center gap-3 mb-2">
-            <Image src="/brand/White%20red%20logo%20@4x.png" alt="Nexus" width={36} height={36} className="object-contain" />
-            <span className="font-head font-black text-white text-lg tracking-[0.06em] uppercase">Nexus</span>
-          </Link>
+          <div className="mb-2">
+            <NexusLogo variant="white" height={40} href="/" priority />
+          </div>
           <p className="text-[10px] font-bold tracking-[0.3em] uppercase text-[#6b7280]">Plateforme de recrutement</p>
         </div>
 

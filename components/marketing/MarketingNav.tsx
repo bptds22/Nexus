@@ -1,6 +1,6 @@
-import Image from "next/image";
 import Link from "next/link";
 import ThemeToggle from "@/app/components/ThemeToggle";
+import NexusLogo from "@/components/ui/NexusLogo";
 
 const DROPDOWN_ITEMS = [
   { label: "Pour les coachs", href: "/pour-les-coachs" },
@@ -16,25 +16,9 @@ export default function MarketingNav() {
     <nav className="sticky top-0 z-50 bg-[#060A14]/92 backdrop-blur-md border-b border-[#1E2D4A]">
       <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
 
-        <Link href="/" className="flex items-center gap-3">
-          <Image
-            id="navbar-logo"
-            src="/brand/White%20red%20logo%20@4x.png"
-            alt="Nexus"
-            width={32}
-            height={32}
-            className="object-contain nx-logo-dark"
-          />
-          <Image
-            src="/brand/Profile%20trans@4x.png"
-            alt="Nexus"
-            width={32}
-            height={32}
-            className="object-contain nx-logo-light"
-          />
-          <span className="font-head font-black text-white text-base tracking-[0.06em] uppercase hidden sm:block">
-            Nexus
-          </span>
+        <Link href="/" aria-label="Nexus" className="flex items-center">
+          <NexusLogo variant="white" height={28} className="nx-logo-dark" priority />
+          <NexusLogo variant="black-red" height={28} className="nx-logo-light" priority />
         </Link>
 
         <ul className="hidden md:flex items-center gap-8 list-none">

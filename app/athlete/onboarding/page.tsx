@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
+import NexusLogo from "@/components/ui/NexusLogo";
 import { createClient } from "@/lib/supabase/client";
 import { calculateProfileCompletion } from "@/lib/utils/calculateProfileCompletion";
 import SportPositionSelect from "@/app/coach/components/SportPositionSelect";
@@ -421,9 +421,8 @@ export default function AthleteOnboardingPage() {
 
       <div className="relative z-10 w-full max-w-2xl space-y-6">
         {/* Logo */}
-        <div className="flex items-center justify-center gap-3 mb-2">
-          <Image src="/brand/White%20red%20logo%20@4x.png" alt="Nexus" width={32} height={32} className="object-contain" />
-          <span className="font-head font-black text-white text-base tracking-[0.06em] uppercase">Nexus</span>
+        <div className="flex items-center justify-center mb-2">
+          <NexusLogo variant="white" height={36} priority />
         </div>
 
         {/* Step indicator */}

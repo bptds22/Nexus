@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
+import NexusLogo from "@/components/ui/NexusLogo";
 import { createClient } from "@/lib/supabase/client";
 import PlaybookBackground from "../components/PlaybookBackground";
 
@@ -561,7 +561,7 @@ export default function OnboardingPage() {
 
       {/* Logo */}
       <div className="relative z-10 pt-8 pb-2 flex justify-center">
-        <Image src="/brand/White%20red%20logo%20@4x.png" alt="Nexus" width={32} height={32} className="object-contain" />
+        <NexusLogo variant="white" height={36} priority />
       </div>
 
       {/* Wizard card */}

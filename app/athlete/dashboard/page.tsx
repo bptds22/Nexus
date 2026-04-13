@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { athleteUser, athleteStats, athleteActivity, profileChecklist } from "@/lib/mock/athlete";
 import type { AthleteActivityItem } from "@/lib/mock/athlete";
+import { createClient } from "@/lib/supabase/client";
 
 /* ═══════════════════════════════════════════════════════════════
    Athlete Dashboard — "Salut Marc-Antoine!"
@@ -27,9 +28,28 @@ const ACTIVITY_DOT: Record<AthleteActivityItem["type"], string> = {
 };
 
 export default function AthleteDashboardPage() {
-  const u = athleteUser;
+  const [firstName, setFirstName] = useState<string>(athleteUser.firstName);
+  const u = { ...athleteUser, firstName };
   const s = athleteStats;
   const [activities, setActivities] = useState(athleteActivity);
+
+  useEffect(() => {
+    const load = async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase
+        .from("athletes")
+        .select("first_name")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      const fn = (data?.first_name as string | undefined)
+        || (user.user_metadata?.first_name as string | undefined)
+        || (user.email?.split("@")[0]);
+      if (fn) setFirstName(fn);
+    };
+    load();
+  }, []);
   const pctColor = completenessColor(s.profile_completeness);
   const viewsTrend = s.views_last_month > 0 ? Math.round(((s.views_this_month - s.views_last_month) / s.views_last_month) * 100) : 0;
   const unreadCount = activities.filter((a) => !a.read).length;

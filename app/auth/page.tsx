@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect, Suspense } from "react";
-import Image from "next/image";
+import NexusLogo from "@/components/ui/NexusLogo";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -543,7 +543,7 @@ function AuthContent() {
         <div className="max-w-6xl mx-auto px-6 pt-10 pb-6">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6 pb-6 border-b border-white/5">
             <div className="flex items-center gap-3">
-              <Image src="/brand/White%20red%20logo%20@4x.png" alt="Nexus" width={24} height={24} className="object-contain opacity-60" />
+              <NexusLogo variant="white" height={22} href="/" className="opacity-80" />
               <span className={`${label} text-[#6B7280]`}>Construit pour les étudiants-athlètes québécois</span>
             </div>
             <nav className="flex items-center gap-8">

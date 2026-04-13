@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
+import NexusLogo from "@/components/ui/NexusLogo";
 
 const NAV_ITEMS = [
   {
@@ -62,12 +62,9 @@ export default function AdminSidebar({ mobileOpen, onClose }: Props) {
   const nav = (
     <div className="flex flex-col h-full">
       {/* Logo + label */}
-      <div className="px-5 pt-6 pb-4 flex items-center gap-3">
-        <Image src="/brand/White%20red%20logo%20@4x.png" alt="Nexus" width={28} height={28} className="object-contain" />
-        <div>
-          <span className="font-head text-[13px] font-black text-white uppercase tracking-[0.06em]">Nexus</span>
-          <span className="block text-[9px] font-bold tracking-[0.25em] uppercase text-[#E63946]">Portail Admin</span>
-        </div>
+      <div className="px-5 pt-6 pb-4 flex flex-col gap-1">
+        <NexusLogo variant="white" height={26} href="/admin" priority />
+        <span className="text-[9px] font-bold tracking-[0.25em] uppercase text-[#E63946]">Portail Admin</span>
       </div>
 
       {/* Divider */}

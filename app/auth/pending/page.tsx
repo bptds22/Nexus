@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
+import NexusLogo from "@/components/ui/NexusLogo";
 import Link from "next/link";
 import PlaybookBackground from "../../components/PlaybookBackground";
 
@@ -52,10 +52,9 @@ export default function PendingPage() {
 
       <div className="relative z-10 flex flex-col items-center text-center max-w-md">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-3 mb-12">
-          <Image src="/brand/White%20red%20logo%20@4x.png" alt="Nexus" width={40} height={40} className="object-contain" />
-          <span className="font-head font-black text-white text-xl tracking-[0.06em] uppercase">Nexus</span>
-        </Link>
+        <div className="mb-12">
+          <NexusLogo variant="white" height={44} href="/" priority />
+        </div>
 
         {/* Clock icon with spin */}
         <div className="mb-8 animate-spin-slow">

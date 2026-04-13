@@ -8,7 +8,8 @@ import type { AthleteSuggestion } from "@/lib/mock/athlete";
 import type { AthleteTraitRatings } from "@/lib/types/models";
 import StarRating from "@/components/ui/StarRating";
 import NxIcon from "@/components/ui/NxIcon";
-import { BADGE_CONFIG, BADGE_ORDER, MAX_BADGES, MAX_DETAIL_LENGTH, getSportStats, parseDistinctions, type DistinctionEntry } from "@/lib/config/badges";
+import { BADGE_CONFIG, BADGE_ORDER, MAX_BADGES, MAX_DETAIL_LENGTH, parseDistinctions, type DistinctionEntry } from "@/lib/config/badges";
+import DistinctionBadge from "@/components/shared/DistinctionBadge";
 
 /* ═══════════════════════════════════════════════════════════════
    Athlete Profile — Co-creation page
@@ -399,114 +400,73 @@ function LockedField({ label, value, recruiterView, children }: {
   );
 }
 
-/* ── Cote Globale — athlete can suggest ──────────────────── */
+/* ── Shared suggestion UI primitives ──────────────────────── */
 
-function CoteGlobaleSuggest({ currentValue, pending, onSubmit, onUpgradeToDetailed, forceDetailedUpgrade, pendingSugs }: {
-  currentValue: number;
-  pending?: { proposed_value: string };
-  onSubmit: (field: string, proposed: string, message: string) => Promise<void>;
-  onUpgradeToDetailed?: () => void;
-  forceDetailedUpgrade?: boolean;
-  pendingSugs?: AthleteSuggestion[];
-}) {
-  const [editing, setEditing] = useState(false);
-  const [rating, setRating] = useState(currentValue);
-  const [saving, setSaving] = useState(false);
+const SECTION_LABEL_CLS = "text-[11px] font-bold uppercase tracking-[0.2em] text-[#6b7280]";
+const SECTION_SUBTITLE_CLS = "text-[12px] text-[#6b7280]";
+const PROPOSE_BTN_CLS = "px-4 py-2 border border-[#E63946] text-[#E63946] rounded-lg text-[11px] font-bold uppercase tracking-wider hover:bg-[#E63946]/10 transition-colors";
+const CANCEL_BTN_CLS = "px-4 py-2 border border-[#E63946] text-[#E63946] rounded-lg text-[11px] font-bold uppercase tracking-wider hover:bg-[#E63946]/10 transition-colors";
+const SUBMIT_BTN_CLS = "px-4 py-2 bg-[#E63946] hover:bg-[#D42B22] disabled:opacity-40 text-white rounded-lg text-[11px] font-bold uppercase tracking-wider transition-colors";
+const PENDING_LINE_CLS = "text-[11px] text-[#6b7280] italic mt-1";
 
-  async function handleSubmit() {
-    if (rating <= 0) return;
-    setSaving(true);
-    await onSubmit("Cote globale", rating.toFixed(1), "");
-    setSaving(false);
-    setEditing(false);
-  }
-
-  // If athlete wants to upgrade to detailed, render TraitsSuggest instead
-  if (forceDetailedUpgrade) {
-    return (
-      <TraitsSuggest
-        traitRatings={undefined}
-        traitAvg={currentValue}
-        pendingSugs={pendingSugs || []}
-        onSubmit={onSubmit}
-        upgradeMode
-      />
-    );
-  }
-
+function ReadOnlyStars({ rating, size = 20 }: { rating: number; size?: number }) {
   return (
-    <div className="py-3 border-b border-[#2D3748]/40">
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-[13px] text-[#9CA3AF] flex items-center gap-2">
-          Cote Globale
-          <span className="text-[9px] font-bold tracking-wider uppercase px-1.5 py-0.5 rounded bg-[#EAB308]/15 text-[#EAB308]">Suggestion</span>
-        </span>
-        <div className="flex items-center gap-2">
-          <StarRating rating={currentValue} size="md" showNumber={false} />
-          <span className="text-[14px] font-bold text-white">{currentValue > 0 ? `${currentValue.toFixed(1)}/5` : "—"}</span>
-          {!editing && !pending && (
-            <button type="button" onClick={() => { setRating(currentValue); setEditing(true); }} className="ml-2 text-[11px] font-bold text-[#EAB308] hover:text-[#FDE047] transition-colors">Suggérer</button>
-          )}
-        </div>
-      </div>
-
-      <p className="text-[11px] text-[#4a4d56] italic">Ton entraîneur utilise l&apos;évaluation simplifiée. Tu peux suggérer une cote globale ou proposer une évaluation détaillée.</p>
-
-      {!editing && !pending && onUpgradeToDetailed && (
-        <button type="button" onClick={onUpgradeToDetailed} className="mt-2 text-[11px] font-bold text-[#EAB308] hover:text-[#FDE047] transition-colors flex items-center gap-1">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
-          Suggérer une évaluation détaillée (11 critères)
-        </button>
-      )}
-
-      {pending && (
-        <div className="mt-2 flex items-center gap-2 px-3 py-2 rounded bg-[#EAB308]/10 border border-[#EAB308]/30">
-          <span className="text-[11px]">⏳</span>
-          <span className="text-[12px] font-bold text-[#EAB308]">En attente: {pending.proposed_value}/5</span>
-        </div>
-      )}
-
-      {editing && (
-        <div className="mt-3 flex items-center gap-3">
-          <div className="flex items-center gap-1">
-            {Array.from({ length: 5 }, (_, i) => {
-              const starIndex = i + 1;
-              const filled = rating >= starIndex;
-              const half = rating >= starIndex - 0.5 && rating < starIndex;
-              return (
-                <button key={i} type="button" className="relative w-7 h-7 cursor-pointer"
-                  onClick={(e) => {
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    const x = e.clientX - rect.left;
-                    const isLeftHalf = x < rect.width / 2;
-                    const value = isLeftHalf ? starIndex - 0.5 : starIndex;
-                    setRating(rating === value ? 0 : value);
-                  }}>
-                  <svg className="absolute inset-0 w-7 h-7" viewBox="0 0 24 24" fill="#2D3748" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
-                  {filled && <svg className="absolute inset-0 w-7 h-7" viewBox="0 0 24 24" fill="#EAB308" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>}
-                  {half && (
-                    <svg className="absolute inset-0 w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="none">
-                      <defs><clipPath id={`cgs-${i}`}><rect x="0" y="0" width="12" height="24" /></clipPath></defs>
-                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" fill="#EAB308" clipPath={`url(#cgs-${i})`} />
-                    </svg>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-          <span className="text-[13px] font-bold text-white">{rating > 0 ? `${rating.toFixed(1)}/5` : "—"}</span>
-          <div className="flex-1" />
-          <button type="button" onClick={() => setEditing(false)} className="text-[11px] text-[#6b7280] hover:text-white transition-colors">Annuler</button>
-          <button type="button" onClick={handleSubmit} disabled={saving || rating <= 0} className="px-3 py-1.5 bg-[#EAB308] hover:bg-[#CA8A04] disabled:opacity-40 text-black text-[11px] font-bold rounded transition-colors">
-            {saving ? "..." : "Envoyer"}
-          </button>
-        </div>
-      )}
+    <div className="flex items-center gap-0.5">
+      {Array.from({ length: 5 }, (_, i) => {
+        const filled = rating >= i + 1;
+        const half = rating >= i + 0.5 && rating < i + 1;
+        return (
+          <svg key={i} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="none">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" fill="#2D3748" />
+            {filled && <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" fill="#F59E0B" />}
+            {half && (
+              <>
+                <defs><clipPath id={`ros-${i}-${Math.random().toString(36).slice(2, 8)}`}><rect x="0" y="0" width="12" height="24" /></clipPath></defs>
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" fill="#F59E0B" clipPath="inset(0 50% 0 0)" />
+              </>
+            )}
+          </svg>
+        );
+      })}
     </div>
   );
 }
 
-/* ── Traits Suggest — detailed evaluation mode ──────────── */
+function ClickableStars({ value, onChange, size = 28, allowHalf = false }: { value: number; onChange: (v: number) => void; size?: number; allowHalf?: boolean }) {
+  return (
+    <div className="flex items-center gap-1">
+      {Array.from({ length: 5 }, (_, i) => {
+        const starIndex = i + 1;
+        const filled = value >= starIndex;
+        const half = value >= starIndex - 0.5 && value < starIndex;
+        return (
+          <button key={i} type="button" className="relative cursor-pointer" style={{ width: size, height: size }}
+            onClick={(e) => {
+              if (allowHalf) {
+                const rect = e.currentTarget.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const next = x < rect.width / 2 ? starIndex - 0.5 : starIndex;
+                onChange(value === next ? 0 : next);
+              } else {
+                onChange(value === starIndex ? 0 : starIndex);
+              }
+            }}>
+            <svg className="absolute inset-0" style={{ width: size, height: size }} viewBox="0 0 24 24" fill="#2D3748" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
+            {filled && <svg className="absolute inset-0" style={{ width: size, height: size }} viewBox="0 0 24 24" fill="#F59E0B" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>}
+            {half && (
+              <svg className="absolute inset-0" style={{ width: size, height: size }} viewBox="0 0 24 24" fill="none" stroke="none">
+                <defs><clipPath id={`cs-${i}-${starIndex}`}><rect x="0" y="0" width="12" height="24" /></clipPath></defs>
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" fill="#F59E0B" clipPath={`url(#cs-${i}-${starIndex})`} />
+              </svg>
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ── Trait definitions (detailed evaluation) ──────────────── */
 
 const TRAIT_CHAMPS: { key: keyof AthleteTraitRatings; label: string }[] = [
   { key: "leadership", label: "Leadership" },
@@ -519,90 +479,134 @@ const TRAIT_CHAMPS: { key: keyof AthleteTraitRatings; label: string }[] = [
   { key: "attitude", label: "Attitude / Mentalité" },
 ];
 
-function TraitsSuggest({ traitRatings, traitAvg, pendingSugs, onSubmit, upgradeMode }: {
+/* ── Unified Evaluation section (simplified + detailed) ───── */
+
+function EvaluationSuggest({ currentOverall, traitRatings, pendingSugs, onSubmit }: {
+  currentOverall: number;
   traitRatings: AthleteTraitRatings | undefined;
-  traitAvg: number;
   pendingSugs: AthleteSuggestion[];
   onSubmit: (field: string, proposed: string, message: string) => Promise<void>;
-  upgradeMode?: boolean;
 }) {
+  const isDetailedMode = !!traitRatings && TRAIT_CHAMPS.some((t) => (traitRatings[t.key] || 0) > 0);
   const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState<Record<string, number>>({});
   const [saving, setSaving] = useState(false);
-
-  // Map current trait values by French label for lookups
-  function getCurrent(key: keyof AthleteTraitRatings): number {
-    return traitRatings ? (traitRatings[key] || 0) : 0;
-  }
+  const [overallDraft, setOverallDraft] = useState(currentOverall);
+  const [traitDraft, setTraitDraft] = useState<Record<string, number>>({});
 
   function pendingFor(label: string): AthleteSuggestion | undefined {
     return pendingSugs.find((s) => s.field === label);
   }
 
+  const getCurrent = (key: keyof AthleteTraitRatings) => (traitRatings ? traitRatings[key] || 0 : 0);
+
+  const traitAvg = isDetailedMode
+    ? (() => {
+        const vals = TRAIT_CHAMPS.map((t) => getCurrent(t.key)).filter((v) => v > 0);
+        return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
+      })()
+    : currentOverall;
+
   function startEditing() {
+    setOverallDraft(currentOverall);
     const initial: Record<string, number> = {};
     for (const t of TRAIT_CHAMPS) initial[t.label] = getCurrent(t.key);
-    setDraft(initial);
+    setTraitDraft(initial);
     setEditing(true);
+  }
+
+  function cancel() {
+    setEditing(false);
   }
 
   async function handleSubmit() {
     setSaving(true);
-    const changes: { label: string; value: number }[] = [];
-    for (const t of TRAIT_CHAMPS) {
-      const current = getCurrent(t.key);
-      const proposed = draft[t.label] ?? 0;
-      if (proposed > 0 && proposed !== current) {
-        changes.push({ label: t.label, value: proposed });
+    if (isDetailedMode) {
+      for (const t of TRAIT_CHAMPS) {
+        const current = getCurrent(t.key);
+        const proposed = traitDraft[t.label] ?? 0;
+        if (proposed > 0 && proposed !== current) {
+          await onSubmit(t.label, String(proposed), "");
+        }
       }
-    }
-    for (const change of changes) {
-      await onSubmit(change.label, String(change.value), "");
+    } else if (overallDraft > 0 && overallDraft !== currentOverall) {
+      await onSubmit("Cote globale", overallDraft.toFixed(1), "");
     }
     setSaving(false);
     setEditing(false);
   }
 
-  const rowCls = "flex items-center justify-between py-2 border-b border-[#2D3748]/30";
-
   return (
-    <div className="py-3 border-b border-[#2D3748]/40">
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-[13px] text-[#9CA3AF] flex items-center gap-2">
-          {upgradeMode ? "Proposer une évaluation détaillée" : "Évaluation détaillée"}
-          <span className="text-[9px] font-bold tracking-wider uppercase px-1.5 py-0.5 rounded bg-[#EAB308]/15 text-[#EAB308]">Suggestion</span>
-        </span>
-        <div className="flex items-center gap-2">
-          <StarRating rating={traitAvg} size="md" showNumber={false} />
-          <span className="text-[14px] font-bold text-white">{traitAvg > 0 ? `${traitAvg.toFixed(1)}/5` : "—"}</span>
-          {!editing && (
-            <button type="button" onClick={startEditing} className="ml-2 text-[11px] font-bold text-[#EAB308] hover:text-[#FDE047] transition-colors">
-              {upgradeMode ? "Commencer" : "Suggérer"}
-            </button>
-          )}
-        </div>
+    <div className="mt-4 pt-4 border-t border-[#2D3748]/40">
+      <div className="flex items-center justify-between mb-1">
+        <h3 className={SECTION_LABEL_CLS}>Évaluation</h3>
+        {!editing && (
+          <button type="button" onClick={startEditing} className={PROPOSE_BTN_CLS}>Proposer</button>
+        )}
       </div>
+      {!editing && <p className={SECTION_SUBTITLE_CLS}>Modifications soumises à ton entraîneur pour approbation</p>}
 
-      <p className="text-[11px] text-[#4a4d56] italic mb-3">
-        {upgradeMode
-          ? "Propose une note pour chaque critère. Tes suggestions seront soumises à ton entraîneur pour approbation."
-          : "Ton entraîneur utilise l'évaluation détaillée. Suggère des ajustements par critère."}
-      </p>
+      {!editing && !isDetailedMode && (
+        <div className="flex items-center justify-between py-3 mt-2 border-b border-[#2D3748]/40">
+          <span className="text-[13px] text-[#9CA3AF]">Cote Globale</span>
+          <div className="flex items-center gap-3">
+            <ReadOnlyStars rating={currentOverall} size={20} />
+            <span className="text-[14px] font-bold text-white w-12 text-right">{currentOverall > 0 ? `${currentOverall.toFixed(1)}/5` : "—"}</span>
+          </div>
+        </div>
+      )}
+      {!editing && !isDetailedMode && pendingFor("Cote globale") && (
+        <p className={PENDING_LINE_CLS}>⏳ En attente: {pendingFor("Cote globale")?.proposed_value}/5</p>
+      )}
 
-      {/* Display current traits + pending */}
-      {!editing && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
+      {!editing && isDetailedMode && (
+        <>
+          <div className="flex items-center justify-between py-3 mt-2 border-b border-[#2D3748]/40">
+            <span className="text-[13px] text-[#9CA3AF]">Cote Globale (moyenne)</span>
+            <div className="flex items-center gap-3">
+              <ReadOnlyStars rating={traitAvg} size={20} />
+              <span className="text-[14px] font-bold text-white w-12 text-right">{traitAvg > 0 ? `${traitAvg.toFixed(1)}/5` : "—"}</span>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 mt-2">
+            {TRAIT_CHAMPS.map((trait) => {
+              const current = getCurrent(trait.key);
+              const pend = pendingFor(trait.label);
+              return (
+                <div key={trait.key} className="py-2 border-b border-[#2D3748]/30">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[12px] text-[#9CA3AF]">{trait.label}</span>
+                    {current > 0 ? <ReadOnlyStars rating={current} size={14} /> : <span className="text-[12px] text-[#4a4d56]">—</span>}
+                  </div>
+                  {pend && <p className={PENDING_LINE_CLS}>⏳ En attente: {pend.proposed_value}/5</p>}
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      {editing && !isDetailedMode && (
+        <div className="mt-3">
+          <div className="flex items-center justify-between py-3 border-b border-[#2D3748]/40">
+            <span className="text-[13px] text-[#9CA3AF]">Cote Globale</span>
+            <div className="flex items-center gap-3">
+              <ClickableStars value={overallDraft} onChange={setOverallDraft} size={28} allowHalf />
+              <span className="text-[14px] font-bold text-white w-12 text-right">{overallDraft > 0 ? `${overallDraft.toFixed(1)}/5` : "—"}</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editing && isDetailedMode && (
+        <div className="mt-3 space-y-1">
           {TRAIT_CHAMPS.map((trait) => {
-            const current = getCurrent(trait.key);
-            const pend = pendingFor(trait.label);
+            const value = traitDraft[trait.label] ?? 0;
             return (
-              <div key={trait.key} className={rowCls}>
-                <span className="text-[12px] text-[#9CA3AF]">{trait.label}</span>
+              <div key={trait.key} className="flex items-center justify-between py-2 border-b border-[#2D3748]/30">
+                <span className="text-[12px] text-[#c8c8cc]">{trait.label}</span>
                 <div className="flex items-center gap-2">
-                  {current > 0 ? <StarRating rating={current} size="sm" /> : <span className="text-[12px] text-[#4a4d56]">—</span>}
-                  {pend && (
-                    <span className="text-[10px] font-bold tracking-wider uppercase px-1.5 py-0.5 rounded bg-[#EAB308]/15 text-[#EAB308]" title={`Proposé: ${pend.proposed_value}/5`}>⏳ {pend.proposed_value}/5</span>
-                  )}
+                  <ClickableStars value={value} onChange={(v) => setTraitDraft((d) => ({ ...d, [trait.label]: v }))} size={20} />
+                  <span className="text-[11px] font-bold text-[#9CA3AF] w-10 text-right">{value > 0 ? `${value}/5` : "—"}</span>
                 </div>
               </div>
             );
@@ -610,51 +614,25 @@ function TraitsSuggest({ traitRatings, traitAvg, pendingSugs, onSubmit, upgradeM
         </div>
       )}
 
-      {/* Editing */}
       {editing && (
-        <div className="space-y-1">
-          {TRAIT_CHAMPS.map((trait) => {
-            const value = draft[trait.label] ?? 0;
-            return (
-              <div key={trait.key} className={rowCls}>
-                <span className="text-[12px] text-[#c8c8cc]">{trait.label}</span>
-                <div className="flex items-center gap-1">
-                  {Array.from({ length: 5 }, (_, i) => {
-                    const starIndex = i + 1;
-                    const filled = value >= starIndex;
-                    return (
-                      <button key={i} type="button" title={`${starIndex} étoile${starIndex > 1 ? "s" : ""}`} aria-label={`${starIndex} étoile${starIndex > 1 ? "s" : ""}`} onClick={() => setDraft((d) => ({ ...d, [trait.label]: value === starIndex ? 0 : starIndex }))}
-                        className="w-5 h-5 cursor-pointer">
-                        <svg viewBox="0 0 24 24" fill={filled ? "#EAB308" : "#2D3748"} stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
-                      </button>
-                    );
-                  })}
-                  <span className="text-[11px] font-bold text-[#9CA3AF] ml-1 w-8 text-right">{value > 0 ? `${value}/5` : "—"}</span>
-                </div>
-              </div>
-            );
-          })}
-          <div className="flex items-center gap-2 justify-end mt-3">
-            <button type="button" onClick={() => setEditing(false)} className="text-[11px] text-[#6b7280] hover:text-white transition-colors">Annuler</button>
-            <button type="button" onClick={handleSubmit} disabled={saving} className="px-3 py-1.5 bg-[#EAB308] hover:bg-[#CA8A04] disabled:opacity-40 text-black text-[11px] font-bold rounded transition-colors">
-              {saving ? "Envoi..." : "Envoyer les suggestions"}
-            </button>
-          </div>
+        <div className="flex items-center gap-3 justify-end mt-4 pt-3 border-t border-[#2D3748]/40">
+          <button type="button" onClick={cancel} className={CANCEL_BTN_CLS}>Annuler</button>
+          <button type="button" onClick={handleSubmit} disabled={saving} className={SUBMIT_BTN_CLS}>
+            {saving ? "..." : "Envoyer"}
+          </button>
         </div>
       )}
     </div>
   );
 }
 
-/* ── Distinctions — athlete can suggest ──────────────────── */
+/* ── Distinctions suggestion (unified pattern) ────────────── */
 
-function DistinctionsSuggest({ sportName, currentDistinctions, pending, onSubmit }: {
-  sportName: string;
+function DistinctionsSuggest({ currentDistinctions, pending, onSubmit }: {
   currentDistinctions: DistinctionEntry[];
   pending?: { proposed_value: string };
   onSubmit: (field: string, proposed: string, message: string) => Promise<void>;
 }) {
-  const sportStats = getSportStats(sportName);
   const [editing, setEditing] = useState(false);
   const [entries, setEntries] = useState<DistinctionEntry[]>(currentDistinctions);
   const [saving, setSaving] = useState(false);
@@ -682,96 +660,73 @@ function DistinctionsSuggest({ sportName, currentDistinctions, pending, onSubmit
     setEditing(false);
   }
 
-  const pendingArr: DistinctionEntry[] = pending ? (() => {
-    try { return parseDistinctions(JSON.parse(pending.proposed_value)); } catch { return []; }
-  })() : [];
+  function startEditing() {
+    setEntries(currentDistinctions);
+    setEditing(true);
+  }
 
-  const pill = (e: DistinctionEntry, color: "red" | "yellow") => {
-    const cfg = BADGE_CONFIG[e.badge];
-    const label = e.badge === "custom" ? (e.detail || "Distinction") : cfg?.label || e.badge;
-    const text = e.badge !== "custom" && e.detail ? `${label} — ${e.detail}` : label;
-    const cls = color === "red"
-      ? "bg-[#E63946]/15 border-[#E63946]/30 text-[#E63946]"
-      : "bg-[#EAB308]/15 border-[#EAB308]/30 text-[#EAB308]";
-    return <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[11px] font-bold ${cls}`}>{text}</span>;
-  };
+  const hasPending = !!pending;
 
   return (
     <div className="mt-4 pt-4 border-t border-[#2D3748]/40">
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-[13px] text-[#9CA3AF] flex items-center gap-2">
-          Distinctions
-          <span className="text-[9px] font-bold tracking-wider uppercase px-1.5 py-0.5 rounded bg-[#EAB308]/15 text-[#EAB308]">Suggestion</span>
-        </span>
-        {!editing && !pending && (
-          <button type="button" onClick={() => { setEntries(currentDistinctions); setEditing(true); }} className="text-[11px] font-bold text-[#EAB308] hover:text-[#FDE047] transition-colors">Suggérer</button>
+      <div className="flex items-center justify-between mb-1">
+        <h3 className={SECTION_LABEL_CLS}>Distinctions</h3>
+        {!editing && (
+          <button type="button" onClick={startEditing} className={PROPOSE_BTN_CLS}>Proposer</button>
         )}
       </div>
-      <p className="text-[11px] text-[#4a4d56] italic mb-3">Tes distinctions seront soumises à ton entraîneur pour approbation</p>
+      {!editing && <p className={SECTION_SUBTITLE_CLS}>Modifications soumises à ton entraîneur pour approbation</p>}
 
       {!editing && currentDistinctions.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {currentDistinctions.map((e, i) => <span key={`${e.badge}-${i}`}>{pill(e, "red")}</span>)}
+        <div className="flex flex-wrap gap-4 mt-3">
+          {currentDistinctions.map((e, i) => (
+            <DistinctionBadge key={`${e.badge}-${i}`} badge={e.badge} detail={e.detail} index={i} />
+          ))}
         </div>
       )}
-      {!editing && currentDistinctions.length === 0 && !pending && (
-        <p className="text-[12px] text-[#4a4d56]">Aucune distinction</p>
+      {!editing && currentDistinctions.length === 0 && (
+        <p className="text-[13px] text-[#6b7280] mt-3">—</p>
       )}
-
-      {pending && pendingArr.length > 0 && (
-        <div className="mt-2 px-3 py-2 rounded bg-[#EAB308]/10 border border-[#EAB308]/30">
-          <p className="text-[11px] font-bold text-[#EAB308] mb-1.5">⏳ En attente d&apos;approbation:</p>
-          <div className="flex flex-wrap gap-1.5">
-            {pendingArr.map((e, i) => <span key={`${e.badge}-${i}`}>{pill(e, "yellow")}</span>)}
-          </div>
-        </div>
+      {!editing && hasPending && (
+        <p className={PENDING_LINE_CLS}>⏳ En attente</p>
       )}
 
       {editing && (
-        <div className="space-y-2">
+        <div className="mt-3 space-y-2">
           {BADGE_ORDER.map((key) => {
             const cfg = BADGE_CONFIG[key];
             const entry = entries.find((e) => e.badge === key);
             const isSelected = !!entry;
             const isDisabled = !isSelected && atMax;
             return (
-              <div key={key} className={`border rounded transition-colors ${isSelected ? "border-[#EAB308]/50 bg-[#EAB308]/[0.08]" : "border-[#2a2d36]"} ${isDisabled ? "opacity-40" : ""}`}>
+              <div key={key} className={`border rounded transition-colors ${isSelected ? "border-[#E63946]/40 bg-[#E63946]/[0.06]" : "border-[#2a2d36]"} ${isDisabled ? "opacity-40" : ""}`}>
                 <button type="button" onClick={() => !isDisabled && toggle(key)} disabled={isDisabled}
                   className="w-full flex items-center gap-3 px-3 py-2 text-left">
-                  <span className={`w-4 h-4 rounded border flex items-center justify-center ${isSelected ? "bg-[#EAB308] border-[#EAB308]" : "border-[#4a4d56]"}`}>
-                    {isSelected && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>}
+                  <span className={`w-4 h-4 rounded border flex items-center justify-center ${isSelected ? "bg-[#E63946] border-[#E63946]" : "border-[#4a4d56]"}`}>
+                    {isSelected && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>}
                   </span>
                   <span className={`text-[13px] font-bold ${isSelected ? "text-white" : "text-[#8a8d96]"}`}>{key === "custom" ? "Personnalisée" : cfg.label}</span>
                 </button>
                 {isSelected && cfg.hasDetail && (
-                  <div className="px-3 pb-3 pl-10 space-y-2">
-                    {(key === "team_leader" || key === "league_leader") && sportStats.length > 0 && (
-                      <select aria-label="Statistique"
-                        value={sportStats.includes(entry?.detail || "") ? entry?.detail || "" : ""}
-                        onChange={(e) => updateDetail(key, e.target.value)}
-                        className="w-full bg-[#13151a] border border-[#2a2d36] rounded px-2 py-1.5 text-[12px] text-white">
-                        <option value="">— Stat —</option>
-                        {sportStats.map((s) => <option key={s} value={s}>{s}</option>)}
-                      </select>
-                    )}
+                  <div className="px-3 pb-3 pl-10">
                     <input type="text"
                       value={entry?.detail || ""}
                       onChange={(e) => updateDetail(key, e.target.value.slice(0, MAX_DETAIL_LENGTH))}
                       maxLength={MAX_DETAIL_LENGTH}
-                      placeholder={key === "custom" ? "Titre" : "Précise"}
-                      className="w-full bg-[#13151a] border border-[#2a2d36] rounded px-2 py-1.5 text-[12px] text-white"
+                      placeholder={key === "custom" ? "Titre" : "Ex: Points, Buts, Passes..."}
+                      className="w-full bg-[#13151a] border border-[#2a2d36] rounded px-2 py-1.5 text-[12px] text-white focus:border-[#E63946] outline-none"
                     />
                   </div>
                 )}
               </div>
             );
           })}
-          <p className="text-[11px] text-[#6b7280]">{totalCount} / {MAX_BADGES} sélectionnée{totalCount !== 1 ? "s" : ""}</p>
+          <p className="text-[11px] text-[#6b7280]">{totalCount} / {MAX_BADGES}</p>
 
-          <div className="flex items-center gap-2 justify-end mt-3">
-            <button type="button" onClick={() => setEditing(false)} className="text-[11px] text-[#6b7280] hover:text-white transition-colors">Annuler</button>
-            <button type="button" onClick={handleSubmit} disabled={saving} className="px-3 py-1.5 bg-[#EAB308] hover:bg-[#CA8A04] disabled:opacity-40 text-black text-[11px] font-bold rounded transition-colors">
-              {saving ? "..." : "Envoyer la suggestion"}
+          <div className="flex items-center gap-3 justify-end mt-4 pt-3 border-t border-[#2D3748]/40">
+            <button type="button" onClick={() => setEditing(false)} className={CANCEL_BTN_CLS}>Annuler</button>
+            <button type="button" onClick={handleSubmit} disabled={saving} className={SUBMIT_BTN_CLS}>
+              {saving ? "..." : "Envoyer"}
             </button>
           </div>
         </div>
@@ -944,7 +899,6 @@ export default function AthleteProfilPage() {
   const recruiterView = false;
   const [showPreview, setShowPreview] = useState(false);
   const [suggestions, setSuggestions] = useState<AthleteSuggestion[]>([]);
-  const [wantsDetailedSuggest, setWantsDetailedSuggest] = useState(false);
   const [sugTab, setSugTab] = useState<"pending" | "approved" | "rejected">("pending");
   const [toast, setToast] = useState<string | null>(null);
 
@@ -1209,17 +1163,13 @@ export default function AthleteProfilPage() {
           <h3 className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#6b7280]">{title}</h3>
           {editSection !== sectionKey && (
             <button type="button" onClick={() => setEditSection(sectionKey)}
-              className={`px-3 py-1 rounded-lg border text-[10px] font-bold uppercase tracking-wider transition-colors ${
-                isDirect
-                  ? "border-[#E63946]/30 text-[#E63946] hover:bg-[#E63946]/10"
-                  : "border-[#EAB308]/30 text-[#EAB308] hover:bg-[#EAB308]/10"
-              }`}>
+              className="px-4 py-2 border border-[#E63946] text-[#E63946] rounded-lg text-[11px] font-bold uppercase tracking-wider hover:bg-[#E63946]/10 transition-colors">
               {isDirect ? "Modifier" : "Proposer"}
             </button>
           )}
         </div>
         {!isDirect && editSection !== sectionKey && (
-          <p className="text-[10px] text-[#4a4d56] mt-1">Modifications soumises à ton coach</p>
+          <p className="text-[12px] text-[#6b7280] mt-1">Modifications soumises à ton entraîneur pour approbation</p>
         )}
       </div>
     );
@@ -1360,9 +1310,9 @@ export default function AthleteProfilPage() {
 
       {/* Pending suggestions banner */}
       {!recruiterView && pendingSugs.length > 0 && (
-        <div className="bg-[#1A1D24] border-l-4 border-[#EAB308] rounded-r-xl px-5 py-3 flex items-center justify-between">
-          <span className="text-[13px] text-[#EAB308] font-bold">{pendingSugs.length} suggestion{pendingSugs.length > 1 ? "s" : ""} en attente d&apos;approbation par ton coach</span>
-          <button type="button" onClick={() => { const el = document.getElementById("suggestions-section"); el?.scrollIntoView({ behavior: "smooth" }); }} className="text-[12px] font-bold text-[#EAB308] hover:text-white transition-colors">
+        <div className="bg-[#1A1D24] border-l-4 border-[#E63946] rounded-r-xl px-5 py-3 flex items-center justify-between">
+          <span className="text-[13px] text-[#E63946] font-bold">{pendingSugs.length} suggestion{pendingSugs.length > 1 ? "s" : ""} en attente d&apos;approbation par ton coach</span>
+          <button type="button" onClick={() => { const el = document.getElementById("suggestions-section"); el?.scrollIntoView({ behavior: "smooth" }); }} className="text-[12px] font-bold text-[#E63946] hover:text-white transition-colors">
             Voir mes suggestions →
           </button>
         </div>
@@ -1596,58 +1546,39 @@ export default function AthleteProfilPage() {
               </div>
             )}
 
-            {/* Evaluation — mode-aware (simplified vs detailed) */}
-            {(() => {
-              const isDetailedMode = traitEntries.some(([, v]) => v > 0);
-              if (recruiterView) {
-                return (
-                  <>
-                    <div className="py-2.5 border-b border-[#2D3748]/40 flex items-center justify-between">
-                      <span className="text-[13px] text-[#9CA3AF]">Cote Globale</span>
-                      <div className="flex items-center gap-2">
-                        <StarRating rating={traitAvg} size="md" showNumber={false} />
-                        <span className="text-[16px] font-head font-black text-white">{traitAvg.toFixed(1)}/5</span>
+            {/* Evaluation — recruiter view (read-only) vs athlete (unified suggestion pattern) */}
+            {recruiterView ? (
+              <>
+                <div className="py-2.5 border-b border-[#2D3748]/40 flex items-center justify-between">
+                  <span className="text-[13px] text-[#9CA3AF]">Cote Globale</span>
+                  <div className="flex items-center gap-2">
+                    <StarRating rating={traitAvg} size="md" showNumber={false} />
+                    <span className="text-[16px] font-head font-black text-white">{traitAvg.toFixed(1)}/5</span>
+                  </div>
+                </div>
+                {traitEntries.length > 0 && (
+                  <div className="grid grid-cols-2 gap-2 mt-3">
+                    {traitEntries.map(([key, val]) => (
+                      <div key={key} className="flex items-center justify-between py-1.5 px-3 rounded bg-[#111317] border border-white/5">
+                        <span className="text-[12px] text-[#9CA3AF]">{TRAIT_LABELS[key]}</span>
+                        <StarRating rating={val} size="sm" />
                       </div>
-                    </div>
-                    {traitEntries.length > 0 && (
-                      <div className="grid grid-cols-2 gap-2 mt-3">
-                        {traitEntries.map(([key, val]) => (
-                          <div key={key} className="flex items-center justify-between py-1.5 px-3 rounded bg-[#111317] border border-white/5">
-                            <span className="text-[12px] text-[#9CA3AF]">{TRAIT_LABELS[key]}</span>
-                            <StarRating rating={val} size="sm" />
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </>
-                );
-              }
-              if (isDetailedMode) {
-                return (
-                  <TraitsSuggest
-                    traitRatings={a.traitRatings}
-                    traitAvg={traitAvg}
-                    pendingSugs={pendingSugs}
-                    onSubmit={submitSuggestion}
-                  />
-                );
-              }
-              return (
-                <CoteGlobaleSuggest
-                  currentValue={a.overallRating || 0}
-                  pending={getPending("Cote globale")}
-                  onSubmit={submitSuggestion}
-                  onUpgradeToDetailed={() => setWantsDetailedSuggest(true)}
-                  forceDetailedUpgrade={wantsDetailedSuggest}
-                  pendingSugs={pendingSugs}
-                />
-              );
-            })()}
+                    ))}
+                  </div>
+                )}
+              </>
+            ) : (
+              <EvaluationSuggest
+                currentOverall={a.overallRating || 0}
+                traitRatings={a.traitRatings}
+                pendingSugs={pendingSugs}
+                onSubmit={submitSuggestion}
+              />
+            )}
 
             {/* Distinctions — suggestible */}
             {!recruiterView && (
               <DistinctionsSuggest
-                sportName={a.primarySport || ""}
                 currentDistinctions={((a as unknown) as { coachDistinctions?: DistinctionEntry[] }).coachDistinctions || []}
                 pending={getPending("Distinctions")}
                 onSubmit={submitSuggestion}

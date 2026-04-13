@@ -2,7 +2,7 @@
 
 import { useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import Image from "next/image";
+import NexusLogo from "@/components/ui/NexusLogo";
 import Link from "next/link";
 import PlaybookBackground from "@/app/components/PlaybookBackground";
 
@@ -107,9 +107,8 @@ function InviteContent() {
 
           {/* Logo + subtitle */}
           <div className="text-center mb-8">
-            <div className="flex items-center justify-center gap-3 mb-4">
-              <Image src="/brand/White%20red%20logo%20@4x.png" alt="Nexus" width={36} height={36} className="object-contain" />
-              <span className="font-head font-black text-white text-lg tracking-[0.06em] uppercase">Nexus</span>
+            <div className="flex items-center justify-center mb-4">
+              <NexusLogo variant="white" height={40} priority />
             </div>
             <div className="inline-flex items-center gap-3 mb-6">
               <span className="w-6 h-px bg-[#E63946]" />

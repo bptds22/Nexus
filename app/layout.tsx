@@ -12,6 +12,13 @@ const outfit = Outfit({
 export const metadata: Metadata = {
   title: "Nexus — Recrutement sportif",
   description: "Plateforme de recrutement sportif au Québec",
+  icons: {
+    icon: [
+      { url: "/brand/icon-red.svg", type: "image/svg+xml" },
+      { url: "/brand/icon-red.png", type: "image/png" },
+    ],
+    apple: "/brand/icon-red.png",
+  },
 };
 
 export default function RootLayout({

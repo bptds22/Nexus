@@ -170,7 +170,7 @@ export default function IntroOverlay() {
       {/* Layer 2 (z-201): Logo ONLY — never fades, flies to navbar */}
       <img
         ref={logoRef}
-        src="/brand/White%20red%20logo%20@4x.png"
+        src="/brand/logo-white.svg"
         alt=""
         className="z-[201] pointer-events-none"
         style={{

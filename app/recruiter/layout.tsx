@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
+import NexusLogo from "@/components/ui/NexusLogo";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import ThemeToggle from "../components/ThemeToggle";
@@ -82,24 +82,9 @@ export default function RecruiterLayout({
 
             {/* Logo + portal label */}
             <div className="flex items-center gap-3">
-              <Link href="/recruiter/dashboard" className="flex items-center gap-2.5">
-                <Image
-                  src="/brand/White%20red%20logo%20@4x.png"
-                  alt="Nexus"
-                  width={28}
-                  height={28}
-                  className="object-contain nx-logo-dark"
-                />
-                <Image
-                  src="/brand/Profile%20trans@4x.png"
-                  alt="Nexus"
-                  width={28}
-                  height={28}
-                  className="object-contain nx-logo-light"
-                />
-                <span className="font-head font-black text-white text-sm tracking-[0.06em] uppercase hidden sm:block">
-                  Nexus
-                </span>
+              <Link href="/recruiter/dashboard" aria-label="Nexus" className="flex items-center">
+                <NexusLogo variant="white" height={26} className="nx-logo-dark" priority />
+                <NexusLogo variant="black-red" height={26} className="nx-logo-light" priority />
               </Link>
               <span className="hidden sm:block w-px h-5 bg-[#2D3748]" />
               <span className={`hidden sm:block ${label} text-[#6B7280]`}>
