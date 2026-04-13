@@ -401,10 +401,13 @@ function LockedField({ label, value, recruiterView, children }: {
 
 /* ── Cote Globale — athlete can suggest ──────────────────── */
 
-function CoteGlobaleSuggest({ currentValue, pending, onSubmit }: {
+function CoteGlobaleSuggest({ currentValue, pending, onSubmit, onUpgradeToDetailed, forceDetailedUpgrade, pendingSugs }: {
   currentValue: number;
   pending?: { proposed_value: string };
   onSubmit: (field: string, proposed: string, message: string) => Promise<void>;
+  onUpgradeToDetailed?: () => void;
+  forceDetailedUpgrade?: boolean;
+  pendingSugs?: AthleteSuggestion[];
 }) {
   const [editing, setEditing] = useState(false);
   const [rating, setRating] = useState(currentValue);
@@ -416,6 +419,19 @@ function CoteGlobaleSuggest({ currentValue, pending, onSubmit }: {
     await onSubmit("Cote globale", rating.toFixed(1), "");
     setSaving(false);
     setEditing(false);
+  }
+
+  // If athlete wants to upgrade to detailed, render TraitsSuggest instead
+  if (forceDetailedUpgrade) {
+    return (
+      <TraitsSuggest
+        traitRatings={undefined}
+        traitAvg={currentValue}
+        pendingSugs={pendingSugs || []}
+        onSubmit={onSubmit}
+        upgradeMode
+      />
+    );
   }
 
   return (
@@ -434,7 +450,14 @@ function CoteGlobaleSuggest({ currentValue, pending, onSubmit }: {
         </div>
       </div>
 
-      <p className="text-[11px] text-[#4a4d56] italic">Ta cote sera soumise à ton entraîneur pour approbation</p>
+      <p className="text-[11px] text-[#4a4d56] italic">Ton entraîneur utilise l&apos;évaluation simplifiée. Tu peux suggérer une cote globale ou proposer une évaluation détaillée.</p>
+
+      {!editing && !pending && onUpgradeToDetailed && (
+        <button type="button" onClick={onUpgradeToDetailed} className="mt-2 text-[11px] font-bold text-[#EAB308] hover:text-[#FDE047] transition-colors flex items-center gap-1">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+          Suggérer une évaluation détaillée (11 critères)
+        </button>
+      )}
 
       {pending && (
         <div className="mt-2 flex items-center gap-2 px-3 py-2 rounded bg-[#EAB308]/10 border border-[#EAB308]/30">
@@ -477,6 +500,146 @@ function CoteGlobaleSuggest({ currentValue, pending, onSubmit }: {
           <button type="button" onClick={handleSubmit} disabled={saving || rating <= 0} className="px-3 py-1.5 bg-[#EAB308] hover:bg-[#CA8A04] disabled:opacity-40 text-black text-[11px] font-bold rounded transition-colors">
             {saving ? "..." : "Envoyer"}
           </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Traits Suggest — detailed evaluation mode ──────────── */
+
+const TRAIT_CHAMPS: { key: keyof AthleteTraitRatings; label: string }[] = [
+  { key: "leadership", label: "Leadership" },
+  { key: "discipline", label: "Discipline" },
+  { key: "coachability", label: "Coachabilité" },
+  { key: "gameIQ", label: "Intelligence de jeu" },
+  { key: "competitiveness", label: "Compétitivité" },
+  { key: "teamwork", label: "Esprit d'équipe" },
+  { key: "resilience", label: "Résilience" },
+  { key: "attitude", label: "Attitude / Mentalité" },
+];
+
+function TraitsSuggest({ traitRatings, traitAvg, pendingSugs, onSubmit, upgradeMode }: {
+  traitRatings: AthleteTraitRatings | undefined;
+  traitAvg: number;
+  pendingSugs: AthleteSuggestion[];
+  onSubmit: (field: string, proposed: string, message: string) => Promise<void>;
+  upgradeMode?: boolean;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState<Record<string, number>>({});
+  const [saving, setSaving] = useState(false);
+
+  // Map current trait values by French label for lookups
+  function getCurrent(key: keyof AthleteTraitRatings): number {
+    return traitRatings ? (traitRatings[key] || 0) : 0;
+  }
+
+  function pendingFor(label: string): AthleteSuggestion | undefined {
+    return pendingSugs.find((s) => s.field === label);
+  }
+
+  function startEditing() {
+    const initial: Record<string, number> = {};
+    for (const t of TRAIT_CHAMPS) initial[t.label] = getCurrent(t.key);
+    setDraft(initial);
+    setEditing(true);
+  }
+
+  async function handleSubmit() {
+    setSaving(true);
+    const changes: { label: string; value: number }[] = [];
+    for (const t of TRAIT_CHAMPS) {
+      const current = getCurrent(t.key);
+      const proposed = draft[t.label] ?? 0;
+      if (proposed > 0 && proposed !== current) {
+        changes.push({ label: t.label, value: proposed });
+      }
+    }
+    for (const change of changes) {
+      await onSubmit(change.label, String(change.value), "");
+    }
+    setSaving(false);
+    setEditing(false);
+  }
+
+  const rowCls = "flex items-center justify-between py-2 border-b border-[#2D3748]/30";
+
+  return (
+    <div className="py-3 border-b border-[#2D3748]/40">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-[13px] text-[#9CA3AF] flex items-center gap-2">
+          {upgradeMode ? "Proposer une évaluation détaillée" : "Évaluation détaillée"}
+          <span className="text-[9px] font-bold tracking-wider uppercase px-1.5 py-0.5 rounded bg-[#EAB308]/15 text-[#EAB308]">Suggestion</span>
+        </span>
+        <div className="flex items-center gap-2">
+          <StarRating rating={traitAvg} size="md" showNumber={false} />
+          <span className="text-[14px] font-bold text-white">{traitAvg > 0 ? `${traitAvg.toFixed(1)}/5` : "—"}</span>
+          {!editing && (
+            <button type="button" onClick={startEditing} className="ml-2 text-[11px] font-bold text-[#EAB308] hover:text-[#FDE047] transition-colors">
+              {upgradeMode ? "Commencer" : "Suggérer"}
+            </button>
+          )}
+        </div>
+      </div>
+
+      <p className="text-[11px] text-[#4a4d56] italic mb-3">
+        {upgradeMode
+          ? "Propose une note pour chaque critère. Tes suggestions seront soumises à ton entraîneur pour approbation."
+          : "Ton entraîneur utilise l'évaluation détaillée. Suggère des ajustements par critère."}
+      </p>
+
+      {/* Display current traits + pending */}
+      {!editing && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
+          {TRAIT_CHAMPS.map((trait) => {
+            const current = getCurrent(trait.key);
+            const pend = pendingFor(trait.label);
+            return (
+              <div key={trait.key} className={rowCls}>
+                <span className="text-[12px] text-[#9CA3AF]">{trait.label}</span>
+                <div className="flex items-center gap-2">
+                  {current > 0 ? <StarRating rating={current} size="sm" /> : <span className="text-[12px] text-[#4a4d56]">—</span>}
+                  {pend && (
+                    <span className="text-[10px] font-bold tracking-wider uppercase px-1.5 py-0.5 rounded bg-[#EAB308]/15 text-[#EAB308]" title={`Proposé: ${pend.proposed_value}/5`}>⏳ {pend.proposed_value}/5</span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Editing */}
+      {editing && (
+        <div className="space-y-1">
+          {TRAIT_CHAMPS.map((trait) => {
+            const value = draft[trait.label] ?? 0;
+            return (
+              <div key={trait.key} className={rowCls}>
+                <span className="text-[12px] text-[#c8c8cc]">{trait.label}</span>
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: 5 }, (_, i) => {
+                    const starIndex = i + 1;
+                    const filled = value >= starIndex;
+                    return (
+                      <button key={i} type="button" title={`${starIndex} étoile${starIndex > 1 ? "s" : ""}`} aria-label={`${starIndex} étoile${starIndex > 1 ? "s" : ""}`} onClick={() => setDraft((d) => ({ ...d, [trait.label]: value === starIndex ? 0 : starIndex }))}
+                        className="w-5 h-5 cursor-pointer">
+                        <svg viewBox="0 0 24 24" fill={filled ? "#EAB308" : "#2D3748"} stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
+                      </button>
+                    );
+                  })}
+                  <span className="text-[11px] font-bold text-[#9CA3AF] ml-1 w-8 text-right">{value > 0 ? `${value}/5` : "—"}</span>
+                </div>
+              </div>
+            );
+          })}
+          <div className="flex items-center gap-2 justify-end mt-3">
+            <button type="button" onClick={() => setEditing(false)} className="text-[11px] text-[#6b7280] hover:text-white transition-colors">Annuler</button>
+            <button type="button" onClick={handleSubmit} disabled={saving} className="px-3 py-1.5 bg-[#EAB308] hover:bg-[#CA8A04] disabled:opacity-40 text-black text-[11px] font-bold rounded transition-colors">
+              {saving ? "Envoi..." : "Envoyer les suggestions"}
+            </button>
+          </div>
         </div>
       )}
     </div>
@@ -815,6 +978,7 @@ export default function AthleteProfilPage() {
   const [showPreview, setShowPreview] = useState(false);
   const [suggestions, setSuggestions] = useState<AthleteSuggestion[]>([]);
   const [existingCustomDistinctions, setExistingCustomDistinctions] = useState<{ id: string; title: string }[]>([]);
+  const [wantsDetailedSuggest, setWantsDetailedSuggest] = useState(false);
   const [sugTab, setSugTab] = useState<"pending" | "approved" | "rejected">("pending");
   const [toast, setToast] = useState<string | null>(null);
 
@@ -1474,34 +1638,53 @@ export default function AthleteProfilPage() {
               </div>
             )}
 
-            {/* Cote Globale — suggestible (not locked) */}
-            {!recruiterView ? (
-              <CoteGlobaleSuggest
-                currentValue={a.overallRating || 0}
-                pending={getPending("Cote globale")}
-                onSubmit={submitSuggestion}
-              />
-            ) : (
-              <div className="py-2.5 border-b border-[#2D3748]/40 flex items-center justify-between">
-                <span className="text-[13px] text-[#9CA3AF]">Cote Globale</span>
-                <div className="flex items-center gap-2">
-                  <StarRating rating={traitAvg} size="md" showNumber={false} />
-                  <span className="text-[16px] font-head font-black text-white">{traitAvg.toFixed(1)}/5</span>
-                </div>
-              </div>
-            )}
-
-            {/* Detailed traits — stay locked */}
-            {traitEntries.length > 0 && (
-              <div className="grid grid-cols-2 gap-2 mt-3">
-                {traitEntries.map(([key, val]) => (
-                  <div key={key} className="flex items-center justify-between py-1.5 px-3 rounded bg-[#111317] border border-white/5">
-                    <span className="text-[12px] text-[#9CA3AF]">{TRAIT_LABELS[key]}</span>
-                    <StarRating rating={val} size="sm" />
-                  </div>
-                ))}
-              </div>
-            )}
+            {/* Evaluation — mode-aware (simplified vs detailed) */}
+            {(() => {
+              const isDetailedMode = traitEntries.some(([, v]) => v > 0);
+              if (recruiterView) {
+                return (
+                  <>
+                    <div className="py-2.5 border-b border-[#2D3748]/40 flex items-center justify-between">
+                      <span className="text-[13px] text-[#9CA3AF]">Cote Globale</span>
+                      <div className="flex items-center gap-2">
+                        <StarRating rating={traitAvg} size="md" showNumber={false} />
+                        <span className="text-[16px] font-head font-black text-white">{traitAvg.toFixed(1)}/5</span>
+                      </div>
+                    </div>
+                    {traitEntries.length > 0 && (
+                      <div className="grid grid-cols-2 gap-2 mt-3">
+                        {traitEntries.map(([key, val]) => (
+                          <div key={key} className="flex items-center justify-between py-1.5 px-3 rounded bg-[#111317] border border-white/5">
+                            <span className="text-[12px] text-[#9CA3AF]">{TRAIT_LABELS[key]}</span>
+                            <StarRating rating={val} size="sm" />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                );
+              }
+              if (isDetailedMode) {
+                return (
+                  <TraitsSuggest
+                    traitRatings={a.traitRatings}
+                    traitAvg={traitAvg}
+                    pendingSugs={pendingSugs}
+                    onSubmit={submitSuggestion}
+                  />
+                );
+              }
+              return (
+                <CoteGlobaleSuggest
+                  currentValue={a.overallRating || 0}
+                  pending={getPending("Cote globale")}
+                  onSubmit={submitSuggestion}
+                  onUpgradeToDetailed={() => setWantsDetailedSuggest(true)}
+                  forceDetailedUpgrade={wantsDetailedSuggest}
+                  pendingSugs={pendingSugs}
+                />
+              );
+            })()}
 
             {/* Distinctions — suggestible */}
             {!recruiterView && (

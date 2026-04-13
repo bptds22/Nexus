@@ -62,10 +62,12 @@ const BADGE_LABELS: Record<string, string> = {
 function SuggestionValueDisplay({ field, value, muted }: { field: string; value: string | null | undefined; muted?: boolean }) {
   if (!value) return <span className={`text-[14px] italic ${muted ? "text-[#4a4d56]" : "text-[#EAB308]/60"}`}>Aucune</span>;
 
-  // Star rating display for Cote globale
-  if (field === "Cote globale") {
+  // Star rating display for Cote globale + all 8 individual traits
+  const STAR_FIELDS = ["Cote globale", "Leadership", "Discipline", "Coachabilité", "Intelligence de jeu", "Compétitivité", "Esprit d'équipe", "Résilience", "Attitude / Mentalité"];
+  if (STAR_FIELDS.includes(field)) {
     const rating = parseFloat(value);
     if (!isNaN(rating)) {
+      const isGlobal = field === "Cote globale";
       return (
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-0.5">
@@ -75,7 +77,7 @@ function SuggestionValueDisplay({ field, value, muted }: { field: string; value:
               </svg>
             ))}
           </div>
-          <span className={`text-[14px] font-bold ${muted ? "text-white" : "text-[#EAB308]"}`}>{rating.toFixed(1)}/5</span>
+          <span className={`text-[14px] font-bold ${muted ? "text-white" : "text-[#EAB308]"}`}>{isGlobal ? rating.toFixed(1) : rating.toFixed(0)}/5</span>
         </div>
       );
     }
