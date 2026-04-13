@@ -8,7 +8,7 @@ import type { AthleteSuggestion } from "@/lib/mock/athlete";
 import type { AthleteTraitRatings } from "@/lib/types/models";
 import StarRating from "@/components/ui/StarRating";
 import NxIcon from "@/components/ui/NxIcon";
-import { getBadgesForSport } from "@/lib/config/sportBadges";
+import { BADGE_CONFIG, BADGE_ORDER, MAX_BADGES, MAX_DETAIL_LENGTH, getSportStats, parseDistinctions, type DistinctionEntry } from "@/lib/config/badges";
 
 /* ═══════════════════════════════════════════════════════════════
    Athlete Profile — Co-creation page
@@ -648,50 +648,53 @@ function TraitsSuggest({ traitRatings, traitAvg, pendingSugs, onSubmit, upgradeM
 
 /* ── Distinctions — athlete can suggest ──────────────────── */
 
-function DistinctionsSuggest({ sportName, currentDistinctions, existingCustom, pending, pendingCustom, onSubmit }: {
+function DistinctionsSuggest({ sportName, currentDistinctions, pending, onSubmit }: {
   sportName: string;
-  currentDistinctions: string[];
-  existingCustom: { id: string; title: string }[];
+  currentDistinctions: DistinctionEntry[];
   pending?: { proposed_value: string };
-  pendingCustom: { id: string; proposed_value: string }[];
   onSubmit: (field: string, proposed: string, message: string) => Promise<void>;
 }) {
-  const badgeOptions = getBadgesForSport(sportName);
+  const sportStats = getSportStats(sportName);
   const [editing, setEditing] = useState(false);
-  const [selected, setSelected] = useState<Set<string>>(new Set(currentDistinctions));
-  const [customTitle, setCustomTitle] = useState("");
+  const [entries, setEntries] = useState<DistinctionEntry[]>(currentDistinctions);
   const [saving, setSaving] = useState(false);
 
-  if (!sportName || badgeOptions.length === 0) return null;
+  const totalCount = entries.length;
+  const atMax = totalCount >= MAX_BADGES;
 
-  const totalCount = selected.size + existingCustom.length + pendingCustom.length;
-
-  function toggle(badgeId: string) {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(badgeId)) next.delete(badgeId);
-      else if (next.size + existingCustom.length + pendingCustom.length < 5) next.add(badgeId);
-      return next;
+  function toggle(key: string) {
+    setEntries((prev) => {
+      const idx = prev.findIndex((e) => e.badge === key);
+      if (idx >= 0) return prev.filter((_, i) => i !== idx);
+      if (prev.length >= MAX_BADGES) return prev;
+      return [...prev, { badge: key }];
     });
+  }
+
+  function updateDetail(key: string, detail: string) {
+    setEntries((prev) => prev.map((e) => e.badge === key ? { ...e, detail: detail || undefined } : e));
   }
 
   async function handleSubmit() {
     setSaving(true);
-    await onSubmit("Distinctions", JSON.stringify(Array.from(selected)), "");
+    await onSubmit("Distinctions", JSON.stringify(entries), "");
     setSaving(false);
     setEditing(false);
   }
 
-  async function handleSubmitCustom() {
-    const title = customTitle.trim().slice(0, 50);
-    if (!title || totalCount >= 5) return;
-    setSaving(true);
-    await onSubmit("Distinction personnalisée", title, "");
-    setCustomTitle("");
-    setSaving(false);
-  }
+  const pendingArr: DistinctionEntry[] = pending ? (() => {
+    try { return parseDistinctions(JSON.parse(pending.proposed_value)); } catch { return []; }
+  })() : [];
 
-  const pendingArr: string[] = pending ? (() => { try { return JSON.parse(pending.proposed_value); } catch { return []; } })() : [];
+  const pill = (e: DistinctionEntry, color: "red" | "yellow") => {
+    const cfg = BADGE_CONFIG[e.badge];
+    const label = e.badge === "custom" ? (e.detail || "Distinction") : cfg?.label || e.badge;
+    const text = e.badge !== "custom" && e.detail ? `${label} — ${e.detail}` : label;
+    const cls = color === "red"
+      ? "bg-[#E63946]/15 border-[#E63946]/30 text-[#E63946]"
+      : "bg-[#EAB308]/15 border-[#EAB308]/30 text-[#EAB308]";
+    return <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[11px] font-bold ${cls}`}>{text}</span>;
+  };
 
   return (
     <div className="mt-4 pt-4 border-t border-[#2D3748]/40">
@@ -701,105 +704,69 @@ function DistinctionsSuggest({ sportName, currentDistinctions, existingCustom, p
           <span className="text-[9px] font-bold tracking-wider uppercase px-1.5 py-0.5 rounded bg-[#EAB308]/15 text-[#EAB308]">Suggestion</span>
         </span>
         {!editing && !pending && (
-          <button type="button" onClick={() => { setSelected(new Set(currentDistinctions)); setEditing(true); }} className="text-[11px] font-bold text-[#EAB308] hover:text-[#FDE047] transition-colors">Suggérer</button>
+          <button type="button" onClick={() => { setEntries(currentDistinctions); setEditing(true); }} className="text-[11px] font-bold text-[#EAB308] hover:text-[#FDE047] transition-colors">Suggérer</button>
         )}
       </div>
       <p className="text-[11px] text-[#4a4d56] italic mb-3">Tes distinctions seront soumises à ton entraîneur pour approbation</p>
 
-      {/* Current coach-set distinctions + custom */}
-      {!editing && (currentDistinctions.length > 0 || existingCustom.length > 0) && (
+      {!editing && currentDistinctions.length > 0 && (
         <div className="flex flex-wrap gap-2">
-          {currentDistinctions.map((d) => {
-            const opt = badgeOptions.find((o) => o.badgeId === d);
-            return (
-              <span key={d} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#E63946]/15 border border-[#E63946]/30 text-[11px] font-bold text-[#E63946]">
-                {opt?.label || d}
-              </span>
-            );
-          })}
-          {existingCustom.map((cd) => (
-            <span key={cd.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#F59E0B]/15 border border-[#F59E0B]/30 text-[11px] font-bold text-[#F59E0B]">
-              {cd.title}
-            </span>
-          ))}
+          {currentDistinctions.map((e, i) => <span key={`${e.badge}-${i}`}>{pill(e, "red")}</span>)}
         </div>
       )}
-      {!editing && currentDistinctions.length === 0 && existingCustom.length === 0 && !pending && pendingCustom.length === 0 && (
+      {!editing && currentDistinctions.length === 0 && !pending && (
         <p className="text-[12px] text-[#4a4d56]">Aucune distinction</p>
       )}
 
-      {/* Pending custom distinctions */}
-      {!editing && pendingCustom.length > 0 && (
-        <div className="mt-2 px-3 py-2 rounded bg-[#EAB308]/10 border border-[#EAB308]/30">
-          <p className="text-[11px] font-bold text-[#EAB308] mb-1.5">⏳ Distinctions personnalisées en attente:</p>
-          <div className="flex flex-wrap gap-1.5">
-            {pendingCustom.map((pc) => (
-              <span key={pc.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#EAB308]/15 border border-[#EAB308]/30 text-[11px] font-bold text-[#EAB308]">
-                {pc.proposed_value}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Pending suggestion */}
       {pending && pendingArr.length > 0 && (
         <div className="mt-2 px-3 py-2 rounded bg-[#EAB308]/10 border border-[#EAB308]/30">
           <p className="text-[11px] font-bold text-[#EAB308] mb-1.5">⏳ En attente d&apos;approbation:</p>
           <div className="flex flex-wrap gap-1.5">
-            {pendingArr.map((d) => {
-              const opt = badgeOptions.find((o) => o.badgeId === d);
-              return (
-                <span key={d} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#EAB308]/15 border border-[#EAB308]/30 text-[11px] font-bold text-[#EAB308]">
-                  {opt?.label || d}
-                </span>
-              );
-            })}
+            {pendingArr.map((e, i) => <span key={`${e.badge}-${i}`}>{pill(e, "yellow")}</span>)}
           </div>
         </div>
       )}
 
-      {/* Editing UI */}
       {editing && (
         <div className="space-y-2">
-          {badgeOptions.map((opt) => {
-            const isSelected = selected.has(opt.badgeId);
-            const isDisabled = !isSelected && selected.size >= 5;
+          {BADGE_ORDER.map((key) => {
+            const cfg = BADGE_CONFIG[key];
+            const entry = entries.find((e) => e.badge === key);
+            const isSelected = !!entry;
+            const isDisabled = !isSelected && atMax;
             return (
-              <button key={opt.badgeId} type="button" onClick={() => !isDisabled && toggle(opt.badgeId)} disabled={isDisabled}
-                className={`w-full flex items-center gap-3 px-3 py-2 rounded border transition-colors ${isSelected ? "border-[#EAB308]/50 bg-[#EAB308]/[0.08]" : "border-[#2a2d36] hover:border-[#4a4d56]"} ${isDisabled ? "opacity-40 cursor-not-allowed" : ""}`}>
-                <span className={`w-4 h-4 rounded border flex items-center justify-center ${isSelected ? "bg-[#EAB308] border-[#EAB308]" : "border-[#4a4d56]"}`}>
-                  {isSelected && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>}
-                </span>
-                <span className={`text-[13px] font-bold ${isSelected ? "text-white" : "text-[#8a8d96]"}`}>{opt.label}</span>
-              </button>
+              <div key={key} className={`border rounded transition-colors ${isSelected ? "border-[#EAB308]/50 bg-[#EAB308]/[0.08]" : "border-[#2a2d36]"} ${isDisabled ? "opacity-40" : ""}`}>
+                <button type="button" onClick={() => !isDisabled && toggle(key)} disabled={isDisabled}
+                  className="w-full flex items-center gap-3 px-3 py-2 text-left">
+                  <span className={`w-4 h-4 rounded border flex items-center justify-center ${isSelected ? "bg-[#EAB308] border-[#EAB308]" : "border-[#4a4d56]"}`}>
+                    {isSelected && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>}
+                  </span>
+                  <span className={`text-[13px] font-bold ${isSelected ? "text-white" : "text-[#8a8d96]"}`}>{key === "custom" ? "Personnalisée" : cfg.label}</span>
+                </button>
+                {isSelected && cfg.hasDetail && (
+                  <div className="px-3 pb-3 pl-10 space-y-2">
+                    {(key === "team_leader" || key === "league_leader") && sportStats.length > 0 && (
+                      <select aria-label="Statistique"
+                        value={sportStats.includes(entry?.detail || "") ? entry?.detail || "" : ""}
+                        onChange={(e) => updateDetail(key, e.target.value)}
+                        className="w-full bg-[#13151a] border border-[#2a2d36] rounded px-2 py-1.5 text-[12px] text-white">
+                        <option value="">— Stat —</option>
+                        {sportStats.map((s) => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                    )}
+                    <input type="text"
+                      value={entry?.detail || ""}
+                      onChange={(e) => updateDetail(key, e.target.value.slice(0, MAX_DETAIL_LENGTH))}
+                      maxLength={MAX_DETAIL_LENGTH}
+                      placeholder={key === "custom" ? "Titre" : "Précise"}
+                      className="w-full bg-[#13151a] border border-[#2a2d36] rounded px-2 py-1.5 text-[12px] text-white"
+                    />
+                  </div>
+                )}
+              </div>
             );
           })}
-          <p className="text-[11px] text-[#6b7280]">{totalCount} / 5 sélectionnée{totalCount !== 1 ? "s" : ""}</p>
-
-          {/* Custom distinction input */}
-          <div className="mt-2 pt-3 border-t border-[#2D3748]/40">
-            <p className="text-[11px] font-bold tracking-wider uppercase text-[#EAB308] mb-2">Distinction personnalisée</p>
-            {totalCount >= 5 ? (
-              <p className="text-[11px] text-[#4a4d56] italic">Maximum atteint — retire une distinction pour en proposer une personnalisée.</p>
-            ) : (
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={customTitle}
-                  onChange={(e) => setCustomTitle(e.target.value.slice(0, 50))}
-                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleSubmitCustom(); } }}
-                  placeholder="Ex: MVP de la saison"
-                  maxLength={50}
-                  className="flex-1 bg-[#13151a] border border-[#2a2d36] rounded px-3 py-2 text-[13px] text-white placeholder-[#4a4d56] focus:outline-none focus:border-[#EAB308]/50"
-                />
-                <button type="button" onClick={handleSubmitCustom} disabled={saving || !customTitle.trim()}
-                  className="px-3 py-2 bg-[#EAB308] hover:bg-[#CA8A04] disabled:opacity-40 text-black text-[11px] font-bold rounded transition-colors">
-                  Proposer
-                </button>
-              </div>
-            )}
-          </div>
+          <p className="text-[11px] text-[#6b7280]">{totalCount} / {MAX_BADGES} sélectionnée{totalCount !== 1 ? "s" : ""}</p>
 
           <div className="flex items-center gap-2 justify-end mt-3">
             <button type="button" onClick={() => setEditing(false)} className="text-[11px] text-[#6b7280] hover:text-white transition-colors">Annuler</button>
@@ -977,7 +944,6 @@ export default function AthleteProfilPage() {
   const recruiterView = false;
   const [showPreview, setShowPreview] = useState(false);
   const [suggestions, setSuggestions] = useState<AthleteSuggestion[]>([]);
-  const [existingCustomDistinctions, setExistingCustomDistinctions] = useState<{ id: string; title: string }[]>([]);
   const [wantsDetailedSuggest, setWantsDetailedSuggest] = useState(false);
   const [sugTab, setSugTab] = useState<"pending" | "approved" | "rejected">("pending");
   const [toast, setToast] = useState<string | null>(null);
@@ -1009,14 +975,6 @@ export default function AthleteProfilPage() {
       if (!raw) { setLoading(false); return; }
 
       setAthleteId(raw.id);
-
-      // Load existing custom distinctions (coach-approved)
-      const { data: customData } = await supabase
-        .from("custom_distinctions")
-        .select("id, title")
-        .eq("athlete_id", raw.id)
-        .order("created_at", { ascending: true });
-      if (customData) setExistingCustomDistinctions(customData);
 
       // Secondary sport/position lookups
       let secondarySportName = "";
@@ -1115,7 +1073,7 @@ export default function AthleteProfilPage() {
         coachReport: evalRel?.rapport_entraineur || "",
         coachName: coachRel ? `${coachRel.first_name || ""} ${coachRel.last_name || ""}`.trim() : "",
         overallRating: evalRel?.cote_globale || 0,
-        coachDistinctions: (evalRel?.distinctions as string[]) || [],
+        coachDistinctions: parseDistinctions(evalRel?.distinctions),
         traitRatings,
         highlightVideoUrl: raw.video_faits_saillants_url || "",
         hudlUrl: raw.hudl_url || "",
@@ -1690,10 +1648,8 @@ export default function AthleteProfilPage() {
             {!recruiterView && (
               <DistinctionsSuggest
                 sportName={a.primarySport || ""}
-                currentDistinctions={((a as unknown) as { coachDistinctions?: string[] }).coachDistinctions || []}
-                existingCustom={existingCustomDistinctions}
+                currentDistinctions={((a as unknown) as { coachDistinctions?: DistinctionEntry[] }).coachDistinctions || []}
                 pending={getPending("Distinctions")}
-                pendingCustom={pendingSugs.filter((s) => s.field === "Distinction personnalisée").map((s) => ({ id: s.id, proposed_value: s.proposed_value }))}
                 onSubmit={submitSuggestion}
               />
             )}

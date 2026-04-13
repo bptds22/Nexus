@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/client";
 import type { AthleteProfile } from "./mockAthleteProfiles";
 import type { AthleteProfileRecruiterView } from "@/lib/types/models";
+import { parseDistinctions } from "@/lib/config/badges";
 
 /* ═══════════════════════════════════════════════════════════════
    Shared Supabase loader for coach athlete pages.
@@ -155,7 +156,7 @@ export function mapToAthleteProfile(raw: Record<string, unknown>): AthleteProfil
     school: schoolObj?.name || "",
     region: "",
     sport: (sportObj?.nom?.toLowerCase().replace(/ /g, "_") || "football") as AthleteProfile["sport"],
-    badges: ((eval0?.distinctions as AthleteProfile["badges"]) || []).filter((b) => b != null),
+    badges: parseDistinctions(eval0?.distinctions) as unknown as AthleteProfile["badges"],
     coachEndorsement: (raw.notes_coach as string) || (eval0?.rapport_entraineur as string) || undefined,
     openToRelocate: !!(raw.pret_changer_region),
     openToPrivate: !!(raw.ouvert_cegep_prive),
@@ -284,41 +285,7 @@ export function buildFormFromRaw(raw: Record<string, unknown>): Record<string, u
         resilience: (eval0.resilience as number) || 0,
         attitude_mentalite: (eval0.attitude_mentalite as number) || 0,
       } : {},
-      badges: (() => {
-        const rawDist = eval0?.distinctions;
-        if (!rawDist) return [];
-        const arr = Array.isArray(rawDist) ? rawDist : [];
-        const BADGE_LABELS: Record<string, { label: string; icon: string }> = {
-          captain: { label: "Capitaine", icon: "captain" },
-          allstar: { label: "Étoile provinciale", icon: "allstar" },
-          team_leader: { label: "Meilleur joueur d'équipe", icon: "target" },
-          league_leader: { label: "Meilleur joueur de la ligue", icon: "chart" },
-          scoring_leader: { label: "Meilleur pointeur", icon: "target" },
-          points_leader: { label: "Meilleur pointeur", icon: "target" },
-          goals_leader: { label: "Meilleur buteur", icon: "goal" },
-          assists_leader: { label: "Meilleur passeur", icon: "target" },
-          offensive_leader: { label: "Meilleur joueur offensif", icon: "trending" },
-          defensive_leader: { label: "Meilleur joueur défensif", icon: "shield" },
-          progression: { label: "Progression marquée", icon: "trending" },
-          best_time: { label: "Meilleur chrono d'équipe", icon: "timer" },
-          school_record: { label: "Record d'école", icon: "trophy" },
-          best_mark: { label: "Meilleure marque d'équipe", icon: "trophy" },
-          singles_leader: { label: "Meilleur en simple", icon: "target" },
-          specialist: { label: "Spécialiste", icon: "target" },
-          mvp: { label: "MVP", icon: "target" },
-        };
-        return arr
-          .filter((d: unknown) => d != null)
-          .map((d: unknown) => {
-            if (typeof d === "string") {
-              const info = BADGE_LABELS[d];
-              return info ? { badgeId: d, label: info.label, icon: info.icon } : null;
-            }
-            if (typeof d === "object" && d !== null && "badgeId" in (d as Record<string, unknown>)) return d;
-            return null;
-          })
-          .filter((b: unknown) => b != null);
-      })(),
+      badges: parseDistinctions(eval0?.distinctions),
       coachEndorsement: (eval0?.rapport_entraineur as string) || (raw.notes_coach as string) || "",
     },
     media: {
@@ -450,7 +417,7 @@ export function mapToRecruiterView(raw: Record<string, unknown>): AthleteProfile
     coachReport: (raw.notes_coach as string) || (eval0?.rapport_entraineur as string) || "",
     traitRatings: traitRatings as AthleteProfileRecruiterView["traitRatings"],
     overallRating: (eval0?.cote_globale as number) || (raw.cote_globale_entraineur as number) || 0,
-    distinctions: ((eval0?.distinctions as AthleteProfileRecruiterView["distinctions"]) || []).filter((d) => d != null),
+    distinctions: parseDistinctions(eval0?.distinctions),
     highlightVideoUrl: (raw.video_faits_saillants_url as string) || "",
     hudlUrl: (raw.hudl_url as string) || "",
     youtubeUrl: (raw.youtube_url as string) || "",

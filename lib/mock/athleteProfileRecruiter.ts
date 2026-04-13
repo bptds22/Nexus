@@ -70,9 +70,9 @@ export const mockAthleteProfileFull: AthleteProfileRecruiterView = {
   },
   overallRating: 5,
   distinctions: [
-    { badgeId: "captain", label: "Capitaine", icon: "captain" },
-    { badgeId: "allstar", label: "Étoile provinciale", icon: "allstar" },
-    { badgeId: "league_leader", label: "Meilleur joueur de la ligue", icon: "chart", detail: "Touchés par la passe" },
+    { badge: "captain" },
+    { badge: "allstar" },
+    { badge: "league_leader", detail: "Touchés par la passe" },
   ],
 
   // Media
@@ -249,9 +249,9 @@ export const mockBrunoProfile: AthleteProfileRecruiterView = {
   },
   overallRating: 5,
   distinctions: [
-    { badgeId: "captain", label: "Capitaine", icon: "captain" },
-    { badgeId: "allstar", label: "Étoile provinciale", icon: "allstar" },
-    { badgeId: "league_leader", label: "Meilleur joueur de la ligue", icon: "chart", detail: "Plaques" },
+    { badge: "captain" },
+    { badge: "allstar" },
+    { badge: "league_leader", detail: "Plaques" },
   ],
 
   // Media

@@ -3,7 +3,8 @@
    Sport-specific leadership badges + coach endorsement model.
 ───────────────────────────────────────────────────────────────── */
 
-import type { NexusSport, LeadershipBadge } from "@/lib/config/sportBadges";
+import type { NexusSport } from "@/lib/config/sportBadges";
+import type { DistinctionEntry } from "@/lib/config/badges";
 
 export type Position = "QB" | "RB" | "WR" | "TE" | "OL" | "DL" | "LB" | "CB" | "S" | "K/P"
   | "Passeuse" | "Attaquante" | "Libéro" | "Centrale" | "Arrière";
@@ -50,7 +51,7 @@ export interface AthleteProfile {
 
   // Sport-specific badge model
   sport: NexusSport;
-  badges: LeadershipBadge[];
+  badges: DistinctionEntry[];
   coachEndorsement?: string;
 }
 
@@ -92,9 +93,9 @@ export const MARC_ANTOINE: AthleteProfile = {
 
   sport: "football",
   badges: [
-    { badgeId: "captain", label: "Capitaine", icon: "captain" },
-    { badgeId: "allstar", label: "Étoile provinciale", icon: "allstar" },
-    { badgeId: "league_leader", label: "Meilleur joueur de la ligue", icon: "chart", detail: "Touchés par la passe" },
+    { badge: "captain" },
+    { badge: "allstar" },
+    { badge: "league_leader", detail: "Touchés par la passe" },
   ],
   coachEndorsement: "Marc-Antoine a mené notre ligue avec 18 touchés cette saison. Capitaine unanime, premier au gymnase, dernier à quitter. Il lit les défenses comme un vétéran. Je le recommande sans hésitation pour tout programme D1.",
 };
@@ -137,8 +138,8 @@ export const FELIX: AthleteProfile = {
 
   sport: "football",
   badges: [
-    { badgeId: "team_leader", label: "Meilleur joueur d'équipe", icon: "target", detail: "Plaqués (67)" },
-    { badgeId: "progression", label: "Progression marquée", icon: "trending" },
+    { badge: "team_leader", detail: "Plaqués (67)" },
+    { badge: "progression" },
   ],
   coachEndorsement: "Félix est le cœur de notre défensive. Meneur en plaqués pour la 2e saison consécutive. Instinct rare pour lire les jeux. Fort et rapide, il excelle autant en couverture qu'en pression.",
 };
@@ -181,8 +182,8 @@ export const SOPHIE: AthleteProfile = {
 
   sport: "volleyball",
   badges: [
-    { badgeId: "captain", label: "Capitaine", icon: "captain" },
-    { badgeId: "offensive_leader", label: "Meilleur joueur offensif", icon: "trending", detail: "Attaques" },
+    { badge: "captain" },
+    { badge: "team_leader", detail: "Attaques" },
   ],
   coachEndorsement: "Sophie est notre passeuse-attaquante la plus complète. 245 attaques marquantes cette saison. Leadership vocal exceptionnel sur le terrain, calme sous pression.",
 };
@@ -225,7 +226,7 @@ export const EMILE: AthleteProfile = {
 
   sport: "cross_country",
   badges: [
-    { badgeId: "best_time", label: "Meilleur chrono d'équipe", icon: "trophy", detail: "5 km" },
+    { badge: "team_leader", detail: "5 km" },
   ],
   coachEndorsement: "Émile a amélioré son temps au 5 km de 45 secondes cette saison. Travailleur acharné, toujours le premier à l'entraînement matinal.",
 };
@@ -309,9 +310,9 @@ export const BRUNO: AthleteProfile = {
 
   sport: "football",
   badges: [
-    { badgeId: "captain", label: "Capitaine", icon: "captain" },
-    { badgeId: "allstar", label: "Étoile provinciale", icon: "allstar" },
-    { badgeId: "league_leader", label: "Meilleur joueur de la ligue", icon: "chart", detail: "Plaques" },
+    { badge: "captain" },
+    { badge: "allstar" },
+    { badge: "league_leader", detail: "Plaques" },
   ],
   coachEndorsement: "Bruno a mené notre ligue avec 58 plaques cette saison. Capitaine unanime, premier au gymnase, dernier à quitter. Il lit les offensives comme un vétéran. Je le recommande sans hésitation pour tout programme D1.",
 };

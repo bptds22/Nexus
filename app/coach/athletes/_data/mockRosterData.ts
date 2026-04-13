@@ -4,6 +4,7 @@
 ───────────────────────────────────────────────────────────────── */
 
 import type { AthleteVerification } from "../../../../lib/types/models";
+import type { DistinctionEntry } from "@/lib/config/badges";
 
 export type CommitmentStatus = "aucun" | "en_discussion" | "visite_planifiee" | "lettre_signee" | "place";
 
@@ -54,7 +55,7 @@ export interface RosterAthlete {
   region?: string;
   sport?: string;
   hasVideo?: boolean;
-  badges?: { badgeId: string; label: string; icon: string }[];
+  badges?: DistinctionEntry[];
   academicBadges?: string[];
   heightWeight?: string;
   gpa?: number;

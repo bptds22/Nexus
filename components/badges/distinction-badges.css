@@ -28,12 +28,13 @@
 }
 
 @keyframes svgSweep {
-  0%, 100% { transform: translateX(-150px) rotate(12deg); }
-  50% { transform: translateX(150px) rotate(12deg); }
+  0% { transform: translateX(-120%); }
+  60% { transform: translateX(120%); }
+  100% { transform: translateX(120%); }
 }
 
 .badge-shimmer {
-  animation: svgSweep 4s ease-in-out infinite;
+  animation: svgSweep 3s ease-in-out infinite;
 }
 
 /* Star shimmer on player card ticket */

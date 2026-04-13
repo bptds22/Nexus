@@ -6,7 +6,8 @@ import TagInput from "../../components/TagInput";
 import DatePicker from "../../components/DatePicker";
 import SportPositionSelect from "../../components/SportPositionSelect";
 import NxSelect from "../../components/NxSelect";
-import { getBadgesForSport, MAX_BADGES, type LeadershipBadge, type BadgeOption } from "@/lib/config/sportBadges";
+import { BADGE_CONFIG, BADGE_ORDER, MAX_BADGES, MAX_DETAIL_LENGTH, getSportStats, type DistinctionEntry } from "@/lib/config/badges";
+import DistinctionBadge from "@/components/shared/DistinctionBadge";
 import FormModeToggle from "../../components/FormModeToggle";
 import NxIcon from "@/components/ui/NxIcon";
 import { createClient } from "@/lib/supabase/client";
@@ -92,7 +93,7 @@ interface AthleteFormData {
     evalMode: "simple" | "detailed";
     starRating: number;
     traitRatings: Record<string, number>;
-    badges: LeadershipBadge[];
+    badges: DistinctionEntry[];
     coachEndorsement: string;
   };
   media: {
@@ -344,28 +345,27 @@ export default function CreateAthletePage() {
     setForm((prev) => ({ ...prev, submission: { ...prev.submission, [field]: value } }));
   }, []);
 
-  const updateScouting = useCallback((field: string, value: string | number | LeadershipBadge[] | Record<string, number>) => {
+  const updateScouting = useCallback((field: string, value: string | number | DistinctionEntry[] | Record<string, number>) => {
     setForm((prev) => ({ ...prev, scouting: { ...prev.scouting, [field]: value } }));
   }, []);
 
   /* ── Badge helpers ─────────────────────────────────────────── */
 
-  function toggleBadge(option: BadgeOption) {
+  function toggleBadge(badgeKey: string) {
     const badges = form.scouting.badges;
-    const idx = badges.findIndex((b) => b.badgeId === option.badgeId);
+    const idx = badges.findIndex((b) => b.badge === badgeKey);
     if (idx >= 0) {
       updateScouting("badges", badges.filter((_, i) => i !== idx));
     } else if (badges.length < MAX_BADGES) {
-      const newBadge: LeadershipBadge = { badgeId: option.badgeId, label: option.label, icon: option.icon };
-      updateScouting("badges", [...badges, newBadge]);
+      updateScouting("badges", [...badges, { badge: badgeKey }]);
     }
   }
 
-  function updateBadgeDetail(badgeId: string, detail: string) {
-    const badges = form.scouting.badges.map((b) =>
-      b.badgeId === badgeId ? { ...b, detail: detail || undefined } : b
+  function updateBadgeDetail(badgeKey: string, detail: string) {
+    const next: DistinctionEntry[] = form.scouting.badges.map((b) =>
+      b.badge === badgeKey ? { ...b, detail: detail || undefined } : b
     );
-    updateScouting("badges", badges);
+    updateScouting("badges", next);
   }
 
   /* ── Toggle helpers ─────────────────────────────────────────── */
@@ -590,7 +590,7 @@ export default function CreateAthletePage() {
         coach_id: authUser.id,
         athlete_id: newAthlete.id,
         cote_globale: form.scouting.starRating || null,
-        distinctions: (form.scouting.badges || []).map((b) => b?.badgeId).filter((k): k is string => !!k),
+        distinctions: (form.scouting.badges || []).filter((b) => b && b.badge),
         rapport_entraineur: form.scouting.coachEndorsement || null,
       };
 
@@ -1066,8 +1066,8 @@ export default function CreateAthletePage() {
     const sc = form.scouting;
     const isDetailed = sc.evalMode === "detailed";
     const sportName = form.sports.primarySport;
-    const badgeOptions = getBadgesForSport(sportName);
-    const selectedIds = new Set(sc.badges.map((b) => b.badgeId));
+    const sportStats = getSportStats(sportName);
+    const selectedMap = new Map(sc.badges.map((b) => [b.badge, b]));
     const atMax = sc.badges.length >= MAX_BADGES;
 
     return (
@@ -1193,58 +1193,55 @@ export default function CreateAthletePage() {
             Sélectionne les reconnaissances qui s&apos;appliquent à cet athlète cette saison.
           </p>
 
-          {!sportName && (
-            <div className="bg-[#13151a] border border-[#2a2d36] rounded-lg p-4 text-center">
-              <p className="text-[14px] text-[#6b7280]">Sélectionne un sport à l&apos;étape 4 pour voir les distinctions disponibles.</p>
-            </div>
-          )}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {BADGE_ORDER.map((key) => {
+              const cfg = BADGE_CONFIG[key];
+              const entry = selectedMap.get(key);
+              const isSelected = !!entry;
+              const isDisabled = !isSelected && atMax;
+              return (
+                <div key={key}
+                  className={`border rounded-lg transition-all ${isSelected ? "border-[#E63946]/40 bg-[#E63946]/[0.06]" : "border-[#2a2d36]"} ${isDisabled ? "opacity-40 cursor-not-allowed" : ""}`}>
+                  <button type="button"
+                    onClick={() => !isDisabled && toggleBadge(key)}
+                    disabled={isDisabled}
+                    className="w-full flex flex-col items-center gap-2 px-3 py-4 text-center">
+                    <DistinctionBadge badge={key} detail={entry?.detail} size="sm" />
+                    <span className={`text-[12px] font-bold ${isSelected ? "text-white" : "text-[#8a8d96]"}`}>
+                      {key === "custom" ? "Personnalisée" : cfg.label}
+                    </span>
+                  </button>
 
-          {badgeOptions.length > 0 && (
-            <div className="space-y-2">
-              {badgeOptions.map((opt) => {
-                const isSelected = selectedIds.has(opt.badgeId);
-                const isDisabled = !isSelected && atMax;
-                const badge = sc.badges.find((b) => b.badgeId === opt.badgeId);
+                  {isSelected && cfg.hasDetail && (
+                    <div className="px-3 pb-3 space-y-2">
+                      {(key === "team_leader" || key === "league_leader") && sportStats.length > 0 && (
+                        <select
+                          aria-label="Statistique"
+                          value={sportStats.includes(entry?.detail || "") ? entry?.detail || "" : ""}
+                          onChange={(e) => updateBadgeDetail(key, e.target.value)}
+                          className={`${inputCls} text-[13px]`}
+                        >
+                          <option value="">— Choisir une stat —</option>
+                          {sportStats.map((s) => <option key={s} value={s}>{s}</option>)}
+                        </select>
+                      )}
+                      <input type="text"
+                        value={entry?.detail || ""}
+                        onChange={(e) => updateBadgeDetail(key, e.target.value.slice(0, MAX_DETAIL_LENGTH))}
+                        maxLength={MAX_DETAIL_LENGTH}
+                        placeholder={key === "custom" ? "Titre de la distinction" : "Précise (ex: Points)"}
+                        className={`${inputCls} text-[13px]`}
+                      />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
 
-                return (
-                  <div key={opt.badgeId}
-                    className={`border rounded-lg transition-all ${isSelected ? "border-[#E63946]/40 bg-[#E63946]/[0.06]" : "border-[#2a2d36]"} ${isDisabled ? "opacity-40 cursor-not-allowed" : ""}`}>
-                    <button type="button"
-                      onClick={() => !isDisabled && toggleBadge(opt)}
-                      disabled={isDisabled}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-left">
-                      {/* Checkbox */}
-                      <div className={`w-5 h-5 rounded flex items-center justify-center shrink-0 border transition-colors ${isSelected ? "bg-[#E63946] border-[#E63946]" : "border-[#4a4d56]"}`}>
-                        {isSelected && (
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
-                        )}
-                      </div>
-                      <span className={`text-[14px] font-bold ${isSelected ? "text-white" : "text-[#8a8d96]"}`}>{opt.label}</span>
-                    </button>
-
-                    {/* Detail field (shown when checked & badge needs detail) */}
-                    {isSelected && opt.hasDetail && (
-                      <div className="px-4 pb-3 pl-14">
-                        <input type="text"
-                          value={badge?.detail || ""}
-                          onChange={(e) => updateBadgeDetail(opt.badgeId, e.target.value.slice(0, 25))}
-                          maxLength={25}
-                          placeholder={opt.detailPlaceholder || "Précise..."}
-                          className={`${inputCls} text-[14px]`}
-                        />
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {badgeOptions.length > 0 && (
-            <p className="text-[12px] text-[#4a4d56] mt-3">
-              {sc.badges.length} sélectionnée{sc.badges.length !== 1 ? "s" : ""}
-            </p>
-          )}
+          <p className="text-[12px] text-[#4a4d56] mt-3">
+            {sc.badges.length} / {MAX_BADGES} sélectionnée{sc.badges.length !== 1 ? "s" : ""}
+          </p>
         </div>
 
         {/* ── Rapport de l'entraîneur ──────────────── */}
@@ -1417,7 +1414,11 @@ export default function CreateAthletePage() {
 
         {summaryCard("Évaluation", 5, (
           <div>
-            {infoRow("Distinctions", scouting.badges.length > 0 ? scouting.badges.map((b) => `${b.label}${b.detail ? ` — ${b.detail}` : ""}`).join(", ") : "")}
+            {infoRow("Distinctions", scouting.badges.length > 0 ? scouting.badges.map((b) => {
+              const cfg = BADGE_CONFIG[b.badge];
+              const label = b.badge === "custom" ? (b.detail || "Distinction") : cfg?.label || b.badge;
+              return b.badge !== "custom" && b.detail ? `${label} — ${b.detail}` : label;
+            }).join(", ") : "")}
             {scouting.coachEndorsement && (
               <div className="mt-2 p-3 bg-[#1A1D24] rounded-lg">
                 <p className="text-[12px] text-[#6b7280] mb-1 font-bold uppercase tracking-wider">Rapport</p>

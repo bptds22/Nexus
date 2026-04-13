@@ -236,7 +236,13 @@ export default function AdminAthleteDetailPage({
   const pctColor = completenessColor(a.profileCompleteness);
 
   // Distinctions (editable)
-  const [distinctions, setDistinctions] = useState(a.distinctions?.map((d) => d.label) || []);
+  const [distinctions, setDistinctions] = useState<string[]>(
+    (a.distinctions || []).map((d) => {
+      const cfg = (d as { badge?: string; detail?: string });
+      // Fallback to rendering badge key or detail
+      return cfg.badge === "custom" ? (cfg.detail || "Distinction") : cfg.badge || "";
+    }).filter((s) => !!s)
+  );
 
   // Trait average — read from editFields in edit mode
   const traitEntries = a.traitRatings ? Object.entries(a.traitRatings) as [keyof AthleteTraitRatings, number][] : [];

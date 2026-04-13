@@ -10,9 +10,7 @@ import NxIcon from "@/components/ui/NxIcon";
 import StarRating from "@/components/ui/StarRating";
 import { createClient } from "@/lib/supabase/client";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
-import DistinctionBadge from "@/components/shared/DistinctionBadge";
-import { parseDistinctions, type DistinctionEntry } from "@/lib/config/badges";
-import VideoEmbed from "@/components/ui/VideoEmbed";
+import DistinctionBadge, { DISTINCTION_TO_BADGE } from "@/components/badges/DistinctionBadge";
 import type { GlobalRecruitmentStatus } from "@/lib/types/models";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -28,15 +26,15 @@ const SPORT_DISPLAY: Record<string, string> = Object.fromEntries(
   Object.entries(SPORT_NAME_MAP).map(([display, key]) => [key, display])
 );
 
-const TRAIT_LIST: { key: keyof AthleteTraitRatings; label: string }[] = [
-  { key: "leadership", label: "Leadership" },
-  { key: "discipline", label: "Discipline" },
-  { key: "coachability", label: "Coachabilité" },
-  { key: "gameIQ", label: "Intelligence de jeu" },
-  { key: "competitiveness", label: "Compétitivité" },
-  { key: "teamwork", label: "Esprit d'équipe" },
-  { key: "resilience", label: "Résilience" },
-  { key: "attitude", label: "Attitude / Mentalité" },
+const CHARACTER_TRAITS: { key: keyof AthleteTraitRatings; label: string; iconName: string }[] = [
+  { key: "leadership", label: "Leadership", iconName: "leadership" },
+  { key: "discipline", label: "Discipline", iconName: "discipline" },
+  { key: "coachability", label: "Coachabilité", iconName: "coachability" },
+  { key: "gameIQ", label: "Intelligence de jeu", iconName: "gameIQ" },
+  { key: "competitiveness", label: "Compétitivité", iconName: "competitiveness" },
+  { key: "teamwork", label: "Esprit d'équipe", iconName: "teamwork" },
+  { key: "resilience", label: "Résilience", iconName: "resilience" },
+  { key: "attitude", label: "Attitude", iconName: "attitude" },
 ];
 
 /* ── Shared components (same as recruiter view) ───────────────── */
@@ -126,9 +124,9 @@ function PlayerCard({ a }: { a: AthleteProfileRecruiterView }) {
 
   return (
     <div className="nx-v30-wrap relative" style={{ width: 300, paddingTop: 6, paddingBottom: 10 }}>
-      <div className="nx-v30-badge absolute z-30" style={{ top: 10, right: -12 }} title={a.isVerified ? "Profil vérifié" : "Profil non vérifié"}>
-        <div className="rounded-full" style={{ border: '3px solid #111317' }}>
-          {a.isVerified ? (
+      {a.isVerified && (
+        <div className="nx-v30-badge absolute z-30" style={{ top: 10, right: -12 }}>
+          <div className="rounded-full" style={{ border: '3px solid #111317' }}>
             <svg width="48" height="48" viewBox="0 0 54 54" fill="none">
               <defs>
                 <radialGradient id="cc_bg" cx="38%" cy="28%" r="68%"><stop offset="0%" stopColor="#29AAFF" /><stop offset="55%" stopColor="#0094F0" /><stop offset="100%" stopColor="#0060C0" /></radialGradient>
@@ -138,16 +136,9 @@ function PlayerCard({ a }: { a: AthleteProfileRecruiterView }) {
               <circle cx="27" cy="27" r="24" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" />
               <path d="M16,27 L22,34 L38,18" stroke="#FFFFFF" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
             </svg>
-          ) : (
-            <svg width="48" height="48" viewBox="0 0 54 54" fill="none">
-              <circle cx="27" cy="27" r="26" fill="#4B5563" opacity="0.35" />
-              <circle cx="27" cy="27" r="24" fill="#6B7280" />
-              <circle cx="27" cy="27" r="24" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5" />
-              <path d="M16,27 L22,34 L38,18" stroke="#FFFFFF" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-            </svg>
-          )}
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="nx-v30-card relative overflow-visible" style={{ width: 300, borderRadius: 10 }}>
         <div className="relative overflow-hidden" style={{ width: 300, height: 420, borderRadius: 10, background: '#2F3440' }}>
@@ -189,16 +180,11 @@ function PlayerCard({ a }: { a: AthleteProfileRecruiterView }) {
               ))}
             </div>
             <div className="flex-1 flex flex-col justify-center" style={{ background: '#FFFFFF', padding: '12px 16px' }}>
-              <div className="relative overflow-hidden" style={{ display: 'inline-flex', alignItems: 'center', gap: 3, marginBottom: 6 }}>
-                {Array.from({ length: 5 }, (_, i) => (
-                  <svg key={i} width="28" height="28" viewBox="0 0 24 24" fill={ratingValue >= i + 1 ? "#F59E0B" : ratingValue >= i + 0.5 ? "#F59E0B" : "#D1D5DB"} stroke="none">
-                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                  </svg>
-                ))}
-                <div className="card-star-shimmer absolute inset-0 pointer-events-none" />
+              <div style={{ display: 'inline-flex', alignItems: 'center', background: '#1E2128', borderRadius: 4, padding: '3px 5px', marginBottom: 6, width: 'fit-content' }}>
+                <StarRating rating={ratingValue} size="md" showNumber={false} className="!gap-0.5" />
               </div>
-              <div style={{ fontFamily: 'var(--font-barlow-cond), sans-serif', fontWeight: 700, fontSize: 13, letterSpacing: '0.1em', textTransform: 'uppercase' as const, color: '#1E2128', marginBottom: 2, lineHeight: 1.2 }}>{a.schoolName}</div>
-              <div style={{ fontFamily: 'var(--font-barlow-cond), sans-serif', fontWeight: 700, fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#9CA3AF', lineHeight: 1.2 }}>{a.region}</div>
+              <div style={{ fontFamily: 'var(--font-barlow-cond), sans-serif', fontWeight: 700, fontSize: 16, letterSpacing: '0.1em', textTransform: 'uppercase' as const, color: '#1E2128', marginBottom: 2 }}>{a.schoolName}</div>
+              <div style={{ fontFamily: 'var(--font-barlow-cond), sans-serif', fontWeight: 700, fontSize: 14, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#9CA3AF' }}>{a.region}</div>
               <div style={{ fontFamily: 'var(--font-barlow-cond), sans-serif', fontWeight: 700, fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#E63946', marginTop: 4 }}>Promotion {a.graduationYear}</div>
             </div>
             <div className="flex items-center justify-center flex-shrink-0" style={{ background: '#E63946', width: 24, writingMode: 'vertical-rl' as const, fontFamily: 'var(--font-bebas), sans-serif', fontSize: 10, letterSpacing: '0.22em', color: 'rgba(255,255,255,0.7)' }}>NEXUS</div>
@@ -298,21 +284,24 @@ export default function CoachAthleteProfilePage() {
       if (evalRow?.distinctions) {
         let d = evalRow.distinctions;
         if (typeof d === "string") { try { d = JSON.parse(d); } catch { d = []; } }
-        const parsed = parseDistinctions(d);
-        console.log("Distinctions parsed:", parsed);
-        setDbDistinctions(parsed);
+        const filtered = (Array.isArray(d) ? d : []).filter((v: unknown) => v != null && v !== "");
+        console.log("Distinctions filtered:", filtered);
+        setDbDistinctions(filtered);
       }
 
-      // Engagement metrics (from both legacy + new view tables)
-      const [{ count: vc1 }, { count: vc2 }, { count: fc }] = await Promise.all([
-        supabase.from("recruiter_athlete_views").select("*", { count: "exact", head: true }).eq("athlete_id", id),
-        supabase.from("profile_views").select("*", { count: "exact", head: true }).eq("athlete_id", id),
-        supabase.from("recruiter_favorites").select("*", { count: "exact", head: true }).eq("athlete_id", id),
-      ]);
+      // Engagement metrics
+      const { count: vc } = await supabase
+        .from("recruiter_athlete_views")
+        .select("*", { count: "exact", head: true })
+        .eq("athlete_id", id);
 
-      const totalViews = (vc1 || 0) + (vc2 || 0);
-      console.log("Engagement metrics:", { legacyViews: vc1, newViews: vc2, totalViews, favoriteCount: fc });
-      setViewCount(totalViews);
+      const { count: fc } = await supabase
+        .from("recruiter_favorites")
+        .select("*", { count: "exact", head: true })
+        .eq("athlete_id", id);
+
+      console.log("Engagement metrics:", { viewCount: vc, favoriteCount: fc });
+      setViewCount(vc || 0);
       setFavoriteCount(fc || 0);
 
       // Global recruitment status
@@ -407,7 +396,7 @@ export default function CoachAthleteProfilePage() {
   const [pipelineData, setPipelineData] = useState<{ status: string; count: number }[]>([]);
   const [pipelineMaxAt, setPipelineMaxAt] = useState("");
   const [recruitOverride, setRecruitOverride] = useState<{ value: string; at: string } | null>(null);
-  const [dbDistinctions, setDbDistinctions] = useState<DistinctionEntry[]>([]);
+  const [dbDistinctions, setDbDistinctions] = useState<string[]>([]);
   const [viewCount, setViewCount] = useState(0);
   const [favoriteCount, setFavoriteCount] = useState(0);
   const [globalRecruitmentStatus, setGlobalRecruitmentStatus] = useState<string>("OUVERT");
@@ -445,6 +434,24 @@ export default function CoachAthleteProfilePage() {
   });
 
   // Stat strip cells — taille + poids + distinction badges from DB
+  const BADGE_DISPLAY: Record<string, { char: string; label: string }> = {
+    captain: { char: "C", label: "Capitaine" },
+    allstar: { char: "★", label: "Étoile provinciale" },
+    team_leader: { char: "M", label: "Meilleur joueur d'équipe" },
+    league_leader: { char: "L", label: "Meilleur de la ligue" },
+    progression: { char: "P", label: "Progression marquée" },
+    offensive_leader: { char: "O", label: "Meilleur joueur offensif" },
+    defensive_leader: { char: "D", label: "Meilleur joueur défensif" },
+    scoring_leader: { char: "S", label: "Meilleur pointeur" },
+    assists_leader: { char: "A", label: "Meilleur passeur" },
+    goals_leader: { char: "B", label: "Meilleur buteur" },
+    points_leader: { char: "P", label: "Meilleur pointeur" },
+    best_time: { char: "T", label: "Meilleur chrono" },
+    school_record: { char: "R", label: "Record d'école" },
+    best_mark: { char: "R", label: "Meilleure marque" },
+    singles_leader: { char: "S", label: "Meilleur en simple" },
+    specialist: { char: "★", label: "Spécialiste" },
+  };
   const statCells: { top?: string; mid: string; sub?: string; iconName?: string; isBadge?: boolean; badgeChar?: string }[] = [
     { top: a.heightDisplay, mid: "Taille" },
     { top: a.weightDisplay, mid: "Poids" },
@@ -671,24 +678,38 @@ export default function CoachAthleteProfilePage() {
               </div>
             )}
 
+            {/* Video CTA — inline with metrics */}
+            {a.highlightVideoUrl ? (
+              <a href={a.highlightVideoUrl} target="_blank" rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 bg-[#E63946] rounded-lg px-4 py-2 text-white font-bold text-[11px] uppercase tracking-wider transition-all hover:bg-[#D42B22] hover:-translate-y-0.5">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="white" stroke="none"><polygon points="8 5 19 12 8 19 8 5" /></svg>
+                Faits saillants
+              </a>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 bg-[#111317] rounded-lg px-3 py-2 text-[11px] text-[#4a4d56]">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4a4d56" strokeWidth="1.5" strokeLinecap="round"><polygon points="23 7 16 12 23 17 23 7" /><rect x="1" y="5" width="15" height="14" rx="2" ry="2" /></svg>
+                Pas de vidéo
+              </span>
+            )}
           </div>
 
-          {/* Profil Athlète */}
+          {/* Profil Athlète — no box, clean layout */}
           <div>
             <h3 className="text-[11px] font-semibold tracking-[2px] uppercase text-[#555] mb-6">Profil athlète</h3>
 
-            <div className="flex items-center gap-12 mb-8">
+            {/* Stats row */}
+            <div className="flex items-center justify-center gap-12 mb-8">
               {a.heightDisplay && (
-                <div className="text-center">
+                <div className="flex flex-col items-center">
                   <p className="text-[40px] font-head font-[800] text-white leading-none">{a.heightDisplay}</p>
                   <p className="text-[11px] font-semibold tracking-[2px] uppercase text-[#555] mt-1.5">Taille</p>
                 </div>
               )}
               {a.heightDisplay && a.weightDisplay && (
-                <div className="w-px h-12 bg-[#555]" />
+                <div className="w-px h-12 bg-[#1A1D24] self-center" />
               )}
               {a.weightDisplay && (
-                <div className="text-center">
+                <div className="flex flex-col items-center">
                   <p className="text-[40px] font-head font-[800] text-white leading-none">
                     {a.weightDisplay.replace(" lbs", "")}<span className="text-[20px] font-semibold text-[#555]"> lbs</span>
                   </p>
@@ -697,17 +718,36 @@ export default function CoachAthleteProfilePage() {
               )}
             </div>
 
-            {dbDistinctions.length > 0 && (
-              <div className="flex items-start gap-9 flex-wrap">
-                {dbDistinctions.map((d, i) => (
-                  <DistinctionBadge key={`${d.badge}-${i}`} badge={d.badge} detail={d.detail} size="lg" />
-                ))}
+            {/* Badges row */}
+            {dbDistinctions.filter((d) => d != null && BADGE_DISPLAY[d]).length > 0 && (
+              <div className="flex items-end justify-center gap-9">
+                {dbDistinctions
+                  .filter((d) => d != null && BADGE_DISPLAY[d])
+                  .map((d) => {
+                    const badgeType = DISTINCTION_TO_BADGE[d];
+                    if (badgeType) {
+                      return <DistinctionBadge key={d} type={badgeType} size="lg" />;
+                    }
+                    const b = BADGE_DISPLAY[d];
+                    return (
+                      <div key={d} className="flex flex-col items-center gap-2">
+                        <span className="w-[60px] h-[60px] rounded-full bg-[#E63946]/15 flex items-center justify-center text-[22px] font-bold text-[#E63946]">
+                          {b.char}
+                        </span>
+                        <p className="text-[10px] font-bold tracking-[1.5px] uppercase text-[#E63946]">{b.label}</p>
+                      </div>
+                    );
+                  })}
               </div>
             )}
           </div>
-
         </div>
       </section>
+
+      {/* Distinctions moved into stat strip below */}
+      {false && (
+        <section />
+      )}
 
       {/* ══════════ COACH REPORT ══════════ */}
       {(a.coachReport || coteGlobale >= 0) && (
@@ -747,11 +787,14 @@ export default function CoachAthleteProfilePage() {
                     <div className="border-t border-[#2D3748]/50 pt-4">
                       <p className="text-[11px] font-bold tracking-[0.15em] uppercase text-[#6b7280] mb-3">Détail par trait</p>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1">
-                        {TRAIT_LIST.map((trait) => {
+                        {CHARACTER_TRAITS.map((trait) => {
                           const val = a.traitRatings ? a.traitRatings[trait.key] : 0;
                           return (
                             <div key={trait.key} className="flex items-center justify-between py-2.5 border-b border-[#2D3748]/30">
-                              <span className="text-[13px] text-[#c8c8cc]">{trait.label}</span>
+                              <span className="text-[13px] text-[#c8c8cc] flex items-center gap-2">
+                                <NxIcon name={trait.iconName} size={15} className="text-[#6B7280]" />
+                                {trait.label}
+                              </span>
                               {val > 0 ? <StarRating rating={val} size="sm" /> : <span className="text-[13px] text-[#4a4d56]">—</span>}
                             </div>
                           );
@@ -760,12 +803,20 @@ export default function CoachAthleteProfilePage() {
                     </div>
                   )}
 
-                  {dbDistinctions.length > 0 && (
+                  {a.distinctions && a.distinctions.filter((d) => d != null && d.label).length > 0 && (
                     <div className="border-t border-[#2D3748]/50 pt-4 mt-4">
                       <p className="text-[11px] font-bold tracking-[0.15em] uppercase text-[#6b7280] mb-3">Distinctions</p>
                       <div className="flex flex-wrap gap-3">
-                        {dbDistinctions.map((d, i) => (
-                          <DistinctionBadge key={`${d.badge}-${i}`} badge={d.badge} detail={d.detail} size="sm" />
+                        {a.distinctions.filter((d) => d != null && d.label).map((d, i) => (
+                          <div key={i} className="flex items-center gap-3 bg-[#E63946]/[0.06] border border-[#E63946]/20 rounded-lg px-4 py-2.5">
+                            <div className="w-8 h-8 rounded-full bg-[#E63946]/10 flex items-center justify-center flex-shrink-0">
+                              {d.icon && <NxIcon name={d.icon} size={16} className="text-[#E63946]" />}
+                            </div>
+                            <div>
+                              <p className="text-[13px] font-bold text-white">{d.label}</p>
+                              {d.detail && <p className="text-[11px] text-[#9CA3AF]">{d.detail}</p>}
+                            </div>
+                          </div>
                         ))}
                       </div>
                     </div>
@@ -776,26 +827,6 @@ export default function CoachAthleteProfilePage() {
           </div>
         </section>
       )}
-
-      {/* ══════════ FAITS SAILLANTS (VIDEO) ══════════ */}
-      <section>
-        <h2 className={sectionLabel}>Faits saillants</h2>
-        {a.highlightVideoUrl || a.fullGameUrl ? (
-          <div className="flex flex-col gap-4">
-            {a.highlightVideoUrl && (
-              <VideoEmbed url={a.highlightVideoUrl} title="Faits saillants" />
-            )}
-            {a.fullGameUrl && (
-              <div>
-                <p className="text-[11px] font-semibold tracking-[2px] uppercase text-[#555] mb-3">Match complet</p>
-                <VideoEmbed url={a.fullGameUrl} title="Match complet" />
-              </div>
-            )}
-          </div>
-        ) : (
-          <p className="text-[13px] text-[#555]">Aucune vidéo ajoutée</p>
-        )}
-      </section>
 
       {/* ══════════ ACADEMIC PROFILE ══════════ */}
       {(() => { console.log("PROGRAMME DEBUG:", { program: a.program, targetCegepProgram: a.targetCegepProgram, gpa: a.gpa, prefs: { relocate: a.openToRelocate, prive: a.openToPrivate, anglo: a.openToAnglophone } }); return null; })()}

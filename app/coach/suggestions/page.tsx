@@ -5,6 +5,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { mapDbStatus } from "./_data/mockSuggestions";
 import type { CoachSuggestion } from "./_data/mockSuggestions";
+import { BADGE_CONFIG, parseDistinctions } from "@/lib/config/badges";
 
 /* ═══════════════════════════════════════════════════════════════
    Suggestions des Athlètes — Coach approval queue
@@ -48,17 +49,6 @@ function Toast({ message, onDone }: { message: string; onDone: () => void }) {
 
 /* ── Typed display for suggestion values ──────────────────── */
 
-const BADGE_LABELS: Record<string, string> = {
-  captain: "Capitaine", allstar: "Étoile provinciale", team_leader: "Leader",
-  league_leader: "Meilleur de la ligue", scoring_leader: "Meilleur pointeur",
-  points_leader: "Meilleur pointeur", goals_leader: "Meilleur buteur",
-  assists_leader: "Meilleur passeur", offensive_leader: "Meilleur offensif",
-  defensive_leader: "Meilleur défensif", progression: "Progression",
-  best_time: "Meilleur chrono", school_record: "Record d'école",
-  best_mark: "Meilleure marque", singles_leader: "Meilleur en simple",
-  specialist: "Spécialiste", mvp: "MVP",
-};
-
 function SuggestionValueDisplay({ field, value, muted }: { field: string; value: string | null | undefined; muted?: boolean }) {
   if (!value) return <span className={`text-[14px] italic ${muted ? "text-[#4a4d56]" : "text-[#EAB308]/60"}`}>Aucune</span>;
 
@@ -85,16 +75,21 @@ function SuggestionValueDisplay({ field, value, muted }: { field: string; value:
 
   // Badges display for Distinctions
   if (field === "Distinctions") {
-    let arr: string[] = [];
-    try { arr = JSON.parse(value); } catch { arr = []; }
-    if (arr.length === 0) return <span className={`text-[14px] italic ${muted ? "text-[#4a4d56]" : "text-[#EAB308]/60"}`}>Aucune</span>;
+    let parsed: { badge: string; detail?: string }[] = [];
+    try { parsed = parseDistinctions(JSON.parse(value)); } catch { parsed = []; }
+    if (parsed.length === 0) return <span className={`text-[14px] italic ${muted ? "text-[#4a4d56]" : "text-[#EAB308]/60"}`}>Aucune</span>;
     return (
       <div className="flex flex-wrap gap-1.5">
-        {arr.map((d) => (
-          <span key={d} className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold ${muted ? "bg-[#6b7280]/15 text-[#9CA3AF] border border-[#6b7280]/30" : "bg-[#EAB308]/15 text-[#EAB308] border border-[#EAB308]/30"}`}>
-            {BADGE_LABELS[d] || d}
-          </span>
-        ))}
+        {parsed.map((e, i) => {
+          const cfg = BADGE_CONFIG[e.badge];
+          const label = e.badge === "custom" ? (e.detail || "Distinction") : cfg?.label || e.badge;
+          const text = e.badge !== "custom" && e.detail ? `${label} — ${e.detail}` : label;
+          return (
+            <span key={`${e.badge}-${i}`} className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold ${muted ? "bg-[#6b7280]/15 text-[#9CA3AF] border border-[#6b7280]/30" : "bg-[#EAB308]/15 text-[#EAB308] border border-[#EAB308]/30"}`}>
+              {text}
+            </span>
+          );
+        })}
       </div>
     );
   }

@@ -5,7 +5,8 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { loadAthleteRaw, buildFormFromRaw } from "../../_data/loadAthleteFromSupabase";
-import { getBadgesForSport, MAX_BADGES, type LeadershipBadge, type BadgeOption } from "@/lib/config/sportBadges";
+import { BADGE_CONFIG, BADGE_ORDER, MAX_BADGES, MAX_DETAIL_LENGTH, getSportStats, type DistinctionEntry } from "@/lib/config/badges";
+import DistinctionBadge from "@/components/shared/DistinctionBadge";
 import StepIndicator from "../../../components/StepIndicator";
 import TagInput from "../../../components/TagInput";
 import DatePicker from "../../../components/DatePicker";
@@ -97,7 +98,7 @@ interface AthleteFormData {
     evalMode: "simple" | "detailed";
     starRating: number;
     traitRatings: Record<string, number>;
-    badges: LeadershipBadge[];
+    badges: DistinctionEntry[];
     coachEndorsement: string;
   };
   parentalConsent: boolean;
@@ -220,8 +221,6 @@ function ModifierContent({ id }: { id: string }) {
   const [schoolsList, setSchoolsList] = useState<{ id: string; name: string }[]>([]);
   const [schoolsSearch, setSchoolsSearch] = useState<string>("");
   const [coachTeam, setCoachTeam] = useState<CoachTeamData>({ school: "", city: "", region: "", teams: [] });
-  const [customDistinctions, setCustomDistinctions] = useState<{ id: string; title: string }[]>([]);
-  const [customInput, setCustomInput] = useState("");
 
   useEffect(() => {
     // Fetch schools for committed school selector + coach's teams
@@ -298,15 +297,6 @@ function ModifierContent({ id }: { id: string }) {
         }
       }
 
-      // Load custom distinctions for this athlete
-      const { data: customData } = await supabase
-        .from("custom_distinctions")
-        .select("id, title")
-        .eq("athlete_id", id)
-        .eq("coach_id", user.id)
-        .order("created_at", { ascending: true });
-      console.log("[Modifier] Loaded custom distinctions:", customData?.length);
-      if (customData) setCustomDistinctions(customData);
     })();
 
     loadAthleteRaw(id).then(({ data, error }) => {
@@ -365,28 +355,27 @@ function ModifierContent({ id }: { id: string }) {
     setForm((prev) => ({ ...prev, submission: { ...prev.submission, [field]: value } }));
   }, []);
 
-  const updateScouting = useCallback((field: string, value: string | number | LeadershipBadge[] | Record<string, number>) => {
+  const updateScouting = useCallback((field: string, value: string | number | DistinctionEntry[] | Record<string, number>) => {
     setForm((prev) => ({ ...prev, scouting: { ...prev.scouting, [field]: value } }));
   }, []);
 
   /* ── Badge helpers ─────────────────────────────────────────── */
 
-  function toggleBadge(option: BadgeOption) {
+  function toggleBadge(badgeKey: string) {
     const badges = form.scouting.badges;
-    const idx = badges.findIndex((b) => b.badgeId === option.badgeId);
+    const idx = badges.findIndex((b) => b.badge === badgeKey);
     if (idx >= 0) {
       updateScouting("badges", badges.filter((_, i) => i !== idx));
     } else if (badges.length < MAX_BADGES) {
-      const newBadge: LeadershipBadge = { badgeId: option.badgeId, label: option.label, icon: option.icon };
-      updateScouting("badges", [...badges, newBadge]);
+      updateScouting("badges", [...badges, { badge: badgeKey }]);
     }
   }
 
-  function updateBadgeDetail(badgeId: string, detail: string) {
-    const badges = form.scouting.badges.map((b) =>
-      b.badgeId === badgeId ? { ...b, detail: detail || undefined } : b
+  function updateBadgeDetail(badgeKey: string, detail: string) {
+    const next: DistinctionEntry[] = form.scouting.badges.map((b) =>
+      b.badge === badgeKey ? { ...b, detail: detail || undefined } : b
     );
-    updateScouting("badges", badges);
+    updateScouting("badges", next);
   }
 
   /* ── Toggle helpers ─────────────────────────────────────────── */
@@ -644,11 +633,9 @@ function ModifierContent({ id }: { id: string }) {
     const resilience = tr.resilience || null;
     const attitude_mentalite = tr.attitude_mentalite || null;
 
-    // Distinctions — extract badge keys, filter nulls
-    const distinctionKeys = form.scouting.badges
-      .map((b) => b?.badgeId)
-      .filter((k): k is string => !!k);
-    console.log("Distinctions to save:", distinctionKeys);
+    // Distinctions — save full object array (new format)
+    const distinctionsToSave = form.scouting.badges.filter((b) => b && b.badge);
+    console.log("Distinctions to save:", distinctionsToSave);
     console.log("Saving jersey:", form.sports.jerseyNumber);
 
     const evalRecord = {
@@ -668,7 +655,7 @@ function ModifierContent({ id }: { id: string }) {
       esprit_equipe,
       resilience,
       attitude_mentalite,
-      distinctions: distinctionKeys,
+      distinctions: distinctionsToSave,
       rapport_entraineur: form.scouting.coachEndorsement || null,
     };
     console.log("Saving evaluation:", JSON.stringify(evalRecord));
@@ -1037,43 +1024,15 @@ function ModifierContent({ id }: { id: string }) {
     );
   }
 
-  /* ── Custom distinction handlers ────────────────────────── */
-  async function addCustomDistinction() {
-    const title = customInput.trim().slice(0, 50);
-    if (!title) return;
-    const totalNow = form.scouting.badges.length + customDistinctions.length;
-    if (totalNow >= 5) return;
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    const { data, error } = await supabase
-      .from("custom_distinctions")
-      .insert({ athlete_id: id, coach_id: user.id, title })
-      .select("id, title")
-      .single();
-    if (error) { console.error("[Modifier] Custom distinction insert failed:", error); return; }
-    if (data) {
-      setCustomDistinctions((prev) => [...prev, data]);
-      setCustomInput("");
-    }
-  }
-
-  async function removeCustomDistinction(rowId: string) {
-    const supabase = createClient();
-    const { error } = await supabase.from("custom_distinctions").delete().eq("id", rowId);
-    if (error) { console.error("[Modifier] Custom distinction delete failed:", error); return; }
-    setCustomDistinctions((prev) => prev.filter((c) => c.id !== rowId));
-  }
-
   /* ── Step 5: Évaluation (Badges + Coach Endorsement) ────────── */
   function renderStep5() {
     const sc = form.scouting;
     const isDetailed = sc.evalMode === "detailed";
     const sportName = form.sports.primarySport;
-    const badgeOptions = getBadgesForSport(sportName);
-    const selectedIds = new Set(sc.badges.map((b) => b.badgeId));
-    const totalDistinctions = sc.badges.length + customDistinctions.length;
-    const atMax = totalDistinctions >= 5;
+    const sportStats = getSportStats(sportName);
+    const selectedMap = new Map(sc.badges.map((b) => [b.badge, b]));
+    const totalDistinctions = sc.badges.length;
+    const atMax = totalDistinctions >= MAX_BADGES;
 
     return (
       <div className={cardCls}>
@@ -1211,108 +1170,55 @@ function ModifierContent({ id }: { id: string }) {
             Maximum de 5 distinctions affichées sur le profil
           </p>
 
-          {!sportName && (
-            <div className="bg-[#13151a] border border-[#2a2d36] rounded-lg p-4 text-center">
-              <p className="text-[14px] text-[#6b7280]">Sélectionne un sport à l&apos;étape 4 pour voir les distinctions disponibles.</p>
-            </div>
-          )}
-
-          {badgeOptions.length > 0 && (
-            <div className="space-y-2">
-              {badgeOptions.map((opt) => {
-                const isSelected = selectedIds.has(opt.badgeId);
-                const isDisabled = !isSelected && atMax;
-                const badge = sc.badges.find((b) => b.badgeId === opt.badgeId);
-
-                return (
-                  <div key={opt.badgeId}
-                    className={`border rounded-lg transition-all ${isSelected ? "border-[#E63946]/40 bg-[#E63946]/[0.06]" : "border-[#2a2d36]"} ${isDisabled ? "opacity-40 cursor-not-allowed" : ""}`}>
-                    <button type="button"
-                      onClick={() => !isDisabled && toggleBadge(opt)}
-                      disabled={isDisabled}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-left">
-                      <div className={`w-5 h-5 rounded flex items-center justify-center shrink-0 border transition-colors ${isSelected ? "bg-[#E63946] border-[#E63946]" : "border-[#4a4d56]"}`}>
-                        {isSelected && (
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
-                        )}
-                      </div>
-                      <span className={`text-[14px] font-bold ${isSelected ? "text-white" : "text-[#8a8d96]"}`}>{opt.label}</span>
-                    </button>
-
-                    {isSelected && opt.hasDetail && (
-                      <div className="px-4 pb-3 pl-14">
-                        <input type="text"
-                          value={badge?.detail || ""}
-                          onChange={(e) => updateBadgeDetail(opt.badgeId, e.target.value.slice(0, 25))}
-                          maxLength={25}
-                          placeholder={opt.detailPlaceholder || "Précise..."}
-                          className={`${inputCls} text-[14px]`}
-                        />
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Custom distinctions list */}
-          {customDistinctions.length > 0 && (
-            <div className="space-y-2 mt-3">
-              {customDistinctions.map((cd) => (
-                <div key={cd.id} className="flex items-center justify-between gap-3 px-4 py-3 rounded-lg border border-[#F59E0B]/30 bg-[#F59E0B]/[0.06]">
-                  <div className="flex items-center gap-3">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M7.21 15 2.66 7.14a2 2 0 0 1 .13-2.2L4.4 2.8A2 2 0 0 1 6 2h12a2 2 0 0 1 1.6.8l1.6 2.14a2 2 0 0 1 .14 2.2L16.79 15" />
-                      <path d="M11 12 5.12 2.2" />
-                      <path d="m13 12 5.88-9.8" />
-                      <path d="M8 7h8" />
-                      <circle cx="12" cy="17" r="5" />
-                      <path d="M12 18v-2h-.5" />
-                    </svg>
-                    <span className="text-[14px] font-bold text-white">{cd.title}</span>
-                    <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-[#F59E0B]/20 text-[#F59E0B]">Personnalisée</span>
-                  </div>
-                  <button type="button" onClick={() => removeCustomDistinction(cd.id)} className="text-[#4a4d56] hover:text-[#E63946] transition-colors" title="Retirer">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6L6 18" /><path d="M6 6l12 12" /></svg>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {BADGE_ORDER.map((key) => {
+              const cfg = BADGE_CONFIG[key];
+              const entry = selectedMap.get(key);
+              const isSelected = !!entry;
+              const isDisabled = !isSelected && atMax;
+              return (
+                <div key={key}
+                  className={`border rounded-lg transition-all ${isSelected ? "border-[#E63946]/40 bg-[#E63946]/[0.06]" : "border-[#2a2d36]"} ${isDisabled ? "opacity-40 cursor-not-allowed" : ""}`}>
+                  <button type="button"
+                    onClick={() => !isDisabled && toggleBadge(key)}
+                    disabled={isDisabled}
+                    className="w-full flex flex-col items-center gap-2 px-3 py-4 text-center">
+                    <DistinctionBadge badge={key} detail={entry?.detail} size="sm" />
+                    <span className={`text-[12px] font-bold ${isSelected ? "text-white" : "text-[#8a8d96]"}`}>
+                      {key === "custom" ? "Personnalisée" : cfg.label}
+                    </span>
                   </button>
-                </div>
-              ))}
-            </div>
-          )}
 
-          {/* Custom distinction input */}
-          <div className="mt-4">
-            {atMax ? (
-              <p className="text-[12px] text-[#4a4d56] italic">Maximum atteint — retire une distinction pour en ajouter une autre.</p>
-            ) : (
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={customInput}
-                  onChange={(e) => setCustomInput(e.target.value.slice(0, 50))}
-                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCustomDistinction(); } }}
-                  placeholder="Ajouter une distinction personnalisée"
-                  maxLength={50}
-                  className={`${inputCls} flex-1 text-[14px]`}
-                />
-                <button
-                  type="button"
-                  onClick={addCustomDistinction}
-                  disabled={!customInput.trim()}
-                  className="px-4 py-3 rounded-lg bg-[#E63946] text-white text-[12px] font-bold uppercase tracking-wider transition-colors hover:bg-[#D42B22] disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  Ajouter
-                </button>
-              </div>
-            )}
+                  {isSelected && cfg.hasDetail && (
+                    <div className="px-3 pb-3 space-y-2">
+                      {(key === "team_leader" || key === "league_leader") && sportStats.length > 0 && (
+                        <select
+                          aria-label="Statistique"
+                          value={sportStats.includes(entry?.detail || "") ? entry?.detail || "" : ""}
+                          onChange={(e) => updateBadgeDetail(key, e.target.value)}
+                          className={`${inputCls} text-[13px]`}
+                        >
+                          <option value="">— Choisir une stat —</option>
+                          {sportStats.map((s) => <option key={s} value={s}>{s}</option>)}
+                        </select>
+                      )}
+                      <input type="text"
+                        value={entry?.detail || ""}
+                        onChange={(e) => updateBadgeDetail(key, e.target.value.slice(0, MAX_DETAIL_LENGTH))}
+                        maxLength={MAX_DETAIL_LENGTH}
+                        placeholder={key === "custom" ? "Titre de la distinction" : "Précise (ex: Points)"}
+                        className={`${inputCls} text-[13px]`}
+                      />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
 
-          {(badgeOptions.length > 0 || customDistinctions.length > 0) && (
-            <p className="text-[12px] text-[#4a4d56] mt-3">
-              {totalDistinctions} / 5 sélectionnée{totalDistinctions !== 1 ? "s" : ""}
-            </p>
-          )}
+          <p className="text-[12px] text-[#4a4d56] mt-3">
+            {totalDistinctions} / {MAX_BADGES} sélectionnée{totalDistinctions !== 1 ? "s" : ""}
+          </p>
         </div>
 
         {/* ── Rapport de l'entraîneur ──────────────── */}
@@ -1416,7 +1322,11 @@ function ModifierContent({ id }: { id: string }) {
         {summaryCard("Sport", 4, (<div>{infoRow("Sport principal", sports.primarySport)}{infoRow("Position", `${sports.primaryPosition}${sports.secondaryPosition ? ` / ${sports.secondaryPosition}` : ""}`)}{infoRow("Équipe", sports.currentTeam)}{infoRow("Niveau", sports.teamLevel)}</div>))}
 
         {summaryCard("Évaluation", 5, (<div>
-          {infoRow("Distinctions", scouting.badges.length > 0 ? scouting.badges.map((b) => `${b.label}${b.detail ? ` — ${b.detail}` : ""}`).join(", ") : "")}
+          {infoRow("Distinctions", scouting.badges.length > 0 ? scouting.badges.map((b) => {
+            const cfg = BADGE_CONFIG[b.badge];
+            const label = b.badge === "custom" ? (b.detail || "Distinction") : cfg?.label || b.badge;
+            return b.badge !== "custom" && b.detail ? `${label} — ${b.detail}` : label;
+          }).join(", ") : "")}
           {scouting.coachEndorsement && (<div className="mt-2 p-3 bg-[#1A1D24] rounded-lg"><p className="text-[12px] text-[#6b7280] mb-1 font-bold uppercase tracking-wider">Rapport</p><p className="text-[12px] text-[#e0e0e0] italic leading-relaxed">&ldquo;{scouting.coachEndorsement.slice(0, 150)}{scouting.coachEndorsement.length > 150 ? "…" : ""}&rdquo;</p></div>)}
         </div>))}
 

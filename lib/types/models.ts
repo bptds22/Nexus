@@ -783,6 +783,8 @@ export interface AthleteTraitRatings {
   attitude: number;
 }
 
+import type { DistinctionEntry } from "@/lib/config/badges";
+
 export interface AthleteProfileRecruiterView {
   // Identity (filtered — no email, phone, parent)
   id: string;
@@ -844,7 +846,7 @@ export interface AthleteProfileRecruiterView {
   coachReport?: string;
   traitRatings?: AthleteTraitRatings;
   overallRating: number;
-  distinctions: { badgeId: string; label: string; icon: string; char?: string; detail?: string }[];
+  distinctions: DistinctionEntry[];
 
   // Media
   highlightVideoUrl?: string;

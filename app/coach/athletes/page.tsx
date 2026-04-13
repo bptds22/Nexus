@@ -8,6 +8,7 @@ import { type RosterAthlete } from "./_data/mockRosterData";
 import NxIcon from "@/components/ui/NxIcon";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
 import type { GlobalRecruitmentStatus } from "@/lib/types/models";
+import { BADGE_CONFIG, parseDistinctions } from "@/lib/config/badges";
 
 /* ═══════════════════════════════════════════════════════════════
    Mes Athlètes — Card/list layout matching recruiter search
@@ -109,11 +110,15 @@ function CoachAthleteCard({ a }: { a: RosterAthlete }) {
         {/* Badges */}
         {a.badges && a.badges.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mt-1.5">
-            {a.badges.map((b) => (
-              <span key={b.badgeId} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#E63946]/15 border border-[#E63946]/30 text-[10px] font-bold text-[#E63946]">
-                <NxIcon name={b.icon} size={10} className="text-[#E63946]" /> {b.label}
-              </span>
-            ))}
+            {a.badges.map((b, i) => {
+              const cfg = BADGE_CONFIG[b.badge];
+              const label = b.badge === "custom" ? (b.detail || "Distinction") : cfg?.label || b.badge;
+              return (
+                <span key={`${b.badge}-${i}`} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#E63946]/15 border border-[#E63946]/30 text-[10px] font-bold text-[#E63946]">
+                  {label}{b.badge !== "custom" && b.detail ? ` — ${b.detail}` : ""}
+                </span>
+              );
+            })}
           </div>
         )}
 
@@ -214,11 +219,15 @@ function CoachAthleteRow({ a }: { a: RosterAthlete }) {
 
       {/* Badges — flex */}
       <div className="flex gap-1.5 flex-1 min-w-0">
-        {a.badges?.map((b) => (
-          <span key={b.badgeId} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#E63946]/15 border border-[#E63946]/30 text-[10px] font-bold text-[#E63946] whitespace-nowrap">
-            <NxIcon name={b.icon} size={10} className="text-[#E63946]" /> {b.label}
-          </span>
-        ))}
+        {a.badges?.map((b, i) => {
+          const cfg = BADGE_CONFIG[b.badge];
+          const label = b.badge === "custom" ? (b.detail || "Distinction") : cfg?.label || b.badge;
+          return (
+            <span key={`${b.badge}-${i}`} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#E63946]/15 border border-[#E63946]/30 text-[10px] font-bold text-[#E63946] whitespace-nowrap">
+              {label}{b.badge !== "custom" && b.detail ? ` — ${b.detail}` : ""}
+            </span>
+          );
+        })}
       </div>
 
       {/* Favorites */}
@@ -362,13 +371,6 @@ function MesAthletesContent() {
         });
       }
 
-      // Badge map for distinctions
-      const badgeMap: Record<string, { label: string; icon: string }> = {
-        captain: { label: "Capitaine", icon: "shield" },
-        allstar: { label: "Équipe d'étoiles", icon: "star" },
-        team_leader: { label: "Leader", icon: "award" },
-      };
-
       const mapped: RosterAthlete[] = data.map((a: Record<string, unknown>) => {
         // Handle FK joins — may be object or array
         const posRaw = a.positions;
@@ -388,9 +390,9 @@ function MesAthletesContent() {
 
         const evalsRaw = a.evaluations;
         const evals = Array.isArray(evalsRaw) ? evalsRaw : [];
-        const eval0 = evals[0] as { cote_globale?: number; distinctions?: string[] } | undefined;
+        const eval0 = evals[0] as { cote_globale?: number; distinctions?: unknown } | undefined;
         const stars = eval0?.cote_globale || (a.cote_globale_entraineur as number) || 0;
-        const distinctions: string[] = eval0?.distinctions || [];
+        const distinctions = parseDistinctions(eval0?.distinctions);
 
         const position = posObj?.abreviation || posObj?.nom || "";
         const gradYear = (a.annee_diplomation as number) || 0;
@@ -442,9 +444,7 @@ function MesAthletesContent() {
           region: schoolObj?.region || "",
           sport: sportName,
           hasVideo: !!a.video_faits_saillants_url,
-          badges: distinctions
-            .filter((d) => d != null && badgeMap[d])
-            .map((d) => ({ badgeId: d, label: badgeMap[d].label, icon: badgeMap[d].icon })),
+          badges: distinctions,
           academicBadges: (a.mentions_academiques as string[]) || [],
           recruitmentStatus: (a.recruitment_status as string) || "OUVERT",
           committedSchoolName: committedSchool?.name || "",

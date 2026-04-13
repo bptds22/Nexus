@@ -10,7 +10,8 @@ import {
 import type { AthleteProfileRecruiterView, AthleteTraitRatings, GlobalRecruitmentStatus } from "@/lib/types/models";
 import { BADGE_COLORS } from "@/lib/types/models";
 import RecruitmentStatusBadgeGlobal from "@/components/ui/RecruitmentStatusBadge";
-import DistinctionBadge, { DISTINCTION_TO_BADGE } from "@/components/badges/DistinctionBadge";
+import DistinctionBadge from "@/components/shared/DistinctionBadge";
+import { parseDistinctions, MAX_BADGES } from "@/lib/config/badges";
 import { SPORT_NAME_MAP } from "@/lib/config/sportBadges";
 import type { RecruitmentStatus, RetireReason } from "@/lib/config/recruitmentStatuses";
 import { getAthleteTracking } from "@/app/recruteur/_data/mockPipelineData";
@@ -300,7 +301,6 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
   const [committedSchoolName, setCommittedSchoolName] = useState("");
   const [openToOffers, setOpenToOffers] = useState<boolean | null>(null);
   const [myPipelineStage, setMyPipelineStage] = useState<string | null>(null);
-  const [customDistinctions, setCustomDistinctions] = useState<{ id: string; title: string }[]>([]);
   const [coachId, setCoachId] = useState<string | null>(null);
   const [isAllStar, setIsAllStar] = useState(false);
   const [coachRepData, setCoachRepData] = useState<{
@@ -509,33 +509,7 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
           coachReputation: undefined,
           overallRating: (eval0?.cote_globale as number) ?? (d.cote_globale_entraineur as number) ?? 0,
           traitRatings: traitRatings as AthleteProfileRecruiterView["traitRatings"],
-          distinctions: (() => {
-            const raw = (eval0?.distinctions as string[]) || [];
-            const badgeMap: Record<string, { label: string; icon: string; char: string }> = {
-              captain: { label: "Capitaine", icon: "shield", char: "C" },
-              allstar: { label: "Étoile provinciale", icon: "star", char: "★" },
-              team_leader: { label: "Meilleur joueur d'équipe", icon: "award", char: "M" },
-              mvp: { label: "MVP", icon: "trophy", char: "M" },
-              rookie: { label: "Recrue de l'année", icon: "zap", char: "R" },
-              scholar: { label: "Étudiant-athlète", icon: "book", char: "É" },
-              iron_man: { label: "Iron Man", icon: "heart", char: "I" },
-              most_improved: { label: "Joueur le plus amélioré", icon: "trending-up", char: "+" },
-              scoring_leader: { label: "Meilleur pointeur", icon: "target", char: "S" },
-              league_leader: { label: "Meilleur de la ligue", icon: "award", char: "L" },
-              progression: { label: "Progression marquée", icon: "trending-up", char: "P" },
-              offensive_leader: { label: "Meilleur joueur offensif", icon: "zap", char: "O" },
-              defensive_leader: { label: "Meilleur joueur défensif", icon: "shield", char: "D" },
-              assists_leader: { label: "Meilleur passeur", icon: "activity", char: "A" },
-              goals_leader: { label: "Meilleur buteur", icon: "target", char: "B" },
-              points_leader: { label: "Meilleur pointeur", icon: "award", char: "P" },
-              best_time: { label: "Meilleur chrono", icon: "clock", char: "T" },
-              school_record: { label: "Record d'école", icon: "trophy", char: "R" },
-              best_mark: { label: "Meilleure marque", icon: "trophy", char: "R" },
-              singles_leader: { label: "Meilleur en simple", icon: "target", char: "S" },
-              specialist: { label: "Spécialiste", icon: "star", char: "★" },
-            };
-            return raw.filter((d) => d && badgeMap[d]).map((d) => ({ badgeId: d, label: badgeMap[d].label, icon: badgeMap[d].icon, char: badgeMap[d].char }));
-          })(),
+          distinctions: parseDistinctions(eval0?.distinctions),
           favoriteCount: 0,
           viewsThisMonth: 0,
         };
@@ -543,11 +517,6 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
         setA(mapped);
         setCoachId((d.coach_id as string) || null);
         setLoadingAthlete(false);
-
-        // Load custom distinctions
-        supabase.from("custom_distinctions").select("id, title").eq("athlete_id", id).order("created_at", { ascending: true }).then(({ data: cd }) => {
-          if (cd) setCustomDistinctions(cd);
-        });
       });
   }, [id]);
 
@@ -889,24 +858,10 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
                 )}
               </div>
 
-              {(a.distinctions.length > 0 || customDistinctions.length > 0) && (
-                <div className="flex items-end gap-9 flex-wrap">
-                  {a.distinctions.map((d, i) => {
-                    const badgeType = DISTINCTION_TO_BADGE[d.badgeId];
-                    if (badgeType) {
-                      return <DistinctionBadge key={i} type={badgeType} size="lg" />;
-                    }
-                    return (
-                      <div key={i} className="flex flex-col items-center gap-2">
-                        <span className="w-[60px] h-[60px] rounded-full bg-[#E63946]/15 flex items-center justify-center text-[22px] font-bold text-[#E63946]">
-                          {d.char || <NxIcon name={d.icon} size={20} className="text-[#E63946]" />}
-                        </span>
-                        <p className="text-[10px] font-bold tracking-[1.5px] uppercase text-[#E63946]">{d.label}</p>
-                      </div>
-                    );
-                  })}
-                  {customDistinctions.map((cd) => (
-                    <DistinctionBadge key={cd.id} type="medaille" size="lg" customLabel={cd.title} />
+              {a.distinctions.length > 0 && (
+                <div className="flex items-start gap-9 flex-wrap">
+                  {a.distinctions.slice(0, MAX_BADGES).map((d, i) => (
+                    <DistinctionBadge key={`${d.badge}-${i}`} badge={d.badge} detail={d.detail} size="lg" />
                   ))}
                 </div>
               )}
@@ -977,20 +932,12 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
                       </div>
                     )}
 
-                    {a.distinctions && a.distinctions.filter((d) => d != null && d.label).length > 0 && (
+                    {a.distinctions.length > 0 && (
                       <div className="border-t border-[#2D3748]/50 pt-4 mt-4">
                         <p className="text-[11px] font-bold tracking-[0.15em] uppercase text-[#6b7280] mb-3">Distinctions</p>
                         <div className="flex flex-wrap gap-3">
-                          {a.distinctions.filter((d) => d != null && d.label).map((d, i) => (
-                            <div key={i} className="flex items-center gap-3 bg-[#E63946]/[0.06] border border-[#E63946]/20 rounded-lg px-4 py-2.5">
-                              <div className="w-8 h-8 rounded-full bg-[#E63946]/10 flex items-center justify-center flex-shrink-0">
-                                {d.char ? <span className="text-[13px] font-bold text-[#E63946]">{d.char}</span> : d.icon && <NxIcon name={d.icon} size={16} className="text-[#E63946]" />}
-                              </div>
-                              <div>
-                                <p className="text-[13px] font-bold text-white">{d.label}</p>
-                                {d.detail && <p className="text-[11px] text-[#9CA3AF]">{d.detail}</p>}
-                              </div>
-                            </div>
+                          {a.distinctions.slice(0, MAX_BADGES).map((d, i) => (
+                            <DistinctionBadge key={`${d.badge}-${i}`} badge={d.badge} detail={d.detail} size="sm" />
                           ))}
                         </div>
                       </div>
