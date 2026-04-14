@@ -61,8 +61,8 @@ export function useUser() {
     return () => subscription.unsubscribe()
   }, [])
 
-  const isCoach     = user?.role === 'COACH' || user?.role === 'DIRECTEUR_SECONDAIRE'
-  const isRecruteur = user?.role === 'RECRUTEUR' || user?.role === 'DIRECTEUR_CEGEP'
+  const isCoach     = user?.role === 'COACH'
+  const isRecruteur = user?.role === 'RECRUTEUR'
   const isAthlete   = user?.role === 'ATHLETE'
   const isAdmin     = user?.role === 'ADMIN'
 

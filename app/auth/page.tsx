@@ -209,9 +209,9 @@ function AuthContent() {
     }
 
     // Route to correct portal
-    if (role === "COACH" || role === "DIRECTEUR_SECONDAIRE") {
+    if (role === "COACH") {
       router.push("/coach");
-    } else if (role === "RECRUTEUR" || role === "DIRECTEUR_CEGEP") {
+    } else if (role === "RECRUTEUR") {
       router.push("/recruteur");
     } else if (role === "ATHLETE") {
       router.push("/athlete");

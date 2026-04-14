@@ -36,13 +36,22 @@ interface School {
 
 const RECRUITMENT_OPTIONS = [
   { value: "", label: "—" },
-  { value: "IDENTIFIE", label: "Identifié" },
-  { value: "CONTACTE", label: "Contacté" },
-  { value: "EN_DISCUSSION", label: "En discussion" },
-  { value: "VISITE_PLANIFIEE", label: "Visite planifiée" },
-  { value: "ENGAGE", label: "Engagé" },
-  { value: "LETTRE_SIGNEE", label: "Lettre signée" },
+  { value: "OUVERT", label: "Ouvert" },
+  { value: "EN_PROCESSUS", label: "En processus" },
+  { value: "RECRUTE", label: "Recruté" },
+  { value: "RETIRE", label: "Retiré" },
 ];
+
+/** Collapse raw pipeline stages into the 4 global display statuses. */
+function bucketRecruitmentStatus(raw: string | null | undefined): "OUVERT" | "EN_PROCESSUS" | "RECRUTE" | "RETIRE" | null {
+  if (!raw) return null;
+  const v = raw.toUpperCase();
+  if (v === "OUVERT" || v === "IDENTIFIE") return "OUVERT";
+  if (v === "CONTACTE" || v === "EN_DISCUSSION" || v === "VISITE_PLANIFIEE" || v === "EN_PROCESSUS") return "EN_PROCESSUS";
+  if (v === "ENGAGE" || v === "LETTRE_SIGNEE" || v === "RECRUTE") return "RECRUTE";
+  if (v === "RETIRE") return "RETIRE";
+  return null;
+}
 
 function formatDate(iso: string | null | undefined) {
   if (!iso) return "";
@@ -183,18 +192,53 @@ export default function AdminAthletesPage() {
           <span className="text-[#4a4d56]">—</span>
         ),
     },
-    { key: "cote_globale_entraineur", label: "Cote globale", type: "number", align: "center" },
+    {
+      key: "cote_globale_entraineur",
+      label: "Cote globale",
+      type: "number",
+      align: "center",
+      width: "160px",
+      render: (r) => {
+        const v = r.cote_globale_entraineur;
+        if (v == null) return <span className="text-[#4a4d56]">—</span>;
+        const pct = Math.max(0, Math.min(1, v / 5)) * 100;
+        return (
+          <span className="inline-flex items-center gap-1.5">
+            <span className="relative inline-block leading-none" aria-label={`${v} sur 5`}>
+              <span className="text-[14px] tracking-[2px] text-[#374151]">★★★★★</span>
+              <span
+                className="absolute inset-0 text-[14px] tracking-[2px] text-[#F59E0B] overflow-hidden whitespace-nowrap"
+                style={{ width: `${pct}%` }}
+              >
+                ★★★★★
+              </span>
+            </span>
+            <span className="text-[11px] text-[#9CA3AF] tabular-nums">{v.toFixed(1)}</span>
+          </span>
+        );
+      },
+    },
     {
       key: "statut_recrutement_override",
       label: "Statut recrutement",
       type: "select",
       options: RECRUITMENT_OPTIONS,
       render: (r) => {
-        if (!r.statut_recrutement_override) return <span className="text-[#4a4d56]">—</span>;
-        const opt = RECRUITMENT_OPTIONS.find((o) => o.value === r.statut_recrutement_override);
+        const bucket = bucketRecruitmentStatus(r.statut_recrutement_override);
+        if (!bucket) return <span className="text-[#4a4d56]">—</span>;
+        const cls =
+          bucket === "OUVERT"        ? "bg-green-500/20 text-green-400" :
+          bucket === "EN_PROCESSUS"  ? "bg-amber-500/20 text-amber-400" :
+          bucket === "RECRUTE"       ? "bg-red-500/20 text-red-400" :
+                                       "bg-gray-500/20 text-gray-400";
+        const label =
+          bucket === "EN_PROCESSUS" ? "EN PROCESSUS" :
+          bucket === "RECRUTE"      ? "RECRUTÉ" :
+          bucket === "RETIRE"       ? "RETIRÉ" :
+                                      "OUVERT";
         return (
-          <span className="inline-flex px-2 py-0.5 rounded-full bg-[#3B82F6]/15 text-[#3B82F6] text-[11px] font-bold">
-            {opt?.label ?? r.statut_recrutement_override}
+          <span className={`inline-flex px-2.5 py-1 rounded-full text-[11px] font-bold ${cls}`}>
+            {label}
           </span>
         );
       },

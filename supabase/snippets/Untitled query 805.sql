@@ -1,6 +1,9 @@
--- Find the actual evaluation table
-SELECT tablename FROM pg_tables WHERE tablename LIKE '%eval%' OR tablename LIKE '%review%' OR tablename LIKE '%cote%';
+-- Get the two IDs
+SELECT id, name FROM schools WHERE name LIKE '%Saint-Jean%';
 
--- Also check for JSONB columns on athletes that might store evaluations
-SELECT column_name, data_type FROM information_schema.columns 
-WHERE table_name = 'athletes' AND (column_name LIKE '%eval%' OR column_name LIKE '%cote%' OR data_type = 'jsonb');
+-- Then merge: move everything to the one that has data
+-- Replace KEEP_ID and DELETE_ID with actual UUIDs
+UPDATE athletes SET school_id = 'KEEP_ID' WHERE school_id = 'DELETE_ID';
+UPDATE users SET school_id = 'KEEP_ID' WHERE school_id = 'DELETE_ID';
+UPDATE teams SET school_id = 'KEEP_ID' WHERE school_id = 'DELETE_ID';
+DELETE FROM schools WHERE id = 'DELETE_ID';

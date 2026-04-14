@@ -24,8 +24,7 @@ export default function SidebarUpgradeCard() {
     setSub({ current_period_end: s.current_period_end, trial_days_remaining: s.trial_days_remaining });
     try {
       const u = JSON.parse(localStorage.getItem("nexus_user") || "{}");
-      if (u.is_school_admin) setIsAdmin("school");
-      else if (u.is_cegep_admin) setIsAdmin("cegep");
+      if (u.is_school_admin) setIsAdmin(u.role === "recruiter" ? "cegep" : "school");
       if (sessionStorage.getItem("nexus_sidebar_upgrade_dismissed")) setDismissed(true);
     } catch { /* */ }
   }, []);

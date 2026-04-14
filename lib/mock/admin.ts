@@ -1026,37 +1026,6 @@ export const REVENUE_STATS: RevenueStats = {
    Each school/CÉGEP has ONE owner + zero or more collaborators
 ═══════════════════════════════════════════════════════════════ */
 
-export interface DirectorAssignment {
-  user_id: string;
-  user_name: string;
-  user_email: string;
-  school_id: string;
-  school_name: string;
-  school_type: "secondaire" | "cegep";
-  director_role: "owner" | "collaborator";
-  claimed_at: string;
-  approved_by: string | null;
-  last_login_at: string | null;
-}
-
-export const DIRECTOR_ASSIGNMENTS: DirectorAssignment[] = [
-  // De Rochebelle — owner + 1 collaborator
-  { user_id: "u-030", user_name: "Nathalie Gagnon", user_email: "n.gagnon@rochebelle.qc.ca", school_id: "s-003", school_name: "De Rochebelle", school_type: "secondaire", director_role: "owner", claimed_at: "2025-01-08T10:00:00Z", approved_by: null, last_login_at: "2026-03-15T08:00:00Z" },
-  { user_id: "u-035", user_name: "Luc Tremblay", user_email: "l.tremblay@rochebelle.qc.ca", school_id: "s-003", school_name: "De Rochebelle", school_type: "secondaire", director_role: "collaborator", claimed_at: "2025-09-15T11:00:00Z", approved_by: "u-030", last_login_at: "2026-03-14T09:30:00Z" },
-
-  // CÉGEP Garneau — owner + 1 collaborator
-  { user_id: "u-031", user_name: "François Simard", user_email: "f.simard@cegep-garneau.qc.ca", school_id: "c-001", school_name: "CÉGEP Garneau", school_type: "cegep", director_role: "owner", claimed_at: "2025-01-20T11:00:00Z", approved_by: null, last_login_at: "2026-03-14T14:30:00Z" },
-  { user_id: "u-036", user_name: "Sylvie Côté", user_email: "s.cote@cegep-garneau.qc.ca", school_id: "c-001", school_name: "CÉGEP Garneau", school_type: "cegep", director_role: "collaborator", claimed_at: "2025-10-01T14:00:00Z", approved_by: "u-031", last_login_at: "2026-03-15T16:00:00Z" },
-
-  // Séminaire de Sherbrooke — owner only
-  { user_id: "u-032", user_name: "Josée Bélanger", user_email: "j.belanger@seminaire.qc.ca", school_id: "s-012", school_name: "Séminaire de Sherbrooke", school_type: "secondaire", director_role: "owner", claimed_at: "2025-02-12T09:00:00Z", approved_by: null, last_login_at: "2026-03-12T16:00:00Z" },
-
-  // De Mortagne — owner only
-  { user_id: "u-033", user_name: "Marie-Ève Lapointe", user_email: "me.lapointe@demortagne.qc.ca", school_id: "s-001", school_name: "De Mortagne", school_type: "secondaire", director_role: "owner", claimed_at: "2025-09-01T10:00:00Z", approved_by: null, last_login_at: "2026-03-16T10:00:00Z" },
-
-  // Saint-Jean-Eudes — owner (INACTIVE 47 days)
-  { user_id: "u-034", user_name: "Patrick Bergeron", user_email: "p.bergeron@sje.qc.ca", school_id: "s-002", school_name: "Saint-Jean-Eudes", school_type: "secondaire", director_role: "owner", claimed_at: "2025-03-15T09:00:00Z", approved_by: null, last_login_at: "2026-01-28T14:00:00Z" },
-];
 
 /* ── Ownership Transfer Requests ─────────────────────────────── */
 

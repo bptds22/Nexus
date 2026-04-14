@@ -78,7 +78,7 @@ function InviteAdminContent() {
       localStorage.setItem("nexus_user", JSON.stringify({
         firstName, lastName, email: emailParam,
         role: "recruiter", status: "active", onboarding_complete: true,
-        is_cegep_admin: true, is_also_recruiter: alsoActive, cegep_admin_type: "owner",
+        is_school_admin: true, is_also_recruiter: alsoActive, cegep_admin_type: "owner",
         institution: { name: institutionName }, profile: { title },
         subscription: { tier: "free", status: "active", billing_cycle: null, current_period_end: null, trial_days_remaining: null, cancel_at_period_end: false },
         tier: "free", privacy_consent: privacyData,

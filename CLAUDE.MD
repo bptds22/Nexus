@@ -250,9 +250,8 @@ Follow these instructions exactly. Updated April 2026.
 - Coach self-declaration populates leagues table organically
 
 ### Director Roles
-- No separate director portals
-- Directors are coaches/recruiters with admin flags (is_school_admin / is_cegep_admin)
-- Free Pro/All Star access via role flag
+- Director roles fully removed. Only 4 roles exist: COACH, RECRUTEUR, ATHLETE, ADMIN. School/CÉGEP admin status is determined by the is_school_admin boolean (school vs CÉGEP is inferred from role).
+- Free Pro/All Star access via is_school_admin flag
 
 ### Two Separate Evaluation Systems — NEVER CONFLATE
 - Coaches evaluate athletes → evaluations table (8 criteria + distinctions)
@@ -484,7 +483,7 @@ If a field is empty (coach used simplified), show nothing — no placeholder, ju
 
 - **Total pages:** ~70 (56 across portals + 14 admin)
 - **Portals:** Coach, Recruiter (each with Free/Pro/All Star tiers)
-- **Director portals merged:** Directors are coaches/recruiters with admin flags, not separate roles
+- **Director portals removed:** Only COACH, RECRUTEUR, ATHLETE, ADMIN roles exist; school/CÉGEP admin status is a boolean flag (is_school_admin) on a coach or recruiter user
 - **Admin portal:** 14 pages, Phase 2A/2B/2C prioritization
 
 ---

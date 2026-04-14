@@ -14,6 +14,7 @@ import SportPositionSelect from "../../../components/SportPositionSelect";
 import NxSelect from "../../../components/NxSelect";
 import FormModeToggle from "../../../components/FormModeToggle";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
+import SchoolSelect from "@/components/ui/SchoolSelect";
 import type { GlobalRecruitmentStatus } from "@/lib/types/models";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -219,7 +220,6 @@ function ModifierContent({ id }: { id: string }) {
   const [committedSchoolId, setCommittedSchoolId] = useState<string>("");
   const [openToOffers, setOpenToOffers] = useState<boolean | null>(null);
   const [schoolsList, setSchoolsList] = useState<{ id: string; name: string }[]>([]);
-  const [schoolsSearch, setSchoolsSearch] = useState<string>("");
   const [coachTeam, setCoachTeam] = useState<CoachTeamData>({ school: "", city: "", region: "", teams: [] });
 
   useEffect(() => {
@@ -699,10 +699,6 @@ function ModifierContent({ id }: { id: string }) {
       { value: "RETIRE", label: "Retiré" },
     ];
 
-    const filteredSchools = schoolsList.filter((s) =>
-      schoolsSearch ? s.name.toLowerCase().includes(schoolsSearch.toLowerCase()) : true
-    ).slice(0, 50);
-
     return (
       <>
       <div className={cardCls}>
@@ -805,43 +801,12 @@ function ModifierContent({ id }: { id: string }) {
             <div className="border-t border-[#1e2128] pt-5 space-y-6">
               <div>
                 <label className={labelCls}>CÉGEP d&apos;engagement</label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={schoolsSearch}
-                    onChange={(e) => setSchoolsSearch(e.target.value)}
-                    placeholder="Rechercher un CÉGEP..."
-                    className={inputCls}
-                  />
-                  {committedSchoolId && !schoolsSearch && (
-                    <div className="flex items-center justify-between mt-2 px-3 py-2 bg-[#E63946]/10 border border-[#E63946]/25 rounded-lg">
-                      <span className="text-[13px] text-[#e0e0e0]">
-                        {schoolsList.find((s) => s.id === committedSchoolId)?.name || committedSchoolId}
-                      </span>
-                      <button type="button" onClick={() => { setCommittedSchoolId(""); }} className="text-[12px] text-[#E63946] hover:underline ml-3">Retirer</button>
-                    </div>
-                  )}
-                  {schoolsSearch && (
-                    <div className="absolute z-20 left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-[#13151a] border border-[#2a2d36] rounded-lg shadow-lg">
-                      {filteredSchools.length === 0 && (
-                        <div className="px-4 py-3 text-[13px] text-[#6b7280]">Aucun résultat</div>
-                      )}
-                      {filteredSchools.map((school) => (
-                        <button
-                          key={school.id}
-                          type="button"
-                          onClick={() => {
-                            setCommittedSchoolId(school.id);
-                            setSchoolsSearch("");
-                          }}
-                          className={`w-full text-left px-4 py-2.5 text-[13px] transition-colors hover:bg-[#1A1D24] ${committedSchoolId === school.id ? "text-[#E63946] font-bold" : "text-[#e0e0e0]"}`}
-                        >
-                          {school.name}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                <SchoolSelect
+                  value={committedSchoolId || null}
+                  onChange={(id) => setCommittedSchoolId(id)}
+                  filterType="CEGEP"
+                  placeholder="Rechercher un CÉGEP..."
+                />
               </div>
 
               <div>

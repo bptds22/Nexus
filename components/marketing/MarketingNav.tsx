@@ -5,7 +5,6 @@ import NexusLogo from "@/components/ui/NexusLogo";
 const DROPDOWN_ITEMS = [
   { label: "Pour les coachs", href: "/pour-les-coachs" },
   { label: "Pour les recruteurs", href: "/pour-les-recruteurs" },
-  { label: "Pour les directeurs sportifs", href: "/pour-les-directeurs" },
   { label: "Pour les étudiants-athlètes", href: "/pour-les-athletes" },
 ];
 

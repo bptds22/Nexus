@@ -1,0 +1,34 @@
+Schools reseau/langue backfill - 2026-04-13
+============================================================
+Rows in DB: 935
+Matched in CSV (with at least 1 value): 880
+
+Of matched:
+  PUBLIC/FR: 527
+  PRIVE/FR: 40
+  PUBLIC/EN: 121
+  PRIVE/EN: 2
+  BILINGUE: 8
+
+Unmatched (stayed null): 55
+First 20 unmatched names:
+  - Académie Lafontaine
+  - Cégep de Lanaudière à Joliette
+  - Cégep de Lanaudière à L'Assomption
+  - Cégep de Lanaudière à Terrebonne
+  - Cégep de Saint-Félicien
+  - Cégep de Saint-Hyacinthe
+  - Cégep Garneau
+  - Centennial College
+  - Champlain College Lennoxville
+  - Champlain College Saint-Lambert
+  - Champlain College St-Lawrence
+  - Champlain Regional College
+  - Collège Bart
+  - Collège Mérici
+  - Collège O'Sullivan de Montréal
+  - Collège O'Sullivan de Québec
+  - Dawson College
+  - Heritage College
+  - John Abbott College
+  - TAV College

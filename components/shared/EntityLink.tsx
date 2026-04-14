@@ -12,7 +12,7 @@ import DeactivatedBadge from "./DeactivatedBadge";
 ═══════════════════════════════════════════════════════════════ */
 
 export type EntityType = "athlete" | "coach" | "recruiter" | "school" | "cegep" | "trainer";
-export type Portal = "coach" | "recruiter" | "director_hs" | "director_cegep";
+export type Portal = "coach" | "recruiter";
 
 export interface EntityLinkProps {
   type: EntityType;
@@ -30,18 +30,14 @@ function getEntityRoute(type: EntityType, id: string, portal: Portal): string {
     case "athlete":
       if (portal === "coach") return `/coach/athletes/${id}/apercu`;
       if (portal === "recruiter") return `/recruteur/athletes/${id}`;
-      if (portal === "director_hs") return `/directeur-ecole/athletes/${id}`;
       return "#";
 
     case "coach":
       if (portal === "recruiter") return `/recruteur/coach/${id}`;
-      if (portal === "director_hs") return `/directeur-ecole/coachs/${id}`;
-      if (portal === "director_cegep") return `/directeur-cegep/entraineurs/${id}`;
       return "#";
 
     case "recruiter":
       if (portal === "coach") return `/recruteur/${id}/profil`;
-      if (portal === "director_cegep") return `/directeur-cegep/entraineurs/${id}`;
       return "#";
 
     case "school":
@@ -51,7 +47,6 @@ function getEntityRoute(type: EntityType, id: string, portal: Portal): string {
       return `/cegeps/${id}`;
 
     case "trainer":
-      if (portal === "director_cegep") return `/directeur-cegep/entraineurs/${id}`;
       return "#";
 
     default:

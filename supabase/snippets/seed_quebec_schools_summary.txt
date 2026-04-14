@@ -1,0 +1,16 @@
+Quebec school seed — 2026-04-13
+===========================
+CSV counts (after filtering + dedup):
+  Public secondary:  642 rows
+  Private secondary: 130 rows
+  CÉGEPs:            95 rows
+  Total candidates:  865 rows
+
+DB state before seed: 212 schools (71 CEGEP + 141 SECONDAIRE)
+
+Match outcomes:
+  Already in DB (skipped):         67
+  New INSERTs planned:             686 SECONDAIRE + 45 CEGEP = 731 total
+  Existing rows needing city/region backfill: 67
+
+Output SQL: supabase/snippets/seed_quebec_schools.sql

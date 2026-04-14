@@ -3,12 +3,10 @@ import { NextResponse, type NextRequest } from 'next/server'
 
 // ── Route access rules per role ───────────────────────────────
 const ROLE_ROUTES: Record<string, string[]> = {
-  COACH:               ['/coach'],
-  RECRUTEUR:           ['/recruteur'],
-  ATHLETE:             ['/athlete'],
-  DIRECTEUR_SECONDAIRE:['/coach', '/directeur'],
-  DIRECTEUR_CEGEP:     ['/recruteur', '/directeur'],
-  ADMIN:               ['/admin', '/coach', '/recruteur', '/athlete'],
+  COACH:     ['/coach'],
+  RECRUTEUR: ['/recruteur'],
+  ATHLETE:   ['/athlete'],
+  ADMIN:     ['/admin', '/coach', '/recruteur', '/athlete'],
 }
 
 export async function updateSession(request: NextRequest) {

@@ -19,7 +19,7 @@ export default function CegepGate({ children }: { children: React.ReactNode }) {
     try {
       const user = JSON.parse(localStorage.getItem("nexus_user") || "{}");
       const tier = user.subscription?.tier || "free";
-      if (tier === "recruteur_allstar" || user.is_cegep_admin === true) {
+      if (tier === "recruteur_allstar" || (user.role === "recruiter" && user.is_school_admin === true)) {
         setHasAccess(true);
       }
       if (tier === "recruteur_pro") {

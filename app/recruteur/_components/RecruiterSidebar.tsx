@@ -118,7 +118,7 @@ export default function RecruiterSidebar({ mobileOpen, onClose }: RecruiterSideb
           setUserSub(`Recruteur${inst ? ` \u2014 ${inst}` : ""}`);
         }
         const allstar = u.subscription?.tier === "recruteur_allstar";
-        const admin = u.is_cegep_admin === true;
+        const admin = u.is_school_admin === true;
         setHasProAccess(allstar || admin);
         setIsAdmin(admin);
         setIsAlsoRecruiter(u.is_also_recruiter !== false);

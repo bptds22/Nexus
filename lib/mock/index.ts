@@ -24,59 +24,6 @@ export type {
   RecruiterVisibility,
 } from "@/lib/types/models";
 
-/* ── Director portals ─────────────────────────────────────── */
-export {
-  mockDirectorHS,
-  mockDirectorCegep,
-  mockHSDashboardStats,
-  mockCegepDashboardStats,
-  mockCoachOverviews,
-  mockTrainerOverviews,
-  mockPlacementsHS,
-  mockRecruitsCegep,
-  mockRecruitmentStatsBySport,
-  mockInvitations,
-  mockDirectorActivitiesHS,
-  mockDirectorActivitiesCegep,
-  mockViewsBySport,
-  mockViewsTrend,
-  mockFunnelData,
-  mockCegepPipelineBySport,
-  mockCegepRegions,
-  mockInterestedCegeps,
-  mockCohortData,
-  mockTopAthletes,
-  mockRecruitmentFunnel,
-  mockRecruiterPerformance,
-  mockCegepRosterNeeds,
-  mockCegepCohortData,
-  mockCegepTopTargets,
-  mockCegepSeasonComparison,
-  mockDeactivationEvents,
-} from "./director";
-export type {
-  DirectorProfile,
-  DirectorDashboardStats,
-  CoachOverview,
-  TrainerOverview,
-  Placement,
-  RecruitmentStatsBySport,
-  Invitation,
-  DirectorActivity,
-  DirectorNotificationPrefs,
-  DirectorSettings,
-  CegepRecruitmentFunnel,
-  RecruiterPerformance,
-  CegepRosterNeed,
-  CegepCohortData,
-  CegepTopTarget,
-  CegepSeasonComparison,
-  CoachDeactivationEvent,
-  CoachAccountStatus,
-  AuditLogEntry,
-  AuditLogAction,
-} from "@/lib/types/models";
-
 /* ── Coach Reputation ───────────────────────────────────────── */
 export { mockCoachReputation, mockCoachReviews } from "./coachReputation";
 export type { CoachReputation, CoachReview } from "@/lib/types/models";

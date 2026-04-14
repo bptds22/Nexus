@@ -3,6 +3,7 @@
 import type { RecruiterSettings } from "@/lib/types/models";
 import { RSEQ_SPORTS } from "@/lib/mock/recruiterSettings";
 import { POSITIONS } from "@/lib/sports-data";
+import SchoolSelect from "@/components/ui/SchoolSelect";
 
 /* ─────────────────────────────────────────────────────────────────
    EtablissementSection — CÉGEP, sports, divisions
@@ -37,14 +38,12 @@ export default function EtablissementSection({ form, original, onUpdate, onSave,
         {/* CÉGEP */}
         <div>
           <label className={labelCls}>CÉGEP / École</label>
-          <select aria-label="CÉGEP" value={form.cegepId}
-            onChange={(e) => { if (e.target.value !== form.cegepId) onCegepChange(e.target.value); }}
-            className={inputCls}>
-            <option value="">Sélectionner un établissement</option>
-            {schools.map((s) => (
-              <option key={s.id} value={s.id}>{s.name}</option>
-            ))}
-          </select>
+          <SchoolSelect
+            value={form.cegepId || null}
+            onChange={(id) => { if (id !== form.cegepId) onCegepChange(id); }}
+            filterType="CEGEP"
+            placeholder="Rechercher un CÉGEP..."
+          />
         </div>
 
         {/* Role */}

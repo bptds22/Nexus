@@ -169,7 +169,7 @@ export default function PlacementsTable({ placements, variant }: PlacementsTable
                     {/* Coach */}
                     <td className="px-4 py-3 text-[13px]">
                       {p.coachId ? (
-                        <Link href={`/directeur-ecole/coachs/${p.coachId}`} className="text-[#9CA3AF] hover:text-[#E63946] transition-colors">
+                        <Link href={`/coach/ecole/coachs/${p.coachId}`} className="text-[#9CA3AF] hover:text-[#E63946] transition-colors">
                           {p.coachName}
                         </Link>
                       ) : (
@@ -189,7 +189,7 @@ export default function PlacementsTable({ placements, variant }: PlacementsTable
                     {/* Coach source */}
                     <td className="px-4 py-3 text-[13px]">
                       {p.coachId ? (
-                        <Link href={`/directeur-cegep/coachs/${p.coachId}`} className="text-[#9CA3AF] hover:text-[#E63946] transition-colors">
+                        <Link href={`/recruteur/coach/${p.coachId}`} className="text-[#9CA3AF] hover:text-[#E63946] transition-colors">
                           {p.coachName}
                         </Link>
                       ) : (
@@ -200,7 +200,7 @@ export default function PlacementsTable({ placements, variant }: PlacementsTable
                     {/* Recruteur */}
                     <td className="px-4 py-3 text-[13px]">
                       {p.recruiterId ? (
-                        <Link href={`/directeur-cegep/entraineurs/${p.recruiterId}`} className="text-[#9CA3AF] hover:text-[#E63946] transition-colors">
+                        <Link href={`/recruteur/cegep/entraineurs/${p.recruiterId}`} className="text-[#9CA3AF] hover:text-[#E63946] transition-colors">
                           {p.recruiterName}
                         </Link>
                       ) : (

@@ -535,41 +535,10 @@ export interface RoadmapPhase {
 }
 
 /* ══════════════════════════════════════════════════════════════
-   DIRECTOR PORTALS — École Secondaire & CÉGEP
+   SCHOOL / CÉGEP ADMIN DASHBOARD TYPES
+   (former "director portal" types — role-less now that directors
+   have been merged into is_school_admin coaches/recruiters)
 ══════════════════════════════════════════════════════════════ */
-
-export type DirectorRole = "director_hs" | "director_cegep";
-
-export interface DirectorProfile {
-  id: string;
-  role: DirectorRole;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone?: string;
-  avatarUrl?: string;
-  establishmentId: string;
-  establishmentName: string;
-  region: string;
-  roleTitle: string;
-  accountStatus: "active" | "deactivated";
-}
-
-export interface DirectorDashboardStats {
-  // École secondaire
-  totalAthletes?: number;
-  athletesTrend?: number;
-  avgProfileCompletion?: number;
-  completionTrend?: number;
-  recruiterViews30d?: number;
-  viewsTrend?: number;
-  placementsSeason?: number;
-  // CÉGEP
-  recruitsConfirmed?: number;
-  activePipeline?: number;
-  messagesSent30d?: number;
-  profilesViewed30d?: number;
-}
 
 export type CoachAccountStatus = "ACTIF" | "DESACTIVE";
 
@@ -647,54 +616,6 @@ export interface Invitation {
   status: "pending" | "accepted" | "expired";
 }
 
-export type DirectorActivityType =
-  | "coach_added_athlete"
-  | "athlete_viewed"
-  | "letter_of_intent"
-  | "coach_inactive"
-  | "profile_verified"
-  | "recruit_confirmed"
-  | "new_favorite"
-  | "message_sent"
-  | "recruiter_inactive"
-  | "coach_joined"
-  | "recruiter_joined"
-  | "coach_deactivated"
-  | "coach_reactivated"
-  | "athlete_reassigned"
-  | "pipeline_transferred"
-  | "pipeline_frozen";
-
-export interface DirectorActivity {
-  id: string;
-  type: DirectorActivityType;
-  timestamp: string;
-  isRead: boolean;
-  athleteId?: string;
-  athleteName?: string;
-  coachId?: string;
-  coachName?: string;
-  recruiterName?: string;
-  schoolName?: string;
-  cegepName?: string;
-  sportName?: string;
-  daysInactive?: number;
-  ctaLabel: string;
-  ctaRoute: string;
-  isHighlighted?: boolean;
-}
-
-export interface DirectorNotificationPrefs {
-  newPlacement: { inApp: boolean; email: boolean };
-  staffInactive: { inApp: boolean; email: boolean };
-  newStaffJoined: { inApp: boolean; email: boolean };
-  weeklyDigest: boolean;
-}
-
-export interface DirectorSettings {
-  profile: DirectorProfile;
-  notifications: DirectorNotificationPrefs;
-}
 
 /* ══════════════════════════════════════════════════════════════
    CÉGEP DIRECTOR DASHBOARD — Value & ROI

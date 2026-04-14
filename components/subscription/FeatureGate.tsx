@@ -43,7 +43,7 @@ function getUserTierLevel(): "free" | "pro" | "allstar" | "admin" {
   if (typeof window === "undefined") return "free";
   try {
     const user = JSON.parse(localStorage.getItem("nexus_user") || "{}");
-    if (user.is_school_admin || user.is_cegep_admin) return "admin";
+    if (user.is_school_admin) return "admin";
     const tier = user.subscription?.tier || user.tier || "free";
     if (tier.includes("allstar")) return "allstar";
     if (tier !== "free") return "pro";

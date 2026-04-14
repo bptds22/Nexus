@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
+import SchoolSelect from "@/components/ui/SchoolSelect";
 
 /* ─────────────────────────────────────────────────────────────────
    TransfertSection — CÉGEP transfer portal for recruiters
@@ -46,9 +47,6 @@ export default function TransfertSection({ currentSchoolId, currentSchoolName, s
   const [cancelling, setCancelling] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [success, setSuccess] = useState(false);
-
-  // Filter schools: exclude current school
-  const availableSchools = schools.filter((s) => s.id !== currentSchoolId);
 
   useEffect(() => {
     async function load() {
@@ -97,7 +95,7 @@ export default function TransfertSection({ currentSchoolId, currentSchoolName, s
     if (!user) { setSubmitting(false); return; }
 
     const { data: userData } = await supabase.from("users").select("first_name, last_name").eq("id", user.id).single();
-    const newSchool = availableSchools.find((s) => s.id === selectedSchoolId);
+    const newSchool = schools.find((s) => s.id === selectedSchoolId);
 
     const { error } = await supabase.from("transfer_requests").insert({
       user_id: user.id,
@@ -287,17 +285,15 @@ export default function TransfertSection({ currentSchoolId, currentSchoolName, s
               <label className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mb-1.5 block">
                 Nouveau CÉGEP <span className="text-[#EF4444]">*</span>
               </label>
-              <select
-                value={selectedSchoolId}
-                onChange={(e) => setSelectedSchoolId(e.target.value)}
-                aria-label="Nouveau CÉGEP"
-                className="w-full h-11 px-4 bg-[#111317] border border-[#2D3748] rounded-lg text-[14px] text-white focus:border-[#E63946] outline-none transition-colors appearance-none cursor-pointer"
-              >
-                <option value="">Sélectionner un CÉGEP</option>
-                {availableSchools.map((s) => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
-                ))}
-              </select>
+              <SchoolSelect
+                value={selectedSchoolId || null}
+                onChange={(id) => {
+                  if (id && id === currentSchoolId) return;
+                  setSelectedSchoolId(id);
+                }}
+                filterType="CEGEP"
+                placeholder="Rechercher un CÉGEP..."
+              />
             </div>
 
             {/* Reason */}
@@ -340,9 +336,9 @@ export default function TransfertSection({ currentSchoolId, currentSchoolName, s
             <button
               type="button"
               onClick={handleSubmit}
-              disabled={!selectedSchoolId || submitting}
+              disabled={!selectedSchoolId || selectedSchoolId === currentSchoolId || submitting}
               className={`w-full py-3 rounded-lg font-head font-bold text-[14px] uppercase tracking-widest transition-all ${
-                selectedSchoolId && !submitting
+                selectedSchoolId && selectedSchoolId !== currentSchoolId && !submitting
                   ? "bg-[#E63946] text-white hover:bg-[#D42B22]"
                   : "bg-[#2D3748] text-[#6b7280] cursor-not-allowed"
               }`}

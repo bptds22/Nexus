@@ -90,7 +90,7 @@ export default function SubscriptionSection({ portal }: { portal: PortalType }) 
     try {
       const user = JSON.parse(localStorage.getItem("nexus_user") || "{}");
       if (user.subscription) setSub(user.subscription);
-      if (user.is_school_admin || user.is_cegep_admin) setIsAdmin(true);
+      if (user.is_school_admin) setIsAdmin(true);
     } catch { /* noop */ }
   }, []);
 
@@ -311,10 +311,11 @@ export default function SubscriptionSection({ portal }: { portal: PortalType }) 
                 if (opt.key === "admin") {
                   user.subscription = { tier: "free", status: "active", billing_cycle: null, current_period_end: null, trial_days_remaining: null, cancel_at_period_end: false };
                   user.tier = "free";
-                  if (portal === "coach") { user.is_school_admin = true; user.is_also_coach = true; }
-                  else { user.is_cegep_admin = true; user.is_also_recruiter = true; }
+                  user.is_school_admin = true;
+                  if (portal === "coach") { user.is_also_coach = true; }
+                  else { user.is_also_recruiter = true; }
                 } else {
-                  user.is_school_admin = false; user.is_cegep_admin = false;
+                  user.is_school_admin = false;
                   user.subscription = { tier: opt.tier, status: opt.status, billing_cycle: "monthly", current_period_end: "2026-04-15", trial_days_remaining: null, cancel_at_period_end: false };
                   user.tier = opt.tier;
                 }

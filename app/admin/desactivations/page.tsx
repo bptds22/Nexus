@@ -15,8 +15,6 @@ const ROLE_LABEL: Record<string, string> = {
   ADMIN: "Admin",
   COACH: "Entraîneur",
   RECRUTEUR: "Recruteur",
-  DIRECTEUR_SECONDAIRE: "Directeur sec.",
-  DIRECTEUR_CEGEP: "Directeur CÉGEP",
   ATHLETE: "Athlète",
 };
 

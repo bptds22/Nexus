@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { calculateProfileCompletion } from "@/lib/utils/calculateProfileCompletion";
 import SportPositionSelect from "@/app/coach/components/SportPositionSelect";
 import DatePicker from "@/app/coach/components/DatePicker";
+import SchoolSelect from "@/components/ui/SchoolSelect";
 
 const SPORTS = [
   "Football", "Basketball", "Soccer", "Hockey", "Volleyball",
@@ -62,9 +63,6 @@ export default function AthleteOnboardingPage() {
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   // School
-  const [schoolSearch, setSchoolSearch] = useState("");
-  const [schools, setSchools] = useState<{ id: string; name: string; region: string; city: string }[]>([]);
-  const [filteredSchools, setFilteredSchools] = useState<{ id: string; name: string; region: string; city: string }[]>([]);
   const [selectedSchoolId, setSelectedSchoolId] = useState("");
   const [selectedSchoolName, setSelectedSchoolName] = useState("");
 
@@ -189,27 +187,10 @@ export default function AthleteOnboardingPage() {
         console.log("[Onboarding] resumed from saved data, step:", step);
       }
 
-      // Load schools
-      const { data: schoolData } = await supabase.from("schools").select("id, name, region, city").eq("type", "SECONDAIRE").order("name");
-      if (schoolData) {
-        setSchools(schoolData);
-        setFilteredSchools(schoolData.slice(0, 15));
-      }
-
       setLoading(false);
     }
     init();
   }, [router]);
-
-  // Filter schools on search
-  useEffect(() => {
-    if (schoolSearch.length < 2) {
-      setFilteredSchools(schools.slice(0, 15));
-    } else {
-      const q = schoolSearch.toLowerCase();
-      setFilteredSchools(schools.filter((s) => (s.name && s.name.toLowerCase().includes(q)) || (s.city && s.city.toLowerCase().includes(q)) || (s.region && s.region.toLowerCase().includes(q))).slice(0, 15));
-    }
-  }, [schoolSearch, schools]);
 
   function canProceed(): boolean {
     switch (step) {
@@ -500,14 +481,16 @@ export default function AthleteOnboardingPage() {
 
             {/* School selection */}
             <div className={sectionTitle}><div className="w-0.5 h-4 bg-[#E63946] rounded-full" />Mon école <span className="text-[#EF4444]">*</span></div>
-            <input type="text" value={schoolSearch} onChange={(e) => setSchoolSearch(e.target.value)} placeholder="Rechercher ton école..." className={`${inputCls} mb-3`} />
-            <div className="max-h-[180px] overflow-y-auto space-y-1 mb-2">
-              {filteredSchools.map((s) => (
-                <button key={s.id} type="button" onClick={() => { setSelectedSchoolId(s.id); setSelectedSchoolName(s.name); }}
-                  className={`w-full text-left px-3 py-2.5 rounded-lg transition-colors text-[13px] ${selectedSchoolId === s.id ? "bg-[#E63946]/10 border border-[#E63946]/30 text-white font-bold" : "bg-[#111317] border border-[#2D3748] text-[#9CA3AF] hover:border-[#4a4d56]"}`}>
-                  {s.name} <span className="text-[11px] text-[#4a4d56]">· {s.city || s.region}</span>
-                </button>
-              ))}
+            <div className="mb-3">
+              <SchoolSelect
+                value={selectedSchoolId || null}
+                onChange={(id) => {
+                  setSelectedSchoolId(id);
+                  if (!id) setSelectedSchoolName("");
+                }}
+                filterType="SECONDAIRE"
+                placeholder="Rechercher ton école..."
+              />
             </div>
             {selectedSchoolName && <p className="text-[12px] text-[#22C55E] font-bold mb-6">✓ {selectedSchoolName}</p>}
 

@@ -77,12 +77,13 @@ export function isAlsoCoach(): boolean {
 export function hasCegepAccess(): boolean {
   const user = getUser();
   const tier = (user.subscription as SubscriptionData)?.tier || "free";
-  // Only All Star or Admin CÉGEP unlocks CÉGEP management (Pro does NOT)
-  return tier === "recruteur_allstar" || user.is_cegep_admin === true;
+  // Only All Star or Admin CÉGEP (recruiter + is_school_admin) unlocks CÉGEP management (Pro does NOT)
+  return tier === "recruteur_allstar" || (user.role === "recruiter" && user.is_school_admin === true);
 }
 
 export function isCegepAdmin(): boolean {
-  return getUser().is_cegep_admin === true;
+  const user = getUser();
+  return user.role === "recruiter" && user.is_school_admin === true;
 }
 
 export function isRecruiterPro(): boolean {
@@ -135,7 +136,7 @@ export function hasExport(): boolean {
 
 export function getSidebarState(): SidebarState {
   const user = getUser();
-  if (user.is_school_admin || user.is_cegep_admin) return "admin";
+  if (user.is_school_admin) return "admin";
   const sub = getSub();
   if (sub.status === "past_due") return "past_due";
   if (sub.status === "canceled") return "canceled";

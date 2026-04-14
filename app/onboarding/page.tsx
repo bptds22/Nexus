@@ -76,8 +76,7 @@ interface NexusUser {
   is_school_admin?: boolean;
   is_also_coach?: boolean;
   school_admin_type?: "owner" | "collaborator" | null;
-  // CÉGEP admin fields
-  is_cegep_admin?: boolean;
+  // CÉGEP admin fields (reuses is_school_admin — role infers school vs CÉGEP)
   is_also_recruiter?: boolean;
   cegep_admin_type?: "owner" | "collaborator" | null;
   // Shared
@@ -341,8 +340,6 @@ export default function OnboardingPage() {
   const totalStepsMap: Record<string, number> = {
     coach: 4,           // profil, école, directeur, athlète
     coach_league: 4,    // profil, ligue, coordonnateur, athlète
-    director_school: 3, // redirect below
-    director_cegep: 3,  // redirect below
     recruiter: 4,       // profil, cégep, directeur, critères
     coordinator_league: 3,
   };
@@ -404,14 +401,6 @@ export default function OnboardingPage() {
           }
         }
 
-        // Step 2+ = Director / Invite / Criteria steps
-        if (step === 2) {
-          // For directors, save is_school_admin
-          if (role === "director_school" || role === "director_cegep") {
-            await supabase.from("users").update({ is_school_admin: true }).eq("id", authUser.id);
-          }
-        }
-
         console.log("[Onboarding] step", step, "saved to Supabase for role:", role);
       }
     } catch (err) {
@@ -456,7 +445,7 @@ export default function OnboardingPage() {
         .eq("id", authUser.id);
 
       // Save school to users table if coach selected one
-      if (localUser.institution?.name && (user?.role === "coach" || user?.role === "director_school")) {
+      if (localUser.institution?.name && user?.role === "coach") {
         const { data: school } = await supabase
           .from("schools")
           .select("id")
@@ -475,8 +464,8 @@ export default function OnboardingPage() {
         }
       }
 
-      // Save CÉGEP to users table for recruiter/director_cegep
-      if (localUser.institution?.name && (user?.role === "recruiter" || user?.role === "director_cegep")) {
+      // Save CÉGEP to users table for recruiter
+      if (localUser.institution?.name && user?.role === "recruiter") {
         const { data: cegep } = await supabase
           .from("schools")
           .select("id")
@@ -542,8 +531,6 @@ export default function OnboardingPage() {
   /* ── Step labels per role ── */
   const stepLabelsMap: Record<string, string[]> = {
     coach: ["Profil", "École", "Directeur", "Athlète"],
-    director_school: ["Profil", "École", "Invitations"],
-    director_cegep: ["Profil", "CÉGEP", "Invitations"],
     recruiter: ["Profil", "CÉGEP", "Directeur", "Critères"],
     coach_league: ["Profil", "Ligue", "Coordonnateur", "Athlète"],
     coordinator_league: ["Profil", "Ligue", "Invitations"],
@@ -572,8 +559,6 @@ export default function OnboardingPage() {
           {/* Step content with slide animation */}
           <div key={`${user.role}-${step}`} className={slideDir === "right" ? "animate-slide-right" : "animate-slide-left"}>
             {user.role === "coach" && <CoachStep step={step} user={user} save={save} onFinish={finish} />}
-            {user.role === "director_school" && <DirectorEcoleStep step={step} user={user} save={save} onFinish={finish} />}
-            {user.role === "director_cegep" && <DirectorCegepStep step={step} user={user} save={save} onFinish={finish} />}
             {user.role === "recruiter" && <RecruiterStep step={step} user={user} save={save} onFinish={finish} />}
             {user.role === "coach_league" && <LeagueCoachStep step={step} user={user} save={save} onFinish={finish} />}
             {user.role === "coordinator_league" && <LeagueCoordinatorStep step={step} user={user} save={save} onFinish={finish} />}
@@ -656,7 +641,7 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
   const labelCls = "block text-[10px] font-bold tracking-[0.25em] uppercase text-[#6B7280] mb-1.5";
 
   useEffect(() => {
-    const adminKey = isCegep ? "is_cegep_admin" : "is_school_admin";
+    const adminKey = "is_school_admin";
     const coachKey = isCegep ? "is_also_recruiter" : "is_also_coach";
     const typeKey = isCegep ? "cegep_admin_type" : "school_admin_type";
     if (choice === "self") {
@@ -991,146 +976,7 @@ function CoachConfirmation({ user }: { user: NexusUser }) {
   );
 }
 
-/* ── Director School Step (ownership-aware) ──────────────── */
-
-const MOCK_SCHOOL_OWNERS: Record<string, { name: string; email: string; lastLogin: string }> = {
-  "Saint-Jean-Eudes": { name: "Patrick Bergeron", email: "p.b***@sje.qc.ca", lastLogin: "2026-01-28T14:00:00Z" },
-  "De Mortagne": { name: "Marie-Ève Lapointe", email: "m.l***@demortagne.qc.ca", lastLogin: "2026-03-16T10:00:00Z" },
-  "De Rochebelle": { name: "Nathalie Gagnon", email: "n.g***@rochebelle.qc.ca", lastLogin: "2026-03-15T08:00:00Z" },
-};
-
-function DirectorSchoolStep({ user, save, type }: { user: NexusUser; save: (u: Partial<NexusUser>) => void; type: "ecole" | "cegep" }) {
-  const [joinMessage, setJoinMessage] = useState("");
-  const [joinSent, setJoinSent] = useState(false);
-  const inst = user.institution as Record<string, unknown> | null;
-  const schoolName = inst?.name as string | undefined;
-  const owner = schoolName ? MOCK_SCHOOL_OWNERS[schoolName] : undefined;
-
-  // Check if owner is inactive (30+ days)
-  const ownerInactiveDays = owner ? Math.floor((Date.now() - new Date(owner.lastLogin).getTime()) / 86400000) : 0;
-  const ownerInactive = ownerInactiveDays > 30;
-
-  // If join request was sent, show confirmation
-  if (joinSent) {
-    return (
-      <div className="space-y-6 text-center py-8">
-        <div className="w-16 h-16 rounded-full bg-[#22C55E]/15 flex items-center justify-center mx-auto">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5" /></svg>
-        </div>
-        <h2 className="font-head text-xl font-black text-white uppercase">Ta demande a été envoyée!</h2>
-        <p className="text-sm text-[#9CA3AF] max-w-md mx-auto leading-relaxed">
-          {ownerInactive
-            ? "Un administrateur Nexus examinera ta demande."
-            : `Le directeur principal de ${schoolName} et un administrateur Nexus examineront ta demande.`
-          }
-        </p>
-        <p className="text-xs text-[#6B7280]">Tu recevras un courriel lorsque ta demande sera traitée.</p>
-        <a href="/" className="inline-flex items-center gap-2 px-6 py-3 bg-[#E63946] text-white rounded-lg font-head font-bold text-[13px] uppercase tracking-widest hover:bg-[#D42B22] transition-colors">
-          Retour à l&apos;accueil
-        </a>
-      </div>
-    );
-  }
-
-  // If school has no owner → show Case A (normal claim with crown)
-  if (schoolName && !owner) {
-    return (
-      <div className="space-y-4">
-        {type === "ecole" ? <SchoolStep user={user} save={save} /> : <CegepStep user={user} save={save} />}
-        {schoolName && (
-          <div className="bg-[#111317] border-l-4 border-[#DAB65A] rounded-r-lg p-4 flex items-start gap-3">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="#DAB65A" stroke="none" className="mt-0.5 shrink-0">
-              <path d="M2 20h20v2H2zm1-2l3-10 6 6 6-6 3 10z" />
-              <circle cx="5" cy="6" r="2" /><circle cx="12" cy="3" r="2" /><circle cx="19" cy="6" r="2" />
-            </svg>
-            <p className="text-sm text-[#DAB65A] font-bold">Tu seras le directeur principal de {schoolName}</p>
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  // Case B/C — school has an owner
-  return (
-    <div className="space-y-5">
-      {type === "ecole" ? <SchoolStep user={user} save={save} /> : <CegepStep user={user} save={save} />}
-
-      {schoolName && owner && (
-        <>
-          {/* Owner info card */}
-          <div className={`bg-[#1A1D24] rounded-xl p-5 border-l-4 space-y-2 ${ownerInactive ? "border-[#E63946]" : "border-[#EAB308]"}`}>
-            <p className="text-[14px] font-bold text-white">
-              {ownerInactive
-                ? "Le directeur principal de cette école semble inactif"
-                : "Cette école a déjà un directeur principal"
-              }
-            </p>
-            <p className="text-[13px] text-[#9CA3AF]">{owner.name} · {owner.email}</p>
-            {ownerInactive && (
-              <p className="text-[12px] text-[#E63946] font-bold">Dernière connexion: il y a {ownerInactiveDays} jours</p>
-            )}
-            <p className="text-[12px] text-[#6B7280]">
-              {ownerInactive
-                ? "Ta demande sera envoyée directement à l'administrateur Nexus pour examen."
-                : "Tu seras ajouté comme directeur collaborateur si ta demande est approuvée."
-              }
-            </p>
-          </div>
-
-          {/* Join request form */}
-          <div className="space-y-3">
-            <label className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#6b7280] block">
-              Pourquoi veux-tu rejoindre cette école? <span className="text-[#E63946]">*</span>
-            </label>
-            <textarea
-              value={joinMessage}
-              onChange={(e) => setJoinMessage(e.target.value)}
-              rows={3}
-              placeholder="Ex: Je suis le nouveau coordonnateur sportif depuis septembre 2025, remplaçant M. Tremblay."
-              className="w-full bg-[#13151a] border border-[#2a2d36] rounded-lg px-4 py-2.5 text-[13px] text-[#e0e0e0] placeholder:text-[#4a4d56] focus:border-[#E63946] outline-none resize-none"
-            />
-            <button
-              type="button"
-              disabled={!joinMessage.trim()}
-              onClick={() => {
-                localStorage.setItem("nexus_join_request", JSON.stringify({
-                  school: schoolName,
-                  message: joinMessage,
-                  status: ownerInactive ? "pending_admin" : "pending_owner",
-                  date: new Date().toISOString(),
-                }));
-                setJoinSent(true);
-              }}
-              className="w-full py-3 bg-[#E63946] hover:bg-[#D42B22] disabled:opacity-40 disabled:cursor-not-allowed text-white font-head font-bold text-[13px] uppercase tracking-widest rounded-lg transition-colors"
-            >
-              Envoyer la demande
-            </button>
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   DIRECTEUR ÉCOLE ONBOARDING STEPS
-═══════════════════════════════════════════════════════════════ */
-function DirectorEcoleStep({ step, user, save, onFinish }: { step: number; user: NexusUser; save: (u: Partial<NexusUser>) => void; onFinish: () => void }) {
-  if (step === 0) return <DirectorProfile user={user} save={save} subtitle="En tant que directeur sportif, tu supervises les coachs et les athlètes de ton école." />;
-  if (step === 1) return <DirectorSchoolStep user={user} save={save} type="ecole" />;
-  return <InviteStep role="coach" onFinish={onFinish} />;
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   DIRECTEUR CÉGEP ONBOARDING STEPS
-═══════════════════════════════════════════════════════════════ */
-function DirectorCegepStep({ step, user, save, onFinish }: { step: number; user: NexusUser; save: (u: Partial<NexusUser>) => void; onFinish: () => void }) {
-  if (step === 0) return <DirectorProfile user={user} save={save} subtitle="En tant que directeur sportif collégial, tu supervises le recrutement de ton CÉGEP." />;
-  if (step === 1) return <DirectorSchoolStep user={user} save={save} type="cegep" />;
-  return <InviteStep role="recruteur" onFinish={onFinish} />;
-}
-
-/* ── Director profile (shared) ── */
+/* ── Director profile (shared — used by league coordinator onboarding) ── */
 function DirectorProfile({ user, save, subtitle }: { user: NexusUser; save: (u: Partial<NexusUser>) => void; subtitle: string }) {
   const p = (user.profile || {}) as Record<string, unknown>;
   const [titre, setTitre] = useState((p.titre as string) || "");

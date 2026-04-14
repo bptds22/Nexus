@@ -3,13 +3,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import AdminTable, { AdminColumn } from "../_components/AdminTable";
+import SchoolSelect from "@/components/ui/SchoolSelect";
 
 type UserRole =
   | "ADMIN"
   | "COACH"
   | "RECRUTEUR"
-  | "DIRECTEUR_SECONDAIRE"
-  | "DIRECTEUR_CEGEP"
   | "ATHLETE";
 
 type AccountStatus = "ACTIF" | "DESACTIVE" | "EN_ATTENTE" | "DIPLOME";
@@ -38,9 +37,16 @@ const ROLE_OPTIONS: { value: UserRole; label: string }[] = [
   { value: "ADMIN", label: "Admin" },
   { value: "COACH", label: "Entraîneur" },
   { value: "RECRUTEUR", label: "Recruteur" },
-  { value: "DIRECTEUR_SECONDAIRE", label: "Directeur secondaire" },
-  { value: "DIRECTEUR_CEGEP", label: "Directeur CÉGEP" },
   { value: "ATHLETE", label: "Athlète" },
+];
+
+// Invite modal: narrower list — directors are modeled via is_school_admin flag
+// on a coach/recruiter account instead of their own role.
+const INVITE_ROLE_OPTIONS: { value: UserRole; label: string }[] = [
+  { value: "COACH", label: "Entraîneur" },
+  { value: "RECRUTEUR", label: "Recruteur" },
+  { value: "ATHLETE", label: "Athlète" },
+  { value: "ADMIN", label: "Admin" },
 ];
 
 const STATUS_OPTIONS: { value: AccountStatus; label: string }[] = [
@@ -75,39 +81,51 @@ export default function AdminUsersPage() {
     first_name: "",
     last_name: "",
     role: "COACH" as UserRole,
+    is_school_admin: false,
+    school_id: "" as string,
   });
 
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const [uRes, sRes, subRes] = await Promise.all([
+      const [uRes, sRes, subRes, athRes] = await Promise.all([
         supabase
           .from("users")
           .select("id,email,first_name,last_name,role,status,school_id,is_school_admin,created_at")
           .order("created_at", { ascending: false }),
         supabase.from("schools").select("id,name").order("name"),
         supabase.from("subscriptions").select("user_id,tier"),
+        supabase.from("athletes").select("user_id,school_id"),
       ]);
 
       const schoolMap = new Map((sRes.data || []).map((s: SchoolLookup) => [s.id, s.name]));
       const subMap = new Map<string, string>(
         (subRes.data || []).map((s: { user_id: string; tier: string }) => [s.user_id, s.tier]),
       );
+      const athleteSchoolMap = new Map<string, string>();
+      for (const a of ((athRes.data || []) as { user_id: string | null; school_id: string | null }[])) {
+        if (a.user_id && a.school_id) athleteSchoolMap.set(a.user_id, a.school_id);
+      }
 
-      const mapped: UserRow[] = (uRes.data || []).map((u: Record<string, unknown>) => ({
-        id: u.id as string,
-        email: (u.email as string) ?? "",
-        first_name: (u.first_name as string) ?? null,
-        last_name: (u.last_name as string) ?? null,
-        role: u.role as UserRole,
-        status: u.status as AccountStatus,
-        school_id: (u.school_id as string) ?? null,
-        school_name: u.school_id ? schoolMap.get(u.school_id as string) ?? null : null,
-        is_school_admin: (u.is_school_admin as boolean) ?? false,
-        subscription_tier: subMap.get(u.id as string) ?? "free",
-        created_at: u.created_at as string,
-        created_at_fmt: formatDate(u.created_at as string),
-      }));
+      const mapped: UserRow[] = (uRes.data || []).map((u: Record<string, unknown>) => {
+        const uid = u.id as string;
+        const userSchoolId = (u.school_id as string) ?? null;
+        const resolvedSchoolId = userSchoolId ?? athleteSchoolMap.get(uid) ?? null;
+        return {
+          id: uid,
+          email: (u.email as string) ?? "",
+          first_name: (u.first_name as string) ?? null,
+          last_name: (u.last_name as string) ?? null,
+          role: u.role as UserRole,
+          status: u.status as AccountStatus,
+          school_id: resolvedSchoolId,
+          school_name: resolvedSchoolId ? schoolMap.get(resolvedSchoolId) ?? null : null,
+          is_school_admin: (u.is_school_admin as boolean) ?? false,
+          subscription_tier: subMap.get(uid) ?? "free",
+          created_at: u.created_at as string,
+          created_at_fmt: formatDate(u.created_at as string),
+        };
+      });
 
       setRows(mapped);
       setSchools((sRes.data as SchoolLookup[]) || []);
@@ -134,8 +152,14 @@ export default function AdminUsersPage() {
       options: ROLE_OPTIONS,
       render: (r) => {
         const opt = ROLE_OPTIONS.find((o) => o.value === r.role);
+        const cls =
+          r.role === "COACH"     ? "bg-amber-500/20 text-amber-400" :
+          r.role === "ATHLETE"   ? "bg-blue-500/20 text-blue-400" :
+          r.role === "RECRUTEUR" ? "bg-red-500/20 text-red-400" :
+          r.role === "ADMIN"     ? "bg-green-500/20 text-green-400" :
+                                   "bg-[#3B82F6]/15 text-[#3B82F6]";
         return (
-          <span className="inline-flex px-2.5 py-1 rounded-full bg-[#3B82F6]/15 text-[#3B82F6] text-[11px] font-bold">
+          <span className={`inline-flex px-2.5 py-1 rounded-full text-[11px] font-bold ${cls}`}>
             {opt?.label ?? r.role}
           </span>
         );
@@ -196,6 +220,8 @@ export default function AdminUsersPage() {
   async function handleInvite() {
     if (!inviteForm.email) return;
     const supa = createClient();
+    const canBeAdmin = inviteForm.role === "COACH" || inviteForm.role === "RECRUTEUR";
+    const needsSchool = inviteForm.role === "COACH" || inviteForm.role === "RECRUTEUR";
     const { error } = await supa.from("users").insert({
       id: crypto.randomUUID(),
       email: inviteForm.email,
@@ -203,6 +229,8 @@ export default function AdminUsersPage() {
       last_name: inviteForm.last_name || null,
       role: inviteForm.role,
       status: "EN_ATTENTE",
+      is_school_admin: canBeAdmin ? inviteForm.is_school_admin : false,
+      school_id: needsSchool && inviteForm.school_id ? inviteForm.school_id : null,
     });
     if (error) {
       setToast(`Erreur: ${error.message}`);
@@ -212,7 +240,7 @@ export default function AdminUsersPage() {
     setToast("Utilisateur créé");
     setTimeout(() => setToast(null), 3000);
     setShowInvite(false);
-    setInviteForm({ email: "", first_name: "", last_name: "", role: "COACH" });
+    setInviteForm({ email: "", first_name: "", last_name: "", role: "COACH", is_school_admin: false, school_id: "" });
     // Refresh
     const { data } = await supa
       .from("users")
@@ -366,16 +394,46 @@ export default function AdminUsersPage() {
                   title="Rôle"
                   value={inviteForm.role}
                   onChange={(e) =>
-                    setInviteForm({ ...inviteForm, role: e.target.value as UserRole })
+                    setInviteForm({ ...inviteForm, role: e.target.value as UserRole, is_school_admin: false, school_id: "" })
                   }
                   className={selectBase + " w-full"}
                 >
-                  {ROLE_OPTIONS.map((o) => (
+                  {INVITE_ROLE_OPTIONS.map((o) => (
                     <option key={o.value} value={o.value}>
                       {o.label}
                     </option>
                   ))}
                 </select>
+
+                {(inviteForm.role === "COACH" || inviteForm.role === "RECRUTEUR") && (
+                  <div className="mt-3">
+                    <label className="block text-[11px] font-bold text-[#6b7280] uppercase tracking-wider mb-1.5">
+                      {inviteForm.role === "COACH" ? "École" : "CÉGEP"}
+                    </label>
+                    <SchoolSelect
+                      value={inviteForm.school_id || null}
+                      onChange={(id) => setInviteForm({ ...inviteForm, school_id: id })}
+                      filterType={inviteForm.role === "COACH" ? "SECONDAIRE" : "CEGEP"}
+                      placeholder={inviteForm.role === "COACH" ? "Rechercher une école..." : "Rechercher un CÉGEP..."}
+                    />
+                  </div>
+                )}
+
+                {(inviteForm.role === "COACH" || inviteForm.role === "RECRUTEUR") && (
+                  <label className="mt-3 flex items-center gap-2 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={inviteForm.is_school_admin}
+                      onChange={(e) =>
+                        setInviteForm({ ...inviteForm, is_school_admin: e.target.checked })
+                      }
+                      className="w-4 h-4 accent-[#E63946]"
+                    />
+                    <span className="text-[13px] text-[#E0E0E0]">
+                      Administrateur de son {inviteForm.role === "COACH" ? "école" : "CÉGEP"}
+                    </span>
+                  </label>
+                )}
               </div>
             </div>
             <div className="flex items-center justify-end gap-3 mt-6">

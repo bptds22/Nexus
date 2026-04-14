@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
+import SchoolSelect from "@/components/ui/SchoolSelect";
 
 /* ═══════════════════════════════════════════════════════════════
    Recruiter Profile — Form + Live Preview
@@ -257,19 +258,15 @@ export default function RecruiterProfilPage() {
 
             <div>
               <label className={labelCls}>CÉGEP / École *</label>
-              <select
-                title="CÉGEP / École"
-                value={form.schoolId}
-                onChange={(e) => {
-                  const id = e.target.value;
+              <SchoolSelect
+                value={form.schoolId || null}
+                onChange={(id) => {
                   const name = schools.find(s => s.id === id)?.name || "";
                   setForm(prev => ({ ...prev, schoolId: id, schoolName: name }));
                 }}
-                className={inputCls}
-              >
-                <option value="">Sélectionner un établissement</option>
-                {schools.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </select>
+                filterType="CEGEP"
+                placeholder="Rechercher un CÉGEP..."
+              />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
