@@ -64,7 +64,7 @@ export default function AdminSidebar({ mobileOpen, onClose }: Props) {
       {/* Logo + label */}
       <div className="px-5 pt-6 pb-4 flex flex-col gap-1">
         <NexusLogo variant="white" height={26} href="/admin" priority />
-        <span className="text-[9px] font-bold tracking-[0.25em] uppercase text-[#E63946]">Portail Admin</span>
+        <span className="text-[9px] font-bold tracking-[0.25em] uppercase text-white">Portail Admin</span>
       </div>
 
       {/* Divider */}

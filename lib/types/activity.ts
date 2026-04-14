@@ -17,7 +17,8 @@ export type ActivityType =
   | "new_athlete_in_sport"
   | "favorite_profile_updated"
   | "favorite_stats_updated"
-  | "coach_response";
+  | "coach_response"
+  | "status_changed";
 
 export type ActivityPortal = "coach" | "recruiter";
 
@@ -78,6 +79,7 @@ export const ACTIVITY_TYPE_CONFIG: Record<ActivityType, ActivityTypeConfig> = {
   favorite_profile_updated:{ icon: "refresh-cw",     borderColor: "#3B82F6", label: "Mises à jour" },
   favorite_stats_updated:  { icon: "bar-chart-3",    borderColor: "#22C55E", label: "Statistiques" },
   coach_response:          { icon: "reply",          borderColor: "#22C55E", label: "Réponses" },
+  status_changed:          { icon: "activity",       borderColor: "#F59E0B", label: "Pipeline" },
 };
 
 /* ── Time grouping helper ──────────────────────────────────── */

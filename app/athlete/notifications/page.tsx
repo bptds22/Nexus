@@ -102,7 +102,9 @@ export default function NotificationsPage() {
   const markRead = async (id: string) => {
     setNotifs((prev) => prev.map((n) => n.id === id ? { ...n, read: true } : n));
     const supabase = createClient();
-    supabase.from("athlete_notifications").update({ read: true }).eq("id", id).then(() => {});
+    supabase.from("athlete_notifications").update({ read: true }).eq("id", id).then(() => {
+      window.dispatchEvent(new Event("notifications-updated"));
+    });
   };
 
   const markAllRead = async () => {
@@ -111,7 +113,9 @@ export default function NotificationsPage() {
     setToast("Tout marqué comme lu");
     setTimeout(() => setToast(null), 2000);
     const supabase = createClient();
-    supabase.from("athlete_notifications").update({ read: true }).eq("athlete_id", athleteId).eq("read", false).then(() => {});
+    supabase.from("athlete_notifications").update({ read: true }).eq("athlete_id", athleteId).eq("read", false).then(() => {
+      window.dispatchEvent(new Event("notifications-updated"));
+    });
   };
 
   const FILTERS: { key: FilterKey; label: string; count?: number; color?: string }[] = [

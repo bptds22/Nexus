@@ -35,6 +35,11 @@ export default function AthleteDashboardPage() {
   const u = { ...athleteUser, firstName, is_verified: verified };
   const s = athleteStats;
   const [activities, setActivities] = useState(athleteActivity);
+  const [unreadNotifs, setUnreadNotifs] = useState<{ count: number; latestTitle: string | null }>({ count: 0, latestTitle: null });
+  const [viewsThisMonth, setViewsThisMonth] = useState(0);
+  const [viewsLastMonth, setViewsLastMonth] = useState(0);
+  const [favoritesCount, setFavoritesCount] = useState(0);
+  const [regionsCount, setRegionsCount] = useState(0);
 
   useEffect(() => {
     const load = async () => {
@@ -54,12 +59,78 @@ export default function AthleteDashboardPage() {
         setVerified(!!data.verified);
         setLastValidation((data.last_profile_validation as string) || null);
       }
+
+      const { data: athleteRow } = await supabase
+        .from("athletes")
+        .select("id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (athleteRow?.id) {
+        const { data: notifs, count } = await supabase
+          .from("athlete_notifications")
+          .select("title", { count: "exact" })
+          .eq("athlete_id", athleteRow.id)
+          .eq("read", false)
+          .order("created_at", { ascending: false })
+          .limit(1);
+        setUnreadNotifs({
+          count: count ?? 0,
+          latestTitle: (notifs?.[0]?.title as string) || null,
+        });
+
+        // ── Real KPI data ──────────────────────────────────────
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+        const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString();
+
+        const [viewsMonthRes, viewsLastRes, favsRes] = await Promise.all([
+          supabase
+            .from("recruiter_athlete_views")
+            .select("id", { count: "exact", head: true })
+            .eq("athlete_id", athleteRow.id)
+            .gte("viewed_at", startOfMonth),
+          supabase
+            .from("recruiter_athlete_views")
+            .select("id", { count: "exact", head: true })
+            .eq("athlete_id", athleteRow.id)
+            .gte("viewed_at", startOfLastMonth)
+            .lt("viewed_at", startOfMonth),
+          supabase
+            .from("recruiter_favorites")
+            .select("recruiter_id")
+            .eq("athlete_id", athleteRow.id),
+        ]);
+
+        setViewsThisMonth(viewsMonthRes.count ?? 0);
+        setViewsLastMonth(viewsLastRes.count ?? 0);
+
+        const favRecruiterIds = (favsRes.data || []).map((r: { recruiter_id: string }) => r.recruiter_id);
+        setFavoritesCount(favRecruiterIds.length);
+
+        if (favRecruiterIds.length > 0) {
+          const { data: recruiters } = await supabase
+            .from("users")
+            .select("region")
+            .in("id", favRecruiterIds);
+          const uniqueRegions = new Set(
+            (recruiters || []).map((r: { region?: string | null }) => r.region).filter(Boolean),
+          );
+          setRegionsCount(uniqueRegions.size);
+        } else {
+          setRegionsCount(0);
+        }
+      }
     };
     load();
+    const handler = () => load();
+    window.addEventListener("notifications-updated", handler);
+    return () => window.removeEventListener("notifications-updated", handler);
   }, []);
   const badgeActive = verified && !isValidationExpired({ verified, last_profile_validation: lastValidation });
   const pctColor = completenessColor(s.profile_completeness);
-  const viewsTrend = s.views_last_month > 0 ? Math.round(((s.views_this_month - s.views_last_month) / s.views_last_month) * 100) : 0;
+  const viewsTrend: number | null = viewsLastMonth > 0
+    ? Math.round(((viewsThisMonth - viewsLastMonth) / viewsLastMonth) * 100)
+    : null;
   const unreadCount = activities.filter((a) => !a.read).length;
 
   const markRead = (id: string) => {
@@ -83,6 +154,37 @@ export default function AthleteDashboardPage() {
       </div>
       <p className="text-[14px] text-[#9CA3AF] -mt-4">Voici ce qui se passe avec ton profil</p>
 
+      {/* ── Unread notifications banner ───────────────────────── */}
+      {unreadNotifs.count > 0 && (
+        <Link
+          href="/athlete/notifications"
+          className="flex items-center gap-4 bg-[#1A1D24] border border-[#E63946]/30 hover:border-[#E63946]/60 rounded-xl px-5 py-4 transition-colors group"
+        >
+          <span className="w-11 h-11 shrink-0 rounded-full bg-[#E63946]/10 border border-[#E63946]/30 flex items-center justify-center">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" />
+              <path d="M13.73 21a2 2 0 01-3.46 0" />
+            </svg>
+          </span>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <p className="text-[13px] font-bold text-white leading-tight">
+                Nouvelles notifications
+              </p>
+              <span className="inline-flex items-center justify-center min-w-[20px] h-[20px] px-1.5 bg-[#E63946] rounded-full text-[11px] font-bold text-white leading-none">
+                {unreadNotifs.count}
+              </span>
+            </div>
+            {unreadNotifs.latestTitle && (
+              <p className="text-[12px] text-[#9CA3AF] truncate mt-1">{unreadNotifs.latestTitle}</p>
+            )}
+          </div>
+          <span className="text-[12px] font-bold text-[#E63946] group-hover:text-[#D42B22] shrink-0">
+            Voir tout →
+          </span>
+        </Link>
+      )}
+
       {/* ── KPI Cards ─────────────────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
 
@@ -95,9 +197,12 @@ export default function AthleteDashboardPage() {
               <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" />
             </svg>
           </div>
-          <p className="font-head text-[36px] font-black text-white leading-none">{s.views_this_month}</p>
-          {viewsTrend > 0 && (
+          <p className="font-head text-[36px] font-black text-white leading-none">{viewsThisMonth}</p>
+          {viewsTrend !== null && viewsTrend > 0 && (
             <p className="text-[12px] font-bold text-[#22C55E] mt-1.5">↑{viewsTrend}% vs mois dernier</p>
+          )}
+          {viewsTrend !== null && viewsTrend < 0 && (
+            <p className="text-[12px] font-bold text-[#EF4444] mt-1.5">↓{Math.abs(viewsTrend)}% vs mois dernier</p>
           )}
         </div>
 
@@ -110,8 +215,10 @@ export default function AthleteDashboardPage() {
               <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
             </svg>
           </div>
-          <p className="font-head text-[36px] font-black text-white leading-none">{s.favorites_count}</p>
-          <p className="text-[12px] text-[#6b7280] mt-1.5">de {s.recruiter_regions.length} région{s.recruiter_regions.length > 1 ? "s" : ""} différente{s.recruiter_regions.length > 1 ? "s" : ""}</p>
+          <p className="font-head text-[36px] font-black text-white leading-none">{favoritesCount}</p>
+          {regionsCount > 0 && (
+            <p className="text-[12px] text-[#6b7280] mt-1.5">de {regionsCount} région{regionsCount > 1 ? "s" : ""} différente{regionsCount > 1 ? "s" : ""}</p>
+          )}
         </div>
 
         {/* Profile completeness */}

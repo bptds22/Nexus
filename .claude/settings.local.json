@@ -8,7 +8,12 @@
       "Bash(while read:*)",
       "Bash(do echo:*)",
       "Bash(done)",
-      "Bash(xargs sed:*)"
+      "Bash(xargs sed:*)",
+      "Bash(cp \"brand_assets/Logo white red@4x.png\" \"public/brand/logo-white-red.png\")",
+      "Bash(cp \"brand_assets/Logo black red@4x.png\" \"public/brand/logo-black-red.png\")",
+      "Bash(cp \"brand_assets/Logo white@4x.png\" \"public/brand/logo-white.png\")",
+      "Bash(cp \"brand_assets/Logo black@4x.png\" \"public/brand/logo-black.png\")",
+      "Bash(cp \"brand_assets/Icon red@4x.png\" \"public/brand/icon-red.png\")"
     ]
   }
 }

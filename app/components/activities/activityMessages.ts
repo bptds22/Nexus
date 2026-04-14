@@ -118,7 +118,13 @@ export function getActivityMessage(a: Activity): ActivityMessageParts {
         entities,
         text: cegep
           ? `Un recruteur de {cegep} a consulté le profil de {athlete}${pos}`
-          : `Le profil de {athlete}${pos} a été consulté`,
+          : `Un recruteur a consulté le profil de {athlete}${pos}`,
+      };
+
+    case "status_changed":
+      return {
+        entities,
+        text: `Le statut de recrutement de {athlete}${pos} a changé`,
       };
 
     case "profile_incomplete":

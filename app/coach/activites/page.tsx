@@ -17,12 +17,16 @@ function mapType(dbType: string): ActivityType {
     VIDEO_ADDED: "video_added",
     BADGE_EARNED: "badge_earned",
     PROFILE_VERIFIED: "profile_verified",
-    PROFILE_MODIFIED: "scouting_report",
+    PROFILE_MODIFIED: "profile_viewed",
+    PROFILE_VIEWED: "profile_viewed",
+    PROFILE_UPDATED: "profile_viewed",
     ATHLETE_ADDED: "athlete_added",
-    STATUS_CHANGED: "letter_of_intent",
+    NEW_ATHLETE: "athlete_added",
+    STATUS_CHANGED: "status_changed",
+    PIPELINE_CHANGED: "status_changed",
     LETTRE_SIGNEE: "letter_of_intent",
   };
-  return MAP[dbType] || "scouting_report";
+  return MAP[dbType] || "profile_viewed";
 }
 
 /** Build display text from DB activity */
@@ -64,19 +68,21 @@ function buildCtaLabel(dbType: string): string {
 export default function CoachActivitesPage() {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
+  const [coachId, setCoachId] = useState<string | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
     async function load() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setLoading(false); return; }
+      setCoachId(user.id);
 
       const { data, error } = await supabase
         .from("activities")
         .select("*, athletes(first_name, last_name, position_id, positions!position_id(nom, abreviation))")
         .eq("coach_id", user.id)
         .order("created_at", { ascending: false })
-        .limit(50);
+        .limit(200);
 
       console.log("Activities data:", data, "error:", error);
 
@@ -131,12 +137,33 @@ export default function CoachActivitesPage() {
     );
   }
 
+  const markRead = async (id: string) => {
+    setActivities((prev) => prev.map((a) => (a.id === id ? { ...a, isRead: true } : a)));
+    const supabase = createClient();
+    await supabase.from("activities").update({ read: true }).eq("id", id);
+    window.dispatchEvent(new Event("activities-updated"));
+  };
+
+  const markAllRead = async () => {
+    if (!coachId) return;
+    setActivities((prev) => prev.map((a) => ({ ...a, isRead: true })));
+    const supabase = createClient();
+    await supabase
+      .from("activities")
+      .update({ read: true })
+      .eq("coach_id", coachId)
+      .eq("read", false);
+    window.dispatchEvent(new Event("activities-updated"));
+  };
+
   return (
     <ActivityFeedFull
       activities={activities}
       portal="coach"
       title="Activités"
       subtitle="Toute l'activité autour de tes athlètes"
+      onMarkRead={markRead}
+      onMarkAllRead={markAllRead}
     />
   );
 }

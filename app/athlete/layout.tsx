@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import NexusLogo from "@/components/ui/NexusLogo";
 import { usePathname, useRouter } from "next/navigation";
@@ -69,49 +69,56 @@ function AthleteSidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose:
   const [badges, setBadges] = useState<Record<string, number>>({});
   const [userInfo, setUserInfo] = useState<{ firstName: string; lastName: string; school: string; sport: string; position: string; verified: boolean }>({ firstName: "", lastName: "", school: "", sport: "", position: "", verified: false });
 
+  const loadBadges = useCallback(async () => {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data: athlete } = await supabase
+      .from("athletes")
+      .select("id, first_name, last_name, verified, sports!sport_id(nom), positions!position_id(abreviation), schools!school_id(name)")
+      .eq("user_id", user.id)
+      .single();
+    if (!athlete) return;
+
+    setUserInfo({
+      firstName: (athlete as any).first_name || "",
+      lastName: (athlete as any).last_name || "",
+      school: (athlete as any).schools?.name || "",
+      sport: (athlete as any).sports?.nom || "",
+      position: (athlete as any).positions?.abreviation || "",
+      verified: (athlete as any).verified || false,
+    });
+
+    // Unread notifications count
+    const { count: unreadNotifs } = await supabase
+      .from("athlete_notifications")
+      .select("id", { count: "exact", head: true })
+      .eq("athlete_id", athlete.id)
+      .eq("read", false);
+
+    // Pending suggestions count
+    const { count: pendingSuggs } = await supabase
+      .from("athlete_suggestions")
+      .select("id", { count: "exact", head: true })
+      .eq("athlete_id", athlete.id)
+      .eq("status", "EN_ATTENTE");
+
+    setBadges({
+      notifications: unreadNotifs || 0,
+      profil: pendingSuggs || 0,
+    });
+  }, []);
+
   useEffect(() => {
-    const loadBadges = async () => {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: athlete } = await supabase
-        .from("athletes")
-        .select("id, first_name, last_name, verified, sports!sport_id(nom), positions!position_id(abreviation), schools!school_id(name)")
-        .eq("user_id", user.id)
-        .single();
-      if (!athlete) return;
-
-      setUserInfo({
-        firstName: (athlete as any).first_name || "",
-        lastName: (athlete as any).last_name || "",
-        school: (athlete as any).schools?.name || "",
-        sport: (athlete as any).sports?.nom || "",
-        position: (athlete as any).positions?.abreviation || "",
-        verified: (athlete as any).verified || false,
-      });
-
-      // Unread notifications count
-      const { count: unreadNotifs } = await supabase
-        .from("athlete_notifications")
-        .select("id", { count: "exact", head: true })
-        .eq("athlete_id", athlete.id)
-        .eq("read", false);
-
-      // Pending suggestions count
-      const { count: pendingSuggs } = await supabase
-        .from("athlete_suggestions")
-        .select("id", { count: "exact", head: true })
-        .eq("athlete_id", athlete.id)
-        .eq("status", "EN_ATTENTE");
-
-      setBadges({
-        notifications: unreadNotifs || 0,
-        profil: pendingSuggs || 0,
-      });
-    };
     loadBadges();
-  }, [pathname]);
+  }, [pathname, loadBadges]);
+
+  useEffect(() => {
+    const handler = () => loadBadges();
+    window.addEventListener("notifications-updated", handler);
+    return () => window.removeEventListener("notifications-updated", handler);
+  }, [loadBadges]);
 
   const handleLogout = () => router.push("/");
 

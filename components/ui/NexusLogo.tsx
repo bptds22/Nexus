@@ -19,9 +19,9 @@ export default function NexusLogo({
   priority = false,
 }: NexusLogoProps) {
   const srcMap = {
-    white: iconOnly ? "/brand/icon-white.svg" : "/brand/logo-white.svg",
-    "black-red": iconOnly ? "/brand/icon-red.svg" : "/brand/logo-black-red.svg",
-    black: iconOnly ? "/brand/icon-black.svg" : "/brand/logo-black.svg",
+    white: iconOnly ? "/brand/icon-red.png" : "/brand/logo-white-red.png",
+    "black-red": iconOnly ? "/brand/icon-red.png" : "/brand/logo-black-red.png",
+    black: iconOnly ? "/brand/icon-black.png" : "/brand/logo-black.png",
   } as const;
   const src = srcMap[variant];
   const width = iconOnly ? height : Math.round(height * 2.85);

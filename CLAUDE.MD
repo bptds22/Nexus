@@ -499,3 +499,24 @@ If a field is empty (coach used simplified), show nothing — no placeholder, ju
 - Clean up old pipeline table references (replace with recruiter_favorites/recruiter_pipeline)
 - Coach reputation system (coach_reviews table — not yet built)
 - Logo redesign
+## Brand Assets — Logo System
+
+All logos live in `public/brand/` with clean filenames (copied from `brand_assets/`).
+
+### Dark mode (current default)
+- **Main logo:** `/brand/logo-white-red.png` (white wordmark + red flame)
+- **Icon/favicon:** `/brand/icon-red.png`
+- **Neutral fallback (no red):** `/brand/logo-white.png` + `/brand/icon-white.png`
+
+### Light mode (future)
+- **Main logo:** `/brand/logo-black-red.png` (black wordmark + red flame)
+- **Icon/favicon:** `/brand/icon-red.png`
+- **Neutral fallback (no red):** `/brand/logo-black.png` + `/brand/icon-black.png`
+
+### Rules
+- NEVER reference old WeLead placeholder logos (White red@4x.png, etc.)
+- All logo references go through the NexusLogo component when possible
+- Footer "Propulsé par" uses `/brand/logo-white-red.png` (dark) or `/brand/logo-black-red.png` (light)
+- Icon red is the universal favicon/app icon across both themes
+- Use neutral (no red) variants only when red clashes with surrounding UI
+- Source PNGs in `brand_assets/` use spaces and @4x suffix — `public/brand/` uses lowercase-hyphenated names

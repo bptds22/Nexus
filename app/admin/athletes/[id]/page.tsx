@@ -179,6 +179,8 @@ export default function AdminAthleteDetailPage({
   const [pipelineSaving, setPipelineSaving] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [evalMode, setEvalMode] = useState<"simple" | "detailed">("simple");
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [togglingVerified, setTogglingVerified] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -287,6 +289,73 @@ export default function AdminAthleteDetailPage({
   }
   function setE(key: string, value: unknown) {
     setEvaluation((e) => ({ ...e, [key]: value }));
+  }
+
+  async function handlePhotoUpload(file: File) {
+    try {
+      setUploadingPhoto(true);
+      const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+      const path = `athletes/${id}/profile.${ext}`;
+      const { data: uploadData, error: uploadErr } = await supabase.storage
+        .from("athlete-photos")
+        .upload(path, file, { upsert: true, cacheControl: "3600" });
+      console.log("Upload response:", uploadData, uploadErr);
+      if (uploadErr) throw uploadErr;
+      const { data: urlData } = supabase.storage.from("athlete-photos").getPublicUrl(path);
+      const publicUrl = `${urlData.publicUrl}?t=${Date.now()}`;
+      const { error: updateErr } = await supabase
+        .from("athletes")
+        .update({ photo_url: publicUrl })
+        .eq("id", id);
+      if (updateErr) throw updateErr;
+      setA("photo_url", publicUrl);
+      setToast("Photo mise à jour");
+      setTimeout(() => setToast(null), 2500);
+    } catch (err) {
+      console.error("Photo upload failed:", err);
+      setToast("Échec du téléversement");
+      setTimeout(() => setToast(null), 2500);
+    } finally {
+      setUploadingPhoto(false);
+    }
+  }
+
+  async function handleToggleVerified() {
+    if (togglingVerified) return;
+    const current = !!A("verified");
+    const next = !current;
+    try {
+      setTogglingVerified(true);
+      const { error } = await supabase
+        .from("athletes")
+        .update({ verified: next })
+        .eq("id", id);
+      if (error) throw error;
+      setA("verified", next);
+      setToast(next ? "Athlète vérifié" : "Vérification retirée");
+      setTimeout(() => setToast(null), 2500);
+    } catch (err) {
+      console.error("Toggle verified failed:", err);
+      setToast("Échec de la mise à jour");
+      setTimeout(() => setToast(null), 2500);
+    } finally {
+      setTogglingVerified(false);
+    }
+  }
+
+  async function handlePhotoRemove() {
+    try {
+      setUploadingPhoto(true);
+      const { error } = await supabase.from("athletes").update({ photo_url: null }).eq("id", id);
+      if (error) throw error;
+      setA("photo_url", null);
+      setToast("Photo supprimée");
+      setTimeout(() => setToast(null), 2500);
+    } catch (err) {
+      console.error("Photo remove failed:", err);
+    } finally {
+      setUploadingPhoto(false);
+    }
   }
 
   const filteredPositions = positions.filter((p) => p.sport_id === A("sport_id"));
@@ -963,9 +1032,27 @@ export default function AdminAthleteDetailPage({
           >
             ← Retour à la liste
           </Link>
-          <h1 className="font-head text-2xl font-black text-white uppercase tracking-tight mt-2">
-            {(A("first_name") as string) ?? ""} {(A("last_name") as string) ?? ""}
-          </h1>
+          <div className="flex items-center gap-3 mt-2 flex-wrap">
+            <h1 className="font-head text-2xl font-black text-white uppercase tracking-tight">
+              {(A("first_name") as string) ?? ""} {(A("last_name") as string) ?? ""}
+            </h1>
+            <button
+              type="button"
+              onClick={handleToggleVerified}
+              disabled={togglingVerified}
+              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold border transition-colors disabled:opacity-40 cursor-pointer ${
+                A("verified")
+                  ? "bg-[#2563EB]/10 text-[#2563EB] border-[#2563EB]/30 hover:bg-[#2563EB]/20"
+                  : "bg-[#2A2D35] text-gray-400 border-[#2A2D35] hover:bg-[#333842]"
+              }`}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2l3 2 3-1 1 3 3 1-1 3 2 3-2 3 1 3-3 1-1 3-3-1-3 2-3-2-3 1-1-3-3-1 1-3-2-3 2-3-1-3 3-1 1-3 3 1z" />
+                <polyline points="9 12 11 14 15 10" />
+              </svg>
+              {A("verified") ? "Vérifié" : "Non vérifié"}
+            </button>
+          </div>
           <p className="text-[12px] text-[#6b7280] mt-1 font-mono">{id}</p>
         </div>
         <div className="flex items-center gap-3">
@@ -980,27 +1067,73 @@ export default function AdminAthleteDetailPage({
             </svg>
             Aperçu recruteur
           </button>
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={saving}
-            className="px-5 py-2.5 rounded-lg bg-[#E63946] text-white font-bold text-[13px] uppercase tracking-wider hover:bg-[#D42B22] transition-colors disabled:opacity-40"
-          >
-            {saving ? "Enregistrement..." : "Sauvegarder"}
-          </button>
         </div>
       </div>
 
       {section(
         "Identité",
         <>
+          <div className="md:col-span-2 flex flex-col items-center gap-3 pb-4 mb-2 border-b border-[#2A2D35]">
+            <div className="relative w-32 h-32 rounded-full overflow-hidden bg-[#1A1D24] border border-[#2A2D35] flex items-center justify-center">
+              {A("photo_url") ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img
+                  src={A("photo_url") as string}
+                  alt="Athlete"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="text-white font-semibold text-3xl uppercase">
+                  {((A("first_name") as string) || "?").charAt(0)}
+                  {((A("last_name") as string) || "").charAt(0)}
+                </span>
+              )}
+              {uploadingPhoto && (
+                <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                  <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                </div>
+              )}
+            </div>
+            <input
+              id="admin-athlete-photo-input"
+              type="file"
+              accept="image/*"
+              title="Téléverser une photo"
+              aria-label="Téléverser une photo de l'athlète"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) handlePhotoUpload(f);
+                e.target.value = "";
+              }}
+            />
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                disabled={uploadingPhoto}
+                onClick={() => document.getElementById("admin-athlete-photo-input")?.click()}
+                className="px-4 py-2 rounded-lg border border-[#E63946] text-[#E63946] font-bold text-[12px] uppercase tracking-wider hover:bg-[#E63946]/10 transition-colors disabled:opacity-40"
+              >
+                {A("photo_url") ? "Changer" : "Téléverser"}
+              </button>
+              {A("photo_url") && (
+                <button
+                  type="button"
+                  disabled={uploadingPhoto}
+                  onClick={handlePhotoRemove}
+                  className="px-4 py-2 rounded-lg border border-[#2A2D35] text-[#6b7280] font-bold text-[12px] uppercase tracking-wider hover:bg-white/5 hover:text-white transition-colors disabled:opacity-40"
+                >
+                  Retirer
+                </button>
+              )}
+            </div>
+          </div>
           {row("Prénom", text("first_name"))}
           {row("Nom", text("last_name"))}
           {row("Date de naissance", date("date_naissance"))}
           {row("Genre", select("genre", GENRE_OPTS))}
           {row("Courriel", text("email"))}
           {row("Téléphone", text("telephone"))}
-          {row("Photo URL", text("photo_url"))}
           {row("Nom du parent", text("nom_parent"))}
           {row("Téléphone parent", text("telephone_parent"))}
         </>,
@@ -1149,16 +1282,14 @@ export default function AdminAthleteDetailPage({
         )}
       </section>
 
-      <div className="flex justify-end pt-2">
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={saving}
-          className="px-6 py-3 rounded-lg bg-[#E63946] text-white font-bold text-[13px] uppercase tracking-wider hover:bg-[#D42B22] transition-colors disabled:opacity-40"
-        >
-          {saving ? "Enregistrement..." : "Sauvegarder"}
-        </button>
-      </div>
+      <button
+        type="button"
+        onClick={handleSave}
+        disabled={saving}
+        className="fixed bottom-6 right-6 left-4 sm:left-auto z-50 px-6 py-3 rounded-lg bg-[#E63946] text-white font-bold text-[13px] uppercase tracking-wider hover:bg-[#D42B22] transition-colors disabled:opacity-40 shadow-lg shadow-black/40"
+      >
+        {saving ? "Enregistrement..." : "Sauvegarder"}
+      </button>
 
       {toast && (
         <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 bg-[#1A1D24] border border-[#E63946]/30 text-white font-head font-bold text-sm uppercase tracking-wider px-6 py-3 rounded-lg shadow-xl">

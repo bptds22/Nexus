@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import NexusLogo from "@/components/ui/NexusLogo";
 import { usePathname, useRouter } from "next/navigation";
@@ -12,7 +12,7 @@ import { createClient } from "@/lib/supabase/client";
    Data loaded from Supabase auth + users table.
 ───────────────────────────────────────────────────────────────── */
 
-type NavItem = { label: string; href: string; icon: React.ReactNode };
+type NavItem = { label: string; href: string; icon: React.ReactNode; badgeKey?: "activites" };
 
 const CORE_ITEMS: NavItem[] = [
   {
@@ -30,6 +30,11 @@ const CORE_ITEMS: NavItem[] = [
   {
     label: "Messages", href: "/coach/demandes",
     icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" /></svg>,
+  },
+  {
+    label: "Activités", href: "/coach/activites",
+    badgeKey: "activites",
+    icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 01-3.46 0" /></svg>,
   },
 ];
 
@@ -84,6 +89,26 @@ export default function CoachSidebar({ mobileOpen, onClose }: CoachSidebarProps)
   const [userInitials, setUserInitials] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
   const [portalLabel, setPortalLabel] = useState("Portail coach");
+  const [badges, setBadges] = useState<Record<string, number>>({});
+
+  const fetchBadges = useCallback(async () => {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { count } = await supabase
+      .from("activities")
+      .select("id", { count: "exact", head: true })
+      .eq("coach_id", user.id)
+      .eq("read", false);
+    setBadges({ activites: count || 0 });
+  }, []);
+
+  useEffect(() => {
+    fetchBadges();
+    const handler = () => fetchBadges();
+    window.addEventListener("activities-updated", handler);
+    return () => window.removeEventListener("activities-updated", handler);
+  }, [fetchBadges]);
 
   useEffect(() => {
     async function loadUser() {
@@ -187,6 +212,11 @@ export default function CoachSidebar({ mobileOpen, onClose }: CoachSidebarProps)
           {item.icon}
         </span>
         <span className="flex-1">{item.label}</span>
+        {item.badgeKey && badges[item.badgeKey] > 0 && (
+          <span className="bg-[#E63946] text-white text-[10px] font-bold rounded-full px-1.5 min-w-[18px] h-[18px] flex items-center justify-center leading-none">
+            {badges[item.badgeKey]}
+          </span>
+        )}
       </Link>
     );
   }

@@ -364,7 +364,7 @@ export default function CollecteDonneesPage() {
               ))}
             </div>
           </div>
-          <p className={`${label} text-[#2E3D55] text-center pt-5`}>&copy; 2026 Nexus — Propuls&eacute; par <img src="/brand/White%20red@4x.png" alt="WeLead" style={{height:16}} /></p>
+          <p className={`${label} text-[#2E3D55] text-center pt-5`}>&copy; 2026 Nexus — Propuls&eacute; par <img src="/brand/logo-white-red.png" alt="WeLead" style={{height:16}} /></p>
         </div>
       </footer>
     </div>

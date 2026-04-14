@@ -13,7 +13,7 @@ import RichActivityMessage from "./RichActivityMessage";
    Letter of intent = red glow highlight.
 ───────────────────────────────────────────────────────────────── */
 
-export default function ActivityCard({ activity }: { activity: Activity }) {
+export default function ActivityCard({ activity, onMarkRead }: { activity: Activity; onMarkRead?: (id: string) => void }) {
   const config = ACTIVITY_TYPE_CONFIG[activity.type];
   const msg = getActivityMessage(activity);
   const relTime = relativeTimeFromNow(activity.timestamp, new Date());
@@ -31,10 +31,15 @@ export default function ActivityCard({ activity }: { activity: Activity }) {
 
   const portal = activity.portal === "coach" ? "coach" as const : "recruiter" as const;
 
+  const markReadOnInteract = () => {
+    if (onMarkRead && !activity.isRead) onMarkRead(activity.id);
+  };
+
   return (
     <div
-      className="flex items-start gap-3.5 px-5 py-4 rounded-lg transition-colors hover:brightness-110"
+      className="flex items-start gap-3.5 px-5 py-4 rounded-lg transition-colors hover:brightness-110 cursor-pointer"
       style={{ backgroundColor: containerBg, borderLeft }}
+      onClick={markReadOnInteract}
     >
       {/* Icon in colored circle */}
       <div

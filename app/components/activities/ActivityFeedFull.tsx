@@ -22,9 +22,11 @@ interface Props {
   portal: "coach" | "recruiter";
   title: string;
   subtitle: string;
+  onMarkRead?: (id: string) => void;
+  onMarkAllRead?: () => void;
 }
 
-export default function ActivityFeedFull({ activities, portal, title, subtitle }: Props) {
+export default function ActivityFeedFull({ activities, portal, title, subtitle, onMarkRead, onMarkAllRead }: Props) {
   const [filter, setFilter] = useState<FilterValue>("tous");
   const [search, setSearch] = useState("");
   const [showCount, setShowCount] = useState(PAGE_SIZE);
@@ -116,6 +118,15 @@ export default function ActivityFeedFull({ activities, portal, title, subtitle }
             </span>
           )}
         </div>
+        {onMarkAllRead && unreadCount > 0 && (
+          <button
+            type="button"
+            onClick={onMarkAllRead}
+            className="text-[12px] font-bold text-[#E63946] hover:text-[#ff4d5a] transition-colors self-start sm:self-auto uppercase tracking-wider"
+          >
+            Tout marquer comme lu
+          </button>
+        )}
       </div>
 
       {/* ── Toolbar ─────────────────────────────────────────── */}
@@ -148,7 +159,7 @@ export default function ActivityFeedFull({ activities, portal, title, subtitle }
               if (item.kind === "header") {
                 return <ActivityTimeGroup key={`hdr-${item.label}`} label={item.label} />;
               }
-              return <ActivityCard key={item.activity.id} activity={item.activity} />;
+              return <ActivityCard key={item.activity.id} activity={item.activity} onMarkRead={onMarkRead} />;
             })}
           </div>
 
