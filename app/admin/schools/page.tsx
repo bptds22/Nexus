@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import AdminTable, { AdminColumn } from "../_components/AdminTable";
 
@@ -93,10 +94,11 @@ export default function AdminSchoolsPage() {
 
   async function fetchAll() {
     setLoading(true);
-    const [schoolsRes, athletesRes, coachesRes, teamsRes] = await Promise.all([
+    const [schoolsRes, athletesRes, scCoachesRes, legacyCoachesRes, teamsRes] = await Promise.all([
       supabase.from("schools").select("id,name,type,city,region,reseau,langue").order("name"),
       supabase.from("athletes").select("school_id"),
-      supabase.from("users").select("school_id,role").eq("role", "COACH"),
+      supabase.from("school_coaches").select("school_id, user_id"),
+      supabase.from("users").select("id, school_id, role").eq("role", "COACH"),
       supabase.from("teams").select("school_id,sport_id"),
     ]);
 
@@ -105,10 +107,20 @@ export default function AdminSchoolsPage() {
       if (!a.school_id) continue;
       athleteCounts.set(a.school_id, (athleteCounts.get(a.school_id) || 0) + 1);
     }
+    // Union school_coaches + legacy users.school_id, dedupe by (school_id, user_id)
+    const coachPairs = new Set<string>();
+    for (const c of (scCoachesRes.data || []) as { school_id: string | null; user_id: string | null }[]) {
+      if (!c.school_id || !c.user_id) continue;
+      coachPairs.add(`${c.school_id}:${c.user_id}`);
+    }
+    for (const u of (legacyCoachesRes.data || []) as { id: string; school_id: string | null }[]) {
+      if (!u.school_id) continue;
+      coachPairs.add(`${u.school_id}:${u.id}`);
+    }
     const coachCounts = new Map<string, number>();
-    for (const c of (coachesRes.data || []) as { school_id: string | null }[]) {
-      if (!c.school_id) continue;
-      coachCounts.set(c.school_id, (coachCounts.get(c.school_id) || 0) + 1);
+    for (const pair of coachPairs) {
+      const [sid] = pair.split(":");
+      coachCounts.set(sid, (coachCounts.get(sid) || 0) + 1);
     }
     const teamCounts = new Map<string, number>();
     const sportSets = new Map<string, Set<string>>();
@@ -199,7 +211,20 @@ export default function AdminSchoolsPage() {
       width: "180px",
       render: (r) => <span className="text-[11px] text-[#6b7280] font-mono">{r.id.slice(0, 8)}…</span>,
     },
-    { key: "name", label: "Nom", type: "text" },
+    {
+      key: "name",
+      label: "Nom",
+      type: "text",
+      render: (r) => (
+        <Link
+          href={`/admin/schools/${r.id}`}
+          className="text-[13px] font-bold text-white hover:text-[#E63946] transition-colors"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {r.name}
+        </Link>
+      ),
+    },
     {
       key: "type",
       label: "Type",

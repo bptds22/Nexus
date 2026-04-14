@@ -16,7 +16,7 @@ function getBadgeLabel(badge: string, detail: string | undefined, config: { labe
   return config.label;
 }
 
-export default function DistinctionBadge({ badge, detail, index }: Props) {
+export default function DistinctionBadge({ badge, detail, size = "lg", index }: Props) {
   const config = BADGE_CONFIG[badge];
   const reactId = useId();
   if (!config) return null;
@@ -24,12 +24,18 @@ export default function DistinctionBadge({ badge, detail, index }: Props) {
   const uid = `${badge}-${index ?? "x"}-${reactId.replace(/[^a-zA-Z0-9]/g, "")}`;
   const label = getBadgeLabel(badge, detail, config);
 
+  // Uniform outer tile + icon box so every badge occupies the same footprint
+  // regardless of the SVG's natural aspect ratio.
+  const outerW = size === "sm" ? "w-[88px]" : "w-[110px]";
+  const iconBox = size === "sm" ? "w-14 h-14" : "w-[72px] h-[72px]";
+  const labelCls = size === "sm" ? "text-[10px] max-w-[88px]" : "text-[11px] max-w-[110px]";
+
   return (
-    <div className="flex flex-col items-center gap-[10px] cursor-pointer group">
-      <div className="relative w-14 h-14 flex items-end justify-center transition-all duration-300 drop-shadow-[0_2px_8px_rgba(230,57,70,0.3)] group-hover:scale-[1.18] group-hover:-translate-y-[3px] group-hover:drop-shadow-[0_6px_20px_rgba(230,57,70,0.5)]">
+    <div className={`flex flex-col items-center gap-[10px] cursor-pointer group shrink-0 ${outerW}`}>
+      <div className={`relative ${iconBox} flex items-center justify-center transition-all duration-300 drop-shadow-[0_2px_8px_rgba(230,57,70,0.3)] group-hover:scale-[1.18] group-hover:-translate-y-[3px] group-hover:drop-shadow-[0_6px_20px_rgba(230,57,70,0.5)]`}>
         {renderSvg(config.icon, uid)}
       </div>
-      <span className="text-[10px] font-bold tracking-[0.1em] uppercase text-center text-[#E0E0E0] leading-tight max-w-[100px] block">
+      <span className={`${labelCls} font-bold tracking-[0.1em] uppercase text-center text-[#E0E0E0] leading-tight block`}>
         {label}
       </span>
     </div>
@@ -40,7 +46,7 @@ function renderSvg(icon: string, uid: string) {
   switch (icon) {
     case "shield":
       return (
-        <svg width="56" height="56" viewBox="4 2 72 92" preserveAspectRatio="xMidYMax meet" xmlns="http://www.w3.org/2000/svg">
+        <svg width="100%" height="100%" viewBox="4 2 72 92" preserveAspectRatio="xMidYMax meet" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <clipPath id={`clip-${uid}`}>
               <path d="M40 7L71 17.5V52C71 68 55 80.5 40 88C25 80.5 9 68 9 52V17.5L40 7Z" />
@@ -58,7 +64,7 @@ function renderSvg(icon: string, uid: string) {
       );
     case "star":
       return (
-        <svg width="56" height="56" viewBox="4 2 82 85" preserveAspectRatio="xMidYMax meet" xmlns="http://www.w3.org/2000/svg">
+        <svg width="100%" height="100%" viewBox="4 2 82 85" preserveAspectRatio="xMidYMax meet" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <clipPath id={`clip-${uid}`}>
               <path d="M45 10L53.8 33L80 36L60.5 54L66 80L45 69L24 80L29.5 54L10 36L36.2 33Z" />
@@ -75,7 +81,7 @@ function renderSvg(icon: string, uid: string) {
       );
     case "trophy":
       return (
-        <svg width="56" height="56" viewBox="10 6 60 72" preserveAspectRatio="xMidYMax meet" xmlns="http://www.w3.org/2000/svg">
+        <svg width="100%" height="100%" viewBox="10 6 60 72" preserveAspectRatio="xMidYMax meet" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <clipPath id={`clip-${uid}`}>
               <path d="M22 12h36v22a18 18 0 01-36 0V12Z" />
@@ -102,7 +108,7 @@ function renderSvg(icon: string, uid: string) {
       );
     case "crown":
       return (
-        <svg width="56" height="56" viewBox="2 5 86 75" preserveAspectRatio="xMidYMax meet" xmlns="http://www.w3.org/2000/svg">
+        <svg width="100%" height="100%" viewBox="2 5 86 75" preserveAspectRatio="xMidYMax meet" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <clipPath id={`clip-${uid}`}>
               <path d="M11 58L5 18L23 37L34 12L45 30L56 12L67 37L85 18L79 58Z" />
@@ -128,7 +134,7 @@ function renderSvg(icon: string, uid: string) {
       );
     case "medal":
       return (
-        <svg width="56" height="56" viewBox="10 0 60 90" preserveAspectRatio="xMidYMax meet" xmlns="http://www.w3.org/2000/svg">
+        <svg width="100%" height="100%" viewBox="10 0 60 90" preserveAspectRatio="xMidYMax meet" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <radialGradient id={`md-grad-${uid}`} cx="40" cy="56" r="24" gradientUnits="userSpaceOnUse">
               <stop offset="0%" stopColor="#E63946" />
@@ -155,7 +161,7 @@ function renderSvg(icon: string, uid: string) {
       );
     case "rocket":
       return (
-        <svg width="56" height="56" viewBox="6 -2 44 80" preserveAspectRatio="xMidYMax meet" xmlns="http://www.w3.org/2000/svg">
+        <svg width="100%" height="100%" viewBox="-12 -2 80 80" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <clipPath id={`clip-${uid}`}>
               <path d="M28 4C28 4 20 16 20 36V56H36V36C36 16 28 4 28 4Z" />
@@ -180,7 +186,7 @@ function renderSvg(icon: string, uid: string) {
       );
     case "target":
       return (
-        <svg width="56" height="56" viewBox="2 2 76 76" preserveAspectRatio="xMidYMax meet" xmlns="http://www.w3.org/2000/svg">
+        <svg width="100%" height="100%" viewBox="2 2 76 76" preserveAspectRatio="xMidYMax meet" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <clipPath id={`clip-${uid}`}>
               <circle cx="40" cy="40" r="36" />

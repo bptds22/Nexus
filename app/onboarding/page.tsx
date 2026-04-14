@@ -1263,10 +1263,9 @@ function RecruiterCegepStep({ user, save }: { user: NexusUser; save: (u: Partial
   useEffect(() => {
     const supabase = createClient();
     supabase
-      .from("school_registry")
-      .select("name, city, region_admin")
+      .from("schools")
+      .select("name, city, region")
       .eq("has_collegial", true)
-      .eq("status", "ACTIVE")
       .order("name")
       .then(({ data, error }) => {
         console.log("CÉGEPs:", data?.length, error);
@@ -1274,7 +1273,7 @@ function RecruiterCegepStep({ user, save }: { user: NexusUser; save: (u: Partial
           setCegeps(data.map(s => ({
             name: s.name,
             city: s.city || "",
-            region: s.region_admin || "",
+            region: s.region || "",
           })));
         }
       });
