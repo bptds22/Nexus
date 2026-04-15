@@ -1,8 +1,10 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import NexusLogo from "@/components/ui/NexusLogo";
+import { createClient } from "@/lib/supabase/client";
 
 const NAV_ITEMS = [
   {
@@ -34,7 +36,7 @@ const NAV_ITEMS = [
     icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="18" r="3" /><circle cx="6" cy="6" r="3" /><path d="M6 21V9a9 9 0 009 9" /></svg>,
   },
   {
-    label: "Modération", href: "/admin/moderation", badge: 3,
+    label: "Modération", href: "/admin/moderation",
     icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>,
   },
   {
@@ -58,6 +60,29 @@ interface Props {
 
 export default function AdminSidebar({ mobileOpen, onClose }: Props) {
   const pathname = usePathname();
+  const [pendingReports, setPendingReports] = useState<number>(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    const supabase = createClient();
+    (async () => {
+      const { count, error } = await supabase
+        .from("reports")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "EN_ATTENTE");
+      if (error) {
+        console.log("[AdminSidebar] reports count error:", error.message);
+        return;
+      }
+      console.log("[AdminSidebar] pending reports count:", count);
+      if (!cancelled) setPendingReports(count ?? 0);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const badges: Record<string, number> = {
+    "/admin/moderation": pendingReports,
+  };
 
   const nav = (
     <div className="flex flex-col h-full">
@@ -91,9 +116,9 @@ export default function AdminSidebar({ mobileOpen, onClose }: Props) {
               )}
               <span className="shrink-0">{item.icon}</span>
               <span className="flex-1">{item.label}</span>
-              {item.badge && (
+              {badges[item.href] > 0 && (
                 <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-[#E63946] text-white text-[11px] font-bold flex items-center justify-center">
-                  {item.badge}
+                  {badges[item.href]}
                 </span>
               )}
             </Link>

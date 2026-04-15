@@ -1,83 +1,115 @@
+import { createClient } from "@/lib/supabase/server";
 import NexusLogo from "@/components/ui/NexusLogo";
 import PlaybookBackground from "@/app/components/PlaybookBackground";
 
+export const dynamic = "force-dynamic";
+export const metadata = { title: "Maintenance — Nexus" };
+
 /* ─────────────────────────────────────────────────────────────────
-   Maintenance Page
-   Shown to all non-admin users when maintenance mode is active.
-   Phase 2: middleware will redirect here when maintenance_mode = true.
+   Public maintenance page — no auth required.
+   Fetches message + ETA from app_settings at request time.
 ───────────────────────────────────────────────────────────────── */
 
-export default function MaintenancePage() {
+const DEFAULT_MESSAGE =
+  "Nous effectuons des améliorations pour mieux servir les étudiants-athlètes du Québec. La plateforme sera de retour sous peu.";
+
+async function loadSettings() {
+  try {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from("app_settings")
+      .select("key, value")
+      .in("key", ["maintenance_message", "maintenance_eta"]);
+    const map = new Map<string, string>((data || []).map((r: { key: string; value: string | null }) => [r.key, r.value ?? ""]));
+    return {
+      message: map.get("maintenance_message") || DEFAULT_MESSAGE,
+      eta: map.get("maintenance_eta") || "",
+    };
+  } catch (err) {
+    console.log("[maintenance] settings load failed:", err);
+    return { message: DEFAULT_MESSAGE, eta: "" };
+  }
+}
+
+export default async function MaintenancePage() {
+  const { message, eta } = await loadSettings();
+
   return (
-    <div className="hero-playbook bg-[#111317] min-h-screen flex items-center justify-center relative">
+    <div className="hero-playbook nx-no-glow bg-[#111317] min-h-screen flex items-center justify-center relative font-sans">
       <PlaybookBackground />
 
-      <div className="relative z-10 flex flex-col items-center text-center px-6 py-16 max-w-[500px] mx-auto">
-        {/* Logo */}
+      <div className="relative z-10 flex flex-col items-center text-center px-6 py-16 max-w-[520px] mx-auto">
         <div className="mb-10">
           <NexusLogo variant="white" height={40} priority />
         </div>
 
-        {/* Spinning gear icon */}
         <div className="mb-8">
-          <div className="w-[80px] h-[80px] rounded-full bg-[#E63946]/10 flex items-center justify-center animate-[spin_8s_linear_infinite]">
-            <svg
-              width="40"
-              height="40"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="#E63946"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <circle cx="12" cy="12" r="3" />
-              <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
-            </svg>
-          </div>
+          <svg
+            width={64}
+            height={64}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#E63946"
+            strokeWidth={1.5}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <line x1="10" x2="14" y1="2" y2="2" />
+            <circle cx="12" cy="14" r="8" />
+            <line x1="12" y1="14" x2="12" y2="8" className="nx-timer-hand" />
+          </svg>
         </div>
+        <style>{`
+          .nx-timer-hand {
+            transform-origin: 12px 14px;
+            animation: nx-timer-spin 6s linear infinite;
+          }
+          @keyframes nx-timer-spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+          }
+        `}</style>
 
-        {/* Heading */}
-        <h1 className="nx-display text-3xl sm:text-4xl font-black text-white uppercase tracking-tight leading-tight">
-          Nexus est en maintenance
+        <h1 className="font-head text-3xl sm:text-4xl font-black text-white uppercase tracking-tight leading-tight">
+          Temps d&apos;arrêt
         </h1>
 
-        {/* Body */}
-        <p className="text-[15px] text-[#9CA3AF] leading-relaxed mt-5 max-w-[400px]">
-          Nous effectuons des améliorations pour mieux servir les étudiants-athlètes du Québec. La plateforme sera de retour sous peu.
+        <p className="text-[15px] text-[#9CA3AF] leading-relaxed mt-5 max-w-[440px]">
+          {message}
         </p>
 
-        {/* Estimated time pill */}
-        <div className="mt-6">
-          <span className="inline-block px-5 py-2 rounded-full bg-[#1A1D24] border border-white/10 text-[13px] text-[#6b7280]">
-            Retour prévu dans quelques minutes
-          </span>
-        </div>
+        {eta && (
+          <div className="mt-7">
+            <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-[#1A1D24] border border-white/10 text-[13px] text-[#E0E0E0]">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#E63946] animate-pulse" />
+              <span className="text-[#6b7280]">Retour estimé :</span>
+              <span className="font-bold text-white">{eta}</span>
+            </span>
+          </div>
+        )}
 
-        {/* Contact */}
-        <p className="text-[13px] text-[#6b7280] mt-8">
-          Des questions? Contactez-nous à{" "}
+        <p className="text-[13px] text-[#9CA3AF] mt-10">
+          Suivez-nous sur{" "}
           <a
-            href="mailto:support@nexus-sport.ca"
-            className="text-[#E63946] hover:text-[#FF5C58] transition-colors font-bold"
+            href="https://instagram.com/nexus.sports.ca"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[#E63946] hover:underline"
           >
-            support@nexus-sport.ca
-          </a>
+            Instagram
+          </a>{" "}
+          et{" "}
+          <a
+            href="https://facebook.com/nexussports"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[#E63946] hover:underline"
+          >
+            Facebook
+          </a>{" "}
+          pour les mises à jour
         </p>
-
-        {/* Pulsing dots */}
-        <div className="flex items-center gap-2 mt-10">
-          {[0, 1, 2].map((i) => (
-            <span
-              key={i}
-              className="w-2 h-2 rounded-full bg-[#E63946]"
-              style={{
-                animation: "pulse-dot 1.4s ease-in-out infinite",
-                animationDelay: `${i * 0.2}s`,
-              }}
-            />
-          ))}
-        </div>
       </div>
     </div>
   );

@@ -188,9 +188,18 @@ function AuthContent() {
     // Check if onboarding is complete
     const { data: profile } = await supabase
       .from("users")
-      .select("role, onboarding_complete")
+      .select("role, onboarding_complete, status")
       .eq("id", data.user.id)
       .single();
+
+    // Block deactivated accounts (SUPER_ADMIN exempt)
+    if (profile?.status === "DESACTIVE" && profile?.role !== "SUPER_ADMIN") {
+      console.log("[Login] deactivated account — signing out:", data.user.id);
+      await supabase.auth.signOut();
+      router.replace("/compte-desactive");
+      setLoading(false);
+      return;
+    }
 
     // Use profile from DB, fallback to auth metadata
     const role = profile?.role || (data.user.user_metadata?.role as string);

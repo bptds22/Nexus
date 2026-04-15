@@ -3,6 +3,8 @@
 import { useState } from "react";
 import CoachSidebar from "./components/CoachSidebar";
 import PlaybookBackground from "../components/PlaybookBackground";
+import DeactivationGuard from "@/components/auth/DeactivationGuard";
+import PreMaintenanceBanner from "@/components/auth/PreMaintenanceBanner";
 
 /* ─────────────────────────────────────────────────────────────────
    Nexus — Coach Shell Layout
@@ -19,6 +21,7 @@ export default function CoachLayout({
 
   return (
     <div className="hero-playbook nx-no-glow bg-[#111317] min-h-screen flex">
+      <DeactivationGuard />
       <PlaybookBackground />
 
       {/* Sidebar */}
@@ -29,6 +32,7 @@ export default function CoachLayout({
 
       {/* Main column */}
       <div className="flex-1 flex flex-col min-h-screen">
+        <PreMaintenanceBanner />
         {/* Mobile top bar */}
         <div className="lg:hidden sticky top-0 z-30 bg-[#111317]/95 backdrop-blur-md border-b border-[#1e2128] px-5 h-16 flex items-center justify-between">
           <button

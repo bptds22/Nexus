@@ -6,6 +6,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import ThemeToggle from "../components/ThemeToggle";
 import PlaybookBackground from "../components/PlaybookBackground";
+import DeactivationGuard from "@/components/auth/DeactivationGuard";
+import PreMaintenanceBanner from "@/components/auth/PreMaintenanceBanner";
 
 /* ─────────────────────────────────────────────────────────────────
    Nexus — Recruiter Shell Layout
@@ -69,6 +71,8 @@ export default function RecruiterLayout({
 
   return (
     <div className="hero-playbook nx-no-glow bg-[#111317] min-h-screen flex flex-col">
+      <DeactivationGuard />
+      <PreMaintenanceBanner />
       <PlaybookBackground />
 
       {/* ══════════════════════════════════════════

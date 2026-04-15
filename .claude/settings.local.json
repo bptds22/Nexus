@@ -20,7 +20,8 @@
       "Bash(python)",
       "Bash(git commit -m ':*)",
       "Bash(find /c/Users/bptds/Documents/Nexus -type f \\\\\\( -name \"*.tsx\" -o -name \"*.ts\" \\\\\\) -exec grep -l \"RSEQ\\\\|NEXUS.*banner\\\\|profil.*athlete\" {} \\\\;)",
-      "Bash(npm install *)"
+      "Bash(npm install *)",
+      "Bash(git commit -m ' *)"
     ]
   }
 }

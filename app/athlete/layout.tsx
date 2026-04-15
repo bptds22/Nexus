@@ -6,6 +6,8 @@ import NexusLogo from "@/components/ui/NexusLogo";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import PlaybookBackground from "../components/PlaybookBackground";
+import DeactivationGuard from "@/components/auth/DeactivationGuard";
+import PreMaintenanceBanner from "@/components/auth/PreMaintenanceBanner";
 /* ─────────────────────────────────────────────────────────────────
    Nexus — Athlete Portal Layout
    Sidebar nav + main content. Simplified for 16-18 year old athletes.
@@ -243,9 +245,11 @@ export default function AthleteLayout({ children }: { children: React.ReactNode 
 
   return (
     <div className="hero-playbook nx-no-glow bg-[#111317] min-h-screen flex">
+      <DeactivationGuard />
       <PlaybookBackground />
       <AthleteSidebar mobileOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />
       <div className="flex-1 flex flex-col min-h-screen">
+        <PreMaintenanceBanner />
         <div className="lg:hidden sticky top-0 z-30 bg-[#111317]/95 backdrop-blur-md border-b border-[#1e2128] px-5 h-16 flex items-center justify-between">
           <button type="button" onClick={() => setMobileMenuOpen(true)} className="text-[#8a8d96] hover:text-white transition-colors" aria-label="Menu">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M3 12h18" /><path d="M3 6h18" /><path d="M3 18h18" /></svg>

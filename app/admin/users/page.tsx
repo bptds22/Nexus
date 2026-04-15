@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import AdminTable, { AdminColumn } from "../_components/AdminTable";
 import SchoolSelect from "@/components/ui/SchoolSelect";
@@ -26,6 +27,7 @@ interface UserRow {
   subscription_tier?: string | null;
   created_at: string;
   created_at_fmt?: string;
+  athlete_id?: string | null;
 }
 
 interface SchoolLookup {
@@ -76,6 +78,9 @@ export default function AdminUsersPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [toast, setToast] = useState<string | null>(null);
   const [showInvite, setShowInvite] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [confirm, setConfirm] = useState<{ user: UserRow; action: "deactivate" | "reactivate" } | null>(null);
+  const [version, setVersion] = useState(0);
   const [inviteForm, setInviteForm] = useState({
     email: "",
     first_name: "",
@@ -87,6 +92,14 @@ export default function AdminUsersPage() {
 
   useEffect(() => {
     (async () => {
+      const { data: authData } = await supabase.auth.getUser();
+      setCurrentUserId(authData?.user?.id ?? null);
+      console.log("[AdminUsers] current auth user id:", authData?.user?.id);
+    })();
+  }, [supabase]);
+
+  useEffect(() => {
+    (async () => {
       setLoading(true);
       const [uRes, sRes, subRes, athRes] = await Promise.all([
         supabase
@@ -95,7 +108,7 @@ export default function AdminUsersPage() {
           .order("created_at", { ascending: false }),
         supabase.from("schools").select("id,name").order("name"),
         supabase.from("subscriptions").select("user_id,tier"),
-        supabase.from("athletes").select("user_id,school_id"),
+        supabase.from("athletes").select("id,user_id,school_id"),
       ]);
 
       const schoolMap = new Map((sRes.data || []).map((s: SchoolLookup) => [s.id, s.name]));
@@ -103,7 +116,9 @@ export default function AdminUsersPage() {
         (subRes.data || []).map((s: { user_id: string; tier: string }) => [s.user_id, s.tier]),
       );
       const athleteSchoolMap = new Map<string, string>();
-      for (const a of ((athRes.data || []) as { user_id: string | null; school_id: string | null }[])) {
+      const athleteIdMap = new Map<string, string>();
+      for (const a of ((athRes.data || []) as { id: string; user_id: string | null; school_id: string | null }[])) {
+        if (a.user_id) athleteIdMap.set(a.user_id, a.id);
         if (a.user_id && a.school_id) athleteSchoolMap.set(a.user_id, a.school_id);
       }
 
@@ -124,6 +139,7 @@ export default function AdminUsersPage() {
           subscription_tier: subMap.get(uid) ?? "free",
           created_at: u.created_at as string,
           created_at_fmt: formatDate(u.created_at as string),
+          athlete_id: athleteIdMap.get(uid) ?? null,
         };
       });
 
@@ -131,7 +147,29 @@ export default function AdminUsersPage() {
       setSchools((sRes.data as SchoolLookup[]) || []);
       setLoading(false);
     })();
-  }, [supabase]);
+  }, [supabase, version]);
+
+  async function updateStatus(user: UserRow, newStatus: AccountStatus) {
+    console.log("[AdminUsers] updating status:", user.id, "->", newStatus);
+    const { error } = await supabase.from("users").update({ status: newStatus }).eq("id", user.id);
+    if (error) {
+      console.log("[AdminUsers] status update error:", error.message);
+      setToast(`Erreur: ${error.message}`);
+      setTimeout(() => setToast(null), 4000);
+      return;
+    }
+    setToast(newStatus === "DESACTIVE" ? "Compte désactivé" : "Compte réactivé");
+    setTimeout(() => setToast(null), 2500);
+    setConfirm(null);
+    setVersion((v) => v + 1);
+  }
+
+  function profileHref(r: UserRow): string | null {
+    if (r.role === "ATHLETE" && r.athlete_id) return `/admin/athletes/${r.athlete_id}`;
+    if (r.role === "COACH" && r.school_id) return `/admin/schools/${r.school_id}`;
+    if (r.role === "RECRUTEUR" || r.role === "ADMIN") return `/admin/users/${r.id}`;
+    return null;
+  }
 
   const filteredRows = useMemo(() => {
     return rows.filter((r) => {
@@ -215,6 +253,46 @@ export default function AdminUsersPage() {
       },
     },
     { key: "created_at_fmt", label: "Inscrit le", type: "readonly" },
+    {
+      key: "id",
+      label: "Actions",
+      readonly: true,
+      align: "right",
+      render: (r) => {
+        const href = profileHref(r);
+        const isSelf = currentUserId === r.id;
+        return (
+          <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+            {href && (
+              <Link
+                href={href}
+                className="px-2.5 py-1.5 rounded-lg border border-[#2D3748] text-[#9CA3AF] text-[11px] font-bold uppercase tracking-wider hover:text-white hover:border-white/20 transition-colors"
+              >
+                Voir
+              </Link>
+            )}
+            {!isSelf && r.status !== "DESACTIVE" && (
+              <button
+                type="button"
+                onClick={() => setConfirm({ user: r, action: "deactivate" })}
+                className="px-2.5 py-1.5 rounded-lg border border-[#E63946]/50 text-[#E63946] text-[11px] font-bold uppercase tracking-wider hover:bg-[#E63946]/10 transition-colors"
+              >
+                Désactiver
+              </button>
+            )}
+            {!isSelf && r.status === "DESACTIVE" && (
+              <button
+                type="button"
+                onClick={() => setConfirm({ user: r, action: "reactivate" })}
+                className="px-2.5 py-1.5 rounded-lg border border-[#22C55E]/50 text-[#22C55E] text-[11px] font-bold uppercase tracking-wider hover:bg-[#22C55E]/10 transition-colors"
+              >
+                Réactiver
+              </button>
+            )}
+          </div>
+        );
+      },
+    },
   ];
 
   async function handleInvite() {
@@ -451,6 +529,45 @@ export default function AdminUsersPage() {
                 className="px-5 py-2.5 rounded-lg bg-[#E63946] text-white font-bold text-[13px] uppercase tracking-wider hover:bg-[#D42B22] transition-colors disabled:opacity-40"
               >
                 Créer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setConfirm(null)}
+          />
+          <div className="relative bg-[#1A1D24] border border-[#2D3748] rounded-xl p-6 w-full max-w-[440px] shadow-2xl mx-4">
+            <h2 className="font-head text-[16px] font-black text-white uppercase mb-3">
+              {confirm.action === "deactivate" ? "Désactiver le compte" : "Réactiver le compte"}
+            </h2>
+            <p className="text-[13px] text-[#9CA3AF] mb-6">
+              {confirm.action === "deactivate"
+                ? `Désactiver le compte de ${[confirm.user.first_name, confirm.user.last_name].filter(Boolean).join(" ") || confirm.user.email}? L'utilisateur ne pourra plus se connecter.`
+                : `Réactiver le compte de ${[confirm.user.first_name, confirm.user.last_name].filter(Boolean).join(" ") || confirm.user.email}?`}
+            </p>
+            <div className="flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setConfirm(null)}
+                className="px-4 py-2.5 text-[13px] font-bold text-[#9CA3AF] hover:text-white transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={() => updateStatus(confirm.user, confirm.action === "deactivate" ? "DESACTIVE" : "ACTIF")}
+                className={`px-5 py-2.5 rounded-lg text-white font-bold text-[13px] uppercase tracking-wider transition-colors ${
+                  confirm.action === "deactivate"
+                    ? "bg-[#E63946] hover:bg-[#D42B22]"
+                    : "bg-[#22C55E] hover:bg-[#1EA751]"
+                }`}
+              >
+                {confirm.action === "deactivate" ? "Désactiver" : "Réactiver"}
               </button>
             </div>
           </div>

@@ -1193,12 +1193,12 @@ function ModifierContent({ id }: { id: string }) {
           <textarea
             value={sc.coachEndorsement}
             onChange={(e) => updateScouting("coachEndorsement", e.target.value)}
-            maxLength={300}
-            rows={4}
+            maxLength={1000}
+            rows={8}
             placeholder="Ex: Joueur le plus discipliné de mon roster. Meneur de l'équipe en plaqués avec 67 cette saison. Leadership exceptionnel, capitaine depuis 2 ans..."
-            className={`${inputCls} resize-none min-h-[100px]`}
+            className={`${inputCls} resize-y min-h-[200px]`}
           />
-          <p className="text-[12px] text-[#4a4d56] text-right mt-1 tabular-nums">{sc.coachEndorsement.length} / 300</p>
+          <p className="text-[12px] text-[#4a4d56] text-right mt-1 tabular-nums">{sc.coachEndorsement.length} / 1000</p>
           {!sc.coachEndorsement && (
             <div className="mt-3 bg-[#F59E0B]/10 border border-[#F59E0B]/20 rounded-lg p-3">
               <p className="text-[12px] text-[#F59E0B] font-bold">Le rapport de l&apos;entraîneur est la section la plus consultée par les recruteurs. C&apos;est ta recommandation personnelle.</p>
