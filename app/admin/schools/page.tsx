@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import AdminTable, { AdminColumn } from "../_components/AdminTable";
 
@@ -21,6 +22,7 @@ interface SchoolRow {
   sport_count: number;
   team_count: number;
   coach_count: number;
+  recruiter_count: number;
 }
 
 const TYPE_OPTIONS: { value: SchoolType; label: string }[] = [
@@ -47,6 +49,7 @@ type SortBy =
   | "name_desc"
   | "athletes_desc"
   | "coaches_desc"
+  | "recruiters_desc"
   | "teams_desc";
 
 const SORT_OPTIONS: { value: SortBy; label: string }[] = [
@@ -54,11 +57,13 @@ const SORT_OPTIONS: { value: SortBy; label: string }[] = [
   { value: "name_desc", label: "Nom (Z-A)" },
   { value: "athletes_desc", label: "# Athlètes (↓)" },
   { value: "coaches_desc", label: "# Coachs (↓)" },
+  { value: "recruiters_desc", label: "# Recruteurs (↓)" },
   { value: "teams_desc", label: "# Équipes (↓)" },
 ];
 
 export default function AdminSchoolsPage() {
   const supabase = useMemo(() => createClient(), []);
+  const router = useRouter();
   const [rows, setRows] = useState<SchoolRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [typeFilter, setTypeFilter] = useState<"all" | SchoolType>("all");
@@ -68,6 +73,7 @@ export default function AdminSchoolsPage() {
   const [langueFilter, setLangueFilter] = useState<"all" | Langue>("all");
   const [withAthletes, setWithAthletes] = useState(false);
   const [withCoaches, setWithCoaches] = useState(false);
+  const [withRecruiters, setWithRecruiters] = useState(false);
   const [sortBy, setSortBy] = useState<SortBy>("name_asc");
   const [toast, setToast] = useState<string | null>(null);
   const [showAdd, setShowAdd] = useState(false);
@@ -94,11 +100,12 @@ export default function AdminSchoolsPage() {
 
   async function fetchAll() {
     setLoading(true);
-    const [schoolsRes, athletesRes, scCoachesRes, legacyCoachesRes, teamsRes] = await Promise.all([
+    const [schoolsRes, athletesRes, scCoachesRes, legacyCoachesRes, recruitersRes, teamsRes] = await Promise.all([
       supabase.from("schools").select("id,name,type,city,region,reseau,langue").order("name"),
       supabase.from("athletes").select("school_id"),
       supabase.from("school_coaches").select("school_id, user_id"),
       supabase.from("users").select("id, school_id, role").eq("role", "COACH"),
+      supabase.from("users").select("id, school_id, role").eq("role", "RECRUTEUR"),
       supabase.from("teams").select("school_id,sport_id"),
     ]);
 
@@ -121,6 +128,11 @@ export default function AdminSchoolsPage() {
     for (const pair of coachPairs) {
       const [sid] = pair.split(":");
       coachCounts.set(sid, (coachCounts.get(sid) || 0) + 1);
+    }
+    const recruiterCounts = new Map<string, number>();
+    for (const u of (recruitersRes.data || []) as { id: string; school_id: string | null }[]) {
+      if (!u.school_id) continue;
+      recruiterCounts.set(u.school_id, (recruiterCounts.get(u.school_id) || 0) + 1);
     }
     const teamCounts = new Map<string, number>();
     const sportSets = new Map<string, Set<string>>();
@@ -145,6 +157,7 @@ export default function AdminSchoolsPage() {
       sport_count: sportSets.get(s.id as string)?.size || 0,
       team_count: teamCounts.get(s.id as string) || 0,
       coach_count: coachCounts.get(s.id as string) || 0,
+      recruiter_count: recruiterCounts.get(s.id as string) || 0,
     }));
     setRows(mapped);
     setLoading(false);
@@ -185,6 +198,7 @@ export default function AdminSchoolsPage() {
       if (langueFilter !== "all" && r.langue !== langueFilter) return false;
       if (withAthletes && r.athlete_count <= 0) return false;
       if (withCoaches && r.coach_count <= 0) return false;
+      if (withRecruiters && r.recruiter_count <= 0) return false;
       return true;
     });
     const sorted = [...list];
@@ -194,14 +208,16 @@ export default function AdminSchoolsPage() {
         case "name_desc":     return b.name.localeCompare(a.name, "fr", { sensitivity: "base" });
         case "athletes_desc": return b.athlete_count - a.athlete_count || a.name.localeCompare(b.name, "fr");
         case "coaches_desc":  return b.coach_count - a.coach_count   || a.name.localeCompare(b.name, "fr");
+        case "recruiters_desc": return b.recruiter_count - a.recruiter_count || a.name.localeCompare(b.name, "fr");
         case "teams_desc":    return b.team_count - a.team_count     || a.name.localeCompare(b.name, "fr");
       }
     });
     return sorted;
-  }, [rows, typeFilter, regionFilter, cityFilter, reseauFilter, langueFilter, withAthletes, withCoaches, sortBy]);
+  }, [rows, typeFilter, regionFilter, cityFilter, reseauFilter, langueFilter, withAthletes, withCoaches, withRecruiters, sortBy]);
 
   const totalWithAthletes = useMemo(() => filtered.filter((r) => r.athlete_count > 0).length, [filtered]);
   const totalWithCoaches  = useMemo(() => filtered.filter((r) => r.coach_count > 0).length, [filtered]);
+  const totalWithRecruiters = useMemo(() => filtered.filter((r) => r.recruiter_count > 0).length, [filtered]);
 
   const columns: AdminColumn<SchoolRow>[] = [
     {
@@ -214,7 +230,7 @@ export default function AdminSchoolsPage() {
     {
       key: "name",
       label: "Nom",
-      type: "text",
+      readonly: true,
       render: (r) => (
         <Link
           href={`/admin/schools/${r.id}`}
@@ -228,24 +244,19 @@ export default function AdminSchoolsPage() {
     {
       key: "type",
       label: "Type",
-      type: "select",
-      options: TYPE_OPTIONS,
+      readonly: true,
       width: "140px",
       render: (r) => {
         const label = TYPE_OPTIONS.find((o) => o.value === r.type)?.label ?? r.type;
         return <span className="text-[13px] text-[#E0E0E0]">{label}</span>;
       },
     },
-    { key: "city", label: "Ville", type: "text" },
-    { key: "region", label: "Région", type: "text" },
+    { key: "city", label: "Ville", readonly: true },
+    { key: "region", label: "Région", readonly: true },
     {
       key: "reseau",
       label: "Réseau",
-      type: "select",
-      options: [
-        { value: "PUBLIC", label: "Public" },
-        { value: "PRIVE", label: "Privé" },
-      ],
+      readonly: true,
       width: "120px",
       render: (r) => {
         if (!r.reseau) return <span className="text-[#4a4d56]">—</span>;
@@ -256,12 +267,7 @@ export default function AdminSchoolsPage() {
     {
       key: "langue",
       label: "Langue",
-      type: "select",
-      options: [
-        { value: "FR", label: "Français" },
-        { value: "EN", label: "Anglais" },
-        { value: "BILINGUE", label: "Bilingue" },
-      ],
+      readonly: true,
       width: "130px",
       render: (r) => {
         if (!r.langue) return <span className="text-[#4a4d56]">—</span>;
@@ -300,6 +306,14 @@ export default function AdminSchoolsPage() {
       align: "right",
       width: "120px",
       render: (r) => <span className="text-[13px] text-[#E0E0E0] tabular-nums">{r.coach_count}</span>,
+    },
+    {
+      key: "recruiter_count",
+      label: "# Recruteurs",
+      readonly: true,
+      align: "right",
+      width: "130px",
+      render: (r) => <span className="text-[13px] text-[#E0E0E0] tabular-nums">{r.recruiter_count}</span>,
     },
   ];
 
@@ -501,6 +515,16 @@ export default function AdminSchoolsPage() {
           <span className="text-[13px] text-[#E0E0E0]">Avec coachs</span>
         </label>
 
+        <label className="flex items-center gap-2 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={withRecruiters}
+            onChange={(e) => setWithRecruiters(e.target.checked)}
+            className="w-4 h-4 accent-[#E63946]"
+          />
+          <span className="text-[13px] text-[#E0E0E0]">Avec recruteurs</span>
+        </label>
+
         <div className="flex-1" />
 
         <div className="flex items-center gap-2">
@@ -532,6 +556,10 @@ export default function AdminSchoolsPage() {
           <span className="font-bold tabular-nums">{totalWithCoaches}</span>
           <span className="ml-1">avec coachs inscrits</span>
         </span>
+        <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-red-500/10 border border-red-500/30 text-red-400">
+          <span className="font-bold tabular-nums">{totalWithRecruiters}</span>
+          <span className="ml-1">avec recruteurs inscrits</span>
+        </span>
       </div>
 
       {loading ? (
@@ -545,6 +573,7 @@ export default function AdminSchoolsPage() {
           table="schools"
           searchFields={["name", "city", "region"]}
           searchPlaceholder="Rechercher par nom, ville, région..."
+          onRowClick={(r) => router.push(`/admin/schools/${r.id}`)}
           onSaved={(id, patch) =>
             setRows((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)))
           }

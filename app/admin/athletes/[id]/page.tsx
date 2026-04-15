@@ -1348,7 +1348,7 @@ export default function AdminAthleteDetailPage({
               >
                 {A("photo_url") ? "Changer" : "Téléverser"}
               </button>
-              {A("photo_url") && (
+              {Boolean(A("photo_url")) && (
                 <button
                   type="button"
                   disabled={uploadingPhoto}

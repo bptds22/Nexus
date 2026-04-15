@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import AdminTable, { AdminColumn } from "../_components/AdminTable";
 
@@ -23,6 +24,7 @@ const inputBase =
 
 export default function AdminSportsPage() {
   const supabase = useMemo(() => createClient(), []);
+  const router = useRouter();
   const [sports, setSports] = useState<SportRow[]>([]);
   const [positions, setPositions] = useState<PositionRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -80,7 +82,12 @@ export default function AdminSportsPage() {
       width: "180px",
       render: (r) => <span className="text-[11px] text-[#6b7280] font-mono">{r.id.slice(0, 8)}…</span>,
     },
-    { key: "nom", label: "Nom", type: "text" },
+    {
+      key: "nom",
+      label: "Nom",
+      readonly: true,
+      render: (r) => <span className="text-[13px] font-bold text-white">{r.nom}</span>,
+    },
     {
       key: "athlete_count",
       label: "# Athlètes",
@@ -204,7 +211,7 @@ export default function AdminSportsPage() {
           table="sports"
           searchFields={["nom"]}
           searchPlaceholder="Rechercher un sport..."
-          onRowClick={(r) => setSelectedSportId((cur) => (cur === r.id ? null : r.id))}
+          onRowClick={(r) => router.push(`/admin/sports/${r.id}`)}
           onSaved={(id, patch) =>
             setSports((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)))
           }

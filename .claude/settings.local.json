@@ -17,7 +17,10 @@
       "Bash(git stash:*)",
       "Bash(grep -n \"function renderRecruiterPreview\\\\|^}$\" app/admin/athletes/\\\\[id\\\\]/page.tsx)",
       "Bash(python scripts/_tmp_admin_rewrite.py)",
-      "Bash(python)"
+      "Bash(python)",
+      "Bash(git commit -m ':*)",
+      "Bash(find /c/Users/bptds/Documents/Nexus -type f \\\\\\( -name \"*.tsx\" -o -name \"*.ts\" \\\\\\) -exec grep -l \"RSEQ\\\\|NEXUS.*banner\\\\|profil.*athlete\" {} \\\\;)",
+      "Bash(npm install *)"
     ]
   }
 }
