@@ -152,15 +152,14 @@ export default function AthleteProfileView({ athleteId, headerSlot, footerSlot, 
         setGlobalRecruit(overrideVal || "OUVERT");
 
         const supabase = createClient();
-        const [{ count: vc1 }, { count: vc2 }, { count: fc }] = await Promise.all([
+        const [{ count: vc }, { count: fc }] = await Promise.all([
           supabase.from("recruiter_athlete_views").select("*", { count: "exact", head: true }).eq("athlete_id", athleteId),
-          supabase.from("profile_views").select("*", { count: "exact", head: true }).eq("athlete_id", athleteId),
           supabase.from("recruiter_favorites").select("*", { count: "exact", head: true }).eq("athlete_id", athleteId),
         ]);
         if (cancelled) return;
-        setViewCount((vc1 || 0) + (vc2 || 0));
+        setViewCount(vc || 0);
         setFavoriteCount(fc || 0);
-        console.log("[AthleteProfileView] engagement:", { vc1, vc2, fc });
+        console.log("[AthleteProfileView] engagement:", { vc, fc });
       } catch (err) {
         console.error("[AthleteProfileView] load failed:", err);
       } finally {

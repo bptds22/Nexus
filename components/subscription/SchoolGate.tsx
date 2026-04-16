@@ -1,30 +1,27 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
+import { useSubscription } from "@/lib/hooks/useSubscription";
 
 /* ═══════════════════════════════════════════════════════════════
-   SchoolGate — Wraps school management pages
-   Access: Coach Pro OR Coach All Star OR Admin École
+   SchoolGate — wraps school-management pages.
+   Access = Coach Pro OR Admin école (is_school_admin).
+
+   Reads from the DB-backed useSubscription hook (not localStorage),
+   so it reflects live tier changes including the DevTierSwitcher.
 ═══════════════════════════════════════════════════════════════ */
 
 export default function SchoolGate({ children }: { children: React.ReactNode }) {
-  const [hasAccess, setHasAccess] = useState(false);
-  const [checked, setChecked] = useState(false);
+  const { loading, tier, canSee, isSchoolAdmin } = useSubscription();
   const [toast, setToast] = useState<string | null>(null);
 
-  useEffect(() => {
-    try {
-      const user = JSON.parse(localStorage.getItem("nexus_user") || "{}");
-      const tier = user.subscription?.tier || "free";
-      if (tier === "coach_pro" || tier === "coach_allstar" || user.is_school_admin === true) {
-        setHasAccess(true);
-      }
-    } catch { /* noop */ }
-    setChecked(true);
-  }, []);
+  console.log("[SchoolGate] tier:", tier, "canSee mon_ecole:", canSee("can_see_mon_ecole"), "isSchoolAdmin:", isSchoolAdmin);
 
-  if (!checked) return null;
+  if (loading) return null;
+
+  // Pass through for: Pro, All Star (via canSee) OR Admin école flag.
+  const hasAccess = canSee("can_see_mon_ecole") || isSchoolAdmin;
   if (hasAccess) return <>{children}</>;
 
   return (
@@ -51,9 +48,9 @@ export default function SchoolGate({ children }: { children: React.ReactNode }) 
             onClick={() => { setToast("Redirection vers Stripe Checkout (Phase 2)"); setTimeout(() => setToast(null), 3000); }}
             className="w-full h-11 rounded-lg bg-[#DAB65A] text-[#111317] font-head font-bold text-[12px] uppercase tracking-wider hover:bg-[#c9a84f] transition-colors mb-2"
           >
-            Passer à Pro — 5,99$/mois →
+            Passer à Pro — 14,99$/mois →
           </button>
-          <Link href="/tarifs" className="text-[12px] text-[#6B7280] hover:text-white transition-colors">
+          <Link href="/tarifs?role=coach" className="text-[12px] text-[#6B7280] hover:text-white transition-colors">
             Voir les plans
           </Link>
         </div>

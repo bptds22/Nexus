@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import SchoolGate from "@/components/subscription/SchoolGate";
 import { createClient } from "@/lib/supabase/client";
+import { calculateProfileCompletion } from "@/lib/utils/calculateProfileCompletion";
 
 /* ═══════════════════════════════════════════════════════════════
    Coach Analytics — PRO feature
@@ -73,64 +74,136 @@ function CoachAnalyticsPage() {
 
   useEffect(() => {
     async function fetchData() {
+      const weekLabels = getWeekLabels(12);
+      const emptyData: AnalyticsData = {
+        kpis: { total_athletes: 0, athletes_visible: 0, athletes_favorited: 0, athletes_contacted: 0 },
+        views_weekly: Array(12).fill(0),
+        week_labels: weekLabels,
+        athlete_performance: [],
+        cegeps_interested: [],
+        funnel: [],
+        placement_rate: 0,
+        attention_needed: [],
+        sports_breakdown: { athletes: [], views: [] },
+      };
+
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { setLoading(false); return; }
+      if (!user) { setD(emptyData); setLoading(false); return; }
 
-      // 1. Get my school
-      const { data: mySchool } = await supabase
+      // 1. Resolve my school_id — try the junction table first, fall back to users.school_id.
+      //    Coaches can be linked to a school via either:
+      //      (a) school_coaches (new multi-team model), or
+      //      (b) users.school_id (legacy single-school link)
+      const { data: scRow, error: scErr } = await supabase
         .from("school_coaches")
         .select("school_id")
         .eq("coach_id", user.id)
         .limit(1)
-        .single();
-      console.log("Analytics — my school:", mySchool);
-      if (!mySchool) { setLoading(false); return; }
+        .maybeSingle();
+      console.log("Analytics — school_coaches lookup:", scRow, "err:", scErr);
 
-      // 2. Get all coaches at my school
-      const { data: schoolCoaches } = await supabase
-        .from("school_coaches")
-        .select("coach_id")
-        .eq("school_id", mySchool.school_id);
-      if (!schoolCoaches || schoolCoaches.length === 0) { setLoading(false); return; }
-      const coachIds = schoolCoaches.map(sc => sc.coach_id);
+      let mySchoolId = (scRow?.school_id as string | undefined) || null;
+      if (!mySchoolId) {
+        const { data: userRow } = await supabase
+          .from("users")
+          .select("school_id")
+          .eq("id", user.id)
+          .maybeSingle();
+        mySchoolId = (userRow?.school_id as string | undefined) || null;
+        console.log("Analytics — users.school_id fallback:", mySchoolId);
+      }
 
-      // 3. Get all athletes with sport + position joins
-      const { data: athletes } = await supabase
+      if (!mySchoolId) {
+        console.log("Analytics — no school link found; rendering empty state");
+        setD(emptyData);
+        setLoading(false);
+        return;
+      }
+
+      // 2. Get all athletes at this school — filter by athletes.school_id (authoritative),
+      //    not by coach_id. This catches athletes whose coach_id is NULL or whose coach
+      //    isn't in school_coaches.
+      const { data: athletes, error: athleteErr } = await supabase
         .from("athletes")
-        .select("id, first_name, last_name, sport_id, coach_id, profile_completion, verified, annee_diplomation, position_id, sports!sport_id(nom), positions!position_id(nom, abreviation)")
-        .in("coach_id", coachIds);
-      console.log("Analytics — athletes:", athletes);
+        // Every column calculateProfileCompletion needs, plus the evaluations join it looks at.
+        // profile_completion (the denormalized field) is deliberately NOT used anymore — it's
+        // stale for athletes that were edited without the trigger firing.
+        .select(`
+          id, first_name, last_name, sport_id, coach_id, verified, annee_diplomation, position_id,
+          photo_url, date_naissance, genre, telephone, school_id, league_team_id, equipe_id,
+          numero_jersey, taille_pieds, taille_pouces, poids_lbs, main_dominante, pied_dominant,
+          video_faits_saillants_url, video_match_complet_url, video_entrainement_url,
+          hudl_url, youtube_url, instagram_url,
+          moyenne_generale, programme_cegep_vise, matieres_fortes, regions_cegep_preferees,
+          cote_globale_entraineur,
+          sports!sport_id(nom),
+          positions!position_id(nom, abreviation),
+          evaluations(leadership, discipline, coachabilite, intelligence_jeu, competitivite, esprit_equipe, resilience, attitude_mentalite, cote_globale, rapport_entraineur, distinctions)
+        `)
+        .eq("school_id", mySchoolId);
+      console.log("Analytics — school_id:", mySchoolId, "athletes:", athletes, "err:", athleteErr);
 
       const athleteList = athletes || [];
       const totalAthletes = athleteList.length;
-      const weekLabels = getWeekLabels(12);
 
       if (totalAthletes === 0) {
-        setD({
-          kpis: { total_athletes: 0, athletes_visible: 0, athletes_favorited: 0, athletes_contacted: 0 },
-          views_weekly: Array(12).fill(0),
-          week_labels: weekLabels,
-          athlete_performance: [],
-          cegeps_interested: [],
-          funnel: [],
-          placement_rate: 0,
-          attention_needed: [],
-          sports_breakdown: { athletes: [], views: [] },
-        });
+        setD(emptyData);
         setLoading(false);
         return;
       }
 
       const athleteIds = athleteList.map(a => a.id);
+      console.log("[Analytique] auth user.id:", user.id);
+      console.log("[Analytique] myAthleteIds (", athleteIds.length, "total):", athleteIds);
+      console.log("[Analytique] athletes with their coach_id (RLS read path):",
+        athleteList.map(a => ({ id: a.id, name: `${a.first_name} ${a.last_name}`, coach_id: a.coach_id, verified: a.verified })));
 
-      // 4. Get all pipeline entries
-      const { data: pipelineEntries } = await supabase
-        .from("pipeline")
-        .select("id, athlete_id, recruiter_id, status")
-        .in("athlete_id", athleteIds);
-      console.log("Analytics — pipeline:", pipelineEntries);
-      const pipeline = pipelineEntries || [];
+      // 4. Pull all recruiter-interest signals in parallel. No date filter — the
+      //    page shows lifetime totals (the weekly chart buckets viewed_at itself).
+      //    .limit(10000) overrides PostgREST's default 1000-row cap.
+      console.log("[Analytique] BEFORE recruiter_athlete_views query — params:", { athlete_id_in: athleteIds });
+      console.log("[Analytique] BEFORE recruiter_favorites query — params:", { athlete_id_in: athleteIds });
+      console.log("[Analytique] BEFORE conversations query — params:", { athlete_id_in: athleteIds });
+      console.log("[Analytique] BEFORE pipeline query — params:", { athlete_id_in: athleteIds });
+
+      const [pipelineRes, viewsRes, favoritesRes, convsRes] = await Promise.all([
+        supabase.from("pipeline").select("id, athlete_id, recruiter_id, status", { count: "exact" }).in("athlete_id", athleteIds).limit(10000),
+        // recruiter_athlete_views is the authoritative view-tracking table (matches the
+        // counter shown on the recruiter-side athlete profile page).
+        supabase.from("recruiter_athlete_views").select("athlete_id, recruiter_id, viewed_at", { count: "exact" }).in("athlete_id", athleteIds).limit(10000),
+        supabase.from("recruiter_favorites").select("athlete_id, recruiter_id", { count: "exact" }).in("athlete_id", athleteIds).limit(10000),
+        supabase.from("conversations").select("athlete_id, recruiter_id", { count: "exact" }).in("athlete_id", athleteIds).limit(10000),
+      ]);
+      const pipeline = pipelineRes.data || [];
+      const profileViews = viewsRes.data || [];
+      const favorites = favoritesRes.data || [];
+      const conversations = convsRes.data || [];
+
+      // `count` is the true row count PostgREST saw (before any .limit()); `data.length` is what
+      // was returned after pagination. If they differ for any query, we're being paginated.
+      console.log("[Analytique] recruiter_athlete_views count:", viewsRes.count, "data.length:", profileViews.length, "error:", viewsRes.error);
+      console.log("[Analytique] recruiter_athlete_views raw:", profileViews);
+      console.log("[Analytique] recruiter_favorites count:", favoritesRes.count, "data.length:", favorites.length, "error:", favoritesRes.error);
+      console.log("[Analytique] recruiter_favorites raw:", favorites);
+      console.log("[Analytique] conversations count:", convsRes.count, "data.length:", conversations.length, "error:", convsRes.error);
+      console.log("[Analytique] conversations raw:", conversations);
+      console.log("[Analytique] pipeline count:", pipelineRes.count, "data.length:", pipeline.length, "error:", pipelineRes.error);
+      console.log("[Analytique] pipeline raw:", pipeline);
+
+      // Per-athlete breakdown so we can spot mismatches vs. the recruiter-side counter.
+      const perAthleteViewTotals: Record<string, number> = {};
+      profileViews.forEach(v => {
+        const aid = v.athlete_id as string;
+        perAthleteViewTotals[aid] = (perAthleteViewTotals[aid] || 0) + 1;
+      });
+      console.log("[Analytique] views per athlete:",
+        athleteList.map(a => ({
+          name: `${a.first_name} ${a.last_name}`,
+          athlete_id: a.id,
+          views_in_query: perAthleteViewTotals[a.id as string] || 0,
+        }))
+      );
 
       // 5. Get sport names
       const sportIds = [...new Set(athleteList.map(a => a.sport_id).filter(Boolean))];
@@ -140,42 +213,95 @@ function CoachAnalyticsPage() {
         if (sports) sports.forEach(s => { sportsMap[s.id] = s.nom; });
       }
 
-      // ── Count pipeline statuses ──
-      const CONTACT_STATUSES = ["CONTACTE", "EN_DISCUSSION", "VISITE_PLANIFIEE", "ENGAGE", "LETTRE_SIGNEE"];
-
-      // ── Views weekly (12 zeros for now) ──
-      const views_weekly = Array(12).fill(0) as number[];
-
-      // ── Athlete performance ──
-      const athletePipelineFavs: Record<string, number> = {};
-      const athletePipelineContacts: Record<string, number> = {};
-      pipeline.forEach(p => {
-        if (p.status === "IDENTIFIE") athletePipelineFavs[p.athlete_id] = (athletePipelineFavs[p.athlete_id] || 0) + 1;
-        if (CONTACT_STATUSES.includes(p.status)) athletePipelineContacts[p.athlete_id] = (athletePipelineContacts[p.athlete_id] || 0) + 1;
+      // ── Per-athlete maps from real tables ─────────────────────
+      const viewsByAthlete: Record<string, number> = {};
+      const athletesViewed = new Set<string>();
+      profileViews.forEach(v => {
+        const aid = v.athlete_id as string;
+        viewsByAthlete[aid] = (viewsByAthlete[aid] || 0) + 1;
+        athletesViewed.add(aid);
       });
 
+      const favoritesByAthlete: Record<string, number> = {};
+      const athletesFavorited = new Set<string>();
+      favorites.forEach(f => {
+        const aid = f.athlete_id as string;
+        favoritesByAthlete[aid] = (favoritesByAthlete[aid] || 0) + 1;
+        athletesFavorited.add(aid);
+      });
+
+      const contactsByAthlete: Record<string, number> = {};
+      const athletesContacted = new Set<string>();
+      conversations.forEach(c => {
+        const aid = c.athlete_id as string;
+        contactsByAthlete[aid] = (contactsByAthlete[aid] || 0) + 1;
+        athletesContacted.add(aid);
+      });
+
+      // ── Views weekly — bucket recruiter_athlete_views.viewed_at into 12 weekly bins ──
+      const views_weekly = Array(12).fill(0) as number[];
+      const now = Date.now();
+      const weekMs = 7 * 24 * 60 * 60 * 1000;
+      let bucketedIn12wk = 0;
+      let bucketedOlderThan12wk = 0;
+      let bucketedInvalidDate = 0;
+      profileViews.forEach(v => {
+        if (!v.viewed_at) { bucketedInvalidDate++; return; }
+        const ts = new Date(v.viewed_at as string).getTime();
+        if (!Number.isFinite(ts)) { bucketedInvalidDate++; return; }
+        const weeksAgo = Math.floor((now - ts) / weekMs);
+        if (weeksAgo >= 0 && weeksAgo < 12) {
+          // weekLabels[0] = oldest (11 weeks ago), weekLabels[11] = this week.
+          views_weekly[11 - weeksAgo] += 1;
+          bucketedIn12wk++;
+        } else {
+          bucketedOlderThan12wk++;
+        }
+      });
+      console.log("[Analytique] weekly chart — buckets (index 0 = oldest, 11 = this week):", views_weekly);
+      console.log("[Analytique] weekly chart — bucketed in 12-week window:", bucketedIn12wk,
+        "older than 12 weeks:", bucketedOlderThan12wk,
+        "invalid/null viewed_at:", bucketedInvalidDate,
+        "total recruiter_athlete_views rows:", profileViews.length);
+
+      // ── Athlete performance (real views/favorites/contacts + live completion) ──
       const athlete_performance = athleteList.map(a => {
         const posRaw = a.positions;
         const posObj = (Array.isArray(posRaw) ? posRaw[0] : posRaw) as { nom?: string; abreviation?: string } | null;
+        const completion = calculateProfileCompletion(a as Record<string, unknown>);
+        console.log("[Analytique] completion for", a.first_name, a.last_name, "=", completion,
+          "(stale DB profile_completion was:", (a as Record<string, unknown>).profile_completion, ")");
         return {
           name: `${a.first_name} ${a.last_name}`,
           pos: posObj?.abreviation || posObj?.nom || "—",
           grad: (a.annee_diplomation as number) || 0,
-          completion: (a.profile_completion as number) || 0,
-          views: 0,
+          completion,
+          views: viewsByAthlete[a.id] || 0,
           trend: "flat" as const,
           trend_pct: 0,
-          favorites: athletePipelineFavs[a.id] || 0,
-          contacts: athletePipelineContacts[a.id] || 0,
+          favorites: favoritesByAthlete[a.id] || 0,
+          contacts: contactsByAthlete[a.id] || 0,
         };
       });
 
-      // ── CÉGEPs interested — group by CÉGEP, count distinct athletes + sports ──
+      // ── CÉGEPs interested — union of pipeline + favorites + conversations recruiter ids ──
       const activePipeline = pipeline.filter(p => p.status !== "NONE" && p.status !== "RETIRE");
-      const recruiterIds = [...new Set(activePipeline.map(p => p.recruiter_id).filter(Boolean))];
+      type InterestRow = { athlete_id: string; recruiter_id: string };
+      const interestRows: InterestRow[] = [
+        ...activePipeline
+          .filter((p): p is typeof p & { recruiter_id: string } => !!p.recruiter_id)
+          .map(p => ({ athlete_id: p.athlete_id as string, recruiter_id: p.recruiter_id as string })),
+        ...favorites
+          .filter((f): f is typeof f & { recruiter_id: string } => !!f.recruiter_id)
+          .map(f => ({ athlete_id: f.athlete_id as string, recruiter_id: f.recruiter_id as string })),
+        ...conversations
+          .filter((c): c is typeof c & { recruiter_id: string } => !!c.recruiter_id)
+          .map(c => ({ athlete_id: c.athlete_id as string, recruiter_id: c.recruiter_id as string })),
+      ];
+      const interestRecruiterIds = [...new Set(interestRows.map(r => r.recruiter_id))];
       let cegeps_interested: AnalyticsData["cegeps_interested"] = [];
-      if (recruiterIds.length > 0) {
-        const { data: recruiterUsers } = await supabase.from("users").select("id, school_id").in("id", recruiterIds);
+      if (interestRecruiterIds.length > 0) {
+        const { data: recruiterUsers } = await supabase.from("users").select("id, school_id").in("id", interestRecruiterIds);
         const cegepSchoolIds = [...new Set((recruiterUsers || []).map((r: Record<string, unknown>) => r.school_id).filter(Boolean))] as string[];
         const schoolsMap: Record<string, string> = {};
         if (cegepSchoolIds.length > 0) {
@@ -183,13 +309,13 @@ function CoachAnalyticsPage() {
           if (schools) schools.forEach((s: { id: string; name: string }) => { schoolsMap[s.id] = s.name; });
         }
         const cegepData: Record<string, { athletes: Set<string>; sports: Set<string> }> = {};
-        activePipeline.forEach(p => {
-          const rec = (recruiterUsers || []).find((r: Record<string, unknown>) => r.id === p.recruiter_id) as { school_id?: string } | undefined;
+        interestRows.forEach(row => {
+          const rec = (recruiterUsers || []).find((r: Record<string, unknown>) => r.id === row.recruiter_id) as { school_id?: string } | undefined;
           if (!rec?.school_id) return;
           const schoolName = schoolsMap[rec.school_id] || rec.school_id;
           if (!cegepData[schoolName]) cegepData[schoolName] = { athletes: new Set(), sports: new Set() };
-          cegepData[schoolName].athletes.add(p.athlete_id);
-          const ath = athleteList.find(a => a.id === p.athlete_id);
+          cegepData[schoolName].athletes.add(row.athlete_id);
+          const ath = athleteList.find(a => a.id === row.athlete_id);
           if (ath) cegepData[schoolName].sports.add(sportsMap[ath.sport_id] || "Inconnu");
         });
         cegeps_interested = Object.entries(cegepData)
@@ -198,15 +324,8 @@ function CoachAnalyticsPage() {
       }
       console.log("Analytics — cegeps_interested:", cegeps_interested);
 
-      // ── TRUE CONVERSION FUNNEL — each row = distinct athletes who reached that stage ──
+      // ── Funnel ─────────────────────────────────────────────────
       const verifiedCount = athleteList.filter(a => a.verified).length;
-
-      // Athletes with any pipeline entry (not NONE)
-      const athletesWithPipeline = new Set(activePipeline.map(p => p.athlete_id));
-
-      // Cumulative: athletes at status X or higher
-      const ALL_ACTIVE = ["IDENTIFIE", "CONTACTE", "EN_DISCUSSION", "VISITE_PLANIFIEE", "ENGAGE", "LETTRE_SIGNEE"];
-      const CONTACTE_PLUS = ["CONTACTE", "EN_DISCUSSION", "VISITE_PLANIFIEE", "ENGAGE", "LETTRE_SIGNEE"];
       const DISCUSSION_PLUS = ["EN_DISCUSSION", "VISITE_PLANIFIEE", "ENGAGE", "LETTRE_SIGNEE"];
       const VISITE_PLUS = ["VISITE_PLANIFIEE", "ENGAGE", "LETTRE_SIGNEE"];
 
@@ -217,25 +336,32 @@ function CoachAnalyticsPage() {
       };
 
       const funnelData = [
-        { label: "Créés", count: totalAthletes, color: "#3B82F6" },
-        { label: "Vérifiés", count: verifiedCount, color: "#22C55E" },
-        { label: "Profils vus", count: athletesWithPipeline.size, color: "#06B6D4" },
-        { label: "Favoris", count: distinctAthletesByStatuses(ALL_ACTIVE), color: "#8B5CF6" },
-        { label: "Contactés", count: distinctAthletesByStatuses(CONTACTE_PLUS), color: "#F59E0B" },
-        { label: "En discussion", count: distinctAthletesByStatuses(DISCUSSION_PLUS), color: "#F97316" },
-        { label: "Visite", count: distinctAthletesByStatuses(VISITE_PLUS), color: "#EC4899" },
-        { label: "Placés", count: distinctAthletesByStatuses(["LETTRE_SIGNEE"]), color: "#E63946" },
+        { label: "Créés",          count: totalAthletes,                              color: "#3B82F6" },
+        { label: "Vérifiés",       count: verifiedCount,                              color: "#22C55E" },
+        { label: "Profils vus",    count: athletesViewed.size,                        color: "#06B6D4" },
+        { label: "Favoris",        count: athletesFavorited.size,                     color: "#8B5CF6" },
+        { label: "Contactés",      count: athletesContacted.size,                     color: "#F59E0B" },
+        { label: "En discussion",  count: distinctAthletesByStatuses(DISCUSSION_PLUS), color: "#F97316" },
+        { label: "Visite",         count: distinctAthletesByStatuses(VISITE_PLUS),     color: "#EC4899" },
+        { label: "Placés",         count: distinctAthletesByStatuses(["LETTRE_SIGNEE"]), color: "#E63946" },
       ];
       const placedCount = distinctAthletesByStatuses(["LETTRE_SIGNEE"]);
       const placementRate = totalAthletes > 0 ? Math.round((placedCount / totalAthletes) * 100) : 0;
 
-      // ── KPIs (conversion rates) ──
+      // ── KPIs — every KPI card on this page uses the pattern (numerator / denominator * 100).
+      //    Denominator is always totalAthletes (atheletes at this school).
       const kpis = {
         total_athletes: totalAthletes,
-        athletes_visible: athletesWithPipeline.size,
-        athletes_favorited: distinctAthletesByStatuses(ALL_ACTIVE),
-        athletes_contacted: distinctAthletesByStatuses(CONTACTE_PLUS),
+        athletes_visible: athletesViewed.size,       // distinct athletes with ≥1 recruiter_athlete_views row
+        athletes_favorited: athletesFavorited.size,  // distinct athletes with ≥1 recruiter_favorites row
+        athletes_contacted: athletesContacted.size,  // distinct athletes with ≥1 conversations row
       };
+      const pctOrZero = (num: number, denom: number) => (denom > 0 ? Math.round((num / denom) * 100) : 0);
+      console.log("[Analytique] KPI formula: pct = round(numerator / denominator * 100)");
+      console.log("[Analytique] KPI — Taux de visibilité:     num =", kpis.athletes_visible,   "denom =", kpis.total_athletes, "→ pct =", pctOrZero(kpis.athletes_visible,   kpis.total_athletes));
+      console.log("[Analytique] KPI — Taux de favoris:        num =", kpis.athletes_favorited, "denom =", kpis.total_athletes, "→ pct =", pctOrZero(kpis.athletes_favorited, kpis.total_athletes));
+      console.log("[Analytique] KPI — Taux de contact:        num =", kpis.athletes_contacted, "denom =", kpis.total_athletes, "→ pct =", pctOrZero(kpis.athletes_contacted, kpis.total_athletes));
+      console.log("[Analytique] KPI — Taux de placement:      num =", placedCount,             "denom =", totalAthletes,       "→ pct =", placementRate);
 
       // ── Attention needed ──
       const attention_needed: AnalyticsData["attention_needed"] = [];
@@ -244,7 +370,7 @@ function CoachAnalyticsPage() {
         const posObj = (Array.isArray(posRaw) ? posRaw[0] : posRaw) as { nom?: string; abreviation?: string } | null;
         const pos = posObj?.abreviation || posObj?.nom || "—";
         const grad = (a.annee_diplomation as number) || 0;
-        const completion = (a.profile_completion as number) || 0;
+        const completion = calculateProfileCompletion(a as Record<string, unknown>);
 
         if (completion < 60) {
           const missing: string[] = [];
@@ -256,7 +382,7 @@ function CoachAnalyticsPage() {
         }
       });
 
-      // ── Sports breakdown ──
+      // ── Sports breakdown — athletes per sport + views per sport ──
       const sportCountMap: Record<string, number> = {};
       athleteList.forEach(a => {
         const sportName = sportsMap[a.sport_id] || "Inconnu";
@@ -266,7 +392,27 @@ function CoachAnalyticsPage() {
       const sportsAthletes = Object.entries(sportCountMap).map(([sport, count]) => ({
         sport, count, percent: totalAthletes > 0 ? Math.round((count / totalAthletes) * 100) : 0,
       }));
-      const sportsViews = Object.entries(sportCountMap).map(([sport]) => ({ sport, views: 0, percent: 0 }));
+
+      // Aggregate recruiter_athlete_views rows by the athlete's sport.
+      // Build athlete_id → sport_name lookup, then bucket every view row into that sport.
+      const athleteIdToSport: Record<string, string> = {};
+      athleteList.forEach(a => {
+        athleteIdToSport[a.id as string] = sportsMap[a.sport_id] || "Inconnu";
+      });
+      const sportViewCountMap: Record<string, number> = {};
+      Object.keys(sportCountMap).forEach(sport => { sportViewCountMap[sport] = 0; });
+      profileViews.forEach(v => {
+        const sport = athleteIdToSport[v.athlete_id as string];
+        if (!sport) return;
+        sportViewCountMap[sport] = (sportViewCountMap[sport] || 0) + 1;
+      });
+      const totalViews = Object.values(sportViewCountMap).reduce((s, n) => s + n, 0);
+      const sportsViews = Object.entries(sportViewCountMap).map(([sport, views]) => ({
+        sport,
+        views,
+        percent: totalViews > 0 ? Math.round((views / totalViews) * 100) : 0,
+      }));
+      console.log("[Analytique] sports_breakdown views:", sportsViews, "totalViews:", totalViews);
 
       setD({
         kpis, views_weekly, week_labels: weekLabels, athlete_performance, cegeps_interested,

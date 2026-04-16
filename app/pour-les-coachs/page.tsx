@@ -38,7 +38,7 @@ const HOW_STEPS = [
   },
 ];
 
-type TierKey = "FREE" | "PRO" | "ALLSTAR";
+type TierKey = "FREE" | "PRO";
 const FEATURES: { title: string; body: string; tier: TierKey }[] = [
   { title: "Compte entraîneur",      body: "Crée ton compte, associe-toi à ton école.",                                   tier: "FREE" },
   { title: "Gestion des athlètes",   body: "Crée et gère les profils. Ajout illimité.",                                    tier: "FREE" },
@@ -51,7 +51,6 @@ const FEATURES: { title: string; body: string; tier: TierKey }[] = [
   { title: "Placement",              body: "Suis tes athlètes — qui est recruté, par quel CÉGEP.",                          tier: "PRO" },
   { title: "Ma réputation",          body: "Tes badges, ton historique, ta crédibilité.",                                   tier: "PRO" },
   { title: "Analytics",              body: "Tendances, activité recruteurs, performance pipeline.",                         tier: "PRO" },
-  { title: "Accès complet",          body: "Tout ce que la plateforme offre. Pour les programmes compétitifs.",             tier: "ALLSTAR" },
 ];
 
 type PricingTier = {
@@ -88,10 +87,10 @@ const PRICING_TIERS: PricingTier[] = [
   },
   {
     name: "Pro",
-    price: "5,99$",
+    price: "14,99$",
     priceSuffix: "/mois",
     priceColor: "text-white",
-    subtitle: "ou 29,99$/an — économise 58%",
+    subtitle: "ou 139$/an — économise 23%",
     subheader: "Tout ce qui est gratuit, plus :",
     bullets: [
       "Accès à Mon école (page complète de ton école)",
@@ -104,23 +103,6 @@ const PRICING_TIERS: PricingTier[] = [
     highlighted: true,
     badge: "Populaire",
     buttonVariant: "filled-red",
-  },
-  {
-    name: "All Star",
-    price: "29,99$",
-    priceSuffix: "/mois",
-    priceColor: "text-white",
-    subtitle: "ou 200$/an — économise 44%",
-    subheader: "Tout ce qui est Pro, plus :",
-    bullets: [
-      "Accès complet à toute la plateforme",
-      "Fonctionnalités exclusives All Star",
-      "Pour les programmes compétitifs (sport-études, PPP)",
-      "Support prioritaire",
-    ],
-    checkColor: "text-[#F59E0B] bg-[#F59E0B]/15",
-    note: "Le tier pour les coachs qui vivent le recrutement au quotidien.",
-    buttonVariant: "outline-amber",
   },
 ];
 
@@ -144,8 +126,10 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 
 function TierPill({ tier }: { tier: TierKey }) {
   if (tier === "FREE") return <span className="inline-flex px-2 py-0.5 rounded-full bg-[#22C55E]/15 text-[#22C55E] text-[10px] font-bold uppercase tracking-wider">Gratuit</span>;
-  if (tier === "PRO")  return <span className="inline-flex px-2 py-0.5 rounded-full bg-[#E63946]/15 text-[#E63946] text-[10px] font-bold uppercase tracking-wider">Pro · 5,99$/mois</span>;
-  return <span className="inline-flex px-2 py-0.5 rounded-full bg-[#F59E0B]/15 text-[#F59E0B] text-[10px] font-bold uppercase tracking-wider">All Star · 29,99$/mois</span>;
+  if (tier === "PRO")  return <span className="inline-flex px-2 py-0.5 rounded-full bg-[#E63946]/15 text-[#E63946] text-[10px] font-bold uppercase tracking-wider">Pro · 14,99$/mois</span>;
+  // "ALLSTAR" tier is retained in the FEATURES typing for backward compat but
+  // coach has only 2 tiers — collapse any ALLSTAR pill to the Pro label.
+  return <span className="inline-flex px-2 py-0.5 rounded-full bg-[#E63946]/15 text-[#E63946] text-[10px] font-bold uppercase tracking-wider">Pro · 14,99$/mois</span>;
 }
 
 function Check({ className = "" }: { className?: string }) {

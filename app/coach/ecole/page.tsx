@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import SchoolGate from "@/components/subscription/SchoolGate";
+import { useSubscription } from "@/lib/hooks/useSubscription";
 import KpiCard from "@/components/director/KpiCard";
 import KpiCardRow from "@/components/director/KpiCardRow";
 import FunnelChart from "@/components/director/FunnelChart";
@@ -51,6 +52,8 @@ function DarkTooltip({
 ═══════════════════════════════════════════════════════════ */
 
 export default function SchoolDashboardPage() {
+  const { tier, canSee } = useSubscription();
+  console.log("[Mon École] tier:", tier, "canSee mon_ecole:", canSee("can_see_mon_ecole"));
   return <SchoolGate><SchoolDashboardContent /></SchoolGate>;
 }
 

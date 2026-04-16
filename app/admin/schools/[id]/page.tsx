@@ -384,14 +384,14 @@ export default function AdminSchoolDetailPage({ params }: { params: Promise<{ id
       mappedTeams.sort((a, b) => a.nom.localeCompare(b.nom, "fr"));
       if (!cancelled) setTeams(mappedTeams);
 
-      // profile_views for this school's athletes
+      // recruiter_athlete_views for this school's athletes
       let profileViews = 0;
       if (athleteIds.length > 0) {
-        const [{ count: pv1 }, { count: pv2 }] = await Promise.all([
-          supabase.from("profile_views").select("*", { count: "exact", head: true }).in("athlete_id", athleteIds),
-          supabase.from("recruiter_athlete_views").select("*", { count: "exact", head: true }).in("athlete_id", athleteIds),
-        ]);
-        profileViews = (pv1 || 0) + (pv2 || 0);
+        const { count: pv } = await supabase
+          .from("recruiter_athlete_views")
+          .select("*", { count: "exact", head: true })
+          .in("athlete_id", athleteIds);
+        profileViews = pv || 0;
       }
 
       if (!cancelled) {

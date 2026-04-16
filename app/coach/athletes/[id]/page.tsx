@@ -304,15 +304,14 @@ export default function CoachAthleteProfilePage() {
         setDbDistinctions(parsed);
       }
 
-      // Engagement metrics (from both legacy + new view tables)
-      const [{ count: vc1 }, { count: vc2 }, { count: fc }] = await Promise.all([
+      // Engagement metrics
+      const [{ count: vc }, { count: fc }] = await Promise.all([
         supabase.from("recruiter_athlete_views").select("*", { count: "exact", head: true }).eq("athlete_id", id),
-        supabase.from("profile_views").select("*", { count: "exact", head: true }).eq("athlete_id", id),
         supabase.from("recruiter_favorites").select("*", { count: "exact", head: true }).eq("athlete_id", id),
       ]);
 
-      const totalViews = (vc1 || 0) + (vc2 || 0);
-      console.log("Engagement metrics:", { legacyViews: vc1, newViews: vc2, totalViews, favoriteCount: fc });
+      const totalViews = vc || 0;
+      console.log("Engagement metrics:", { totalViews, favoriteCount: fc });
       setViewCount(totalViews);
       setFavoriteCount(fc || 0);
 

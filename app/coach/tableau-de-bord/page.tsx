@@ -123,14 +123,12 @@ export default function TableauDeBordPage() {
       let viewsThisMonth = 0;
       let viewsLastMonth = 0;
       if (coachAthleteIds.length > 0) {
-        const [{ count: legacyThis }, { count: newThis }, { count: legacyLast }, { count: newLast }] = await Promise.all([
+        const [{ count: thisCount }, { count: lastCount }] = await Promise.all([
           supabase.from("recruiter_athlete_views").select("id", { count: "exact", head: true }).in("athlete_id", coachAthleteIds).gte("viewed_at", firstOfThisMonth).lt("viewed_at", firstOfNextMonth),
-          supabase.from("profile_views").select("id", { count: "exact", head: true }).in("athlete_id", coachAthleteIds).gte("viewed_at", firstOfThisMonth).lt("viewed_at", firstOfNextMonth),
           supabase.from("recruiter_athlete_views").select("id", { count: "exact", head: true }).in("athlete_id", coachAthleteIds).gte("viewed_at", firstOfLastMonth).lt("viewed_at", firstOfThisMonth),
-          supabase.from("profile_views").select("id", { count: "exact", head: true }).in("athlete_id", coachAthleteIds).gte("viewed_at", firstOfLastMonth).lt("viewed_at", firstOfThisMonth),
         ]);
-        viewsThisMonth = (legacyThis || 0) + (newThis || 0);
-        viewsLastMonth = (legacyLast || 0) + (newLast || 0);
+        viewsThisMonth = thisCount || 0;
+        viewsLastMonth = lastCount || 0;
       }
 
       // Calculate trend — always produce a value
@@ -180,17 +178,15 @@ export default function TableauDeBordPage() {
         monday.setHours(0, 0, 0, 0);
         const startOfWeek = monday.toISOString();
 
-        // Views this week per athlete (from both legacy + new tables)
-        const [{ data: viewRows1 }, { data: viewRows2 }] = await Promise.all([
-          supabase.from("recruiter_athlete_views").select("athlete_id").in("athlete_id", coachAthleteIds).gte("viewed_at", startOfWeek),
-          supabase.from("profile_views").select("athlete_id").in("athlete_id", coachAthleteIds).gte("viewed_at", startOfWeek),
-        ]);
+        // Views this week per athlete
+        const { data: viewRows } = await supabase
+          .from("recruiter_athlete_views")
+          .select("athlete_id")
+          .in("athlete_id", coachAthleteIds)
+          .gte("viewed_at", startOfWeek);
 
         const viewCounts = new Map<string, number>();
-        for (const r of (viewRows1 || [])) {
-          viewCounts.set(r.athlete_id, (viewCounts.get(r.athlete_id) || 0) + 1);
-        }
-        for (const r of (viewRows2 || [])) {
+        for (const r of (viewRows || [])) {
           viewCounts.set(r.athlete_id, (viewCounts.get(r.athlete_id) || 0) + 1);
         }
 

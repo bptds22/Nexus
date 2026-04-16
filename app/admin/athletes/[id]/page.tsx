@@ -497,14 +497,13 @@ export default function AdminAthleteDetailPage({
       } catch (err) {
         console.error("[admin/athletes] loadAthleteRaw failed:", err);
       }
-      const [{ count: vc1 }, { count: vc2 }, { count: fc }] = await Promise.all([
+      const [{ count: vc }, { count: fc }] = await Promise.all([
         supabase.from("recruiter_athlete_views").select("*", { count: "exact", head: true }).eq("athlete_id", id),
-        supabase.from("profile_views").select("*", { count: "exact", head: true }).eq("athlete_id", id),
         supabase.from("recruiter_favorites").select("*", { count: "exact", head: true }).eq("athlete_id", id),
       ]);
-      setViewCount((vc1 || 0) + (vc2 || 0));
+      setViewCount(vc || 0);
       setFavoriteCount(fc || 0);
-      console.log("[admin/athletes] engagement:", { vc1, vc2, fc });
+      console.log("[admin/athletes] engagement:", { vc, fc });
 
       setSports((spRes.data as Sport[]) || []);
       setPositions((posRes.data as Position[]) || []);

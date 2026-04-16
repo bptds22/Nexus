@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import PlaybookBackground from "../components/PlaybookBackground";
 import DeactivationGuard from "@/components/auth/DeactivationGuard";
 import PreMaintenanceBanner from "@/components/auth/PreMaintenanceBanner";
+import DevTierSwitcher from "@/components/dev/DevTierSwitcher";
 /* ─────────────────────────────────────────────────────────────────
    Nexus — Athlete Portal Layout
    Sidebar nav + main content. Simplified for 16-18 year old athletes.
@@ -261,6 +262,7 @@ export default function AthleteLayout({ children }: { children: React.ReactNode 
         </div>
         <main className="relative z-10 flex-1">{children}</main>
       </div>
+      <DevTierSwitcher />
     </div>
   );
 }

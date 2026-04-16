@@ -566,16 +566,11 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      // Legacy view tracking
+      // Record the view — upsert dedupes per day via the (recruiter_id, athlete_id, view_date) unique key.
       supabase.from("recruiter_athlete_views").upsert(
         { recruiter_id: user.id, athlete_id: id, viewed_at: new Date().toISOString() },
         { onConflict: "recruiter_id,athlete_id,view_date" }
       );
-      // New profile_views table (dedup handled by unique index)
-      supabase.from("profile_views").insert({
-        athlete_id: id,
-        recruiter_id: user.id,
-      });
     };
     recordView();
   }, [id]);
@@ -619,13 +614,12 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
   useEffect(() => {
     const loadCounts = async () => {
       const supabase = createClient();
-      const [favRes, viewRes1, viewRes2] = await Promise.all([
+      const [favRes, viewRes] = await Promise.all([
         supabase.from("recruiter_favorites").select("*", { count: "exact", head: true }).eq("athlete_id", id),
         supabase.from("recruiter_athlete_views").select("*", { count: "exact", head: true }).eq("athlete_id", id),
-        supabase.from("profile_views").select("*", { count: "exact", head: true }).eq("athlete_id", id),
       ]);
       setFavCount(favRes.count ?? 0);
-      setViewCount((viewRes1.count ?? 0) + (viewRes2.count ?? 0));
+      setViewCount(viewRes.count ?? 0);
     };
     loadCounts();
   }, [id, isFavorited]);

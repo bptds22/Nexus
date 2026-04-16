@@ -164,9 +164,9 @@ const COACH_TIERS: Tier[] = [
     id: "coach_pro",
     name: "Pro",
     nameColor: "text-[#F59E0B]",
-    monthly: 5.99,
-    annual: 29.99,
-    annualMonthlyEq: 2.50,
+    monthly: 14.99,
+    annual: 139,
+    annualMonthlyEq: 11.58,
     border: "border-2 border-[#F59E0B]",
     glow: "shadow-[0_0_24px_rgba(245,158,11,0.15)]",
     badge: { label: "Populaire", bg: "bg-[#F59E0B]", fg: "text-black" },
@@ -183,27 +183,6 @@ const COACH_TIERS: Tier[] = [
     ],
     ctaLabel: "Passer à Pro →",
     ctaClass: "bg-[#F59E0B] text-black hover:bg-[#FBBF24]",
-    ctaHref: "/inscription?role=COACH",
-  },
-  {
-    id: "coach_allstar",
-    name: "All Star",
-    nameColor: "text-[#E63946]",
-    monthly: 29.99,
-    annual: 200,
-    annualMonthlyEq: 16.67,
-    border: "border-2 border-[#E63946]",
-    glow: "shadow-[0_0_24px_rgba(230,57,70,0.1)]",
-    badge: null,
-    featuresHeader: "Tout du plan Pro, plus :",
-    features: [
-      { kind: "item", label: "Accès complet à toute la plateforme", included: true },
-      { kind: "item", label: "Gestion école (admin)", included: true },
-      { kind: "item", label: "Export PDF profils athlètes", included: true },
-      { kind: "item", label: "Historique de placement (cohortes passées)", included: true },
-    ],
-    ctaLabel: "Devenir All Star →",
-    ctaClass: "bg-[#E63946] text-white hover:bg-[#D42B22]",
     ctaHref: "/inscription?role=COACH",
   },
 ];
@@ -273,7 +252,7 @@ const ATHLETE_TIERS: Tier[] = [
 /* ── Savings shown in toggle label per persona (Pro-tier representative) ─ */
 const PERSONA_SAVINGS: Record<Persona, number> = {
   recruteur: 22,
-  coach: 58,
+  coach: 23,
   athlete: 18,
 };
 
@@ -396,14 +375,14 @@ export default function TarifsPage() {
       {/* ─── SECTION 4 — PRICING CARDS ────────────────────── */}
       <section>
         <div className="max-w-[1200px] mx-auto px-6 pt-10 pb-12">
-          {persona === "athlete" ? (
-            /* Athlete — 2 cards centered */
+          {tiers.length === 2 ? (
+            /* 2 tiers (Coach or Athlète) — centered */
             <div className="max-w-[820px] mx-auto grid grid-cols-1 md:grid-cols-2 gap-5 items-stretch">
               <PricingCard tier={tiers[1]} billing={billing} orderCls="order-1 md:order-2" />
               <PricingCard tier={tiers[0]} billing={billing} orderCls="order-2 md:order-1" />
             </div>
           ) : (
-            /* Recruteur / Coach — 3 cards */
+            /* 3 tiers (Recruteur) */
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-stretch">
               <PricingCard tier={tiers[1]} billing={billing} orderCls="order-1 md:order-2" />
               <PricingCard tier={tiers[0]} billing={billing} orderCls="order-2 md:order-1" />

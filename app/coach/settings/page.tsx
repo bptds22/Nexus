@@ -10,6 +10,7 @@ import AccountSection from "./_components/AccountSection";
 import type { SettingsSection } from "./_components/SettingsNav";
 import SubscriptionSection from "@/components/subscription/SubscriptionSection";
 import SchoolGate from "@/components/subscription/SchoolGate";
+import { useSubscription } from "@/lib/hooks/useSubscription";
 
 /* ═══════════════════════════════════════════════════════════════
    Coach Settings — Paramètres
@@ -18,46 +19,12 @@ import SchoolGate from "@/components/subscription/SchoolGate";
 
 /* ── Coach Pricing Section ────────────────────────────────── */
 
-/**
- * Normalize any tier string the DB might hold (legacy + current writers):
- *   'ALL_STAR', 'all_star', 'allstar', 'coach_allstar'  → 'allstar'
- *   'PRO', 'pro', 'coach_pro'                           → 'pro'
- *   anything else                                       → 'free'
- */
-function normalizeCoachTier(raw: string | null | undefined): "free" | "pro" | "allstar" {
-  if (!raw) return "free";
-  const s = raw.toLowerCase().replace(/[\s_-]/g, "");
-  if (s.includes("allstar")) return "allstar";
-  if (s.includes("pro")) return "pro";
-  return "free";
-}
-
 function CoachPricingSection() {
   const [annual, setAnnual] = useState(false);
-  const [currentTier, setCurrentTier] = useState<"free" | "pro" | "allstar">("free");
-
-  useEffect(() => {
-    (async () => {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        console.log("[CoachSettings] no auth user — defaulting to free");
-        return;
-      }
-      const { data: sub, error } = await supabase
-        .from("subscriptions")
-        .select("tier, status, billing_cycle, current_period_end")
-        .eq("user_id", user.id)
-        .eq("status", "active")
-        .maybeSingle();
-
-      console.log("Subscription data fetched:", sub, "error:", error);
-
-      const tier = normalizeCoachTier(sub?.tier as string | undefined);
-      console.log("Current tier:", tier);
-      setCurrentTier(tier);
-    })();
-  }, []);
+  // Coach has only 2 tiers: free / pro.
+  // Any legacy DB value that reads as "all_star" is collapsed to "pro".
+  const { tier: hookTier } = useSubscription();
+  const currentTier: "free" | "pro" = hookTier === "free" ? "free" : "pro";
 
   const tiers = [
     {
@@ -85,8 +52,8 @@ function CoachPricingSection() {
     {
       id: "pro",
       name: "Pro",
-      monthly: 6,
-      yearly: 30,
+      monthly: 14.99,
+      yearly: 139,
       border: "border-[#F59E0B]",
       glow: "shadow-[0_0_20px_rgba(245,158,11,0.1)]",
       badge: { label: "POPULAIRE", color: "bg-[#F59E0B] text-black" },
@@ -103,27 +70,6 @@ function CoachPricingSection() {
         { label: "Évaluations détaillées", included: true },
       ],
     },
-    {
-      id: "allstar",
-      name: "All Star",
-      monthly: 30,
-      yearly: 200,
-      border: "border-[#E63946]",
-      glow: "shadow-[0_0_20px_rgba(230,57,70,0.1)]",
-      badge: { label: "COMPLET", color: "bg-[#E63946] text-white" },
-      ctaBg: "bg-[#E63946] hover:bg-[#D42B22] text-white",
-      ctaText: "Passer à All Star",
-      features: [
-        { label: "Tout du plan Pro +", included: true, header: true },
-        { label: "Gestion école complète", included: true },
-        { label: "Multi-coachs", included: true },
-        { label: "Export PDF / CSV", included: true },
-        { label: "Messagerie prioritaire", included: true },
-        { label: "Analytics avancés", included: true },
-        { label: "Support prioritaire", included: true },
-        { label: "Badge Coach Élite", included: true },
-      ],
-    },
   ];
 
   return (
@@ -136,7 +82,7 @@ function CoachPricingSection() {
       <div className="bg-[#22C55E]/10 border border-[#22C55E]/30 rounded-xl px-5 py-3">
         <div className="flex items-center gap-2">
           <span className="w-2.5 h-2.5 rounded-full bg-[#22C55E]" />
-          <span className="text-[14px] font-bold text-white">Tu es actuellement sur le plan <span className="uppercase">{currentTier === "free" ? "Gratuit" : currentTier === "pro" ? "Pro" : "All Star"}</span></span>
+          <span className="text-[14px] font-bold text-white">Tu es actuellement sur le plan <span className="uppercase">{currentTier === "free" ? "Gratuit" : "Pro"}</span></span>
         </div>
         {currentTier === "free" && <p className="text-[13px] text-[#9CA3AF] mt-1 ml-[18px]">Passe à Pro pour maximiser la visibilité de tes athlètes</p>}
       </div>
@@ -145,12 +91,12 @@ function CoachPricingSection() {
         <div className="flex items-center gap-1 bg-[#13151a] rounded-xl p-1.5">
           <button type="button" onClick={() => setAnnual(false)} className={`px-5 py-2.5 rounded-lg text-[12px] font-bold uppercase tracking-[0.12em] transition-all ${!annual ? "bg-[#E63946] text-white shadow-[0_0_10px_rgba(230,57,70,0.25)]" : "text-[#6b7280] hover:text-white"}`}>Mensuel</button>
           <button type="button" onClick={() => setAnnual(true)} className={`px-5 py-2.5 rounded-lg text-[12px] font-bold uppercase tracking-[0.12em] transition-all ${annual ? "bg-[#E63946] text-white shadow-[0_0_10px_rgba(230,57,70,0.25)]" : "text-[#6b7280] hover:text-white"}`}>
-            Annuel <span className="text-[10px] font-normal ml-1 opacity-80">(économise 58%)</span>
+            Annuel <span className="text-[10px] font-normal ml-1 opacity-80">(économise 23%)</span>
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-[680px] mx-auto">
         {tiers.map(tier => {
           const isCurrent = currentTier === tier.id;
           const price = annual ? tier.yearly : tier.monthly;

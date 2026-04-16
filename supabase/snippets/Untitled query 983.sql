@@ -1,3 +1,2 @@
-SELECT tier, LOWER(tier), LENGTH(tier) 
-FROM subscriptions 
-WHERE user_id = 'e74b866b-c544-46a2-af12-c330a5fd8ecb';
+SELECT COUNT(*) FROM recruiter_athlete_views 
+WHERE athlete_id = 'aebccbf1-ddcf-4a36-98cf-5d0fd773dd16';

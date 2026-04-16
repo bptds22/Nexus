@@ -6,6 +6,7 @@ import RecruiterSidebar from "./_components/RecruiterSidebar";
 import PlaybookBackground from "../components/PlaybookBackground";
 import DeactivationGuard from "@/components/auth/DeactivationGuard";
 import PreMaintenanceBanner from "@/components/auth/PreMaintenanceBanner";
+import DevTierSwitcher from "@/components/dev/DevTierSwitcher";
 
 /* ─────────────────────────────────────────────────────────────────
    Nexus — Recruiter Shell Layout
@@ -69,6 +70,7 @@ function RecruteurLayoutInner({ children }: { children: React.ReactNode }) {
           {children}
         </main>
       </div>
+      <DevTierSwitcher />
     </div>
   );
 }

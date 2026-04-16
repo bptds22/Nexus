@@ -5,6 +5,7 @@ import CoachSidebar from "./components/CoachSidebar";
 import PlaybookBackground from "../components/PlaybookBackground";
 import DeactivationGuard from "@/components/auth/DeactivationGuard";
 import PreMaintenanceBanner from "@/components/auth/PreMaintenanceBanner";
+import DevTierSwitcher from "@/components/dev/DevTierSwitcher";
 
 /* ─────────────────────────────────────────────────────────────────
    Nexus — Coach Shell Layout
@@ -60,6 +61,7 @@ export default function CoachLayout({
           {children}
         </main>
       </div>
+      <DevTierSwitcher />
     </div>
   );
 }
