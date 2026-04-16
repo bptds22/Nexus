@@ -1,50 +1,17 @@
+"use client";
+
+import { useEffect } from "react";
 import NexusLogo from "@/components/ui/NexusLogo";
 import Link from "next/link";
+import { Building2, ShieldCheck, BadgeCheck } from "lucide-react";
 import PlaybookBackground from "./components/PlaybookBackground";
 import MarketingNav from "@/components/marketing/MarketingNav";
 
 /* ─────────────────────────────────────────────────────────────────
-   Nexus — Landing Page
-   Inspired by: College Football 25 UI · ESPN · Nike College
-   Dark navy · chalk playbook · condensed bold · OVR card aesthetic
+   Nexus — Homepage (rewrite)
+   Four sections only: Hero, Persona Cards, Trust Strip, Footer.
 ───────────────────────────────────────────────────────────────────*/
 
-const STEPS = [
-  {
-    n: "01",
-    role: "ENTRAÎNEUR",
-    title: "Inscris tes athlètes",
-    body: "Crée les profils de tes joueurs avec statistiques, vidéos et parcours académique vérifiés — tout en un seul endroit.",
-  },
-  {
-    n: "02",
-    role: "ATHLÈTE",
-    title: "Mets leur profil en valeur",
-    body: "Faits saillants, références et bio personnelle. Les stats se mettent à jour automatiquement chaque saison.",
-  },
-  {
-    n: "03",
-    role: "RECRUTEUR",
-    title: "Découvre les prospects",
-    body: "Filtre, sauvegarde et contacte directement les coaches pour discuter des athlètes qui correspondent à ton programme CÉGEP.",
-  },
-];
-
-const COACH_FEATURES   = ["Profils complets pour chaque joueur", "Stats, vidéos et parcours académique", "Visibilité maximale auprès des CÉGEP"];
-const RECRUIT_FEATURES = ["200+ profils d'athlètes vérifiés", "Filtres avancés : sport, région, GPA", "Contact direct sans intermédiaire"];
-
-const CEGEPS = [
-  { name: "Sainte-Foy",         city: "Québec",        sport: "Football · Basketball" },
-  { name: "Garneau",            city: "Québec",        sport: "Football · Soccer"     },
-  { name: "Montmorency",        city: "Laval",         sport: "Football · Basketball" },
-  { name: "Édouard-Montpetit",  city: "Longueuil",     sport: "Football · Hockey"     },
-  { name: "Lionel-Groulx",      city: "Ste-Thérèse",   sport: "Football · Basketball" },
-  { name: "Sherbrooke",         city: "Sherbrooke",    sport: "Football · Hockey"     },
-  { name: "Trois-Rivières",     city: "Trois-Rivières", sport: "Football · Soccer"    },
-  { name: "André-Laurendeau",   city: "LaSalle",       sport: "Football · Basketball" },
-];
-
-/* shared micro-label style */
 const label = "text-[10px] font-bold tracking-[0.25em] uppercase";
 
 const SOCIALS = [
@@ -71,31 +38,36 @@ const SOCIALS = [
 ];
 
 export default function Home() {
-  return (
-    <div className="hero-playbook bg-[#060A14] min-h-screen">
-      <PlaybookBackground />
+  useEffect(() => {
+    console.log("[Homepage] Hero section rendered");
+    console.log("[Homepage] Persona cards section rendered");
+    console.log("[Homepage] Trust strip rendered");
+    console.log("[Homepage] Coach CTA button added");
+  }, []);
 
+  return (
+    <div className="hero-playbook bg-[#111317] min-h-screen">
+      <PlaybookBackground />
       <MarketingNav />
 
       {/* ══════════════════════════════════════════
-          HERO
+          SECTION 1 — HERO
       ══════════════════════════════════════════ */}
       <section className="relative overflow-hidden bg-transparent">
         <div className="relative max-w-6xl mx-auto px-6 pt-20 pb-24 grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-16 xl:gap-24 items-start">
 
           {/* ── Left: copy ── */}
           <div>
-            {/* Eyebrow — game tag style */}
+            {/* Eyebrow */}
             <div className="inline-flex items-center gap-3 mb-8">
-              <span className="w-6 h-px bg-wl-red"/>
-              <span className={`${label} text-wl-red`}>Plateforme officielle · Québec 2026</span>
-              <span className="w-6 h-px bg-wl-red"/>
+              <span className="w-6 h-px bg-[#E63946]" />
+              <span className={`${label} text-[#E63946]`}>Plateforme officielle · Québec 2026</span>
+              <span className="w-6 h-px bg-[#E63946]" />
             </div>
 
-            {/* Headline — condensed, all-caps game style */}
+            {/* Headline */}
             <h1 className="nx-display text-6xl xl:text-7xl font-black text-white uppercase leading-[0.92] tracking-tight mb-6">
-              La Plateforme{" "}
-              <span className="text-wl-red">#1</span>
+              La Plateforme <span className="text-[#E63946]">#1</span>
               <br />
               de Recrutement
               <br />
@@ -104,38 +76,34 @@ export default function Home() {
               Québec
             </h1>
 
-            <p className="font-sans text-base text-[#9AA3B2] leading-relaxed max-w-[420px] mb-10">
-              Nexus connecte les entraîneurs du secondaire avec les recruteurs des CÉGEP. Profils vérifiés, stats en temps réel, communication directe.
+            <p className="font-sans text-base text-[#9CA3AF] leading-relaxed max-w-[460px] mb-10">
+              Connecte les athlètes du secondaire aux programmes sport-études des CÉGEP. Profils vérifiés, stats en temps réel, recrutement simplifié.
             </p>
 
-            {/* CTAs */}
-            <div className="flex flex-wrap gap-3 mb-14">
-              <button className="nx-ghost-btn h-12 px-8 border font-head font-black text-sm uppercase tracking-widest">
+            {/* CTAs — Athlète (red) + Recruteur (outline) + Coach (outline) */}
+            <div className="flex flex-wrap gap-3">
+              <Link
+                href="/inscription?role=ATHLETE"
+                className="inline-flex items-center h-12 px-8 bg-[#E63946] text-white font-head font-black text-sm uppercase tracking-widest hover:bg-[#D42B22] transition-colors rounded"
+              >
+                Je suis un Athlète →
+              </Link>
+              <Link
+                href="/inscription?role=RECRUTEUR"
+                className="nx-ghost-btn inline-flex items-center h-12 px-8 border font-head font-black text-sm uppercase tracking-widest rounded"
+              >
+                Je suis un Recruteur →
+              </Link>
+              <Link
+                href="/inscription?role=COACH"
+                className="nx-ghost-btn inline-flex items-center h-12 px-8 border font-head font-black text-sm uppercase tracking-widest rounded"
+              >
                 Je suis un Coach →
-              </button>
-              <button className="nx-ghost-btn h-12 px-8 border font-head font-black text-sm uppercase tracking-widest">
-                Je suis un Recruteur
-              </button>
-            </div>
-
-            {/* Stats — OVR-style with pipe separators */}
-            <div className="flex divide-x divide-[#1E2D4A]">
-              {[
-                { num: "200", label: "Athlètes" },
-                { num: "50",  label: "Écoles secondaires" },
-                { num: "30",  label: "Recruteurs CÉGEP" },
-              ].map((s) => (
-                <div key={s.label} className="px-7 first:pl-0 last:pr-0">
-                  <div className="nx-stat-num nx-display text-4xl font-black text-white leading-none">
-                    {s.num}<span className="text-wl-red">+</span>
-                  </div>
-                  <div className={`${label} text-[#9AA3B2] mt-1.5`}>{s.label}</div>
-                </div>
-              ))}
+              </Link>
             </div>
           </div>
 
-          {/* ── Right: Athlete Card v30 ── */}
+          {/* ── Right: Athlete Card v30 (unchanged) ── */}
           <div className="flex justify-center lg:justify-end lg:pt-[52px]">
             <div className="nx-v30-wrap relative" style={{ width: 340, paddingTop: 6, paddingBottom: 10 }}>
 
@@ -174,12 +142,10 @@ export default function Home() {
                       backgroundPosition: 'center top -40px',
                     }}
                   />
-                  {/* Gradient fade */}
                   <div
                     className="absolute bottom-0 left-0 right-0 h-1/2 z-[2]"
                     style={{ background: 'linear-gradient(to top, rgba(11,18,32,0.97) 0%, rgba(11,18,32,0.7) 35%, transparent 100%)' }}
                   />
-                  {/* Corner fold */}
                   <div
                     className="absolute top-0 right-0 z-20"
                     style={{ width: 0, height: 0, borderStyle: 'solid', borderWidth: '0 20px 20px 0', borderColor: 'transparent #1E2128 transparent transparent' }}
@@ -192,8 +158,6 @@ export default function Home() {
                   style={{ bottom: -16, right: -26, borderRadius: 4, border: '1.5px solid rgba(255,255,255,0.08)' }}
                 >
                   <div className="flex" style={{ width: 364 }}>
-
-                    {/* Left — dark navy */}
                     <div
                       className="flex flex-col justify-between"
                       style={{ background: '#1E2128', padding: '14px 16px 14px 18px', minWidth: 109, gap: 5 }}
@@ -214,7 +178,6 @@ export default function Home() {
                       ))}
                     </div>
 
-                    {/* Perforation */}
                     <div
                       className="nx-v30-perf flex flex-col items-center justify-center"
                       style={{ width: 12, background: '#E6E6E6', borderLeft: '1.5px dashed rgba(11,18,32,0.2)', borderRight: '1.5px dashed rgba(11,18,32,0.2)', gap: 3 }}
@@ -224,7 +187,6 @@ export default function Home() {
                       ))}
                     </div>
 
-                    {/* Right — white with dark star pill */}
                     <div className="flex-1 flex flex-col justify-center" style={{ background: '#FFFFFF', padding: '14px 18px' }}>
                       <svg width="150" height="22" viewBox="0 0 150 22" fill="none" style={{ display: 'block', marginBottom: 8 }}>
                         {[0, 30, 60, 90, 120].map((x) => (
@@ -242,7 +204,6 @@ export default function Home() {
                       </div>
                     </div>
 
-                    {/* Stub */}
                     <div
                       className="flex items-center justify-center flex-shrink-0"
                       style={{
@@ -257,7 +218,6 @@ export default function Home() {
                     >
                       NEXUS
                     </div>
-
                   </div>
                 </div>
 
@@ -269,170 +229,90 @@ export default function Home() {
       </section>
 
       {/* ══════════════════════════════════════════
-          CEGEP PARTNERS — trust strip
+          SECTION 2 — CHOISIS TON PARCOURS
       ══════════════════════════════════════════ */}
-      <section className="bg-[#060A14]/80">
-        <div className="max-w-6xl mx-auto px-6 py-10">
-
-          <div className="flex items-center justify-center gap-3 mb-8">
-            <span className="w-6 h-px bg-wl-red"/>
-            <span className={`${label} text-wl-red`}>Programmes CÉGEP partenaires</span>
-            <span className="w-6 h-px bg-wl-red"/>
-          </div>
-
-          <div className="nx-cegep-grid grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 border border-[#1E2D4A] divide-x divide-[#1E2D4A]">
-            {CEGEPS.map((c) => (
-              <div key={c.name} className="group px-4 py-5 flex flex-col items-center text-center hover:bg-white/[0.04] transition-colors cursor-default">
-                {/* Red top accent on hover */}
-                <div className="w-full h-px bg-wl-red scale-x-0 group-hover:scale-x-100 transition-transform origin-left mb-3"/>
-                <div className="font-head text-xs font-black text-white/55 group-hover:text-white uppercase tracking-wider transition-colors leading-tight mb-1">
-                  {c.name}
-                </div>
-                <div className={`${label} text-[#3D5578] group-hover:text-[#9AA3B2] transition-colors`} style={{ fontSize: "8px" }}>
-                  {c.city}
-                </div>
-              </div>
-            ))}
-          </div>
-
-        </div>
-      </section>
-
-      {/* Diagonal separator */}
-      <div className="nx-sep relative h-14 bg-[#060A14]/60 overflow-hidden" aria-hidden>
-        <div className="absolute inset-0 bg-[#0A1020]/60" style={{ clipPath: "polygon(0 100%, 100% 0, 100% 100%)" }}/>
-      </div>
-
-      {/* ══════════════════════════════════════════
-          HOW IT WORKS — game mode list style
-      ══════════════════════════════════════════ */}
-      <section id="how" className="bg-[#0A1020]/75 pb-24 pt-16">
+      <section id="roles" className="bg-[#111317]/75 pb-24 pt-16">
         <div className="max-w-6xl mx-auto px-6">
 
-          <div className="mb-14">
-            <div className={`${label} text-wl-red mb-3`}>Comment ça marche</div>
-            <h2 className="nx-display text-5xl font-black text-white uppercase leading-[1] tracking-tight">
-              Du Secondaire au CÉGEP<br/>
-              <span className="text-wl-red">en 3 étapes</span>
-            </h2>
+          <div className="text-center mb-12">
+            <span className={`${label} text-[#E63946]`}>Choisis ton parcours</span>
           </div>
 
-          {/* Steps — bordered columns like CF25 game mode list */}
-          <div className="nx-steps-grid grid grid-cols-1 md:grid-cols-3">
-            {STEPS.map((step) => (
-              <div key={step.n} className="nx-step-card group px-8 py-10 first:pl-0 last:pr-0 hover:bg-white/[0.06] transition-colors relative">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-                {/* Hover accent line */}
-                <div className="absolute top-0 left-8 right-8 md:left-0 md:right-auto md:top-0 md:bottom-0 md:w-px md:h-full h-px bg-wl-red scale-0 group-hover:scale-100 transition-transform origin-top-left" aria-hidden/>
-
-                {/* Giant watermark step number */}
-                <div className="nx-step-num nx-display text-8xl font-black text-white/30 leading-none mb-3 select-none" aria-hidden>
-                  {step.n}
-                </div>
-
-                <div className={`${label} text-wl-red mb-3`}>{step.role}</div>
-                <h3 className="nx-display text-2xl font-black text-white uppercase leading-tight mb-3">
-                  {step.title}
-                </h3>
-                <p className="font-sans text-sm text-[#D8E1EA] leading-relaxed">
-                  {step.body}
-                </p>
-              </div>
-            ))}
-          </div>
-
-        </div>
-      </section>
-
-      {/* Diagonal separator reverse */}
-      <div className="nx-sep relative h-14 bg-[#0A1020]/60 overflow-hidden" aria-hidden>
-        <div className="absolute inset-0 bg-[#060A14]/60" style={{ clipPath: "polygon(0 0, 100% 100%, 0 100%)" }}/>
-      </div>
-
-      {/* ══════════════════════════════════════════
-          CHOOSE YOUR JOURNEY — CF25 selection style
-      ══════════════════════════════════════════ */}
-      <section id="roles" className="bg-[#060A14]/75 pb-24 pt-8">
-        <div className="max-w-6xl mx-auto px-6">
-
-          {/* Header */}
-          <div className="text-center mb-16">
-            <div className={`${label} text-wl-red mb-4`}>Rejoins Nexus</div>
-            <h2 className="nx-display text-6xl font-black text-white uppercase tracking-tight leading-[1]">
-              Choisis ton Parcours
-            </h2>
-          </div>
-
-          {/* Cards — touching, no gap, like CF25 journey selection */}
-          <div className="grid grid-cols-1 md:grid-cols-2">
-
-            {/* COACH */}
-            <div className="relative overflow-hidden bg-[#0A1428] border border-[#1E2D4A] p-12 group hover:bg-[#0D1A38] transition-colors cursor-pointer">
-
-              {/* Giant watermark number */}
+            {/* ── Card 1 — Athlète ── */}
+            <div className="relative overflow-hidden bg-[#1A1D24] border border-[#1E2D4A] rounded-lg p-10 lg:p-12 group">
+              {/* Watermark number */}
               <div className="absolute -right-8 -bottom-4 nx-display text-[200px] font-black text-white/[0.03] leading-none select-none pointer-events-none" aria-hidden>
                 01
               </div>
 
-              {/* Red top accent bar — appears on hover */}
-              <div className="absolute top-0 left-0 right-0 h-0.5 bg-wl-red scale-x-0 group-hover:scale-x-100 transition-transform origin-left"/>
-
-              <span className={`${label} text-wl-red`}>Coach / Entraîneur</span>
+              <span className={`${label} text-[#E63946]`}>Athlète</span>
 
               <h3 className="nx-display text-5xl font-black text-white uppercase leading-[1] mt-4 mb-2">
-                Valorise
+                Fais-toi
                 <br />
-                tes Athlètes
+                remarquer
               </h3>
 
-              {/* Thin rule */}
-              <div className="w-12 h-0.5 bg-wl-red my-6"/>
+              <div className="w-12 h-0.5 bg-[#E63946] my-6" />
 
               <ul className="space-y-3 mb-10">
-                {COACH_FEATURES.map((f) => (
+                {[
+                  "Profil vérifié visible par tous les recruteurs CÉGEP",
+                  "Vidéos, stats et parcours académique en un seul endroit",
+                  "Gratuit",
+                ].map((f) => (
                   <li key={f} className="flex items-center gap-3">
-                    <span className="w-6 h-px bg-wl-red flex-shrink-0"/>
-                    <span className="font-sans text-sm text-[#9AA3B2]">{f}</span>
+                    <span className="w-6 h-px bg-[#E63946] flex-shrink-0" />
+                    <span className="font-sans text-sm text-[#9CA3AF]">{f}</span>
                   </li>
                 ))}
               </ul>
 
-              <a href="/auth/pro" className="inline-flex items-center h-11 px-8 bg-wl-red text-white font-head font-black text-xs uppercase tracking-widest hover:bg-wl-red-hover transition-colors">
-                Créer mon Compte →
-              </a>
+              <Link
+                href="/inscription?role=ATHLETE"
+                className="inline-flex items-center h-11 px-8 bg-[#E63946] text-white font-head font-black text-xs uppercase tracking-widest hover:bg-[#D42B22] transition-colors rounded"
+              >
+                Créer mon profil →
+              </Link>
             </div>
 
-            {/* RECRUITER */}
-            <div className="relative overflow-hidden bg-[#070D1C] border border-[#1E2D4A] md:border-l-0 p-12 group hover:bg-[#0A1228] transition-colors cursor-pointer">
-
+            {/* ── Card 2 — Recruteur CÉGEP ── */}
+            <div className="relative overflow-hidden bg-[#1A1D24] border border-[#1E2D4A] rounded-lg p-10 lg:p-12 group">
               <div className="absolute -right-8 -bottom-4 nx-display text-[200px] font-black text-white/[0.03] leading-none select-none pointer-events-none" aria-hidden>
                 02
               </div>
 
-              <div className="absolute top-0 left-0 right-0 h-0.5 bg-[#2E3D55] scale-x-0 group-hover:scale-x-100 transition-transform origin-left"/>
-
-              <span className={`${label} text-[#9AA3B2]`}>Recruteur CÉGEP</span>
+              <span className={`${label} text-[#9CA3AF]`}>Recruteur CÉGEP</span>
 
               <h3 className="nx-display text-5xl font-black text-white uppercase leading-[1] mt-4 mb-2">
-                Découvre
+                Trouve ton
                 <br />
-                les Meilleurs
+                prochain joueur
               </h3>
 
-              <div className="w-12 h-0.5 bg-[#2E3D55] my-6"/>
+              <div className="w-12 h-0.5 bg-[#E63946] my-6" />
 
               <ul className="space-y-3 mb-10">
-                {RECRUIT_FEATURES.map((f) => (
+                {[
+                  "16 sports couverts — du RSEQ",
+                  "Filtres avancés : sport, région, position, GPA",
+                  "Contact direct avec les entraîneurs",
+                ].map((f) => (
                   <li key={f} className="flex items-center gap-3">
-                    <span className="w-6 h-px bg-[#2E3D55] flex-shrink-0"/>
-                    <span className="font-sans text-sm text-[#9AA3B2]">{f}</span>
+                    <span className="w-6 h-px bg-[#2E3D55] flex-shrink-0" />
+                    <span className="font-sans text-sm text-[#9CA3AF]">{f}</span>
                   </li>
                 ))}
               </ul>
 
-              <a href="/auth?mode=signup" className="nx-ghost-btn h-11 px-8 border font-head font-black text-xs uppercase tracking-widest inline-flex items-center">
-                Explorer les Athlètes →
-              </a>
+              <Link
+                href="/inscription?role=RECRUTEUR"
+                className="nx-ghost-btn inline-flex items-center h-11 px-8 border font-head font-black text-xs uppercase tracking-widest rounded"
+              >
+                Explorer les athlètes →
+              </Link>
             </div>
 
           </div>
@@ -440,29 +320,31 @@ export default function Home() {
       </section>
 
       {/* ══════════════════════════════════════════
-          FINAL CTA STRIP
+          SECTION 3 — TRUST STRIP
       ══════════════════════════════════════════ */}
-      <section className="bg-[#060A14]/75">
-        <div className="max-w-6xl mx-auto px-6 py-16 flex flex-col md:flex-row items-center justify-between gap-8">
-          <div>
-            <div className={`${label} text-wl-red mb-3`}>Prêt à jouer?</div>
-            <h2 className="nx-display text-4xl font-black text-white uppercase leading-tight">
-              Commence à recruter aujourd&apos;hui
-            </h2>
-          </div>
-          <div className="flex gap-3 flex-shrink-0">
-            <a href="/auth?mode=signup" className="inline-flex items-center h-12 px-8 bg-wl-red text-white font-head font-black text-xs uppercase tracking-widest hover:bg-wl-red-hover transition-colors hover:shadow-[0_8px_28px_rgba(232,72,72,0.38)] hover:-translate-y-0.5">
-              Explorer les Athlètes →
-            </a>
-            <a href="/auth/pro" className="nx-ghost-btn h-12 px-8 border font-head font-black text-xs uppercase tracking-widest inline-flex items-center">
-              Je suis Coach
-            </a>
+      <section className="bg-[#111317]/80 border-t border-[#1E2D4A]/40 border-b border-[#1E2D4A]/40">
+        <div className="max-w-6xl mx-auto px-6 py-8">
+          <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-[#9CA3AF] text-sm">
+            <span className="inline-flex items-center gap-2">
+              <Building2 size={16} strokeWidth={2} className="text-[#9CA3AF]" />
+              Hébergé au Québec
+            </span>
+            <span className="hidden sm:inline text-[#475569]">·</span>
+            <span className="inline-flex items-center gap-2">
+              <ShieldCheck size={16} strokeWidth={2} className="text-[#9CA3AF]" />
+              Conforme Loi 25
+            </span>
+            <span className="hidden sm:inline text-[#475569]">·</span>
+            <span className="inline-flex items-center gap-2">
+              <BadgeCheck size={16} strokeWidth={2} className="text-[#9CA3AF]" />
+              Profils vérifiés
+            </span>
           </div>
         </div>
       </section>
 
       {/* ══════════════════════════════════════════
-          FOOTER
+          SECTION 4 — FOOTER (unchanged)
       ══════════════════════════════════════════ */}
       <footer className="bg-[#030609]/80 border-t border-[#1E2D4A]">
         <div className="max-w-6xl mx-auto px-6 pt-10 pb-6">
@@ -477,9 +359,9 @@ export default function Home() {
             </div>
 
             <nav className="flex items-center gap-8">
-              <Link href="/confidentialite" className={`${label} text-[#475569] hover:text-[#9AA3B2] transition-colors`}>Confidentialité</Link>
-              <Link href="/conditions" className={`${label} text-[#475569] hover:text-[#9AA3B2] transition-colors`}>Conditions</Link>
-              <Link href="/contact" className={`${label} text-[#475569] hover:text-[#9AA3B2] transition-colors`}>Contact</Link>
+              <Link href="/confidentialite" className={`${label} text-[#475569] hover:text-[#9CA3AF] transition-colors`}>Confidentialité</Link>
+              <Link href="/conditions" className={`${label} text-[#475569] hover:text-[#9CA3AF] transition-colors`}>Conditions</Link>
+              <Link href="/contact" className={`${label} text-[#475569] hover:text-[#9CA3AF] transition-colors`}>Contact</Link>
             </nav>
 
             <div className="flex items-center gap-5">
@@ -495,7 +377,11 @@ export default function Home() {
 
           </div>
 
-          <p className={`${label} text-[#2E3D55] text-center pt-5`}>© 2026 Nexus — Propulsé par <img src="/brand/logo-white-red.png" alt="WeLead" style={{height:16}} /></p>
+          <p className={`${label} text-[#2E3D55] text-center pt-5 flex items-center justify-center gap-2`}>
+            <span>© 2026 Nexus — Propulsé par</span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/brand/logo-white-red.png" alt="WeLead" className="h-4 w-auto" />
+          </p>
 
         </div>
       </footer>

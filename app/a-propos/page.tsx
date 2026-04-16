@@ -72,6 +72,10 @@ export default function AProposPage() {
     if (!form.name.trim() || !form.email.trim() || !form.message.trim()) return;
     // TODO: integrate with backend / email service
     setSubmitted(true);
+    setTimeout(() => {
+      setSubmitted(false);
+      setForm({ name: "", email: "", subject: "Question générale", message: "" });
+    }, 4000);
   };
 
   return (
@@ -88,7 +92,7 @@ export default function AProposPage() {
               Nexus, c&apos;est nous avant d&apos;être un produit.
             </h1>
             <p className="text-[18px] text-white/75 leading-[1.7] mt-6 max-w-[720px] mx-auto">
-              On a construit Nexus pour régler un problème qu&apos;on a vécu. Un athlète qui voulait être vu. Un coach qui voulait donner une chance à ses joueurs. Deux professionnels en technologie qui savent bâtir des plateformes sécurisées. Voilà qui on est.
+              Un ancien athlète qui voulait être vu. Un ancien coach qui voulait donner une chance à ses joueurs. Deux professionnels en technologie qui savent bâtir des plateformes sécurisées. Voilà qui on est.
             </p>
           </div>
         </section>
@@ -110,10 +114,7 @@ export default function AProposPage() {
 
                 <div className="space-y-4 text-[15px] text-white/70 leading-[1.7]">
                   <p>
-                    Ancien joueur de football collégial, j&apos;ai vécu le processus de recrutement de l&apos;intérieur. J&apos;ai vu des coéquipiers plus talentueux que moi passer inaperçus simplement parce que leur coach ne connaissait pas les bonnes personnes. J&apos;ai aussi eu la chance — parce que j&apos;ai fait des camps — d&apos;aller au CÉGEP qui m&apos;a donné les trois meilleures années de ma vie.
-                  </p>
-                  <p>
-                    En parallèle, je travaille en technologie — infrastructure, applications, cybersécurité. Nexus combine ces deux univers: le sport étudiant que je connais, et la plateforme sécurisée que je sais bâtir.
+                    Ancien joueur de football collégial. J&apos;ai vécu le processus de recrutement de l&apos;intérieur — j&apos;ai vu des coéquipiers plus talentueux que moi passer inaperçus parce que leur coach ne connaissait pas les bonnes personnes. En parallèle, je travaille en technologie — infrastructure, applications, cybersécurité. Nexus combine ces deux mondes.
                   </p>
                 </div>
 
@@ -148,10 +149,7 @@ export default function AProposPage() {
 
                 <div className="space-y-4 text-[15px] text-white/70 leading-[1.7]">
                   <p>
-                    J&apos;ai entraîné des athlètes au secondaire. J&apos;ai vu de près ce qui fait la différence entre un joueur qui se fait recruter et un joueur qui se fait oublier — et souvent, ça n&apos;a rien à voir avec le talent sur le terrain. Ça a à voir avec la visibilité, les connexions, et le timing.
-                  </p>
-                  <p>
-                    Comme Bruno, je viens de la technologie — cybersécurité et infrastructure. On a construit Nexus avec la conviction que les données des jeunes athlètes méritent le même niveau de protection qu&apos;un système bancaire. Pas moins.
+                    Ancien entraîneur au secondaire. J&apos;ai vu de près ce qui fait la différence entre un joueur qui se fait recruter et un joueur qui se fait oublier — et souvent, ça n&apos;a rien à voir avec le talent. Comme Bruno, je viens de la cybersécurité et de l&apos;infrastructure. On a construit Nexus avec la conviction que les données des jeunes athlètes méritent le même niveau de protection qu&apos;un système bancaire.
                   </p>
                 </div>
 
@@ -172,18 +170,28 @@ export default function AProposPage() {
           </div>
         </section>
 
-        {/* ─── SECTION 3 — CONTACT FORM ──────────────────────── */}
+        {/* ─── SECTION 3 — SÉCURITÉ ──────────────────────────── */}
+        <section className="border-b border-white/[0.06]">
+          <div className="max-w-[820px] mx-auto px-6 py-20 text-center">
+            <RedLabel>Sécurité</RedLabel>
+            <SectionTitle>Bâti par des professionnels en cybersécurité.</SectionTitle>
+            <p className="text-[15px] sm:text-[16px] text-white/70 leading-[1.75] mt-6 max-w-[720px] mx-auto">
+              Nexus est hébergé au Québec (OVHcloud Beauharnois). Conforme à la Loi 25 sur la protection des renseignements personnels. Consentement parental documenté pour chaque athlète mineur. Vos données ne quittent jamais la province.
+            </p>
+          </div>
+        </section>
+
+        {/* ─── SECTION 4 — CONTACT FORM ──────────────────────── */}
         <section className="border-b border-white/[0.06]">
           <div className="max-w-[700px] mx-auto px-6 py-20 text-center">
             <RedLabel>Nous écrire</RedLabel>
             <SectionTitle>Une question pour l&apos;équipe?</SectionTitle>
             <p className="text-[15px] text-white/65 leading-relaxed mt-4 max-w-[560px] mx-auto">
-              Utilise le formulaire ci-dessous pour toute question générale, partenariat, ou suggestion. On te répond dans les 48 heures.
+              On répond dans les 48 heures.
             </p>
 
             <div ref={fadeRef} className="mt-10 text-left">
-              {!submitted ? (
-                <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+              <form onSubmit={handleSubmit} className="flex flex-col gap-5">
                   {/* Name + Email */}
                   <div className="grid sm:grid-cols-2 gap-5">
                     <div>
@@ -214,11 +222,13 @@ export default function AProposPage() {
 
                   {/* Subject dropdown */}
                   <div>
-                    <label className="text-[11px] font-bold tracking-[0.2em] uppercase text-white/45 mb-1.5 block">Sujet</label>
+                    <label htmlFor="contact-subject" className="text-[11px] font-bold tracking-[0.2em] uppercase text-white/45 mb-1.5 block">Sujet</label>
                     <select
+                      id="contact-subject"
                       name="subject"
                       value={form.subject}
                       onChange={handleChange}
+                      aria-label="Sujet"
                       className="w-full h-11 px-4 rounded-lg bg-[#1A1D24] border border-white/[0.06] text-white text-[14px] focus:border-[#E63946] focus:outline-none transition-colors appearance-none cursor-pointer"
                     >
                       {SUBJECTS.map((s) => (
@@ -249,32 +259,20 @@ export default function AProposPage() {
                     Envoyer le message
                   </button>
                 </form>
-              ) : (
-                <div className="text-center py-10">
-                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full border-2 border-[#E63946] mb-6">
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M20 6L9 17l-5-5" />
-                    </svg>
-                  </div>
-                  <h3 className="font-head text-[22px] font-black text-white">Message envoyé</h3>
-                  <p className="text-[14px] text-white/55 mt-3 max-w-[320px] mx-auto">
-                    Merci pour ton message! On te répond dans les 48 heures.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSubmitted(false);
-                      setForm({ name: "", email: "", subject: "Question générale", message: "" });
-                    }}
-                    className="mt-6 inline-flex items-center px-6 py-2.5 rounded-lg border border-[#E63946] text-[#E63946] text-[13px] font-bold uppercase tracking-wider hover:bg-[#E63946]/10 transition-colors"
-                  >
-                    Envoyer un autre message
-                  </button>
-                </div>
-              )}
             </div>
           </div>
         </section>
+
+        {/* Success toast */}
+        {submitted && (
+          <div className="fixed bottom-6 right-6 bg-[#1A1D24] border border-[#22C55E]/50 rounded-lg px-5 py-3.5 shadow-2xl flex items-center gap-3 z-50">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <path d="M9 12l2 2 4-4" />
+            </svg>
+            <span className="text-[13px] text-white">Message envoyé! On vous revient dans les 48 heures.</span>
+          </div>
+        )}
       </div>
     </div>
   );

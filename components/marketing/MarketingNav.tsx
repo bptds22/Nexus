@@ -63,6 +63,12 @@ export default function MarketingNav() {
           </li>
 
           <li>
+            <Link href="/roadmap" className={`${label} text-[#9AA3B2] hover:text-white transition-colors`}>
+              Roadmap
+            </Link>
+          </li>
+
+          <li>
             <Link href="/a-propos" className={`${label} text-[#9AA3B2] hover:text-white transition-colors`}>
               À propos
             </Link>

@@ -1,353 +1,580 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import {
+  Building2,
+  ShieldCheck,
+  BadgeCheck,
+  GraduationCap,
+  Check,
+  X as XIcon,
+} from "lucide-react";
 import PlaybookBackground from "@/app/components/PlaybookBackground";
 import MarketingNav from "@/components/marketing/MarketingNav";
 
 /* ═══════════════════════════════════════════════════════════════
-   Tarifs — 7 tiers across 3 tabs (Coach / Recruiter / Athlete)
+   Tarifs — Unified pricing (Recruteur / Coach / Athlète)
 ═══════════════════════════════════════════════════════════════ */
 
-const label = "text-[10px] font-bold tracking-[0.25em] uppercase";
+type Persona = "recruteur" | "coach" | "athlete";
+type Billing = "monthly" | "annual";
 
-type Tab = "coach" | "recruteur" | "athlete";
+type FeatureRow =
+  | { kind: "item"; label: string; included: boolean }
+  | { kind: "section"; label: string };
 
-interface Plan {
+interface Tier {
   id: string;
   name: string;
+  nameColor: string;
   monthly: number;
   annual: number;
-  annualFull: number; // monthly × 12
-  subtitle: string;
-  features: string[];
-  featured?: boolean;
+  annualMonthlyEq: number | null;
+  border: string;
+  glow: string;
+  badge: { label: string; bg: string; fg: string } | null;
+  featuresHeader?: string;
+  features: FeatureRow[];
+  ctaLabel: string;
+  ctaClass: string;
+  ctaHref: string;
 }
 
-const COACH_PLANS: Plan[] = [
-  {
-    id: "free", name: "Gratuit", monthly: 0, annual: 0, annualFull: 0,
-    subtitle: "L'essentiel pour commencer",
-    features: [
-      "Créer/gérer profils athlètes (illimité)",
-      "Évaluations simplifiées (5 critères)",
-      "Vérifier les profils (badge bleu)",
-      "Recevoir messages des recruteurs",
-      "Rejoindre une école",
-    ],
-  },
-  {
-    id: "coach_pro", name: "Pro", monthly: 5.99, annual: 29.99, annualFull: 71.88,
-    subtitle: "Gère ton école et booste la visibilité",
-    features: [
-      "Tout du plan Gratuit",
-      "Mon école — Tableau de bord",
-      "Stats école — Visibilité détaillée",
-      "Placements — Suivi des recrues",
-      "Ma réputation — Évaluations recruteurs",
-      "Analytics — Performance athlètes",
-    ],
-  },
-  {
-    id: "coach_allstar", name: "All Star", monthly: 29.99, annual: 200, annualFull: 359.88,
-    subtitle: "Accès complet à toute la plateforme", featured: true,
-    features: [
-      "Tout du plan Pro",
-      "Accès complet et illimité",
-      "Support prioritaire",
-      "Badge All Star visible",
-      "Fonctionnalités futures incluses",
-    ],
-  },
-];
+/* ── RECRUITER ──────────────────────────────────────────────── */
 
-const RECRUITER_PLANS: Plan[] = [
+const RECRUITER_TIERS: Tier[] = [
   {
-    id: "free", name: "Gratuit", monthly: 0, annual: 0, annualFull: 0,
-    subtitle: "Découvre la plateforme",
+    id: "rec_free",
+    name: "Gratuit",
+    nameColor: "text-[#9CA3AF]",
+    monthly: 0,
+    annual: 0,
+    annualMonthlyEq: null,
+    border: "border border-white/10",
+    glow: "",
+    badge: null,
     features: [
-      "Recherche basique (10 résultats)",
-      "Pipeline de base (50 athlètes max)",
-      "Favoris (10 max)",
-      "Consultations limitées (5/mois)",
+      { kind: "item", label: "Recherche par sport, région, année, école, position", included: true },
+      { kind: "item", label: "Étoiles, cote globale, badge vérifié", included: true },
+      { kind: "item", label: "École, sport, promotion, moyenne", included: true },
+      { kind: "item", label: "Taille / poids", included: true },
+      { kind: "item", label: "Évaluations simplifiées (3 groupes)", included: true },
+      { kind: "item", label: "10 résultats par recherche", included: true },
+      { kind: "item", label: "10 favoris max", included: true },
+      { kind: "item", label: "Filtres avancés", included: false },
+      { kind: "item", label: "Identité de l'athlète (nom, photo, jersey)", included: false },
+      { kind: "item", label: "Vidéos et parcours académique", included: false },
+      { kind: "item", label: "Messagerie coach", included: false },
+      { kind: "item", label: "Pipeline de recrutement", included: false },
     ],
+    ctaLabel: "Commencer gratuitement →",
+    ctaClass: "border border-white/30 text-white hover:bg-white/5",
+    ctaHref: "/inscription?role=RECRUTEUR",
   },
   {
-    id: "recruteur_pro", name: "Pro", monthly: 9.99, annual: 89, annualFull: 119.88,
-    subtitle: "Recrute sans limites",
+    id: "rec_pro",
+    name: "Pro",
+    nameColor: "text-[#F59E0B]",
+    monthly: 15.99,
+    annual: 149,
+    annualMonthlyEq: 12.42,
+    border: "border-2 border-[#F59E0B]",
+    glow: "shadow-[0_0_24px_rgba(245,158,11,0.15)]",
+    badge: { label: "Populaire", bg: "bg-[#F59E0B]", fg: "text-black" },
+    featuresHeader: "Tout du plan Gratuit, plus :",
     features: [
-      "Recherche illimitée",
-      "Pipeline illimité",
-      "Favoris illimités",
-      "Messagerie directe avec les coachs",
-      "Analytics de recrutement",
+      { kind: "item", label: "Filtres avancés (taille, poids, cote globale)", included: true },
+      { kind: "item", label: "Résultats de recherche illimités", included: true },
+      { kind: "item", label: "Nom, photo, numéro de jersey révélés", included: true },
+      { kind: "item", label: "Vidéos faits saillants", included: true },
+      { kind: "item", label: "Commentaires du coach", included: true },
+      { kind: "item", label: "Parcours académique complet", included: true },
+      { kind: "item", label: "Coordonnées du coach (email, tel)", included: true },
+      { kind: "item", label: "Messagerie coach (10/mois)", included: true },
+      { kind: "item", label: "Auto-intro / templates", included: true },
+      { kind: "item", label: "Favoris illimités", included: true },
+      { kind: "item", label: "Pipeline de recrutement (50 athlètes)", included: true },
+      { kind: "item", label: "Activity feed (18 événements)", included: true },
+      { kind: "item", label: "Coach reviews — lire et rédiger", included: true },
     ],
+    ctaLabel: "Passer à Pro →",
+    ctaClass: "bg-[#F59E0B] text-black hover:bg-[#FBBF24]",
+    ctaHref: "/inscription?role=RECRUTEUR",
   },
   {
-    id: "recruteur_allstar", name: "All Star", monthly: 29.99, annual: 269, annualFull: 359.88,
-    subtitle: "Pilote le recrutement de ton CÉGEP", featured: true,
+    id: "rec_allstar",
+    name: "All Star",
+    nameColor: "text-[#E63946]",
+    monthly: 29.99,
+    annual: 269,
+    annualMonthlyEq: 22.42,
+    border: "border-2 border-[#E63946]",
+    glow: "shadow-[0_0_24px_rgba(230,57,70,0.1)]",
+    badge: null,
+    featuresHeader: "Tout du plan Pro, plus :",
     features: [
-      "Tout du plan Pro",
-      "Gestion CÉGEP (Dashboard, Recruteurs, Stats)",
-      "Messages groupés (bulk messaging)",
-      "Export PDF/CSV",
-      "Support prioritaire",
-      "Fonctionnalités futures incluses",
+      { kind: "item", label: "Évaluations détaillées (11 critères)", included: true },
+      { kind: "item", label: "Statut de recrutement global", included: true },
+      { kind: "item", label: "Voir qui a consulté l'athlète", included: true },
+      { kind: "item", label: "Messagerie illimitée", included: true },
+      { kind: "item", label: "Pipeline illimité", included: true },
+      { kind: "item", label: "Pipeline analytics (conversion, temps par statut)", included: true },
+      { kind: "item", label: "Listes de prospects custom", included: true },
+      { kind: "item", label: "Taux de réponse coaches", included: true },
+      { kind: "item", label: "Signaux de compétition", included: true },
+      { kind: "item", label: "Gestion CÉGEP", included: true },
     ],
-  },
-];
-
-const ATHLETE_PLANS: Plan[] = [
-  {
-    id: "free", name: "Gratuit", monthly: 0, annual: 0, annualFull: 0,
-    subtitle: "Sois visible des recruteurs",
-    features: [
-      "Créer/modifier ton profil",
-      "Suggestions au coach",
-      "Notifications de base",
-      "Vues totales (nombre seul)",
-    ],
-  },
-  {
-    id: "athlete_pro", name: "Pro", monthly: 9.99, annual: 79, annualFull: 119.88,
-    subtitle: "Sache qui te regarde", featured: true,
-    features: [
-      "Tout du plan Gratuit",
-      "Quels CÉGEPs consultent ton profil",
-      "Alertes en temps réel (vues + favoris)",
-      "Graphique vues/semaine",
-      "Classement dans ton sport",
-      "Badge Pro sur ton profil",
-      "Support prioritaire",
-    ],
+    ctaLabel: "Devenir All Star →",
+    ctaClass: "bg-[#E63946] text-white hover:bg-[#D42B22]",
+    ctaHref: "/inscription?role=RECRUTEUR",
   },
 ];
 
-/* ── Comparison tables per tab ── */
-interface CompRow { feature: string; tiers: string[] }
+/* ── COACH ──────────────────────────────────────────────────── */
 
-const COACH_COMPARE: CompRow[] = [
-  { feature: "Profils athlètes", tiers: ["Illimité", "Illimité", "Illimité"] },
-  { feature: "Évaluation", tiers: ["Simplifiée (5)", "Simplifiée (5)", "Simplifiée (5)"] },
-  { feature: "Vérification profils", tiers: ["✓", "✓", "✓"] },
-  { feature: "Messages recruteurs", tiers: ["✓", "✓", "✓"] },
-  { feature: "Mon école", tiers: ["✗", "✓", "✓"] },
-  { feature: "Stats école", tiers: ["✗", "✓", "✓"] },
-  { feature: "Placements", tiers: ["✗", "✓", "✓"] },
-  { feature: "Réputation", tiers: ["✗", "✓", "✓"] },
-  { feature: "Analytics", tiers: ["✗", "✓", "✓"] },
-  { feature: "Accès complet", tiers: ["✗", "✗", "✓"] },
-  { feature: "Support", tiers: ["Communautaire", "Standard", "Prioritaire"] },
+const COACH_TIERS: Tier[] = [
+  {
+    id: "coach_free",
+    name: "Gratuit",
+    nameColor: "text-[#9CA3AF]",
+    monthly: 0,
+    annual: 0,
+    annualMonthlyEq: null,
+    border: "border border-white/10",
+    glow: "",
+    badge: null,
+    features: [
+      { kind: "item", label: "Créer profils athlètes", included: true },
+      { kind: "item", label: "Évaluations simplifiées et détaillées", included: true },
+      { kind: "item", label: "Vérifier les athlètes", included: true },
+      { kind: "item", label: "Recevoir messages des recruteurs", included: true },
+      { kind: "item", label: "Rejoindre une école", included: true },
+      { kind: "item", label: "Mon école (dashboard)", included: false },
+      { kind: "item", label: "Stats école", included: false },
+      { kind: "item", label: "Placement", included: false },
+      { kind: "item", label: "Ma réputation", included: false },
+      { kind: "item", label: "Analytics", included: false },
+    ],
+    ctaLabel: "Commencer gratuitement →",
+    ctaClass: "border border-white/30 text-white hover:bg-white/5",
+    ctaHref: "/inscription?role=COACH",
+  },
+  {
+    id: "coach_pro",
+    name: "Pro",
+    nameColor: "text-[#F59E0B]",
+    monthly: 5.99,
+    annual: 29.99,
+    annualMonthlyEq: 2.50,
+    border: "border-2 border-[#F59E0B]",
+    glow: "shadow-[0_0_24px_rgba(245,158,11,0.15)]",
+    badge: { label: "Populaire", bg: "bg-[#F59E0B]", fg: "text-black" },
+    featuresHeader: "Tout du plan Gratuit, plus :",
+    features: [
+      { kind: "item", label: "Mon école — dashboard de l'école", included: true },
+      { kind: "item", label: "Stats école — vues, placements, activité", included: true },
+      { kind: "item", label: "Placement — suivi des placements en CÉGEP", included: true },
+      { kind: "item", label: "Ma réputation — score, avis recruteurs, badges", included: true },
+      { kind: "item", label: "Analytics — tendances, recruteurs actifs", included: true },
+      { kind: "item", label: "Voir quels recruteurs regardent tes athlètes", included: true },
+      { kind: "item", label: "Notifications d'intérêt recruteur", included: true },
+      { kind: "item", label: "Multi-équipe (gérer plusieurs sports)", included: true },
+    ],
+    ctaLabel: "Passer à Pro →",
+    ctaClass: "bg-[#F59E0B] text-black hover:bg-[#FBBF24]",
+    ctaHref: "/inscription?role=COACH",
+  },
+  {
+    id: "coach_allstar",
+    name: "All Star",
+    nameColor: "text-[#E63946]",
+    monthly: 29.99,
+    annual: 200,
+    annualMonthlyEq: 16.67,
+    border: "border-2 border-[#E63946]",
+    glow: "shadow-[0_0_24px_rgba(230,57,70,0.1)]",
+    badge: null,
+    featuresHeader: "Tout du plan Pro, plus :",
+    features: [
+      { kind: "item", label: "Accès complet à toute la plateforme", included: true },
+      { kind: "item", label: "Gestion école (admin)", included: true },
+      { kind: "item", label: "Export PDF profils athlètes", included: true },
+      { kind: "item", label: "Historique de placement (cohortes passées)", included: true },
+    ],
+    ctaLabel: "Devenir All Star →",
+    ctaClass: "bg-[#E63946] text-white hover:bg-[#D42B22]",
+    ctaHref: "/inscription?role=COACH",
+  },
 ];
 
-const RECRUITER_COMPARE: CompRow[] = [
-  { feature: "Recherche", tiers: ["10 résultats", "Illimité", "Illimité"] },
-  { feature: "Pipeline", tiers: ["50 max", "Illimité", "Illimité"] },
-  { feature: "Favoris", tiers: ["10 max", "Illimité", "Illimité"] },
-  { feature: "Consultations profils", tiers: ["5/mois", "Illimité", "Illimité"] },
-  { feature: "Messagerie", tiers: ["✗", "✓", "✓"] },
-  { feature: "Analytics recrutement", tiers: ["✗", "✓", "✓"] },
-  { feature: "Gestion CÉGEP", tiers: ["✗", "✗", "✓"] },
-  { feature: "Messages groupés", tiers: ["✗", "✗", "✓"] },
-  { feature: "Export PDF/CSV", tiers: ["✗", "✗", "✓"] },
-  { feature: "Support", tiers: ["Communautaire", "Standard", "Prioritaire"] },
+/* ── ATHLETE ────────────────────────────────────────────────── */
+
+const ATHLETE_TIERS: Tier[] = [
+  {
+    id: "ath_free",
+    name: "Gratuit",
+    nameColor: "text-[#9CA3AF]",
+    monthly: 0,
+    annual: 0,
+    annualMonthlyEq: null,
+    border: "border border-white/10",
+    glow: "",
+    badge: null,
+    features: [
+      { kind: "section", label: "Mon profil" },
+      { kind: "item", label: "Créer et gérer mon profil complet", included: true },
+      { kind: "item", label: "Photo, bio, parcours académique", included: true },
+      { kind: "item", label: "Vidéos faits saillants + match complet", included: true },
+      { kind: "item", label: "Stats et mesures physiques", included: true },
+      { kind: "item", label: "Badge vérifié par le coach", included: true },
+      { kind: "item", label: "Cote globale visible aux recruteurs", included: true },
+      { kind: "section", label: "Ma visibilité" },
+      { kind: "item", label: "Nombre de vues ce mois / total", included: true },
+      { kind: "item", label: "Nombre de recruteurs en favori", included: true },
+      { kind: "item", label: "Graphique de vues par semaine", included: true },
+      { kind: "item", label: "D'où viennent les recruteurs (régions)", included: true },
+      { kind: "item", label: "Nom des recruteurs qui consultent", included: false },
+      { kind: "item", label: "Nom des CÉGEPs qui regardent", included: false },
+      { kind: "item", label: "Quels recruteurs t'ont mis en favori", included: false },
+      { kind: "section", label: "Outils" },
+      { kind: "item", label: "Consentement parental numérique", included: true },
+      { kind: "item", label: "Statut de recrutement", included: true },
+      { kind: "item", label: "Confirmation d'engagement", included: true },
+    ],
+    ctaLabel: "Créer mon profil gratuitement →",
+    ctaClass: "border border-white/30 text-white hover:bg-white/5",
+    ctaHref: "/inscription?role=ATHLETE",
+  },
+  {
+    id: "ath_pro",
+    name: "Pro",
+    nameColor: "text-[#F59E0B]",
+    monthly: 4.99,
+    annual: 49,
+    annualMonthlyEq: 4.08,
+    border: "border-2 border-[#F59E0B]",
+    glow: "shadow-[0_0_24px_rgba(245,158,11,0.15)]",
+    badge: { label: "Recommandé", bg: "bg-[#F59E0B]", fg: "text-black" },
+    featuresHeader: "Tout du plan Gratuit, plus :",
+    features: [
+      { kind: "item", label: "Voir le nom des recruteurs qui consultent ton profil", included: true },
+      { kind: "item", label: "Voir quels CÉGEPs s'intéressent à toi", included: true },
+      { kind: "item", label: "Savoir quels recruteurs t'ont ajouté en favori (nom + CÉGEP)", included: true },
+      { kind: "item", label: "Classement détaillé des vues par CÉGEP", included: true },
+      { kind: "item", label: "Notifications d'intérêt avec noms", included: true },
+    ],
+    ctaLabel: "Passer à Pro →",
+    ctaClass: "bg-[#F59E0B] text-black hover:bg-[#FBBF24]",
+    ctaHref: "/inscription?role=ATHLETE",
+  },
 ];
 
-const ATHLETE_COMPARE: CompRow[] = [
-  { feature: "Profil athlète", tiers: ["✓", "✓"] },
-  { feature: "Suggestions coach", tiers: ["✓", "✓"] },
-  { feature: "Vues totales", tiers: ["Nombre seul", "Détaillées"] },
-  { feature: "Quels CÉGEPs regardent", tiers: ["✗", "✓"] },
-  { feature: "Alertes temps réel", tiers: ["✗", "✓"] },
-  { feature: "Graphique vues/semaine", tiers: ["✗", "✓"] },
-  { feature: "Classement sport", tiers: ["✗", "✓"] },
-  { feature: "Badge Pro", tiers: ["✗", "✓"] },
-  { feature: "Support", tiers: ["Communautaire", "Prioritaire"] },
-];
+/* ── Savings shown in toggle label per persona (Pro-tier representative) ─ */
+const PERSONA_SAVINGS: Record<Persona, number> = {
+  recruteur: 22,
+  coach: 58,
+  athlete: 18,
+};
 
-/* ── FAQ ── */
-const FAQ = [
-  { q: "Est-ce que je peux essayer gratuitement?", a: "Oui, tous les plans payants incluent un essai gratuit de 14 jours. Aucune carte de crédit requise pour commencer." },
-  { q: "Comment fonctionne la facturation?", a: "Tu choisis un cycle mensuel ou annuel. Le paiement est automatique via Stripe. L'annuel offre jusqu'à 58% d'économies." },
-  { q: "Est-ce que je peux annuler à tout moment?", a: "Oui, sans frais. Tu gardes l'accès jusqu'à la fin de ta période en cours." },
-  { q: "Est-ce que les prix incluent les taxes?", a: "Les prix affichés sont avant taxes. TPS (5%) et TVQ (9,975%) s'appliquent." },
-  { q: "Quelle est la différence entre Pro et All Star?", a: "Pro débloque les fonctionnalités avancées de ton rôle. All Star ajoute la gestion d'établissement, l'export et le support prioritaire." },
-  { q: "Comment payer?", a: "Visa, Mastercard, Amex via Stripe. Le paiement est sécurisé et conforme PCI DSS." },
-];
+/* ── Helpers ────────────────────────────────────────────────── */
 
-/* ═══════════════════════════════════════════════════════════════ */
+function formatPrice(n: number): string {
+  if (n === 0) return "0$";
+  const s = n.toString().replace(".", ",");
+  return `${s}$`;
+}
+
+function isValidPersona(v: string | null): v is Persona {
+  return v === "recruteur" || v === "coach" || v === "athlete";
+}
+
+/* ══════════════════════════════════════════════════════════════
+   Page
+══════════════════════════════════════════════════════════════ */
 
 export default function TarifsPage() {
-  const [tab, setTab] = useState<Tab>("athlete");
-  const [annual, setAnnual] = useState(false);
-  const [openFaq, setOpenFaq] = useState<number | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
+  const [persona, setPersona] = useState<Persona>("recruteur");
+  const [billing, setBilling] = useState<Billing>("monthly");
 
-  const plans = tab === "coach" ? COACH_PLANS : tab === "recruteur" ? RECRUITER_PLANS : ATHLETE_PLANS;
-  const compare = tab === "coach" ? COACH_COMPARE : tab === "recruteur" ? RECRUITER_COMPARE : ATHLETE_COMPARE;
-  const tierHeaders = tab === "athlete" ? ["Gratuit", "Pro (9,99$)"] : ["Gratuit", `Pro (${tab === "coach" ? "5,99" : "9,99"}$)`, "All Star (29,99$)"];
+  useEffect(() => {
+    console.log("[Tarifs] Page rendered");
+    // Read ?role= from URL on mount (avoids Suspense boundary with useSearchParams)
+    if (typeof window !== "undefined") {
+      const param = new URLSearchParams(window.location.search).get("role");
+      const normalized = (param || "").toLowerCase();
+      if (isValidPersona(normalized)) {
+        setPersona(normalized);
+      }
+    }
+  }, []);
 
-  const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
+  useEffect(() => {
+    console.log("[Tarifs] Active persona:", persona);
+  }, [persona]);
+
+  useEffect(() => {
+    console.log("[Tarifs] Billing toggle:", billing);
+  }, [billing]);
+
+  const tiers =
+    persona === "recruteur" ? RECRUITER_TIERS : persona === "coach" ? COACH_TIERS : ATHLETE_TIERS;
+  const savingsPct = PERSONA_SAVINGS[persona];
 
   return (
     <div className="hero-playbook bg-[#111317] min-h-screen">
       <PlaybookBackground />
       <MarketingNav />
 
-      <main className="relative z-10 max-w-6xl mx-auto px-6 py-16">
-        {/* Header */}
-        <div className="text-center mb-10">
-          <span className={`${label} text-[#E63946] tracking-[0.2em]`}>Tarification</span>
-          <h1 className="font-head text-4xl sm:text-5xl font-black text-white uppercase tracking-tight mt-2">Choisis le plan qui te convient</h1>
-          <p className="text-[15px] text-[#9CA3AF] mt-3 max-w-lg mx-auto">Essai gratuit de 14 jours. Aucune carte requise.</p>
+      {/* ─── SECTION 1 — HEADER ───────────────────────────── */}
+      <section>
+        <div className="max-w-[1200px] mx-auto px-6 pt-20 pb-10 text-center">
+          <p className="text-[12px] sm:text-[13px] font-bold tracking-[0.25em] uppercase text-[#E63946]">
+            Tarifs
+          </p>
+          <h1 className="font-head text-[40px] sm:text-[48px] font-black text-white uppercase leading-[1.05] tracking-tight mt-4">
+            Choisis ton plan
+          </h1>
+          <p className="text-[15px] sm:text-[16px] text-[#9CA3AF] leading-relaxed mt-5 max-w-[600px] mx-auto">
+            Commence gratuitement. Passe à Pro quand tu es prêt.
+          </p>
         </div>
+      </section>
 
-        {/* Tab navigation */}
-        <div className="flex justify-center mb-8">
-          <div className="inline-flex border border-white/10 rounded-lg overflow-hidden">
+      {/* ─── SECTION 2 — PERSONA TOGGLE ───────────────────── */}
+      <section>
+        <div className="max-w-[1200px] mx-auto px-6 flex justify-center">
+          <div className="inline-flex items-center gap-1 bg-[#1A1D24] rounded-full p-1.5 border border-white/[0.06]">
             {([
-              { key: "coach" as Tab, label: "Coachs" },
-              { key: "recruteur" as Tab, label: "Recruteurs" },
-              { key: "athlete" as Tab, label: "Athlètes" },
-            ]).map((t) => (
-              <button key={t.key} onClick={() => setTab(t.key)}
-                className={`px-6 sm:px-8 h-11 font-head font-bold text-xs uppercase tracking-widest transition-colors ${
-                  tab === t.key ? "bg-[#E63946] text-white" : "text-[#9CA3AF] hover:text-white"
+              { key: "recruteur", label: "Recruteur" },
+              { key: "coach", label: "Coach" },
+              { key: "athlete", label: "Athlète" },
+            ] as { key: Persona; label: string }[]).map((p) => (
+              <button
+                key={p.key}
+                type="button"
+                onClick={() => setPersona(p.key)}
+                className={`px-5 sm:px-6 py-2 rounded-full text-[12px] sm:text-[13px] font-bold uppercase tracking-wider transition-all ${
+                  persona === p.key
+                    ? "bg-[#2A2D34] text-white shadow-[0_2px_8px_rgba(0,0,0,0.25)]"
+                    : "text-[#9CA3AF] hover:text-white"
                 }`}
-              >{t.label}</button>
+              >
+                {p.label}
+              </button>
             ))}
           </div>
         </div>
+      </section>
 
-        {/* Billing toggle */}
-        <div className="flex justify-center items-center gap-3 mb-10">
-          <span className={`text-sm font-semibold ${!annual ? "text-white" : "text-[#6B7280]"}`}>Mensuel</span>
-          <button type="button" aria-label="Basculer facturation annuelle" onClick={() => setAnnual(!annual)} className="relative w-14 h-7 rounded-full transition-colors" style={{ backgroundColor: annual ? "#E63946" : "#2D3748" }}>
-            <span className={`absolute top-1 w-5 h-5 rounded-full bg-white transition-transform ${annual ? "left-8" : "left-1"}`} />
-          </button>
-          <span className={`text-sm font-semibold ${annual ? "text-white" : "text-[#6B7280]"}`}>Annuel</span>
-          {annual && <span className="text-[10px] font-bold text-[#DAB65A] bg-[#DAB65A]/15 px-2 py-0.5 rounded-full">Économise jusqu&apos;à 58%</span>}
+      {/* ─── SECTION 3 — BILLING TOGGLE ───────────────────── */}
+      <section>
+        <div className="max-w-[1200px] mx-auto px-6 flex justify-center mt-5">
+          <div className="inline-flex items-center gap-1 bg-[#1A1D24] rounded-full p-1 border border-white/[0.06]">
+            <button
+              type="button"
+              onClick={() => setBilling("monthly")}
+              className={`px-4 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider transition-all ${
+                billing === "monthly" ? "bg-[#2A2D34] text-white" : "text-[#9CA3AF] hover:text-white"
+              }`}
+            >
+              Mensuel
+            </button>
+            <button
+              type="button"
+              onClick={() => setBilling("annual")}
+              className={`px-4 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider transition-all ${
+                billing === "annual" ? "bg-[#2A2D34] text-white" : "text-[#9CA3AF] hover:text-white"
+              }`}
+            >
+              Annuel <span className="text-[10px] font-normal ml-1 opacity-80">(économise {savingsPct}%)</span>
+            </button>
+          </div>
         </div>
+      </section>
 
-        {/* Plan cards */}
-        <div className={`grid gap-5 mb-16 ${tab === "athlete" ? "grid-cols-1 sm:grid-cols-2 max-w-3xl mx-auto" : "grid-cols-1 sm:grid-cols-3"}`}>
-          {plans.map((plan) => {
-            const price = annual ? plan.annual : plan.monthly;
-            const isFree = plan.monthly === 0;
-            const savingsPct = !isFree && plan.annualFull > 0 ? Math.round((1 - plan.annual / plan.annualFull) * 100) : 0;
-            return (
-              <div key={plan.id} className={`bg-[#1A1D24] rounded-xl p-6 sm:p-7 flex flex-col relative ${
-                plan.featured ? "border-2 border-[#E63946] shadow-[0_0_30px_rgba(230,57,70,0.12)]" : "border border-white/10"
-              }`}>
-                {plan.featured && (
-                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#E63946] text-white text-[10px] font-bold uppercase tracking-widest px-4 py-1 rounded-full">Populaire</span>
-                )}
-                {annual && !isFree && savingsPct > 0 && (
-                  <span className="absolute top-4 right-4 text-[10px] font-bold text-[#DAB65A] bg-[#DAB65A]/15 px-2 py-0.5 rounded-full">-{savingsPct}%</span>
-                )}
-                <h3 className="font-head font-black text-xl text-white uppercase">{plan.name}</h3>
-                <div className="flex items-baseline gap-1 mt-2">
-                  <span className="font-head font-black text-4xl text-white">{isFree ? "0" : price.toFixed(2).replace(".", ",")}$</span>
-                  {!isFree && <span className="text-sm text-[#6B7280]">/{annual ? "an" : "mois"}</span>}
-                </div>
-                {annual && !isFree && (
-                  <p className="text-[11px] text-[#6B7280] mt-1 line-through">{plan.annualFull.toFixed(2).replace(".", ",")}$/an</p>
-                )}
-                <p className="text-[13px] text-[#9CA3AF] mt-2 leading-relaxed">{plan.subtitle}</p>
-                <div className="w-full h-px bg-white/10 my-4" />
-                <ul className="space-y-2.5 flex-1">
-                  {plan.features.map((f) => (
-                    <li key={f} className="flex items-start gap-2">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2.5" strokeLinecap="round" className="shrink-0 mt-0.5"><path d="M20 6L9 17l-5-5" /></svg>
-                      <span className="text-[13px] text-[#9CA3AF]">{f}</span>
-                    </li>
-                  ))}
-                </ul>
-                <button onClick={() => showToast(isFree ? "Tu es déjà sur le plan Gratuit" : "Redirection Stripe Checkout (Phase 2)")}
-                  className={`mt-6 h-12 w-full rounded-lg font-head font-bold text-sm uppercase tracking-widest transition-all cursor-pointer ${
-                    plan.featured
-                      ? "bg-[#E63946] text-white hover:bg-[#D42B22] hover:shadow-[0_8px_28px_rgba(230,57,70,0.38)] hover:-translate-y-0.5"
-                      : isFree
-                        ? "bg-white/5 text-[#9CA3AF] border border-white/10 hover:bg-white/10"
-                        : "bg-transparent text-[#DAB65A] border border-[#DAB65A]/40 hover:bg-[#DAB65A]/10"
-                  }`}
-                >
-                  {isFree ? "Plan actuel" : "Essai gratuit 14 jours"}
-                </button>
-                {!isFree && <p className="text-[10px] text-[#6B7280] text-center mt-2">Aucune carte requise</p>}
+      {/* ─── SECTION 4 — PRICING CARDS ────────────────────── */}
+      <section>
+        <div className="max-w-[1200px] mx-auto px-6 pt-10 pb-12">
+          {persona === "athlete" ? (
+            /* Athlete — 2 cards centered */
+            <div className="max-w-[820px] mx-auto grid grid-cols-1 md:grid-cols-2 gap-5 items-stretch">
+              <PricingCard tier={tiers[1]} billing={billing} orderCls="order-1 md:order-2" />
+              <PricingCard tier={tiers[0]} billing={billing} orderCls="order-2 md:order-1" />
+            </div>
+          ) : (
+            /* Recruteur / Coach — 3 cards */
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-stretch">
+              <PricingCard tier={tiers[1]} billing={billing} orderCls="order-1 md:order-2" />
+              <PricingCard tier={tiers[0]} billing={billing} orderCls="order-2 md:order-1" />
+              <PricingCard tier={tiers[2]} billing={billing} orderCls="order-3 md:order-3" />
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* ─── SECTION 5 — CÉGEP BANNER (recruiter only) ────── */}
+      {persona === "recruteur" && (
+        <section>
+          <div className="max-w-[1200px] mx-auto px-6 pb-14">
+            <div className="bg-[#1A1D24] border border-white/10 rounded-xl p-6 sm:p-7 flex flex-col md:flex-row items-start md:items-center gap-5">
+              <div className="shrink-0 w-12 h-12 rounded-full bg-[#E63946]/10 flex items-center justify-center">
+                <GraduationCap size={22} className="text-[#E63946]" strokeWidth={2} />
               </div>
-            );
-          })}
-        </div>
-
-        {/* Comparison table */}
-        <div className="mb-16">
-          <h2 className="font-head text-2xl font-black text-white uppercase text-center mb-6">Comparaison détaillée</h2>
-          <div className="bg-[#1A1D24] rounded-xl border border-white/10 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="border-b border-white/10">
-                    <th className="px-5 py-4 text-[11px] font-bold uppercase tracking-[0.15em] text-[#6B7280]">Fonctionnalité</th>
-                    {tierHeaders.map((h) => (
-                      <th key={h} className="px-5 py-4 text-[11px] font-bold uppercase tracking-[0.15em] text-[#9CA3AF] text-center">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {compare.map((row, i) => (
-                    <tr key={row.feature} className={`border-b border-white/5 ${i % 2 === 0 ? "bg-[#1A1D24]" : "bg-[#111317]/50"}`}>
-                      <td className="px-5 py-3 text-[13px] text-[#9CA3AF]">{row.feature}</td>
-                      {row.tiers.map((val, j) => (
-                        <td key={j} className="px-5 py-3 text-center text-[13px]">
-                          {val === "✓" ? <span className="text-[#22C55E] font-bold">✓</span>
-                            : val === "✗" ? <span className="text-[#6B7280]">✗</span>
-                            : val.includes("Illimité") ? <span className="text-white font-bold">{val}</span>
-                            : <span className="text-[#9CA3AF]">{val}</span>
-                          }
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-[16px] font-semibold text-white">Forfait CÉGEP — plusieurs recruteurs?</h3>
+                <p className="text-[14px] text-[#9CA3AF] mt-1.5 leading-relaxed">
+                  Votre programme a plus d&apos;un recruteur? Contactez l&apos;équipe Nexus pour un forfait organisationnel adapté à votre CÉGEP avec tarification de groupe et gestion centralisée.
+                </p>
+              </div>
+              <Link
+                href="/contact"
+                className="shrink-0 inline-flex items-center h-11 px-5 rounded-lg border border-[#E63946] text-[#E63946] text-[12px] font-bold uppercase tracking-wider hover:bg-[#E63946]/10 transition-colors"
+              >
+                Contacter l&apos;équipe Nexus →
+              </Link>
             </div>
           </div>
-        </div>
+        </section>
+      )}
 
-        {/* FAQ */}
-        <div className="max-w-2xl mx-auto mb-16">
-          <h2 className="font-head text-2xl font-black text-white uppercase text-center mb-6">Questions fréquentes</h2>
-          <div className="space-y-2">
-            {FAQ.map((faq, i) => (
-              <div key={i} className="bg-[#1A1D24] rounded-lg border border-white/10 overflow-hidden">
-                <button onClick={() => setOpenFaq(openFaq === i ? null : i)} className="w-full flex items-center justify-between px-5 py-4 text-left">
-                  <span className="text-[14px] font-semibold text-white">{faq.q}</span>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2" strokeLinecap="round" className={`shrink-0 transition-transform ${openFaq === i ? "rotate-180" : ""}`}><path d="M6 9l6 6 6-6" /></svg>
-                </button>
-                {openFaq === i && (
-                  <div className="px-5 pb-4 text-[13px] text-[#9CA3AF] leading-relaxed">{faq.a}</div>
-                )}
-              </div>
-            ))}
+      {/* ─── SECTION 6 — POURQUOI PRO (athlete only) ──────── */}
+      {persona === "athlete" && (
+        <section>
+          <div className="max-w-[820px] mx-auto px-6 pb-14 text-center">
+            <p className="text-[12px] sm:text-[13px] font-bold tracking-[0.25em] uppercase text-[#F59E0B]">
+              Pourquoi Pro?
+            </p>
+            <h2 className="font-head text-[28px] sm:text-[34px] font-black text-white uppercase leading-tight tracking-tight mt-3">
+              Tu sais que tu es regardé. Maintenant, sache par qui.
+            </h2>
+            <p className="text-[15px] text-[#9CA3AF] leading-relaxed mt-5 max-w-[640px] mx-auto">
+              Chaque mois, ton profil est consulté par des recruteurs de partout au Québec. Avec Pro, tu vois leurs noms, leurs CÉGEPs, et combien de fois ils reviennent.
+            </p>
+          </div>
+        </section>
+      )}
+
+      {/* ─── TRUST STRIP ──────────────────────────────────── */}
+      <section className="bg-[#111317]/80 border-t border-white/[0.06] border-b border-white/[0.06]">
+        <div className="max-w-[1200px] mx-auto px-6 py-8">
+          <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-[#9CA3AF] text-sm">
+            <span className="inline-flex items-center gap-2">
+              <Building2 size={16} strokeWidth={2} className="text-[#9CA3AF]" />
+              Hébergé au Québec
+            </span>
+            <span className="hidden sm:inline text-[#475569]">·</span>
+            <span className="inline-flex items-center gap-2">
+              <ShieldCheck size={16} strokeWidth={2} className="text-[#9CA3AF]" />
+              Conforme Loi 25
+            </span>
+            <span className="hidden sm:inline text-[#475569]">·</span>
+            <span className="inline-flex items-center gap-2">
+              <BadgeCheck size={16} strokeWidth={2} className="text-[#9CA3AF]" />
+              Profils vérifiés
+            </span>
           </div>
         </div>
+      </section>
+    </div>
+  );
+}
 
-        {/* Bottom CTA */}
-        <div className="text-center">
-          <p className="text-[13px] text-[#6B7280] mb-4">Données hébergées au Québec · Conforme à la Loi 25</p>
-          <Link href="/auth?mode=signup" className="inline-flex items-center h-12 px-8 bg-[#E63946] text-white font-head font-bold text-sm uppercase tracking-widest rounded-lg hover:bg-[#D42B22] transition-all hover:shadow-[0_8px_28px_rgba(230,57,70,0.38)]">
-            Commencer gratuitement →
-          </Link>
-        </div>
-      </main>
+/* ── PricingCard ────────────────────────────────────────────── */
 
-      {/* Toast */}
-      {toast && (
-        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 bg-[#1A1D24] border border-[#E63946]/30 text-white font-head font-bold text-sm uppercase tracking-wider px-6 py-3 rounded-lg shadow-xl">
-          {toast}
-        </div>
+function PricingCard({
+  tier,
+  billing,
+  orderCls,
+}: {
+  tier: Tier;
+  billing: Billing;
+  orderCls: string;
+}) {
+  const showAnnual = billing === "annual" && tier.annual > 0;
+  const priceDisplay = showAnnual
+    ? `${tier.annual}$`
+    : tier.monthly === 0
+    ? "0$"
+    : formatPrice(tier.monthly);
+  const periodShort =
+    tier.monthly === 0 ? "" : showAnnual ? "/an" : "/mois";
+  const periodNote =
+    tier.monthly === 0
+      ? "pour toujours"
+      : showAnnual && tier.annualMonthlyEq != null
+      ? `soit ${formatPrice(tier.annualMonthlyEq)}/mois`
+      : "facturé mensuellement";
+
+  return (
+    <div className={`relative bg-[#1A1D24] rounded-xl ${tier.border} ${tier.glow} ${orderCls} p-6 sm:p-7 flex flex-col`}>
+      {tier.badge && (
+        <span
+          className={`absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${tier.badge.bg} ${tier.badge.fg}`}
+        >
+          {tier.badge.label}
+        </span>
       )}
+
+      <p className={`text-[11px] font-bold uppercase tracking-[0.2em] ${tier.nameColor}`}>
+        {tier.name}
+      </p>
+
+      <div className="mt-3 flex items-baseline gap-1.5">
+        <span className="font-head text-[36px] sm:text-[40px] font-black text-white leading-none">
+          {priceDisplay}
+        </span>
+        {tier.monthly > 0 && (
+          <span className="text-[14px] text-[#9CA3AF]">{periodShort}</span>
+        )}
+      </div>
+      <p className="text-[12px] text-[#9CA3AF] mt-2">{periodNote}</p>
+
+      <div className="h-px bg-white/[0.06] my-5" />
+
+      {tier.featuresHeader && (
+        <p className="text-[11px] font-bold uppercase tracking-wider text-[#9CA3AF] mb-3">
+          {tier.featuresHeader}
+        </p>
+      )}
+
+      <ul className="space-y-2.5 flex-1">
+        {tier.features.map((f, idx) => {
+          if (f.kind === "section") {
+            return (
+              <li
+                key={`sec-${idx}-${f.label}`}
+                className="pt-3 pb-1 text-[10px] font-bold uppercase tracking-[0.2em] text-white/55"
+              >
+                {f.label}
+              </li>
+            );
+          }
+          return (
+            <li key={`item-${idx}-${f.label}`} className="flex items-start gap-2.5">
+              {f.included ? (
+                <span className="shrink-0 mt-0.5 w-[16px] h-[16px] rounded-full bg-[#10B981]/15 text-[#10B981] flex items-center justify-center">
+                  <Check size={11} strokeWidth={3} />
+                </span>
+              ) : (
+                <span className="shrink-0 mt-0.5 w-[16px] h-[16px] rounded-full bg-white/5 text-[#6b7280] flex items-center justify-center">
+                  <XIcon size={11} strokeWidth={2.5} />
+                </span>
+              )}
+              <span className={`text-[13px] leading-relaxed ${f.included ? "text-white/85" : "text-[#6b7280]"}`}>
+                {f.label}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+
+      <Link
+        href={tier.ctaHref}
+        className={`mt-6 inline-flex items-center justify-center w-full h-11 rounded-lg text-[12px] font-bold uppercase tracking-wider transition-colors ${tier.ctaClass}`}
+      >
+        {tier.ctaLabel}
+      </Link>
     </div>
   );
 }

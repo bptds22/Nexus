@@ -67,6 +67,7 @@ interface CoachRow {
   team_name: string | null;
   athleteCount: number;
   verifiedCount: number;
+  is_school_admin: boolean;
 }
 
 interface TeamRow {
@@ -128,6 +129,18 @@ export default function AdminSchoolDetailPage({ params }: { params: Promise<{ id
 
   const [regionOptions, setRegionOptions] = useState<string[]>([]);
 
+  // ── Transfer / delete coach modals ────────────────────────────
+  interface SchoolOption { id: string; name: string; type: string | null; city: string | null }
+  const [allSchools, setAllSchools] = useState<SchoolOption[]>([]);
+  type TransferRole = "COACH" | "RECRUTEUR";
+  const [transferModal, setTransferModal] = useState<{
+    coach: CoachRow;
+    newSchoolId: string;
+    newRole: TransferRole;
+  } | null>(null);
+  const [deleteModal, setDeleteModal] = useState<{ coach: CoachRow; ackChecked: boolean } | null>(null);
+  const [actionPending, setActionPending] = useState(false);
+
   function notify(msg: string) {
     setToast(msg);
     setTimeout(() => setToast(null), 2500);
@@ -156,6 +169,8 @@ export default function AdminSchoolDetailPage({ params }: { params: Promise<{ id
       const regs = Array.from(new Set(((regRows as { region: string | null }[] | null) || [])
         .map((r) => r.region).filter((r): r is string => !!r))).sort((a, b) => a.localeCompare(b, "fr"));
       if (!cancelled) setRegionOptions(regs);
+
+      // NOTE: Transfer dropdown fetches schools on demand (see loadAllSchools()).
 
       // Fetch athlete ids first (needed for views + activity)
       const { data: athleteRowsRaw } = await supabase
@@ -294,6 +309,7 @@ export default function AdminSchoolDetailPage({ params }: { params: Promise<{ id
           team_name: meta.team_name,
           athleteCount: counts.total,
           verifiedCount: counts.verified,
+          is_school_admin: Boolean(u?.is_school_admin),
         };
       });
       if (!cancelled) setCoaches(mappedCoaches);
@@ -493,19 +509,112 @@ export default function AdminSchoolDetailPage({ params }: { params: Promise<{ id
     notify(`${name} est maintenant Directeur`);
   }
 
-  async function removeCoachFromSchool(coach: CoachRow) {
+  async function loadAllSchools() {
+    const { data, error } = await supabase
+      .from("schools")
+      .select("id, name, city, type")
+      .neq("id", id)
+      .order("name", { ascending: true })
+      .limit(10000);
+    console.log("Schools fetched:", data, "Error:", error);
+    if (error) {
+      notify(`Erreur chargement écoles : ${error.message}`);
+      return;
+    }
+    const mapped: SchoolOption[] = ((data || []) as SchoolOption[]).map((s) => ({
+      id: s.id,
+      name: s.name,
+      type: s.type ?? null,
+      city: s.city ?? null,
+    }));
+    setAllSchools(mapped);
+  }
+
+  async function openTransferModal(coach: CoachRow) {
+    console.log("Transfer clicked for coach:", coach.id, "from school:", id);
+    console.log("Modal opened, fetching schools...");
+    setTransferModal({ coach, newSchoolId: "", newRole: "COACH" });
+    // Always refetch on open so the dropdown reflects the current DB state
+    await loadAllSchools();
+  }
+
+  async function confirmTransfer() {
+    if (!transferModal || !transferModal.newSchoolId) return;
+    const { coach, newSchoolId, newRole } = transferModal;
     const name = `${coach.first_name ?? ""} ${coach.last_name ?? ""}`.trim() || "ce coach";
-    const schoolName = S("name") || "cette école";
-    if (!confirm(`Retirer ${name} de ${schoolName} ? Cette action est irréversible.`)) return;
-    // If this coach came from school_coaches, delete that row. If it came from
-    // the legacy users.school_id link (no scId), null the user's school_id.
-    const res = coach.scId
-      ? await supabase.from("school_coaches").delete().eq("id", coach.scId)
-      : await supabase.from("users").update({ school_id: null }).eq("id", coach.id);
-    if (res.error) { notify(`Erreur: ${res.error.message}`); return; }
+    const target = allSchools.find((s) => s.id === newSchoolId);
+    console.log("Transfer confirmed:", { coachId: coach.id, newRole, newSchoolId });
+    setActionPending(true);
+
+    // 1. Remove from current school's coach list (if scId exists)
+    if (coach.scId) {
+      const { error } = await supabase.from("school_coaches").delete().eq("id", coach.scId);
+      if (error) { setActionPending(false); notify(`Erreur: ${error.message}`); return; }
+    }
+
+    // 2. Update the user's primary school (+ role if switching to RECRUTEUR)
+    const userPatch: Record<string, unknown> = { school_id: newSchoolId };
+    if (newRole === "RECRUTEUR") userPatch.role = "RECRUTEUR";
+    const { error: uErr } = await supabase.from("users").update(userPatch).eq("id", coach.id);
+    if (uErr) { setActionPending(false); notify(`Erreur: ${uErr.message}`); return; }
+
+    // 3. Unlink athletes
+    //    - Staying as coach: only unlink athletes at the OLD school
+    //    - Becoming recruteur: unlink ALL athletes (no longer a coach)
+    const unlinkQuery = supabase.from("athletes").update({ coach_id: null }).eq("coach_id", coach.id);
+    const { error: aErr } = newRole === "RECRUTEUR"
+      ? await unlinkQuery
+      : await unlinkQuery.eq("school_id", id);
+    if (aErr) { setActionPending(false); notify(`Erreur: ${aErr.message}`); return; }
+
     setCoaches((prev) => prev.filter((c) => c.id !== coach.id));
     setStats((s) => ({ ...s, totalCoaches: Math.max(0, s.totalCoaches - 1) }));
-    notify("Coach retiré");
+    setTransferModal(null);
+    setActionPending(false);
+
+    if (newRole === "RECRUTEUR") {
+      notify(`${name} est maintenant recruteur au ${target?.name ?? "nouveau CÉGEP"}`);
+    } else {
+      notify(`${name} a été transféré à ${target?.name ?? "la nouvelle école"}`);
+    }
+  }
+
+  function openDeleteModal(coach: CoachRow) {
+    console.log("Delete clicked for coach:", coach.id);
+    setDeleteModal({ coach, ackChecked: false });
+  }
+
+  async function confirmDelete() {
+    if (!deleteModal || !deleteModal.ackChecked) return;
+    const { coach } = deleteModal;
+    const name = `${coach.first_name ?? ""} ${coach.last_name ?? ""}`.trim() || "ce coach";
+    console.log("Delete confirmed");
+    setActionPending(true);
+
+    // 1. Deactivate user + clear school link
+    const { error: uErr } = await supabase
+      .from("users")
+      .update({ status: "DESACTIVE", school_id: null })
+      .eq("id", coach.id);
+    if (uErr) { setActionPending(false); notify(`Erreur: ${uErr.message}`); return; }
+
+    // 2. Unlink ALL athletes from this coach
+    const { error: aErr } = await supabase
+      .from("athletes")
+      .update({ coach_id: null })
+      .eq("coach_id", coach.id);
+    if (aErr) { setActionPending(false); notify(`Erreur: ${aErr.message}`); return; }
+
+    // 3. Remove from school_coaches (this school)
+    if (coach.scId) {
+      await supabase.from("school_coaches").delete().eq("id", coach.scId);
+    }
+
+    setCoaches((prev) => prev.filter((c) => c.id !== coach.id));
+    setStats((s) => ({ ...s, totalCoaches: Math.max(0, s.totalCoaches - 1) }));
+    setDeleteModal(null);
+    setActionPending(false);
+    notify(`Le compte de ${name} a été désactivé`);
   }
 
   async function deleteTeam(teamId: string) {
@@ -759,17 +868,39 @@ export default function AdminSchoolDetailPage({ params }: { params: Promise<{ id
                             )}
                             <button
                               type="button"
-                              onClick={() => removeCoachFromSchool(c)}
+                              onClick={() => openTransferModal(c)}
                               disabled={isLastDirecteur}
-                              title={isLastDirecteur ? "Transférez le rôle avant de retirer" : undefined}
+                              title={isLastDirecteur ? "Transférez le rôle de directeur avant le transfert" : undefined}
                               className={`px-3 py-1.5 rounded border text-[11px] font-bold uppercase tracking-wider transition-colors ${
                                 isLastDirecteur
                                   ? "border-[#2D3748] text-[#4a4d56] cursor-not-allowed opacity-60"
-                                  : "border-[#2D3748] text-[#9CA3AF] hover:border-[#E63946] hover:text-[#E63946]"
+                                  : "border-[#F59E0B] text-[#F59E0B] hover:bg-[#F59E0B]/10"
                               }`}
                             >
-                              Retirer
+                              Transférer
                             </button>
+                            {c.is_school_admin ? (
+                              <span
+                                title="Compte administrateur d'école — protégé"
+                                className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-[#6b7280] italic"
+                              >
+                                Admin école
+                              </span>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => openDeleteModal(c)}
+                                disabled={isLastDirecteur}
+                                title={isLastDirecteur ? "Transférez le rôle de directeur avant la suppression" : undefined}
+                                className={`px-2 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors ${
+                                  isLastDirecteur
+                                    ? "text-[#4a4d56] cursor-not-allowed opacity-60"
+                                    : "text-[#E63946]/75 hover:text-[#E63946]"
+                                }`}
+                              >
+                                Supprimer
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -933,6 +1064,167 @@ export default function AdminSchoolDetailPage({ params }: { params: Promise<{ id
             ))
           )}
         </section>
+      )}
+
+      {/* ── Transfer modal ─────────────────────────────────── */}
+      {transferModal && (() => {
+        const filteredSchools = transferModal.newRole === "RECRUTEUR"
+          ? allSchools.filter((s) => s.type === "CEGEP")
+          : allSchools;
+        const isRoleChange = transferModal.newRole === "RECRUTEUR";
+        const schoolLabel = isRoleChange ? "CÉGEP d'affiliation" : "Nouvel établissement";
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+            <div className="w-full max-w-[520px] bg-[#1A1D24] border border-[#2D3748] rounded-xl shadow-2xl">
+              <div className="px-6 py-5 border-b border-[#2D3748]">
+                <h3 className="text-[17px] font-bold text-white">
+                  Transférer {`${transferModal.coach.first_name ?? ""} ${transferModal.coach.last_name ?? ""}`.trim()}
+                </h3>
+              </div>
+              <div className="px-6 py-5 space-y-5">
+
+                {/* Step 1 — role selection */}
+                <div>
+                  <p className={labelCls}>Nouveau rôle</p>
+                  <div className="mt-2 grid grid-cols-2 gap-2">
+                    {([
+                      { value: "COACH", label: "Entraîneur" },
+                      { value: "RECRUTEUR", label: "Recruteur CÉGEP" },
+                    ] as { value: TransferRole; label: string }[]).map((opt) => {
+                      const selected = transferModal.newRole === opt.value;
+                      return (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => {
+                            console.log("Transfer modal - role selected:", opt.value);
+                            setTransferModal({ ...transferModal, newRole: opt.value, newSchoolId: "" });
+                          }}
+                          className={`px-3 py-2.5 rounded-lg border text-[13px] font-bold uppercase tracking-wider transition-colors ${
+                            selected
+                              ? "border-[#E63946] bg-[#E63946]/10 text-[#E63946]"
+                              : "border-[#2D3748] text-[#9CA3AF] hover:text-white hover:border-[#4a4d56]"
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Step 2 — school selection */}
+                <div>
+                  <label htmlFor="transfer-school" className={labelCls}>{schoolLabel}</label>
+                  <select
+                    id="transfer-school"
+                    value={transferModal.newSchoolId}
+                    onChange={(e) => {
+                      console.log("Transfer modal - school selected:", e.target.value);
+                      setTransferModal({ ...transferModal, newSchoolId: e.target.value });
+                    }}
+                    className={`${inputCls} mt-1.5`}
+                  >
+                    <option value="">
+                      {isRoleChange ? "— Sélectionnez un CÉGEP —" : "— Sélectionnez une école —"}
+                    </option>
+                    {filteredSchools.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name}{s.city ? ` · ${s.city}` : ""}{isRoleChange ? "" : ` — ${s.type === "CEGEP" ? "CÉGEP" : "Secondaire"}`}
+                      </option>
+                    ))}
+                  </select>
+                  {isRoleChange && (
+                    <p className="text-[11px] text-[#9CA3AF] mt-2 leading-relaxed">
+                      Le rôle sera changé de COACH à RECRUTEUR. L&apos;entraîneur aura accès au portail recruteur.
+                    </p>
+                  )}
+                </div>
+
+                {transferModal.coach.athleteCount > 0 && (
+                  <div className="bg-[#F59E0B]/10 border border-[#F59E0B]/30 rounded-lg px-4 py-3 text-[12px] text-[#F59E0B]">
+                    ⚠ {transferModal.coach.athleteCount} athlète(s) seront dissociés de cet entraîneur.
+                  </div>
+                )}
+              </div>
+              <div className="px-6 py-4 border-t border-[#2D3748] flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setTransferModal(null)}
+                  className="px-4 py-2 rounded-lg text-[12px] font-bold uppercase tracking-wider text-[#9CA3AF] hover:text-white transition-colors"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmTransfer}
+                  disabled={!transferModal.newSchoolId || actionPending}
+                  className={`px-4 py-2 rounded-lg text-[12px] font-bold uppercase tracking-wider transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+                    isRoleChange
+                      ? "bg-[#E63946] text-white hover:bg-[#D42B22]"
+                      : "bg-[#F59E0B] text-[#111317] hover:bg-[#FBBF24]"
+                  }`}
+                >
+                  Confirmer le transfert
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ── Delete (deactivate) modal ──────────────────────── */}
+      {deleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+          <div className="w-full max-w-[520px] bg-[#1A1D24] border border-[#E63946]/40 rounded-xl shadow-2xl">
+            <div className="px-6 py-5 border-b border-[#2D3748]">
+              <h3 className="text-[17px] font-bold text-white">
+                Supprimer le compte de {`${deleteModal.coach.first_name ?? ""} ${deleteModal.coach.last_name ?? ""}`.trim()} ?
+              </h3>
+            </div>
+            <div className="px-6 py-5 space-y-4">
+              <div className="bg-[#E63946]/10 border border-[#E63946]/40 rounded-lg px-4 py-3 text-[12px] text-[#E63946]">
+                ⚠ Cette action désactivera le compte de cet entraîneur.
+              </div>
+              <p className="text-[13px] text-[#E0E0E0] leading-relaxed">
+                L&apos;entraîneur ne pourra plus se connecter à Nexus. Ses évaluations et vérifications resteront dans le système mais ne seront plus modifiables.
+              </p>
+              {deleteModal.coach.athleteCount > 0 && (
+                <p className="text-[13px] text-[#9CA3AF] leading-relaxed">
+                  Cet entraîneur a {deleteModal.coach.athleteCount} athlète(s). Leurs profils resteront actifs mais ne seront plus liés à un entraîneur.
+                </p>
+              )}
+              <label className="flex items-start gap-2.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={deleteModal.ackChecked}
+                  onChange={(e) => setDeleteModal({ ...deleteModal, ackChecked: e.target.checked })}
+                  className="mt-0.5 accent-[#E63946]"
+                />
+                <span className="text-[13px] text-[#E0E0E0]">
+                  Je comprends que cette action désactivera le compte.
+                </span>
+              </label>
+            </div>
+            <div className="px-6 py-4 border-t border-[#2D3748] flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setDeleteModal(null)}
+                className="px-4 py-2 rounded-lg text-[12px] font-bold uppercase tracking-wider text-[#9CA3AF] hover:text-white transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={confirmDelete}
+                disabled={!deleteModal.ackChecked || actionPending}
+                className="px-4 py-2 rounded-lg bg-[#E63946] text-white text-[12px] font-bold uppercase tracking-wider hover:bg-[#D42B22] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Supprimer le compte
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {toast && (

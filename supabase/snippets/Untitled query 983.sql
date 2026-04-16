@@ -1,22 +1,3 @@
--- Activities
-ALTER TABLE activities DROP CONSTRAINT activities_type_check;
-ALTER TABLE activities ADD CONSTRAINT activities_type_check
-CHECK (type = ANY (ARRAY[
-  'PROFILE_MODIFIED', 'PROFILE_VERIFIED', 'NEW_MESSAGE', 
-  'FAVORITED', 'STATUS_CHANGED', 'ATHLETE_ADDED', 
-  'VIDEO_ADDED', 'BADGE_EARNED', 'PROFILE_VIEWED', 
-  'PIPELINE_CHANGED', 'PROFILE_UPDATED', 'NEW_ATHLETE',
-  'ADMIN_BROADCAST'
-]));
-
--- Recruiter activity log
-ALTER TABLE recruiter_activity_log DROP CONSTRAINT recruiter_activity_log_action_type_check;
-ALTER TABLE recruiter_activity_log ADD CONSTRAINT recruiter_activity_log_action_type_check
-CHECK (action_type = ANY (ARRAY[
-  'NOTE_ADDED', 'NOTE_UPDATED', 'LIST_CREATED', 'LIST_NOTE_ADDED',
-  'ATHLETE_ADDED_TO_LIST', 'ATHLETE_REMOVED_FROM_LIST',
-  'PIPELINE_CHANGED', 'FAVORITED', 'UNFAVORITED',
-  'PROFILE_VIEWED', 'NEW_ATHLETE', 'PROFILE_UPDATED',
-  'VIDEO_ADDED', 'ATHLETE_VERIFIED', 'STATS_UPDATED',
-  'REVIEW_SUBMITTED', 'COACH_REPLY', 'ADMIN_BROADCAST'
-]));
+SELECT tier, LOWER(tier), LENGTH(tier) 
+FROM subscriptions 
+WHERE user_id = 'e74b866b-c544-46a2-af12-c330a5fd8ecb';

@@ -18,9 +18,46 @@ import SchoolGate from "@/components/subscription/SchoolGate";
 
 /* ── Coach Pricing Section ────────────────────────────────── */
 
+/**
+ * Normalize any tier string the DB might hold (legacy + current writers):
+ *   'ALL_STAR', 'all_star', 'allstar', 'coach_allstar'  → 'allstar'
+ *   'PRO', 'pro', 'coach_pro'                           → 'pro'
+ *   anything else                                       → 'free'
+ */
+function normalizeCoachTier(raw: string | null | undefined): "free" | "pro" | "allstar" {
+  if (!raw) return "free";
+  const s = raw.toLowerCase().replace(/[\s_-]/g, "");
+  if (s.includes("allstar")) return "allstar";
+  if (s.includes("pro")) return "pro";
+  return "free";
+}
+
 function CoachPricingSection() {
   const [annual, setAnnual] = useState(false);
-  const currentTier = "free";
+  const [currentTier, setCurrentTier] = useState<"free" | "pro" | "allstar">("free");
+
+  useEffect(() => {
+    (async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        console.log("[CoachSettings] no auth user — defaulting to free");
+        return;
+      }
+      const { data: sub, error } = await supabase
+        .from("subscriptions")
+        .select("tier, status, billing_cycle, current_period_end")
+        .eq("user_id", user.id)
+        .eq("status", "active")
+        .maybeSingle();
+
+      console.log("Subscription data fetched:", sub, "error:", error);
+
+      const tier = normalizeCoachTier(sub?.tier as string | undefined);
+      console.log("Current tier:", tier);
+      setCurrentTier(tier);
+    })();
+  }, []);
 
   const tiers = [
     {

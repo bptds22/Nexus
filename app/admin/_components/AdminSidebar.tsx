@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import NexusLogo from "@/components/ui/NexusLogo";
 import { createClient } from "@/lib/supabase/client";
+import { UserCheck } from "lucide-react";
 
 const NAV_ITEMS = [
   {
@@ -18,6 +19,10 @@ const NAV_ITEMS = [
   {
     label: "Athlètes", href: "/admin/athletes",
     icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="8.5" cy="7" r="4" /><polyline points="17 11 19 13 23 9" /></svg>,
+  },
+  {
+    label: "Recruteurs", href: "/admin/recruteurs",
+    icon: <UserCheck size={18} strokeWidth={2} />,
   },
   {
     label: "Écoles", href: "/admin/schools",
@@ -61,6 +66,7 @@ interface Props {
 export default function AdminSidebar({ mobileOpen, onClose }: Props) {
   const pathname = usePathname();
   const [pendingReports, setPendingReports] = useState<number>(0);
+  const [newRecruiters, setNewRecruiters] = useState<number>(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -72,16 +78,32 @@ export default function AdminSidebar({ mobileOpen, onClose }: Props) {
         .eq("status", "EN_ATTENTE");
       if (error) {
         console.log("[AdminSidebar] reports count error:", error.message);
-        return;
+      } else {
+        console.log("[AdminSidebar] pending reports count:", count);
+        if (!cancelled) setPendingReports(count ?? 0);
       }
-      console.log("[AdminSidebar] pending reports count:", count);
-      if (!cancelled) setPendingReports(count ?? 0);
+
+      // New recruiters (last 7 days)
+      const sevenAgo = new Date();
+      sevenAgo.setDate(sevenAgo.getDate() - 7);
+      const { count: recCount, error: recErr } = await supabase
+        .from("users")
+        .select("id", { count: "exact", head: true })
+        .eq("role", "RECRUTEUR")
+        .gte("created_at", sevenAgo.toISOString());
+      if (recErr) {
+        console.log("[AdminSidebar] new recruiters count error:", recErr.message);
+      } else {
+        console.log("[AdminSidebar] new recruiters (7d):", recCount);
+        if (!cancelled) setNewRecruiters(recCount ?? 0);
+      }
     })();
     return () => { cancelled = true; };
   }, []);
 
   const badges: Record<string, number> = {
     "/admin/moderation": pendingReports,
+    "/admin/recruteurs": newRecruiters,
   };
 
   const nav = (
