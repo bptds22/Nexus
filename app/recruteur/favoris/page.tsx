@@ -47,7 +47,7 @@ function FavoriGridCard({ a, onUnfavorite }: { a: FavoriAthlete; onUnfavorite: (
       {/* Photo */}
       <div className="relative h-[180px] bg-[#2F3440] overflow-hidden">
         {a.photo ? (
-          <img src={a.photo} alt={`${a.firstName} ${a.lastName}`} className="w-full h-full object-cover" />
+          <img src={a.photo} alt={`${a.firstName} ${a.lastName}`} className="w-full h-full object-cover object-[center_15%]" />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
             <span className="text-[48px] font-head font-black text-white/5">{a.firstName[0]}{a.lastName[0]}</span>

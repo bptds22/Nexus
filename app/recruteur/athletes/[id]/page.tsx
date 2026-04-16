@@ -181,7 +181,7 @@ function PlayerCard({ a }: { a: AthleteProfileRecruiterView }) {
         <div className="relative overflow-hidden" style={{ width: 300, height: 420, borderRadius: 10, background: '#2F3440' }}>
           {a.photoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={a.photoUrl} alt={`${a.firstName} ${a.lastName}`} className="absolute inset-0 w-full h-full object-cover z-[1]" />
+            <img src={a.photoUrl} alt={`${a.firstName} ${a.lastName}`} className="absolute inset-0 w-full h-full object-cover object-[center_15%] z-[1]" />
           ) : (
             <div className="absolute inset-0 z-[1] flex items-center justify-center">
               <span style={{ fontFamily: 'var(--font-outfit), sans-serif', fontSize: 120, fontWeight: 900, color: 'rgba(255,255,255,0.06)', letterSpacing: '0.05em', lineHeight: 1 }}>

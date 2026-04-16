@@ -12,7 +12,7 @@ const label = "text-[10px] font-bold tracking-[0.25em] uppercase";
 
 export default function MarketingNav() {
   return (
-    <nav className="sticky top-0 z-50 bg-[#060A14]/92 backdrop-blur-md border-b border-[#1E2D4A]">
+    <nav className="sticky top-0 z-50 bg-[#111317] border-b border-[#1E2D4A]">
       <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
 
         <Link href="/" aria-label="Nexus" className="flex items-center">
@@ -21,12 +21,6 @@ export default function MarketingNav() {
         </Link>
 
         <ul className="hidden md:flex items-center gap-8 list-none">
-          <li>
-            <Link href="/comment-ca-marche" className={`${label} text-[#9AA3B2] hover:text-white transition-colors`}>
-              Comment ça marche
-            </Link>
-          </li>
-
           {/* Dropdown — Coaches & Recruteurs */}
           <li className="relative group">
             <span className={`${label} text-[#9AA3B2] group-hover:text-white transition-colors cursor-default flex items-center gap-1`}>
@@ -54,6 +48,12 @@ export default function MarketingNav() {
                 ))}
               </ul>
             </div>
+          </li>
+
+          <li>
+            <Link href="/comment-ca-marche" className={`${label} text-[#9AA3B2] hover:text-white transition-colors`}>
+              Comment ça marche
+            </Link>
           </li>
 
           <li>

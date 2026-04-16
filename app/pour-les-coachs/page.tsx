@@ -177,86 +177,6 @@ function GlowFrame({ children }: { children: React.ReactNode }) {
   );
 }
 
-function VerifiedBadge({ size = 16 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="#2563EB" aria-label="Vérifié">
-      <circle cx="12" cy="12" r="10" />
-      <path d="M9 12l2 2 4-4" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-    </svg>
-  );
-}
-
-/* ── Mes Athlètes table mockup (fake names) ─────────────────── */
-
-type RosterRow = {
-  name: string;
-  sport: string;
-  pos: string;
-  verified: boolean;
-  completion: number;
-  status: "OUVERT" | "EN_PROCESSUS" | "RECRUTE" | null;
-};
-
-const ROSTER: RosterRow[] = [
-  { name: "Alexandre B.", sport: "Football",   pos: "QB", verified: true,  completion: 87, status: "OUVERT" },
-  { name: "Émilie G.",    sport: "Hockey",     pos: "C",  verified: true,  completion: 72, status: "EN_PROCESSUS" },
-  { name: "Mathieu R.",   sport: "Soccer",     pos: "MF", verified: true,  completion: 91, status: "RECRUTE" },
-  { name: "Sarah T.",     sport: "Basketball", pos: "PG", verified: false, completion: 45, status: null },
-  { name: "Luca F.",      sport: "Football",   pos: "LB", verified: false, completion: 33, status: null },
-];
-
-function StatusBadge({ status }: { status: RosterRow["status"] }) {
-  if (status === "OUVERT")       return <span className="inline-flex px-2.5 py-1 rounded-full bg-[#22C55E]/15 text-[#22C55E] text-[12px] font-bold uppercase tracking-wider">Ouvert</span>;
-  if (status === "EN_PROCESSUS") return <span className="inline-flex px-2.5 py-1 rounded-full bg-[#F59E0B]/15 text-[#F59E0B] text-[12px] font-bold uppercase tracking-wider">En processus</span>;
-  if (status === "RECRUTE")      return <span className="inline-flex px-2.5 py-1 rounded-full bg-[#E63946]/15 text-[#E63946] text-[12px] font-bold uppercase tracking-wider">Recruté</span>;
-  return <span className="text-[#4a4d56] text-[13px]">—</span>;
-}
-
-function CompletionBar({ pct }: { pct: number }) {
-  const color = pct >= 80 ? "bg-[#22C55E]" : pct >= 60 ? "bg-[#F59E0B]" : "bg-[#E63946]";
-  const w = { "--bar-w": `${Math.min(100, Math.max(0, pct))}%` } as React.CSSProperties;
-  return (
-    <div className="flex items-center gap-2.5">
-      <div className="flex-1 h-2 rounded-full bg-[#2D3748] overflow-hidden">
-        {/* eslint-disable-next-line react/forbid-dom-props -- width is dynamic */}
-        <div className={`h-full rounded-full w-[var(--bar-w)] ${color}`} style={w} />
-      </div>
-      <span className="text-[13px] font-bold text-white/75 tabular-nums w-11 text-right">{pct}%</span>
-    </div>
-  );
-}
-
-function AthletesTableMockup({ compact = false }: { compact?: boolean }) {
-  const rows = compact ? ROSTER.slice(0, 4) : ROSTER;
-  return (
-    <div className="bg-[#15171c] rounded-2xl border border-white/[0.06] overflow-hidden shadow-2xl">
-      <div className="grid grid-cols-[1.4fr_0.9fr_auto_1.3fr_auto] gap-4 sm:gap-6 px-5 sm:px-7 py-4 border-b border-white/[0.05] bg-[#1A1D24]">
-        <span className="text-[12px] font-bold uppercase tracking-[0.15em] text-[#6b7280]">Athlète</span>
-        <span className="text-[12px] font-bold uppercase tracking-[0.15em] text-[#6b7280]">Sport</span>
-        <span className="text-[12px] font-bold uppercase tracking-[0.15em] text-[#6b7280]">Vérifié</span>
-        <span className="text-[12px] font-bold uppercase tracking-[0.15em] text-[#6b7280]">Complétude</span>
-        <span className="text-[12px] font-bold uppercase tracking-[0.15em] text-[#6b7280] text-right">Statut</span>
-      </div>
-      <ul className="divide-y divide-white/[0.04]">
-        {rows.map((r) => (
-          <li key={r.name} className="grid grid-cols-[1.4fr_0.9fr_auto_1.3fr_auto] gap-4 sm:gap-6 px-5 sm:px-7 py-4 items-center">
-            <div className="min-w-0">
-              <p className="text-[16px] font-bold text-white truncate">{r.name}</p>
-              <p className="text-[12px] text-[#6b7280]">{r.pos}</p>
-            </div>
-            <span className="text-[15px] text-white/75">{r.sport}</span>
-            <span className="flex items-center justify-center w-7">
-              {r.verified ? <VerifiedBadge size={20} /> : <span className="w-4 h-4 rounded-full border border-[#4a4d56]" />}
-            </span>
-            <CompletionBar pct={r.completion} />
-            <div className="text-right"><StatusBadge status={r.status} /></div>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
 /* ── Messaging mockup (fake names) ──────────────────────────── */
 
 function MessagesMockup() {
@@ -401,33 +321,17 @@ export default function PourLesCoachsPage() {
               >
                 Sois le Nex
               </Link>
-              <span className="inline-flex items-center px-3.5 py-1.5 rounded-full bg-[#22C55E]/15 text-[#22C55E] text-[13px] font-bold uppercase tracking-wider">
-                100% gratuit
-              </span>
             </div>
 
             <div className="mt-16 max-w-[1200px] mx-auto">
               <GlowFrame>
-                <AthletesTableMockup />
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/Image/Coach%20Dashboard.png"
+                  alt="Tableau de bord entraîneur — Mes athlètes"
+                  style={{ width: "100%", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.15)" }}
+                />
               </GlowFrame>
-            </div>
-          </div>
-        </section>
-
-        {/* ─── SECTION 2 — SINGLE SOCIAL-PROOF STAT ─────────── */}
-        <section id="social-proof" className="border-b border-white/[0.06]">
-          <div className="max-w-[900px] mx-auto px-6 py-20">
-            <div className="bg-[#1A1D24] border border-white/[0.06] rounded-2xl px-8 sm:px-14 py-14 text-center">
-              <span className="inline-block w-10 h-[2px] bg-[#E63946] mx-auto" />
-              <p className="font-head text-[96px] sm:text-[128px] font-black leading-none text-[#E63946] tabular-nums mt-6">
-                77%
-              </p>
-              <p className="text-[18px] sm:text-[20px] text-white font-semibold leading-relaxed mt-6 max-w-[640px] mx-auto">
-                des athlètes vérifiés par leur coach sont contactés par un recruteur.
-              </p>
-              <p className="text-[14px] text-white/55 leading-relaxed mt-4 max-w-[520px] mx-auto">
-                Un profil vérifié, c&apos;est un profil crédible. La différence, c&apos;est toi.
-              </p>
             </div>
           </div>
         </section>
@@ -557,7 +461,12 @@ export default function PourLesCoachsPage() {
             </p>
             <div className="mt-12 max-w-[1200px] mx-auto">
               <GlowFrame>
-                <AthletesTableMockup />
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/Image/Mes%20ath%20(2).png"
+                  alt="Tableau de bord entraîneur — gestion des athlètes"
+                  style={{ width: "100%", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.15)" }}
+                />
               </GlowFrame>
             </div>
           </div>

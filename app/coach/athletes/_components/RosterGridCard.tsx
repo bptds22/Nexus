@@ -18,7 +18,7 @@ export default function RosterGridCard({ athlete: a }: { athlete: RosterAthlete 
       <div className="relative h-[140px] bg-[#2F3440] overflow-hidden">
         {a.photo ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={a.photo} alt={`${a.firstName} ${a.lastName}`} className="w-full h-full object-cover" />
+          <img src={a.photo} alt={`${a.firstName} ${a.lastName}`} className="w-full h-full object-cover object-[center_15%]" />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
             <span className="text-[48px] font-head font-black text-white/5 tracking-wide">

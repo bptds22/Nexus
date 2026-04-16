@@ -360,7 +360,7 @@ const DraggableKanbanCard = memo(function DraggableKanbanCard({
         {/* Photo banner */}
         <div className="relative h-20 bg-[#2F3440]">
           {card.photo_url ? (
-            <img src={card.photo_url} alt="" className="w-full h-full object-cover" />
+            <img src={card.photo_url} alt="" className="w-full h-full object-cover object-[center_15%]" />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
               <span className="text-[26px] font-head font-black text-white/5">{card.full_name.split(" ").map(n => n[0]).join("")}</span>
