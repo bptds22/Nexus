@@ -1,5 +1,6 @@
+"use client";
+
 import Link from "next/link";
-import ThemeToggle from "@/app/components/ThemeToggle";
 import NexusLogo from "@/components/ui/NexusLogo";
 
 const DROPDOWN_ITEMS = [
@@ -76,7 +77,6 @@ export default function MarketingNav() {
         </ul>
 
         <div className="flex items-center gap-2">
-          <ThemeToggle />
           <button
             type="button"
             onClick={() => { console.log("[MarketingNav] Language toggle clicked — no-op until translations ready"); }}

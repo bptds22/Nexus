@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import CegepGate from "@/components/subscription/CegepGate";
 import { createClient } from "@/lib/supabase/client";
 import type { TrainerOverview } from "@/lib/types/models";
@@ -100,6 +101,7 @@ export default function TrainersListWrapper() {
 }
 
 function TrainersListPage() {
+  const router = useRouter();
   const [sortKey, setSortKey] = useState<SortKey>("name");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [sportFilter, setSportFilter] = useState("Tous");
@@ -367,12 +369,11 @@ function TrainersListPage() {
                     trainer.firstName.charAt(0) + trainer.lastName.charAt(0);
 
                   return (
-                    <Link
+                    <tr
                       key={trainer.id}
-                      href={`/recruteur/cegep/entraineurs/${trainer.id}`}
-                      className="contents"
+                      onClick={() => router.push(`/recruteur/cegep/entraineurs/${trainer.id}`)}
+                      className="border-t border-[#1e2128] hover:bg-[#22262E] cursor-pointer transition-colors"
                     >
-                      <tr className="border-t border-[#1e2128] hover:bg-[#22262E] cursor-pointer transition-colors">
                         {/* Entraîneur */}
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
@@ -465,7 +466,6 @@ function TrainersListPage() {
                           </div>
                         </td>
                       </tr>
-                    </Link>
                   );
                 })}
               </tbody>
