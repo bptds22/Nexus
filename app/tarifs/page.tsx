@@ -161,7 +161,7 @@ const COACH_TIERS: Tier[] = [
     ctaHref: "/inscription?role=COACH",
   },
   {
-    id: "coach_pro",
+    id: "coach-pro",
     name: "Pro",
     nameColor: "text-[#F59E0B]",
     monthly: 14.99,

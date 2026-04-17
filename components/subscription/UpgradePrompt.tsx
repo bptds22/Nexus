@@ -2,10 +2,13 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useSubscription } from "@/lib/hooks/useSubscription";
 
 /* ═══════════════════════════════════════════════════════════════
-   UpgradePrompt — Subtle, dismissible upgrade card
-   Shows only for free-tier users. Reads from localStorage.
+   UpgradePrompt — Subtle, dismissible upgrade card.
+   Shows only for users whose effective tier is "free"
+   (admins/ Pro/All Star never see it).
+   Dismissal is stored in localStorage under `dismissKey`.
 ═══════════════════════════════════════════════════════════════ */
 
 interface UpgradePromptProps {
@@ -25,26 +28,24 @@ export default function UpgradePrompt({
   ctaLabel = "Essayer gratuitement →",
   ctaHref = "/tarifs",
 }: UpgradePromptProps) {
-  const [visible, setVisible] = useState(false);
+  const { tier, isSchoolAdmin, loading } = useSubscription();
+  const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
     try {
-      const raw = localStorage.getItem("nexus_user");
-      const user = raw ? JSON.parse(raw) : null;
-      const tier = user?.tier || "free";
-      const dismissed = localStorage.getItem(dismissKey) === "true";
-      if (tier === "free" && !dismissed) setVisible(true);
-    } catch {
-      setVisible(true); // default: show for POC
-    }
+      if (localStorage.getItem(dismissKey) === "true") setDismissed(true);
+    } catch { /* noop */ }
   }, [dismissKey]);
 
+  if (loading) return null;
+  if (dismissed) return null;
+  if (isSchoolAdmin) return null;
+  if (tier !== "free") return null;
+
   const dismiss = () => {
-    setVisible(false);
+    setDismissed(true);
     try { localStorage.setItem(dismissKey, "true"); } catch { /* noop */ }
   };
-
-  if (!visible) return null;
 
   return (
     <div className="relative bg-[#1A1D24] rounded-xl border border-[#2D3748] overflow-hidden">

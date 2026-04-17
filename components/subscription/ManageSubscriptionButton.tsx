@@ -1,19 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
+import { useSubscription } from "@/lib/hooks/useSubscription";
 
 /* ═══════════════════════════════════════════════════════════════
-   ManageSubscriptionButton — Shows current plan + CTA
+   ManageSubscriptionButton — Shows current plan + CTA.
    Used in every portal's Paramètres page under "Abonnement" section.
 ═══════════════════════════════════════════════════════════════ */
-
-const TIER_LABELS: Record<string, string> = {
-  free: "Gratuit",
-  coach_pro: "Coach Pro",
-  recruteur_pro: "Recruteur Pro",
-  athlete_pro: "Athlète Pro",
-};
 
 const BILLING_LABELS: Record<string, string> = {
   monthly: "mensuel",
@@ -21,32 +15,18 @@ const BILLING_LABELS: Record<string, string> = {
 };
 
 export default function ManageSubscriptionButton() {
-  const [tier, setTier] = useState("free");
-  const [billingCycle, setBillingCycle] = useState<string | null>(null);
-  const [renewalDate, setRenewalDate] = useState<string | null>(null);
+  const { tier, tierLabel, billing, periodEnd, loading } = useSubscription();
   const [toast, setToast] = useState<string | null>(null);
 
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem("nexus_user");
-      if (raw) {
-        const user = JSON.parse(raw);
-        if (user.tier) setTier(user.tier);
-        if (user.billingCycle) setBillingCycle(user.billingCycle);
-        if (user.renewalDate) setRenewalDate(user.renewalDate);
-      }
-    } catch {
-      // noop
-    }
-  }, []);
+  if (loading) return null;
 
   const showToast = (msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(null), 3000);
   };
 
-  const isPro = tier !== "free";
-  const tierLabel = TIER_LABELS[tier] || tier;
+  const isPaid = tier !== "free";
+  const label = tierLabel();
 
   return (
     <div>
@@ -54,29 +34,29 @@ export default function ManageSubscriptionButton() {
       <div className="flex items-center gap-3 mb-4">
         <span className="text-[13px] text-[#9CA3AF]">Plan actuel :</span>
         <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[12px] font-bold ${
-          isPro
+          isPaid
             ? "bg-[#DAB65A]/15 text-[#DAB65A]"
             : "bg-[#6B7280]/15 text-[#6B7280]"
         }`}>
-          {isPro && (
+          {isPaid && (
             <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
               <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
             </svg>
           )}
-          {tierLabel}
-          {billingCycle && ` (${BILLING_LABELS[billingCycle] || billingCycle})`}
+          {label}
+          {billing && ` (${BILLING_LABELS[billing] || billing})`}
         </span>
       </div>
 
       {/* Renewal info */}
-      {isPro && renewalDate && (
+      {isPaid && periodEnd && (
         <p className="text-[12px] text-[#6B7280] mb-4">
-          Prochain renouvellement : {new Date(renewalDate).toLocaleDateString("fr-CA", { year: "numeric", month: "long", day: "numeric" })}
+          Prochain renouvellement : {new Date(periodEnd).toLocaleDateString("fr-CA", { year: "numeric", month: "long", day: "numeric" })}
         </p>
       )}
 
       {/* Action button */}
-      {isPro ? (
+      {isPaid ? (
         <button
           type="button"
           onClick={() => showToast("Redirection vers Stripe Customer Portal (Phase 2)")}

@@ -6,6 +6,7 @@ import NexusLogo from "@/components/ui/NexusLogo";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import SidebarUpgradeCard from "@/components/subscription/SidebarUpgradeCard";
+import { useSubscription } from "@/lib/hooks/useSubscription";
 
 /* ─────────────────────────────────────────────────────────────────
    RecruiterSidebar — vertical nav for the recruiter portal.
@@ -98,14 +99,19 @@ interface RecruiterSidebarProps {
 export default function RecruiterSidebar({ mobileOpen, onClose }: RecruiterSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const { tier, isSchoolAdmin } = useSubscription();
   const [userName, setUserName] = useState("Pierre Dufour");
   const [userSub, setUserSub] = useState("Recruteur \u2014 C\u00c9GEP Garneau");
   const [userInitials, setUserInitials] = useState("PD");
-  const [hasProAccess, setHasProAccess] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [isAlsoRecruiter, setIsAlsoRecruiter] = useState(true);
   const [portalLabel, setPortalLabel] = useState("Portail recruteur");
 
+  /* Subscription/admin flags come from the DB-backed hook (single source of truth). */
+  const hasProAccess = tier === "all_star" || isSchoolAdmin;
+  const isAdmin = isSchoolAdmin;
+
+  /* Name/initials/institution are profile-level (not subscription) and still
+     come from the onboarding localStorage bag. Safe: not a tier-gated read. */
   useEffect(() => {
     try {
       const raw = localStorage.getItem("nexus_user");
@@ -117,18 +123,14 @@ export default function RecruiterSidebar({ mobileOpen, onClose }: RecruiterSideb
           const inst = u.institution?.name || "";
           setUserSub(`Recruteur${inst ? ` \u2014 ${inst}` : ""}`);
         }
-        const allstar = u.subscription?.tier === "recruteur_allstar";
-        const admin = u.is_school_admin === true;
-        setHasProAccess(allstar || admin);
-        setIsAdmin(admin);
         setIsAlsoRecruiter(u.is_also_recruiter !== false);
-        if (admin && u.is_also_recruiter === false) {
+        if (isSchoolAdmin && u.is_also_recruiter === false) {
           setPortalLabel("Directeur sportif \u2014 C\u00c9GEP");
           setUserSub(`Directeur${u.institution?.name ? ` \u2014 ${u.institution.name}` : ""}`);
         }
       }
     } catch { /* use defaults */ }
-  }, []);
+  }, [isSchoolAdmin]);
 
   // Real badge counts from Supabase
   const [msgBadge, setMsgBadge] = useState(0);

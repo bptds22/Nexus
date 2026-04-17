@@ -1,38 +1,35 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
+import {
+  useSubscription,
+  type SubscriptionTier,
+  type SubscriptionStatus,
+} from "@/lib/hooks/useSubscription";
 
 /* ═══════════════════════════════════════════════════════════════
-   SubscriptionSection — 3-tier subscription management panel
-   Supports Free / Pro / All Star for coach & recruiter, Free / Pro for athlete.
-   Used in every portal's Paramètres page under "Abonnement" tab.
+   SubscriptionSection — 3-tier subscription management panel.
+   Canonical taxonomy: tier = "free" | "pro" | "all_star",
+   role is separate ("coach" | "recruiter" | "athlete").
+   Source of truth: useSubscription() hook (DB-backed).
 ═══════════════════════════════════════════════════════════════ */
 
 type PortalType = "coach" | "recruteur" | "athlete";
-type Tier = "free" | "coach_pro" | "coach_allstar" | "recruteur_pro" | "recruteur_allstar" | "athlete_pro";
-type SubStatus = "active" | "trialing" | "past_due" | "canceled";
 
-interface SubData {
-  tier: Tier;
-  status: SubStatus;
-  billing_cycle: "monthly" | "annual" | null;
-  current_period_end: string | null;
-  trial_days_remaining: number | null;
-  cancel_at_period_end: boolean;
-}
-
-const TIER_LABELS: Record<Tier, string> = {
-  free: "Gratuit", coach_pro: "Coach Pro", coach_allstar: "Coach All Star",
-  recruteur_pro: "Recruteur Pro", recruteur_allstar: "Recruteur All Star", athlete_pro: "Athlète Pro",
-};
-
-const TIER_PRICES: Record<string, { monthly: string; annual: string }> = {
-  coach_pro: { monthly: "5,99 $/mois", annual: "29,99 $/an" },
-  coach_allstar: { monthly: "29,99 $/mois", annual: "200 $/an" },
-  recruteur_pro: { monthly: "9,99 $/mois", annual: "89 $/an" },
-  recruteur_allstar: { monthly: "29,99 $/mois", annual: "269 $/an" },
-  athlete_pro: { monthly: "9,99 $/mois", annual: "79 $/an" },
+const TIER_PRICES: Record<PortalType, { pro?: { monthly: string; annual: string }; all_star?: { monthly: string; annual: string } }> = {
+  coach: {
+    pro:      { monthly: "5,99 $/mois",  annual: "29,99 $/an" },
+    all_star: { monthly: "29,99 $/mois", annual: "200 $/an"   },
+  },
+  recruteur: {
+    pro:      { monthly: "9,99 $/mois",  annual: "89 $/an"    },
+    all_star: { monthly: "29,99 $/mois", annual: "269 $/an"   },
+  },
+  athlete: {
+    pro:      { monthly: "9,99 $/mois",  annual: "79 $/an"    },
+  },
 };
 
 const FREE_LIMITS_COACH = ["Mon école — Bloqué", "Stats école — Bloqué", "Placement — Bloqué", "Ma réputation — Bloqué", "Analytics — Bloqué"];
@@ -54,14 +51,15 @@ const MOCK_INVOICES = [
 
 function usageColor(pct: number) { return pct >= 100 ? "#E63946" : pct >= 80 ? "#EAB308" : "#22C55E"; }
 
-function TierPill({ tier }: { tier: Tier }) {
-  const isAllStar = tier.includes("allstar");
-  const isPro = tier !== "free" && !isAllStar;
-  const bg = isAllStar ? "bg-[#E63946]/15 text-[#E63946]" : isPro ? "bg-[#DAB65A]/15 text-[#DAB65A]" : "bg-[#6B7280]/15 text-[#6B7280]";
+function TierPill({ tier, label }: { tier: SubscriptionTier; label: string }) {
+  const bg =
+    tier === "all_star" ? "bg-[#E63946]/15 text-[#E63946]" :
+    tier === "pro"      ? "bg-[#DAB65A]/15 text-[#DAB65A]" :
+                          "bg-[#6B7280]/15 text-[#6B7280]";
   return (
     <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold ${bg}`}>
-      {isAllStar && <span>★</span>}
-      {TIER_LABELS[tier]}
+      {tier === "all_star" && <span>★</span>}
+      {label}
     </span>
   );
 }
@@ -79,49 +77,108 @@ function CheckItem({ text, ok }: { text: string; ok: boolean }) {
   );
 }
 
+/** Portals that have an All-Star tier (athlete does not). */
+function portalHasAllStar(portal: PortalType): boolean {
+  return portal !== "athlete";
+}
+
+/** Build the label shown inside the current-plan pill. */
+function currentPlanLabel(portal: PortalType, tier: SubscriptionTier, isAdmin: boolean): string {
+  if (isAdmin) return portal === "coach" ? "Admin École" : "Admin CÉGEP";
+  if (tier === "free") return "Gratuit";
+  const portalLabel = portal === "coach" ? "Coach" : portal === "recruteur" ? "Recruteur" : "Athlète";
+  return tier === "all_star" ? `${portalLabel} All Star` : `${portalLabel} Pro`;
+}
+
+/** Price for a tier on a given portal, by billing cycle. */
+function priceFor(portal: PortalType, tier: SubscriptionTier, cycle: "monthly" | "annual" | null): string {
+  const fallback = cycle === "annual" ? "annuel" : "mensuel";
+  if (tier === "free") return "0 $/" + fallback;
+  const bucket = TIER_PRICES[portal];
+  const slot = tier === "pro" ? bucket.pro : bucket.all_star;
+  if (!slot) return "—";
+  return cycle === "annual" ? slot.annual : slot.monthly;
+}
+
 export default function SubscriptionSection({ portal }: { portal: PortalType }) {
-  const [sub, setSub] = useState<SubData>({ tier: "free", status: "active", billing_cycle: null, current_period_end: null, trial_days_remaining: null, cancel_at_period_end: false });
-  const [isAdmin, setIsAdmin] = useState(false);
+  const {
+    tier, status, billing, isSchoolAdmin, periodEnd, trialDaysRemaining,
+    cancelAtPeriodEnd, subscription, refresh, loading,
+  } = useSubscription();
   const [toast, setToast] = useState<string | null>(null);
   const [invoicesOpen, setInvoicesOpen] = useState(false);
   const [cancelModal, setCancelModal] = useState(false);
+  const [busy, setBusy] = useState(false);
 
-  useEffect(() => {
-    try {
-      const user = JSON.parse(localStorage.getItem("nexus_user") || "{}");
-      if (user.subscription) setSub(user.subscription);
-      if (user.is_school_admin) setIsAdmin(true);
-    } catch { /* noop */ }
-  }, []);
+  if (loading) return null;
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
 
-  const tier = sub.tier;
   const isFree = tier === "free";
-  const isPro = tier.includes("_pro");
-  const isAllStar = tier.includes("allstar");
-  const isTrial = sub.status === "trialing";
-  const tierLabel = TIER_LABELS[tier] || "Gratuit";
-  const hasAllStar = portal !== "athlete";
+  const isPro = tier === "pro";
+  const isAllStar = tier === "all_star";
+  const isTrial = status === "trialing";
+  const hasAllStar = portalHasAllStar(portal);
+  const displayedTier: SubscriptionTier = isSchoolAdmin ? "all_star" : tier;
 
-  const proTier: Tier = portal === "coach" ? "coach_pro" : portal === "recruteur" ? "recruteur_pro" : "athlete_pro";
-  const allstarTier: Tier = portal === "coach" ? "coach_allstar" : "recruteur_allstar";
+  const label = currentPlanLabel(portal, tier, isSchoolAdmin);
+  const renewal = periodEnd ? new Date(periodEnd).toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" }) : "—";
 
   const freeLimits = portal === "coach" ? FREE_LIMITS_COACH : portal === "recruteur" ? FREE_LIMITS_RECRUITER : FREE_LIMITS_ATHLETE;
   const proFeatures = portal === "coach" ? PRO_FEATURES_COACH : portal === "recruteur" ? PRO_FEATURES_RECRUITER : PRO_FEATURES_ATHLETE;
   const allstarExclusives = portal === "coach" ? ALLSTAR_EXCLUSIVES_COACH : ALLSTAR_EXCLUSIVES_RECRUITER;
 
-  // Demo switcher options
-  const demoOptions: { key: string; label: string; tier: Tier; status: SubStatus }[] = [
-    { key: "free", label: "Gratuit", tier: "free", status: "active" },
-    { key: "pro", label: `${portal === "coach" ? "Coach" : portal === "recruteur" ? "Recruteur" : "Athlète"} Pro`, tier: proTier, status: "active" },
+  /* ── Demo tier switcher (dev mode) ───────────────────────────
+     Writes canonical tier strings to the `subscriptions` table via
+     Supabase. The admin option toggles `users.is_school_admin`.
+     Only active in NODE_ENV === "development".
+  ─────────────────────────────────────────────────────────────── */
+  async function setDemoAccess(next: "free" | "pro" | "all_star" | "admin") {
+    if (busy || !subscription) return;
+    setBusy(true);
+    const supabase = createClient();
+    const userId = subscription.userId;
+
+    if (next === "admin") {
+      await supabase.from("users").update({ is_school_admin: true }).eq("id", userId);
+      await supabase.from("subscriptions").upsert(
+        { user_id: userId, tier: "free", status: "active", billing_cycle: "monthly" },
+        { onConflict: "user_id" },
+      );
+    } else {
+      await supabase.from("users").update({ is_school_admin: false }).eq("id", userId);
+      await supabase.from("subscriptions").upsert(
+        {
+          user_id: userId,
+          tier: next,
+          status: "active",
+          billing_cycle: next === "free" ? null : "monthly",
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "user_id" },
+      );
+    }
+    await refresh();
+    setBusy(false);
+  }
+
+  type DemoOpt = { key: string; label: string; kind: "free" | "pro" | "all_star" | "admin" };
+  const demoOptions: DemoOpt[] = [
+    { key: "free", label: "Gratuit",                                                          kind: "free" },
+    { key: "pro",  label: `${portal === "coach" ? "Coach" : portal === "recruteur" ? "Recruteur" : "Athlète"} Pro`, kind: "pro"  },
   ];
   if (hasAllStar) {
-    demoOptions.push({ key: "allstar", label: `${portal === "coach" ? "Coach" : "Recruteur"} All Star`, tier: allstarTier, status: "active" });
+    demoOptions.push({ key: "allstar", label: `${portal === "coach" ? "Coach" : "Recruteur"} All Star`, kind: "all_star" });
   }
   if (portal !== "athlete") {
-    demoOptions.push({ key: "admin", label: portal === "coach" ? "Admin École" : "Admin CÉGEP", tier: "free", status: "active" });
+    demoOptions.push({ key: "admin", label: portal === "coach" ? "Admin École" : "Admin CÉGEP", kind: "admin" });
   }
+
+  const isDemoActive = (opt: DemoOpt): boolean => {
+    if (opt.kind === "admin") return isSchoolAdmin;
+    if (isSchoolAdmin) return false;
+    return tier === opt.kind;
+  };
 
   return (
     <div className="space-y-6">
@@ -132,10 +189,10 @@ export default function SubscriptionSection({ portal }: { portal: PortalType }) 
 
       {/* ── Current plan card ── */}
       <div className="bg-[#1A1D24] rounded-xl border border-white/5 p-6">
-        <div className="mb-4"><TierPill tier={isAdmin ? (portal === "coach" ? "coach_allstar" : "recruteur_allstar") : tier} /></div>
+        <div className="mb-4"><TierPill tier={displayedTier} label={label} /></div>
 
         {/* ADMIN */}
-        {isAdmin && (
+        {isSchoolAdmin && (
           <>
             <p className="text-[15px] font-bold text-white mb-2">👑 {portal === "coach" ? "Admin École" : "Admin CÉGEP"}</p>
             <p className="text-[13px] text-[#9CA3AF] mb-4">Accès All Star inclus gratuitement via ton rôle d&apos;administrateur.</p>
@@ -148,7 +205,7 @@ export default function SubscriptionSection({ portal }: { portal: PortalType }) 
         )}
 
         {/* FREE */}
-        {isFree && !isTrial && !isAdmin && (
+        {isFree && !isTrial && !isSchoolAdmin && (
           <>
             <p className="text-[15px] font-bold text-white mb-4">Tu utilises le plan Gratuit</p>
             <div className="space-y-2.5 mb-6">
@@ -158,13 +215,13 @@ export default function SubscriptionSection({ portal }: { portal: PortalType }) 
             <div className={`grid gap-3 ${hasAllStar ? "grid-cols-1 sm:grid-cols-2" : ""}`}>
               <Link href="/tarifs" className="flex flex-col items-center justify-center h-auto py-4 px-4 rounded-xl border border-[#DAB65A]/40 hover:bg-[#DAB65A]/10 transition-colors text-center">
                 <span className="font-head font-bold text-[13px] text-[#DAB65A] uppercase">Passer à Pro</span>
-                <span className="text-[11px] text-[#6B7280] mt-1">{TIER_PRICES[proTier]?.monthly}</span>
+                <span className="text-[11px] text-[#6B7280] mt-1">{priceFor(portal, "pro", "monthly")}</span>
               </Link>
               {hasAllStar && (
                 <Link href="/tarifs" className="flex flex-col items-center justify-center h-auto py-4 px-4 rounded-xl bg-[#E63946] hover:bg-[#D42B22] transition-colors text-center relative">
                   <span className="absolute -top-2 px-2 py-0.5 bg-[#E63946] border border-[#D42B22] rounded-full text-[8px] font-bold text-white uppercase tracking-wider">Populaire</span>
                   <span className="font-head font-bold text-[13px] text-white uppercase">Passer à All Star</span>
-                  <span className="text-[11px] text-white/70 mt-1">{TIER_PRICES[allstarTier]?.monthly}</span>
+                  <span className="text-[11px] text-white/70 mt-1">{priceFor(portal, "all_star", "monthly")}</span>
                 </Link>
               )}
             </div>
@@ -173,12 +230,12 @@ export default function SubscriptionSection({ portal }: { portal: PortalType }) 
         )}
 
         {/* TRIAL */}
-        {isTrial && !isAdmin && (
+        {isTrial && !isSchoolAdmin && (
           <>
-            <p className="text-[15px] font-bold text-white mb-2">Il te reste {sub.trial_days_remaining ?? 8} jours d&apos;essai</p>
+            <p className="text-[15px] font-bold text-white mb-2">Il te reste {trialDaysRemaining ?? 8} jours d&apos;essai</p>
             <div className="mb-4">
               <div className="h-2 bg-[#2D3748] rounded-full overflow-hidden">
-                <div className="h-full rounded-full bg-[#22C55E]" style={{ width: `${((14 - (sub.trial_days_remaining ?? 8)) / 14) * 100}%` }} />
+                <div className="h-full rounded-full bg-[#22C55E]" style={{ width: `${((14 - (trialDaysRemaining ?? 8)) / 14) * 100}%` }} />
               </div>
             </div>
             <button type="button" onClick={() => showToast("Redirection Stripe Checkout (Phase 2)")} className="h-11 px-6 rounded-lg bg-[#E63946] text-white font-head font-bold text-[12px] uppercase tracking-wider hover:bg-[#D42B22] transition-colors">
@@ -188,12 +245,12 @@ export default function SubscriptionSection({ portal }: { portal: PortalType }) 
         )}
 
         {/* PRO (active) */}
-        {isPro && !isTrial && !isAdmin && (
+        {isPro && !isTrial && !isSchoolAdmin && (
           <>
             <div className="space-y-2 mb-4">
-              <div className="flex justify-between text-[13px]"><span className="text-[#9CA3AF]">Plan</span><span className="text-white font-bold">{tierLabel} ({sub.billing_cycle === "annual" ? "annuel" : "mensuel"})</span></div>
-              <div className="flex justify-between text-[13px]"><span className="text-[#9CA3AF]">Prix</span><span className="text-white font-bold">{TIER_PRICES[tier] ? (sub.billing_cycle === "annual" ? TIER_PRICES[tier].annual : TIER_PRICES[tier].monthly) : "—"}</span></div>
-              <div className="flex justify-between text-[13px]"><span className="text-[#9CA3AF]">Renouvellement</span><span className="text-white">{sub.current_period_end ?? "15 avril 2026"}</span></div>
+              <div className="flex justify-between text-[13px]"><span className="text-[#9CA3AF]">Plan</span><span className="text-white font-bold">{label} ({billing === "annual" ? "annuel" : "mensuel"})</span></div>
+              <div className="flex justify-between text-[13px]"><span className="text-[#9CA3AF]">Prix</span><span className="text-white font-bold">{priceFor(portal, "pro", billing)}</span></div>
+              <div className="flex justify-between text-[13px]"><span className="text-[#9CA3AF]">Renouvellement</span><span className="text-white">{renewal}</span></div>
             </div>
             <div className="border-t border-[#2D3748]/40 pt-4 mb-4">
               <div className="space-y-2">
@@ -216,19 +273,19 @@ export default function SubscriptionSection({ portal }: { portal: PortalType }) 
                 Gérer mon abonnement
               </button>
             </div>
-            {!sub.cancel_at_period_end && (
+            {!cancelAtPeriodEnd && (
               <button type="button" onClick={() => setCancelModal(true)} className="block mt-3 text-[11px] text-[#E63946]/60 hover:text-[#E63946] transition-colors">Annuler</button>
             )}
           </>
         )}
 
         {/* ALL STAR (active) */}
-        {isAllStar && !isTrial && !isAdmin && (
+        {isAllStar && !isTrial && !isSchoolAdmin && (
           <>
             <div className="space-y-2 mb-4">
-              <div className="flex justify-between text-[13px]"><span className="text-[#9CA3AF]">Plan</span><span className="text-white font-bold">{tierLabel} ({sub.billing_cycle === "annual" ? "annuel" : "mensuel"})</span></div>
-              <div className="flex justify-between text-[13px]"><span className="text-[#9CA3AF]">Prix</span><span className="text-white font-bold">{TIER_PRICES[tier] ? (sub.billing_cycle === "annual" ? TIER_PRICES[tier].annual : TIER_PRICES[tier].monthly) : "—"}</span></div>
-              <div className="flex justify-between text-[13px]"><span className="text-[#9CA3AF]">Renouvellement</span><span className="text-white">{sub.current_period_end ?? "15 avril 2026"}</span></div>
+              <div className="flex justify-between text-[13px]"><span className="text-[#9CA3AF]">Plan</span><span className="text-white font-bold">{label} ({billing === "annual" ? "annuel" : "mensuel"})</span></div>
+              <div className="flex justify-between text-[13px]"><span className="text-[#9CA3AF]">Prix</span><span className="text-white font-bold">{priceFor(portal, "all_star", billing)}</span></div>
+              <div className="flex justify-between text-[13px]"><span className="text-[#9CA3AF]">Renouvellement</span><span className="text-white">{renewal}</span></div>
             </div>
             <div className="border-t border-[#2D3748]/40 pt-4 mb-4">
               <div className="space-y-2">
@@ -244,15 +301,15 @@ export default function SubscriptionSection({ portal }: { portal: PortalType }) 
                 Changer de plan
               </Link>
             </div>
-            {!sub.cancel_at_period_end && (
+            {!cancelAtPeriodEnd && (
               <button type="button" onClick={() => setCancelModal(true)} className="block mt-3 text-[11px] text-[#E63946]/60 hover:text-[#E63946] transition-colors">Annuler</button>
             )}
           </>
         )}
       </div>
 
-      {/* ── Usage stats (free only) ── */}
-      {isFree && !isTrial && !isAdmin && portal === "recruteur" && (
+      {/* ── Usage stats (free recruteur only) ── */}
+      {isFree && !isTrial && !isSchoolAdmin && portal === "recruteur" && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[
             { label: "Consultations ce mois", current: 3, max: 5 },
@@ -274,7 +331,7 @@ export default function SubscriptionSection({ portal }: { portal: PortalType }) 
       )}
 
       {/* ── Invoice history ── */}
-      {(isPro || isAllStar) && !isTrial && !isAdmin && (
+      {(isPro || isAllStar) && !isTrial && !isSchoolAdmin && (
         <div className="bg-[#1A1D24] rounded-xl border border-white/5 overflow-hidden">
           <button type="button" onClick={() => setInvoicesOpen(!invoicesOpen)} className="w-full px-5 py-4 flex items-center justify-between hover:bg-white/[0.02] transition-colors">
             <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#6b7280]">Historique de facturation</span>
@@ -287,7 +344,7 @@ export default function SubscriptionSection({ portal }: { portal: PortalType }) 
                 <tbody>{MOCK_INVOICES.map((inv, i) => (
                   <tr key={i} className="border-b border-[#2D3748]/30">
                     <td className="py-3 text-[12px] text-[#9CA3AF]">{inv.date}</td>
-                    <td className="py-3 text-[12px] text-white">{tierLabel} — {inv.desc}</td>
+                    <td className="py-3 text-[12px] text-white">{label} — {inv.desc}</td>
                     <td className="py-3 text-[12px] text-white font-bold">{inv.amount}</td>
                     <td className="py-3"><span className="text-[10px] font-bold text-[#22C55E]">{inv.status} ✓</span></td>
                   </tr>
@@ -299,35 +356,30 @@ export default function SubscriptionSection({ portal }: { portal: PortalType }) 
         </div>
       )}
 
-      {/* ── Demo tier switcher ── */}
-      <div className="pt-4 border-t border-[#2D3748]/20">
-        <p className="text-[10px] text-[#4a4d56]/60 mb-2">DÉMO : Simuler un plan</p>
-        <div className="flex flex-wrap gap-2">
-          {demoOptions.map((opt) => {
-            const isActive = (opt.key === "admin" && isAdmin) || (!isAdmin && tier === opt.tier && sub.status === opt.status);
-            return (
-              <button key={opt.key} type="button" onClick={() => {
-                const user = JSON.parse(localStorage.getItem("nexus_user") || "{}");
-                if (opt.key === "admin") {
-                  user.subscription = { tier: "free", status: "active", billing_cycle: null, current_period_end: null, trial_days_remaining: null, cancel_at_period_end: false };
-                  user.tier = "free";
-                  user.is_school_admin = true;
-                  if (portal === "coach") { user.is_also_coach = true; }
-                  else { user.is_also_recruiter = true; }
-                } else {
-                  user.is_school_admin = false;
-                  user.subscription = { tier: opt.tier, status: opt.status, billing_cycle: "monthly", current_period_end: "2026-04-15", trial_days_remaining: null, cancel_at_period_end: false };
-                  user.tier = opt.tier;
-                }
-                localStorage.setItem("nexus_user", JSON.stringify(user));
-                window.location.reload();
-              }} className={`px-3 py-1.5 rounded text-[10px] font-bold transition-colors ${isActive ? "bg-[#E63946]/15 text-[#E63946]" : "text-[#4a4d56] hover:text-[#6b7280]"}`}>
-                {opt.label}
-              </button>
-            );
-          })}
+      {/* ── Demo tier switcher (dev-mode only) ── */}
+      {process.env.NODE_ENV === "development" && (
+        <div className="pt-4 border-t border-[#2D3748]/20">
+          <p className="text-[10px] text-[#4a4d56]/60 mb-2">DÉMO : Simuler un plan (écrit dans la DB)</p>
+          <div className="flex flex-wrap gap-2">
+            {demoOptions.map((opt) => {
+              const active = isDemoActive(opt);
+              return (
+                <button
+                  key={opt.key}
+                  type="button"
+                  disabled={busy}
+                  onClick={() => setDemoAccess(opt.kind)}
+                  className={`px-3 py-1.5 rounded text-[10px] font-bold transition-colors ${
+                    active ? "bg-[#E63946]/15 text-[#E63946]" : "text-[#4a4d56] hover:text-[#6b7280]"
+                  } ${busy ? "opacity-50 cursor-wait" : ""}`}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Cancel modal */}
       {cancelModal && (
@@ -336,7 +388,7 @@ export default function SubscriptionSection({ portal }: { portal: PortalType }) 
           <div className="relative bg-[#1A1D24] border border-[#2D3748] rounded-xl p-6 max-w-md mx-4">
             <h3 className="font-head text-lg font-black text-white mb-2">Annuler ton abonnement?</h3>
             <p className="text-[13px] text-[#9CA3AF] leading-relaxed mb-5">
-              Tu garderas l&apos;accès jusqu&apos;au {sub.current_period_end ?? "15 avril 2026"}. Après, tu passeras au plan Gratuit.
+              Tu garderas l&apos;accès jusqu&apos;au {renewal}. Après, tu passeras au plan Gratuit.
             </p>
             <div className="flex gap-3">
               <button type="button" onClick={() => setCancelModal(false)} className="flex-1 h-10 rounded-lg border border-white/15 text-white font-bold text-[12px] uppercase tracking-wider hover:bg-white/5 transition-colors">Garder</button>

@@ -2,43 +2,78 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { getSidebarState, getTier, getSubscription, getTierLabel, type SidebarState, type SubscriptionTier } from "@/lib/utils/subscription";
+import { useSubscription } from "@/lib/hooks/useSubscription";
 
 /* ═══════════════════════════════════════════════════════════════
    SidebarUpgradeCard — Smart subscription block for all sidebars.
    Shows: upgrade nudge (free/pro) + plan status indicator.
    Adapts to: free, pro, allstar, trial, admin, past_due, canceled.
+   Source of truth: useSubscription() hook (DB-backed).
 ═══════════════════════════════════════════════════════════════ */
 
+type SidebarState = "free" | "pro" | "allstar" | "trial" | "admin" | "past_due" | "canceled";
+
+function resolveState(
+  tier: "free" | "pro" | "all_star",
+  status: "active" | "trialing" | "past_due" | "canceled",
+  isSchoolAdmin: boolean,
+): SidebarState {
+  if (isSchoolAdmin) return "admin";
+  if (status === "past_due") return "past_due";
+  if (status === "canceled") return "canceled";
+  if (status === "trialing") return "trial";
+  if (tier === "all_star") return "allstar";
+  if (tier === "pro") return "pro";
+  return "free";
+}
+
 export default function SidebarUpgradeCard() {
-  const [state, setState] = useState<SidebarState>("free");
-  const [tier, setTier] = useState<SubscriptionTier>("free");
-  const [sub, setSub] = useState({ current_period_end: null as string | null, trial_days_remaining: null as number | null });
-  const [isAdmin, setIsAdmin] = useState<"school" | "cegep" | null>(null);
+  const {
+    tier, role, status, isSchoolAdmin,
+    periodEnd, trialDaysRemaining, tierLabel,
+    loading,
+  } = useSubscription();
   const [dismissed, setDismissed] = useState(false);
+  const [adminKind, setAdminKind] = useState<"school" | "cegep" | null>(null);
 
   useEffect(() => {
-    setState(getSidebarState());
-    setTier(getTier());
-    const s = getSubscription();
-    setSub({ current_period_end: s.current_period_end, trial_days_remaining: s.trial_days_remaining });
     try {
-      const u = JSON.parse(localStorage.getItem("nexus_user") || "{}");
-      if (u.is_school_admin) setIsAdmin(u.role === "recruiter" ? "cegep" : "school");
       if (sessionStorage.getItem("nexus_sidebar_upgrade_dismissed")) setDismissed(true);
-    } catch { /* */ }
+    } catch { /* noop */ }
   }, []);
 
-  const renewalDate = sub.current_period_end ? new Date(sub.current_period_end).toLocaleDateString("fr-CA", { day: "numeric", month: "short" }) : null;
-  const tierLabel = getTierLabel(tier);
-  const isAthlete = tier === "athlete_pro" || (tier === "free" && typeof window !== "undefined" && JSON.parse(localStorage.getItem("nexus_user") || "{}").role === "athlete");
+  useEffect(() => {
+    if (isSchoolAdmin) {
+      setAdminKind(role === "recruiter" ? "cegep" : "school");
+    } else {
+      setAdminKind(null);
+    }
+  }, [isSchoolAdmin, role]);
+
+  if (loading) return null;
+
+  const state = resolveState(tier, status, isSchoolAdmin);
+  const renewalDate = periodEnd
+    ? new Date(periodEnd).toLocaleDateString("fr-CA", { day: "numeric", month: "short" })
+    : null;
+  const label = tierLabel();
+  const isAthlete = role === "athlete";
 
   // Determine if we should show an upgrade card
   const showUpgrade = !dismissed && (state === "free" || state === "pro") && !isAthlete || (state === "free" && isAthlete);
   const showProUpgrade = state === "free";
   const showAllStarUpgrade = state === "pro" && !isAthlete;
 
-  const handleDismiss = () => { setDismissed(true); sessionStorage.setItem("nexus_sidebar_upgrade_dismissed", "true"); };
+  const handleDismiss = () => {
+    setDismissed(true);
+    try { sessionStorage.setItem("nexus_sidebar_upgrade_dismissed", "true"); } catch { /* noop */ }
+  };
+
+  const settingsHref = isAthlete
+    ? "/athlete/parametres"
+    : role === "coach"
+    ? "/coach/settings"
+    : "/recruteur/parametres";
 
   return (
     <div className="px-3 mb-1">
@@ -73,7 +108,7 @@ export default function SidebarUpgradeCard() {
       )}
 
       {/* ── Plan status indicator ── */}
-      <Link href={isAthlete ? "/athlete/parametres" : tier.startsWith("coach") || tier === "free" ? "/coach/parametres" : "/recruteur/parametres"} className="flex items-center gap-2 px-1 py-1 rounded hover:bg-white/5 transition-colors">
+      <Link href={settingsHref} className="flex items-center gap-2 px-1 py-1 rounded hover:bg-white/5 transition-colors">
         {state === "free" && (
           <>
             <span className="w-2 h-2 rounded-full bg-[#6B7280] shrink-0" />
@@ -84,7 +119,7 @@ export default function SidebarUpgradeCard() {
           <div className="flex flex-col">
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-[#DAB65A] shrink-0" />
-              <span className="text-[11px] text-[#DAB65A] font-semibold">{tierLabel}</span>
+              <span className="text-[11px] text-[#DAB65A] font-semibold">{label}</span>
             </div>
             {renewalDate && <span className="text-[10px] text-[#6B7280] ml-4">Renouvelle le {renewalDate}</span>}
           </div>
@@ -102,11 +137,11 @@ export default function SidebarUpgradeCard() {
           <div className="flex flex-col">
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-[#22C55E] shrink-0 animate-pulse" />
-              <span className="text-[11px] text-[#22C55E] font-semibold">Essai {tier.includes("allstar") ? "All Star" : "Pro"}</span>
+              <span className="text-[11px] text-[#22C55E] font-semibold">Essai {tier === "all_star" ? "All Star" : "Pro"}</span>
             </div>
-            {sub.trial_days_remaining != null && (
-              <span className={`text-[10px] ml-4 ${sub.trial_days_remaining <= 3 ? "text-[#EAB308]" : "text-[#6B7280]"}`}>
-                {sub.trial_days_remaining} jours restants
+            {trialDaysRemaining != null && (
+              <span className={`text-[10px] ml-4 ${trialDaysRemaining <= 3 ? "text-[#EAB308]" : "text-[#6B7280]"}`}>
+                {trialDaysRemaining} jours restants
               </span>
             )}
           </div>
@@ -115,7 +150,7 @@ export default function SidebarUpgradeCard() {
           <div className="flex flex-col">
             <div className="flex items-center gap-2">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#DAB65A" strokeWidth="1.5" strokeLinecap="round"><path d="M2 20h20v2H2zm1-2l3-10 6 6 6-6 3 10z" /><circle cx="5" cy="6" r="2" /><circle cx="12" cy="3" r="2" /><circle cx="19" cy="6" r="2" /></svg>
-              <span className="text-[11px] text-[#DAB65A] font-semibold">{isAdmin === "cegep" ? "Admin CÉGEP" : "Admin École"}</span>
+              <span className="text-[11px] text-[#DAB65A] font-semibold">{adminKind === "cegep" ? "Admin CÉGEP" : "Admin École"}</span>
             </div>
             <span className="text-[10px] text-[#6B7280] ml-4">Accès All Star inclus</span>
           </div>

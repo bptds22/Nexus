@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import type { RecruiterSettings } from "@/lib/types/models";
 import { createClient } from "@/lib/supabase/client";
+import { useSubscription } from "@/lib/hooks/useSubscription";
 import RecruiterSettingsNav, { type SectionKey } from "./_components/RecruiterSettingsNav";
 import CompteSection from "./_components/CompteSection";
 import EtablissementSection from "./_components/EtablissementSection";
@@ -542,60 +543,69 @@ function RecruiterPricingSection() {
   );
 }
 
-/* ── Demo access toggle ───────────────────────────────────── */
+/* ── Demo access toggle ───────────────────────────────────────
+   DEV-only demo toggle that writes the canonical tier/admin state
+   to Supabase (subscriptions + users tables). Replaces the prior
+   localStorage-based toggle, which was bypassable and used the
+   legacy role-prefixed taxonomy.
+───────────────────────────────────────────────────────────────── */
 
 function DemoRecruiterAccessToggle() {
-  const [current, setCurrent] = useState("free");
+  const { tier, isSchoolAdmin, subscription, refresh, loading } = useSubscription();
+  const [busy, setBusy] = useState(false);
 
-  useEffect(() => {
-    try {
-      const user = JSON.parse(localStorage.getItem("nexus_user") || "{}");
-      if (user.subscription?.tier === "recruteur_pro") setCurrent("pro");
-      else if (user.is_school_admin) setCurrent("admin");
-      else setCurrent("free");
-    } catch { /* noop */ }
-  }, []);
+  if (process.env.NODE_ENV !== "development") return null;
+  if (loading || !subscription) return null;
 
-  const setAccess = (mode: string) => {
-    const raw = localStorage.getItem("nexus_user");
-    const user = raw ? JSON.parse(raw) : {};
-    if (mode === "free") {
-      user.subscription = { tier: "free", status: "active", billing_cycle: null, current_period_end: null, trial_days_remaining: null, cancel_at_period_end: false };
-      user.tier = "free";
-      user.is_school_admin = false;
-      user.is_also_recruiter = true;
-    } else if (mode === "pro") {
-      user.subscription = { tier: "recruteur_pro", status: "active", billing_cycle: "monthly", current_period_end: "2026-04-15", trial_days_remaining: null, cancel_at_period_end: false };
-      user.tier = "recruteur_pro";
-      user.is_school_admin = false;
-      user.is_also_recruiter = true;
+  const current: "free" | "pro" | "admin" =
+    isSchoolAdmin ? "admin" : tier === "pro" || tier === "all_star" ? "pro" : "free";
+
+  async function setAccess(mode: "free" | "pro" | "admin") {
+    if (busy || !subscription) return;
+    setBusy(true);
+    const supabase = createClient();
+    const userId = subscription.userId;
+
+    if (mode === "admin") {
+      await supabase.from("users").update({ is_school_admin: true }).eq("id", userId);
+      await supabase.from("subscriptions").upsert(
+        { user_id: userId, tier: "free", status: "active", billing_cycle: "monthly", updated_at: new Date().toISOString() },
+        { onConflict: "user_id" },
+      );
     } else {
-      user.subscription = { tier: "free", status: "active", billing_cycle: null, current_period_end: null, trial_days_remaining: null, cancel_at_period_end: false };
-      user.tier = "free";
-      user.is_school_admin = true;
-      user.is_also_recruiter = true;
-      user.cegep_admin_type = "owner";
+      await supabase.from("users").update({ is_school_admin: false }).eq("id", userId);
+      await supabase.from("subscriptions").upsert(
+        {
+          user_id: userId,
+          tier: mode,
+          status: "active",
+          billing_cycle: mode === "free" ? null : "monthly",
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "user_id" },
+      );
     }
-    localStorage.setItem("nexus_user", JSON.stringify(user));
-    window.location.reload();
-  };
+    await refresh();
+    setBusy(false);
+  }
 
   return (
     <div className="mt-8 pt-4 border-t border-[#2D3748]/20">
-      <p className="text-[10px] text-[#4a4d56]/60 mb-2">DÉMO : Changer d&apos;accès</p>
+      <p className="text-[10px] text-[#4a4d56]/60 mb-2">DÉMO : Changer d&apos;accès (écrit dans la DB)</p>
       <div className="flex gap-2">
         {[
-          { key: "free", label: "Recruteur Gratuit" },
-          { key: "pro", label: "Recruteur Pro" },
-          { key: "admin", label: "Admin CÉGEP" },
+          { key: "free" as const,  label: "Recruteur Gratuit" },
+          { key: "pro" as const,   label: "Recruteur Pro" },
+          { key: "admin" as const, label: "Admin CÉGEP" },
         ].map((t) => (
           <button
             key={t.key}
             type="button"
+            disabled={busy}
             onClick={() => setAccess(t.key)}
             className={`px-3 py-1.5 rounded text-[10px] font-bold transition-colors ${
               current === t.key ? "bg-[#E63946]/15 text-[#E63946]" : "text-[#4a4d56] hover:text-[#6b7280]"
-            }`}
+            } ${busy ? "opacity-50 cursor-wait" : ""}`}
           >
             {t.label}
           </button>

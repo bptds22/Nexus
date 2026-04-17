@@ -1,36 +1,36 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useState } from "react";
+import { useSubscription } from "@/lib/hooks/useSubscription";
 
 /* ═══════════════════════════════════════════════════════════════
-   CegepGate — Wraps CÉGEP management pages
-   Access: Recruteur All Star OR Admin CÉGEP only
-   (Recruteur Pro does NOT unlock CÉGEP management)
+   CegepGate — wraps CÉGEP management pages.
+
+   Access: recruteur All Star OR any user flagged is_school_admin
+   (the latter grants Pro/All Star-equivalent access via their role,
+   mirroring the SchoolGate pattern).
+
+   Source of truth: useSubscription() hook (DB-backed). Reading
+   localStorage is no longer allowed — the gate cannot be bypassed
+   by editing client state.
+
+   NOTE: children still render (blurred) inside the DOM. Converting
+   this to a conditional render is a Phase 4 concern — do NOT change
+   that behaviour here.
 ═══════════════════════════════════════════════════════════════ */
 
 export default function CegepGate({ children }: { children: React.ReactNode }) {
-  const [hasAccess, setHasAccess] = useState(false);
-  const [checked, setChecked] = useState(false);
-  const [userIsPro, setUserIsPro] = useState(false);
+  const { tier, role, isSchoolAdmin, loading } = useSubscription();
   const [toast, setToast] = useState<string | null>(null);
 
-  useEffect(() => {
-    try {
-      const user = JSON.parse(localStorage.getItem("nexus_user") || "{}");
-      const tier = user.subscription?.tier || "free";
-      if (tier === "recruteur_allstar" || (user.role === "recruiter" && user.is_school_admin === true)) {
-        setHasAccess(true);
-      }
-      if (tier === "recruteur_pro") {
-        setUserIsPro(true);
-      }
-    } catch { /* noop */ }
-    setChecked(true);
-  }, []);
+  if (loading) return null;
 
-  if (!checked) return null;
+  const hasAccess = isSchoolAdmin || tier === "all_star";
   if (hasAccess) return <>{children}</>;
+
+  const userIsPro = tier === "pro";
+  const userIsRecruiter = role === "recruiter";
 
   return (
     <div className="relative overflow-hidden rounded-xl">
@@ -49,9 +49,11 @@ export default function CegepGate({ children }: { children: React.ReactNode }) {
           </div>
           <h3 className="font-head text-lg font-black text-white mb-2">Fonctionnalité All Star</h3>
           <p className="text-[13px] text-[#9CA3AF] leading-relaxed mb-4">
-            Supervise tes recruteurs, suis les recrues confirmées et gère ton CÉGEP directement depuis ton portail recruteur.
+            {userIsRecruiter
+              ? "Supervise tes recruteurs, suis les recrues confirmées et gère ton CÉGEP directement depuis ton portail recruteur."
+              : "Cette section est réservée aux administrateurs CÉGEP."}
           </p>
-          {userIsPro && (
+          {userIsPro && userIsRecruiter && (
             <p className="text-[11px] text-[#DAB65A] mb-3">Tu es Pro — passe à All Star pour débloquer la gestion CÉGEP</p>
           )}
           <button

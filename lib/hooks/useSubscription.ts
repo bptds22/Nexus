@@ -5,28 +5,30 @@ import { useCallback, useEffect, useState } from "react";
 
 /* ═══════════════════════════════════════════════════════════════
    useSubscription — DB-backed subscription + feature flags.
+   Single source of truth for tier, role, and gate decisions.
 
-   Reads from the existing `subscriptions` table (user_id, tier,
-   status, billing_cycle) + joins `users.role` to determine persona.
-
-   Normalizes every historical tier string the DB might hold:
-     ALL_STAR / all_star / allstar / coach_allstar / recruteur_allstar
-       → "all_star"
-     PRO / pro / coach_pro / recruteur_pro / athlete_pro
-       → "pro"
-     anything else → "free"
+   Canonical tier taxonomy: "free" | "pro" | "all_star".
+   normalizeTier() defensively coerces any odd DB value (casing
+   drift, stray separators) back to one of the three canonical
+   strings; a DB-level CHECK constraint now enforces lowercase on
+   writes, so this is belt-and-braces.
 ═══════════════════════════════════════════════════════════════ */
 
 export type SubscriptionTier = "free" | "pro" | "all_star";
 export type SubscriptionRole = "recruiter" | "coach" | "athlete";
+export type SubscriptionStatus = "active" | "trialing" | "past_due" | "canceled";
 
 interface Subscription {
   tier: SubscriptionTier;
   role: SubscriptionRole;
-  status: string;
-  billing: string | null;
+  status: SubscriptionStatus;
+  billing: "monthly" | "annual" | null;
   userId: string;
   isSchoolAdmin: boolean;
+  periodEnd: string | null;
+  trialEndsAt: string | null;
+  trialDaysRemaining: number | null;
+  cancelAtPeriodEnd: boolean;
 }
 
 /* ── Feature flag tables ──────────────────────────────────── */
@@ -270,7 +272,7 @@ export function useSubscription() {
       supabase.from("users").select("role, is_school_admin").eq("id", session.user.id).maybeSingle(),
       supabase
         .from("subscriptions")
-        .select("tier, status, billing_cycle")
+        .select("tier, status, billing_cycle, current_period_end, trial_ends_at, cancel_at_period_end")
         .eq("user_id", session.user.id)
         .maybeSingle(),
     ]);
@@ -278,8 +280,21 @@ export function useSubscription() {
     const role = normalizeRole(userRes.data?.role as string | undefined);
     const isSchoolAdmin = Boolean(userRes.data?.is_school_admin);
     const tier = normalizeTier(subRes.data?.tier as string | undefined);
-    const status = (subRes.data?.status as string | undefined) || "active";
-    const billing = (subRes.data?.billing_cycle as string | undefined) || null;
+    const rawStatus = (subRes.data?.status as string | undefined) || "active";
+    const status: SubscriptionStatus =
+      rawStatus === "trialing" || rawStatus === "past_due" || rawStatus === "canceled"
+        ? rawStatus
+        : "active";
+    const rawBilling = (subRes.data?.billing_cycle as string | undefined) || null;
+    const billing: "monthly" | "annual" | null =
+      rawBilling === "monthly" || rawBilling === "annual" ? rawBilling : null;
+    const periodEnd = (subRes.data?.current_period_end as string | undefined) || null;
+    const trialEndsAt = (subRes.data?.trial_ends_at as string | undefined) || null;
+    const cancelAtPeriodEnd = Boolean(subRes.data?.cancel_at_period_end);
+
+    const trialDaysRemaining = trialEndsAt
+      ? Math.max(0, Math.ceil((new Date(trialEndsAt).getTime() - Date.now()) / 86_400_000))
+      : null;
 
     const next: Subscription = {
       tier,
@@ -288,6 +303,10 @@ export function useSubscription() {
       billing,
       userId: session.user.id,
       isSchoolAdmin,
+      periodEnd,
+      trialEndsAt,
+      trialDaysRemaining,
+      cancelAtPeriodEnd,
     };
     console.log("[Subscription] Hook loaded:", { tier: next.tier, role: next.role });
     setSubscription(next);
@@ -348,11 +367,21 @@ export function useSubscription() {
   };
 
   const isSchoolAdmin: boolean = Boolean(subscription?.isSchoolAdmin);
+  const status: SubscriptionStatus = subscription?.status ?? "active";
+  const billing = subscription?.billing ?? null;
+  const periodEnd: string | null = subscription?.periodEnd ?? null;
+  const trialDaysRemaining: number | null = subscription?.trialDaysRemaining ?? null;
+  const cancelAtPeriodEnd: boolean = Boolean(subscription?.cancelAtPeriodEnd);
 
   return {
     subscription,
     tier,
     role,
+    status,
+    billing,
+    periodEnd,
+    trialDaysRemaining,
+    cancelAtPeriodEnd,
     loading,
     features,
     canSee,
