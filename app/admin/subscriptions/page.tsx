@@ -18,7 +18,7 @@ import AdminTable, { AdminColumn } from "../_components/AdminTable";
 const TIER_OPTIONS = [
   { value: "free", label: "Free" },
   { value: "pro", label: "Pro" },
-  { value: "allstar", label: "All Star" },
+  { value: "all_star", label: "All Star" },
 ];
 
 const ROLE_LABEL: Record<string, string> = {
@@ -160,7 +160,7 @@ export default function AdminSubscriptionsPage() {
           );
         }
         const cls =
-          r.tier === "allstar"
+          r.tier === "all_star"
             ? "bg-[#E63946]/15 text-[#E63946]"
             : r.tier === "pro"
             ? "bg-[#DAB65A]/15 text-[#DAB65A]"
@@ -192,7 +192,7 @@ export default function AdminSubscriptionsPage() {
         <p className="text-[13px] text-[#6b7280] mt-1">
           {rows.length} utilisateur{rows.length > 1 ? "s" : ""} —{" "}
           {rows.filter((r) => r.tier === "pro").length} Pro ·{" "}
-          {rows.filter((r) => r.tier === "allstar").length} All Star
+          {rows.filter((r) => r.tier === "all_star").length} All Star
         </p>
       </div>
 

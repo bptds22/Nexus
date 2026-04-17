@@ -61,7 +61,7 @@ const STATUS_OPTIONS: { value: AccountStatus; label: string }[] = [
 const TIER_OPTIONS = [
   { value: "free", label: "Free" },
   { value: "pro", label: "Pro" },
-  { value: "allstar", label: "All Star" },
+  { value: "all_star", label: "All Star" },
 ];
 
 function formatDate(iso: string | null | undefined) {
@@ -240,7 +240,7 @@ export default function AdminUsersPage() {
       render: (r) => {
         const tier = r.subscription_tier || "free";
         const cls =
-          tier === "allstar"
+          tier === "all_star"
             ? "bg-[#E63946]/15 text-[#E63946]"
             : tier === "pro"
             ? "bg-[#DAB65A]/15 text-[#DAB65A]"
