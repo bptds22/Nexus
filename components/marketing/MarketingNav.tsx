@@ -77,6 +77,15 @@ export default function MarketingNav() {
 
         <div className="flex items-center gap-2">
           <ThemeToggle />
+          <button
+            type="button"
+            onClick={() => { console.log("[MarketingNav] Language toggle clicked — no-op until translations ready"); }}
+            className="hidden sm:flex items-center gap-1 px-3 py-1.5 rounded-full border border-white/20 text-sm font-medium"
+          >
+            <span className="text-white font-semibold">FR</span>
+            <span className="text-gray-600">/</span>
+            <span className="text-gray-500">EN</span>
+          </button>
           <Link href="/auth" className={`hidden sm:block ${label} text-wl-red transition-colors px-4 h-9 leading-9 hover:drop-shadow-[0_0_8px_rgba(232,72,72,0.6)]`}>
             Connexion
           </Link>

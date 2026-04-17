@@ -201,11 +201,27 @@ export default function ParametresPage() {
               </div>
 
               <div className="border-t border-[#2D3748]/40 pt-6">
-                <h2 className="font-head text-lg font-black text-white uppercase tracking-tight mb-4">Langue</h2>
-                <div className="flex gap-2">
-                  <button type="button" className="px-4 py-2 rounded-lg text-[12px] font-bold bg-[#E63946]/15 text-[#E63946] border border-[#E63946]/30">Français</button>
-                  <button type="button" disabled className="px-4 py-2 rounded-lg text-[12px] font-bold text-[#4a4d56] border border-[#2D3748] cursor-not-allowed">English</button>
-                </div>
+                <h2 className="font-head text-lg font-black text-white uppercase tracking-tight mb-4">Langue de l&apos;interface</h2>
+                <select
+                  title="Langue de l'interface"
+                  defaultValue="fr"
+                  onChange={async (e) => {
+                    const value = e.target.value;
+                    const supabase = createClient();
+                    const { data: { user } } = await supabase.auth.getUser();
+                    if (!user) return;
+                    const { error } = await supabase
+                      .from("users")
+                      .update({ preferred_language: value })
+                      .eq("id", user.id);
+                    console.log("[Athlete parametres] preferred_language saved:", value, error);
+                    showToast("Préférence de langue sauvegardée");
+                  }}
+                  className={`${inputCls} max-w-[260px]`}
+                >
+                  <option value="fr">Fran&#231;ais</option>
+                  <option value="en">English</option>
+                </select>
                 <p className="text-[11px] text-[#4a4d56] mt-2">English — disponible prochainement</p>
               </div>
             </div>

@@ -36,6 +36,8 @@ export default function ProfileSection() {
   const [error, setError] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [coachEntryId, setCoachEntryId] = useState<string | null>(null);
+  const [preferredLanguage, setPreferredLanguage] = useState<string>("fr");
+  const [userId, setUserId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -45,12 +47,14 @@ export default function ProfileSection() {
       if (!user) { setLoading(false); return; }
 
       // Load user profile
+      setUserId(user.id);
       const { data: profile, error: profileErr } = await supabase
         .from("users")
-        .select("first_name, last_name, email, phone, avatar_url")
+        .select("first_name, last_name, email, phone, avatar_url, preferred_language")
         .eq("id", user.id)
         .single();
       console.log("ProfileSection — user profile:", profile, profileErr);
+      if (profile?.preferred_language) setPreferredLanguage(profile.preferred_language);
 
       // Load coach entry
       const { data: coachEntry, error: coachErr } = await supabase
@@ -255,6 +259,31 @@ export default function ProfileSection() {
                 ))}
               </select>
             </div>
+          </div>
+
+          {/* Language preference */}
+          <div>
+            <p className={label}>Langue de l&apos;interface</p>
+            <select
+              title="Langue de l'interface"
+              value={preferredLanguage}
+              onChange={async (e) => {
+                const value = e.target.value;
+                setPreferredLanguage(value);
+                if (!userId) return;
+                const supabase = createClient();
+                const { error: langErr } = await supabase
+                  .from("users")
+                  .update({ preferred_language: value })
+                  .eq("id", userId);
+                console.log("[ProfileSection] preferred_language saved:", value, langErr);
+              }}
+              className={input}
+            >
+              <option value="fr">Fran&#231;ais</option>
+              <option value="en">English</option>
+            </select>
+            <p className="text-[11px] text-[#4a4d56] mt-1">English — disponible prochainement</p>
           </div>
 
           {/* Save button */}

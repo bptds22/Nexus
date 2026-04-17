@@ -1,5 +1,7 @@
 "use client";
 
+import { useState, useEffect } from "react";
+import { createClient } from "@/lib/supabase/client";
 import type { RecruiterSettings } from "@/lib/types/models";
 
 /* ─────────────────────────────────────────────────────────────────
@@ -20,6 +22,18 @@ interface Props {
 
 export default function CompteSection({ form, original, onUpdate, onSave, onPasswordModal, onPhotoUpload }: Props) {
   const dirty = form.firstName !== original.firstName || form.lastName !== original.lastName || (form.phone ?? "") !== (original.phone ?? "");
+  const [preferredLanguage, setPreferredLanguage] = useState<string>("fr");
+
+  useEffect(() => {
+    async function loadLang() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase.from("users").select("preferred_language").eq("id", user.id).single();
+      if (data?.preferred_language) setPreferredLanguage(data.preferred_language);
+    }
+    loadLang();
+  }, []);
 
   return (
     <div className="space-y-8">
@@ -84,11 +98,28 @@ export default function CompteSection({ form, original, onUpdate, onSave, onPass
           </button>
         </div>
         <div>
-          <label className={labelCls}>Langue</label>
-          <div className="flex items-center gap-2">
-            <input type="text" value="Français" disabled className={`${inputCls} opacity-60 cursor-not-allowed flex-1`} />
-            <span className="px-2 py-0.5 text-[9px] font-bold tracking-[0.15em] uppercase bg-[#2a2d36]/60 text-[#6B7280] rounded border border-[#2a2d36] shrink-0">Bientôt</span>
-          </div>
+          <label className={labelCls}>Langue de l&apos;interface</label>
+          <select
+            title="Langue de l'interface"
+            value={preferredLanguage}
+            onChange={async (e) => {
+              const value = e.target.value;
+              setPreferredLanguage(value);
+              const supabase = createClient();
+              const { data: { user } } = await supabase.auth.getUser();
+              if (!user) return;
+              const { error } = await supabase
+                .from("users")
+                .update({ preferred_language: value })
+                .eq("id", user.id);
+              console.log("[CompteSection] preferred_language saved:", value, error);
+            }}
+            className={inputCls}
+          >
+            <option value="fr">Fran&#231;ais</option>
+            <option value="en">English</option>
+          </select>
+          <p className="text-[11px] text-[#4a4d56] mt-1">English — disponible prochainement</p>
         </div>
       </div>
 
