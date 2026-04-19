@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
 import type { GlobalRecruitmentStatus } from "@/lib/types/models";
 import NxIcon from "@/components/ui/NxIcon";
+import { useSubscription } from "@/lib/hooks/useSubscription";
 
 /* ═══════════════════════════════════════════════════════════════
    Mes Favoris — Grid/List view with filters
@@ -228,6 +229,7 @@ export default function FavorisPage() {
 }
 
 function FavorisContent() {
+  const { maxFavorites } = useSubscription();
   const [athletes, setAthletes] = useState<FavoriAthlete[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -417,7 +419,11 @@ function FavorisContent() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="font-head text-2xl sm:text-3xl font-black text-white uppercase tracking-tight">Mes favoris</h1>
-          <p className="text-[14px] text-[#9CA3AF] mt-1">{athletes.length} athlète{athletes.length !== 1 ? "s" : ""} suivi{athletes.length !== 1 ? "s" : ""}</p>
+          <p className="text-[14px] text-[#9CA3AF] mt-1">
+            {maxFavorites === -1
+              ? <>Favoris&nbsp;: <span className="font-bold text-white">{athletes.length}</span></>
+              : <>Favoris&nbsp;: <span className={`font-bold ${athletes.length >= maxFavorites ? "text-[#E63946]" : "text-white"}`}>{athletes.length} / {maxFavorites}</span></>}
+          </p>
         </div>
         <div className="flex items-center gap-3">
           <span className="text-[13px] font-bold text-[#6b7280]">{filtered.length} résultat{filtered.length !== 1 ? "s" : ""}</span>

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import FeatureGate from "@/components/subscription/FeatureGate";
-import useAthleteVisibility from "@/hooks/useAthleteVisibility";
+import useAthleteVisibility, { useAthleteVisibilityPro } from "@/hooks/useAthleteVisibility";
 import { relativeTimeFr } from "@/lib/utils/relativeTime";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -41,7 +41,7 @@ function InterestBadge({ level }: { level: "fort" | "interesse" | "nouveau" }) {
 }
 
 export default function VisibilitePage() {
-  const { stats, weeklyViews, regionBreakdown, cegepDetails, recruiterDetails, percentile, sportName, loading } = useAthleteVisibility();
+  const { stats, weeklyViews, regionBreakdown, percentile, sportName, loading } = useAthleteVisibility();
 
   const trend = stats.viewsLastMonth > 0
     ? Math.round(((stats.viewsThisMonth - stats.viewsLastMonth) / stats.viewsLastMonth) * 100)
@@ -172,89 +172,12 @@ export default function VisibilitePage() {
 
       {/* ── Section 5: Quels CÉGEPs consultent ton profil (Pro) ── */}
       <FeatureGate feature="who_viewed" requiredTier="pro">
-        <div>
-          <div className="flex items-center mb-4">
-            <h2 className={sectionTitle}>Quels CÉGEPs consultent ton profil</h2>
-            <span className={proTag}>PRO</span>
-          </div>
-          {cegepDetails.length > 0 ? (
-            <div className="space-y-3">
-              {cegepDetails.map((c) => (
-                <div
-                  key={c.cegepName}
-                  className="bg-[#1A1D24] rounded-lg border-l-[3px] border-l-[#E63946] flex items-center gap-3.5"
-                  style={{ padding: "14px 16px" }}
-                >
-                  <Initials name={c.cegepName} size={40} />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className="text-[14px] font-bold text-white">{c.cegepName}</p>
-                      <InterestBadge level={c.interestLevel} />
-                    </div>
-                    <p className="text-[12px] text-[#6b7280] mt-0.5">{c.region}</p>
-                  </div>
-                  <div className="flex items-center gap-4 shrink-0">
-                    <span className="flex items-center gap-1.5 text-[12px] text-[#9CA3AF]">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
-                      {c.totalViews}
-                    </span>
-                    {c.favCount > 0 && (
-                      <span className="flex items-center gap-1.5 text-[12px] text-[#E63946]">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="#E63946" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" /></svg>
-                        {c.favCount}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="bg-[#1A1D24] rounded-xl border border-white/5 p-6 text-center">
-              <p className="text-[13px] text-[#555]">Aucun CÉGEP n&apos;a encore consulté ton profil</p>
-            </div>
-          )}
-        </div>
+        <CegepDetailsSection />
       </FeatureGate>
 
       {/* ── Section 6: Qui consulte ton profil (Pro) ────────── */}
       <FeatureGate feature="who_viewed" requiredTier="pro">
-        <div>
-          <div className="flex items-center mb-4">
-            <h2 className={sectionTitle}>Qui consulte ton profil</h2>
-            <span className={proTag}>PRO</span>
-          </div>
-          {recruiterDetails.length > 0 ? (
-            <div className="space-y-2">
-              {recruiterDetails.map((r) => (
-                <div
-                  key={r.recruiterId}
-                  className="bg-[#1A1D24] rounded-lg flex items-center gap-3.5"
-                  style={{ padding: "12px 14px" }}
-                >
-                  <Initials name={r.name} size={36} />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[13px] font-bold text-white">{r.name}</p>
-                    {r.cegepName && <p className="text-[11px] text-[#6b7280]">{r.cegepName}</p>}
-                  </div>
-                  <div className="flex items-center gap-3 shrink-0">
-                    <span className="flex items-center gap-1 text-[12px] text-[#9CA3AF]">
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
-                      {r.viewCount}
-                    </span>
-                    {r.hasFavorited && (
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="#E63946" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" /></svg>
-                    )}
-                    <span className="text-[11px] text-[#4a4d56]">{relativeTimeFr(r.lastViewed)}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="bg-[#1A1D24] rounded-xl border border-white/5 p-6 text-center">
-              <p className="text-[13px] text-[#555]">Aucun recruteur n&apos;a encore consulté ton profil</p>
-            </div>
-          )}
-        </div>
+        <RecruiterDetailsSection />
       </FeatureGate>
 
       {/* ── Section 7: Verified + video impact ────────────────── */}
@@ -276,6 +199,113 @@ export default function VisibilitePage() {
         </div>
         <p className="text-[11px] text-[#6b7280] mt-4">Continue à améliorer ton profil pour maximiser ta visibilité!</p>
       </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Pro-only sub-components.
+   Their hooks fire ONLY when rendered inside a passing FeatureGate,
+   so recruiter / CÉGEP names never reach a free account's browser.
+═══════════════════════════════════════════════════════════════ */
+
+function CegepDetailsSection() {
+  const { cegepDetails, loading } = useAthleteVisibilityPro();
+
+  if (loading) {
+    return <div className="h-40 bg-[#1A1D24] rounded-xl animate-pulse" />;
+  }
+
+  return (
+    <div>
+      <div className="flex items-center mb-4">
+        <h2 className={sectionTitle}>Quels CÉGEPs consultent ton profil</h2>
+        <span className={proTag}>PRO</span>
+      </div>
+      {cegepDetails.length > 0 ? (
+        <div className="space-y-3">
+          {cegepDetails.map((c) => (
+            <div
+              key={c.cegepName}
+              className="bg-[#1A1D24] rounded-lg border-l-[3px] border-l-[#E63946] flex items-center gap-3.5"
+              style={{ padding: "14px 16px" }}
+            >
+              <Initials name={c.cegepName} size={40} />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="text-[14px] font-bold text-white">{c.cegepName}</p>
+                  <InterestBadge level={c.interestLevel} />
+                </div>
+                <p className="text-[12px] text-[#6b7280] mt-0.5">{c.region}</p>
+              </div>
+              <div className="flex items-center gap-4 shrink-0">
+                <span className="flex items-center gap-1.5 text-[12px] text-[#9CA3AF]">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+                  {c.totalViews}
+                </span>
+                {c.favCount > 0 && (
+                  <span className="flex items-center gap-1.5 text-[12px] text-[#E63946]">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="#E63946" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" /></svg>
+                    {c.favCount}
+                  </span>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="bg-[#1A1D24] rounded-xl border border-white/5 p-6 text-center">
+          <p className="text-[13px] text-[#555]">Aucun CÉGEP n&apos;a encore consulté ton profil</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RecruiterDetailsSection() {
+  const { recruiterDetails, loading } = useAthleteVisibilityPro();
+
+  if (loading) {
+    return <div className="h-40 bg-[#1A1D24] rounded-xl animate-pulse" />;
+  }
+
+  return (
+    <div>
+      <div className="flex items-center mb-4">
+        <h2 className={sectionTitle}>Qui consulte ton profil</h2>
+        <span className={proTag}>PRO</span>
+      </div>
+      {recruiterDetails.length > 0 ? (
+        <div className="space-y-2">
+          {recruiterDetails.map((r) => (
+            <div
+              key={r.recruiterId}
+              className="bg-[#1A1D24] rounded-lg flex items-center gap-3.5"
+              style={{ padding: "12px 14px" }}
+            >
+              <Initials name={r.name} size={36} />
+              <div className="flex-1 min-w-0">
+                <p className="text-[13px] font-bold text-white">{r.name}</p>
+                {r.cegepName && <p className="text-[11px] text-[#6b7280]">{r.cegepName}</p>}
+              </div>
+              <div className="flex items-center gap-3 shrink-0">
+                <span className="flex items-center gap-1 text-[12px] text-[#9CA3AF]">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+                  {r.viewCount}
+                </span>
+                {r.hasFavorited && (
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="#E63946" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" /></svg>
+                )}
+                <span className="text-[11px] text-[#4a4d56]">{relativeTimeFr(r.lastViewed)}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="bg-[#1A1D24] rounded-xl border border-white/5 p-6 text-center">
+          <p className="text-[13px] text-[#555]">Aucun recruteur n&apos;a encore consulté ton profil</p>
+        </div>
+      )}
     </div>
   );
 }

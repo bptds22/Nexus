@@ -373,6 +373,16 @@ export function useSubscription() {
   const trialDaysRemaining: number | null = subscription?.trialDaysRemaining ?? null;
   const cancelAtPeriodEnd: boolean = Boolean(subscription?.cancelAtPeriodEnd);
 
+  // Recruiter search-result cap. -1 = unlimited. Non-recruiters don't
+  // search athletes, so expose -1 to avoid accidentally capping them.
+  const maxSearchResults: number =
+    role === "recruiter" ? getLimit("search_results_limit") : -1;
+
+  // Recruiter favorites cap. -1 = unlimited. Non-recruiters don't use the
+  // recruiter_favorites table, so expose -1.
+  const maxFavorites: number =
+    role === "recruiter" ? getLimit("favorites_limit") : -1;
+
   return {
     subscription,
     tier,
@@ -391,5 +401,7 @@ export function useSubscription() {
     requiredTierFor,
     refresh,
     isSchoolAdmin,
+    maxSearchResults,
+    maxFavorites,
   };
 }

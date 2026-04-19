@@ -44,10 +44,14 @@ export interface AthleteVisibility {
   stats: VisibilityStats;
   weeklyViews: WeeklyView[];
   regionBreakdown: RegionBreakdown[];
-  cegepDetails: CegepDetail[];
-  recruiterDetails: RecruiterDetail[];
   percentile: number | null;
   sportName: string;
+  loading: boolean;
+}
+
+export interface AthleteVisibilityPro {
+  cegepDetails: CegepDetail[];
+  recruiterDetails: RecruiterDetail[];
   loading: boolean;
 }
 
@@ -59,13 +63,16 @@ function deriveInterest(views: number, favCount: number, firstSeen: string): "fo
   return "interesse";
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   Free-tier hook: fetches only non-PII aggregates.
+   Never selects recruiter_name or cegep_name — region breakdown
+   is built from region-only columns.
+═══════════════════════════════════════════════════════════════ */
 export default function useAthleteVisibility(): AthleteVisibility {
   const [data, setData] = useState<AthleteVisibility>({
     stats: { viewsThisMonth: 0, viewsLastMonth: 0, uniqueRecruiters: 0, totalFavorites: 0 },
     weeklyViews: [],
     regionBreakdown: [],
-    cegepDetails: [],
-    recruiterDetails: [],
     percentile: null,
     sportName: "",
     loading: true,
@@ -77,7 +84,6 @@ export default function useAthleteVisibility(): AthleteVisibility {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setData((d) => ({ ...d, loading: false })); return; }
 
-      // Get athlete record
       const { data: athlete } = await supabase
         .from("athletes")
         .select("id, sport_id, sports!sport_id(nom)")
@@ -88,26 +94,18 @@ export default function useAthleteVisibility(): AthleteVisibility {
       const athleteId = athlete.id;
       const sportName = (athlete as any).sports?.nom || "";
 
-      // Parallel queries
-      const [statsRes, weeklyRes, detailsRes, favsRes, percentileRes] = await Promise.all([
-        // 1. Aggregated stats
+      const [statsRes, weeklyRes, regionsRes, percentileRes] = await Promise.all([
         supabase.from("athlete_visibility_stats").select("*").eq("athlete_id", athleteId).maybeSingle(),
-        // 2. Weekly views
         supabase.from("athlete_views_weekly").select("*").eq("athlete_id", athleteId),
-        // 3. View details (per recruiter)
-        supabase.from("athlete_view_details").select("*").eq("athlete_id", athleteId),
-        // 4. Favorites for this athlete
-        supabase.from("recruiter_favorites").select("recruiter_id").eq("athlete_id", athleteId),
-        // 5. Sport percentile via RPC
+        // Region-only column select — no recruiter_name, no cegep_name reaches the browser.
+        supabase.from("athlete_view_details").select("cegep_region, visit_count").eq("athlete_id", athleteId),
         supabase.rpc("get_sport_view_stats", { p_athlete_id: athleteId }).maybeSingle(),
       ]);
 
       const stats = statsRes.data;
       const weekly = weeklyRes.data || [];
-      const details = detailsRes.data || [];
-      const favSet = new Set((favsRes.data || []).map((f: any) => f.recruiter_id));
+      const regionRows = regionsRes.data || [];
 
-      // Stats
       const visStats: VisibilityStats = {
         viewsThisMonth: stats?.views_this_month || 0,
         viewsLastMonth: stats?.views_last_month || 0,
@@ -115,15 +113,13 @@ export default function useAthleteVisibility(): AthleteVisibility {
         totalFavorites: stats?.total_favorites || 0,
       };
 
-      // Weekly views (pad to 8 weeks)
       const weeklyViews: WeeklyView[] = weekly.map((w: any) => ({
         weekStart: w.week_start,
         viewCount: Number(w.view_count) || 0,
       }));
 
-      // Region breakdown (from details)
       const regionMap = new Map<string, number>();
-      for (const d of details) {
+      for (const d of regionRows) {
         const region = (d as any).cegep_region || "Inconnue";
         regionMap.set(region, (regionMap.get(region) || 0) + Number((d as any).visit_count || 0));
       }
@@ -131,7 +127,62 @@ export default function useAthleteVisibility(): AthleteVisibility {
         .map(([region, count]) => ({ region, count }))
         .sort((a, b) => b.count - a.count);
 
-      // CÉGEP details (group by cegep)
+      const pctData = percentileRes.data as { percentile?: number } | null;
+      const percentile: number | null = pctData?.percentile != null
+        ? Number(pctData.percentile)
+        : null;
+
+      setData({
+        stats: visStats,
+        weeklyViews,
+        regionBreakdown,
+        percentile,
+        sportName,
+        loading: false,
+      });
+    };
+
+    load();
+  }, []);
+
+  return data;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Pro-tier hook: fetches PII (recruiter names, cegep names).
+   Must be called ONLY inside a FeatureGate-wrapped component so
+   gated rows never reach the browser for free users.
+═══════════════════════════════════════════════════════════════ */
+export function useAthleteVisibilityPro(): AthleteVisibilityPro {
+  const [data, setData] = useState<AthleteVisibilityPro>({
+    cegepDetails: [],
+    recruiterDetails: [],
+    loading: true,
+  });
+
+  useEffect(() => {
+    const load = async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setData((d) => ({ ...d, loading: false })); return; }
+
+      const { data: athlete } = await supabase
+        .from("athletes")
+        .select("id")
+        .eq("user_id", user.id)
+        .single();
+      if (!athlete) { setData((d) => ({ ...d, loading: false })); return; }
+
+      const athleteId = athlete.id;
+
+      const [detailsRes, favsRes] = await Promise.all([
+        supabase.from("athlete_view_details").select("*").eq("athlete_id", athleteId),
+        supabase.from("recruiter_favorites").select("recruiter_id").eq("athlete_id", athleteId),
+      ]);
+
+      const details = detailsRes.data || [];
+      const favSet = new Set((favsRes.data || []).map((f: any) => f.recruiter_id));
+
       const cegepMap = new Map<string, { region: string; totalViews: number; recruiterCount: number; lastSeen: string; firstSeen: string }>();
       for (const d of details) {
         const name = (d as any).cegep_name;
@@ -149,7 +200,6 @@ export default function useAthleteVisibility(): AthleteVisibility {
           cegepMap.set(name, { region: (d as any).cegep_region || "", totalViews: visits, recruiterCount: 1, lastSeen, firstSeen });
         }
       }
-      // Count favorites per cegep (from favSet + user school)
       const cegepFavMap = new Map<string, number>();
       for (const d of details) {
         const name = (d as any).cegep_name;
@@ -172,7 +222,6 @@ export default function useAthleteVisibility(): AthleteVisibility {
         }))
         .sort((a, b) => b.totalViews - a.totalViews);
 
-      // Recruiter details (top 10)
       const recruiterDetails: RecruiterDetail[] = details
         .slice(0, 10)
         .map((d: any) => ({
@@ -184,22 +233,7 @@ export default function useAthleteVisibility(): AthleteVisibility {
           hasFavorited: favSet.has(d.recruiter_id),
         }));
 
-      // Percentile from RPC
-      const pctData = percentileRes.data as { percentile?: number } | null;
-      const percentile: number | null = pctData?.percentile != null
-        ? Number(pctData.percentile)
-        : null;
-
-      setData({
-        stats: visStats,
-        weeklyViews,
-        regionBreakdown,
-        cegepDetails,
-        recruiterDetails,
-        percentile,
-        sportName,
-        loading: false,
-      });
+      setData({ cegepDetails, recruiterDetails, loading: false });
     };
 
     load();

@@ -18,6 +18,8 @@ import { getAthleteTracking } from "@/app/recruteur/_data/mockPipelineData";
 import RecruitmentStatusBadge from "@/app/recruteur/_components/RecruitmentStatusBadge";
 import StatusChangeDropdown from "@/app/recruteur/_components/StatusChangeDropdown";
 import ComposeIntroModal from "@/app/recruteur/_components/ComposeIntroModal";
+import { useSubscription } from "@/lib/hooks/useSubscription";
+import { useFavoritesCount } from "@/lib/hooks/useFavoritesCount";
 import CelebrationToast from "@/app/recruteur/_components/CelebrationToast";
 import NxIcon from "@/components/ui/NxIcon";
 import StarRating from "@/components/ui/StarRating";
@@ -298,6 +300,8 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
   const { id } = use(params);
   const searchParams = useSearchParams();
   const isPreview = searchParams?.get("preview") === "true";
+  const { maxFavorites } = useSubscription();
+  const { count: myFavCount, setCount: setMyFavCount } = useFavoritesCount();
   const [a, setA] = useState<AthleteProfileRecruiterView>(mockAthleteProfileFull);
   const [loadingAthlete, setLoadingAthlete] = useState(true);
   const [recruitmentStatus, setRecruitmentStatus] = useState<GlobalRecruitmentStatus>("OUVERT");
@@ -532,6 +536,35 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
   const [favCount, setFavCount] = useState(0);
   const [viewCount, setViewCount] = useState(0);
 
+  // DB enforces the cap via RLS; this only short-circuits the click before
+  // it fires a doomed request and lets us show a clearer message.
+  const favAtCap = maxFavorites !== -1 && myFavCount >= maxFavorites;
+  const favButtonDisabled = favAtCap && !isFavorited;
+  const favDisabledTitle = `Limite de ${maxFavorites} favoris atteinte. Passez à Pro pour plus.`;
+
+  const toggleFav = async () => {
+    if (favButtonDisabled) return;
+    const supabase = createClient();
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) return;
+    const userId = session.user.id;
+    const { data: existing } = await supabase
+      .from("recruiter_favorites")
+      .select("id")
+      .eq("recruiter_id", userId)
+      .eq("athlete_id", id)
+      .maybeSingle();
+    if (existing) {
+      await supabase.from("recruiter_favorites").delete().eq("id", existing.id);
+      setIsFavorited(false);
+      setMyFavCount((c) => Math.max(0, c - 1));
+    } else {
+      await supabase.from("recruiter_favorites").insert({ recruiter_id: userId, athlete_id: id });
+      setIsFavorited(true);
+      setMyFavCount((c) => c + 1);
+    }
+  };
+
   useEffect(() => {
     const checkFav = async () => {
       const supabase = createClient();
@@ -711,35 +744,10 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
             </button>
             <button
               type="button"
-              onClick={async () => {
-                const supabase = createClient();
-                const { data: { session } } = await supabase.auth.getSession();
-                if (!session?.user) return;
-                const userId = session.user.id;
-
-                // Check if already favorited
-                const { data: existing } = await supabase
-                  .from("recruiter_favorites")
-                  .select("id")
-                  .eq("recruiter_id", userId)
-                  .eq("athlete_id", id)
-                  .maybeSingle();
-
-                if (existing) {
-                  // Already favorited → unfavorite (DELETE)
-                  await supabase.from("recruiter_favorites").delete().eq("id", existing.id);
-                  setIsFavorited(false);
-                  console.log("Unfavorited:", id);
-                } else {
-                  // Not favorited → favorite (INSERT only; pipeline entries are
-                  // created by explicit user action on the Kanban page, not as
-                  // a side-effect of favoriting)
-                  await supabase.from("recruiter_favorites").insert({ recruiter_id: userId, athlete_id: id });
-                  setIsFavorited(true);
-                  console.log("Favorited:", id);
-                }
-              }}
-              className="flex items-center gap-1.5 text-[12px] font-bold transition-colors"
+              onClick={toggleFav}
+              disabled={favButtonDisabled}
+              title={favButtonDisabled ? favDisabledTitle : undefined}
+              className={`flex items-center gap-1.5 text-[12px] font-bold transition-colors ${favButtonDisabled ? "cursor-not-allowed opacity-40" : ""}`}
               style={{ color: isFavorited ? "#E63946" : "#9CA3AF" }}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill={isFavorited ? "#E63946" : "none"} stroke={isFavorited ? "#E63946" : "currentColor"} strokeWidth="2" strokeLinecap="round">
@@ -1239,16 +1247,10 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
             </svg>
             Contacter le coach
           </Link>
-          <button type="button" onClick={async () => {
-            const supabase = createClient();
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session?.user) return;
-            const userId = session.user.id;
-            const { data: existing } = await supabase.from("recruiter_favorites").select("id").eq("recruiter_id", userId).eq("athlete_id", id).maybeSingle();
-            if (existing) { await supabase.from("recruiter_favorites").delete().eq("id", existing.id); setIsFavorited(false); }
-            else { await supabase.from("recruiter_favorites").insert({ recruiter_id: userId, athlete_id: id }); setIsFavorited(true); }
-          }} title={isFavorited ? "Retirer des favoris" : "Ajouter aux favoris"}
-            className={`w-12 h-12 rounded-xl flex items-center justify-center border transition-colors ${isFavorited ? "bg-[#E63946]/10 border-[#E63946]/30" : "bg-[#1A1D24] border-[#2D3748]"}`}>
+          <button type="button" onClick={toggleFav}
+            disabled={favButtonDisabled}
+            title={favButtonDisabled ? favDisabledTitle : (isFavorited ? "Retirer des favoris" : "Ajouter aux favoris")}
+            className={`w-12 h-12 rounded-xl flex items-center justify-center border transition-colors ${favButtonDisabled ? "cursor-not-allowed opacity-40" : ""} ${isFavorited ? "bg-[#E63946]/10 border-[#E63946]/30" : "bg-[#1A1D24] border-[#2D3748]"}`}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill={isFavorited ? "#E63946" : "none"} stroke={isFavorited ? "#E63946" : "#6B7280"} strokeWidth="2" strokeLinecap="round">
               <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
             </svg>
@@ -1270,16 +1272,10 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
             </svg>
             Contacter le coach
           </Link>
-          <button type="button" onClick={async () => {
-            const supabase = createClient();
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session?.user) return;
-            const userId = session.user.id;
-            const { data: existing } = await supabase.from("recruiter_favorites").select("id").eq("recruiter_id", userId).eq("athlete_id", id).maybeSingle();
-            if (existing) { await supabase.from("recruiter_favorites").delete().eq("id", existing.id); setIsFavorited(false); }
-            else { await supabase.from("recruiter_favorites").insert({ recruiter_id: userId, athlete_id: id }); setIsFavorited(true); }
-          }} className={`w-12 h-12 rounded-xl flex items-center justify-center border transition-all hover:-translate-y-0.5 ${isFavorited ? "bg-[#E63946]/10 border-[#E63946]/30" : "bg-[#1A1D24] border-[#2D3748] hover:border-[#E63946]/30"}`}
-            title={isFavorited ? "Retirer des favoris" : "Ajouter aux favoris"}>
+          <button type="button" onClick={toggleFav}
+            disabled={favButtonDisabled}
+            className={`w-12 h-12 rounded-xl flex items-center justify-center border transition-all ${favButtonDisabled ? "cursor-not-allowed opacity-40" : "hover:-translate-y-0.5"} ${isFavorited ? "bg-[#E63946]/10 border-[#E63946]/30" : `bg-[#1A1D24] border-[#2D3748] ${favButtonDisabled ? "" : "hover:border-[#E63946]/30"}`}`}
+            title={favButtonDisabled ? favDisabledTitle : (isFavorited ? "Retirer des favoris" : "Ajouter aux favoris")}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill={isFavorited ? "#E63946" : "none"} stroke={isFavorited ? "#E63946" : "#6B7280"} strokeWidth="2" strokeLinecap="round">
               <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
             </svg>

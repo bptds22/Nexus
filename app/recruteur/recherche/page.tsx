@@ -11,7 +11,7 @@ import type { GlobalRecruitmentStatus } from "@/lib/types/models";
 import { isValidationExpired } from "@/lib/utils/profileValidation";
 
 type ExtendedAthlete = SearchAthlete & { academicBadges: string[]; stars: number; recruitmentStatus: string | null; heightWeight: string; gpa: number; committedSchoolName: string | null; openToOffers: boolean | null; jersey: string; sportName: string; ouvertDemenager: boolean; ouvertPrive: boolean; ouvertAnglophone: boolean; createdAt: string; lastValidation?: string | null };
-import FeatureGate from "@/components/subscription/FeatureGate";
+import { useSubscription } from "@/lib/hooks/useSubscription";
 
 /* ═══════════════════════════════════════════════════════════════
    Recherche d'athlètes — Filterable card grid
@@ -49,7 +49,12 @@ const sportLabel = (value: string): string => {
 
 /* ── Athlete Search Card ──────────────────────────────────── */
 
-function AthleteSearchCard({ a, onToggleFav }: { a: ExtendedAthlete; onToggleFav: (id: string) => void }) {
+function AthleteSearchCard({ a, onToggleFav, favDisabled, favDisabledReason }: {
+  a: ExtendedAthlete;
+  onToggleFav: (id: string) => void;
+  favDisabled: boolean;
+  favDisabledReason: string;
+}) {
   console.log('CARD RENDER:', a.firstName, { sport: a.sport, sportName: a.sportName, position: a.position, jersey: a.jersey });
   return (
     <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] overflow-hidden hover:border-[#E63946]/30 hover:shadow-[0_0_24px_rgba(230,57,70,0.12)] hover:-translate-y-1.5 hover:scale-[1.02] transition-all duration-300 ease-out group flex flex-col">
@@ -79,9 +84,10 @@ function AthleteSearchCard({ a, onToggleFav }: { a: ExtendedAthlete; onToggleFav
           })()}
           <button
             type="button"
-            title="Favori"
-            onClick={(e) => { e.preventDefault(); onToggleFav(a.id); }}
-            className="w-7 h-7 rounded-full flex items-center justify-center"
+            title={favDisabled ? favDisabledReason : "Favori"}
+            disabled={favDisabled}
+            onClick={(e) => { e.preventDefault(); if (!favDisabled) onToggleFav(a.id); }}
+            className={`w-7 h-7 rounded-full flex items-center justify-center ${favDisabled ? "cursor-not-allowed opacity-40" : ""}`}
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill={a.isFavorited ? "#E63946" : "none"} stroke={a.isFavorited ? "#E63946" : "#6B7280"} strokeWidth="2" strokeLinecap="round">
               <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
@@ -162,7 +168,12 @@ function AthleteSearchCard({ a, onToggleFav }: { a: ExtendedAthlete; onToggleFav
 
 /* ── Athlete Search Row (list view) ─────────────────────────── */
 
-function AthleteSearchRow({ a, onToggleFav }: { a: ExtendedAthlete; onToggleFav: (id: string) => void }) {
+function AthleteSearchRow({ a, onToggleFav, favDisabled, favDisabledReason }: {
+  a: ExtendedAthlete;
+  onToggleFav: (id: string) => void;
+  favDisabled: boolean;
+  favDisabledReason: string;
+}) {
   return (
     <div className="bg-[#1A1D24] rounded-lg border border-[#2D3748] hover:border-[#E63946]/30 hover:shadow-[0_0_24px_rgba(230,57,70,0.12)] transition-all duration-300 ease-out flex items-center px-4 py-3 gap-4">
 
@@ -241,9 +252,10 @@ function AthleteSearchRow({ a, onToggleFav }: { a: ExtendedAthlete; onToggleFav:
       {/* Fav toggle */}
       <button
         type="button"
-        title="Favori"
-        onClick={(e) => { e.preventDefault(); onToggleFav(a.id); }}
-        className="w-8 h-8 rounded-full bg-[#13151a] border border-[#2D3748] flex items-center justify-center hover:bg-[#2D3748] transition-colors shrink-0"
+        title={favDisabled ? favDisabledReason : "Favori"}
+        disabled={favDisabled}
+        onClick={(e) => { e.preventDefault(); if (!favDisabled) onToggleFav(a.id); }}
+        className={`w-8 h-8 rounded-full bg-[#13151a] border border-[#2D3748] flex items-center justify-center transition-colors shrink-0 ${favDisabled ? "cursor-not-allowed opacity-40" : "hover:bg-[#2D3748]"}`}
       >
         <svg width="14" height="14" viewBox="0 0 24 24" fill={a.isFavorited ? "#E63946" : "none"} stroke={a.isFavorited ? "#E63946" : "#6b7280"} strokeWidth="2" strokeLinecap="round">
           <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
@@ -271,6 +283,7 @@ export default function RecherchePage() {
 
 function RechercheContent() {
   const searchParams = useSearchParams();
+  const { maxSearchResults, maxFavorites, loading: tierLoading } = useSubscription();
   const [search, setSearch] = useState("");
   const [sport, setSport] = useState("");
   const [position, setPosition] = useState("");
@@ -297,15 +310,59 @@ function RechercheContent() {
   const [favCounts, setFavCounts] = useState<Record<string, number>>({});
   const [regions, setRegions] = useState<string[]>([]);
   const [dynamicPositions, setDynamicPositions] = useState<{ abbr: string; label: string }[]>([]);
+  const [sportId, setSportId] = useState<string | null>(null);
 
-  // Load athletes + pipeline favorites in parallel
+  // One-time init: favorites (mine + totals) + regions dropdown.
+  // These are independent of search filters, so they never re-fire.
   useEffect(() => {
-    const loadData = async () => {
+    const init = async () => {
       const supabase = createClient();
       const { data: { session } } = await supabase.auth.getSession();
       const userId = session?.user?.id;
 
-      const athletePromise = supabase
+      const [myFavsRes, favCountRes, regionRowsRes] = await Promise.all([
+        userId
+          ? supabase.from("recruiter_favorites").select("athlete_id").eq("recruiter_id", userId)
+          : Promise.resolve({ data: [] as { athlete_id: string }[] }),
+        supabase.from("recruiter_favorites").select("athlete_id"),
+        supabase.from("schools").select("region"),
+      ]);
+
+      const favSet = new Set<string>();
+      ((myFavsRes.data as { athlete_id: string }[]) || []).forEach((f) => favSet.add(f.athlete_id));
+      setFavorites(favSet);
+
+      const counts: Record<string, number> = {};
+      ((favCountRes.data as { athlete_id: string }[]) || []).forEach((f) => {
+        counts[f.athlete_id] = (counts[f.athlete_id] || 0) + 1;
+      });
+      setFavCounts(counts);
+
+      const uniqueRegions = Array.from(
+        new Set(((regionRowsRes.data as { region: string }[]) || []).map((r) => r.region).filter(Boolean))
+      ).sort();
+      setRegions(uniqueRegions);
+    };
+    init();
+  }, []);
+
+  // Main athlete query — re-runs whenever any server-side filter or sort changes.
+  // The free-tier `.limit(maxSearchResults)` is applied AFTER filters/sort, so the
+  // 10 rows that reach a Free user's browser are the top-N matches for their
+  // query (not a blind top-10 of the entire table).
+  //
+  // Client-side filters (position, region, badges, academicBadges, hideFavorites)
+  // run against this returned page only. For Free users, that means those filters
+  // can further narrow the 10 rows but cannot reach additional matches beyond the
+  // cap — which is the intended revenue gate.
+  useEffect(() => {
+    if (tierLoading) return;
+    if (sport && !sportId) return; // wait for sport_id lookup
+    const loadData = async () => {
+      setLoading(true);
+      const supabase = createClient();
+
+      let query = supabase
         .from("athletes")
         .select(`
           id, first_name, last_name, photo_url, verified, last_profile_validation,
@@ -327,32 +384,56 @@ function RechercheContent() {
         `)
         .eq("status", "ACTIF");
 
-      // Load MY favorites from recruiter_favorites
-      const myFavsPromise = userId
-        ? supabase.from("recruiter_favorites").select("athlete_id").eq("recruiter_id", userId)
-        : Promise.resolve({ data: [] as { athlete_id: string }[] });
+      // Server-side filters
+      if (search.trim().length >= 3) {
+        const q = search.trim().replace(/[%,]/g, "");
+        query = query.or(`first_name.ilike.%${q}%,last_name.ilike.%${q}%`);
+      }
+      if (sportId) query = query.eq("sport_id", sportId);
+      if (promotion) query = query.eq("annee_diplomation", parseInt(promotion));
+      if (verifiedOnly) query = query.eq("verified", true);
+      if (withVideoOnly) query = query.not("video_faits_saillants_url", "is", null);
+      if (orgType === "scolaire") query = query.not("school_id", "is", null);
+      if (orgType === "ligue_civile") query = query.is("school_id", null);
+      if (minGpa) query = query.gte("moyenne_generale", parseFloat(minGpa));
+      if (minRating) query = query.gte("cote_globale_entraineur", parseFloat(minRating));
+      if (filterOuvertDemenager) query = query.eq("pret_changer_region", true);
+      if (filterOuvertPrive) query = query.eq("ouvert_cegep_prive", true);
+      if (filterOuvertAnglophone) query = query.eq("ouvert_cegep_anglophone", true);
+      if (filterNewOnly) {
+        const tenDaysAgo = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
+        query = query.gte("created_at", tenDaysAgo);
+      }
 
-      // Load ALL fav counts
-      const favCountPromise = supabase.from("recruiter_favorites").select("athlete_id");
+      // Server-side sort. favorites_desc can't be ordered at the DB level
+      // without a view; fall back to rating_desc and let the client reorder
+      // within the returned page.
+      switch (sortBy) {
+        case "rating_desc":
+        case "favorites_desc":
+          query = query.order("cote_globale_entraineur", { ascending: false, nullsFirst: false });
+          break;
+        case "rating_asc":
+          query = query.order("cote_globale_entraineur", { ascending: true, nullsFirst: false });
+          break;
+        case "grad_asc":
+          query = query.order("annee_diplomation", { ascending: true });
+          break;
+        case "grad_desc":
+          query = query.order("annee_diplomation", { ascending: false });
+          break;
+        case "name_asc":
+          query = query.order("last_name", { ascending: true });
+          break;
+      }
 
-      const [{ data: athleteData, error }, { data: myFavsData }, { data: favData }] = await Promise.all([
-        athletePromise,
-        myFavsPromise,
-        favCountPromise,
-      ]);
+      // Tier cap — applied AFTER filters/sort. -1 = unlimited.
+      if (maxSearchResults !== -1) {
+        query = query.limit(maxSearchResults);
+      }
+
+      const { data: athleteData, error } = await query;
       console.log("Athletes loaded:", athleteData?.length, error);
-
-      // Build favorites set from recruiter_favorites
-      const favSet = new Set<string>();
-      ((myFavsData as { athlete_id: string }[]) || []).forEach((f) => favSet.add(f.athlete_id));
-      setFavorites(favSet);
-
-      // Build fav counts
-      const counts: Record<string, number> = {};
-      ((favData as { athlete_id: string }[]) || []).forEach((f) => {
-        counts[f.athlete_id] = (counts[f.athlete_id] || 0) + 1;
-      });
-      setFavCounts(counts);
 
       if (athleteData) {
         const badgeMap: Record<string, { label: string; icon: string }> = {
@@ -383,12 +464,12 @@ function RechercheContent() {
             weightDisplay: "",
             isVerified: a.verified as boolean,
             lastValidation: (a.last_profile_validation as string) || null,
-            isFavorited: favSet.has(a.id as string),
+            isFavorited: favorites.has(a.id as string),
             hasVideo: !!a.video_faits_saillants_url,
             badges: distinctions
               .filter((d) => d != null && badgeMap[d])
               .map((d) => ({ badgeId: d, label: badgeMap[d].label, icon: badgeMap[d].icon })),
-            favorites: counts[a.id as string] || 0,
+            favorites: favCounts[a.id as string] || 0,
             views: 0,
             stars: (a.cote_globale_entraineur as number) || 0,
             heightWeight: (() => {
@@ -417,20 +498,23 @@ function RechercheContent() {
         });
         if (mapped[0]) console.log("AFTER MAP:", { name: mapped[0].firstName, jersey: mapped[0].jersey, sport: mapped[0].sport, sportName: mapped[0].sportName, position: mapped[0].position });
         setAthletes(mapped);
-
-        // Derive unique regions
-        const uniqueRegions = Array.from(new Set(mapped.map((a) => a.region).filter(Boolean))).sort();
-        setRegions(uniqueRegions);
       }
 
       setLoading(false);
     };
     loadData();
-  }, []);
+  }, [
+    tierLoading, maxSearchResults,
+    search, sport, sportId, promotion, verifiedOnly, withVideoOnly,
+    orgType, minGpa, minRating,
+    filterOuvertDemenager, filterOuvertPrive, filterOuvertAnglophone, filterNewOnly,
+    sortBy,
+    favorites, favCounts,
+  ]);
 
   // Load positions dynamically when sport changes
   useEffect(() => {
-    if (!sport) { setDynamicPositions([]); setPosition(""); return; }
+    if (!sport) { setSportId(null); setDynamicPositions([]); setPosition(""); return; }
 
     const loadPositions = async () => {
       const supabase = createClient();
@@ -439,7 +523,8 @@ function RechercheContent() {
         .select("id")
         .ilike("nom", sport.replace(/_/g, " "))
         .single();
-      if (!sportRow) return;
+      if (!sportRow) { setSportId(null); return; }
+      setSportId(sportRow.id as string);
 
       const { data: posRows } = await supabase
         .from("positions")
@@ -457,58 +542,30 @@ function RechercheContent() {
     loadPositions();
   }, [sport]);
 
+  // Client-side residual filters. Server-side filters (search, sport, promotion,
+  // verified, video, orgType, GPA, minRating, ouvert_*, filterNewOnly) have
+  // already been applied by the Supabase query, so we only run filters here
+  // that can't be expressed server-side without extra joins / denormalization.
+  //
+  // LIMITATION for Free users: these residual filters reduce the returned page
+  // but won't fetch additional matches beyond the server cap. That's a known
+  // revenue trade-off — upgrade to Pro to filter across the full athlete set.
   const filtered = useMemo(() => {
     let list = [...athletes];
-
-    if (search.trim().length >= 3) {
-      const q = search.toLowerCase();
-      list = list.filter((a) => `${a.firstName} ${a.lastName}`.toLowerCase().includes(q));
-    }
-    if (sport) list = list.filter((a) => a.sport === sport);
     if (position) list = list.filter((a) => a.position === position);
     if (region) list = list.filter((a) => a.region === region);
-    if (promotion) list = list.filter((a) => a.graduationYear === parseInt(promotion));
-    if (verifiedOnly) list = list.filter((a) => a.isVerified);
-    if (withVideoOnly) list = list.filter((a) => a.hasVideo);
-    if (orgType === "scolaire") list = list.filter((a) => !a.orgType || a.orgType === "scolaire");
-    if (orgType === "ligue_civile") list = list.filter((a) => a.orgType === "ligue_civile");
-    if (minRating) list = list.filter((a) => a.stars >= parseFloat(minRating));
     if (withSportBadge) list = list.filter((a) => a.badges.length > 0);
     if (withAcademicBadge) list = list.filter((a) => a.academicBadges && a.academicBadges.length > 0);
-    if (minGpa) list = list.filter((a) => a.gpa >= parseFloat(minGpa));
     if (hideFavorites) list = list.filter((a) => !favorites.has(a.id));
-    if (filterOuvertDemenager) list = list.filter((a) => a.ouvertDemenager);
-    if (filterOuvertPrive) list = list.filter((a) => a.ouvertPrive);
-    if (filterOuvertAnglophone) list = list.filter((a) => a.ouvertAnglophone);
-    if (filterNewOnly) {
-      const tenDaysAgo = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
-      list = list.filter((a) => a.createdAt >= tenDaysAgo);
-    }
 
-    // Sort
-    switch (sortBy) {
-      case "rating_desc":
-        list.sort((a, b) => b.stars - a.stars);
-        break;
-      case "rating_asc":
-        list.sort((a, b) => a.stars - b.stars);
-        break;
-      case "grad_asc":
-        list.sort((a, b) => a.graduationYear - b.graduationYear);
-        break;
-      case "grad_desc":
-        list.sort((a, b) => b.graduationYear - a.graduationYear);
-        break;
-      case "favorites_desc":
-        list.sort((a, b) => (favCounts[b.id] || 0) - (favCounts[a.id] || 0));
-        break;
-      case "name_asc":
-        list.sort((a, b) => a.lastName.localeCompare(b.lastName));
-        break;
+    // favorites_desc sort is a client-side refinement of the returned page
+    // (the DB query already applied rating_desc as a fallback ordering).
+    if (sortBy === "favorites_desc") {
+      list = [...list].sort((a, b) => (favCounts[b.id] || 0) - (favCounts[a.id] || 0));
     }
 
     return list.map((a) => ({ ...a, isFavorited: favorites.has(a.id), favorites: favCounts[a.id] || 0 }));
-  }, [search, sport, position, region, promotion, verifiedOnly, withVideoOnly, orgType, minRating, withSportBadge, withAcademicBadge, minGpa, hideFavorites, filterOuvertDemenager, filterOuvertPrive, filterOuvertAnglophone, filterNewOnly, sortBy, favorites, athletes, favCounts]);
+  }, [athletes, position, region, withSportBadge, withAcademicBadge, hideFavorites, sortBy, favorites, favCounts]);
 
   const toggleFav = async (id: string) => {
     const supabase = createClient();
@@ -791,41 +848,74 @@ function RechercheContent() {
         </div>
       ) : (
         <>
-          {/* First 5 results — always visible */}
-          {viewMode === "grid" ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-              {filtered.slice(0, 6).map((a) => (
-                <AthleteSearchCard key={a.id} a={a} onToggleFav={toggleFav} />
-              ))}
-            </div>
-          ) : (
-            <div className="flex flex-col gap-2">
-              {filtered.slice(0, 6).map((a) => (
-                <AthleteSearchRow key={a.id} a={a} onToggleFav={toggleFav} />
-              ))}
-            </div>
-          )}
+          {(() => {
+            // favorites.size is the recruiter's current favorite count — the
+            // DB still enforces the cap via RLS; this just blocks the click
+            // UX before it fires and surfaces a clearer message.
+            const atFavCap = maxFavorites !== -1 && favorites.size >= maxFavorites;
+            const favDisabledReason = `Limite de ${maxFavorites} favoris atteinte. Passez à Pro pour plus.`;
+            return viewMode === "grid" ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                {filtered.map((a) => (
+                  <AthleteSearchCard
+                    key={a.id}
+                    a={a}
+                    onToggleFav={toggleFav}
+                    favDisabled={atFavCap && !a.isFavorited}
+                    favDisabledReason={favDisabledReason}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {filtered.map((a) => (
+                  <AthleteSearchRow
+                    key={a.id}
+                    a={a}
+                    onToggleFav={toggleFav}
+                    favDisabled={atFavCap && !a.isFavorited}
+                    favDisabledReason={favDisabledReason}
+                  />
+                ))}
+              </div>
+            );
+          })()}
 
-          {/* Remaining results — gated behind Recruteur Pro */}
-          {filtered.length > 6 && (
-            <FeatureGate feature="unlimited_profiles" requiredTier="pro">
-              {viewMode === "grid" ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-                  {filtered.slice(6).map((a) => (
-                    <AthleteSearchCard key={a.id} a={a} onToggleFav={toggleFav} />
-                  ))}
-                </div>
-              ) : (
-                <div className="flex flex-col gap-2">
-                  {filtered.slice(6).map((a) => (
-                    <AthleteSearchRow key={a.id} a={a} onToggleFav={toggleFav} />
-                  ))}
-                </div>
-              )}
-            </FeatureGate>
+          {/* Free-tier cap banner — the query was .limit(maxSearchResults), so
+              if we came back with exactly that many rows, more matches likely
+              exist. Shown only when Free hit the cap; Pro+ is unlimited (-1). */}
+          {maxSearchResults !== -1 && athletes.length >= maxSearchResults && (
+            <UpgradeMoreBanner cap={maxSearchResults} />
           )}
         </>
       )}
+    </div>
+  );
+}
+
+function UpgradeMoreBanner({ cap }: { cap: number }) {
+  return (
+    <div className="mt-6 bg-[#1A1D24] border border-[#E63946]/20 rounded-xl p-6 flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
+      <div className="w-12 h-12 rounded-full bg-[#E63946]/10 flex items-center justify-center shrink-0">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="11" width="18" height="11" rx="2" />
+          <path d="M7 11V7a5 5 0 0110 0v4" />
+        </svg>
+      </div>
+      <div className="flex-1 text-center sm:text-left">
+        <h3 className="font-head text-[15px] font-black text-white mb-1 uppercase tracking-tight">
+          {cap} athlètes affichés — d&apos;autres correspondent à ta recherche
+        </h3>
+        <p className="text-[13px] text-[#9CA3AF] leading-relaxed">
+          Passe à Recruteur Pro pour voir tous les athlètes correspondants et filtrer sur l&apos;ensemble de la base.
+        </p>
+      </div>
+      <Link
+        href="/tarifs"
+        className="inline-flex items-center justify-center h-11 px-6 rounded-lg bg-[#E63946] hover:bg-[#D42B22] text-white font-head font-bold text-[12px] uppercase tracking-wider transition-colors shrink-0"
+      >
+        Voir les forfaits →
+      </Link>
     </div>
   );
 }
