@@ -731,23 +731,12 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
                   setIsFavorited(false);
                   console.log("Unfavorited:", id);
                 } else {
-                  // Not favorited → favorite (INSERT)
+                  // Not favorited → favorite (INSERT only; pipeline entries are
+                  // created by explicit user action on the Kanban page, not as
+                  // a side-effect of favoriting)
                   await supabase.from("recruiter_favorites").insert({ recruiter_id: userId, athlete_id: id });
                   setIsFavorited(true);
                   console.log("Favorited:", id);
-                  // Auto-insert into pipeline at IDENTIFIE (no-op if already exists)
-                  const { data: existingPipeline } = await supabase
-                    .from("recruiter_pipeline")
-                    .select("id")
-                    .eq("recruiter_id", userId)
-                    .eq("athlete_id", id)
-                    .maybeSingle();
-                  if (!existingPipeline) {
-                    const { error: pipeErr } = await supabase
-                      .from("recruiter_pipeline")
-                      .insert({ recruiter_id: userId, athlete_id: id, stage: "IDENTIFIE", moved_at: new Date().toISOString() });
-                    console.log("[Pipeline auto-insert]", { athlete_id: id, stage: "IDENTIFIE", error: pipeErr });
-                  }
                 }
               }}
               className="flex items-center gap-1.5 text-[12px] font-bold transition-colors"

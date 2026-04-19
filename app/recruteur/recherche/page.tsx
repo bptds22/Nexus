@@ -530,23 +530,11 @@ function RechercheContent() {
       setFavorites((prev) => { const next = new Set(prev); next.delete(id); return next; });
       setFavCounts((prev) => ({ ...prev, [id]: Math.max(0, (prev[id] || 0) - 1) }));
     } else {
-      // Not favorited → INSERT (favorite)
+      // Not favorited → INSERT (favorite only; pipeline entries are created
+      // by explicit user action on the Kanban page, not as a side-effect here)
       await supabase.from("recruiter_favorites").insert({ recruiter_id: userId, athlete_id: id });
       setFavorites((prev) => { const next = new Set(prev); next.add(id); return next; });
       setFavCounts((prev) => ({ ...prev, [id]: (prev[id] || 0) + 1 }));
-      // Auto-insert into pipeline at IDENTIFIE (no-op if already exists)
-      const { data: existingPipeline } = await supabase
-        .from("recruiter_pipeline")
-        .select("id")
-        .eq("recruiter_id", userId)
-        .eq("athlete_id", id)
-        .maybeSingle();
-      if (!existingPipeline) {
-        const { error: pipeErr } = await supabase
-          .from("recruiter_pipeline")
-          .insert({ recruiter_id: userId, athlete_id: id, stage: "IDENTIFIE", moved_at: new Date().toISOString() });
-        console.log("[Pipeline auto-insert]", { athlete_id: id, stage: "IDENTIFIE", error: pipeErr });
-      }
     }
   };
 
