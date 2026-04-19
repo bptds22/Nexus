@@ -615,7 +615,7 @@ export default function PourLesCoachsPage() {
 
             <p className="text-[13px] text-white/55 mt-10">
               Pas de joueurs inscrits?{" "}
-              <Link href="/pour-les-athletes" className="text-[#E63946] font-semibold hover:underline">
+              <Link href="/pour-les-etudiant-athlete" className="text-[#E63946] font-semibold hover:underline">
                 Envoie-leur ce lien →
               </Link>
             </p>

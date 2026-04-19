@@ -41,6 +41,7 @@ const SPORT_DISPLAY: Record<string, string> = Object.fromEntries(
 );
 
 const TRAIT_LIST: { key: keyof AthleteTraitRatings; label: string }[] = [
+  // Character (8 original)
   { key: "leadership", label: "Leadership" },
   { key: "discipline", label: "Discipline" },
   { key: "coachability", label: "Coachabilité" },
@@ -49,6 +50,15 @@ const TRAIT_LIST: { key: keyof AthleteTraitRatings; label: string }[] = [
   { key: "teamwork", label: "Esprit d'équipe" },
   { key: "resilience", label: "Résilience" },
   { key: "attitude", label: "Attitude / Mentalité" },
+  // Athletic / tactical (6 newer DB columns: vitesse_explosivite,
+  // force_puissance, endurance_cardio, agilite_coordination,
+  // vision_du_jeu, sens_tactique — mapped via AthleteTraitRatings).
+  { key: "speed", label: "Vitesse / Explosivité" },
+  { key: "power", label: "Force / Puissance" },
+  { key: "endurance", label: "Endurance cardio" },
+  { key: "agility", label: "Agilité / Coordination" },
+  { key: "gameVision", label: "Vision du jeu" },
+  { key: "tactics", label: "Sens tactique" },
 ];
 
 const FLAG_REASONS = [
@@ -908,10 +918,15 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1">
                           {TRAIT_LIST.map((trait) => {
                             const val = a.traitRatings ? a.traitRatings[trait.key] : 0;
+                            // Skip unrated traits entirely — NULL in the DB
+                            // shows up here as 0 via the `|| 0` fallback in
+                            // the mapping. Showing a "—" placeholder would
+                            // imply the coach has rated every trait.
+                            if (!val || val <= 0) return null;
                             return (
                               <div key={trait.key} className="flex items-center justify-between py-2.5 border-b border-[#2D3748]/30">
                                 <span className="text-[13px] text-[#c8c8cc]">{trait.label}</span>
-                                {val > 0 ? <StarRating rating={val} size="sm" /> : <span className="text-[13px] text-[#4a4d56]">—</span>}
+                                <StarRating rating={val} size="sm" />
                               </div>
                             );
                           })}

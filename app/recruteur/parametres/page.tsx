@@ -394,8 +394,8 @@ function RecruiterPricingSection() {
     {
       id: "pro",
       name: "Pro",
-      monthly: 15.99,
-      yearly: 149,
+      monthly: 19.99,
+      yearly: 159,
       border: "border-[#F59E0B]",
       glow: "shadow-[0_0_20px_rgba(245,158,11,0.1)]",
       badge: { label: "POPULAIRE", color: "bg-[#F59E0B] text-black" },
@@ -418,7 +418,7 @@ function RecruiterPricingSection() {
       id: "allstar",
       name: "All Star",
       monthly: 29.99,
-      yearly: 269,
+      yearly: 239,
       border: "border-[#E63946]",
       glow: "shadow-[0_0_20px_rgba(230,57,70,0.1)]",
       badge: { label: "COMPLET", color: "bg-[#E63946] text-white" },
@@ -459,7 +459,7 @@ function RecruiterPricingSection() {
         <div className="flex items-center gap-1 bg-[#13151a] rounded-xl p-1.5">
           <button type="button" onClick={() => setAnnual(false)} className={`px-5 py-2.5 rounded-lg text-[12px] font-bold uppercase tracking-[0.12em] transition-all ${!annual ? "bg-[#E63946] text-white shadow-[0_0_10px_rgba(230,57,70,0.25)]" : "text-[#6b7280] hover:text-white"}`}>Mensuel</button>
           <button type="button" onClick={() => setAnnual(true)} className={`px-5 py-2.5 rounded-lg text-[12px] font-bold uppercase tracking-[0.12em] transition-all ${annual ? "bg-[#E63946] text-white shadow-[0_0_10px_rgba(230,57,70,0.25)]" : "text-[#6b7280] hover:text-white"}`}>
-            Annuel <span className="text-[10px] font-normal ml-1 opacity-80">(économise 17%)</span>
+            Annuel <span className="text-[10px] font-normal ml-1 opacity-80">(économise 34%)</span>
           </button>
         </div>
       </div>

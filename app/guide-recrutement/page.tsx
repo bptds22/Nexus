@@ -406,7 +406,7 @@ export default function GuideRecrutementPage() {
               </Link>
             </div>
             <p className="text-[13px] text-white/55 mt-6">
-              <Link href="/pour-les-athletes" className="text-[#E63946] hover:underline">
+              <Link href="/pour-les-etudiant-athlete" className="text-[#E63946] hover:underline">
                 Retour à la page athlètes →
               </Link>
             </p>

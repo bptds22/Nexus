@@ -472,6 +472,7 @@ function ClickableStars({ value, onChange, size = 28, allowHalf = false }: { val
 /* ── Trait definitions (detailed evaluation) ──────────────── */
 
 const TRAIT_CHAMPS: { key: keyof AthleteTraitRatings; label: string }[] = [
+  // Character (8 original)
   { key: "leadership", label: "Leadership" },
   { key: "discipline", label: "Discipline" },
   { key: "coachability", label: "Coachabilité" },
@@ -480,6 +481,15 @@ const TRAIT_CHAMPS: { key: keyof AthleteTraitRatings; label: string }[] = [
   { key: "teamwork", label: "Esprit d'équipe" },
   { key: "resilience", label: "Résilience" },
   { key: "attitude", label: "Attitude / Mentalité" },
+  // Athletic / tactical (6 newer DB columns: vitesse_explosivite,
+  // force_puissance, endurance_cardio, agilite_coordination,
+  // vision_du_jeu, sens_tactique — mapped via AthleteTraitRatings).
+  { key: "speed", label: "Vitesse / Explosivité" },
+  { key: "power", label: "Force / Puissance" },
+  { key: "endurance", label: "Endurance cardio" },
+  { key: "agility", label: "Agilité / Coordination" },
+  { key: "gameVision", label: "Vision du jeu" },
+  { key: "tactics", label: "Sens tactique" },
 ];
 
 /* ── Unified Evaluation section (simplified + detailed) ───── */
@@ -574,6 +584,10 @@ function EvaluationSuggest({ currentOverall, traitRatings, pendingSugs, onSubmit
             {TRAIT_CHAMPS.map((trait) => {
               const current = getCurrent(trait.key);
               const pend = pendingFor(trait.label);
+              // Hide unrated traits in the read-only view. In edit mode
+              // (handled by a separate block below) we still show every
+              // trait so the athlete can propose a first rating.
+              if (current <= 0 && !pend) return null;
               return (
                 <div key={trait.key} className="py-2 border-b border-[#2D3748]/30">
                   <div className="flex items-center justify-between">
@@ -741,11 +755,11 @@ function DistinctionsSuggest({ currentDistinctions, pending, onSubmit }: {
 /* ── Trait labels ──────────────────────────────────────────────── */
 
 const TRAIT_LABELS: Record<keyof AthleteTraitRatings, string> = {
-  speed: "Vitesse / Explosivité", power: "Force / Puissance", endurance: "Endurance / Cardio", agility: "Agilité / Coordination",
+  speed: "Vitesse / Explosivité", power: "Force / Puissance", endurance: "Endurance cardio", agility: "Agilité / Coordination",
   gameVision: "Vision du jeu", tactics: "Sens tactique",
   leadership: "Leadership", discipline: "Discipline", coachability: "Coachabilité",
-  gameIQ: "QI sportif", competitiveness: "Compétitivité", teamwork: "Esprit d'équipe",
-  resilience: "Résilience", attitude: "Attitude",
+  gameIQ: "Intelligence de jeu", competitiveness: "Compétitivité", teamwork: "Esprit d'équipe",
+  resilience: "Résilience", attitude: "Attitude / Mentalité",
 };
 
 /* ── Completeness color ───────────────────────────────────────── */

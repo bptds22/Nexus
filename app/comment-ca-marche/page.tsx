@@ -70,7 +70,7 @@ const REPUTATION_BADGES = [
 ];
 
 const PERSONAS = [
-  { question: "Tu es un athlète?", line: "Crée ton profil et fais-toi repérer par les recruteurs CÉGEP.", href: "/pour-les-athletes", label: "Découvrir →" },
+  { question: "Tu es un athlète?", line: "Crée ton profil et fais-toi repérer par les recruteurs CÉGEP.", href: "/pour-les-etudiant-athlete", label: "Découvrir →" },
   { question: "Tu es un entraîneur?", line: "Vérifie tes joueurs, ajoute ton évaluation, bâtis ta réputation.", href: "/pour-les-coachs", label: "Découvrir →" },
   { question: "Tu es un recruteur CÉGEP?", line: "Trouve les meilleurs prospects du secondaire à travers le Québec.", href: "/pour-les-recruteurs", label: "Découvrir →" },
 ];

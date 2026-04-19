@@ -76,9 +76,9 @@ const RECRUITER_TIERS: Tier[] = [
     id: "rec_pro",
     name: "Pro",
     nameColor: "text-[#F59E0B]",
-    monthly: 15.99,
-    annual: 149,
-    annualMonthlyEq: 12.42,
+    monthly: 19.99,
+    annual: 159,
+    annualMonthlyEq: 13.25,
     border: "border-2 border-[#F59E0B]",
     glow: "shadow-[0_0_24px_rgba(245,158,11,0.15)]",
     badge: { label: "Populaire", bg: "bg-[#F59E0B]", fg: "text-black" },
@@ -107,8 +107,8 @@ const RECRUITER_TIERS: Tier[] = [
     name: "All Star",
     nameColor: "text-[#E63946]",
     monthly: 29.99,
-    annual: 269,
-    annualMonthlyEq: 22.42,
+    annual: 239,
+    annualMonthlyEq: 19.92,
     border: "border-2 border-[#E63946]",
     glow: "shadow-[0_0_24px_rgba(230,57,70,0.1)]",
     badge: null,
@@ -164,9 +164,9 @@ const COACH_TIERS: Tier[] = [
     id: "coach-pro",
     name: "Pro",
     nameColor: "text-[#F59E0B]",
-    monthly: 14.99,
-    annual: 139,
-    annualMonthlyEq: 11.58,
+    monthly: 4.99,
+    annual: 39,
+    annualMonthlyEq: 3.25,
     border: "border-2 border-[#F59E0B]",
     glow: "shadow-[0_0_24px_rgba(245,158,11,0.15)]",
     badge: { label: "Populaire", bg: "bg-[#F59E0B]", fg: "text-black" },
@@ -183,6 +183,28 @@ const COACH_TIERS: Tier[] = [
     ],
     ctaLabel: "Passer à Pro →",
     ctaClass: "bg-[#F59E0B] text-black hover:bg-[#FBBF24]",
+    ctaHref: "/inscription?role=COACH",
+  },
+  {
+    id: "coach_allstar",
+    name: "All Star",
+    nameColor: "text-[#E63946]",
+    monthly: 9.99,
+    annual: 79,
+    annualMonthlyEq: 6.58,
+    border: "border-2 border-[#E63946]",
+    glow: "shadow-[0_0_24px_rgba(230,57,70,0.1)]",
+    badge: null,
+    featuresHeader: "Tout du plan Pro, plus :",
+    features: [
+      { kind: "item", label: "Gestion complète de l'école (ajout et gestion des coachs)", included: true },
+      { kind: "item", label: "Analytique avancée par athlète et par équipe", included: true },
+      { kind: "item", label: "Suivi détaillé des placements en CÉGEP", included: true },
+      { kind: "item", label: "Statistiques d'école complètes", included: true },
+      { kind: "item", label: "Outils d'invitation pour les entraîneurs", included: true },
+    ],
+    ctaLabel: "Choisir All Star",
+    ctaClass: "bg-[#E63946] text-white hover:bg-[#D42B22]",
     ctaHref: "/inscription?role=COACH",
   },
 ];
@@ -229,9 +251,9 @@ const ATHLETE_TIERS: Tier[] = [
     id: "ath_pro",
     name: "Pro",
     nameColor: "text-[#F59E0B]",
-    monthly: 4.99,
-    annual: 49,
-    annualMonthlyEq: 4.08,
+    monthly: 2.99,
+    annual: 24,
+    annualMonthlyEq: 2.00,
     border: "border-2 border-[#F59E0B]",
     glow: "shadow-[0_0_24px_rgba(245,158,11,0.15)]",
     badge: { label: "Recommandé", bg: "bg-[#F59E0B]", fg: "text-black" },
@@ -247,21 +269,31 @@ const ATHLETE_TIERS: Tier[] = [
     ctaClass: "bg-[#F59E0B] text-black hover:bg-[#FBBF24]",
     ctaHref: "/inscription?role=ATHLETE",
   },
+  // Athlete All Star — coming soon, hidden for MVP.
 ];
 
-/* ── Savings shown in toggle label per persona (Pro-tier representative) ─ */
+/* ── Savings shown in toggle label per persona.
+   All paid tiers now sit at ~33–35% off annual. Using a single flat
+   percentage per persona (the component API) rounded to the tier
+   average. 0 hides the caption (no paid tiers exist). ── */
 const PERSONA_SAVINGS: Record<Persona, number> = {
-  recruteur: 22,
-  coach: 23,
-  athlete: 18,
+  recruteur: 34, // Pro 33.7%, All Star 33.6%
+  coach: 34,     // Pro 34.9%, All Star 34.1%
+  athlete: 33,   // Pro 33.1%
 };
 
 /* ── Helpers ────────────────────────────────────────────────── */
 
-function formatPrice(n: number): string {
-  if (n === 0) return "0$";
-  const s = n.toString().replace(".", ",");
-  return `${s}$`;
+/**
+ * Price formatter. Defaults to two-decimal form ("$4.99") for per-month
+ * values; pass `{ whole: true }` for annual totals we display as integers
+ * ("$159"). Zero always collapses to "$0" so free tiers don't render
+ * "$0.00".
+ */
+function formatPrice(n: number, opts: { whole?: boolean } = {}): string {
+  if (n === 0) return "$0";
+  if (opts.whole) return `$${Math.round(n)}`;
+  return `$${n.toFixed(2)}`;
 }
 
 function isValidPersona(v: string | null): v is Persona {
@@ -366,7 +398,10 @@ export default function TarifsPage() {
                 billing === "annual" ? "bg-[#2A2D34] text-white" : "text-[#9CA3AF] hover:text-white"
               }`}
             >
-              Annuel <span className="text-[10px] font-normal ml-1 opacity-80">(économise {savingsPct}%)</span>
+              Annuel
+              {savingsPct > 0 && (
+                <span className="text-[10px] font-normal ml-1 opacity-80">(économise {savingsPct}%)</span>
+              )}
             </button>
           </div>
         </div>
@@ -376,13 +411,13 @@ export default function TarifsPage() {
       <section>
         <div className="max-w-[1200px] mx-auto px-6 pt-10 pb-12">
           {tiers.length === 2 ? (
-            /* 2 tiers (Coach or Athlète) — centered */
+            /* 2 tiers (Athlète — Pro + Free; All Star hidden for MVP) */
             <div className="max-w-[820px] mx-auto grid grid-cols-1 md:grid-cols-2 gap-5 items-stretch">
               <PricingCard tier={tiers[1]} billing={billing} orderCls="order-1 md:order-2" />
               <PricingCard tier={tiers[0]} billing={billing} orderCls="order-2 md:order-1" />
             </div>
           ) : (
-            /* 3 tiers (Recruteur) */
+            /* 3 tiers (Recruteur, Coach) — Pro centered, Free left, All Star right */
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-stretch">
               <PricingCard tier={tiers[1]} billing={billing} orderCls="order-1 md:order-2" />
               <PricingCard tier={tiers[0]} billing={billing} orderCls="order-2 md:order-1" />
@@ -470,20 +505,17 @@ function PricingCard({
   billing: Billing;
   orderCls: string;
 }) {
+  const isFree = tier.monthly === 0;
   const showAnnual = billing === "annual" && tier.annual > 0;
+  // Big price always follows the billing toggle so the user sees the actual
+  // amount they'll be charged on that cadence. The two-line framing below
+  // shows both options regardless of toggle for easy comparison.
   const priceDisplay = showAnnual
-    ? `${tier.annual}$`
-    : tier.monthly === 0
-    ? "0$"
+    ? formatPrice(tier.annual, { whole: true })
+    : isFree
+    ? "$0"
     : formatPrice(tier.monthly);
-  const periodShort =
-    tier.monthly === 0 ? "" : showAnnual ? "/an" : "/mois";
-  const periodNote =
-    tier.monthly === 0
-      ? "pour toujours"
-      : showAnnual && tier.annualMonthlyEq != null
-      ? `soit ${formatPrice(tier.annualMonthlyEq)}/mois`
-      : "facturé mensuellement";
+  const periodShort = isFree ? "" : showAnnual ? "/an" : "/mois";
 
   return (
     <div className={`relative bg-[#1A1D24] rounded-xl ${tier.border} ${tier.glow} ${orderCls} p-6 sm:p-7 flex flex-col`}>
@@ -503,11 +535,22 @@ function PricingCard({
         <span className="font-head text-[36px] sm:text-[40px] font-black text-white leading-none">
           {priceDisplay}
         </span>
-        {tier.monthly > 0 && (
+        {!isFree && (
           <span className="text-[14px] text-[#9CA3AF]">{periodShort}</span>
         )}
       </div>
-      <p className="text-[12px] text-[#9CA3AF] mt-2">{periodNote}</p>
+      {isFree ? (
+        <p className="text-[12px] text-[#9CA3AF] mt-2">pour toujours</p>
+      ) : (
+        <div className="mt-2 space-y-0.5">
+          <p className="text-[12px] text-[#c8c8cc]">
+            À partir de <span className="font-bold text-white">{formatPrice(tier.annualMonthlyEq ?? tier.monthly)}/mois</span> facturé annuellement
+          </p>
+          <p className="text-[11px] text-[#6b7280]">
+            ou {formatPrice(tier.monthly)}/mois facturé mensuellement
+          </p>
+        </div>
+      )}
 
       <div className="h-px bg-white/[0.06] my-5" />
 

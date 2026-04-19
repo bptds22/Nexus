@@ -6,7 +6,7 @@ import NexusLogo from "@/components/ui/NexusLogo";
 const DROPDOWN_ITEMS = [
   { label: "Pour les coachs", href: "/pour-les-coachs" },
   { label: "Pour les recruteurs", href: "/pour-les-recruteurs" },
-  { label: "Pour les étudiants-athlètes", href: "/pour-les-athletes" },
+  { label: "Pour les étudiants-athlètes", href: "/pour-les-etudiant-athlete" },
 ];
 
 const label = "text-[10px] font-bold tracking-[0.25em] uppercase";

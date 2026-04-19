@@ -127,7 +127,7 @@ type PricingTier = {
 const PRICING_TIERS: PricingTier[] = [
   {
     name: "Gratuit",
-    price: "0$",
+    price: "$0",
     priceColor: "text-[#22C55E]",
     subtitle: "Pour explorer la plateforme",
     bullets: [
@@ -144,7 +144,7 @@ const PRICING_TIERS: PricingTier[] = [
   },
   {
     name: "Pro",
-    price: "À déterminer$",
+    price: "$19.99",
     priceSuffix: "/mois",
     priceColor: "text-white",
     subtitle: "Pour les recruteurs actifs",
@@ -167,7 +167,7 @@ const PRICING_TIERS: PricingTier[] = [
   },
   {
     name: "All Star",
-    price: "À déterminer$",
+    price: "$29.99",
     priceSuffix: "/mois",
     priceColor: "text-white",
     subtitle: "Pour les programmes compétitifs",

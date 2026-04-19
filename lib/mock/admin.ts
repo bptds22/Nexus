@@ -905,7 +905,7 @@ export const SUBSCRIPTION_TIERS: SubscriptionTier[] = [
   { id: "tier-school-pro", name: "Pro", customer_type: "school", price_monthly: 79, price_yearly: 790, features: ["3 coachs", "Profils détaillés", "Analytique vues recruteurs", "Badge école vérifiée", "Rapport mensuel"], limits: { max_coaches: 3, max_sports: 3 }, is_popular: true },
   { id: "tier-school-elite", name: "Élite", customer_type: "school", price_monthly: 149, price_yearly: 1490, features: ["Coachs illimités", "Tous les sports", "Analytique avancée", "Promotion prioritaire", "Support dédié"], limits: { max_coaches: -1, max_sports: -1 }, is_popular: false },
   { id: "tier-athlete-free", name: "Gratuit", customer_type: "athlete", price_monthly: 0, price_yearly: 0, features: ["Profil de base créé par le coach", "Visible dans la recherche"], limits: {}, is_popular: false },
-  { id: "tier-athlete-pro", name: "Pro", customer_type: "athlete", price_monthly: 9.99, price_yearly: 89.99, features: ["Profil boosté (priorité dans résultats)", "Notifications quand un recruteur consulte", "Tableau de bord personnel", "Badge « Profil actif »"], limits: {}, is_popular: true },
+  { id: "tier-athlete-pro", name: "Pro", customer_type: "athlete", price_monthly: 2.99, price_yearly: 24, features: ["Profil boosté (priorité dans résultats)", "Notifications quand un recruteur consulte", "Tableau de bord personnel", "Badge « Profil actif »"], limits: {}, is_popular: true },
 ];
 
 // ── Institution Subscriptions ────────────────────────────────
