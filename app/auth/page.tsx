@@ -123,38 +123,25 @@ function AuthContent() {
     }
     setLoading(true);
 
-    const supabase = createClient();
-    const { data, error } = await supabase.auth.signUp({
+    const { signUp } = await import("@/lib/supabase/auth.actions");
+
+    const { data, error } = await signUp(
       email,
       password,
-      options: {
-        data: {
-          first_name: firstName,
-          last_name: lastName,
-          sport: selectedSport,
-          role: "ATHLETE",
-        },
-      },
-    });
+      "ATHLETE",
+      firstName,
+      lastName,
+      { sport: selectedSport }
+    );
 
     if (error) {
       setToast(error.message);
+      setTimeout(() => setToast(null), 4000);
       setLoading(false);
       return;
     }
 
-    console.log("[Athlete signup]", { userId: data.user?.id, email });
-
-    // Create users row
-    if (data.user) {
-      await supabase.from("users").upsert({
-        id: data.user.id,
-        first_name: firstName,
-        last_name: lastName,
-        role: "ATHLETE",
-        onboarding_complete: false,
-      }, { onConflict: "id" });
-    }
+    console.log("[Athlete signup]", { userId: data?.user?.id, email });
 
     setLoading(false);
     router.push("/athlete/onboarding");
