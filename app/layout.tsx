@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Barlow_Condensed, Outfit } from "next/font/google";
 import "./globals.css";
+import { GrainOverlay } from "@/components/editorial";
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -36,6 +37,7 @@ export default function RootLayout({
   return (
     <html lang="fr" data-theme="dark">
       <body className={`${outfit.variable} ${barlowCondensed.variable} antialiased`}>
+        <GrainOverlay />
         {children}
       </body>
     </html>

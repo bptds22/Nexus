@@ -140,9 +140,11 @@ body {
   transform-origin: center;
 }
 
-/* Remove red glow on specific pages */
+/* Remove red glow on specific pages. Used to also carry the dark
+   edge vignette — dropped together with the main vignette so the
+   playbook reads uniformly at page corners. */
 .nx-no-glow::after {
-  background: radial-gradient(ellipse 130% 100% at 50% 50%, transparent 35%, rgba(0, 0, 0, 0.52) 100%) !important;
+  background: none !important;
 }
 
 /* Hide playbook text in coach portal — keep only diagrams */
@@ -150,14 +152,15 @@ body {
   display: none !important;
 }
 
-/* Red accent glow + dark edge vignette */
+/* Red accent glow. Dark edge vignette removed — it was shading the
+   playbook diagrams at page corners and the business ask was to let
+   the playbook read uniformly across the full viewport. */
 .hero-playbook::after {
   content: "";
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(700px 300px at 72% 38%, rgba(230, 57, 70, 0.16), transparent 60%),
-    radial-gradient(ellipse 130% 100% at 50% 50%, transparent 35%, rgba(0, 0, 0, 0.52) 100%);
+    radial-gradient(700px 300px at 72% 38%, rgba(230, 57, 70, 0.16), transparent 60%);
   pointer-events: none;
   z-index: -1;
 }
@@ -874,4 +877,25 @@ body.light-mode .nx-social-auth-btn:hover {
 @keyframes badgeSweep {
   0%, 100% { left: -80%; }
   50% { left: 140%; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   EDITORIAL TEXTURE — optional grain utility for specific surfaces.
+   The app-wide grain ships as <GrainOverlay /> at root layout. This
+   class is for one-off cards that need an extra grain hit on top of
+   the global layer (e.g. testimonial callouts, pricing cards). The
+   parent must be position: relative so ::after can absolute-inset.
+═══════════════════════════════════════════════════════════════ */
+.editorial-grain {
+  position: relative;
+}
+.editorial-grain::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  opacity: 0.04;
+  mix-blend-mode: overlay;
+  pointer-events: none;
+  z-index: 1;
 }
