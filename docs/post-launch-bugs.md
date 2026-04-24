@@ -106,13 +106,7 @@ file.
 
 ## P1 — Data collection
 
-- [ ] **`recruiter_athlete_views` table never written.** 0 rows in
-      production across the full Phase 5 test window. The
-      instrumentation on the recruiter athlete profile page
-      ([`app/recruteur/athletes/[id]/page.tsx`](../app/recruteur/athletes/%5Bid%5D/page.tsx))
-      is either missing or failing RLS. Blocks the athlete visibility
-      feature (who viewed me / CÉGEP interest) from showing any
-      data to Pro athletes.
+*(all cleared — see **Closed** at the bottom)*
 
 ---
 
@@ -231,3 +225,25 @@ remains gated by existing RLS policies. `loadCounts` in
 now calls `supabase.rpc(...)` instead. Verified live — Marc-Antoine
 shows 3 favoris (was 1) with all 3 test recruiters having favorited
 him.
+
+### [x] `recruiter_athlete_views` table never written
+Closed in commit [`5c2ff54`](../../../commit/5c2ff54). Profile views
+were never landing in the DB — two compounding issues:
+1. The `recordView` useEffect in
+   [`app/recruteur/athletes/[id]/page.tsx`](../app/recruteur/athletes/%5Bid%5D/page.tsx)
+   did fire-and-forget `.upsert(...)` with no `await` and no error
+   capture. React's component lifecycle was likely cancelling the
+   in-flight request before it completed, and any failure was
+   invisible.
+2. A redundant unique constraint was added in migration
+   [`supabase/migrations/20260424100000_recruiter_athlete_views_unique_constraint.sql`](../supabase/migrations/20260424100000_recruiter_athlete_views_unique_constraint.sql)
+   to make the `(recruiter_id, athlete_id, view_date)` dedup
+   explicit at the constraint level (the baseline already had the
+   same unique index at the index level — this just belts-and-braces
+   the upsert's `onConflict` target).
+
+`recordView` now awaits the upsert response and logs any errors via
+`console.error("[recordView] ...")`. Verified live: `test-pro` viewed
+Marc-Antoine's profile, row landed in the DB, and the `count_athlete_views`
+RPC from [`52b9309`](../../../commit/52b9309) surfaces the correct
+view count in the UI.
