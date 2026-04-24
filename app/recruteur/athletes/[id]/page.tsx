@@ -658,11 +658,11 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
     const loadCounts = async () => {
       const supabase = createClient();
       const [favRes, viewRes] = await Promise.all([
-        supabase.from("recruiter_favorites").select("*", { count: "exact", head: true }).eq("athlete_id", id),
-        supabase.from("recruiter_athlete_views").select("*", { count: "exact", head: true }).eq("athlete_id", id),
+        supabase.rpc("count_athlete_favorites", { athlete_uuid: id }),
+        supabase.rpc("count_athlete_views", { athlete_uuid: id }),
       ]);
-      setFavCount(favRes.count ?? 0);
-      setViewCount(viewRes.count ?? 0);
+      setFavCount((favRes.data as number) ?? 0);
+      setViewCount((viewRes.data as number) ?? 0);
     };
     loadCounts();
   }, [id, isFavorited]);
