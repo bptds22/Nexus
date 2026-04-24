@@ -49,15 +49,6 @@ file.
       feature (who viewed me / CÉGEP interest) from showing any
       data to Pro athletes.
 
-- [ ] **Favorites counter on athlete profile shows wrong count.** DB
-      has the correct total (verified by direct `SELECT COUNT(*) FROM
-      recruiter_favorites WHERE athlete_id = …`) but the UI reads from
-      a different source (likely a stale `favCount` state from an
-      earlier fetch, or a client-side aggregate that's off by one).
-      File to audit:
-      [`app/athlete/visibilite/page.tsx`](../app/athlete/visibilite/page.tsx)
-      and the underlying `useAthleteVisibility()` hook.
-
 ---
 
 ## P2 — Observability
@@ -158,3 +149,20 @@ don't auto-promote, and use the correct enum value `DIRECTEUR_INTERIM`
 (replacing the outdated `ADMIN_COACH_INTERIM` string). Trigger binding
 unchanged — still `BEFORE INSERT` on `school_coaches` via
 `trg_first_coach_claim` from the baseline.
+
+### [x] Favorites counter on athlete profile shows wrong count
+Closed in commit [`52b9309`](../../../commit/52b9309). The UI was
+reading from the RLS-scoped direct `.select("*", { count: "exact" })`
+on `recruiter_favorites`, which returned only rows owned by the
+current recruiter (0 or 1) instead of the true total across all
+recruiters. Fixed via two new `SECURITY DEFINER` SQL functions in
+migration
+[`supabase/migrations/20260423210000_count_athlete_favorites_function.sql`](../supabase/migrations/20260423210000_count_athlete_favorites_function.sql):
+`count_athlete_favorites(athlete_uuid UUID) → INTEGER` and
+`count_athlete_views(athlete_uuid UUID) → INTEGER`. Both bypass RLS
+for the aggregate only; row-level privacy (who favorited, who viewed)
+remains gated by existing RLS policies. `loadCounts` in
+[`app/recruteur/athletes/[id]/page.tsx`](../app/recruteur/athletes/%5Bid%5D/page.tsx)
+now calls `supabase.rpc(...)` instead. Verified live — Marc-Antoine
+shows 3 favoris (was 1) with all 3 test recruiters having favorited
+him.
