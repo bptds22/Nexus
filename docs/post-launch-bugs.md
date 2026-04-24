@@ -57,6 +57,35 @@ file.
       Flow implication: only show this option when no `DIRECTEUR` or
       `DIRECTEUR_INTERIM` currently exists for the selected school.
 
+- [ ] **Athlete photo upload doesn't persist to profile.** Athlete
+      fills profile, uploads a photo, UI reports success (or no
+      error), but `photo_url` stays empty and the profile shows
+      placeholder initials. Tried with Kako, couldn't resolve.
+      Repro: log in as athlete, go to
+      [`/athlete/profil`](../app/athlete/profil/page.tsx), click
+      modifier, attempt to upload avatar.
+      Needs investigation:
+      - Does the file actually land in `storage.objects`?
+      - Does `athletes.photo_url` get written?
+      - If written, does the UI read from the right field?
+      - Any storage RLS policies blocking the upload path?
+
+- [ ] **Coach cannot see athletes from their own school.** Coach at
+      a school (e.g., Collège St-Jean-Vianney) cannot see athletes
+      assigned to that same school in their roster. Breaks the core
+      coach workflow: approval, evaluations, rapport d'entraîneur,
+      ratings — all gated behind the coach being able to find the
+      athlete.
+      Repro: create athlete at School X with `coach_id` set to Coach
+      Y's user ID. Log in as Coach Y. Athlete not visible in coach's
+      roster.
+      Investigate in order:
+      1. Is `athletes.coach_id` actually set to Coach Y's user ID?
+      2. Does the coach roster query filter by `coach_id`,
+         `school_id`, or both? Which tables does it join?
+      3. RLS on `athletes` for `COACH` role — what's the SELECT
+         policy?
+
 ## P1 — Data collection
 
 - [ ] **`recruiter_athlete_views` table never written.** 0 rows in
