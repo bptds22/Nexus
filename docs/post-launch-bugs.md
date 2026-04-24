@@ -39,6 +39,24 @@ file.
       Next step: grep both pages for `verified` reads and compare
       sources.
 
+- [ ] **Coach onboarding missing interim-director option.** Step 3 of
+      coach signup ("Qui est le directeur sportif?") shows only two
+      buttons: "C'est moi" and "Inviter quelqu'un." The DB logic also
+      supports a third state — first-claim interim director — where
+      no director exists yet and the signing-up coach is auto-promoted
+      to `DIRECTEUR_INTERIM` by the `first_coach_claim` trigger (fixed
+      in commit [`9719fac`](../../../commit/9719fac)).
+      Current UX leaves users confused: they may not want to claim
+      director responsibility, but there's no director to invite
+      either. They pick one of the two wrong answers and the trigger
+      overrides their choice silently.
+      Needs a third option with explicit language: *"Je ne suis pas
+      le directeur, mais il n'y a pas encore de directeur inscrit. Je
+      deviens directeur par intérim jusqu'à ce qu'un directeur
+      officiel rejoigne l'école."*
+      Flow implication: only show this option when no `DIRECTEUR` or
+      `DIRECTEUR_INTERIM` currently exists for the selected school.
+
 ## P1 — Data collection
 
 - [ ] **`recruiter_athlete_views` table never written.** 0 rows in
