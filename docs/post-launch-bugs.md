@@ -17,12 +17,6 @@ file.
 
 ## P1 — Silent UX failures
 
-- [ ] **Free recruiter message send fails silently.** RLS now rejects
-      the insert (Phase 2a), but [`app/recruteur/messages/nouveau/page.tsx`](../app/recruteur/messages/nouveau/page.tsx)
-      doesn't surface the error or route the user to the upgrade flow.
-      Expected: show an inline upsell toast or a `FeatureGate` wrapping
-      the compose view for Free tier.
-
 - [ ] **Signup errors swallowed client-side.** Both
       [`app/auth/page.tsx`](../app/auth/page.tsx) and
       [`app/auth/pro/page.tsx`](../app/auth/pro/page.tsx) show toasts for
@@ -120,3 +114,14 @@ source-to-destination merge. Fixes all 22 affected CTAs across
 [`app/pour-les-recruteurs/page.tsx`](../app/pour-les-recruteurs/page.tsx),
 and [`app/guide-recrutement/page.tsx`](../app/guide-recrutement/page.tsx)
 without touching any of them.
+
+### [x] Free recruiter message send fails silently
+Closed in commit [`5837c90`](../../../commit/5837c90). Added an
+`ErrorToast` component to
+[`app/recruteur/messages/nouveau/page.tsx`](../app/recruteur/messages/nouveau/page.tsx)
+with an optional `Passer à Pro` CTA linking to `/tarifs`. Both the
+`conversations` and `messages` INSERT handlers now detect tier denials
+(PostgREST code `42501` or RLS keywords in the error message) and
+surface an actionable toast. Side benefit: closed a related latent bug
+where a failing `messages` INSERT would still trigger the success
+toast — success now only fires when both writes land cleanly.
