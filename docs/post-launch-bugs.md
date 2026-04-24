@@ -25,6 +25,20 @@ file.
       `{ error }` destructuring on every secondary write and a
       catch-all try/finally around the flow.
 
+- [ ] **Verified badge inconsistent between search and favoris views.**
+      Same athlete renders with different `isVerified` values across
+      pages — e.g. verified on [`/recruteur/recherche`](../app/recruteur/recherche/page.tsx)
+      but not on [`/recruteur/favoris`](../app/recruteur/favoris/page.tsx),
+      or vice versa. Discovered 2026-04-23 during favorites counter
+      fix verification.
+      Repro: log in as a recruiter, favorite any athlete, compare the
+      verified badge on `/recruteur/recherche` vs `/recruteur/favoris`.
+      Hypothesis: one page reads `athletes.verified` directly, the
+      other reads a stale joined view or a different field. Needs
+      investigation, not fixing yet.
+      Next step: grep both pages for `verified` reads and compare
+      sources.
+
 ## P1 — Data collection
 
 - [ ] **`recruiter_athlete_views` table never written.** 0 rows in
@@ -59,6 +73,19 @@ file.
       rendered` from `app/page.tsx`, `[GrainOverlay] mounted` from the
       editorial system. Strip before public launch. Sweep with
       `grep -rn 'console.log' app/` and decide per-site.
+
+- [ ] **"Pas dans le pipeline" status should tease Pro upgrade for
+      Free users.** On the recruiter athlete profile, the "Mon statut"
+      box renders `"Pas dans le pipeline"` when the current recruiter
+      hasn't added the athlete — but Free recruiters can't add to the
+      pipeline at all (Phase 2a RLS blocks the write past `CONTACTE`
+      and the Free recruiter currently has no UI to insert even the
+      baseline `IDENTIFIE` row from this page). For Free accounts this
+      text is dead; should read something like `"Passe à Pro pour
+      ajouter au pipeline"` with an upgrade CTA.
+      File: [`app/recruteur/athletes/[id]/page.tsx`](../app/recruteur/athletes/%5Bid%5D/page.tsx)
+      around the `Mon statut` block. UX polish — save for the
+      upgrade-prompts pass.
 
 ---
 
