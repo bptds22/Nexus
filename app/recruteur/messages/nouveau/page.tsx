@@ -44,6 +44,46 @@ function SuccessToast({ visible }: { visible: boolean }) {
   );
 }
 
+/* ── Error Toast ────────────────────────────────────────────── */
+
+function ErrorToast({
+  data,
+  onDismiss,
+}: {
+  data: { message: string; showUpgrade: boolean } | null;
+  onDismiss: () => void;
+}) {
+  if (!data) return null;
+  return (
+    <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[100] animate-[slideDown_0.3s_ease-out]">
+      <div className="flex items-center gap-3 bg-[#E63946] text-white px-6 py-3.5 rounded-xl shadow-2xl max-w-[480px]">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
+        </svg>
+        <span className="text-[14px] font-bold flex-1">{data.message}</span>
+        {data.showUpgrade && (
+          <Link
+            href="/tarifs"
+            className="shrink-0 bg-white text-[#E63946] px-3 py-1.5 rounded-lg text-[12px] font-black uppercase tracking-wider hover:bg-white/90 transition-colors"
+          >
+            Passer à Pro
+          </Link>
+        )}
+        <button
+          type="button"
+          onClick={onDismiss}
+          className="shrink-0 text-white/80 hover:text-white transition-colors"
+          aria-label="Fermer"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+            <path d="M18 6L6 18" /><path d="M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /* ── Athlete Combobox ──────────────────────────────────────── */
 
 function AthleteCombobox({
@@ -143,6 +183,10 @@ function NouveauMessageContent() {
   const [selectedAthlete, setSelectedAthlete] = useState<SelectableAthlete | null>(null);
   const [messageBody, setMessageBody] = useState("");
   const [showToast, setShowToast] = useState(false);
+  const [errorToast, setErrorToast] = useState<{
+    message: string;
+    showUpgrade: boolean;
+  } | null>(null);
   const [sending, setSending] = useState(false);
   const [recruiterName, setRecruiterName] = useState({ first: "", last: "", school: "" });
 
@@ -318,7 +362,24 @@ ${recruiterName.first || (profile?.first_name as string) || ""} ${recruiterName.
         .select("id")
         .single();
       console.log("[NEW CONV] result:", { newConv, error: convErr });
-      if (!newConv) { setSending(false); return; }
+
+      if (convErr || !newConv) {
+        // Detect tier-related denials from RLS. PostgREST surfaces these
+        // as code 42501 (insufficient_privilege) or with "permission denied"
+        // / "new row violates row-level security" in the message.
+        const isTierDenial =
+          convErr?.code === "42501" ||
+          /permission denied|row-level security|policy/i.test(convErr?.message ?? "");
+
+        setErrorToast({
+          message: isTierDenial
+            ? "L'envoi de messages nécessite un abonnement Pro."
+            : "Impossible de créer la conversation. Réessaie dans un instant.",
+          showUpgrade: isTierDenial,
+        });
+        setSending(false);
+        return;
+      }
       convId = newConv.id;
     }
 
@@ -329,6 +390,21 @@ ${recruiterName.first || (profile?.first_name as string) || ""} ${recruiterName.
       content: messageBody.trim(),
     }).select("id").single();
     console.log("[Message sent]", { newMsg: sentMsg, error: sendErr });
+
+    if (sendErr || !sentMsg) {
+      const isTierDenial =
+        sendErr?.code === "42501" ||
+        /permission denied|row-level security|policy/i.test(sendErr?.message ?? "");
+
+      setErrorToast({
+        message: isTierDenial
+          ? "L'envoi de messages nécessite un abonnement Pro."
+          : "Impossible d'envoyer le message. Réessaie dans un instant.",
+        showUpgrade: isTierDenial,
+      });
+      setSending(false);
+      return;
+    }
 
     // Update conversation
     await supabase.from("conversations").update({
@@ -345,6 +421,7 @@ ${recruiterName.first || (profile?.first_name as string) || ""} ${recruiterName.
   return (
     <>
       <SuccessToast visible={showToast} />
+      <ErrorToast data={errorToast} onDismiss={() => setErrorToast(null)} />
 
       <div className="px-6 sm:px-10 py-8 max-w-[1280px] mx-auto space-y-6">
         {/* Header */}
