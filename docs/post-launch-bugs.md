@@ -25,13 +25,6 @@ file.
       `{ error }` destructuring on every secondary write and a
       catch-all try/finally around the flow.
 
-- [ ] **`first_coach_claim` trigger references non-existent column.**
-      The trigger body reads `school_registry.director_id` but the
-      `school_registry` table has no such column in the current schema.
-      Trigger likely throws on any claim-related insert. Audit the
-      trigger body, rename to the correct column, or drop if the
-      claim feature is deferred.
-
 ## P1 — Data collection
 
 - [ ] **`recruiter_athlete_views` table never written.** 0 rows in
@@ -125,3 +118,16 @@ with an optional `Passer à Pro` CTA linking to `/tarifs`. Both the
 surface an actionable toast. Side benefit: closed a related latent bug
 where a failing `messages` INSERT would still trigger the success
 toast — success now only fires when both writes land cleanly.
+
+### [x] `first_coach_claim` trigger references non-existent column
+Closed in migration
+[`supabase/migrations/20260423200000_fix_first_coach_claim_trigger.sql`](../supabase/migrations/20260423200000_fix_first_coach_claim_trigger.sql)
+(shipped in commit [`9719fac`](../../../commit/9719fac)). The old
+function body read `school_registry.director_id` — the table had been
+dropped and the column never existed. Rewrote to check existing
+directors via `school_coaches` rows with role `DIRECTEUR` /
+`DIRECTEUR_INTERIM`, guard on `NEW.role = 'COACH'` so PENDING rows
+don't auto-promote, and use the correct enum value `DIRECTEUR_INTERIM`
+(replacing the outdated `ADMIN_COACH_INTERIM` string). Trigger binding
+unchanged — still `BEFORE INSERT` on `school_coaches` via
+`trg_first_coach_claim` from the baseline.
