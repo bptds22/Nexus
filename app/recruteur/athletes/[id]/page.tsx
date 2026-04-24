@@ -603,17 +603,22 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
     loadPipeline();
   }, [id]);
 
-  // Record profile view (fire and forget)
+  // Record profile view — awaits and logs errors. The upsert dedupes
+  // per day via the (recruiter_id, athlete_id, view_date) unique key.
   useEffect(() => {
     const recordView = async () => {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      // Record the view — upsert dedupes per day via the (recruiter_id, athlete_id, view_date) unique key.
-      supabase.from("recruiter_athlete_views").upsert(
-        { recruiter_id: user.id, athlete_id: id, viewed_at: new Date().toISOString() },
-        { onConflict: "recruiter_id,athlete_id,view_date" }
-      );
+      const { error } = await supabase
+        .from("recruiter_athlete_views")
+        .upsert(
+          { recruiter_id: user.id, athlete_id: id, viewed_at: new Date().toISOString() },
+          { onConflict: "recruiter_id,athlete_id,view_date" }
+        );
+      if (error) {
+        console.error("[recordView] failed to write recruiter_athlete_views:", error);
+      }
     };
     recordView();
   }, [id]);
