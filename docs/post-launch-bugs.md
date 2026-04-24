@@ -11,23 +11,6 @@ file.
 
 ## P0 — Affect new user onboarding
 
-- [ ] **`handle_new_auth_user` trigger missing on `auth.users`.** Function
-      exists in the baseline but the trigger that calls it was never
-      created. Every signup produced an `auth.users` row with no paired
-      `public.users` row. Migration
-      [`20260423030000_restore_handle_new_auth_user_trigger.sql`](../supabase/migrations/20260423030000_restore_handle_new_auth_user_trigger.sql)
-      was drafted today — needs to ship in the next migration pass and
-      be verified on the cloud DB.
-
-- [ ] **Athlete signup at `/auth` has redundant inline upsert.**
-      [`app/auth/page.tsx`](../app/auth/page.tsx) L150-157 manually upserts
-      into `public.users` after `supabase.auth.signUp`. Once the
-      `handle_new_auth_user` trigger is live, this upsert is redundant
-      (and hides errors — no `{ error }` check). Migrate to the shared
-      `signUp()` helper in [`lib/supabase/auth.actions.ts`](../lib/supabase/auth.actions.ts),
-      carrying `sport` via `supabase.auth.updateUser({ data: {...} })`
-      after signup.
-
 - [ ] **`/inscription` route is linked from marketing but doesn't exist.**
       Multiple marketing CTAs (landing, persona cards, pour-les-coachs,
       pour-les-recruteurs, tarifs, guide-recrutement) link to
@@ -100,10 +83,33 @@ file.
 
 ## Closeout rule
 
-When an item ships, mark the checkbox and link the closing commit:
+When an item ships, move it to the **Closed** section below with a
+commit SHA and/or file path so the audit trail stays intact. Pattern:
 
 ```md
-- [x] Description — closed in `abc1234`
+### [x] Short title
+Closed in commit `abc1234`. One-line summary of what landed.
 ```
 
 Keep the file; it becomes the Phase 5 → v1.0 delta log.
+
+---
+
+## Closed
+
+### [x] Migrate /auth athlete signup to shared helper
+Closed in commits [`aa56cff`](../../../commit/aa56cff) (helper hardening —
+`extraMetadata` param, defensive `.upsert()`, surfaced errors) and
+[`20158bd`](../../../commit/20158bd) (athlete migration). Inline
+duplicate upsert removed from [`app/auth/page.tsx`](../app/auth/page.tsx);
+signup now goes through [`lib/supabase/auth.actions.ts`](../lib/supabase/auth.actions.ts)
+with `{ sport: selectedSport }` threaded via `extraMetadata`.
+
+### [x] Restore `handle_new_auth_user` trigger on `auth.users`
+Closed in migration
+[`supabase/migrations/20260423030000_restore_handle_new_auth_user_trigger.sql`](../supabase/migrations/20260423030000_restore_handle_new_auth_user_trigger.sql)
+(shipped in commit [`4a60680`](../../../commit/4a60680)). Trigger
+restored with `CREATE OR REPLACE TRIGGER` for idempotent replay.
+Function body already existed in the baseline — only the
+`AFTER INSERT` trigger on `auth.users` was missing. Verified
+end-to-end during Phase 5 manual testing.
