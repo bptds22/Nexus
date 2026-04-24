@@ -86,6 +86,24 @@ file.
       3. RLS on `athletes` for `COACH` role — what's the SELECT
          policy?
 
+- [ ] **Athlete signup writes placeholder email instead of user
+      input.** When creating an athlete profile, the email field in
+      the `athletes` table gets populated with mock/hardcoded test
+      data instead of the actual email the user provided at signup.
+      Real athletes end up with fake emails attached to their
+      profiles.
+      Repro: sign up as a new athlete with a real email. Check the
+      `athletes.email` column — it'll likely be a mock string, not
+      what was typed.
+      Investigate:
+      - What path does the athlete signup take?
+        (`/auth` with `mode=signup`, `role=ATHLETE`)
+      - Where does the `athletes` row get INSERTed — in the trigger,
+        the client, or the onboarding flow?
+      - Grep for hardcoded email patterns (`example.com`, `@test.`,
+        etc.) in the athlete onboarding and `athletes`-table INSERT
+        code.
+
 ## P1 — Data collection
 
 - [ ] **`recruiter_athlete_views` table never written.** 0 rows in
