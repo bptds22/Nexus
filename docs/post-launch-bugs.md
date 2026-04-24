@@ -11,13 +11,7 @@ file.
 
 ## P0 — Affect new user onboarding
 
-- [ ] **`/inscription` route is linked from marketing but doesn't exist.**
-      Multiple marketing CTAs (landing, persona cards, pour-les-coachs,
-      pour-les-recruteurs, tarifs, guide-recrutement) link to
-      `/inscription?role=...`. The actual route is `/auth?mode=signup`.
-      Clicking any of these CTAs hits a 404. Either add a redirect in
-      `next.config.ts`, create an `app/inscription/page.tsx` that
-      forwards to `/auth`, or rewrite all CTAs to the real path.
+*(all cleared — see **Closed** at the bottom)*
 
 ---
 
@@ -113,3 +107,16 @@ restored with `CREATE OR REPLACE TRIGGER` for idempotent replay.
 Function body already existed in the baseline — only the
 `AFTER INSERT` trigger on `auth.users` was missing. Verified
 end-to-end during Phase 5 manual testing.
+
+### [x] `/inscription` 404 from marketing CTAs
+Closed in commit [`785a582`](../../../commit/785a582). Added a single
+redirect rule in [`next.config.ts`](../next.config.ts):
+`/inscription` → `/auth?mode=signup` (307, `permanent: false`). Query
+params (`?role=...`, `?ref=...`) pass through via Next.js's default
+source-to-destination merge. Fixes all 22 affected CTAs across
+[`app/page.tsx`](../app/page.tsx),
+[`app/tarifs/page.tsx`](../app/tarifs/page.tsx),
+[`app/pour-les-coachs/page.tsx`](../app/pour-les-coachs/page.tsx),
+[`app/pour-les-recruteurs/page.tsx`](../app/pour-les-recruteurs/page.tsx),
+and [`app/guide-recrutement/page.tsx`](../app/guide-recrutement/page.tsx)
+without touching any of them.
