@@ -17,13 +17,15 @@ file.
 
 ## P1 — Silent UX failures
 
-- [ ] **Signup errors swallowed client-side.** Both
-      [`app/auth/page.tsx`](../app/auth/page.tsx) and
-      [`app/auth/pro/page.tsx`](../app/auth/pro/page.tsx) show toasts for
-      `error.message` but don't catch DB-layer rejections from the
-      `handle_new_auth_user` trigger or follow-up upserts. Add explicit
-      `{ error }` destructuring on every secondary write and a
-      catch-all try/finally around the flow.
+- [ ] **Signup errors swallowed client-side on `/auth` (athlete path).**
+      [`app/auth/page.tsx`](../app/auth/page.tsx) still shows raw
+      English Supabase auth errors for the brief moment the toast is
+      visible, then auto-dismisses. The `/auth/pro` path was migrated
+      in commit [`ab369ce`](../../../commit/ab369ce) to use the shared
+      `ErrorToast` + `translateAuthError` helper; apply the same
+      template here. Same file also doesn't catch trigger or upsert
+      rejections from the secondary writes inside `auth.actions.signUp`
+      — those currently log to `console.error` only.
 
 - [ ] **Verified badge inconsistent between search and favoris views.**
       Same athlete renders with different `isVerified` values across
@@ -241,6 +243,30 @@ were never landing in the DB — two compounding issues:
 Marc-Antoine's profile, row landed in the DB, and the `count_athlete_views`
 RPC from [`52b9309`](../../../commit/52b9309) surfaces the correct
 view count in the UI.
+
+### [x] Signup errors swallowed client-side on `/auth/pro`
+Closed in commit [`ab369ce`](../../../commit/ab369ce). Three changes
+landed together:
+1. Extracted the inline `ErrorToast` from `messages/nouveau` into a
+   shared component
+   [`components/ui/ErrorToast.tsx`](../components/ui/ErrorToast.tsx) —
+   red top-center pill with optional `Passer à Pro` CTA, dismiss
+   button, no auto-dismiss timer.
+2. Promoted the toast slide-in animation to a globally-scoped
+   `@keyframes toastSlideDown` in
+   [`app/globals.css`](../app/globals.css) (renamed from `slideDown`
+   to avoid collision with the existing reveal-pattern `slideDown`).
+3. Wired the shared `ErrorToast` into
+   [`app/auth/pro/page.tsx`](../app/auth/pro/page.tsx) and added a
+   `translateAuthError(message)` helper covering the 5 most common
+   Supabase auth errors (duplicate email, weak password, invalid
+   email, rate limit, network) with French translations; falls back
+   to original message for unknown errors.
+
+The athlete path (`/auth/page.tsx`) still uses the older pattern —
+tracked separately in the open P1 above. The trigger/upsert error
+swallowing inside `auth.actions.signUp` is also not yet surfaced to
+either signup UI; those still log to `console.error` only.
 
 ### [x] `recruiter_activity_log` 400 on every page load
 Closed in commit [`9434d22`](../../../commit/9434d22). Two compounding
