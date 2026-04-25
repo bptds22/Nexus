@@ -17,20 +17,6 @@ file.
 
 ## P1 — Silent UX failures
 
-- [ ] **Verified badge inconsistent between search and favoris views.**
-      Same athlete renders with different `isVerified` values across
-      pages — e.g. verified on [`/recruteur/recherche`](../app/recruteur/recherche/page.tsx)
-      but not on [`/recruteur/favoris`](../app/recruteur/favoris/page.tsx),
-      or vice versa. Discovered 2026-04-23 during favorites counter
-      fix verification.
-      Repro: log in as a recruiter, favorite any athlete, compare the
-      verified badge on `/recruteur/recherche` vs `/recruteur/favoris`.
-      Hypothesis: one page reads `athletes.verified` directly, the
-      other reads a stale joined view or a different field. Needs
-      investigation, not fixing yet.
-      Next step: grep both pages for `verified` reads and compare
-      sources.
-
 - [ ] **Coach onboarding missing interim-director option.** Step 3 of
       coach signup ("Qui est le directeur sportif?") shows only two
       buttons: "C'est moi" and "Inviter quelqu'un." The DB logic also
@@ -287,6 +273,23 @@ isn't surfaced to either signup UI. If the `handle_new_auth_user`
 trigger ever fails silently, users would complete the auth form and
 hit downstream breakage later. Worth a follow-up pass when someone
 hits that failure mode in testing.
+
+### [x] Verified badge inconsistent between search and favoris views
+Closed in commit [`e1e0a75`](../../../commit/e1e0a75). The recherche
+page applied `isValidationExpired()` from
+[`lib/utils/profileValidation.ts`](../lib/utils/profileValidation.ts)
+to gate the blue verified badge on a fresh `last_profile_validation`
+timestamp; the favoris page was reading only `verified` and ignoring
+freshness. Same athlete rendered as blue on favoris but gray on
+recherche when they had `verified=true` and `last_profile_validation=NULL`.
+Aligned by adding `last_profile_validation` to the favoris athletes
+SELECT, threading `lastValidation` through `FavoriAthlete` + the row
+mapper, and wrapping both render sites (grid card + list row) in an
+IIFE that computes `active = isVerified && !isValidationExpired(...)`.
+The `verifiedOnly` filter still operates on `isVerified` alone — it's
+"show athletes who completed verification" (a permanent attribute),
+distinct from "show athletes whose validation is currently fresh"
+(a time-bounded display state).
 
 ### [x] `recruiter_activity_log` 400 on every page load
 Closed in commit [`9434d22`](../../../commit/9434d22). Two compounding
