@@ -142,7 +142,7 @@ export default function RecruiterSidebar({ mobileOpen, onClose }: RecruiterSideb
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Unread messages: conversations where recruiter has unread replies
+      // Unread messages: messages.read_at IS NULL means not yet read
       const { data: convs } = await supabase
         .from("conversations")
         .select("id")
@@ -155,11 +155,11 @@ export default function RecruiterSidebar({ mobileOpen, onClose }: RecruiterSideb
           .select("*", { count: "exact", head: true })
           .in("conversation_id", convIds)
           .neq("sender_id", user.id)
-          .eq("is_read", false);
+          .is("read_at", null);
         setMsgBadge(count ?? 0);
       }
 
-      // Unread activities
+      // Unread activities — auto-marked as read when user visits /recruteur/activites
       const { count: actCount } = await supabase
         .from("recruiter_activity_log")
         .select("*", { count: "exact", head: true })

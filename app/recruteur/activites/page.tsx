@@ -48,6 +48,27 @@ export default function RecruteurActivitesPage() {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Mark all of this recruiter's unread activity rows as read when they
+  // land on this page. Matches the Pattern 1 decision baked into
+  // migration 20260424110000 — visiting the page is the read signal;
+  // no per-row click tracking. Clears the sidebar badge.
+  useEffect(() => {
+    const markAllAsRead = async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { error } = await supabase
+        .from("recruiter_activity_log")
+        .update({ is_read: true })
+        .eq("recruiter_id", user.id)
+        .eq("is_read", false);
+      if (error) {
+        console.error("[activites markAsRead] failed to clear unread:", error);
+      }
+    };
+    markAllAsRead();
+  }, []);
+
   useEffect(() => {
     async function load() {
       const supabase = createClient();
@@ -57,7 +78,7 @@ export default function RecruteurActivitesPage() {
       // Try recruiter_activity_log first
       const { data: logData, error: logErr } = await supabase
         .from("recruiter_activity_log")
-        .select("id, action_type, details, read, created_at, athlete_id, recruiter_id")
+        .select("id, action_type, details, is_read, created_at, athlete_id, recruiter_id")
         .eq("recruiter_id", user.id)
         .order("created_at", { ascending: false })
         .limit(50);
@@ -119,7 +140,7 @@ export default function RecruteurActivitesPage() {
             type: ACTION_TO_TYPE[actionType] || "profile_viewed",
             portal: "recruiter" as const,
             timestamp: log.created_at,
-            isRead: log.read || false,
+            isRead: log.is_read || false,
             athleteId: log.athlete_id || undefined,
             athleteName: athleteName || undefined,
             athletePosition: athletePos || undefined,
