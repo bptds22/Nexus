@@ -7,6 +7,7 @@ import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
 import type { GlobalRecruitmentStatus } from "@/lib/types/models";
 import NxIcon from "@/components/ui/NxIcon";
 import { useSubscription } from "@/lib/hooks/useSubscription";
+import { isValidationExpired } from "@/lib/utils/profileValidation";
 
 /* ═══════════════════════════════════════════════════════════════
    Mes Favoris — Grid/List view with filters
@@ -26,6 +27,7 @@ interface FavoriAthlete {
   graduationYear: number;
   stars: number;
   isVerified: boolean;
+  lastValidation?: string | null;
   hasVideo: boolean;
   heightWeight: string;
   favoritedAt: string;
@@ -58,10 +60,18 @@ function FavoriGridCard({ a, onUnfavorite }: { a: FavoriAthlete; onUnfavorite: (
 
         {/* Top left — verified + unfavorite */}
         <div className="absolute top-3 left-3 z-10 flex items-center gap-2">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill={a.isVerified ? "#3B82F6" : "#4a4d56"} stroke="none">
-            <circle cx="12" cy="12" r="10" />
-            <path d="M9 12l2 2 4-4" stroke={a.isVerified ? "#fff" : "#6b7280"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-          </svg>
+          {(() => {
+            const active = a.isVerified && !isValidationExpired({
+              verified: !!a.isVerified,
+              last_profile_validation: a.lastValidation ?? null,
+            });
+            return (
+              <svg width="28" height="28" viewBox="0 0 24 24" fill={active ? "#3B82F6" : "#4a4d56"} stroke="none">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M9 12l2 2 4-4" stroke={active ? "#fff" : "#6b7280"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+              </svg>
+            );
+          })()}
           {a.favCount > 1 && (
             <span className="flex items-center gap-1 bg-black/50 backdrop-blur-sm rounded-full px-2 py-0.5">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="#E63946" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" /></svg>
@@ -158,10 +168,18 @@ function FavoriListRow({ a, onUnfavorite }: { a: FavoriAthlete; onUnfavorite: (i
           )}
         </div>
         <div className="absolute -top-1 -right-1 z-10">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill={a.isVerified ? "#3B82F6" : "#4a4d56"} stroke="none">
-            <circle cx="12" cy="12" r="10" />
-            <path d="M9 12l2 2 4-4" stroke={a.isVerified ? "#fff" : "#6b7280"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-          </svg>
+          {(() => {
+            const active = a.isVerified && !isValidationExpired({
+              verified: !!a.isVerified,
+              last_profile_validation: a.lastValidation ?? null,
+            });
+            return (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill={active ? "#3B82F6" : "#4a4d56"} stroke="none">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M9 12l2 2 4-4" stroke={active ? "#fff" : "#6b7280"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+              </svg>
+            );
+          })()}
         </div>
       </div>
 
@@ -257,7 +275,7 @@ function FavorisContent() {
       .select(`
         id, athlete_id, created_at,
         athletes!athlete_id(
-          id, first_name, last_name, photo_url, verified,
+          id, first_name, last_name, photo_url, verified, last_profile_validation,
           video_faits_saillants_url, annee_diplomation,
           cote_globale_entraineur, numero_jersey, taille_pieds, taille_pouces, poids_lbs,
           recruitment_status, committed_school_id, open_to_offers,
@@ -337,6 +355,7 @@ function FavorisContent() {
         graduationYear: (a?.annee_diplomation as number) || 0,
         stars: (eval0?.cote_globale as number) ?? (a?.cote_globale_entraineur as number) ?? 0,
         isVerified: !!(a?.verified),
+        lastValidation: (a?.last_profile_validation as string) || null,
         hasVideo: !!(a?.video_faits_saillants_url),
         heightWeight: hwParts.join(" · "),
         favoritedAt: (f.created_at as string) || "",
