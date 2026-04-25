@@ -6,6 +6,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
 import StarRating from "@/components/ui/StarRating";
+import ErrorToast from "@/components/ui/ErrorToast";
 import type { GlobalRecruitmentStatus } from "@/lib/types/models";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -33,52 +34,12 @@ interface SelectableAthlete {
 function SuccessToast({ visible }: { visible: boolean }) {
   if (!visible) return null;
   return (
-    <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[100] animate-[slideDown_0.3s_ease-out]">
+    <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[100] animate-[toastSlideDown_0.3s_ease-out]">
       <div className="flex items-center gap-3 bg-[#22C55E] text-white px-6 py-3.5 rounded-xl shadow-2xl">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
           <path d="M22 11.08V12a10 10 0 11-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" />
         </svg>
         <span className="text-[14px] font-bold">Message envoyé avec succès!</span>
-      </div>
-    </div>
-  );
-}
-
-/* ── Error Toast ────────────────────────────────────────────── */
-
-function ErrorToast({
-  data,
-  onDismiss,
-}: {
-  data: { message: string; showUpgrade: boolean } | null;
-  onDismiss: () => void;
-}) {
-  if (!data) return null;
-  return (
-    <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[100] animate-[slideDown_0.3s_ease-out]">
-      <div className="flex items-center gap-3 bg-[#E63946] text-white px-6 py-3.5 rounded-xl shadow-2xl max-w-[480px]">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
-        </svg>
-        <span className="text-[14px] font-bold flex-1">{data.message}</span>
-        {data.showUpgrade && (
-          <Link
-            href="/tarifs"
-            className="shrink-0 bg-white text-[#E63946] px-3 py-1.5 rounded-lg text-[12px] font-black uppercase tracking-wider hover:bg-white/90 transition-colors"
-          >
-            Passer à Pro
-          </Link>
-        )}
-        <button
-          type="button"
-          onClick={onDismiss}
-          className="shrink-0 text-white/80 hover:text-white transition-colors"
-          aria-label="Fermer"
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-            <path d="M18 6L6 18" /><path d="M6 6l12 12" />
-          </svg>
-        </button>
       </div>
     </div>
   );
@@ -544,13 +505,6 @@ ${recruiterName.first || (profile?.first_name as string) || ""} ${recruiterName.
           </div>
         </div>
       </div>
-
-      <style jsx>{`
-        @keyframes slideDown {
-          from { opacity: 0; transform: translate(-50%, -20px); }
-          to { opacity: 1; transform: translate(-50%, 0); }
-        }
-      `}</style>
     </>
   );
 }

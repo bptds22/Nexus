@@ -5,6 +5,7 @@ import NexusLogo from "@/components/ui/NexusLogo";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import PlaybookBackground from "@/app/components/PlaybookBackground";
+import ErrorToast, { type ErrorToastData } from "@/components/ui/ErrorToast";
 
 /* ─────────────────────────────────────────────────────────────────
    Nexus — Pro Signup (Coach / Recruiter / Coordinator)
@@ -56,6 +57,31 @@ const CTA_LABELS: Record<ProRole, string> = {
   ligue_civile: "Créer mon compte",
 };
 
+/**
+ * Translate Supabase auth error messages from English to French.
+ * Falls back to the original message if no mapping is found —
+ * better to show technical English than nothing at all.
+ */
+function translateAuthError(message: string): string {
+  const lowered = message.toLowerCase();
+  if (lowered.includes("user already registered") || lowered.includes("already exists")) {
+    return "Cet email est déjà utilisé. Connecte-toi ou utilise un autre email.";
+  }
+  if (lowered.includes("password") && lowered.includes("6 characters")) {
+    return "Le mot de passe doit contenir au moins 6 caractères.";
+  }
+  if (lowered.includes("invalid email") || lowered.includes("email address")) {
+    return "Adresse email invalide.";
+  }
+  if (lowered.includes("rate limit") || lowered.includes("too many")) {
+    return "Trop de tentatives. Attends quelques minutes avant de réessayer.";
+  }
+  if (lowered.includes("network") || lowered.includes("fetch")) {
+    return "Erreur de connexion. Vérifie ta connexion internet et réessaie.";
+  }
+  return message;  // Fallback: show original
+}
+
 
 export default function ProSignupPage() {
   const router = useRouter();
@@ -69,7 +95,7 @@ export default function ProSignupPage() {
   const [showConfirmPwd, setShowConfirmPwd] = useState(false);
   const [shakeFields, setShakeFields] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
+  const [errorToast, setErrorToast] = useState<ErrorToastData | null>(null);
   const [consentPolicy, setConsentPolicy] = useState(false);
   const [consentData, setConsentData] = useState(false);
   const [consentMarketing, setConsentMarketing] = useState(false);
@@ -101,8 +127,7 @@ export default function ProSignupPage() {
     const { error } = await signUp(email, password, role, firstName, lastName);
 
     if (error) {
-      setToast(error.message);
-      setTimeout(() => setToast(null), 4000);
+      setErrorToast({ message: translateAuthError(error.message), showUpgrade: false });
       return;
     }
 
@@ -113,12 +138,7 @@ export default function ProSignupPage() {
     <div className="hero-playbook bg-[#111317] min-h-screen flex flex-col">
       <PlaybookBackground />
 
-      {toast && (
-        <div className="fixed top-6 right-6 z-[200] bg-[#1A1D24] border border-white/10 rounded-lg px-5 py-3 text-sm text-white shadow-lg flex items-center gap-3 animate-slide-in">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#EAB308" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
-          {toast}
-        </div>
-      )}
+      <ErrorToast data={errorToast} onDismiss={() => setErrorToast(null)} />
 
       {/* Logo */}
       <div className="relative z-10 pt-8 pb-4 flex justify-center">

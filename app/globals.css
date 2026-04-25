@@ -899,3 +899,20 @@ body.light-mode .nx-social-auth-btn:hover {
   pointer-events: none;
   z-index: 1;
 }
+
+/* ── Toast animations (used by ErrorToast and SuccessToast) ──
+   Centered toasts are positioned with `left-1/2 -translate-x-1/2`,
+   so the entrance animation must preserve the X-translation while
+   sliding in vertically. Distinct from the global `slideDown`
+   keyframe higher in this file (used by collapsible-reveal panels)
+   to avoid name collision. */
+@keyframes toastSlideDown {
+  from {
+    transform: translate(-50%, -20px);
+    opacity: 0;
+  }
+  to {
+    transform: translate(-50%, 0);
+    opacity: 1;
+  }
+}
