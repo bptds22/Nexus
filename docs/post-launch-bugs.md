@@ -112,12 +112,6 @@ file.
 
 ## P2 — Observability
 
-- [ ] **`recruiter_activity_log` query returns HTTP 400 on dashboard.**
-      Appears in the browser network tab on the recruiter dashboard.
-      Likely a missing column, bad FK hint, or ambiguous join in a
-      PostgREST `.select(...)`. File:
-      [`app/recruteur/tableau-de-bord/page.tsx`](../app/recruteur/tableau-de-bord/page.tsx).
-
 - [ ] **Debug `console.log` noise in production.** Examples: `Athletes
       loaded: 1 null` from the recherche page, `[Homepage] Hero section
       rendered` from `app/page.tsx`, `[GrainOverlay] mounted` from the
@@ -247,3 +241,36 @@ were never landing in the DB — two compounding issues:
 Marc-Antoine's profile, row landed in the DB, and the `count_athlete_views`
 RPC from [`52b9309`](../../../commit/52b9309) surfaces the correct
 view count in the UI.
+
+### [x] `recruiter_activity_log` 400 on every page load
+Closed in commit [`9434d22`](../../../commit/9434d22). Two compounding
+silent 400s broke the sidebar badge system:
+1. The sidebar's activity-log badge query in
+   [`app/recruteur/_components/RecruiterSidebar.tsx`](../app/recruteur/_components/RecruiterSidebar.tsx)
+   filtered `.eq("is_read", false)` against `recruiter_activity_log`
+   — column did not exist.
+2. The same file's messages badge query filtered `.eq("is_read",
+   false)` against `messages` — column there is named `read_at`
+   (timestamp), not `is_read`.
+
+Migration
+[`supabase/migrations/20260424110000_recruiter_activity_log_is_read.sql`](../supabase/migrations/20260424110000_recruiter_activity_log_is_read.sql)
+adds the `is_read` column to `recruiter_activity_log` (default
+`false`, all pre-existing test rows marked `true` for clean slate)
+plus a partial index on `(recruiter_id) WHERE is_read = false` for
+the badge-count hot path. Sidebar messages query now uses
+`.is("read_at", null)`; activity-log query stays on
+`.eq("is_read", false)` against the now-real column.
+
+Activities page
+([`app/recruteur/activites/page.tsx`](../app/recruteur/activites/page.tsx))
+got two changes in the same commit:
+- New `markAllAsRead` `useEffect` clears the unread badge for the
+  current user when they land on the page (Pattern 1: visit-as-read
+  signal, no per-row tracking).
+- Pre-existing column rename in `load()` — `.select(...read...)` →
+  `.select(...is_read...)` — was also throwing 400 and rendering an
+  empty feed; fixed alongside.
+
+Verified live: sidebar badge counts unread, visiting `/recruteur/activites`
+clears badge to 0 on return.
