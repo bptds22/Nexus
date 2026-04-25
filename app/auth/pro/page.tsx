@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import PlaybookBackground from "@/app/components/PlaybookBackground";
 import ErrorToast, { type ErrorToastData } from "@/components/ui/ErrorToast";
+import { translateAuthError } from "@/lib/utils/translateAuthError";
 
 /* ─────────────────────────────────────────────────────────────────
    Nexus — Pro Signup (Coach / Recruiter / Coordinator)
@@ -56,32 +57,6 @@ const CTA_LABELS: Record<ProRole, string> = {
   collegial: "Créer mon compte recruteur",
   ligue_civile: "Créer mon compte",
 };
-
-/**
- * Translate Supabase auth error messages from English to French.
- * Falls back to the original message if no mapping is found —
- * better to show technical English than nothing at all.
- */
-function translateAuthError(message: string): string {
-  const lowered = message.toLowerCase();
-  if (lowered.includes("user already registered") || lowered.includes("already exists")) {
-    return "Cet email est déjà utilisé. Connecte-toi ou utilise un autre email.";
-  }
-  if (lowered.includes("password") && lowered.includes("6 characters")) {
-    return "Le mot de passe doit contenir au moins 6 caractères.";
-  }
-  if (lowered.includes("invalid email") || lowered.includes("email address")) {
-    return "Adresse email invalide.";
-  }
-  if (lowered.includes("rate limit") || lowered.includes("too many")) {
-    return "Trop de tentatives. Attends quelques minutes avant de réessayer.";
-  }
-  if (lowered.includes("network") || lowered.includes("fetch")) {
-    return "Erreur de connexion. Vérifie ta connexion internet et réessaie.";
-  }
-  return message;  // Fallback: show original
-}
-
 
 export default function ProSignupPage() {
   const router = useRouter();

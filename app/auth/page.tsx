@@ -7,6 +7,8 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import PlaybookBackground from "../components/PlaybookBackground";
 import MarketingNav from "@/components/marketing/MarketingNav";
+import ErrorToast, { type ErrorToastData } from "@/components/ui/ErrorToast";
+import { translateAuthError } from "@/lib/utils/translateAuthError";
 
 /* ─────────────────────────────────────────────────────────────────
    Nexus — Auth Page (Login / Sign Up)
@@ -55,6 +57,7 @@ function AuthContent() {
   const [mode, setMode] = useState<"login" | "signup">(initialMode);
   const fadeRef = useRef<HTMLDivElement>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [errorToast, setErrorToast] = useState<ErrorToastData | null>(null);
 
   /* ── Referral code capture ── */
   const [referralCode, setReferralCode] = useState<string | null>(null);
@@ -135,8 +138,7 @@ function AuthContent() {
     );
 
     if (error) {
-      setToast(error.message);
-      setTimeout(() => setToast(null), 4000);
+      setErrorToast({ message: translateAuthError(error.message), showUpgrade: false });
       setLoading(false);
       return;
     }
@@ -166,8 +168,7 @@ function AuthContent() {
     });
 
     if (error) {
-      setToast(error.message);
-      setTimeout(() => setToast(null), 4000);
+      setErrorToast({ message: translateAuthError(error.message), showUpgrade: false });
       setLoading(false);
       return;
     }
@@ -243,6 +244,7 @@ function AuthContent() {
       <PlaybookBackground />
 
       {toast && <Toast message={toast} onClose={() => setToast(null)} />}
+      <ErrorToast data={errorToast} onDismiss={() => setErrorToast(null)} />
 
       <MarketingNav />
 
