@@ -17,16 +17,6 @@ file.
 
 ## P1 — Silent UX failures
 
-- [ ] **Signup errors swallowed client-side on `/auth` (athlete path).**
-      [`app/auth/page.tsx`](../app/auth/page.tsx) still shows raw
-      English Supabase auth errors for the brief moment the toast is
-      visible, then auto-dismisses. The `/auth/pro` path was migrated
-      in commit [`ab369ce`](../../../commit/ab369ce) to use the shared
-      `ErrorToast` + `translateAuthError` helper; apply the same
-      template here. Same file also doesn't catch trigger or upsert
-      rejections from the secondary writes inside `auth.actions.signUp`
-      — those currently log to `console.error` only.
-
 - [ ] **Verified badge inconsistent between search and favoris views.**
       Same athlete renders with different `isVerified` values across
       pages — e.g. verified on [`/recruteur/recherche`](../app/recruteur/recherche/page.tsx)
@@ -87,6 +77,24 @@ file.
          `school_id`, or both? Which tables does it join?
       3. RLS on `athletes` for `COACH` role — what's the SELECT
          policy?
+
+- [ ] **Coach card design inconsistent between compose page and
+      thread page.** On
+      [`/recruteur/messages/nouveau`](../app/recruteur/messages/nouveau/page.tsx)
+      (compose), the right-rail "Coach destinataire" card shows only
+      the school name — no coach name, no contact info. On
+      `/recruteur/messages/<conv-id>` (thread), the same card area
+      shows full info: name, email, "Laisser un avis" CTA.
+      Both tiers should see the same coach card design (Pro
+      version with full info). The Free-vs-Pro distinction is purely
+      about whether the message actually sends — not about what
+      coach info is visible. Fix: replace the compose page's minimal
+      coach card with the same component/markup the thread page
+      uses. Free tier still gets blocked at send time (existing
+      behavior); the visual experience is uniform.
+      Repro: log in as `test-free` or `test-pro`, click "Nouveau
+      message", select Alexandre Bouchard. Compare right rail to
+      any existing conversation thread.
 
 - [ ] **Athlete signup writes placeholder email instead of user
       input.** When creating an athlete profile, the email field in
@@ -244,9 +252,10 @@ Marc-Antoine's profile, row landed in the DB, and the `count_athlete_views`
 RPC from [`52b9309`](../../../commit/52b9309) surfaces the correct
 view count in the UI.
 
-### [x] Signup errors swallowed client-side on `/auth/pro`
-Closed in commit [`ab369ce`](../../../commit/ab369ce). Three changes
-landed together:
+### [x] Signup errors swallowed client-side (both `/auth` and `/auth/pro`)
+Closed in commits [`ab369ce`](../../../commit/ab369ce) (`/auth/pro`)
+and [`5a697d0`](../../../commit/5a697d0) (`/auth` athlete signup +
+login). Four changes spanning the two commits:
 1. Extracted the inline `ErrorToast` from `messages/nouveau` into a
    shared component
    [`components/ui/ErrorToast.tsx`](../components/ui/ErrorToast.tsx) —
@@ -256,17 +265,28 @@ landed together:
    `@keyframes toastSlideDown` in
    [`app/globals.css`](../app/globals.css) (renamed from `slideDown`
    to avoid collision with the existing reveal-pattern `slideDown`).
-3. Wired the shared `ErrorToast` into
-   [`app/auth/pro/page.tsx`](../app/auth/pro/page.tsx) and added a
-   `translateAuthError(message)` helper covering the 5 most common
-   Supabase auth errors (duplicate email, weak password, invalid
-   email, rate limit, network) with French translations; falls back
-   to original message for unknown errors.
+3. Extracted `translateAuthError(message)` to
+   [`lib/utils/translateAuthError.ts`](../lib/utils/translateAuthError.ts)
+   with 7 translation rules covering the most common Supabase auth
+   errors (duplicate email, weak password, invalid email, invalid
+   login credentials, rate limit, network, email not confirmed);
+   falls back to the original message for unknown errors.
+4. Wired the shared `ErrorToast` + `translateAuthError` helper into
+   both [`app/auth/page.tsx`](../app/auth/page.tsx) (athlete signup +
+   login handlers) and
+   [`app/auth/pro/page.tsx`](../app/auth/pro/page.tsx) (pro signup
+   handler). The local `Toast` component in `/auth` was kept intact
+   for informational messages (`socialToast`, "Mot de passe oublié?"
+   stub) — those aren't errors and the yellow auto-dismissing pill
+   is correct for them.
 
-The athlete path (`/auth/page.tsx`) still uses the older pattern —
-tracked separately in the open P1 above. The trigger/upsert error
-swallowing inside `auth.actions.signUp` is also not yet surfaced to
-either signup UI; those still log to `console.error` only.
+Remaining gap (not in this P1 scope, still logged as a separate
+concern in the commit trail): the trigger/upsert error swallowing
+inside `auth.actions.signUp` still logs to `console.error` only and
+isn't surfaced to either signup UI. If the `handle_new_auth_user`
+trigger ever fails silently, users would complete the auth form and
+hit downstream breakage later. Worth a follow-up pass when someone
+hits that failure mode in testing.
 
 ### [x] `recruiter_activity_log` 400 on every page load
 Closed in commit [`9434d22`](../../../commit/9434d22). Two compounding
