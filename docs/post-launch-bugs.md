@@ -157,6 +157,34 @@ file.
 
 ---
 
+## P3 — Latent / future work
+
+- [ ] **Existing Studio-uploaded photos use signed URLs with 7-day
+      expiration.** Some athlete photos in the database use signed
+      storage URLs (`/storage/v1/object/sign/Ath Photos/...?token=...`)
+      with ~7-day expiration tokens. These photos were uploaded via
+      Supabase Studio (not the app), and will silently break when
+      their tokens expire.
+      Examples discovered 2026-04-26:
+      - Alexandre Bouchard (`a1c06999-c2f9-4959-b553-cb9dbcaaa923`)
+      The `Ath Photos` bucket is now public (commit
+      [`982bbb5`](../../../commit/982bbb5)), so future uploads via
+      the app use long-lived public URLs. Existing signed-URL photos
+      need one of:
+      - Manual re-upload (small data set so far, manageable)
+      - Migration script that downloads existing files and re-uploads
+        them as public URLs
+      - Accept they'll break and re-upload on demand
+      Decision needed before token expiration. Track which athletes
+      have signed URLs vs public URLs:
+      ```sql
+      SELECT id, first_name, last_name, photo_url
+      FROM athletes
+      WHERE photo_url LIKE '%/sign/%';
+      ```
+
+---
+
 ## Closeout rule
 
 When an item ships, move it to the **Closed** section below with a
