@@ -33,6 +33,14 @@ export default function TableauDeBordPage() {
   const [hotAthletes, setHotAthletes] = useState<HotAthlete[]>([]);
   const [activities, setActivities] = useState<ActivityEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isInterimDirector, setIsInterimDirector] = useState(false);
+  const [interimSchoolName, setInterimSchoolName] = useState("");
+  const [demotionNotifications, setDemotionNotifications] = useState<{
+    id: string;
+    title: string;
+    message: string | null;
+    metadata: Record<string, unknown> | null;
+  }[]>([]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -57,6 +65,39 @@ export default function TableauDeBordPage() {
         const school = Array.isArray(schoolRaw) ? schoolRaw[0] : schoolRaw;
         const schoolObj = school as { name?: string } | null;
         setSchoolName(schoolObj?.name || "");
+      }
+
+      // Check if coach is currently DIRECTEUR_INTERIM at any school
+      const { data: interimRows } = await supabase
+        .from("school_coaches")
+        .select("school_id, schools!school_id(name)")
+        .eq("coach_id", user.id)
+        .eq("role", "DIRECTEUR_INTERIM");
+
+      if (interimRows && interimRows.length > 0) {
+        setIsInterimDirector(true);
+        const firstSchool = Array.isArray(interimRows[0].schools)
+          ? interimRows[0].schools[0]
+          : interimRows[0].schools;
+        setInterimSchoolName((firstSchool as { name?: string } | null)?.name || "");
+      }
+
+      // Load unread INTERIM_DEMOTED notifications
+      const { data: demotions } = await supabase
+        .from("coach_notifications")
+        .select("id, title, message, metadata")
+        .eq("coach_id", user.id)
+        .eq("type", "INTERIM_DEMOTED")
+        .eq("read", false)
+        .order("created_at", { ascending: false });
+
+      if (demotions && demotions.length > 0) {
+        setDemotionNotifications(demotions.map((d) => ({
+          id: d.id as string,
+          title: d.title as string,
+          message: (d.message as string) || null,
+          metadata: (d.metadata as Record<string, unknown>) || null,
+        })));
       }
 
       // Get all coach's athletes (active)
@@ -321,6 +362,19 @@ export default function TableauDeBordPage() {
     load();
   }, []);
 
+  async function dismissDemotion(notificationId: string) {
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("coach_notifications")
+      .update({ read: true })
+      .eq("id", notificationId);
+    if (error) {
+      console.error("[Dashboard] dismiss failed:", error);
+      return;
+    }
+    setDemotionNotifications((prev) => prev.filter((n) => n.id !== notificationId));
+  }
+
   return (
     <div className="px-6 sm:px-10 py-8 max-w-[1280px] mx-auto space-y-8">
 
@@ -337,6 +391,61 @@ export default function TableauDeBordPage() {
         </p>
         <p className="text-[12px] text-[#6b7280] mt-0.5 capitalize">{frenchDate()}</p>
       </div>
+
+      {/* Interim director status (persistent while role is held) */}
+      {isInterimDirector && (
+        <div className="rounded-xl border border-[#6B7280]/30 bg-[#6B7280]/[0.06] px-5 py-4 flex items-start gap-3">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5">
+            <circle cx="12" cy="12" r="10" />
+            <polyline points="12 6 12 12 16 14" />
+          </svg>
+          <div className="flex-1">
+            <p className="text-[14px] font-bold text-[#c8c8cc]">
+              Tu es directeur sportif intérimaire{interimSchoolName ? ` de ${interimSchoolName}` : ""}
+            </p>
+            <p className="text-[13px] text-[#9CA3AF] mt-0.5 leading-relaxed">
+              Tu as les pleins pouvoirs administratifs jusqu&apos;à l&apos;arrivée d&apos;un directeur permanent. Si un directeur officiel s&apos;inscrit et choisit «&nbsp;C&apos;est moi&nbsp;», ton rôle sera automatiquement ramené à entraîneur.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Demotion notification — dismissible */}
+      {demotionNotifications.map((n) => {
+        return (
+          <div
+            key={n.id}
+            className="rounded-xl border border-[#F59E0B]/25 bg-[#F59E0B]/[0.06] px-5 py-4 flex items-start gap-3"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+              <line x1="12" y1="9" x2="12" y2="13" />
+              <line x1="12" y1="17" x2="12.01" y2="17" />
+            </svg>
+            <div className="flex-1">
+              <p className="text-[14px] font-bold text-[#F59E0B]">
+                {n.title}
+              </p>
+              {n.message && (
+                <p className="text-[13px] text-[#9CA3AF] mt-0.5 leading-relaxed">
+                  {n.message}
+                </p>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => dismissDemotion(n.id)}
+              aria-label="Fermer"
+              className="shrink-0 text-[#9CA3AF] hover:text-white transition-colors"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <path d="M18 6L6 18" />
+                <path d="M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        );
+      })}
 
       {/* Zone 1: Action Bar */}
       <ActionBar data={actionBar} />
