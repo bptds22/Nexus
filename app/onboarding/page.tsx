@@ -630,7 +630,7 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
     ? (user.institution as Record<string, string>)?.name || "ton organisation"
     : "ton organisation";
 
-  const [choice, setChoice] = useState<"self" | "invite" | "">("");
+  const [choice, setChoice] = useState<"self" | "invite" | "interim" | "">("");
   const [selfEmail, setSelfEmail] = useState(user.email || "");
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteFirstName, setInviteFirstName] = useState("");
@@ -653,6 +653,12 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
         [typeKey]: "owner",
         pending_director_invite: { email: inviteEmail, firstName: inviteFirstName, lastName: inviteLastName, message: inviteMessage, sent_at: new Date().toISOString(), type: isCegep ? "cegep" : type },
       });
+    } else if (choice === "interim") {
+      save({
+        [adminKey]: true,
+        [coachKey]: true,
+        [typeKey]: "interim",
+      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [choice, selfEmail, inviteEmail, inviteFirstName, inviteLastName, inviteMessage]);
@@ -666,7 +672,7 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className={`grid grid-cols-1 gap-4 ${type === "school" ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>
         {/* Card 1: C'EST MOI */}
         <button
           type="button"
@@ -704,6 +710,28 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
           <span className="font-head font-black text-[13px] uppercase tracking-[0.1em] text-white">Inviter quelqu&apos;un</span>
           <span className="text-[11px] text-[#6B7280] leading-snug">J&apos;enverrai une invitation au {roleLabel}</span>
         </button>
+
+        {/* Card 3: JE SERAI INTÉRIMAIRE — school coaches only */}
+        {type === "school" && (
+          <button
+            type="button"
+            onClick={() => setChoice("interim")}
+            className={`flex flex-col items-center gap-3 p-5 rounded-xl border transition-all text-center ${
+              choice === "interim"
+                ? "border-[#E63946] bg-[rgba(230,57,70,0.08)]"
+                : "border-white/10 hover:border-white/20"
+            }`}
+          >
+            <div className={`w-12 h-12 rounded-full flex items-center justify-center ${choice === "interim" ? "bg-[#6B7280]/20" : "bg-[#1A1D24]"}`}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
+            </div>
+            <span className="font-head font-black text-[13px] uppercase tracking-[0.1em] text-white">Je serai intérimaire</span>
+            <span className="text-[11px] text-[#6B7280] leading-snug">Aucun directeur sportif n&apos;est en place pour l&apos;instant — je vais assumer ce rôle temporairement</span>
+          </button>
+        )}
       </div>
 
       {/* C'EST MOI expanded */}
@@ -746,6 +774,27 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
           <p className="text-[12px] text-[#9CA3AF] leading-relaxed">
             Le {roleLabel} recevra un lien pour créer son compte gratuit. En attendant, tu seras temporairement Admin {isCegep ? "CÉGEP" : isLeague ? "Ligue" : "École"}.
           </p>
+        </div>
+      )}
+
+      {/* INTÉRIMAIRE expanded */}
+      {choice === "interim" && type === "school" && (
+        <div className="animate-fade-slide-down bg-[#111317]/60 rounded-xl p-5 border border-white/5">
+          <div className="flex items-start gap-3">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            <div>
+              <p className="text-[12px] text-[#c8c8cc] leading-relaxed font-bold">
+                Tu seras Directeur intérimaire jusqu&apos;à l&apos;arrivée d&apos;un directeur permanent.
+              </p>
+              <p className="text-[11px] text-[#9CA3AF] leading-relaxed mt-2">
+                Tu auras les pleins pouvoirs administratifs (gérer les autres entraîneurs, voir les stats de l&apos;école, approuver les profils). Si un directeur officiel s&apos;inscrit plus tard et choisit «&nbsp;C&apos;est moi&nbsp;», ton rôle sera automatiquement ramené à entraîneur et tu seras notifié.
+              </p>
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -98,6 +98,29 @@ file.
           processus" to the locked section
       Decision needed: confirm tier gating once and align everywhere.
 
+- [ ] **Onboarding wizard allows skipping school selection.** In the
+      shared onboarding wizard
+      ([`app/onboarding/page.tsx`](../app/onboarding/page.tsx)),
+      users can advance past steps without selecting a school in
+      some flows. The result is users landing in the platform with
+      `school_id = NULL`, which breaks downstream queries (no
+      athletes visible, no school stats, no roster). Discovered
+      2026-04-26 during interim-director feature testing.
+      Investigation needed before fix:
+      - Which flows allow advancing without a school? (school
+        coach, league coach, CÉGEP recruiter, athlete signup at
+        `/auth`)
+      - Athlete onboarding already enforces school via
+        `SchoolSelect` at
+        [`app/athlete/onboarding/page.tsx`](../app/athlete/onboarding/page.tsx)
+        — verify other flows have the same enforcement
+      - League coaches don't have a single "school" — they have a
+        league. Don't blanket-require school for that flow
+      - CÉGEP recruiters need a CÉGEP school assignment, but the
+        validation needs to be flow-specific
+      Likely fix surface: `canProceed()` / step-validation logic
+      in the onboarding wizard, gated per flow type.
+
 - [ ] **Favorites should auto-create pipeline entry under
       "Identifié".** When a recruiter favorites an athlete, the
       athlete should automatically appear in the recruiter's pipeline
