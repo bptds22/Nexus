@@ -100,6 +100,34 @@ file.
         etc.) in the athlete onboarding and `athletes`-table INSERT
         code.
 
+- [ ] **Duplicate Signaler/Favori buttons on athlete profile.** The
+      athlete profile page has two sets of Signaler + Favori buttons:
+      one in the top-right corner of the header, one in the bottom
+      CTA bar next to "Contacter le coach". Should pick one (user
+      prefers the bottom CTA bar). Discovered 2026-04-26.
+
+- [ ] **Pipeline tier gating inconsistent.** "Mon processus" appears
+      in the Free section of the recruiter sidebar but pipeline is
+      documented as a Pro+ feature in /tarifs and is gated by
+      paywalls elsewhere (athlete profile shows upgrade modal for
+      Free users). Either:
+      (a) Pipeline IS a Free feature and the paywall is wrong
+      (b) Pipeline is Pro+ and the sidebar should move "Mon
+          processus" to the locked section
+      Decision needed: confirm tier gating once and align everywhere.
+
+- [ ] **Favorites should auto-create pipeline entry under
+      "Identifié".** When a recruiter favorites an athlete, the
+      athlete should automatically appear in the recruiter's pipeline
+      under the "Identifié" stage (matches the natural funnel:
+      favorite → identify → contact). Currently favoriting and adding
+      to pipeline are disconnected actions.
+      Open questions before fixing:
+      - Pro/All Star tier only, or all tiers?
+      - What happens on unfavorite — remove from pipeline, or keep?
+      - What happens if athlete is already in pipeline at a later
+        stage (e.g., "Contacté")? Don't downgrade.
+
 ## P1 — Data collection
 
 *(all cleared — see **Closed** at the bottom)*
