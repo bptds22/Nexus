@@ -449,8 +449,12 @@ export default function AthleteOnboardingPage() {
                     const supabase = createClient();
                     const { data: { user } } = await supabase.auth.getUser(); if (!user) return;
                     const path = `athletes/${user.id}/${Date.now()}.${f.name.split(".").pop()}`;
-                    await supabase.storage.from("avatars").upload(path, f, { upsert: true });
-                    const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
+                    const { error: uploadError } = await supabase.storage.from("Ath Photos").upload(path, f, { upsert: true });
+                    if (uploadError) {
+                      console.error("[Onboarding photo upload]", uploadError);
+                      return;
+                    }
+                    const { data: urlData } = supabase.storage.from("Ath Photos").getPublicUrl(path);
                     setPhoto(urlData.publicUrl);
                   }} />
                 </label>
