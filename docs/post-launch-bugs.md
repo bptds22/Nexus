@@ -17,24 +17,6 @@ file.
 
 ## P1 — Silent UX failures
 
-- [ ] **Coach onboarding missing interim-director option.** Step 3 of
-      coach signup ("Qui est le directeur sportif?") shows only two
-      buttons: "C'est moi" and "Inviter quelqu'un." The DB logic also
-      supports a third state — first-claim interim director — where
-      no director exists yet and the signing-up coach is auto-promoted
-      to `DIRECTEUR_INTERIM` by the `first_coach_claim` trigger (fixed
-      in commit [`9719fac`](../../../commit/9719fac)).
-      Current UX leaves users confused: they may not want to claim
-      director responsibility, but there's no director to invite
-      either. They pick one of the two wrong answers and the trigger
-      overrides their choice silently.
-      Needs a third option with explicit language: *"Je ne suis pas
-      le directeur, mais il n'y a pas encore de directeur inscrit. Je
-      deviens directeur par intérim jusqu'à ce qu'un directeur
-      officiel rejoigne l'école."*
-      Flow implication: only show this option when no `DIRECTEUR` or
-      `DIRECTEUR_INTERIM` currently exists for the selected school.
-
 - [ ] **Athlete photo upload doesn't persist to profile.** Athlete
       fills profile, uploads a photo, UI reports success (or no
       error), but `photo_url` stays empty and the profile shows
@@ -421,3 +403,39 @@ The mock file was intentionally left in place — dashboard and
 other athlete pages still consume it; tracked as P2 'Athlete
 portal still uses mock data in dashboard and other pages'.
 Verified live as Alexandre Tremblay (marketing@gmail.com).
+
+### [x] Coach onboarding missing interim-director option
+Closed 2026-04-26 — interim director feature shipped end-to-end across
+3 commits.
+
+- DB: migration
+  [`supabase/migrations/20260427010000_coach_notifications_and_interim_demotion.sql`](../supabase/migrations/20260427010000_coach_notifications_and_interim_demotion.sql)
+  (commit [`3af30a4`](../../../commit/3af30a4)) added the
+  `coach_notifications` table (mirrors `athlete_notifications` shape,
+  RLS lets coaches read/update their own rows only, inserts come
+  exclusively from triggers) and the
+  `demote_interim_on_director_appointment` trigger that fires
+  `AFTER INSERT OR UPDATE OF role` on `school_coaches` when a row
+  transitions into `role='DIRECTEUR'`. Demotes any existing
+  `DIRECTEUR_INTERIM` at the same school to `COACH` and writes an
+  `INTERIM_DEMOTED` notification with school + new-director
+  metadata.
+- UI: `DirectorChoiceStep` in
+  [`app/onboarding/page.tsx`](../app/onboarding/page.tsx) (commit
+  [`3af30a4`](../../../commit/3af30a4)) gained a third option «&nbsp;Je
+  serai intérimaire&nbsp;» for `type === "school"` onboarding only.
+  Saves `school_admin_type: 'interim'` to distinguish it from the
+  permanent «&nbsp;C'est moi&nbsp;» owner claim. League and CÉGEP
+  flows keep the existing 2-option layout.
+- Dashboard banner: commit
+  [`a8980fb`](../../../commit/a8980fb) added two banners above the
+  Action Bar in
+  [`app/coach/tableau-de-bord/page.tsx`](../app/coach/tableau-de-bord/page.tsx).
+  Persistent gray banner while the coach holds
+  `DIRECTEUR_INTERIM` at any school; dismissible amber banner per
+  unread `INTERIM_DEMOTED` notification. Both can render
+  simultaneously.
+
+Recruiter-side parity deferred — would require a `school_recruiters`
+table + recruiter-side enum + `recruiter_notifications` equivalent.
+Logged separately if needed in a future session.
