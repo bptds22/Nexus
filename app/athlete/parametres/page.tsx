@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { athleteUser } from "@/lib/mock/athlete";
 import SubscriptionSection from "@/components/subscription/SubscriptionSection";
 import AthletePlayerCard from "@/components/shared/AthletePlayerCard";
 import { createClient } from "@/lib/supabase/client";
@@ -53,7 +52,6 @@ const NOTIF_PREFS = [
 ];
 
 export default function ParametresPage() {
-  const u = athleteUser;
   const [section, setSection] = useState<SectionKey>("compte");
   const [toast, setToast] = useState<string | null>(null);
   const [showPwdForm, setShowPwdForm] = useState(false);
@@ -62,6 +60,13 @@ export default function ParametresPage() {
   );
   const [showRevokeModal, setShowRevokeModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [profile, setProfile] = useState<{
+    email: string;
+    schoolName: string;
+    coachName: string;
+    parentalConsentGiven: boolean;
+    parentalConsentDate: string | null;
+  } | null>(null);
 
   // Social card export
   const [cardAthlete, setCardAthlete] = useState<AthleteProfileRecruiterView | null>(null);
@@ -71,6 +76,35 @@ export default function ParametresPage() {
   const captureRef = useRef<HTMLDivElement | null>(null);
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
+
+  useEffect(() => {
+    async function loadProfile() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: row } = await supabase
+        .from("athletes")
+        .select(`
+          consentement_parental,
+          consentement_parental_date,
+          schools!school_id(name),
+          users!athletes_coach_id_fkey(first_name, last_name)
+        `)
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (!row) return;
+      const schoolRel = Array.isArray(row.schools) ? row.schools[0] : row.schools;
+      const coachRel = Array.isArray(row.users) ? row.users[0] : row.users;
+      setProfile({
+        email: user.email ?? "",
+        schoolName: schoolRel?.name ?? "",
+        coachName: coachRel ? `${coachRel.first_name ?? ""} ${coachRel.last_name ?? ""}`.trim() : "",
+        parentalConsentGiven: row.consentement_parental === true,
+        parentalConsentDate: row.consentement_parental_date ?? null,
+      });
+    }
+    loadProfile();
+  }, []);
 
   useEffect(() => {
     if (section !== "carte" || cardAthlete || cardLoading) return;
@@ -159,7 +193,7 @@ export default function ParametresPage() {
                   <div>
                     <label className={labelCls}>Courriel</label>
                     <div className="flex items-center gap-3">
-                      <span className="text-[14px] text-[#9CA3AF]">{u.email}</span>
+                      <span className="text-[14px] text-[#9CA3AF]">{profile?.email || "..."}</span>
                       <button type="button" onClick={() => showToast("Modifier le courriel — POC")} className="text-[12px] font-bold text-[#E63946] hover:text-[#D42B22] transition-colors">Modifier</button>
                     </div>
                   </div>
@@ -190,11 +224,11 @@ export default function ParametresPage() {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between py-2">
                     <span className="text-[13px] text-[#9CA3AF]">École</span>
-                    <span className="text-[14px] font-bold text-white">{u.school}</span>
+                    <span className="text-[14px] font-bold text-white">{profile?.schoolName || "..."}</span>
                   </div>
                   <div className="flex items-center justify-between py-2">
                     <span className="text-[13px] text-[#9CA3AF]">Coach</span>
-                    <span className="text-[14px] font-bold text-white">{u.coach_name}</span>
+                    <span className="text-[14px] font-bold text-white">{profile?.coachName || "..."}</span>
                   </div>
                 </div>
                 <p className="text-[11px] text-[#4a4d56] mt-3 italic">Ces informations sont gérées par ton coach. Contacte-le si elles sont incorrectes.</p>
@@ -358,7 +392,11 @@ export default function ParametresPage() {
                 <div className="bg-[#13151a] border border-white/5 rounded-lg p-4">
                   <div className="flex items-center gap-2 mb-2">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><path d="M9 12l2 2 4-4" /></svg>
-                    <span className="text-[13px] font-bold text-[#22C55E]">Consentement parental confirmé le {new Date(u.parental_consent.date).toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" })} par {u.coach_name}</span>
+                    <span className="text-[13px] font-bold text-[#22C55E]">
+                      {profile?.parentalConsentGiven && profile.parentalConsentDate
+                        ? `Consentement parental confirmé le ${new Date(profile.parentalConsentDate).toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" })}${profile.coachName ? ` par ${profile.coachName}` : ""}`
+                        : "Consentement en attente"}
+                    </span>
                   </div>
                   <p className="text-[12px] text-[#9CA3AF] leading-relaxed">Le consentement peut être retiré à tout moment. Ton profil sera immédiatement désactivé et invisible.</p>
                   <button type="button" onClick={() => setShowRevokeModal(true)}
