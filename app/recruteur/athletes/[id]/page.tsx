@@ -21,6 +21,7 @@ import ComposeIntroModal from "@/app/recruteur/_components/ComposeIntroModal";
 import { useSubscription } from "@/lib/hooks/useSubscription";
 import { useFavoritesCount } from "@/lib/hooks/useFavoritesCount";
 import CelebrationToast from "@/app/recruteur/_components/CelebrationToast";
+import UpgradeModal from "@/components/ui/UpgradeModal";
 import NxIcon from "@/components/ui/NxIcon";
 import StarRating from "@/components/ui/StarRating";
 import VideoEmbed from "@/components/ui/VideoEmbed";
@@ -310,7 +311,7 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
   const { id } = use(params);
   const searchParams = useSearchParams();
   const isPreview = searchParams?.get("preview") === "true";
-  const { maxFavorites } = useSubscription();
+  const { maxFavorites, tier } = useSubscription();
   const { count: myFavCount, setCount: setMyFavCount } = useFavoritesCount();
   const [a, setA] = useState<AthleteProfileRecruiterView>(mockAthleteProfileFull);
   const [loadingAthlete, setLoadingAthlete] = useState(true);
@@ -684,6 +685,7 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
   const [pipelineStatus, setPipelineStatus] = useState<RecruitmentStatus>(initialTracking?.status || "none");
   const [showComposeIntro, setShowComposeIntro] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   function handleStatusChange(newStatus: RecruitmentStatus, _extra?: { visitDate?: string; retireReason?: RetireReason }) {
     setPipelineStatus(newStatus);
@@ -820,6 +822,18 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
                         VISITE_PLANIFIEE: "Visite planifiée", ENGAGE: "Engagé", LETTRE_SIGNEE: "Lettre signée",
                       } as Record<string, string>)[myPipelineStage.toUpperCase()] || myPipelineStage.replace(/_/g, " ")}
                     </span>
+                  ) : tier === "free" ? (
+                    <button
+                      type="button"
+                      onClick={() => setShowUpgradeModal(true)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#E63946]/10 border border-[#E63946]/30 text-[11px] font-bold text-[#E63946] hover:bg-[#E63946]/20 hover:border-[#E63946]/50 transition-all"
+                    >
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2" />
+                        <path d="M7 11V7a5 5 0 0110 0v4" />
+                      </svg>
+                      Passer à Pro pour le pipeline
+                    </button>
                   ) : (
                     <span className="text-[12px] text-[#6b7280]">Pas dans le pipeline</span>
                   )}
@@ -1408,6 +1422,15 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
           </div>
         </div>
       )}
+
+      <UpgradeModal
+        open={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        role="recruteur"
+        tierId="rec_pro"
+        lockedFeatureTitle="Le pipeline de recrutement"
+        returnTo={typeof window !== "undefined" ? window.location.pathname : undefined}
+      />
     </div>
   );
 }
