@@ -82,24 +82,6 @@ file.
       message", select Alexandre Bouchard. Compare right rail to
       any existing conversation thread.
 
-- [ ] **Athlete signup writes placeholder email instead of user
-      input.** When creating an athlete profile, the email field in
-      the `athletes` table gets populated with mock/hardcoded test
-      data instead of the actual email the user provided at signup.
-      Real athletes end up with fake emails attached to their
-      profiles.
-      Repro: sign up as a new athlete with a real email. Check the
-      `athletes.email` column — it'll likely be a mock string, not
-      what was typed.
-      Investigate:
-      - What path does the athlete signup take?
-        (`/auth` with `mode=signup`, `role=ATHLETE`)
-      - Where does the `athletes` row get INSERTed — in the trigger,
-        the client, or the onboarding flow?
-      - Grep for hardcoded email patterns (`example.com`, `@test.`,
-        etc.) in the athlete onboarding and `athletes`-table INSERT
-        code.
-
 - [ ] **Duplicate Signaler/Favori buttons on athlete profile.** The
       athlete profile page has two sets of Signaler + Favori buttons:
       one in the top-right corner of the header, one in the bottom
@@ -154,6 +136,22 @@ file.
       File: [`app/recruteur/athletes/[id]/page.tsx`](../app/recruteur/athletes/%5Bid%5D/page.tsx)
       around the `Mon statut` block. UX polish — save for the
       upgrade-prompts pass.
+
+- [ ] **Athlete portal still uses mock data in dashboard and other
+      pages.** The mock file
+      [`lib/mock/athlete.ts`](../lib/mock/athlete.ts) exports
+      `athleteUser`, `athleteStats`, `athleteActivity`,
+      `athleteNotifications`, `profileChecklist`, etc. — all
+      hardcoded Marc-Antoine Tremblay data.
+      Settings page (`/athlete/parametres`) was wired to real data
+      on 2026-04-26 (commit
+      [`fa4e295`](../../../commit/fa4e295)), but the dashboard and
+      other athlete portal pages likely still import these mock
+      values.
+      Audit needed: grep for `from "@/lib/mock/athlete"` across
+      `app/athlete/` and replace mock imports with real Supabase
+      queries on each page. Removing `lib/mock/athlete.ts` entirely
+      is the goal once all consumers are wired.
 
 ---
 
@@ -379,3 +377,24 @@ got two changes in the same commit:
 
 Verified live: sidebar badge counts unread, visiting `/recruteur/activites`
 clears badge to 0 on return.
+
+### [x] Athlete signup writes placeholder email instead of user input
+Closed in commit [`fa4e295`](../../../commit/fa4e295). Misdiagnosed
+on intake — the `athletes.email` column has always held the real
+user-typed email. The bug was in
+[`app/athlete/parametres/page.tsx`](../app/athlete/parametres/page.tsx),
+which imported `athleteUser` from `@/lib/mock/athlete` and rendered
+its hardcoded `email: "marc-antoine@gmail.com"` regardless of who
+was logged in. Fix swapped the mock object for a per-user load on
+mount: pulls `email` from `auth.users` (the live session), and
+`schoolName` / `coachName` / parental-consent state via joins on
+the current athlete's row. The parental-consent block now also
+handles three real states (consent + date + coach, consent without
+coach, no consent yet) instead of always rendering the same
+hardcoded line. Read-only display only — email Modifier button
+still routes to its existing showToast placeholder; a real
+email-edit flow needs auth.users re-verification and is deferred.
+The mock file was intentionally left in place — dashboard and
+other athlete pages still consume it; tracked as P2 'Athlete
+portal still uses mock data in dashboard and other pages'.
+Verified live as Alexandre Tremblay (marketing@gmail.com).
