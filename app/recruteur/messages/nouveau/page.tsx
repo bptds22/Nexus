@@ -5,8 +5,9 @@ import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
-import StarRating from "@/components/ui/StarRating";
 import ErrorToast from "@/components/ui/ErrorToast";
+import CoachInfoCard from "@/components/recruteur/CoachInfoCard";
+import AthleteInfoCard from "@/components/recruteur/AthleteInfoCard";
 import type { GlobalRecruitmentStatus } from "@/lib/types/models";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -27,6 +28,22 @@ interface SelectableAthlete {
   coachId: string;
   coachFirstName: string;
   coachLastName: string;
+  coachAvatarUrl: string;
+  coachEmail: string;
+  coachPhone: string;
+  coachRegion: string;
+  photoUrl: string;
+  sport: string;
+  gradYear: number;
+  committedSchool: string;
+  openToOffers: boolean | null;
+  region: string;
+  gpa: number;
+  programmes: string[];
+  openRelocate: boolean;
+  openPrivate: boolean;
+  openAnglophone: boolean;
+  distinctions: string[];
 }
 
 /* ── Success Toast ─────────────────────────────────────────── */
@@ -172,11 +189,17 @@ function NouveauMessageContent() {
         .select(`
           athlete_id,
           athletes!athlete_id(
-            id, first_name, last_name, verified, coach_id,
+            id, first_name, last_name, photo_url, verified, coach_id,
             numero_jersey, recruitment_status, cote_globale_entraineur,
+            annee_diplomation, committed_school_id, open_to_offers,
+            moyenne_generale, programme_cegep_vise,
+            pret_changer_region, ouvert_cegep_prive, ouvert_cegep_anglophone,
+            sports!sport_id(nom),
             positions!position_id(abreviation),
-            schools!school_id(name),
-            users!coach_id(id, first_name, last_name)
+            schools!school_id(name, region),
+            committed_school:schools!committed_school_id(name),
+            evaluations(distinctions),
+            users!coach_id(id, first_name, last_name, avatar_url, email, phone, schools!school_id(region))
           )
         `)
         .eq("recruiter_id", user.id);
@@ -191,9 +214,25 @@ function NouveauMessageContent() {
           const posRel = a.positions;
           const pos = (Array.isArray(posRel) ? posRel[0] : posRel) as { abreviation?: string } | null;
           const schoolRel = a.schools;
-          const school = (Array.isArray(schoolRel) ? schoolRel[0] : schoolRel) as { name?: string } | null;
+          const school = (Array.isArray(schoolRel) ? schoolRel[0] : schoolRel) as { name?: string; region?: string } | null;
           const coachRel = a.users;
-          const coach = (Array.isArray(coachRel) ? coachRel[0] : coachRel) as { id?: string; first_name?: string; last_name?: string } | null;
+          const coach = (Array.isArray(coachRel) ? coachRel[0] : coachRel) as Record<string, unknown> | null;
+          const coachSchoolRel = coach?.schools;
+          const coachSchoolObj = (Array.isArray(coachSchoolRel) ? coachSchoolRel[0] : coachSchoolRel) as { region?: string } | null;
+          const sportRel = a.sports;
+          const sportObj = (Array.isArray(sportRel) ? sportRel[0] : sportRel) as { nom?: string } | null;
+          const committedSchoolRel = a.committed_school;
+          const committedSchoolObj = (Array.isArray(committedSchoolRel) ? committedSchoolRel[0] : committedSchoolRel) as { name?: string } | null;
+          const evalRel = a.evaluations;
+          const eval0 = (Array.isArray(evalRel) ? evalRel[0] : evalRel) as { distinctions?: unknown[] } | null;
+          const rawDistinctions: unknown[] = Array.isArray(eval0?.distinctions) ? eval0!.distinctions as unknown[] : [];
+          const distinctions: string[] = rawDistinctions
+            .map((d) => (typeof d === "string" ? d : (d && typeof d === "object" ? ((d as { code?: string; id?: string }).code || (d as { code?: string; id?: string }).id || "") : "")))
+            .filter((d): d is string => typeof d === "string" && d !== "");
+          const rawProg: unknown = a.programme_cegep_vise;
+          const programmes: string[] = Array.isArray(rawProg)
+            ? (rawProg as unknown[]).filter((p): p is string => typeof p === "string" && p !== "")
+            : (typeof rawProg === "string" && rawProg !== "" ? [rawProg] : []);
           return {
             id: a.id as string,
             firstName: (a.first_name as string) || "",
@@ -207,6 +246,22 @@ function NouveauMessageContent() {
             coachId: (coach?.id as string) || (a.coach_id as string) || "",
             coachFirstName: (coach?.first_name as string) || "",
             coachLastName: (coach?.last_name as string) || "",
+            coachAvatarUrl: (coach?.avatar_url as string) || "",
+            coachEmail: (coach?.email as string) || "",
+            coachPhone: (coach?.phone as string) || "",
+            coachRegion: coachSchoolObj?.region || "",
+            photoUrl: (a.photo_url as string) || "",
+            sport: sportObj?.nom || "",
+            gradYear: (a.annee_diplomation as number) || 0,
+            committedSchool: committedSchoolObj?.name || "",
+            openToOffers: (a.open_to_offers as boolean | null) ?? null,
+            region: (school?.region as string) || "",
+            gpa: (a.moyenne_generale as number) || 0,
+            programmes,
+            openRelocate: !!(a.pret_changer_region),
+            openPrivate: !!(a.ouvert_cegep_prive),
+            openAnglophone: !!(a.ouvert_cegep_anglophone),
+            distinctions,
           };
         }).filter(Boolean) as SelectableAthlete[];
         setAthletes(mapped);
@@ -219,7 +274,19 @@ function NouveauMessageContent() {
           if (!found) {
             const { data: directAthlete } = await supabase
               .from("athletes")
-              .select("id, first_name, last_name, verified, coach_id, numero_jersey, recruitment_status, cote_globale_entraineur, positions!position_id(abreviation), schools!school_id(name), users!coach_id(id, first_name, last_name)")
+              .select(`
+                id, first_name, last_name, photo_url, verified, coach_id,
+                numero_jersey, recruitment_status, cote_globale_entraineur,
+                annee_diplomation, committed_school_id, open_to_offers,
+                moyenne_generale, programme_cegep_vise,
+                pret_changer_region, ouvert_cegep_prive, ouvert_cegep_anglophone,
+                sports!sport_id(nom),
+                positions!position_id(abreviation),
+                schools!school_id(name, region),
+                committed_school:schools!committed_school_id(name),
+                evaluations(distinctions),
+                users!coach_id(id, first_name, last_name, avatar_url, email, phone, schools!school_id(region))
+              `)
               .eq("id", athleteId)
               .single();
             if (directAthlete) {
@@ -228,7 +295,23 @@ function NouveauMessageContent() {
               const schoolRel = (directAthlete as any).schools;
               const school = (Array.isArray(schoolRel) ? schoolRel[0] : schoolRel) as { name?: string } | null;
               const coachRel = (directAthlete as any).users;
-              const coach = (Array.isArray(coachRel) ? coachRel[0] : coachRel) as { id?: string; first_name?: string; last_name?: string } | null;
+              const coach = (Array.isArray(coachRel) ? coachRel[0] : coachRel) as Record<string, unknown> | null;
+              const directCoachSchoolRel = (coach as { schools?: unknown })?.schools;
+              const directCoachSchoolObj = (Array.isArray(directCoachSchoolRel) ? directCoachSchoolRel[0] : directCoachSchoolRel) as { region?: string } | null;
+              const directSportRel = (directAthlete as Record<string, unknown>)?.sports;
+              const directSportObj = (Array.isArray(directSportRel) ? directSportRel[0] : directSportRel) as { nom?: string } | null;
+              const directCommittedSchoolRel = (directAthlete as Record<string, unknown>)?.committed_school;
+              const directCommittedSchoolObj = (Array.isArray(directCommittedSchoolRel) ? directCommittedSchoolRel[0] : directCommittedSchoolRel) as { name?: string } | null;
+              const directEvalRel = (directAthlete as Record<string, unknown>)?.evaluations;
+              const directEval0 = (Array.isArray(directEvalRel) ? directEvalRel[0] : directEvalRel) as { distinctions?: unknown[] } | null;
+              const directRawDistinctions: unknown[] = Array.isArray(directEval0?.distinctions) ? directEval0!.distinctions as unknown[] : [];
+              const directDistinctions: string[] = directRawDistinctions
+                .map((d) => (typeof d === "string" ? d : (d && typeof d === "object" ? ((d as { code?: string; id?: string }).code || (d as { code?: string; id?: string }).id || "") : "")))
+                .filter((d): d is string => typeof d === "string" && d !== "");
+              const directRawProg: unknown = (directAthlete as Record<string, unknown>)?.programme_cegep_vise;
+              const directProgrammes: string[] = Array.isArray(directRawProg)
+                ? (directRawProg as unknown[]).filter((p): p is string => typeof p === "string" && p !== "")
+                : (typeof directRawProg === "string" && directRawProg !== "" ? [directRawProg] : []);
               found = {
                 id: directAthlete.id as string,
                 firstName: (directAthlete.first_name as string) || "",
@@ -242,6 +325,22 @@ function NouveauMessageContent() {
                 coachId: (coach?.id as string) || (directAthlete.coach_id as string) || "",
                 coachFirstName: (coach?.first_name as string) || "",
                 coachLastName: (coach?.last_name as string) || "",
+                coachAvatarUrl: ((coach as Record<string, unknown>)?.avatar_url as string) || "",
+                coachEmail: ((coach as Record<string, unknown>)?.email as string) || "",
+                coachPhone: ((coach as Record<string, unknown>)?.phone as string) || "",
+                coachRegion: directCoachSchoolObj?.region || "",
+                photoUrl: ((directAthlete as Record<string, unknown>)?.photo_url as string) || "",
+                sport: directSportObj?.nom || "",
+                gradYear: ((directAthlete as Record<string, unknown>)?.annee_diplomation as number) || 0,
+                committedSchool: directCommittedSchoolObj?.name || "",
+                openToOffers: ((directAthlete as Record<string, unknown>)?.open_to_offers as boolean | null) ?? null,
+                region: ((school as Record<string, unknown>)?.region as string) || "",
+                gpa: ((directAthlete as Record<string, unknown>)?.moyenne_generale as number) || 0,
+                programmes: directProgrammes,
+                openRelocate: !!((directAthlete as Record<string, unknown>)?.pret_changer_region),
+                openPrivate: !!((directAthlete as Record<string, unknown>)?.ouvert_cegep_prive),
+                openAnglophone: !!((directAthlete as Record<string, unknown>)?.ouvert_cegep_anglophone),
+                distinctions: directDistinctions,
               };
               setAthletes(prev => [found!, ...prev]);
             }
@@ -443,56 +542,43 @@ ${recruiterName.first || (profile?.first_name as string) || ""} ${recruiterName.
           <div className="space-y-5">
             {selectedAthlete ? (
               <>
-                <div className="bg-[#1A1D24] border border-[#2D3748] rounded-xl p-5">
-                  <p className="text-[10px] font-bold tracking-[0.25em] uppercase text-[#6b7280] mb-4">Athlète sélectionné</p>
-
-                  {/* Athlete header */}
-                  <div className="flex items-start gap-3">
-                    <div className="relative shrink-0" style={{ overflow: "visible" }}>
-                      <div className="w-11 h-11 rounded-full bg-[#E63946]/15 border-2 border-[#E63946]/30 flex items-center justify-center">
-                        <span className="text-[13px] font-bold text-[#E63946]">{selectedAthlete.firstName[0]}{selectedAthlete.lastName[0]}</span>
-                      </div>
-                      {selectedAthlete.isVerified && (
-                        <div className="absolute -top-0.5 -right-0.5 z-10">
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="#3B82F6" stroke="none"><circle cx="12" cy="12" r="10" /><path d="M9 12l2 2 4-4" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" /></svg>
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[15px] font-bold text-white">{selectedAthlete.firstName} {selectedAthlete.lastName}</span>
-                        {selectedAthlete.jersey && <span className="text-[12px] font-black text-[#E63946]">#{selectedAthlete.jersey}</span>}
-                      </div>
-                      <p className="text-[12px] text-[#6b7280] mt-0.5">{selectedAthlete.school}</p>
-                      <div className="flex items-center gap-2 mt-2">
-                        {selectedAthlete.position && <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-[#2D3748] text-[#c0c4cc] text-[11px] font-bold uppercase tracking-wider">{selectedAthlete.position}</span>}
-                        <StarRating rating={selectedAthlete.stars} size="sm" />
-                      </div>
-                      <div className="mt-2">
-                        <RecruitmentStatusBadge status={selectedAthlete.recruitmentStatus as GlobalRecruitmentStatus} size="sm" />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="pt-3 mt-3 border-t border-[#2D3748]">
-                    <Link href={`/recruteur/athletes/${selectedAthlete.id}`} className="text-[11px] font-bold text-[#E63946] hover:text-[#ff4d5a] transition-colors">Voir le profil →</Link>
-                  </div>
-                </div>
+                <AthleteInfoCard
+                  athleteId={selectedAthlete.id}
+                  athleteName={`${selectedAthlete.firstName} ${selectedAthlete.lastName}`.trim()}
+                  athleteInitials={`${selectedAthlete.firstName[0] || ""}${selectedAthlete.lastName[0] || ""}`.toUpperCase()}
+                  athletePhotoUrl={selectedAthlete.photoUrl || undefined}
+                  athleteJersey={selectedAthlete.jersey || undefined}
+                  athleteSport={selectedAthlete.sport || undefined}
+                  athletePosition={selectedAthlete.position || undefined}
+                  athleteGradYear={selectedAthlete.gradYear}
+                  athleteVerified={selectedAthlete.isVerified}
+                  athleteStars={selectedAthlete.stars}
+                  athleteSchool={selectedAthlete.school || undefined}
+                  athleteRegion={selectedAthlete.region || undefined}
+                  athleteRecruitmentStatus={selectedAthlete.recruitmentStatus}
+                  athleteCommittedSchool={selectedAthlete.committedSchool || undefined}
+                  athleteOpenToOffers={selectedAthlete.openToOffers}
+                  athleteGpa={selectedAthlete.gpa}
+                  athleteProgrammes={selectedAthlete.programmes}
+                  athleteOpenRelocate={selectedAthlete.openRelocate}
+                  athleteOpenPrivate={selectedAthlete.openPrivate}
+                  athleteOpenAnglophone={selectedAthlete.openAnglophone}
+                  athleteDistinctions={selectedAthlete.distinctions}
+                />
 
                 {/* Coach card */}
-                <div className="bg-[#1A1D24] border border-[#2D3748] rounded-xl p-5">
-                  <p className="text-[10px] font-bold tracking-[0.25em] uppercase text-[#6b7280] mb-4">Coach destinataire</p>
-                  <div className="flex items-center gap-3">
-                    <div className="w-11 h-11 rounded-full bg-[#2D3748] flex items-center justify-center shrink-0">
-                      <span className="text-[13px] font-bold text-[#9CA3AF]">{selectedAthlete.coachFirstName[0] || ""}{selectedAthlete.coachLastName[0] || ""}</span>
-                    </div>
-                    <div>
-                      <p className="text-[15px] font-bold text-white">{selectedAthlete.coachFirstName} {selectedAthlete.coachLastName}</p>
-                      <p className="text-[12px] text-[#9CA3AF]">Entraîneur</p>
-                      <p className="text-[12px] text-[#6b7280]">{selectedAthlete.school}</p>
-                    </div>
-                  </div>
-                </div>
+                <CoachInfoCard
+                  coachId={selectedAthlete.coachId}
+                  coachName={`${selectedAthlete.coachFirstName} ${selectedAthlete.coachLastName}`.trim()}
+                  coachInitials={`${selectedAthlete.coachFirstName[0] || ""}${selectedAthlete.coachLastName[0] || ""}`.toUpperCase()}
+                  coachAvatarUrl={selectedAthlete.coachAvatarUrl || undefined}
+                  coachSchool={selectedAthlete.school || undefined}
+                  coachRegion={selectedAthlete.coachRegion || undefined}
+                  coachEmail={selectedAthlete.coachEmail || undefined}
+                  coachPhone={selectedAthlete.coachPhone || undefined}
+                  athleteId={selectedAthlete.id}
+                  athleteName={`${selectedAthlete.firstName} ${selectedAthlete.lastName}`.trim()}
+                />
               </>
             ) : (
               <div className="bg-[#1A1D24] border border-[#2D3748] border-dashed rounded-xl p-8 flex flex-col items-center justify-center text-center">
