@@ -46,24 +46,6 @@ file.
       3. RLS on `athletes` for `COACH` role — what's the SELECT
          policy?
 
-- [ ] **Coach card design inconsistent between compose page and
-      thread page.** On
-      [`/recruteur/messages/nouveau`](../app/recruteur/messages/nouveau/page.tsx)
-      (compose), the right-rail "Coach destinataire" card shows only
-      the school name — no coach name, no contact info. On
-      `/recruteur/messages/<conv-id>` (thread), the same card area
-      shows full info: name, email, "Laisser un avis" CTA.
-      Both tiers should see the same coach card design (Pro
-      version with full info). The Free-vs-Pro distinction is purely
-      about whether the message actually sends — not about what
-      coach info is visible. Fix: replace the compose page's minimal
-      coach card with the same component/markup the thread page
-      uses. Free tier still gets blocked at send time (existing
-      behavior); the visual experience is uniform.
-      Repro: log in as `test-free` or `test-pro`, click "Nouveau
-      message", select Alexandre Bouchard. Compare right rail to
-      any existing conversation thread.
-
 - [ ] **Duplicate Signaler/Favori buttons on athlete profile.** The
       athlete profile page has two sets of Signaler + Favori buttons:
       one in the top-right corner of the header, one in the bottom
@@ -439,3 +421,31 @@ Closed 2026-04-26 — interim director feature shipped end-to-end across
 Recruiter-side parity deferred — would require a `school_recruiters`
 table + recruiter-side enum + `recruiter_notifications` equivalent.
 Logged separately if needed in a future session.
+
+### [x] Coach card design inconsistent between compose page and thread page
+Closed 2026-04-27 — messages surface card consistency landed across
+3 commits ([`c718d96`](../../../commit/c718d96),
+[`0c3a0c7`](../../../commit/0c3a0c7),
+[`c6eb900`](../../../commit/c6eb900)).
+
+The recruiter messages module now shares two reusable components
+across thread detail and compose surfaces:
+
+- [`lib/hooks/useCoachReputation.ts`](../lib/hooks/useCoachReputation.ts)
+  — reputation aggregation (reviews + badges + placement stats +
+  avg response time) exposed as a single hook with `refresh()`
+- [`components/recruteur/CoachInfoCard.tsx`](../components/recruteur/CoachInfoCard.tsx)
+  — rich coach card (avatar + contact + reputation + stats +
+  badges + review CTA) consuming the hook
+- [`components/recruteur/AthleteInfoCard.tsx`](../components/recruteur/AthleteInfoCard.tsx)
+  — rich athlete card (photo + name + sport/pos/grad + status
+  badges + stars + location + academic + distinctions +
+  preferences + profile CTA)
+
+Both surfaces now render identical rich cards. Compose page
+queries extended to load all fields the rich cards need. Section
+copy unified ("Athlète concerné" everywhere).
+
+Adjacent improvement: thread page also benefits from the
+extraction — `onSubmitted` review-refresh logic became a single
+`refresh()` call instead of 25 lines of inlined re-fetch.
