@@ -46,6 +46,33 @@ file.
       3. RLS on `athletes` for `COACH` role — what's the SELECT
          policy?
 
+      **2026-04-27 — Partially shipped** (commit
+      [`050540c`](../../../commit/050540c)):
+      The Mes Athlètes roster page now filters by `school_id`
+      instead of `coach_id`. The `athlete_suggestions` SELECT RLS
+      policy follows the same school-scoped model.
+      Verified live with three coaches at Collège St-Jean-Vianney
+      (`test-coach@`, `demo.coach.vianney@`, `coachmarketing@`) —
+      all three see the same roster and same À TRAITER suggestions
+      queue.
+      Architecture note: `athletes.coach_id` is now
+      soft-deprecated. Stop reading from it; leave the column in
+      place. Hard-deprecation (dropping the column) is logged as
+      P3.
+      Still open within this P1:
+      - Coach dashboard / tableau-de-bord may still filter by
+        `coach_id`
+      - Coach activities feed may still filter by `coach_id`
+      - Ma Réputation may filter coach stats by `coach_id`
+        ownership
+      - Coach side of recruiter messages — needs decision: stay
+        coach-scoped (private to specific coach) or go
+        school-scoped?
+      These need audit + same school-scope fix in a follow-up
+      session.
+      Migration:
+      [`supabase/migrations/20260427130000_athlete_suggestions_school_select.sql`](../supabase/migrations/20260427130000_athlete_suggestions_school_select.sql)
+
 - [ ] **Duplicate Signaler/Favori buttons on athlete profile.** The
       athlete profile page has two sets of Signaler + Favori buttons:
       one in the top-right corner of the header, one in the bottom
