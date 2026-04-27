@@ -743,36 +743,6 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
             <span className="text-[#2D3748]">|</span>
             <span className="text-[12px] text-[#6b7280] tracking-wider uppercase">Profil athlète</span>
           </div>
-          <div className="flex items-center gap-4">
-            <button
-              type="button"
-              onClick={() => { if (!flagSubmitted) setShowFlagModal(true); }}
-              className={`group flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-bold transition-all duration-300 ${
-                flagSubmitted
-                  ? "text-[#F59E0B] bg-[#F59E0B]/10"
-                  : "text-[#6b7280] hover:text-[#F59E0B] hover:bg-[#F59E0B]/10 hover:-translate-y-0.5 hover:shadow-[0_4px_12px_rgba(245,158,11,0.15)]"
-              }`}
-            >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill={flagSubmitted ? "#F59E0B" : "none"} stroke={flagSubmitted ? "#F59E0B" : "currentColor"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={flagSubmitted ? "" : "group-hover:stroke-[#F59E0B] transition-colors duration-300"}>
-                <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
-                <line x1="4" y1="22" x2="4" y2="15" />
-              </svg>
-              {flagSubmitted ? "Signalé" : "Signaler"}
-            </button>
-            <button
-              type="button"
-              onClick={toggleFav}
-              disabled={favButtonDisabled}
-              title={favButtonDisabled ? favDisabledTitle : undefined}
-              className={`flex items-center gap-1.5 text-[12px] font-bold transition-colors ${favButtonDisabled ? "cursor-not-allowed opacity-40" : ""}`}
-              style={{ color: isFavorited ? "#E63946" : "#9CA3AF" }}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill={isFavorited ? "#E63946" : "none"} stroke={isFavorited ? "#E63946" : "currentColor"} strokeWidth="2" strokeLinecap="round">
-                <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
-              </svg>
-              {isFavorited ? "Dans tes favoris" : "Ajouter aux favoris"}
-            </button>
-          </div>
         </div>
       </div>
       )}
