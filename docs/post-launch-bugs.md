@@ -85,18 +85,6 @@ file.
       Likely fix surface: `canProceed()` / step-validation logic
       in the onboarding wizard, gated per flow type.
 
-- [ ] **Favorites should auto-create pipeline entry under
-      "Identifié".** When a recruiter favorites an athlete, the
-      athlete should automatically appear in the recruiter's pipeline
-      under the "Identifié" stage (matches the natural funnel:
-      favorite → identify → contact). Currently favoriting and adding
-      to pipeline are disconnected actions.
-      Open questions before fixing:
-      - Pro/All Star tier only, or all tiers?
-      - What happens on unfavorite — remove from pipeline, or keep?
-      - What happens if athlete is already in pipeline at a later
-        stage (e.g., "Contacté")? Don't downgrade.
-
 ## P1 — Data collection
 
 *(all cleared — see **Closed** at the bottom)*
@@ -449,3 +437,20 @@ copy unified ("Athlète concerné" everywhere).
 Adjacent improvement: thread page also benefits from the
 extraction — `onSubmitted` review-refresh logic became a single
 `refresh()` call instead of 25 lines of inlined re-fetch.
+
+### [x] Favorites should auto-create pipeline entry under "Identifié"
+Closed 2026-04-27 in commit
+[`c5f8289`](../../../commit/c5f8289). The favorite action now
+serves as the save-to-pipeline action. Two AFTER triggers on
+`recruiter_favorites` handle the coupling:
+
+- INSERT trigger: creates pipeline row at IDENTIFIE, or resets a
+  RETIRE row back to IDENTIFIE on re-favorite. Active stages
+  (CONTACTE through LETTRE_SIGNEE) are protected from reset.
+- DELETE trigger: marks pipeline row as RETIRE (preserves history)
+
+All tiers get the auto-pipeline behavior. Pipeline UI tier gating
+is a separate still-open P1.
+
+Migration:
+[`supabase/migrations/20260427120000_favorites_auto_pipeline.sql`](../supabase/migrations/20260427120000_favorites_auto_pipeline.sql)
