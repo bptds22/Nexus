@@ -335,6 +335,7 @@ export default function OnboardingPage() {
     const current = JSON.parse(raw) as NexusUser;
     const next = { ...current, ...updates };
     localStorage.setItem("nexus_user", JSON.stringify(next));
+    setLocalUserVersion((v) => v + 1);
   }, []);
 
   const totalStepsMap: Record<string, number> = {
@@ -347,9 +348,36 @@ export default function OnboardingPage() {
   const progress = ((step + 1) / totalSteps) * 100;
 
   const [stepSaving, setStepSaving] = useState(false);
+  const [, setLocalUserVersion] = useState(0);
+
+  function canProceed(): boolean {
+    if (!user) return false;
+
+    // Read latest localStorage state — user state object lags by design
+    const raw = localStorage.getItem("nexus_user");
+    const localUser = raw ? JSON.parse(raw) : {};
+    const role = user.role;
+
+    // Step 1 enforcement (institution selection)
+    if (step === 1) {
+      if (role === "coach" || role === "recruiter") {
+        const inst = localUser.institution as Record<string, unknown> | null;
+        if (!inst || !inst.name) return false;
+      }
+      // League flows (coach_league, coordinator_league) intentionally
+      // ungated — to be addressed in a future session
+    }
+
+    // Other steps currently have no validation rules
+    return true;
+  }
 
   const next = async () => {
     if (step >= totalSteps - 1) return;
+    if (!canProceed()) {
+      console.log("[Onboarding] cannot proceed: validation failed at step", step);
+      return;
+    }
 
     setStepSaving(true);
     try {
@@ -572,7 +600,7 @@ export default function OnboardingPage() {
               </button>
             ) : <div />}
             {step < totalSteps - 1 ? (
-              <button type="button" onClick={next} disabled={stepSaving} className="h-11 px-8 rounded-lg bg-[#E63946] text-sm font-bold text-white hover:bg-[#D42B22] transition-colors disabled:opacity-50">
+              <button type="button" onClick={next} disabled={stepSaving || !canProceed()} className="h-11 px-8 rounded-lg bg-[#E63946] text-sm font-bold text-white hover:bg-[#D42B22] transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                 {stepSaving ? "Enregistrement..." : "Suivant →"}
               </button>
             ) : (
