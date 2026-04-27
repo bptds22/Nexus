@@ -323,6 +323,23 @@ function MesAthletesContent() {
         return;
       }
 
+      // Look up the coach's school_id — the roster shows all
+      // athletes at the coach's school, not just claimed ones.
+      const { data: coachRow, error: coachError } = await supabase
+        .from("users")
+        .select("school_id")
+        .eq("id", session.user.id)
+        .single();
+
+      if (coachError || !coachRow?.school_id) {
+        console.error("[Coach roster] Coach has no school_id assigned", coachError);
+        setLoading(false);
+        return;
+      }
+
+      const coachSchoolId = coachRow.school_id;
+      console.log("[Coach roster] Loading athletes for school:", coachSchoolId);
+
       const { data, error } = await supabase
         .from("athletes")
         .select(`
@@ -371,7 +388,7 @@ function MesAthletesContent() {
           committed_school:schools!committed_school_id(name),
           evaluations(cote_globale, rapport_entraineur, distinctions)
         `)
-        .eq("coach_id", session.user.id)
+        .eq("school_id", coachSchoolId)
         .eq("status", "ACTIF");
 
       console.log("Roster query result:", data?.length, "error:", error);
