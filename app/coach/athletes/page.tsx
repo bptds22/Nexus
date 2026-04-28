@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { type RosterAthlete } from "./_data/mockRosterData";
+import ReclamerSection from "./_components/ReclamerSection";
 import NxIcon from "@/components/ui/NxIcon";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
 import type { GlobalRecruitmentStatus } from "@/lib/types/models";
@@ -298,13 +299,15 @@ function MesAthletesContent() {
   const [filterOuvertAnglophone, setFilterOuvertAnglophone] = useState(false);
   const [filterNewOnly, setFilterNewOnly] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [activeTab, setActiveTab] = useState<"roster" | "traiter">("roster");
+  const [activeTab, setActiveTab] = useState<"roster" | "reclamer" | "traiter">("roster");
   const [unverifiedAthletes, setUnverifiedAthletes] = useState<{ id: string; firstName: string; lastName: string; sport: string; position: string; gradYear: number; createdAt: string }[]>([]);
   const [pendingSuggestions, setPendingSuggestions] = useState<{ id: string; athleteName: string; champ: string; valeurActuelle: string; valeurProposee: string; message: string; createdAt: string }[]>([]);
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [regions, setRegions] = useState<string[]>([]);
   const [dynamicPositions, setDynamicPositions] = useState<{ abbr: string; label: string }[]>([]);
+  const [currentUserId, setCurrentUserId] = useState<string>("");
+  const [refreshVersion, setRefreshVersion] = useState(0);
 
   // Apply URL filter presets
   useEffect(() => {
@@ -322,6 +325,8 @@ function MesAthletesContent() {
         setLoading(false);
         return;
       }
+
+      setCurrentUserId(session.user.id);
 
       // Look up the coach's school_id — the roster shows all
       // athletes at the coach's school, not just claimed ones.
@@ -364,6 +369,7 @@ function MesAthletesContent() {
           telephone,
           bio,
           school_id,
+          coach_id,
           taille_pieds,
           taille_pouces,
           poids_lbs,
@@ -496,6 +502,7 @@ function MesAthletesContent() {
           ouvertPrive: a.ouvert_cegep_prive === true,
           ouvertAnglophone: a.ouvert_cegep_anglophone === true,
           createdAt: (a.created_at as string) || "",
+          coach_id: (a.coach_id as string | null) ?? null,
         };
 
         return athlete;
@@ -545,7 +552,7 @@ function MesAthletesContent() {
     };
 
     loadAthletes();
-  }, []);
+  }, [refreshVersion]);
 
   // Load positions dynamically when sport changes
   useEffect(() => {
@@ -576,8 +583,18 @@ function MesAthletesContent() {
     loadPositions();
   }, [sport]);
 
+  const myRoster = useMemo(
+    () => realAthletes.filter((a) => a.coach_id === currentUserId),
+    [realAthletes, currentUserId]
+  );
+
+  const unclaimedAthletes = useMemo(
+    () => realAthletes.filter((a) => a.coach_id == null),
+    [realAthletes]
+  );
+
   const filtered = useMemo(() => {
-    let list = [...realAthletes];
+    let list = [...myRoster];
 
     // URL preset filter
     if (urlFilter === "non_verifies" || urlFilter === "incomplets") {
@@ -625,7 +642,7 @@ function MesAthletesContent() {
     }
 
     return list;
-  }, [realAthletes, search, sport, position, region, promotion, verifiedOnly, withVideoOnly, minRating, withSportBadge, withAcademicBadge, minGpa, filterOuvertDemenager, filterOuvertPrive, filterOuvertAnglophone, filterNewOnly, sortBy, urlFilter]);
+  }, [myRoster, search, sport, position, region, promotion, verifiedOnly, withVideoOnly, minRating, withSportBadge, withAcademicBadge, minGpa, filterOuvertDemenager, filterOuvertPrive, filterOuvertAnglophone, filterNewOnly, sortBy, urlFilter]);
 
   const hasFilters = sport || position || region || promotion || verifiedOnly || withVideoOnly || minRating || withSportBadge || withAcademicBadge || minGpa || filterOuvertDemenager || filterOuvertPrive || filterOuvertAnglophone || filterNewOnly || sortBy !== "rating_desc";
 
@@ -755,6 +772,13 @@ function MesAthletesContent() {
           className={`px-5 py-2.5 rounded-lg text-[12px] font-bold uppercase tracking-[0.12em] transition-all ${activeTab === "roster" ? "bg-[#E63946] text-white shadow-[0_0_10px_rgba(230,57,70,0.25)]" : "text-[#6b7280] hover:text-white"}`}>
           Roster
         </button>
+        <button type="button" onClick={() => setActiveTab("reclamer")}
+          className={`px-5 py-2.5 rounded-lg text-[12px] font-bold uppercase tracking-[0.12em] transition-all flex items-center gap-2 ${activeTab === "reclamer" ? "bg-[#E63946] text-white shadow-[0_0_10px_rgba(230,57,70,0.25)]" : "text-[#6b7280] hover:text-white"}`}>
+          À réclamer
+          {unclaimedAthletes.length > 0 && (
+            <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-[#F59E0B]/15 text-[#F59E0B] text-[11px] font-bold">{unclaimedAthletes.length}</span>
+          )}
+        </button>
         <button type="button" onClick={() => setActiveTab("traiter")}
           className={`px-5 py-2.5 rounded-lg text-[12px] font-bold uppercase tracking-[0.12em] transition-all flex items-center gap-2 ${activeTab === "traiter" ? "bg-[#E63946] text-white shadow-[0_0_10px_rgba(230,57,70,0.25)]" : "text-[#6b7280] hover:text-white"}`}>
           À traiter
@@ -763,6 +787,15 @@ function MesAthletesContent() {
           )}
         </button>
       </div>
+
+      {/* ══════════ À RÉCLAMER TAB ══════════ */}
+      {activeTab === "reclamer" && (
+        <ReclamerSection
+          unclaimedAthletes={unclaimedAthletes}
+          currentUserId={currentUserId}
+          onClaimSuccess={() => setRefreshVersion((v) => v + 1)}
+        />
+      )}
 
       {/* ══════════ À TRAITER TAB ══════════ */}
       {activeTab === "traiter" && (
@@ -1040,10 +1073,31 @@ function MesAthletesContent() {
               <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
             </svg>
           </div>
-          <h3 className="font-head text-xl font-black text-white uppercase tracking-wide mb-2">Aucun athlète trouvé</h3>
-          <p className="text-[14px] text-[#9CA3AF] max-w-md leading-relaxed">
-            Essayez de modifier vos filtres ou votre recherche.
-          </p>
+          {myRoster.length === 0 && unclaimedAthletes.length > 0 ? (
+            <>
+              <h3 className="font-head text-xl font-black text-white uppercase tracking-wide mb-2">Tu n&apos;as pas encore réclamé d&apos;athlètes</h3>
+              <p className="text-[14px] text-[#9CA3AF] max-w-md leading-relaxed mb-4">
+                Réclame des athlètes parmi ceux disponibles à ton école pour bâtir ton roster.
+              </p>
+              <button
+                type="button"
+                onClick={() => setActiveTab("reclamer")}
+                className="inline-flex items-center gap-2 bg-[#E63946] text-white rounded-lg px-5 py-2.5 font-head font-bold text-[13px] uppercase tracking-widest hover:bg-[#D42B22] transition-colors"
+              >
+                Voir les athlètes à réclamer ({unclaimedAthletes.length})
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                  <path d="M5 12h14" /><path d="M12 5l7 7-7 7" />
+                </svg>
+              </button>
+            </>
+          ) : (
+            <>
+              <h3 className="font-head text-xl font-black text-white uppercase tracking-wide mb-2">Aucun athlète trouvé</h3>
+              <p className="text-[14px] text-[#9CA3AF] max-w-md leading-relaxed">
+                Essayez de modifier vos filtres ou votre recherche.
+              </p>
+            </>
+          )}
         </div>
       ) : viewMode === "grid" ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
