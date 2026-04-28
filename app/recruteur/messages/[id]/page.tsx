@@ -5,6 +5,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import CoachInfoCard from "@/components/recruteur/CoachInfoCard";
 import AthleteInfoCard from "@/components/recruteur/AthleteInfoCard";
+import FeatureGate from "@/components/subscription/FeatureGate";
 
 /* ═══════════════════════════════════════════════════════════════
    Thread Detail — Recruiter side
@@ -107,7 +108,15 @@ function DaySeparator({ date }: { date: string }) {
   );
 }
 
-export default function RecruiterThreadPage({ params }: { params: Promise<{ id: string }> }) {
+export default function Page({ params }: { params: Promise<{ id: string }> }) {
+  return (
+    <FeatureGate feature="messaging" requiredTier="pro">
+      <RecruiterThreadPage params={params} />
+    </FeatureGate>
+  );
+}
+
+function RecruiterThreadPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const [ctx, setCtx] = useState<ThreadContext | null>(null);
   const [messages, setMessages] = useState<MessageData[]>([]);

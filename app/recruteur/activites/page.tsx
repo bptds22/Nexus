@@ -1,5 +1,6 @@
 "use client";
 
+import FeatureGate from "@/components/subscription/FeatureGate";
 import { useState, useEffect } from "react";
 import ActivityFeedFull from "@/app/components/activities/ActivityFeedFull";
 import type { Activity, ActivityType } from "@/lib/types/activity";
@@ -44,7 +45,15 @@ const ACTION_LABELS: Record<string, { ctaLabel: string; ctaBase: string }> = {
   COACH_REPLY: { ctaLabel: "Voir la réponse", ctaBase: "/recruteur/messages" },
 };
 
-export default function RecruteurActivitesPage() {
+export default function Page() {
+  return (
+    <FeatureGate feature="activity_feed" requiredTier="pro">
+      <RecruteurActivitesPageContent />
+    </FeatureGate>
+  );
+}
+
+function RecruteurActivitesPageContent() {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
 

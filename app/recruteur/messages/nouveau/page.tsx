@@ -6,6 +6,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
 import ErrorToast from "@/components/ui/ErrorToast";
+import FeatureGate from "@/components/subscription/FeatureGate";
 import CoachInfoCard from "@/components/recruteur/CoachInfoCard";
 import AthleteInfoCard from "@/components/recruteur/AthleteInfoCard";
 import type { GlobalRecruitmentStatus } from "@/lib/types/models";
@@ -147,9 +148,11 @@ function AthleteCombobox({
 
 export default function NouveauMessagePage() {
   return (
-    <Suspense fallback={<div className="px-6 sm:px-10 py-8 max-w-[1280px] mx-auto text-[#6b7280]">Chargement...</div>}>
-      <NouveauMessageContent />
-    </Suspense>
+    <FeatureGate feature="messaging" requiredTier="pro">
+      <Suspense fallback={<div className="px-6 sm:px-10 py-8 max-w-[1280px] mx-auto text-[#6b7280]">Chargement...</div>}>
+        <NouveauMessageContent />
+      </Suspense>
+    </FeatureGate>
   );
 }
 

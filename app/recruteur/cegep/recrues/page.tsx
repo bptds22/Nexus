@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
+import FeatureGate from "@/components/subscription/FeatureGate";
 import CegepGate from "@/components/subscription/CegepGate";
 import { createClient } from "@/lib/supabase/client";
 import StarRating from "@/components/ui/StarRating";
@@ -39,7 +40,15 @@ const STAGE_COLORS: Record<string, { bg: string; text: string; border: string }>
 
 /* ── Page ── */
 
-export default function RecrusCegepWrapper() {
+export default function Page() {
+  return (
+    <FeatureGate feature="cegep_management" requiredTier="all_star">
+      <RecrusCegepWrapperContent />
+    </FeatureGate>
+  );
+}
+
+function RecrusCegepWrapperContent() {
   return <CegepGate><RecrusCegepPage /></CegepGate>;
 }
 

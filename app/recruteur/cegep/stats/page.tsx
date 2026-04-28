@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import StarRating from "@/components/ui/StarRating";
+import FeatureGate from "@/components/subscription/FeatureGate";
 import CegepGate from "@/components/subscription/CegepGate";
 import KpiCard from "@/components/director/KpiCard";
 import KpiCardRow from "@/components/director/KpiCardRow";
@@ -89,7 +90,15 @@ interface TopTarget {
    PAGE — Stats de recrutement
 ══════════════════════════════════════════════════════════════ */
 
-export default function CegepStatsWrapper() {
+export default function Page() {
+  return (
+    <FeatureGate feature="cegep_management" requiredTier="all_star">
+      <CegepStatsWrapperContent />
+    </FeatureGate>
+  );
+}
+
+function CegepStatsWrapperContent() {
   return <CegepGate><CegepStatsPage /></CegepGate>;
 }
 

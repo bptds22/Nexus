@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { getStatusConfig } from "@/lib/config/recruitmentStatuses";
+import FeatureGate from "@/components/subscription/FeatureGate";
 import CegepGate from "@/components/subscription/CegepGate";
 import StarRating from "@/components/ui/StarRating";
 import { createClient } from "@/lib/supabase/client";
@@ -255,7 +256,15 @@ const STATUS_FILTERS: { value: string; label: string }[] = [
 
 const SPORT_FILTERS = ["", "Football", "Hockey", "Basketball", "Soccer", "Volleyball"];
 
-export default function ReassignationWrapper() {
+export default function Page() {
+  return (
+    <FeatureGate feature="cegep_management" requiredTier="all_star" adminBypass={true}>
+      <ReassignationWrapperContent />
+    </FeatureGate>
+  );
+}
+
+function ReassignationWrapperContent() {
   return <CegepGate><ReassignationPage /></CegepGate>;
 }
 

@@ -1,5 +1,6 @@
 "use client";
 
+import FeatureGate from "@/components/subscription/FeatureGate";
 import { useState, useMemo, useCallback, memo, useEffect } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
@@ -749,7 +750,15 @@ function SlideOver({
    MAIN PAGE
 ═══════════════════════════════════════════════════════════════ */
 
-export default function PipelinePage() {
+export default function Page() {
+  return (
+    <FeatureGate feature="unlimited_pipeline" requiredTier="pro">
+      <PipelinePageContent />
+    </FeatureGate>
+  );
+}
+
+function PipelinePageContent() {
   const [cards, setCards] = useState<PipelineKanbanCard[]>([]);
   const [selectedCard, setSelectedCard] = useState<PipelineKanbanCard | null>(null);
   const [toast, setToast] = useState<string | null>(null);

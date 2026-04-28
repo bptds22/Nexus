@@ -1,5 +1,6 @@
 "use client";
 
+import FeatureGate from "@/components/subscription/FeatureGate";
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
@@ -128,7 +129,15 @@ function ThreadCard({ thread: t }: { thread: ThreadData }) {
   );
 }
 
-export default function MessagesPage() {
+export default function Page() {
+  return (
+    <FeatureGate feature="messaging" requiredTier="pro">
+      <MessagesPageContent />
+    </FeatureGate>
+  );
+}
+
+function MessagesPageContent() {
   const [search, setSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState<FilterPreset>("tous");
   const [threads, setThreads] = useState<ThreadData[]>([]);

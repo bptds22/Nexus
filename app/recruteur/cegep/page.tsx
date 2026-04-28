@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import FeatureGate from "@/components/subscription/FeatureGate";
 import CegepGate from "@/components/subscription/CegepGate";
 import KpiCard from "@/components/director/KpiCard";
 import KpiCardRow from "@/components/director/KpiCardRow";
@@ -181,7 +182,15 @@ function DarkTooltip({
 
 /* ── Page ──────────────────────────────────────────────────── */
 
-export default function CegepDashboardWrapper() {
+export default function Page() {
+  return (
+    <FeatureGate feature="cegep_management" requiredTier="all_star">
+      <CegepDashboardWrapperContent />
+    </FeatureGate>
+  );
+}
+
+function CegepDashboardWrapperContent() {
   return <CegepGate><CegepDashboardContent /></CegepGate>;
 }
 

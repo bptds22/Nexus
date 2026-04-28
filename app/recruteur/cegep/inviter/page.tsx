@@ -2,10 +2,19 @@
 
 import InviteForm from "@/components/director/InviteForm";
 import InvitationsList from "@/components/director/InvitationsList";
+import FeatureGate from "@/components/subscription/FeatureGate";
 import CegepGate from "@/components/subscription/CegepGate";
 import { RSEQ_SPORTS } from "@/lib/mock";
 
-export default function InviterRecruteurWrapper() {
+export default function Page() {
+  return (
+    <FeatureGate feature="cegep_management" requiredTier="all_star" adminBypass={true}>
+      <InviterRecruteurWrapper />
+    </FeatureGate>
+  );
+}
+
+function InviterRecruteurWrapper() {
   return <CegepGate><InviterRecruteurPage /></CegepGate>;
 }
 

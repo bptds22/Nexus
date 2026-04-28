@@ -1,5 +1,6 @@
 "use client";
 
+import FeatureGate from "@/components/subscription/FeatureGate";
 import React, { useState, useMemo, useCallback, useEffect } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
@@ -918,7 +919,15 @@ function EmptyState({ onCreate }: { onCreate: () => void }) {
    MAIN PAGE
 ═══════════════════════════════════════════════════════════════ */
 
-export default function ListesPage() {
+export default function Page() {
+  return (
+    <FeatureGate feature="custom_lists" requiredTier="pro">
+      <ListesPageContent />
+    </FeatureGate>
+  );
+}
+
+function ListesPageContent() {
   const [lists, setLists] = useState<ProspectList[]>([]);
   const [selectedListId, setSelectedListId] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);

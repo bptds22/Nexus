@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import FeatureGate from "@/components/subscription/FeatureGate";
 import CegepGate from "@/components/subscription/CegepGate";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -210,7 +211,15 @@ function frenchDate(iso: string): string {
 
 /* ── Page ───────────────────────────────────────────────────── */
 
-export default function RecruiterDetailWrapper() {
+export default function Page() {
+  return (
+    <FeatureGate feature="cegep_management" requiredTier="all_star" adminBypass={true}>
+      <RecruiterDetailWrapper />
+    </FeatureGate>
+  );
+}
+
+function RecruiterDetailWrapper() {
   return <CegepGate><RecruiterDetailPage /></CegepGate>;
 }
 

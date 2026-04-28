@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import FeatureGate from "@/components/subscription/FeatureGate";
 import CegepGate from "@/components/subscription/CegepGate";
 import { createClient } from "@/lib/supabase/client";
 import type { TrainerOverview } from "@/lib/types/models";
@@ -96,7 +97,15 @@ const STATUS_FILTER = [
 
 /* ── Component ───────────────────────────────────────────── */
 
-export default function TrainersListWrapper() {
+export default function Page() {
+  return (
+    <FeatureGate feature="cegep_management" requiredTier="all_star" adminBypass={true}>
+      <TrainersListWrapperContent />
+    </FeatureGate>
+  );
+}
+
+function TrainersListWrapperContent() {
   return <CegepGate><TrainersListPage /></CegepGate>;
 }
 
