@@ -122,11 +122,23 @@ file.
       - Athlete profile detail gating (videos, academic full,
         coach contact, detailed eval, recruitment status,
         who-viewed)
-      - Page-level guards on `/recruteur/listes`,
-        `/recruteur/processus`, `/recruteur/messages`,
-        `/recruteur/cegep` — direct URL access still bypasses
-        the sidebar
       - `useSubscription.ts` feature table reconciliation
+        (`can_use_custom_lists` still false for Pro in the hook;
+        sidebar and page guards both use Pro+ — hook is the
+        outlier now)
+
+      **2026-04-28 — Page guards shipped (2/N)** (commit
+      [`23c060e`](../../../commit/23c060e)): 13 recruteur pages
+      now wrapped in `<FeatureGate>`. Direct URL access for gated
+      pages renders `UpgradePlaceholder` instead of the page
+      content. Strict conditional render — children not mounted,
+      no Supabase calls fire. Verified across 4 user/admin
+      scenarios.
+      - **Pro+:** pipeline, listes, messages (×3 routes),
+        activites
+      - **All Star:** cegep root + stats + recrues
+      - **All Star + admin bypass:** cegep/recruteurs,
+        /reassignation, /inviter, /entraineurs/[id]
 
 - [ ] **Onboarding wizard allows skipping school selection.** In the
       shared onboarding wizard
@@ -158,6 +170,23 @@ file.
 ---
 
 ## P2 — Observability
+
+- [ ] **Athlete-route guard pushes non-athletes to onboarding.**
+      Reported 2026-04-28. Visiting any `/athlete/*` route as a
+      recruiter or coach triggers the athlete onboarding flow
+      with the user's name + email pre-filled. Could create
+      phantom athlete rows tied to non-athlete user records if
+      the user submits the form.
+      Reproduced: logged in as `test-allstar@` (recruiter),
+      navigated to `/athlete/visibilite`. App pushed to
+      `/athlete/onboarding` with "Test" / "All star" /
+      `test-allstar@gmail.com` pre-populated and sidebar showing
+      `MON ESPACE ATHLETE`.
+      Pre-existing behavior, not introduced by recent commits.
+      Fix: athlete route layout/guard should redirect
+      non-athletes to their correct portal (`/recruteur/...` or
+      `/coach/...`) instead of pushing them through athlete
+      onboarding.
 
 - [ ] **Debug `console.log` noise in production.** Examples: `Athletes
       loaded: 1 null` from the recherche page, `[Homepage] Hero section
