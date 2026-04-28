@@ -140,6 +140,20 @@ file.
       - **All Star + admin bypass:** cegep/recruteurs,
         /reassignation, /inviter, /entraineurs/[id]
 
+      **2026-04-28 — Pipeline demo mode for Free (3/N)** (commit
+      [`0002c30`](../../../commit/0002c30)): Pipeline is now
+      Free-accessible as a demo. Real favorited athletes load in
+      IDENTIFIE; drag/save actions tease toast and revert.
+      Sidebar unlocked Mon processus. Listes / Messages /
+      Activités / CEGEP routes stay hard-paywalled (no demo
+      mode).
+      The "see the value" pattern only makes sense where the
+      surface is visually compelling AND the demo data is the
+      user's own limited-access data (10-favorite cap on Free).
+      Pipeline qualifies. Listes (custom prospect lists) and
+      Activités (activity feed) don't have natural demo-data —
+      those stay paywalled.
+
 - [ ] **Onboarding wizard allows skipping school selection.** In the
       shared onboarding wizard
       ([`app/onboarding/page.tsx`](../app/onboarding/page.tsx)),
