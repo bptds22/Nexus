@@ -251,6 +251,22 @@ file.
       WHERE photo_url LIKE '%/sign/%';
       ```
 
+- [ ] **Implement CÉGEP coach detail messaging (Phase 2).**
+      Reported 2026-04-28. The "Envoyer un message" button at
+      [`app/recruteur/cegep/entraineurs/[id]/page.tsx:293-295`](../app/recruteur/cegep/entraineurs/%5Bid%5D/page.tsx#L293-L295)
+      is a stub. Its `onClick` calls `showToast("Messagerie
+      interne (Phase 2)")` instead of navigating.
+      When implementing: a director messaging a coach from the
+      CÉGEP context has no specific athlete attached. The
+      current compose flow requires an athlete (the
+      one-thread-per-(recruiter, coach, athlete) tuple
+      invariant). Either:
+      - Allow athlete-less conversations for director-to-coach
+        organizational messaging
+      - Or force the director to pick an athlete first
+        (degraded UX)
+      Product decision needed before code.
+
 ---
 
 ## Closeout rule
@@ -549,3 +565,22 @@ is a separate still-open P1.
 
 Migration:
 [`supabase/migrations/20260427120000_favorites_auto_pipeline.sql`](../supabase/migrations/20260427120000_favorites_auto_pipeline.sql)
+
+### [x] Messaging dead-ends across recruteur surfaces
+Closed 2026-04-28 in commit
+[`bcbd773`](../../../commit/bcbd773). The pipeline 'Envoyer un
+message' Link was building the wrong URL — used `athlete_id`
+where `conversation_id` was expected, so the thread page
+returned 'Conversation introuvable' for any athlete the
+recruiter hadn't already messaged. Fixed by routing to the
+compose page (`/recruteur/messages/nouveau?athlete=<id>`),
+which already supports pre-selecting the athlete via that
+query param.
+While in the area, two adjacent UX fixes:
+- Athlete profile 'Contacter le coach' buttons hidden from
+  users who can't message (Free, Free admin)
+- CÉGEP coach detail 'Envoyer un message' stub hidden likewise
+Admin bypass does NOT extend to messaging — admin role is for
+CÉGEP organizational management, not free product features.
+The CÉGEP coach detail messaging button is still a Phase 2 stub
+(button calls `showToast`, no Link). Logged separately as P3.
