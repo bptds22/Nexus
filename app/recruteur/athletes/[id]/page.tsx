@@ -312,6 +312,7 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
   const searchParams = useSearchParams();
   const isPreview = searchParams?.get("preview") === "true";
   const { maxFavorites, tier } = useSubscription();
+  const canMessageCoach = tier === "pro" || tier === "all_star";
   const { count: myFavCount, setCount: setMyFavCount } = useFavoritesCount();
   const [a, setA] = useState<AthleteProfileRecruiterView>(mockAthleteProfileFull);
   const [loadingAthlete, setLoadingAthlete] = useState(true);
@@ -1244,13 +1245,15 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
       <div className="fixed bottom-0 left-0 right-0 z-40 md:bottom-6 md:left-auto md:right-6 md:w-auto">
         {/* Mobile — full-width bar */}
         <div className="md:hidden bg-[#111317]/95 backdrop-blur-sm border-t border-[#2D3748] px-4 py-3 flex items-center gap-2">
-          <Link href={`/recruteur/messages/nouveau?athlete=${a.id}`}
-            className="flex-1 flex items-center justify-center gap-2.5 bg-[#E63946] text-white rounded-xl px-6 py-3.5 font-head font-bold text-[14px] uppercase tracking-widest transition-all hover:bg-[#D42B22] active:scale-[0.98] shadow-[0_0_20px_rgba(230,57,70,0.3)]">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" />
-            </svg>
-            Contacter le coach
-          </Link>
+          {canMessageCoach && (
+            <Link href={`/recruteur/messages/nouveau?athlete=${a.id}`}
+              className="flex-1 flex items-center justify-center gap-2.5 bg-[#E63946] text-white rounded-xl px-6 py-3.5 font-head font-bold text-[14px] uppercase tracking-widest transition-all hover:bg-[#D42B22] active:scale-[0.98] shadow-[0_0_20px_rgba(230,57,70,0.3)]">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" />
+              </svg>
+              Contacter le coach
+            </Link>
+          )}
           <button type="button" onClick={toggleFav}
             disabled={favButtonDisabled}
             title={favButtonDisabled ? favDisabledTitle : (isFavorited ? "Retirer des favoris" : "Ajouter aux favoris")}
@@ -1269,13 +1272,15 @@ export default function RecruiterAthletePage({ params }: { params: Promise<{ id:
         </div>
         {/* Desktop — floating pill */}
         <div className="hidden md:flex items-center gap-2">
-          <Link href={`/recruteur/messages/nouveau?athlete=${a.id}`}
-            className="flex items-center gap-2.5 bg-[#E63946] text-white rounded-xl px-8 py-4 font-head font-bold text-[14px] uppercase tracking-widest justify-center transition-all hover:bg-[#D42B22] hover:-translate-y-0.5 hover:shadow-[0_0_30px_rgba(230,57,70,0.4)] active:scale-[0.98] shadow-[0_4px_20px_rgba(230,57,70,0.3)]">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" />
-            </svg>
-            Contacter le coach
-          </Link>
+          {canMessageCoach && (
+            <Link href={`/recruteur/messages/nouveau?athlete=${a.id}`}
+              className="flex items-center gap-2.5 bg-[#E63946] text-white rounded-xl px-8 py-4 font-head font-bold text-[14px] uppercase tracking-widest justify-center transition-all hover:bg-[#D42B22] hover:-translate-y-0.5 hover:shadow-[0_0_30px_rgba(230,57,70,0.4)] active:scale-[0.98] shadow-[0_4px_20px_rgba(230,57,70,0.3)]">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" />
+              </svg>
+              Contacter le coach
+            </Link>
+          )}
           <button type="button" onClick={toggleFav}
             disabled={favButtonDisabled}
             className={`w-12 h-12 rounded-xl flex items-center justify-center border transition-all ${favButtonDisabled ? "cursor-not-allowed opacity-40" : "hover:-translate-y-0.5"} ${isFavorited ? "bg-[#E63946]/10 border-[#E63946]/30" : `bg-[#1A1D24] border-[#2D3748] ${favButtonDisabled ? "" : "hover:border-[#E63946]/30"}`}`}

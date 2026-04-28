@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import FeatureGate from "@/components/subscription/FeatureGate";
 import CegepGate from "@/components/subscription/CegepGate";
+import { useSubscription } from "@/lib/hooks/useSubscription";
 
 /* ═══════════════════════════════════════════════════════════════
    Recruiter Detail — Admin CÉGEP coaching tool
@@ -229,6 +230,8 @@ function RecruiterDetailPage() {
   const profile = PROFILES[id];
   const [toast, setToast] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const { tier } = useSubscription();
+  const canMessageCoach = tier === "pro" || tier === "all_star";
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
 
@@ -290,9 +293,11 @@ function RecruiterDetailPage() {
 
           {/* Action buttons */}
           <div className="flex items-center gap-2 shrink-0">
-            <button type="button" onClick={() => showToast("Messagerie interne (Phase 2)")} className="px-4 h-9 rounded-lg bg-[#E63946] text-white font-head font-bold text-[12px] uppercase tracking-[0.1em] hover:bg-[#D42B22] transition-colors">
-              Envoyer un message
-            </button>
+            {canMessageCoach && (
+              <button type="button" onClick={() => showToast("Messagerie interne (Phase 2)")} className="px-4 h-9 rounded-lg bg-[#E63946] text-white font-head font-bold text-[12px] uppercase tracking-[0.1em] hover:bg-[#D42B22] transition-colors">
+                Envoyer un message
+              </button>
+            )}
             <div className="relative">
               <button type="button" onClick={() => setMenuOpen(!menuOpen)} className="w-9 h-9 rounded-lg border border-[#2a2d36] flex items-center justify-center text-[#6B7280] hover:text-white hover:border-white/20 transition-colors">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="12" cy="19" r="1.5" /></svg>
