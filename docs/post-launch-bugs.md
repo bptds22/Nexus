@@ -60,18 +60,38 @@ file.
       place. Hard-deprecation (dropping the column) is logged as
       P3.
       Still open within this P1:
-      - Coach dashboard / tableau-de-bord may still filter by
-        `coach_id`
       - Coach activities feed may still filter by `coach_id`
       - Ma Réputation may filter coach stats by `coach_id`
         ownership
       - Coach side of recruiter messages — needs decision: stay
         coach-scoped (private to specific coach) or go
         school-scoped?
+      - Team creation "Ajouter un athlète" modal filters by
+        `coach_id`. Reported 2026-04-28: when CoachMarketing
+        creates a team and opens the athlete-picker, only "dd
+        dds" appears — her own added athlete. Should show all 4
+        ACTIF St-Jean-Vianney athletes. Likely on
+        `app/coach/equipes/*` or a similar path. Same fix shape
+        as the dashboard: switch the athletes query from
+        `coach_id = me` to `school_id = coachSchoolId`.
       These need audit + same school-scope fix in a follow-up
       session.
       Migration:
       [`supabase/migrations/20260427130000_athlete_suggestions_school_select.sql`](../supabase/migrations/20260427130000_athlete_suggestions_school_select.sql)
+
+      **2026-04-28 — Dashboard school-scoped** (commit
+      [`7d856e7`](../../../commit/7d856e7)): The coach dashboard
+      ([`app/coach/tableau-de-bord/page.tsx`](../app/coach/tableau-de-bord/page.tsx))
+      foundational athletes query now filters by `school_id`
+      instead of `coach_id`. All downstream widgets (KPIs, Hot
+      Athletes, Activity Feed, banners) build on
+      `coachAthleteIds` and inherit the new scope automatically.
+      Three other `coach_id` queries on the page deliberately
+      preserved (interim director check, demotion notifications,
+      personal "athlete added" counter — all about ME, not
+      roster reads).
+      Verified as `coachmarketing@`: `totalAthletes` went from 1
+      to 4 (full St-Jean-Vianney ACTIF roster).
 
 - [ ] **Duplicate Signaler/Favori buttons on athlete profile.** The
       athlete profile page has two sets of Signaler + Favori buttons:
