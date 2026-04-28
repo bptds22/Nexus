@@ -115,7 +115,7 @@ export default function TeamDetailPage() {
     const { data } = await supabase
       .from("athletes")
       .select("id, first_name, last_name, positions!position_id(abreviation)")
-      .eq("coach_id", user.id)
+      .eq("school_id", team.schoolId)
       .not("id", "in", `(${existingIds.join(",") || "00000000-0000-0000-0000-000000000000"})`);
     if (data) {
       setAvailableAthletes(data.map((a: any) => {
