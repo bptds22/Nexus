@@ -13,29 +13,45 @@ import UpgradePlaceholder from "./UpgradePlaceholder";
    where the Network tab revealed gated data despite the visual lock.
 
    Source of truth: useSubscription() hook (reads the `subscriptions`
-   table). School/CÉGEP admins bypass.
+   table). Admin bypass is OPT-IN per call via the adminBypass prop —
+   set to true only for items directors need regardless of tier.
+   Default behavior is tier-only.
 ═══════════════════════════════════════════════════════════════ */
 
 export type GatedFeature =
   | "messaging" | "analytics" | "export_pdf" | "detailed_eval"
   | "video_upload" | "who_viewed" | "bulk_message"
   | "unlimited_pipeline" | "unlimited_favorites" | "unlimited_profiles"
-  | "school_management" | "cegep_management";
+  | "school_management" | "cegep_management"
+  | "custom_lists" | "activity_feed";
 
 interface FeatureGateProps {
   feature: GatedFeature;
   requiredTier: "pro" | "all_star";
   children: React.ReactNode;
+  /** When true, school admins (is_school_admin=true) bypass the
+   *  tier requirement. Default false. Use for operational items
+   *  directors must access regardless of tier (e.g. CÉGEP
+   *  Recruteurs/Réassignation/Inviter). Leave unset for tier-only
+   *  features. */
+  adminBypass?: boolean;
 }
 
-export default function FeatureGate({ feature, requiredTier, children }: FeatureGateProps) {
+export default function FeatureGate({
+  feature,
+  requiredTier,
+  children,
+  adminBypass = false,
+}: FeatureGateProps) {
   const { tier, isSchoolAdmin, loading } = useSubscription();
 
   if (loading) return null;
 
-  // admins always bypass; all_star bypasses everything; pro bypasses pro-level gates
+  // Per-call admin bypass (default false): only items that should
+  // unlock for directors regardless of tier set this true.
+  // all_star bypasses all tier gates; pro bypasses pro-level only.
   const hasAccess =
-    isSchoolAdmin ||
+    (isSchoolAdmin && adminBypass) ||
     tier === "all_star" ||
     (requiredTier === "pro" && tier === "pro");
 

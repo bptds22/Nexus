@@ -31,6 +31,8 @@ const FEATURE_DESCRIPTIONS: Record<string, string> = {
   unlimited_profiles: "Crée un nombre illimité de profils athlètes.",
   school_management: "Supervise tes coachs, suis les placements et gère ton école.",
   cegep_management: "Supervise tes recruteurs, suis les recrues et gère ton CÉGEP.",
+  custom_lists: "Crée des listes personnalisées pour organiser tes prospects par sport, position ou stratégie.",
+  activity_feed: "Suis l'activité récente — qui a consulté tes athlètes, qui a envoyé des messages, et plus.",
 };
 
 interface UpgradePlaceholderProps {
