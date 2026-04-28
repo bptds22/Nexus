@@ -30,7 +30,7 @@ file.
       - If written, does the UI read from the right field?
       - Any storage RLS policies blocking the upload path?
 
-- [ ] **Hidden trigger blocks `coach_id = NULL` on athletes.**
+- [x] **Hidden trigger blocks `coach_id = NULL` on athletes.**
       Reported 2026-04-28 while testing the new claim flow.
       Attempted to free test athletes via:
       ```sql
@@ -64,6 +64,15 @@ file.
       Workaround for testing: INSERT new athletes with
       `coach_id = NULL` directly (the trigger appears to only
       block UPDATE, not INSERT).
+
+      **Closed 2026-04-28 — Piece 2 ship** (commit
+      [`a11bb98`](../../../commit/a11bb98)):
+      Trigger `auto_link_athlete_to_coach` and its function dropped
+      in migration
+      [`20260428060000_drop_auto_link_athlete_coach_trigger.sql`](../supabase/migrations/20260428060000_drop_auto_link_athlete_coach_trigger.sql).
+      Function used `SELECT ... LIMIT 1` with no `ORDER BY` to pick
+      an arbitrary coach when `coach_id` was NULL — non-deterministic
+      and conflicted with the new model.
 
 - [ ] **Coach cannot see athletes from their own school.** Coach at
       a school (e.g., Collège St-Jean-Vianney) cannot see athletes
@@ -325,9 +334,47 @@ file.
       queries on each page. Removing `lib/mock/athlete.ts` entirely
       is the goal once all consumers are wired.
 
+      **2026-04-28 — Dashboard confirmed mock-bound.** While testing
+      Piece 2 (athlete coach selection), confirmed that
+      [`app/athlete/dashboard/page.tsx`](../app/athlete/dashboard/page.tsx)
+      still seeds `firstName`, `is_verified`, `activities`, and
+      `profileChecklist` from `@/lib/mock/athlete` even when the
+      logged-in athlete has none of Marc-Antoine's data. KPI cards
+      (views, favorites, regions) are wired to real Supabase
+      counts and the unread-notifications banner is real, but the
+      activity feed and profile-improvement checklist remain mock
+      for every athlete that loads the dashboard. Fresh signups
+      see Marc-Antoine's mock activity history. Fix: replace
+      `athleteActivity` with a real query against
+      `athlete_notifications` (or a dedicated activity feed table
+      if we add one) and replace `profileChecklist` with a
+      derived list from `athletes.profile_completion` field
+      gaps.
+
 ---
 
 ## P3 — Latent / future work
+
+- [ ] **`users.school_id` and `athletes.school_id` can drift.**
+      Reported 2026-04-28 during Piece 2 testing.
+      `marketing@gmail.com`'s user record had `users.school_id`
+      pointing to one school (Saint-Jean-Eudes) while their
+      `athletes.school_id` pointed to another (Collège
+      St-Jean-Vianney).
+      Mitigated for athletes via role-aware
+      `current_user_school_id()` function (migration
+      [`20260428080000_role_aware_current_user_school_id.sql`](../supabase/migrations/20260428080000_role_aware_current_user_school_id.sql))
+      which reads `athletes.school_id` for the `ATHLETE` role.
+      But the underlying data inconsistency remains and could
+      surface in other queries that read `users.school_id`
+      directly.
+      Long-term fix options:
+      - Backfill `users.school_id` to match `athletes.school_id`
+        for all athletes
+      - Add a constraint or trigger that keeps them in sync on
+        future updates
+      - Fully soft-deprecate `users.school_id` for athletes
+        (only used for COACH / RECRUTEUR roles)
 
 - [ ] **Existing Studio-uploaded photos use signed URLs with 7-day
       expiration.** Some athlete photos in the database use signed
