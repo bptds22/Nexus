@@ -67,6 +67,17 @@ export default function TableauDeBordPage() {
         setSchoolName(schoolObj?.name || "");
       }
 
+      const coachSchoolId = (profile?.school_id as string) || null;
+
+      // If coach has no school assigned, dashboard cannot scope to a
+      // school roster. Bail out early — the dashboard is only useful
+      // for coaches with a school. Show empty state via existing
+      // loading/empty paths.
+      if (!coachSchoolId) {
+        setLoading(false);
+        return;
+      }
+
       // Check if coach is currently DIRECTEUR_INTERIM at any school
       const { data: interimRows } = await supabase
         .from("school_coaches")
@@ -100,11 +111,11 @@ export default function TableauDeBordPage() {
         })));
       }
 
-      // Get all coach's athletes (active)
+      // Get all athletes at the coach's school (school-scoped roster)
       const { data: athleteRows } = await supabase
         .from("athletes")
         .select("id, verified")
-        .eq("coach_id", user.id)
+        .eq("school_id", coachSchoolId)
         .eq("status", "ACTIF");
       console.log("Dashboard athletes:", athleteRows);
 
