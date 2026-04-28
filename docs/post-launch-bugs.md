@@ -30,6 +30,41 @@ file.
       - If written, does the UI read from the right field?
       - Any storage RLS policies blocking the upload path?
 
+- [ ] **Hidden trigger blocks `coach_id = NULL` on athletes.**
+      Reported 2026-04-28 while testing the new claim flow.
+      Attempted to free test athletes via:
+      ```sql
+      UPDATE athletes SET coach_id = NULL WHERE id IN (...);
+      ```
+      The query reported 3 rows updated and the RETURNING clause
+      showed... the OLD `coach_id` values still in place. A
+      trigger or constraint is silently rolling back
+      `coach_id = NULL` on existing rows.
+      This blocks:
+      - Un-claim flow (Piece 2 follow-up to the just-shipped
+        claim flow at commit
+        [`ea0356b`](../../../commit/ea0356b))
+      - Any future data migration that needs to clear `coach_id`
+      - Edge cases like coach account deletion (athletes get
+        orphaned with bad `coach_id` pointing at non-existent
+        users)
+      Diagnostic:
+      ```sql
+      SELECT trigger_name, event_manipulation, action_timing,
+             action_statement
+      FROM information_schema.triggers
+      WHERE event_object_table = 'athletes'
+      ORDER BY trigger_name;
+      ```
+      Likely a BEFORE UPDATE trigger that "protects" `coach_id`
+      from being NULLed. Made sense in the old coach_id-only
+      world; blocks the new claim/un-claim model.
+      Fix: modify or drop the offending trigger. `coach_id =
+      NULL` is now a valid state (the unclaimed pool).
+      Workaround for testing: INSERT new athletes with
+      `coach_id = NULL` directly (the trigger appears to only
+      block UPDATE, not INSERT).
+
 - [ ] **Coach cannot see athletes from their own school.** Coach at
       a school (e.g., Collège St-Jean-Vianney) cannot see athletes
       assigned to that same school in their roster. Breaks the core
