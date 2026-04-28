@@ -89,6 +89,45 @@ file.
           processus" to the locked section
       Decision needed: confirm tier gating once and align everywhere.
 
+      **2026-04-27 — Partially shipped** (commit
+      [`2afa0a3`](../../../commit/2afa0a3)): decision (b). The
+      recruiter sidebar at
+      [`app/recruteur/_components/RecruiterSidebar.tsx`](../app/recruteur/_components/RecruiterSidebar.tsx)
+      now gates each nav item against the user's tier (`free` /
+      `pro` / `all_star`) plus their `is_school_admin` flag.
+      Locked items show a lock icon and intercept the click to
+      open the existing `UpgradeModal` with the matching tier
+      card and the nav item's label as the contextual headline.
+      Final tier matrix:
+      - **Free open:** Tableau de bord, Recherche, Mes favoris,
+        Mon profil, Paramètres
+      - **Pro+:** Mon processus, Listes, Messages, Activités
+      - **All Star:** Mon CÉGEP, Stats recrutement, Recrues
+        confirmées (analytics — no admin bypass)
+      - **All Star OR school admin:** Recruteurs, Réassignation,
+        Inviter (operational — directors reach these regardless
+        of tier)
+
+      `RECRUITER_FEATURES.pro.can_use_custom_lists` in
+      [`lib/hooks/useSubscription.ts`](../lib/hooks/useSubscription.ts)
+      still reads `false` — the hook table is now out of sync
+      with the sidebar's "Listes is Pro+" decision. Reconciling
+      the hook is deferred to the downstream-gate work.
+
+      Still open within this P1:
+      - Mes Favoris cap (10 max for Free) at the favorite action
+      - Search results cap (10 for Free) on `/recruteur/recherche`
+      - Athlete card anonymization on `/recruteur/recherche`
+        (name, photo, jersey hidden for Free)
+      - Athlete profile detail gating (videos, academic full,
+        coach contact, detailed eval, recruitment status,
+        who-viewed)
+      - Page-level guards on `/recruteur/listes`,
+        `/recruteur/processus`, `/recruteur/messages`,
+        `/recruteur/cegep` — direct URL access still bypasses
+        the sidebar
+      - `useSubscription.ts` feature table reconciliation
+
 - [ ] **Onboarding wizard allows skipping school selection.** In the
       shared onboarding wizard
       ([`app/onboarding/page.tsx`](../app/onboarding/page.tsx)),
