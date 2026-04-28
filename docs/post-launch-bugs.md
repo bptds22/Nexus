@@ -60,20 +60,15 @@ file.
       place. Hard-deprecation (dropping the column) is logged as
       P3.
       Still open within this P1:
-      - Coach activities feed may still filter by `coach_id`
       - Ma Réputation may filter coach stats by `coach_id`
         ownership
       - Coach side of recruiter messages — needs decision: stay
         coach-scoped (private to specific coach) or go
         school-scoped?
-      - Team creation "Ajouter un athlète" modal filters by
-        `coach_id`. Reported 2026-04-28: when CoachMarketing
-        creates a team and opens the athlete-picker, only "dd
-        dds" appears — her own added athlete. Should show all 4
-        ACTIF St-Jean-Vianney athletes. Likely on
-        `app/coach/equipes/*` or a similar path. Same fix shape
-        as the dashboard: switch the athletes query from
-        `coach_id = me` to `school_id = coachSchoolId`.
+      - `/coach/activites` page (separate from the dashboard
+        widget) — needs RLS audit; the dashboard widget feed is
+        now school-scoped via the new policy, but the standalone
+        page may have its own gap
       These need audit + same school-scope fix in a follow-up
       session.
       Migration:
@@ -92,6 +87,25 @@ file.
       roster reads).
       Verified as `coachmarketing@`: `totalAthletes` went from 1
       to 4 (full St-Jean-Vianney ACTIF roster).
+
+      **2026-04-28 (late evening) — Activity feed RLS + team
+      modal** (commit
+      [`058cb86`](../../../commit/058cb86)): Two more pieces of
+      school-coach linking shipped:
+      - `recruiter_activity_log` SELECT policy now school-scoped
+        via JOIN to `users.school_id`. The dashboard activity
+        widget on
+        [`app/coach/tableau-de-bord/page.tsx`](../app/coach/tableau-de-bord/page.tsx)
+        now populates with cross-athlete events. Migration:
+        [`supabase/migrations/20260428040000_activity_log_school_scope.sql`](../supabase/migrations/20260428040000_activity_log_school_scope.sql)
+      - Team-detail "Ajouter un athlète" modal at
+        [`app/coach/equipes/[teamId]/page.tsx`](../app/coach/equipes/%5BteamId%5D/page.tsx)
+        switched its athletes query from `coach_id = me` to
+        `school_id = team.schoolId`. The coaches picker on the
+        same page already used the same pattern.
+      Verified as `coachmarketing@`: activity feed populates with
+      cross-athlete events; team modal shows all 4
+      St-Jean-Vianney ACTIF athletes minus already-on-team ones.
 
 - [ ] **Duplicate Signaler/Favori buttons on athlete profile.** The
       athlete profile page has two sets of Signaler + Favori buttons:
@@ -204,6 +218,25 @@ file.
 ---
 
 ## P2 — Observability
+
+- [ ] **Team filter / view toggle on coach dashboard.** Reported
+      2026-04-28. After school-coach linking shipped, dashboard
+      shows school-wide roster (correct per model decision). For
+      coaches at multi-sport / multi-team schools, this mixes
+      relevant data with irrelevant. Add either:
+      - A team filter dropdown (default: all teams, narrows
+        KPIs/feed/Hot Athletes to selected team)
+      - Or a school-view vs team-view toggle (per-coach default
+        preference)
+      Open product questions:
+      - Should ALL widgets honor the filter, or just some?
+      - Default selection for new coaches — all or "my primary
+        team"?
+      - Persist selection per user across sessions?
+      - Does this interact with school admin views (school-wide
+        stats is the admin's primary use case)?
+      Not a launch blocker — single-sport schools already see
+      what they need. Defer to post-launch polish.
 
 - [ ] **Athlete-route guard pushes non-athletes to onboarding.**
       Reported 2026-04-28. Visiting any `/athlete/*` route as a
