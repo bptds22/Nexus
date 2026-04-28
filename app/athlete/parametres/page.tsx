@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import SubscriptionSection from "@/components/subscription/SubscriptionSection";
 import AthletePlayerCard from "@/components/shared/AthletePlayerCard";
+import CoachPicker from "@/components/coach/CoachPicker";
 import { createClient } from "@/lib/supabase/client";
 import { loadAthleteRaw, mapToRecruiterView } from "@/app/coach/athletes/_data/loadAthleteFromSupabase";
 import type { AthleteProfileRecruiterView } from "@/lib/types/models";
@@ -62,11 +63,20 @@ export default function ParametresPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [profile, setProfile] = useState<{
     email: string;
+    schoolId: string;
     schoolName: string;
+    coachId: string | null;
     coachName: string;
+    coachPhotoUrl: string | null;
     parentalConsentGiven: boolean;
     parentalConsentDate: string | null;
   } | null>(null);
+
+  // Coach selection modal state
+  const [showCoachModal, setShowCoachModal] = useState(false);
+  const [showRemoveCoachConfirm, setShowRemoveCoachConfirm] = useState(false);
+  const [pickerSelection, setPickerSelection] = useState<string | null>(null);
+  const [savingCoach, setSavingCoach] = useState(false);
 
   // Social card export
   const [cardAthlete, setCardAthlete] = useState<AthleteProfileRecruiterView | null>(null);
@@ -77,34 +87,40 @@ export default function ParametresPage() {
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
 
-  useEffect(() => {
-    async function loadProfile() {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const { data: row } = await supabase
-        .from("athletes")
-        .select(`
-          consentement_parental,
-          consentement_parental_date,
-          schools!school_id(name),
-          users!athletes_coach_id_fkey(first_name, last_name)
-        `)
-        .eq("user_id", user.id)
-        .maybeSingle();
-      if (!row) return;
-      const schoolRel = Array.isArray(row.schools) ? row.schools[0] : row.schools;
-      const coachRel = Array.isArray(row.users) ? row.users[0] : row.users;
-      setProfile({
-        email: user.email ?? "",
-        schoolName: schoolRel?.name ?? "",
-        coachName: coachRel ? `${coachRel.first_name ?? ""} ${coachRel.last_name ?? ""}`.trim() : "",
-        parentalConsentGiven: row.consentement_parental === true,
-        parentalConsentDate: row.consentement_parental_date ?? null,
-      });
-    }
-    loadProfile();
+  const loadProfile = useCallback(async () => {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { data: row } = await supabase
+      .from("athletes")
+      .select(`
+        school_id,
+        coach_id,
+        consentement_parental,
+        consentement_parental_date,
+        schools!school_id(name),
+        users!athletes_coach_id_fkey(first_name, last_name, photo_url)
+      `)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!row) return;
+    const schoolRel = Array.isArray(row.schools) ? row.schools[0] : row.schools;
+    const coachRel = Array.isArray(row.users) ? row.users[0] : row.users;
+    setProfile({
+      email: user.email ?? "",
+      schoolId: (row.school_id as string) ?? "",
+      schoolName: schoolRel?.name ?? "",
+      coachId: (row.coach_id as string | null) ?? null,
+      coachName: coachRel ? `${coachRel.first_name ?? ""} ${coachRel.last_name ?? ""}`.trim() : "",
+      coachPhotoUrl: (coachRel?.photo_url as string | null) ?? null,
+      parentalConsentGiven: row.consentement_parental === true,
+      parentalConsentDate: row.consentement_parental_date ?? null,
+    });
   }, []);
+
+  useEffect(() => {
+    loadProfile();
+  }, [loadProfile]);
 
   useEffect(() => {
     if (section !== "carte" || cardAthlete || cardLoading) return;
@@ -220,18 +236,69 @@ export default function ParametresPage() {
               </div>
 
               <div className="border-t border-[#2D3748]/40 pt-6">
-                <h2 className="font-head text-lg font-black text-white uppercase tracking-tight mb-4">Mon école &amp; coach</h2>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between py-2">
-                    <span className="text-[13px] text-[#9CA3AF]">École</span>
-                    <span className="text-[14px] font-bold text-white">{profile?.schoolName || "..."}</span>
-                  </div>
-                  <div className="flex items-center justify-between py-2">
-                    <span className="text-[13px] text-[#9CA3AF]">Coach</span>
-                    <span className="text-[14px] font-bold text-white">{profile?.coachName || "..."}</span>
-                  </div>
+                <h2 className="font-head text-lg font-black text-white uppercase tracking-tight mb-4">Mon école</h2>
+                <div className="flex items-center justify-between py-2 mb-4">
+                  <span className="text-[13px] text-[#9CA3AF]">École</span>
+                  <span className="text-[14px] font-bold text-white">{profile?.schoolName || "..."}</span>
                 </div>
-                <p className="text-[11px] text-[#4a4d56] mt-3 italic">Ces informations sont gérées par ton coach. Contacte-le si elles sont incorrectes.</p>
+                <p className="text-[11px] text-[#4a4d56] italic">Pour changer d&apos;école, contacte le support.</p>
+              </div>
+
+              <div className="border-t border-[#2D3748]/40 pt-6">
+                <h2 className="font-head text-lg font-black text-white uppercase tracking-tight mb-4">Mon coach</h2>
+                {profile?.coachId ? (
+                  <div className="bg-[#13151a] border border-white/5 rounded-lg p-4 flex items-center gap-4">
+                    {profile.coachPhotoUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={profile.coachPhotoUrl}
+                        alt={profile.coachName}
+                        className="w-14 h-14 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-14 h-14 rounded-full bg-[#2D3748] flex items-center justify-center text-[14px] font-bold text-white">
+                        {profile.coachName.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
+                      </div>
+                    )}
+                    <div className="flex-1">
+                      <p className="text-[14px] font-bold text-white">{profile.coachName}</p>
+                      <p className="text-[12px] text-[#6b7280]">Mon coach actuel</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPickerSelection(profile.coachId);
+                          setShowCoachModal(true);
+                        }}
+                        className="px-3 py-1.5 text-[12px] font-bold text-[#E63946] hover:text-[#D42B22] transition-colors"
+                      >
+                        Changer
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowRemoveCoachConfirm(true)}
+                        className="px-3 py-1.5 text-[12px] font-bold text-[#6b7280] hover:text-[#EF4444] transition-colors"
+                      >
+                        Retirer
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-[#13151a] border border-white/5 rounded-lg p-4">
+                    <p className="text-[13px] text-[#9CA3AF] mb-3">Tu n&apos;as pas encore de coach.</p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPickerSelection(null);
+                        setShowCoachModal(true);
+                      }}
+                      className="px-4 py-2 bg-[#E63946] hover:bg-[#D42B22] text-white text-[12px] font-bold rounded-lg transition-colors"
+                    >
+                      Sélectionner un coach
+                    </button>
+                  </div>
+                )}
               </div>
 
               <div className="border-t border-[#2D3748]/40 pt-6">
@@ -449,6 +516,113 @@ export default function ParametresPage() {
             <div className="flex items-center justify-end gap-3 mt-5">
               <button type="button" onClick={() => setShowDeleteModal(false)} className="px-4 py-2 text-[13px] font-bold text-[#9CA3AF] hover:text-white transition-colors">Annuler</button>
               <button type="button" onClick={() => { setShowDeleteModal(false); showToast("Demande de suppression envoyée (POC)"); }} className="px-5 py-2 bg-[#E63946] hover:bg-[#D42B22] text-white text-[13px] font-bold rounded-lg transition-colors">Confirmer la suppression</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Coach selection modal */}
+      {showCoachModal && profile && (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => !savingCoach && setShowCoachModal(false)} />
+          <div className="relative bg-[#1A1D24] border border-[#2D3748] rounded-xl p-6 max-w-2xl w-full mx-4 shadow-2xl max-h-[85vh] overflow-y-auto">
+            <h3 className="font-head text-lg font-black text-white uppercase tracking-tight mb-1">
+              {profile.coachId ? "Changer de coach" : "Sélectionner un coach"}
+            </h3>
+            <p className="text-[13px] text-[#9CA3AF] mb-5">
+              Choisis ton coach actuel à {profile.schoolName}.
+            </p>
+            <CoachPicker
+              schoolId={profile.schoolId}
+              selectedCoachId={pickerSelection}
+              onChange={setPickerSelection}
+            />
+            <div className="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-[#2D3748]/40">
+              <button
+                type="button"
+                onClick={() => setShowCoachModal(false)}
+                className="px-4 py-2 text-[13px] font-bold text-[#9CA3AF] hover:text-white transition-colors"
+                disabled={savingCoach}
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  setSavingCoach(true);
+                  const supabase = createClient();
+                  const { data: { user } } = await supabase.auth.getUser();
+                  if (!user) { setSavingCoach(false); return; }
+                  const { error } = await supabase
+                    .from("athletes")
+                    .update({ coach_id: pickerSelection })
+                    .eq("user_id", user.id);
+                  if (error) {
+                    console.error("[Coach update]", error);
+                    showToast("Impossible de mettre à jour le coach");
+                    setSavingCoach(false);
+                    return;
+                  }
+                  showToast(pickerSelection ? "Coach mis à jour" : "Coach retiré");
+                  setShowCoachModal(false);
+                  setSavingCoach(false);
+                  await loadProfile();
+                }}
+                className="px-5 py-2 bg-[#E63946] hover:bg-[#D42B22] text-white text-[13px] font-bold rounded-lg transition-colors disabled:opacity-50"
+                disabled={savingCoach || pickerSelection === profile.coachId}
+              >
+                {savingCoach ? "Enregistrement..." : "Confirmer"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Remove-coach confirmation modal */}
+      {showRemoveCoachConfirm && (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => !savingCoach && setShowRemoveCoachConfirm(false)} />
+          <div className="relative bg-[#1A1D24] border border-[#2D3748] rounded-xl p-6 max-w-sm w-full mx-4 shadow-2xl">
+            <h3 className="font-head text-[16px] font-black text-white uppercase tracking-tight mb-2">Retirer ton coach&nbsp;?</h3>
+            <p className="text-[13px] text-[#9CA3AF] leading-relaxed mb-5">
+              Tu n&apos;auras plus de coach assigné. Tu pourras en sélectionner un autre plus tard.
+            </p>
+            <div className="flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setShowRemoveCoachConfirm(false)}
+                className="px-4 py-2 text-[13px] font-bold text-[#9CA3AF] hover:text-white transition-colors"
+                disabled={savingCoach}
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  setSavingCoach(true);
+                  const supabase = createClient();
+                  const { data: { user } } = await supabase.auth.getUser();
+                  if (!user) { setSavingCoach(false); return; }
+                  const { error } = await supabase
+                    .from("athletes")
+                    .update({ coach_id: null })
+                    .eq("user_id", user.id);
+                  if (error) {
+                    console.error("[Coach remove]", error);
+                    showToast("Impossible de retirer le coach");
+                    setSavingCoach(false);
+                    return;
+                  }
+                  showToast("Coach retiré");
+                  setShowRemoveCoachConfirm(false);
+                  setSavingCoach(false);
+                  await loadProfile();
+                }}
+                className="px-5 py-2 bg-[#EF4444] hover:bg-[#DC2626] text-white text-[13px] font-bold rounded-lg transition-colors disabled:opacity-50"
+                disabled={savingCoach}
+              >
+                {savingCoach ? "Suppression..." : "Retirer"}
+              </button>
             </div>
           </div>
         </div>

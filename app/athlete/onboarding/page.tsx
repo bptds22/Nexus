@@ -8,6 +8,7 @@ import { calculateProfileCompletion } from "@/lib/utils/calculateProfileCompleti
 import SportPositionSelect from "@/app/coach/components/SportPositionSelect";
 import DatePicker from "@/app/coach/components/DatePicker";
 import SchoolSelect from "@/components/ui/SchoolSelect";
+import CoachPicker from "@/components/coach/CoachPicker";
 
 const SPORTS = [
   "Football", "Basketball", "Soccer", "Hockey", "Volleyball",
@@ -65,6 +66,8 @@ export default function AthleteOnboardingPage() {
   // School
   const [selectedSchoolId, setSelectedSchoolId] = useState("");
   const [selectedSchoolName, setSelectedSchoolName] = useState("");
+  // Coach (optional)
+  const [selectedCoachId, setSelectedCoachId] = useState<string | null>(null);
 
   // Step 2 — Academic
   const [gpa, setGpa] = useState("");
@@ -153,6 +156,7 @@ export default function AthleteOnboardingPage() {
           const schoolRel = Array.isArray(existing.schools) ? existing.schools[0] : existing.schools;
           if (schoolRel?.name) setSelectedSchoolName(schoolRel.name);
         }
+        if (existing.coach_id) setSelectedCoachId(existing.coach_id as string);
         if (existing.parent_first_name) setParentFirstName(existing.parent_first_name);
         if (existing.parent_last_name) setParentLastName(existing.parent_last_name);
         if (existing.parent_email) setParentEmail(existing.parent_email);
@@ -220,6 +224,7 @@ export default function AthleteOnboardingPage() {
         photo_url: photo || null, email: email || null, telephone: phone || null,
         annee_diplomation: gradYear ? parseInt(gradYear) : null,
         school_id: selectedSchoolId || null,
+        coach_id: selectedCoachId,
         nom_parent: `${parentFirstName.trim()} ${parentLastName.trim()}`.trim() || null,
         parent_first_name: parentFirstName.trim() || null, parent_last_name: parentLastName.trim() || null,
         parent_email: parentEmail.trim() || null, telephone_parent: parentPhone.trim() || null,
@@ -292,6 +297,7 @@ export default function AthleteOnboardingPage() {
     const athleteRecord = {
       user_id: userId,
       school_id: selectedSchoolId || null,
+      coach_id: selectedCoachId,
       first_name: firstName.trim(),
       last_name: lastName.trim(),
       date_naissance: dateOfBirth || null,
@@ -353,20 +359,6 @@ export default function AthleteOnboardingPage() {
     if (freshAthlete) {
       const completion = calculateProfileCompletion(freshAthlete);
       await supabase.from("athletes").update({ profile_completion: completion }).eq("user_id", userId);
-    }
-
-    // Auto-link to coach at the same school (DB trigger also handles this as safety net)
-    if (selectedSchoolId) {
-      const { data: coaches } = await supabase
-        .from("users")
-        .select("id")
-        .eq("school_id", selectedSchoolId)
-        .eq("role", "COACH")
-        .limit(1);
-      if (coaches && coaches.length > 0) {
-        await supabase.from("athletes").update({ coach_id: coaches[0].id }).eq("user_id", userId);
-        console.log("[Onboarding] linked to coach:", coaches[0].id);
-      }
     }
 
     await supabase.from("users").update({ onboarding_complete: true }).eq("id", userId);
@@ -491,12 +483,31 @@ export default function AthleteOnboardingPage() {
                 onChange={(id) => {
                   setSelectedSchoolId(id);
                   if (!id) setSelectedSchoolName("");
+                  setSelectedCoachId(null);
                 }}
                 filterType="SECONDAIRE"
                 placeholder="Rechercher ton école..."
               />
             </div>
             {selectedSchoolName && <p className="text-[12px] text-[#22C55E] font-bold mb-6">✓ {selectedSchoolName}</p>}
+
+            {/* Coach picker — only after school selection */}
+            {selectedSchoolId && (
+              <>
+                <div className={sectionTitle}>
+                  <div className="w-0.5 h-4 bg-[#E63946] rounded-full" />
+                  Mon coach <span className="text-[10px] text-[#4a4d56] font-normal normal-case tracking-normal ml-2">(optionnel)</span>
+                </div>
+                <p className="text-[12px] text-[#6b7280] mb-3">Sélectionne ton coach actuel. Tu pourras changer plus tard.</p>
+                <div className="mb-6">
+                  <CoachPicker
+                    schoolId={selectedSchoolId}
+                    selectedCoachId={selectedCoachId}
+                    onChange={setSelectedCoachId}
+                  />
+                </div>
+              </>
+            )}
 
             {/* Parent / Guardian */}
             <div className={sectionTitle}><div className="w-0.5 h-4 bg-[#E63946] rounded-full" />Parent / Tuteur</div>
