@@ -1,7 +1,7 @@
 "use client";
 
-import FeatureGate from "@/components/subscription/FeatureGate";
 import { useState, useMemo, useCallback, memo, useEffect } from "react";
+import { useSubscription } from "@/lib/hooks/useSubscription";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -538,10 +538,13 @@ interface NoteEntry {
 
 function SlideOver({
   card, onClose, onStatusChange, onTogglePriority,
+  isFreeDemoMode, onTeaseUpgrade,
 }: {
   card: PipelineKanbanCard; onClose: () => void;
   onStatusChange: (cardId: string, newStatus: RecruitmentStatus) => void;
   onTogglePriority: (cardId: string, value: boolean) => void;
+  isFreeDemoMode: boolean;
+  onTeaseUpgrade: () => void;
 }) {
   const [noteText, setNoteText] = useState("");
   const [noteHistory, setNoteHistory] = useState<NoteEntry[]>([]);
@@ -570,6 +573,11 @@ function SlideOver({
   // Post a new note
   const handlePostNote = async () => {
     if (!noteText.trim()) return;
+    if (isFreeDemoMode) {
+      onTeaseUpgrade();
+      setNoteText("");
+      return;
+    }
     setPosting(true);
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -751,11 +759,7 @@ function SlideOver({
 ═══════════════════════════════════════════════════════════════ */
 
 export default function Page() {
-  return (
-    <FeatureGate feature="unlimited_pipeline" requiredTier="pro">
-      <PipelinePageContent />
-    </FeatureGate>
-  );
+  return <PipelinePageContent />;
 }
 
 function PipelinePageContent() {
@@ -770,6 +774,12 @@ function PipelinePageContent() {
   const [competitorMap, setCompetitorMap] = useState<Record<string, number>>({});
   const [sportFilter, setSportFilter] = useState("");
   const now = useClientNow();
+
+  // Free users get a read-only "demo" experience: kanban renders
+  // with their real pipeline data, drags revert on drop, save
+  // actions show a tease toast instead of persisting.
+  const { tier } = useSubscription();
+  const isFreeDemoMode = tier === "free";
 
   /* ── Supabase fetch ──────────────────────────────────────── */
 
@@ -924,8 +934,17 @@ function PipelinePageContent() {
     setTimeout(() => setToast(null), 3000);
   }, []);
 
+  const teaseUpgrade = useCallback(() => {
+    showToast("Passe à Pro pour sauvegarder ton pipeline");
+  }, [showToast]);
+
   /* ── Status change handler ─────────────────────────────────── */
   const handleStatusChange = useCallback(async (cardId: string, newStatus: RecruitmentStatus) => {
+    if (isFreeDemoMode) {
+      teaseUpgrade();
+      setSelectedCard(null);
+      return;
+    }
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
@@ -956,9 +975,13 @@ function PipelinePageContent() {
     }
     setSelectedCard(null);
     showToast(`Statut changé → ${KANBAN_COLUMNS.find((col) => col.id === newStatus)?.label || newStatus}`);
-  }, [showToast]);
+  }, [showToast, isFreeDemoMode, teaseUpgrade]);
 
   const handleTogglePriority = useCallback(async (cardId: string, value: boolean) => {
+    if (isFreeDemoMode) {
+      teaseUpgrade();
+      return;
+    }
     setCards((prev) => prev.map((c) => c.id === cardId ? { ...c, flagged: value } : c));
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -967,10 +990,15 @@ function PipelinePageContent() {
       console.log("[Pipeline PATCH]", { id: cardId, field: "flagged", newValue: value, error });
     }
     showToast(value ? "Marqué prioritaire" : "Priorité retirée");
-  }, [showToast]);
+  }, [showToast, isFreeDemoMode, teaseUpgrade]);
 
   /* ── Save next action ───────────────────────────────────────── */
   const handleSaveAction = useCallback(async (pipelineId: string, fields: { flagged: boolean; next_action_at: string | null; next_action_note: string | null }) => {
+    if (isFreeDemoMode) {
+      teaseUpgrade();
+      setActionPopover(null);
+      return;
+    }
     // Optimistic update
     setCards((prev) => prev.map((c) => c.pipeline_id === pipelineId ? { ...c, ...fields } : c));
     setActionPopover(null);
@@ -978,7 +1006,7 @@ function PipelinePageContent() {
     const { error } = await supabase.from("recruiter_pipeline").update(fields).eq("id", pipelineId);
     console.log("[Pipeline PATCH]", { id: pipelineId, field: "next_action", newValue: fields, error });
     showToast("Suivi mis à jour");
-  }, [showToast]);
+  }, [showToast, isFreeDemoMode, teaseUpgrade]);
 
   const openSlideOver = useCallback((card: PipelineKanbanCard) => {
     const fresh = cards.find((c) => c.id === card.id) || card;
@@ -1010,8 +1038,21 @@ function PipelinePageContent() {
     const targetCol = over.id as RecruitmentStatus;
     if (!KANBAN_COLUMNS.some((c) => c.id === targetCol)) return;
     if (card.status === targetCol) return;
+
+    if (isFreeDemoMode) {
+      // Demo mode: visually move the card, then snap back with a
+      // tease toast. No DB write, no confirm modal.
+      const originalStatus = card.status;
+      setCards((prev) => prev.map((c) => c.id === card.id ? { ...c, status: targetCol } : c));
+      setTimeout(() => {
+        setCards((prev) => prev.map((c) => c.id === card.id ? { ...c, status: originalStatus } : c));
+        teaseUpgrade();
+      }, 600);
+      return;
+    }
+
     setPendingDrop({ cardId: card.id, from: card.status, to: targetCol });
-  }, [showToast]);
+  }, [isFreeDemoMode, teaseUpgrade]);
 
   const confirmDrop = useCallback(() => {
     if (!pendingDrop) return;
@@ -1032,6 +1073,22 @@ function PipelinePageContent() {
         <h1 className="font-head text-2xl sm:text-3xl font-black text-white uppercase tracking-tight">Mon processus de recrutement</h1>
         <p className="text-[14px] text-[#9CA3AF] mt-1">Saison 2025-2026 · Suivez vos prospects de l&apos;identification à la signature</p>
       </div>
+
+      {isFreeDemoMode && (
+        <div className="bg-[#1A1D24] border border-[#F59E0B]/20 rounded-lg px-5 py-3 flex items-center gap-3">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+            <circle cx="12" cy="12" r="10" />
+            <path d="M12 8v4M12 16h.01" />
+          </svg>
+          <p className="text-[13px] text-[#9CA3AF] flex-1">
+            Tu visualises ton pipeline.{" "}
+            <Link href="/tarifs" className="text-[#F59E0B] font-bold hover:underline">
+              Passe à Pro
+            </Link>{" "}
+            pour sauvegarder tes mouvements et ajouter des notes.
+          </p>
+        </div>
+      )}
 
       <FunnelSummary cards={cards} />
 
@@ -1102,7 +1159,15 @@ function PipelinePageContent() {
 
       {/* Slide-Over */}
       {selectedCard && (
-        <SlideOver key={selectedCard.id} card={selectedCard} onClose={() => setSelectedCard(null)} onStatusChange={handleStatusChange} onTogglePriority={handleTogglePriority} />
+        <SlideOver
+          key={selectedCard.id}
+          card={selectedCard}
+          onClose={() => setSelectedCard(null)}
+          onStatusChange={handleStatusChange}
+          onTogglePriority={handleTogglePriority}
+          isFreeDemoMode={isFreeDemoMode}
+          onTeaseUpgrade={teaseUpgrade}
+        />
       )}
 
       {/* TASK 5: Next action popover */}
