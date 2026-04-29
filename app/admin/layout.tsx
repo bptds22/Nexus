@@ -1,32 +1,39 @@
-"use client";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import AdminShell from "./_components/AdminShell";
 
-import { useState } from "react";
-import PlaybookBackground from "@/app/components/PlaybookBackground";
-import AdminSidebar from "./_components/AdminSidebar";
-import DeactivationGuard from "@/components/auth/DeactivationGuard";
-import PreMaintenanceBanner from "@/components/auth/PreMaintenanceBanner";
+/* ─────────────────────────────────────────────────────────────────
+   Admin Portal Layout — server component + SSR guard.
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const [mobileOpen, setMobileOpen] = useState(false);
+   Pattern:
+   - Layout itself is async + runs the is_platform_admin check
+     before any UI mounts. Non-admins see the redirect destination,
+     not a flash of admin chrome.
+   - Mobile menu state + sidebar live in AdminShell (client) so the
+     layout stays pure server.
 
-  return (
-    <div className="hero-playbook nx-no-glow bg-[#111317] min-h-screen flex">
-      <DeactivationGuard />
-      <PlaybookBackground />
-      <AdminSidebar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
-      <div className="flex-1 flex flex-col min-h-screen">
-        <PreMaintenanceBanner />
-        {/* Mobile top bar */}
-        <div className="lg:hidden sticky top-0 z-30 bg-[#111317]/90 backdrop-blur-sm border-b border-[#1e2128] h-16 flex items-center px-4 gap-3">
-          <button type="button" onClick={() => setMobileOpen(true)} title="Menu" aria-label="Menu" className="text-white p-2">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M3 12h18M3 6h18M3 18h18" /></svg>
-          </button>
-          <span className="font-head text-sm font-bold text-white uppercase tracking-wider">Portail Admin</span>
-        </div>
-        <main className="relative z-10 flex-1">
-          {children}
-        </main>
-      </div>
-    </div>
-  );
+   Auth + authz:
+   - No session → /auth
+   - Authenticated but not is_platform_admin = true → /
+   - Otherwise → render <AdminShell>{children}</AdminShell>
+
+   The guard uses the SECURITY DEFINER helper is_platform_admin(uid)
+   added in 20260429000000_add_media_partners.sql, which falls
+   back to false when the row is missing.
+───────────────────────────────────────────────────────────────── */
+
+export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+  const supabase = await createClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/auth");
+
+  const { data: isAdmin, error } = await supabase.rpc("is_platform_admin", { uid: user.id });
+  if (error) {
+    console.error("[admin layout] is_platform_admin rpc:", error);
+    redirect("/");
+  }
+  if (!isAdmin) redirect("/");
+
+  return <AdminShell>{children}</AdminShell>;
 }
