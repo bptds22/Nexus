@@ -329,25 +329,6 @@ file.
 
 ## P2 — Observability
 
-- [ ] **Team filter / view toggle on coach dashboard.** Reported
-      2026-04-28. After school-coach linking shipped, dashboard
-      shows school-wide roster (correct per model decision). For
-      coaches at multi-sport / multi-team schools, this mixes
-      relevant data with irrelevant. Add either:
-      - A team filter dropdown (default: all teams, narrows
-        KPIs/feed/Hot Athletes to selected team)
-      - Or a school-view vs team-view toggle (per-coach default
-        preference)
-      Open product questions:
-      - Should ALL widgets honor the filter, or just some?
-      - Default selection for new coaches — all or "my primary
-        team"?
-      - Persist selection per user across sessions?
-      - Does this interact with school admin views (school-wide
-        stats is the admin's primary use case)?
-      Not a launch blocker — single-sport schools already see
-      what they need. Defer to post-launch polish.
-
 - [ ] **Athlete-route guard pushes non-athletes to onboarding.**
       Reported 2026-04-28. Visiting any `/athlete/*` route as a
       recruiter or coach triggers the athlete onboarding flow
