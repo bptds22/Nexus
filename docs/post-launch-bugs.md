@@ -346,11 +346,22 @@ file.
       `/coach/...`) instead of pushing them through athlete
       onboarding.
 
-- [ ] **Debug `console.log` noise in production.** Examples: `Athletes
+- [x] **Debug `console.log` noise in production.** Examples: `Athletes
       loaded: 1 null` from the recherche page, `[Homepage] Hero section
       rendered` from `app/page.tsx`, `[GrainOverlay] mounted` from the
       editorial system. Strip before public launch. Sweep with
       `grep -rn 'console.log' app/` and decide per-site.
+
+      **Deferred 2026-04-29 — moved to pre-launch checklist**:
+      counted 385 `console.log` calls across 79 files
+      (concentrated in
+      [`app/coach/ecole/analytics/page.tsx`](../app/coach/ecole/analytics/page.tsx)
+      with 30, [`app/coach/athletes/[id]/modifier/page.tsx`](../app/coach/athletes/%5Bid%5D/modifier/page.tsx)
+      with 25, and a long tail). Mechanical sweep is better
+      done in a focused launch prep session than piecemeal
+      late evening. Tracked in
+      [`docs/pre-launch-checklist.md`](pre-launch-checklist.md)
+      under Code hygiene.
 
 - [ ] **"Pas dans le pipeline" status should tease Pro upgrade for
       Free users.** On the recruiter athlete profile, the "Mon statut"
