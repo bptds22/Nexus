@@ -318,7 +318,7 @@ file.
       around the `Mon statut` block. UX polish — save for the
       upgrade-prompts pass.
 
-- [ ] **Athlete portal still uses mock data in dashboard and other
+- [x] **Athlete portal still uses mock data in dashboard and other
       pages.** The mock file
       [`lib/mock/athlete.ts`](../lib/mock/athlete.ts) exports
       `athleteUser`, `athleteStats`, `athleteActivity`,
@@ -350,6 +350,26 @@ file.
       if we add one) and replace `profileChecklist` with a
       derived list from `athletes.profile_completion` field
       gaps.
+
+      **Closed 2026-04-28** (commit
+      [`5387755`](../../../commit/5387755)):
+      Dashboard now reads real data on all four surfaces. Activity
+      feed queries `recruiter_activity_log` filtered by
+      `athlete_id`, joined with the recruiter's region for the
+      message text — empty state shows when fresh athletes have no
+      events. Profile checklist derives from a second `athletes`
+      query (with `evaluations` join) — each of the 10 items
+      reflects whether that specific field is populated. Greeting
+      and `verified` badge initialize to empty/false instead of
+      Marc-Antoine defaults; profile completion % reads
+      `athletes.profile_completion`. `AthleteSuggestion` type was
+      relocated to [`lib/types/models.ts`](../lib/types/models.ts)
+      (the only external consumer was the profil page). Mock file
+      [`lib/mock/athlete.ts`](../lib/mock/athlete.ts) deleted in
+      full (115 lines, 10 exports — the 4 unused exports
+      `athleteSuggestions` / `AthleteNotification` /
+      `athleteNotifications` / `ProfileChecklistItem` had zero
+      consumers per codebase grep before deletion).
 
 ---
 
