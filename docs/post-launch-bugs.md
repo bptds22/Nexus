@@ -41,9 +41,6 @@ file.
       trigger or constraint is silently rolling back
       `coach_id = NULL` on existing rows.
       This blocks:
-      - Un-claim flow (Piece 2 follow-up to the just-shipped
-        claim flow at commit
-        [`ea0356b`](../../../commit/ea0356b))
       - Any future data migration that needs to clear `coach_id`
       - Edge cases like coach account deletion (athletes get
         orphaned with bad `coach_id` pointing at non-existent
@@ -58,9 +55,10 @@ file.
       ```
       Likely a BEFORE UPDATE trigger that "protects" `coach_id`
       from being NULLed. Made sense in the old coach_id-only
-      world; blocks the new claim/un-claim model.
+      world; blocks the new claim model.
       Fix: modify or drop the offending trigger. `coach_id =
-      NULL` is now a valid state (the unclaimed pool).
+      NULL` is now a valid state (the unclaimed pool — newly
+      created athletes who haven't been claimed yet).
       Workaround for testing: INSERT new athletes with
       `coach_id = NULL` directly (the trigger appears to only
       block UPDATE, not INSERT).
@@ -73,6 +71,21 @@ file.
       Function used `SELECT ... LIMIT 1` with no `ORDER BY` to pick
       an arbitrary coach when `coach_id` was NULL — non-deterministic
       and conflicted with the new model.
+
+      **Un-claim flow — closed without implementation
+      2026-04-28**: architecturally considered as a Piece 1
+      follow-up but deliberately not built. Coaches don't have a
+      real need to return an athlete to the unclaimed pool — the
+      existing `recruitment_status = RETIRE` option covers the
+      actual workflow. The coach marks the athlete as retired
+      (out of recruitment, records preserved); the athlete stays
+      in the coach's roster, history intact. RETIRE handles the
+      three real Quebec scenarios: athlete graduating, athlete
+      leaving the program, athlete switching schools. Trying to
+      "release" an athlete back to unclaimed creates more
+      confusion than it solves. Revisit only if a multi-coach
+      scenario emerges (rare in current single-coach-per-athlete
+      design).
 
 - [ ] **Coach cannot see athletes from their own school.** Coach at
       a school (e.g., Collège St-Jean-Vianney) cannot see athletes
