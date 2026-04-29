@@ -87,7 +87,7 @@ file.
       scenario emerges (rare in current single-coach-per-athlete
       design).
 
-- [ ] **Coach cannot see athletes from their own school.** Coach at
+- [x] **Coach cannot see athletes from their own school.** Coach at
       a school (e.g., Collège St-Jean-Vianney) cannot see athletes
       assigned to that same school in their roster. Breaks the core
       coach workflow: approval, evaluations, rapport d'entraîneur,
@@ -163,6 +163,59 @@ file.
       Verified as `coachmarketing@`: activity feed populates with
       cross-athlete events; team modal shows all 4
       St-Jean-Vianney ACTIF athletes minus already-on-team ones.
+
+      **Closed 2026-04-28 — full revisit shipped**: After Pieces
+      1 + 2 of the claim model shipped (coach claim flow +
+      athlete coach selection at signup/settings), all five
+      coach surfaces were tightened back from the school-scoped
+      over-correction to coach-scoped via the claim model:
+
+      1. **Coach dashboard** (commit
+         [`2bf628b`](../../../commit/2bf628b)) —
+         [`app/coach/tableau-de-bord/page.tsx`](../app/coach/tableau-de-bord/page.tsx)
+         athletes query swapped `.eq("school_id", coachSchoolId)`
+         for `.eq("coach_id", user.id)`. All downstream widgets
+         (KPIs, hot athletes, activity feed, suggestions,
+         conversations) flip via the same `coachAthleteIds`
+         array.
+
+      2. **Mes Athlètes À traiter tab** (commit
+         [`c9045c2`](../../../commit/c9045c2)) —
+         [`app/coach/athletes/page.tsx`](../app/coach/athletes/page.tsx)
+         unverified-athletes filter and pending-suggestions
+         query both add `coach_id === session.user.id`. The
+         page-level athletes query stays school-scoped because
+         the À réclamer tab still needs school-wide data.
+
+      3. **Mes Équipes list** (commit
+         [`b96ffa1`](../../../commit/b96ffa1)) —
+         [`app/coach/equipes/page.tsx`](../app/coach/equipes/page.tsx)
+         now fetches my team IDs from `team_coaches` first,
+         then loads only those teams via `.in("id", myTeamIds)`.
+         Team detail page stays school-scoped (athlete picker
+         needs school-wide).
+
+      4. **`recruiter_activity_log` RLS** (commit
+         [`a08cc30`](../../../commit/a08cc30), migration
+         [`20260428090000_activity_log_coach_scope.sql`](../supabase/migrations/20260428090000_activity_log_coach_scope.sql))
+         — replaces the school-scoped SELECT policy with
+         `Coaches read activity for their claimed athletes`
+         using `athletes.coach_id = auth.uid()`. The athletes-
+         self SELECT policy stays.
+
+      5. **`athlete_suggestions` RLS** (commit
+         [`accaa38`](../../../commit/accaa38), migration
+         [`20260428100000_athlete_suggestions_coach_scope.sql`](../supabase/migrations/20260428100000_athlete_suggestions_coach_scope.sql))
+         — coach-claimed SELECT + UPDATE policies replace
+         school-scoped SELECT and the permissive UPDATE that
+         had let any authenticated user mutate any suggestion
+         row. Bonus security hole closed at the RLS layer; app
+         layer was the only thing previously preventing
+         cross-coach approval/rejection.
+
+      The school-coach over-correction is fully unwound. The
+      claim model is now the source of truth for coach
+      visibility everywhere.
 
 - [ ] **Duplicate Signaler/Favori buttons on athlete profile.** The
       athlete profile page has two sets of Signaler + Favori buttons:
