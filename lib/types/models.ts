@@ -131,6 +131,10 @@ export interface Athlete {
   timeline?: AthleteTimelineEntry[];
   recruiterActivity?: RecruiterActivityEntry[];
   coachContact?: CoachContact;
+  /* ── Media partner opt-in (snake_case to mirror DB column names) ── */
+  partner_visibility_opt_in?: boolean;
+  partner_visibility_opted_in_at?: string | null;
+  partner_visibility_parental_consent?: boolean;
 }
 
 /** Athlete row in the coach dashboard table (compact view with completeness flags) */
@@ -896,4 +900,39 @@ export interface AthleteSuggestion {
   submitted_at: string;
   reviewed_at?: string;
   rejection_reason?: string;
+}
+
+/* ── Media partners (Phase 1) ─────────────────────────────── */
+
+export type PartnerStatus = "PENDING" | "APPROVED" | "SUSPENDED" | "REVOKED";
+export type CardDownloadFormat = "square" | "story" | "landscape";
+
+export interface MediaPartner {
+  id: string;
+  user_id: string;
+  organization_name: string;
+  contact_name: string;
+  contact_email: string;
+  logo_url: string | null;
+  website_url: string | null;
+  instagram_handle: string | null;
+  facebook_url: string | null;
+  tiktok_handle: string | null;
+  description: string | null;
+  audience_size: number | null;
+  status: PartnerStatus;
+  approved_at: string | null;
+  approved_by: string | null;
+  show_on_homepage: boolean;
+  homepage_order: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PartnerCardDownload {
+  id: string;
+  partner_id: string;
+  athlete_id: string;
+  format: CardDownloadFormat;
+  downloaded_at: string;
 }
