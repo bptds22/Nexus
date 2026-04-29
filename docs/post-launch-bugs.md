@@ -450,7 +450,7 @@ file.
 
 ## P3 — Latent / future work
 
-- [ ] **`users.school_id` and `athletes.school_id` can drift.**
+- [x] **`users.school_id` and `athletes.school_id` can drift.**
       Reported 2026-04-28 during Piece 2 testing.
       `marketing@gmail.com`'s user record had `users.school_id`
       pointing to one school (Saint-Jean-Eudes) while their
@@ -470,6 +470,21 @@ file.
         future updates
       - Fully soft-deprecate `users.school_id` for athletes
         (only used for COACH / RECRUTEUR roles)
+
+      **Closed 2026-04-29 — drift count is 0**: underlying
+      inconsistency was a one-time test data artifact (role
+      change on `marketing@gmail.com`). Normal-flow athletes
+      never write `users.school_id` —
+      [`app/onboarding/page.tsx`](../app/onboarding/page.tsx)
+      only updates that column inside `if (role === "coach"
+      || role === "coach_league")` and `if (... role ===
+      "recruiter")` branches; the athlete onboarding wizard
+      writes only to `athletes.school_id`. The role-aware
+      `current_user_school_id()` helper insulates RLS from
+      any future drift. No backfill needed; no code change
+      needed. Future role changes via admin tooling should
+      clear stale `users.school_id`, but that's an admin
+      tooling concern, not this entry's scope.
 
 - [ ] **Existing Studio-uploaded photos use signed URLs with 7-day
       expiration.** Some athlete photos in the database use signed
