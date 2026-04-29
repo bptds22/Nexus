@@ -9,6 +9,7 @@ import PlaybookBackground from "../components/PlaybookBackground";
 import DeactivationGuard from "@/components/auth/DeactivationGuard";
 import PreMaintenanceBanner from "@/components/auth/PreMaintenanceBanner";
 import DevTierSwitcher from "@/components/dev/DevTierSwitcher";
+import WrongRoutePage from "./_components/WrongRoutePage";
 /* ─────────────────────────────────────────────────────────────────
    Nexus — Athlete Portal Layout
    Sidebar nav + main content. Simplified for 16-18 year old athletes.
@@ -205,37 +206,54 @@ function AthleteSidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose:
 
 export default function AthleteLayout({ children }: { children: React.ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [onboardingChecked, setOnboardingChecked] = useState(false);
+  const router = useRouter();
   const pathname = usePathname();
-  const layoutRouter = useRouter();
+  const [state, setState] = useState<"loading" | "ok" | "wrong-role">("loading");
+  const [wrongRole, setWrongRole] = useState<"COACH" | "RECRUTEUR" | null>(null);
 
-  // Onboarding guard — redirect to /athlete/onboarding if profile incomplete
   useEffect(() => {
-    if (pathname.startsWith("/athlete/onboarding")) {
-      setOnboardingChecked(true);
-      return;
-    }
-    async function checkOnboarding() {
+    async function checkAccess() {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { setOnboardingChecked(true); return; }
 
-      const { data: athlete } = await supabase
-        .from("athletes")
-        .select("first_name, last_name, school_id, sport_id")
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      if (!athlete || !athlete.first_name || !athlete.last_name || !athlete.school_id || !athlete.sport_id) {
-        layoutRouter.replace("/athlete/onboarding");
+      if (!user) {
+        router.replace("/auth");
         return;
       }
-      setOnboardingChecked(true);
-    }
-    checkOnboarding();
-  }, [pathname, layoutRouter]);
 
-  if (!onboardingChecked && !pathname.startsWith("/athlete/onboarding")) {
+      const { data } = await supabase
+        .from("users")
+        .select("role, onboarding_complete")
+        .eq("id", user.id)
+        .single();
+
+      if (!data) {
+        router.replace("/auth");
+        return;
+      }
+
+      if (data.role === "COACH" || data.role === "RECRUTEUR") {
+        setWrongRole(data.role);
+        setState("wrong-role");
+        return;
+      }
+
+      if (data.role === "ATHLETE" && !data.onboarding_complete && pathname !== "/athlete/onboarding") {
+        router.replace("/athlete/onboarding");
+        return;
+      }
+
+      if (data.role === "ATHLETE" && data.onboarding_complete && pathname === "/athlete/onboarding") {
+        router.replace("/athlete/dashboard");
+        return;
+      }
+
+      setState("ok");
+    }
+    checkAccess();
+  }, [router, pathname]);
+
+  if (state === "loading") {
     return (
       <div className="hero-playbook nx-no-glow bg-[#111317] min-h-screen flex items-center justify-center">
         <PlaybookBackground />
@@ -243,6 +261,8 @@ export default function AthleteLayout({ children }: { children: React.ReactNode 
       </div>
     );
   }
+
+  if (state === "wrong-role") return <WrongRoutePage role={wrongRole} />;
 
   return (
     <div className="hero-playbook nx-no-glow bg-[#111317] min-h-screen flex">

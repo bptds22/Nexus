@@ -284,6 +284,23 @@ export default function AthleteOnboardingPage() {
     try {
     const supabase = createClient();
 
+    // Defense-in-depth: refuse to create athletes row if user
+    // is not actually ATHLETE role. The layout's role guard
+    // should prevent this, but if a non-athlete somehow
+    // reaches here, abort cleanly instead of corrupting data.
+    const { data: userRoleCheck } = await supabase
+      .from("users")
+      .select("role")
+      .eq("id", userId)
+      .single();
+
+    if (userRoleCheck?.role !== "ATHLETE") {
+      console.error("[Athlete onboarding] non-athlete attempted to submit, role:", userRoleCheck?.role);
+      alert("Erreur : ton compte n'est pas configuré comme athlète. Contacte le support.");
+      setSaving(false);
+      return;
+    }
+
     // Resolve sport_id
     const { data: sportData } = await supabase.from("sports").select("id").eq("nom", primarySport).single();
 
