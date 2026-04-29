@@ -2,15 +2,42 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { athleteUser, athleteStats, athleteActivity, profileChecklist } from "@/lib/mock/athlete";
-import type { AthleteActivityItem } from "@/lib/mock/athlete";
 import { createClient } from "@/lib/supabase/client";
 import { isValidationExpired } from "@/lib/utils/profileValidation";
 
 /* ═══════════════════════════════════════════════════════════════
-   Athlete Dashboard — "Salut Marc-Antoine!"
-   Personal, encouraging tone ("tu" everywhere)
+   Athlete Dashboard — personal, encouraging tone ("tu" everywhere)
 ═══════════════════════════════════════════════════════════════ */
+
+type ActivityItem = {
+  id: string;
+  type: "profile_viewed" | "new_favorite" | "coach_update" | "suggestion_approved" | "suggestion_rejected" | "milestone" | "completion_reminder";
+  message: string;
+  time: string;
+  read: boolean;
+};
+
+type ChecklistItem = {
+  label: string;
+  boost: number;
+  done: boolean;
+  section?: string;
+};
+
+function formatRelativeTime(isoTimestamp: string): string {
+  const now = Date.now();
+  const then = new Date(isoTimestamp).getTime();
+  const diffMs = now - then;
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+  if (diffMins < 60) return diffMins <= 1 ? "À l'instant" : `Il y a ${diffMins}min`;
+  if (diffHours < 24) return `Il y a ${diffHours}h`;
+  if (diffDays === 1) return "Hier";
+  if (diffDays < 7) return `Il y a ${diffDays} jours`;
+  if (diffDays < 30) return `Il y a ${Math.floor(diffDays / 7)} semaine${Math.floor(diffDays / 7) > 1 ? "s" : ""}`;
+  return `Il y a ${Math.floor(diffDays / 30)} mois`;
+}
 
 function completenessColor(pct: number): string {
   if (pct < 40) return "#EF4444";
@@ -18,7 +45,7 @@ function completenessColor(pct: number): string {
   return "#3B82F6";
 }
 
-const ACTIVITY_DOT: Record<AthleteActivityItem["type"], string> = {
+const ACTIVITY_DOT: Record<ActivityItem["type"], string> = {
   profile_viewed: "#9CA3AF",
   new_favorite: "#E63946",
   coach_update: "#3B82F6",
@@ -29,12 +56,12 @@ const ACTIVITY_DOT: Record<AthleteActivityItem["type"], string> = {
 };
 
 export default function AthleteDashboardPage() {
-  const [firstName, setFirstName] = useState<string>(athleteUser.firstName);
-  const [verified, setVerified] = useState<boolean>(athleteUser.is_verified);
+  const [firstName, setFirstName] = useState<string>("");
+  const [verified, setVerified] = useState<boolean>(false);
+  const [profileCompletion, setProfileCompletion] = useState<number>(0);
   const [lastValidation, setLastValidation] = useState<string | null>(null);
-  const u = { ...athleteUser, firstName, is_verified: verified };
-  const s = athleteStats;
-  const [activities, setActivities] = useState(athleteActivity);
+  const [activities, setActivities] = useState<ActivityItem[]>([]);
+  const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
   const [unreadNotifs, setUnreadNotifs] = useState<{ count: number; latestTitle: string | null }>({ count: 0, latestTitle: null });
   const [viewsThisMonth, setViewsThisMonth] = useState(0);
   const [viewsLastMonth, setViewsLastMonth] = useState(0);
@@ -48,7 +75,7 @@ export default function AthleteDashboardPage() {
       if (!user) return;
       const { data } = await supabase
         .from("athletes")
-        .select("first_name, verified, last_profile_validation")
+        .select("first_name, verified, last_profile_validation, profile_completion")
         .eq("user_id", user.id)
         .maybeSingle();
       const fn = (data?.first_name as string | undefined)
@@ -58,6 +85,7 @@ export default function AthleteDashboardPage() {
       if (data) {
         setVerified(!!data.verified);
         setLastValidation((data.last_profile_validation as string) || null);
+        setProfileCompletion((data.profile_completion as number) || 0);
       }
 
       const { data: athleteRow } = await supabase
@@ -119,6 +147,83 @@ export default function AthleteDashboardPage() {
         } else {
           setRegionsCount(0);
         }
+
+        // ── Activity feed ──────────────────────────────────────
+        const { data: activityRows } = await supabase
+          .from("recruiter_activity_log")
+          .select("id, action_type, created_at, recruiter:recruiter_id(region)")
+          .eq("athlete_id", athleteRow.id)
+          .order("created_at", { ascending: false })
+          .limit(20);
+
+        if (activityRows && activityRows.length > 0) {
+          const mapped: ActivityItem[] = activityRows.map((row: { id: string; action_type: string; created_at: string; recruiter: { region?: string | null } | { region?: string | null }[] | null }) => {
+            const recruiterRegion = Array.isArray(row.recruiter)
+              ? row.recruiter[0]?.region
+              : row.recruiter?.region;
+            const regionLabel = recruiterRegion ? ` de la région ${recruiterRegion}` : "";
+            let type: ActivityItem["type"] = "profile_viewed";
+            let message = "";
+            switch (row.action_type) {
+              case "PROFILE_VIEWED":
+                type = "profile_viewed";
+                message = `Un recruteur${regionLabel} a consulté ton profil`;
+                break;
+              case "FAVORITE_ADDED":
+                type = "new_favorite";
+                message = `Un recruteur${regionLabel} t'a ajouté à ses favoris`;
+                break;
+              case "ATHLETE_VERIFIED":
+                type = "coach_update";
+                message = "Ton profil a été vérifié par ton coach";
+                break;
+              default:
+                type = "profile_viewed";
+                message = `Activité: ${row.action_type}`;
+            }
+            return {
+              id: row.id,
+              type,
+              message,
+              time: formatRelativeTime(row.created_at),
+              read: true,
+            };
+          });
+          setActivities(mapped);
+        } else {
+          setActivities([]);
+        }
+
+        // ── Profile checklist (derived from real fields) ───────
+        const { data: athleteFullRow } = await supabase
+          .from("athletes")
+          .select("photo_url, first_name, last_name, date_naissance, telephone, taille_pieds, poids_lbs, sport_id, position_id, video_match_complet_url, video_faits_saillants_url, hudl_url, youtube_url, instagram_url, moyenne_generale, test_40_verges, saut_vertical, evaluations(vitesse_explosivite, force_puissance, leadership, rapport_entraineur)")
+          .eq("id", athleteRow.id)
+          .maybeSingle();
+
+        if (athleteFullRow) {
+          const evalRow = Array.isArray(athleteFullRow.evaluations)
+            ? athleteFullRow.evaluations[0]
+            : athleteFullRow.evaluations;
+          const hasAnyTrait = evalRow && (
+            (evalRow.vitesse_explosivite || 0) > 0 ||
+            (evalRow.force_puissance || 0) > 0 ||
+            (evalRow.leadership || 0) > 0
+          );
+          const newChecklist: ChecklistItem[] = [
+            { label: "Photo de profil", boost: 8, done: !!athleteFullRow.photo_url },
+            { label: "Identité complète", boost: 10, done: !!(athleteFullRow.first_name && athleteFullRow.last_name && athleteFullRow.date_naissance && athleteFullRow.telephone) },
+            { label: "Profil physique", boost: 10, done: !!(athleteFullRow.taille_pieds && athleteFullRow.poids_lbs) },
+            { label: "Sport et position", boost: 8, done: !!(athleteFullRow.sport_id && athleteFullRow.position_id) },
+            { label: "Évaluation coach", boost: 15, done: !!hasAnyTrait, section: "coach" },
+            { label: "Rapport entraîneur", boost: 12, done: !!evalRow?.rapport_entraineur, section: "coach" },
+            { label: "Vidéo de match complet", boost: 8, done: !!athleteFullRow.video_match_complet_url, section: "media" },
+            { label: "Médias et liens complets", boost: 7, done: !!(athleteFullRow.video_faits_saillants_url || athleteFullRow.hudl_url || athleteFullRow.youtube_url || athleteFullRow.instagram_url), section: "media" },
+            { label: "Profil académique", boost: 10, done: !!athleteFullRow.moyenne_generale },
+            { label: "Stats clés détaillées", boost: 12, done: !!(athleteFullRow.test_40_verges || athleteFullRow.saut_vertical), section: "stats" },
+          ];
+          setChecklist(newChecklist);
+        }
       }
     };
     load();
@@ -127,7 +232,7 @@ export default function AthleteDashboardPage() {
     return () => window.removeEventListener("notifications-updated", handler);
   }, []);
   const badgeActive = verified && !isValidationExpired({ verified, last_profile_validation: lastValidation });
-  const pctColor = completenessColor(s.profile_completeness);
+  const pctColor = completenessColor(profileCompletion);
   const viewsTrend: number | null = viewsLastMonth > 0
     ? Math.round(((viewsThisMonth - viewsLastMonth) / viewsLastMonth) * 100)
     : null;
@@ -143,9 +248,9 @@ export default function AthleteDashboardPage() {
       {/* ── Greeting ──────────────────────────────────────────── */}
       <div className="flex items-center gap-3">
         <h1 className="font-head text-2xl sm:text-3xl font-black text-white uppercase tracking-tight">
-          Salut {u.firstName}!
+          Salut {firstName || "..."}!
         </h1>
-        {u.is_verified && (
+        {verified && (
           <svg width="24" height="24" viewBox="0 0 24 24" fill={badgeActive ? "#3B82F6" : "#4a4d56"} stroke="none" aria-label={badgeActive ? "Profil vérifié" : "Badge désactivé"}>
             <circle cx="12" cy="12" r="10" />
             <path d="M9 12l2 2 4-4" stroke={badgeActive ? "#fff" : "#6b7280"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
@@ -230,9 +335,9 @@ export default function AthleteDashboardPage() {
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
             </svg>
           </div>
-          <p className="font-head text-[36px] font-black leading-none" style={{ color: pctColor }}>{s.profile_completeness}%</p>
+          <p className="font-head text-[36px] font-black leading-none" style={{ color: pctColor }}>{profileCompletion}%</p>
           <div className="h-2 bg-[#2D3748] rounded-full overflow-hidden mt-3">
-            <div className="h-full rounded-full transition-all" style={{ width: `${s.profile_completeness}%`, backgroundColor: pctColor }} />
+            <div className="h-full rounded-full transition-all" style={{ width: `${profileCompletion}%`, backgroundColor: pctColor }} />
           </div>
           <Link href="/athlete/profil" className="text-[12px] font-bold text-[#E63946] hover:text-[#D42B22] mt-2 inline-block transition-colors">
             Améliorer →
@@ -252,41 +357,52 @@ export default function AthleteDashboardPage() {
             )}
           </div>
           <div className="space-y-2">
-            {activities.map((a) => (
-              <button
-                key={a.id}
-                type="button"
-                onClick={() => markRead(a.id)}
-                className={`group w-full text-left bg-[#1A1D24] rounded-lg border p-4 transition-all duration-300 hover:border-[#2D3748] relative overflow-hidden ${
-                  a.read ? "border-white/5" : "border-[#2D3748] bg-[#1A1D24]"
-                }`}
-              >
-                <div className="absolute top-0 left-0 right-0 h-[2px] bg-[#E63946] scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
-                <div className="flex items-start gap-3">
-                  <div className="mt-1.5">
-                    <span className="block w-2.5 h-2.5 rounded-full" style={{ backgroundColor: ACTIVITY_DOT[a.type] }} />
+            {activities.length === 0 ? (
+              <div className="bg-[#1A1D24] rounded-lg border border-white/5 p-8 text-center">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#4a4d56" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mx-auto mb-3">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M12 6v6l4 2" />
+                </svg>
+                <p className="text-[13px] text-[#9CA3AF] font-semibold">Aucune activité pour l&apos;instant</p>
+                <p className="text-[12px] text-[#6b7280] mt-1.5">Partage ton profil pour attirer les recruteurs</p>
+              </div>
+            ) : (
+              activities.map((a) => (
+                <button
+                  key={a.id}
+                  type="button"
+                  onClick={() => markRead(a.id)}
+                  className={`group w-full text-left bg-[#1A1D24] rounded-lg border p-4 transition-all duration-300 hover:border-[#2D3748] relative overflow-hidden ${
+                    a.read ? "border-white/5" : "border-[#2D3748] bg-[#1A1D24]"
+                  }`}
+                >
+                  <div className="absolute top-0 left-0 right-0 h-[2px] bg-[#E63946] scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
+                  <div className="flex items-start gap-3">
+                    <div className="mt-1.5">
+                      <span className="block w-2.5 h-2.5 rounded-full" style={{ backgroundColor: ACTIVITY_DOT[a.type] }} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-[13px] leading-relaxed ${a.read ? "text-[#9CA3AF]" : "text-white font-semibold"}`}>
+                        {a.message}
+                      </p>
+                      <p className="text-[11px] text-[#4a4d56] mt-1">{a.time}</p>
+                    </div>
+                    {!a.read && (
+                      <span className="w-2 h-2 rounded-full bg-[#E63946] shrink-0 mt-2" />
+                    )}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className={`text-[13px] leading-relaxed ${a.read ? "text-[#9CA3AF]" : "text-white font-semibold"}`}>
-                      {a.message}
-                    </p>
-                    <p className="text-[11px] text-[#4a4d56] mt-1">{a.time}</p>
-                  </div>
-                  {!a.read && (
-                    <span className="w-2 h-2 rounded-full bg-[#E63946] shrink-0 mt-2" />
-                  )}
-                </div>
-              </button>
-            ))}
+                </button>
+              ))
+            )}
           </div>
         </div>
 
         {/* Profile Improvement Checklist (40%) */}
-        {s.profile_completeness < 100 && (
+        {profileCompletion < 100 && (
           <div className="lg:col-span-2">
             <h2 className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mb-4">Améliore ton profil</h2>
             <div className="bg-[#1A1D24] rounded-xl border border-white/5 p-5 space-y-3">
-              {profileChecklist.map((item) => (
+              {checklist.map((item) => (
                 <div key={item.label} className="flex items-center gap-3">
                   {item.done ? (
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2.5" strokeLinecap="round" className="shrink-0">
@@ -321,7 +437,7 @@ export default function AthleteDashboardPage() {
       </div>
 
       {/* ── Stats Impact Banner ────────────────────────────────── */}
-      {u.is_verified && (
+      {verified && (
         <div className="bg-[#1A1D24] rounded-xl border border-white/5 px-5 py-3.5 flex items-center gap-3">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2" strokeLinecap="round">
             <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" />

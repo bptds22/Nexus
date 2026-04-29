@@ -7,8 +7,7 @@ import { calculateCompletionForRole, SECTION_IDS } from "@/lib/utils/profileComp
 import { isValidationDue, isValidationExpired, formatDeadlineFr, currentMonthKey } from "@/lib/utils/profileValidation";
 import VerifiedBadge from "@/components/ui/VerifiedBadge";
 import DatePicker from "@/app/coach/components/DatePicker";
-import type { AthleteSuggestion } from "@/lib/mock/athlete";
-import type { AthleteTraitRatings } from "@/lib/types/models";
+import type { AthleteSuggestion, AthleteTraitRatings } from "@/lib/types/models";
 import StarRating from "@/components/ui/StarRating";
 import NxIcon from "@/components/ui/NxIcon";
 import { BADGE_CONFIG, BADGE_ORDER, MAX_BADGES, MAX_DETAIL_LENGTH, parseDistinctions, type DistinctionEntry } from "@/lib/config/badges";

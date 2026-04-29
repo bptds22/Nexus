@@ -884,3 +884,16 @@ export interface AuditLogEntry {
   details: Record<string, string | number | boolean>;
   timestamp: string;
 }
+
+/* ── Athlete suggestion ──────────────────────────────────── */
+export interface AthleteSuggestion {
+  id: string;
+  field: string;
+  current_value: string | null;
+  proposed_value: string;
+  message: string;
+  status: "pending" | "approved" | "rejected";
+  submitted_at: string;
+  reviewed_at?: string;
+  rejection_reason?: string;
+}
