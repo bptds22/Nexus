@@ -111,13 +111,13 @@ export default function TableauDeBordPage() {
         })));
       }
 
-      // Get all athletes at the coach's school (school-scoped roster)
+      // Get athletes claimed by this coach (coach-scoped roster)
       const { data: athleteRows } = await supabase
         .from("athletes")
         .select("id, verified")
-        .eq("school_id", coachSchoolId)
+        .eq("coach_id", user.id)
         .eq("status", "ACTIF");
-      console.log("Dashboard athletes:", athleteRows);
+      console.log("Dashboard athletes (claimed by coach):", athleteRows);
 
       const athletes = athleteRows || [];
       const coachAthleteIds = athletes.map((a: { id: string }) => a.id);
