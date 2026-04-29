@@ -68,6 +68,13 @@ export default function EquipesPage() {
     if (!profile?.school_id) { setLoading(false); return; }
     setSchoolId(profile.school_id);
 
+    // Get teams where I'm a coach (via team_coaches)
+    const { data: myTeamRows } = await supabase
+      .from("team_coaches")
+      .select("team_id")
+      .eq("coach_id", user.id);
+    const myTeamIds = (myTeamRows || []).map((r) => r.team_id);
+
     // Load sports for create form
     const { data: sportsData } = await supabase.from("sports").select("id, nom").order("nom");
     if (sportsData) setSports(sportsData);
@@ -79,11 +86,17 @@ export default function EquipesPage() {
       .eq("coach_id", user.id);
     setRosterCount(count || 0);
 
+    // If coach has no teams, skip the teams query entirely
+    if (myTeamIds.length === 0) {
+      setLoading(false);
+      return;
+    }
+
     // Load teams with coaches and athlete counts
     const { data: teamsData } = await supabase
       .from("teams")
       .select("id, name, age_group, division, league, season, sport_id, sports!sport_id(nom), team_coaches(coach_id, role), team_athletes(id)")
-      .eq("school_id", profile.school_id)
+      .in("id", myTeamIds)
       .eq("is_active", true)
       .order("created_at", { ascending: false });
 
