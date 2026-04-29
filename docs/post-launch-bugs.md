@@ -11,7 +11,7 @@ file.
 
 ## P0 — Affect new user onboarding
 
-- [ ] **Signup photo upload fails — `avatars` bucket missing.**
+- [x] **Signup photo upload fails — `avatars` bucket missing.**
       Reported 2026-04-29. During the role-selection onboarding
       wizard (`/onboarding`), the `PhotoUpload` component throws
       a `StorageApiError: Bucket not found` when an athlete /
@@ -24,22 +24,19 @@ file.
       `avatars` bucket doesn't exist. Only `Ath Photos` exists
       in this Supabase (verified via
       `SELECT * FROM storage.buckets`).
-      Two fix options:
-      - **(a) Create the `avatars` bucket** (cleaner separation
-        — athlete photos vs. generic user avatars vs. logos).
-        Public, with appropriate storage RLS for write-self,
-        read-anyone.
-      - **(b) Repoint the signup wizard's PhotoUpload to use
-        `Ath Photos`** (fewer buckets, but conflates athlete
-        photos with coach/recruiter avatars in one bucket).
-      Choose (a) for cleaner data model. Apply via SQL or
-      Supabase Studio:
-      ```sql
-      INSERT INTO storage.buckets (id, name, public)
-      VALUES ('avatars', 'avatars', true);
-      ```
-      Plus matching RLS policies for INSERT (auth.uid() owns
-      path) and SELECT (public read).
+
+      **Closed 2026-04-29** (migration
+      [`20260429020000_add_avatars_bucket.sql`](../supabase/migrations/20260429020000_add_avatars_bucket.sql)):
+      created the `avatars` bucket (public read) and four RLS
+      policies on `storage.objects` — public SELECT, INSERT
+      gated to authenticated users, UPDATE/DELETE gated to
+      the row owner (`storage.objects.owner = auth.uid()`).
+      Cleaner separation kept: `avatars` for generic user
+      profile pictures (coaches, recruiters, partners,
+      onboarding wizard), `Ath Photos` for athlete-specific
+      photos with their own path-namespacing scheme. Verified
+      via `SELECT id, name, public FROM storage.buckets` —
+      both buckets present and public.
 
 ---
 
