@@ -371,6 +371,15 @@ file.
       `athleteNotifications` / `ProfileChecklistItem` had zero
       consumers per codebase grep before deletion).
 
+      **Audit confirmed 2026-04-28**: full grep across
+      `app/athlete/**/*.tsx` and `app/athlete/**/*.ts` for
+      `@/lib/mock`, `from.*mock`, `import.*mock`, `MOCK_`,
+      `mock[A-Z]` returns zero hits. Athlete portal is fully
+      wired to real Supabase data. Coach and recruteur portals
+      not yet audited — recruteur tableau de bord and CÉGEP
+      sub-pages likely still have mock data, coach has pending
+      cleanup per session memory.
+
 ---
 
 ## P3 — Latent / future work
