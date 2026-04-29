@@ -70,7 +70,14 @@ export default function ParametresPage() {
     coachPhotoUrl: string | null;
     parentalConsentGiven: boolean;
     parentalConsentDate: string | null;
+    dateOfBirth: string | null;
+    partnerOptIn: boolean;
+    partnerOptInDate: string | null;
+    partnerParentalConsent: boolean;
   } | null>(null);
+
+  // Media partner opt-in toggle state
+  const [savingPartnerOptIn, setSavingPartnerOptIn] = useState(false);
 
   // Coach selection modal state
   const [showCoachModal, setShowCoachModal] = useState(false);
@@ -96,8 +103,12 @@ export default function ParametresPage() {
       .select(`
         school_id,
         coach_id,
+        date_naissance,
         consentement_parental,
         consentement_parental_date,
+        partner_visibility_opt_in,
+        partner_visibility_opted_in_at,
+        partner_visibility_parental_consent,
         schools!school_id(name),
         users!athletes_coach_id_fkey(first_name, last_name, photo_url)
       `)
@@ -115,6 +126,10 @@ export default function ParametresPage() {
       coachPhotoUrl: (coachRel?.photo_url as string | null) ?? null,
       parentalConsentGiven: row.consentement_parental === true,
       parentalConsentDate: row.consentement_parental_date ?? null,
+      dateOfBirth: (row.date_naissance as string | null) ?? null,
+      partnerOptIn: row.partner_visibility_opt_in === true,
+      partnerOptInDate: (row.partner_visibility_opted_in_at as string | null) ?? null,
+      partnerParentalConsent: row.partner_visibility_parental_consent === true,
     });
   }, []);
 
@@ -451,6 +466,121 @@ export default function ParametresPage() {
                     <span className="text-[13px] font-bold text-[#22C55E]">Profil visible</span>
                   </div>
                   <p className="text-[11px] text-[#4a4d56] mt-2">Pour masquer ton profil, contacte ton coach.</p>
+                </div>
+              </div>
+
+              <div className="border-t border-[#2D3748]/40 pt-6">
+                <h2 className="font-head text-lg font-black text-white uppercase tracking-tight mb-4">Visibilité publique</h2>
+                <div className="bg-[#13151a] border border-white/5 rounded-lg p-4 space-y-4">
+                  <div>
+                    <p className="text-[14px] font-bold text-white">Partenaires médias</p>
+                    <p className="text-[13px] text-[#9CA3AF] leading-relaxed mt-1">
+                      Permettre aux partenaires médias approuvés (journalistes sportifs, pages spécialisées) de télécharger ma carte Nexus pour publication. Ma carte contient mon nom, ma photo, mon école et mon sport.
+                    </p>
+                  </div>
+
+                  {(() => {
+                    if (!profile) return null;
+                    const isMinor = (() => {
+                      if (!profile.dateOfBirth) return false;
+                      const dob = new Date(profile.dateOfBirth);
+                      const today = new Date();
+                      let age = today.getFullYear() - dob.getFullYear();
+                      const m = today.getMonth() - dob.getMonth();
+                      if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
+                      return age < 18;
+                    })();
+                    const consentReady = !isMinor || profile.partnerParentalConsent;
+                    const toggleEnabled = consentReady && !savingPartnerOptIn;
+
+                    return (
+                      <>
+                        {isMinor && (
+                          <label className="flex items-start gap-3 cursor-pointer group">
+                            <input
+                              type="checkbox"
+                              checked={profile.partnerParentalConsent}
+                              onChange={async (e) => {
+                                const supabase = createClient();
+                                const { data: { user } } = await supabase.auth.getUser();
+                                if (!user) return;
+                                const checked = e.target.checked;
+                                // If parent unchecks while opt-in is active, also turn opt-in off.
+                                const updates: Record<string, unknown> = { partner_visibility_parental_consent: checked };
+                                if (!checked && profile.partnerOptIn) {
+                                  updates.partner_visibility_opt_in = false;
+                                  updates.partner_visibility_opted_in_at = null;
+                                }
+                                const { error } = await supabase.from("athletes").update(updates).eq("user_id", user.id);
+                                if (error) { console.error("[Partner consent]", error); showToast("Erreur lors de la sauvegarde"); return; }
+                                showToast(checked ? "Consentement parental enregistré" : "Consentement retiré");
+                                await loadProfile();
+                              }}
+                              className="sr-only"
+                            />
+                            <div className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 mt-0.5 transition-colors ${profile.partnerParentalConsent ? "bg-[#E63946] border-[#E63946]" : "border-[#4a4d56] group-hover:border-[#6b7280]"}`}>
+                              {profile.partnerParentalConsent && (
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"><path d="M20 6L9 17l-5-5" /></svg>
+                              )}
+                            </div>
+                            <span className="text-[12px] text-[#9CA3AF] leading-snug">
+                              J&apos;ai reçu le consentement parental pour permettre l&apos;utilisation de ma carte Nexus par des partenaires médias.
+                            </span>
+                          </label>
+                        )}
+
+                        <div className="flex items-center justify-between py-2">
+                          <div className="flex-1 pr-4">
+                            <p className="text-[13px] font-semibold text-white">Permettre l&apos;utilisation de ma carte par les partenaires</p>
+                            {profile.partnerOptIn && profile.partnerOptInDate && (
+                              <p className="text-[11px] text-[#22C55E] mt-1">
+                                Activé le {new Date(profile.partnerOptInDate).toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" })}
+                              </p>
+                            )}
+                            {isMinor && !profile.partnerParentalConsent && (
+                              <p className="text-[11px] text-[#F59E0B] mt-1">Coche le consentement parental pour activer.</p>
+                            )}
+                          </div>
+                          <button
+                            type="button"
+                            disabled={!toggleEnabled}
+                            aria-label="Permettre l'utilisation de ma carte par les partenaires"
+                            onClick={async () => {
+                              if (!toggleEnabled) return;
+                              setSavingPartnerOptIn(true);
+                              const supabase = createClient();
+                              const { data: { user } } = await supabase.auth.getUser();
+                              if (!user) { setSavingPartnerOptIn(false); return; }
+                              const next = !profile.partnerOptIn;
+                              const updates: Record<string, unknown> = next
+                                ? {
+                                    partner_visibility_opt_in: true,
+                                    partner_visibility_opted_in_at: new Date().toISOString(),
+                                    partner_visibility_parental_consent: isMinor ? true : profile.partnerParentalConsent,
+                                  }
+                                : {
+                                    partner_visibility_opt_in: false,
+                                    partner_visibility_opted_in_at: null,
+                                  };
+                              const { error } = await supabase.from("athletes").update(updates).eq("user_id", user.id);
+                              if (error) {
+                                console.error("[Partner opt-in]", error);
+                                showToast("Erreur lors de la sauvegarde");
+                                setSavingPartnerOptIn(false);
+                                return;
+                              }
+                              showToast(next ? "Visibilité publique activée" : "Visibilité publique désactivée");
+                              setSavingPartnerOptIn(false);
+                              await loadProfile();
+                            }}
+                            className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${profile.partnerOptIn ? "bg-[#22C55E]" : "bg-[#2D3748]"} ${!toggleEnabled ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}`}
+                          >
+                            <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform ${profile.partnerOptIn ? "left-[22px]" : "left-0.5"}`} />
+                          </button>
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
 
