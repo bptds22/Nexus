@@ -214,6 +214,8 @@ function AuthContent() {
       router.push("/athlete");
     } else if (role === "ADMIN") {
       router.push("/admin");
+    } else if (role === "PARTNER") {
+      router.push("/partenaire");
     } else {
       router.push("/onboarding");
     }
