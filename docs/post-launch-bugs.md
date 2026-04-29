@@ -11,7 +11,35 @@ file.
 
 ## P0 — Affect new user onboarding
 
-*(all cleared — see **Closed** at the bottom)*
+- [ ] **Signup photo upload fails — `avatars` bucket missing.**
+      Reported 2026-04-29. During the role-selection onboarding
+      wizard (`/onboarding`), the `PhotoUpload` component throws
+      a `StorageApiError: Bucket not found` when an athlete /
+      coach / recruiter tries to upload a profile picture.
+      Stack: `node_modules/@supabase/storage-js/src/lib/common/fetch.ts:65:16`
+      Root cause:
+      [`app/onboarding/page.tsx`](../app/onboarding/page.tsx)
+      line ~103 calls
+      `supabase.storage.from("avatars").upload(...)` but the
+      `avatars` bucket doesn't exist. Only `Ath Photos` exists
+      in this Supabase (verified via
+      `SELECT * FROM storage.buckets`).
+      Two fix options:
+      - **(a) Create the `avatars` bucket** (cleaner separation
+        — athlete photos vs. generic user avatars vs. logos).
+        Public, with appropriate storage RLS for write-self,
+        read-anyone.
+      - **(b) Repoint the signup wizard's PhotoUpload to use
+        `Ath Photos`** (fewer buckets, but conflates athlete
+        photos with coach/recruiter avatars in one bucket).
+      Choose (a) for cleaner data model. Apply via SQL or
+      Supabase Studio:
+      ```sql
+      INSERT INTO storage.buckets (id, name, public)
+      VALUES ('avatars', 'avatars', true);
+      ```
+      Plus matching RLS policies for INSERT (auth.uid() owns
+      path) and SELECT (public read).
 
 ---
 
