@@ -329,7 +329,7 @@ file.
 
 ## P2 — Observability
 
-- [ ] **Athlete-route guard pushes non-athletes to onboarding.**
+- [x] **Athlete-route guard pushes non-athletes to onboarding.**
       Reported 2026-04-28. Visiting any `/athlete/*` route as a
       recruiter or coach triggers the athlete onboarding flow
       with the user's name + email pre-filled. Could create
@@ -345,6 +345,28 @@ file.
       non-athletes to their correct portal (`/recruteur/...` or
       `/coach/...`) instead of pushing them through athlete
       onboarding.
+
+      **Closed 2026-04-29** (commit
+      [`21b0e8b`](../../../commit/21b0e8b)): role-aware layout
+      at
+      [`app/athlete/layout.tsx`](../app/athlete/layout.tsx)
+      checks `users.role` + `users.onboarding_complete` on
+      every render. COACH/RECRUTEUR users get a full-takeover
+      football-themed wrong-route page
+      ([`app/athlete/_components/WrongRoutePage.tsx`](../app/athlete/_components/WrongRoutePage.tsx))
+      — no athlete sidebar, no shared chrome — with a CTA back
+      to their role-appropriate dashboard
+      (`/coach/tableau-de-bord` or
+      `/recruteur/tableau-de-bord`). Defense-in-depth role
+      check added in
+      [`app/athlete/onboarding/page.tsx`](../app/athlete/onboarding/page.tsx)'s
+      `handleSubmit` re-verifies `users.role === 'ATHLETE'`
+      before BOTH the INSERT and UPDATE paths against the
+      athletes table — if the layout guard is bypassed, the
+      submit aborts before any phantom row is created or
+      modified. Verified manually: COACH and RECRUTEUR both
+      land on the wrong-route page; ATHLETE pass through to
+      the normal dashboard.
 
 - [x] **Debug `console.log` noise in production.** Examples: `Athletes
       loaded: 1 null` from the recherche page, `[Homepage] Hero section
