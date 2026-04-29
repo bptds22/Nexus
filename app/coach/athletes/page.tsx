@@ -328,8 +328,10 @@ function MesAthletesContent() {
 
       setCurrentUserId(session.user.id);
 
-      // Look up the coach's school_id — the roster shows all
-      // athletes at the coach's school, not just claimed ones.
+      // Look up the coach's school_id — needed for the À réclamer
+      // tab which shows unclaimed athletes at the school. The
+      // Roster tab and À traiter tab filter down to coach_id =
+      // me in memory.
       const { data: coachRow, error: coachError } = await supabase
         .from("users")
         .select("school_id")
@@ -515,21 +517,23 @@ function MesAthletesContent() {
       setRegions(uniqueRegions);
 
       // Load "À traiter" data
-      // Unverified athletes
-      const unverified = mapped.filter((a) => !a.isVerified);
+      // Unverified athletes — only this coach's claimed athletes
+      const unverified = mapped.filter((a) => !a.isVerified && a.coach_id === session.user.id);
       setUnverifiedAthletes(unverified.map((a) => ({
         id: a.id, firstName: a.firstName, lastName: a.lastName,
         sport: a.sport || "", position: a.position || "",
         gradYear: a.gradYear, createdAt: "",
       })));
 
-      // Pending suggestions
-      const rosterAthleteIds = mapped.map((a) => a.id);
-      if (rosterAthleteIds.length > 0) {
+      // Pending suggestions — only for MY claimed athletes
+      const myAthleteIds = mapped
+        .filter((a) => a.coach_id === session.user.id)
+        .map((a) => a.id);
+      if (myAthleteIds.length > 0) {
         const { data: sugs } = await supabase
           .from("athlete_suggestions")
           .select("id, champ, valeur_actuelle, valeur_proposee, message, created_at, athlete_id, athletes!athlete_id(first_name, last_name)")
-          .in("athlete_id", rosterAthleteIds)
+          .in("athlete_id", myAthleteIds)
           .eq("status", "EN_ATTENTE")
           .order("created_at", { ascending: false });
         if (sugs) {
