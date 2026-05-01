@@ -296,7 +296,17 @@ export default function OnboardingPage() {
       if (profile.onboarding_complete) {
         if (profile.role === "COACH") router.replace("/coach/tableau-de-bord");
         else if (profile.role === "RECRUTEUR") router.replace("/recruteur/tableau-de-bord");
+        else if (profile.role === "PARTNER") router.replace("/partenaire");
         else router.replace("/");
+        return;
+      }
+
+      // Defense-in-depth: PARTNER role should never see this wizard
+      // (admin onboards partners; users.onboarding_complete is set
+      // true at creation). If they somehow land here with an
+      // incomplete flag, bounce to the partner portal.
+      if (profile.role === "PARTNER") {
+        router.replace("/partenaire");
         return;
       }
 
