@@ -117,7 +117,12 @@ export async function POST(req: Request) {
 
   const { error: roleErr } = await sbAdmin
     .from("users")
-    .update({ role: "PARTNER", first_name: firstName, last_name: lastName })
+    .update({
+      role: "PARTNER",
+      first_name: firstName,
+      last_name: lastName,
+      onboarding_complete: true,
+    })
     .eq("id", newUserId);
   if (roleErr) {
     console.error("[admin/partners/create] users.update role:", roleErr);
