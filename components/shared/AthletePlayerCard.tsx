@@ -6,13 +6,42 @@ import { isValidationExpired } from "@/lib/utils/profileValidation";
 
 /* ═══════════════════════════════════════════════════════════════
    Athlete Player Card — shared hero card used by recruiter/coach/
-   admin profile views AND by the social-post export on the
-   athlete settings page.
+   admin profile views, by the social-post export on the athlete
+   settings page, AND by partner-side card downloads.
 
-   Keeping this as a pure, self-contained component so it can be
-   rendered off-screen into a canvas (html-to-image) without
-   dragging in the rest of the profile view.
+   Format prop scales the card to match social-post dimensions:
+     compact     — 300×460 (default, profile views, in-app preview)
+     publication — 1080×1350 (4:5, IG feed)
+     story       — 1080×1920 (9:16, IG/TT story)
+
+   Implementation: keep the natural 300-wide design and CSS-scale
+   it inside a sized outer container. html-to-image captures the
+   outer container's bounding box, so the resulting PNG always
+   matches the target format dimensions exactly. This avoids
+   parameterizing every hardcoded font size and padding.
+
+   Pure, self-contained — renderable off-screen for capture
+   without dragging in the rest of the profile view.
 ═══════════════════════════════════════════════════════════════ */
+
+type CardFormat = "compact" | "publication" | "story";
+
+const FORMAT_CONFIG: Record<CardFormat, {
+  width: number;
+  height: number;
+  scale: number;
+  topOffset: number; // y-offset of the scaled card inside the outer box
+}> = {
+  // Compact mirrors the original 300-wide design verbatim.
+  compact:     { width: 300,  height: 460,  scale: 1,    topOffset: 0   },
+  // Publication: scale up by 3.6x to fit 1080 wide; total 1350 height.
+  publication: { width: 1080, height: 1350, scale: 3.6,  topOffset: 0   },
+  // Story: same 3.6x scale, padded vertically to 9:16. Extra ~285px
+  // above pushes the card down so the ticket overlay sits roughly
+  // mid-frame, leaving room above for caption space when partners
+  // overlay text.
+  story:       { width: 1080, height: 1920, scale: 3.6,  topOffset: 285 },
+};
 
 const SPORT_DISPLAY: Record<string, string> = Object.fromEntries(
   Object.entries(SPORT_NAME_MAP).map(([display, key]) => [key, display])
@@ -24,7 +53,14 @@ function positionAbbr(pos: string): string {
   return pos.length > 4 ? pos.slice(0, 3).toUpperCase() : pos.toUpperCase();
 }
 
-export default function AthletePlayerCard({ a }: { a: AthleteProfileRecruiterView }) {
+export default function AthletePlayerCard({
+  a,
+  format = "compact",
+}: {
+  a: AthleteProfileRecruiterView;
+  format?: CardFormat;
+}) {
+  const dims = FORMAT_CONFIG[format];
   const ratingValue = a.overallRating;
   const posAbbr = positionAbbr(a.primaryPosition);
   const secPosAbbr = a.secondaryPosition ? positionAbbr(a.secondaryPosition) : "";
@@ -34,6 +70,23 @@ export default function AthletePlayerCard({ a }: { a: AthleteProfileRecruiterVie
   const badgeActive = a.isVerified && !isValidationExpired({ verified: !!a.isVerified, last_profile_validation: a.lastValidation ?? null });
 
   return (
+    <div
+      style={{
+        position: "relative",
+        width: dims.width,
+        height: dims.height,
+        overflow: "hidden",
+      }}
+    >
+      <div
+        style={{
+          position: "absolute",
+          top: dims.topOffset,
+          left: 0,
+          transform: `scale(${dims.scale})`,
+          transformOrigin: "top left",
+        }}
+      >
     <div className="nx-v30-wrap relative" style={{ width: 300, paddingTop: 6, paddingBottom: 10 }}>
       <div className="nx-v30-badge absolute z-30" style={{ top: 10, right: -12 }} title={badgeActive ? "Profil vérifié" : a.isVerified ? "Badge désactivé — confirmation requise" : "Profil non vérifié"}>
         <div className="rounded-full" style={{ border: "3px solid #111317" }}>
@@ -116,6 +169,8 @@ export default function AthletePlayerCard({ a }: { a: AthleteProfileRecruiterVie
           </div>
         </div>
       </div>
+      </div>
+    </div>
     </div>
   );
 }
