@@ -7,6 +7,7 @@ import CoachPicker from "@/components/coach/CoachPicker";
 import { createClient } from "@/lib/supabase/client";
 import { loadAthleteRaw, mapToRecruiterView } from "@/app/coach/athletes/_data/loadAthleteFromSupabase";
 import type { AthleteProfileRecruiterView } from "@/lib/types/models";
+import { isMinor } from "@/lib/utils/age";
 import { toPng } from "html-to-image";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -481,21 +482,13 @@ export default function ParametresPage() {
 
                   {(() => {
                     if (!profile) return null;
-                    const isMinor = (() => {
-                      if (!profile.dateOfBirth) return false;
-                      const dob = new Date(profile.dateOfBirth);
-                      const today = new Date();
-                      let age = today.getFullYear() - dob.getFullYear();
-                      const m = today.getMonth() - dob.getMonth();
-                      if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
-                      return age < 18;
-                    })();
-                    const consentReady = !isMinor || profile.partnerParentalConsent;
+                    const minor = isMinor(profile.dateOfBirth);
+                    const consentReady = !minor || profile.partnerParentalConsent;
                     const toggleEnabled = consentReady && !savingPartnerOptIn;
 
                     return (
                       <>
-                        {isMinor && (
+                        {minor && (
                           <label className="flex items-start gap-3 cursor-pointer group">
                             <input
                               type="checkbox"
@@ -537,7 +530,7 @@ export default function ParametresPage() {
                                 Activé le {new Date(profile.partnerOptInDate).toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" })}
                               </p>
                             )}
-                            {isMinor && !profile.partnerParentalConsent && (
+                            {minor && !profile.partnerParentalConsent && (
                               <p className="text-[11px] text-[#F59E0B] mt-1">Coche le consentement parental pour activer.</p>
                             )}
                           </div>
@@ -556,7 +549,7 @@ export default function ParametresPage() {
                                 ? {
                                     partner_visibility_opt_in: true,
                                     partner_visibility_opted_in_at: new Date().toISOString(),
-                                    partner_visibility_parental_consent: isMinor ? true : profile.partnerParentalConsent,
+                                    partner_visibility_parental_consent: minor ? true : profile.partnerParentalConsent,
                                   }
                                 : {
                                     partner_visibility_opt_in: false,
