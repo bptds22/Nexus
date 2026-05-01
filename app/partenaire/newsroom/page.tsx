@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import NewsroomDropdownFilters from "../_components/NewsroomDropdownFilters";
 
 /* ═══════════════════════════════════════════════════════════════
    /partenaire/newsroom — async server component
@@ -9,9 +10,13 @@ import { createClient } from "@/lib/supabase/server";
    URL params drive filters:
      ?type=COMMITMENT | FIVE_STAR_SIGNUP   (default: ALL)
      ?range=7d | 30d | all                 (default: 30d)
+     ?sport=<sport_id>                     (default: ALL)
+     ?position=<position_id>               (default: ALL)
 
-   Filter changes use <Link href="?type=...&range=..."> — no
-   client state needed.
+   Type/range use chip-style <Link> nav. Sport/position are
+   <select> dropdowns inside a small client component
+   (NewsroomDropdownFilters) that pushes URL changes via
+   useRouter — same pattern as ClassementsFilterBar.
 ═══════════════════════════════════════════════════════════════ */
 
 type EventType = "COMMITMENT" | "FIVE_STAR_SIGNUP";
@@ -29,6 +34,8 @@ type EventRow = {
 type FilterParams = {
   type?: string;
   range?: string;
+  sport?: string;
+  position?: string;
 };
 
 const TYPE_LABEL: Record<EventType, string> = {
@@ -91,12 +98,32 @@ export default async function PartnerNewsroomPage({
   const params = await searchParams;
   const typeFilter = params.type === "COMMITMENT" || params.type === "FIVE_STAR_SIGNUP" ? params.type : null;
   const rangeFilter = params.range === "7d" ? "7d" : params.range === "all" ? "all" : "30d";
+  const sportFilter = params.sport || null;
+  const positionFilter = params.position || null;
 
   const supabase = await createClient();
 
+  // Pre-fetch dropdown options for the sport + position filters.
+  // Sports list is small (16) and positions cap at ~50 across all
+  // sports — single query each, passed into the client filter
+  // component as props.
+  const [sportsRes, positionsRes] = await Promise.all([
+    supabase.from("sports").select("id, nom").order("nom"),
+    supabase.from("positions").select("id, nom, abreviation, sport_id").order("nom"),
+  ]);
+  const sports = (sportsRes.data ?? []) as { id: string; nom: string }[];
+  const positions = (positionsRes.data ?? []) as { id: string; nom: string; abreviation: string | null; sport_id: string }[];
+
+  // Position filter requires inner join to athletes (filter on
+  // joined column). Sport filter goes on newsroom_events.sport_id
+  // directly (set by the trigger), no inner join needed for that.
+  const athletesEmbed = positionFilter
+    ? "athletes!inner(id, photo_url, first_name, last_name, position_id)"
+    : "athletes(photo_url, first_name, last_name)";
+
   let query = supabase
     .from("newsroom_events")
-    .select("id, event_type, athlete_id, title, description, metadata, occurred_at, athletes(photo_url, first_name, last_name)")
+    .select(`id, event_type, athlete_id, title, description, metadata, occurred_at, ${athletesEmbed}`)
     .order("occurred_at", { ascending: false })
     .limit(100);
 
@@ -110,6 +137,12 @@ export default async function PartnerNewsroomPage({
     const cutoff = new Date(Date.now() - 30 * 86400000).toISOString();
     query = query.gte("occurred_at", cutoff);
   }
+  if (sportFilter) {
+    query = query.eq("sport_id", sportFilter);
+  }
+  if (positionFilter) {
+    query = query.eq("athletes.position_id", positionFilter);
+  }
 
   const { data, error } = await query;
   const events: EventRow[] = error ? [] : ((data ?? []) as unknown as EventRow[]);
@@ -120,9 +153,16 @@ export default async function PartnerNewsroomPage({
     const r = overrides.range !== undefined ? overrides.range : rangeFilter;
     if (t) next.set("type", t);
     if (r && r !== "30d") next.set("range", r);
+    // Preserve sport + position across chip-driven nav so a partner
+    // changing the type chip doesn't lose their sport/position
+    // selection.
+    if (sportFilter) next.set("sport", sportFilter);
+    if (positionFilter) next.set("position", positionFilter);
     const qs = next.toString();
     return qs ? `/partenaire/newsroom?${qs}` : "/partenaire/newsroom";
   }
+
+  const hasActiveFilters = !!(typeFilter || rangeFilter !== "30d" || sportFilter || positionFilter);
 
   return (
     <div className="px-6 sm:px-10 py-8 max-w-[1100px] mx-auto space-y-6">
@@ -132,16 +172,21 @@ export default async function PartnerNewsroomPage({
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mr-1">Type</span>
-        <FilterChip label="Tout" href={buildHref({ type: null })} active={typeFilter === null} />
-        <FilterChip label="Engagements" href={buildHref({ type: "COMMITMENT" })} active={typeFilter === "COMMITMENT"} />
-        <FilterChip label="5 étoiles" href={buildHref({ type: "FIVE_STAR_SIGNUP" })} active={typeFilter === "FIVE_STAR_SIGNUP"} />
-        <span className="w-px h-5 bg-[#2D3748] mx-2" />
-        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mr-1">Période</span>
-        <FilterChip label="7 derniers jours" href={buildHref({ range: "7d" })} active={rangeFilter === "7d"} />
-        <FilterChip label="30 derniers jours" href={buildHref({ range: "30d" })} active={rangeFilter === "30d"} />
-        <FilterChip label="Tout" href={buildHref({ range: "all" })} active={rangeFilter === "all"} />
+      <div className="space-y-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mr-1">Type</span>
+          <FilterChip label="Tout" href={buildHref({ type: null })} active={typeFilter === null} />
+          <FilterChip label="Engagements" href={buildHref({ type: "COMMITMENT" })} active={typeFilter === "COMMITMENT"} />
+          <FilterChip label="5 étoiles" href={buildHref({ type: "FIVE_STAR_SIGNUP" })} active={typeFilter === "FIVE_STAR_SIGNUP"} />
+          <span className="w-px h-5 bg-[#2D3748] mx-2" />
+          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mr-1">Période</span>
+          <FilterChip label="7 derniers jours" href={buildHref({ range: "7d" })} active={rangeFilter === "7d"} />
+          <FilterChip label="30 derniers jours" href={buildHref({ range: "30d" })} active={rangeFilter === "30d"} />
+          <FilterChip label="Tout" href={buildHref({ range: "all" })} active={rangeFilter === "all"} />
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <NewsroomDropdownFilters sports={sports} positions={positions} />
+        </div>
       </div>
 
       {/* Feed */}
@@ -153,8 +198,17 @@ export default async function PartnerNewsroomPage({
               <path d="M12 6v6l4 2" />
             </svg>
           </div>
-          <p className="text-[13px] text-[#9CA3AF] font-semibold">Aucun événement récent.</p>
-          <p className="text-[12px] text-[#6b7280] mt-1.5">Revenez bientôt — les événements apparaissent ici dès qu&apos;un athlète admissible signe ou atteint 5 étoiles.</p>
+          {hasActiveFilters ? (
+            <>
+              <p className="text-[13px] text-[#9CA3AF] font-semibold">Aucun événement ne correspond à ces filtres.</p>
+              <p className="text-[12px] text-[#6b7280] mt-1.5">Essayez d&apos;élargir votre recherche.</p>
+            </>
+          ) : (
+            <>
+              <p className="text-[13px] text-[#9CA3AF] font-semibold">Aucun événement récent.</p>
+              <p className="text-[12px] text-[#6b7280] mt-1.5">Revenez bientôt — les événements apparaissent ici dès qu&apos;un athlète admissible signe ou atteint 5 étoiles.</p>
+            </>
+          )}
         </div>
       ) : (
         <div className="space-y-3">
