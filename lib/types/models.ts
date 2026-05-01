@@ -905,7 +905,7 @@ export interface AthleteSuggestion {
 /* ── Media partners (Phase 1) ─────────────────────────────── */
 
 export type PartnerStatus = "PENDING" | "APPROVED" | "SUSPENDED" | "REVOKED";
-export type CardDownloadFormat = "square" | "story" | "landscape";
+export type CardDownloadFormat = "publication" | "story";
 
 export interface MediaPartner {
   id: string;
