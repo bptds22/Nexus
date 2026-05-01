@@ -88,11 +88,16 @@ export async function POST(req: Request) {
   // 5. Generate temp password (~16 chars, base64url-safe)
   const tempPassword = crypto.randomBytes(12).toString("base64url");
 
-  // 6. Create auth user
+  // 6. Create auth user. Pass role in user_metadata so the
+  //    handle_new_auth_user trigger sets role='PARTNER' on the
+  //    public.users row from the start — avoids the race where
+  //    the partner's session JWT caches the default ATHLETE role
+  //    before our follow-up UPDATE lands.
   const { data: created, error: createErr } = await sbAdmin.auth.admin.createUser({
     email,
     password: tempPassword,
     email_confirm: true,
+    user_metadata: { role: "PARTNER" },
   });
   if (createErr || !created.user) {
     console.error("[admin/partners/create] auth.createUser failed:", createErr);
