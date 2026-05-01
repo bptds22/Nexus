@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import PartnerSidebar from "./_components/PartnerSidebar";
 import PlaybookBackground from "@/app/components/PlaybookBackground";
 import { createClient } from "@/lib/supabase/client";
@@ -18,8 +18,14 @@ type GuardState = "loading" | "ok" | "wrong-role";
 
 export default function PartenaireLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [state, setState] = useState<GuardState>("loading");
+
+  // /partenaire/bienvenue is a dedicated welcome screen — no
+  // sidebar chrome. Same role guard applies (only PARTNER), but
+  // the layout renders centered children only.
+  const isWelcomeFlow = pathname === "/partenaire/bienvenue";
 
   useEffect(() => {
     async function check() {
@@ -54,6 +60,17 @@ export default function PartenaireLayout({ children }: { children: React.ReactNo
       <div className="hero-playbook nx-no-glow bg-[#111317] min-h-screen flex items-center justify-center">
         <PlaybookBackground />
         <div className="w-8 h-8 border-2 border-[#E63946] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  // Welcome flow: full-screen, no sidebar, no top bar.
+  if (isWelcomeFlow) {
+    return (
+      <div className="hero-playbook nx-no-glow bg-[#111317] min-h-screen flex flex-col">
+        <DeactivationGuard />
+        <PlaybookBackground />
+        <main className="relative z-10 flex-1">{children}</main>
       </div>
     );
   }
