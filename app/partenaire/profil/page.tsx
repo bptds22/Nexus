@@ -61,15 +61,13 @@ export default function PartnerProfilePage() {
 
   async function handleSave() {
     if (!partner) return;
-    if (!form.organization_name.trim() || !form.contact_name.trim()) {
-      showToast("error", "Nom de l'organisation et personne-contact sont requis");
-      return;
-    }
     setSaving(true);
     const supabase = createClient();
+    // Admin-controlled fields (organization_name, contact_name,
+    // contact_email, status, show_on_homepage, audience_size,
+    // approved_*, homepage_order) are deliberately NOT in the
+    // UPDATE — partners can't self-edit those.
     const updates = {
-      organization_name: form.organization_name.trim(),
-      contact_name: form.contact_name.trim(),
       logo_url: form.logo_url.trim() || null,
       website_url: form.website_url.trim() || null,
       instagram_handle: form.instagram_handle.trim().replace(/^@/, "") || null,
@@ -108,15 +106,24 @@ export default function PartnerProfilePage() {
       </div>
 
       <div className="bg-[#1A1D24] border border-[#2D3748] rounded-xl p-6 space-y-5">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className={labelCls}>Nom de l&apos;organisation <span className="text-[#EF4444]">*</span></label>
-            <input type="text" value={form.organization_name} onChange={(e) => setForm({ ...form, organization_name: e.target.value })} className={inputCls} />
+        {/* Admin-controlled fields — read-only. Contact support to change. */}
+        <div className="bg-[#13151a] border border-[#2D3748]/40 rounded-lg p-4 space-y-3">
+          <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-[#6B7280]">Géré par Nexus</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className={labelCls}>Nom de l&apos;organisation</label>
+              <input type="text" title="Nom de l'organisation" value={form.organization_name} readOnly disabled className={`${inputCls} text-[#6B7280] cursor-not-allowed`} />
+            </div>
+            <div>
+              <label className={labelCls}>Personne-contact</label>
+              <input type="text" title="Personne-contact" value={form.contact_name} readOnly disabled className={`${inputCls} text-[#6B7280] cursor-not-allowed`} />
+            </div>
           </div>
           <div>
-            <label className={labelCls}>Personne-contact <span className="text-[#EF4444]">*</span></label>
-            <input type="text" value={form.contact_name} onChange={(e) => setForm({ ...form, contact_name: e.target.value })} className={inputCls} />
+            <label className={labelCls}>Courriel de contact</label>
+            <input type="email" title="Courriel de contact" value={partner.contact_email} readOnly disabled className={`${inputCls} text-[#6B7280] cursor-not-allowed`} />
           </div>
+          <p className="text-[11px] text-[#6B7280] italic">Pour modifier ces informations, contactez l&apos;équipe Nexus.</p>
         </div>
 
         <div>
@@ -152,11 +159,15 @@ export default function PartnerProfilePage() {
           <label className={labelCls}>Description</label>
           <textarea
             rows={4}
+            maxLength={500}
             value={form.description}
-            onChange={(e) => setForm({ ...form, description: e.target.value })}
+            onChange={(e) => setForm({ ...form, description: e.target.value.slice(0, 500) })}
             placeholder="Quelques mots sur ton organisation…"
             className={`${inputCls} h-auto resize-none`}
           />
+          <p className={`text-[11px] mt-1 text-right ${form.description.length >= 480 ? "text-[#F59E0B]" : "text-[#6B7280]"}`}>
+            {form.description.length}/500 caractères
+          </p>
         </div>
 
         <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#2D3748]/40">
@@ -166,7 +177,7 @@ export default function PartnerProfilePage() {
             disabled={saving}
             className="px-5 py-2.5 bg-[#E63946] hover:bg-[#D42B22] text-white text-[13px] font-bold rounded-lg transition-colors disabled:opacity-50 uppercase tracking-wider"
           >
-            {saving ? "Enregistrement…" : "Enregistrer"}
+            {saving ? "Enregistrement…" : "Enregistrer les modifications"}
           </button>
         </div>
       </div>

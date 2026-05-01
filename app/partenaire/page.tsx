@@ -6,9 +6,9 @@ import { createClient } from "@/lib/supabase/client";
 import type { MediaPartner, PartnerStatus } from "@/lib/types/models";
 
 /* ═══════════════════════════════════════════════════════════════
-   Partner Tableau de bord — Phase 1 landing.
-   Welcome message + status badge + four "Bientôt disponible"
-   tiles previewing the upcoming sections.
+   Partner Tableau de bord — Phase 2 landing.
+   Welcome message + status badge + 6 navigation tiles. All
+   target features now shipped.
 ═══════════════════════════════════════════════════════════════ */
 
 const STATUS_PILL: Record<PartnerStatus, { bg: string; text: string; label: string }> = {
@@ -22,25 +22,37 @@ const TILES = [
   {
     title: "Newsroom",
     href: "/partenaire/newsroom",
-    description: "Athlètes vedettes de la semaine, montants à publier, contenu prêt-à-utiliser.",
+    description: "Engagements et nouvelles 5 étoiles en temps réel",
     icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 22h16a2 2 0 002-2V4a2 2 0 00-2-2H8a2 2 0 00-2 2v16a2 2 0 01-2 2zm0 0a2 2 0 01-2-2v-9c0-1.1.9-2 2-2h2" /><path d="M18 14h-8" /><path d="M15 18h-5" /><path d="M10 6h8v4h-8z" /></svg>,
+  },
+  {
+    title: "Classements",
+    href: "/partenaire/classements",
+    description: "Top 25 athlètes par sport, position, région et promotion",
+    icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="20" x2="12" y2="10" /><line x1="18" y1="20" x2="18" y2="4" /><line x1="6" y1="20" x2="6" y2="16" /></svg>,
+  },
+  {
+    title: "Tendances",
+    href: "/partenaire/tendances",
+    description: "Athlètes en pleine ascension cette semaine",
+    icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" /></svg>,
   },
   {
     title: "Athlètes",
     href: "/partenaire/athletes",
-    description: "Catalogue des athlètes ayant consenti à la diffusion publique.",
+    description: "Catalogue des athlètes ayant consenti à la diffusion partenaire",
     icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="8.5" cy="7" r="4" /><path d="M20 8v6" /><path d="M23 11h-6" /></svg>,
   },
   {
     title: "Téléchargements",
     href: "/partenaire/telechargements",
-    description: "Historique des cartes téléchargées + métriques d'usage.",
+    description: "Historique des cartes téléchargées",
     icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>,
   },
   {
     title: "Mon profil",
     href: "/partenaire/profil",
-    description: "Logo, réseaux sociaux, description de l'organisation.",
+    description: "Logo, réseaux sociaux, description de l'organisation",
     icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>,
   },
 ];
@@ -74,7 +86,7 @@ export default function PartenaireDashboardPage() {
         <h1 className="font-head text-2xl sm:text-3xl font-black text-white uppercase tracking-tight">
           Bienvenue{partner?.organization_name ? `, ${partner.organization_name}` : ""}
         </h1>
-        <p className="text-[14px] text-[#9CA3AF] mt-1">Espace partenaire Nexus — bêta fermée Phase 1</p>
+        <p className="text-[14px] text-[#9CA3AF] mt-1">Espace partenaire Nexus</p>
         {partner && (
           <span className={`inline-flex items-center mt-3 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ${STATUS_PILL[partner.status].bg} ${STATUS_PILL[partner.status].text}`}>
             {STATUS_PILL[partner.status].label}
@@ -82,15 +94,15 @@ export default function PartenaireDashboardPage() {
         )}
       </div>
 
-      {/* Phase intro */}
+      {/* Welcome paragraph */}
       <div className="bg-[#1A1D24] border border-[#2D3748] rounded-xl p-5">
         <p className="text-[13px] text-[#9CA3AF] leading-relaxed">
-          Ton espace est en train d&apos;être bâti. Les sections ci-dessous arriveront bientôt — tu pourras parcourir les athlètes, télécharger leurs cartes Nexus, et publier sur tes réseaux. En attendant, complète ton profil pour qu&apos;on puisse te mettre en avant.
+          Bienvenue dans votre espace partenaire Nexus. Parcourez les athlètes, téléchargez leurs cartes officielles, et publiez avec attribution Nexus.
         </p>
       </div>
 
-      {/* Coming-soon tiles */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      {/* Navigation tiles — 6 in a 3×2 grid on lg, 2×3 on sm, stacked on xs */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {TILES.map((tile) => (
           <Link
             key={tile.href}
@@ -103,14 +115,7 @@ export default function PartenaireDashboardPage() {
                 {tile.icon}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h3 className="font-head text-[15px] font-black text-white uppercase tracking-tight">{tile.title}</h3>
-                  {tile.href !== "/partenaire/profil" && (
-                    <span className="px-2 py-0.5 rounded-full bg-[#F59E0B]/15 text-[#F59E0B] text-[9px] font-bold uppercase tracking-wider">
-                      Bientôt
-                    </span>
-                  )}
-                </div>
+                <h3 className="font-head text-[15px] font-black text-white uppercase tracking-tight">{tile.title}</h3>
                 <p className="text-[12px] text-[#9CA3AF] mt-1.5 leading-relaxed">{tile.description}</p>
               </div>
             </div>
