@@ -512,11 +512,11 @@ function ModifierContent({ id }: { id: string }) {
       sportId = sportRow?.id || null;
       console.log("Sport save:", { dropdownValue: form.sports.primarySport, sport_id: sportId });
     }
-    if (form.sports.primaryPosition) {
-      const { data: posRow } = await supabase.from("positions").select("id").eq("abreviation", form.sports.primaryPosition).maybeSingle();
+    if (form.sports.primaryPosition && sportId) {
+      const { data: posRow } = await supabase.from("positions").select("id").eq("abreviation", form.sports.primaryPosition).eq("sport_id", sportId).maybeSingle();
       if (!posRow) {
         // Try matching by full name
-        const { data: posRow2 } = await supabase.from("positions").select("id").eq("nom", form.sports.primaryPosition).maybeSingle();
+        const { data: posRow2 } = await supabase.from("positions").select("id").eq("nom", form.sports.primaryPosition).eq("sport_id", sportId).maybeSingle();
         positionId = posRow2?.id || null;
       } else {
         positionId = posRow.id;
