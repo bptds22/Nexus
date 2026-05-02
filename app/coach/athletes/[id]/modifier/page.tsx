@@ -641,6 +641,7 @@ function ModifierContent({ id }: { id: string }) {
     const evalRecord = {
       coach_id: user.id,
       athlete_id: id,
+      cote_globale: coteGlobale,
       vitesse_explosivite,
       force_puissance,
       endurance_cardio,
