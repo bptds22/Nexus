@@ -5,11 +5,12 @@ import { createClient } from "@/lib/supabase/server";
    /partenaire/telechargements — partner's own download history
    Reads partner_card_downloads (RLS auto-restricts to current
    partner via 'Partners read own download history' policy from
-   Phase 1).
+   Phase 1). Most recent 50 downloads, reverse chronological.
 
-   Most recent 50 downloads, reverse chronological. Format pill
-   (Publication / Story), athlete photo + name link, relative
-   time stamp.
+   Three "columns" per row: Athlète (photo + name + sport),
+   Format pill (Publication blue / Story purple), Date
+   (relative French time). Entire row is a Link to the
+   athlete profile.
 ═══════════════════════════════════════════════════════════════ */
 
 type DownloadRow = {
@@ -21,12 +22,20 @@ type DownloadRow = {
     first_name: string | null;
     last_name: string | null;
     photo_url: string | null;
+    sport_id: string | null;
+    sports: { nom: string | null } | null;
   } | null;
 };
 
-const FORMAT_PILL: Record<DownloadRow["format"], { bg: string; text: string; label: string }> = {
-  publication: { bg: "bg-[#3B82F6]/15", text: "text-[#3B82F6]", label: "Publication" },
-  story: { bg: "bg-[#E63946]/15", text: "text-[#E63946]", label: "Story" },
+const FORMAT_PILL: Record<DownloadRow["format"], { className: string; label: string }> = {
+  publication: {
+    className: "bg-blue-500/20 text-blue-400 border border-blue-500/30",
+    label: "Publication",
+  },
+  story: {
+    className: "bg-purple-500/20 text-purple-400 border border-purple-500/30",
+    label: "Story",
+  },
 };
 
 function formatRelativeFrench(iso: string): string {
@@ -48,7 +57,7 @@ export default async function PartnerTelechargementsPage() {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("partner_card_downloads")
-    .select("id, format, downloaded_at, athletes(id, first_name, last_name, photo_url)")
+    .select("id, format, downloaded_at, athletes(id, first_name, last_name, photo_url, sport_id, sports(nom))")
     .order("downloaded_at", { ascending: false })
     .limit(50);
 
@@ -73,10 +82,19 @@ export default async function PartnerTelechargementsPage() {
               <line x1="12" y1="15" x2="12" y2="3" />
             </svg>
           </div>
-          <p className="text-[13px] text-[#9CA3AF] font-semibold">Aucun téléchargement pour le moment.</p>
-          <p className="text-[12px] text-[#6b7280] mt-1.5">
-            Visitez le <Link href="/partenaire/athletes" className="text-[#E63946] hover:text-[#D42B22] transition-colors">catalogue des athlètes</Link> pour télécharger des cartes.
+          <p className="text-[14px] text-white font-bold">Aucun téléchargement pour le moment</p>
+          <p className="text-[13px] text-[#9CA3AF] mt-1.5 max-w-md mx-auto">
+            Téléchargez la carte officielle d&apos;un athlète pour la publier dans vos contenus.
           </p>
+          <Link
+            href="/partenaire/athletes"
+            className="inline-flex items-center gap-2 mt-5 px-5 py-2.5 bg-[#E63946] hover:bg-[#D42B22] text-white text-[12px] font-bold uppercase tracking-wider rounded-lg transition-colors"
+          >
+            Parcourir le catalogue d&apos;athlètes
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <path d="M5 12h14" /><path d="M12 5l7 7-7 7" />
+            </svg>
+          </Link>
         </div>
       ) : (
         <div className="bg-[#1A1D24] border border-[#2D3748] rounded-xl overflow-hidden">
@@ -89,38 +107,52 @@ export default async function PartnerTelechargementsPage() {
           <div className="divide-y divide-[#2D3748]/40">
             {downloads.map((d) => {
               const ath = d.athletes;
-              const name = ath ? `${ath.first_name ?? ""} ${ath.last_name ?? ""}`.trim() : "Athlète inconnu";
+              const name = ath ? `${ath.first_name ?? ""} ${ath.last_name ?? ""}`.trim() : "Athlète supprimé";
               const initials = name.split(/\s+/).map((n) => n[0]).slice(0, 2).join("").toUpperCase() || "?";
+              const sportName = ath?.sports?.nom ?? null;
               const pill = FORMAT_PILL[d.format];
-
-              return (
-                <div key={d.id} className="px-5 py-4 flex items-center gap-4 hover:bg-white/[0.03] transition-colors">
+              const rowInner = (
+                <>
                   {ath?.photo_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={ath.photo_url} alt={name} className="w-11 h-11 rounded-full object-cover shrink-0" />
+                    <img src={ath.photo_url} alt={name} className="w-10 h-10 rounded-full object-cover shrink-0" />
                   ) : (
-                    <div className="w-11 h-11 rounded-full bg-[#2D3748] flex items-center justify-center text-[12px] font-bold text-white/60 shrink-0">
+                    <div className="w-10 h-10 rounded-full bg-[#2D3748] flex items-center justify-center text-[12px] font-bold text-white/60 shrink-0">
                       {initials}
                     </div>
                   )}
 
+                  {/* Athlète column — name + sport */}
                   <div className="flex-1 min-w-0">
-                    {ath?.id ? (
-                      <Link
-                        href={`/partenaire/athletes/${ath.id}`}
-                        className="text-[14px] font-bold text-white hover:text-[#E63946] transition-colors truncate block"
-                      >
-                        {name}
-                      </Link>
-                    ) : (
-                      <p className="text-[14px] font-bold text-white truncate">{name}</p>
+                    <p className="text-[14px] font-semibold text-white truncate">{name}</p>
+                    {sportName && (
+                      <p className="text-[12px] text-[#9CA3AF] truncate">{sportName}</p>
                     )}
-                    <p className="text-[11px] text-[#6b7280]">{formatRelativeFrench(d.downloaded_at)}</p>
                   </div>
 
-                  <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ${pill.bg} ${pill.text} shrink-0`}>
+                  {/* Format column */}
+                  <span className={`hidden sm:inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shrink-0 ${pill.className}`}>
                     {pill.label}
                   </span>
+
+                  {/* Date column */}
+                  <span className="text-[11px] text-[#6b7280] tabular-nums shrink-0 sm:w-[110px] sm:text-right">
+                    {formatRelativeFrench(d.downloaded_at)}
+                  </span>
+                </>
+              );
+
+              return ath?.id ? (
+                <Link
+                  key={d.id}
+                  href={`/partenaire/athletes/${ath.id}`}
+                  className="px-5 py-4 flex items-center gap-4 hover:bg-[#2D3748]/40 transition-colors"
+                >
+                  {rowInner}
+                </Link>
+              ) : (
+                <div key={d.id} className="px-5 py-4 flex items-center gap-4">
+                  {rowInner}
                 </div>
               );
             })}
