@@ -1,197 +1,287 @@
-"use client";
-
-import { useCallback, useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
-import type { MediaPartner } from "@/lib/types/models";
+import { createClient } from "@/lib/supabase/server";
 
 /* ═══════════════════════════════════════════════════════════════
-   Mon profil — partner-side editor for organization fields.
-   Status, approved_at, approved_by, homepage flag remain
-   admin-only (RLS on UPDATE will reject those if attempted).
+   /partenaire/profil — read-only "Mes informations" view.
+
+   Partners can see what Nexus has on file for their organization
+   but cannot self-edit. Admin manages partner info from
+   /admin/partenaires. RLS handles partner scoping (partners read
+   their own row via the Phase 1 "Partners read own profile"
+   policy).
 ═══════════════════════════════════════════════════════════════ */
 
-const inputCls = "w-full bg-[#13151a] border border-[#2a2d36] rounded-lg px-4 py-2.5 text-[14px] text-[#e0e0e0] placeholder:text-[#4a4d56] focus:border-[#E63946] outline-none transition-colors";
-const labelCls = "block text-[12px] font-bold tracking-[0.25em] uppercase text-[#6B7280] mb-1.5";
+type PartnerRow = {
+  organization_name: string | null;
+  contact_name: string | null;
+  contact_email: string | null;
+  logo_url: string | null;
+  website_url: string | null;
+  instagram_handle: string | null;
+  facebook_url: string | null;
+  tiktok_handle: string | null;
+  description: string | null;
+  status: "PENDING" | "APPROVED" | "SUSPENDED" | "REVOKED";
+  approved_at: string | null;
+  created_at: string;
+};
 
-export default function PartnerProfilePage() {
-  const [partner, setPartner] = useState<MediaPartner | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [toast, setToast] = useState<{ kind: "success" | "error"; message: string } | null>(null);
-  const showToast = (kind: "success" | "error", message: string) => {
-    setToast({ kind, message });
-    setTimeout(() => setToast(null), 3000);
-  };
+const STATUS_BADGE: Record<PartnerRow["status"], { className: string; label: string }> = {
+  APPROVED: {
+    className: "bg-green-500/20 text-green-400 border-green-500/30",
+    label: "Approuvé",
+  },
+  PENDING: {
+    className: "bg-amber-500/20 text-amber-400 border-amber-500/30",
+    label: "En attente",
+  },
+  SUSPENDED: {
+    className: "bg-red-500/20 text-red-400 border-red-500/30",
+    label: "Suspendu",
+  },
+  REVOKED: {
+    className: "bg-gray-500/20 text-gray-400 border-gray-500/30",
+    label: "Révoqué",
+  },
+};
 
-  const [form, setForm] = useState({
-    organization_name: "",
-    contact_name: "",
-    logo_url: "",
-    website_url: "",
-    instagram_handle: "",
-    facebook_url: "",
-    tiktok_handle: "",
-    description: "",
-  });
+function formatFrenchDate(iso: string | null): string {
+  if (!iso) return "—";
+  return new Intl.DateTimeFormat("fr-CA", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  }).format(new Date(iso));
+}
 
-  const loadPartner = useCallback(async () => {
-    setLoading(true);
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setLoading(false); return; }
-    const { data } = await supabase.from("media_partners").select("*").eq("user_id", user.id).maybeSingle();
-    if (data) {
-      const p = data as MediaPartner;
-      setPartner(p);
-      setForm({
-        organization_name: p.organization_name ?? "",
-        contact_name: p.contact_name ?? "",
-        logo_url: p.logo_url ?? "",
-        website_url: p.website_url ?? "",
-        instagram_handle: p.instagram_handle ?? "",
-        facebook_url: p.facebook_url ?? "",
-        tiktok_handle: p.tiktok_handle ?? "",
-        description: p.description ?? "",
-      });
-    }
-    setLoading(false);
-  }, []);
+function Row({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-4 py-3 border-b border-[#2D3748]/40 last:border-0">
+      <span className="text-[12px] uppercase tracking-wider text-[#9CA3AF] sm:shrink-0">
+        {label}
+      </span>
+      <div className="text-[15px] text-white sm:text-right break-words min-w-0">
+        {children}
+      </div>
+    </div>
+  );
+}
 
-  useEffect(() => { loadPartner(); }, [loadPartner]);
+function Muted({ children }: { children: React.ReactNode }) {
+  return <span className="text-[14px] text-[#6B7280] italic">{children}</span>;
+}
 
-  async function handleSave() {
-    if (!partner) return;
-    setSaving(true);
-    const supabase = createClient();
-    // Admin-controlled fields (organization_name, contact_name,
-    // contact_email, status, show_on_homepage, audience_size,
-    // approved_*, homepage_order) are deliberately NOT in the
-    // UPDATE — partners can't self-edit those.
-    const updates = {
-      logo_url: form.logo_url.trim() || null,
-      website_url: form.website_url.trim() || null,
-      instagram_handle: form.instagram_handle.trim().replace(/^@/, "") || null,
-      facebook_url: form.facebook_url.trim() || null,
-      tiktok_handle: form.tiktok_handle.trim().replace(/^@/, "") || null,
-      description: form.description.trim() || null,
-    };
-    const { error } = await supabase.from("media_partners").update(updates).eq("id", partner.id);
-    if (error) {
-      console.error("[partenaire/profil] save:", error);
-      showToast("error", `Erreur : ${error.message}`);
-    } else {
-      showToast("success", "Profil mis à jour");
-      await loadPartner();
-    }
-    setSaving(false);
-  }
+function ExternalLinkIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="inline-block ml-1.5 -mt-0.5">
+      <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
+      <polyline points="15 3 21 3 21 9" />
+      <line x1="10" y1="14" x2="21" y2="3" />
+    </svg>
+  );
+}
 
-  if (loading) {
-    return <div className="px-6 sm:px-10 py-8 max-w-[800px] mx-auto"><p className="text-[13px] text-[#6B7280]">Chargement…</p></div>;
-  }
+function InstagramIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="inline-block mr-1.5 -mt-0.5">
+      <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+      <path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z" />
+      <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
+    </svg>
+  );
+}
+
+function FacebookIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="inline-block mr-1.5 -mt-0.5">
+      <path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z" />
+    </svg>
+  );
+}
+
+function TikTokIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" className="inline-block mr-1.5 -mt-0.5">
+      <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-5.2 1.74 2.89 2.89 0 012.31-4.64 2.93 2.93 0 01.88.13V9.4a6.84 6.84 0 00-1-.05A6.33 6.33 0 005.8 20.1a6.34 6.34 0 0010.86-4.43V8.51a8.16 8.16 0 004.77 1.52V6.69h-1.84z" />
+    </svg>
+  );
+}
+
+export default async function PartnerProfilePage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  const { data: partner } = user
+    ? await supabase
+        .from("media_partners")
+        .select(`
+          organization_name,
+          contact_name,
+          contact_email,
+          logo_url,
+          website_url,
+          instagram_handle,
+          facebook_url,
+          tiktok_handle,
+          description,
+          status,
+          approved_at,
+          created_at
+        `)
+        .eq("user_id", user.id)
+        .maybeSingle()
+    : { data: null };
 
   if (!partner) {
     return (
       <div className="px-6 sm:px-10 py-8 max-w-[800px] mx-auto">
-        <p className="text-[13px] text-[#EF4444]">Aucun profil partenaire trouvé pour ce compte.</p>
+        <h1 className="font-head text-2xl sm:text-3xl font-black text-white uppercase tracking-tight">
+          Mes informations
+        </h1>
+        <div className="bg-[#1A1D24] border border-[#2D3748] rounded-xl p-6 mt-6">
+          <p className="text-[14px] text-[#EF4444]">
+            Profil introuvable. Contactez l&apos;équipe Nexus.
+          </p>
+        </div>
       </div>
     );
   }
 
+  const p = partner as PartnerRow;
+  const statusBadge = STATUS_BADGE[p.status];
+
   return (
     <div className="px-6 sm:px-10 py-8 max-w-[800px] mx-auto space-y-6">
       <div>
-        <h1 className="font-head text-2xl sm:text-3xl font-black text-white uppercase tracking-tight">Mon profil</h1>
-        <p className="text-[14px] text-[#9CA3AF] mt-1">{partner.contact_email} · Compte créé le {new Date(partner.created_at).toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" })}</p>
+        <h1 className="font-head text-2xl sm:text-3xl font-black text-white uppercase tracking-tight">
+          Mes informations
+        </h1>
+        <p className="text-[14px] text-[#9CA3AF] mt-1">
+          Informations enregistrées dans Nexus pour votre organisation
+        </p>
       </div>
 
-      <div className="bg-[#1A1D24] border border-[#2D3748] rounded-xl p-6 space-y-5">
-        {/* Admin-controlled fields — read-only. Contact support to change. */}
-        <div className="bg-[#13151a] border border-[#2D3748]/40 rounded-lg p-4 space-y-3">
-          <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-[#6B7280]">Géré par Nexus</p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className={labelCls}>Nom de l&apos;organisation</label>
-              <input type="text" title="Nom de l'organisation" value={form.organization_name} readOnly disabled className={`${inputCls} text-[#6B7280] cursor-not-allowed`} />
-            </div>
-            <div>
-              <label className={labelCls}>Personne-contact</label>
-              <input type="text" title="Personne-contact" value={form.contact_name} readOnly disabled className={`${inputCls} text-[#6B7280] cursor-not-allowed`} />
-            </div>
-          </div>
-          <div>
-            <label className={labelCls}>Courriel de contact</label>
-            <input type="email" title="Courriel de contact" value={partner.contact_email} readOnly disabled className={`${inputCls} text-[#6B7280] cursor-not-allowed`} />
-          </div>
-          <p className="text-[11px] text-[#6B7280] italic">Pour modifier ces informations, contactez l&apos;équipe Nexus.</p>
+      {/* Section 1 — Identité */}
+      <section className="bg-[#1A1D24] border border-[#2D3748] rounded-xl p-6">
+        <h2 className="font-head text-[20px] font-bold text-white tracking-tight mb-2">
+          Identité
+        </h2>
+        <div className="divide-y divide-[#2D3748]/40">
+          <Row label="Organisation">
+            {p.organization_name || <Muted>—</Muted>}
+          </Row>
+          <Row label="Personne-ressource">
+            {p.contact_name || <Muted>—</Muted>}
+          </Row>
+          <Row label="Courriel">
+            {p.contact_email || <Muted>—</Muted>}
+          </Row>
+          <Row label="Statut">
+            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider border ${statusBadge.className}`}>
+              {statusBadge.label}
+            </span>
+          </Row>
+          <Row label="Date d'approbation">
+            {formatFrenchDate(p.approved_at)}
+          </Row>
+          <Row label="Membre depuis">
+            {formatFrenchDate(p.created_at)}
+          </Row>
         </div>
+      </section>
 
-        <div>
-          <label className={labelCls}>Logo URL</label>
-          <input type="url" value={form.logo_url} onChange={(e) => setForm({ ...form, logo_url: e.target.value })} placeholder="https://…" className={inputCls} />
-          {form.logo_url && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={form.logo_url} alt="Aperçu" className="mt-2 h-12 rounded-md object-contain bg-[#13151a] border border-[#2a2d36] p-1" />
-          )}
+      {/* Section 2 — Présence en ligne */}
+      <section className="bg-[#1A1D24] border border-[#2D3748] rounded-xl p-6">
+        <h2 className="font-head text-[20px] font-bold text-white tracking-tight mb-2">
+          Présence en ligne
+        </h2>
+        <div className="divide-y divide-[#2D3748]/40">
+          <Row label="Logo">
+            {p.logo_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={p.logo_url}
+                alt="Logo"
+                className="max-w-[120px] max-h-[120px] object-contain bg-[#13151a] border border-[#2a2d36] rounded-md p-1.5"
+              />
+            ) : (
+              <Muted>Aucun logo enregistré</Muted>
+            )}
+          </Row>
+          <Row label="Site web">
+            {p.website_url ? (
+              <a
+                href={p.website_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[#E63946] hover:underline inline-flex items-center"
+              >
+                <span className="break-all">{p.website_url}</span>
+                <ExternalLinkIcon />
+              </a>
+            ) : (
+              "—"
+            )}
+          </Row>
+          <Row label="Instagram">
+            {p.instagram_handle ? (
+              <a
+                href={`https://instagram.com/${p.instagram_handle}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[#E63946] hover:underline inline-flex items-center"
+              >
+                <InstagramIcon />
+                @{p.instagram_handle}
+              </a>
+            ) : (
+              "—"
+            )}
+          </Row>
+          <Row label="Facebook">
+            {p.facebook_url ? (
+              <a
+                href={p.facebook_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[#E63946] hover:underline inline-flex items-center"
+              >
+                <FacebookIcon />
+                <span className="break-all">{p.facebook_url}</span>
+              </a>
+            ) : (
+              "—"
+            )}
+          </Row>
+          <Row label="TikTok">
+            {p.tiktok_handle ? (
+              <a
+                href={`https://tiktok.com/@${p.tiktok_handle}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[#E63946] hover:underline inline-flex items-center"
+              >
+                <TikTokIcon />
+                @{p.tiktok_handle}
+              </a>
+            ) : (
+              "—"
+            )}
+          </Row>
+          <Row label="Description">
+            {p.description ? (
+              <p className="text-[14px] text-[#9CA3AF] leading-relaxed whitespace-pre-line">
+                {p.description}
+              </p>
+            ) : (
+              <Muted>Aucune description enregistrée</Muted>
+            )}
+          </Row>
         </div>
+      </section>
 
-        <div>
-          <label className={labelCls}>Site web</label>
-          <input type="url" value={form.website_url} onChange={(e) => setForm({ ...form, website_url: e.target.value })} placeholder="https://…" className={inputCls} />
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div>
-            <label className={labelCls}>Instagram</label>
-            <input type="text" value={form.instagram_handle} onChange={(e) => setForm({ ...form, instagram_handle: e.target.value })} placeholder="handle" className={inputCls} />
-          </div>
-          <div>
-            <label className={labelCls}>Facebook</label>
-            <input type="url" value={form.facebook_url} onChange={(e) => setForm({ ...form, facebook_url: e.target.value })} placeholder="https://…" className={inputCls} />
-          </div>
-          <div>
-            <label className={labelCls}>TikTok</label>
-            <input type="text" value={form.tiktok_handle} onChange={(e) => setForm({ ...form, tiktok_handle: e.target.value })} placeholder="handle" className={inputCls} />
-          </div>
-        </div>
-
-        <div>
-          <label className={labelCls}>Description</label>
-          <textarea
-            rows={4}
-            maxLength={500}
-            value={form.description}
-            onChange={(e) => setForm({ ...form, description: e.target.value.slice(0, 500) })}
-            placeholder="Quelques mots sur ton organisation…"
-            className={`${inputCls} h-auto resize-none`}
-          />
-          <p className={`text-[11px] mt-1 text-right ${form.description.length >= 480 ? "text-[#F59E0B]" : "text-[#6B7280]"}`}>
-            {form.description.length}/500 caractères
-          </p>
-        </div>
-
-        <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#2D3748]/40">
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={saving}
-            className="px-5 py-2.5 bg-[#E63946] hover:bg-[#D42B22] text-white text-[13px] font-bold rounded-lg transition-colors disabled:opacity-50 uppercase tracking-wider"
-          >
-            {saving ? "Enregistrement…" : "Enregistrer les modifications"}
-          </button>
-        </div>
-      </div>
-
-      {toast && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100]">
-          <div className={`bg-[#1A1D24] border rounded-lg px-5 py-3 shadow-lg flex items-center gap-3 ${toast.kind === "success" ? "border-[#22C55E]/30" : "border-[#EF4444]/30"}`}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={toast.kind === "success" ? "#22C55E" : "#EF4444"} strokeWidth="2.5" strokeLinecap="round">
-              {toast.kind === "success" ? <path d="M20 6L9 17l-5-5" /> : <><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /></>}
-            </svg>
-            <span className="text-[13px] font-bold text-white">{toast.message}</span>
-          </div>
-        </div>
-      )}
+      <p className="text-[12px] text-[#6B7280] text-center pt-2">
+        Pour modifier ces informations, contactez l&apos;équipe Nexus.
+      </p>
     </div>
   );
 }
