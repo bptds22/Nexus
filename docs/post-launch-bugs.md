@@ -549,6 +549,24 @@ file.
       WHERE photo_url LIKE '%/sign/%';
       ```
 
+      **2026-05-02 — Token expired in the wild.** Alexandre
+      Bouchard's signed URL token (`exp = 1777609083`) expired
+      today, surfaced as a broken `<img>` with leaking alt text
+      ('Alex…') on the partner telechargements page. Manual
+      one-off intervention: NULL'd the row's `photo_url` so the
+      initials-fallback path renders cleanly:
+      ```sql
+      UPDATE athletes SET photo_url = NULL
+      WHERE first_name = 'Alexandre' AND last_name = 'Bouchard';
+      ```
+      Verified `UPDATE 1`. Athlete now renders 'AB' initials
+      across all surfaces. Underlying bug stays open — same
+      class of failure will hit any other Studio-uploaded photo
+      when its token expires. Companion follow-up commit adds
+      an `AthletePhoto` component with `onError` fallback so
+      future expired URLs degrade gracefully without manual
+      intervention.
+
 - [ ] **Implement CÉGEP coach detail messaging (Phase 2).**
       Reported 2026-04-28. The "Envoyer un message" button at
       [`app/recruteur/cegep/entraineurs/[id]/page.tsx:293-295`](../app/recruteur/cegep/entraineurs/%5Bid%5D/page.tsx#L293-L295)
