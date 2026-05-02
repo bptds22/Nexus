@@ -9,6 +9,8 @@ import NxIcon from "@/components/ui/NxIcon";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
 import type { GlobalRecruitmentStatus } from "@/lib/types/models";
 import { isValidationExpired } from "@/lib/utils/profileValidation";
+import AthletePhoto from "@/components/shared/AthletePhoto";
+import AthletePhotoFill from "@/components/shared/AthletePhotoFill";
 
 type ExtendedAthlete = SearchAthlete & { academicBadges: string[]; stars: number; recruitmentStatus: string | null; heightWeight: string; gpa: number; committedSchoolName: string | null; openToOffers: boolean | null; jersey: string; sportName: string; ouvertDemenager: boolean; ouvertPrive: boolean; ouvertAnglophone: boolean; createdAt: string; lastValidation?: string | null };
 import { useSubscription } from "@/lib/hooks/useSubscription";
@@ -60,16 +62,14 @@ function AthleteSearchCard({ a, onToggleFav, favDisabled, favDisabledReason }: {
     <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] overflow-hidden hover:border-[#E63946]/30 hover:shadow-[0_0_24px_rgba(230,57,70,0.12)] hover:-translate-y-1.5 hover:scale-[1.02] transition-all duration-300 ease-out group flex flex-col">
       {/* Photo area */}
       <Link href={`/recruteur/athletes/${a.id}`} className="relative block h-[180px] bg-[#2F3440] overflow-hidden cursor-pointer">
-        {a.photo ? (
-          <img src={a.photo} alt={`${a.firstName} ${a.lastName}`} className="w-full h-full object-cover object-[center_15%]" />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <span className="text-[48px] font-head font-black text-white/5 tracking-wide">
-              {a.firstName[0]}{a.lastName[0]}
-            </span>
-          </div>
-        )}
-        <div className="absolute bottom-0 left-0 right-0 h-1/2" style={{ background: "linear-gradient(to top, rgba(26,29,36,0.95), transparent)" }} />
+        <AthletePhotoFill
+          photoUrl={a.photo}
+          firstName={a.firstName}
+          lastName={a.lastName}
+          initialsFontSize={72}
+          className="object-[center_15%]"
+        />
+        <div className="absolute bottom-0 left-0 right-0 h-1/2 z-[2]" style={{ background: "linear-gradient(to top, rgba(26,29,36,0.95), transparent)" }} />
 
         {/* Top left — verified check + favorite heart */}
         <div className="absolute top-3 left-3 z-10 flex items-center gap-2">
@@ -178,16 +178,13 @@ function AthleteSearchRow({ a, onToggleFav, favDisabled, favDisabledReason }: {
     <div className="bg-[#1A1D24] rounded-lg border border-[#2D3748] hover:border-[#E63946]/30 hover:shadow-[0_0_24px_rgba(230,57,70,0.12)] transition-all duration-300 ease-out flex items-center px-4 py-3 gap-4">
 
       {/* Avatar + verified badge */}
-      <Link href={`/recruteur/athletes/${a.id}`} className="relative w-12 h-12 rounded-full bg-[#2F3440] shrink-0 block" style={{ overflow: "visible" }}>
-        <div className="w-full h-full rounded-full overflow-hidden">
-          {a.photo ? (
-            <img src={a.photo} alt={`${a.firstName} ${a.lastName}`} className="w-full h-full object-cover" />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <span className="text-[14px] font-head font-black text-white/10">{a.firstName[0]}{a.lastName[0]}</span>
-            </div>
-          )}
-        </div>
+      <Link href={`/recruteur/athletes/${a.id}`} className="relative w-12 h-12 shrink-0 block" style={{ overflow: "visible" }}>
+        <AthletePhoto
+          photoUrl={a.photo}
+          firstName={a.firstName}
+          lastName={a.lastName}
+          size={48}
+        />
         <div className="absolute -top-1 -right-1 z-10">
           {(() => {
             const active = a.isVerified && !isValidationExpired({ verified: !!a.isVerified, last_profile_validation: a.lastValidation ?? null });

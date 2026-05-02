@@ -27,6 +27,7 @@ import {
   getCardsByStatus,
 } from "./_data/mockKanbanData";
 import type { PipelineKanbanCard } from "./_data/mockKanbanData";
+import AthletePhotoFill from "@/components/shared/AthletePhotoFill";
 // MOCK_KANBAN no longer imported — all data from Supabase recruiter_pipeline
 
 /* ═══════════════════════════════════════════════════════════════
@@ -359,15 +360,20 @@ const DraggableKanbanCard = memo(function DraggableKanbanCard({
         aria-label={ring.reason || undefined}
       >
         {/* Photo banner */}
-        <div className="relative h-20 bg-[#2F3440]">
-          {card.photo_url ? (
-            <img src={card.photo_url} alt="" className="w-full h-full object-cover object-[center_15%]" />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <span className="text-[26px] font-head font-black text-white/5">{card.full_name.split(" ").map(n => n[0]).join("")}</span>
-            </div>
-          )}
-          <div className="absolute inset-0" style={{ background: "linear-gradient(to top, #1A1D24 0%, transparent 60%)" }} />
+        <div className="relative h-20 bg-[#2F3440] overflow-hidden">
+          {(() => {
+            const [first, ...rest] = (card.full_name || "").split(/\s+/);
+            return (
+              <AthletePhotoFill
+                photoUrl={card.photo_url}
+                firstName={first}
+                lastName={rest.join(" ")}
+                initialsFontSize={48}
+                className="object-[center_15%]"
+              />
+            );
+          })()}
+          <div className="absolute inset-0 z-[2]" style={{ background: "linear-gradient(to top, #1A1D24 0%, transparent 60%)" }} />
           {/* Verified badge */}
           <div className="absolute top-2 left-2">
             <svg width="18" height="18" viewBox="0 0 24 24" fill={card.is_verified ? BLUE : "#4a4d56"} stroke="none">

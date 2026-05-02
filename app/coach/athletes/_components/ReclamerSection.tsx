@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { RosterAthlete } from "../_data/mockRosterData";
+import AthletePhotoFill from "@/components/shared/AthletePhotoFill";
 
 /* ═══════════════════════════════════════════════════════════════
    ReclamerSection — multi-select grid for claiming unclaimed
@@ -133,18 +134,15 @@ export default function ReclamerSection({
                 </div>
 
                 {/* Photo banner */}
-                <div className="relative h-[140px] bg-[#2F3440]">
-                  {a.photo ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={a.photo} alt={`${a.firstName} ${a.lastName}`} className="w-full h-full object-cover object-[center_15%]" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <span className="text-[40px] font-head font-black text-white/5">
-                        {a.firstName[0]}{a.lastName[0]}
-                      </span>
-                    </div>
-                  )}
-                  <div className="absolute bottom-0 left-0 right-0 h-1/2" style={{ background: "linear-gradient(to top, rgba(26,29,36,0.95), transparent)" }} />
+                <div className="relative h-[140px] bg-[#2F3440] overflow-hidden">
+                  <AthletePhotoFill
+                    photoUrl={a.photo}
+                    firstName={a.firstName}
+                    lastName={a.lastName}
+                    initialsFontSize={48}
+                    className="object-[center_15%]"
+                  />
+                  <div className="absolute bottom-0 left-0 right-0 h-1/2 z-[2]" style={{ background: "linear-gradient(to top, rgba(26,29,36,0.95), transparent)" }} />
                 </div>
 
                 {/* Info */}

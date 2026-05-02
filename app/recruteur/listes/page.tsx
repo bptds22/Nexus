@@ -9,6 +9,7 @@ import StarRating from "@/components/ui/StarRating";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
 import type { GlobalRecruitmentStatus } from "@/lib/types/models";
 import type { ProspectList, ProspectListAthlete } from "./_data/mockListsData";
+import AthletePhoto from "@/components/shared/AthletePhoto";
 
 /* ═══════════════════════════════════════════════════════════════
    Mes Listes de Prospects — Organized folders for pipeline athletes
@@ -370,15 +371,19 @@ function AddAthleteModal({
               <div key={a.id} className="bg-[#13151a] rounded-lg border border-[#2a2d36] p-3">
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-8 h-8 rounded-full bg-[#2F3440] border border-[#2D3748] shrink-0 overflow-hidden">
-                      {a.photo_url ? (
-                        <img src={a.photo_url} alt="" className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <span className="text-[10px] font-bold text-white/20">{a.full_name.split(" ").map((w) => w[0]).join("")}</span>
+                    {(() => {
+                      const [first, ...rest] = (a.full_name || "").split(/\s+/);
+                      return (
+                        <div className="relative w-8 h-8 shrink-0">
+                          <AthletePhoto
+                            photoUrl={a.photo_url}
+                            firstName={first}
+                            lastName={rest.join(" ")}
+                            size={32}
+                          />
                         </div>
-                      )}
-                    </div>
+                      );
+                    })()}
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5">
                         <p className="text-[13px] font-bold text-white truncate">{a.full_name}</p>
@@ -753,16 +758,16 @@ function ExpandedListView({
               <div className={`bg-[#1A1D24] rounded-lg border border-[#2D3748] hover:border-[#E63946]/30 hover:shadow-[0_0_24px_rgba(230,57,70,0.12)] transition-all duration-300 ease-out ${expandedNotes === a.id ? "border-[#E63946]/20" : ""}`}>
                 <div className="flex items-center px-4 py-3 gap-3">
                   {/* Avatar + check */}
-                  <div className="relative w-10 h-10 rounded-full bg-[#2F3440] shrink-0" style={{ overflow: "visible" }}>
-                    <div className="w-full h-full rounded-full overflow-hidden">
-                      {a.photo_url ? (
-                        <img src={a.photo_url} alt="" className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <span className="text-[13px] font-head font-black text-white/10">{a.full_name.split(" ").map(w => w[0]).join("")}</span>
-                        </div>
-                      )}
-                    </div>
+                  {(() => {
+                    const [first, ...rest] = (a.full_name || "").split(/\s+/);
+                    return (
+                  <div className="relative w-10 h-10 shrink-0" style={{ overflow: "visible" }}>
+                    <AthletePhoto
+                      photoUrl={a.photo_url}
+                      firstName={first}
+                      lastName={rest.join(" ")}
+                      size={40}
+                    />
                     <div className="absolute -top-0.5 -right-0.5 z-10">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill={a.is_verified ? "#3B82F6" : "#4a4d56"} stroke="none">
                         <circle cx="12" cy="12" r="10" />
@@ -770,6 +775,8 @@ function ExpandedListView({
                       </svg>
                     </div>
                   </div>
+                    );
+                  })()}
 
                   {/* Name + jersey + school — fixed width */}
                   <div className="w-[200px] shrink-0">

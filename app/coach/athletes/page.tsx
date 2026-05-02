@@ -12,6 +12,8 @@ import type { GlobalRecruitmentStatus } from "@/lib/types/models";
 import { BADGE_CONFIG, parseDistinctions } from "@/lib/config/badges";
 import { calculateCompletion, type AthleteLike, type EvalLike } from "@/lib/utils/profileCompletion";
 import { isValidationExpired } from "@/lib/utils/profileValidation";
+import AthletePhoto from "@/components/shared/AthletePhoto";
+import AthletePhotoFill from "@/components/shared/AthletePhotoFill";
 
 /* ═══════════════════════════════════════════════════════════════
    Mes Athlètes — Card/list layout matching recruiter search
@@ -48,16 +50,14 @@ function CoachAthleteCard({ a }: { a: RosterAthlete }) {
     <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] overflow-hidden hover:border-[#E63946]/30 hover:shadow-[0_0_24px_rgba(230,57,70,0.12)] hover:-translate-y-1.5 hover:scale-[1.02] transition-all duration-300 ease-out group flex flex-col">
       {/* Photo area */}
       <Link href={`/coach/athletes/${a.id}`} className="relative block h-[180px] bg-[#2F3440] overflow-hidden cursor-pointer">
-        {a.photo ? (
-          <img src={a.photo} alt={`${a.firstName} ${a.lastName}`} className="w-full h-full object-cover object-[center_15%]" />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <span className="text-[48px] font-head font-black text-white/5 tracking-wide">
-              {a.firstName[0]}{a.lastName[0]}
-            </span>
-          </div>
-        )}
-        <div className="absolute bottom-0 left-0 right-0 h-1/2" style={{ background: "linear-gradient(to top, rgba(26,29,36,0.95), transparent)" }} />
+        <AthletePhotoFill
+          photoUrl={a.photo}
+          firstName={a.firstName}
+          lastName={a.lastName}
+          initialsFontSize={72}
+          className="object-[center_15%]"
+        />
+        <div className="absolute bottom-0 left-0 right-0 h-1/2 z-[2]" style={{ background: "linear-gradient(to top, rgba(26,29,36,0.95), transparent)" }} />
 
         {/* Top left — verified check + favorites */}
         <div className="absolute top-3 left-3 z-10 flex items-center gap-2">
@@ -159,16 +159,13 @@ function CoachAthleteRow({ a }: { a: RosterAthlete }) {
     <div className="bg-[#1A1D24] rounded-lg border border-[#2D3748] hover:border-[#E63946]/30 hover:shadow-[0_0_24px_rgba(230,57,70,0.12)] transition-all duration-300 ease-out flex items-center px-4 py-3 gap-3">
 
       {/* Avatar + verified */}
-      <Link href={`/coach/athletes/${a.id}`} className="relative w-10 h-10 rounded-full bg-[#2F3440] shrink-0 block" style={{ overflow: "visible" }}>
-        <div className="w-full h-full rounded-full overflow-hidden">
-          {a.photo ? (
-            <img src={a.photo} alt={`${a.firstName} ${a.lastName}`} className="w-full h-full object-cover" />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <span className="text-[13px] font-head font-black text-white/10">{a.firstName[0]}{a.lastName[0]}</span>
-            </div>
-          )}
-        </div>
+      <Link href={`/coach/athletes/${a.id}`} className="relative w-10 h-10 shrink-0 block" style={{ overflow: "visible" }}>
+        <AthletePhoto
+          photoUrl={a.photo}
+          firstName={a.firstName}
+          lastName={a.lastName}
+          size={40}
+        />
         <div className="absolute -top-0.5 -right-0.5 z-10">
           {(() => {
             const active = a.isVerified && !isValidationExpired({ verified: !!a.isVerified, last_profile_validation: a.lastValidation ?? null });
@@ -660,10 +657,21 @@ function MesAthletesContent() {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    const { error } = await supabase.from("athletes").update({ verified: true, verification_method: "manuel_coach", verified_at: new Date().toISOString(), verified_by: user.id }).eq("id", athleteId);
+    const nowIso = new Date().toISOString();
+    const { error } = await supabase.from("athletes").update({
+      verified: true,
+      verification_method: "manuel_coach",
+      verified_at: nowIso,
+      verified_by: user.id,
+      last_profile_validation: nowIso,
+    }).eq("id", athleteId);
     if (error) { console.error("[Verify]", error); return; }
     setUnverifiedAthletes((prev) => prev.filter((a) => a.id !== athleteId));
-    setRealAthletes((prev) => prev.map((a) => a.id === athleteId ? { ...a, isVerified: true } : a));
+    setRealAthletes((prev) => prev.map((a) => a.id === athleteId ? {
+      ...a,
+      isVerified: true,
+      lastValidation: nowIso,
+    } : a));
   }
 
   async function approveSuggestion(suggestionId: string) {

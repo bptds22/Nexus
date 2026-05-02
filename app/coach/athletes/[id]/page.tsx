@@ -15,6 +15,7 @@ import { parseDistinctions, type DistinctionEntry } from "@/lib/config/badges";
 import VideoEmbed from "@/components/ui/VideoEmbed";
 import type { GlobalRecruitmentStatus } from "@/lib/types/models";
 import { isValidationExpired } from "@/lib/utils/profileValidation";
+import AthletePhotoFill from "@/components/shared/AthletePhotoFill";
 
 /* ═══════════════════════════════════════════════════════════════
    Coach Athlete Profile — Same design as recruiter view
@@ -152,16 +153,11 @@ function PlayerCard({ a }: { a: AthleteProfileRecruiterView }) {
 
       <div className="nx-v30-card relative overflow-visible" style={{ width: 300, borderRadius: 10 }}>
         <div className="relative overflow-hidden" style={{ width: 300, height: 420, borderRadius: 10, background: '#2F3440' }}>
-          {a.photoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={a.photoUrl} alt={`${a.firstName} ${a.lastName}`} className="absolute inset-0 w-full h-full object-cover z-[1]" />
-          ) : (
-            <div className="absolute inset-0 z-[1] flex items-center justify-center">
-              <span style={{ fontFamily: 'var(--font-heading), sans-serif', fontSize: 120, color: 'rgba(255,255,255,0.06)', letterSpacing: '0.05em', lineHeight: 1 }}>
-                {a.firstName[0]}{a.lastName[0]}
-              </span>
-            </div>
-          )}
+          <AthletePhotoFill
+            photoUrl={a.photoUrl}
+            firstName={a.firstName}
+            lastName={a.lastName}
+          />
           <div className="absolute bottom-0 left-0 right-0 h-1/2 z-[2]" style={{ background: 'linear-gradient(to top, rgba(11,18,32,0.97) 0%, rgba(11,18,32,0.7) 35%, transparent 100%)' }} />
           <div className="absolute bottom-4 left-4 z-[3]">
             <p style={{ fontFamily: 'var(--font-heading), sans-serif', fontSize: 28, color: '#fff', letterSpacing: '0.04em', lineHeight: 1 }}>{a.firstName}</p>
@@ -1057,13 +1053,15 @@ export default function CoachAthleteProfilePage() {
                   const { data: { user } } = await supabase.auth.getUser();
                   if (!user) return;
 
+                  const nowIso = new Date().toISOString();
                   const { error } = await supabase
                     .from("athletes")
                     .update({
                       verified: true,
                       verification_method: "manuel_coach",
-                      verified_at: new Date().toISOString(),
+                      verified_at: nowIso,
                       verified_by: user.id,
+                      last_profile_validation: nowIso,
                     })
                     .eq("id", id);
 
@@ -1074,7 +1072,7 @@ export default function CoachAthleteProfilePage() {
                     return;
                   }
 
-                  setA((prev) => prev ? { ...prev, isVerified: true } : prev);
+                  setA((prev) => prev ? { ...prev, isVerified: true, lastValidation: nowIso } : prev);
                   setShowVerifyModal(false);
                   showToast("Profil vérifié avec succès ✓");
                 }}

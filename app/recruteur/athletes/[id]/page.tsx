@@ -27,6 +27,7 @@ import StarRating from "@/components/ui/StarRating";
 import VideoEmbed from "@/components/ui/VideoEmbed";
 import { calculateCompletion, type AthleteLike, type EvalLike } from "@/lib/utils/profileCompletion";
 import { isValidationExpired } from "@/lib/utils/profileValidation";
+import AthletePhotoFill from "@/components/shared/AthletePhotoFill";
 
 /* ═══════════════════════════════════════════════════════════════
    Recruiter Athlete Profile — Simplified / Detailed toggle
@@ -192,16 +193,12 @@ function PlayerCard({ a }: { a: AthleteProfileRecruiterView }) {
 
       <div className="nx-v30-card relative overflow-visible" style={{ width: 300, borderRadius: 10 }}>
         <div className="relative overflow-hidden" style={{ width: 300, height: 420, borderRadius: 10, background: '#2F3440' }}>
-          {a.photoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={a.photoUrl} alt={`${a.firstName} ${a.lastName}`} className="absolute inset-0 w-full h-full object-cover object-[center_15%] z-[1]" />
-          ) : (
-            <div className="absolute inset-0 z-[1] flex items-center justify-center">
-              <span style={{ fontFamily: 'var(--font-outfit), sans-serif', fontSize: 120, fontWeight: 900, color: 'rgba(255,255,255,0.06)', letterSpacing: '0.05em', lineHeight: 1 }}>
-                {a.firstName[0]}{a.lastName[0]}
-              </span>
-            </div>
-          )}
+          <AthletePhotoFill
+            photoUrl={a.photoUrl}
+            firstName={a.firstName}
+            lastName={a.lastName}
+            className="object-[center_15%]"
+          />
           <div className="absolute bottom-0 left-0 right-0 h-1/2 z-[2]" style={{ background: 'linear-gradient(to top, rgba(11,18,32,0.97) 0%, rgba(11,18,32,0.7) 35%, transparent 100%)' }} />
           <div className="absolute bottom-4 left-4 z-[3]">
             <p style={{ fontFamily: 'var(--font-outfit), sans-serif', fontSize: 28, fontWeight: 900, color: '#fff', letterSpacing: '0.04em', lineHeight: 1, textTransform: 'uppercase' }}>{a.firstName}</p>

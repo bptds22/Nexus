@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import AthletePhotoFill from "@/components/shared/AthletePhotoFill";
 
 /* ═══════════════════════════════════════════════════════════════
    /partenaire/athletes — listing of partner-eligible athletes
@@ -72,7 +73,6 @@ export default async function PartnerAthletesPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {athletes.map((a) => {
             const name = `${a.first_name ?? ""} ${a.last_name ?? ""}`.trim();
-            const initials = name.split(/\s+/).map((n) => n[0]).slice(0, 2).join("").toUpperCase() || "?";
             return (
               <Link
                 key={a.id}
@@ -80,15 +80,14 @@ export default async function PartnerAthletesPage() {
                 className="bg-[#1A1D24] rounded-xl border border-[#2D3748] hover:border-[#E63946]/30 hover:shadow-[0_0_24px_rgba(230,57,70,0.10)] transition-all duration-300 overflow-hidden group flex flex-col"
               >
                 <div className="relative h-[180px] bg-[#2F3440] overflow-hidden">
-                  {a.photo_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={a.photo_url} alt={name} className="w-full h-full object-cover object-[center_15%]" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <span className="text-[40px] font-head font-black text-white/10">{initials}</span>
-                    </div>
-                  )}
-                  <div className="absolute bottom-0 left-0 right-0 h-1/2" style={{ background: "linear-gradient(to top, rgba(26,29,36,0.95), transparent)" }} />
+                  <AthletePhotoFill
+                    photoUrl={a.photo_url}
+                    firstName={a.first_name}
+                    lastName={a.last_name}
+                    initialsFontSize={72}
+                    className="object-[center_15%]"
+                  />
+                  <div className="absolute bottom-0 left-0 right-0 h-1/2 z-[2]" style={{ background: "linear-gradient(to top, rgba(26,29,36,0.95), transparent)" }} />
                   <div className="absolute top-3 right-3 z-10 flex items-center gap-0.5 bg-black/70 backdrop-blur-md rounded-full px-2.5 py-1.5">
                     <StarRow rating={a.cote_globale_entraineur} />
                     <span className="text-[11px] font-bold text-[#F59E0B] ml-1.5">{(a.cote_globale_entraineur ?? 0).toFixed(1)}</span>
