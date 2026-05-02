@@ -7,6 +7,7 @@ import { toPng } from "html-to-image";
 import { createClient } from "@/lib/supabase/client";
 import { loadAthleteRaw, mapToRecruiterView } from "@/app/coach/athletes/_data/loadAthleteFromSupabase";
 import AthletePlayerCard from "@/components/shared/AthletePlayerCard";
+import AthletePhoto from "@/components/shared/AthletePhoto";
 import type { AthleteProfileRecruiterView } from "@/lib/types/models";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -167,14 +168,12 @@ export default function PartnerAthleteProfilePage({ params }: { params: Promise<
 
       {/* Athlete header */}
       <div className="bg-[#1A1D24] border border-[#2D3748] rounded-xl p-6 flex items-center gap-5">
-        {athlete.photoUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={athlete.photoUrl} alt={`${athlete.firstName} ${athlete.lastName}`} className="w-20 h-20 rounded-full object-cover shrink-0" />
-        ) : (
-          <div className="w-20 h-20 rounded-full bg-[#2D3748] flex items-center justify-center text-[18px] font-bold text-white/60 shrink-0">
-            {athlete.firstName[0]}{athlete.lastName[0]}
-          </div>
-        )}
+        <AthletePhoto
+          photoUrl={athlete.photoUrl}
+          firstName={athlete.firstName}
+          lastName={athlete.lastName}
+          size={80}
+        />
         <div className="flex-1 min-w-0">
           <h1 className="font-head text-2xl sm:text-3xl font-black text-white uppercase tracking-tight truncate">
             {athlete.firstName} {athlete.lastName}

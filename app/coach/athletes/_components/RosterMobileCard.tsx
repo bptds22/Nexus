@@ -3,6 +3,7 @@ import StarRating from "@/components/ui/StarRating";
 import type { RosterAthlete } from "../_data/mockRosterData";
 import VerificationBadge from "./VerificationBadge";
 import FavoriteSignal from "./FavoriteSignal";
+import AthletePhoto from "@/components/shared/AthletePhoto";
 
 /* ─────────────────────────────────────────────────────────────────
    Roster Mobile Card — card layout for < 768px
@@ -14,14 +15,12 @@ export default function RosterMobileCard({ athlete: a }: { athlete: RosterAthlet
       {/* Top row: photo + name + position + favorite */}
       <div className="flex items-start justify-between">
         <div className="flex items-start gap-3">
-          {a.photo ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={a.photo} alt="" className="w-12 h-12 rounded-full object-cover shrink-0" />
-          ) : (
-            <div className="w-12 h-12 rounded-full bg-[#2F3440] flex items-center justify-center shrink-0">
-              <span className="text-[14px] font-bold text-white/20">{a.firstName[0]}{a.lastName[0]}</span>
-            </div>
-          )}
+          <AthletePhoto
+            photoUrl={a.photo}
+            firstName={a.firstName}
+            lastName={a.lastName}
+            size={48}
+          />
           <div>
           <div className="flex items-center gap-2">
             <Link href={`/coach/athletes/${a.id}`} className="text-[16px] font-bold text-white hover:text-[#E63946] transition-colors">

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import AthletePhoto from "@/components/shared/AthletePhoto";
 
 /* ═══════════════════════════════════════════════════════════════
    /partenaire/tendances — async server component
@@ -63,7 +64,6 @@ function ArrowDown() {
 
 function AthleteRow({ row, mode }: { row: TrendingRow; mode: "views" | "favs" }) {
   const name = `${row.first_name ?? ""} ${row.last_name ?? ""}`.trim();
-  const initials = name.split(/\s+/).map((n) => n[0]).slice(0, 2).join("").toUpperCase() || "?";
   const delta = mode === "views" ? row.views_delta : row.favs_delta;
   const current = mode === "views" ? row.views_7d : row.favs_7d;
   const color = deltaColor(delta);
@@ -76,14 +76,13 @@ function AthleteRow({ row, mode }: { row: TrendingRow; mode: "views" | "favs" })
       href={`/partenaire/athletes/${row.id}`}
       className="flex items-center gap-3 px-4 py-3 hover:bg-white/[0.03] transition-colors group"
     >
-      {row.photo_url ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={row.photo_url} alt={name} className="w-11 h-11 rounded-full object-cover shrink-0" />
-      ) : (
-        <div className="w-11 h-11 rounded-full bg-[#2D3748] flex items-center justify-center text-[12px] font-bold text-white/60 shrink-0">
-          {initials}
-        </div>
-      )}
+      <AthletePhoto
+        photoUrl={row.photo_url}
+        firstName={row.first_name}
+        lastName={row.last_name}
+        size={44}
+        alt={name}
+      />
       <div className="flex-1 min-w-0">
         <p className="text-[13px] font-bold text-white truncate group-hover:text-[#E63946] transition-colors">{name}</p>
         <p className="text-[11px] text-[#6b7280] truncate">{subtitle}</p>

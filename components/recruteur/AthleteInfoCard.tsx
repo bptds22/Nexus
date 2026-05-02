@@ -3,6 +3,7 @@
 import Link from "next/link";
 import StarRating from "@/components/ui/StarRating";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
+import AthletePhoto from "@/components/shared/AthletePhoto";
 import type { GlobalRecruitmentStatus } from "@/lib/types/models";
 
 interface AthleteInfoCardProps {
@@ -32,7 +33,8 @@ interface AthleteInfoCardProps {
 export default function AthleteInfoCard({
   athleteId,
   athleteName,
-  athleteInitials,
+  // athleteInitials is now derived inside AthletePhoto — kept on the
+  // props interface for backward compat with existing callers.
   athletePhotoUrl,
   athleteJersey,
   athleteSport,
@@ -52,20 +54,26 @@ export default function AthleteInfoCard({
   athleteOpenAnglophone = false,
   athleteDistinctions = [],
 }: AthleteInfoCardProps) {
+  // Split athleteName so AthletePhoto can compute initials in
+  // its onError fallback path. The athleteInitials prop becomes
+  // unused — kept on the interface to avoid breaking callers.
+  const [firstNamePart, ...lastNameParts] = athleteName.split(/\s+/);
+  const lastNamePart = lastNameParts.join(" ");
+
   return (
     <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748]/60 p-6">
       <p className="text-[11px] font-semibold tracking-[0.25em] uppercase text-[#E63946] mb-4">Athlète concerné</p>
 
-      {/* Photo or initials */}
+      {/* Photo with onError → initials fallback */}
       <div className="flex justify-center">
-        {athletePhotoUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={athletePhotoUrl} alt={athleteName} className="w-20 h-20 rounded-full object-cover border border-white/10" />
-        ) : (
-          <div className="w-20 h-20 rounded-full bg-[#2a2d36] flex items-center justify-center">
-            <span className="text-[24px] font-bold text-white">{athleteInitials}</span>
-          </div>
-        )}
+        <AthletePhoto
+          photoUrl={athletePhotoUrl}
+          firstName={firstNamePart}
+          lastName={lastNamePart}
+          size={80}
+          alt={athleteName}
+          className="border border-white/10"
+        />
       </div>
 
       {/* Name + jersey */}

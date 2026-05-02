@@ -6,6 +6,7 @@ import Link from "next/link";
 import StarRating from "@/components/ui/StarRating";
 import { STATUS_CONFIG, mapDbStatus, type ConversationThread, type ThreadStatus } from "./_data/mockThreadsData";
 import EntityLink from "@/components/shared/EntityLink";
+import AthletePhoto from "@/components/shared/AthletePhoto";
 import { createClient } from "@/lib/supabase/client";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -100,13 +101,12 @@ function ThreadCard({ thread: t }: { thread: ConversationThread }) {
 
       {/* Athlete context */}
       <div className="hidden md:flex items-center gap-2 shrink-0 w-[200px]">
-        {(a as any).photoUrl ? (
-          <img src={(a as any).photoUrl} alt="" className="w-8 h-8 rounded-full object-cover shrink-0" />
-        ) : (
-          <div className="w-8 h-8 rounded-full bg-[#111317] border border-[#2D3748] flex items-center justify-center shrink-0">
-            <span className="text-[9px] font-bold text-[#6b7280]">{a.firstName[0]}{a.lastName[0]}</span>
-          </div>
-        )}
+        <AthletePhoto
+          photoUrl={(a as { photoUrl?: string | null }).photoUrl}
+          firstName={a.firstName}
+          lastName={a.lastName}
+          size={32}
+        />
         <div className="min-w-0">
           <EntityLink
             type="athlete"

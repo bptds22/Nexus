@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import AthletePhoto from "@/components/shared/AthletePhoto";
 
 /* ═══════════════════════════════════════════════════════════════
    /partenaire/telechargements — partner's own download history
@@ -108,19 +109,17 @@ export default async function PartnerTelechargementsPage() {
             {downloads.map((d) => {
               const ath = d.athletes;
               const name = ath ? `${ath.first_name ?? ""} ${ath.last_name ?? ""}`.trim() : "Athlète supprimé";
-              const initials = name.split(/\s+/).map((n) => n[0]).slice(0, 2).join("").toUpperCase() || "?";
               const sportName = ath?.sports?.nom ?? null;
               const pill = FORMAT_PILL[d.format];
               const rowInner = (
                 <>
-                  {ath?.photo_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={ath.photo_url} alt={name} className="w-10 h-10 rounded-full object-cover shrink-0" />
-                  ) : (
-                    <div className="w-10 h-10 rounded-full bg-[#2D3748] flex items-center justify-center text-[12px] font-bold text-white/60 shrink-0">
-                      {initials}
-                    </div>
-                  )}
+                  <AthletePhoto
+                    photoUrl={ath?.photo_url}
+                    firstName={ath?.first_name}
+                    lastName={ath?.last_name}
+                    size={40}
+                    alt={name}
+                  />
 
                   {/* Athlète column — name + sport */}
                   <div className="flex-1 min-w-0">

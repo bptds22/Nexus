@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import ClassementsFilterBar from "../_components/ClassementsFilterBar";
+import AthletePhoto from "@/components/shared/AthletePhoto";
 
 /* ═══════════════════════════════════════════════════════════════
    /partenaire/classements — Top 25 leaderboard
@@ -128,7 +129,6 @@ export default async function PartnerClassementsPage({
           <div className="divide-y divide-[#2D3748]/40">
             {athletes.map((a, i) => {
               const name = `${a.first_name ?? ""} ${a.last_name ?? ""}`.trim();
-              const initials = name.split(/\s+/).map((n) => n[0]).slice(0, 2).join("").toUpperCase() || "?";
               const rank = i + 1;
 
               return (
@@ -137,14 +137,13 @@ export default async function PartnerClassementsPage({
                     {rank}
                   </span>
 
-                  {a.photo_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={a.photo_url} alt={name} className="w-11 h-11 rounded-full object-cover shrink-0" />
-                  ) : (
-                    <div className="w-11 h-11 rounded-full bg-[#2D3748] flex items-center justify-center text-[12px] font-bold text-white/60 shrink-0">
-                      {initials}
-                    </div>
-                  )}
+                  <AthletePhoto
+                    photoUrl={a.photo_url}
+                    firstName={a.first_name}
+                    lastName={a.last_name}
+                    size={44}
+                    alt={name}
+                  />
 
                   <div className="flex-1 min-w-0">
                     <Link

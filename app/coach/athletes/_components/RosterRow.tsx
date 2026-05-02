@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { RosterAthlete } from "../_data/mockRosterData";
 import VerificationBadge from "./VerificationBadge";
 import FavoriteSignal from "./FavoriteSignal";
+import AthletePhoto from "@/components/shared/AthletePhoto";
 
 /* ─────────────────────────────────────────────────────────────────
    Roster Row — single athlete table row
@@ -51,18 +52,21 @@ export default function RosterRow({ athlete: a, even, onVerify }: RosterRowProps
           verification_method: null,
           verified_at: null,
           verified_by: null,
+          last_profile_validation: null,
         })
         .eq("id", a.id);
       console.log("Unverify result:", error);
     } else {
       console.log("Verifying athlete:", a.id);
+      const nowIso = new Date().toISOString();
       const { error } = await supabase
         .from("athletes")
         .update({
           verified: true,
           verification_method: "manuel_coach",
-          verified_at: new Date().toISOString(),
+          verified_at: nowIso,
           verified_by: user.id,
+          last_profile_validation: nowIso,
         })
         .eq("id", a.id);
       console.log("Verify result:", error);
@@ -84,14 +88,12 @@ export default function RosterRow({ athlete: a, even, onVerify }: RosterRowProps
       <td className="px-4 py-3.5">
         <Link href={`/coach/athletes/${a.id}`}>
           <div className="flex items-center gap-3">
-            {a.photo ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={a.photo} alt="" className="w-10 h-10 rounded-full object-cover shrink-0" />
-            ) : (
-              <div className="w-10 h-10 rounded-full bg-[#2F3440] flex items-center justify-center shrink-0">
-                <span className="text-[12px] font-bold text-white/20">{a.firstName[0]}{a.lastName[0]}</span>
-              </div>
-            )}
+            <AthletePhoto
+              photoUrl={a.photo}
+              firstName={a.firstName}
+              lastName={a.lastName}
+              size={40}
+            />
             <div>
               <p className="text-[16px] font-bold text-white group-hover:text-[#E63946] transition-colors">
                 {a.firstName} {a.lastName}
