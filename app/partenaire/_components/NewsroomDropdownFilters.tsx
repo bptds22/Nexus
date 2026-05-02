@@ -43,12 +43,11 @@ export default function NewsroomDropdownFilters({ sports, positions }: NewsroomD
     router.push(qs ? `/partenaire/newsroom?${qs}` : "/partenaire/newsroom");
   }
 
-  const selectCls = "bg-[#13151a] border border-[#2a2d36] rounded-lg px-3 py-1.5 text-[12px] text-[#e0e0e0] focus:border-[#E63946] outline-none transition-colors min-w-[140px]";
+  const selectCls = "bg-[#13151a] border border-[#2a2d36] rounded-lg px-3 py-2 text-[13px] text-[#e0e0e0] focus:border-[#E63946] outline-none transition-colors min-w-[140px] disabled:opacity-50 disabled:cursor-not-allowed";
   const activeCls = "border-[#E63946]/40 bg-[#E63946]/5";
 
   return (
     <>
-      <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mr-1">Sport</span>
       <select
         value={currentSport}
         onChange={(e) => pushFilter({ sport: e.target.value || null, position: null })}
@@ -66,7 +65,7 @@ export default function NewsroomDropdownFilters({ sports, positions }: NewsroomD
         disabled={!currentSport}
         aria-label="Position"
       >
-        <option value="">{currentSport ? "Toutes les positions" : "Sport d'abord"}</option>
+        <option value="">{currentSport ? "Toutes les positions" : "Sélectionner un sport d'abord"}</option>
         {positionsForSport.map((p) => (
           <option key={p.id} value={p.id}>
             {p.abreviation ? `${p.abreviation} — ${p.nom}` : p.nom}
