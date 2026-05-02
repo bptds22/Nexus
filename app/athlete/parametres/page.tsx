@@ -522,55 +522,64 @@ export default function ParametresPage() {
                           </label>
                         )}
 
-                        <div className="flex items-center justify-between py-2">
-                          <div className="flex-1 pr-4">
-                            <p className="text-[13px] font-semibold text-white">Permettre l&apos;utilisation de ma carte par les partenaires</p>
-                            {profile.partnerOptIn && profile.partnerOptInDate && (
-                              <p className="text-[11px] text-[#22C55E] mt-1">
-                                Activé le {new Date(profile.partnerOptInDate).toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" })}
-                              </p>
-                            )}
-                            {minor && !profile.partnerParentalConsent && (
-                              <p className="text-[11px] text-[#F59E0B] mt-1">Coche le consentement parental pour activer.</p>
-                            )}
-                          </div>
-                          <button
-                            type="button"
-                            disabled={!toggleEnabled}
-                            aria-label="Permettre l'utilisation de ma carte par les partenaires"
-                            onClick={async () => {
-                              if (!toggleEnabled) return;
-                              setSavingPartnerOptIn(true);
-                              const supabase = createClient();
-                              const { data: { user } } = await supabase.auth.getUser();
-                              if (!user) { setSavingPartnerOptIn(false); return; }
-                              const next = !profile.partnerOptIn;
-                              const updates: Record<string, unknown> = next
-                                ? {
-                                    partner_visibility_opt_in: true,
-                                    partner_visibility_opted_in_at: new Date().toISOString(),
-                                    partner_visibility_parental_consent: minor ? true : profile.partnerParentalConsent,
-                                  }
-                                : {
-                                    partner_visibility_opt_in: false,
-                                    partner_visibility_opted_in_at: null,
-                                  };
-                              const { error } = await supabase.from("athletes").update(updates).eq("user_id", user.id);
-                              if (error) {
-                                console.error("[Partner opt-in]", error);
-                                showToast("Erreur lors de la sauvegarde");
+                        {consentReady ? (
+                          <div className="flex items-center justify-between py-2">
+                            <div className="flex-1 pr-4">
+                              <p className="text-[13px] font-semibold text-white">Permettre l&apos;utilisation de ma carte par les partenaires</p>
+                              {profile.partnerOptIn && profile.partnerOptInDate && (
+                                <p className="text-[11px] text-[#22C55E] mt-1">
+                                  Activé le {new Date(profile.partnerOptInDate).toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" })}
+                                </p>
+                              )}
+                            </div>
+                            <button
+                              type="button"
+                              disabled={!toggleEnabled}
+                              aria-label="Permettre l'utilisation de ma carte par les partenaires"
+                              onClick={async () => {
+                                if (!toggleEnabled) return;
+                                setSavingPartnerOptIn(true);
+                                const supabase = createClient();
+                                const { data: { user } } = await supabase.auth.getUser();
+                                if (!user) { setSavingPartnerOptIn(false); return; }
+                                const next = !profile.partnerOptIn;
+                                const updates: Record<string, unknown> = next
+                                  ? {
+                                      partner_visibility_opt_in: true,
+                                      partner_visibility_opted_in_at: new Date().toISOString(),
+                                      partner_visibility_parental_consent: minor ? true : profile.partnerParentalConsent,
+                                    }
+                                  : {
+                                      partner_visibility_opt_in: false,
+                                      partner_visibility_opted_in_at: null,
+                                    };
+                                const { error } = await supabase.from("athletes").update(updates).eq("user_id", user.id);
+                                if (error) {
+                                  console.error("[Partner opt-in]", error);
+                                  showToast("Erreur lors de la sauvegarde");
+                                  setSavingPartnerOptIn(false);
+                                  return;
+                                }
+                                showToast(next ? "Visibilité publique activée" : "Visibilité publique désactivée");
                                 setSavingPartnerOptIn(false);
-                                return;
-                              }
-                              showToast(next ? "Visibilité publique activée" : "Visibilité publique désactivée");
-                              setSavingPartnerOptIn(false);
-                              await loadProfile();
-                            }}
-                            className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${profile.partnerOptIn ? "bg-[#22C55E]" : "bg-[#2D3748]"} ${!toggleEnabled ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}`}
-                          >
-                            <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform ${profile.partnerOptIn ? "left-[22px]" : "left-0.5"}`} />
-                          </button>
-                        </div>
+                                await loadProfile();
+                              }}
+                              className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${profile.partnerOptIn ? "bg-[#22C55E]" : "bg-[#2D3748]"} ${!toggleEnabled ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}`}
+                            >
+                              <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform ${profile.partnerOptIn ? "left-[22px]" : "left-0.5"}`} />
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-start gap-2.5 py-2">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5">
+                              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                              <path d="M7 11V7a5 5 0 0110 0v4" />
+                            </svg>
+                            <p className="text-[13px] text-[#9CA3AF] leading-relaxed">
+                              Cochez le consentement parental ci-dessus pour activer la visibilité partenaire.
+                            </p>
+                          </div>
+                        )}
                       </>
                     );
                   })()}
