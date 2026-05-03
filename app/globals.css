@@ -546,6 +546,18 @@ body.light-mode .nx-social-icon {
 .nx-v30-perf::before { top: -5px; }
 .nx-v30-perf::after  { bottom: -5px; }
 
+/* Capture-clean wrapper — when applied to an off-screen container
+   wrapping AthletePlayerCard for html-to-image capture, disables
+   the editorial tilt transforms on the v30 card and ticket so the
+   resulting PNG is axis-aligned and no rotated descendant clips
+   beyond the bounding box. The on-screen card keeps its tilt. */
+.nx-capture-clean .nx-v30-card,
+.nx-capture-clean .nx-v30-ticket,
+.nx-capture-clean .nx-v30-badge {
+  transform: none !important;
+  transition: none !important;
+}
+
 /* ── Auth page ──────────────────────────────────────────────── */
 
 .nx-auth-card {

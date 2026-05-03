@@ -136,7 +136,10 @@ export default function PartnerAthleteProfilePage({ params }: { params: Promise<
         return;
       }
       const dataUrl = await toPng(node, {
-        pixelRatio: 2,
+        // pixelRatio 1: AthletePlayerCard's outer container already
+        // renders at the exact target dimensions (publication =
+        // 1080×1350, story = 1080×1920), so no oversampling needed.
+        pixelRatio: 1,
         cacheBust: true,
         backgroundColor: undefined,
       });
@@ -215,7 +218,7 @@ export default function PartnerAthleteProfilePage({ params }: { params: Promise<
       </div>
 
       {/* Off-screen full-size renderings for capture (one per format, both kept ready) */}
-      <div aria-hidden="true" style={{ position: "fixed", left: -99999, top: 0, pointerEvents: "none", zIndex: -1 }}>
+      <div aria-hidden="true" className="nx-capture-clean" style={{ position: "fixed", left: -99999, top: 0, pointerEvents: "none", zIndex: -1 }}>
         <div ref={captureRefPub}>
           <AthletePlayerCard a={athlete} format="publication" />
         </div>

@@ -169,8 +169,15 @@ export default function ParametresPage() {
     if (!captureRef.current || !cardAthlete) return;
     setDownloading(true);
     try {
+      // Wait for fonts so the captured PNG has the right typography.
+      if (typeof document !== "undefined" && document.fonts) {
+        await document.fonts.ready;
+      }
       const dataUrl = await toPng(captureRef.current, {
-        pixelRatio: 3, // 400×500 intrinsic × 3 = 1200×1500 (IG portrait)
+        // AthletePlayerCard format="publication" renders at exactly
+        // 1080×1350 (IG portrait); pixelRatio 1 produces the PNG
+        // at that target resolution natively.
+        pixelRatio: 1,
         cacheBust: true,
         backgroundColor: undefined, // transparent
         style: {
@@ -419,34 +426,20 @@ export default function ParametresPage() {
                       <span className="text-[12px] text-[#6b7280]">Fond transparent · haute résolution</span>
                     </div>
 
-                    {/* Off-screen full-size render for html-to-image capture */}
+                    {/* Off-screen full-size render for html-to-image capture.
+                        AthletePlayerCard format="publication" is intrinsically
+                        1080×1350. The .nx-capture-clean class disables the
+                        editorial tilt transforms (.nx-v30-card / .nx-v30-ticket)
+                        on descendants so the resulting PNG is axis-aligned
+                        with no clipped ticket. The on-screen card preview
+                        above keeps its tilt — it's purely visual flair. */}
                     <div
                       aria-hidden="true"
+                      className="nx-capture-clean"
                       style={{ position: "fixed", left: -99999, top: 0, pointerEvents: "none", zIndex: -1 }}
                     >
-                      <div
-                        ref={captureRef}
-                        style={{
-                          width: 400,
-                          height: 500,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          background: "transparent",
-                          animation: "none",
-                          transition: "none",
-                        }}
-                      >
-                        <div
-                          style={{
-                            transform: "rotate(-3deg)",
-                            transformOrigin: "center center",
-                            animation: "none",
-                            transition: "none",
-                          }}
-                        >
-                          <AthletePlayerCard a={cardAthlete} />
-                        </div>
+                      <div ref={captureRef}>
+                        <AthletePlayerCard a={cardAthlete} format="publication" />
                       </div>
                     </div>
                   </>
