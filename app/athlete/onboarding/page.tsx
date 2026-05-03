@@ -9,6 +9,7 @@ import SportPositionSelect from "@/app/coach/components/SportPositionSelect";
 import DatePicker from "@/app/coach/components/DatePicker";
 import SchoolSelect from "@/components/ui/SchoolSelect";
 import CoachPicker from "@/components/coach/CoachPicker";
+import PartnerVisibilityConsentCard from "@/components/shared/PartnerVisibilityConsentCard";
 
 const SPORTS = [
   "Football", "Basketball", "Soccer", "Hockey", "Volleyball",
@@ -105,6 +106,7 @@ export default function AthleteOnboardingPage() {
   const [consentProfile, setConsentProfile] = useState(false);
   const [consentVisibility, setConsentVisibility] = useState(false);
   const [consentComms, setConsentComms] = useState(false);
+  const [consentPartnerVisibility, setConsentPartnerVisibility] = useState(false);
 
   useEffect(() => {
     async function init() {
@@ -572,6 +574,8 @@ export default function AthleteOnboardingPage() {
                 <span className="text-[12px] text-[#6b7280] leading-snug">Mon parent ou tuteur accepte de recevoir des communications de Nexus concernant mon recrutement. <span className="text-[10px] text-[#4a4d56]">(optionnel)</span></span>
               </label>
             </div>
+
+            <PartnerVisibilityConsentCard checked={consentPartnerVisibility} onChange={setConsentPartnerVisibility} />
           </div>
         )}
 

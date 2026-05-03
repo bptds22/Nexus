@@ -11,6 +11,7 @@ import DistinctionBadge from "@/components/shared/DistinctionBadge";
 import FormModeToggle from "../../components/FormModeToggle";
 import NxIcon from "@/components/ui/NxIcon";
 import { createClient } from "@/lib/supabase/client";
+import PartnerVisibilityConsentCard from "@/components/shared/PartnerVisibilityConsentCard";
 
 /* ─────────────────────────────────────────────────────────────────
    Nexus — Coach / Créer un profil athlète
@@ -110,6 +111,7 @@ interface AthleteFormData {
     preferredDivision: string;
   };
   parentalConsent: boolean;
+  partnerVisibilityConsent: boolean;
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -212,6 +214,7 @@ const INITIAL_FORM: AthleteFormData = {
   },
   submission: { recruitingStatus: "", preferredDivision: "" },
   parentalConsent: false,
+  partnerVisibilityConsent: false,
 };
 
 /* ══════════════════════════════════════════════════════════════
@@ -1485,6 +1488,11 @@ export default function CreateAthletePage() {
             </button>
           </div>
         </div>
+
+        <PartnerVisibilityConsentCard
+          checked={form.partnerVisibilityConsent}
+          onChange={(next) => setForm((prev) => ({ ...prev, partnerVisibilityConsent: next }))}
+        />
       </div>
     );
   }
