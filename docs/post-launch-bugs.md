@@ -511,6 +511,35 @@ file.
 
 ## P3 — Latent / future work
 
+- [ ] **Canonical `AthleteProfileFullView` extraction.** Currently
+      [`/athlete/profil`](../app/athlete/profil/page.tsx) (1828
+      lines, monolithic, deeply edit-coupled) and
+      [`AthleteProfileView`](../components/shared/AthleteProfileView.tsx)
+      (used by partner page in `viewMode="partner"` and by recruiter
+      / coach / admin surfaces) are two parallel implementations of
+      "render an athlete's profile." Long-term consolidation would
+      let future profile improvements propagate to all viewers
+      (athlete, partner, future admin / coach full-detail page) with
+      one canonical component.
+
+      Estimated effort: 4-6 hours, high regression risk on the
+      athlete co-creation edit flow (30+ inline edit affordances
+      with the green / yellow / red pencil grammar, monthly
+      re-validation banner, slide-out preview panel, suggestions
+      section). Defer until either:
+      - Admin or coach view of the full athlete profile becomes a
+        roadmap item that justifies the cost, OR
+      - Drift between `/athlete/profil` and `AthleteProfileView`
+        becomes a maintenance burden (a feature added to one needs
+        to be manually mirrored to the other often enough to hurt).
+
+      Stopgap shipped 2026-05-03 (commits 057e78d / b4cfe09):
+      `AthleteProfileView` partner mode renders a dashed-border
+      lock placeholder for the academic section instead of silently
+      hiding it, so the redaction reads as intentional rather than
+      buggy. The two components stay parallel; the placeholder
+      pattern is reusable if future fields need similar redaction.
+
 - [x] **`users.school_id` and `athletes.school_id` can drift.**
       Reported 2026-04-28 during Piece 2 testing.
       `marketing@gmail.com`'s user record had `users.school_id`
