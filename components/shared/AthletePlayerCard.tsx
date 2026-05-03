@@ -30,17 +30,24 @@ const FORMAT_CONFIG: Record<CardFormat, {
   width: number;
   height: number;
   scale: number;
-  topOffset: number; // y-offset of the scaled card inside the outer box
+  topOffset: number;  // y-offset of the scaled card inside the outer box
+  leftOffset: number; // x-offset (used to horizontally center publication)
 }> = {
   // Compact mirrors the original 300-wide design verbatim.
-  compact:     { width: 300,  height: 460,  scale: 1,    topOffset: 0   },
-  // Publication: scale up by 3.6x to fit 1080 wide; total 1350 height.
-  publication: { width: 1080, height: 1350, scale: 3.6,  topOffset: 0   },
-  // Story: same 3.6x scale, padded vertically to 9:16. Extra ~285px
-  // above pushes the card down so the ticket overlay sits roughly
-  // mid-frame, leaving room above for caption space when partners
-  // overlay text.
-  story:       { width: 1080, height: 1920, scale: 3.6,  topOffset: 285 },
+  compact:     { width: 300,  height: 460,  scale: 1,    topOffset: 0,   leftOffset: 0  },
+  // Publication: 1080×1350 (IG portrait, 4:5). The natural ticket-
+  // style design is ~440px tall × 300px wide. At scale 3.6 it would
+  // be 1584px tall — the ticket footer overflows the 1350 container
+  // and gets clipped. Drop to scale 3.0 so the design fits height-
+  // first (300×3.0=900 wide, ~440×3.0=1320 tall) and center
+  // horizontally with 90px margins. ~15px top offset to give a
+  // touch of breathing room above the badge.
+  publication: { width: 1080, height: 1350, scale: 3.0,  topOffset: 15,  leftOffset: 90 },
+  // Story: 1080×1920 (IG/TT story, 9:16). The natural design at
+  // scale 3.6 = 1080 wide × 1584 tall, fits comfortably in 1920.
+  // topOffset 285 pushes the card down so the ticket sits mid-
+  // frame, leaving room above for partners to overlay text.
+  story:       { width: 1080, height: 1920, scale: 3.6,  topOffset: 285, leftOffset: 0  },
 };
 
 const SPORT_DISPLAY: Record<string, string> = Object.fromEntries(
@@ -82,7 +89,7 @@ export default function AthletePlayerCard({
         style={{
           position: "absolute",
           top: dims.topOffset,
-          left: 0,
+          left: dims.leftOffset,
           transform: `scale(${dims.scale})`,
           transformOrigin: "top left",
         }}
