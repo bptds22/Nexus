@@ -156,7 +156,7 @@ export default function VisibilitePage() {
           <h2 className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mb-3">Ton profil vs la moyenne</h2>
           {percentile >= 70 ? (
             <p className="text-[15px] font-bold text-[#22C55E]">
-              Ton profil est dans le top {100 - percentile}% des profils les plus consultés en {sportName}
+              Ton profil est dans le top {Math.max(1, 100 - percentile)}% des profils les plus consultés en {sportName}
             </p>
           ) : (
             <div>
