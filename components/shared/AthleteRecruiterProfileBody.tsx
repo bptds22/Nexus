@@ -565,7 +565,10 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
   }, [id]);
 
   const [mode, setMode] = useState<"simple" | "detailed">("simple");
-  const isDetailed = mode === "detailed";
+  // Partners only see the simplified canonical view; the detailed
+  // toggle and detailed-only sections are hidden in partner mode.
+  const effectiveMode: "simple" | "detailed" = isPartner ? "simple" : mode;
+  const isDetailed = effectiveMode === "detailed";
 
   const [isFavorited, setIsFavorited] = useState(false);
   const [favCount, setFavCount] = useState(0);
@@ -779,9 +782,9 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
 
       <div className="max-w-7xl mx-auto px-6 py-8 space-y-6 pb-28 relative z-1">
 
-        {/* ── Toggle + Completeness ─────────────────────────── */}
+        {/* ── Toggle (hidden for partner) + Completeness ────── */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <ProfileToggle mode={mode} onChange={setMode} />
+          {isPartner ? <div /> : <ProfileToggle mode={mode} onChange={setMode} />}
           <div className="w-full sm:w-56">
             <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#6b7280] mb-1">Profil complété</p>
             <CompletenessBar percent={a.profileCompleteness} />
