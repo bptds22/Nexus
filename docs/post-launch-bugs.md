@@ -71,11 +71,26 @@ file.
       Repro: log in as athlete, go to
       [`/athlete/profil`](../app/athlete/profil/page.tsx), click
       modifier, attempt to upload avatar.
-      Needs investigation:
-      - Does the file actually land in `storage.objects`?
-      - Does `athletes.photo_url` get written?
-      - If written, does the UI read from the right field?
-      - Any storage RLS policies blocking the upload path?
+
+      Code audit 2026-05-03 surfaced two probable causes at
+      [`app/athlete/profil/page.tsx:1457-1466`](../app/athlete/profil/page.tsx#L1457-L1466):
+      1. Upload targets `supabase.storage.from("Ath Photos")` —
+         a bucket name with a space and capital A. The Phase 2
+         signup-photo fix (4c7236a, 2026-05-01) created an
+         `avatars` bucket. If `Ath Photos` doesn't exist or has
+         different RLS, `uploadError` triggers the early return
+         and the toast still fires deceptively.
+      2. The `athletes.update({ photo_url })` call at line 1464
+         doesn't destructure or check `error`. Any RLS denial
+         on the update succeeds silently from the UI's
+         perspective.
+
+      Fix path: confirm bucket via
+      `docker exec supabase_db_Nexus psql -c "SELECT id, public, owner FROM storage.buckets WHERE name IN ('avatars', 'Ath Photos');"`,
+      align the upload target to whatever bucket actually exists,
+      add an error check on the athletes UPDATE, and surface the
+      error path to the toast instead of always saying "Photo
+      mise à jour!".
 
 - [x] **Hidden trigger blocks `coach_id = NULL` on athletes.**
       Reported 2026-04-28 while testing the new claim flow.
@@ -264,11 +279,20 @@ file.
       claim model is now the source of truth for coach
       visibility everywhere.
 
-- [ ] **Duplicate Signaler/Favori buttons on athlete profile.** The
-      athlete profile page has two sets of Signaler + Favori buttons:
-      one in the top-right corner of the header, one in the bottom
-      CTA bar next to "Contacter le coach". Should pick one (user
-      prefers the bottom CTA bar). Discovered 2026-04-26.
+- [ ] **Duplicate Signaler/Favori buttons on the recruiter view of
+      athlete profile.** The recruiter sticky CTA bar in
+      [`AthleteRecruiterProfileBody.tsx`](../components/shared/AthleteRecruiterProfileBody.tsx)
+      renders the favorite + signaler pair twice — once at
+      [lines 1326-1336](../components/shared/AthleteRecruiterProfileBody.tsx#L1326-L1336)
+      and again at
+      [lines 1353-1364](../components/shared/AthleteRecruiterProfileBody.tsx#L1353-L1364)
+      with identical onClick handlers
+      (`toggleFavorite`, `setShowFlagModal(true)`). Code audit
+      2026-05-03 confirms still duplicated post-recruiter-page
+      extraction — likely a copy-paste artifact from the
+      mobile-vs-desktop split that never got reconciled.
+      User prefers the bottom CTA bar (`px-4 py-2.5` style). Pick
+      one and delete the other. Originally reported 2026-04-26.
 
 - [ ] **Pipeline tier gating inconsistent.** "Mon processus" appears
       in the Free section of the recruiter sidebar but pipeline is
