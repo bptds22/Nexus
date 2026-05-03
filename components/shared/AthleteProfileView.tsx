@@ -425,8 +425,26 @@ export default function AthleteProfileView({
         )}
       </section>
 
-      {/* PROFIL ACADÉMIQUE — hidden for partner mode (out of partner scope) */}
-      {!isPartner && (
+      {/* PROFIL ACADÉMIQUE — partner mode swaps the real card for a
+          dashed-border lock placeholder so the redaction is
+          legible (intentional, not a UI bug) instead of silent. */}
+      {isPartner ? (
+        <section>
+          <h2 className={sectionLabel}>Profil académique</h2>
+          <div className="bg-[#1A1D24] rounded-xl border border-dashed border-white/10 px-6 py-12 flex flex-col items-center justify-center text-center">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mb-3">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+              <path d="M7 11V7a5 5 0 0110 0v4" />
+            </svg>
+            <p className="text-[14px] text-[#9CA3AF] font-semibold mb-1">
+              Réservé aux recruteurs et coaches
+            </p>
+            <p className="text-[13px] text-[#6B7280] max-w-md">
+              Ces informations académiques ne sont pas partagées avec les partenaires Nexus.
+            </p>
+          </div>
+        </section>
+      ) : (
         <section>
           <h2 className={sectionLabel}>Profil académique</h2>
           <div className={`${cardBase} overflow-hidden`}>
