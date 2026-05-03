@@ -48,7 +48,7 @@ function FilterChip({ label, href, active }: { label: string; href: string; acti
   return (
     <Link
       href={href}
-      className={`inline-flex items-center px-3.5 py-1.5 rounded-full text-[12px] font-bold uppercase tracking-wider transition-colors border ${
+      className={`inline-flex items-center px-3.5 py-1.5 rounded-full text-[12px] font-bold uppercase tracking-wider transition-colors border shrink-0 whitespace-nowrap ${
         active
           ? "bg-[#E63946]/15 border-[#E63946]/30 text-[#E63946]"
           : "bg-[#13151a] border-[#2D3748] text-[#9CA3AF] hover:text-white hover:border-[#4a4d56]"
@@ -143,18 +143,19 @@ export default async function PartnerNewsroomPage({
         <p className="text-[14px] text-[#9CA3AF] mt-1">Engagements et nouvelles 5 étoiles</p>
       </div>
 
-      {/* Filters — type → sport → position → date range */}
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mr-1">Type</span>
+      {/* Filters — type → sport → position → date range, single
+          row with horizontal scroll on narrow viewports. */}
+      <div className="flex flex-nowrap items-center gap-2 overflow-x-auto pb-1">
+        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mr-1 shrink-0">Type</span>
         <FilterChip label="Tout" href={buildHref({ type: null })} active={typeFilter === null} />
         <FilterChip label="Engagements" href={buildHref({ type: "COMMITMENT" })} active={typeFilter === "COMMITMENT"} />
         <FilterChip label="5 étoiles" href={buildHref({ type: "FIVE_STAR_SIGNUP" })} active={typeFilter === "FIVE_STAR_SIGNUP"} />
-        <span className="w-px h-5 bg-[#2D3748] mx-2" />
+        <span className="w-px h-5 bg-[#2D3748] mx-2 shrink-0" />
         <NewsroomDropdownFilters sports={sports} positions={positions} />
-        <span className="w-px h-5 bg-[#2D3748] mx-2" />
-        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mr-1">Période</span>
-        <FilterChip label="7 derniers jours" href={buildHref({ range: "7d" })} active={rangeFilter === "7d"} />
-        <FilterChip label="30 derniers jours" href={buildHref({ range: "30d" })} active={rangeFilter === "30d"} />
+        <span className="w-px h-5 bg-[#2D3748] mx-2 shrink-0" />
+        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mr-1 shrink-0">Période</span>
+        <FilterChip label="7 jours" href={buildHref({ range: "7d" })} active={rangeFilter === "7d"} />
+        <FilterChip label="30 jours" href={buildHref({ range: "30d" })} active={rangeFilter === "30d"} />
         <FilterChip label="Tout" href={buildHref({ range: "all" })} active={rangeFilter === "all"} />
       </div>
 
