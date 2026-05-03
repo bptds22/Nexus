@@ -184,82 +184,34 @@ export default function PartnerAthleteProfilePage({ params }: { params: Promise<
     );
   }
 
-  const meta = FORMAT_META[activeFormat];
-  const previewScale = activeFormat === "publication" ? meta.previewWidth / 1080 : meta.previewWidth / 1080;
-
   return (
     <div className="px-6 sm:px-10 py-8 max-w-[1100px] mx-auto space-y-6">
       <Link href="/partenaire/athletes" className="text-[12px] font-bold text-[#9CA3AF] hover:text-white transition-colors inline-flex items-center gap-1">
         ← Retour
       </Link>
 
-      {/* Carte officielle Nexus — primary partner CTA */}
-      <div>
-        <h2 className="font-head text-[18px] sm:text-[20px] font-black text-white uppercase tracking-tight">
-          Carte officielle Nexus
-        </h2>
-        <p className="text-[12px] text-[#9CA3AF] mt-1">
-          Téléchargez la carte pour publication. Format de votre choix.
-        </p>
-      </div>
-
-      {/* Format tabs */}
-      <div className="flex items-center gap-2 border-b border-[#2D3748]">
-        {(Object.keys(FORMAT_META) as CardFormat[]).map((fmt) => (
-          <button
-            key={fmt}
-            type="button"
-            onClick={() => setActiveFormat(fmt)}
-            className={`px-4 py-2.5 text-[12px] font-bold uppercase tracking-wider border-b-2 transition-colors ${
-              activeFormat === fmt
-                ? "border-[#E63946] text-[#E63946]"
-                : "border-transparent text-[#9CA3AF] hover:text-white"
-            }`}
-          >
-            {FORMAT_META[fmt].name}
-          </button>
-        ))}
-      </div>
-
-      {/* Preview + download */}
-      <div className="bg-[#1A1D24] border border-[#2D3748] rounded-xl p-6">
-        <div className="flex flex-col items-center gap-5">
-          <div
-            className="bg-[#13151a] border border-white/5 rounded-lg overflow-hidden"
-            style={{ width: meta.previewWidth, height: meta.previewHeight }}
-          >
-            <div style={{ transform: `scale(${previewScale})`, transformOrigin: "top left" }}>
-              <AthletePlayerCard a={athlete} format={activeFormat} />
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => handleDownload(activeFormat)}
-            disabled={downloading !== null}
-            className="px-6 py-3 bg-[#E63946] hover:bg-[#D42B22] text-white text-[13px] font-bold rounded-lg transition-colors disabled:opacity-50 uppercase tracking-wider flex items-center gap-2"
-          >
-            {downloading === activeFormat ? (
-              <>
-                <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                Génération…
-              </>
-            ) : (
-              <>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                  <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-                  <polyline points="7 10 12 15 17 10" />
-                  <line x1="12" y1="15" x2="12" y2="3" />
-                </svg>
-                Télécharger la carte ({meta.name.toUpperCase()})
-              </>
-            )}
-          </button>
-
-          <p className="text-[11px] text-[#6b7280]">
-            {meta.formatLabel} · {meta.size}px · PNG haute résolution · enregistrement automatique
-          </p>
-        </div>
+      {/* Compact card download — format selector + single button.
+          The card itself renders inside the editorial profile body
+          below; no need for a separate preview here. */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <select
+          value={activeFormat}
+          onChange={(e) => setActiveFormat(e.target.value as CardFormat)}
+          aria-label="Format de la carte"
+          className="bg-[#1A1D24] border border-[#2D3748] rounded-lg px-3 py-2 text-[13px] text-white focus:border-[#E63946] outline-none transition-colors"
+        >
+          <option value="publication">Format publication (1080×1350)</option>
+          <option value="story">Format story (1080×1920)</option>
+        </select>
+        <button
+          type="button"
+          onClick={() => handleDownload(activeFormat)}
+          disabled={downloading !== null}
+          className="px-5 py-2.5 bg-[#E63946] hover:bg-[#D42B22] text-white text-[13px] font-bold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {downloading === activeFormat ? "Génération…" : "Télécharger la carte"}
+        </button>
+        <span className="text-[12px] text-[#6b7280]">PNG haute résolution · enregistrement automatique</span>
       </div>
 
       {/* Off-screen full-size renderings for capture (one per format, both kept ready) */}
