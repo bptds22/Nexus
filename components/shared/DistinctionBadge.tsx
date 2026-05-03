@@ -6,7 +6,15 @@ import "@/components/badges/distinction-badges.css";
 interface Props {
   badge: string;
   detail?: string;
+  /** Explicit size — if omitted, auto-derives from `count` (sm when count >= 4, else lg). */
   size?: "sm" | "lg";
+  /**
+   * Total distinctions in the same row. When provided and `size`
+   * is not explicit, badges auto-shrink to "sm" at 4+ distinctions
+   * so they stay on a single row at typical container widths.
+   * Both /athlete/profil and the partner profile pass count.
+   */
+  count?: number;
   index?: number;
 }
 
@@ -16,7 +24,7 @@ function getBadgeLabel(badge: string, detail: string | undefined, config: { labe
   return config.label;
 }
 
-export default function DistinctionBadge({ badge, detail, size = "lg", index }: Props) {
+export default function DistinctionBadge({ badge, detail, size, count, index }: Props) {
   const config = BADGE_CONFIG[badge];
   const reactId = useId();
   if (!config) return null;
@@ -24,11 +32,15 @@ export default function DistinctionBadge({ badge, detail, size = "lg", index }: 
   const uid = `${badge}-${index ?? "x"}-${reactId.replace(/[^a-zA-Z0-9]/g, "")}`;
   const label = getBadgeLabel(badge, detail, config);
 
+  // Auto-derive size from count when no explicit size is passed.
+  // Explicit size always wins (back-compat).
+  const effectiveSize: "sm" | "lg" = size ?? (count !== undefined && count >= 4 ? "sm" : "lg");
+
   // Uniform outer tile + icon box so every badge occupies the same footprint
   // regardless of the SVG's natural aspect ratio.
-  const outerW = size === "sm" ? "w-[88px]" : "w-[110px]";
-  const iconBox = size === "sm" ? "w-14 h-14" : "w-[72px] h-[72px]";
-  const labelCls = size === "sm" ? "text-[10px] max-w-[88px]" : "text-[11px] max-w-[110px]";
+  const outerW = effectiveSize === "sm" ? "w-[88px]" : "w-[110px]";
+  const iconBox = effectiveSize === "sm" ? "w-14 h-14" : "w-[72px] h-[72px]";
+  const labelCls = effectiveSize === "sm" ? "text-[10px] max-w-[88px]" : "text-[11px] max-w-[110px]";
 
   return (
     <div className={`flex flex-col items-center gap-[10px] cursor-pointer group shrink-0 ${outerW}`}>

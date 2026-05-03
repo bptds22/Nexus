@@ -696,7 +696,7 @@ function DistinctionsSuggest({ currentDistinctions, pending, onSubmit }: {
       {!editing && currentDistinctions.length > 0 && (
         <div className="flex flex-wrap gap-4 mt-3">
           {currentDistinctions.map((e, i) => (
-            <DistinctionBadge key={`${e.badge}-${i}`} badge={e.badge} detail={e.detail} index={i} />
+            <DistinctionBadge key={`${e.badge}-${i}`} badge={e.badge} detail={e.detail} count={currentDistinctions.length} index={i} />
           ))}
         </div>
       )}
