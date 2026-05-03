@@ -27,9 +27,9 @@ import type { AthleteProfileRecruiterView } from "@/lib/types/models";
 
 type CardFormat = "publication" | "story";
 
-const FORMAT_META: Record<CardFormat, { label: string; size: string; previewWidth: number; previewHeight: number }> = {
-  publication: { label: "Format publication (1080×1350)", size: "1080×1350", previewWidth: 270, previewHeight: 338 },
-  story:       { label: "Format story (1080×1920)",       size: "1080×1920", previewWidth: 240, previewHeight: 426 },
+const FORMAT_META: Record<CardFormat, { name: string; formatLabel: string; size: string; previewWidth: number; previewHeight: number }> = {
+  publication: { name: "Publication", formatLabel: "Format publication", size: "1080×1350", previewWidth: 270, previewHeight: 338 },
+  story:       { name: "Story",       formatLabel: "Format story",       size: "1080×1920", previewWidth: 240, previewHeight: 426 },
 };
 
 function safeFilenamePart(s: string): string {
@@ -214,6 +214,16 @@ export default function PartnerAthleteProfilePage({ params }: { params: Promise<
         </div>
       </div>
 
+      {/* Carte officielle Nexus — primary partner CTA */}
+      <div>
+        <h2 className="font-head text-[18px] sm:text-[20px] font-black text-white uppercase tracking-tight">
+          Carte officielle Nexus
+        </h2>
+        <p className="text-[12px] text-[#9CA3AF] mt-1">
+          Téléchargez la carte pour publication. Format de votre choix.
+        </p>
+      </div>
+
       {/* Format tabs */}
       <div className="flex items-center gap-2 border-b border-[#2D3748]">
         {(Object.keys(FORMAT_META) as CardFormat[]).map((fmt) => (
@@ -227,7 +237,7 @@ export default function PartnerAthleteProfilePage({ params }: { params: Promise<
                 : "border-transparent text-[#9CA3AF] hover:text-white"
             }`}
           >
-            {FORMAT_META[fmt].label}
+            {FORMAT_META[fmt].name}
           </button>
         ))}
       </div>
@@ -262,13 +272,13 @@ export default function PartnerAthleteProfilePage({ params }: { params: Promise<
                   <polyline points="7 10 12 15 17 10" />
                   <line x1="12" y1="15" x2="12" y2="3" />
                 </svg>
-                Télécharger ({meta.size})
+                Télécharger la carte ({meta.name.toUpperCase()})
               </>
             )}
           </button>
 
           <p className="text-[11px] text-[#6b7280]">
-            PNG haute résolution · pixelRatio 2x · enregistrement automatique du téléchargement
+            {meta.formatLabel} · {meta.size}px · PNG haute résolution · enregistrement automatique
           </p>
         </div>
       </div>
