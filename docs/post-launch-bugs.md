@@ -511,28 +511,28 @@ file.
 
 ## P3 — Latent / future work
 
-- [ ] **Drop orphan view-tracking tables `profile_views` and `athlete_views`.**
-      Confirmed unused after the 2026-05-03 canonical migration to
-      `recruiter_athlete_views`. Three views were repointed in
-      [`20260503030000_repoint_athlete_visibility_views_to_canonical_source.sql`](../supabase/migrations/20260503030000_repoint_athlete_visibility_views_to_canonical_source.sql):
-      - `athlete_visibility_stats`
-      - `athlete_view_details`
-      - `athlete_views_weekly`
+- [ ] **Drop deprecated orphan view-tracking tables.**
+      Tables soft-deprecated 2026-05-03 in
+      [`20260503040000_deprecate_orphan_view_tracking_tables.sql`](../supabase/migrations/20260503040000_deprecate_orphan_view_tracking_tables.sql):
+      - `profile_views` → `_deprecated_profile_views_2026_05`
+      - `athlete_views` → `_deprecated_athlete_views_2026_05`
 
-      Before dropping the orphan tables, grep the full codebase for
-      remaining references — including SQL files, Edge Functions,
-      RLS policies, and triggers:
-      ```
-      grep -rn "profile_views\|athlete_views" supabase/ app/ components/ lib/
-      ```
-      If clean, ship a destructive migration:
-      ```sql
-      DROP TABLE IF EXISTS profile_views CASCADE;
-      DROP TABLE IF EXISTS athlete_views CASCADE;
-      ```
-      Defer until either (a) someone is doing schema cleanup, or
-      (b) a fresh contributor stumbles on the orphan tables and
-      gets confused about which is canonical.
+      Three views were repointed before the rename in
+      [`20260503030000_repoint_athlete_visibility_views_to_canonical_source.sql`](../supabase/migrations/20260503030000_repoint_athlete_visibility_views_to_canonical_source.sql):
+      `athlete_visibility_stats`, `athlete_view_details`,
+      `athlete_views_weekly` — all now read from
+      `recruiter_athlete_views`.
+
+      Original purpose of the rename: any forgotten consumer
+      surfaces immediately as a "table not found" error rather
+      than silently reading empty data. After 3+ months of zero
+      activity (target: **August 2026**), drop with a separate
+      destructive migration after a final grep confirms zero
+      references — including the SQL snippets at
+      `supabase/snippets/admin_rls_bypass.sql` and
+      `supabase/snippets/coach_analytics_rls.sql`, which still
+      reference `profile_views` for inert hand-run scripts.
+      Update or delete those snippets at drop time too.
 
 - [ ] **Canonical `AthleteProfileFullView` extraction.** Currently
       [`/athlete/profil`](../app/athlete/profil/page.tsx) (1828
