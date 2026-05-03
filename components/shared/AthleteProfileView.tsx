@@ -105,8 +105,6 @@ const PlayerCard = AthletePlayerCard;
 
 /* ── component ─────────────────────────────────────────────────── */
 
-export type AthleteProfileViewMode = "recruiter" | "coach" | "admin" | "partner";
-
 export interface AthleteProfileViewProps {
   athleteId: string;
   /** Extra slot rendered under the hero (used by wrappers to inject actions). */
@@ -115,50 +113,6 @@ export interface AthleteProfileViewProps {
   footerSlot?: React.ReactNode;
   /** Hide the views/favoris/statut chips row (e.g. for screenshots). */
   hideEngagement?: boolean;
-  /**
-   * Caller context. Defaults to "recruiter" for back-compat (the
-   * original consumers — recruiter, coach, admin — all share the
-   * same simplifié layout). "partner" hides the academic +
-   * coach-reputation sections and surfaces a prominent
-   * recruitment-status banner with committed-school destination.
-   */
-  viewMode?: AthleteProfileViewMode;
-}
-
-const PARTNER_STATUS_CONFIG: Record<string, { color: string; bg: string; border: string; label: string }> = {
-  OUVERT:       { color: "#10B981", bg: "rgba(16,185,129,0.12)",  border: "rgba(16,185,129,0.40)",  label: "Ouvert" },
-  EN_PROCESSUS: { color: "#F59E0B", bg: "rgba(245,158,11,0.12)",  border: "rgba(245,158,11,0.40)",  label: "En processus" },
-  RECRUTE:      { color: "#E63946", bg: "rgba(230,57,70,0.12)",   border: "rgba(230,57,70,0.40)",   label: "Recruté" },
-  RETIRE:       { color: "#6B7280", bg: "rgba(107,114,128,0.12)", border: "rgba(107,114,128,0.40)", label: "Retiré" },
-};
-
-function PartnerStatusBanner({ status, committedSchool }: { status: string; committedSchool: string | null }) {
-  const cfg = PARTNER_STATUS_CONFIG[status] ?? PARTNER_STATUS_CONFIG.OUVERT;
-  const isRecrute = status === "RECRUTE";
-  const headline = isRecrute && committedSchool ? `Recruté par ${committedSchool}` : cfg.label;
-  return (
-    <section>
-      <div
-        className="bg-[#1A1D24] rounded-xl px-6 py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-white/[0.06]"
-        style={{ borderLeft: `3px solid ${cfg.color}` }}
-      >
-        <div className="flex items-center gap-3 flex-wrap">
-          <span className="text-[10px] font-semibold uppercase tracking-[0.2em]" style={{ color: cfg.color }}>
-            Statut de recrutement
-          </span>
-          <span
-            className="inline-flex items-center px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-[0.1em] border"
-            style={{ backgroundColor: cfg.bg, borderColor: cfg.border, color: cfg.color }}
-          >
-            {cfg.label}
-          </span>
-        </div>
-        <h3 className="text-[18px] sm:text-[22px] font-bold text-white tracking-[-0.01em]">
-          {headline}
-        </h3>
-      </div>
-    </section>
-  );
 }
 
 export default function AthleteProfileView({
@@ -166,7 +120,6 @@ export default function AthleteProfileView({
   headerSlot,
   footerSlot,
   hideEngagement = false,
-  viewMode = "recruiter",
 }: AthleteProfileViewProps) {
   const [a, setA] = useState<AthleteProfileRecruiterView | null>(null);
   const [loading, setLoading] = useState(true);
@@ -175,8 +128,6 @@ export default function AthleteProfileView({
   const [viewCount, setViewCount] = useState(0);
   const [favoriteCount, setFavoriteCount] = useState(0);
   const [globalRecruit, setGlobalRecruit] = useState<string>("OUVERT");
-  const [partnerCommittedSchool, setPartnerCommittedSchool] = useState<string | null>(null);
-  const isPartner = viewMode === "partner";
 
   useEffect(() => {
     let cancelled = false;
@@ -202,20 +153,8 @@ export default function AthleteProfileView({
           setDbDistinctions(parseDistinctions(d));
         }
 
-        if (isPartner) {
-          // Partner mode reads the canonical enum (driven by the
-          // recruiter_pipeline cascade) instead of the free-form
-          // override. Committed-school name comes through the
-          // existing committed_school join in loadAthleteRaw.
-          const canonical = (rawRec.recruitment_status as string) || "OUVERT";
-          setGlobalRecruit(canonical);
-          const committed = rawRec.committed_school as { name?: string } | { name?: string }[] | null | undefined;
-          const committedRow = Array.isArray(committed) ? committed[0] : committed;
-          setPartnerCommittedSchool(committedRow?.name ?? null);
-        } else {
-          const overrideVal = rawRec.statut_recrutement_override as string | null;
-          setGlobalRecruit(overrideVal || "OUVERT");
-        }
+        const overrideVal = rawRec.statut_recrutement_override as string | null;
+        setGlobalRecruit(overrideVal || "OUVERT");
 
         const supabase = createClient();
         const [{ count: vc }, { count: fc }] = await Promise.all([
@@ -293,12 +232,10 @@ export default function AthleteProfileView({
                 <span className="text-[16px] font-bold text-white">{favoriteCount}</span>
                 <span className="text-[11px] text-[#6b7280]">favoris</span>
               </div>
-              {!isPartner && (
-                <div className="bg-[#111317] rounded-lg px-4 py-2">
-                  <span className="text-[8px] font-bold uppercase tracking-[0.2em] text-[#6b7280] block mb-1">Statut recrutement</span>
-                  <RecruitmentStatusBadge status={globalRecruit as GlobalRecruitmentStatus} size="sm" />
-                </div>
-              )}
+              <div className="bg-[#111317] rounded-lg px-4 py-2">
+                <span className="text-[8px] font-bold uppercase tracking-[0.2em] text-[#6b7280] block mb-1">Statut recrutement</span>
+                <RecruitmentStatusBadge status={globalRecruit as GlobalRecruitmentStatus} size="sm" />
+              </div>
             </div>
           )}
 
@@ -331,9 +268,6 @@ export default function AthleteProfileView({
           </div>
         </div>
       </section>
-
-      {/* PARTNER-ONLY: prominent recruitment-status banner with committed school */}
-      {isPartner && <PartnerStatusBanner status={globalRecruit} committedSchool={partnerCommittedSchool} />}
 
       {/* COACH REPORT */}
       {(a.coachReport || coteGlobale > 0) && (
@@ -425,61 +359,41 @@ export default function AthleteProfileView({
         )}
       </section>
 
-      {/* PROFIL ACADÉMIQUE — partner mode swaps the real card for a
-          dashed-border lock placeholder so the redaction is
-          legible (intentional, not a UI bug) instead of silent. */}
-      {isPartner ? (
-        <section>
-          <h2 className={sectionLabel}>Profil académique</h2>
-          <div className="bg-[#1A1D24] rounded-xl border border-dashed border-white/10 px-6 py-12 flex flex-col items-center justify-center text-center">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mb-3">
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-              <path d="M7 11V7a5 5 0 0110 0v4" />
-            </svg>
-            <p className="text-[14px] text-[#9CA3AF] font-semibold mb-1">
-              Réservé aux recruteurs et coaches
-            </p>
-            <p className="text-[13px] text-[#6B7280] max-w-md">
-              Ces informations académiques ne sont pas partagées avec les partenaires Nexus.
-            </p>
-          </div>
-        </section>
-      ) : (
-        <section>
-          <h2 className={sectionLabel}>Profil académique</h2>
-          <div className={`${cardBase} overflow-hidden`}>
-            <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-[#2D3748]/50">
-              <div className="p-5 text-center">
-                <p className="text-[28px] font-head font-black text-white leading-none">{a.gpa ? `${a.gpa}%` : "—"}</p>
-                <p className="text-[12px] font-bold tracking-[0.2em] uppercase text-[#9CA3AF] mt-2">Moyenne générale</p>
-              </div>
-              <div className="p-5 text-center">
-                {(() => {
-                  let display = "—";
-                  if (a.program && typeof a.program === "string" && a.program.length > 0) {
-                    display = a.program;
-                  } else {
-                    let arr: unknown = a.targetCegepProgram;
-                    if (typeof arr === "string") { try { arr = JSON.parse(arr); } catch { arr = []; } }
-                    if (Array.isArray(arr) && arr.length > 0) display = arr.join(", ");
-                  }
-                  return <p className="text-[18px] font-bold text-white leading-none mt-1">{display}</p>;
-                })()}
-                <p className="text-[12px] font-bold tracking-[0.2em] uppercase text-[#9CA3AF] mt-2">Programme visé</p>
-              </div>
-              <div className="p-5 text-center">
-                <p className="text-[18px] font-bold text-white leading-none mt-1">Juin {a.graduationYear}</p>
-                <p className="text-[12px] font-bold tracking-[0.2em] uppercase text-[#9CA3AF] mt-2">Graduation</p>
-              </div>
+      {/* PROFIL ACADÉMIQUE */}
+      <section>
+        <h2 className={sectionLabel}>Profil académique</h2>
+        <div className={`${cardBase} overflow-hidden`}>
+          <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-[#2D3748]/50">
+            <div className="p-5 text-center">
+              <p className="text-[28px] font-head font-black text-white leading-none">{a.gpa ? `${a.gpa}%` : "—"}</p>
+              <p className="text-[12px] font-bold tracking-[0.2em] uppercase text-[#9CA3AF] mt-2">Moyenne générale</p>
             </div>
-            <div className="border-t border-[#2D3748]/50 px-5 py-3.5 flex flex-wrap gap-2">
-              <PreferencePill active={a.openToRelocate} label="Ouvert à déménager" />
-              <PreferencePill active={a.openToPrivate} label="Ouvert au privé" />
-              <PreferencePill active={a.openToAnglophone} label="Ouvert anglophone" />
+            <div className="p-5 text-center">
+              {(() => {
+                let display = "—";
+                if (a.program && typeof a.program === "string" && a.program.length > 0) {
+                  display = a.program;
+                } else {
+                  let arr: unknown = a.targetCegepProgram;
+                  if (typeof arr === "string") { try { arr = JSON.parse(arr); } catch { arr = []; } }
+                  if (Array.isArray(arr) && arr.length > 0) display = arr.join(", ");
+                }
+                return <p className="text-[18px] font-bold text-white leading-none mt-1">{display}</p>;
+              })()}
+              <p className="text-[12px] font-bold tracking-[0.2em] uppercase text-[#9CA3AF] mt-2">Programme visé</p>
+            </div>
+            <div className="p-5 text-center">
+              <p className="text-[18px] font-bold text-white leading-none mt-1">Juin {a.graduationYear}</p>
+              <p className="text-[12px] font-bold tracking-[0.2em] uppercase text-[#9CA3AF] mt-2">Graduation</p>
             </div>
           </div>
-        </section>
-      )}
+          <div className="border-t border-[#2D3748]/50 px-5 py-3.5 flex flex-wrap gap-2">
+            <PreferencePill active={a.openToRelocate} label="Ouvert à déménager" />
+            <PreferencePill active={a.openToPrivate} label="Ouvert au privé" />
+            <PreferencePill active={a.openToAnglophone} label="Ouvert anglophone" />
+          </div>
+        </div>
+      </section>
 
       {/* DETAILED-ONLY */}
       {isDetailed && (
@@ -560,7 +474,7 @@ export default function AthleteProfileView({
             </section>
           )}
 
-          {!isPartner && (a.strongSubjects?.length > 0 || a.academicHonors?.length > 0 || a.preferredRegions?.length > 0 || (Array.isArray(a.targetCegepProgram) && a.targetCegepProgram.length > 0)) && (
+          {(a.strongSubjects?.length > 0 || a.academicHonors?.length > 0 || a.preferredRegions?.length > 0 || (Array.isArray(a.targetCegepProgram) && a.targetCegepProgram.length > 0)) && (
             <section>
               <h2 className={sectionLabel}>Détails académiques</h2>
               <div className={`${cardBase} p-5 space-y-4`}>
@@ -638,7 +552,7 @@ export default function AthleteProfileView({
             </section>
           )}
 
-          {!isPartner && a.coachName && (
+          {a.coachName && (
             <section>
               <h2 className={sectionLabel}>Réputation du coach</h2>
               <div className={`${cardBase} p-5`}>

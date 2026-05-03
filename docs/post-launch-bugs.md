@@ -534,33 +534,6 @@ file.
       (b) a fresh contributor stumbles on the orphan tables and
       gets confused about which is canonical.
 
-- [ ] **`AthleteProfileView` partner mode is dead code — remove if no other consumers surface.**
-      As of 2026-05-03, the partner profile page renders
-      [`AthleteRecruiterProfileBody`](../components/shared/AthleteRecruiterProfileBody.tsx)
-      with `viewerMode="partner"` (commit 934772c). The earlier
-      partner mode in
-      [`AthleteProfileView`](../components/shared/AthleteProfileView.tsx)
-      — including the lock-placeholder treatment for the academic
-      section (057e78d) and the `PartnerStatusBanner` /
-      `partnerCommittedSchool` state introduced in d1beba0 — is
-      no longer reached from anywhere in the codebase.
-      `AthleteProfileView` itself is still consumed by
-      [`app/admin/athletes/[id]/page.tsx:1575`](../app/admin/athletes/%5Bid%5D/page.tsx#L1575)
-      but only at the default `viewMode="recruiter"`.
-
-      Cleanup options when picking this up:
-      1. Remove the `'partner'` value from `AthleteProfileViewMode`
-         and delete the partner-mode branches (`isPartner` checks,
-         `PartnerStatusBanner`, `partnerCommittedSchool` state,
-         the dashed-border placeholder) — net deletion, no
-         functional change.
-      2. Leave dead, document the intent.
-
-      Defer until either (a) someone adds a new consumer that
-      could plausibly want the simpler partner view, or (b) the
-      next time `AthleteProfileView` is touched for unrelated
-      reasons, fold the cleanup in.
-
 - [ ] **Canonical `AthleteProfileFullView` extraction.** Currently
       [`/athlete/profil`](../app/athlete/profil/page.tsx) (1828
       lines, monolithic, deeply edit-coupled) and
