@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import NewsroomDropdownFilters from "../_components/NewsroomDropdownFilters";
+import NewsroomEventCard, { type NewsroomEventType } from "@/components/partner/NewsroomEventCard";
 
 /* ═══════════════════════════════════════════════════════════════
    /partenaire/newsroom — async server component
@@ -19,16 +20,21 @@ import NewsroomDropdownFilters from "../_components/NewsroomDropdownFilters";
    useRouter — same pattern as ClassementsFilterBar.
 ═══════════════════════════════════════════════════════════════ */
 
-type EventType = "COMMITMENT" | "FIVE_STAR_SIGNUP";
 type EventRow = {
   id: string;
-  event_type: EventType;
+  event_type: NewsroomEventType;
   athlete_id: string | null;
-  title: string;
-  description: string | null;
   metadata: Record<string, unknown> | null;
   occurred_at: string;
-  athletes: { photo_url: string | null; first_name: string | null; last_name: string | null } | null;
+  athletes: {
+    id: string | null;
+    photo_url: string | null;
+    first_name: string | null;
+    last_name: string | null;
+    schools: { name: string | null } | null;
+    sports: { nom: string | null } | null;
+    positions: { abreviation: string | null } | null;
+  } | null;
 };
 
 type FilterParams = {
@@ -37,43 +43,6 @@ type FilterParams = {
   sport?: string;
   position?: string;
 };
-
-const TYPE_LABEL: Record<EventType, string> = {
-  COMMITMENT: "Engagement",
-  FIVE_STAR_SIGNUP: "5 étoiles",
-};
-
-function formatRelativeFrench(iso: string): string {
-  const then = new Date(iso).getTime();
-  const diffMs = Date.now() - then;
-  const mins = Math.floor(diffMs / 60000);
-  const hours = Math.floor(diffMs / 3600000);
-  const days = Math.floor(diffMs / 86400000);
-  if (mins < 1) return "À l'instant";
-  if (mins < 60) return `Il y a ${mins} min`;
-  if (hours < 24) return `Il y a ${hours} h`;
-  if (days === 1) return "Hier";
-  if (days < 7) return `Il y a ${days} jours`;
-  if (days < 30) return `Il y a ${Math.floor(days / 7)} semaine${Math.floor(days / 7) > 1 ? "s" : ""}`;
-  return `Il y a ${Math.floor(days / 30)} mois`;
-}
-
-function CommitmentIcon() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M9 11l3 3L22 4" />
-      <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
-    </svg>
-  );
-}
-
-function FiveStarIcon() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="#F59E0B" stroke="none">
-      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-    </svg>
-  );
-}
 
 function FilterChip({ label, href, active }: { label: string; href: string; active: boolean }) {
   return (
@@ -117,13 +86,16 @@ export default async function PartnerNewsroomPage({
   // Position filter requires inner join to athletes (filter on
   // joined column). Sport filter goes on newsroom_events.sport_id
   // directly (set by the trigger), no inner join needed for that.
+  // Embed pulls schools/sports/positions for the editorial card
+  // metadata row ("FOOTBALL · QB · COLLÈGE ...").
+  const athletesProjection = "id, photo_url, first_name, last_name, schools!school_id(name), sports!sport_id(nom), positions!position_id(abreviation)";
   const athletesEmbed = positionFilter
-    ? "athletes!inner(id, photo_url, first_name, last_name, position_id)"
-    : "athletes(photo_url, first_name, last_name)";
+    ? `athletes!inner(${athletesProjection})`
+    : `athletes(${athletesProjection})`;
 
   let query = supabase
     .from("newsroom_events")
-    .select(`id, event_type, athlete_id, title, description, metadata, occurred_at, ${athletesEmbed}`)
+    .select(`id, event_type, athlete_id, metadata, occurred_at, ${athletesEmbed}`)
     .order("occurred_at", { ascending: false })
     .limit(100);
 
@@ -216,57 +188,33 @@ export default async function PartnerNewsroomPage({
       ) : (
         <div className="space-y-3">
           {events.map((e) => {
-            const athleteName = e.athletes
-              ? `${e.athletes.first_name ?? ""} ${e.athletes.last_name ?? ""}`.trim()
+            const athleteId = e.athletes?.id ?? e.athlete_id;
+            // Skip rows where the athlete record is missing — the
+            // card needs an id to construct the profile link.
+            if (!athleteId) return null;
+
+            const meta = (e.metadata ?? {}) as Record<string, unknown>;
+            const committedSchoolName = e.event_type === "COMMITMENT"
+              ? (typeof meta.school_name === "string" ? meta.school_name : null)
               : null;
-            const photo = e.athletes?.photo_url || null;
-            const initials = athleteName ? athleteName.split(/\s+/).map((n) => n[0]).slice(0, 2).join("").toUpperCase() : "?";
 
-            return (
-              <div
-                key={e.id}
-                className="bg-[#1A1D24] border border-[#2D3748] rounded-xl p-5 flex items-start gap-4 hover:border-[#E63946]/30 transition-colors"
-              >
-                <div className="w-10 h-10 rounded-full bg-[#13151a] flex items-center justify-center shrink-0">
-                  {e.event_type === "COMMITMENT" ? <CommitmentIcon /> : <FiveStarIcon />}
-                </div>
+            const cardEvent = {
+              id: e.id,
+              event_type: e.event_type,
+              occurred_at: e.occurred_at,
+              athlete: {
+                id: athleteId,
+                first_name: e.athletes?.first_name ?? null,
+                last_name: e.athletes?.last_name ?? null,
+                photo_url: e.athletes?.photo_url ?? null,
+                sport_name: e.athletes?.sports?.nom ?? null,
+                position_abbreviation: e.athletes?.positions?.abreviation ?? null,
+                school_name: e.athletes?.schools?.name ?? null,
+              },
+              committed_school_name: committedSchoolName,
+            };
 
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-[#2D3748] text-[#c0c4cc] text-[10px] font-bold uppercase tracking-wider">
-                      {TYPE_LABEL[e.event_type]}
-                    </span>
-                    <span className="text-[11px] text-[#6b7280]">{formatRelativeFrench(e.occurred_at)}</span>
-                  </div>
-                  <h3 className="text-[15px] font-bold text-white mt-1.5 leading-snug">{e.title}</h3>
-                  {e.description && (
-                    <p className="text-[13px] text-[#9CA3AF] mt-1 leading-relaxed">{e.description}</p>
-                  )}
-                  {e.athlete_id && athleteName && (
-                    <Link
-                      href={`/partenaire/athletes/${e.athlete_id}`}
-                      className="inline-block text-[12px] font-bold text-[#E63946] hover:text-[#D42B22] transition-colors mt-2"
-                    >
-                      Voir {athleteName} →
-                    </Link>
-                  )}
-                </div>
-
-                {/* Athlete thumbnail (right side) */}
-                {e.athlete_id && (
-                  <Link href={`/partenaire/athletes/${e.athlete_id}`} className="shrink-0 block">
-                    {photo ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={photo} alt={athleteName ?? ""} className="w-12 h-12 rounded-full object-cover" />
-                    ) : (
-                      <div className="w-12 h-12 rounded-full bg-[#2D3748] flex items-center justify-center text-[12px] font-bold text-white/60">
-                        {initials}
-                      </div>
-                    )}
-                  </Link>
-                )}
-              </div>
-            );
+            return <NewsroomEventCard key={e.id} event={cardEvent} />;
           })}
         </div>
       )}
