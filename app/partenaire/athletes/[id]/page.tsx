@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import { loadAthleteRaw, mapToRecruiterView } from "@/app/coach/athletes/_data/loadAthleteFromSupabase";
 import AthletePlayerCard from "@/components/shared/AthletePlayerCard";
 import AthletePhoto from "@/components/shared/AthletePhoto";
+import AthleteProfileView from "@/components/shared/AthleteProfileView";
 import type { AthleteProfileRecruiterView } from "@/lib/types/models";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -60,6 +61,20 @@ export default function PartnerAthleteProfilePage({ params }: { params: Promise<
 
   useEffect(() => {
     (async () => {
+      // Eligibility guard runs first (defense in depth — RLS on
+      // athletes also gates the row, but the explicit check gives
+      // us a clean error path instead of a silent empty result).
+      const supabase = createClient();
+      const { data: eligibleResult, error: eligibleErr } = await supabase.rpc(
+        "is_partner_eligible_athlete",
+        { p_athlete_id: id },
+      );
+      if (eligibleErr || !eligibleResult) {
+        setError("Cet athlète n'est pas disponible pour les partenaires.");
+        setLoading(false);
+        return;
+      }
+
       const result = await loadAthleteRaw(id);
       if (!result?.data) {
         setError("Cet athlète n'est pas disponible pour les partenaires.");
@@ -68,6 +83,19 @@ export default function PartnerAthleteProfilePage({ params }: { params: Promise<
       }
       setAthlete(mapToRecruiterView(result.data as Record<string, unknown>));
       setLoading(false);
+
+      // Fire-and-forget profile-view audit log. Failures are
+      // swallowed — auditing shouldn't block the page from
+      // rendering (but the route still validates partner status
+      // + eligibility server-side and refuses to log if either
+      // fails, so no false rows can land).
+      fetch("/api/partner/profile-views/log", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ athlete_id: id }),
+      }).catch((err) => {
+        console.warn("[partner profile-view audit] log failed:", err);
+      });
     })();
   }, [id]);
 
@@ -166,24 +194,23 @@ export default function PartnerAthleteProfilePage({ params }: { params: Promise<
         ← Retour
       </Link>
 
-      {/* Athlete header */}
-      <div className="bg-[#1A1D24] border border-[#2D3748] rounded-xl p-6 flex items-center gap-5">
+      {/* Compact context strip — the rich identity hero lives in
+          AthleteProfileView below, this just anchors the
+          download UI with a "you're looking at X" signal. */}
+      <div className="bg-[#1A1D24] border border-[#2D3748] rounded-xl p-5 flex items-center gap-4">
         <AthletePhoto
           photoUrl={athlete.photoUrl}
           firstName={athlete.firstName}
           lastName={athlete.lastName}
-          size={80}
+          size={56}
         />
         <div className="flex-1 min-w-0">
-          <h1 className="font-head text-2xl sm:text-3xl font-black text-white uppercase tracking-tight truncate">
+          <h1 className="font-head text-[20px] sm:text-[22px] font-bold text-white uppercase tracking-tight truncate">
             {athlete.firstName} {athlete.lastName}
           </h1>
-          <p className="text-[13px] text-[#9CA3AF] mt-1">
-            {[athlete.primarySport, athlete.primaryPosition, athlete.schoolName, athlete.region].filter(Boolean).join(" · ")}
+          <p className="text-[12px] text-[#9CA3AF] mt-0.5 truncate">
+            {[athlete.primarySport, athlete.primaryPosition, athlete.schoolName].filter(Boolean).join(" · ")}
           </p>
-          {athlete.graduationYear && (
-            <p className="text-[12px] text-[#6b7280] mt-0.5">Promotion {athlete.graduationYear}</p>
-          )}
         </div>
       </div>
 
@@ -255,6 +282,11 @@ export default function PartnerAthleteProfilePage({ params }: { params: Promise<
           <AthletePlayerCard a={athlete} format="story" />
         </div>
       </div>
+
+      {/* Full editorial profile — partner mode hides academic +
+          coach-reputation sections and renders a prominent
+          recruitment-status banner with committed-school name. */}
+      <AthleteProfileView athleteId={id} viewMode="partner" />
 
       {/* Toast */}
       {toast && (
