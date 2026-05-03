@@ -42,6 +42,28 @@ file.
 
 ## P1 — Silent UX failures
 
+- [ ] **Loi 25 onboarding consent wording (v1) requires Quebec privacy
+      counsel review before production launch.** Current onboarding
+      partner-visibility consent wording in
+      [`components/shared/PartnerVisibilityConsentCard.tsx`](../components/shared/PartnerVisibilityConsentCard.tsx)
+      uses approximate Loi 25 language for transfer of editorial
+      responsibility once a partner downloads an athlete's card
+      (the bolded bullet "Une fois la carte téléchargée par un
+      partenaire, celui-ci devient responsable de l'usage qu'il
+      en fait dans ses publications, conformément à la Loi 25").
+      Validate exact phrasing with Quebec privacy lawyer. When
+      wording finalizes, bump `terms_version` from `v1` to `v2`
+      and decide whether to force re-acceptance for existing
+      partners + parents who opted in under v1.
+
+      Companion scope note: this commit also broadens the partner
+      framing from Phase 2's "partenaires médias" to "partenaires
+      Nexus" — same partners table on the backend, but the parent-
+      facing copy now explicitly covers camps de sport, services
+      d'entraînement, podcasts, etc., not just journalists. If
+      counsel pushes back on the broader framing, the wording
+      change is contained to the single component above.
+
 - [ ] **Athlete photo upload doesn't persist to profile.** Athlete
       fills profile, uploads a photo, UI reports success (or no
       error), but `photo_url` stays empty and the profile shows
