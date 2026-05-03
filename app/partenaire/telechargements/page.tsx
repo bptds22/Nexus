@@ -56,9 +56,14 @@ function formatRelativeFrench(iso: string): string {
 
 export default async function PartnerTelechargementsPage() {
   const supabase = await createClient();
+  // FK hint `sports!sport_id` disambiguates the embed: athletes
+  // has two FKs to sports (sport_id + sport_secondaire_id), and
+  // PostgREST returns an error rather than picking one. Same FK-
+  // hint convention is used everywhere else in the codebase
+  // (loadAthleteFromSupabase, recruteur/recherche, etc.).
   const { data, error } = await supabase
     .from("partner_card_downloads")
-    .select("id, format, downloaded_at, athletes(id, first_name, last_name, photo_url, sport_id, sports(nom))")
+    .select("id, format, downloaded_at, athletes(id, first_name, last_name, photo_url, sport_id, sports!sport_id(nom))")
     .order("downloaded_at", { ascending: false })
     .limit(50);
 
@@ -66,6 +71,7 @@ export default async function PartnerTelechargementsPage() {
     console.error("[partenaire/telechargements] load:", error);
   }
   const downloads: DownloadRow[] = (data ?? []) as unknown as DownloadRow[];
+  const loadFailed = !!error;
 
   return (
     <div className="px-6 sm:px-10 py-8 max-w-[1100px] mx-auto space-y-6">
@@ -74,7 +80,21 @@ export default async function PartnerTelechargementsPage() {
         <p className="text-[14px] text-[#9CA3AF] mt-1">Historique des cartes téléchargées</p>
       </div>
 
-      {downloads.length === 0 ? (
+      {loadFailed ? (
+        <div className="bg-[#1A1D24] border border-[#EF4444]/30 rounded-xl p-6 flex items-start gap-3">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+          <div>
+            <p className="text-[14px] font-bold text-[#EF4444]">Erreur lors du chargement des téléchargements</p>
+            <p className="text-[13px] text-[#9CA3AF] mt-1">
+              Réessaie de charger la page. Si le problème persiste, contacte l&apos;équipe Nexus.
+            </p>
+          </div>
+        </div>
+      ) : downloads.length === 0 ? (
         <div className="bg-[#1A1D24] border border-[#2D3748] rounded-xl p-10 text-center">
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-[#1A1D24] border border-[#2D3748] mb-4">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a4d56" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
