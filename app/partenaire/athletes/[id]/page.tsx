@@ -7,8 +7,7 @@ import { toPng } from "html-to-image";
 import { createClient } from "@/lib/supabase/client";
 import { loadAthleteRaw, mapToRecruiterView } from "@/app/coach/athletes/_data/loadAthleteFromSupabase";
 import AthletePlayerCard from "@/components/shared/AthletePlayerCard";
-import AthletePhoto from "@/components/shared/AthletePhoto";
-import AthleteProfileView from "@/components/shared/AthleteProfileView";
+import AthleteRecruiterProfileBody from "@/components/shared/AthleteRecruiterProfileBody";
 import type { AthleteProfileRecruiterView } from "@/lib/types/models";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -194,26 +193,6 @@ export default function PartnerAthleteProfilePage({ params }: { params: Promise<
         ← Retour
       </Link>
 
-      {/* Compact context strip — the rich identity hero lives in
-          AthleteProfileView below, this just anchors the
-          download UI with a "you're looking at X" signal. */}
-      <div className="bg-[#1A1D24] border border-[#2D3748] rounded-xl p-5 flex items-center gap-4">
-        <AthletePhoto
-          photoUrl={athlete.photoUrl}
-          firstName={athlete.firstName}
-          lastName={athlete.lastName}
-          size={56}
-        />
-        <div className="flex-1 min-w-0">
-          <h1 className="font-head text-[20px] sm:text-[22px] font-bold text-white uppercase tracking-tight truncate">
-            {athlete.firstName} {athlete.lastName}
-          </h1>
-          <p className="text-[12px] text-[#9CA3AF] mt-0.5 truncate">
-            {[athlete.primarySport, athlete.primaryPosition, athlete.schoolName].filter(Boolean).join(" · ")}
-          </p>
-        </div>
-      </div>
-
       {/* Carte officielle Nexus — primary partner CTA */}
       <div>
         <h2 className="font-head text-[18px] sm:text-[20px] font-black text-white uppercase tracking-tight">
@@ -293,10 +272,13 @@ export default function PartnerAthleteProfilePage({ params }: { params: Promise<
         </div>
       </div>
 
-      {/* Full editorial profile — partner mode hides academic +
-          coach-reputation sections and renders a prominent
-          recruitment-status banner with committed-school name. */}
-      <AthleteProfileView athleteId={id} viewMode="partner" />
+      {/* Canonical recruiter-style profile body. Partner viewerMode
+          hides recruiter-specific UI (no pipeline chip, no
+          favorite toggle, no sticky CTA bar), swaps academic
+          sections for locked placeholders, hides Réputation du
+          coach, and skips the recruiter_athlete_views write so
+          partner sessions don't pollute view counts. */}
+      <AthleteRecruiterProfileBody athleteId={id} viewerMode="partner" />
 
       {/* Toast */}
       {toast && (
