@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import AthletePhoto from "@/components/shared/AthletePhoto";
+import TendancesDropdownFilters from "../_components/TendancesDropdownFilters";
 
 /* ═══════════════════════════════════════════════════════════════
    /partenaire/tendances — async server component
@@ -31,6 +32,13 @@ type TrendingRow = {
   favs_7d: number;
   favs_prior_7d: number;
   favs_delta: number;
+  sport_id: string | null;
+  position_id: string | null;
+};
+
+type FilterParams = {
+  sport?: string;
+  position?: string;
 };
 
 function formatDelta(d: number): string {
@@ -113,33 +121,67 @@ function EmptyPanel({ message }: { message: string }) {
   );
 }
 
-export default async function PartnerTendancesPage() {
+export default async function PartnerTendancesPage({
+  searchParams,
+}: {
+  searchParams: Promise<FilterParams>;
+}) {
+  const params = await searchParams;
+  const sportFilter = params.sport || null;
+  const positionFilter = params.position || null;
+
   const supabase = await createClient();
 
-  // Top 10 by views_delta — only positive movers (delta > 0)
-  const viewsRes = await supabase
+  // Pre-fetch dropdown options. Sports list is small (16);
+  // positions cap at ~50 across all sports — single query each,
+  // passed into the client filter component as props.
+  const [sportsRes, positionsRes] = await Promise.all([
+    supabase.from("sports").select("id, nom").order("nom"),
+    supabase.from("positions").select("id, nom, abreviation, sport_id").order("nom"),
+  ]);
+  const sports = (sportsRes.data ?? []) as { id: string; nom: string }[];
+  const positions = (positionsRes.data ?? []) as { id: string; nom: string; abreviation: string | null; sport_id: string }[];
+
+  // Build the views/favs queries with optional sport + position
+  // filters layered on top of the positive-mover gate.
+  let viewsQuery = supabase
     .from("trending_athletes_view")
     .select("*")
     .gt("views_delta", 0)
     .order("views_delta", { ascending: false })
     .limit(10);
+  if (sportFilter) viewsQuery = viewsQuery.eq("sport_id", sportFilter);
+  if (positionFilter) viewsQuery = viewsQuery.eq("position_id", positionFilter);
 
-  // Top 10 by favs_delta — only positive movers
-  const favsRes = await supabase
+  let favsQuery = supabase
     .from("trending_athletes_view")
     .select("*")
     .gt("favs_delta", 0)
     .order("favs_delta", { ascending: false })
     .limit(10);
+  if (sportFilter) favsQuery = favsQuery.eq("sport_id", sportFilter);
+  if (positionFilter) favsQuery = favsQuery.eq("position_id", positionFilter);
+
+  const [viewsRes, favsRes] = await Promise.all([viewsQuery, favsQuery]);
 
   const viewsTop: TrendingRow[] = (viewsRes.data ?? []) as unknown as TrendingRow[];
   const favsTop: TrendingRow[] = (favsRes.data ?? []) as unknown as TrendingRow[];
+
+  const hasActiveFilters = !!(sportFilter || positionFilter);
+  const emptyMessage = hasActiveFilters
+    ? "Aucune tendance ne correspond à ces filtres."
+    : "Aucune tendance détectée cette semaine.";
 
   return (
     <div className="px-6 sm:px-10 py-8 max-w-[1100px] mx-auto space-y-6">
       <div>
         <h1 className="font-head text-2xl sm:text-3xl font-black text-white uppercase tracking-tight">Tendances</h1>
         <p className="text-[14px] text-[#9CA3AF] mt-1">Athlètes en pleine ascension cette semaine</p>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-wrap items-center gap-2">
+        <TendancesDropdownFilters sports={sports} positions={positions} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
@@ -158,7 +200,7 @@ export default async function PartnerTendancesPage() {
             </div>
           </div>
           {viewsTop.length === 0 ? (
-            <EmptyPanel message="Aucune tendance détectée cette semaine." />
+            <EmptyPanel message={emptyMessage} />
           ) : (
             <div className="divide-y divide-[#2D3748]/40">
               {viewsTop.map((r) => <AthleteRow key={r.id} row={r} mode="views" />)}
@@ -180,7 +222,7 @@ export default async function PartnerTendancesPage() {
             </div>
           </div>
           {favsTop.length === 0 ? (
-            <EmptyPanel message="Aucune tendance détectée cette semaine." />
+            <EmptyPanel message={emptyMessage} />
           ) : (
             <div className="divide-y divide-[#2D3748]/40">
               {favsTop.map((r) => <AthleteRow key={r.id} row={r} mode="favs" />)}
