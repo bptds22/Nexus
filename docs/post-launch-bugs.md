@@ -511,6 +511,29 @@ file.
 
 ## P3 — Latent / future work
 
+- [ ] **Drop orphan view-tracking tables `profile_views` and `athlete_views`.**
+      Confirmed unused after the 2026-05-03 canonical migration to
+      `recruiter_athlete_views`. Three views were repointed in
+      [`20260503030000_repoint_athlete_visibility_views_to_canonical_source.sql`](../supabase/migrations/20260503030000_repoint_athlete_visibility_views_to_canonical_source.sql):
+      - `athlete_visibility_stats`
+      - `athlete_view_details`
+      - `athlete_views_weekly`
+
+      Before dropping the orphan tables, grep the full codebase for
+      remaining references — including SQL files, Edge Functions,
+      RLS policies, and triggers:
+      ```
+      grep -rn "profile_views\|athlete_views" supabase/ app/ components/ lib/
+      ```
+      If clean, ship a destructive migration:
+      ```sql
+      DROP TABLE IF EXISTS profile_views CASCADE;
+      DROP TABLE IF EXISTS athlete_views CASCADE;
+      ```
+      Defer until either (a) someone is doing schema cleanup, or
+      (b) a fresh contributor stumbles on the orphan tables and
+      gets confused about which is canonical.
+
 - [ ] **`AthleteProfileView` partner mode is dead code — remove if no other consumers surface.**
       As of 2026-05-03, the partner profile page renders
       [`AthleteRecruiterProfileBody`](../components/shared/AthleteRecruiterProfileBody.tsx)
