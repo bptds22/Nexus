@@ -504,6 +504,11 @@ export default function CreateAthletePage() {
       annee_diplomation: form.identity.gradYear ? parseInt(form.identity.gradYear) : null,
       consentement_parental: form.parentalConsent,
       consentement_parental_date: form.parentalConsent ? new Date().toISOString() : null,
+      ...(form.parentalConsent && form.partnerVisibilityConsent ? {
+        partner_visibility_parental_consent: true,
+        partner_visibility_opt_in: true,
+        partner_visibility_opted_in_at: new Date().toISOString(),
+      } : {}),
 
       // Academic
       moyenne_generale: (() => {

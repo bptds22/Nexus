@@ -233,6 +233,11 @@ export default function AthleteOnboardingPage() {
         parent_relationship: parentRelationship || null,
         consentement_parental: consentProfile && consentVisibility,
         consentement_parental_date: (consentProfile && consentVisibility) ? new Date().toISOString() : null,
+        ...(consentProfile && consentVisibility && consentPartnerVisibility ? {
+          partner_visibility_parental_consent: true,
+          partner_visibility_opt_in: true,
+          partner_visibility_opted_in_at: new Date().toISOString(),
+        } : {}),
         status: "ACTIF", verified: false,
       };
     } else if (step === 2) {
@@ -359,6 +364,11 @@ export default function AthleteOnboardingPage() {
       parent_relationship: parentRelationship || null,
       consentement_parental: consentProfile && consentVisibility,
       consentement_parental_date: (consentProfile && consentVisibility) ? new Date().toISOString() : null,
+      ...(consentProfile && consentVisibility && consentPartnerVisibility ? {
+        partner_visibility_parental_consent: true,
+        partner_visibility_opt_in: true,
+        partner_visibility_opted_in_at: new Date().toISOString(),
+      } : {}),
       status: "ACTIF",
       verified: false,
     };
