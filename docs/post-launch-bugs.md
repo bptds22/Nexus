@@ -531,6 +531,48 @@ file.
       sub-pages likely still have mock data, coach has pending
       cleanup per session memory.
 
+- [ ] **Starter tier (DB) vs Free tier (code) model mismatch.**
+      Database RLS policies on `recruiter_pipeline` (and possibly
+      other tables) include a carve-out allowing Free-tier
+      recruiters to create rows at IDENTIFIE/CONTACTE stages.
+      This was prepped for a $9.99/mo "Starter" tier per CLAUDE.md
+      pricing spec, but Starter is not wired into:
+      - [`lib/hooks/useSubscription.ts`](../lib/hooks/useSubscription.ts)
+        (only recognizes `free` / `pro` / `all_star`)
+      - The pipeline UI gating logic in
+        [`components/shared/AthleteRecruiterProfileBody.tsx`](../components/shared/AthleteRecruiterProfileBody.tsx)
+        (`canUsePipeline = pro || all_star`)
+      - Stripe products
+      - Pricing pages
+
+      Current RLS check (live in DB) on
+      `recruiter_pipeline_insert` + `recruiter_pipeline_update`:
+      ```sql
+      ((get_user_tier() = 'free' AND stage IN ('IDENTIFIE', 'CONTACTE'))
+       OR user_has_pro())
+      ```
+
+      Three resolution paths to choose between when revisited:
+      - (a) Tighten DB policy to `user_has_pro()` only — drops
+        Starter, aligns DB with current code's 2-tier-for-pipeline
+        model
+      - (b) Wire Starter as a real tier — adds 2-stage pipeline UI
+        for Starter users, updates pricing/billing/marketing
+      - (c) Continue as-is — accept the model mismatch indefinitely
+
+      Choice depends on monetization product decision: does
+      Starter as a $9.99 entry-point recruiter tier exist in your
+      model?
+
+      **Test data note**: orphan Free-tier pipeline rows
+      (2 rows held by `test-free@gmail.com` at `IDENTIFIE`)
+      were cleaned up on 2026-05-03 via direct
+      `DELETE FROM recruiter_pipeline ...` against Docker psql
+      (no migration file — one-time test data cleanup, see commit
+      log). Future Starter-style data may re-appear if the DB
+      policy is left unchanged and new test accounts get pipeline
+      rows seeded.
+
 ---
 
 ## P3 — Latent / future work
