@@ -567,7 +567,7 @@ file.
       sub-pages likely still have mock data, coach has pending
       cleanup per session memory.
 
-- [ ] **Starter tier (DB) vs Free tier (code) model mismatch.**
+- [x] **Starter tier (DB) vs Free tier (code) model mismatch.**
       Database RLS policies on `recruiter_pipeline` (and possibly
       other tables) include a carve-out allowing Free-tier
       recruiters to create rows at IDENTIFIE/CONTACTE stages.
@@ -608,6 +608,32 @@ file.
       log). Future Starter-style data may re-appear if the DB
       policy is left unchanged and new test accounts get pipeline
       rows seeded.
+
+      **Closed 2026-05-03** (migration
+      [`20260503060000_tighten_recruiter_pipeline_rls_pro_only.sql`](../supabase/migrations/20260503060000_tighten_recruiter_pipeline_rls_pro_only.sql)):
+      resolution path **(a)** chosen. User confirmed via the live
+      pricing page that only Free / Pro $19.99 / All Star $29.99
+      exist — Starter is not in the product, the DB carve-out was
+      dead policy from an abandoned spec. The migration drops and
+      recreates `recruiter_pipeline_insert` and
+      `recruiter_pipeline_update` with `user_has_pro()` only on
+      WITH CHECK; ownership + role checks preserved exactly as
+      before.
+
+      Verified post-migration with role-impersonated psql
+      (`SET LOCAL ROLE authenticated` +
+      `SET LOCAL request.jwt.claims = '{"sub":"<free-recruiter-uuid>",...}'`)
+      that an INSERT at `IDENTIFIE` for the Free recruiter
+      `test-free@gmail.com` errors with `new row violates
+      row-level security policy for table "recruiter_pipeline"`.
+      DB and code now agree: pipeline is Pro+.
+
+      Scope contained: the other two policies that reference
+      `get_user_tier()` —
+      `recruiter_favorites_insert` (10-favorite Free cap) and
+      `athletes_insert` (30-athlete coach Free cap) — are live
+      Free-tier business rules matching the pricing page; not
+      touched.
 
 - [ ] **Partner visibility consent has no audit trail (Loi 25 gap).**
       `partner_visibility_opt_in` / `partner_visibility_opted_in_at`
