@@ -678,6 +678,16 @@ file.
 
 ## P3 — Latent / future work
 
+- [ ] **FEATURE — Recruiter Interest Trigger.** Spec'd in
+      [`docs/feature-specs/recruiter-interest-trigger.md`](feature-specs/recruiter-interest-trigger.md).
+      Status: spec locked, blocks on Loi 25 lawyer review (bundle
+      with P1 partner visibility consent wording review) and
+      infrastructure audit (parent email column + email-sending
+      integration + notification framework + attribution + cron).
+      Phased implementation: Phase 1 adult-only schema/UI (3-4
+      days post-unblock), Phase 2 minor parent routing (2-3 days
+      post-lawyer), Phase 3 polish (2-3 days, post-launch).
+
 - [ ] **`terms_version` not persisted on partner visibility consent.**
       [`PartnerVisibilityConsentCard.tsx`](../components/shared/PartnerVisibilityConsentCard.tsx)
       flags `v1` in a JSDoc header, but no DB column records which
