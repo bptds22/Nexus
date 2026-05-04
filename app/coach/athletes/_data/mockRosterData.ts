@@ -64,6 +64,8 @@ export interface RosterAthlete {
   ouvertPrive?: boolean;
   ouvertAnglophone?: boolean;
   createdAt?: string;
+  /** Primary coach owning this athlete (NULL = unclaimed in the school pool). */
+  coach_id?: string | null;
 }
 
 /* ── Helper to build verification objects ───────────────────── */

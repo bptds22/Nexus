@@ -269,10 +269,18 @@ Follow these instructions exactly. Updated April 2026.
 - Recruiter: Free / Pro / All Star
 - Coach: Free / Pro / All Star
 - Athlete: Free / Pro
-- Feature gating: blur overlays (FeatureGate component), not banners
-- Pro items in sidebar: 0.6 opacity with lock icons
 - "Passe à Pro" sidebar element: small gold card with icon
 - Recherche page: first 6 results free, rest behind FeatureGate
+
+## Feature gating
+
+Use `<FeatureGate>` from `@/components/subscription/FeatureGate` to gate sections of UI by subscription tier.
+
+- Conditional render only — gated children are NOT mounted, no Supabase calls fire, no data leaks via the Network tab
+- Replaces children with `<UpgradePlaceholder>` showing the required tier and a "Voir les forfaits" CTA
+- Admin bypass is opt-in per call via the `adminBypass` prop — only set true for operational items directors need regardless of tier (e.g. CÉGEP Inviter/Réassignation/Recruteurs)
+- Do NOT use the older blur-overlay pattern. The `components/ui/FeatureGate.tsx` blur version was deleted in favor of the strict conditional-render version.
+- Sidebar nav items use the same tier-rule shape via per-item `requiredTier` + `adminBypass` flags on `NavItem` — see `RecruiterSidebar.tsx`
 
 ---
 

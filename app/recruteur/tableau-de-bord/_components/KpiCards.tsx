@@ -38,16 +38,32 @@ export default function KpiCards({ data, pipelineCounts }: { data: RecruiterKpiD
             const cfg = getStatusConfig(status);
             const count = counts[status] || 0;
             const isCommitment = cfg.phase === "commitment";
+            const isActive = count > 0;
+
+            // Color scheme:
+            // - Commitment stages (en_discussion, visite, engage, lettre_signee): always red,
+            //   muted when empty so active stages still stand out
+            // - Auto stages (identifie, contacte): cfg.color when active, gray when empty
+            const iconColor = isCommitment
+              ? (isActive ? cfg.color : "rgba(230,57,70,0.45)")
+              : (isActive ? cfg.color : "#4a4d56");
+            const numberColor = iconColor;
+            const labelColor = isCommitment
+              ? (isActive ? "rgba(230,57,70,0.7)" : "rgba(230,57,70,0.4)")
+              : (isActive ? "rgba(107,114,128,0.7)" : "#4a4d56");
+            const borderColor = isCommitment
+              ? (isActive ? "rgba(230,57,70,0.3)" : "rgba(230,57,70,0.15)")
+              : (isActive ? "rgba(107,114,128,0.25)" : "#2D3748");
+            const background = isCommitment
+              ? (isActive ? "rgba(230,57,70,0.06)" : "transparent")
+              : (isActive ? "rgba(107,114,128,0.05)" : "transparent");
 
             return (
               <Link
                 key={status}
                 href={`/recruteur/pipeline?stage=${status.toUpperCase()}`}
                 className="relative group rounded-lg border p-3 text-center transition-all hover:-translate-y-0.5 cursor-pointer hover:brightness-110"
-                style={{
-                  borderColor: count > 0 ? (isCommitment ? "rgba(230,51,41,0.3)" : "rgba(107,114,128,0.25)") : "#2D3748",
-                  background: count > 0 ? (isCommitment ? "rgba(230,51,41,0.06)" : "rgba(107,114,128,0.05)") : "transparent",
-                }}
+                style={{ borderColor, background }}
               >
                 {/* Connector arrow between cards (hidden on first) */}
                 {i > 0 && (
@@ -58,12 +74,12 @@ export default function KpiCards({ data, pipelineCounts }: { data: RecruiterKpiD
                   </div>
                 )}
                 <div className="flex justify-center mb-2">
-                  <StatusIcon icon={cfg.icon} color={count > 0 ? cfg.color : "#4a4d56"} size={16} />
+                  <StatusIcon icon={cfg.icon} color={iconColor} size={16} />
                 </div>
-                <p className="text-[26px] font-head font-black leading-none" style={{ color: count > 0 ? cfg.color : "#4a4d56" }}>
+                <p className="text-[26px] font-head font-black leading-none" style={{ color: numberColor }}>
                   {count}
                 </p>
-                <p className="text-[10px] font-bold tracking-[0.15em] uppercase mt-1" style={{ color: count > 0 ? (isCommitment ? "rgba(230,51,41,0.6)" : "rgba(107,114,128,0.7)") : "#4a4d56" }}>
+                <p className="text-[10px] font-bold tracking-[0.15em] uppercase mt-1" style={{ color: labelColor }}>
                   {cfg.shortLabel}
                 </p>
               </Link>
