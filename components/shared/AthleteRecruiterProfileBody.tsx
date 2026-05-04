@@ -336,6 +336,7 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
   const isPartner = viewerMode === "partner";
   const { maxFavorites, tier } = useSubscription();
   const canMessageCoach = tier === "pro" || tier === "all_star";
+  const canUsePipeline = tier === "pro" || tier === "all_star";
   const { count: myFavCount, setCount: setMyFavCount } = useFavoritesCount();
   const [a, setA] = useState<AthleteProfileRecruiterView>(mockAthleteProfileFull);
   const [loadingAthlete, setLoadingAthlete] = useState(true);
@@ -849,7 +850,7 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
 
             </div>
 
-            {!isPreview && pipelineStatus !== "none" && (
+            {!isPreview && canUsePipeline && pipelineStatus !== "none" && (
               <div className="flex items-center gap-3">
                 <StatusChangeDropdown
                   currentStatus={pipelineStatus}
