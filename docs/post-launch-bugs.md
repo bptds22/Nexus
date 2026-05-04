@@ -369,7 +369,7 @@ file.
       Activités (activity feed) don't have natural demo-data —
       those stay paywalled.
 
-- [ ] **Onboarding wizard allows skipping school selection.** In the
+- [x] **Onboarding wizard allows skipping school selection.** In the
       shared onboarding wizard
       ([`app/onboarding/page.tsx`](../app/onboarding/page.tsx)),
       users can advance past steps without selecting a school in
@@ -391,6 +391,42 @@ file.
         validation needs to be flow-specific
       Likely fix surface: `canProceed()` / step-validation logic
       in the onboarding wizard, gated per flow type.
+
+      **Closed 2026-04-26** (commit
+      [`4f9c55d`](../../../commit/4f9c55d)): gate shipped on the
+      shared coach/recruiter wizard via a new
+      `canProceed(role, step, localUser)` at
+      [`app/onboarding/page.tsx:363-383`](../app/onboarding/page.tsx#L363-L383).
+      Step 1 enforces `localUser.institution?.name` for `coach`
+      and `recruiter` roles. Two enforcement sites: programmatic
+      gate at the top of `next()`
+      ([line 387-390](../app/onboarding/page.tsx#L387-L390))
+      early-returns when `!canProceed()`, and the Suivant button
+      ([line 613](../app/onboarding/page.tsx#L613)) carries
+      `disabled={stepSaving || !canProceed()}` for UX affordance.
+      The athlete wizard at
+      [`app/athlete/onboarding/page.tsx:201-209`](../app/athlete/onboarding/page.tsx#L201-L209)
+      already had the equivalent gate (`selectedSchoolId` required
+      at step 1), enforced on `saveStepAndAdvance()` at
+      [line 213](../app/athlete/onboarding/page.tsx#L213) and on
+      both nav buttons at
+      [lines 719 + 726](../app/athlete/onboarding/page.tsx#L719-L726).
+      Defense in depth via `school_id: selectedSchoolId || null`
+      at the payload layer.
+
+      **Verified 2026-05-03**: DB has zero NULL `school_id`
+      rows in `athletes` and zero NULL `school_id` rows in
+      `users` for `COACH` / `RECRUTEUR` roles. The pre-fix
+      audit's 7 affected legacy test accounts were cleaned up
+      separately at the time of the fix; nothing has slipped
+      through since.
+
+      **Known carve-out** (not part of this P1, captured
+      separately as a P3 product decision): league flows
+      (`coach_league`, `coordinator_league`) intentionally pass
+      through without an institution check per the original
+      commit message — what an "institution" means for a
+      league-level role is a product question, not a gate bug.
 
 ## P1 — Data collection
 
@@ -576,6 +612,38 @@ file.
 ---
 
 ## P3 — Latent / future work
+
+- [ ] **League onboarding flow institution requirement (product
+      decision).** The shared onboarding wizard's `canProceed()`
+      at
+      [`app/onboarding/page.tsx:363-383`](../app/onboarding/page.tsx#L363-L383)
+      intentionally skips the institution check for `coach_league`
+      and `coordinator_league` roles ("league flows pass through
+      unconditionally" per commit
+      [`4f9c55d`](../../../commit/4f9c55d)). This is not a gate
+      bug — it's a deferred product question:
+
+      What does "institution" mean for a league-level
+      coach/coordinator?
+      - A regional federation? (e.g., Hockey Québec, Football
+        Québec)
+      - A specific league office? (e.g., RSEQ, LFCQ)
+      - A team within a league? (probably not — those are
+        individual coaches)
+      - Optional / N/A? (some league roles may not have an
+        institution at all)
+
+      Once the product model for league-level institutions is
+      defined, gate the league flows in `canProceed()` at
+      [`app/onboarding/page.tsx:363-383`](../app/onboarding/page.tsx#L363-L383)
+      with the appropriate validation. Until then, league users
+      can complete onboarding without an institution, which means
+      downstream queries on `users.school_id` will return NULL
+      for these accounts.
+
+      Not a launch blocker if league user volume is zero or
+      near-zero in pre-launch testing. Revisit when league flow
+      product scope is finalized.
 
 - [ ] **Drop deprecated orphan view-tracking tables.**
       Tables soft-deprecated 2026-05-03 in
