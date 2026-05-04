@@ -87,10 +87,10 @@ const PRICING_TIERS: PricingTier[] = [
   },
   {
     name: "Pro",
-    price: "14,99$",
+    price: "9,99$",
     priceSuffix: "/mois",
     priceColor: "text-white",
-    subtitle: "ou 139$/an — économise 23%",
+    subtitle: "ou 79$/an — économise 34%",
     subheader: "Tout ce qui est gratuit, plus :",
     bullets: [
       "Accès à Mon école (page complète de ton école)",
@@ -103,6 +103,23 @@ const PRICING_TIERS: PricingTier[] = [
     highlighted: true,
     badge: "Populaire",
     buttonVariant: "filled-red",
+  },
+  {
+    name: "All Star",
+    price: "19,99$",
+    priceSuffix: "/mois",
+    priceColor: "text-white",
+    subtitle: "ou 159$/an — économise 34%",
+    subheader: "Tout du plan Pro, plus :",
+    bullets: [
+      "Gestion complète de l'école (ajout et gestion des coachs)",
+      "Analytique avancée par athlète et par équipe",
+      "Suivi détaillé des placements en CÉGEP",
+      "Statistiques d'école complètes",
+      "Outils d'invitation pour les entraîneurs",
+    ],
+    checkColor: "text-[#F59E0B] bg-[#F59E0B]/15",
+    buttonVariant: "outline-amber",
   },
 ];
 
@@ -118,7 +135,7 @@ function RedLabel({ children }: { children: React.ReactNode }) {
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="font-head text-[26px] sm:text-[30px] font-black text-white leading-tight tracking-tight mt-3">
+    <h2 className="nx-display text-[26px] sm:text-[30px] font-black text-white leading-tight tracking-tight mt-3">
       {children}
     </h2>
   );
@@ -126,10 +143,10 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 
 function TierPill({ tier }: { tier: TierKey }) {
   if (tier === "FREE") return <span className="inline-flex px-2 py-0.5 rounded-full bg-[#22C55E]/15 text-[#22C55E] text-[10px] font-bold uppercase tracking-wider">Gratuit</span>;
-  if (tier === "PRO")  return <span className="inline-flex px-2 py-0.5 rounded-full bg-[#E63946]/15 text-[#E63946] text-[10px] font-bold uppercase tracking-wider">Pro · 14,99$/mois</span>;
+  if (tier === "PRO")  return <span className="inline-flex px-2 py-0.5 rounded-full bg-[#E63946]/15 text-[#E63946] text-[10px] font-bold uppercase tracking-wider">Pro · 9,99$/mois</span>;
   // "ALLSTAR" tier is retained in the FEATURES typing for backward compat but
   // coach has only 2 tiers — collapse any ALLSTAR pill to the Pro label.
-  return <span className="inline-flex px-2 py-0.5 rounded-full bg-[#E63946]/15 text-[#E63946] text-[10px] font-bold uppercase tracking-wider">Pro · 14,99$/mois</span>;
+  return <span className="inline-flex px-2 py-0.5 rounded-full bg-[#E63946]/15 text-[#E63946] text-[10px] font-bold uppercase tracking-wider">Pro · 9,99$/mois</span>;
 }
 
 function Check({ className = "" }: { className?: string }) {
@@ -287,7 +304,7 @@ export default function PourLesCoachsPage() {
         <section id="hero" className="border-b border-white/[0.06]">
           <div className="max-w-[1200px] mx-auto px-6 py-20 lg:py-28 text-center">
             <RedLabel>Pour les entraîneurs du secondaire</RedLabel>
-            <h1 className="font-head text-[42px] sm:text-[48px] font-black leading-[1.05] tracking-tight mt-4">
+            <h1 className="nx-display text-[42px] sm:text-[48px] font-black leading-[1.05] tracking-tight mt-4">
               Tes joueurs méritent d&apos;être vus.<br />
               <span className="text-[#E63946]">Ta réputation aussi.</span>
             </h1>
@@ -336,13 +353,13 @@ export default function PourLesCoachsPage() {
                     i === 0 ? "border-l-[3px] border-[#E63946]/30" : "border-l-[3px] border-white/[0.04]"
                   }`}
                 >
-                  <span className="font-head text-[56px] sm:text-[64px] font-black leading-none text-white/[0.08] tracking-tighter block">
+                  <span className="nx-display text-[56px] sm:text-[64px] font-black leading-none text-white/25 tracking-tighter block">
                     {step.n}
                   </span>
                   <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-[#E63946] mt-5">
                     {step.role}
                   </p>
-                  <h3 className="font-head text-[18px] font-black uppercase text-white tracking-tight mt-2.5">
+                  <h3 className="nx-display text-[18px] font-black uppercase text-white tracking-tight mt-2.5">
                     {step.title}
                   </h3>
                   <p className="text-[14px] text-white/75 leading-relaxed mt-3">
@@ -398,7 +415,7 @@ export default function PourLesCoachsPage() {
                     {b.icon}
                   </div>
                   <div>
-                    <p className="font-head text-[15px] font-black uppercase tracking-wide text-white">
+                    <p className="nx-display text-[15px] font-black uppercase tracking-wide text-white">
                       {b.name}
                     </p>
                     <p className="text-[11px] text-white/55 mt-1">{b.threshold}</p>
@@ -415,7 +432,7 @@ export default function PourLesCoachsPage() {
                   className="inline-flex items-center gap-2 bg-[#1A1D24] border border-white/[0.06] rounded-full px-4 py-2 text-[12px]"
                 >
                   <span className="text-white/55 uppercase tracking-wider font-bold text-[10px]">{s.label}</span>
-                  <span className="font-head font-black text-white text-[13px] tabular-nums">{s.value}</span>
+                  <span className="nx-display font-black text-white text-[13px] tabular-nums">{s.value}</span>
                 </span>
               ))}
             </div>
@@ -489,7 +506,7 @@ export default function PourLesCoachsPage() {
                   <div className="flex items-center justify-between mb-4">
                     <TierPill tier={f.tier} />
                   </div>
-                  <h3 className="font-head text-[18px] font-black text-white">{f.title}</h3>
+                  <h3 className="nx-display text-[18px] font-black text-white">{f.title}</h3>
                   <p className="text-[14px] text-white/75 leading-relaxed mt-2">{f.body}</p>
                 </div>
               ))}
@@ -531,7 +548,7 @@ export default function PourLesCoachsPage() {
 
                     {/* Price */}
                     <div className="mt-4 flex items-baseline gap-1.5">
-                      <span className={`font-head text-[36px] font-black leading-none ${t.priceColor}`}>
+                      <span className={`nx-display text-[36px] font-black leading-none ${t.priceColor}`}>
                         {t.price}
                       </span>
                       {t.priceSuffix && (
@@ -586,7 +603,7 @@ export default function PourLesCoachsPage() {
           <div className="max-w-[820px] mx-auto px-6 py-28 text-center">
             <span className="inline-block w-10 h-[2px] bg-[#E63946] mb-8" />
 
-            <h2 className="font-head text-[40px] sm:text-[56px] font-black text-white leading-[1.05] tracking-tight">
+            <h2 className="nx-display text-[40px] sm:text-[56px] font-black text-white leading-[1.05] tracking-tight">
               Prêt à faire la <span className="text-[#E63946]">différence</span> pour tes joueurs?
             </h2>
 

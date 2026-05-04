@@ -227,7 +227,7 @@ function RedLabel({ children }: { children: React.ReactNode }) {
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="font-head text-[26px] sm:text-[32px] font-black text-white leading-tight tracking-tight mt-3">
+    <h2 className="nx-display text-[26px] sm:text-[32px] font-black text-white leading-tight tracking-tight mt-3">
       {children}
     </h2>
   );
@@ -298,7 +298,7 @@ export default function PourLesRecruteursPage() {
               {/* Left — copy */}
               <div>
                 <RedLabel>Pour les recruteurs CÉGEP</RedLabel>
-                <h1 className="font-head text-[38px] sm:text-[44px] lg:text-[48px] font-black leading-[1.05] tracking-tight mt-4">
+                <h1 className="nx-display text-[38px] sm:text-[44px] lg:text-[48px] font-black leading-[1.05] tracking-tight mt-4">
                   Trouvez les athlètes<br />
                   que votre réseau<br />
                   <span className="text-[#E63946]">ne verra jamais.</span>
@@ -374,7 +374,7 @@ export default function PourLesRecruteursPage() {
                     i > 0 ? "lg:border-l lg:border-white/[0.08]" : ""
                   }`}
                 >
-                  <p className="font-head text-[28px] sm:text-[36px] font-black text-white leading-none tracking-tight">
+                  <p className="nx-display text-[28px] sm:text-[36px] font-black text-white leading-none tracking-tight">
                     {s.value}
                   </p>
                   <p className="text-[12px] sm:text-[13px] text-white/55 mt-3 leading-snug">
@@ -405,7 +405,7 @@ export default function PourLesRecruteursPage() {
                 <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-white/55">
                   Le statu quo
                 </p>
-                <h3 className="font-head text-[20px] font-black text-white/85 mt-2">
+                <h3 className="nx-display text-[20px] font-black text-white/85 mt-2">
                   Sans Nexus
                 </h3>
                 <ul className="space-y-3.5 mt-6">
@@ -425,7 +425,7 @@ export default function PourLesRecruteursPage() {
                 <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-[#E63946]">
                   Le recrutement réinventé
                 </p>
-                <h3 className="font-head text-[20px] font-black text-white mt-2">
+                <h3 className="nx-display text-[20px] font-black text-white mt-2">
                   Avec <span className="text-[#E63946]">Nexus</span>
                 </h3>
                 <ul className="space-y-3.5 mt-6">
@@ -465,7 +465,7 @@ export default function PourLesRecruteursPage() {
                     <div className={`${boxSize} rounded-xl flex items-center justify-center ${s.bg} ${s.fg}`}>
                       {p.icon}
                     </div>
-                    <h3 className="font-head text-[20px] font-black text-white tracking-tight mt-5">
+                    <h3 className="nx-display text-[20px] font-black text-white tracking-tight mt-5">
                       {p.title}
                     </h3>
                     <p className="text-[14px] text-white/75 leading-relaxed mt-3">
@@ -567,7 +567,7 @@ export default function PourLesRecruteursPage() {
             {/* Split: left copy 2/5, right mockup 3/5 */}
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-10 lg:gap-12 items-start mt-14">
               <div className="lg:col-span-2">
-                <h3 className="font-head text-[20px] sm:text-[22px] font-black text-white tracking-tight leading-tight">
+                <h3 className="nx-display text-[20px] sm:text-[22px] font-black text-white tracking-tight leading-tight">
                   La réputation des coachs, construite par les recruteurs.
                 </h3>
                 <div className="space-y-4 mt-5 text-[14px] sm:text-[15px] text-white/75 leading-relaxed">
@@ -692,7 +692,7 @@ export default function PourLesRecruteursPage() {
                     <div className="sm:col-span-3 space-y-4 min-w-0">
                       {/* Name + jersey */}
                       <div>
-                        <p className="font-head text-[18px] sm:text-[20px] font-black text-white uppercase tracking-tight leading-tight">
+                        <p className="nx-display text-[18px] sm:text-[20px] font-black text-white uppercase tracking-tight leading-tight">
                           Alexandre Tremblay{" "}
                           <span className="text-[#E63946]">#7</span>
                         </p>
@@ -729,29 +729,14 @@ export default function PourLesRecruteursPage() {
                         </div>
                       </div>
 
-                      {/* Concurrence section — anonymized stage breakdown */}
-                      <div>
-                        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#E63946]">
-                          Concurrence — 3 CÉGEPs intéressés
-                        </p>
-                        <div className="mt-2 flex flex-wrap gap-1.5">
-                          <span className="inline-flex items-center rounded-full bg-[#E63946]/15 border border-[#E63946]/30 px-3 py-1.5 text-[11px] font-semibold text-[#E63946]">
-                            1 CÉGEP · Étape Visite
+                      {/* Read annotation — explains the gap between Mon statut and Recrutement global */}
+                      <div className="bg-white/[0.03] border border-white/[0.08] rounded-lg px-3 py-2.5">
+                        <p className="flex items-start gap-2 text-[11px] text-white/70 leading-relaxed">
+                          <Zap size={13} className="shrink-0 mt-0.5 text-[#E63946]" strokeWidth={2.2} />
+                          <span>
+                            <span className="font-bold text-white">Le recrutement global avance.</span>{" "}
+                            L&apos;athlète est en processus avec un CÉGEP — comparez à votre propre statut pour savoir si vous devez accélérer.
                           </span>
-                          <span className="inline-flex items-center rounded-full bg-white/[0.04] border border-white/10 px-3 py-1.5 text-[11px] font-semibold text-white/55">
-                            1 CÉGEP · Étape Contacté
-                          </span>
-                          <span className="inline-flex items-center rounded-full bg-white/[0.04] border border-white/10 px-3 py-1.5 text-[11px] font-semibold text-white/55">
-                            1 CÉGEP · Étape Découvert
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Urgency banner */}
-                      <div className="bg-[#E63946] rounded-lg px-3 py-2.5 shadow-[0_0_24px_rgba(230,57,70,0.45)]">
-                        <p className="flex items-center justify-center gap-1.5 text-[11px] font-bold text-white uppercase tracking-wider leading-tight text-center">
-                          <Zap size={13} fill="currentColor" strokeWidth={2} className="shrink-0" />
-                          <span>Urgent — un compétiteur est à l&apos;étape Visite. Avancez votre processus.</span>
                         </p>
                       </div>
                     </div>
@@ -763,17 +748,17 @@ export default function PourLesRecruteursPage() {
               <div className="order-1 lg:order-2">
                 <RedLabel>Intelligence concurrentielle</RedLabel>
                 <SectionTitle>
-                  Sachez qui d&apos;autre regarde — et agissez avant eux.
+                  Sachez où vous en êtes — par rapport au reste.
                 </SectionTitle>
                 <div className="space-y-4 mt-6 text-[14px] sm:text-[15px] text-white/75 leading-relaxed">
                   <p>
-                    Un recruteur sans Nexus apprend par la rumeur qu&apos;un autre CÉGEP s&apos;intéresse à son prospect. Un recruteur sur Nexus le sait en temps réel.
+                    Un recruteur sans Nexus apprend par la rumeur qu&apos;un athlète discute avec un autre CÉGEP. Sur Nexus, l&apos;information est sur le profil : le statut de recrutement de l&apos;athlète change dès qu&apos;il avance dans son processus.
                   </p>
                   <p>
-                    Sur chaque profil d&apos;athlète, vous voyez combien de recruteurs l&apos;ont mis en favori et à quelle étape de leur processus de recrutement il est. Si un compétiteur a déjà planifié une visite et que vous en êtes à « Découvert », vous êtes en retard.
+                    Sur chaque profil, deux indicateurs côte à côte : <span className="text-white font-semibold">votre propre statut</span> avec cet athlète, et le <span className="text-white font-semibold">statut de recrutement global</span> qu&apos;il porte (Ouvert, En processus, Recruté). Si le statut global passe à « En processus » alors que vous êtes encore à « Identifié », l&apos;écart est visible.
                   </p>
                   <p>
-                    L&apos;urgence automatique: quand un compétiteur CÉGEP avance un athlète plus loin que vous, vous recevez une notification. Pas de surprise de dernière minute — vous voyez le jeu se dérouler en temps réel.
+                    Le nombre de recruteurs qui l&apos;ont mis en favori complète le portrait — combien de CÉGEPs s&apos;intéressent à lui en ce moment. Pas de noms par CÉGEP, pas d&apos;étapes par concurrent : juste les signaux qui comptent pour décider si vous devez accélérer.
                   </p>
                 </div>
               </div>
@@ -814,7 +799,7 @@ export default function PourLesRecruteursPage() {
                     <h3 className="text-[20px] font-bold text-white">{t.name}</h3>
 
                     <div className="mt-4 flex items-baseline gap-1.5 flex-wrap">
-                      <span className={`font-head text-[32px] sm:text-[36px] font-black leading-none ${t.priceColor}`}>
+                      <span className={`nx-display text-[32px] sm:text-[36px] font-black leading-none ${t.priceColor}`}>
                         {t.price}
                       </span>
                       {t.priceSuffix && (
@@ -886,7 +871,7 @@ export default function PourLesRecruteursPage() {
           <div className="max-w-[820px] mx-auto px-6 py-24 text-center">
             <span className="inline-block w-10 h-[2px] bg-[#E63946] mb-8" />
 
-            <h2 className="font-head text-[38px] sm:text-[52px] font-black text-white leading-[1.05] tracking-tight">
+            <h2 className="nx-display text-[38px] sm:text-[52px] font-black text-white leading-[1.05] tracking-tight">
               Prêt à voir tous les <span className="text-[#E63946]">talents</span> du Québec?
             </h2>
 
