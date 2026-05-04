@@ -609,9 +609,66 @@ file.
       policy is left unchanged and new test accounts get pipeline
       rows seeded.
 
+- [ ] **Partner visibility consent has no audit trail (Loi 25 gap).**
+      `partner_visibility_opt_in` / `partner_visibility_opted_in_at`
+      / `partner_visibility_parental_consent` toggles on the
+      `athletes` table only record latest state. The
+      `consent_audit_trail` table exists for `parental_consents`
+      but its `action` CHECK constraint
+      (`'ATTESTED', 'WITHDRAWN', 'EXPIRED', 'PDF_DOWNLOADED',
+      'PDF_UPLOADED'`) and FK shape (`consent_id` → `parental_consents`,
+      not `athletes`) are wrong for partner-visibility events.
+      Result: if a parent disputes "when did I grant or revoke
+      partner visibility consent," there's no trail to defend.
+      This is a Loi 25 compliance concern beyond the wording
+      review (P1 lawyer review).
+
+      Resolution paths:
+      - (a) Extend `consent_audit_trail`: relax CHECK constraint
+        to add `'PARTNER_VIS_GRANTED'` / `'PARTNER_VIS_REVOKED'`
+        (etc.), add a nullable secondary FK to `athletes`, write
+        rows on every toggle in onboarding +
+        [`/athlete/parametres`](../app/athlete/parametres/page.tsx)
+        + [coach create](../app/coach/athletes/create/page.tsx).
+      - (b) Build a separate `partner_visibility_audit_trail`
+        table mirroring `consent_audit_trail`'s shape but
+        FK-pointing to `athletes` directly.
+      - (c) Continue as-is — accept that disputes can't be
+        defended with a trail. Risky in a Loi 25 jurisdiction.
+
+      Recommended path: **(a)** — re-uses existing audit table
+      infrastructure, smaller migration. Estimated 1-2 hours:
+      migration + handler updates in three call sites
+      ([`app/athlete/onboarding/page.tsx:236-240`](../app/athlete/onboarding/page.tsx#L236-L240)
+      and
+      [`:367-371`](../app/athlete/onboarding/page.tsx#L367-L371),
+      [`app/coach/athletes/create/page.tsx:507-511`](../app/coach/athletes/create/page.tsx#L507-L511),
+      [`app/athlete/parametres/page.tsx:494-499`](../app/athlete/parametres/page.tsx#L494-L499)
+      + [`:528-559`](../app/athlete/parametres/page.tsx#L528-L559)).
+      Block on lawyer review (P1) — they may have audit-trail
+      requirements that affect the schema.
+
 ---
 
 ## P3 — Latent / future work
+
+- [ ] **`terms_version` not persisted on partner visibility consent.**
+      [`PartnerVisibilityConsentCard.tsx`](../components/shared/PartnerVisibilityConsentCard.tsx)
+      flags `v1` in a JSDoc header, but no DB column records which
+      version of the consent text the user actually agreed to. When
+      Loi 25 lawyer review (P1) finalizes wording and bumps `v1` →
+      `v2`, there will be no way to know which version any given
+      existing consent was granted under.
+
+      Resolution: add `partner_visibility_terms_version text NOT NULL
+      DEFAULT 'v1'` column to `athletes`, populate on every opt-in
+      write across the three call sites
+      ([`app/athlete/onboarding/page.tsx`](../app/athlete/onboarding/page.tsx),
+      [`app/coach/athletes/create/page.tsx`](../app/coach/athletes/create/page.tsx),
+      [`app/athlete/parametres/page.tsx`](../app/athlete/parametres/page.tsx)).
+      Defer until lawyer review actually requires v2 — the column
+      and the wiring are cheap to add at that point and avoid
+      pre-fixing for a version bump that may never happen.
 
 - [ ] **League onboarding flow institution requirement (product
       decision).** The shared onboarding wizard's `canProceed()`
@@ -1108,3 +1165,52 @@ Admin bypass does NOT extend to messaging — admin role is for
 CÉGEP organizational management, not free product features.
 The CÉGEP coach detail messaging button is still a Phase 2 stub
 (button calls `showToast`, no Link). Logged separately as P3.
+
+### [x] P2.1 Loi 25 onboarding browser-walk verified via code audit
+Closed 2026-05-03 on the strength of a code + DB audit (no
+explicit doc bullet preceded — P2.1 was the session-tracking
+name for the verification task spun off from the broader P1
+lawyer review).
+
+Wiring confirmed correct across all four paths:
+- **Athlete signup unchecked** (path A) — spread-conditional at
+  [`app/athlete/onboarding/page.tsx:236-240`](../app/athlete/onboarding/page.tsx#L236-L240)
+  and
+  [`:367-371`](../app/athlete/onboarding/page.tsx#L367-L371)
+  omits the three `partner_visibility_*` columns from the upsert
+  payload entirely; DB defaults take over (`opt_in = false`,
+  `opted_in_at = null`, `parental_consent = false`).
+- **Athlete signup checked** (path B) — same code path writes
+  `opt_in = true`, `opted_in_at = now()`,
+  `parental_consent = true`.
+- **Parametres toggle** (path C) — toggle handlers at
+  [`app/athlete/parametres/page.tsx:528-559`](../app/athlete/parametres/page.tsx#L528-L559)
+  write fresh `opted_in_at` on toggle ON and clear it (`null`)
+  on toggle OFF; minor parental-consent revocation at
+  [`:494-499`](../app/athlete/parametres/page.tsx#L494-L499)
+  cascades `opt_in` off (defensive).
+- **Coach create flow** (path D) — same spread-conditional
+  pattern at
+  [`app/coach/athletes/create/page.tsx:507-511`](../app/coach/athletes/create/page.tsx#L507-L511).
+
+Schema reality double-checked: only three columns written
+(`partner_visibility_opt_in`,
+`partner_visibility_opted_in_at`,
+`partner_visibility_parental_consent`); no
+`partner_visibility_consented_at` and no `terms_version`
+columns exist (the latter is filed as a P3 follow-up).
+
+Stale test athlete (`ff160979-488b-4647-bce1-68dc113aac19`,
+`test-onboard-a@gmail.com`) cleaned up at audit time including
+its 4 dependent rows (`recruiter_athlete_views`,
+`recruiter_favorites`, `recruiter_pipeline`, `evaluations`) in
+a single transaction.
+
+Browser walk explicitly deferred — remaining risk is UI
+cosmetic only (layout/copy/accessibility on the
+[`PartnerVisibilityConsentCard`](../components/shared/PartnerVisibilityConsentCard.tsx)).
+Spot-check candidate if launch readiness needs it; not blocking
+the closeout.
+
+Companion P2 (audit trail gap) and P3 (`terms_version`
+persistence) filed in their respective sections.
