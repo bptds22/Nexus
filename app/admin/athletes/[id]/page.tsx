@@ -528,11 +528,11 @@ export default function AdminAthleteDetailPage({
       const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
       const path = `athletes/${id}/profile.${ext}`;
       const { data: uploadData, error: uploadErr } = await supabase.storage
-        .from("athlete-photos")
+        .from("Ath Photos")
         .upload(path, file, { upsert: true, cacheControl: "3600" });
       console.log("Upload response:", uploadData, uploadErr);
       if (uploadErr) throw uploadErr;
-      const { data: urlData } = supabase.storage.from("athlete-photos").getPublicUrl(path);
+      const { data: urlData } = supabase.storage.from("Ath Photos").getPublicUrl(path);
       const publicUrl = `${urlData.publicUrl}?t=${Date.now()}`;
       const { error: updateErr } = await supabase
         .from("athletes")
