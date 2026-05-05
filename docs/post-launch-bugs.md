@@ -687,6 +687,29 @@ file.
       cause is coach acquisition for civil leagues, tracked
       separately.
 
+- [ ] **Three near-duplicate athlete search implementations.**
+      Recruiter
+      ([`app/recruteur/recherche/page.tsx`](../app/recruteur/recherche/page.tsx),
+      ~918 lines), coach
+      ([`app/coach/athletes/page.tsx`](../app/coach/athletes/page.tsx),
+      ~1131 lines), and partner
+      ([`components/partenaire/PartnerAthletesSearch.tsx`](../components/partenaire/PartnerAthletesSearch.tsx),
+      new 2026-05-04) each hand-roll filter UI + state + query
+      layer. No shared `<AthleteSearchPanel>` component exists.
+      Past bug fixes (position-by-sport, trait-rating-wipe) have
+      already required dual-application across recruiter and
+      coach; the partner addition makes future fixes a three-way
+      patch.
+
+      Consolidation candidate: extract
+      `components/shared/AthleteSearchPanel.tsx` with a `mode`
+      prop (`"recruiter" | "coach" | "partner"`) parameterizing
+      the visible filter set, the data source (athletes vs
+      top_athletes_view), and any tier-aware caps; refactor all
+      three callers. Estimated 1-day refactor. Defer until
+      drift causes a real regression OR a fourth caller is
+      needed.
+
 - [ ] **`terms_version` not persisted on partner visibility consent.**
       [`PartnerVisibilityConsentCard.tsx`](../components/shared/PartnerVisibilityConsentCard.tsx)
       flags `v1` in a JSDoc header, but no DB column records which
