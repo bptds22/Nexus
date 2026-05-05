@@ -1,0 +1,21 @@
+-- ════════════════════════════════════════════════════════════════════════════
+-- Cleanup: drop coach_verification_tier function.
+--
+-- Architectural pivot v4 → v5 (2026-05-04): the coach verification tier
+-- system (BLUE/GREY) is being removed entirely. Coach école and coach civil
+-- behave identically in the system (rating, athlete verification, badges,
+-- comments). The only architectural difference between the two populations
+-- is their organizational anchor (school_coaches vs league_coaches).
+--
+-- Trust mechanism for both is community-driven (signalement / flag) rather
+-- than a tier system. Distinguishing the two populations at the
+-- architecture layer added complexity without a real security gain — a
+-- school-affiliated coach can be an impostor as easily as a civil coach.
+--
+-- The function shipped in 94f39f2 has zero consumers (verified by grep
+-- across all .ts/.tsx files immediately before this drop). Drop-forward
+-- rather than revert so the create + drop both stay in migration history
+-- as honest record of the pivot.
+-- ════════════════════════════════════════════════════════════════════════════
+
+DROP FUNCTION IF EXISTS public.coach_verification_tier(uuid);
