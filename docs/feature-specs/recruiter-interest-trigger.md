@@ -1,5 +1,19 @@
 # Recruiter Interest Trigger
 
+> **STATUS: KILLED 2026-05-04**
+>
+> This feature is no longer planned. Reasoning: the trigger was designed
+> to bridge to absent coaches, but an athlete without a coach on platform
+> has no blue verified badge and no coach rating — meaning their profile
+> has no displayable value that would attract recruiter interest in the
+> first place. The trigger solved a symptom; the root cause (coach
+> acquisition, particularly civil league coaches) is being addressed in
+> a separate workstream tracked at docs/product-thinking/civil-league-coaches.md.
+>
+> This spec is preserved for archeology in case the underlying problem
+> shape changes (e.g., if athlete profiles develop standalone value
+> independent of coach involvement, the trigger pattern could be revisited).
+
 **Status:** SPEC LOCKED — implementation pending Loi 25 lawyer review and infrastructure audit  
 **Spec date:** 2026-05-03  
 **Owner:** Bruno-Philippe  
