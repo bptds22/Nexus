@@ -316,11 +316,24 @@ export default function OnboardingPage() {
         RECRUTEUR: "recruiter",
       };
 
+      let onboardingRole = roleMap[profile.role] || "coach";
+
+      // Civil-league discriminator: the signup form at /auth/pro lets
+      // the user pick "Ligue ou club sportif", which is persisted as
+      // users.context = 'ligue_civile'. The DB role itself is COACH
+      // (no COACH_LEAGUE enum value). Upgrade to the wizard's
+      // coach_league branch only when both conditions hold — a
+      // hypothetical recruiter or athlete with context='ligue_civile'
+      // (data drift) must not be silently re-routed into a coach flow.
+      if (onboardingRole === "coach" && profile.context === "ligue_civile") {
+        onboardingRole = "coach_league";
+      }
+
       const nexusUser: NexusUser = {
         firstName: profile.first_name || "",
         lastName: profile.last_name || "",
         email: profile.email,
-        role: roleMap[profile.role] || "coach",
+        role: onboardingRole,
         status: profile.status,
         onboarding_complete: profile.onboarding_complete || false,
         institution: null,
@@ -515,14 +528,11 @@ export default function OnboardingPage() {
         }
       }
 
-      // Save league data for league coaches — set context
-      if (user?.role === "coach_league") {
-        const { error: ctxError } = await supabase
-          .from("users")
-          .update({ context: "ligue_civile" })
-          .eq("id", authUser.id);
-        console.log("[finish] Set context to ligue_civile:", ctxError);
-      }
+      // users.context is now written at signup (auth/pro/page.tsx via
+      // signUp()'s context parameter). Removed redundant write here to
+      // maintain single source of truth — having two writers (signup +
+      // wizard finish) means they could diverge if one is modified
+      // without the other.
 
       // Save recruiter preferences if recruiter
       if (user?.role === "recruiter" && localUser.search_criteria) {

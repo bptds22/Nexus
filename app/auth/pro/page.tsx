@@ -99,7 +99,20 @@ export default function ProSignupPage() {
     const { signUp } = await import('@/lib/supabase/auth.actions');
     const role = ROLE_MAP[selectedRole as ProRole];
 
-    const { error } = await signUp(email, password, role, firstName, lastName);
+    // selectedRole carries the scolaire/collegial/ligue_civile
+    // discriminator that the wizard reads via users.context to branch
+    // coach → coach_league for civil-league onboarding. Without this
+    // pass-through, the "Ligue ou club sportif" choice silently
+    // collapses to école and the league branch is unreachable.
+    const { error } = await signUp(
+      email,
+      password,
+      role,
+      firstName,
+      lastName,
+      undefined,
+      selectedRole as ProRole,
+    );
 
     if (error) {
       setErrorToast({ message: translateAuthError(error.message), showUpgrade: false });

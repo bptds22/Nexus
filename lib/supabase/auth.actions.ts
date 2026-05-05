@@ -15,7 +15,8 @@ export async function signUp(
   role: 'COACH' | 'RECRUTEUR' | 'ATHLETE',
   firstName: string,
   lastName: string,
-  extraMetadata?: Record<string, unknown>
+  extraMetadata?: Record<string, unknown>,
+  context?: 'scolaire' | 'collegial' | 'ligue_civile',
 ) {
   const supabase = createClient()
 
@@ -27,6 +28,7 @@ export async function signUp(
         role,           // stored in raw_user_meta_data → triggers handle_new_auth_user
         first_name: firstName,
         last_name: lastName,
+        ...(context ? { context } : {}),
         ...(extraMetadata ?? {}),
       },
     },
@@ -41,6 +43,13 @@ export async function signUp(
   // session is already valid and the user can sign in regardless; any
   // downstream issues will surface as real symptoms against a missing
   // public.users row.
+  //
+  // `context` is the school/league/CÉGEP discriminator (DB CHECK:
+  // 'scolaire' | 'collegial' | 'ligue_civile'). Today the
+  // handle_new_auth_user trigger doesn't read context from
+  // raw_user_meta_data, so the defensive upsert is the only path that
+  // lands it in public.users.context — keep it in sync if the trigger
+  // is ever extended.
   if (data.user) {
     const { error: upsertError } = await supabase
       .from('users')
@@ -51,6 +60,7 @@ export async function signUp(
         last_name: lastName,
         role,
         status: 'ACTIF',
+        ...(context ? { context } : {}),
       }, { onConflict: 'id' })
 
     if (upsertError) {
