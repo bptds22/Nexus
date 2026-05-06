@@ -47,6 +47,185 @@ const inputCls = "w-full h-11 px-4 bg-[#111317] border border-[#2D3748] rounded-
 const labelCls = "text-[11px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mb-1.5 block";
 const sectionTitle = "text-[12px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mb-4 flex items-center gap-2";
 
+/* ─────────────────────────────────────────────────────────────────
+   CivilTeamPicker — civil-context replacement for the school block.
+
+   Resolves all civil leagues for the athlete's sport (level='Civil',
+   matched on sport_id), then aggregates every league_team across
+   those leagues. The athlete picks one or opts out via "Continuer
+   sans équipe" — no athlete-side team creation (V1 scope decision:
+   teams are created by coaches in 5.2a).
+
+   Search input is shown above for parity with SchoolSelect even
+   though typical lists will be small (<5 teams). league_name is
+   displayed as a subtitle to disambiguate when two coaches happen
+   to name their teams identically across different civil leagues.
+───────────────────────────────────────────────────────────────── */
+type CivilTeamRow = {
+  id: string;
+  name: string;
+  age_group: string | null;
+  division: string | null;
+  league_id: string;
+  league_name: string;
+};
+
+function CivilTeamPicker({
+  sportName,
+  selectedTeamId,
+  onSelect,
+  onContinueWithoutTeam,
+}: {
+  sportName: string;
+  selectedTeamId: string | null;
+  onSelect: (team: CivilTeamRow) => void;
+  onContinueWithoutTeam: () => void;
+}) {
+  const [teams, setTeams] = useState<CivilTeamRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [skipped, setSkipped] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadTeams() {
+      setLoading(true);
+      const supabase = createClient();
+
+      // Resolve sport_id from name. Fail-soft: if the sport doesn't
+      // exist (e.g., user picked "Autre" at signup), surface as
+      // empty list — the "Continuer sans équipe" CTA still works.
+      const { data: sportRow } = await supabase
+        .from("sports")
+        .select("id")
+        .eq("nom", sportName)
+        .maybeSingle();
+      if (!sportRow?.id) {
+        if (!cancelled) { setTeams([]); setLoading(false); }
+        return;
+      }
+
+      // Aggregate ALL teams across every civil league for this sport.
+      // Multiple coaches may have created multiple civil leagues for
+      // the same sport (legitimate post-5.2a — no LIMIT 1 here).
+      const { data: rows } = await supabase
+        .from("league_teams")
+        .select("id, name, age_group, division, league_id, leagues!league_id(name, level, sport_id)")
+        .order("name");
+      if (!rows) { if (!cancelled) { setTeams([]); setLoading(false); } return; }
+
+      const filtered: CivilTeamRow[] = [];
+      for (const raw of rows as Record<string, unknown>[]) {
+        const leagueRel = Array.isArray(raw.leagues) ? raw.leagues[0] : raw.leagues;
+        const l = leagueRel as { name?: string; level?: string; sport_id?: string } | null;
+        if (l?.level !== "Civil" || l?.sport_id !== sportRow.id) continue;
+        filtered.push({
+          id: raw.id as string,
+          name: raw.name as string,
+          age_group: (raw.age_group as string) ?? null,
+          division: (raw.division as string) ?? null,
+          league_id: raw.league_id as string,
+          league_name: l.name ?? "",
+        });
+      }
+
+      if (!cancelled) { setTeams(filtered); setLoading(false); }
+    }
+    if (sportName) loadTeams();
+    else { setTeams([]); setLoading(false); }
+    return () => { cancelled = true; };
+  }, [sportName]);
+
+  const visible = search.trim().length > 0
+    ? teams.filter((t) =>
+        t.name.toLowerCase().includes(search.toLowerCase().trim())
+        || t.league_name.toLowerCase().includes(search.toLowerCase().trim()),
+      )
+    : teams;
+
+  if (skipped) {
+    return (
+      <p className="text-[13px] text-[#9CA3AF] italic">
+        Tu pourras associer ton équipe plus tard depuis ton profil.
+      </p>
+    );
+  }
+
+  if (loading) {
+    return <p className="text-[13px] text-[#6b7280]">Chargement des équipes...</p>;
+  }
+
+  if (teams.length === 0) {
+    return (
+      <div className="bg-[#13151a] border border-[#2D3748] rounded-lg px-4 py-5">
+        <p className="text-[13px] text-[#9CA3AF] mb-1">Aucune équipe civile trouvée pour {sportName || "ton sport"}.</p>
+        <p className="text-[12px] text-[#6b7280] mb-4">Demande à ton entraîneur de créer son équipe sur Nexus, ou continue sans équipe — tu pourras l&apos;associer plus tard.</p>
+        <button
+          type="button"
+          onClick={() => { setSkipped(true); onContinueWithoutTeam(); }}
+          className="h-10 px-5 rounded-lg border border-[#E63946]/40 text-[12px] font-bold text-[#E63946] hover:bg-[#E63946]/10 transition-colors"
+        >
+          Continuer sans équipe →
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <input
+        type="text"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        placeholder="Rechercher ton équipe..."
+        className={inputCls}
+      />
+      <div className="space-y-2 max-h-[280px] overflow-y-auto">
+        {visible.map((t) => {
+          const isSelected = selectedTeamId === t.id;
+          const meta = [t.age_group, t.division].filter(Boolean).join(" · ");
+          return (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => onSelect(t)}
+              className={`w-full text-left rounded-lg px-4 py-3 transition-colors border ${
+                isSelected
+                  ? "bg-[#E63946]/10 border-[#E63946]"
+                  : "bg-[#13151a] border-[#2D3748] hover:border-[#4a4d56]"
+              }`}
+            >
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-[14px] font-bold text-white truncate">{t.name}</p>
+                  <p className="text-[11px] text-[#6b7280] truncate">
+                    {t.league_name}{meta ? ` — ${meta}` : ""}
+                  </p>
+                </div>
+                {isSelected && (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2.5" strokeLinecap="round" className="shrink-0">
+                    <path d="M20 6L9 17l-5-5" />
+                  </svg>
+                )}
+              </div>
+            </button>
+          );
+        })}
+        {visible.length === 0 && (
+          <p className="text-[12px] text-[#6b7280] px-1 py-2">Aucune équipe ne correspond à « {search} ».</p>
+        )}
+      </div>
+      <button
+        type="button"
+        onClick={() => { setSkipped(true); onContinueWithoutTeam(); }}
+        className="text-[12px] text-[#6b7280] hover:text-[#E63946] transition-colors underline"
+      >
+        Mon équipe n&apos;est pas listée — continuer sans équipe
+      </button>
+    </div>
+  );
+}
+
 export default function AthleteOnboardingPage() {
   const router = useRouter();
   const [step, setStep] = useState(1);
@@ -64,11 +243,21 @@ export default function AthleteOnboardingPage() {
   const [gradYear, setGradYear] = useState("2026");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
-  // School
+  // School (used when userContext === 'scolaire')
   const [selectedSchoolId, setSelectedSchoolId] = useState("");
   const [selectedSchoolName, setSelectedSchoolName] = useState("");
-  // Coach (optional)
+  // Coach (optional, school-context only)
   const [selectedCoachId, setSelectedCoachId] = useState<string | null>(null);
+
+  // Civil league team (used when userContext === 'ligue_civile').
+  // Loaded from users.context at mount; civil athletes pick a team
+  // their coach already created (no athlete-side team creation).
+  // Can stay NULL if athlete clicks "Continuer sans équipe" — Loi 25
+  // and the rest of the profile still apply, the recruiter card will
+  // surface a "Pas d'équipe" badge per 5.3d.
+  const [userContext, setUserContext] = useState<"scolaire" | "ligue_civile" | null>(null);
+  const [selectedLeagueTeamId, setSelectedLeagueTeamId] = useState<string | null>(null);
+  const [selectedLeagueTeamName, setSelectedLeagueTeamName] = useState("");
 
   // Step 2 — Academic
   const [gpa, setGpa] = useState("");
@@ -129,19 +318,43 @@ export default function AthleteOnboardingPage() {
         if (userRow?.last_name) setLastName(userRow.last_name);
       }
 
-      console.log("[Onboarding] pre-fill from metadata:", { first_name: meta.first_name, last_name: meta.last_name, sport: meta.sport });
+      // Read users.context for the civil/school discriminator. Wired
+      // at signup in 5.3a (commit 5dc7456). Defaults to 'scolaire'
+      // when null — preserves existing behavior for any user who
+      // signed up before 5.3a shipped.
+      const { data: contextRow } = await supabase
+        .from("users")
+        .select("context")
+        .eq("id", user.id)
+        .single();
+      const ctxRaw = contextRow?.context;
+      const ctx: "scolaire" | "ligue_civile" =
+        ctxRaw === "ligue_civile" ? "ligue_civile" : "scolaire";
+      setUserContext(ctx);
 
-      // Check if athlete row exists — pre-fill all saved fields
+      console.log("[Onboarding] pre-fill from metadata:", { first_name: meta.first_name, last_name: meta.last_name, sport: meta.sport, context: ctx });
+
+      // Check if athlete row exists — pre-fill all saved fields.
+      // The league_teams embed pre-fills the civil-context picker
+      // when the athlete returns to onboarding mid-flow with a team
+      // already chosen (otherwise the picker would render "rien
+      // sélectionné" despite the DB carrying the value).
       const { data: existing } = await supabase
         .from("athletes")
-        .select("*, schools!school_id(name), sports!sport_id(nom)")
+        .select("*, schools!school_id(name), sports!sport_id(nom), league_teams!league_team_id(name)")
         .eq("user_id", user.id)
         .maybeSingle();
 
       if (existing) {
         setExistingAthleteId(existing.id);
-        // If profile is complete, skip to dashboard
-        if (existing.first_name && existing.last_name && existing.school_id && existing.sport_id) {
+        // If profile is complete, skip to dashboard. Civil-context
+        // athletes have NULL school_id by design — their gate is the
+        // user.context value rather than school presence. League_team
+        // is optional ("Continuer sans équipe") so it isn't part of
+        // the complete-profile check.
+        const profileComplete = existing.first_name && existing.last_name && existing.sport_id
+          && (ctx === "ligue_civile" || existing.school_id);
+        if (profileComplete) {
           router.replace("/athlete/dashboard");
           return;
         }
@@ -159,6 +372,13 @@ export default function AthleteOnboardingPage() {
           if (schoolRel?.name) setSelectedSchoolName(schoolRel.name);
         }
         if (existing.coach_id) setSelectedCoachId(existing.coach_id as string);
+        if (existing.league_team_id) {
+          setSelectedLeagueTeamId(existing.league_team_id as string);
+          const ltRel = Array.isArray(existing.league_teams) ? existing.league_teams[0] : existing.league_teams;
+          if ((ltRel as { name?: string } | null)?.name) {
+            setSelectedLeagueTeamName((ltRel as { name: string }).name);
+          }
+        }
         if (existing.parent_first_name) setParentFirstName(existing.parent_first_name);
         if (existing.parent_last_name) setParentLastName(existing.parent_last_name);
         if (existing.parent_email) setParentEmail(existing.parent_email);
@@ -184,8 +404,13 @@ export default function AthleteOnboardingPage() {
         if (existing.hudl_url) setHudlLink(existing.hudl_url);
         if (existing.youtube_url) setYoutubeLink(existing.youtube_url);
         if (existing.instagram_url) setInstagramLink(existing.instagram_url);
-        // Resume at first incomplete step
-        if (existing.first_name && existing.school_id && existing.consentement_parental) {
+        // Resume at first incomplete step. Step 1 completion gate
+        // mirrors canProceed() — for civil context, school_id is not
+        // required (athlete may have legitimately picked "Continuer
+        // sans équipe").
+        const step1Complete = existing.first_name && existing.consentement_parental
+          && (ctx === "ligue_civile" || existing.school_id);
+        if (step1Complete) {
           if (existing.taille_pieds || existing.poids_lbs) setStep(4);
           else if (existing.moyenne_generale || (existing.matieres_fortes && existing.matieres_fortes.length > 0)) setStep(3);
           else setStep(2);
@@ -200,7 +425,17 @@ export default function AthleteOnboardingPage() {
 
   function canProceed(): boolean {
     switch (step) {
-      case 1: return !!(firstName.trim() && lastName.trim() && selectedSchoolId && gradYear && parentFirstName.trim() && parentLastName.trim() && parentEmail.trim() && consentProfile && consentVisibility);
+      case 1: {
+        // Identity + parental consent are required for both contexts
+        // (Loi 25 minor consent applies regardless of school vs civil).
+        // School context additionally requires selectedSchoolId; civil
+        // context permits NULL league_team_id ("Continuer sans équipe").
+        const baseValid = !!(firstName.trim() && lastName.trim() && gradYear
+          && parentFirstName.trim() && parentLastName.trim() && parentEmail.trim()
+          && consentProfile && consentVisibility);
+        if (userContext === "ligue_civile") return baseValid;
+        return baseValid && !!selectedSchoolId;
+      }
       case 2: return true;
       case 3: return true;
       case 4: return !!primarySport;
@@ -504,37 +739,69 @@ export default function AthleteOnboardingPage() {
             </div>
             <div className="mb-4"><label className={labelCls}>Téléphone</label><input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="514-000-0000" className={inputCls} /></div>
 
-            {/* School selection */}
-            <div className={sectionTitle}><div className="w-0.5 h-4 bg-[#E63946] rounded-full" />Mon école <span className="text-[#EF4444]">*</span></div>
-            <div className="mb-3">
-              <SchoolSelect
-                value={selectedSchoolId || null}
-                onChange={(id) => {
-                  setSelectedSchoolId(id);
-                  if (!id) setSelectedSchoolName("");
-                  setSelectedCoachId(null);
-                }}
-                filterType="SECONDAIRE"
-                placeholder="Rechercher ton école..."
-              />
-            </div>
-            {selectedSchoolName && <p className="text-[12px] text-[#22C55E] font-bold mb-6">✓ {selectedSchoolName}</p>}
-
-            {/* Coach picker — only after school selection */}
-            {selectedSchoolId && (
+            {/* School OR civil-team block — conditional on userContext.
+                Both contexts continue to use the existing parent +
+                consent + partner-visibility blocks below. */}
+            {userContext === "ligue_civile" ? (
               <>
                 <div className={sectionTitle}>
                   <div className="w-0.5 h-4 bg-[#E63946] rounded-full" />
-                  Mon coach <span className="text-[10px] text-[#4a4d56] font-normal normal-case tracking-normal ml-2">(optionnel)</span>
+                  Mon équipe
+                  <span className="text-[10px] text-[#4a4d56] font-normal normal-case tracking-normal ml-2">(optionnel)</span>
                 </div>
-                <p className="text-[12px] text-[#6b7280] mb-3">Sélectionne ton coach actuel. Tu pourras changer plus tard.</p>
-                <div className="mb-6">
-                  <CoachPicker
-                    schoolId={selectedSchoolId}
-                    selectedCoachId={selectedCoachId}
-                    onChange={setSelectedCoachId}
+                <div className="mb-3">
+                  <CivilTeamPicker
+                    sportName={primarySport}
+                    selectedTeamId={selectedLeagueTeamId}
+                    onSelect={(t) => {
+                      setSelectedLeagueTeamId(t.id);
+                      setSelectedLeagueTeamName(t.name);
+                    }}
+                    onContinueWithoutTeam={() => {
+                      setSelectedLeagueTeamId(null);
+                      setSelectedLeagueTeamName("");
+                    }}
                   />
                 </div>
+                {selectedLeagueTeamName && (
+                  <p className="text-[12px] text-[#22C55E] font-bold mb-6">✓ {selectedLeagueTeamName}</p>
+                )}
+              </>
+            ) : (
+              <>
+                {/* School selection */}
+                <div className={sectionTitle}><div className="w-0.5 h-4 bg-[#E63946] rounded-full" />Mon école <span className="text-[#EF4444]">*</span></div>
+                <div className="mb-3">
+                  <SchoolSelect
+                    value={selectedSchoolId || null}
+                    onChange={(id) => {
+                      setSelectedSchoolId(id);
+                      if (!id) setSelectedSchoolName("");
+                      setSelectedCoachId(null);
+                    }}
+                    filterType="SECONDAIRE"
+                    placeholder="Rechercher ton école..."
+                  />
+                </div>
+                {selectedSchoolName && <p className="text-[12px] text-[#22C55E] font-bold mb-6">✓ {selectedSchoolName}</p>}
+
+                {/* Coach picker — only after school selection */}
+                {selectedSchoolId && (
+                  <>
+                    <div className={sectionTitle}>
+                      <div className="w-0.5 h-4 bg-[#E63946] rounded-full" />
+                      Mon coach <span className="text-[10px] text-[#4a4d56] font-normal normal-case tracking-normal ml-2">(optionnel)</span>
+                    </div>
+                    <p className="text-[12px] text-[#6b7280] mb-3">Sélectionne ton coach actuel. Tu pourras changer plus tard.</p>
+                    <div className="mb-6">
+                      <CoachPicker
+                        schoolId={selectedSchoolId}
+                        selectedCoachId={selectedCoachId}
+                        onChange={setSelectedCoachId}
+                      />
+                    </div>
+                  </>
+                )}
               </>
             )}
 
