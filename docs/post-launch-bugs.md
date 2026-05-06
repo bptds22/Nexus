@@ -710,6 +710,25 @@ file.
       drift causes a real regression OR a fourth caller is
       needed.
 
+- [ ] **`<NoTeamBadge>` + `<AthleteCard>` extraction across
+      recruiter surfaces.** The "Pas d'équipe" pill shipped in
+      5.3d (commit pending) is duplicated inline at 5 render
+      sites across 3 pages: recherche grid + recherche list,
+      favoris grid + favoris list, pipeline kanban card +
+      pipeline drag-overlay + pipeline detail panel. Same JSX,
+      same styling, same `noTeam` boolean derived identically
+      (`!school_id && !league_team_id`) at every mapping site.
+      Each page also hand-rolls its own athlete-card render
+      (related to the search-panel duplication above — the cards
+      are tightly coupled to those page-local data shapes).
+
+      Consolidation candidate: extract a small `<NoTeamBadge>`
+      component (~5 lines) and a richer `<AthleteCard variant>`
+      that absorbs the grid/list/kanban shapes. Smaller scope
+      than the search panel above but related — both stem from
+      the same per-page-monolith pattern. Logged separately so
+      whichever lands first can pull the other into scope.
+
 - [ ] **`terms_version` not persisted on partner visibility consent.**
       [`PartnerVisibilityConsentCard.tsx`](../components/shared/PartnerVisibilityConsentCard.tsx)
       flags `v1` in a JSDoc header, but no DB column records which

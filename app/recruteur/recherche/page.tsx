@@ -12,7 +12,7 @@ import { isValidationExpired } from "@/lib/utils/profileValidation";
 import AthletePhoto from "@/components/shared/AthletePhoto";
 import AthletePhotoFill from "@/components/shared/AthletePhotoFill";
 
-type ExtendedAthlete = SearchAthlete & { academicBadges: string[]; stars: number; recruitmentStatus: string | null; heightWeight: string; gpa: number; committedSchoolName: string | null; openToOffers: boolean | null; jersey: string; sportName: string; ouvertDemenager: boolean; ouvertPrive: boolean; ouvertAnglophone: boolean; createdAt: string; lastValidation?: string | null };
+type ExtendedAthlete = SearchAthlete & { academicBadges: string[]; stars: number; recruitmentStatus: string | null; heightWeight: string; gpa: number; committedSchoolName: string | null; openToOffers: boolean | null; jersey: string; sportName: string; ouvertDemenager: boolean; ouvertPrive: boolean; ouvertAnglophone: boolean; createdAt: string; lastValidation?: string | null; noTeam: boolean };
 import { useSubscription } from "@/lib/hooks/useSubscription";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -149,7 +149,17 @@ function AthleteSearchCard({ a, onToggleFav, favDisabled, favDisabledReason }: {
 
         {/* Footer — school · year left, voir le profil right */}
         <div className="flex items-center justify-between pt-3 mt-auto border-t border-[#2D3748]/60">
-          <span className="text-[12px] text-[#6b7280] truncate">{a.school} <span className="text-[#4a4d56]">·</span> {a.graduationYear}</span>
+          <span className="text-[12px] text-[#6b7280] truncate flex items-center gap-2 min-w-0">
+            {a.noTeam ? (
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold uppercase tracking-wider text-[#9CA3AF] shrink-0">
+                Pas d&apos;équipe
+              </span>
+            ) : (
+              <span className="truncate">{a.school}</span>
+            )}
+            <span className="text-[#4a4d56] shrink-0">·</span>
+            <span className="shrink-0">{a.graduationYear}</span>
+          </span>
           <Link href={`/recruteur/athletes/${a.id}`} className="text-[13px] font-semibold text-[#9CA3AF] hover:text-white transition-colors flex items-center gap-1 shrink-0">
             Voir le profil
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
@@ -203,7 +213,13 @@ function AthleteSearchRow({ a, onToggleFav, favDisabled, favDisabledReason }: {
         <Link href={`/recruteur/athletes/${a.id}`} className="text-[15px] font-bold text-white hover:text-[#E63946] transition-colors truncate block">
           {a.firstName} {a.lastName}
         </Link>
-        <p className="text-[13px] text-[#9CA3AF] truncate">{a.school}</p>
+        {a.noTeam ? (
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold uppercase tracking-wider text-[#9CA3AF]">
+            Pas d&apos;équipe
+          </span>
+        ) : (
+          <p className="text-[13px] text-[#9CA3AF] truncate">{a.school}</p>
+        )}
         <div className="flex items-center gap-2 mt-0.5">
           <div className="flex items-center gap-0.5">
             {Array.from({ length: 5 }, (_, i) => (
@@ -363,7 +379,7 @@ function RechercheContent() {
         .from("athletes")
         .select(`
           id, first_name, last_name, photo_url, verified, last_profile_validation,
-          annee_diplomation, numero_jersey, video_faits_saillants_url, school_id,
+          annee_diplomation, numero_jersey, video_faits_saillants_url, school_id, league_team_id,
           cote_globale_entraineur,
           taille_pieds,
           taille_pouces,
@@ -491,6 +507,11 @@ function RechercheContent() {
             ouvertPrive: a.ouvert_cegep_prive === true,
             ouvertAnglophone: a.ouvert_cegep_anglophone === true,
             createdAt: (a.created_at as string) || "",
+            // "Pas d'équipe" badge fires when neither anchor is set —
+            // chk_school_or_league guarantees both can't be set, so
+            // this is purely the both-NULL "no anchor" case (civil
+            // athlete who clicked "Continuer sans équipe" at signup).
+            noTeam: !a.school_id && !a.league_team_id,
           };
         });
         if (mapped[0]) console.log("AFTER MAP:", { name: mapped[0].firstName, jersey: mapped[0].jersey, sport: mapped[0].sport, sportName: mapped[0].sportName, position: mapped[0].position });

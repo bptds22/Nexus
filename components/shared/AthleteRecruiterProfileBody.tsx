@@ -346,6 +346,20 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
   const [myPipelineStage, setMyPipelineStage] = useState<string | null>(null);
   const [coachId, setCoachId] = useState<string | null>(null);
   const [isAllStar, setIsAllStar] = useState(false);
+
+  // Civil-context affiliation state. `affiliation` is the
+  // discriminator: 'school' (school_id present), 'civil_with_team'
+  // (school_id NULL + league_team_id present), 'civil_no_team'
+  // (both NULL — "Continuer sans équipe" path). Drives the
+  // section-level swap between "École" and "Équipe civile".
+  const [affiliation, setAffiliation] = useState<"school" | "civil_with_team" | "civil_no_team">("school");
+  const [civilTeamInfo, setCivilTeamInfo] = useState<{
+    teamName: string;
+    leagueName: string;
+    ageGroup: string | null;
+    division: string | null;
+    coaches: string[];
+  } | null>(null);
   const [coachRepData, setCoachRepData] = useState<{
     reviewCount: number;
     avgRating: number;
@@ -411,10 +425,16 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
         open_to_offers,
         sport_secondaire_id,
         position_secondaire_id,
+        school_id,
+        league_team_id,
         sports!athletes_sport_id_fkey(nom),
         positions!athletes_position_id_fkey(nom, abreviation),
         schools!school_id(name, region, city),
         committed_school:schools!committed_school_id(name),
+        league_teams!league_team_id(
+          id, name, age_group, division,
+          leagues!league_id(name)
+        ),
         evaluations(
           vitesse_explosivite, force_puissance, endurance_cardio, agilite_coordination,
           vision_du_jeu, sens_tactique,
@@ -561,6 +581,48 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
 
         setA(mapped);
         setCoachId((d.coach_id as string) || null);
+
+        // Affiliation discriminator + civil-team info population.
+        // chk_school_or_league guarantees at most one of school_id /
+        // league_team_id is non-null, so the three branches below
+        // are mutually exclusive.
+        const schoolId = d.school_id as string | null;
+        const leagueTeamId = d.league_team_id as string | null;
+        if (schoolId) {
+          setAffiliation("school");
+          setCivilTeamInfo(null);
+        } else if (leagueTeamId) {
+          setAffiliation("civil_with_team");
+          const ltRel = Array.isArray(d.league_teams) ? d.league_teams[0] : d.league_teams;
+          const lt = ltRel as Record<string, unknown> | null;
+          const leagueRel = lt ? (Array.isArray(lt.leagues) ? lt.leagues[0] : lt.leagues) : null;
+          const lg = leagueRel as { name?: string } | null;
+          // Coaches list — separate query because PostgREST embed
+          // doesn't traverse league_coaches → users in one shot.
+          const { data: coachRows } = await supabase
+            .from("league_coaches")
+            .select("users!coach_id(first_name, last_name)")
+            .eq("league_team_id", leagueTeamId);
+          const coachNames: string[] = (coachRows ?? [])
+            .map((row) => {
+              const u = (row as Record<string, unknown>).users;
+              const userObj = (Array.isArray(u) ? u[0] : u) as { first_name?: string; last_name?: string } | null;
+              if (!userObj) return "";
+              return `${userObj.first_name ?? ""} ${userObj.last_name ?? ""}`.trim();
+            })
+            .filter((s) => s.length > 0);
+          setCivilTeamInfo({
+            teamName: (lt?.name as string) ?? "",
+            leagueName: lg?.name ?? "",
+            ageGroup: (lt?.age_group as string) ?? null,
+            division: (lt?.division as string) ?? null,
+            coaches: coachNames,
+          });
+        } else {
+          setAffiliation("civil_no_team");
+          setCivilTeamInfo(null);
+        }
+
         setLoadingAthlete(false);
       });
   }, [id]);
@@ -1066,15 +1128,46 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
         {isDetailed && (
           <div className="space-y-6" key="detailed-sections">
 
+            {/* ── Affiliation: school OR civil team ─────────── */}
+            <section className="nx-slide-section">
+              <h2 className={sectionLabel}>
+                {affiliation === "school" ? "École" : "Équipe civile"}
+              </h2>
+              <div className={`${cardBase} p-5`}>
+                {affiliation === "school" && (
+                  <>
+                    <InfoRow label="École" value={a.schoolName} icon="building" />
+                    <InfoRow label="Région" value={a.region} icon="map" />
+                    <InfoRow label="Ville" value={a.city} icon="mapPin" />
+                  </>
+                )}
+                {affiliation === "civil_with_team" && civilTeamInfo && (
+                  <>
+                    <InfoRow label="Équipe" value={civilTeamInfo.teamName} icon="flag" />
+                    <InfoRow label="Ligue" value={civilTeamInfo.leagueName} icon="trophy" />
+                    <InfoRow label="Catégorie d'âge" value={civilTeamInfo.ageGroup} icon="layers" />
+                    <InfoRow label="Division" value={civilTeamInfo.division} icon="target" />
+                    <InfoRow
+                      label={civilTeamInfo.coaches.length > 1 ? "Entraîneurs" : "Entraîneur"}
+                      value={civilTeamInfo.coaches.length > 0 ? civilTeamInfo.coaches.join(", ") : null}
+                      icon="user"
+                    />
+                  </>
+                )}
+                {affiliation === "civil_no_team" && (
+                  <p className="text-[13px] text-[#9CA3AF] italic py-2">
+                    Athlète en ligue civile, pas encore rattaché à une équipe.
+                  </p>
+                )}
+              </div>
+            </section>
+
             {/* ── Personal Info ─────────────────────────────── */}
             <section className="nx-slide-section">
               <h2 className={sectionLabel}>Informations personnelles</h2>
               <div className={`${cardBase} p-5`}>
                 <InfoRow label="Âge" value={`${a.age} ans`} icon="calendar" />
                 <InfoRow label="Genre" value={a.gender === "M" ? "Masculin" : a.gender === "F" ? "Féminin" : "Autre"} icon="user" />
-                <InfoRow label="Ville" value={a.city} icon="mapPin" />
-                <InfoRow label="Région" value={a.region} icon="map" />
-                <InfoRow label="École" value={a.schoolName} icon="building" />
                 <InfoRow label="Graduation" value={a.graduationYear} icon="gradCap" />
               </div>
             </section>

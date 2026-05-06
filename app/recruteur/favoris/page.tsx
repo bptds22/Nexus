@@ -42,6 +42,9 @@ interface FavoriAthlete {
   committedSchoolName: string;
   openToOffers: boolean | null;
   badges: { badgeId: string; label: string; icon: string }[];
+  // "Pas d'équipe" = neither school nor league_team set on the
+  // athlete row. chk_school_or_league guarantees both can't be set.
+  noTeam: boolean;
 }
 
 /* ── Grid Card (same as coach Mes Athlètes) ──────────────── */
@@ -114,10 +117,16 @@ function FavoriGridCard({ a, onUnfavorite }: { a: FavoriAthlete; onUnfavorite: (
           />
         </div>
 
-        {/* School · Promotion */}
-        <p className="text-[13px] text-[#c0c4cc] mt-1">
-          {a.school}
-          {a.graduationYear > 0 && <><span className="mx-1 text-[#4a4d56]">·</span>Promotion {a.graduationYear}</>}
+        {/* School · Promotion (or "Pas d'équipe" badge) */}
+        <p className="text-[13px] text-[#c0c4cc] mt-1 flex items-center gap-2 flex-wrap">
+          {a.noTeam ? (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold uppercase tracking-wider text-[#9CA3AF]">
+              Pas d&apos;équipe
+            </span>
+          ) : (
+            <span>{a.school}</span>
+          )}
+          {a.graduationYear > 0 && <><span className="text-[#4a4d56]">·</span><span>Promotion {a.graduationYear}</span></>}
         </p>
 
         {/* Height / Weight */}
@@ -182,12 +191,21 @@ function FavoriListRow({ a, onUnfavorite }: { a: FavoriAthlete; onUnfavorite: (i
         </div>
       </div>
 
-      {/* Name + school — fixed width */}
+      {/* Name + school (or "Pas d'équipe" badge) — fixed width */}
       <div className="w-[200px] shrink-0">
         <Link href={`/recruteur/athletes/${a.id}`} className="text-[14px] font-bold text-white hover:text-[#E63946] transition-colors truncate block">
           {a.firstName} {a.lastName}
         </Link>
-        <p className="text-[12px] text-[#6b7280] truncate">{a.school} · {a.graduationYear}</p>
+        <p className="text-[12px] text-[#6b7280] truncate flex items-center gap-1.5">
+          {a.noTeam ? (
+            <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-white/5 border border-white/10 text-[9px] font-bold uppercase tracking-wider text-[#9CA3AF]">
+              Pas d&apos;équipe
+            </span>
+          ) : (
+            <span className="truncate">{a.school}</span>
+          )}
+          <span>· {a.graduationYear}</span>
+        </p>
       </div>
 
       {/* Position — fixed width */}
@@ -277,7 +295,7 @@ function FavorisContent() {
           id, first_name, last_name, photo_url, verified, last_profile_validation,
           video_faits_saillants_url, annee_diplomation,
           cote_globale_entraineur, numero_jersey, taille_pieds, taille_pouces, poids_lbs,
-          recruitment_status, committed_school_id, open_to_offers,
+          recruitment_status, committed_school_id, open_to_offers, school_id, league_team_id,
           sports!sport_id(nom),
           positions!position_id(nom, abreviation),
           schools!school_id(name, region),
@@ -369,6 +387,7 @@ function FavorisContent() {
         badges: distinctions
           .filter((d) => d != null && badgeMap[d])
           .map((d) => ({ badgeId: d, label: badgeMap[d].label, icon: badgeMap[d].icon })),
+        noTeam: !a?.school_id && !a?.league_team_id,
       };
     });
 

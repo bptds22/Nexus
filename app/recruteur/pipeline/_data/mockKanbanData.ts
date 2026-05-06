@@ -32,6 +32,10 @@ export interface PipelineKanbanCard {
   next_action_at: string | null;
   next_action_note: string | null;
   moved_at: string | null;
+  // "Pas d'équipe" indicator — true when athlete has neither school
+  // nor league_team set (chk_school_or_league rules out both-set, so
+  // this is the both-NULL case).
+  noTeam?: boolean;
 }
 
 export const KANBAN_COLUMNS: {

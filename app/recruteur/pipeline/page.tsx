@@ -396,10 +396,16 @@ const DraggableKanbanCard = memo(function DraggableKanbanCard({
             {card.jersey && <span className="text-[12px] font-black text-[#E63946] shrink-0">#{card.jersey}</span>}
           </div>
 
-          {/* School + Year */}
-          <p className="text-[12px] text-[#6b7280] mt-1 truncate">
-            {card.school}
-            {card.graduation_year > 0 && <> <span className="text-[#4a4d56]">·</span> {card.graduation_year}</>}
+          {/* School + Year (or "Pas d'équipe" badge) */}
+          <p className="text-[12px] text-[#6b7280] mt-1 truncate flex items-center gap-1.5">
+            {card.noTeam ? (
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-white/5 border border-white/10 text-[9px] font-bold uppercase tracking-wider text-[#9CA3AF] shrink-0">
+                Pas d&apos;équipe
+              </span>
+            ) : (
+              <span className="truncate">{card.school}</span>
+            )}
+            {card.graduation_year > 0 && <><span className="text-[#4a4d56] shrink-0">·</span><span className="shrink-0">{card.graduation_year}</span></>}
           </p>
 
           {/* Global recruitment status */}
@@ -464,7 +470,13 @@ function DragOverlayCard({ card }: { card: PipelineKanbanCard }) {
       <div className="flex items-center gap-1.5 mt-1">
         <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider text-white" style={{ backgroundColor: col?.color === RED ? "rgba(230,57,70,0.25)" : "rgba(107,114,128,0.25)" }}>{card.sport}</span>
         <span className="text-[11px] text-[#9CA3AF]">{card.position}</span>
-        <span className="text-[11px] text-[#6b7280]">· {card.school}</span>
+        {card.noTeam ? (
+          <span className="inline-flex items-center px-1.5 py-0 rounded-full bg-white/5 border border-white/10 text-[9px] font-bold uppercase tracking-wider text-[#9CA3AF]">
+            Pas d&apos;équipe
+          </span>
+        ) : (
+          <span className="text-[11px] text-[#6b7280]">· {card.school}</span>
+        )}
       </div>
     </div>
   );
@@ -637,7 +649,13 @@ function SlideOver({
               <span className="text-[#2D3748]">·</span>
               <span className="text-[13px] text-[#9CA3AF]">{card.division}</span>
             </div>
-            <p className="text-[13px] text-[#6b7280] mt-1">{card.school}</p>
+            {card.noTeam ? (
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold uppercase tracking-wider text-[#9CA3AF] mt-1">
+                Pas d&apos;équipe
+              </span>
+            ) : (
+              <p className="text-[13px] text-[#6b7280] mt-1">{card.school}</p>
+            )}
             <p className="text-[13px] text-[#6b7280]">Promotion {card.graduation_year}</p>
             <div className="flex items-center gap-2 mt-3"><StarRating rating={card.coach_rating} size="md" /><span className="text-[12px] text-[#6b7280]">Cote du coach</span></div>
             <div className="mt-3">
@@ -823,6 +841,8 @@ function PipelinePageContent() {
             cote_globale_entraineur,
             recruitment_status,
             committed_school_id,
+            school_id,
+            league_team_id,
             open_to_offers,
             sports!sport_id(nom),
             positions!position_id(nom, abreviation),
@@ -852,6 +872,8 @@ function PipelinePageContent() {
               cote_globale_entraineur: number | null;
               recruitment_status: string | null;
               committed_school_id: string | null;
+              school_id: string | null;
+              league_team_id: string | null;
               open_to_offers: boolean | null;
               sports: { nom: string } | { nom: string }[] | null;
               positions: { nom: string; abreviation: string } | { nom: string; abreviation: string }[] | null;
@@ -899,6 +921,7 @@ function PipelinePageContent() {
               next_action_at: (p.next_action_at as string) || null,
               next_action_note: (p.next_action_note as string) || null,
               moved_at: movedAt,
+              noTeam: !a?.school_id && !a?.league_team_id,
             };
           });
           setCards(mapped);
