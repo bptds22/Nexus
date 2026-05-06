@@ -82,6 +82,14 @@ function AuthContent() {
   const [shakeFields, setShakeFields] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [selectedSport, setSelectedSport] = useState("");
+  // Context discriminator (scolaire | ligue_civile) — wired to
+  // users.context via signUp's 7th arg, mirroring the /auth/pro
+  // flow shipped in 5.1. The athlete onboarding wizard reads this
+  // at load to branch step 1 between the school path (existing) and
+  // the league_team selection path (5.3b). Without it civil
+  // athletes default to the school path and get stuck on the
+  // selectedSchoolId requirement.
+  const [selectedContext, setSelectedContext] = useState<"" | "scolaire" | "ligue_civile">("");
   const [showAthleteForm, setShowAthleteForm] = useState(false);
   const [consentPolicy, setConsentPolicy] = useState(false);
   const [consentData, setConsentData] = useState(false);
@@ -98,7 +106,7 @@ function AuthContent() {
   const pwdMeetsMin = password.length >= 8;
   const pwdMismatch = confirmPassword.length > 0 && password !== confirmPassword;
   const baseValid = firstName && lastName && email && pwdMeetsMin && !pwdMismatch;
-  const signupValid = baseValid && selectedSport && consentPolicy && consentData;
+  const signupValid = baseValid && selectedContext && selectedSport && consentPolicy && consentData;
 
   /* Replay fade animation on mode switch */
   const switchMode = useCallback(
@@ -128,13 +136,18 @@ function AuthContent() {
 
     const { signUp } = await import("@/lib/supabase/auth.actions");
 
+    // selectedContext is guaranteed non-empty here because
+    // signupValid (checked above) requires it. The cast narrows
+    // the union from "" | "scolaire" | "ligue_civile" → the two
+    // signUp accepts for athletes (collegial is recruiter-only).
     const { data, error } = await signUp(
       email,
       password,
       "ATHLETE",
       firstName,
       lastName,
-      { sport: selectedSport }
+      { sport: selectedSport },
+      selectedContext as "scolaire" | "ligue_civile",
     );
 
     if (error) {
@@ -393,6 +406,34 @@ function AuthContent() {
                             <EyeToggle show={showConfirmPwd} onClick={() => setShowConfirmPwd(!showConfirmPwd)} />
                           </div>
                           {pwdMismatch && <p className="text-xs mt-1.5 text-[#EF4444]">Les mots de passe ne correspondent pas</p>}
+                        </div>
+
+                        {/* Context chooser — école secondaire vs ligue civile.
+                            Drives users.context which the onboarding wizard
+                            reads to branch step 1 (school path vs league_team
+                            path). */}
+                        <div>
+                          <label className={`${label} text-[#9CA3AF] mb-2 block`}>Tu joues pour... <span className="text-[#EF4444]">*</span></label>
+                          <div className="grid grid-cols-2 gap-2">
+                            <button type="button" onClick={() => setSelectedContext("scolaire")}
+                              className={`py-3 px-3 rounded-lg text-[12px] font-bold transition-all text-left ${
+                                selectedContext === "scolaire"
+                                  ? "bg-[#E63946] text-white"
+                                  : "bg-[#111317] border border-white/10 text-[#9CA3AF] hover:border-white/20 hover:text-white"
+                              }`}>
+                              École secondaire
+                              <span className="block text-[10px] font-normal opacity-70 mt-0.5">RSEQ, équipe scolaire</span>
+                            </button>
+                            <button type="button" onClick={() => setSelectedContext("ligue_civile")}
+                              className={`py-3 px-3 rounded-lg text-[12px] font-bold transition-all text-left ${
+                                selectedContext === "ligue_civile"
+                                  ? "bg-[#E63946] text-white"
+                                  : "bg-[#111317] border border-white/10 text-[#9CA3AF] hover:border-white/20 hover:text-white"
+                              }`}>
+                              Ligue civile ou club
+                              <span className="block text-[10px] font-normal opacity-70 mt-0.5">Hors RSEQ, équipe communautaire</span>
+                            </button>
+                          </div>
                         </div>
 
                         {/* Sport pills */}
