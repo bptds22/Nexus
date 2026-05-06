@@ -454,14 +454,22 @@ export default function AthleteOnboardingPage() {
     let payload: Record<string, unknown> = { user_id: userId };
 
     if (step === 1) {
+      // Branch on userContext to honor the chk_school_or_league
+      // CHECK constraint (at most one of school_id / league_team_id
+      // can be non-null) AND to persist the civil-team selection at
+      // partial-save time. Without writing league_team_id here, a
+      // civil athlete who advances mid-flow loses their team
+      // selection — breaks 5.3b's resume-prefill UX guarantee.
+      const isCivil = userContext === "ligue_civile";
       payload = {
         ...payload,
         first_name: firstName.trim(), last_name: lastName.trim(),
         date_naissance: dateOfBirth || null, genre: gender || null,
         photo_url: photo || null, email: email || null, telephone: phone || null,
         annee_diplomation: gradYear ? parseInt(gradYear) : null,
-        school_id: selectedSchoolId || null,
-        coach_id: selectedCoachId,
+        school_id: isCivil ? null : (selectedSchoolId || null),
+        coach_id: isCivil ? null : selectedCoachId,
+        league_team_id: isCivil ? selectedLeagueTeamId : null,
         nom_parent: `${parentFirstName.trim()} ${parentLastName.trim()}`.trim() || null,
         parent_first_name: parentFirstName.trim() || null, parent_last_name: parentLastName.trim() || null,
         parent_email: parentEmail.trim() || null, telephone_parent: parentPhone.trim() || null,
@@ -553,10 +561,18 @@ export default function AthleteOnboardingPage() {
       positionId = posData?.id || null;
     }
 
+    // Civil-context athletes: school_id and coach_id stay NULL,
+    // league_team_id carries the picker selection (or NULL if
+    // "Continuer sans équipe"). School-context: existing behavior.
+    // Honors chk_school_or_league CHECK (at most one of
+    // {school_id, league_team_id} non-null per row).
+    const isCivil = userContext === "ligue_civile";
+
     const athleteRecord = {
       user_id: userId,
-      school_id: selectedSchoolId || null,
-      coach_id: selectedCoachId,
+      school_id: isCivil ? null : (selectedSchoolId || null),
+      coach_id: isCivil ? null : selectedCoachId,
+      league_team_id: isCivil ? selectedLeagueTeamId : null,
       first_name: firstName.trim(),
       last_name: lastName.trim(),
       date_naissance: dateOfBirth || null,
