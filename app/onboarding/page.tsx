@@ -1646,25 +1646,59 @@ const LEAGUE_LEVELS = ["AAA", "AA", "A", "Club", "Civil"];
 const TEAM_CATEGORIES = ["U15", "U16", "U17", "U18", "Juvénile", "Cadet", "Midget", "Senior", "Autre"];
 
 /* ── League search + select (shared by coach + coordinator) ── */
+type CivilLeagueRow = {
+  id: string;
+  name: string;
+  sport_id: string | null;
+  sport_name: string;
+  city: string | null;
+  region: string | null;
+  level: string | null;
+};
+
 function LeagueSelectStep({ user, save, onRequestNew }: {
   user: NexusUser;
   save: (u: Partial<NexusUser>) => void;
   onRequestNew: () => void;
 }) {
-  const [leagues, setLeagues] = useState<{ id: string; name: string; sport: string; city: string; region: string; level: string }[]>([]);
-  const [selected, setSelected] = useState<{ id: string; name: string; sport: string; city: string; region: string; level: string } | null>(null);
+  const [leagues, setLeagues] = useState<CivilLeagueRow[]>([]);
+  const [selected, setSelected] = useState<CivilLeagueRow | null>(null);
   const [loadingLeagues, setLoadingLeagues] = useState(true);
 
-  // Load leagues from Supabase on mount
+  // Load civil leagues from Supabase on mount.
+  //
+  // Filter on level='Civil' so this list never surfaces school-side
+  // RSEQ leagues to a civil-coach onboardee. The previous version
+  // selected a non-existent `sport` text column on `leagues`; the
+  // schema has `sport_id uuid` FK to `sports.nom`. We embed the
+  // sports name via PostgREST's relationship syntax so the UI can
+  // render the human label without a second query.
   useEffect(() => {
     async function loadLeagues() {
       const supabase = createClient();
       const { data, error } = await supabase
         .from("leagues")
-        .select("id, name, sport, city, region, level")
+        .select("id, name, sport_id, sports!sport_id(nom), city, region, level")
+        .eq("level", "Civil")
         .order("name");
-      console.log("[LeagueSelectStep] Loaded leagues:", data, error);
-      if (data) setLeagues(data);
+      console.log("[LeagueSelectStep] Loaded civil leagues:", data, error);
+      if (data) {
+        const mapped: CivilLeagueRow[] = data.map((row) => {
+          const r = row as Record<string, unknown>;
+          const sportRel = Array.isArray(r.sports) ? r.sports[0] : r.sports;
+          const sportName = (sportRel as { nom?: string } | null)?.nom ?? "";
+          return {
+            id: r.id as string,
+            name: r.name as string,
+            sport_id: (r.sport_id as string) ?? null,
+            sport_name: sportName,
+            city: (r.city as string) ?? null,
+            region: (r.region as string) ?? null,
+            level: (r.level as string) ?? null,
+          };
+        });
+        setLeagues(mapped);
+      }
       setLoadingLeagues(false);
     }
     loadLeagues();
@@ -1682,7 +1716,20 @@ function LeagueSelectStep({ user, save, onRequestNew }: {
 
   useEffect(() => {
     if (selected) {
-      save({ institution: { id: selected.id, name: selected.name, sport: selected.sport, city: selected.city, region: selected.region, level: selected.level, type: "ligue_civile" } });
+      // Pass sport_id through so downstream team creation can
+      // inherit it from the selected league rather than re-querying.
+      save({
+        institution: {
+          id: selected.id,
+          name: selected.name,
+          sport_id: selected.sport_id,
+          sport: selected.sport_name,
+          city: selected.city,
+          region: selected.region,
+          level: selected.level,
+          type: "ligue_civile",
+        },
+      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected]);
@@ -1712,7 +1759,7 @@ function LeagueSelectStep({ user, save, onRequestNew }: {
                   <p className="text-[10px] text-[#6B7280]">{[item.city, item.region].filter(Boolean).join(" — ")}</p>
                 )}
               </div>
-              <span className="px-2 py-0.5 rounded-full bg-[#E63946]/10 text-[9px] font-bold text-[#E63946] uppercase">{item.sport}</span>
+              <span className="px-2 py-0.5 rounded-full bg-[#E63946]/10 text-[9px] font-bold text-[#E63946] uppercase">{item.sport_name}</span>
             </div>
           )}
         />
@@ -1722,7 +1769,7 @@ function LeagueSelectStep({ user, save, onRequestNew }: {
         <div className="bg-[#111317] border border-white/10 rounded-lg p-5 space-y-3">
           <div className="flex items-center gap-3">
             <h3 className="font-head font-black text-lg text-white">{selected.name}</h3>
-            <span className="px-2 py-0.5 rounded-full bg-[#E63946]/10 text-[9px] font-bold text-[#E63946] uppercase border border-[#E63946]/20">{selected.sport}</span>
+            <span className="px-2 py-0.5 rounded-full bg-[#E63946]/10 text-[9px] font-bold text-[#E63946] uppercase border border-[#E63946]/20">{selected.sport_name}</span>
           </div>
           {[selected.city, selected.region].filter(Boolean).join(", ") && (
             <p className="text-xs text-[#9CA3AF]">{[selected.city, selected.region].filter(Boolean).join(", ")}</p>
@@ -1761,24 +1808,48 @@ function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Part
   const [customSport, setCustomSport] = useState("");
   const [customCity, setCustomCity] = useState("");
   const [customRegion, setCustomRegion] = useState("");
-  const [customLevel, setCustomLevel] = useState("");
   const [customSubmitted, setCustomSubmitted] = useState(false);
   const [customSaving, setCustomSaving] = useState(false);
+
+  // Sports lookup — fetched once at mount. Used by:
+  //   1. The custom-league INSERT to resolve customSport (name) →
+  //      sport_id (uuid), since leagues.sport_id is the FK column
+  //      (the previous code wrote a non-existent `sport` text column).
+  //   2. (Indirectly) the team INSERT, which inherits sport_id from
+  //      the selected league via the institution payload.
+  // Driving the dropdown from this list also keeps the UI in sync
+  // with what the DB actually accepts (16 sports), instead of the
+  // local 22-entry SPORTS constant which includes Golf/Tennis/Judo
+  // etc. that have no corresponding sports row.
+  const [dbSports, setDbSports] = useState<{ id: string; nom: string }[]>([]);
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.from("sports").select("id, nom").order("nom").then(({ data }) => {
+      if (data) setDbSports(data as { id: string; nom: string }[]);
+    });
+  }, []);
 
   // Team info
   const inst = user.institution as Record<string, unknown> | null;
   const hasLeague = !!inst?.name;
   const selectedLeagueId = (inst?.id as string) || null;
+  const selectedSportId = (inst?.sport_id as string) || null;
   const [teamName, setTeamName] = useState("");
   const [teamCategory, setTeamCategory] = useState("");
   const [teamGender, setTeamGender] = useState("");
+  // age_group is REQUIRED at form-level. Phase 1's UNIQUE constraint
+  // on (league_id, name, age_group, division, season) uses Postgres'
+  // default NULLS DISTINCT semantics: two rows with NULL age_group
+  // and identical other keys would both insert. Forcing a non-empty
+  // value here prevents that quiet duplication.
+  const [teamAgeGroup, setTeamAgeGroup] = useState("");
   const teamSeason = "2025-2026";
   const [teamSaved, setTeamSaved] = useState(false);
   const [teamSaving, setTeamSaving] = useState(false);
 
   // Save team to Supabase when all fields are filled
   useEffect(() => {
-    if (!hasLeague || !teamName || !selectedLeagueId || teamSaved || teamSaving) return;
+    if (!hasLeague || !teamName || !teamAgeGroup || !selectedLeagueId || teamSaved || teamSaving) return;
 
     const debounce = setTimeout(async () => {
       setTeamSaving(true);
@@ -1787,15 +1858,21 @@ function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Part
         const { data: { user: authUser } } = await supabase.auth.getUser();
         if (!authUser) return;
 
-        // Insert league_team
+        // Insert league_team. age_group is now part of the
+        // identity tuple (Phase 1 UNIQUE constraint) and is required
+        // at form-level above. sport_id is inherited from the
+        // selected league rather than left NULL — keeps the team
+        // self-describing for downstream queries.
         const { data: newTeam, error: teamError } = await supabase
           .from("league_teams")
           .insert({
             league_id: selectedLeagueId,
             name: teamName,
+            age_group: teamAgeGroup,
             division: teamCategory || null,
             gender: teamGender || null,
             season: teamSeason,
+            sport_id: selectedSportId,
             owner_id: authUser.id,
           })
           .select()
@@ -1826,7 +1903,7 @@ function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Part
               ...current,
               profile: {
                 ...(current.profile || {}),
-                league_team: { id: newTeam.id, name: teamName, category: teamCategory, gender: teamGender, season: teamSeason },
+                league_team: { id: newTeam.id, name: teamName, age_group: teamAgeGroup, category: teamCategory, gender: teamGender, season: teamSeason },
                 league_id: selectedLeagueId,
                 league_team_id: newTeam.id,
               },
@@ -1845,13 +1922,13 @@ function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Part
 
     return () => clearTimeout(debounce);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [teamName, teamCategory, teamGender, hasLeague, selectedLeagueId, teamSaved]);
+  }, [teamName, teamAgeGroup, teamCategory, teamGender, hasLeague, selectedLeagueId, selectedSportId, teamSaved]);
 
   // Reset teamSaved when team fields change after initial save
   useEffect(() => {
     if (teamSaved) setTeamSaved(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [teamName, teamCategory, teamGender]);
+  }, [teamName, teamAgeGroup, teamCategory, teamGender]);
 
   return (
     <div className="space-y-5">
@@ -1876,7 +1953,7 @@ function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Part
               <input type="text" placeholder="Nom de la ligue / du club" value={customName} onChange={(e) => setCustomName(e.target.value)} className={inputClass} />
               <select title="Sport" value={customSport} onChange={(e) => setCustomSport(e.target.value)} className={`${inputClass} appearance-none`}>
                 <option value="">Sport</option>
-                {SPORTS.map((s) => <option key={s} value={s}>{s}</option>)}
+                {dbSports.map((s) => <option key={s.id} value={s.id}>{s.nom}</option>)}
               </select>
               <div className="grid grid-cols-2 gap-3">
                 <input type="text" placeholder="Ville" value={customCity} onChange={(e) => setCustomCity(e.target.value)} className={inputClass} />
@@ -1885,10 +1962,10 @@ function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Part
                   {REGIONS.map((r) => <option key={r} value={r}>{r}</option>)}
                 </select>
               </div>
-              <select title="Niveau" value={customLevel} onChange={(e) => setCustomLevel(e.target.value)} className={`${inputClass} appearance-none`}>
-                <option value="">Niveau</option>
-                {LEAGUE_LEVELS.map((l) => <option key={l} value={l}>{l}</option>)}
-              </select>
+              {/* Niveau hardcoded to 'Civil' for civil-coach onboarding —
+                  the previous free-text dropdown allowed AAA/AA/A/Club
+                  values that would have placed the league outside the
+                  level='Civil' filter on LeagueSelectStep. */}
               <div className="flex gap-2">
                 <button type="button" onClick={() => setShowCustom(false)} className="h-10 px-4 rounded-lg border border-white/10 text-xs font-bold text-white hover:border-white/20 transition-colors">
                   Annuler
@@ -1900,14 +1977,20 @@ function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Part
                     const { data: { user: authUser } } = await supabase.auth.getUser();
                     if (!authUser) { setCustomSaving(false); return; }
 
+                    // customSport now carries a sport_id (uuid),
+                    // since the dropdown above is keyed on s.id.
+                    // The display name comes from dbSports lookup.
+                    const sportRow = dbSports.find((s) => s.id === customSport);
+                    const sportName = sportRow?.nom ?? "";
+
                     const { data: newLeague, error } = await supabase
                       .from("leagues")
                       .insert({
                         name: customName,
-                        sport: customSport,
+                        sport_id: customSport || null,
                         city: customCity || null,
                         region: customRegion || null,
-                        level: customLevel || null,
+                        level: "Civil",
                         created_by: authUser.id,
                       })
                       .select()
@@ -1916,13 +1999,47 @@ function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Part
                     console.log("[LeagueCoachLeagueStep] Created league:", newLeague, error);
 
                     if (newLeague) {
-                      save({ institution: { id: newLeague.id, name: newLeague.name, sport: newLeague.sport, city: newLeague.city, region: newLeague.region, level: newLeague.level, type: "ligue_civile" } });
+                      save({
+                        institution: {
+                          id: newLeague.id,
+                          name: newLeague.name,
+                          sport_id: newLeague.sport_id,
+                          sport: sportName,
+                          city: newLeague.city,
+                          region: newLeague.region,
+                          level: newLeague.level,
+                          type: "ligue_civile",
+                        },
+                      });
                     } else {
-                      save({ institution: { name: customName, sport: customSport, city: customCity, region: customRegion, level: customLevel, type: "ligue_civile", pending: true } });
+                      save({
+                        institution: {
+                          name: customName,
+                          sport_id: customSport,
+                          sport: sportName,
+                          city: customCity,
+                          region: customRegion,
+                          level: "Civil",
+                          type: "ligue_civile",
+                          pending: true,
+                        },
+                      });
                     }
                   } catch (err) {
                     console.error("[LeagueCoachLeagueStep] Error creating league:", err);
-                    save({ institution: { name: customName, sport: customSport, city: customCity, region: customRegion, level: customLevel, type: "ligue_civile", pending: true } });
+                    const sportRow = dbSports.find((s) => s.id === customSport);
+                    save({
+                      institution: {
+                        name: customName,
+                        sport_id: customSport,
+                        sport: sportRow?.nom ?? "",
+                        city: customCity,
+                        region: customRegion,
+                        level: "Civil",
+                        type: "ligue_civile",
+                        pending: true,
+                      },
+                    });
                   } finally {
                     setCustomSaving(false);
                     setCustomSubmitted(true);
@@ -1943,7 +2060,19 @@ function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Part
             <h3 className="font-head text-base font-black text-white uppercase">Ton équipe</h3>
             <p className="text-xs text-[#9CA3AF] mt-0.5">Quelle équipe entraînes-tu dans cette ligue?</p>
           </div>
-          <input type="text" placeholder="Ex: U18 Division 1" value={teamName} onChange={(e) => setTeamName(e.target.value)} className={inputClass} />
+          <input type="text" placeholder="Nom de l'équipe (ex: Patriotes Senior)" value={teamName} onChange={(e) => setTeamName(e.target.value)} className={inputClass} />
+          {/* age_group is REQUIRED — see comment on the state declaration. */}
+          <div>
+            <label className={`${label} text-[#9CA3AF] mb-1.5 block`}>Catégorie d&apos;âge *</label>
+            <input
+              type="text"
+              placeholder="Ex: U13, U15, U17, Senior"
+              value={teamAgeGroup}
+              onChange={(e) => setTeamAgeGroup(e.target.value)}
+              className={inputClass}
+              required
+            />
+          </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className={`${label} text-[#9CA3AF] mb-1.5 block`}>Catégorie</label>
