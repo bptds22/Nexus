@@ -254,7 +254,7 @@ export default function AthleteOnboardingPage() {
   // their coach already created (no athlete-side team creation).
   // Can stay NULL if athlete clicks "Continuer sans équipe" — Loi 25
   // and the rest of the profile still apply, the recruiter card will
-  // surface a "Pas d'équipe" badge per 5.3d.
+  // surface a "Ligue Civile" badge per 5.3d.
   const [userContext, setUserContext] = useState<"scolaire" | "ligue_civile" | null>(null);
   const [selectedLeagueTeamId, setSelectedLeagueTeamId] = useState<string | null>(null);
   const [selectedLeagueTeamName, setSelectedLeagueTeamName] = useState("");

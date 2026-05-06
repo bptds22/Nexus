@@ -152,7 +152,7 @@ function AthleteSearchCard({ a, onToggleFav, favDisabled, favDisabledReason }: {
           <span className="text-[12px] text-[#6b7280] truncate flex items-center gap-2 min-w-0">
             {a.noTeam ? (
               <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold uppercase tracking-wider text-[#9CA3AF] shrink-0">
-                Pas d&apos;équipe
+                Ligue Civile
               </span>
             ) : (
               <span className="truncate">{a.school}</span>
@@ -215,7 +215,7 @@ function AthleteSearchRow({ a, onToggleFav, favDisabled, favDisabledReason }: {
         </Link>
         {a.noTeam ? (
           <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold uppercase tracking-wider text-[#9CA3AF]">
-            Pas d&apos;équipe
+            Ligue Civile
           </span>
         ) : (
           <p className="text-[13px] text-[#9CA3AF] truncate">{a.school}</p>
@@ -507,7 +507,7 @@ function RechercheContent() {
             ouvertPrive: a.ouvert_cegep_prive === true,
             ouvertAnglophone: a.ouvert_cegep_anglophone === true,
             createdAt: (a.created_at as string) || "",
-            // "Pas d'équipe" badge fires when neither anchor is set —
+            // "Ligue Civile" badge fires when neither anchor is set —
             // chk_school_or_league guarantees both can't be set, so
             // this is purely the both-NULL "no anchor" case (civil
             // athlete who clicked "Continuer sans équipe" at signup).

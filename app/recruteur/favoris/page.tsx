@@ -42,7 +42,7 @@ interface FavoriAthlete {
   committedSchoolName: string;
   openToOffers: boolean | null;
   badges: { badgeId: string; label: string; icon: string }[];
-  // "Pas d'équipe" = neither school nor league_team set on the
+  // "Ligue Civile" = neither school nor league_team set on the
   // athlete row. chk_school_or_league guarantees both can't be set.
   noTeam: boolean;
 }
@@ -117,11 +117,11 @@ function FavoriGridCard({ a, onUnfavorite }: { a: FavoriAthlete; onUnfavorite: (
           />
         </div>
 
-        {/* School · Promotion (or "Pas d'équipe" badge) */}
+        {/* School · Promotion (or "Ligue Civile" badge) */}
         <p className="text-[13px] text-[#c0c4cc] mt-1 flex items-center gap-2 flex-wrap">
           {a.noTeam ? (
             <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold uppercase tracking-wider text-[#9CA3AF]">
-              Pas d&apos;équipe
+              Ligue Civile
             </span>
           ) : (
             <span>{a.school}</span>
@@ -191,7 +191,7 @@ function FavoriListRow({ a, onUnfavorite }: { a: FavoriAthlete; onUnfavorite: (i
         </div>
       </div>
 
-      {/* Name + school (or "Pas d'équipe" badge) — fixed width */}
+      {/* Name + school (or "Ligue Civile" badge) — fixed width */}
       <div className="w-[200px] shrink-0">
         <Link href={`/recruteur/athletes/${a.id}`} className="text-[14px] font-bold text-white hover:text-[#E63946] transition-colors truncate block">
           {a.firstName} {a.lastName}
@@ -199,7 +199,7 @@ function FavoriListRow({ a, onUnfavorite }: { a: FavoriAthlete; onUnfavorite: (i
         <p className="text-[12px] text-[#6b7280] truncate flex items-center gap-1.5">
           {a.noTeam ? (
             <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-white/5 border border-white/10 text-[9px] font-bold uppercase tracking-wider text-[#9CA3AF]">
-              Pas d&apos;équipe
+              Ligue Civile
             </span>
           ) : (
             <span className="truncate">{a.school}</span>

@@ -69,11 +69,13 @@ const ATHLETE_SELECT = `
   open_to_offers,
   position_secondaire_id,
   school_id,
+  league_team_id,
   coach_id,
   sports!sport_id(nom),
   positions!position_id(nom, abreviation),
   schools!school_id(name, city, region),
   committed_school:schools!committed_school_id(name),
+  league_teams!league_team_id(name),
   evaluations(
     cote_globale,
     vitesse_explosivite, force_puissance, endurance_cardio, agilite_coordination,
@@ -363,7 +365,17 @@ export function mapToRecruiterView(raw: Record<string, unknown>): AthleteProfile
     age: 0,
     gender: ((raw.genre as string) || "M") as "M" | "F" | "Autre",
     photoUrl: (raw.photo_url as string) || "",
-    schoolName: schoolObj?.name || "",
+    // schoolName overloaded for civil context: civil athletes carry
+    // their league team name (or "Ligue Civile" label) so the
+    // 4-way-duplicated PlayerCard tickets render the right label
+    // without needing component changes. Tech debt logged P3.
+    schoolName: (() => {
+      if (raw.school_id) return schoolObj?.name || "";
+      const ltRel = (raw as Record<string, unknown>).league_teams;
+      const lt = (Array.isArray(ltRel) ? ltRel[0] : ltRel) as { name?: string } | null;
+      if (raw.league_team_id && lt?.name) return lt.name;
+      return "Ligue Civile";
+    })(),
     city: "",
     region: "",
     graduationYear: (raw.annee_diplomation as number) || 0,

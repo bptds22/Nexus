@@ -710,6 +710,37 @@ file.
       drift causes a real regression OR a fourth caller is
       needed.
 
+- [ ] **`schoolName` field overloaded for civil-context athletes.**
+      Shipped 2026-05-06 in 5.3d-fix as a tight workaround to avoid
+      touching the 4-way duplicated PlayerCard ticket components
+      (`AthletePlayerCard.tsx` + 3 local `PlayerCard` /
+      `PreviewPlayerCard` copies in
+      [`AthleteRecruiterProfileBody.tsx`](../components/shared/AthleteRecruiterProfileBody.tsx),
+      [`app/coach/athletes/[id]/page.tsx`](../app/coach/athletes/%5Bid%5D/page.tsx),
+      [`app/admin/athletes/[id]/page.tsx`](../app/admin/athletes/%5Bid%5D/page.tsx)).
+
+      `AthleteProfileRecruiterView.schoolName` now carries:
+      - the school name (école athletes)
+      - the civil team name (civil athletes with a team)
+      - the literal label "Ligue Civile" (civil athletes who chose
+        "Continuer sans équipe")
+
+      Branching lives in
+      [`app/coach/athletes/_data/loadAthleteFromSupabase.ts`](../app/coach/athletes/_data/loadAthleteFromSupabase.ts)
+      `mapToRecruiterView()` and in
+      [`AthleteRecruiterProfileBody.tsx`](../components/shared/AthleteRecruiterProfileBody.tsx)
+      load handler (the only consumer that doesn't pass through the
+      shared loader). The PlayerCard tickets render `schoolName`
+      verbatim — they don't know the field is overloaded.
+
+      Proper fix: consolidate `AthletePlayerCard` + the 3 local
+      `PlayerCard` duplicates into a single shared component, then
+      add explicit `isCivil` / `leagueTeamName` / `leagueName`
+      affiliation fields to `AthleteProfileRecruiterView`. The 4-way
+      ticket duplication is the same tech-debt class as the search
+      panel + AthleteCard duplications already logged above —
+      consolidating any one likely justifies sweeping the others.
+
 - [ ] **`<NoTeamBadge>` + `<AthleteCard>` extraction across
       recruiter surfaces.** The "Pas d'équipe" pill shipped in
       5.3d (commit pending) is duplicated inline at 5 render

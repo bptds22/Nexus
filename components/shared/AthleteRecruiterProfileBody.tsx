@@ -562,7 +562,20 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
           primaryPosition: pos?.abreviation ? `${pos.nom} (${pos.abreviation})` : pos?.nom || "",
           secondarySport: secondarySportName,
           secondaryPosition: secondaryPositionName,
-          schoolName: school?.name || "",
+          // schoolName is overloaded for civil context: when athletes
+          // have no school anchor, it carries the civil team name (or
+          // "Ligue Civile" label when the athlete chose "Continuer
+          // sans équipe"). Acceptable shortcut to avoid touching the
+          // 4-way duplicated PlayerCard; logged as P3 tech debt for
+          // proper consolidation. PlayerCard ticket renders schoolName
+          // verbatim — caller decides what it carries.
+          schoolName: (() => {
+            if (d.school_id) return school?.name || "";
+            const ltEmbed = Array.isArray(d.league_teams) ? d.league_teams[0] : d.league_teams;
+            const ltName = (ltEmbed as { name?: string } | null)?.name;
+            if (d.league_team_id && ltName) return ltName;
+            return "Ligue Civile";
+          })(),
           region: school?.region || "",
           city: school?.city || "",
           age: age || 0,

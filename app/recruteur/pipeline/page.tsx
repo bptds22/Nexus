@@ -396,11 +396,11 @@ const DraggableKanbanCard = memo(function DraggableKanbanCard({
             {card.jersey && <span className="text-[12px] font-black text-[#E63946] shrink-0">#{card.jersey}</span>}
           </div>
 
-          {/* School + Year (or "Pas d'équipe" badge) */}
+          {/* School + Year (or "Ligue Civile" badge) */}
           <p className="text-[12px] text-[#6b7280] mt-1 truncate flex items-center gap-1.5">
             {card.noTeam ? (
               <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-white/5 border border-white/10 text-[9px] font-bold uppercase tracking-wider text-[#9CA3AF] shrink-0">
-                Pas d&apos;équipe
+                Ligue Civile
               </span>
             ) : (
               <span className="truncate">{card.school}</span>
@@ -472,7 +472,7 @@ function DragOverlayCard({ card }: { card: PipelineKanbanCard }) {
         <span className="text-[11px] text-[#9CA3AF]">{card.position}</span>
         {card.noTeam ? (
           <span className="inline-flex items-center px-1.5 py-0 rounded-full bg-white/5 border border-white/10 text-[9px] font-bold uppercase tracking-wider text-[#9CA3AF]">
-            Pas d&apos;équipe
+            Ligue Civile
           </span>
         ) : (
           <span className="text-[11px] text-[#6b7280]">· {card.school}</span>
@@ -651,7 +651,7 @@ function SlideOver({
             </div>
             {card.noTeam ? (
               <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold uppercase tracking-wider text-[#9CA3AF] mt-1">
-                Pas d&apos;équipe
+                Ligue Civile
               </span>
             ) : (
               <p className="text-[13px] text-[#6b7280] mt-1">{card.school}</p>
