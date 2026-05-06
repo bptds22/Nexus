@@ -1944,8 +1944,8 @@ function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Part
           {customSubmitted ? (
             <div className="bg-[#111317] border border-[#22C55E]/20 rounded-lg p-5 text-center space-y-2">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2" strokeLinecap="round" className="mx-auto"><path d="M20 6L9 17l-5-5"/></svg>
-              <p className="text-sm text-[#22C55E] font-bold">Demande soumise!</p>
-              <p className="text-xs text-[#6B7280]">Un administrateur créera ta ligue. Tu pourras continuer entre-temps.</p>
+              <p className="text-sm text-[#22C55E] font-bold">Ligue créée!</p>
+              <p className="text-xs text-[#6B7280]">Tu peux maintenant créer ton équipe ci-dessous.</p>
             </div>
           ) : (
             <div className="space-y-3 bg-[#111317] border border-white/10 rounded-lg p-4">
