@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import SubscriptionSection from "@/components/subscription/SubscriptionSection";
 import AthletePlayerCard from "@/components/shared/AthletePlayerCard";
 import CoachPicker from "@/components/coach/CoachPicker";
+import CivilCoachPicker from "@/components/coach/CivilCoachPicker";
 import { createClient } from "@/lib/supabase/client";
 import { loadAthleteRaw, mapToRecruiterView } from "@/app/coach/athletes/_data/loadAthleteFromSupabase";
 import type { AthleteProfileRecruiterView } from "@/lib/types/models";
@@ -311,10 +312,9 @@ export default function ParametresPage() {
 
               <div className="border-t border-[#2D3748]/40 pt-6">
                 <h2 className="font-head text-lg font-black text-white uppercase tracking-tight mb-4">Mon coach</h2>
-                {profile?.context === "ligue_civile" ? (
+                {profile?.context === "ligue_civile" && !profile.leagueTeamId ? (
                   <div className="bg-[#13151a] border border-white/5 rounded-lg p-4">
-                    <p className="text-[13px] text-[#9CA3AF]">Sélection de coach civil disponible bientôt.</p>
-                    <p className="text-[11px] text-[#4a4d56] mt-1.5 italic">Pour l&apos;instant, demande à ton coach de t&apos;ajouter à son équipe.</p>
+                    <p className="text-[13px] text-[#9CA3AF]">Tu dois d&apos;abord être assigné à une équipe civile pour sélectionner un coach.</p>
                   </div>
                 ) : profile?.coachId ? (
                   <div className="bg-[#13151a] border border-white/5 rounded-lg p-4 flex items-center gap-4">
@@ -706,13 +706,21 @@ export default function ParametresPage() {
               {profile.coachId ? "Changer de coach" : "Sélectionner un coach"}
             </h3>
             <p className="text-[13px] text-[#9CA3AF] mb-5">
-              Choisis ton coach actuel à {profile.schoolName}.
+              Choisis ton coach actuel à {profile.context === "ligue_civile" ? (profile.leagueTeamName || "ton équipe") : profile.schoolName}.
             </p>
-            <CoachPicker
-              schoolId={profile.schoolId}
-              selectedCoachId={pickerSelection}
-              onChange={setPickerSelection}
-            />
+            {profile.context === "ligue_civile" && profile.leagueTeamId ? (
+              <CivilCoachPicker
+                leagueTeamId={profile.leagueTeamId}
+                selectedCoachId={pickerSelection}
+                onChange={setPickerSelection}
+              />
+            ) : (
+              <CoachPicker
+                schoolId={profile.schoolId}
+                selectedCoachId={pickerSelection}
+                onChange={setPickerSelection}
+              />
+            )}
             <div className="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-[#2D3748]/40">
               <button
                 type="button"
