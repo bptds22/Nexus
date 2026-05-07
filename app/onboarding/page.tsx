@@ -483,6 +483,33 @@ export default function OnboardingPage() {
       const raw = localStorage.getItem("nexus_user");
       const localUser = raw ? JSON.parse(raw) : {};
 
+      // Persist DirectorChoiceStep choices made at step 2.
+      //
+      // Pre-5.4d, the wizard wrote is_school_admin / school_admin_type /
+      // pending_director_invite to localStorage but finish() never
+      // moved them to the DB — every coach who picked "C'est moi"
+      // landed on the dashboard with is_school_admin still false.
+      //
+      // is_school_admin is the canonical admin flag for school + CÉGEP
+      // + league contexts per CLAUDE.md (school vs CÉGEP inferred from
+      // role). Only set to true when the user actively chose — leave
+      // unset (undefined → not in update) when they skipped step 2 so
+      // we don't stomp prior state with a false default.
+      //
+      // school_admin_type ("owner" / "interim") and the full
+      // pending_director_invite object live in profile_data JSONB
+      // since neither has a dedicated column. Rewriting profile_data
+      // here also wipes orphan keys (e.g. pre-5.4a sports_secondaires
+      // from legacy wizard completions) — see post-launch-bugs P3.
+      const adminUpdates: Record<string, unknown> = {};
+      if (localUser.is_school_admin === true) adminUpdates.is_school_admin = true;
+      const profileData = {
+        bio: localUser.profile?.bio || null,
+        experience_years: localUser.profile?.experience_years || null,
+        admin_type: localUser.school_admin_type || localUser.cegep_admin_type || null,
+        pending_director_invite: localUser.pending_director_invite || null,
+      };
+
       // Save profile data to users table
       await supabase
         .from("users")
@@ -491,6 +518,8 @@ export default function OnboardingPage() {
           first_name: localUser.firstName || user?.firstName,
           last_name: localUser.lastName || user?.lastName,
           phone: localUser.profile?.phone || null,
+          ...adminUpdates,
+          profile_data: profileData,
         })
         .eq("id", authUser.id);
 
