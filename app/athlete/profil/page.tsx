@@ -936,6 +936,7 @@ export default function AthleteProfilPage() {
           sports!sport_id(nom),
           positions!position_id(nom, abreviation),
           schools!school_id(name, region, city),
+          league_teams!league_team_id(name),
           evaluations(vitesse_explosivite, force_puissance, endurance_cardio, agilite_coordination, vision_du_jeu, sens_tactique, leadership, discipline, coachabilite, intelligence_jeu, competitivite, esprit_equipe, resilience, attitude_mentalite, cote_globale, rapport_entraineur, distinctions),
           users!athletes_coach_id_fkey(first_name, last_name)
         `)
@@ -962,8 +963,15 @@ export default function AthleteProfilPage() {
       const sportRel = Array.isArray(raw.sports) ? raw.sports[0] : raw.sports;
       const posRel = Array.isArray(raw.positions) ? raw.positions[0] : raw.positions;
       const schoolRel = Array.isArray(raw.schools) ? raw.schools[0] : raw.schools;
+      const teamRel = Array.isArray(raw.league_teams) ? raw.league_teams[0] : raw.league_teams;
       const evalRel = Array.isArray(raw.evaluations) ? raw.evaluations[0] : raw.evaluations;
       const coachRel = Array.isArray(raw.users) ? raw.users[0] : raw.users;
+      const isCivil = !raw.school_id;
+      const schoolNameOverloaded = raw.school_id
+        ? (schoolRel?.name || "")
+        : raw.league_team_id && teamRel?.name
+          ? teamRel.name
+          : "Ligue Civile";
 
       const heightFt = raw.taille_pieds;
       const heightIn = raw.taille_pouces;
@@ -1010,7 +1018,8 @@ export default function AthleteProfilPage() {
         primaryPosition: posRel?.nom || posRel?.abreviation || "",
         secondarySport: secondarySportName,
         secondaryPosition: secondaryPositionName,
-        schoolName: schoolRel?.name || "",
+        schoolName: schoolNameOverloaded,
+        isCivil,
         city: schoolRel?.city || "",
         region: schoolRel?.region || "",
         graduationYear: raw.annee_diplomation || "",
@@ -1095,14 +1104,21 @@ export default function AthleteProfilPage() {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    const { data: raw } = await supabase.from("athletes").select("*, sports!sport_id(nom), positions!position_id(nom, abreviation), schools!school_id(name, region, city), evaluations(vitesse_explosivite, force_puissance, endurance_cardio, agilite_coordination, vision_du_jeu, sens_tactique, leadership, discipline, coachabilite, intelligence_jeu, competitivite, esprit_equipe, resilience, attitude_mentalite, cote_globale, rapport_entraineur, distinctions), users!athletes_coach_id_fkey(first_name, last_name)").eq("user_id", user.id).maybeSingle();
+    const { data: raw } = await supabase.from("athletes").select("*, sports!sport_id(nom), positions!position_id(nom, abreviation), schools!school_id(name, region, city), league_teams!league_team_id(name), evaluations(vitesse_explosivite, force_puissance, endurance_cardio, agilite_coordination, vision_du_jeu, sens_tactique, leadership, discipline, coachabilite, intelligence_jeu, competitivite, esprit_equipe, resilience, attitude_mentalite, cote_globale, rapport_entraineur, distinctions), users!athletes_coach_id_fkey(first_name, last_name)").eq("user_id", user.id).maybeSingle();
     if (!raw) return;
     // Re-run the same mapping (simplified — just update key display fields)
     const sportRel = Array.isArray(raw.sports) ? raw.sports[0] : raw.sports;
     const posRel = Array.isArray(raw.positions) ? raw.positions[0] : raw.positions;
     const schoolRel = Array.isArray(raw.schools) ? raw.schools[0] : raw.schools;
+    const teamRel = Array.isArray(raw.league_teams) ? raw.league_teams[0] : raw.league_teams;
     const evalRel = Array.isArray(raw.evaluations) ? raw.evaluations[0] : raw.evaluations;
     const coachRel = Array.isArray(raw.users) ? raw.users[0] : raw.users;
+    const isCivil = !raw.school_id;
+    const schoolNameOverloaded = raw.school_id
+      ? (schoolRel?.name || "")
+      : raw.league_team_id && teamRel?.name
+        ? teamRel.name
+        : "Ligue Civile";
     const heightDisplay = raw.taille_pieds ? `${raw.taille_pieds}'${raw.taille_pouces || 0}"` : "";
     const weightDisplay = raw.poids_lbs ? `${raw.poids_lbs} lbs` : "";
     let age = 0;
@@ -1128,7 +1144,7 @@ export default function AthleteProfilPage() {
       ...a,
       firstName: raw.first_name||"", lastName: raw.last_name||"", isVerified: raw.verified===true, profileCompleteness,
       primarySport: sportRel?.nom||"", primaryPosition: posRel?.nom||posRel?.abreviation||"",
-      schoolName: schoolRel?.name||"", city: schoolRel?.city||"", region: schoolRel?.region||"",
+      schoolName: schoolNameOverloaded, isCivil, city: schoolRel?.city||"", region: schoolRel?.region||"",
       graduationYear: raw.annee_diplomation||"", age, gender: raw.genre||"", telephone: raw.telephone||"", jerseyNumber: raw.numero_jersey||"",
       heightDisplay, weightDisplay, wingspan: raw.envergure||"", handSize: raw.taille_mains||"",
       dominantHand: raw.main_dominante||"", dominantFoot: raw.pied_dominant||"",
@@ -1502,7 +1518,7 @@ export default function AthleteProfilPage() {
                 <LockedField label="Genre" value={a.gender === "M" ? "Masculin" : a.gender === "F" ? "Féminin" : a.gender === "X" ? "Autre" : null} recruiterView={recruiterView} />
                 <LockedField label="Ville" value={a.city} recruiterView={recruiterView} />
                 <LockedField label="Région" value={a.region} recruiterView={recruiterView} />
-                <LockedField label="École" value={a.schoolName} recruiterView={recruiterView} />
+                <LockedField label={a.isCivil ? "Équipe civile" : "École"} value={a.schoolName} recruiterView={recruiterView} />
                 <LockedField label="Graduation" value={a.graduationYear ? String(a.graduationYear) : null} recruiterView={recruiterView} />
                 <LockedField label="Téléphone" value={a.telephone} recruiterView={recruiterView} />
               </>
