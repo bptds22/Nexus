@@ -577,9 +577,9 @@ export default function OnboardingPage() {
 
   /* ── Step labels per role ── */
   const stepLabelsMap: Record<string, string[]> = {
-    coach: ["Profil", "École", "Directeur", "Athlète"],
+    coach: ["Profil", "École", "Directeur", "Confirmation"],
     recruiter: ["Profil", "CÉGEP", "Directeur", "Critères"],
-    coach_league: ["Profil", "Ligue", "Coordonnateur", "Athlète"],
+    coach_league: ["Profil", "Ligue", "Coordonnateur", "Confirmation"],
     coordinator_league: ["Profil", "Ligue", "Invitations"],
   };
   const stepLabels = stepLabelsMap[user.role] || ["1", "2", "3"];
@@ -1018,28 +1018,13 @@ function SchoolStep({ user, save }: { user: NexusUser; save: (u: Partial<NexusUs
 }
 
 /* ── Coach confirmation (step 3) ── */
-function CoachConfirmation({ user }: { user: NexusUser }) {
-  const p = (user.profile || {}) as Record<string, unknown>;
-  const inst = (user.institution || {}) as Record<string, unknown>;
+type ConfirmationRow = { label: string; value: string };
 
-  const rows: { label: string; value: string }[] = [
-    { label: "Nom", value: `${user.firstName} ${user.lastName}` },
-    { label: "Courriel", value: user.email },
-    p.sport_principal ? { label: "Sport principal", value: p.sport_principal as string } : null,
-    p.experience_years ? { label: "Expérience", value: `${p.experience_years} ans` } : null,
-    p.phone ? { label: "Téléphone", value: p.phone as string } : null,
-    inst.name ? { label: "École", value: inst.name as string } : null,
-    [inst.city, inst.region].filter(Boolean).join(", ") ? { label: "Ville", value: [inst.city, inst.region].filter(Boolean).join(", ") } : null,
-    inst.conference ? { label: "Conférence RSEQ", value: inst.conference as string } : null,
-  ].filter(Boolean) as { label: string; value: string }[];
-
+function ConfirmationSection({ title, rows }: { title?: string; rows: ConfirmationRow[] }) {
+  if (rows.length === 0) return null;
   return (
-    <div className="space-y-5">
-      <div>
-        <h2 className="font-head text-xl font-black text-white uppercase">Confirme ton profil</h2>
-        <p className="text-sm text-[#9CA3AF] mt-1">Vérifie que tout est correct avant de continuer.</p>
-      </div>
-
+    <div>
+      {title && <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#9CA3AF] mb-2">{title}</h3>}
       <div className="bg-[#111317] border border-white/10 rounded-xl overflow-hidden">
         {rows.map((row, i) => (
           <div key={i} className={`flex items-center justify-between px-5 py-3.5 ${i < rows.length - 1 ? "border-b border-white/5" : ""}`}>
@@ -1048,6 +1033,101 @@ function CoachConfirmation({ user }: { user: NexusUser }) {
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+function CoachConfirmation({ user }: { user: NexusUser }) {
+  // LeagueCoachLeagueStep writes league_team / league_team_id directly
+  // to localStorage without going through save() (see :1898-1911), so
+  // those fields aren't in the React `user` prop. Read fresh from
+  // localStorage to surface them in the civil recap. Same pattern as
+  // next() at :380.
+  const raw = typeof window !== "undefined" ? localStorage.getItem("nexus_user") : null;
+  const localUser = raw ? (JSON.parse(raw) as NexusUser) : user;
+  const p = (localUser.profile || {}) as Record<string, unknown>;
+  const inst = (localUser.institution || {}) as Record<string, unknown>;
+  const isCivil = user.role === "coach_league";
+
+  const profilRows: ConfirmationRow[] = [
+    { label: "Nom", value: `${user.firstName} ${user.lastName}` },
+    { label: "Courriel", value: user.email },
+    p.sport_principal ? { label: "Sport principal", value: p.sport_principal as string } : null,
+    p.experience_years ? { label: "Expérience", value: `${p.experience_years} ans` } : null,
+    p.phone ? { label: "Téléphone", value: p.phone as string } : null,
+  ].filter(Boolean) as ConfirmationRow[];
+
+  // Affiliation rows differ between civil (ligue + équipe metadata) and
+  // école (school + region + conference). The "Coach principal" / role
+  // sub-line — derived from school_admin_type + pending_director_invite
+  // written by DirectorChoiceStep — is shown only for civil per the
+  // 5.4b spec. École keeps its existing single-block layout.
+  if (isCivil) {
+    const team = (p.league_team || {}) as Record<string, unknown>;
+    const teamGender = team.gender as string | undefined;
+    const teamCategory = team.category as string | undefined;
+    const genreDivision = [teamGender, teamCategory].filter(Boolean).join(" / ");
+
+    const affiliationRows: ConfirmationRow[] = [
+      inst.name ? { label: "Ligue", value: inst.name as string } : null,
+      team.name ? { label: "Équipe", value: team.name as string } : null,
+      team.age_group ? { label: "Catégorie d'âge", value: team.age_group as string } : null,
+      genreDivision ? { label: "Genre / Division", value: genreDivision } : null,
+      team.season ? { label: "Saison", value: team.season as string } : null,
+    ].filter(Boolean) as ConfirmationRow[];
+
+    const invite = localUser.pending_director_invite as Record<string, unknown> | null;
+    const adminType = (localUser as unknown as Record<string, unknown>).school_admin_type as string | undefined;
+    let coachPrincipalValue: string | null = null;
+    if (invite?.email) coachPrincipalValue = `Invitation envoyée à ${invite.email}`;
+    else if (adminType === "owner") coachPrincipalValue = "C'est moi";
+    const roleRows: ConfirmationRow[] = coachPrincipalValue
+      ? [{ label: "Coach principal", value: coachPrincipalValue }]
+      : [];
+
+    return (
+      <div className="space-y-5">
+        <div>
+          <h2 className="font-head text-xl font-black text-white uppercase">Confirme ton profil</h2>
+          <p className="text-sm text-[#9CA3AF] mt-1">Vérifie que tout est correct avant de continuer.</p>
+        </div>
+
+        <ConfirmationSection title="Profil" rows={profilRows} />
+        <ConfirmationSection title="Affiliation" rows={affiliationRows} />
+        <ConfirmationSection title="Rôle" rows={roleRows} />
+
+        {typeof p.bio === "string" && p.bio && (
+          <div className="bg-[#111317] border border-white/10 rounded-xl px-5 py-4">
+            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#6B7280] block mb-2">Bio</span>
+            <p className="text-sm text-[#9CA3AF] leading-relaxed italic">&ldquo;{p.bio}&rdquo;</p>
+          </div>
+        )}
+
+        <div className="flex items-center gap-3 p-4 rounded-lg bg-[#22C55E]/10 border border-[#22C55E]/20">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+          <p className="text-xs text-[#22C55E] font-bold">Tout est bon? Clique sur Terminer pour accéder à ton tableau de bord.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // École flat layout — unchanged from pre-5.4b shape (sports_secondaires
+  // row already removed in 5.4a).
+  const ecoleRows: ConfirmationRow[] = [
+    ...profilRows,
+    inst.name ? { label: "École", value: inst.name as string } : null,
+    [inst.city, inst.region].filter(Boolean).join(", ") ? { label: "Ville", value: [inst.city, inst.region].filter(Boolean).join(", ") } : null,
+    inst.conference ? { label: "Conférence RSEQ", value: inst.conference as string } : null,
+  ].filter(Boolean) as ConfirmationRow[];
+
+  return (
+    <div className="space-y-5">
+      <div>
+        <h2 className="font-head text-xl font-black text-white uppercase">Confirme ton profil</h2>
+        <p className="text-sm text-[#9CA3AF] mt-1">Vérifie que tout est correct avant de continuer.</p>
+      </div>
+
+      <ConfirmationSection rows={ecoleRows} />
 
       {typeof p.bio === "string" && p.bio && (
         <div className="bg-[#111317] border border-white/10 rounded-xl px-5 py-4">
