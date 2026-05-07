@@ -674,6 +674,28 @@ file.
       Block on lawyer review (P1) — they may have audit-trail
       requirements that affect the schema.
 
+- [ ] **Civil coach onboarding is CREATE-team only — no JOIN existing
+      team flow.** Discovered 2026-05-06 during Phase 5.4 discovery.
+      [`app/onboarding/page.tsx:1805-2103`](../app/onboarding/page.tsx#L1805-L2103)
+      (`LeagueCoachLeagueStep`) only supports creating a new
+      `league_team` row when a civil coach onboards — there is no
+      UX to search for an existing team, request to join, or
+      otherwise be added as a `league_coaches` row with
+      `role: "COACH"` (the schema's distinction between team-creator
+      and team-joiner). Every civil coach therefore becomes ADMIN of
+      a fresh team. If two coaches of the same physical team
+      onboard, they end up as ADMIN of two separate `league_team`
+      rows pointing at the same league — silent data fragmentation.
+
+      Resolution: extend the team section with two paths — "Créer
+      une nouvelle équipe" (current behavior) vs "Rejoindre une
+      équipe existante" (search by league + name → `league_coaches`
+      INSERT with `role: "COACH"`, no `league_teams` INSERT).
+      Likely needs an approval/notification step (the existing
+      ADMIN of the team approves the join request) — coordinate
+      with the eventual coach-invite flow rather than shipping in
+      isolation. Out of Phase 5.4 scope.
+
 ---
 
 ## P3 — Latent / future work
@@ -981,6 +1003,43 @@ file.
       replacing the 5.3e-iii placeholder, and verify the recruiter-side
       `AthleteRecruiterProfileBody` coach list populates for civil
       athletes. One migration + one page change + one verify pass.
+
+- [ ] **Civil onboarding wizard creates orphan `league_teams` rows on
+      back-navigation.** Discovered 2026-05-06 during Phase 5.4
+      discovery. In
+      [`app/onboarding/page.tsx:1928-1931`](../app/onboarding/page.tsx#L1928-L1931)
+      (`LeagueCoachLeagueStep`), `teamSaved` is reset to `false`
+      whenever `teamName` / `teamAgeGroup` / `teamCategory` /
+      `teamGender` change. Combined with the auto-save `useEffect`
+      at line 1851, this means: user fills team fields → INSERT
+      `league_teams` row + `league_coaches` row → user navigates
+      back to step 0, edits, returns to step 1, modifies team
+      name → fresh INSERT of both rows without cleaning up the
+      previous pair. Each back-and-forth round-trip leaks one
+      `league_team` + one `league_coaches` row.
+
+      Resolution: either (a) UPDATE the existing row when
+      `teamSaved=true` instead of resetting to false and re-INSERTing,
+      or (b) DELETE the previous team before re-INSERTing. (a) is
+      cleaner since league_team_id is referenced from localStorage
+      across steps. Defer until orphan accumulation is observed in
+      production data.
+
+- [ ] **Orphan `sports_secondaires` keys in `users.profile_data`
+      JSONB.** Created 2026-05-06 alongside Phase 5.4a (removal of
+      the sports_secondaires UI). The wizard previously wrote
+      `profile_data.sports_secondaires: []` (mostly empty arrays)
+      for every coach and recruiter onboardee. Removing the writers
+      stops new entries but leaves existing keys in place — they
+      have no readers anywhere outside the now-deleted recap row,
+      so they're functionally dead, just not cleaned up.
+
+      Resolution: a one-shot UPDATE
+      `SET profile_data = profile_data - 'sports_secondaires'`
+      across `public.users`. Trivial and safe (no readers); defer
+      to the next migration that touches `users.profile_data`
+      cleanup, or run as a standalone housekeeping migration when
+      convenient.
 
 ---
 

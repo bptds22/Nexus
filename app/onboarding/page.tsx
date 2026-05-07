@@ -423,32 +423,31 @@ export default function OnboardingPage() {
             sport: profileData.sport_principal || null,
             profile_data: {
               bio: profileData.bio || null,
-              sports_secondaires: profileData.sports_secondaires || [],
               experience_years: profileData.experience_years || null,
             },
           }).eq("id", authUser.id);
           if (error) { console.error("[Onboarding] step 0 save error:", error); setStepSaving(false); return; }
         }
 
-        // Step 1 = School/CÉGEP selection
-        if (step === 1 && institution.name) {
+        // Step 1 = School/CÉGEP selection. Civil-coach onboarding
+        // (role === 'coach_league') has a league as institution, not
+        // a school, so this whole block is intentionally school-only.
+        if (step === 1 && institution.name && role === "coach") {
           // Find the school_id from schools table
           const { data: schoolRow } = await supabase.from("schools").select("id").eq("name", institution.name).maybeSingle();
           if (schoolRow) {
             // Save school_id to users table
             await supabase.from("users").update({ school_id: schoolRow.id, region: institution.region || null }).eq("id", authUser.id);
 
-            // Upsert into school_coaches for coach roles
-            if (role === "coach" || role === "coach_league") {
-              await supabase.from("school_coaches").upsert({
-                coach_id: authUser.id,
-                school_id: schoolRow.id,
-                role: "COACH",
-                sport: profileData.sport_principal || null,
-              }, { onConflict: "coach_id,school_id" }).then(({ error: scErr }) => {
-                if (scErr) console.error("[Onboarding] school_coaches upsert:", scErr);
-              });
-            }
+            // Upsert into school_coaches for the school-coach flow.
+            await supabase.from("school_coaches").upsert({
+              coach_id: authUser.id,
+              school_id: schoolRow.id,
+              role: "COACH",
+              sport: profileData.sport_principal || null,
+            }, { onConflict: "coach_id,school_id" }).then(({ error: scErr }) => {
+              if (scErr) console.error("[Onboarding] school_coaches upsert:", scErr);
+            });
           }
         }
 
@@ -852,15 +851,14 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
 function CoachProfile({ profile, save }: { profile: Record<string, unknown>; save: (u: Partial<NexusUser>) => void }) {
   const [bio, setBio] = useState((profile.bio as string) || "");
   const [sport, setSport] = useState((profile.sport_principal as string) || "");
-  const [secondary, setSecondary] = useState<string[]>((profile.sports_secondaires as string[]) || []);
   const [experience, setExperience] = useState((profile.experience_years as number) || 0);
   const [phone, setPhone] = useState((profile.phone as string) || "");
   const [photoUrl, setPhotoUrl] = useState((profile.photo_url as string) || "");
 
   useEffect(() => {
-    save({ profile: { ...profile, bio, sport_principal: sport, sports_secondaires: secondary, experience_years: experience, phone, photo_url: photoUrl } });
+    save({ profile: { ...profile, bio, sport_principal: sport, experience_years: experience, phone, photo_url: photoUrl } });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bio, sport, secondary, experience, phone, photoUrl]);
+  }, [bio, sport, experience, phone, photoUrl]);
 
   return (
     <div className="space-y-5">
@@ -888,16 +886,10 @@ function CoachProfile({ profile, save }: { profile: Record<string, unknown>; sav
       {/* Sport principal */}
       <div>
         <label className={`${label} text-[#9CA3AF] mb-1.5 block`}>Sport principal</label>
-        <select value={sport} onChange={(e) => { setSport(e.target.value); setSecondary(secondary.filter((s) => s !== e.target.value)); }} className={`${inputClass} appearance-none cursor-pointer`}>
+        <select value={sport} onChange={(e) => setSport(e.target.value)} className={`${inputClass} appearance-none cursor-pointer`}>
           <option value="">Sélectionner...</option>
           {SPORTS.map((s) => <option key={s} value={s}>{s}</option>)}
         </select>
-      </div>
-
-      {/* Sports secondaires */}
-      <div>
-        <label className={`${label} text-[#9CA3AF] mb-2 block`}>Sports secondaires</label>
-        <PillToggle options={SPORTS.filter((s) => s !== sport)} selected={secondary} onToggle={(v) => setSecondary((prev) => prev.includes(v) ? prev.filter((x) => x !== v) : [...prev, v])} />
       </div>
 
       {/* Experience + Phone */}
@@ -1034,7 +1026,6 @@ function CoachConfirmation({ user }: { user: NexusUser }) {
     { label: "Nom", value: `${user.firstName} ${user.lastName}` },
     { label: "Courriel", value: user.email },
     p.sport_principal ? { label: "Sport principal", value: p.sport_principal as string } : null,
-    (p.sports_secondaires as string[] | undefined)?.length ? { label: "Sports secondaires", value: (p.sports_secondaires as string[]).join(", ") } : null,
     p.experience_years ? { label: "Expérience", value: `${p.experience_years} ans` } : null,
     p.phone ? { label: "Téléphone", value: p.phone as string } : null,
     inst.name ? { label: "École", value: inst.name as string } : null,
@@ -1281,14 +1272,13 @@ function RecruiterProfile({ user, save }: { user: NexusUser; save: (u: Partial<N
   const p = (user.profile || {}) as Record<string, unknown>;
   const [bio, setBio] = useState((p.bio as string) || "");
   const [sport, setSport] = useState((p.sport_principal as string) || "");
-  const [secondary, setSecondary] = useState<string[]>((p.sports_secondaires as string[]) || []);
   const [experience, setExperience] = useState((p.experience_years as number) || 0);
   const [phone, setPhone] = useState((p.phone as string) || "");
 
   useEffect(() => {
-    save({ profile: { ...p, bio, sport_principal: sport, sports_secondaires: secondary, experience_years: experience, phone } });
+    save({ profile: { ...p, bio, sport_principal: sport, experience_years: experience, phone } });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bio, sport, secondary, experience, phone]);
+  }, [bio, sport, experience, phone]);
 
   const cegepName = (user.institution as Record<string, unknown>)?.name as string || null;
 
@@ -1321,11 +1311,6 @@ function RecruiterProfile({ user, save }: { user: NexusUser; save: (u: Partial<N
           <option value="">Sélectionner...</option>
           {SPORTS.map((s) => <option key={s} value={s}>{s}</option>)}
         </select>
-      </div>
-
-      <div>
-        <label className={`${label} text-[#9CA3AF] mb-2 block`}>Sports secondaires recrutés</label>
-        <PillToggle options={SPORTS.filter((s) => s !== sport)} selected={secondary} onToggle={(v) => setSecondary((prev) => prev.includes(v) ? prev.filter((x) => x !== v) : [...prev, v])} />
       </div>
 
       <div className="grid grid-cols-2 gap-3">
