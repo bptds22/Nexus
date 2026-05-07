@@ -386,9 +386,22 @@ export default function OnboardingPage() {
       if (role === "coach" || role === "recruiter") {
         const inst = localUser.institution as Record<string, unknown> | null;
         if (!inst || !inst.name) return false;
+      } else if (role === "coach_league") {
+        // Civil coach must (a) select or create a league AND (b) have
+        // an INSERTed league_team. profile.league_team_id is the
+        // persistent signal — set in localStorage by
+        // LeagueCoachLeagueStep only after both league_teams +
+        // league_coaches INSERTs succeed (see :2007). Pre-5.4e this
+        // branch was missing entirely, letting civil coaches finish
+        // onboarding with no team / no league_coaches row, breaking
+        // 5.3f (athlete-side picker) and the eventual team dashboard.
+        const inst = localUser.institution as Record<string, unknown> | null;
+        if (!inst || !inst.name) return false;
+        const profile = localUser.profile as Record<string, unknown> | null;
+        if (!profile?.league_team_id) return false;
       }
-      // League flows (coach_league, coordinator_league) intentionally
-      // ungated — to be addressed in a future session
+      // coordinator_league intentionally ungated — separate flow,
+      // tracked in post-launch-bugs.md.
     }
 
     // Other steps currently have no validation rules
