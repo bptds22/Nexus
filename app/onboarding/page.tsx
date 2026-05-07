@@ -1941,8 +1941,22 @@ function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Part
     });
   }, []);
 
-  // Team info
-  const inst = user.institution as Record<string, unknown> | null;
+  // Team info — read fresh localStorage instead of the parent React
+  // state. The wizard's `save()` helper at :355 writes to localStorage
+  // and bumps localUserVersion (forcing a re-render) but never calls
+  // setUser, so `user.institution` from the prop chain stays at its
+  // load-time value (null) for the entire session. Pre-5.4f, that
+  // made `hasLeague` architecturally always false: the team form
+  // never rendered after either the existing-league select or the
+  // custom-league INSERT, so civil coaches had no way to create
+  // their team. Same staleness affected `selectedLeagueId` and
+  // `selectedSportId` used by the team-INSERT useEffect — the
+  // INSERT may have been firing with null values when it ran at all.
+  // Mirror the localStorage-read pattern already used in
+  // CoachConfirmation (5.4b) and canProceed (5.4e).
+  const raw = typeof window !== "undefined" ? localStorage.getItem("nexus_user") : null;
+  const localUser = raw ? (JSON.parse(raw) as NexusUser) : user;
+  const inst = localUser.institution as Record<string, unknown> | null;
   const hasLeague = !!inst?.name;
   const selectedLeagueId = (inst?.id as string) || null;
   const selectedSportId = (inst?.sport_id as string) || null;

@@ -1041,6 +1041,25 @@ file.
       cleanup, or run as a standalone housekeeping migration when
       convenient.
 
+- [ ] **Civil onboarding step 1: minimal "Ligue créée!" feedback after
+      custom-league INSERT (5.4f-bis, deferred UX).** Surfaced during
+      5.4f discovery. Once a coach creates a custom league via
+      `LeagueCoachLeagueStep`, the form is replaced by a green banner
+      reading "Ligue créée! Tu peux maintenant créer ton équipe
+      ci-dessous." with no echo of what was actually created (name,
+      sport, city, region) and no way to revise or undo. The same
+      minimalism applies to the existing-league selection path — the
+      "C'est ma ligue" card stays visible but there's no "modifier ce
+      choix" affordance once the team form below begins to fill.
+
+      Resolution: render a small read-only summary card showing the
+      created/selected league details (name + sport pill + city/region)
+      with a discreet "Modifier" link that re-opens the picker / form.
+      Mirror the pattern already used by `SchoolStep` for école
+      ([page.tsx:984-1001](../app/onboarding/page.tsx#L984-L1001)) so
+      the two flows feel consistent. Pure UX polish; not a blocker —
+      data is correct end-to-end since 5.4f.
+
 ---
 
 ## Closeout rule
