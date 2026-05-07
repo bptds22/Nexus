@@ -64,8 +64,12 @@ export default function ParametresPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [profile, setProfile] = useState<{
     email: string;
+    context: string | null;
     schoolId: string;
     schoolName: string;
+    leagueTeamId: string | null;
+    leagueTeamName: string;
+    leagueName: string;
     coachId: string | null;
     coachName: string;
     coachPhotoUrl: string | null;
@@ -103,6 +107,7 @@ export default function ParametresPage() {
       .from("athletes")
       .select(`
         school_id,
+        league_team_id,
         coach_id,
         date_naissance,
         consentement_parental,
@@ -111,17 +116,29 @@ export default function ParametresPage() {
         partner_visibility_opted_in_at,
         partner_visibility_parental_consent,
         schools!school_id(name),
+        league_teams!league_team_id(name, leagues!league_id(name)),
         users!athletes_coach_id_fkey(first_name, last_name, photo_url)
       `)
       .eq("user_id", user.id)
       .maybeSingle();
     if (!row) return;
+    const { data: userRow } = await supabase
+      .from("users")
+      .select("context")
+      .eq("id", user.id)
+      .maybeSingle();
     const schoolRel = Array.isArray(row.schools) ? row.schools[0] : row.schools;
+    const teamRel = Array.isArray(row.league_teams) ? row.league_teams[0] : row.league_teams;
+    const leagueRel = teamRel ? (Array.isArray(teamRel.leagues) ? teamRel.leagues[0] : teamRel.leagues) : null;
     const coachRel = Array.isArray(row.users) ? row.users[0] : row.users;
     setProfile({
       email: user.email ?? "",
+      context: (userRow?.context as string | null) ?? null,
       schoolId: (row.school_id as string) ?? "",
       schoolName: schoolRel?.name ?? "",
+      leagueTeamId: (row.league_team_id as string | null) ?? null,
+      leagueTeamName: teamRel?.name ?? "",
+      leagueName: leagueRel?.name ?? "",
       coachId: (row.coach_id as string | null) ?? null,
       coachName: coachRel ? `${coachRel.first_name ?? ""} ${coachRel.last_name ?? ""}`.trim() : "",
       coachPhotoUrl: (coachRel?.photo_url as string | null) ?? null,
@@ -258,18 +275,48 @@ export default function ParametresPage() {
                 </div>
               </div>
 
-              <div className="border-t border-[#2D3748]/40 pt-6">
-                <h2 className="font-head text-lg font-black text-white uppercase tracking-tight mb-4">Mon école</h2>
-                <div className="flex items-center justify-between py-2 mb-4">
-                  <span className="text-[13px] text-[#9CA3AF]">École</span>
-                  <span className="text-[14px] font-bold text-white">{profile?.schoolName || "..."}</span>
+              {profile?.context === "ligue_civile" ? (
+                <div className="border-t border-[#2D3748]/40 pt-6">
+                  <h2 className="font-head text-lg font-black text-white uppercase tracking-tight mb-4">Mon équipe civile</h2>
+                  {profile.leagueTeamName ? (
+                    <>
+                      <div className="flex items-center justify-between py-2">
+                        <span className="text-[13px] text-[#9CA3AF]">Équipe</span>
+                        <span className="text-[14px] font-bold text-white">{profile.leagueTeamName}</span>
+                      </div>
+                      {profile.leagueName && (
+                        <div className="flex items-center justify-between py-2 mb-2">
+                          <span className="text-[13px] text-[#9CA3AF]">Ligue</span>
+                          <span className="text-[14px] font-bold text-white">{profile.leagueName}</span>
+                        </div>
+                      )}
+                      <p className="text-[11px] text-[#4a4d56] italic">Pour changer d&apos;équipe, contacte le support.</p>
+                    </>
+                  ) : (
+                    <div className="bg-[#13151a] border border-white/5 rounded-lg p-4">
+                      <p className="text-[13px] text-[#9CA3AF]">Tu n&apos;as pas encore d&apos;équipe civile assignée. Complète ton profil pour rejoindre une équipe.</p>
+                    </div>
+                  )}
                 </div>
-                <p className="text-[11px] text-[#4a4d56] italic">Pour changer d&apos;école, contacte le support.</p>
-              </div>
+              ) : (
+                <div className="border-t border-[#2D3748]/40 pt-6">
+                  <h2 className="font-head text-lg font-black text-white uppercase tracking-tight mb-4">Mon école</h2>
+                  <div className="flex items-center justify-between py-2 mb-4">
+                    <span className="text-[13px] text-[#9CA3AF]">École</span>
+                    <span className="text-[14px] font-bold text-white">{profile?.schoolName || "..."}</span>
+                  </div>
+                  <p className="text-[11px] text-[#4a4d56] italic">Pour changer d&apos;école, contacte le support.</p>
+                </div>
+              )}
 
               <div className="border-t border-[#2D3748]/40 pt-6">
                 <h2 className="font-head text-lg font-black text-white uppercase tracking-tight mb-4">Mon coach</h2>
-                {profile?.coachId ? (
+                {profile?.context === "ligue_civile" ? (
+                  <div className="bg-[#13151a] border border-white/5 rounded-lg p-4">
+                    <p className="text-[13px] text-[#9CA3AF]">Sélection de coach civil disponible bientôt.</p>
+                    <p className="text-[11px] text-[#4a4d56] mt-1.5 italic">Pour l&apos;instant, demande à ton coach de t&apos;ajouter à son équipe.</p>
+                  </div>
+                ) : profile?.coachId ? (
                   <div className="bg-[#13151a] border border-white/5 rounded-lg p-4 flex items-center gap-4">
                     {profile.coachPhotoUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
@@ -390,7 +437,11 @@ export default function ParametresPage() {
                 if (!cardAthlete.photoUrl) missing.push("photo");
                 if (!cardAthlete.primaryPosition) missing.push("position");
                 if (!cardAthlete.jerseyNumber) missing.push("numéro");
-                if (!cardAthlete.schoolName) missing.push("école");
+                if (profile?.context === "ligue_civile") {
+                  if (!profile.leagueTeamName) missing.push("équipe");
+                } else if (!cardAthlete.schoolName) {
+                  missing.push("école");
+                }
                 if (!cardAthlete.graduationYear) missing.push("promotion");
                 return (
                   <>

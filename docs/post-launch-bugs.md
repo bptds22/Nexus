@@ -956,6 +956,32 @@ file.
         (degraded UX)
       Product decision needed before code.
 
+- [ ] **Civil coach names silently empty on recruiter profile detail
+      (5.3d latent RLS gap).** Discovered 2026-05-06 while planning
+      5.3e-iii inline civil coach picker. The query at
+      [`AthleteRecruiterProfileBody.tsx:615`](../components/shared/AthleteRecruiterProfileBody.tsx#L615)
+      runs `from("league_coaches").select("users!coach_id(...)").eq("league_team_id", id)`
+      to populate the civil coach names list, but the only SELECT
+      policy on `league_coaches` is `coach_id = auth.uid()` (see
+      [`baseline.sql:3951`](../supabase/migrations/20260417120000_baseline.sql#L3951)).
+      A recruiter querying that table only sees rows where they
+      themselves are the coach — i.e. zero rows for any civil
+      athlete. The "Coaches" sub-section under the civil affiliation
+      block renders silently empty.
+
+      Same RLS gap also blocks the inline civil coach picker for
+      athletes in `parametres` — the reason 5.3e-iii ships with a
+      placeholder ("Sélection de coach civil disponible bientôt")
+      where the picker would go.
+
+      Resolution scoped to **5.3f**: add an `Athletes read coaches
+      of own team` SELECT policy on `league_coaches` (`league_team_id
+      IN (SELECT league_team_id FROM athletes WHERE user_id = auth.uid())`),
+      then build the inline civil picker in `app/athlete/parametres/page.tsx`
+      replacing the 5.3e-iii placeholder, and verify the recruiter-side
+      `AthleteRecruiterProfileBody` coach list populates for civil
+      athletes. One migration + one page change + one verify pass.
+
 ---
 
 ## Closeout rule
