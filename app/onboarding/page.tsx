@@ -579,7 +579,7 @@ export default function OnboardingPage() {
   const stepLabelsMap: Record<string, string[]> = {
     coach: ["Profil", "École", "Directeur", "Confirmation"],
     recruiter: ["Profil", "CÉGEP", "Directeur", "Critères"],
-    coach_league: ["Profil", "Ligue", "Coordonnateur", "Confirmation"],
+    coach_league: ["Profil", "Ligue", "Coach principal", "Confirmation"],
     coordinator_league: ["Profil", "Ligue", "Invitations"],
   };
   const stepLabels = stepLabelsMap[user.role] || ["1", "2", "3"];
@@ -671,8 +671,13 @@ function CoachStep({ step, user, save }: { step: number; user: NexusUser; save: 
 function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: Partial<NexusUser>) => void; type: "school" | "league" | "cegep" }) {
   const isLeague = type === "league";
   const isCegep = type === "cegep";
-  const roleLabel = isLeague ? "coordonnateur" : "directeur sportif";
-  const RoleLabel = isLeague ? "Coordonnateur" : "Directeur sportif";
+  // Civil-coach onboarding flow uses "coach principal" terminology
+  // (the team's senior coach), not "coordonnateur" (which describes
+  // the separate `coordinator_league` role onboarded via
+  // LeagueCoordinatorStep). Keep `isLeague` as the discriminator —
+  // any future cegep/league admin variants stay co-located here.
+  const roleLabel = isLeague ? "coach principal" : "directeur sportif";
+  const RoleLabel = isLeague ? "Coach principal" : "Directeur sportif";
   const orgName = user.institution
     ? (user.institution as Record<string, string>)?.name || "ton organisation"
     : "ton organisation";
@@ -795,7 +800,7 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
         <div className="animate-fade-slide-down space-y-4 bg-[#111317]/60 rounded-xl p-5 border border-white/5">
           <div>
             <label className={labelCls}>Courriel du {roleLabel} <span className="text-[#EF4444]">*</span></label>
-            <input type="email" placeholder={`${roleLabel}@${isLeague ? "ligue" : "ecole"}.qc.ca`} value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} className={inputCls} />
+            <input type="email" placeholder={isLeague ? "coach@ligue.qc.ca" : `${roleLabel}@ecole.qc.ca`} value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} className={inputCls} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -819,7 +824,7 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
             <p className="text-[10px] text-[#4a4d56] text-right mt-1">{inviteMessage.length}/300</p>
           </div>
           <p className="text-[12px] text-[#9CA3AF] leading-relaxed">
-            Le {roleLabel} recevra un lien pour créer son compte gratuit. En attendant, tu seras temporairement Admin {isCegep ? "CÉGEP" : isLeague ? "Ligue" : "École"}.
+            Le {roleLabel} recevra un lien pour créer son compte gratuit. En attendant, tu seras temporairement {isCegep ? "Admin CÉGEP" : isLeague ? "coach principal" : "Admin École"}.
           </p>
         </div>
       )}
