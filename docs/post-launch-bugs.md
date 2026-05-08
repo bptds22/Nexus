@@ -1089,6 +1089,31 @@ file.
       together with the find-or-create logic so the production cutover
       lands integrity-tight.
 
+- [ ] **`team_athletes` RLS is essentially open — needs scoped
+      hardening to match `league_team_athletes`.** Surfaced during
+      5.5b discovery. The current school-side `team_athletes` table
+      has two policies:
+      `Authenticated access team_athletes` ALL `USING (true)` and
+      `admins read all` SELECT `is_admin()`. The first one grants
+      every authenticated user full CRUD on the entire roster
+      surface — any logged-in user can read, insert, update, or
+      delete any team's roster across the platform. This is a real
+      security gap that 5.5b consciously did not inherit:
+      `league_team_athletes` ships with proper scoped RLS (coach-
+      of-team CRUD, athlete-self read, recruiter read, admin all).
+
+      Resolution: drop the open policy and replace with the same
+      4-policy scoping used by `league_team_athletes`:
+        - "Coaches of team manage roster": `team_id IN (SELECT
+          team_id FROM team_coaches WHERE coach_id = auth.uid())`
+        - "Athletes read own membership": `athlete_id IN (SELECT
+          id FROM athletes WHERE user_id = auth.uid())`
+        - "Recruiters read all rosters": role = 'RECRUTEUR'
+        - "Admins manage all rosters": is_admin()
+      One-migration change, ~30 lines SQL. Defer until either the
+      gap surfaces in a security review OR we touch team_athletes
+      for another reason (then bundle).
+
 - [ ] **`getCurrentSeason()` helper to consolidate hardcoded
       `"2025-2026"` strings (5.4g-ii cleanup).** Surfaced during
       5.4g-ii. The string `"2025-2026"` is hardcoded in at least 5
