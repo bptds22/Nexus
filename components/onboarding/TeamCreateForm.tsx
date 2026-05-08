@@ -33,12 +33,16 @@ import { createClient } from "@/lib/supabase/client";
    helper P3 (lib/utils/season.ts) — see post-launch-bugs.md. The
    form keeps it editable to handle off-season onboarding.
 
-   Gender values match DB convention: "Masculin" / "Féminin" / "Mixte"
-   (capitalized with accents). Caller writes them straight to
-   league_teams.gender without transformation.
+   Gender values match the DB CHECK constraint
+   (league_teams_gender_check): lowercase, no accents — "masculin",
+   "feminin", "mixte". The toggle shows capitalized labels for UX
+   ("Masculin"/"Féminin"/"Mixte") but emits the lowercase value so
+   the caller can write it straight into league_teams.gender without
+   a transform. Display surfaces (TeamSearchOrCreate result rows,
+   CoachConfirmation recap) capitalize for human display.
 ═══════════════════════════════════════════════════════════════ */
 
-export type Gender = "Masculin" | "Féminin" | "Mixte";
+export type Gender = "masculin" | "feminin" | "mixte";
 
 export interface TeamFormData {
   team_name: string;
@@ -63,7 +67,11 @@ interface LeagueOption {
 }
 
 const AGE_GROUPS = ["U13", "U15", "U17", "U18", "Senior", "Autre"];
-const GENDERS: Gender[] = ["Masculin", "Féminin", "Mixte"];
+const GENDER_OPTIONS: { value: Gender; label: string }[] = [
+  { value: "masculin", label: "Masculin" },
+  { value: "feminin", label: "Féminin" },
+  { value: "mixte", label: "Mixte" },
+];
 const DEFAULT_SEASON = "2025-2026";
 
 const inputCls =
@@ -235,13 +243,13 @@ export default function TeamCreateForm({
           Genre <span className="text-[#EF4444]">*</span>
         </span>
         <div className="flex gap-2">
-          {GENDERS.map((g) => {
-            const selected = gender === g;
+          {GENDER_OPTIONS.map((opt) => {
+            const selected = gender === opt.value;
             return (
               <button
-                key={g}
+                key={opt.value}
                 type="button"
-                onClick={() => setGender(g)}
+                onClick={() => setGender(opt.value)}
                 className={`flex-1 h-11 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${
                   selected
                     ? "bg-[rgba(230,57,70,0.1)] border border-[#E63946] text-white"
@@ -249,7 +257,7 @@ export default function TeamCreateForm({
                 }`}
                 aria-pressed={selected ? "true" : "false"}
               >
-                {g}
+                {opt.label}
               </button>
             );
           })}

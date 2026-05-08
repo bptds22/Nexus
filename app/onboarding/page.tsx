@@ -1114,7 +1114,16 @@ function CoachConfirmation({ user }: { user: NexusUser }) {
   // 5.4b spec. École keeps its existing single-block layout.
   if (isCivil) {
     const team = (p.league_team || {}) as Record<string, unknown>;
-    const teamGender = team.gender as string | undefined;
+    // gender is stored lowercase no-accent per league_teams_gender_check
+    // ("masculin"/"feminin"/"mixte"). Capitalize + restore accent for
+    // human display in the recap.
+    const teamGenderRaw = team.gender as string | undefined;
+    const GENDER_DISPLAY: Record<string, string> = {
+      masculin: "Masculin",
+      feminin: "Féminin",
+      mixte: "Mixte",
+    };
+    const teamGender = teamGenderRaw ? GENDER_DISPLAY[teamGenderRaw] ?? teamGenderRaw : undefined;
     const teamCategory = team.category as string | undefined;
     const genreDivision = [teamGender, teamCategory].filter(Boolean).join(" / ");
 
