@@ -1060,6 +1060,35 @@ file.
       the two flows feel consistent. Pure UX polish; not a blocker —
       data is correct end-to-end since 5.4f.
 
+- [ ] **`pg_trgm` + GIN index on team/league names for search-as-you-type
+      (5.4g performance).** Surfaced during 5.4g-i discovery. The new
+      `TeamSearchOrCreate` component runs `ILIKE '%search%'` against
+      `league_teams.name` (and the eventual league-name autocomplete
+      runs the same against `leagues.name`). Leading wildcards bypass
+      btree indexes, so today these queries seq-scan. At pre-beta data
+      volume (a handful of civil leagues, dozens of teams) the scan is
+      sub-millisecond and there's no real-world performance issue.
+
+      Resolution when team count grows past a few hundred: enable
+      `pg_trgm` extension and create
+      `CREATE INDEX … USING GIN (name gin_trgm_ops)` on both
+      `league_teams.name` and `leagues.name`. Trivial migration; defer
+      until search latency becomes observable.
+
+- [ ] **`UNIQUE(LOWER(name), sport_id, level)` on `leagues` to defend
+      find-or-create race (5.4g robustness).** Surfaced during 5.4g-i
+      discovery, relevant when 5.4g-iii ships the find-or-create
+      autocomplete in the team-create form. Without a UNIQUE
+      constraint, two coaches typing the same brand-new league name
+      within ~1ms create separate `leagues` rows. The constraint
+      protects against this race and lets the find-or-create logic
+      use `INSERT … ON CONFLICT DO NOTHING RETURNING id` cleanly.
+
+      Resolution: add the constraint as part of 5.4g-iii's migration.
+      Edge case is negligible at pre-beta scale, but worth shipping
+      together with the find-or-create logic so the production cutover
+      lands integrity-tight.
+
 ---
 
 ## Closeout rule
