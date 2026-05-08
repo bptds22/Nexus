@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation";
 import NexusLogo from "@/components/ui/NexusLogo";
 import { createClient } from "@/lib/supabase/client";
 import PlaybookBackground from "../components/PlaybookBackground";
+import TeamSearchOrCreate, { type TeamSearchRow } from "@/components/onboarding/TeamSearchOrCreate";
+import TeamCreateForm, { type TeamFormData } from "@/components/onboarding/TeamCreateForm";
+import { findOrCreateLeague } from "@/lib/onboarding/findOrCreateLeague";
 
 /* ─────────────────────────────────────────────────────────────────
    Nexus — Onboarding Wizard
@@ -1915,315 +1918,299 @@ function LeagueCoachStep({ step, user, save }: { step: number; user: NexusUser; 
 }
 
 function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Partial<NexusUser>) => void }) {
-  const [showCustom, setShowCustom] = useState(false);
-  const [customName, setCustomName] = useState("");
-  const [customSport, setCustomSport] = useState("");
-  const [customCity, setCustomCity] = useState("");
-  const [customRegion, setCustomRegion] = useState("");
-  const [customSubmitted, setCustomSubmitted] = useState(false);
-  const [customSaving, setCustomSaving] = useState(false);
-
-  // Sports lookup — fetched once at mount. Used by:
-  //   1. The custom-league INSERT to resolve customSport (name) →
-  //      sport_id (uuid), since leagues.sport_id is the FK column
-  //      (the previous code wrote a non-existent `sport` text column).
-  //   2. (Indirectly) the team INSERT, which inherits sport_id from
-  //      the selected league via the institution payload.
-  // Driving the dropdown from this list also keeps the UI in sync
-  // with what the DB actually accepts (16 sports), instead of the
-  // local 22-entry SPORTS constant which includes Golf/Tennis/Judo
-  // etc. that have no corresponding sports row.
-  const [dbSports, setDbSports] = useState<{ id: string; nom: string }[]>([]);
-  useEffect(() => {
-    const supabase = createClient();
-    supabase.from("sports").select("id, nom").order("nom").then(({ data }) => {
-      if (data) setDbSports(data as { id: string; nom: string }[]);
-    });
-  }, []);
-
-  // Team info — read fresh localStorage instead of the parent React
-  // state. The wizard's `save()` helper at :355 writes to localStorage
-  // and bumps localUserVersion (forcing a re-render) but never calls
-  // setUser, so `user.institution` from the prop chain stays at its
-  // load-time value (null) for the entire session. Pre-5.4f, that
-  // made `hasLeague` architecturally always false: the team form
-  // never rendered after either the existing-league select or the
-  // custom-league INSERT, so civil coaches had no way to create
-  // their team. Same staleness affected `selectedLeagueId` and
-  // `selectedSportId` used by the team-INSERT useEffect — the
-  // INSERT may have been firing with null values when it ran at all.
-  // Mirror the localStorage-read pattern already used in
-  // CoachConfirmation (5.4b) and canProceed (5.4e).
+  // Read fresh localStorage to pick up profile updates from step 0 —
+  // the wizard's save() helper writes localStorage but never calls
+  // setUser, so `user` from props is stale (see the comment at :355).
   const raw = typeof window !== "undefined" ? localStorage.getItem("nexus_user") : null;
   const localUser = raw ? (JSON.parse(raw) as NexusUser) : user;
-  const inst = localUser.institution as Record<string, unknown> | null;
-  const hasLeague = !!inst?.name;
-  const selectedLeagueId = (inst?.id as string) || null;
-  const selectedSportId = (inst?.sport_id as string) || null;
-  const [teamName, setTeamName] = useState("");
-  const [teamCategory, setTeamCategory] = useState("");
-  const [teamGender, setTeamGender] = useState("");
-  // age_group is REQUIRED at form-level. Phase 1's UNIQUE constraint
-  // on (league_id, name, age_group, division, season) uses Postgres'
-  // default NULLS DISTINCT semantics: two rows with NULL age_group
-  // and identical other keys would both insert. Forcing a non-empty
-  // value here prevents that quiet duplication.
-  const [teamAgeGroup, setTeamAgeGroup] = useState("");
-  const teamSeason = "2025-2026";
-  const [teamSaved, setTeamSaved] = useState(false);
-  const [teamSaving, setTeamSaving] = useState(false);
+  const profileData = (localUser.profile || {}) as Record<string, unknown>;
+  const sportName = (profileData.sport_principal as string) || "";
 
-  // Save team to Supabase when all fields are filled
+  const [sportId, setSportId] = useState<string | null>(null);
+  const [sportLoading, setSportLoading] = useState(true);
+  const [mode, setMode] = useState<"search" | "create">("search");
+  const [selectedTeam, setSelectedTeam] = useState<TeamSearchRow | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Resolve the sport NAME from step 0 to its uuid for downstream
+  // team/league queries. step 0 saves users.sport as a name string,
+  // not an id, so the lookup happens here.
   useEffect(() => {
-    if (!hasLeague || !teamName || !teamAgeGroup || !selectedLeagueId || teamSaved || teamSaving) return;
+    if (!sportName) {
+      setSportLoading(false);
+      return;
+    }
+    const supabase = createClient();
+    supabase
+      .from("sports")
+      .select("id")
+      .eq("nom", sportName)
+      .maybeSingle()
+      .then(({ data }) => {
+        setSportId((data?.id as string) ?? null);
+        setSportLoading(false);
+      });
+  }, [sportName]);
 
-    const debounce = setTimeout(async () => {
-      setTeamSaving(true);
-      try {
-        const supabase = createClient();
-        const { data: { user: authUser } } = await supabase.auth.getUser();
-        if (!authUser) return;
+  // Resume support: if the user already picked/created a team in a
+  // previous session and is back at step 1 (e.g. via Précédent),
+  // surface the prior choice as the selected card.
+  useEffect(() => {
+    if (selectedTeam) return;
+    const teamData = profileData.league_team as Record<string, unknown> | undefined;
+    if (!teamData?.id) return;
+    setSelectedTeam({
+      id: teamData.id as string,
+      name: (teamData.name as string) ?? "",
+      age_group: (teamData.age_group as string) ?? null,
+      gender: (teamData.gender as string) ?? null,
+      division: (teamData.category as string) ?? null,
+      league_id: (profileData.league_id as string) ?? "",
+      league_name:
+        ((localUser.institution as Record<string, unknown> | null)?.name as string) ?? "",
+      coach_count: 0,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-        // Insert league_team. age_group is now part of the
-        // identity tuple (Phase 1 UNIQUE constraint) and is required
-        // at form-level above. sport_id is inherited from the
-        // selected league rather than left NULL — keeps the team
-        // self-describing for downstream queries.
-        const { data: newTeam, error: teamError } = await supabase
-          .from("league_teams")
-          .insert({
-            league_id: selectedLeagueId,
-            name: teamName,
-            age_group: teamAgeGroup,
-            division: teamCategory || null,
-            gender: teamGender || null,
-            season: teamSeason,
-            sport_id: selectedSportId,
-            owner_id: authUser.id,
-          })
-          .select()
-          .single();
+  function persistTeamLocally(args: {
+    teamId: string;
+    teamName: string;
+    ageGroup: string | null;
+    gender: string | null;
+    category: string | null;
+    season: string;
+    leagueId: string;
+    leagueName: string;
+  }) {
+    save({
+      institution: { id: args.leagueId, name: args.leagueName, type: "ligue_civile" },
+    });
+    const rawNow = localStorage.getItem("nexus_user");
+    if (!rawNow) return;
+    const current = JSON.parse(rawNow) as NexusUser;
+    const updated = {
+      ...current,
+      profile: {
+        ...(current.profile || {}),
+        league_team: {
+          id: args.teamId,
+          name: args.teamName,
+          age_group: args.ageGroup,
+          gender: args.gender,
+          category: args.category,
+          season: args.season,
+        },
+        league_id: args.leagueId,
+        league_team_id: args.teamId,
+      },
+    };
+    localStorage.setItem("nexus_user", JSON.stringify(updated));
+  }
 
-        console.log("[LeagueCoachLeagueStep] Created league_team:", newTeam, teamError);
-
-        if (newTeam) {
-          // Insert league_coaches record
-          const { data: coachEntry, error: coachError } = await supabase
-            .from("league_coaches")
-            .insert({
-              coach_id: authUser.id,
-              league_id: selectedLeagueId,
-              league_team_id: newTeam.id,
-              role: "ADMIN",
-            })
-            .select()
-            .single();
-
-          console.log("[LeagueCoachLeagueStep] Created league_coach:", coachEntry, coachError);
-
-          // Store IDs in localStorage for finish()
-          const raw = localStorage.getItem("nexus_user");
-          if (raw) {
-            const current = JSON.parse(raw) as NexusUser;
-            const updated = {
-              ...current,
-              profile: {
-                ...(current.profile || {}),
-                league_team: { id: newTeam.id, name: teamName, age_group: teamAgeGroup, category: teamCategory, gender: teamGender, season: teamSeason },
-                league_id: selectedLeagueId,
-                league_team_id: newTeam.id,
-              },
-            };
-            localStorage.setItem("nexus_user", JSON.stringify(updated));
-          }
-
-          setTeamSaved(true);
-        }
-      } catch (err) {
-        console.error("[LeagueCoachLeagueStep] Error saving team:", err);
-      } finally {
-        setTeamSaving(false);
+  async function handleJoinExistingTeam(team: TeamSearchRow) {
+    setSubmitting(true);
+    setError(null);
+    try {
+      const supabase = createClient();
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser) {
+        setError("Session expirée. Reconnecte-toi pour continuer.");
+        return;
       }
-    }, 800);
 
-    return () => clearTimeout(debounce);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [teamName, teamAgeGroup, teamCategory, teamGender, hasLeague, selectedLeagueId, selectedSportId, teamSaved]);
+      const { error: lcError } = await supabase.from("league_coaches").insert({
+        coach_id: authUser.id,
+        league_id: team.league_id,
+        league_team_id: team.id,
+        role: "COACH",
+      });
 
-  // Reset teamSaved when team fields change after initial save
-  useEffect(() => {
-    if (teamSaved) setTeamSaved(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [teamName, teamAgeGroup, teamCategory, teamGender]);
+      // 23505 = duplicate key. The UNIQUE on (league_id, league_team_id,
+      // coach_id) means the user is already a coach of this team —
+      // surface as success rather than an error.
+      if (lcError && lcError.code !== "23505") {
+        console.error("[LeagueCoachLeagueStep] join failed:", lcError);
+        setError("Impossible de rejoindre l'équipe. Réessaie.");
+        return;
+      }
+
+      persistTeamLocally({
+        teamId: team.id,
+        teamName: team.name,
+        ageGroup: team.age_group,
+        gender: team.gender,
+        category: team.division,
+        season: "2025-2026",
+        leagueId: team.league_id,
+        leagueName: team.league_name,
+      });
+      setSelectedTeam(team);
+    } catch (err) {
+      console.error("[LeagueCoachLeagueStep] join exception:", err);
+      setError("Une erreur est survenue. Réessaie.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleCreateTeam(formData: TeamFormData) {
+    if (!sportId) {
+      setError("Sport non résolu. Reviens à l'étape 1.");
+      return;
+    }
+    setSubmitting(true);
+    setError(null);
+    try {
+      const supabase = createClient();
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser) {
+        setError("Session expirée. Reconnecte-toi pour continuer.");
+        return;
+      }
+
+      // 1. Find or create the league. If the autocomplete already
+      //    snapped to an existing league id, skip the lookup roundtrip.
+      let leagueId = formData.league_id_if_existing;
+      let leagueName = formData.league_input;
+      if (!leagueId) {
+        const result = await findOrCreateLeague({
+          name: formData.league_input,
+          sportId,
+        });
+        leagueId = result.id;
+        leagueName = result.name;
+      }
+
+      // 2. INSERT the team row (owner = current user).
+      const { data: newTeam, error: ltError } = await supabase
+        .from("league_teams")
+        .insert({
+          league_id: leagueId,
+          name: formData.team_name,
+          age_group: formData.age_group,
+          division: null,
+          gender: formData.gender,
+          season: formData.season,
+          sport_id: sportId,
+          owner_id: authUser.id,
+        })
+        .select()
+        .single();
+
+      if (ltError || !newTeam) {
+        console.error("[LeagueCoachLeagueStep] create team failed:", ltError);
+        setError("Impossible de créer l'équipe. Réessaie.");
+        return;
+      }
+
+      // 3. INSERT league_coaches with role: ADMIN (creator/owner).
+      const { error: lcError } = await supabase.from("league_coaches").insert({
+        coach_id: authUser.id,
+        league_id: leagueId,
+        league_team_id: newTeam.id,
+        role: "ADMIN",
+      });
+      if (lcError) {
+        // The team exists; coach attachment is non-critical for proceeding.
+        // Log and continue — the user can be re-attached manually if needed.
+        console.error("[LeagueCoachLeagueStep] league_coaches insert failed:", lcError);
+      }
+
+      persistTeamLocally({
+        teamId: newTeam.id,
+        teamName: formData.team_name,
+        ageGroup: formData.age_group,
+        gender: formData.gender,
+        category: null,
+        season: formData.season,
+        leagueId,
+        leagueName,
+      });
+
+      setSelectedTeam({
+        id: newTeam.id,
+        name: formData.team_name,
+        age_group: formData.age_group,
+        gender: formData.gender,
+        division: null,
+        league_id: leagueId,
+        league_name: leagueName,
+        coach_count: 1,
+      });
+      setMode("search");
+    } catch (err) {
+      console.error("[LeagueCoachLeagueStep] create exception:", err);
+      setError(err instanceof Error ? err.message : "Une erreur est survenue. Réessaie.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  if (sportLoading) {
+    return (
+      <div className="space-y-5">
+        <p className="text-sm text-[#6B7280]">Chargement...</p>
+      </div>
+    );
+  }
+
+  if (!sportId) {
+    return (
+      <div className="space-y-5">
+        <p className="text-sm text-[#EF4444]">
+          Erreur: ton sport principal n&apos;a pas été reconnu. Reviens à l&apos;étape précédente
+          et sélectionne un sport.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5">
       <div>
-        <h2 className="font-head text-xl font-black text-white uppercase">Associe-toi à ta ligue ou ton club sportif</h2>
-        <p className="text-sm text-[#9CA3AF] mt-1">Ton équipe et tes athlètes seront liés à cette organisation.</p>
+        <h2 className="font-head text-xl font-black text-white uppercase">
+          {mode === "search" ? "Trouve ton équipe" : "Crée ta nouvelle équipe"}
+        </h2>
+        <p className="text-sm text-[#9CA3AF] mt-1">
+          {mode === "search"
+            ? "Cherche ton équipe parmi celles déjà inscrites, ou crée une nouvelle équipe."
+            : "Remplis les détails — la ligue sera reconnue ou créée automatiquement."}
+        </p>
       </div>
 
-      {!showCustom ? (
-        <LeagueSelectStep user={user} save={save} onRequestNew={() => setShowCustom(true)} />
-      ) : (
-        <>
-          {customSubmitted ? (
-            <div className="bg-[#111317] border border-[#22C55E]/20 rounded-lg p-5 text-center space-y-2">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2" strokeLinecap="round" className="mx-auto"><path d="M20 6L9 17l-5-5"/></svg>
-              <p className="text-sm text-[#22C55E] font-bold">Ligue créée!</p>
-              <p className="text-xs text-[#6B7280]">Tu peux maintenant créer ton équipe ci-dessous.</p>
-            </div>
-          ) : (
-            <div className="space-y-3 bg-[#111317] border border-white/10 rounded-lg p-4">
-              <p className="text-xs font-bold text-white uppercase tracking-wider mb-2">Soumettre une nouvelle ligue</p>
-              <input type="text" placeholder="Nom de la ligue / du club" value={customName} onChange={(e) => setCustomName(e.target.value)} className={inputClass} />
-              <select title="Sport" value={customSport} onChange={(e) => setCustomSport(e.target.value)} className={`${inputClass} appearance-none`}>
-                <option value="">Sport</option>
-                {dbSports.map((s) => <option key={s.id} value={s.id}>{s.nom}</option>)}
-              </select>
-              <div className="grid grid-cols-2 gap-3">
-                <input type="text" placeholder="Ville" value={customCity} onChange={(e) => setCustomCity(e.target.value)} className={inputClass} />
-                <select title="Région" value={customRegion} onChange={(e) => setCustomRegion(e.target.value)} className={`${inputClass} appearance-none`}>
-                  <option value="">Région</option>
-                  {REGIONS.map((r) => <option key={r} value={r}>{r}</option>)}
-                </select>
-              </div>
-              {/* Niveau hardcoded to 'Civil' for civil-coach onboarding —
-                  the previous free-text dropdown allowed AAA/AA/A/Club
-                  values that would have placed the league outside the
-                  level='Civil' filter on LeagueSelectStep. */}
-              <div className="flex gap-2">
-                <button type="button" onClick={() => setShowCustom(false)} className="h-10 px-4 rounded-lg border border-white/10 text-xs font-bold text-white hover:border-white/20 transition-colors">
-                  Annuler
-                </button>
-                <button type="button" disabled={!customName || !customSport || customSaving} onClick={async () => {
-                  setCustomSaving(true);
-                  try {
-                    const supabase = createClient();
-                    const { data: { user: authUser } } = await supabase.auth.getUser();
-                    if (!authUser) { setCustomSaving(false); return; }
-
-                    // customSport now carries a sport_id (uuid),
-                    // since the dropdown above is keyed on s.id.
-                    // The display name comes from dbSports lookup.
-                    const sportRow = dbSports.find((s) => s.id === customSport);
-                    const sportName = sportRow?.nom ?? "";
-
-                    const { data: newLeague, error } = await supabase
-                      .from("leagues")
-                      .insert({
-                        name: customName,
-                        sport_id: customSport || null,
-                        city: customCity || null,
-                        region: customRegion || null,
-                        level: "Civil",
-                        created_by: authUser.id,
-                      })
-                      .select()
-                      .single();
-
-                    console.log("[LeagueCoachLeagueStep] Created league:", newLeague, error);
-
-                    if (newLeague) {
-                      save({
-                        institution: {
-                          id: newLeague.id,
-                          name: newLeague.name,
-                          sport_id: newLeague.sport_id,
-                          sport: sportName,
-                          city: newLeague.city,
-                          region: newLeague.region,
-                          level: newLeague.level,
-                          type: "ligue_civile",
-                        },
-                      });
-                    } else {
-                      save({
-                        institution: {
-                          name: customName,
-                          sport_id: customSport,
-                          sport: sportName,
-                          city: customCity,
-                          region: customRegion,
-                          level: "Civil",
-                          type: "ligue_civile",
-                          pending: true,
-                        },
-                      });
-                    }
-                  } catch (err) {
-                    console.error("[LeagueCoachLeagueStep] Error creating league:", err);
-                    const sportRow = dbSports.find((s) => s.id === customSport);
-                    save({
-                      institution: {
-                        name: customName,
-                        sport_id: customSport,
-                        sport: sportRow?.nom ?? "",
-                        city: customCity,
-                        region: customRegion,
-                        level: "Civil",
-                        type: "ligue_civile",
-                        pending: true,
-                      },
-                    });
-                  } finally {
-                    setCustomSaving(false);
-                    setCustomSubmitted(true);
-                  }
-                }} className="h-10 px-6 rounded-lg bg-[#E63946] text-xs font-bold text-white hover:bg-[#D42B22] transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
-                  Soumettre la demande
-                </button>
-              </div>
-            </div>
-          )}
-        </>
-      )}
-
-      {/* Team section — appears after league is selected */}
-      {hasLeague && (
-        <div className="space-y-4 pt-2 border-t border-white/5 animate-fade-slide-down">
-          <div>
-            <h3 className="font-head text-base font-black text-white uppercase">Ton équipe</h3>
-            <p className="text-xs text-[#9CA3AF] mt-0.5">Quelle équipe entraînes-tu dans cette ligue?</p>
-          </div>
-          <input type="text" placeholder="Nom de l'équipe (ex: Patriotes Senior)" value={teamName} onChange={(e) => setTeamName(e.target.value)} className={inputClass} />
-          {/* age_group is REQUIRED — see comment on the state declaration. */}
-          <div>
-            <label className={`${label} text-[#9CA3AF] mb-1.5 block`}>Catégorie d&apos;âge *</label>
-            <input
-              type="text"
-              placeholder="Ex: U13, U15, U17, Senior"
-              value={teamAgeGroup}
-              onChange={(e) => setTeamAgeGroup(e.target.value)}
-              className={inputClass}
-              required
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className={`${label} text-[#9CA3AF] mb-1.5 block`}>Catégorie</label>
-              <select title="Catégorie" value={teamCategory} onChange={(e) => setTeamCategory(e.target.value)} className={`${inputClass} appearance-none`}>
-                <option value="">Sélectionner</option>
-                {TEAM_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className={`${label} text-[#9CA3AF] mb-1.5 block`}>Genre</label>
-              <div className="flex gap-2">
-                {["Masculin", "Féminin", "Mixte"].map((g) => (
-                  <button key={g} type="button" onClick={() => setTeamGender(g)} className={`flex-1 h-11 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${teamGender === g ? "bg-[rgba(230,57,70,0.1)] border border-[#E63946] text-white" : "bg-[#111317] border border-white/10 text-[#9CA3AF] hover:border-white/20"}`}>
-                    {g}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/5">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-[#6B7280]">Saison:</span>
-            <span className="text-sm text-white">{teamSeason}</span>
-          </div>
+      {error && (
+        <div className="bg-[#EF4444]/10 border border-[#EF4444]/30 rounded-lg p-3">
+          <p className="text-[12px] text-[#EF4444]">{error}</p>
         </div>
       )}
+
+      {mode === "search" && (
+        <TeamSearchOrCreate
+          sportId={sportId}
+          selectedTeam={selectedTeam}
+          onSelect={handleJoinExistingTeam}
+          onCreate={() => {
+            setError(null);
+            setMode("create");
+          }}
+        />
+      )}
+
+      {mode === "create" && (
+        <TeamCreateForm
+          sportId={sportId}
+          sportName={sportName}
+          onSubmit={handleCreateTeam}
+          onCancel={() => {
+            setError(null);
+            setMode("search");
+          }}
+        />
+      )}
+
+      {submitting && <p className="text-[12px] text-[#9CA3AF]">Enregistrement en cours...</p>}
     </div>
   );
 }
