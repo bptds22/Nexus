@@ -1089,6 +1089,22 @@ file.
       together with the find-or-create logic so the production cutover
       lands integrity-tight.
 
+- [ ] **`getCurrentSeason()` helper to consolidate hardcoded
+      `"2025-2026"` strings (5.4g-ii cleanup).** Surfaced during
+      5.4g-ii. The string `"2025-2026"` is hardcoded in at least 5
+      places: `components/onboarding/TeamCreateForm.tsx` (new in
+      5.4g-ii), `app/coach/equipes/page.tsx:49` and `:302`,
+      `app/coach/equipes/[teamId]/page.tsx:308`, and
+      `app/onboarding/page.tsx:1972`. Quebec's academic year flips
+      around July/August, so a date-based helper would naturally
+      roll over without manual edits.
+
+      Resolution: introduce `lib/utils/season.ts` exporting
+      `getCurrentSeason(date?: Date): string` returning e.g.
+      `"2026-2027"` once `date >= 2026-08-01`. Replace each
+      hardcoded site. Trivial; defer until the 2026-2027 season
+      flip is approaching to avoid premature edits.
+
 ---
 
 ## Closeout rule
