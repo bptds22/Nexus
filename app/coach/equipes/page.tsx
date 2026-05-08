@@ -21,6 +21,21 @@ interface Team {
   coaches: { name: string; role: string }[];
 }
 
+// Civil "Mon équipe" view shape — single team per coach with role +
+// league + sport metadata. Pulled from league_coaches + league_teams
+// + leagues + sports + league_team_athletes (5.5b junction for count).
+interface CivilTeam {
+  id: string;
+  name: string;
+  ageGroup: string;
+  gender: string;
+  season: string;
+  sportName: string;
+  leagueName: string;
+  myRole: string;
+  athleteCount: number;
+}
+
 const ROLE_LABELS: Record<string, string> = {
   head_coach: "Entraîneur-chef",
   assistant: "Assistant",
@@ -49,22 +64,105 @@ export default function EquipesPage() {
   const [newSeason, setNewSeason] = useState("2025-2026");
   const [saving, setSaving] = useState(false);
 
+  // Civil "Mon équipe" branch state. isCivil gates the entire JSX
+  // return — école path stays byte-identical when isCivil is false.
+  const [isCivil, setIsCivil] = useState(false);
+  const [civilTeam, setCivilTeam] = useState<CivilTeam | null>(null);
+
   useEffect(() => {
     loadTeams();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Load the civil coach's single team via league_coaches. Picks the
+  // ADMIN row first if the coach is on multiple teams (alphabetical
+  // ASC sort puts ADMIN before COACH); .limit(1) bounds the result.
+  // Multi-team civil coaches are an edge case logged P3 — typical
+  // coaches have exactly one row from the 5.4g onboarding flow.
+  async function loadCivilTeam(userId: string) {
+    const supabase = createClient();
+    const { data: row } = await supabase
+      .from("league_coaches")
+      .select(`
+        role,
+        league_team_id,
+        league_teams!league_team_id(
+          id, name, age_group, gender, season, league_id, sport_id,
+          leagues!league_id(name),
+          sports!sport_id(nom)
+        )
+      `)
+      .eq("coach_id", userId)
+      .in("role", ["ADMIN", "COACH"])
+      .order("role")
+      .limit(1)
+      .maybeSingle();
+
+    if (!row || !row.league_team_id) return;
+
+    const teamRel = (row as Record<string, unknown>).league_teams as
+      | Record<string, unknown>
+      | Record<string, unknown>[]
+      | null;
+    const team = (Array.isArray(teamRel) ? teamRel[0] : teamRel) as Record<string, unknown> | null;
+    if (!team) return;
+
+    const leagueRel = team.leagues as
+      | Record<string, unknown>
+      | Record<string, unknown>[]
+      | null;
+    const league = Array.isArray(leagueRel) ? leagueRel[0] : leagueRel;
+    const sportRel = team.sports as
+      | Record<string, unknown>
+      | Record<string, unknown>[]
+      | null;
+    const sport = Array.isArray(sportRel) ? sportRel[0] : sportRel;
+
+    // Athlete count via the 5.5b junction — proper civil source of
+    // truth. Falls back to 0 if the count query returns null.
+    const { count } = await supabase
+      .from("league_team_athletes")
+      .select("id", { count: "exact", head: true })
+      .eq("league_team_id", team.id as string);
+
+    setCivilTeam({
+      id: team.id as string,
+      name: (team.name as string) || "",
+      ageGroup: (team.age_group as string) || "",
+      gender: (team.gender as string) || "",
+      season: (team.season as string) || "",
+      sportName: (sport as { nom?: string } | null)?.nom || "",
+      leagueName: (league as { name?: string } | null)?.name || "",
+      myRole: (row as { role?: string }).role || "COACH",
+      athleteCount: count || 0,
+    });
+  }
 
   async function loadTeams() {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setLoading(false); return; }
 
-    // Get coach's school
+    // Detect context FIRST. Civil coaches need a different load path
+    // (league_coaches + league_teams) and a different render shape
+    // (single hero card vs multi-team list). Pre-5.5c this page used
+    // the école-only path and silently dropped civil coaches at the
+    // school_id null-check below — they'd see a broken empty state
+    // with a "Créer une équipe" button that couldn't fire.
     const { data: profile } = await supabase
       .from("users")
-      .select("school_id")
+      .select("context, school_id")
       .eq("id", user.id)
       .single();
+
+    if (profile?.context === "ligue_civile") {
+      setIsCivil(true);
+      await loadCivilTeam(user.id);
+      setLoading(false);
+      return;
+    }
+
+    // ── École path (unchanged below) ──
     if (!profile?.school_id) { setLoading(false); return; }
     setSchoolId(profile.school_id);
 
@@ -182,6 +280,86 @@ export default function EquipesPage() {
 
   const inputCls = "w-full bg-[#13151a] border border-[#2a2d36] rounded-lg px-4 py-3 text-[14px] text-white placeholder-[#4a4d56] focus:outline-none focus:border-[#E63946]/50 transition-colors";
   const labelCls = "block text-[11px] font-bold tracking-[0.2em] uppercase text-[#6b7280] mb-1.5";
+
+  // Civil "Mon équipe" branch. Returns early — école JSX below is
+  // never executed for civil coaches. Edge case (no team) shows an
+  // onboarding redirect since civil team creation lives at signup.
+  if (isCivil) {
+    return (
+      <div className="px-6 sm:px-10 py-8 max-w-[1200px] mx-auto space-y-6">
+        <div>
+          <h1 className="font-head text-2xl font-black text-white uppercase tracking-tight">Mon équipe</h1>
+          <p className="text-[14px] text-[#9CA3AF] mt-1">
+            {civilTeam ? "Gère ton équipe et ton roster." : "Aucune équipe associée à ton compte."}
+          </p>
+        </div>
+
+        {civilTeam ? (
+          <Link
+            href={`/coach/equipes/${civilTeam.id}`}
+            className="block bg-[#1A1D24] rounded-xl border-l-[3px] border-l-[#E63946] hover:border-l-[#ff4d5a] transition-all hover:shadow-[0_0_24px_rgba(230,57,70,0.1)] group p-6"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-3 flex-wrap mb-2">
+                  <h2 className="text-[22px] font-bold text-white group-hover:text-[#E63946] transition-colors">{civilTeam.name}</h2>
+                  <span className="px-2 py-0.5 rounded-full bg-[#E63946]/10 text-[10px] font-bold text-[#E63946] uppercase border border-[#E63946]/20">
+                    {civilTeam.myRole === "ADMIN" ? "Coach principal" : "Coach"}
+                  </span>
+                  <span className="text-[11px] font-bold tracking-wider uppercase px-2 py-0.5 rounded bg-[#2D3748] text-[#9CA3AF]">{civilTeam.season}</span>
+                </div>
+                {civilTeam.leagueName && (
+                  <p className="text-[14px] text-[#9CA3AF] mb-2">{civilTeam.leagueName}</p>
+                )}
+                <div className="flex items-center gap-2 flex-wrap">
+                  {civilTeam.sportName && (
+                    <span className="px-2 py-0.5 rounded-full bg-white/5 text-[10px] font-bold text-[#9CA3AF] uppercase border border-white/10">{civilTeam.sportName}</span>
+                  )}
+                  {civilTeam.ageGroup && (
+                    <span className="px-2 py-0.5 rounded-full bg-white/5 text-[10px] font-bold text-[#9CA3AF] uppercase border border-white/10">{civilTeam.ageGroup}</span>
+                  )}
+                  {civilTeam.gender && (
+                    <span className="px-2 py-0.5 rounded-full bg-white/5 text-[10px] font-bold text-[#9CA3AF] uppercase border border-white/10">{civilTeam.gender}</span>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-4 shrink-0">
+                <div className="text-center">
+                  <p className="text-[28px] font-head font-black text-white">{civilTeam.athleteCount}</p>
+                  <p className="text-[10px] text-[#6b7280] uppercase tracking-wider">athlète{civilTeam.athleteCount !== 1 ? "s" : ""}</p>
+                </div>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round"
+                  className="opacity-0 group-hover:opacity-100 transition-opacity">
+                  <path d="M5 12h14" /><path d="M12 5l7 7-7 7" />
+                </svg>
+              </div>
+            </div>
+          </Link>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="w-16 h-16 rounded-full bg-[#1A1D24] border border-[#2D3748] flex items-center justify-center mb-4">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4a4d56" strokeWidth="1.5" strokeLinecap="round">
+                <path d="M12 2L2 7l10 5 10-5-10-5z" /><path d="M2 17l10 5 10-5" /><path d="M2 12l10 5 10-5" />
+              </svg>
+            </div>
+            <h3 className="font-head text-lg font-black text-white uppercase mb-1">Aucune équipe</h3>
+            <p className="text-[13px] text-[#9CA3AF] mb-5 max-w-md">
+              Tu dois compléter ton onboarding pour créer ou rejoindre une équipe civile.
+            </p>
+            <Link
+              href="/onboarding"
+              className="inline-flex items-center gap-2 bg-[#E63946] hover:bg-[#D42B22] text-white px-5 py-2.5 rounded-lg font-head font-bold text-[12px] uppercase tracking-wider transition-colors"
+            >
+              Aller à l&apos;onboarding
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <path d="M5 12h14" /><path d="M12 5l7 7-7 7" />
+              </svg>
+            </Link>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="px-6 sm:px-10 py-8 max-w-[1200px] mx-auto space-y-6">
