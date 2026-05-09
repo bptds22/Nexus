@@ -14,6 +14,21 @@ interface TeamAthlete { id: string; athleteId: string; name: string; position: s
 interface AvailableAthlete { id: string; name: string; position: string }
 interface AvailableCoach { id: string; name: string }
 
+// Civil header shape — 5.5d-i ships the header only. Subsequent
+// sub-phases extend with athletes (ii), coach mutations (iii),
+// other coaches list (iv), and admin info edit (v).
+interface CivilTeamHeader {
+  id: string;
+  name: string;
+  ageGroup: string;
+  gender: string;
+  season: string;
+  sportName: string;
+  leagueName: string;
+  myRole: "ADMIN" | "COACH";
+  isActive: boolean;
+}
+
 const ROLE_LABELS: Record<string, string> = { head_coach: "Entraîneur-chef", assistant: "Assistant", coordinator: "Coordonnateur" };
 const ROLE_COLORS: Record<string, string> = {
   head_coach: "bg-[#E63946]/15 text-[#E63946] border-[#E63946]/30",
@@ -52,13 +67,101 @@ export default function TeamDetailPage() {
   const [editLeague, setEditLeague] = useState("");
   const [editSeason, setEditSeason] = useState("");
 
+  // Civil branch state. isCivil gates the entire JSX return — école
+  // path stays byte-identical when isCivil is false.
+  const [isCivil, setIsCivil] = useState(false);
+  const [civilHeader, setCivilHeader] = useState<CivilTeamHeader | null>(null);
+
   function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(null), 2500); }
 
   useEffect(() => { load(); }, [teamId]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Civil header load. Two-query approach for clear error handling:
+  //   1. Fetch the team itself (existence check) → null = 404
+  //   2. Fetch the user's league_coaches role on this team → null = 403
+  // Single nested-join query would conflate "team missing" with
+  // "user not authorized" — both produce a null result row.
+  // Edge case (c) — team is_active=false renders the header normally
+  // with a banner; redirect only happens for (a) and (b).
+  async function loadCivilTeam(userId: string) {
+    const supabase = createClient();
+
+    const { data: team } = await supabase
+      .from("league_teams")
+      .select(`
+        id, name, age_group, gender, season, is_active, sport_id, league_id,
+        sports!sport_id(nom),
+        leagues!league_id(name)
+      `)
+      .eq("id", teamId)
+      .maybeSingle();
+
+    if (!team) {
+      // (a) team_id doesn't exist → silent 404 redirect
+      router.replace("/coach/equipes");
+      return;
+    }
+
+    const { data: roleRow } = await supabase
+      .from("league_coaches")
+      .select("role")
+      .eq("league_team_id", teamId)
+      .eq("coach_id", userId)
+      .in("role", ["ADMIN", "COACH"])
+      .order("role")
+      .limit(1)
+      .maybeSingle();
+
+    if (!roleRow) {
+      // (b) team exists but user is not a coach on it → silent 403 redirect
+      router.replace("/coach/equipes");
+      return;
+    }
+
+    const teamRecord = team as Record<string, unknown>;
+    const sportRel = teamRecord.sports as { nom?: string } | { nom?: string }[] | null;
+    const sport = Array.isArray(sportRel) ? sportRel[0] : sportRel;
+    const leagueRel = teamRecord.leagues as { name?: string } | { name?: string }[] | null;
+    const league = Array.isArray(leagueRel) ? leagueRel[0] : leagueRel;
+
+    setCivilHeader({
+      id: teamRecord.id as string,
+      name: (teamRecord.name as string) || "",
+      ageGroup: (teamRecord.age_group as string) || "",
+      gender: (teamRecord.gender as string) || "",
+      season: (teamRecord.season as string) || "",
+      sportName: sport?.nom || "",
+      leagueName: league?.name || "",
+      myRole: (roleRow.role as "ADMIN" | "COACH") || "COACH",
+      isActive: (teamRecord.is_active as boolean) ?? true,
+    });
+  }
+
   async function load() {
     const supabase = createClient();
 
+    // Detect context FIRST. Civil coaches need a different load path
+    // (league_teams + league_coaches) and a different render shape.
+    // Pre-5.5d-i, civil coaches landing here would either 404 (team
+    // not in `teams` table) or render the école shell with empty
+    // school-side data.
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser) { setLoading(false); return; }
+
+    const { data: profile } = await supabase
+      .from("users")
+      .select("context")
+      .eq("id", authUser.id)
+      .maybeSingle();
+
+    if (profile?.context === "ligue_civile") {
+      setIsCivil(true);
+      await loadCivilTeam(authUser.id);
+      setLoading(false);
+      return;
+    }
+
+    // ── École path (unchanged below) ──
     const { data: t } = await supabase
       .from("teams")
       .select("name, age_group, division, league, season, school_id, sport_id, sports!sport_id(nom)")
@@ -195,7 +298,70 @@ export default function TeamDetailPage() {
     router.push("/coach/equipes");
   }
 
-  if (loading || !team) {
+  if (loading) {
+    return (
+      <div className="px-6 sm:px-10 py-8 max-w-[1000px] mx-auto">
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-[#1A1D24] rounded w-64" />
+          <div className="h-40 bg-[#1A1D24] rounded-xl" />
+          <div className="h-40 bg-[#1A1D24] rounded-xl" />
+        </div>
+      </div>
+    );
+  }
+
+  // Civil branch — header only for 5.5d-i. Subsequent sub-phases
+  // extend this view with athletes (ii), mutations (iii), coaches
+  // section (iv), and admin info edit (v). École JSX below this
+  // branch is byte-identical to pre-5.5d-i.
+  if (isCivil) {
+    if (!civilHeader) return null; // redirect already fired (404/403) or in flight
+    const ROLE_DISPLAY: Record<string, string> = { ADMIN: "Coach principal", COACH: "Coach" };
+    const pills = [
+      civilHeader.sportName,
+      civilHeader.ageGroup,
+      civilHeader.gender,
+      civilHeader.leagueName,
+      civilHeader.season,
+      ROLE_DISPLAY[civilHeader.myRole] || "Coach",
+    ].filter(Boolean);
+    return (
+      <div className="px-6 sm:px-10 py-8 max-w-[1000px] mx-auto space-y-6">
+        {/* Breadcrumb */}
+        <div className="flex items-center gap-2 text-[12px] text-[#6b7280]">
+          <Link href="/coach/equipes" className="hover:text-white transition-colors">Mes équipes</Link>
+          <span>/</span>
+          <span className="text-white">{civilHeader.name}</span>
+        </div>
+
+        {/* Désactivée banner — read-only access stays available so a
+            coach can still see metadata after deactivation, but the
+            visual state is unmistakable. */}
+        {!civilHeader.isActive && (
+          <div className="bg-[#F59E0B]/[0.08] border border-[#F59E0B]/30 rounded-lg px-4 py-3 flex items-center gap-3">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2" strokeLinecap="round">
+              <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            <p className="text-[13px] font-bold text-[#F59E0B]">Cette équipe est désactivée</p>
+          </div>
+        )}
+
+        {/* Header */}
+        <div>
+          <h1 className="font-head text-2xl font-black text-white uppercase tracking-tight">{civilHeader.name}</h1>
+          {pills.length > 0 && (
+            <p className="text-[14px] text-[#9CA3AF] mt-1">{pills.join(" · ")}</p>
+          )}
+        </div>
+
+        {/* 5.5d-ii will mount the athletes list here.
+            5.5d-iv will mount the coaches section.
+            5.5d-v will mount admin-only info edit + deactivate. */}
+      </div>
+    );
+  }
+
+  if (!team) {
     return (
       <div className="px-6 sm:px-10 py-8 max-w-[1000px] mx-auto">
         <div className="animate-pulse space-y-4">
