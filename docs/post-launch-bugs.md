@@ -1130,6 +1130,30 @@ file.
       hardcoded site. Trivial; defer until the 2026-2027 season
       flip is approaching to avoid premature edits.
 
+- [ ] **Extract `<CoachAthleteRow>` to a shared component (5.5d-iii-redux
+      tech debt).** Surfaced 2026-05-09 while landing the rich-row
+      pattern for `/coach/equipes/[teamId]`. The visual contract
+      (avatar + verified check + name + position pill +
+      RecruitmentStatusBadge + region + height/weight + grad year +
+      5-star rating) now exists inline in two places:
+      - [`app/coach/athletes/page.tsx:157-260`](../app/coach/athletes/page.tsx#L157-L260)
+        (`CoachAthleteRow`, ~100 lines, pre-existing)
+      - [`app/coach/equipes/[teamId]/page.tsx`](../app/coach/equipes/%5BteamId%5D/page.tsx)
+        Section B (école, ~80 lines) + the civil athletes section
+        (~80 lines), both inline-copied in 5.5d-iii-redux to avoid
+        touching the debugged école coach roster page during the
+        team-page UX work.
+
+      Resolution: extract to `components/shared/CoachAthleteRow.tsx`
+      with a prop interface that absorbs both call sites' data
+      shapes (école has school sub-line + Modifier/Voir actions;
+      civil has no sub-line + Voir + ADMIN-only remove ✕). Refactor
+      all three call sites. Estimated 1 hr extraction, gated on
+      team-page UX freeze (no major changes for ~30 days). Risk:
+      école coach roster page is debugged per CLAUDE.md — bundle
+      with another change touching that file rather than a
+      single-purpose refactor.
+
 ---
 
 ## Closeout rule
