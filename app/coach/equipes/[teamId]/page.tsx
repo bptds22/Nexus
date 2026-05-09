@@ -29,6 +29,17 @@ interface CivilTeamHeader {
   isActive: boolean;
 }
 
+// Civil roster row for the athletes list (5.5d-ii). Read-only —
+// mutations land in 5.5d-iii.
+interface CivilAthlete {
+  id: string;          // league_team_athletes.id (junction row)
+  athleteId: string;   // athletes.id (target)
+  name: string;
+  position: string;
+  jersey: string;
+  isCaptain: boolean;
+}
+
 const ROLE_LABELS: Record<string, string> = { head_coach: "Entraîneur-chef", assistant: "Assistant", coordinator: "Coordonnateur" };
 const ROLE_COLORS: Record<string, string> = {
   head_coach: "bg-[#E63946]/15 text-[#E63946] border-[#E63946]/30",
@@ -71,6 +82,8 @@ export default function TeamDetailPage() {
   // path stays byte-identical when isCivil is false.
   const [isCivil, setIsCivil] = useState(false);
   const [civilHeader, setCivilHeader] = useState<CivilTeamHeader | null>(null);
+  // 5.5d-ii: civil roster loaded from league_team_athletes junction.
+  const [civilAthletes, setCivilAthletes] = useState<CivilAthlete[]>([]);
 
   function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(null), 2500); }
 
@@ -135,6 +148,44 @@ export default function TeamDetailPage() {
       myRole: (roleRow.role as "ADMIN" | "COACH") || "COACH",
       isActive: (teamRecord.is_active as boolean) ?? true,
     });
+
+    // 5.5d-ii: load roster via the league_team_athletes junction
+    // shipped in 5.5b. Embed athletes + their position to render the
+    // visual-parity row layout. Sort by jersey_number ascending (NULLs
+    // last) so numbered athletes appear first; un-numbered cluster at
+    // bottom in stable order.
+    const { data: rosterRows } = await supabase
+      .from("league_team_athletes")
+      .select(`
+        id, athlete_id, jersey_number, is_captain,
+        athletes!athlete_id(
+          id, first_name, last_name,
+          positions!position_id(abreviation)
+        )
+      `)
+      .eq("league_team_id", teamId)
+      .order("jersey_number", { ascending: true, nullsFirst: false });
+
+    if (rosterRows) {
+      const mapped: CivilAthlete[] = rosterRows.map((row) => {
+        const r = row as Record<string, unknown>;
+        const athleteRel = r.athletes as Record<string, unknown> | Record<string, unknown>[] | null;
+        const athlete = (Array.isArray(athleteRel) ? athleteRel[0] : athleteRel) as Record<string, unknown> | null;
+        const posRel = athlete?.positions as { abreviation?: string } | { abreviation?: string }[] | null;
+        const pos = Array.isArray(posRel) ? posRel[0] : posRel;
+        const firstName = (athlete?.first_name as string) || "";
+        const lastName = (athlete?.last_name as string) || "";
+        return {
+          id: r.id as string,
+          athleteId: (athlete?.id as string) || (r.athlete_id as string),
+          name: `${firstName} ${lastName}`.trim(),
+          position: pos?.abreviation || "",
+          jersey: (r.jersey_number as string) || "",
+          isCaptain: (r.is_captain as boolean) || false,
+        };
+      });
+      setCivilAthletes(mapped);
+    }
   }
 
   async function load() {
@@ -354,8 +405,45 @@ export default function TeamDetailPage() {
           )}
         </div>
 
-        {/* 5.5d-ii will mount the athletes list here.
-            5.5d-iv will mount the coaches section.
+        {/* 5.5d-ii — Athlètes (read-only). Visual parity with école
+            Section B but no add/remove/captain-toggle/jersey-edit
+            controls. Mutations land in 5.5d-iii. No "+" buttons in
+            the section header — civil acquisition flow goes through
+            invitation (5.5d-vi), not pool selection. */}
+        <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] p-5">
+          <h2 className={sectionTitle}>Athlètes ({civilAthletes.length})</h2>
+          {civilAthletes.length === 0 ? (
+            <p className="text-[13px] text-[#4a4d56]">Aucun athlète dans cette équipe</p>
+          ) : (
+            <div className="space-y-1">
+              {civilAthletes.map((a) => (
+                <div key={a.id} className="flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-white/[0.02]">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-full bg-[#2D3748] flex items-center justify-center">
+                      <span className="text-[11px] font-bold text-[#9CA3AF]">
+                        {a.name.split(" ").filter(Boolean).map((n) => n[0]).join("").slice(0, 2) || "?"}
+                      </span>
+                    </div>
+                    <Link href={`/coach/athletes/${a.athleteId}`} className="text-[14px] font-bold text-white hover:text-[#E63946] transition-colors">
+                      {a.name || "—"}
+                    </Link>
+                    {a.position && (
+                      <span className="text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-[#2D3748] text-[#9CA3AF]">{a.position}</span>
+                    )}
+                    {a.isCaptain && (
+                      <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-[#E63946]/15 text-[#E63946] border border-[#E63946]/30">C</span>
+                    )}
+                  </div>
+                  {a.jersey && (
+                    <span className="text-[13px] font-bold text-white tabular-nums">#{a.jersey}</span>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* 5.5d-iv will mount the coaches section.
             5.5d-v will mount admin-only info edit + deactivate. */}
       </div>
     );
