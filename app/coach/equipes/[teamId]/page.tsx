@@ -149,16 +149,11 @@ export default function TeamDetailPage() {
       isActive: (teamRecord.is_active as boolean) ?? true,
     });
 
-    // Roster fetch is delegated to loadCivilRoster so 5.5d-iii-b
-    // mutations can re-fetch it without touching the header query.
-    await loadCivilRoster();
-  }
-
-  // 5.5d-ii read + 5.5d-iii-b mutations both call this helper.
-  // Sort by jersey_number ASC NULLS LAST: numbered athletes first,
-  // un-numbered cluster at the bottom in stable order.
-  async function loadCivilRoster() {
-    const supabase = createClient();
+    // 5.5d-ii: load roster via the league_team_athletes junction
+    // shipped in 5.5b. Embed athletes + their position to render the
+    // visual-parity row layout. Sort by jersey_number ascending (NULLs
+    // last) so numbered athletes appear first; un-numbered cluster at
+    // bottom in stable order.
     const { data: rosterRows } = await supabase
       .from("league_team_athletes")
       .select(`
@@ -171,77 +166,26 @@ export default function TeamDetailPage() {
       .eq("league_team_id", teamId)
       .order("jersey_number", { ascending: true, nullsFirst: false });
 
-    if (!rosterRows) {
-      setCivilAthletes([]);
-      return;
+    if (rosterRows) {
+      const mapped: CivilAthlete[] = rosterRows.map((row) => {
+        const r = row as Record<string, unknown>;
+        const athleteRel = r.athletes as Record<string, unknown> | Record<string, unknown>[] | null;
+        const athlete = (Array.isArray(athleteRel) ? athleteRel[0] : athleteRel) as Record<string, unknown> | null;
+        const posRel = athlete?.positions as { abreviation?: string } | { abreviation?: string }[] | null;
+        const pos = Array.isArray(posRel) ? posRel[0] : posRel;
+        const firstName = (athlete?.first_name as string) || "";
+        const lastName = (athlete?.last_name as string) || "";
+        return {
+          id: r.id as string,
+          athleteId: (athlete?.id as string) || (r.athlete_id as string),
+          name: `${firstName} ${lastName}`.trim(),
+          position: pos?.abreviation || "",
+          jersey: (r.jersey_number as string) || "",
+          isCaptain: (r.is_captain as boolean) || false,
+        };
+      });
+      setCivilAthletes(mapped);
     }
-
-    const mapped: CivilAthlete[] = rosterRows.map((row) => {
-      const r = row as Record<string, unknown>;
-      const athleteRel = r.athletes as Record<string, unknown> | Record<string, unknown>[] | null;
-      const athlete = (Array.isArray(athleteRel) ? athleteRel[0] : athleteRel) as Record<string, unknown> | null;
-      const posRel = athlete?.positions as { abreviation?: string } | { abreviation?: string }[] | null;
-      const pos = Array.isArray(posRel) ? posRel[0] : posRel;
-      const firstName = (athlete?.first_name as string) || "";
-      const lastName = (athlete?.last_name as string) || "";
-      return {
-        id: r.id as string,
-        athleteId: (athlete?.id as string) || (r.athlete_id as string),
-        name: `${firstName} ${lastName}`.trim(),
-        position: pos?.abreviation || "",
-        jersey: (r.jersey_number as string) || "",
-        isCaptain: (r.is_captain as boolean) || false,
-      };
-    });
-    setCivilAthletes(mapped);
-  }
-
-  // 5.5d-iii-b mutations — ADMIN-only at the UI layer. RLS unchanged
-  // (the "Coaches of team manage roster" policy already covers any
-  // coach in league_coaches, including non-ADMIN; UI gating is an
-  // additional product-layer constraint, not a security boundary).
-
-  async function removeCivilAthlete(rowId: string, athleteName: string) {
-    const confirmText = `Retirer ${athleteName} de l'équipe ? Le compte de l'athlète n'est pas supprimé, il pourra rejoindre une autre équipe.`;
-    if (!confirm(confirmText)) return;
-    const supabase = createClient();
-    const { error } = await supabase.from("league_team_athletes").delete().eq("id", rowId);
-    if (error) {
-      alert("Erreur: " + error.message);
-      return;
-    }
-    // 5.5d-iii-a trigger auto-resets athletes.league_team_id when
-    // the deleted membership matches the athlete's anchor — no
-    // second write needed at the application layer.
-    await loadCivilRoster();
-    showToast("Athlète retiré");
-  }
-
-  async function toggleCivilCaptain(rowId: string, currentValue: boolean) {
-    const supabase = createClient();
-    const { error } = await supabase
-      .from("league_team_athletes")
-      .update({ is_captain: !currentValue })
-      .eq("id", rowId);
-    if (error) {
-      alert("Erreur: " + error.message);
-      return;
-    }
-    await loadCivilRoster();
-  }
-
-  async function updateCivilJersey(rowId: string, newValue: string) {
-    const supabase = createClient();
-    const trimmed = newValue.trim();
-    const { error } = await supabase
-      .from("league_team_athletes")
-      .update({ jersey_number: trimmed.length > 0 ? trimmed : null })
-      .eq("id", rowId);
-    if (error) {
-      alert("Erreur: " + error.message);
-      return;
-    }
-    await loadCivilRoster();
   }
 
   async function load() {
@@ -461,84 +405,40 @@ export default function TeamDetailPage() {
           )}
         </div>
 
-        {/* Athlètes — read-only display for non-ADMIN coaches; ADMIN
-            adds 3 mutations: jersey input (blur to save), captain
-            toggle button, remove ✕ on hover. RLS already permits any
-            coach in league_coaches to mutate; UI gate on ADMIN is a
-            product-layer constraint. No "+" buttons in the section
-            header — civil acquisition is invitation-based (5.5d-vi),
-            not pool selection. */}
+        {/* 5.5d-ii — Athlètes (read-only). Visual parity with école
+            Section B but no add/remove/captain-toggle/jersey-edit
+            controls. Mutations land in 5.5d-iii. No "+" buttons in
+            the section header — civil acquisition flow goes through
+            invitation (5.5d-vi), not pool selection. */}
         <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] p-5">
           <h2 className={sectionTitle}>Athlètes ({civilAthletes.length})</h2>
           {civilAthletes.length === 0 ? (
             <p className="text-[13px] text-[#4a4d56]">Aucun athlète dans cette équipe</p>
           ) : (
             <div className="space-y-1">
-              {civilAthletes.map((a) => {
-                const isAdmin = civilHeader.myRole === "ADMIN";
-                return (
-                  <div key={a.id} className="flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-white/[0.02] group">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full bg-[#2D3748] flex items-center justify-center">
-                        <span className="text-[11px] font-bold text-[#9CA3AF]">
-                          {a.name.split(" ").filter(Boolean).map((n) => n[0]).join("").slice(0, 2) || "?"}
-                        </span>
-                      </div>
-                      <Link href={`/coach/athletes/${a.athleteId}`} className="text-[14px] font-bold text-white hover:text-[#E63946] transition-colors">
-                        {a.name || "—"}
-                      </Link>
-                      {a.position && (
-                        <span className="text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-[#2D3748] text-[#9CA3AF]">{a.position}</span>
-                      )}
-                      {a.isCaptain && (
-                        <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-[#E63946]/15 text-[#E63946] border border-[#E63946]/30">C</span>
-                      )}
+              {civilAthletes.map((a) => (
+                <div key={a.id} className="flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-white/[0.02]">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-full bg-[#2D3748] flex items-center justify-center">
+                      <span className="text-[11px] font-bold text-[#9CA3AF]">
+                        {a.name.split(" ").filter(Boolean).map((n) => n[0]).join("").slice(0, 2) || "?"}
+                      </span>
                     </div>
-                    {isAdmin ? (
-                      <div className="flex items-center gap-3">
-                        <input
-                          type="text"
-                          value={a.jersey}
-                          placeholder="#"
-                          aria-label={`Numéro de ${a.name}`}
-                          className="w-12 bg-transparent border border-[#2a2d36] rounded px-2 py-1 text-[13px] text-white text-center focus:outline-none focus:border-[#E63946]/50"
-                          onChange={(e) => {
-                            const v = e.target.value;
-                            setCivilAthletes((prev) => prev.map((x) => x.id === a.id ? { ...x, jersey: v } : x));
-                          }}
-                          onBlur={() => updateCivilJersey(a.id, a.jersey)}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => toggleCivilCaptain(a.id, a.isCaptain)}
-                          title="Capitaine"
-                          className={`text-[11px] font-bold w-7 h-7 rounded flex items-center justify-center transition-colors ${
-                            a.isCaptain
-                              ? "bg-[#E63946] text-white"
-                              : "border border-[#2D3748] text-[#6b7280] hover:text-white hover:border-[#4a4d56]"
-                          }`}
-                        >
-                          C
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => removeCivilAthlete(a.id, a.name || "cet athlète")}
-                          title="Retirer"
-                          className="text-[#4a4d56] hover:text-[#E63946] transition-colors opacity-0 group-hover:opacity-100"
-                        >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                            <path d="M18 6L6 18" /><path d="M6 6l12 12" />
-                          </svg>
-                        </button>
-                      </div>
-                    ) : (
-                      a.jersey && (
-                        <span className="text-[13px] font-bold text-white tabular-nums">#{a.jersey}</span>
-                      )
+                    <Link href={`/coach/athletes/${a.athleteId}`} className="text-[14px] font-bold text-white hover:text-[#E63946] transition-colors">
+                      {a.name || "—"}
+                    </Link>
+                    {a.position && (
+                      <span className="text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-[#2D3748] text-[#9CA3AF]">{a.position}</span>
+                    )}
+                    {a.isCaptain && (
+                      <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-[#E63946]/15 text-[#E63946] border border-[#E63946]/30">C</span>
                     )}
                   </div>
-                );
-              })}
+                  {a.jersey && (
+                    <span className="text-[13px] font-bold text-white tabular-nums">#{a.jersey}</span>
+                  )}
+                </div>
+              ))}
             </div>
           )}
         </div>
