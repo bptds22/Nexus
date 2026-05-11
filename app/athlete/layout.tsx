@@ -124,6 +124,17 @@ function AthleteSidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose:
       .eq("athlete_id", athlete.id)
       .eq("read", false);
 
+    // 5.5e-iv-c: pending Flow A invitations roll into the
+    // Notifications sidebar badge. Same key the existing
+    // 'notifications-updated' event already refreshes — 5.5e-iv-b
+    // accept/reject handlers dispatch that event so the count
+    // stays in sync without any new wiring.
+    const { count: pendingInvitations } = await supabase
+      .from("team_invitations")
+      .select("id", { count: "exact", head: true })
+      .eq("athlete_id", athlete.id)
+      .eq("status", "PENDING");
+
     // Pending suggestions count
     const { count: pendingSuggs } = await supabase
       .from("athlete_suggestions")
@@ -132,7 +143,7 @@ function AthleteSidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose:
       .eq("status", "EN_ATTENTE");
 
     setBadges({
-      notifications: unreadNotifs || 0,
+      notifications: (unreadNotifs || 0) + (pendingInvitations || 0),
       profil: pendingSuggs || 0,
     });
   }, []);

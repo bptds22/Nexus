@@ -63,6 +63,7 @@ export default function AthleteDashboardPage() {
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
   const [unreadNotifs, setUnreadNotifs] = useState<{ count: number; latestTitle: string | null }>({ count: 0, latestTitle: null });
+  const [pendingInvitations, setPendingInvitations] = useState(0);
   const [viewsThisMonth, setViewsThisMonth] = useState(0);
   const [viewsLastMonth, setViewsLastMonth] = useState(0);
   const [favoritesCount, setFavoritesCount] = useState(0);
@@ -105,6 +106,17 @@ export default function AthleteDashboardPage() {
           count: count ?? 0,
           latestTitle: (notifs?.[0]?.title as string) || null,
         });
+
+        // 5.5e-iv-c: pending Flow A invitations count for the dashboard
+        // banner. Refresh hook is the same 'notifications-updated' event
+        // dispatched by 5.5e-iv-b accept/reject handlers — load() runs
+        // again on the event so this count stays in sync.
+        const { count: pendingCount } = await supabase
+          .from("team_invitations")
+          .select("id", { count: "exact", head: true })
+          .eq("athlete_id", athleteRow.id)
+          .eq("status", "PENDING");
+        setPendingInvitations(pendingCount ?? 0);
 
         // ── Real KPI data ──────────────────────────────────────
         const now = new Date();
@@ -258,6 +270,34 @@ export default function AthleteDashboardPage() {
         )}
       </div>
       <p className="text-[14px] text-[#9CA3AF] -mt-4">Voici ce qui se passe avec ton profil</p>
+
+      {/* ── Pending invitations banner (5.5e-iv-c) ────────────── */}
+      {pendingInvitations > 0 && (
+        <Link
+          href="/athlete/notifications"
+          className="flex items-center gap-4 bg-[#1A1D24] border border-[#E63946]/30 hover:border-[#E63946]/60 rounded-xl px-5 py-4 transition-colors group"
+        >
+          <span className="w-11 h-11 shrink-0 rounded-full bg-[#E63946]/15 border border-[#E63946]/30 flex items-center justify-center text-xl">
+            🤝
+          </span>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <p className="text-[13px] font-bold text-white leading-tight">
+                Invitations en attente
+              </p>
+              <span className="inline-flex items-center justify-center min-w-[20px] h-[20px] px-1.5 bg-[#E63946] rounded-full text-[11px] font-bold text-white leading-none">
+                {pendingInvitations}
+              </span>
+            </div>
+            <p className="text-[12px] text-[#9CA3AF] truncate mt-1">
+              Tu as {pendingInvitations} invitation{pendingInvitations > 1 ? "s" : ""} d&apos;équipe à examiner
+            </p>
+          </div>
+          <span className="text-[12px] font-bold text-[#E63946] group-hover:text-[#D42B22] shrink-0">
+            Voir tout →
+          </span>
+        </Link>
+      )}
 
       {/* ── Unread notifications banner ───────────────────────── */}
       {unreadNotifs.count > 0 && (
