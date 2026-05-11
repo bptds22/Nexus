@@ -65,6 +65,32 @@ const SCHOOL_ITEMS: NavItem[] = [
   },
 ];
 
+// Civil-context core items (5.5e-i): "Découvrir" replaces "Mes
+// athlètes" (civils discover orphan athletes via the new route),
+// and the entire "Gestion école" section is hidden. Items are
+// referenced from CORE_ITEMS by href to stay resilient if the
+// école item order changes; if a CORE_ITEMS href is renamed we'll
+// catch it via the non-null assertion at runtime.
+const findCoreItem = (href: string): NavItem => {
+  const found = CORE_ITEMS.find((i) => i.href === href);
+  if (!found) throw new Error(`CoachSidebar: CORE_ITEMS missing expected href ${href}`);
+  return found;
+};
+
+const DECOUVRIR_ITEM: NavItem = {
+  label: "Découvrir",
+  href: "/coach/decouvrir",
+  icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" /></svg>,
+};
+
+const CIVIL_ITEMS: NavItem[] = [
+  findCoreItem("/coach/tableau-de-bord"),
+  findCoreItem("/coach/equipes"),
+  DECOUVRIR_ITEM,
+  findCoreItem("/coach/demandes"),
+  findCoreItem("/coach/activites"),
+];
+
 const BOTTOM_ITEMS: NavItem[] = [
   {
     label: "Ma réputation", href: "/coach/reputation",
@@ -88,6 +114,10 @@ export default function CoachSidebar({ mobileOpen, onClose }: CoachSidebarProps)
   const [userSub, setUserSub] = useState("");
   const [userInitials, setUserInitials] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
+  // 5.5e-i: civil context flag drives sidebar item set + hides
+  // "Gestion école" group entirely. Default false → école behavior
+  // preserved when context is NULL (un-onboarded users).
+  const [isCivil, setIsCivil] = useState(false);
   const [portalLabel, setPortalLabel] = useState("Portail coach");
   const [badges, setBadges] = useState<Record<string, number>>({});
 
@@ -150,6 +180,7 @@ export default function CoachSidebar({ mobileOpen, onClose }: CoachSidebarProps)
         console.log("[CoachSidebar] User context:", userCtx?.context);
 
         if (userCtx?.context === "ligue_civile") {
+          setIsCivil(true);
           // Get league info for subtitle
           const { data: leagueCoach } = await supabase
             .from("league_coaches")
@@ -233,11 +264,13 @@ export default function CoachSidebar({ mobileOpen, onClose }: CoachSidebarProps)
 
       {/* Nav links */}
       <nav className="flex-1 px-3 py-5 space-y-1 overflow-y-auto">
-        {/* ── Core section ── */}
-        {CORE_ITEMS.map((item) => renderNavItem(item))}
+        {/* ── Core section: CIVIL_ITEMS for ligue_civile, CORE_ITEMS for
+            école/scolaire/NULL. Civil swaps "Mes athlètes" for
+            "Découvrir" and hides the Gestion école group below. ── */}
+        {(isCivil ? CIVIL_ITEMS : CORE_ITEMS).map((item) => renderNavItem(item))}
 
-        {/* ── Gestion École section (admin only) ── */}
-        {isAdmin && (
+        {/* ── Gestion École section (école admin only — never for civil) ── */}
+        {!isCivil && isAdmin && (
           <>
             <div className="pt-3 pb-1 px-1">
               <div className="flex items-center gap-2">
