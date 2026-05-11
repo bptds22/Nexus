@@ -12,9 +12,23 @@ import type { GlobalRecruitmentStatus } from "@/lib/types/models";
    Civil-only. Pulls athletes with school_id IS NULL AND
    league_team_id IS NULL AND status='ACTIF', scoped to the coach's
    sport (resolved via league_coaches → leagues.sport_id).
-   Read-only for 5.5e-ii — the invite button is a disabled
-   placeholder; the real mutation ships in 5.5e-iv after the
-   team_invitations migration (5.5e-iii).
+
+   5.5e-iv-a wires Flow A invitations end-to-end (coach side):
+     - Each row's Inviter button INSERTs a PENDING row into
+       team_invitations after a confirm modal.
+     - Rows with an existing PENDING invitation render disabled
+       "Invitation envoyée" (state derived from a pendingSet built
+       on mount).
+     - Target team is the coach's first league_coaches row with
+       league_team_id IS NOT NULL — multi-team picker deferred
+       to 5.5e-v. If no team, the Inviter button is hidden but
+       the orphan list still renders read-only.
+     - Postgres 23505 (uq_team_invitations_pending) is the only
+       error path mapped to a friendly toast; everything else
+       surfaces the raw error.message.
+
+   Athlete-side accept/reject UI ships in 5.5e-iv-b; dashboard
+   banner + sidebar badge in 5.5e-iv-c.
 
    Rich row visual reuses the 5.5d-iii-redux pattern from
    /coach/equipes/[teamId]. Inline-copied per spec; the eventual
@@ -78,6 +92,20 @@ export default function DecouvrirPage() {
   const [searchInput, setSearchInput] = useState("");
   const [searchDebounced, setSearchDebounced] = useState("");
 
+  // 5.5e-iv-a: invitation state
+  const [coachUserId, setCoachUserId] = useState<string | null>(null);
+  const [coachTeamId, setCoachTeamId] = useState<string | null>(null);
+  const [coachTeamName, setCoachTeamName] = useState<string>("");
+  const [pendingSet, setPendingSet] = useState<Set<string>>(new Set());
+  const [inviteTarget, setInviteTarget] = useState<OrphanAthlete | null>(null);
+  const [inviting, setInviting] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+
+  function showToast(msg: string) {
+    setToast(msg);
+    setTimeout(() => setToast(null), 2500);
+  }
+
   // Debounce search input (300ms)
   useEffect(() => {
     const t = setTimeout(() => setSearchDebounced(searchInput.trim().toLowerCase()), 300);
@@ -106,19 +134,24 @@ export default function DecouvrirPage() {
         return;
       }
 
-      // Resolve coach's sport via league_coaches → leagues.sport_id.
-      // Coach may have multiple league_coaches rows (multi-team edge);
-      // first row drives the sport for MVP. P3-tracked for switcher.
+      // Resolve coach's sport via league_coaches → leagues.sport_id,
+      // and team name via league_coaches → league_teams. Coach may have
+      // multiple league_coaches rows (multi-team edge); 5.5e-iv-a picks
+      // the first row with a non-null league_team_id to drive both
+      // sport and target team. P3-tracked for switcher.
       const { data: leagueCoach } = await supabase
         .from("league_coaches")
         .select(`
           league_id,
+          league_team_id,
           leagues!league_id(
             sport_id,
             sports!sport_id(id, nom)
-          )
+          ),
+          league_teams!league_team_id(name)
         `)
         .eq("coach_id", user.id)
+        .order("league_team_id", { ascending: false, nullsFirst: false })
         .limit(1)
         .maybeSingle();
 
@@ -139,6 +172,16 @@ export default function DecouvrirPage() {
       }
 
       setSportName(sport?.nom || "");
+
+      // Resolve target team for invitations. Null here means the coach
+      // has a league but no team yet — orphan list still loads (sport
+      // scoping works via league_id) but Inviter button stays hidden.
+      const teamRel = leagueCoach && (leagueCoach as Record<string, unknown>).league_teams;
+      const teamRow = (Array.isArray(teamRel) ? teamRel[0] : teamRel) as { name?: string } | null;
+      const teamId = ((leagueCoach as Record<string, unknown> | null)?.league_team_id as string | null) ?? null;
+      setCoachUserId(user.id);
+      setCoachTeamId(teamId);
+      setCoachTeamName(teamRow?.name || "");
 
       // Load positions for this sport (drives the position filter dropdown).
       const { data: posRows } = await supabase
@@ -203,6 +246,21 @@ export default function DecouvrirPage() {
         };
       });
       setOrphans(mapped);
+
+      // 5.5e-iv-a: load existing PENDING invitations for this coach's
+      // team to drive the "Invitation envoyée" row state. RLS policy
+      // "Coaches select invitations on own teams" (5.5e-iii-a) scopes
+      // the read; we still constrain by league_team_id explicitly so
+      // the query is correct even with future multi-team UI.
+      if (teamId) {
+        const { data: pendingRows } = await supabase
+          .from("team_invitations")
+          .select("athlete_id")
+          .eq("league_team_id", teamId)
+          .eq("status", "PENDING");
+        setPendingSet(new Set((pendingRows ?? []).map((p) => (p as { athlete_id: string }).athlete_id)));
+      }
+
       setLoading(false);
     })();
   }, [router]);
@@ -254,6 +312,40 @@ export default function DecouvrirPage() {
     setFilterVerified(false);
     setFilterOpen(false);
     setSearchInput("");
+  }
+
+  // 5.5e-iv-a: send Flow A invitation. RLS policy
+  // "Coaches insert invitations on own teams" (5.5e-iii-a) gates the
+  // INSERT. Partial unique index uq_team_invitations_pending blocks
+  // duplicates → Postgres code 23505 mapped to a user-friendly toast.
+  async function handleInvite() {
+    if (!inviteTarget || !coachTeamId || !coachUserId || inviting) return;
+    setInviting(true);
+    const supabase = createClient();
+    const { error } = await supabase.from("team_invitations").insert({
+      league_team_id: coachTeamId,
+      athlete_id: inviteTarget.id,
+      invited_by_coach_id: coachUserId,
+    });
+    setInviting(false);
+
+    if (error) {
+      if (error.code === "23505") {
+        showToast("Une invitation est déjà en cours pour cet athlète");
+      } else {
+        showToast("Erreur : " + error.message);
+      }
+      setInviteTarget(null);
+      return;
+    }
+
+    setPendingSet((prev) => {
+      const next = new Set(prev);
+      next.add(inviteTarget.id);
+      return next;
+    });
+    showToast(`Invitation envoyée à ${inviteTarget.firstName}`);
+    setInviteTarget(null);
   }
 
   const hasActiveFilters =
@@ -407,6 +499,53 @@ export default function DecouvrirPage() {
         )}
       </div>
 
+      {/* Invite confirm modal (5.5e-iv-a) */}
+      {inviteTarget && coachTeamName && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => { if (!inviting) setInviteTarget(null); }}
+          />
+          <div className="relative bg-[#1A1D24] border border-[#2D3748] rounded-xl p-6 w-full max-w-md mx-4 shadow-2xl">
+            <h3 className="font-head text-lg font-black text-white uppercase tracking-tight mb-3">Inviter cet athlète</h3>
+            <p className="text-[14px] text-white mb-2">
+              Inviter <span className="font-bold">{inviteTarget.firstName} {inviteTarget.lastName}</span> dans <span className="font-bold">{coachTeamName}</span>{sportName ? ` (${sportName})` : ""} ?
+            </p>
+            <p className="text-[12px] text-[#9CA3AF] mb-5">
+              L&apos;athlète recevra une demande qu&apos;il pourra accepter ou refuser.
+            </p>
+            <div className="flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setInviteTarget(null)}
+                disabled={inviting}
+                className="px-4 py-2 text-[13px] font-bold text-[#9CA3AF] hover:text-white transition-colors disabled:opacity-50"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={handleInvite}
+                disabled={inviting}
+                className="px-5 py-2 bg-[#E63946] hover:bg-[#D42B22] text-white text-[13px] font-bold rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {inviting ? "Envoi..." : "Confirmer"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toast (5.5e-iv-a) */}
+      {toast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100]">
+          <div className="bg-[#1A1D24] border border-[#2D3748] rounded-lg px-5 py-3 shadow-lg flex items-center gap-3">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5" /></svg>
+            <span className="text-[13px] font-bold text-white">{toast}</span>
+          </div>
+        </div>
+      )}
+
       {/* Results */}
       {filtered.length === 0 ? (
         <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] p-12 text-center">
@@ -481,19 +620,31 @@ export default function DecouvrirPage() {
                   </div>
                 ) : <span />}
               </div>
-              {/* Actions: Voir + disabled Inviter */}
+              {/* Actions: Voir + Inviter (active per 5.5e-iv-a) */}
               <div className="flex-1 flex items-center justify-end gap-3">
                 <Link href={`/coach/athletes/${a.id}`} className="text-[13px] font-bold text-[#9CA3AF] hover:text-white transition-colors flex items-center gap-1 shrink-0">
                   Voir <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M5 12h14" /><path d="M12 5l7 7-7 7" /></svg>
                 </Link>
-                <button
-                  type="button"
-                  disabled
-                  title="Bientôt disponible (5.5e-iv)"
-                  className="text-[12px] font-bold text-[#6b7280] cursor-not-allowed opacity-50 px-3 py-1.5 rounded-lg border border-[#2D3748] shrink-0"
-                >
-                  Inviter
-                </button>
+                {coachTeamId && (
+                  pendingSet.has(a.id) ? (
+                    <button
+                      type="button"
+                      disabled
+                      title="Invitation déjà envoyée — en attente de réponse"
+                      className="text-[12px] font-bold text-[#6b7280] cursor-not-allowed opacity-60 px-3 py-1.5 rounded-lg border border-[#2D3748] shrink-0"
+                    >
+                      Invitation envoyée
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setInviteTarget(a)}
+                      className="text-[12px] font-bold text-white bg-[#E63946] hover:bg-[#D42B22] px-3 py-1.5 rounded-lg transition-colors shrink-0"
+                    >
+                      Inviter
+                    </button>
+                  )
+                )}
               </div>
             </div>
           ))}
