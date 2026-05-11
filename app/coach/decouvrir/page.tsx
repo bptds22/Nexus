@@ -36,6 +36,12 @@ interface OrphanAthlete {
   recruitmentStatus: GlobalRecruitmentStatus | null;
   committedSchoolName: string | null;
   openToOffers: boolean | null;
+  // Email lookup fields — never displayed in the row (5.5e-ii-b).
+  // Loi 25: orphan athletes may be minors; email is PII the coach
+  // shouldn't browse. Used solely to filter when search input
+  // contains "@" (exact match mode).
+  emailDirect: string | null;   // athletes.email
+  emailAuth: string | null;     // public.users.email via athletes.user_id
 }
 
 interface PositionOption {
@@ -147,13 +153,13 @@ export default function DecouvrirPage() {
       const { data: rows } = await supabase
         .from("athletes")
         .select(`
-          id, first_name, last_name, verified,
+          id, first_name, last_name, verified, email,
           position_id, positions!position_id(abreviation, nom),
           annee_diplomation, taille_pieds, taille_pouces, poids_lbs,
           cote_globale_entraineur, statut_recrutement_override,
           open_to_offers, committed_school_id,
           committed_school:schools!committed_school_id(name),
-          user_id, users!athletes_user_id_fkey(region)
+          user_id, users!athletes_user_id_fkey(email, region)
         `)
         .eq("sport_id", sportId)
         .is("league_team_id", null)
@@ -166,7 +172,7 @@ export default function DecouvrirPage() {
         const a = row as Record<string, unknown>;
         const posRel = a.positions as { abreviation?: string } | { abreviation?: string }[] | null;
         const pos = Array.isArray(posRel) ? posRel[0] : posRel;
-        const userRel = a.users as { region?: string } | { region?: string }[] | null;
+        const userRel = a.users as { region?: string; email?: string } | { region?: string; email?: string }[] | null;
         const userRow = Array.isArray(userRel) ? userRel[0] : userRel;
         const committedRel = a.committed_school as { name?: string } | { name?: string }[] | null;
         const committed = Array.isArray(committedRel) ? committedRel[0] : committedRel;
@@ -192,6 +198,8 @@ export default function DecouvrirPage() {
           recruitmentStatus: ((a.statut_recrutement_override as string | null) ?? null) as GlobalRecruitmentStatus | null,
           committedSchoolName: committed?.name || null,
           openToOffers: (a.open_to_offers as boolean | null) ?? null,
+          emailDirect: ((a.email as string | null) ?? null),
+          emailAuth: (userRow?.email ?? null),
         };
       });
       setOrphans(mapped);
@@ -206,16 +214,26 @@ export default function DecouvrirPage() {
     return Array.from(set).sort((a, b) => a - b);
   }, [orphans]);
 
-  // Apply all filters client-side.
+  // Apply all filters client-side. Search input auto-detects mode:
+  // contains "@" → email exact match (case-insensitive), else →
+  // name contains match. Email never displayed in the row even when
+  // matched (Loi 25 — orphan athletes may be minors).
   const filtered = useMemo(() => {
+    const isEmailMode = searchDebounced.includes("@");
     return orphans.filter((a) => {
       if (filterPosition && a.positionId !== filterPosition) return false;
       if (filterYears.size > 0 && (a.gradYear == null || !filterYears.has(a.gradYear))) return false;
       if (filterVerified && !a.verified) return false;
       if (filterOpen && a.openToOffers !== true) return false;
       if (searchDebounced.length > 0) {
-        const hay = `${a.firstName} ${a.lastName}`.toLowerCase();
-        if (!hay.includes(searchDebounced)) return false;
+        if (isEmailMode) {
+          const direct = a.emailDirect?.toLowerCase() ?? null;
+          const auth = a.emailAuth?.toLowerCase() ?? null;
+          if (direct !== searchDebounced && auth !== searchDebounced) return false;
+        } else {
+          const hay = `${a.firstName} ${a.lastName}`.toLowerCase();
+          if (!hay.includes(searchDebounced)) return false;
+        }
       }
       return true;
     });
@@ -306,7 +324,7 @@ export default function DecouvrirPage() {
               type="text"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="Prénom ou nom"
+              placeholder="Prénom, nom ou email"
               className="w-full bg-[#13151a] border border-[#2a2d36] rounded-lg px-3 py-2 text-[13px] text-white placeholder-[#4a4d56] focus:outline-none focus:border-[#E63946]/50 transition-colors"
             />
           </div>
