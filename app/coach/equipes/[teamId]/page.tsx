@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
 import type { GlobalRecruitmentStatus } from "@/lib/types/models";
+import { relativeTimeFr } from "@/lib/utils/relativeTime";
 
 /* ═══════════════════════════════════════════════════════════════
    Team Detail — Manage coaches + athletes for a single team.
@@ -44,6 +45,16 @@ interface RichRowShared {
 interface TeamAthlete extends RichRowShared { school: string }
 
 interface CivilAthlete extends RichRowShared {}
+
+// 5.5e-v: PENDING invitations visible on the civil team page.
+// Lightweight shape — just enough to render the row + cancel.
+interface PendingInvitationRow {
+  id: string;          // team_invitations.id
+  athleteId: string;
+  athleteName: string;
+  position: string;    // abreviation
+  createdAt: string;
+}
 
 interface AvailableAthlete { id: string; name: string; position: string }
 interface AvailableCoach { id: string; name: string }
@@ -119,6 +130,8 @@ export default function TeamDetailPage() {
   const [civilHeader, setCivilHeader] = useState<CivilTeamHeader | null>(null);
   // 5.5d-ii: civil roster loaded from league_team_athletes junction.
   const [civilAthletes, setCivilAthletes] = useState<CivilAthlete[]>([]);
+  // 5.5e-v: PENDING invitations for the team (civil only).
+  const [pendingInvitations, setPendingInvitations] = useState<PendingInvitationRow[]>([]);
 
   function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(null), 2500); }
 
@@ -242,6 +255,46 @@ export default function TeamDetailPage() {
       setCivilAthletes(mapped);
     } else {
       setCivilAthletes([]);
+    }
+
+    // 5.5e-v: PENDING invitations sent from this team. RLS policy 2
+    // (5.5e-iii-a "Coaches select invitations on own teams") scopes
+    // the read to coaches on the team. We still constrain by
+    // league_team_id explicitly so the query is correct regardless
+    // of which row league_coaches resolves first.
+    const { data: pendingRows } = await supabase
+      .from("team_invitations")
+      .select(`
+        id, created_at,
+        athletes!athlete_id(
+          id, first_name, last_name,
+          position_id, positions!position_id(abreviation)
+        )
+      `)
+      .eq("league_team_id", teamId)
+      .eq("status", "PENDING")
+      .order("created_at", { ascending: false });
+
+    if (pendingRows) {
+      const mappedInvites: PendingInvitationRow[] = pendingRows.map((row) => {
+        const r = row as Record<string, unknown>;
+        const athleteRel = r.athletes as Record<string, unknown> | Record<string, unknown>[] | null;
+        const athlete = (Array.isArray(athleteRel) ? athleteRel[0] : athleteRel) ?? {};
+        const posRel = (athlete as Record<string, unknown>).positions as { abreviation?: string } | { abreviation?: string }[] | null;
+        const pos = Array.isArray(posRel) ? posRel[0] : posRel;
+        const firstName = ((athlete as { first_name?: string }).first_name) || "";
+        const lastName = ((athlete as { last_name?: string }).last_name) || "";
+        return {
+          id: r.id as string,
+          athleteId: ((athlete as { id?: string }).id) || "",
+          athleteName: `${firstName} ${lastName}`.trim(),
+          position: pos?.abreviation || "",
+          createdAt: r.created_at as string,
+        };
+      });
+      setPendingInvitations(mappedInvites);
+    } else {
+      setPendingInvitations([]);
     }
   }
 
@@ -408,6 +461,25 @@ export default function TeamDetailPage() {
       return;
     }
     showToast("Athlète retiré");
+    load();
+  }
+
+  // 5.5e-v: cancel a PENDING invitation. RLS policy 5 (5.5e-iii-a
+  // "Coaches cancel own invitations") gates the UPDATE; WITH CHECK
+  // clamps status to 'CANCELLED'. Same load() refresh pattern as
+  // removeCivilAthlete so both sections stay in sync.
+  async function handleCancelInvitation(invitationId: string, athleteName: string) {
+    if (!window.confirm(`Annuler l'invitation à ${athleteName} ?`)) return;
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("team_invitations")
+      .update({ status: "CANCELLED", responded_at: new Date().toISOString() })
+      .eq("id", invitationId);
+    if (error) {
+      alert("Erreur: " + error.message);
+      return;
+    }
+    showToast("Invitation annulée");
     load();
   }
 
@@ -599,6 +671,70 @@ export default function TeamDetailPage() {
             </div>
           )}
         </div>
+
+        {/* 5.5e-v — Invitations envoyées. PENDING only; self-hides
+            when 0. Visible to both ADMIN and COACH (RLS policy 5
+            permits any coach on the team to cancel). Once cancelled,
+            the athlete becomes re-invitable (partial unique index
+            uq_team_invitations_pending blocks duplicates only while
+            PENDING). */}
+        {pendingInvitations.length > 0 && (
+          <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] p-5">
+            <h2 className={sectionTitle}>Invitations envoyées ({pendingInvitations.length})</h2>
+            <div className="space-y-2">
+              {pendingInvitations.map((inv) => (
+                <div key={inv.id} className="bg-[#1A1D24] rounded-lg border border-[#2D3748] hover:border-[#E63946]/30 transition-all duration-200 ease-out flex items-center px-4 py-3 gap-3 group">
+                  {/* Avatar (initiales) */}
+                  <Link href={`/coach/athletes/${inv.athleteId}`} className="relative w-10 h-10 shrink-0 block">
+                    <div className="w-10 h-10 rounded-full bg-[#2D3748] flex items-center justify-center">
+                      <span className="text-[11px] font-bold text-[#9CA3AF]">
+                        {inv.athleteName.split(" ").filter(Boolean).map((n) => n[0]).join("").slice(0, 2) || "?"}
+                      </span>
+                    </div>
+                  </Link>
+                  {/* Name */}
+                  <div className="w-[180px] shrink-0">
+                    <Link href={`/coach/athletes/${inv.athleteId}`} className="text-[14px] font-bold text-white hover:text-[#E63946] transition-colors truncate block">
+                      {inv.athleteName || "—"}
+                    </Link>
+                  </div>
+                  {/* Position */}
+                  <div className="w-[50px] shrink-0">
+                    {inv.position ? (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-[#2D3748] text-[#c0c4cc] text-[11px] font-bold uppercase tracking-wider">{inv.position}</span>
+                    ) : <span className="text-[#4a4d56]">—</span>}
+                  </div>
+                  {/* Timestamp */}
+                  <div className="flex-1 min-w-0">
+                    <span className="text-[12px] text-[#6b7280]" title={new Date(inv.createdAt).toLocaleString("fr-CA")}>
+                      Envoyée {relativeTimeFr(inv.createdAt).toLowerCase()}
+                    </span>
+                  </div>
+                  {/* Cancel button */}
+                  <button
+                    type="button"
+                    onClick={() => handleCancelInvitation(inv.id, inv.athleteName || "cet athlète")}
+                    className="text-[12px] font-bold text-[#9CA3AF] hover:text-[#E63946] border border-[#2D3748] hover:border-[#E63946]/50 px-3 py-1.5 rounded-lg transition-colors shrink-0"
+                  >
+                    Annuler
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Toast — 5.5e-v also fixes the previously-unrendered
+            removeCivilAthlete showToast() call by mounting the
+            toast surface in the civil branch. */}
+        {toast && (
+          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100]">
+            <div className="bg-[#1A1D24] border border-[#2D3748] rounded-lg px-5 py-3 shadow-lg flex items-center gap-3">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5" /></svg>
+              <span className="text-[13px] font-bold text-white">{toast}</span>
+            </div>
+          </div>
+        )}
 
         {/* 5.5d-iv will mount the coaches section.
             5.5d-v will mount admin-only info edit + deactivate. */}
