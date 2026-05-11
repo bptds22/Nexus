@@ -1154,6 +1154,52 @@ file.
       with another change touching that file rather than a
       single-purpose refactor.
 
+- [ ] **Dead INSERT call sites: `invitations` + `director_invitations`
+      tables don't exist in DB.** Surfaced during 5.5e-iii-a discovery.
+      Two existing app handlers INSERT into tables that have never
+      been migrated:
+      - [`app/recruteur/parametres/page.tsx:224`](../app/recruteur/parametres/page.tsx#L224)
+        → `from("invitations").insert({invited_by, email, role,
+        school_id, message})`. No `invitations` table exists in
+        `public` schema.
+      - [`app/coach/settings/page.tsx:256`](../app/coach/settings/page.tsx#L256)
+        → `from("director_invitations").insert({school_id,
+        invited_by, email, status})`. No `director_invitations`
+        table exists either.
+
+      Both INSERTs fail silently at runtime — the Supabase client
+      returns an error in the local variable but neither handler
+      surfaces it visibly (showToast on error in coach/settings is
+      benign-looking; recruteur/parametres logs to console).
+
+      Resolution: pick one path —
+      (a) Ship the missing tables as a migration paired with proper
+          RLS + handler hardening (raise the error visibly), or
+      (b) Delete the dead handlers and remove the UI surfaces that
+          call them.
+      No active product feature depends on either — neither flow is
+      tested or referenced from a documented user journey. Cleanup
+      can land independently from 5.5e-iii-b's email-based invite
+      table (which is its own separate concern).
+
+- [ ] **Status transition enforcement on `team_invitations` is
+      app-layer only (5.5e-iii-a defense-in-depth).** Surfaced
+      while writing the RLS policies. The 5.5e-iv handler validates
+      `current_status === 'PENDING'` before issuing UPDATE, but
+      RLS WITH CHECK cannot reference OLD row state — only the
+      proposed NEW row. So a malicious athlete could in theory
+      transition CANCELLED → ACCEPTED if they bypass the UI
+      handler (e.g. direct supabase JS call from devtools).
+
+      Resolution: add a BEFORE UPDATE trigger on team_invitations
+      that rejects any status transition not in the allowed set:
+        PENDING → ACCEPTED / REJECTED / CANCELLED / EXPIRED
+        (all others terminal)
+      Single-purpose trigger, ~20 lines SQL. Defer until the
+      handler-only approach proves insufficient in production
+      auditing — for MVP the UI handler is the only entry point
+      and the surface is tiny.
+
 ---
 
 ## Closeout rule
