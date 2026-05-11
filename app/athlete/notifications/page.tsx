@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { relativeTimeFr } from "@/lib/utils/relativeTime";
+import PendingInvitations from "./_components/PendingInvitations";
 
 /* ═══════════════════════════════════════════════════════════════
    Notifications — Athlete activity alerts (wired to Supabase)
@@ -110,13 +111,17 @@ export default function NotificationsPage() {
   const markAllRead = async () => {
     if (!athleteId) return;
     setNotifs((prev) => prev.map((n) => ({ ...n, read: true })));
-    setToast("Tout marqué comme lu");
-    setTimeout(() => setToast(null), 2000);
+    showToast("Tout marqué comme lu");
     const supabase = createClient();
     supabase.from("athlete_notifications").update({ read: true }).eq("athlete_id", athleteId).eq("read", false).then(() => {
       window.dispatchEvent(new Event("notifications-updated"));
     });
   };
+
+  function showToast(msg: string) {
+    setToast(msg);
+    setTimeout(() => setToast(null), 2000);
+  }
 
   const FILTERS: { key: FilterKey; label: string; count?: number; color?: string }[] = [
     { key: "all", label: "Toutes", count: notifs.length },
@@ -148,6 +153,9 @@ export default function NotificationsPage() {
           <button type="button" onClick={markAllRead} className="text-[12px] font-bold text-[#6b7280] hover:text-white transition-colors">Tout marquer comme lu</button>
         )}
       </div>
+
+      {/* Flow A invitations — 5.5e-iv-b. Self-hides when 0 PENDING. */}
+      {athleteId && <PendingInvitations athleteId={athleteId} showToast={showToast} />}
 
       {/* Filter tabs */}
       <div className="flex items-center gap-2 overflow-x-auto">
