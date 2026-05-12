@@ -248,6 +248,10 @@ export default function CreateAthletePage() {
   const emailLookupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleEmailChange = useCallback((newEmail: string) => {
+    // 6.2.c-1-fix DIAGNOSTIC LOG (to be removed once BP confirms the
+    // handler fires — see commit body of 6.2.c-1-fix).
+    console.log("[EmailLookup] handleEmailChange triggered:", newEmail);
+
     setForm((prev) => ({
       ...prev,
       identity: { ...prev.identity, email: newEmail },
@@ -823,7 +827,7 @@ export default function CreateAthletePage() {
               </div>
             )}
 
-            <p className="text-[12px] text-[#4a4d56] mt-1.5">Servira à lier le compte de l&apos;athlète en Phase 2. Jamais partagé aux recruteurs.</p>
+            <p className="text-[12px] text-[#4a4d56] mt-1.5">Si l&apos;athlète a déjà un compte Nexus, tu pourras l&apos;inviter à rejoindre ton équipe au submit. Jamais partagé aux recruteurs.</p>
           </div>
         </div>
 
