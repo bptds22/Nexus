@@ -15,6 +15,7 @@ import PlaybookBackground from "../../components/PlaybookBackground";
 export default function PendingPage() {
   const router = useRouter();
   const [role, setRole] = useState<string>("recruiter");
+  const [context, setContext] = useState<string | null>(null);
   const [institutionName, setInstitutionName] = useState("");
 
   useEffect(() => {
@@ -29,6 +30,7 @@ export default function PendingPage() {
       return;
     }
     setRole(user.role);
+    setContext(user.context ?? null);
     if (user.institution?.name) {
       setInstitutionName(user.institution.name);
     }
@@ -44,7 +46,9 @@ export default function PendingPage() {
   };
 
   const isCoach = role === "coach";
-  const isLeagueCoach = role === "coach_league";
+  // Phase 6.2: civil-coach is now derived from users.context, not a
+  // separate coach_league pseudo-role.
+  const isLeagueCoach = role === "coach" && context === "ligue_civile";
 
   return (
     <div className="hero-playbook bg-[#111317] min-h-screen flex flex-col items-center justify-center relative px-6">

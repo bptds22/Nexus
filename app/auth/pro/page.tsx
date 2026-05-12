@@ -100,8 +100,10 @@ export default function ProSignupPage() {
     const role = ROLE_MAP[selectedRole as ProRole];
 
     // selectedRole carries the scolaire/collegial/ligue_civile
-    // discriminator that the wizard reads via users.context to branch
-    // coach → coach_league for civil-league onboarding. Without this
+    // discriminator that the wizard reads via users.context to
+    // branch the coach onboarding flow into the civil-league variant
+    // (Phase 6.2 collapsed the old coach_league pseudo-role — the
+    // wizard now switches on context directly). Without this
     // pass-through, the "Ligue ou club sportif" choice silently
     // collapses to école and the league branch is unreachable.
     const { error } = await signUp(

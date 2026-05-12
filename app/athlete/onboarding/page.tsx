@@ -50,24 +50,25 @@ const sectionTitle = "text-[12px] font-bold uppercase tracking-[0.2em] text-[#6b
 /* ─────────────────────────────────────────────────────────────────
    CivilTeamPicker — civil-context replacement for the school block.
 
-   Resolves all civil leagues for the athlete's sport (level='Civil',
-   matched on sport_id), then aggregates every league_team across
-   those leagues. The athlete picks one or opts out via "Continuer
-   sans équipe" — no athlete-side team creation (V1 scope decision:
-   teams are created by coaches in 5.2a).
+   Phase 6.2: ported to the unified model. Civil leagues now live in
+   `schools` (type='LIGUE_CIVILE') and civil teams live in `teams`
+   anchored on those schools. The picker aggregates every team
+   across civil-league schools for the athlete's sport.
 
-   Search input is shown above for parity with SchoolSelect even
-   though typical lists will be small (<5 teams). league_name is
-   displayed as a subtitle to disambiguate when two coaches happen
-   to name their teams identically across different civil leagues.
+   The athlete picks one or opts out via "Continuer sans équipe" —
+   no athlete-side team creation (teams are created by coaches).
+
+   School (league) name is displayed as a subtitle to disambiguate
+   when two coaches name their teams identically across different
+   civil-league organizations.
 ───────────────────────────────────────────────────────────────── */
 type CivilTeamRow = {
   id: string;
   name: string;
   age_group: string | null;
   division: string | null;
-  league_id: string;
-  league_name: string;
+  school_id: string;
+  school_name: string;
 };
 
 function CivilTeamPicker({
@@ -105,27 +106,28 @@ function CivilTeamPicker({
         return;
       }
 
-      // Aggregate ALL teams across every civil league for this sport.
-      // Multiple coaches may have created multiple civil leagues for
-      // the same sport (legitimate post-5.2a — no LIMIT 1 here).
+      // Aggregate ALL civil teams for this sport across every
+      // LIGUE_CIVILE school. Phase 6.2: teams now live in `teams`
+      // anchored on `schools`; the sport_id filter is server-side.
       const { data: rows } = await supabase
-        .from("league_teams")
-        .select("id, name, age_group, division, league_id, leagues!league_id(name, level, sport_id)")
+        .from("teams")
+        .select("id, name, age_group, division, school_id, schools!school_id(name, type)")
+        .eq("sport_id", sportRow.id)
         .order("name");
       if (!rows) { if (!cancelled) { setTeams([]); setLoading(false); } return; }
 
       const filtered: CivilTeamRow[] = [];
       for (const raw of rows as Record<string, unknown>[]) {
-        const leagueRel = Array.isArray(raw.leagues) ? raw.leagues[0] : raw.leagues;
-        const l = leagueRel as { name?: string; level?: string; sport_id?: string } | null;
-        if (l?.level !== "Civil" || l?.sport_id !== sportRow.id) continue;
+        const schoolRel = Array.isArray(raw.schools) ? raw.schools[0] : raw.schools;
+        const s = schoolRel as { name?: string; type?: string } | null;
+        if (s?.type !== "LIGUE_CIVILE") continue;
         filtered.push({
           id: raw.id as string,
           name: raw.name as string,
           age_group: (raw.age_group as string) ?? null,
           division: (raw.division as string) ?? null,
-          league_id: raw.league_id as string,
-          league_name: l.name ?? "",
+          school_id: raw.school_id as string,
+          school_name: s.name ?? "",
         });
       }
 
@@ -139,7 +141,7 @@ function CivilTeamPicker({
   const visible = search.trim().length > 0
     ? teams.filter((t) =>
         t.name.toLowerCase().includes(search.toLowerCase().trim())
-        || t.league_name.toLowerCase().includes(search.toLowerCase().trim()),
+        || t.school_name.toLowerCase().includes(search.toLowerCase().trim()),
       )
     : teams;
 
@@ -199,7 +201,7 @@ function CivilTeamPicker({
                 <div className="min-w-0">
                   <p className="text-[14px] font-bold text-white truncate">{t.name}</p>
                   <p className="text-[11px] text-[#6b7280] truncate">
-                    {t.league_name}{meta ? ` — ${meta}` : ""}
+                    {t.school_name}{meta ? ` — ${meta}` : ""}
                   </p>
                 </div>
                 {isSelected && (
@@ -253,11 +255,16 @@ export default function AthleteOnboardingPage() {
   // Loaded from users.context at mount; civil athletes pick a team
   // their coach already created (no athlete-side team creation).
   // Can stay NULL if athlete clicks "Continuer sans équipe" — Loi 25
-  // and the rest of the profile still apply, the recruiter card will
-  // surface a "Ligue Civile" badge per 5.3d.
+  // and the rest of the profile still apply.
+  //
+  // Phase 6.2: civil athletes anchor on athletes.school_id (the
+  // LIGUE_CIVILE schools row) and join their team via the
+  // team_athletes junction. Legacy athletes.league_team_id is left
+  // NULL on writes; the column itself is dropped in Phase 6.3.
   const [userContext, setUserContext] = useState<"scolaire" | "ligue_civile" | null>(null);
-  const [selectedLeagueTeamId, setSelectedLeagueTeamId] = useState<string | null>(null);
-  const [selectedLeagueTeamName, setSelectedLeagueTeamName] = useState("");
+  const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
+  const [selectedTeamName, setSelectedTeamName] = useState("");
+  const [selectedTeamSchoolId, setSelectedTeamSchoolId] = useState<string | null>(null);
 
   // Step 2 — Academic
   const [gpa, setGpa] = useState("");
@@ -335,30 +342,32 @@ export default function AthleteOnboardingPage() {
       console.log("[Onboarding] pre-fill from metadata:", { first_name: meta.first_name, last_name: meta.last_name, sport: meta.sport, context: ctx });
 
       // Check if athlete row exists — pre-fill all saved fields.
-      // The league_teams embed pre-fills the civil-context picker
-      // when the athlete returns to onboarding mid-flow with a team
-      // already chosen (otherwise the picker would render "rien
-      // sélectionné" despite the DB carrying the value).
+      // Phase 6.2: civil-context team membership is now read via the
+      // team_athletes junction (joined to teams). The legacy
+      // league_teams embed is dropped — the column is going away in
+      // Phase 6.3 and the unified read is via schools + team_athletes.
       const { data: existing } = await supabase
         .from("athletes")
-        .select("*, schools!school_id(name), sports!sport_id(nom), league_teams!league_team_id(name)")
+        .select("*, schools!school_id(name, type), sports!sport_id(nom), team_athletes(team_id, teams!team_id(id, name, school_id))")
         .eq("user_id", user.id)
         .maybeSingle();
 
       if (existing) {
         setExistingAthleteId(existing.id);
         // If profile is complete, skip to dashboard. Civil-context
-        // athletes have NULL school_id by design — their gate is the
-        // user.context value rather than school presence. League_team
-        // is optional ("Continuer sans équipe") so it isn't part of
-        // the complete-profile check.
+        // athletes anchor on a LIGUE_CIVILE schools row (existing.school_id
+        // is non-null when a team was picked); they can also have
+        // school_id NULL if they used "Continuer sans équipe".
         const profileComplete = existing.first_name && existing.last_name && existing.sport_id
           && (ctx === "ligue_civile" || existing.school_id);
         if (profileComplete) {
           router.replace("/athlete/dashboard");
           return;
         }
-        // Pre-fill from saved data
+        // Pre-fill from saved data. For school-context, school_id +
+        // schools rel give the school name. For civil-context, the
+        // same school_id points to a LIGUE_CIVILE row — but the team
+        // metadata comes from the team_athletes junction.
         if (existing.first_name) setFirstName(existing.first_name);
         if (existing.last_name) setLastName(existing.last_name);
         if (existing.date_naissance) setDateOfBirth(existing.date_naissance);
@@ -366,18 +375,27 @@ export default function AthleteOnboardingPage() {
         if (existing.photo_url) setPhoto(existing.photo_url);
         if (existing.telephone) setPhone(existing.telephone);
         if (existing.annee_diplomation) setGradYear(String(existing.annee_diplomation));
-        if (existing.school_id) {
+        const schoolRel = Array.isArray(existing.schools) ? existing.schools[0] : existing.schools;
+        const schoolType = (schoolRel as { type?: string } | null)?.type;
+        if (existing.school_id && schoolType !== "LIGUE_CIVILE") {
           setSelectedSchoolId(existing.school_id);
-          const schoolRel = Array.isArray(existing.schools) ? existing.schools[0] : existing.schools;
           if (schoolRel?.name) setSelectedSchoolName(schoolRel.name);
         }
         if (existing.coach_id) setSelectedCoachId(existing.coach_id as string);
-        if (existing.league_team_id) {
-          setSelectedLeagueTeamId(existing.league_team_id as string);
-          const ltRel = Array.isArray(existing.league_teams) ? existing.league_teams[0] : existing.league_teams;
-          if ((ltRel as { name?: string } | null)?.name) {
-            setSelectedLeagueTeamName((ltRel as { name: string }).name);
-          }
+        // Civil-context team prefill: read from team_athletes junction.
+        const teamAthleteRel = Array.isArray(existing.team_athletes)
+          ? existing.team_athletes[0]
+          : existing.team_athletes;
+        const teamRel = teamAthleteRel
+          ? (Array.isArray((teamAthleteRel as Record<string, unknown>).teams)
+              ? ((teamAthleteRel as Record<string, unknown>).teams as Record<string, unknown>[])[0]
+              : ((teamAthleteRel as Record<string, unknown>).teams as Record<string, unknown> | null))
+          : null;
+        if (teamRel && typeof teamRel === "object") {
+          const teamObj = teamRel as { id?: string; name?: string; school_id?: string };
+          if (teamObj.id) setSelectedTeamId(teamObj.id);
+          if (teamObj.name) setSelectedTeamName(teamObj.name);
+          if (teamObj.school_id) setSelectedTeamSchoolId(teamObj.school_id);
         }
         if (existing.parent_first_name) setParentFirstName(existing.parent_first_name);
         if (existing.parent_last_name) setParentLastName(existing.parent_last_name);
@@ -405,9 +423,10 @@ export default function AthleteOnboardingPage() {
         if (existing.youtube_url) setYoutubeLink(existing.youtube_url);
         if (existing.instagram_url) setInstagramLink(existing.instagram_url);
         // Resume at first incomplete step. Step 1 completion gate
-        // mirrors canProceed() — for civil context, school_id is not
-        // required (athlete may have legitimately picked "Continuer
-        // sans équipe").
+        // mirrors canProceed() — for civil context, school_id can
+        // legitimately be NULL ("Continuer sans équipe"), so we
+        // don't require it. For scolaire context, school_id must
+        // be a SECONDAIRE row.
         const step1Complete = existing.first_name && existing.consentement_parental
           && (ctx === "ligue_civile" || existing.school_id);
         if (step1Complete) {
@@ -454,22 +473,26 @@ export default function AthleteOnboardingPage() {
     let payload: Record<string, unknown> = { user_id: userId };
 
     if (step === 1) {
-      // Branch on userContext to honor the chk_school_or_league
-      // CHECK constraint (at most one of school_id / league_team_id
-      // can be non-null) AND to persist the civil-team selection at
-      // partial-save time. Without writing league_team_id here, a
-      // civil athlete who advances mid-flow loses their team
-      // selection — breaks 5.3b's resume-prefill UX guarantee.
+      // Phase 6.2 unified model: civil athletes anchor on
+      // athletes.school_id (the LIGUE_CIVILE schools row id resolved
+      // from the picked team) — `league_team_id` is no longer
+      // written. Team membership is captured via the team_athletes
+      // junction at submit time (handleSubmit), not at step-save
+      // time, to avoid orphan junction rows if the athlete drops
+      // out mid-flow. The chk_school_or_league constraint is still
+      // satisfied: we set school_id (possibly to the LIGUE_CIVILE
+      // school) and leave league_team_id NULL.
       const isCivil = userContext === "ligue_civile";
+      const civilAnchorSchoolId = isCivil ? selectedTeamSchoolId : null;
       payload = {
         ...payload,
         first_name: firstName.trim(), last_name: lastName.trim(),
         date_naissance: dateOfBirth || null, genre: gender || null,
         photo_url: photo || null, email: email || null, telephone: phone || null,
         annee_diplomation: gradYear ? parseInt(gradYear) : null,
-        school_id: isCivil ? null : (selectedSchoolId || null),
+        school_id: isCivil ? civilAnchorSchoolId : (selectedSchoolId || null),
         coach_id: isCivil ? null : selectedCoachId,
-        league_team_id: isCivil ? selectedLeagueTeamId : null,
+        league_team_id: null,
         nom_parent: `${parentFirstName.trim()} ${parentLastName.trim()}`.trim() || null,
         parent_first_name: parentFirstName.trim() || null, parent_last_name: parentLastName.trim() || null,
         parent_email: parentEmail.trim() || null, telephone_parent: parentPhone.trim() || null,
@@ -561,18 +584,19 @@ export default function AthleteOnboardingPage() {
       positionId = posData?.id || null;
     }
 
-    // Civil-context athletes: school_id and coach_id stay NULL,
-    // league_team_id carries the picker selection (or NULL if
-    // "Continuer sans équipe"). School-context: existing behavior.
-    // Honors chk_school_or_league CHECK (at most one of
-    // {school_id, league_team_id} non-null per row).
+    // Phase 6.2: civil athletes anchor on athletes.school_id (the
+    // LIGUE_CIVILE schools row id from the picked team). Team
+    // membership is recorded in the team_athletes junction after
+    // the athlete row is INSERT/UPDATE'd below. Legacy
+    // league_team_id is always NULL on writes.
     const isCivil = userContext === "ligue_civile";
+    const civilAnchorSchoolId = isCivil ? selectedTeamSchoolId : null;
 
     const athleteRecord = {
       user_id: userId,
-      school_id: isCivil ? null : (selectedSchoolId || null),
+      school_id: isCivil ? civilAnchorSchoolId : (selectedSchoolId || null),
       coach_id: isCivil ? null : selectedCoachId,
-      league_team_id: isCivil ? selectedLeagueTeamId : null,
+      league_team_id: null,
       first_name: firstName.trim(),
       last_name: lastName.trim(),
       date_naissance: dateOfBirth || null,
@@ -624,14 +648,29 @@ export default function AthleteOnboardingPage() {
       verified: false,
     };
 
+    let athleteIdForTeam: string | null = existingAthleteId;
     if (existingAthleteId) {
       const { error } = await supabase.from("athletes").update(athleteRecord).eq("id", existingAthleteId);
       console.log("[Onboarding] update:", error);
       if (error) { console.error("[Onboarding] update failed:", error); setSaving(false); return; }
     } else {
-      const { error } = await supabase.from("athletes").insert(athleteRecord);
+      const { data: inserted, error } = await supabase.from("athletes").insert(athleteRecord).select("id").single();
       console.log("[Onboarding] insert:", error);
       if (error) { console.error("[Onboarding] insert failed:", error); setSaving(false); return; }
+      athleteIdForTeam = (inserted?.id as string) ?? null;
+    }
+
+    // Phase 6.2: for civil athletes who picked a team, record the
+    // membership in the team_athletes junction (the new unified
+    // anchor). Idempotent — ignore unique-violation on rejoin.
+    if (isCivil && selectedTeamId && athleteIdForTeam) {
+      const { error: taErr } = await supabase.from("team_athletes").insert({
+        team_id: selectedTeamId,
+        athlete_id: athleteIdForTeam,
+      });
+      if (taErr && taErr.code !== "23505") {
+        console.error("[Onboarding] team_athletes insert failed:", taErr);
+      }
     }
 
     // Update profile_completion in DB
@@ -768,19 +807,21 @@ export default function AthleteOnboardingPage() {
                 <div className="mb-3">
                   <CivilTeamPicker
                     sportName={primarySport}
-                    selectedTeamId={selectedLeagueTeamId}
+                    selectedTeamId={selectedTeamId}
                     onSelect={(t) => {
-                      setSelectedLeagueTeamId(t.id);
-                      setSelectedLeagueTeamName(t.name);
+                      setSelectedTeamId(t.id);
+                      setSelectedTeamName(t.name);
+                      setSelectedTeamSchoolId(t.school_id);
                     }}
                     onContinueWithoutTeam={() => {
-                      setSelectedLeagueTeamId(null);
-                      setSelectedLeagueTeamName("");
+                      setSelectedTeamId(null);
+                      setSelectedTeamName("");
+                      setSelectedTeamSchoolId(null);
                     }}
                   />
                 </div>
-                {selectedLeagueTeamName && (
-                  <p className="text-[12px] text-[#22C55E] font-bold mb-6">✓ {selectedLeagueTeamName}</p>
+                {selectedTeamName && (
+                  <p className="text-[12px] text-[#22C55E] font-bold mb-6">✓ {selectedTeamName}</p>
                 )}
               </>
             ) : (

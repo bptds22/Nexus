@@ -2,6 +2,10 @@ import { createClient } from '@/lib/supabase/client'
 
 // ── SIGN UP ──────────────────────────────────────────────────
 // role: 'COACH' | 'RECRUTEUR' | 'ATHLETE'
+// context (optional): 'scolaire' | 'collegial' | 'ligue_civile'
+//   — discriminates the onboarding flow for COACH between school
+//     and civil-league branches. Phase 6.2 dropped any coach_league
+//     pseudo-role; the wizard now switches on users.context.
 //
 // Works in tandem with the `handle_new_auth_user` trigger on auth.users
 // (migration 20260423030000). The trigger mirrors the signup into

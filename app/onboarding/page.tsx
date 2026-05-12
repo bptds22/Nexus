@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import PlaybookBackground from "../components/PlaybookBackground";
 import TeamSearchOrCreate, { type TeamSearchRow } from "@/components/onboarding/TeamSearchOrCreate";
 import TeamCreateForm, { type TeamFormData } from "@/components/onboarding/TeamCreateForm";
-import { findOrCreateLeague } from "@/lib/onboarding/findOrCreateLeague";
+import { findOrCreateSchool } from "@/lib/onboarding/findOrCreateSchool";
 
 /* ─────────────────────────────────────────────────────────────────
    Nexus — Onboarding Wizard
@@ -319,23 +319,20 @@ export default function OnboardingPage() {
         RECRUTEUR: "recruiter",
       };
 
-      let onboardingRole = roleMap[profile.role] || "coach";
+      const onboardingRole = roleMap[profile.role] || "coach";
 
       // Civil-league discriminator: the signup form at /auth/pro lets
       // the user pick "Ligue ou club sportif", which is persisted as
       // users.context = 'ligue_civile'. The DB role itself is COACH
-      // (no COACH_LEAGUE enum value). Upgrade to the wizard's
-      // coach_league branch only when both conditions hold — a
-      // hypothetical recruiter or athlete with context='ligue_civile'
-      // (data drift) must not be silently re-routed into a coach flow.
-      if (onboardingRole === "coach" && profile.context === "ligue_civile") {
-        onboardingRole = "coach_league";
-      }
-
+      // (no COACH_LEAGUE enum value). Phase 6.2 dropped the
+      // coach_league pseudo-role — the civil branch now triggers
+      // off `context === 'ligue_civile'` directly so we don't carry
+      // two parallel ways to spell "civil coach" through the wizard.
       const nexusUser: NexusUser = {
         firstName: profile.first_name || "",
         lastName: profile.last_name || "",
         email: profile.email,
+        context: profile.context || undefined,
         role: onboardingRole,
         status: profile.status,
         onboarding_complete: profile.onboarding_complete || false,
@@ -365,8 +362,11 @@ export default function OnboardingPage() {
   }, []);
 
   const totalStepsMap: Record<string, number> = {
-    coach: 4,           // profil, école, directeur, athlète
-    coach_league: 4,    // profil, ligue, coordonnateur, athlète
+    // Coach has 4 steps for both scolaire and ligue_civile contexts —
+    // the civil branch swaps step 1 (école → ligue/team) but the
+    // step count is identical (profil, école/ligue, directeur/coach
+    // principal, confirmation).
+    coach: 4,
     recruiter: 4,       // profil, cégep, directeur, critères
     coordinator_league: 3,
   };
@@ -383,25 +383,27 @@ export default function OnboardingPage() {
     const raw = localStorage.getItem("nexus_user");
     const localUser = raw ? JSON.parse(raw) : {};
     const role = user.role;
+    const context = (user.context ?? localUser.context) as string | undefined;
+    const isCivilCoach = role === "coach" && context === "ligue_civile";
 
     // Step 1 enforcement (institution selection)
     if (step === 1) {
-      if (role === "coach" || role === "recruiter") {
-        const inst = localUser.institution as Record<string, unknown> | null;
-        if (!inst || !inst.name) return false;
-      } else if (role === "coach_league") {
-        // Civil coach must (a) select or create a league AND (b) have
-        // an INSERTed league_team. profile.league_team_id is the
-        // persistent signal — set in localStorage by
-        // LeagueCoachLeagueStep only after both league_teams +
-        // league_coaches INSERTs succeed (see :2007). Pre-5.4e this
-        // branch was missing entirely, letting civil coaches finish
-        // onboarding with no team / no league_coaches row, breaking
-        // 5.3f (athlete-side picker) and the eventual team dashboard.
+      if (isCivilCoach) {
+        // Civil coach must (a) select or create a league (as a
+        // LIGUE_CIVILE school) AND (b) have an INSERTed team.
+        // profile.team_id is the persistent signal — set in
+        // localStorage by LeagueCoachLeagueStep only after both
+        // schools + teams + school_coaches + team_coaches INSERTs
+        // succeed. Without this gate, civil coaches could finish
+        // onboarding with no team / no coach attachment, breaking
+        // the athlete-side picker and the team dashboard.
         const inst = localUser.institution as Record<string, unknown> | null;
         if (!inst || !inst.name) return false;
         const profile = localUser.profile as Record<string, unknown> | null;
-        if (!profile?.league_team_id) return false;
+        if (!profile?.team_id) return false;
+      } else if (role === "coach" || role === "recruiter") {
+        const inst = localUser.institution as Record<string, unknown> | null;
+        if (!inst || !inst.name) return false;
       }
       // coordinator_league intentionally ungated — separate flow,
       // tracked in post-launch-bugs.md.
@@ -446,9 +448,12 @@ export default function OnboardingPage() {
         }
 
         // Step 1 = School/CÉGEP selection. Civil-coach onboarding
-        // (role === 'coach_league') has a league as institution, not
-        // a school, so this whole block is intentionally school-only.
-        if (step === 1 && institution.name && role === "coach") {
+        // (context === 'ligue_civile') has a LIGUE_CIVILE school as
+        // institution; the school_coaches + team_coaches INSERTs
+        // happen inside LeagueCoachLeagueStep, not here. This block
+        // is intentionally for the SECONDAIRE school-coach path.
+        const isCivilCoachStep1 = role === "coach" && localUser.context === "ligue_civile";
+        if (step === 1 && institution.name && role === "coach" && !isCivilCoachStep1) {
           // Find the school_id from schools table
           const { data: schoolRow } = await supabase.from("schools").select("id").eq("name", institution.name).maybeSingle();
           if (schoolRow) {
@@ -597,7 +602,6 @@ export default function OnboardingPage() {
     const dashMap: Record<string, string> = {
       coach: "/coach/tableau-de-bord",
       recruiter: "/recruteur/tableau-de-bord",
-      coach_league: "/coach/tableau-de-bord",
     };
     setTimeout(() => {
       router.push(dashMap[user?.role || "coach"] || "/");
@@ -621,10 +625,17 @@ export default function OnboardingPage() {
   }
 
   /* ── Step labels per role ── */
+  // Coach labels swap step 1 + step 2 wording based on user.context.
+  // The shape stays identical so the wizard's totalSteps + step
+  // navigation logic doesn't care whether the user is school or
+  // civil — only the rendered strings change.
+  const isCivilCoachLabel = user.role === "coach" && user.context === "ligue_civile";
+  const coachLabels = isCivilCoachLabel
+    ? ["Profil", "Ligue", "Coach principal", "Confirmation"]
+    : ["Profil", "École", "Directeur", "Confirmation"];
   const stepLabelsMap: Record<string, string[]> = {
-    coach: ["Profil", "École", "Directeur", "Confirmation"],
+    coach: coachLabels,
     recruiter: ["Profil", "CÉGEP", "Directeur", "Critères"],
-    coach_league: ["Profil", "Ligue", "Coach principal", "Confirmation"],
     coordinator_league: ["Profil", "Ligue", "Invitations"],
   };
   const stepLabels = stepLabelsMap[user.role] || ["1", "2", "3"];
@@ -648,11 +659,14 @@ export default function OnboardingPage() {
         <div className="w-full max-w-[640px] bg-[#1A1D24] border border-white/5 rounded-xl p-6 sm:p-8">
           <StepIndicator steps={stepLabels} current={step} />
 
-          {/* Step content with slide animation */}
+          {/* Step content with slide animation. Coach role splits
+              on user.context: 'ligue_civile' triggers LeagueCoachStep
+              (école/ligue picker + team creation), everything else
+              falls into the school-coach CoachStep. */}
           <div key={`${user.role}-${step}`} className={slideDir === "right" ? "animate-slide-right" : "animate-slide-left"}>
-            {user.role === "coach" && <CoachStep step={step} user={user} save={save} onFinish={finish} />}
+            {user.role === "coach" && user.context !== "ligue_civile" && <CoachStep step={step} user={user} save={save} onFinish={finish} />}
+            {user.role === "coach" && user.context === "ligue_civile" && <LeagueCoachStep step={step} user={user} save={save} onFinish={finish} />}
             {user.role === "recruiter" && <RecruiterStep step={step} user={user} save={save} onFinish={finish} />}
-            {user.role === "coach_league" && <LeagueCoachStep step={step} user={user} save={save} onFinish={finish} />}
             {user.role === "coordinator_league" && <LeagueCoordinatorStep step={step} user={user} save={save} onFinish={finish} />}
           </div>
 
@@ -1088,16 +1102,19 @@ function ConfirmationSection({ title, rows }: { title?: string; rows: Confirmati
 }
 
 function CoachConfirmation({ user }: { user: NexusUser }) {
-  // LeagueCoachLeagueStep writes league_team / league_team_id directly
-  // to localStorage without going through save() (see :1898-1911), so
-  // those fields aren't in the React `user` prop. Read fresh from
+  // LeagueCoachLeagueStep writes team / team_id directly to
+  // localStorage without going through save() (see persistTeamLocally),
+  // so those fields aren't in the React `user` prop. Read fresh from
   // localStorage to surface them in the civil recap. Same pattern as
   // next() at :380.
   const raw = typeof window !== "undefined" ? localStorage.getItem("nexus_user") : null;
   const localUser = raw ? (JSON.parse(raw) as NexusUser) : user;
   const p = (localUser.profile || {}) as Record<string, unknown>;
   const inst = (localUser.institution || {}) as Record<string, unknown>;
-  const isCivil = user.role === "coach_league";
+  // Civil branch derives from context (not a separate pseudo-role) —
+  // post-Phase 6.2 the wizard collapses coach_league into
+  // `role === 'coach' && context === 'ligue_civile'`.
+  const isCivil = user.role === "coach" && (user.context === "ligue_civile" || localUser.context === "ligue_civile");
 
   const profilRows: ConfirmationRow[] = [
     { label: "Nom", value: `${user.firstName} ${user.lastName}` },
@@ -1113,10 +1130,13 @@ function CoachConfirmation({ user }: { user: NexusUser }) {
   // written by DirectorChoiceStep — is shown only for civil per the
   // 5.4b spec. École keeps its existing single-block layout.
   if (isCivil) {
-    const team = (p.league_team || {}) as Record<string, unknown>;
-    // gender is stored lowercase no-accent per league_teams_gender_check
-    // ("masculin"/"feminin"/"mixte"). Capitalize + restore accent for
-    // human display in the recap.
+    // Phase 6.2: civil team metadata is now stored in localStorage
+    // under profile.team (was profile.league_team in the legacy
+    // model). LeagueCoachLeagueStep writes both keys for now
+    // — see persistTeamLocally — but new code reads only `team`.
+    const team = (p.team || p.league_team || {}) as Record<string, unknown>;
+    // gender is stored lowercase no-accent ("masculin"/"feminin"/
+    // "mixte"). Capitalize + restore accent for human display.
     const teamGenderRaw = team.gender as string | undefined;
     const GENDER_DISPLAY: Record<string, string> = {
       masculin: "Masculin",
@@ -1769,15 +1789,16 @@ function RecruiterNeeds({ user, save }: { user: NexusUser; save: (u: Partial<Nex
 const LEAGUE_LEVELS = ["AAA", "AA", "A", "Club", "Civil"];
 const TEAM_CATEGORIES = ["U15", "U16", "U17", "U18", "Juvénile", "Cadet", "Midget", "Senior", "Autre"];
 
-/* ── League search + select (shared by coach + coordinator) ── */
+/* ── League search + select (shared by coach + coordinator) ──
+   Phase 6.2: civil leagues now live in the unified `schools` table
+   with type='LIGUE_CIVILE'. There is no sport_id on schools — a
+   civil league school can host teams across multiple sports through
+   the teams table. */
 type CivilLeagueRow = {
   id: string;
   name: string;
-  sport_id: string | null;
-  sport_name: string;
   city: string | null;
   region: string | null;
-  level: string | null;
 };
 
 function LeagueSelectStep({ user, save, onRequestNew }: {
@@ -1791,34 +1812,27 @@ function LeagueSelectStep({ user, save, onRequestNew }: {
 
   // Load civil leagues from Supabase on mount.
   //
-  // Filter on level='Civil' so this list never surfaces school-side
-  // RSEQ leagues to a civil-coach onboardee. The previous version
-  // selected a non-existent `sport` text column on `leagues`; the
-  // schema has `sport_id uuid` FK to `sports.nom`. We embed the
-  // sports name via PostgREST's relationship syntax so the UI can
-  // render the human label without a second query.
+  // Filter on type='LIGUE_CIVILE' (unified schools table) so this
+  // list never surfaces school-side RSEQ leagues to a civil-coach
+  // onboardee. Sport is no longer an attribute of the league — it's
+  // captured at the team level.
   useEffect(() => {
     async function loadLeagues() {
       const supabase = createClient();
       const { data, error } = await supabase
-        .from("leagues")
-        .select("id, name, sport_id, sports!sport_id(nom), city, region, level")
-        .eq("level", "Civil")
+        .from("schools")
+        .select("id, name, city, region")
+        .eq("type", "LIGUE_CIVILE")
         .order("name");
       console.log("[LeagueSelectStep] Loaded civil leagues:", data, error);
       if (data) {
         const mapped: CivilLeagueRow[] = data.map((row) => {
           const r = row as Record<string, unknown>;
-          const sportRel = Array.isArray(r.sports) ? r.sports[0] : r.sports;
-          const sportName = (sportRel as { nom?: string } | null)?.nom ?? "";
           return {
             id: r.id as string,
             name: r.name as string,
-            sport_id: (r.sport_id as string) ?? null,
-            sport_name: sportName,
             city: (r.city as string) ?? null,
             region: (r.region as string) ?? null,
-            level: (r.level as string) ?? null,
           };
         });
         setLeagues(mapped);
@@ -1840,17 +1854,15 @@ function LeagueSelectStep({ user, save, onRequestNew }: {
 
   useEffect(() => {
     if (selected) {
-      // Pass sport_id through so downstream team creation can
-      // inherit it from the selected league rather than re-querying.
+      // Phase 6.2: a "league" is now just a schools row with
+      // type='LIGUE_CIVILE'. No sport on the institution — sport is
+      // captured per team.
       save({
         institution: {
           id: selected.id,
           name: selected.name,
-          sport_id: selected.sport_id,
-          sport: selected.sport_name,
           city: selected.city,
           region: selected.region,
-          level: selected.level,
           type: "ligue_civile",
         },
       });
@@ -1876,14 +1888,11 @@ function LeagueSelectStep({ user, save, onRequestNew }: {
           onChange={(item) => setSelected(item)}
           placeholder="Rechercher ta ligue ou ton club..."
           renderItem={(item) => (
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-bold">{item.name}</p>
-                {[item.city, item.region].filter(Boolean).join(" — ") && (
-                  <p className="text-[10px] text-[#6B7280]">{[item.city, item.region].filter(Boolean).join(" — ")}</p>
-                )}
-              </div>
-              <span className="px-2 py-0.5 rounded-full bg-[#E63946]/10 text-[9px] font-bold text-[#E63946] uppercase">{item.sport_name}</span>
+            <div>
+              <p className="font-bold">{item.name}</p>
+              {[item.city, item.region].filter(Boolean).join(" — ") && (
+                <p className="text-[10px] text-[#6B7280]">{[item.city, item.region].filter(Boolean).join(" — ")}</p>
+              )}
             </div>
           )}
         />
@@ -1891,14 +1900,10 @@ function LeagueSelectStep({ user, save, onRequestNew }: {
 
       {selected && (
         <div className="bg-[#111317] border border-white/10 rounded-lg p-5 space-y-3">
-          <div className="flex items-center gap-3">
-            <h3 className="font-head font-black text-lg text-white">{selected.name}</h3>
-            <span className="px-2 py-0.5 rounded-full bg-[#E63946]/10 text-[9px] font-bold text-[#E63946] uppercase border border-[#E63946]/20">{selected.sport_name}</span>
-          </div>
+          <h3 className="font-head font-black text-lg text-white">{selected.name}</h3>
           {[selected.city, selected.region].filter(Boolean).join(", ") && (
             <p className="text-xs text-[#9CA3AF]">{[selected.city, selected.region].filter(Boolean).join(", ")}</p>
           )}
-          {selected.level && <p className="text-xs text-[#6B7280]">Niveau: {selected.level}</p>}
           <p className="text-xs text-[#22C55E] font-bold flex items-center gap-1">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
             C&apos;est ma ligue
@@ -1967,7 +1972,10 @@ function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Part
   // surface the prior choice as the selected card.
   useEffect(() => {
     if (selectedTeam) return;
-    const teamData = profileData.league_team as Record<string, unknown> | undefined;
+    // Phase 6.2: profile.team replaces profile.league_team and the
+    // anchor is now profile.school_id (LIGUE_CIVILE schools row id).
+    // Fall back to the legacy key for any in-flight sessions.
+    const teamData = (profileData.team ?? profileData.league_team) as Record<string, unknown> | undefined;
     if (!teamData?.id) return;
     setSelectedTeam({
       id: teamData.id as string,
@@ -1975,8 +1983,8 @@ function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Part
       age_group: (teamData.age_group as string) ?? null,
       gender: (teamData.gender as string) ?? null,
       division: (teamData.category as string) ?? null,
-      league_id: (profileData.league_id as string) ?? "",
-      league_name:
+      school_id: ((profileData.school_id ?? profileData.league_id) as string) ?? "",
+      school_name:
         ((localUser.institution as Record<string, unknown> | null)?.name as string) ?? "",
       coach_count: 0,
     });
@@ -1990,11 +1998,14 @@ function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Part
     gender: string | null;
     category: string | null;
     season: string;
-    leagueId: string;
-    leagueName: string;
+    schoolId: string;
+    schoolName: string;
   }) {
+    // Phase 6.2: institution is now a LIGUE_CIVILE schools row.
+    // profile.team holds the team metadata; profile.team_id is the
+    // canonical signal used by canProceed (was league_team_id pre-6.2).
     save({
-      institution: { id: args.leagueId, name: args.leagueName, type: "ligue_civile" },
+      institution: { id: args.schoolId, name: args.schoolName, type: "ligue_civile" },
     });
     const rawNow = localStorage.getItem("nexus_user");
     if (!rawNow) return;
@@ -2003,7 +2014,7 @@ function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Part
       ...current,
       profile: {
         ...(current.profile || {}),
-        league_team: {
+        team: {
           id: args.teamId,
           name: args.teamName,
           age_group: args.ageGroup,
@@ -2011,8 +2022,8 @@ function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Part
           category: args.category,
           season: args.season,
         },
-        league_id: args.leagueId,
-        league_team_id: args.teamId,
+        school_id: args.schoolId,
+        team_id: args.teamId,
       },
     };
     localStorage.setItem("nexus_user", JSON.stringify(updated));
@@ -2029,18 +2040,30 @@ function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Part
         return;
       }
 
-      const { error: lcError } = await supabase.from("league_coaches").insert({
+      // Phase 6.2: attach the joiner to BOTH school_coaches (institution
+      // level, role=COACH) and team_coaches (team level, role=assistant).
+      // The unified model requires both to satisfy RLS and to mirror
+      // the dual visibility the legacy league_coaches single-row carried.
+      const { error: scError } = await supabase.from("school_coaches").insert({
         coach_id: authUser.id,
-        league_id: team.league_id,
-        league_team_id: team.id,
+        school_id: team.school_id,
         role: "COACH",
       });
-
-      // 23505 = duplicate key. The UNIQUE on (league_id, league_team_id,
-      // coach_id) means the user is already a coach of this team —
+      // 23505 = duplicate key. Coach already attached to this school —
       // surface as success rather than an error.
-      if (lcError && lcError.code !== "23505") {
-        console.error("[LeagueCoachLeagueStep] join failed:", lcError);
+      if (scError && scError.code !== "23505") {
+        console.error("[LeagueCoachLeagueStep] school_coaches insert failed:", scError);
+        setError("Impossible de rejoindre l'équipe. Réessaie.");
+        return;
+      }
+
+      const { error: tcError } = await supabase.from("team_coaches").insert({
+        coach_id: authUser.id,
+        team_id: team.id,
+        role: "assistant",
+      });
+      if (tcError && tcError.code !== "23505") {
+        console.error("[LeagueCoachLeagueStep] team_coaches insert failed:", tcError);
         setError("Impossible de rejoindre l'équipe. Réessaie.");
         return;
       }
@@ -2052,8 +2075,8 @@ function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Part
         gender: team.gender,
         category: team.division,
         season: "2025-2026",
-        leagueId: team.league_id,
-        leagueName: team.league_name,
+        schoolId: team.school_id,
+        schoolName: team.school_name,
       });
       setSelectedTeam(team);
     } catch (err) {
@@ -2079,31 +2102,34 @@ function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Part
         return;
       }
 
-      // 1. Find or create the league. If the autocomplete already
-      //    snapped to an existing league id, skip the lookup roundtrip.
-      let leagueId = formData.league_id_if_existing;
-      let leagueName = formData.league_input;
-      if (!leagueId) {
-        const result = await findOrCreateLeague({
-          name: formData.league_input,
-          sportId,
-        });
-        leagueId = result.id;
-        leagueName = result.name;
+      // 1. Find or create the league (a schools row with
+      //    type='LIGUE_CIVILE'). Reuse the existing id if the
+      //    autocomplete already snapped to one.
+      let schoolId = formData.league_id_if_existing;
+      let schoolName = formData.league_input;
+      if (!schoolId) {
+        const result = await findOrCreateSchool(
+          supabase,
+          formData.league_input,
+          "LIGUE_CIVILE",
+        );
+        schoolId = result.id;
+        schoolName = result.name;
       }
 
-      // 2. INSERT the team row (owner = current user).
+      // 2. INSERT the team row. Phase 6.2: teams.school_id replaces
+      //    league_teams.league_id; teams has no `division` or
+      //    `owner_id` column (DIRECTEUR ownership is captured via
+      //    school_coaches.role per D5).
       const { data: newTeam, error: ltError } = await supabase
-        .from("league_teams")
+        .from("teams")
         .insert({
-          league_id: leagueId,
+          school_id: schoolId,
           name: formData.team_name,
           age_group: formData.age_group,
-          division: null,
           gender: formData.gender,
           season: formData.season,
           sport_id: sportId,
-          owner_id: authUser.id,
         })
         .select()
         .single();
@@ -2114,17 +2140,27 @@ function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Part
         return;
       }
 
-      // 3. INSERT league_coaches with role: ADMIN (creator/owner).
-      const { error: lcError } = await supabase.from("league_coaches").insert({
+      // 3. INSERT school_coaches (institution level, role=DIRECTEUR
+      //    for the creator — they own the civil league row) and
+      //    team_coaches (team level, role=head_coach).
+      const { error: scError } = await supabase.from("school_coaches").insert({
         coach_id: authUser.id,
-        league_id: leagueId,
-        league_team_id: newTeam.id,
-        role: "ADMIN",
+        school_id: schoolId,
+        role: "DIRECTEUR",
       });
-      if (lcError) {
-        // The team exists; coach attachment is non-critical for proceeding.
-        // Log and continue — the user can be re-attached manually if needed.
-        console.error("[LeagueCoachLeagueStep] league_coaches insert failed:", lcError);
+      if (scError && scError.code !== "23505") {
+        // Non-critical for proceeding; the team exists and the
+        // creator can be re-attached manually. Log but continue.
+        console.error("[LeagueCoachLeagueStep] school_coaches insert failed:", scError);
+      }
+
+      const { error: tcError } = await supabase.from("team_coaches").insert({
+        coach_id: authUser.id,
+        team_id: newTeam.id,
+        role: "head_coach",
+      });
+      if (tcError) {
+        console.error("[LeagueCoachLeagueStep] team_coaches insert failed:", tcError);
       }
 
       persistTeamLocally({
@@ -2134,8 +2170,8 @@ function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Part
         gender: formData.gender,
         category: null,
         season: formData.season,
-        leagueId,
-        leagueName,
+        schoolId,
+        schoolName,
       });
 
       setSelectedTeam({
@@ -2144,8 +2180,8 @@ function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Part
         age_group: formData.age_group,
         gender: formData.gender,
         division: null,
-        league_id: leagueId,
-        league_name: leagueName,
+        school_id: schoolId,
+        school_name: schoolName,
         coach_count: 1,
       });
       setMode("search");

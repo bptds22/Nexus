@@ -5,41 +5,35 @@ import { createClient } from "@/lib/supabase/client";
 
 /* ═══════════════════════════════════════════════════════════════
    TeamCreateForm — pure-presentation form for creating a civil
-   league_team. Standalone component for 5.4g-ii; not yet wired
-   into the onboarding wizard (that's 5.4g-iv).
+   team.
 
-   Pure-presentation by design (Option C from 5.4g-ii discovery):
-   the form collects {team_name, age_group, gender, league_input,
-   league_id_if_existing, season} and emits via onSubmit. The caller
-   owns the find-or-create logic (5.4g-iii will add a UNIQUE
-   constraint on leagues + ON CONFLICT DO NOTHING semantics; 5.4g-iv
-   wires the caller).
+   Phase 6.2: in the unified model, a "civil league" is a `schools`
+   row with type='LIGUE_CIVILE'. This form's autocomplete therefore
+   queries `schools` (filtered to LIGUE_CIVILE) rather than the
+   retired `leagues` table. The shape of the emitted data is
+   unchanged for caller compatibility — `league_input` and
+   `league_id_if_existing` are now the LIGUE_CIVILE school's name
+   and id respectively.
 
-   League autocomplete:
-   - On mount, fetch all civil leagues for the chosen sport
-     (level='Civil', sport_id=props.sportId). Civil league count
+   Pure-presentation by design: the form collects {team_name,
+   age_group, gender, league_input, league_id_if_existing, season}
+   and emits via onSubmit. The caller owns the find-or-create logic.
+
+   School (league) autocomplete:
+   - On mount, fetch all LIGUE_CIVILE schools. Civil league count
      stays small enough that load-all-upfront + client-side filter
-     is the right shape.
+     is the right shape. Sport is no longer an attribute of the
+     league — it lives on the team row.
    - Free-text mode: typing a value not in the suggestion list
      leaves league_id_if_existing as null. Caller treats null as
      "create new league".
-   - Picking from suggestions sets both league_input (the league's
-     name) and league_id_if_existing (its id). Editing the field
-     after a selection diverges from the cached name → reset
-     league_id_if_existing to null so the caller does find-or-create
-     against the new free-text value.
+   - Picking from suggestions sets both league_input (name) and
+     league_id_if_existing (id). Editing the field after a selection
+     diverges from the cached name → reset league_id_if_existing.
 
-   Season default is hardcoded to "2025-2026" pending the season
-   helper P3 (lib/utils/season.ts) — see post-launch-bugs.md. The
-   form keeps it editable to handle off-season onboarding.
-
-   Gender values match the DB CHECK constraint
-   (league_teams_gender_check): lowercase, no accents — "masculin",
-   "feminin", "mixte". The toggle shows capitalized labels for UX
-   ("Masculin"/"Féminin"/"Mixte") but emits the lowercase value so
-   the caller can write it straight into league_teams.gender without
-   a transform. Display surfaces (TeamSearchOrCreate result rows,
-   CoachConfirmation recap) capitalize for human display.
+   Season default is hardcoded to "2025-2026". Gender values match
+   the team-level convention: lowercase, no accents — "masculin",
+   "feminin", "mixte".
 ═══════════════════════════════════════════════════════════════ */
 
 export type Gender = "masculin" | "feminin" | "mixte";
@@ -99,17 +93,18 @@ export default function TeamCreateForm({
   const [leagueOpen, setLeagueOpen] = useState(false);
   const leagueWrapperRef = useRef<HTMLDivElement | null>(null);
 
-  // Fetch civil leagues for this sport on mount.
+  // Fetch civil leagues on mount. Phase 6.2: leagues now live in
+  // `schools` with type='LIGUE_CIVILE'. Sport is no longer an
+  // attribute of the league — keep the sportId prop for caller
+  // compatibility but don't filter on it here.
   useEffect(() => {
-    if (!sportId) return;
     let cancelled = false;
     (async () => {
       const supabase = createClient();
       const { data, error } = await supabase
-        .from("leagues")
+        .from("schools")
         .select("id, name")
-        .eq("sport_id", sportId)
-        .eq("level", "Civil")
+        .eq("type", "LIGUE_CIVILE")
         .order("name");
       if (!cancelled) {
         if (error) {
