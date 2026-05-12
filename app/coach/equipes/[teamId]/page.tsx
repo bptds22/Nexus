@@ -163,11 +163,21 @@ export default function TeamDetailPage() {
       .maybeSingle();
 
     if (!t) {
-      // Team missing → silent 404 redirect (matches the prior civil
-      // behavior; école path used to fall through with a skeleton).
+      // Team missing → silent 404 redirect (route is broken regardless
+      // of école/civil context). Apply to both.
       router.replace("/coach/equipes");
       return;
     }
+
+    // Resolve schoolType early so we can differentiate the no-coach
+    // route guard behavior below (école = soft skeleton, civil =
+    // redirect — restoring the pre-Phase-6.2.d original behavior
+    // per BP feedback).
+    const tRecPre = t as Record<string, unknown>;
+    const schoolRelPre = tRecPre.schools as { name?: string; type?: string } | { name?: string; type?: string }[] | null;
+    const schoolRowPre = Array.isArray(schoolRelPre) ? schoolRelPre[0] : schoolRelPre;
+    const teamSchoolType = (schoolRowPre?.type ?? null) as SchoolType | null;
+    const isTeamCivil = isCivilType(teamSchoolType);
 
     // ── Role check (any coach on the team can read; ADMIN gets
     //    edit affordances downstream) ────────────────────────────
@@ -180,12 +190,18 @@ export default function TeamDetailPage() {
       .limit(1)
       .maybeSingle();
 
-    // École teams pre-6.2 didn't gate by role on this page, but the
-    // RLS policies for team_athletes / team_coaches require coach
-    // membership. We keep a soft gate: if the user isn't a coach on
-    // the team, redirect. (Phase 6 stops treating civil as special.)
+    // No team_coaches row for the current user :
+    //   - Civil (LIGUE_CIVILE) : redirect (pre-Phase-6.2.d behavior)
+    //   - École/Cégep : soft fall-through (setLoading(false), renders
+    //     the empty skeleton branch — pre-Phase-6.2.d behavior).
+    // RLS already blocks roster reads via team_athletes / team_coaches
+    // policies, so the école skeleton renders without sensitive data.
     if (!roleRow) {
-      router.replace("/coach/equipes");
+      if (isTeamCivil) {
+        router.replace("/coach/equipes");
+      } else {
+        setLoading(false);
+      }
       return;
     }
 
