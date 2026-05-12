@@ -2117,6 +2117,26 @@ function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Part
         schoolName = result.name;
       }
 
+      // 1.b — Sync users.school_id BEFORE the teams INSERT.
+      //
+      // RLS "Coaches create teams" requires
+      //   school_id IN (SELECT users.school_id WHERE id=auth.uid())
+      // For école coaches users.school_id was already set in step 1
+      // save (cf. :458-461). Civil coaches don't go through that path
+      // — their school_id is determined here, at team creation time.
+      // Without this UPDATE, the next INSERT into `teams` would fail
+      // RLS silently (pre-existing oeuf-poule discovered in 6.2.a
+      // manual tests).
+      const { error: userUpdateError } = await supabase
+        .from("users")
+        .update({ school_id: schoolId })
+        .eq("id", authUser.id);
+      if (userUpdateError) {
+        console.error("[LeagueCoachLeagueStep] users.school_id sync failed:", userUpdateError);
+        setError("Impossible de finaliser l'inscription. Réessaie.");
+        return;
+      }
+
       // 2. INSERT the team row. Phase 6.2: teams.school_id replaces
       //    league_teams.league_id; teams has no `division` or
       //    `owner_id` column (DIRECTEUR ownership is captured via
