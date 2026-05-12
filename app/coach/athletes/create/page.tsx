@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import StepIndicator from "../../components/StepIndicator";
 import TagInput from "../../components/TagInput";
 import DatePicker from "../../components/DatePicker";
@@ -244,6 +245,8 @@ export default function CreateAthletePage() {
   const [showErrors, setShowErrors] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
+  const router = useRouter();
+
   // 6.2.c-1-pivot : autocomplete partial sur le champ Courriel.
   // Le coach tape une partie de l'email; des suggestions s'affichent;
   // clic = autofill firstName + lastName + email.
@@ -255,6 +258,14 @@ export default function CreateAthletePage() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [linkedToExisting, setLinkedToExisting] = useState<AthleteEmailSuggestion | null>(null);
   const emailAutocompleteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // 6.2.c-2 : state pour le card invitation qui remplace le form quand
+  // un athlete est sélectionné dans le dropdown autocomplete.
+  const [formStateBeforeLink, setFormStateBeforeLink] = useState<AthleteFormData | null>(null);
+  const [invitationTeamId, setInvitationTeamId] = useState<string | null>(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [otherPendingCount, setOtherPendingCount] = useState<number>(0);
+  const [isSubmittingInvitation, setIsSubmittingInvitation] = useState(false);
 
   const handleEmailChange = useCallback((newEmail: string) => {
     setForm((prev) => ({
@@ -289,7 +300,12 @@ export default function CreateAthletePage() {
     }, 300);
   }, [linkedToExisting]);
 
-  const handleSelectSuggestion = useCallback((suggestion: AthleteEmailSuggestion) => {
+  const handleSelectSuggestion = useCallback(async (suggestion: AthleteEmailSuggestion) => {
+    // 6.2.c-2 : save form state pour permettre le restore via "Choisir
+    // un autre athlète". structuredClone garantit un snapshot deep, pas
+    // une référence partagée.
+    setFormStateBeforeLink(structuredClone(form));
+
     setForm((prev) => ({
       ...prev,
       identity: {
@@ -302,7 +318,81 @@ export default function CreateAthletePage() {
     setLinkedToExisting(suggestion);
     setShowSuggestions(false);
     setEmailAutocomplete(null);
-  }, []);
+
+    // Note : auto-select team logique déplacée dans un useEffect plus
+    // bas pour éviter une référence à coachTeam dans la closure
+    // (coachTeam est declared plus tard dans le component body, TDZ).
+
+    // Check pour autres invitations PENDING sur cet athlete
+    try {
+      const supabase = createClient();
+      const { data: otherInvitations } = await supabase
+        .from("team_invitations")
+        .select("id")
+        .eq("athlete_id", suggestion.athleteId)
+        .eq("status", "PENDING");
+      setOtherPendingCount(otherInvitations?.length ?? 0);
+    } catch (err) {
+      console.error("[Invitation] pending count check failed:", err);
+      setOtherPendingCount(0);
+    }
+  }, [form]);
+
+  // 6.2.c-2 : retour au form normal, restore l'état pré-clic.
+  const handleUnlinkAndRestoreForm = useCallback(() => {
+    if (formStateBeforeLink) {
+      setForm(formStateBeforeLink);
+    }
+    setLinkedToExisting(null);
+    setFormStateBeforeLink(null);
+    setInvitationTeamId(null);
+    setOtherPendingCount(0);
+  }, [formStateBeforeLink]);
+
+  // 6.2.c-2 : INSERT team_invitations PENDING. Le trigger Flow A
+  // (apply_team_invitation_acceptance) se déclenchera côté athlete
+  // lors de son ACCEPTED — pas ici.
+  const handleSendInvitation = useCallback(async () => {
+    if (!linkedToExisting || !invitationTeamId) {
+      console.error("[Invitation] Missing data", { linkedToExisting, invitationTeamId });
+      return;
+    }
+
+    setIsSubmittingInvitation(true);
+
+    try {
+      const supabase = createClient();
+      const { data: authData } = await supabase.auth.getUser();
+      if (!authData.user) throw new Error("Not authenticated");
+
+      const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+
+      const { error } = await supabase
+        .from("team_invitations")
+        .insert({
+          team_id: invitationTeamId,
+          athlete_id: linkedToExisting.athleteId,
+          invited_by_coach_id: authData.user.id,
+          status: "PENDING",
+          expires_at: expiresAt,
+        });
+
+      if (error) {
+        console.error("[Invitation] INSERT error:", error);
+        alert(`Erreur lors de l'envoi : ${error.message}`);
+        setIsSubmittingInvitation(false);
+        return;
+      }
+
+      setShowConfirmModal(false);
+      alert(`Invitation envoyée à ${linkedToExisting.firstName} ${linkedToExisting.lastName}`);
+      router.push("/coach/equipes");
+    } catch (err) {
+      console.error("[Invitation] Unexpected error:", err);
+      alert("Erreur inattendue. Réessaie plus tard.");
+      setIsSubmittingInvitation(false);
+    }
+  }, [linkedToExisting, invitationTeamId, router]);
 
   useEffect(() => {
     return () => {
@@ -317,6 +407,18 @@ export default function CreateAthletePage() {
   const [leagueTeamId, setLeagueTeamId] = useState<string | null>(null);
   const [leagueTeamName, setLeagueTeamName] = useState("");
   const [coachTeam, setCoachTeam] = useState<CoachTeamData>({ school: "", city: "", region: "", teams: [] });
+
+  // 6.2.c-2 : auto-select team quand linkedToExisting change. Si le
+  // coach a 1 seule team, on l'auto-sélectionne; sinon force le user
+  // à choisir explicitement via le dropdown du card invitation.
+  useEffect(() => {
+    if (!linkedToExisting) return;
+    if (coachTeam.teams.length === 1) {
+      setInvitationTeamId(coachTeam.teams[0].id);
+    } else {
+      setInvitationTeamId(null);
+    }
+  }, [linkedToExisting, coachTeam.teams]);
 
   // Detect league context on mount
   useEffect(() => {
@@ -1672,6 +1774,169 @@ export default function CreateAthletePage() {
     6: renderStep6,
     7: renderStep7,
   };
+
+  // 6.2.c-2 : si un athlete existant est sélectionné, on remplace
+  // entièrement le form par une card invitation. Le coach n'a pas à
+  // créer l'identité — il envoie juste une invitation à rejoindre
+  // son équipe. Le lien "Choisir un autre athlète" restore l'état
+  // form pré-clic via formStateBeforeLink.
+  if (linkedToExisting) {
+    return (
+      <div className="px-6 sm:px-10 py-8 max-w-2xl mx-auto">
+        <div className="flex items-center gap-2 text-[14px] text-[#6b7280] mb-8">
+          <span className="font-bold text-[#8a8d96]">Nexus</span><span>/</span><span>Coach</span><span>/</span><span className="text-white">Inviter un athlète</span>
+        </div>
+
+        <div className="mb-8">
+          <h1 className="font-head text-3xl sm:text-4xl font-black text-white uppercase tracking-tight">
+            Inviter {linkedToExisting.firstName} {linkedToExisting.lastName}
+          </h1>
+          <p className="text-[15px] text-[#6b7280] mt-2">Compte Nexus existant détecté</p>
+        </div>
+
+        <div className="rounded-2xl bg-[#1A1D24] border border-[#E63946]/30 p-6 space-y-4">
+          {/* Header avec icon + identity */}
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-full bg-[#E63946]/10 flex items-center justify-center shrink-0">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="9 12 11 14 15 10" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-bold text-white">
+                {linkedToExisting.firstName} {linkedToExisting.lastName} existe déjà sur Nexus
+              </h3>
+              <p className="text-sm text-[#9CA3AF] mt-0.5">{linkedToExisting.email}</p>
+            </div>
+          </div>
+
+          {/* Message principal */}
+          <div className="bg-[#111317] rounded-lg p-4">
+            <p className="text-sm text-[#c0c4cc]">
+              Tu dois attendre que cet athlète accepte ton invitation avant de pouvoir
+              voir son profil et l&apos;évaluer. Une fois qu&apos;il accepte, il sera ajouté
+              à ton équipe automatiquement.
+            </p>
+          </div>
+
+          {/* Team selector si 2+ teams */}
+          {coachTeam.teams.length > 1 && (
+            <div>
+              <label className="block text-xs font-bold tracking-[0.2em] uppercase text-[#6b7280] mb-2">
+                Inviter sur quelle équipe ?
+              </label>
+              <select
+                value={invitationTeamId ?? ""}
+                onChange={(e) => setInvitationTeamId(e.target.value || null)}
+                className="w-full bg-[#111317] border border-[#2a2d36] rounded-lg px-4 py-2.5 text-white text-[14px] focus:outline-none focus:border-[#E63946]/50"
+                title="Équipe d'invitation"
+              >
+                <option value="">Sélectionne une équipe</option>
+                {coachTeam.teams.map((team) => (
+                  <option key={team.id} value={team.id}>
+                    {team.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Team auto-selected (1 team) */}
+          {coachTeam.teams.length === 1 && invitationTeamId && (
+            <div className="text-sm text-[#9CA3AF]">
+              Équipe : <span className="text-white font-semibold">{coachTeam.teams[0].name}</span>
+            </div>
+          )}
+
+          {/* Warning si autre invitation PENDING */}
+          {otherPendingCount > 0 && (
+            <div className="p-3 rounded-lg bg-[#F59E0B]/10 border border-[#F59E0B]/30">
+              <p className="text-sm text-[#F59E0B]">
+                ⚠ Cet athlète a déjà {otherPendingCount === 1 ? "1 invitation" : `${otherPendingCount} invitations`} en attente d&apos;un autre coach.
+                Il pourra choisir laquelle accepter.
+              </p>
+            </div>
+          )}
+
+          {/* Actions */}
+          <div className="flex items-center justify-between gap-3 pt-2">
+            <button
+              type="button"
+              onClick={handleUnlinkAndRestoreForm}
+              className="text-sm text-[#9CA3AF] hover:text-white transition-colors"
+            >
+              ← Choisir un autre athlète
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setShowConfirmModal(true)}
+              disabled={!invitationTeamId}
+              className={`px-6 py-2.5 rounded-lg font-head font-bold text-[14px] uppercase tracking-widest transition-colors ${
+                invitationTeamId
+                  ? "bg-[#E63946] hover:bg-[#D42B22] text-white"
+                  : "bg-[#2a2d36] text-[#6b7280] cursor-not-allowed"
+              }`}
+            >
+              Envoyer l&apos;invitation
+            </button>
+          </div>
+        </div>
+
+        {/* Modal de confirmation */}
+        {showConfirmModal && (
+          <div
+            className="fixed inset-0 z-[200] flex items-center justify-center px-4"
+            onClick={() => !isSubmittingInvitation && setShowConfirmModal(false)}
+          >
+            <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+            <div
+              className="relative bg-[#1A1D24] border border-[#E63946]/30 rounded-2xl p-6 max-w-md w-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="text-lg font-bold text-white mb-2">Confirmer l&apos;invitation</h3>
+
+              <p className="text-sm text-[#c0c4cc] mb-4">
+                Envoyer une invitation à{" "}
+                <span className="font-semibold text-white">
+                  {linkedToExisting.firstName} {linkedToExisting.lastName}
+                </span>{" "}
+                ({linkedToExisting.email}) ?
+              </p>
+
+              <p className="text-xs text-[#9CA3AF] mb-6">
+                Il recevra une notification et pourra accepter ou décliner.
+              </p>
+
+              <div className="flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmModal(false)}
+                  disabled={isSubmittingInvitation}
+                  className="px-4 py-2 rounded-lg text-sm text-[#9CA3AF] hover:text-white transition-colors disabled:opacity-50"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSendInvitation}
+                  disabled={isSubmittingInvitation}
+                  className={`px-6 py-2 rounded-lg text-sm font-bold transition-colors ${
+                    isSubmittingInvitation
+                      ? "bg-[#2a2d36] text-[#6b7280]"
+                      : "bg-[#E63946] hover:bg-[#D42B22] text-white"
+                  }`}
+                >
+                  {isSubmittingInvitation ? "Envoi..." : "Envoyer"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="px-6 sm:px-10 py-8 max-w-5xl mx-auto">
