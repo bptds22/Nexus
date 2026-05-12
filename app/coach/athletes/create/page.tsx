@@ -12,7 +12,11 @@ import FormModeToggle from "../../components/FormModeToggle";
 import NxIcon from "@/components/ui/NxIcon";
 import { createClient } from "@/lib/supabase/client";
 import PartnerVisibilityConsentCard from "@/components/shared/PartnerVisibilityConsentCard";
-import { lookupAthleteByEmail, type AthleteEmailLookupResult } from "@/lib/coach/athleteEmailLookup";
+import {
+  autocompleteOrphanAthletes,
+  type AthleteAutocompleteResult,
+  type AthleteSuggestion,
+} from "@/lib/coach/athleteNameAutocomplete";
 
 /* ─────────────────────────────────────────────────────────────────
    Nexus — Coach / Créer un profil athlète
@@ -240,43 +244,77 @@ export default function CreateAthletePage() {
   const [showErrors, setShowErrors] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  // 6.2.c-1 : email lookup state pour détection en temps réel d'un
-  // athlete existant. Debounce 500ms + rate limit 10/60s gérés dans
-  // le helper lib/coach/athleteEmailLookup. Le modal de branching
-  // "Inviter ou créer profil" viendra en 6.2.c-2.
-  const [emailLookup, setEmailLookup] = useState<AthleteEmailLookupResult | null>(null);
-  const emailLookupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // 6.2.c-1-pivot : autocomplete par nom sur les inputs Prénom + Nom.
+  // Filtré aux athletes orphelins (school_id IS NULL) avec un compte
+  // Nexus (user_id NOT NULL) via RLS "Coaches lookup orphan athletes"
+  // (migration 20260512160000). Debounce 300ms + min 3 chars + rate
+  // limit 10/60s gérés dans lib/coach/athleteNameAutocomplete.
+  const [nameAutocomplete, setNameAutocomplete] = useState<AthleteAutocompleteResult | null>(null);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [linkedToExisting, setLinkedToExisting] = useState<AthleteSuggestion | null>(null);
+  const autocompleteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const handleEmailChange = useCallback((newEmail: string) => {
+  const handleNameChange = useCallback((field: "first" | "last", value: string) => {
+    setForm((prev) => {
+      const updatedIdentity = {
+        ...prev.identity,
+        ...(field === "first" ? { firstName: value } : { lastName: value }),
+      };
+      return { ...prev, identity: updatedIdentity };
+    });
+
+    // Edit après autofill = rupture du lien avec le compte sélectionné
+    if (linkedToExisting) {
+      setLinkedToExisting(null);
+    }
+
+    if (autocompleteTimerRef.current) {
+      clearTimeout(autocompleteTimerRef.current);
+    }
+
+    setForm((current) => {
+      const combined = `${field === "first" ? value : current.identity.firstName ?? ""} ${field === "last" ? value : current.identity.lastName ?? ""}`.trim();
+
+      if (combined.length < 3) {
+        setNameAutocomplete(null);
+        setShowSuggestions(false);
+        return current;
+      }
+
+      autocompleteTimerRef.current = setTimeout(async () => {
+        try {
+          const supabase = createClient();
+          const result = await autocompleteOrphanAthletes(supabase, combined);
+          setNameAutocomplete(result);
+          setShowSuggestions(result.status === "ok" && result.athletes.length > 0);
+        } catch (err) {
+          console.error("[NameAutocomplete] lookup error:", err);
+        }
+      }, 300);
+
+      return current;
+    });
+  }, [linkedToExisting]);
+
+  const handleSelectSuggestion = useCallback((suggestion: AthleteSuggestion) => {
     setForm((prev) => ({
       ...prev,
-      identity: { ...prev.identity, email: newEmail },
+      identity: {
+        ...prev.identity,
+        firstName: suggestion.firstName,
+        lastName: suggestion.lastName,
+        email: suggestion.email,
+      },
     }));
-
-    if (emailLookupTimerRef.current) {
-      clearTimeout(emailLookupTimerRef.current);
-    }
-
-    if (!newEmail.trim() || newEmail.trim().length < 5) {
-      setEmailLookup(null);
-      return;
-    }
-
-    emailLookupTimerRef.current = setTimeout(async () => {
-      try {
-        const supabase = createClient();
-        const result = await lookupAthleteByEmail(supabase, newEmail);
-        setEmailLookup(result);
-      } catch (err) {
-        console.error("[EmailLookup] lookup error:", err);
-      }
-    }, 500);
+    setLinkedToExisting(suggestion);
+    setShowSuggestions(false);
+    setNameAutocomplete(null);
   }, []);
 
   useEffect(() => {
     return () => {
-      if (emailLookupTimerRef.current) {
-        clearTimeout(emailLookupTimerRef.current);
+      if (autocompleteTimerRef.current) {
+        clearTimeout(autocompleteTimerRef.current);
       }
     };
   }, []);
@@ -762,14 +800,82 @@ export default function CreateAthletePage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <div>
             <label className={labelCls}>Prénom{req}</label>
-            <input type="text" value={d.firstName} onChange={(e) => updateIdentity("firstName", e.target.value)}
+            <input type="text" value={d.firstName} onChange={(e) => handleNameChange("first", e.target.value)}
+              autoComplete="off"
               placeholder="Prénom" className={`${inputCls} ${isFieldEmpty(d.firstName) ? errBorder : ""}`} />
           </div>
           <div>
             <label className={labelCls}>Nom{req}</label>
-            <input type="text" value={d.lastName} onChange={(e) => updateIdentity("lastName", e.target.value)}
+            <input type="text" value={d.lastName} onChange={(e) => handleNameChange("last", e.target.value)}
+              autoComplete="off"
               placeholder="Nom de famille" className={`${inputCls} ${isFieldEmpty(d.lastName) ? errBorder : ""}`} />
           </div>
+
+          {/* 6.2.c-1-pivot : dropdown autocomplete athletes orphelins.
+              Span full-width sous les 2 inputs Prénom+Nom. */}
+          {showSuggestions && nameAutocomplete?.athletes && nameAutocomplete.athletes.length > 0 && (
+            <div className="sm:col-span-2 mt-2 rounded-lg bg-[#1A1D24] border border-[#E63946]/30 overflow-hidden">
+              <div className="px-4 py-2 text-xs text-[#9CA3AF] border-b border-[#2D3748]">
+                Comptes Nexus existants trouvés
+              </div>
+              {nameAutocomplete.athletes.map((athlete) => (
+                <button
+                  key={athlete.athleteId}
+                  type="button"
+                  onClick={() => handleSelectSuggestion(athlete)}
+                  className="w-full text-left px-4 py-3 hover:bg-[#E63946]/10 transition-colors flex items-start gap-3 border-b border-[#2D3748] last:border-b-0"
+                >
+                  <div className="flex-1">
+                    <div className="font-semibold text-white text-sm">
+                      {athlete.firstName} {athlete.lastName}
+                    </div>
+                    {athlete.sportName && (
+                      <div className="text-[#9CA3AF] text-xs mt-0.5">
+                        Sport : {athlete.sportName}
+                      </div>
+                    )}
+                  </div>
+                  <div className="text-[#E63946] text-xs font-semibold uppercase tracking-wider">
+                    Sélectionner
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {nameAutocomplete?.status === "rate_limited" && (
+            <div className="sm:col-span-2 mt-2 p-2 text-xs text-[#F59E0B]">
+              Trop de recherches. Réessaie dans une minute.
+            </div>
+          )}
+
+          {/* 6.2.c-1-pivot : indicateur "Lié au compte de X" après une
+              sélection dans la dropdown. Clic Délier = reset. */}
+          {linkedToExisting && (
+            <div className="sm:col-span-2 mt-2 p-3 rounded-lg bg-[#1A1D24] border border-[#E63946]/30">
+              <div className="flex items-center gap-2">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                  <circle cx="12" cy="12" r="10" />
+                  <polyline points="9 12 11 14 15 10" />
+                </svg>
+                <div className="flex-1 text-sm">
+                  <span className="font-semibold text-white">
+                    Lié au compte de {linkedToExisting.firstName} {linkedToExisting.lastName}
+                  </span>
+                  <span className="text-[#9CA3AF] text-xs ml-2">
+                    (Au submit, tu pourras envoyer une invitation à rejoindre ton équipe)
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setLinkedToExisting(null)}
+                  className="text-[#9CA3AF] hover:text-white text-xs"
+                >
+                  Délier
+                </button>
+              </div>
+            </div>
+          )}
           <div>
             <label className={labelCls}>Date de naissance{req}</label>
             <DatePicker value={d.dateOfBirth} onChange={(date) => updateIdentity("dateOfBirth", date)} placeholder="Sélectionner une date" hasError={isFieldEmpty(d.dateOfBirth)} />
@@ -787,47 +893,9 @@ export default function CreateAthletePage() {
                 Non visible aux recruteurs
               </span>
             </label>
-            <input type="email" value={d.email} onChange={(e) => handleEmailChange(e.target.value)}
+            <input type="email" value={d.email} onChange={(e) => updateIdentity("email", e.target.value)}
               placeholder="athlete@email.com" className={inputCls} />
-
-            {/* 6.2.c-1 : banner inline si un athlete existant matche
-                cet email. Le modal de branching au submit viendra en
-                6.2.c-2 — pour le moment le coach voit l'info mais le
-                submit reste comportement legacy (création profil). */}
-            {emailLookup?.found && emailLookup.athlete && (
-              <div className="mt-2 p-3 rounded-lg bg-[#1A1D24] border border-[#E63946]/30">
-                <div className="flex items-start gap-3">
-                  <div className="text-[#E63946] mt-0.5 shrink-0">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="12" cy="12" r="10" />
-                      <line x1="12" y1="16" x2="12" y2="12" />
-                      <line x1="12" y1="8" x2="12.01" y2="8" />
-                    </svg>
-                  </div>
-                  <div className="flex-1 text-sm">
-                    <div className="font-semibold text-white">
-                      Compte existant détecté : {emailLookup.athlete.firstName} {emailLookup.athlete.lastName}
-                    </div>
-                    <div className="text-[#9CA3AF] mt-0.5 text-xs">
-                      {emailLookup.athlete.sportName && `Sport : ${emailLookup.athlete.sportName}`}
-                      {emailLookup.athlete.sportName && emailLookup.athlete.schoolName && " · "}
-                      {emailLookup.athlete.schoolName}
-                    </div>
-                    <div className="text-[#6b7280] mt-1 text-xs italic">
-                      Au submit, tu pourras choisir d&apos;envoyer une invitation à rejoindre ton équipe.
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {emailLookup?.reason === "rate_limited" && (
-              <div className="mt-2 p-2 text-xs text-[#F59E0B]">
-                Trop de vérifications. Réessaie dans une minute.
-              </div>
-            )}
-
-            <p className="text-[12px] text-[#4a4d56] mt-1.5">Si l&apos;athlète a déjà un compte Nexus, tu pourras l&apos;inviter à rejoindre ton équipe au submit. Jamais partagé aux recruteurs.</p>
+            <p className="text-[12px] text-[#4a4d56] mt-1.5">Servira à lier le compte de l&apos;athlète ou à lui envoyer une invitation. Jamais partagé aux recruteurs.</p>
           </div>
         </div>
 
