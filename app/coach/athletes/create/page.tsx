@@ -248,29 +248,43 @@ export default function CreateAthletePage() {
   const emailLookupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleEmailChange = useCallback((newEmail: string) => {
-    // 6.2.c-1-fix DIAGNOSTIC LOG (to be removed once BP confirms the
-    // handler fires — see commit body of 6.2.c-1-fix).
+    // 6.2.c-1-debug-2 DIAGNOSTIC LOGS (all to be removed once BP
+    // identifies the blocking step — see commit body).
     console.log("[EmailLookup] handleEmailChange triggered:", newEmail);
 
     setForm((prev) => ({
       ...prev,
       identity: { ...prev.identity, email: newEmail },
     }));
+    console.log("[EmailLookup] STEP 1 — form state updated, email length:", newEmail.length);
 
     if (emailLookupTimerRef.current) {
       clearTimeout(emailLookupTimerRef.current);
+      console.log("[EmailLookup] STEP 2 — previous timer cleared");
+    } else {
+      console.log("[EmailLookup] STEP 2 — no previous timer");
     }
 
     if (!newEmail.trim() || newEmail.trim().length < 5) {
+      console.log("[EmailLookup] STEP 3 — EARLY RETURN (email too short or empty)");
       setEmailLookup(null);
       return;
     }
+    console.log("[EmailLookup] STEP 3 — passed length check, scheduling debounce");
 
     emailLookupTimerRef.current = setTimeout(async () => {
-      const supabase = createClient();
-      const result = await lookupAthleteByEmail(supabase, newEmail);
-      setEmailLookup(result);
+      console.log("[EmailLookup] STEP 4 — debounce fired, calling lookupAthleteByEmail");
+      try {
+        const supabase = createClient();
+        const result = await lookupAthleteByEmail(supabase, newEmail);
+        console.log("[EmailLookup] STEP 4 — lookup returned:", result);
+        setEmailLookup(result);
+        console.log("[EmailLookup] STEP 4 — setEmailLookup called");
+      } catch (err) {
+        console.error("[EmailLookup] STEP 4 — lookup ERROR:", err);
+      }
     }, 500);
+    console.log("[EmailLookup] STEP 4 — debounce scheduled (500ms)");
   }, []);
 
   useEffect(() => {
