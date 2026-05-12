@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import StepIndicator from "../../components/StepIndicator";
 import TagInput from "../../components/TagInput";
 import DatePicker from "../../components/DatePicker";
@@ -12,6 +12,7 @@ import FormModeToggle from "../../components/FormModeToggle";
 import NxIcon from "@/components/ui/NxIcon";
 import { createClient } from "@/lib/supabase/client";
 import PartnerVisibilityConsentCard from "@/components/shared/PartnerVisibilityConsentCard";
+import { lookupAthleteByEmail, type AthleteEmailLookupResult } from "@/lib/coach/athleteEmailLookup";
 
 /* ─────────────────────────────────────────────────────────────────
    Nexus — Coach / Créer un profil athlète
@@ -238,6 +239,43 @@ export default function CreateAthletePage() {
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
   const [showErrors, setShowErrors] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+
+  // 6.2.c-1 : email lookup state pour détection en temps réel d'un
+  // athlete existant. Debounce 500ms + rate limit 10/60s gérés dans
+  // le helper lib/coach/athleteEmailLookup. Le modal de branching
+  // "Inviter ou créer profil" viendra en 6.2.c-2.
+  const [emailLookup, setEmailLookup] = useState<AthleteEmailLookupResult | null>(null);
+  const emailLookupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleEmailChange = useCallback((newEmail: string) => {
+    setForm((prev) => ({
+      ...prev,
+      identity: { ...prev.identity, email: newEmail },
+    }));
+
+    if (emailLookupTimerRef.current) {
+      clearTimeout(emailLookupTimerRef.current);
+    }
+
+    if (!newEmail.trim() || newEmail.trim().length < 5) {
+      setEmailLookup(null);
+      return;
+    }
+
+    emailLookupTimerRef.current = setTimeout(async () => {
+      const supabase = createClient();
+      const result = await lookupAthleteByEmail(supabase, newEmail);
+      setEmailLookup(result);
+    }, 500);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (emailLookupTimerRef.current) {
+        clearTimeout(emailLookupTimerRef.current);
+      }
+    };
+  }, []);
 
   // League context state
   const [userContext, setUserContext] = useState<string | null>(null);
@@ -745,8 +783,46 @@ export default function CreateAthletePage() {
                 Non visible aux recruteurs
               </span>
             </label>
-            <input type="email" value={d.email} onChange={(e) => updateIdentity("email", e.target.value)}
+            <input type="email" value={d.email} onChange={(e) => handleEmailChange(e.target.value)}
               placeholder="athlete@email.com" className={inputCls} />
+
+            {/* 6.2.c-1 : banner inline si un athlete existant matche
+                cet email. Le modal de branching au submit viendra en
+                6.2.c-2 — pour le moment le coach voit l'info mais le
+                submit reste comportement legacy (création profil). */}
+            {emailLookup?.found && emailLookup.athlete && (
+              <div className="mt-2 p-3 rounded-lg bg-[#1A1D24] border border-[#E63946]/30">
+                <div className="flex items-start gap-3">
+                  <div className="text-[#E63946] mt-0.5 shrink-0">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="10" />
+                      <line x1="12" y1="16" x2="12" y2="12" />
+                      <line x1="12" y1="8" x2="12.01" y2="8" />
+                    </svg>
+                  </div>
+                  <div className="flex-1 text-sm">
+                    <div className="font-semibold text-white">
+                      Compte existant détecté : {emailLookup.athlete.firstName} {emailLookup.athlete.lastName}
+                    </div>
+                    <div className="text-[#9CA3AF] mt-0.5 text-xs">
+                      {emailLookup.athlete.sportName && `Sport : ${emailLookup.athlete.sportName}`}
+                      {emailLookup.athlete.sportName && emailLookup.athlete.schoolName && " · "}
+                      {emailLookup.athlete.schoolName}
+                    </div>
+                    <div className="text-[#6b7280] mt-1 text-xs italic">
+                      Au submit, tu pourras choisir d&apos;envoyer une invitation à rejoindre ton équipe.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {emailLookup?.reason === "rate_limited" && (
+              <div className="mt-2 p-2 text-xs text-[#F59E0B]">
+                Trop de vérifications. Réessaie dans une minute.
+              </div>
+            )}
+
             <p className="text-[12px] text-[#4a4d56] mt-1.5">Servira à lier le compte de l&apos;athlète en Phase 2. Jamais partagé aux recruteurs.</p>
           </div>
         </div>
