@@ -60,13 +60,13 @@ export default function Home() {
         {/* Floating playbook particles */}
         <div className="absolute inset-0 pointer-events-none" aria-hidden>
           <span className="nx-particle" style={{ top: '12%', right: '38%' }}>X</span>
-          <span className="nx-particle red" style={{ top: '18%', right: '8%', fontSize: '24px' }}>→</span>
-          <span className="nx-particle blue" style={{ top: '22%', right: '48%', fontSize: '28px' }}>X</span>
+          <span className="nx-particle red" style={{ top: '18%', right: '8%', fontSize: '24px' }}>O</span>
+          <span className="nx-particle" style={{ top: '22%', right: '48%', fontSize: '28px' }}>X</span>
           <span className="nx-particle" style={{ top: '35%', right: '5%', fontSize: '22px' }}>O</span>
-          <span className="nx-particle red" style={{ top: '50%', right: '42%', fontSize: '20px' }}>↗</span>
+          <span className="nx-particle red" style={{ top: '50%', right: '42%', fontSize: '20px' }}>X</span>
           <span className="nx-particle" style={{ top: '58%', right: '4%' }}>X</span>
           <span className="nx-particle" style={{ top: '72%', right: '38%', fontSize: '22px' }}>O</span>
-          <span className="nx-particle blue" style={{ top: '80%', right: '12%', fontSize: '18px' }}>→</span>
+          <span className="nx-particle" style={{ top: '80%', right: '12%', fontSize: '18px' }}>O</span>
           <span className="nx-particle red" style={{ top: '85%', right: '45%', fontSize: '16px' }}>X</span>
         </div>
 
@@ -184,7 +184,7 @@ export default function Home() {
           SECTION 2 — PARTNER CAROUSEL
           Placeholder slots — swap with real partner logos.
       ══════════════════════════════════════════ */}
-      <section className="relative bg-[#0B0D11] border-t border-[#1E2D4A]/30 py-20 overflow-hidden">
+      <section className="relative bg-transparent py-20 overflow-hidden">
 
         <div className="max-w-6xl mx-auto px-6 mb-12 text-center">
           <div className="inline-flex items-center gap-3">
