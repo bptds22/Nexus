@@ -937,6 +937,7 @@ export default function AthleteProfilPage() {
           positions!position_id(nom, abreviation),
           schools!school_id(name, region, city),
           league_teams!league_team_id(name),
+          team_athletes(team_id),
           evaluations(vitesse_explosivite, force_puissance, endurance_cardio, agilite_coordination, vision_du_jeu, sens_tactique, leadership, discipline, coachabilite, intelligence_jeu, competitivite, esprit_equipe, resilience, attitude_mentalite, cote_globale, rapport_entraineur, distinctions),
           users!athletes_coach_id_fkey(first_name, last_name)
         `)

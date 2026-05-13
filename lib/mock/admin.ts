@@ -23,7 +23,7 @@ export interface AdminUserRow {
   id: string;
   full_name: string;
   email: string;
-  role: "admin" | "coach" | "recruiter" | "director" | "athlete" | "coach_league" | "coordinator";
+  role: "admin" | "coach" | "recruiter" | "director" | "athlete" | "coordinator";
   school_or_cegep: string;
   status: "active" | "suspended" | "pending_validation";
   created_at: string;
@@ -73,11 +73,6 @@ export const ADMIN_USERS: AdminUserRow[] = [
   // League Coordinators (2)
   { id: "u-lc-001", full_name: "Patrick Roy", email: "p.roy@wildcats.ca", role: "coordinator", school_or_cegep: "Wildcats Lanaudière", status: "active", created_at: "2025-05-01T10:00:00Z", last_login_at: "2026-03-18T09:00:00Z" },
   { id: "u-lc-002", full_name: "Marie-Ève Tremblay", email: "me.tremblay@rempartsaaa.ca", role: "coordinator", school_or_cegep: "Remparts Hockey AAA", status: "active", created_at: "2025-04-10T10:00:00Z", last_login_at: "2026-03-17T14:30:00Z" },
-
-  // League Coaches (3)
-  { id: "u-lcoach-001", full_name: "Luc Simard", email: "l.simard@wildcats.ca", role: "coach_league", school_or_cegep: "Wildcats Lanaudière", status: "active", created_at: "2025-06-01T10:00:00Z", last_login_at: "2026-03-16T11:00:00Z" },
-  { id: "u-lcoach-005", full_name: "Martin Gagné", email: "m.gagne@elitebaseball.ca", role: "coach_league", school_or_cegep: "Élite Baseball Québec", status: "active", created_at: "2025-07-15T10:00:00Z", last_login_at: "2026-03-15T08:30:00Z" },
-  { id: "u-lcoach-008", full_name: "Alain Tremblay", email: "a.tremblay@rempartsaaa.ca", role: "coach_league", school_or_cegep: "Remparts Hockey AAA", status: "pending_validation", created_at: "2026-03-10T10:00:00Z", last_login_at: null },
 ];
 
 // ── Pending Recruiter Validations ────────────────────────────
@@ -1136,18 +1131,6 @@ export interface AdminLeagueRow {
   created_at: string;
 }
 
-export interface LeagueTeam {
-  id: string;
-  league_id: string;
-  name: string;
-  category: string;
-  gender: "masculin" | "feminin" | "mixte";
-  season: string;
-  coach_name: string;
-  coach_id: string;
-  athletes_count: number;
-}
-
 export const ADMIN_LEAGUES: AdminLeagueRow[] = [
   {
     id: "lg-001", name: "Wildcats Lanaudière", sport: "Football", city: "Repentigny", region: "Lanaudière", level: "AAA",
@@ -1207,20 +1190,3 @@ export const ADMIN_LEAGUES: AdminLeagueRow[] = [
   },
 ];
 
-export const LEAGUE_TEAMS: LeagueTeam[] = [
-  // Wildcats Lanaudière (4 teams)
-  { id: "lt-001", league_id: "lg-001", name: "U18 Division 1", category: "U18", gender: "masculin", season: "2025-2026", coach_name: "Luc Simard", coach_id: "u-lcoach-001", athletes_count: 25 },
-  { id: "lt-002", league_id: "lg-001", name: "U16 Division 1", category: "U16", gender: "masculin", season: "2025-2026", coach_name: "André Boucher", coach_id: "u-lcoach-002", athletes_count: 22 },
-  { id: "lt-003", league_id: "lg-001", name: "U15 Développement", category: "U15", gender: "masculin", season: "2025-2026", coach_name: "Stéphane Fortier", coach_id: "u-lcoach-003", athletes_count: 21 },
-  { id: "lt-004", league_id: "lg-001", name: "U18 Féminin", category: "U18", gender: "feminin", season: "2025-2026", coach_name: "Julie Bédard", coach_id: "u-lcoach-004", athletes_count: 20 },
-  // Élite Baseball Québec (3 teams)
-  { id: "lt-005", league_id: "lg-002", name: "U18 AAA", category: "U18", gender: "masculin", season: "2025-2026", coach_name: "Martin Gagné", coach_id: "u-lcoach-005", athletes_count: 20 },
-  { id: "lt-006", league_id: "lg-002", name: "U16 AAA", category: "U16", gender: "masculin", season: "2025-2026", coach_name: "Benoît Lavoie", coach_id: "u-lcoach-006", athletes_count: 18 },
-  { id: "lt-007", league_id: "lg-002", name: "U15 Élite", category: "U15", gender: "masculin", season: "2025-2026", coach_name: "François Gagnon", coach_id: "u-lcoach-007", athletes_count: 16 },
-  // Remparts Hockey AAA (5 teams)
-  { id: "lt-008", league_id: "lg-003", name: "U18 AAA", category: "U18", gender: "masculin", season: "2025-2026", coach_name: "Alain Tremblay", coach_id: "u-lcoach-008", athletes_count: 25 },
-  { id: "lt-009", league_id: "lg-003", name: "U17 AAA", category: "U17", gender: "masculin", season: "2025-2026", coach_name: "Pierre Côté", coach_id: "u-lcoach-009", athletes_count: 24 },
-  { id: "lt-010", league_id: "lg-003", name: "U16 AAA", category: "U16", gender: "masculin", season: "2025-2026", coach_name: "Marc Pelletier", coach_id: "u-lcoach-010", athletes_count: 22 },
-  { id: "lt-011", league_id: "lg-003", name: "U15 AAA", category: "U15", gender: "masculin", season: "2025-2026", coach_name: "Jean-Sébastien Roy", coach_id: "u-lcoach-011", athletes_count: 20 },
-  { id: "lt-012", league_id: "lg-003", name: "U18 Féminin", category: "U18", gender: "feminin", season: "2025-2026", coach_name: "Isabelle Gagnon", coach_id: "u-lcoach-012", athletes_count: 19 },
-];

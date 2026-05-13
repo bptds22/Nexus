@@ -76,6 +76,7 @@ const ATHLETE_SELECT = `
   schools!school_id(name, city, region),
   committed_school:schools!committed_school_id(name),
   league_teams!league_team_id(name),
+  team_athletes(team_id),
   evaluations(
     cote_globale,
     vitesse_explosivite, force_puissance, endurance_cardio, agilite_coordination,

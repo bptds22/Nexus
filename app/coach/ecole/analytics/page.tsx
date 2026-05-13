@@ -131,7 +131,7 @@ function CoachAnalyticsPage() {
         // stale for athletes that were edited without the trigger firing.
         .select(`
           id, first_name, last_name, sport_id, coach_id, verified, annee_diplomation, position_id,
-          photo_url, date_naissance, genre, telephone, school_id, league_team_id, equipe_id,
+          photo_url, date_naissance, genre, telephone, school_id,
           numero_jersey, taille_pieds, taille_pouces, poids_lbs, main_dominante, pied_dominant,
           video_faits_saillants_url, video_match_complet_url, video_entrainement_url,
           hudl_url, youtube_url, instagram_url,
@@ -139,6 +139,7 @@ function CoachAnalyticsPage() {
           cote_globale_entraineur,
           sports!sport_id(nom),
           positions!position_id(nom, abreviation),
+          team_athletes(team_id),
           evaluations(leadership, discipline, coachabilite, intelligence_jeu, competitivite, esprit_equipe, resilience, attitude_mentalite, cote_globale, rapport_entraineur, distinctions)
         `)
         .eq("school_id", mySchoolId);

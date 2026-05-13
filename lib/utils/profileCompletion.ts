@@ -24,8 +24,10 @@ export interface AthleteLike {
   genre?: string | null;
   telephone?: string | null;
   school_id?: string | null;
-  league_team_id?: string | null;
-  equipe_id?: string | null;
+  team_athletes?:
+    | { team_id?: string | null }[]
+    | { team_id?: string | null }
+    | null;
   annee_diplomation?: number | null;
   sport_id?: string | null;
   position_id?: string | null;
@@ -77,6 +79,16 @@ const numPos = (v: unknown) => {
   return Number.isFinite(n) && n > 0;
 };
 
+// athletes.team_id n'existe pas — la relation passe par team_athletes
+// (junction). On lit team_id depuis l'embed défensivement (array | single | null).
+function getTeamId(a: AthleteLike): string | null {
+  if (!a.team_athletes) return null;
+  const junction = Array.isArray(a.team_athletes)
+    ? a.team_athletes[0]
+    : a.team_athletes;
+  return junction?.team_id ?? null;
+}
+
 export const COMPLETION_CHECKS: CompletionCheck[] = [
   // IDENTITY — 16
   { key: "photo", label: "Photo de profil", weight: 5, section: "identity", role: "athlete",
@@ -108,8 +120,7 @@ export const COMPLETION_CHECKS: CompletionCheck[] = [
   { key: "numero_jersey", label: "Numéro de chandail", weight: 3, section: "sport", role: "both",
     check: (a) => nonEmptyStr(a.numero_jersey) },
   { key: "team", label: "Équipe / ligue", weight: 4, section: "sport", role: "coach",
-    check: (a, _e, t) =>
-      !!(t && t.id) || nonEmptyStr(a.league_team_id) || nonEmptyStr(a.equipe_id) },
+    check: (a) => nonEmptyStr(getTeamId(a)) },
 
   // ACADEMIC — 13
   { key: "moyenne", label: "Moyenne générale", weight: 5, section: "academic", role: "athlete",

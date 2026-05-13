@@ -391,6 +391,7 @@ function MesAthletesContent() {
           positions!position_id(nom, abreviation),
           schools!school_id(name, region),
           committed_school:schools!committed_school_id(name),
+          team_athletes(team_id),
           evaluations(cote_globale, rapport_entraineur, distinctions)
         `)
         .eq("school_id", coachSchoolId)
