@@ -42,8 +42,9 @@ interface FavoriAthlete {
   committedSchoolName: string;
   openToOffers: boolean | null;
   badges: { badgeId: string; label: string; icon: string }[];
-  // "Ligue Civile" = neither school nor league_team set on the
-  // athlete row. chk_school_or_league guarantees both can't be set.
+  // "Ligue Civile" = no school anchor on the athlete row. Post-Phase
+  // 6.1 civil athletes are anchored via school_id to a LIGUE_CIVILE
+  // school, so noTeam only fires for orphans (school_id NULL).
   noTeam: boolean;
 }
 
@@ -295,7 +296,7 @@ function FavorisContent() {
           id, first_name, last_name, photo_url, verified, last_profile_validation,
           video_faits_saillants_url, annee_diplomation,
           cote_globale_entraineur, numero_jersey, taille_pieds, taille_pouces, poids_lbs,
-          recruitment_status, committed_school_id, open_to_offers, school_id, league_team_id,
+          recruitment_status, committed_school_id, open_to_offers, school_id,
           sports!sport_id(nom),
           positions!position_id(nom, abreviation),
           schools!school_id(name, region),
@@ -387,7 +388,7 @@ function FavorisContent() {
         badges: distinctions
           .filter((d) => d != null && badgeMap[d])
           .map((d) => ({ badgeId: d, label: badgeMap[d].label, icon: badgeMap[d].icon })),
-        noTeam: !a?.school_id && !a?.league_team_id,
+        noTeam: !a?.school_id,
       };
     });
 

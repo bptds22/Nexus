@@ -379,7 +379,7 @@ function RechercheContent() {
         .from("athletes")
         .select(`
           id, first_name, last_name, photo_url, verified, last_profile_validation,
-          annee_diplomation, numero_jersey, video_faits_saillants_url, school_id, league_team_id,
+          annee_diplomation, numero_jersey, video_faits_saillants_url, school_id,
           cote_globale_entraineur,
           taille_pieds,
           taille_pouces,
@@ -391,7 +391,7 @@ function RechercheContent() {
           pret_changer_region, ouvert_cegep_prive, ouvert_cegep_anglophone, created_at,
           sports!sport_id(nom),
           positions!position_id(nom, abreviation),
-          schools!school_id(name, region),
+          schools!school_id(name, region, type),
           committed_school:schools!committed_school_id(name),
           evaluations(distinctions)
         `)
@@ -406,8 +406,15 @@ function RechercheContent() {
       if (promotion) query = query.eq("annee_diplomation", parseInt(promotion));
       if (verifiedOnly) query = query.eq("verified", true);
       if (withVideoOnly) query = query.not("video_faits_saillants_url", "is", null);
-      if (orgType === "scolaire") query = query.not("school_id", "is", null);
-      if (orgType === "ligue_civile") query = query.is("school_id", null);
+      // Post-Phase 6.1 unified model : civil athletes are anchored to a
+      // LIGUE_CIVILE school, école/CÉGEP athletes to SECONDAIRE/CEGEP. We
+      // filter via the embed schools.type — orphan athletes (school_id
+      // NULL) are excluded from both buckets since they have no type.
+      if (orgType === "scolaire") {
+        query = query.not("school_id", "is", null).eq("schools.type", "SECONDAIRE");
+      } else if (orgType === "ligue_civile") {
+        query = query.not("school_id", "is", null).eq("schools.type", "LIGUE_CIVILE");
+      }
       if (minGpa) query = query.gte("moyenne_generale", parseFloat(minGpa));
       if (minRating) query = query.gte("cote_globale_entraineur", parseFloat(minRating));
       if (filterOuvertDemenager) query = query.eq("pret_changer_region", true);
@@ -502,16 +509,22 @@ function RechercheContent() {
             committedSchoolName: (committedSchoolRel as Record<string, string> | null)?.name || null,
             openToOffers: (a?.open_to_offers as boolean | null) ?? null,
             commitmentStatus: "aucun",
-            orgType: (a.school_id ? "scolaire" : "ligue_civile") as "scolaire" | "ligue_civile",
+            // Post-Phase 6.1 : orgType derives from the schools.type
+            // discriminator on the embed (LIGUE_CIVILE vs SECONDAIRE/CEGEP).
+            // Orphan athletes (school_id NULL) fall back to "ligue_civile"
+            // so the "Ligue Civile" label still applies to unanchored rows.
+            orgType: (((schoolRel as Record<string, string> | null)?.type === "LIGUE_CIVILE") || !a.school_id
+              ? "ligue_civile"
+              : "scolaire") as "scolaire" | "ligue_civile",
             ouvertDemenager: a.pret_changer_region === true,
             ouvertPrive: a.ouvert_cegep_prive === true,
             ouvertAnglophone: a.ouvert_cegep_anglophone === true,
             createdAt: (a.created_at as string) || "",
-            // "Ligue Civile" badge fires when neither anchor is set —
-            // chk_school_or_league guarantees both can't be set, so
-            // this is purely the both-NULL "no anchor" case (civil
-            // athlete who clicked "Continuer sans équipe" at signup).
-            noTeam: !a.school_id && !a.league_team_id,
+            // "Ligue Civile" badge fires when athlete has no school anchor
+            // (orphan civil athlete). league_team_id is gone in 6.1 — civil
+            // athletes with a team are anchored via school_id to a
+            // LIGUE_CIVILE school.
+            noTeam: !a.school_id,
           };
         });
         if (mapped[0]) console.log("AFTER MAP:", { name: mapped[0].firstName, jersey: mapped[0].jersey, sport: mapped[0].sport, sportName: mapped[0].sportName, position: mapped[0].position });

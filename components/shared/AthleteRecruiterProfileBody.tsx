@@ -347,11 +347,13 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
   const [coachId, setCoachId] = useState<string | null>(null);
   const [isAllStar, setIsAllStar] = useState(false);
 
-  // Civil-context affiliation state. `affiliation` is the
-  // discriminator: 'school' (school_id present), 'civil_with_team'
-  // (school_id NULL + league_team_id present), 'civil_no_team'
-  // (both NULL — "Continuer sans équipe" path). Drives the
-  // section-level swap between "École" and "Équipe civile".
+  // Civil-context affiliation state. Post-Phase 6.1 unified model :
+  // 'school' = athlete anchored to a SECONDAIRE/CEGEP school,
+  // 'civil_with_team' = anchored to a LIGUE_CIVILE school AND in
+  // team_athletes for at least one team, 'civil_no_team' = anchored
+  // to a LIGUE_CIVILE school without a team OR orphan (school_id
+  // NULL — "Continuer sans équipe" path). Drives the section-level
+  // swap between "École" and "Équipe civile".
   const [affiliation, setAffiliation] = useState<"school" | "civil_with_team" | "civil_no_team">("school");
   const [civilTeamInfo, setCivilTeamInfo] = useState<{
     teamName: string;
@@ -426,14 +428,15 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
         sport_secondaire_id,
         position_secondaire_id,
         school_id,
-        league_team_id,
         sports!athletes_sport_id_fkey(nom),
         positions!athletes_position_id_fkey(nom, abreviation),
-        schools!school_id(name, region, city),
+        schools!school_id(name, region, city, type),
         committed_school:schools!committed_school_id(name),
-        league_teams!league_team_id(
-          id, name, age_group, division,
-          leagues!league_id(name)
+        team_athletes(
+          teams!team_id(
+            id, name, age_group, division,
+            schools!school_id(id, name, type)
+          )
         ),
         evaluations(
           vitesse_explosivite, force_puissance, endurance_cardio, agilite_coordination,
@@ -476,7 +479,7 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
 
         // School info
         const schoolRel = Array.isArray(d.schools) ? d.schools[0] : d.schools;
-        const school = schoolRel as { name: string; region: string; city: string } | null;
+        const school = schoolRel as { name: string; region: string; city: string; type: string } | null;
 
         // Age from birth date
         const birthDate = d.date_naissance as string | null;
@@ -562,19 +565,26 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
           primaryPosition: pos?.abreviation ? `${pos.nom} (${pos.abreviation})` : pos?.nom || "",
           secondarySport: secondarySportName,
           secondaryPosition: secondaryPositionName,
-          // schoolName is overloaded for civil context: when athletes
-          // have no school anchor, it carries the civil team name (or
-          // "Ligue Civile" label when the athlete chose "Continuer
-          // sans équipe"). Acceptable shortcut to avoid touching the
-          // 4-way duplicated PlayerCard; logged as P3 tech debt for
-          // proper consolidation. PlayerCard ticket renders schoolName
-          // verbatim — caller decides what it carries.
+          // schoolName is overloaded for civil context: when an athlete
+          // is anchored to a LIGUE_CIVILE school, it carries the team
+          // name (preferred) or the league/school name as fallback;
+          // when there's no anchor at all, it shows "Ligue Civile".
+          // Post-Phase 6.1 unified model — civil athletes are anchored
+          // via athletes.school_id to a LIGUE_CIVILE school, and team
+          // membership comes from team_athletes. Acceptable overload
+          // to avoid touching the 4-way duplicated PlayerCard; logged
+          // as P3 tech debt for proper consolidation.
           schoolName: (() => {
-            if (d.school_id) return school?.name || "";
-            const ltEmbed = Array.isArray(d.league_teams) ? d.league_teams[0] : d.league_teams;
-            const ltName = (ltEmbed as { name?: string } | null)?.name;
-            if (d.league_team_id && ltName) return ltName;
-            return "Ligue Civile";
+            if (!d.school_id) return "Ligue Civile";
+            if (school?.type !== "LIGUE_CIVILE") return school?.name || "";
+            // Civil athlete : prefer team name from team_athletes
+            // embed, fall back to the LIGUE_CIVILE school's name.
+            const taRel = d.team_athletes as unknown;
+            const taArr = Array.isArray(taRel) ? taRel : taRel ? [taRel] : [];
+            const firstTa = taArr[0] as Record<string, unknown> | null;
+            const teamRel = firstTa ? (Array.isArray(firstTa.teams) ? firstTa.teams[0] : firstTa.teams) : null;
+            const teamName = (teamRel as { name?: string } | null)?.name;
+            return teamName || school?.name || "Ligue Civile";
           })(),
           region: school?.region || "",
           city: school?.city || "",
@@ -596,44 +606,63 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
         setCoachId((d.coach_id as string) || null);
 
         // Affiliation discriminator + civil-team info population.
-        // chk_school_or_league guarantees at most one of school_id /
-        // league_team_id is non-null, so the three branches below
-        // are mutually exclusive.
+        // Post-Phase 6.1 unified model :
+        //   - school_id NULL                              → 'civil_no_team' (orphan)
+        //   - school_id NOT NULL, schools.type SECONDAIRE/CEGEP → 'school'
+        //   - school_id NOT NULL, schools.type LIGUE_CIVILE     →
+        //       'civil_with_team' if there's a team_athletes row,
+        //       'civil_no_team'   otherwise
         const schoolId = d.school_id as string | null;
-        const leagueTeamId = d.league_team_id as string | null;
-        if (schoolId) {
-          setAffiliation("school");
-          setCivilTeamInfo(null);
-        } else if (leagueTeamId) {
-          setAffiliation("civil_with_team");
-          const ltRel = Array.isArray(d.league_teams) ? d.league_teams[0] : d.league_teams;
-          const lt = ltRel as Record<string, unknown> | null;
-          const leagueRel = lt ? (Array.isArray(lt.leagues) ? lt.leagues[0] : lt.leagues) : null;
-          const lg = leagueRel as { name?: string } | null;
-          // Coaches list — separate query because PostgREST embed
-          // doesn't traverse league_coaches → users in one shot.
-          const { data: coachRows } = await supabase
-            .from("league_coaches")
-            .select("users!coach_id(first_name, last_name)")
-            .eq("league_team_id", leagueTeamId);
-          const coachNames: string[] = (coachRows ?? [])
-            .map((row) => {
-              const u = (row as Record<string, unknown>).users;
-              const userObj = (Array.isArray(u) ? u[0] : u) as { first_name?: string; last_name?: string } | null;
-              if (!userObj) return "";
-              return `${userObj.first_name ?? ""} ${userObj.last_name ?? ""}`.trim();
-            })
-            .filter((s) => s.length > 0);
-          setCivilTeamInfo({
-            teamName: (lt?.name as string) ?? "",
-            leagueName: lg?.name ?? "",
-            ageGroup: (lt?.age_group as string) ?? null,
-            division: (lt?.division as string) ?? null,
-            coaches: coachNames,
-          });
-        } else {
+        if (!schoolId) {
           setAffiliation("civil_no_team");
           setCivilTeamInfo(null);
+        } else if (school?.type !== "LIGUE_CIVILE") {
+          setAffiliation("school");
+          setCivilTeamInfo(null);
+        } else {
+          // Civil athlete (LIGUE_CIVILE school anchor). Pull team
+          // membership and coaches from the unified team_athletes /
+          // team_coaches tables.
+          const taRel = d.team_athletes as unknown;
+          const taArr = Array.isArray(taRel) ? taRel : taRel ? [taRel] : [];
+          const firstTa = taArr[0] as Record<string, unknown> | null;
+          const teamRel = firstTa ? (Array.isArray(firstTa.teams) ? firstTa.teams[0] : firstTa.teams) : null;
+          const lt = teamRel as Record<string, unknown> | null;
+
+          if (!lt) {
+            setAffiliation("civil_no_team");
+            setCivilTeamInfo(null);
+          } else {
+            setAffiliation("civil_with_team");
+            const teamId = lt.id as string | undefined;
+            // Coaches list — query team_coaches → users for this
+            // specific team. PostgREST embed doesn't traverse all
+            // the way in one shot.
+            let coachNames: string[] = [];
+            if (teamId) {
+              const { data: coachRows } = await supabase
+                .from("team_coaches")
+                .select("users!coach_id(first_name, last_name)")
+                .eq("team_id", teamId);
+              coachNames = (coachRows ?? [])
+                .map((row) => {
+                  const u = (row as Record<string, unknown>).users;
+                  const userObj = (Array.isArray(u) ? u[0] : u) as { first_name?: string; last_name?: string } | null;
+                  if (!userObj) return "";
+                  return `${userObj.first_name ?? ""} ${userObj.last_name ?? ""}`.trim();
+                })
+                .filter((s) => s.length > 0);
+            }
+            setCivilTeamInfo({
+              teamName: (lt.name as string) ?? "",
+              // In the unified model, the LIGUE_CIVILE school IS the
+              // league — its name is the league name.
+              leagueName: school?.name ?? "",
+              ageGroup: (lt.age_group as string) ?? null,
+              division: (lt.division as string) ?? null,
+              coaches: coachNames,
+            });
+          }
         }
 
         setLoadingAthlete(false);

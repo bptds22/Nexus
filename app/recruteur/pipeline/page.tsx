@@ -842,7 +842,6 @@ function PipelinePageContent() {
             recruitment_status,
             committed_school_id,
             school_id,
-            league_team_id,
             open_to_offers,
             sports!sport_id(nom),
             positions!position_id(nom, abreviation),
@@ -873,7 +872,6 @@ function PipelinePageContent() {
               recruitment_status: string | null;
               committed_school_id: string | null;
               school_id: string | null;
-              league_team_id: string | null;
               open_to_offers: boolean | null;
               sports: { nom: string } | { nom: string }[] | null;
               positions: { nom: string; abreviation: string } | { nom: string; abreviation: string }[] | null;
@@ -921,7 +919,7 @@ function PipelinePageContent() {
               next_action_at: (p.next_action_at as string) || null,
               next_action_note: (p.next_action_note as string) || null,
               moved_at: movedAt,
-              noTeam: !a?.school_id && !a?.league_team_id,
+              noTeam: !a?.school_id,
             };
           });
           setCards(mapped);

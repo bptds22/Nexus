@@ -5,21 +5,27 @@ import { createClient } from "@/lib/supabase/client";
 
 /* ═══════════════════════════════════════════════════════════════
    CivilCoachPicker — single-select grid of coaches assigned to a
-   given league_team. Mirrors the school-side CoachPicker but reads
-   from league_coaches instead of users.school_id.
+   given civil team. Mirrors the school-side CoachPicker but reads
+   from team_coaches instead of users.school_id.
+
+   Post-Phase 6.1 : civil coaches are stored in the unified
+   team_coaches table (legacy league_coaches table is empty + slated
+   for drop in Phase 6.3). The prop name `leagueTeamId` is preserved
+   for caller compatibility — semantically it's now a team_id
+   pointing at a row in `teams` whose parent school has
+   type='LIGUE_CIVILE'. P3 rename logged.
 
    Pure: receives leagueTeamId + selectedCoachId, emits onChange.
    No toast, modal, or persistence side effects baked in.
 
-   RLS: depends on the "Athletes read coaches of own team" SELECT
-   policy on league_coaches (see migration
-   20260506000000_athlete_recruiter_read_league_coaches.sql).
-   Filters role IN ('ADMIN', 'COACH') so PENDING coaches don't
-   appear as selectable.
+   RLS: depends on team_coaches read policies (anyone authenticated
+   can read for picker UX). Filters role IN ('ADMIN', 'COACH',
+   'head_coach', 'assistant', 'coordinator') so PENDING coaches
+   don't appear as selectable.
 
    Tech debt: duplicates the layout + interaction pattern of
    components/coach/CoachPicker.tsx. P3 logged for consolidation
-   into a single CoachPicker that accepts schoolId OR leagueTeamId.
+   into a single CoachPicker that accepts schoolId OR teamId.
 ═══════════════════════════════════════════════════════════════ */
 
 interface CoachOption {
@@ -67,10 +73,10 @@ export default function CivilCoachPicker({
       const supabase = createClient();
 
       const { data: rows, error: rowsErr } = await supabase
-        .from("league_coaches")
+        .from("team_coaches")
         .select("coach_id, role, users!coach_id(first_name, last_name, photo_url)")
-        .eq("league_team_id", leagueTeamId)
-        .in("role", ["ADMIN", "COACH"]);
+        .eq("team_id", leagueTeamId)
+        .in("role", ["head_coach", "assistant", "coordinator"]);
 
       if (rowsErr) {
         console.error("[CivilCoachPicker] load failed:", rowsErr);
@@ -88,7 +94,7 @@ export default function CivilCoachPicker({
           firstName: (u?.first_name as string) ?? "",
           lastName: (u?.last_name as string) ?? "",
           photoUrl: (u?.photo_url as string | null) ?? null,
-          role: (r.role as string) ?? "COACH",
+          role: (r.role as string) ?? "assistant",
         };
       });
 
@@ -171,7 +177,11 @@ export default function CivilCoachPicker({
                 {coach.firstName} {coach.lastName}
               </p>
               <span className="inline-block mt-1.5 px-2 py-0.5 rounded-full bg-[#2D3748] text-[#9CA3AF] text-[11px] font-semibold whitespace-nowrap">
-                {coach.role === "ADMIN" ? "Admin équipe" : "Coach"}
+                {coach.role === "head_coach"
+                  ? "Entraîneur-chef"
+                  : coach.role === "coordinator"
+                    ? "Coordinateur"
+                    : "Coach"}
               </span>
             </div>
           </button>
