@@ -181,94 +181,35 @@ export default function Home() {
       </section>
 
       {/* ══════════════════════════════════════════
-          SECTION 2 — CHOISIS TON PARCOURS
+          SECTION 2 — PARTNER CAROUSEL
+          Placeholder slots — swap with real partner logos.
       ══════════════════════════════════════════ */}
-      <section id="roles" className="bg-[#111317]/75 pb-24 pt-16">
-        <div className="max-w-6xl mx-auto px-6">
+      <section className="relative bg-[#0B0D11] border-t border-[#1E2D4A]/30 py-20 overflow-hidden">
 
-          <div className="text-center mb-12">
-            <span className={`${label} text-[#E63946]`}>Choisis ton parcours</span>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-            {/* ── Card 1 — Athlète ── */}
-            <div className="relative overflow-hidden bg-[#1A1D24] border border-[#1E2D4A] rounded-lg p-10 lg:p-12 group">
-              {/* Watermark number */}
-              <div className="absolute -right-8 -bottom-4 nx-display text-[200px] font-black text-white/[0.03] leading-none select-none pointer-events-none" aria-hidden>
-                01
-              </div>
-
-              <span className={`${label} text-[#E63946]`}>Athlète</span>
-
-              <h3 className="nx-display text-5xl font-black text-white uppercase leading-[1] mt-4 mb-2">
-                Fais-toi
-                <br />
-                remarquer
-              </h3>
-
-              <div className="w-12 h-0.5 bg-[#E63946] my-6" />
-
-              <ul className="space-y-3 mb-10">
-                {[
-                  "Profil vérifié visible par tous les recruteurs CÉGEP",
-                  "Vidéos, stats et parcours académique en un seul endroit",
-                  "Gratuit",
-                ].map((f) => (
-                  <li key={f} className="flex items-center gap-3">
-                    <span className="w-6 h-px bg-[#E63946] flex-shrink-0" />
-                    <span className="font-sans text-sm text-[#9CA3AF]">{f}</span>
-                  </li>
-                ))}
-              </ul>
-
-              <Link
-                href="/inscription?role=ATHLETE"
-                className="inline-flex items-center h-11 px-8 bg-[#E63946] text-white font-head font-black text-xs uppercase tracking-widest hover:bg-[#D42B22] transition-colors rounded"
-              >
-                Créer mon profil →
-              </Link>
-            </div>
-
-            {/* ── Card 2 — Recruteur CÉGEP ── */}
-            <div className="relative overflow-hidden bg-[#1A1D24] border border-[#1E2D4A] rounded-lg p-10 lg:p-12 group">
-              <div className="absolute -right-8 -bottom-4 nx-display text-[200px] font-black text-white/[0.03] leading-none select-none pointer-events-none" aria-hidden>
-                02
-              </div>
-
-              <span className={`${label} text-[#9CA3AF]`}>Recruteur CÉGEP</span>
-
-              <h3 className="nx-display text-5xl font-black text-white uppercase leading-[1] mt-4 mb-2">
-                Trouve ton
-                <br />
-                prochain joueur
-              </h3>
-
-              <div className="w-12 h-0.5 bg-[#E63946] my-6" />
-
-              <ul className="space-y-3 mb-10">
-                {[
-                  "16 sports couverts — du RSEQ",
-                  "Filtres avancés : sport, région, position, GPA",
-                  "Contact direct avec les entraîneurs",
-                ].map((f) => (
-                  <li key={f} className="flex items-center gap-3">
-                    <span className="w-6 h-px bg-[#2E3D55] flex-shrink-0" />
-                    <span className="font-sans text-sm text-[#9CA3AF]">{f}</span>
-                  </li>
-                ))}
-              </ul>
-
-              <Link
-                href="/inscription?role=RECRUTEUR"
-                className="nx-ghost-btn inline-flex items-center h-11 px-8 border font-head font-black text-xs uppercase tracking-widest rounded"
-              >
-                Explorer les athlètes →
-              </Link>
-            </div>
-
+        <div className="max-w-6xl mx-auto px-6 mb-12 text-center">
+          <div className="inline-flex items-center gap-3">
+            <span className="w-10 h-px bg-[#E63946]" />
+            <span className={`${label} text-[#E63946]`}>Ils nous font confiance</span>
+            <span className="w-10 h-px bg-[#E63946]" />
           </div>
         </div>
+
+        <div className="nx-marquee" aria-label="Partenaires Nexus">
+          <div className="nx-marquee-track">
+            {[
+              "Partenaire 1", "Partenaire 2", "Partenaire 3",
+              "Partenaire 4", "Partenaire 5", "Partenaire 6",
+              // Duplicated below for seamless infinite loop — do not remove
+              "Partenaire 1", "Partenaire 2", "Partenaire 3",
+              "Partenaire 4", "Partenaire 5", "Partenaire 6",
+            ].map((name, i) => (
+              <div key={i} className="nx-partner-slot" aria-hidden={i >= 6 ? "true" : "false"}>
+                <span className="nx-display text-2xl text-white/30 tracking-wider">{name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
       </section>
 
       {/* ══════════════════════════════════════════
