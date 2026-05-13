@@ -51,60 +51,34 @@ export default function Home() {
       <MarketingNav />
 
       {/* ══════════════════════════════════════════
-          SECTION 1 — HERO
+          SECTION 1 — HERO (CityPunks layout)
       ══════════════════════════════════════════ */}
-      <section className="relative overflow-hidden bg-transparent">
-        <div className="relative max-w-6xl mx-auto px-6 pt-20 pb-24 grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-16 xl:gap-24 items-start">
+      <section className="relative overflow-hidden bg-transparent min-h-[calc(100vh-72px)] lg:min-h-[calc(100vh-72px)]">
 
-          {/* ── Left: copy ── */}
-          <div>
-            {/* Eyebrow */}
-            <div className="inline-flex items-center gap-3 mb-8">
-              <span className="w-6 h-px bg-[#E63946]" />
-              <span className={`${label} text-[#E63946]`}>Plateforme officielle · Québec 2026</span>
-              <span className="w-6 h-px bg-[#E63946]" />
-            </div>
+        {/* Giant NEXUS watermark (background layer) */}
+        <div className="nx-watermark" aria-hidden>NEXUS</div>
 
-            {/* Headline */}
-            <h1 className="nx-display text-6xl xl:text-7xl font-black text-white uppercase leading-[0.92] tracking-tight mb-6">
-              La Plateforme <span className="text-[#E63946]">#1</span>
-              <br />
-              de Recrutement
-              <br />
-              d&apos;Athlètes au
-              <br />
-              Québec
-            </h1>
+        {/* Extra red atmospheric glow centered on card */}
+        <div className="nx-hero-glow" aria-hidden />
 
-            <p className="font-sans text-base text-[#9CA3AF] leading-relaxed max-w-[460px] mb-10">
-              Connecte les athlètes du secondaire aux programmes sport-études des CÉGEP. Profils vérifiés, stats en temps réel, recrutement simplifié.
-            </p>
+        {/* Floating playbook particles */}
+        <div className="absolute inset-0 pointer-events-none" aria-hidden>
+          <span className="nx-particle" style={{ top: '12%', right: '38%' }}>X</span>
+          <span className="nx-particle red" style={{ top: '18%', right: '8%', fontSize: '24px' }}>→</span>
+          <span className="nx-particle blue" style={{ top: '22%', right: '48%', fontSize: '28px' }}>X</span>
+          <span className="nx-particle" style={{ top: '35%', right: '5%', fontSize: '22px' }}>O</span>
+          <span className="nx-particle red" style={{ top: '50%', right: '42%', fontSize: '20px' }}>↗</span>
+          <span className="nx-particle" style={{ top: '58%', right: '4%' }}>X</span>
+          <span className="nx-particle" style={{ top: '72%', right: '38%', fontSize: '22px' }}>O</span>
+          <span className="nx-particle blue" style={{ top: '80%', right: '12%', fontSize: '18px' }}>→</span>
+          <span className="nx-particle red" style={{ top: '85%', right: '45%', fontSize: '16px' }}>X</span>
+        </div>
 
-            {/* CTAs — Athlète (red) + Recruteur (outline) + Coach (outline) */}
-            <div className="flex flex-wrap gap-3">
-              <Link
-                href="/inscription?role=ATHLETE"
-                className="inline-flex items-center h-12 px-8 bg-[#E63946] text-white font-head font-black text-sm uppercase tracking-widest hover:bg-[#D42B22] transition-colors rounded"
-              >
-                Je suis un Athlète →
-              </Link>
-              <Link
-                href="/inscription?role=RECRUTEUR"
-                className="nx-ghost-btn inline-flex items-center h-12 px-8 border font-head font-black text-sm uppercase tracking-widest rounded"
-              >
-                Je suis un Recruteur →
-              </Link>
-              <Link
-                href="/inscription?role=COACH"
-                className="nx-ghost-btn inline-flex items-center h-12 px-8 border font-head font-black text-sm uppercase tracking-widest rounded"
-              >
-                Je suis un Coach →
-              </Link>
-            </div>
-          </div>
+        {/* ── Mobile-first stacking + absolute on lg ── */}
+        <div className="relative z-10 max-w-7xl mx-auto px-6 pt-12 pb-32 lg:pt-0 lg:pb-0 lg:min-h-[calc(100vh-72px)]">
 
-          {/* ── Right: Athlete Card v30 (unchanged) ── */}
-          <div className="flex justify-center lg:justify-end lg:pt-[52px]">
+          {/* ── Athlete card v30 — UNCHANGED, just repositioned ── */}
+          <div className="flex justify-center mb-16 lg:mb-0 lg:absolute lg:top-1/2 lg:right-[6%] lg:-translate-y-1/2 lg:z-20">
             <div className="nx-v30-wrap relative" style={{ width: 340, paddingTop: 6, paddingBottom: 10 }}>
 
               {/* Verified badge — 3D lapel pin */}
@@ -129,100 +103,106 @@ export default function Home() {
                 </svg>
               </div>
 
-              {/* Main card */}
+              {/* Main card — keep exactly as-is */}
               <div className="nx-v30-card relative overflow-visible" style={{ width: 340, borderRadius: 10 }}>
-
-                {/* Photo area */}
                 <div className="relative overflow-hidden" style={{ width: 340, height: 500, borderRadius: 10, background: '#2F3440' }}>
-                  <div
-                    className="absolute inset-0 z-[1]"
-                    style={{
-                      backgroundImage: "url('/player_card%20image%20Bruno%207.png')",
-                      backgroundSize: 'cover',
-                      backgroundPosition: 'center top -40px',
-                    }}
-                  />
-                  <div
-                    className="absolute bottom-0 left-0 right-0 h-1/2 z-[2]"
-                    style={{ background: 'linear-gradient(to top, rgba(11,18,32,0.97) 0%, rgba(11,18,32,0.7) 35%, transparent 100%)' }}
-                  />
-                  <div
-                    className="absolute top-0 right-0 z-20"
-                    style={{ width: 0, height: 0, borderStyle: 'solid', borderWidth: '0 20px 20px 0', borderColor: 'transparent #1E2128 transparent transparent' }}
-                  />
+                  <div className="absolute inset-0 z-[1]" style={{ backgroundImage: "url('/player_card%20image%20Bruno%207.png')", backgroundSize: 'cover', backgroundPosition: 'center top -40px' }} />
+                  <div className="absolute bottom-0 left-0 right-0 h-1/2 z-[2]" style={{ background: 'linear-gradient(to top, rgba(11,18,32,0.97) 0%, rgba(11,18,32,0.7) 35%, transparent 100%)' }} />
+                  <div className="absolute top-0 right-0 z-20" style={{ width: 0, height: 0, borderStyle: 'solid', borderWidth: '0 20px 20px 0', borderColor: 'transparent #1E2128 transparent transparent' }} />
                 </div>
 
-                {/* Ticket */}
-                <div
-                  className="nx-v30-ticket absolute z-[999] overflow-hidden"
-                  style={{ bottom: -16, right: -26, borderRadius: 4, border: '1.5px solid rgba(255,255,255,0.08)' }}
-                >
+                <div className="nx-v30-ticket absolute z-[999] overflow-hidden" style={{ bottom: -16, right: -26, borderRadius: 4, border: '1.5px solid rgba(255,255,255,0.08)' }}>
                   <div className="flex" style={{ width: 364 }}>
-                    <div
-                      className="flex flex-col justify-between"
-                      style={{ background: '#1E2128', padding: '14px 16px 14px 18px', minWidth: 109, gap: 5 }}
-                    >
-                      {[
-                        { lbl: "Sport", val: "Football" },
-                        { lbl: "Pos", val: "QB" },
-                        { lbl: "No.", val: "#12" },
-                      ].map((r) => (
+                    <div className="flex flex-col justify-between" style={{ background: '#1E2128', padding: '14px 16px 14px 18px', minWidth: 109, gap: 5 }}>
+                      {[{ lbl: "Sport", val: "Football" }, { lbl: "Pos", val: "QB" }, { lbl: "No.", val: "#12" }].map((r) => (
                         <div key={r.lbl}>
-                          <div style={{ fontFamily: 'var(--font-barlow-cond), sans-serif', fontSize: 7, fontWeight: 800, letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.38)', marginBottom: 2 }}>
-                            {r.lbl}
-                          </div>
-                          <div style={{ fontFamily: 'var(--font-heading), sans-serif', fontSize: 18, color: '#fff', letterSpacing: '0.06em', lineHeight: 1 }}>
-                            {r.val}
-                          </div>
+                          <div style={{ fontFamily: 'var(--font-barlow-cond), sans-serif', fontSize: 7, fontWeight: 800, letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.38)', marginBottom: 2 }}>{r.lbl}</div>
+                          <div style={{ fontFamily: 'var(--font-heading), sans-serif', fontSize: 18, color: '#fff', letterSpacing: '0.06em', lineHeight: 1 }}>{r.val}</div>
                         </div>
                       ))}
                     </div>
-
-                    <div
-                      className="nx-v30-perf flex flex-col items-center justify-center"
-                      style={{ width: 12, background: '#E6E6E6', borderLeft: '1.5px dashed rgba(11,18,32,0.2)', borderRight: '1.5px dashed rgba(11,18,32,0.2)', gap: 3 }}
-                    >
+                    <div className="nx-v30-perf flex flex-col items-center justify-center" style={{ width: 12, background: '#E6E6E6', borderLeft: '1.5px dashed rgba(11,18,32,0.2)', borderRight: '1.5px dashed rgba(11,18,32,0.2)', gap: 3 }}>
                       {[...Array(8)].map((_, i) => (
                         <span key={i} className="flex-shrink-0" style={{ width: 3, height: 3, borderRadius: '50%', background: 'rgba(11,18,32,0.2)' }} />
                       ))}
                     </div>
-
                     <div className="flex-1 flex flex-col justify-center" style={{ background: '#FFFFFF', padding: '14px 18px' }}>
                       <svg width="150" height="22" viewBox="0 0 150 22" fill="none" style={{ display: 'block', marginBottom: 8 }}>
                         {[0, 30, 60, 90, 120].map((x) => (
                           <path key={x} d="M11,0L13.5,8L22,8L15.5,13L18,21L11,16.2L4,21L6.5,13L0,8L8.5,8Z" fill="#F59E0B" transform={`translate(${x},0)`}/>
                         ))}
                       </svg>
-                      <div style={{ fontFamily: 'var(--font-barlow-cond), sans-serif', fontWeight: 800, fontSize: 14, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#1E2128', marginBottom: 2 }}>
-                        École secondaire Saint-Jean-Eudes
-                      </div>
-                      <div style={{ fontFamily: 'var(--font-barlow-cond), sans-serif', fontWeight: 700, fontSize: 13, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#9CA3AF' }}>
-                        Québec, QC
-                      </div>
-                      <div style={{ fontFamily: 'var(--font-barlow-cond), sans-serif', fontWeight: 700, fontSize: 13, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#E63946', marginTop: 2 }}>
-                        Promotion 2026
-                      </div>
+                      <div style={{ fontFamily: 'var(--font-barlow-cond), sans-serif', fontWeight: 800, fontSize: 14, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#1E2128', marginBottom: 2 }}>École secondaire Saint-Jean-Eudes</div>
+                      <div style={{ fontFamily: 'var(--font-barlow-cond), sans-serif', fontWeight: 700, fontSize: 13, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#9CA3AF' }}>Québec, QC</div>
+                      <div style={{ fontFamily: 'var(--font-barlow-cond), sans-serif', fontWeight: 700, fontSize: 13, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#E63946', marginTop: 2 }}>Promotion 2026</div>
                     </div>
-
-                    <div
-                      className="flex items-center justify-center flex-shrink-0"
-                      style={{
-                        background: '#E63946',
-                        width: 26,
-                        writingMode: 'vertical-rl',
-                        fontFamily: 'var(--font-heading), sans-serif',
-                        fontSize: 11,
-                        letterSpacing: '0.22em',
-                        color: 'rgba(255,255,255,0.7)',
-                      }}
-                    >
-                      NEXUS
-                    </div>
+                    <div className="flex items-center justify-center flex-shrink-0" style={{ background: '#E63946', width: 26, writingMode: 'vertical-rl', fontFamily: 'var(--font-heading), sans-serif', fontSize: 11, letterSpacing: '0.22em', color: 'rgba(255,255,255,0.7)' }}>NEXUS</div>
                   </div>
                 </div>
-
               </div>
             </div>
+          </div>
+
+          {/* ── Text cluster — bottom-left on lg, normal flow on mobile ── */}
+          <div className="lg:absolute lg:bottom-24 lg:left-14 lg:max-w-2xl lg:z-30">
+            <div className="inline-flex items-center gap-3 mb-6">
+              <span className="w-10 h-px bg-[#E63946]" />
+              <span className={`${label} text-[#E63946]`}>Plateforme officielle · Québec 2026</span>
+            </div>
+
+            <h1 className="nx-display text-6xl lg:text-8xl xl:text-[112px] font-black uppercase leading-[0.9] tracking-tight mb-6">
+              <span className="block text-white">Fais-toi voir.</span>
+              <span className="block text-[#E63946]">Fais-toi recruter.</span>
+            </h1>
+
+            <p className="font-sans text-base text-[#9CA3AF] leading-relaxed max-w-[480px] mb-8">
+              <strong className="text-white/85 font-semibold">La plateforme #1 de recrutement d&apos;athlètes au Québec.</strong>{' '}
+              Connecte les athlètes du secondaire aux programmes sport-études des CÉGEP.
+            </p>
+
+            <div className="flex flex-wrap items-center gap-6">
+              <Link
+                href="/inscription?role=ATHLETE"
+                className="inline-flex items-center gap-3 h-12 px-7 bg-[#E63946] text-white font-head font-black text-sm uppercase tracking-widest hover:bg-[#D42B22] hover:-translate-y-0.5 hover:shadow-[0_12px_40px_rgba(230,57,70,0.4)] transition-all rounded"
+              >
+                Créer mon profil
+                <span aria-hidden>→</span>
+              </Link>
+
+              <Link
+                href="/comment-ca-marche"
+                className="inline-flex items-center gap-3 text-white font-sans font-semibold text-sm group"
+              >
+                <span className="w-10 h-10 rounded-full border-[1.5px] border-white/35 inline-flex items-center justify-center group-hover:border-white group-hover:bg-white/5 transition-colors">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden><path d="M2 1 L10 6 L2 11 Z" fill="#fff"/></svg>
+                </span>
+                Voir comment ça marche
+              </Link>
+            </div>
+          </div>
+
+          {/* ── Bottom rail — trust badges + scroll cue (lg only, absolute) ── */}
+          <div className="hidden lg:flex absolute bottom-6 left-0 right-0 px-14 z-30 items-center justify-between">
+            <div className="flex items-center gap-5 text-[10px] font-bold tracking-[0.2em] uppercase text-white/35">
+              <span className="inline-flex items-center gap-2"><Building2 size={14} strokeWidth={2} />Hébergé au Québec</span>
+              <span className="text-white/15">·</span>
+              <span className="inline-flex items-center gap-2"><ShieldCheck size={14} strokeWidth={2} />Conforme Loi 25</span>
+              <span className="text-white/15">·</span>
+              <span className="inline-flex items-center gap-2"><BadgeCheck size={14} strokeWidth={2} />Profils vérifiés</span>
+              <span className="text-white/15">·</span>
+              <span>16 sports · 70+ CÉGEPS</span>
+            </div>
+            <div className="flex flex-col items-center gap-2 text-[10px] font-bold tracking-[0.25em] text-white/40">
+              <span>SCROLL</span>
+              <div className="nx-scroll-line" />
+            </div>
+          </div>
+
+          {/* Mobile-only trust row (replaces deleted Section 3) */}
+          <div className="lg:hidden mt-12 flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-[10px] font-bold tracking-[0.2em] uppercase text-white/45">
+            <span className="inline-flex items-center gap-2"><Building2 size={14} strokeWidth={2} />Hébergé au Québec</span>
+            <span className="inline-flex items-center gap-2"><ShieldCheck size={14} strokeWidth={2} />Conforme Loi 25</span>
+            <span className="inline-flex items-center gap-2"><BadgeCheck size={14} strokeWidth={2} />Profils vérifiés</span>
           </div>
 
         </div>
@@ -315,30 +295,6 @@ export default function Home() {
               </Link>
             </div>
 
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════
-          SECTION 3 — TRUST STRIP
-      ══════════════════════════════════════════ */}
-      <section className="bg-[#111317]/80 border-t border-[#1E2D4A]/40 border-b border-[#1E2D4A]/40">
-        <div className="max-w-6xl mx-auto px-6 py-8">
-          <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-[#9CA3AF] text-sm">
-            <span className="inline-flex items-center gap-2">
-              <Building2 size={16} strokeWidth={2} className="text-[#9CA3AF]" />
-              Hébergé au Québec
-            </span>
-            <span className="hidden sm:inline text-[#475569]">·</span>
-            <span className="inline-flex items-center gap-2">
-              <ShieldCheck size={16} strokeWidth={2} className="text-[#9CA3AF]" />
-              Conforme Loi 25
-            </span>
-            <span className="hidden sm:inline text-[#475569]">·</span>
-            <span className="inline-flex items-center gap-2">
-              <BadgeCheck size={16} strokeWidth={2} className="text-[#9CA3AF]" />
-              Profils vérifiés
-            </span>
           </div>
         </div>
       </section>

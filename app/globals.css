@@ -928,3 +928,126 @@ body.light-mode .nx-social-auth-btn:hover {
     opacity: 1;
   }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   Marketing hero v2 (CityPunks-inspired asymmetric layout)
+   See app/page.tsx Section 1 hero
+══════════════════════════════════════════════════════════════ */
+
+/* Giant NEXUS watermark — background depth layer */
+.nx-watermark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: var(--font-heading), "Barlow Condensed", sans-serif;
+  font-weight: 900;
+  font-size: clamp(220px, 24vw, 460px);
+  color: #fff;
+  opacity: 0.025;
+  letter-spacing: -0.05em;
+  line-height: 1;
+  pointer-events: none;
+  z-index: 1;
+  white-space: nowrap;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Light mode: slightly darker watermark for legibility */
+body.light-mode .nx-watermark {
+  color: #0d1117;
+  opacity: 0.04;
+}
+
+/* Dramatic red atmospheric glow centered on the athlete card */
+.nx-hero-glow {
+  position: absolute;
+  top: 50%;
+  right: -100px;
+  transform: translateY(-50%);
+  width: min(1100px, 110vw);
+  height: min(1100px, 110vw);
+  background: radial-gradient(circle at center,
+    rgba(230, 57, 70, 0.38) 0%,
+    rgba(230, 57, 70, 0.16) 22%,
+    rgba(230, 57, 70, 0.05) 45%,
+    transparent 65%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+body.light-mode .nx-hero-glow {
+  background: radial-gradient(circle at center,
+    rgba(230, 57, 70, 0.22) 0%,
+    rgba(230, 57, 70, 0.10) 22%,
+    rgba(230, 57, 70, 0.03) 45%,
+    transparent 65%);
+}
+
+/* Floating playbook particles (Xs, Os, arrows drifting around card) */
+.nx-particle {
+  position: absolute;
+  opacity: 0.6;
+  pointer-events: none;
+  z-index: 2;
+  color: rgba(255, 255, 255, 0.55);
+  font-family: var(--font-heading), "Barlow Condensed", sans-serif;
+  font-weight: 700;
+  font-size: 18px;
+  animation: nxParticleFloat 9s ease-in-out infinite;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.nx-particle.red { color: #E63946; }
+.nx-particle.blue { color: #2563EB; opacity: 0.5; }
+.nx-particle:nth-child(odd) { animation-duration: 12s; animation-delay: -2s; }
+.nx-particle:nth-child(3n) { animation-duration: 15s; animation-delay: -5s; }
+
+body.light-mode .nx-particle { color: rgba(13, 17, 23, 0.35); }
+body.light-mode .nx-particle.blue { color: rgba(37, 99, 235, 0.4); }
+
+@keyframes nxParticleFloat {
+  0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.4; }
+  50%      { transform: translateY(-25px) rotate(10deg); opacity: 0.75; }
+}
+
+/* Continuous breathing on the card wrap — pauses on hover so the
+   existing nx-v30-card hover transform (rotate + translateY) wins */
+.nx-v30-wrap {
+  animation: nxWrapBreathe 6s ease-in-out infinite;
+}
+.nx-v30-wrap:hover {
+  animation: none;
+}
+
+@keyframes nxWrapBreathe {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-6px); }
+}
+
+/* Scroll cue pulsing line */
+.nx-scroll-line {
+  width: 1px;
+  height: 28px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.4), transparent);
+  animation: nxScrollPulse 2s ease-in-out infinite;
+  transform-origin: top;
+}
+body.light-mode .nx-scroll-line {
+  background: linear-gradient(180deg, rgba(13, 17, 23, 0.4), transparent);
+}
+
+@keyframes nxScrollPulse {
+  0%, 100% { opacity: 0.3; transform: scaleY(0.7); }
+  50%      { opacity: 1;   transform: scaleY(1); }
+}
+
+/* Respect reduced motion — kill all hero v2 animations */
+@media (prefers-reduced-motion: reduce) {
+  .nx-particle,
+  .nx-v30-wrap,
+  .nx-scroll-line {
+    animation: none !important;
+  }
+}
