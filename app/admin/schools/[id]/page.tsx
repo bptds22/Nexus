@@ -64,7 +64,9 @@ interface CoachRow {
   created_at: string | null;
   role: string | null; // school_coaches.role (e.g. 'DIRECTEUR')
   sport: string | null;
-  team_name: string | null;
+  // Phase 6.1.x : team membership is derived via team_coaches → teams.name
+  // (multi-team supported). Replaces the legacy school_coaches.team_name field.
+  teams: string[];
   athleteCount: number;
   verifiedCount: number;
   is_school_admin: boolean;
@@ -217,8 +219,10 @@ export default function AdminSchoolDetailPage({ params }: { params: Promise<{ id
       //   (3) distinct athletes.coach_id for athletes at this school (covers cases
       //       where the link tables got out of sync)
       // school_coaches has NO user_id column and NO is_school_admin column.
-      // The real columns are: id, school_id, coach_id, role, sport, team_name,
-      // created_at. Fetch user details in a separate query and merge client-side.
+      // The real columns are: id, school_id, coach_id, role, sport, created_at.
+      // Phase 6.1.x dropped the team_name read — team membership is now derived
+      // via team_coaches → teams.name (see fetch + maps below).
+      // Fetch user details in a separate query and merge client-side.
       const athleteCoachIds = Array.from(new Set(
         ((athleteRowsRaw as Record<string, unknown>[] | null) || [])
           .map((r) => r.coach_id as string | null)
@@ -227,7 +231,7 @@ export default function AdminSchoolDetailPage({ params }: { params: Promise<{ id
       const [scRes, legacyRes] = await Promise.all([
         supabase
           .from("school_coaches")
-          .select("id, school_id, coach_id, role, sport, team_name, created_at")
+          .select("id, school_id, coach_id, role, sport, created_at")
           .eq("school_id", id),
         supabase
           .from("users")
@@ -241,8 +245,9 @@ export default function AdminSchoolDetailPage({ params }: { params: Promise<{ id
         "athleteCoachIds:", athleteCoachIds,
       );
 
-      // Build per-coach metadata (role/sport/team_name from school_coaches, when present)
-      type CoachMeta = { scId: string; role: string | null; sport: string | null; team_name: string | null };
+      // Build per-coach metadata (role/sport from school_coaches, when present).
+      // Phase 6.1.x : team membership patched in after team_coaches fetch below.
+      type CoachMeta = { scId: string; role: string | null; sport: string | null };
       const coachMeta = new Map<string, CoachMeta>();
       for (const r of (scRes.data as Record<string, unknown>[] | null) || []) {
         const cid = r.coach_id as string | null;
@@ -252,19 +257,18 @@ export default function AdminSchoolDetailPage({ params }: { params: Promise<{ id
             scId: (r.id as string) || "",
             role: (r.role as string) ?? null,
             sport: (r.sport as string) ?? null,
-            team_name: (r.team_name as string) ?? null,
           });
         }
       }
       for (const u of (legacyRes.data as Record<string, unknown>[] | null) || []) {
         const uid = u.id as string;
         if (!coachMeta.has(uid)) {
-          coachMeta.set(uid, { scId: "", role: "COACH", sport: null, team_name: null });
+          coachMeta.set(uid, { scId: "", role: "COACH", sport: null });
         }
       }
       for (const cid of athleteCoachIds) {
         if (!coachMeta.has(cid)) {
-          coachMeta.set(cid, { scId: "", role: null, sport: null, team_name: null });
+          coachMeta.set(cid, { scId: "", role: null, sport: null });
         }
       }
 
@@ -306,13 +310,13 @@ export default function AdminSchoolDetailPage({ params }: { params: Promise<{ id
           created_at: (u?.created_at as string) ?? null,
           role: meta.role,
           sport: meta.sport,
-          team_name: meta.team_name,
+          // teams[] is patched in below once team_coaches is fetched
+          teams: [],
           athleteCount: counts.total,
           verifiedCount: counts.verified,
           is_school_admin: Boolean(u?.is_school_admin),
         };
       });
-      if (!cancelled) setCoaches(mappedCoaches);
 
       // Teams — use SELECT * so we accept whatever columns the table has
       // (some deployments use `name`, others `nom`). We read either below.
@@ -336,47 +340,81 @@ export default function AdminSchoolDetailPage({ params }: { params: Promise<{ id
         }
       }
 
-      // Coach names for teams — teams has NO coach_id. Derive via
-      // school_coaches.team_name matching teams.name, then look up user names.
-      const coachNameByTeamName = new Map<string, string>();
-      const scCoachIds = Array.from(new Set(
-        ((scRes.data as Record<string, unknown>[] | null) || [])
-          .map((r) => r.coach_id as string | null)
-          .filter((v): v is string => !!v)
-      ));
-      const scUserById = new Map<string, { first_name?: string; last_name?: string }>();
-      if (scCoachIds.length > 0) {
-        const { data: scUsers, error: scUserErr } = await supabase
+      // Phase 6.1.x — Team membership is now derived from team_coaches
+      // (replaces the legacy school_coaches.team_name match-by-name). Two
+      // maps are built here: teamsByCoachId (Usage B — coach → list of team
+      // names) and coachByTeamId (Usage A — team → primary coach_id, with
+      // head_coach preferred when multiple coaches share a team).
+      const teamNameById = new Map<string, string>();
+      for (const t of teamList) {
+        const tname = (t.name as string) || (t.nom as string) || "";
+        if (tname) teamNameById.set(t.id as string, tname);
+      }
+
+      const teamsByCoachId = new Map<string, string[]>();
+      const coachByTeamId = new Map<string, { coachId: string; role: string | null }>();
+      let teamCoachCoachIds: string[] = [];
+      if (teamIds.length > 0) {
+        const { data: tcRows, error: tcErr } = await supabase
+          .from("team_coaches")
+          .select("team_id, coach_id, role")
+          .in("team_id", teamIds);
+        console.log("[admin/schools] team_coaches:", tcRows, "err:", tcErr);
+        for (const row of (tcRows as Record<string, unknown>[] | null) || []) {
+          const tid = row.team_id as string;
+          const cid = row.coach_id as string;
+          const role = (row.role as string) ?? null;
+          const tname = teamNameById.get(tid);
+          if (tname) {
+            if (!teamsByCoachId.has(cid)) teamsByCoachId.set(cid, []);
+            teamsByCoachId.get(cid)!.push(tname);
+          }
+          const existing = coachByTeamId.get(tid);
+          if (!existing || (role === "head_coach" && existing.role !== "head_coach")) {
+            coachByTeamId.set(tid, { coachId: cid, role });
+          }
+        }
+        teamsByCoachId.forEach((v) => v.sort((a, b) => a.localeCompare(b, "fr")));
+        teamCoachCoachIds = Array.from(new Set(
+          ((tcRows as Record<string, unknown>[] | null) || []).map((r) => r.coach_id as string)
+        ));
+      }
+
+      // Extend userById with any team_coaches coach_ids missing from the
+      // school_coaches union (e.g. a coach attached to a team but not yet
+      // registered in school_coaches).
+      const extraCoachIds = teamCoachCoachIds.filter((cid) => !userById.has(cid));
+      if (extraCoachIds.length > 0) {
+        const { data: extraUsers } = await supabase
           .from("users")
           .select("id, first_name, last_name")
-          .in("id", scCoachIds);
-        console.log("[admin/schools] team-coach users:", scUsers, "err:", scUserErr);
-        for (const u of (scUsers as Record<string, unknown>[] | null) || []) {
-          scUserById.set(u.id as string, {
-            first_name: (u.first_name as string) ?? "",
-            last_name: (u.last_name as string) ?? "",
-          });
+          .in("id", extraCoachIds);
+        for (const u of (extraUsers as Record<string, unknown>[] | null) || []) {
+          userById.set(u.id as string, u);
         }
       }
-      for (const r of (scRes.data as Record<string, unknown>[] | null) || []) {
-        const tn = (r.team_name as string) || "";
-        const cid = r.coach_id as string | null;
-        if (!tn || !cid) continue;
-        const u = scUserById.get(cid);
-        if (!u) continue;
-        const full = `${u.first_name ?? ""} ${u.last_name ?? ""}`.trim();
-        if (full && !coachNameByTeamName.has(tn)) coachNameByTeamName.set(tn, full);
-      }
+
+      // Patch mappedCoaches with their teams + commit setCoaches.
+      const patchedCoaches: CoachRow[] = mappedCoaches.map((c) => ({
+        ...c,
+        teams: teamsByCoachId.get(c.id) ?? [],
+      }));
+      if (!cancelled) setCoaches(patchedCoaches);
 
       const mappedTeams: TeamRow[] = teamList.map((t) => {
         const sp = Array.isArray(t.sports) ? t.sports[0] : t.sports;
         // Accept either `name` or `nom` (schema varies by deployment)
         const teamName = (t.name as string) || (t.nom as string) || "—";
+        const tcEntry = coachByTeamId.get(t.id as string);
+        const coachUser = tcEntry ? userById.get(tcEntry.coachId) : null;
+        const coachName = coachUser
+          ? `${(coachUser as { first_name?: string }).first_name ?? ""} ${(coachUser as { last_name?: string }).last_name ?? ""}`.trim() || null
+          : null;
         return {
           id: t.id as string,
           nom: teamName,
           sport_name: (sp as { nom?: string } | null)?.nom ?? null,
-          coach_name: coachNameByTeamName.get(teamName) ?? null,
+          coach_name: coachName,
           created_at: (t.created_at as string) ?? null,
           athleteCount: teamAthleteCount.get(t.id as string) || 0,
         };
@@ -425,7 +463,7 @@ export default function AdminSchoolDetailPage({ params }: { params: Promise<{ id
           const athName = ath ? `${(ath.first_name as string) || ""} ${(ath.last_name as string) || ""}`.trim() : null;
           const cid = r.coach_id as string | null;
           const cn = cid ? (() => {
-            const u = scUserById.get(cid) || userById.get(cid);
+            const u = userById.get(cid);
             if (!u) return null;
             return `${(u as { first_name?: string }).first_name ?? ""} ${(u as { last_name?: string }).last_name ?? ""}`.trim() || null;
           })() : null;
@@ -844,13 +882,19 @@ export default function AdminSchoolDetailPage({ params }: { params: Promise<{ id
                           ) : <span className="text-[#4a4d56]">—</span>}
                         </td>
                         <td className="px-4 py-3 text-[#9CA3AF]">
-                          {c.sport || c.team_name ? (
-                            <span>
-                              {c.sport && <span className="text-white">{c.sport}</span>}
-                              {c.sport && c.team_name && <span className="text-[#4a4d56] mx-1">·</span>}
-                              {c.team_name && <span>{c.team_name}</span>}
-                            </span>
-                          ) : <span className="text-[#4a4d56]">—</span>}
+                          {(() => {
+                            const teamsStr = c.teams.length > 0 ? c.teams.join(", ") : "";
+                            if (!c.sport && !teamsStr) {
+                              return <span className="text-[#4a4d56]">—</span>;
+                            }
+                            return (
+                              <span>
+                                {c.sport && <span className="text-white">{c.sport}</span>}
+                                {c.sport && teamsStr && <span className="text-[#4a4d56] mx-1">·</span>}
+                                {teamsStr && <span>{teamsStr}</span>}
+                              </span>
+                            );
+                          })()}
                         </td>
                         <td className="px-4 py-3 text-[#9CA3AF]">{frRelative(c.created_at)}</td>
                         <td className="px-4 py-3 text-right tabular-nums">{c.athleteCount}</td>
