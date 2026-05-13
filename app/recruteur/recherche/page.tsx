@@ -407,13 +407,15 @@ function RechercheContent() {
       if (verifiedOnly) query = query.eq("verified", true);
       if (withVideoOnly) query = query.not("video_faits_saillants_url", "is", null);
       // Post-Phase 6.1 unified model : civil athletes are anchored to a
-      // LIGUE_CIVILE school, école/CÉGEP athletes to SECONDAIRE/CEGEP. We
-      // filter via the embed schools.type — orphan athletes (school_id
-      // NULL) are excluded from both buckets since they have no type.
-      if (orgType === "scolaire") {
-        query = query.not("school_id", "is", null).eq("schools.type", "SECONDAIRE");
-      } else if (orgType === "ligue_civile") {
-        query = query.not("school_id", "is", null).eq("schools.type", "LIGUE_CIVILE");
+      // LIGUE_CIVILE school, école/CÉGEP athletes to SECONDAIRE/CEGEP.
+      // 6.2.f-hotfix : .eq("schools.type", X) on an embed column is
+      // silently ignored by Supabase JS v2 — the filter never reaches
+      // the wire. Server-side we just exclude orphans (school_id NULL)
+      // when a type filter is requested ; the actual type discriminator
+      // runs client-side post-map (see below) where each row already
+      // has its orgType derived from schoolRel.type.
+      if (orgType === "scolaire" || orgType === "ligue_civile") {
+        query = query.not("school_id", "is", null);
       }
       if (minGpa) query = query.gte("moyenne_generale", parseFloat(minGpa));
       if (minRating) query = query.gte("cote_globale_entraineur", parseFloat(minRating));
@@ -528,7 +530,14 @@ function RechercheContent() {
           };
         });
         if (mapped[0]) console.log("AFTER MAP:", { name: mapped[0].firstName, jersey: mapped[0].jersey, sport: mapped[0].sport, sportName: mapped[0].sportName, position: mapped[0].position });
-        setAthletes(mapped);
+
+        // 6.2.f-hotfix : type filter applied client-side (the equivalent
+        // server-side .eq on schools.type embed was silently ignored).
+        const finalAthletes = orgType
+          ? mapped.filter((a) => a.orgType === orgType)
+          : mapped;
+
+        setAthletes(finalAthletes);
       }
 
       setLoading(false);
