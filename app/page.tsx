@@ -3,7 +3,6 @@
 import { useEffect } from "react";
 import NexusLogo from "@/components/ui/NexusLogo";
 import Link from "next/link";
-import { Building2, ShieldCheck, BadgeCheck } from "lucide-react";
 import PlaybookBackground from "./components/PlaybookBackground";
 import MarketingNav from "@/components/marketing/MarketingNav";
 
@@ -55,9 +54,6 @@ export default function Home() {
       ══════════════════════════════════════════ */}
       <section className="relative overflow-hidden bg-transparent min-h-[calc(100vh-72px)] lg:min-h-[calc(100vh-72px)]">
 
-        {/* Giant NEXUS watermark (background layer) */}
-        <div className="nx-watermark" aria-hidden>NEXUS</div>
-
         {/* Extra red atmospheric glow centered on card */}
         <div className="nx-hero-glow" aria-hidden />
 
@@ -78,7 +74,7 @@ export default function Home() {
         <div className="relative z-10 max-w-7xl mx-auto px-6 pt-12 pb-32 lg:pt-0 lg:pb-0 lg:min-h-[calc(100vh-72px)]">
 
           {/* ── Athlete card v30 — UNCHANGED, just repositioned ── */}
-          <div className="flex justify-center mb-16 lg:mb-0 lg:absolute lg:top-1/2 lg:right-[6%] lg:-translate-y-1/2 lg:z-20">
+          <div className="flex justify-center mb-16 lg:mb-0 lg:absolute lg:top-1/2 lg:right-[3%] lg:-translate-y-1/2 lg:scale-125 lg:origin-right lg:z-20">
             <div className="nx-v30-wrap relative" style={{ width: 340, paddingTop: 6, paddingBottom: 10 }}>
 
               {/* Verified badge — 3D lapel pin */}
@@ -165,7 +161,7 @@ export default function Home() {
                 href="/inscription?role=ATHLETE"
                 className="inline-flex items-center gap-3 h-12 px-7 bg-[#E63946] text-white font-head font-black text-sm uppercase tracking-widest hover:bg-[#D42B22] hover:-translate-y-0.5 hover:shadow-[0_12px_40px_rgba(230,57,70,0.4)] transition-all rounded"
               >
-                Créer mon profil
+                Sois le next
                 <span aria-hidden>→</span>
               </Link>
 
@@ -179,30 +175,6 @@ export default function Home() {
                 Voir comment ça marche
               </Link>
             </div>
-          </div>
-
-          {/* ── Bottom rail — trust badges + scroll cue (lg only, absolute) ── */}
-          <div className="hidden lg:flex absolute bottom-6 left-0 right-0 px-14 z-30 items-center justify-between">
-            <div className="flex items-center gap-5 text-[10px] font-bold tracking-[0.2em] uppercase text-white/35">
-              <span className="inline-flex items-center gap-2"><Building2 size={14} strokeWidth={2} />Hébergé au Québec</span>
-              <span className="text-white/15">·</span>
-              <span className="inline-flex items-center gap-2"><ShieldCheck size={14} strokeWidth={2} />Conforme Loi 25</span>
-              <span className="text-white/15">·</span>
-              <span className="inline-flex items-center gap-2"><BadgeCheck size={14} strokeWidth={2} />Profils vérifiés</span>
-              <span className="text-white/15">·</span>
-              <span>16 sports · 70+ CÉGEPS</span>
-            </div>
-            <div className="flex flex-col items-center gap-2 text-[10px] font-bold tracking-[0.25em] text-white/40">
-              <span>SCROLL</span>
-              <div className="nx-scroll-line" />
-            </div>
-          </div>
-
-          {/* Mobile-only trust row (replaces deleted Section 3) */}
-          <div className="lg:hidden mt-12 flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-[10px] font-bold tracking-[0.2em] uppercase text-white/45">
-            <span className="inline-flex items-center gap-2"><Building2 size={14} strokeWidth={2} />Hébergé au Québec</span>
-            <span className="inline-flex items-center gap-2"><ShieldCheck size={14} strokeWidth={2} />Conforme Loi 25</span>
-            <span className="inline-flex items-center gap-2"><BadgeCheck size={14} strokeWidth={2} />Profils vérifiés</span>
           </div>
 
         </div>

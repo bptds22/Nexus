@@ -934,32 +934,6 @@ body.light-mode .nx-social-auth-btn:hover {
    See app/page.tsx Section 1 hero
 ══════════════════════════════════════════════════════════════ */
 
-/* Giant NEXUS watermark — background depth layer */
-.nx-watermark {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-family: var(--font-heading), "Barlow Condensed", sans-serif;
-  font-weight: 900;
-  font-size: clamp(220px, 24vw, 460px);
-  color: #fff;
-  opacity: 0.025;
-  letter-spacing: -0.05em;
-  line-height: 1;
-  pointer-events: none;
-  z-index: 1;
-  white-space: nowrap;
-  -webkit-user-select: none;
-  user-select: none;
-}
-
-/* Light mode: slightly darker watermark for legibility */
-body.light-mode .nx-watermark {
-  color: #0d1117;
-  opacity: 0.04;
-}
-
 /* Dramatic red atmospheric glow centered on the athlete card */
 .nx-hero-glow {
   position: absolute;
@@ -1026,28 +1000,10 @@ body.light-mode .nx-particle.blue { color: rgba(37, 99, 235, 0.4); }
   50%      { transform: translateY(-6px); }
 }
 
-/* Scroll cue pulsing line */
-.nx-scroll-line {
-  width: 1px;
-  height: 28px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.4), transparent);
-  animation: nxScrollPulse 2s ease-in-out infinite;
-  transform-origin: top;
-}
-body.light-mode .nx-scroll-line {
-  background: linear-gradient(180deg, rgba(13, 17, 23, 0.4), transparent);
-}
-
-@keyframes nxScrollPulse {
-  0%, 100% { opacity: 0.3; transform: scaleY(0.7); }
-  50%      { opacity: 1;   transform: scaleY(1); }
-}
-
 /* Respect reduced motion — kill all hero v2 animations */
 @media (prefers-reduced-motion: reduce) {
   .nx-particle,
-  .nx-v30-wrap,
-  .nx-scroll-line {
+  .nx-v30-wrap {
     animation: none !important;
   }
 }
