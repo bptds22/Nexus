@@ -65,24 +65,11 @@ const SCHOOL_ITEMS: NavItem[] = [
   },
 ];
 
-// Civil-context core items (5.5e-i): "Découvrir" replaces "Mes
-// athlètes" (civils discover orphan athletes via the new route),
-// and the entire "Gestion école" section is hidden. Items are
-// referenced from CORE_ITEMS by href to stay resilient if the
-// école item order changes; if a CORE_ITEMS href is renamed we'll
-// catch it via the non-null assertion at runtime.
-const findCoreItem = (href: string): NavItem => {
-  const found = CORE_ITEMS.find((i) => i.href === href);
-  if (!found) throw new Error(`CoachSidebar: CORE_ITEMS missing expected href ${href}`);
-  return found;
-};
-
-const CIVIL_ITEMS: NavItem[] = [
-  findCoreItem("/coach/tableau-de-bord"),
-  findCoreItem("/coach/equipes"),
-  findCoreItem("/coach/demandes"),
-  findCoreItem("/coach/activites"),
-];
+// Phase 6.2.e : civil + école coaches now share CORE_ITEMS post-
+// unification. "Mes athlètes" est visible aux civils aussi (la page
+// supporte le flow invitation par email via 6.2.c-2). SCHOOL_ITEMS
+// reste gaté sur !isCivil pour les features admin école (Mon école,
+// Coachs école, Stats, Analytique, Placements, Inviter coachs).
 
 const BOTTOM_ITEMS: NavItem[] = [
   {
@@ -174,21 +161,31 @@ export default function CoachSidebar({ mobileOpen, onClose }: CoachSidebarProps)
 
         if (userCtx?.context === "ligue_civile") {
           setIsCivil(true);
-          // Get league info for subtitle
-          const { data: leagueCoach } = await supabase
-            .from("league_coaches")
-            .select("league_id, league_team_id, leagues(name), league_teams(name)")
+          // Phase 6.2.e : league info for subtitle via unified tables.
+          // school_coaches gives us the LIGUE_CIVILE school (= ligue);
+          // team_coaches gives us the team. Pick first non-null pair.
+          const { data: scRow } = await supabase
+            .from("school_coaches")
+            .select("school_id, schools!school_id(name, type)")
+            .eq("coach_id", user.id)
+            .limit(1)
+            .maybeSingle();
+          const { data: tcRow } = await supabase
+            .from("team_coaches")
+            .select("team_id, teams!team_id(name)")
             .eq("coach_id", user.id)
             .limit(1)
             .maybeSingle();
 
-          console.log("[CoachSidebar] League coach data:", leagueCoach);
+          const schoolRel = scRow ? (scRow as Record<string, unknown>).schools : null;
+          const school = (Array.isArray(schoolRel) ? schoolRel[0] : schoolRel) as { name?: string; type?: string } | null;
+          const leagueName = school?.name || "";
 
-          if (leagueCoach) {
-            const leagueName = (leagueCoach as any).leagues?.name || "";
-            const teamName = (leagueCoach as any).league_teams?.name || "";
-            setUserSub(teamName ? `${teamName} — ${leagueName}` : leagueName);
-          }
+          const teamRel = tcRow ? (tcRow as Record<string, unknown>).teams : null;
+          const team = (Array.isArray(teamRel) ? teamRel[0] : teamRel) as { name?: string } | null;
+          const teamName = team?.name || "";
+
+          setUserSub(teamName ? `${teamName} — ${leagueName}` : leagueName);
         } else {
           // School context — check school_coaches for role label
           const { data: coachEntry } = await supabase
@@ -257,10 +254,10 @@ export default function CoachSidebar({ mobileOpen, onClose }: CoachSidebarProps)
 
       {/* Nav links */}
       <nav className="flex-1 px-3 py-5 space-y-1 overflow-y-auto">
-        {/* ── Core section: CIVIL_ITEMS for ligue_civile, CORE_ITEMS for
+        {/* ── Core section: unified post-Phase 6.2.e — CORE_ITEMS for
             école/scolaire/NULL. Civil swaps "Mes athlètes" for
             "Découvrir" and hides the Gestion école group below. ── */}
-        {(isCivil ? CIVIL_ITEMS : CORE_ITEMS).map((item) => renderNavItem(item))}
+        {CORE_ITEMS.map((item) => renderNavItem(item))}
 
         {/* ── Gestion École section (école admin only — never for civil) ── */}
         {!isCivil && isAdmin && (
