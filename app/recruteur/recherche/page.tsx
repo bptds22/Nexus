@@ -12,7 +12,7 @@ import { isValidationExpired } from "@/lib/utils/profileValidation";
 import AthletePhoto from "@/components/shared/AthletePhoto";
 import AthletePhotoFill from "@/components/shared/AthletePhotoFill";
 
-type ExtendedAthlete = SearchAthlete & { academicBadges: string[]; stars: number; recruitmentStatus: string | null; heightWeight: string; gpa: number; committedSchoolName: string | null; openToOffers: boolean | null; jersey: string; sportName: string; ouvertDemenager: boolean; ouvertPrive: boolean; ouvertAnglophone: boolean; createdAt: string; lastValidation?: string | null; noTeam: boolean };
+type ExtendedAthlete = SearchAthlete & { academicBadges: string[]; stars: number; recruitmentStatus: string | null; heightWeight: string; gpa: number; committedSchoolName: string | null; openToOffers: boolean | null; jersey: string; sportName: string; ouvertDemenager: boolean; ouvertPrive: boolean; ouvertAnglophone: boolean; createdAt: string; lastValidation?: string | null; noTeam: boolean; context: string | null };
 import { useSubscription } from "@/lib/hooks/useSubscription";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -393,6 +393,7 @@ function RechercheContent() {
           positions!position_id(nom, abreviation),
           schools!school_id(name, region, type),
           committed_school:schools!committed_school_id(name),
+          users!user_id(context),
           evaluations(distinctions)
         `)
         .eq("status", "ACTIF");
@@ -468,6 +469,7 @@ function RechercheContent() {
           const schoolRel = Array.isArray(a.schools) ? a.schools[0] : a.schools;
           const committedSchoolRel = Array.isArray(a.committed_school) ? a.committed_school[0] : a.committed_school;
           const evalRel = Array.isArray(a.evaluations) ? a.evaluations[0] : a.evaluations;
+          const userRel = Array.isArray(a.users) ? a.users[0] : a.users;
           const distinctions: string[] = ((evalRel as Record<string, unknown> | null)?.distinctions as string[]) || [];
           return {
             id: a.id as string,
@@ -525,16 +527,24 @@ function RechercheContent() {
             // athletes with a team are anchored via school_id to a
             // LIGUE_CIVILE school.
             noTeam: !a.school_id,
+            // 6.3-followup-2 : users.context drives orphan classification.
+            // 'ligue_civile' explicit ; NULL/'scolaire' default to scolaire.
+            context: ((userRel as Record<string, unknown> | null)?.context as string | null) ?? null,
           };
         });
         if (mapped[0]) console.log("AFTER MAP:", { name: mapped[0].firstName, jersey: mapped[0].jersey, sport: mapped[0].sport, sportName: mapped[0].sportName, position: mapped[0].position });
 
         // 6.2.f-hotfix : type filter applied client-side (the equivalent
         // server-side .eq on schools.type embed was silently ignored).
-        // 6.3-followup : orphans (noTeam) bypass the type filter — they
-        // are unanchored "libres" athletes and show under any org type.
+        // 6.3-followup-2 : anchored athletes match on schools.type-derived
+        // orgType ; orphans (noTeam) match on their users.context d'origine
+        // ('ligue_civile' explicit, else scolaire). Pattern positif sur
+        // 'ligue_civile' car NULL = scolaire/legacy default.
         const finalAthletes = orgType
-          ? mapped.filter((a) => a.noTeam || a.orgType === orgType)
+          ? mapped.filter((a) =>
+              a.orgType === orgType ||
+              (a.noTeam && (a.context === "ligue_civile" ? "ligue_civile" : "scolaire") === orgType)
+            )
           : mapped;
 
         setAthletes(finalAthletes);
