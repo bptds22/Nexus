@@ -409,14 +409,12 @@ function RechercheContent() {
       // Post-Phase 6.1 unified model : civil athletes are anchored to a
       // LIGUE_CIVILE school, école/CÉGEP athletes to SECONDAIRE/CEGEP.
       // 6.2.f-hotfix : .eq("schools.type", X) on an embed column is
-      // silently ignored by Supabase JS v2 — the filter never reaches
-      // the wire. Server-side we just exclude orphans (school_id NULL)
-      // when a type filter is requested ; the actual type discriminator
-      // runs client-side post-map (see below) where each row already
-      // has its orgType derived from schoolRel.type.
-      if (orgType === "scolaire" || orgType === "ligue_civile") {
-        query = query.not("school_id", "is", null);
-      }
+      // silently ignored by Supabase JS v2 — the type discriminator runs
+      // client-side post-map (see below) where each row already has its
+      // orgType derived from schoolRel.type.
+      // 6.3-followup : orphans (school_id NULL) are "libres" athletes and
+      // must show regardless of the active type filter — so we no longer
+      // exclude them server-side ; the client-side filter keeps them in.
       if (minGpa) query = query.gte("moyenne_generale", parseFloat(minGpa));
       if (minRating) query = query.gte("cote_globale_entraineur", parseFloat(minRating));
       if (filterOuvertDemenager) query = query.eq("pret_changer_region", true);
@@ -533,8 +531,10 @@ function RechercheContent() {
 
         // 6.2.f-hotfix : type filter applied client-side (the equivalent
         // server-side .eq on schools.type embed was silently ignored).
+        // 6.3-followup : orphans (noTeam) bypass the type filter — they
+        // are unanchored "libres" athletes and show under any org type.
         const finalAthletes = orgType
-          ? mapped.filter((a) => a.orgType === orgType)
+          ? mapped.filter((a) => a.noTeam || a.orgType === orgType)
           : mapped;
 
         setAthletes(finalAthletes);
