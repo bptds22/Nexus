@@ -393,7 +393,7 @@ function RechercheContent() {
           positions!position_id(nom, abreviation),
           schools!school_id(name, region, type),
           committed_school:schools!committed_school_id(name),
-          users!user_id(context),
+          context,
           evaluations(distinctions)
         `)
         .eq("status", "ACTIF");
@@ -469,7 +469,6 @@ function RechercheContent() {
           const schoolRel = Array.isArray(a.schools) ? a.schools[0] : a.schools;
           const committedSchoolRel = Array.isArray(a.committed_school) ? a.committed_school[0] : a.committed_school;
           const evalRel = Array.isArray(a.evaluations) ? a.evaluations[0] : a.evaluations;
-          const userRel = Array.isArray(a.users) ? a.users[0] : a.users;
           const distinctions: string[] = ((evalRel as Record<string, unknown> | null)?.distinctions as string[]) || [];
           return {
             id: a.id as string,
@@ -531,9 +530,12 @@ function RechercheContent() {
             // athletes with a team are anchored via school_id to a
             // LIGUE_CIVILE school.
             noTeam: !a.school_id,
-            // 6.3-followup-2 : users.context drives orphan classification.
-            // 'ligue_civile' explicit ; NULL/'scolaire' default to scolaire.
-            context: ((userRel as Record<string, unknown> | null)?.context as string | null) ?? null,
+            // 6.3-followup-4 : context denormalized onto athletes (users
+            // table is RLS-blocked for recruiter -> athlete user rows, so
+            // the old users!user_id(context) embed silently returned null).
+            // Drives orphan classification — 'ligue_civile' explicit,
+            // NULL/'scolaire' default to scolaire.
+            context: (a.context as string | null) ?? null,
           };
         });
         if (mapped[0]) console.log("AFTER MAP:", { name: mapped[0].firstName, jersey: mapped[0].jersey, sport: mapped[0].sport, sportName: mapped[0].sportName, position: mapped[0].position });
