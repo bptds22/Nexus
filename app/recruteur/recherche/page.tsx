@@ -513,11 +513,15 @@ function RechercheContent() {
             commitmentStatus: "aucun",
             // Post-Phase 6.1 : orgType derives from the schools.type
             // discriminator on the embed (LIGUE_CIVILE vs SECONDAIRE/CEGEP).
-            // Orphan athletes (school_id NULL) fall back to "ligue_civile"
-            // so the "Ligue Civile" label still applies to unanchored rows.
-            orgType: (((schoolRel as Record<string, string> | null)?.type === "LIGUE_CIVILE") || !a.school_id
-              ? "ligue_civile"
-              : "scolaire") as "scolaire" | "ligue_civile",
+            // 6.3-followup-3 : orphans (school_id NULL) get undefined orgType
+            // — they are classified by users.context in the type filter's
+            // Branche 2, not by a civil fallback here (which mis-bucketed
+            // scolaire orphans under "Ligue civile").
+            orgType: (!a.school_id
+              ? undefined
+              : (schoolRel as Record<string, string> | null)?.type === "LIGUE_CIVILE"
+                ? "ligue_civile"
+                : "scolaire") as "scolaire" | "ligue_civile" | undefined,
             ouvertDemenager: a.pret_changer_region === true,
             ouvertPrive: a.ouvert_cegep_prive === true,
             ouvertAnglophone: a.ouvert_cegep_anglophone === true,
