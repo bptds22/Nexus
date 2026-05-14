@@ -66,9 +66,9 @@ export default function PendingInvitations({
         .from("team_invitations")
         .select(`
           id,
-          league_team_id,
+          team_id,
           created_at,
-          league_teams!league_team_id(
+          teams!team_id(
             name,
             sports!sport_id(nom)
           ),
@@ -85,7 +85,7 @@ export default function PendingInvitations({
 
       const mapped: PendingInvitation[] = (data ?? []).map((row) => {
         const r = row as Record<string, unknown>;
-        const teamRel = r.league_teams as Record<string, unknown> | Record<string, unknown>[] | null;
+        const teamRel = r.teams as Record<string, unknown> | Record<string, unknown>[] | null;
         const team = (Array.isArray(teamRel) ? teamRel[0] : teamRel) ?? {};
         const sportRel = (team as Record<string, unknown>).sports as { nom?: string } | { nom?: string }[] | null;
         const sport = Array.isArray(sportRel) ? sportRel[0] : sportRel;
@@ -94,7 +94,7 @@ export default function PendingInvitations({
 
         return {
           id: r.id as string,
-          teamId: r.league_team_id as string,
+          teamId: r.team_id as string,
           teamName: ((team as { name?: string }).name) || "",
           sportName: sport?.nom || "",
           coachFirstName: ((coach as { first_name?: string }).first_name) || "",

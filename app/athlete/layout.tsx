@@ -80,7 +80,7 @@ function AthleteSidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose:
 
     const { data: athlete } = await supabase
       .from("athletes")
-      .select("id, first_name, last_name, verified, league_team_id, sports!sport_id(nom), positions!position_id(abreviation), schools!school_id(name), league_teams!league_team_id(name)")
+      .select("id, first_name, last_name, verified, sports!sport_id(nom), positions!position_id(abreviation), schools!school_id(name), team_athletes(teams!team_id(name))")
       .eq("user_id", user.id)
       .single();
     if (!athlete) return;
@@ -102,10 +102,14 @@ function AthleteSidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose:
     // (P3 logged for proper consolidation).
     const aRec = athlete as Record<string, unknown>;
     const schoolRel = aRec.schools as { name?: string } | null;
-    const leagueTeamRel = aRec.league_teams;
-    const leagueTeam = (Array.isArray(leagueTeamRel) ? leagueTeamRel[0] : leagueTeamRel) as { name?: string } | null;
+    // Phase 6.2.h : team name read from team_athletes junction (replaces
+    // legacy league_teams!league_team_id embed).
+    const taRel = aRec.team_athletes;
+    const taRow = (Array.isArray(taRel) ? taRel[0] : taRel) as { teams?: unknown } | null;
+    const teamRelRaw = taRow?.teams;
+    const teamRow = (Array.isArray(teamRelRaw) ? teamRelRaw[0] : teamRelRaw) as { name?: string } | null;
     const affiliationLabel = isCivil
-      ? (leagueTeam?.name ?? "Ligue Civile")
+      ? (teamRow?.name ?? "Ligue Civile")
       : (schoolRel?.name ?? "");
 
     setUserInfo({

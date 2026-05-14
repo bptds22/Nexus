@@ -481,14 +481,23 @@ export default function CreateAthletePage() {
       if (userProfile?.context === "ligue_civile") {
         setUserContext("ligue_civile");
 
-        const { data: teams } = await supabase
-          .from("league_teams")
-          .select("id, name, league_id, leagues(name, city, region)")
-          .eq("owner_id", authUser.id);
+        // Phase 6.2.h : civil teams now read via team_coaches junction
+        // (replaces legacy league_teams.owner_id lookup).
+        const { data: tcRows } = await supabase
+          .from("team_coaches")
+          .select("teams!team_id(id, name)")
+          .eq("coach_id", authUser.id);
 
-        console.log("[CreateAthlete] League teams for user:", teams);
+        const teams = (tcRows ?? [])
+          .map((r) => {
+            const t = (r as { teams?: unknown }).teams;
+            return (Array.isArray(t) ? t[0] : t) as { id?: string; name?: string } | null;
+          })
+          .filter((t): t is { id: string; name: string } => !!t?.id);
 
-        if (teams && teams.length > 0) {
+        console.log("[CreateAthlete] Civil teams for coach:", teams);
+
+        if (teams.length > 0) {
           setLeagueTeamId(teams[0].id);
           setLeagueTeamName(teams[0].name || "");
         }
@@ -661,10 +670,13 @@ export default function CreateAthletePage() {
     }
 
     // Build athlete record
+    // Phase 6.2.h : league_team_id field retiré — civil athletes carry
+    // their LIGUE_CIVILE school_id (post-unification, coach's school_id
+    // points to the right school in both contexts). Team membership is
+    // recorded via team_athletes insert downstream.
     const athleteRecord = {
       coach_id: authUser.id,
-      school_id: leagueTeamId ? null : (coachProfile?.school_id || null),
-      league_team_id: leagueTeamId || null,
+      school_id: coachProfile?.school_id || null,
 
       // Identity
       first_name: form.identity.firstName,

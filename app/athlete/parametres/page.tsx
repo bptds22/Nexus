@@ -108,7 +108,6 @@ export default function ParametresPage() {
       .from("athletes")
       .select(`
         school_id,
-        league_team_id,
         coach_id,
         date_naissance,
         consentement_parental,
@@ -117,7 +116,7 @@ export default function ParametresPage() {
         partner_visibility_opted_in_at,
         partner_visibility_parental_consent,
         schools!school_id(name),
-        league_teams!league_team_id(name, leagues!league_id(name)),
+        team_athletes(team_id, teams!team_id(name, schools!school_id(name, type))),
         users!athletes_coach_id_fkey(first_name, last_name, photo_url)
       `)
       .eq("user_id", user.id)
@@ -129,15 +128,21 @@ export default function ParametresPage() {
       .eq("id", user.id)
       .maybeSingle();
     const schoolRel = Array.isArray(row.schools) ? row.schools[0] : row.schools;
-    const teamRel = Array.isArray(row.league_teams) ? row.league_teams[0] : row.league_teams;
-    const leagueRel = teamRel ? (Array.isArray(teamRel.leagues) ? teamRel.leagues[0] : teamRel.leagues) : null;
+    // Phase 6.2.h : team + parent league name now derived from
+    // team_athletes → teams → schools (civil league school = parent).
+    const taRel = Array.isArray(row.team_athletes) ? row.team_athletes[0] : row.team_athletes;
+    const taRow = taRel as { team_id?: string; teams?: unknown } | null;
+    const teamRelRaw = taRow?.teams;
+    const teamRel = (Array.isArray(teamRelRaw) ? teamRelRaw[0] : teamRelRaw) as { name?: string; schools?: unknown } | null;
+    const leagueRelRaw = teamRel?.schools;
+    const leagueRel = (Array.isArray(leagueRelRaw) ? leagueRelRaw[0] : leagueRelRaw) as { name?: string } | null;
     const coachRel = Array.isArray(row.users) ? row.users[0] : row.users;
     setProfile({
       email: user.email ?? "",
       context: (userRow?.context as string | null) ?? null,
       schoolId: (row.school_id as string) ?? "",
       schoolName: schoolRel?.name ?? "",
-      leagueTeamId: (row.league_team_id as string | null) ?? null,
+      leagueTeamId: taRow?.team_id ?? null,
       leagueTeamName: teamRel?.name ?? "",
       leagueName: leagueRel?.name ?? "",
       coachId: (row.coach_id as string | null) ?? null,
