@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Barlow_Condensed, Outfit } from "next/font/google";
 import "./globals.css";
 import { GrainOverlay } from "@/components/editorial";
-import PageTransition from "@/components/PageTransition";
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -39,7 +38,7 @@ export default function RootLayout({
     <html lang="fr" data-theme="dark">
       <body className={`${outfit.variable} ${barlowCondensed.variable} antialiased`}>
         <GrainOverlay />
-        <PageTransition>{children}</PageTransition>
+        {children}
       </body>
     </html>
   );
