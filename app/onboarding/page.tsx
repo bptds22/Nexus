@@ -552,8 +552,21 @@ export default function OnboardingPage() {
       // since neither has a dedicated column. Rewriting profile_data
       // here also wipes orphan keys (e.g. pre-5.4a sports_secondaires
       // from legacy wizard completions) — see post-launch-bugs P3.
+      // Item 11-Security: a school coach who picks Directeur/Interim
+      // (school_admin_type set + role=coach + context!=ligue_civile)
+      // must go through admin_claims PENDING review before
+      // is_school_admin = true is granted. Civil coach + cegep
+      // recruiter paths are out of scope for the claim workflow and
+      // continue to set is_school_admin immediately on finish.
+      const isSchoolCoachAdminClaim =
+        user?.role === "coach"
+        && localUser.context !== "ligue_civile"
+        && (localUser.school_admin_type === "owner" || localUser.school_admin_type === "interim");
+
       const adminUpdates: Record<string, unknown> = {};
-      if (localUser.is_school_admin === true) adminUpdates.is_school_admin = true;
+      if (localUser.is_school_admin === true && !isSchoolCoachAdminClaim) {
+        adminUpdates.is_school_admin = true;
+      }
       const profileData = {
         bio: localUser.profile?.bio || null,
         experience_years: localUser.profile?.experience_years || null,
@@ -594,6 +607,25 @@ export default function OnboardingPage() {
             role: "COACH",
             sport: localUser.profile?.sport_principal || null,
           }, { onConflict: "coach_id,school_id" });
+
+          // Item 11-Security: file the admin_claims row when a school
+          // coach claimed Directeur or Interim during DirectorChoiceStep.
+          // The user lands on the dashboard with is_school_admin = false
+          // (defer until APPROVED) and the PendingAdminClaimBanner
+          // surfaces the review state. Trigger lives in a follow-up
+          // migration; for now nothing flips is_school_admin on its own.
+          if (isSchoolCoachAdminClaim) {
+            const claimType = localUser.school_admin_type === "owner" ? "DIRECTEUR" : "INTERIM";
+            const { error: claimErr } = await supabase
+              .from("admin_claims")
+              .insert({
+                user_id: authUser.id,
+                school_id: school.id,
+                claim_type: claimType,
+                status: "PENDING",
+              });
+            if (claimErr) console.error("[Onboarding] admin_claims insert:", claimErr);
+          }
         }
       }
 
@@ -769,6 +801,7 @@ function CoachStep({ step, user, save }: { step: number; user: NexusUser; save: 
 function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: Partial<NexusUser>) => void; type: "school" | "league" | "cegep" }) {
   const isLeague = type === "league";
   const isCegep = type === "cegep";
+  const isSchool = type === "school";
   // Civil-coach onboarding flow uses "coach principal" terminology
   // (the team's senior coach), not "coordonnateur" (which describes
   // the separate `coordinator_league` role onboarded via
@@ -780,12 +813,66 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
     ? (user.institution as Record<string, string>)?.name || "ton organisation"
     : "ton organisation";
 
-  const [choice, setChoice] = useState<"self" | "invite" | "interim" | "">("");
+  const [choice, setChoice] = useState<"self" | "invite" | "interim" | "coach_only" | "">("");
   const [selfEmail, setSelfEmail] = useState(user.email || "");
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteFirstName, setInviteFirstName] = useState("");
   const [inviteLastName, setInviteLastName] = useState("");
   const [inviteMessage, setInviteMessage] = useState("");
+
+  // Item 11: query the selected school's existing admin state so the
+  // wizard can hide options that are already taken. Only applies to
+  // school context — league + cegep paths keep their current 2-option
+  // UI (out of scope for the admin_claims workflow).
+  //
+  // Rules: hide "self"/"invite" if a permanent Directeur exists;
+  // hide "interim" if any admin (permanent or interim) already exists.
+  // "coach_only" is always available.
+  const [schoolAdminState, setSchoolAdminState] = useState<{ hasPermanent: boolean; hasInterim: boolean; loading: boolean }>({ hasPermanent: false, hasInterim: false, loading: true });
+
+  useEffect(() => {
+    if (!isSchool || !user.institution) {
+      setSchoolAdminState({ hasPermanent: false, hasInterim: false, loading: false });
+      return;
+    }
+    const inst = user.institution as Record<string, unknown>;
+    const instName = inst?.name as string | undefined;
+    if (!instName) {
+      setSchoolAdminState({ hasPermanent: false, hasInterim: false, loading: false });
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const supabase = createClient();
+      const { data: school } = await supabase.from("schools").select("id").eq("name", instName).maybeSingle();
+      if (cancelled) return;
+      if (!school) {
+        setSchoolAdminState({ hasPermanent: false, hasInterim: false, loading: false });
+        return;
+      }
+      const { data: admins } = await supabase
+        .from("users")
+        .select("profile_data")
+        .eq("school_id", school.id)
+        .eq("is_school_admin", true);
+      if (cancelled) return;
+      const hasPermanent = !!admins?.some((a) => {
+        const pd = a.profile_data as Record<string, unknown> | null;
+        return pd?.admin_type === "owner";
+      });
+      const hasInterim = !!admins?.some((a) => {
+        const pd = a.profile_data as Record<string, unknown> | null;
+        return pd?.admin_type === "interim";
+      });
+      setSchoolAdminState({ hasPermanent, hasInterim, loading: false });
+    })();
+    return () => { cancelled = true; };
+  }, [isSchool, user.institution]);
+
+  const showSelf = !isSchool || !schoolAdminState.hasPermanent;
+  const showInvite = !isSchool || !schoolAdminState.hasPermanent;
+  const showInterim = isSchool && !schoolAdminState.hasPermanent && !schoolAdminState.hasInterim;
+  const showCoachOnly = isSchool;
 
   const inputCls = "w-full bg-[#111317] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white placeholder:text-[#6B7280] focus:border-[#E63946] outline-none transition-colors";
   const labelCls = "block text-[10px] font-bold tracking-[0.25em] uppercase text-[#6B7280] mb-1.5";
@@ -809,6 +896,15 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
         [coachKey]: true,
         [typeKey]: "interim",
       });
+    } else if (choice === "coach_only") {
+      // Item 11: explicit "Entraîneur seulement" — clear any prior
+      // admin flags the user may have toggled on/off in this step.
+      save({
+        [adminKey]: false,
+        [coachKey]: true,
+        [typeKey]: null,
+        pending_director_invite: null,
+      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [choice, selfEmail, inviteEmail, inviteFirstName, inviteLastName, inviteMessage]);
@@ -822,8 +918,33 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
         </p>
       </div>
 
-      <div className={`grid grid-cols-1 gap-4 ${type === "school" ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>
+      {/* Loading state — block UI until we know which options to show */}
+      {isSchool && schoolAdminState.loading ? (
+        <div className="flex items-center justify-center py-8">
+          <div className="w-6 h-6 border-2 border-[#E63946] border-t-transparent rounded-full animate-spin" />
+        </div>
+      ) : (
+      <>
+      {/* Status hint when admin slot is already filled (2nd+ coach case) */}
+      {isSchool && schoolAdminState.hasPermanent && (
+        <div className="bg-[#1A1D24]/60 border border-white/[0.06] rounded-lg px-4 py-3 text-[12px] text-[#9CA3AF]">
+          Un directeur sportif est déjà en place pour {orgName}. Tu peux rejoindre l&apos;équipe comme entraîneur.
+        </div>
+      )}
+      {isSchool && !schoolAdminState.hasPermanent && schoolAdminState.hasInterim && (
+        <div className="bg-[#1A1D24]/60 border border-white/[0.06] rounded-lg px-4 py-3 text-[12px] text-[#9CA3AF]">
+          Un directeur intérimaire est en place. Si tu deviens directeur permanent, il sera rétrogradé automatiquement.
+        </div>
+      )}
+
+      <div className={`grid grid-cols-1 gap-4 ${({
+        1: "sm:grid-cols-1",
+        2: "sm:grid-cols-2",
+        3: "sm:grid-cols-3",
+        4: "sm:grid-cols-4",
+      } as Record<number, string>)[[showSelf, showInvite, showInterim, showCoachOnly].filter(Boolean).length || 1]}`}>
         {/* Card 1: C'EST MOI */}
+        {showSelf && (
         <button
           type="button"
           onClick={() => setChoice("self")}
@@ -841,8 +962,10 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
           <span className="font-head font-black text-[13px] uppercase tracking-[0.1em] text-white">C&apos;est moi</span>
           <span className="text-[11px] text-[#6B7280] leading-snug">Je supervise le {isCegep ? "programme de recrutement de mon CÉGEP" : `programme sportif de mon ${isLeague ? "club" : "école"}`}</span>
         </button>
+        )}
 
         {/* Card 2: INVITER */}
+        {showInvite && (
         <button
           type="button"
           onClick={() => setChoice("invite")}
@@ -860,9 +983,10 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
           <span className="font-head font-black text-[13px] uppercase tracking-[0.1em] text-white">Inviter quelqu&apos;un</span>
           <span className="text-[11px] text-[#6B7280] leading-snug">J&apos;enverrai une invitation au {roleLabel}</span>
         </button>
+        )}
 
-        {/* Card 3: JE SERAI INTÉRIMAIRE — school coaches only */}
-        {type === "school" && (
+        {/* Card 3: JE SERAI INTÉRIMAIRE — school coaches only, only when no admin exists yet */}
+        {showInterim && (
           <button
             type="button"
             onClick={() => setChoice("interim")}
@@ -882,7 +1006,31 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
             <span className="text-[11px] text-[#6B7280] leading-snug">Aucun directeur sportif n&apos;est en place pour l&apos;instant — je vais assumer ce rôle temporairement</span>
           </button>
         )}
+
+        {/* Card 4: ENTRAÎNEUR SEULEMENT — Item 11 */}
+        {showCoachOnly && (
+          <button
+            type="button"
+            onClick={() => setChoice("coach_only")}
+            className={`flex flex-col items-center gap-3 p-5 rounded-xl border transition-all text-center ${
+              choice === "coach_only"
+                ? "border-[#E63946] bg-[rgba(230,57,70,0.08)]"
+                : "border-white/10 hover:border-white/20"
+            }`}
+          >
+            <div className={`w-12 h-12 rounded-full flex items-center justify-center ${choice === "coach_only" ? "bg-[#3B82F6]/20" : "bg-[#1A1D24]"}`}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
+            </div>
+            <span className="font-head font-black text-[13px] uppercase tracking-[0.1em] text-white">Entraîneur seulement</span>
+            <span className="text-[11px] text-[#6B7280] leading-snug">Pas de responsabilité administrative pour l&apos;instant — je m&apos;occupe juste de mes athlètes</span>
+          </button>
+        )}
       </div>
+      </>
+      )}
 
       {/* C'EST MOI expanded */}
       {choice === "self" && (

@@ -8,6 +8,7 @@ import { loadAthleteRaw, buildFormFromRaw } from "../../_data/loadAthleteFromSup
 import { BADGE_CONFIG, BADGE_ORDER, MAX_BADGES, MAX_DETAIL_LENGTH, getSportStats, type DistinctionEntry } from "@/lib/config/badges";
 import DistinctionBadge from "@/components/shared/DistinctionBadge";
 import StepIndicator from "../../../components/StepIndicator";
+import ReadOnlyIfPending from "@/components/auth/ReadOnlyIfPending";
 import TagInput from "../../../components/TagInput";
 import DatePicker from "../../../components/DatePicker";
 import SportPositionSelect from "../../../components/SportPositionSelect";
@@ -198,7 +199,9 @@ export default function ModifierPage({ params }: { params: Promise<{ id: string 
   const { id } = use(params);
   return (
     <Suspense>
-      <ModifierContent id={id} />
+      <ReadOnlyIfPending>
+        <ModifierContent id={id} />
+      </ReadOnlyIfPending>
     </Suspense>
   );
 }

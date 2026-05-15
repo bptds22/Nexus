@@ -13,6 +13,7 @@ import FormModeToggle from "../../components/FormModeToggle";
 import NxIcon from "@/components/ui/NxIcon";
 import { createClient } from "@/lib/supabase/client";
 import PartnerVisibilityConsentCard from "@/components/shared/PartnerVisibilityConsentCard";
+import ReadOnlyIfPending from "@/components/auth/ReadOnlyIfPending";
 import {
   autocompleteOrphanAthletesByEmail,
   type AthleteEmailAutocompleteResult,
@@ -1942,6 +1943,7 @@ export default function CreateAthletePage() {
   }
 
   return (
+    <ReadOnlyIfPending>
     <div className="px-6 sm:px-10 py-8 max-w-5xl mx-auto">
       <div className="flex items-center gap-2 text-[14px] text-[#6b7280] mb-8">
         <span className="font-bold text-[#8a8d96]">Nexus</span><span>/</span><span>Coach</span><span>/</span><span className="text-white">Créer un profil</span>
@@ -1998,5 +2000,6 @@ export default function CreateAthletePage() {
         </div>
       </div>
     </div>
+    </ReadOnlyIfPending>
   );
 }
