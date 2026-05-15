@@ -113,7 +113,7 @@ export default function RoadmapPage() {
         <section>
           <div className="max-w-[1200px] mx-auto px-6 pt-20 pb-12 text-center">
             <RedLabel>Roadmap</RedLabel>
-            <h1 className="font-head text-[40px] sm:text-[48px] font-black text-white leading-[1.05] tracking-tight mt-4">
+            <h1 className="nx-display text-[40px] sm:text-[48px] font-extrabold text-white leading-[1.05] tracking-tight mt-4">
               Ce qui s&apos;en vient.
             </h1>
             <p className="text-[16px] text-white/60 leading-[1.7] mt-5 max-w-[640px] mx-auto">
@@ -172,7 +172,7 @@ export default function RoadmapPage() {
         {/* ─── BOTTOM — Suggestion ───────────────────────────── */}
         <section className="bg-[#0d0f12] border-t border-white/[0.06]">
           <div className="max-w-[600px] mx-auto px-6 py-16 sm:py-20 text-center">
-            <h3 className="font-head text-[24px] sm:text-[28px] font-black text-white tracking-tight">
+            <h3 className="nx-display text-[24px] sm:text-[28px] font-extrabold text-white tracking-tight">
               Une idée?
             </h3>
             <p className="text-[15px] text-white/65 leading-relaxed mt-4">

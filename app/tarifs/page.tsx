@@ -81,7 +81,7 @@ export default function TarifsPage() {
           <p className="text-[12px] sm:text-[13px] font-bold tracking-[0.25em] uppercase text-[#E63946]">
             Tarifs
           </p>
-          <h1 className="font-head text-[40px] sm:text-[48px] font-black text-white uppercase leading-[1.05] tracking-tight mt-4">
+          <h1 className="nx-display text-[40px] sm:text-[48px] font-extrabold text-white uppercase leading-[1.05] tracking-tight mt-4">
             Choisis ton plan
           </h1>
           <p className="text-[15px] sm:text-[16px] text-[#9CA3AF] leading-relaxed mt-5 max-w-[600px] mx-auto">
@@ -197,7 +197,7 @@ export default function TarifsPage() {
             <p className="text-[12px] sm:text-[13px] font-bold tracking-[0.25em] uppercase text-[#F59E0B]">
               Pourquoi Pro?
             </p>
-            <h2 className="font-head text-[28px] sm:text-[34px] font-black text-white uppercase leading-tight tracking-tight mt-3">
+            <h2 className="nx-display text-[28px] sm:text-[34px] font-extrabold text-white uppercase leading-tight tracking-tight mt-3">
               Tu sais que tu es regardé. Maintenant, sache par qui.
             </h2>
             <p className="text-[15px] text-[#9CA3AF] leading-relaxed mt-5 max-w-[640px] mx-auto">

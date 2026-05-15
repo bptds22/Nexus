@@ -104,7 +104,7 @@ export default function Home() {
                     <div className="flex flex-col justify-between" style={{ background: '#1E2128', padding: '14px 16px 14px 18px', minWidth: 109, gap: 5 }}>
                       {[{ lbl: "Sport", val: "Football" }, { lbl: "Pos", val: "QB" }, { lbl: "No.", val: "#12" }].map((r) => (
                         <div key={r.lbl}>
-                          <div style={{ fontFamily: 'var(--font-barlow-cond), sans-serif', fontSize: 7, fontWeight: 800, letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.38)', marginBottom: 2 }}>{r.lbl}</div>
+                          <div style={{ fontFamily: 'var(--font-heading), sans-serif', fontSize: 7, fontWeight: 800, letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.38)', marginBottom: 2 }}>{r.lbl}</div>
                           <div style={{ fontFamily: 'var(--font-heading), sans-serif', fontSize: 18, color: '#fff', letterSpacing: '0.06em', lineHeight: 1 }}>{r.val}</div>
                         </div>
                       ))}
@@ -120,9 +120,9 @@ export default function Home() {
                           <path key={x} d="M11,0L13.5,8L22,8L15.5,13L18,21L11,16.2L4,21L6.5,13L0,8L8.5,8Z" fill="#F59E0B" transform={`translate(${x},0)`}/>
                         ))}
                       </svg>
-                      <div style={{ fontFamily: 'var(--font-barlow-cond), sans-serif', fontWeight: 800, fontSize: 14, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#1E2128', marginBottom: 2 }}>École secondaire Saint-Jean-Eudes</div>
-                      <div style={{ fontFamily: 'var(--font-barlow-cond), sans-serif', fontWeight: 700, fontSize: 13, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#9CA3AF' }}>Québec, QC</div>
-                      <div style={{ fontFamily: 'var(--font-barlow-cond), sans-serif', fontWeight: 700, fontSize: 13, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#E63946', marginTop: 2 }}>Promotion 2026</div>
+                      <div style={{ fontFamily: 'var(--font-heading), sans-serif', fontWeight: 800, fontSize: 14, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#1E2128', marginBottom: 2 }}>École secondaire Saint-Jean-Eudes</div>
+                      <div style={{ fontFamily: 'var(--font-heading), sans-serif', fontWeight: 700, fontSize: 13, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#9CA3AF' }}>Québec, QC</div>
+                      <div style={{ fontFamily: 'var(--font-heading), sans-serif', fontWeight: 700, fontSize: 13, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#E63946', marginTop: 2 }}>Promotion 2026</div>
                     </div>
                     <div className="flex items-center justify-center flex-shrink-0" style={{ background: '#E63946', width: 26, writingMode: 'vertical-rl', fontFamily: 'var(--font-heading), sans-serif', fontSize: 11, letterSpacing: '0.22em', color: 'rgba(255,255,255,0.7)' }}>NEXUS</div>
                   </div>

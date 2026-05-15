@@ -23,7 +23,7 @@ function RedLabel({ children }: { children: React.ReactNode }) {
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="font-head text-[26px] sm:text-[30px] font-black text-white leading-tight tracking-tight mt-3">
+    <h2 className="nx-display text-[26px] sm:text-[30px] font-extrabold text-white leading-tight tracking-tight mt-3">
       {children}
     </h2>
   );
@@ -89,7 +89,7 @@ export default function CommentCaMarche() {
         <section className="border-b border-white/[0.06]">
           <div className="max-w-[1200px] mx-auto px-6 pt-20 pb-16 text-center">
             <RedLabel>Notre mission</RedLabel>
-            <h1 className="font-head text-[42px] sm:text-[52px] font-[800] text-white leading-[1.05] tracking-tight mt-4">
+            <h1 className="nx-display text-[42px] sm:text-[52px] font-[800] text-white leading-[1.05] tracking-tight mt-4">
               Le talent n&apos;a pas de code postal.
             </h1>
             <p className="text-[18px] text-white/75 leading-[1.7] mt-8 max-w-[720px] mx-auto">
@@ -212,7 +212,7 @@ export default function CommentCaMarche() {
               </p>
             </div>
 
-            <h3 className="font-head text-[20px] font-black text-white tracking-tight mt-12">
+            <h3 className="nx-display text-[20px] font-extrabold text-white tracking-tight mt-12">
               Les distinctions Nexus — le langage commun des coachs.
             </h3>
             <p className="text-[16px] text-white/75 leading-[1.7] mt-4 max-w-[800px]">
@@ -352,7 +352,7 @@ export default function CommentCaMarche() {
         <section className="bg-[#0d0f12] border-b border-white/[0.06]">
           <div className="max-w-[720px] mx-auto px-6 py-24 text-center">
             <RedLabel>Notre conviction</RedLabel>
-            <h2 className="font-head text-[30px] sm:text-[36px] font-black text-white leading-tight tracking-tight mt-3">
+            <h2 className="nx-display text-[30px] sm:text-[36px] font-extrabold text-white leading-tight tracking-tight mt-3">
               Le sport, c&apos;est ce qui garde les jeunes à l&apos;école.
             </h2>
 

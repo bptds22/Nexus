@@ -175,7 +175,7 @@ function PlayerCard({ a }: { a: AthleteProfileRecruiterView }) {
                 { lbl: "No.", val: a.jerseyNumber ? `#${a.jerseyNumber}` : "—" },
               ].map((r) => (
                 <div key={r.lbl}>
-                  <div style={{ fontFamily: 'var(--font-barlow-cond), sans-serif', fontSize: 7, fontWeight: 800, letterSpacing: '0.22em', textTransform: 'uppercase' as const, color: 'rgba(255,255,255,0.38)', marginBottom: 1 }}>{r.lbl}</div>
+                  <div style={{ fontFamily: 'var(--font-heading), sans-serif', fontSize: 7, fontWeight: 800, letterSpacing: '0.22em', textTransform: 'uppercase' as const, color: 'rgba(255,255,255,0.38)', marginBottom: 1 }}>{r.lbl}</div>
                   <div style={{ fontFamily: 'var(--font-heading), sans-serif', fontSize: 16, color: '#fff', letterSpacing: '0.06em', lineHeight: 1 }}>{r.val}</div>
                 </div>
               ))}
@@ -194,9 +194,9 @@ function PlayerCard({ a }: { a: AthleteProfileRecruiterView }) {
                 ))}
                 <div className="card-star-shimmer absolute inset-0 pointer-events-none" />
               </div>
-              <div style={{ fontFamily: 'var(--font-barlow-cond), sans-serif', fontWeight: 700, fontSize: 13, letterSpacing: '0.1em', textTransform: 'uppercase' as const, color: '#1E2128', marginBottom: 2, lineHeight: 1.2 }}>{a.schoolName}</div>
-              <div style={{ fontFamily: 'var(--font-barlow-cond), sans-serif', fontWeight: 700, fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#9CA3AF', lineHeight: 1.2 }}>{a.region}</div>
-              <div style={{ fontFamily: 'var(--font-barlow-cond), sans-serif', fontWeight: 700, fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#E63946', marginTop: 4 }}>Promotion {a.graduationYear}</div>
+              <div style={{ fontFamily: 'var(--font-heading), sans-serif', fontWeight: 700, fontSize: 13, letterSpacing: '0.1em', textTransform: 'uppercase' as const, color: '#1E2128', marginBottom: 2, lineHeight: 1.2 }}>{a.schoolName}</div>
+              <div style={{ fontFamily: 'var(--font-heading), sans-serif', fontWeight: 700, fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#9CA3AF', lineHeight: 1.2 }}>{a.region}</div>
+              <div style={{ fontFamily: 'var(--font-heading), sans-serif', fontWeight: 700, fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#E63946', marginTop: 4 }}>Promotion {a.graduationYear}</div>
             </div>
             <div className="flex items-center justify-center flex-shrink-0" style={{ background: '#E63946', width: 24, writingMode: 'vertical-rl' as const, fontFamily: 'var(--font-heading), sans-serif', fontSize: 10, letterSpacing: '0.22em', color: 'rgba(255,255,255,0.7)' }}>NEXUS</div>
           </div>

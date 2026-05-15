@@ -134,7 +134,7 @@ function RedLabel({ children }: { children: React.ReactNode }) {
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="nx-display text-[26px] sm:text-[30px] font-black text-white leading-tight tracking-tight mt-3">
+    <h2 className="nx-display text-[26px] sm:text-[30px] font-extrabold text-white leading-tight tracking-tight mt-3">
       {children}
     </h2>
   );
@@ -299,7 +299,7 @@ export default function PourLesCoachsPage() {
         <section id="hero" className="border-b border-white/[0.06]">
           <div className="max-w-[1200px] mx-auto px-6 py-20 lg:py-28 text-center">
             <RedLabel>Pour les entraîneurs du secondaire</RedLabel>
-            <h1 className="nx-display text-[42px] sm:text-[48px] font-black leading-[1.05] tracking-tight mt-4">
+            <h1 className="nx-display text-[42px] sm:text-[48px] font-extrabold leading-[1.05] tracking-tight mt-4">
               Tes joueurs méritent d&apos;être vus.<br />
               <span className="text-[#E63946]">Ta réputation aussi.</span>
             </h1>
@@ -354,7 +354,7 @@ export default function PourLesCoachsPage() {
                   <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-[#E63946] mt-5">
                     {step.role}
                   </p>
-                  <h3 className="nx-display text-[18px] font-black uppercase text-white tracking-tight mt-2.5">
+                  <h3 className="nx-display text-[18px] font-extrabold uppercase text-white tracking-tight mt-2.5">
                     {step.title}
                   </h3>
                   <p className="text-[14px] text-white/75 leading-relaxed mt-3">
@@ -410,7 +410,7 @@ export default function PourLesCoachsPage() {
                     {b.icon}
                   </div>
                   <div>
-                    <p className="nx-display text-[15px] font-black uppercase tracking-wide text-white">
+                    <p className="nx-display text-[15px] font-extrabold uppercase tracking-wide text-white">
                       {b.name}
                     </p>
                     <p className="text-[11px] text-white/55 mt-1">{b.threshold}</p>
@@ -427,7 +427,7 @@ export default function PourLesCoachsPage() {
                   className="inline-flex items-center gap-2 bg-[#1A1D24] border border-white/[0.06] rounded-full px-4 py-2 text-[12px]"
                 >
                   <span className="text-white/55 uppercase tracking-wider font-bold text-[10px]">{s.label}</span>
-                  <span className="nx-display font-black text-white text-[13px] tabular-nums">{s.value}</span>
+                  <span className="nx-display font-extrabold text-white text-[13px] tabular-nums">{s.value}</span>
                 </span>
               ))}
             </div>
@@ -501,7 +501,7 @@ export default function PourLesCoachsPage() {
                   <div className="flex items-center justify-between mb-4">
                     <TierPill tier={f.tier} />
                   </div>
-                  <h3 className="nx-display text-[18px] font-black text-white">{f.title}</h3>
+                  <h3 className="nx-display text-[18px] font-extrabold text-white">{f.title}</h3>
                   <p className="text-[14px] text-white/75 leading-relaxed mt-2">{f.body}</p>
                 </div>
               ))}
@@ -543,7 +543,7 @@ export default function PourLesCoachsPage() {
 
                     {/* Price */}
                     <div className="mt-4 flex items-baseline gap-1.5">
-                      <span className={`nx-display text-[36px] font-black leading-none ${t.priceColor}`}>
+                      <span className={`nx-display text-[36px] font-extrabold leading-none ${t.priceColor}`}>
                         {t.price}
                       </span>
                       {t.priceSuffix && (
@@ -598,7 +598,7 @@ export default function PourLesCoachsPage() {
           <div className="max-w-[820px] mx-auto px-6 py-28 text-center">
             <span className="inline-block w-10 h-[2px] bg-[#E63946] mb-8" />
 
-            <h2 className="nx-display text-[40px] sm:text-[56px] font-black text-white leading-[1.05] tracking-tight">
+            <h2 className="nx-display text-[40px] sm:text-[56px] font-extrabold text-white leading-[1.05] tracking-tight">
               Prêt à faire la <span className="text-[#E63946]">différence</span> pour tes joueurs?
             </h2>
 

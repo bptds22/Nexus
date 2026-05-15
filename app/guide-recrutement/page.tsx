@@ -191,7 +191,7 @@ function RedLabel({ children }: { children: React.ReactNode }) {
 
 function H2({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="font-head text-[28px] sm:text-[34px] font-black text-white leading-tight tracking-tight mt-3">
+    <h2 className="nx-display text-[28px] sm:text-[34px] font-extrabold text-white leading-tight tracking-tight mt-3">
       {children}
     </h2>
   );
@@ -269,7 +269,7 @@ export default function GuideRecrutementPage() {
         <section id="hero" className="border-b border-white/[0.06]">
           <div className="max-w-[900px] mx-auto px-6 py-20 lg:py-28">
             <RedLabel>Guide · Nexus 2025</RedLabel>
-            <h1 className="font-head text-[42px] sm:text-[56px] font-black leading-[1.05] tracking-tight mt-4">
+            <h1 className="nx-display text-[42px] sm:text-[56px] font-extrabold leading-[1.05] tracking-tight mt-4">
               Comment se faire recruter au CÉGEP
             </h1>
             <p className="text-[18px] text-white/75 leading-relaxed mt-6 max-w-[700px]">
@@ -389,7 +389,7 @@ export default function GuideRecrutementPage() {
         {/* ─── BOTTOM CTA ───────────────────────────────────── */}
         <section className="bg-[#0d0f12] border-t border-white/[0.06]">
           <div className="max-w-[900px] mx-auto px-6 py-24 text-center">
-            <h2 className="font-head text-[32px] sm:text-[40px] font-black text-white leading-tight tracking-tight">
+            <h2 className="nx-display text-[32px] sm:text-[40px] font-extrabold text-white leading-tight tracking-tight">
               Prêt à commencer?
             </h2>
             <div className="mt-9">

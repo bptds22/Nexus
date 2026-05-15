@@ -21,7 +21,7 @@ function RedLabel({ children }: { children: React.ReactNode }) {
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="font-head text-[26px] sm:text-[30px] font-black text-white leading-tight tracking-tight mt-3">
+    <h2 className="nx-display text-[26px] sm:text-[30px] font-extrabold text-white leading-tight tracking-tight mt-3">
       {children}
     </h2>
   );
@@ -84,7 +84,7 @@ export default function AProposPage() {
         <section className="border-b border-white/[0.06]">
           <div className="max-w-[1200px] mx-auto px-6 pt-20 pb-16 text-center">
             <RedLabel>À propos</RedLabel>
-            <h1 className="font-head text-[42px] sm:text-[48px] font-black text-white leading-[1.05] tracking-tight mt-4">
+            <h1 className="nx-display text-[42px] sm:text-[48px] font-extrabold text-white leading-[1.05] tracking-tight mt-4">
               Nexus, c&apos;est nous avant d&apos;être un produit.
             </h1>
             <p className="text-[18px] text-white/75 leading-[1.7] mt-6 max-w-[720px] mx-auto">
@@ -102,7 +102,7 @@ export default function AProposPage() {
               <div className="bg-[#1A1D24] rounded-xl border border-white/[0.06] p-8">
                 <FounderPhoto initials="BP" alt="Bruno-Philippe Simard" />
                 <div className="text-center mt-6">
-                  <h3 className="font-head text-[22px] font-bold text-white">Bruno-Philippe Simard</h3>
+                  <h3 className="nx-display text-[22px] font-bold text-white">Bruno-Philippe Simard</h3>
                   <p className="text-[12px] font-bold tracking-[0.2em] uppercase text-[#E63946] mt-1">Fondateur · Ancien athlète</p>
                 </div>
 
@@ -137,7 +137,7 @@ export default function AProposPage() {
               <div className="bg-[#1A1D24] rounded-xl border border-white/[0.06] p-8">
                 <FounderPhoto initials="C" alt="Chuck" />
                 <div className="text-center mt-6">
-                  <h3 className="font-head text-[22px] font-bold text-white">Chuck</h3>
+                  <h3 className="nx-display text-[22px] font-bold text-white">Chuck</h3>
                   <p className="text-[12px] font-bold tracking-[0.2em] uppercase text-[#E63946] mt-1">Co-fondateur · Ancien coach</p>
                 </div>
 

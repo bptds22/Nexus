@@ -227,7 +227,7 @@ function RedLabel({ children }: { children: React.ReactNode }) {
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="nx-display text-[26px] sm:text-[32px] font-black text-white leading-tight tracking-tight mt-3">
+    <h2 className="nx-display text-[26px] sm:text-[32px] font-extrabold text-white leading-tight tracking-tight mt-3">
       {children}
     </h2>
   );
@@ -294,7 +294,7 @@ export default function PourLesRecruteursPage() {
               {/* Left — copy */}
               <div>
                 <RedLabel>Pour les recruteurs CÉGEP</RedLabel>
-                <h1 className="nx-display text-[38px] sm:text-[44px] lg:text-[48px] font-black leading-[1.05] tracking-tight mt-4">
+                <h1 className="nx-display text-[38px] sm:text-[44px] lg:text-[48px] font-extrabold leading-[1.05] tracking-tight mt-4">
                   Trouvez les athlètes<br />
                   que votre réseau<br />
                   <span className="text-[#E63946]">ne verra jamais.</span>
@@ -370,7 +370,7 @@ export default function PourLesRecruteursPage() {
                     i > 0 ? "lg:border-l lg:border-white/[0.08]" : ""
                   }`}
                 >
-                  <p className="nx-display text-[28px] sm:text-[36px] font-black text-white leading-none tracking-tight">
+                  <p className="nx-display text-[28px] sm:text-[36px] font-extrabold text-white leading-none tracking-tight">
                     {s.value}
                   </p>
                   <p className="text-[12px] sm:text-[13px] text-white/55 mt-3 leading-snug">
@@ -401,7 +401,7 @@ export default function PourLesRecruteursPage() {
                 <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-white/55">
                   Le statu quo
                 </p>
-                <h3 className="nx-display text-[20px] font-black text-white/85 mt-2">
+                <h3 className="nx-display text-[20px] font-extrabold text-white/85 mt-2">
                   Sans Nexus
                 </h3>
                 <ul className="space-y-3.5 mt-6">
@@ -421,7 +421,7 @@ export default function PourLesRecruteursPage() {
                 <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-[#E63946]">
                   Le recrutement réinventé
                 </p>
-                <h3 className="nx-display text-[20px] font-black text-white mt-2">
+                <h3 className="nx-display text-[20px] font-extrabold text-white mt-2">
                   Avec <span className="text-[#E63946]">Nexus</span>
                 </h3>
                 <ul className="space-y-3.5 mt-6">
@@ -461,7 +461,7 @@ export default function PourLesRecruteursPage() {
                     <div className={`${boxSize} rounded-xl flex items-center justify-center ${s.bg} ${s.fg}`}>
                       {p.icon}
                     </div>
-                    <h3 className="nx-display text-[20px] font-black text-white tracking-tight mt-5">
+                    <h3 className="nx-display text-[20px] font-extrabold text-white tracking-tight mt-5">
                       {p.title}
                     </h3>
                     <p className="text-[14px] text-white/75 leading-relaxed mt-3">
@@ -563,7 +563,7 @@ export default function PourLesRecruteursPage() {
             {/* Split: left copy 2/5, right mockup 3/5 */}
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-10 lg:gap-12 items-start mt-14">
               <div className="lg:col-span-2">
-                <h3 className="nx-display text-[20px] sm:text-[22px] font-black text-white tracking-tight leading-tight">
+                <h3 className="nx-display text-[20px] sm:text-[22px] font-extrabold text-white tracking-tight leading-tight">
                   La réputation des coachs, construite par les recruteurs.
                 </h3>
                 <div className="space-y-4 mt-5 text-[14px] sm:text-[15px] text-white/75 leading-relaxed">
@@ -688,7 +688,7 @@ export default function PourLesRecruteursPage() {
                     <div className="sm:col-span-3 space-y-4 min-w-0">
                       {/* Name + jersey */}
                       <div>
-                        <p className="nx-display text-[18px] sm:text-[20px] font-black text-white uppercase tracking-tight leading-tight">
+                        <p className="nx-display text-[18px] sm:text-[20px] font-extrabold text-white uppercase tracking-tight leading-tight">
                           Alexandre Tremblay{" "}
                           <span className="text-[#E63946]">#7</span>
                         </p>
@@ -795,7 +795,7 @@ export default function PourLesRecruteursPage() {
                     <h3 className="text-[20px] font-bold text-white">{t.name}</h3>
 
                     <div className="mt-4 flex items-baseline gap-1.5 flex-wrap">
-                      <span className={`nx-display text-[32px] sm:text-[36px] font-black leading-none ${t.priceColor}`}>
+                      <span className={`nx-display text-[32px] sm:text-[36px] font-extrabold leading-none ${t.priceColor}`}>
                         {t.price}
                       </span>
                       {t.priceSuffix && (
@@ -867,7 +867,7 @@ export default function PourLesRecruteursPage() {
           <div className="max-w-[820px] mx-auto px-6 py-24 text-center">
             <span className="inline-block w-10 h-[2px] bg-[#E63946] mb-8" />
 
-            <h2 className="nx-display text-[38px] sm:text-[52px] font-black text-white leading-[1.05] tracking-tight">
+            <h2 className="nx-display text-[38px] sm:text-[52px] font-extrabold text-white leading-[1.05] tracking-tight">
               Prêt à voir tous les <span className="text-[#E63946]">talents</span> du Québec?
             </h2>
 
