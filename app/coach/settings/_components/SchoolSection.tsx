@@ -12,7 +12,7 @@ const label = "text-[12px] font-bold tracking-[0.25em] uppercase text-[#6b7280] 
 const inputClass = "w-full bg-[#13151a] border border-[#2a2d36] rounded-lg px-4 py-2.5 text-[14px] text-[#e0e0e0] placeholder:text-[#4a4d56] focus:border-[#E63946] outline-none transition-colors";
 const readOnlyClass = "w-full bg-[#13151a] border border-[#2a2d36] rounded-lg px-4 py-2.5 text-[14px] text-[#e0e0e0] opacity-60 cursor-not-allowed";
 
-export default function SchoolSection() {
+export default function SchoolSection({ isCivilCoach = false }: { isCivilCoach?: boolean }) {
   const [form, setForm] = useState<SchoolInfo>({
     name: "", city: "", region: "", division: "",
     ageGroup: "", conference: "", teamName: "", website: "",
@@ -110,8 +110,14 @@ export default function SchoolSection() {
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="font-head text-xl font-black text-white uppercase tracking-tight">École & programme</h2>
-        <p className="text-[14px] text-[#6b7280] mt-1">Informations sur ton école et ton programme sportif.</p>
+        <h2 className="font-head text-xl font-black text-white uppercase tracking-tight">
+          {isCivilCoach ? "Ligue & équipe" : "École & programme"}
+        </h2>
+        <p className="text-[14px] text-[#6b7280] mt-1">
+          {isCivilCoach
+            ? "Informations sur ta ligue et ton équipe."
+            : "Informations sur ton école et ton programme sportif."}
+        </p>
       </div>
 
       <div className="space-y-5 max-w-2xl">
@@ -124,14 +130,14 @@ export default function SchoolSection() {
                 <path d="M7 11V7a5 5 0 0110 0v4" />
               </svg>
               <span className="text-[12px] font-bold tracking-[0.2em] uppercase text-[#6b7280]">
-                Géré par le directeur
+                {isCivilCoach ? "Géré par le coordinateur" : "Géré par le directeur"}
               </span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <p className={label}>Nom de l&apos;école</p>
-                <input type="text" title="Nom de l'école" value={form.name} readOnly className={readOnlyClass} />
+                <p className={label}>{isCivilCoach ? "Nom de la ligue" : "Nom de l’école"}</p>
+                <input type="text" title={isCivilCoach ? "Nom de la ligue" : "Nom de l’école"} value={form.name} readOnly className={readOnlyClass} />
               </div>
               <div>
                 <p className={label}>Ville</p>
@@ -170,8 +176,8 @@ export default function SchoolSection() {
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div>
-                <p className={label}>Nom de l&apos;école</p>
-                <input type="text" title="Nom de l'école" value={form.name} onChange={(e) => update("name", e.target.value)} className={inputClass} />
+                <p className={label}>{isCivilCoach ? "Nom de la ligue" : "Nom de l’école"}</p>
+                <input type="text" title={isCivilCoach ? "Nom de la ligue" : "Nom de l’école"} value={form.name} onChange={(e) => update("name", e.target.value)} className={inputClass} />
               </div>
               <div>
                 <p className={label}>Ville</p>

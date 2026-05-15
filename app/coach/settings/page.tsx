@@ -19,7 +19,7 @@ import { useSubscription } from "@/lib/hooks/useSubscription";
 
 /* ── Coach Pricing Section ────────────────────────────────── */
 
-function CoachPricingSection() {
+function CoachPricingSection({ isCivilCoach = false }: { isCivilCoach?: boolean }) {
   const [annual, setAnnual] = useState(false);
   // Coach has only 2 tiers: free / pro.
   // Any legacy DB value that reads as "all_star" is collapsed to "pro".
@@ -42,8 +42,8 @@ function CoachPricingSection() {
         { label: "Création d'athlètes", included: true },
         { label: "Évaluations de base", included: true },
         { label: "Vérification d'athlètes", included: true },
-        { label: "Mon École", included: false },
-        { label: "Stats École", included: false },
+        { label: isCivilCoach ? "Ma Ligue" : "Mon École", included: false },
+        { label: isCivilCoach ? "Stats Ligue" : "Stats École", included: false },
         { label: "Placements & suivi", included: false },
         { label: "Ma Réputation", included: false },
         { label: "Analytics avancés", included: false },
@@ -61,8 +61,8 @@ function CoachPricingSection() {
       ctaText: "Passer à Pro",
       features: [
         { label: "Tout du plan Gratuit +", included: true, header: true },
-        { label: "Mon École complète", included: true },
-        { label: "Stats École & rapports", included: true },
+        { label: isCivilCoach ? "Ma Ligue complète" : "Mon École complète", included: true },
+        { label: isCivilCoach ? "Stats Ligue & rapports" : "Stats École & rapports", included: true },
         { label: "Placements & suivi", included: true },
         { label: "Ma Réputation", included: true },
         { label: "Analytics de profils", included: true },
@@ -171,7 +171,7 @@ interface Director {
   email: string;
 }
 
-function AdminEcoleSection() {
+function AdminEcoleSection({ isCivilCoach = false }: { isCivilCoach?: boolean }) {
   const [toast, setToast] = useState<string | null>(null);
   const [directors, setDirectors] = useState<Director[]>([]);
   const [loading, setLoading] = useState(true);
@@ -233,7 +233,7 @@ function AdminEcoleSection() {
 
     if (error) { showToast("Erreur lors du retrait."); return; }
     setDirectors((prev) => prev.filter((d) => d.id !== directorId));
-    showToast("Directeur retiré avec succès.");
+    showToast(isCivilCoach ? "Coordinateur retiré avec succès." : "Directeur retiré avec succès.");
   }
 
   async function handleInvite() {
@@ -249,7 +249,7 @@ function AdminEcoleSection() {
       .eq("id", user.id)
       .single();
 
-    if (!userRow?.school_id) { setInviting(false); showToast("École introuvable."); return; }
+    if (!userRow?.school_id) { setInviting(false); showToast(isCivilCoach ? "Ligue introuvable." : "École introuvable."); return; }
 
     const { error } = await supabase
       .from("director_invitations")
@@ -279,7 +279,7 @@ function AdminEcoleSection() {
       .eq("id", user.id)
       .single();
 
-    if (!userRow?.school_id) { setTransferring(false); showToast("École introuvable."); return; }
+    if (!userRow?.school_id) { setTransferring(false); showToast(isCivilCoach ? "Ligue introuvable." : "École introuvable."); return; }
 
     const { error } = await supabase
       .from("admin_transfer_requests")
@@ -320,7 +320,9 @@ function AdminEcoleSection() {
       <div className="space-y-8">
         {/* Directors table */}
         <div>
-          <h2 className="font-head text-lg font-black text-white uppercase tracking-tight mb-4">Directeurs de l&apos;école</h2>
+          <h2 className="font-head text-lg font-black text-white uppercase tracking-tight mb-4">
+            {isCivilCoach ? "Coordinateurs de la ligue" : "Directeurs de l’école"}
+          </h2>
           <div className="bg-[#1A1D24] rounded-xl border border-white/5 overflow-hidden">
             <table className="w-full">
               <thead>
@@ -333,7 +335,9 @@ function AdminEcoleSection() {
               <tbody>
                 {directors.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="px-4 py-6 text-center text-[13px] text-[#6b7280]">Aucun directeur trouvé.</td>
+                    <td colSpan={5} className="px-4 py-6 text-center text-[13px] text-[#6b7280]">
+                      {isCivilCoach ? "Aucun coordinateur trouvé." : "Aucun directeur trouvé."}
+                    </td>
                   </tr>
                 )}
                 {directors.map((d) => (
@@ -369,14 +373,18 @@ function AdminEcoleSection() {
 
         {/* Invite director */}
         <div className="border-t border-[#2D3748]/40 pt-6">
-          <h2 className="font-head text-lg font-black text-white uppercase tracking-tight mb-4">Inviter un directeur sportif</h2>
+          <h2 className="font-head text-lg font-black text-white uppercase tracking-tight mb-4">
+            {isCivilCoach ? "Inviter un coordinateur de ligue" : "Inviter un directeur sportif"}
+          </h2>
           <div className="max-w-md space-y-4">
             <div>
-              <label className="block text-[12px] font-bold tracking-[0.25em] uppercase text-[#6B7280] mb-1.5">Courriel du directeur</label>
+              <label className="block text-[12px] font-bold tracking-[0.25em] uppercase text-[#6B7280] mb-1.5">
+                {isCivilCoach ? "Courriel du coordinateur" : "Courriel du directeur"}
+              </label>
               <input
                 type="email"
-                title="Courriel du directeur"
-                placeholder="directeur@ecole.qc.ca"
+                title={isCivilCoach ? "Courriel du coordinateur" : "Courriel du directeur"}
+                placeholder={isCivilCoach ? "coordinateur@ligue.qc.ca" : "directeur@ecole.qc.ca"}
                 value={inviteEmail}
                 onChange={(e) => setInviteEmail(e.target.value)}
                 className="w-full bg-[#13151a] border border-[#2a2d36] rounded-lg px-4 py-2.5 text-[14px] text-[#e0e0e0] placeholder:text-[#4a4d56] focus:border-[#E63946] outline-none transition-colors"
@@ -390,14 +398,22 @@ function AdminEcoleSection() {
             >
               {inviting ? "Envoi..." : "Envoyer l\u2019invitation"}
             </button>
-            <p className="text-[11px] text-[#4a4d56]">Le directeur invité aura accès gratuit à toutes les fonctionnalités de gestion d&apos;école.</p>
+            <p className="text-[11px] text-[#4a4d56]">
+              {isCivilCoach
+                ? "Le coordinateur invité aura accès gratuit à toutes les fonctionnalités de gestion de la ligue."
+                : "Le directeur invité aura accès gratuit à toutes les fonctionnalités de gestion d’école."}
+            </p>
           </div>
         </div>
 
         {/* Transfer */}
         <div className="border-t border-[#2D3748]/40 pt-6">
           <h2 className="font-head text-lg font-black text-white uppercase tracking-tight mb-2">Transfert d&apos;administration</h2>
-          <p className="text-[13px] text-[#9CA3AF] mb-4">Transfère le rôle de propriétaire à un autre directeur. Cette demande sera traitée par l&apos;administration Nexus.</p>
+          <p className="text-[13px] text-[#9CA3AF] mb-4">
+            {isCivilCoach
+              ? "Transfère le rôle de propriétaire à un autre coordinateur. Cette demande sera traitée par l’administration Nexus."
+              : "Transfère le rôle de propriétaire à un autre directeur. Cette demande sera traitée par l’administration Nexus."}
+          </p>
 
           {!showTransferModal ? (
             <button
@@ -445,7 +461,11 @@ function AdminEcoleSection() {
           )}
 
           {collaborators.length === 0 && !showTransferModal && (
-            <p className="text-[11px] text-[#4a4d56] mt-2">Aucun collaborateur disponible pour le transfert. Invite d&apos;abord un directeur.</p>
+            <p className="text-[11px] text-[#4a4d56] mt-2">
+              {isCivilCoach
+                ? "Aucun collaborateur disponible pour le transfert. Invite d’abord un coordinateur."
+                : "Aucun collaborateur disponible pour le transfert. Invite d’abord un directeur."}
+            </p>
           )}
         </div>
 
@@ -466,21 +486,23 @@ function AdminEcoleSection() {
 export default function CoachSettingsPage() {
   const [section, setSection] = useState<SettingsSection>("profil");
   const [isSchoolAdmin, setIsSchoolAdmin] = useState(false);
+  const [isCivilCoach, setIsCivilCoach] = useState(false);
 
   useEffect(() => {
-    async function checkAdmin() {
+    async function checkUserContext() {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
       const { data } = await supabase
         .from("users")
-        .select("is_school_admin")
+        .select("is_school_admin, context")
         .eq("id", user.id)
         .single();
       if (data?.is_school_admin) setIsSchoolAdmin(true);
+      if (data?.context === "ligue_civile") setIsCivilCoach(true);
     }
-    checkAdmin();
+    checkUserContext();
   }, []);
 
   return (
@@ -491,7 +513,9 @@ export default function CoachSettingsPage() {
           Paramètres
         </h1>
         <p className="text-[14px] text-[#9CA3AF] mt-1">
-          Gère ton profil, ton école et tes préférences.
+          {isCivilCoach
+            ? "Gère ton profil, ta ligue et tes préférences."
+            : "Gère ton profil, ton école et tes préférences."}
         </p>
       </div>
 
@@ -499,16 +523,16 @@ export default function CoachSettingsPage() {
       <div className="flex flex-col lg:flex-row gap-8">
         {/* Left nav */}
         <div className="lg:w-[240px] shrink-0">
-          <SettingsNav active={section} onChange={setSection} isSchoolAdmin={isSchoolAdmin} />
+          <SettingsNav active={section} onChange={setSection} isSchoolAdmin={isSchoolAdmin} isCivilCoach={isCivilCoach} />
         </div>
 
         {/* Content panel */}
         <div className="flex-1 min-w-0">
           <div className="bg-[#111317]/60 backdrop-blur-sm rounded-xl border border-[#1e2128] p-6 sm:p-8">
             {section === "profil" && <ProfileSection />}
-            {section === "ecole" && <SchoolSection />}
-            {section === "abonnement" && <CoachPricingSection />}
-            {section === "admin_ecole" && <AdminEcoleSection />}
+            {section === "ecole" && <SchoolSection isCivilCoach={isCivilCoach} />}
+            {section === "abonnement" && <CoachPricingSection isCivilCoach={isCivilCoach} />}
+            {section === "admin_ecole" && <AdminEcoleSection isCivilCoach={isCivilCoach} />}
             {section === "notifications" && <NotificationsSection />}
             {section === "compte" && <AccountSection />}
           </div>
