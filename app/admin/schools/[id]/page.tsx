@@ -14,6 +14,7 @@ type SchoolRow = Record<string, unknown>;
 const TYPE_OPTS = [
   { v: "SECONDAIRE", l: "Secondaire" },
   { v: "CEGEP", l: "CÉGEP" },
+  { v: "LIGUE_CIVILE", l: "Ligue civile" },
 ];
 const RESEAU_OPTS = [
   { v: "", l: "—" },
@@ -672,13 +673,18 @@ export default function AdminSchoolDetailPage({ params }: { params: Promise<{ id
   if (!school) {
     return (
       <div className="max-w-7xl mx-auto px-6 py-12">
-        <Link href="/admin/schools" className="text-[13px] text-[#E63946] hover:underline">← Retour aux écoles</Link>
-        <p className="mt-6 text-[#9CA3AF]">École introuvable.</p>
+        <Link href="/admin/schools" className="text-[13px] text-[#E63946] hover:underline">← Retour aux établissements</Link>
+        <p className="mt-6 text-[#9CA3AF]">Établissement introuvable.</p>
       </div>
     );
   }
 
   const verifiedPct = stats.totalAthletes > 0 ? Math.round((stats.verifiedAthletes / stats.totalAthletes) * 100) : 0;
+
+  // Phase 6.1.y : LIGUE_CIVILE establishments hide école-specific fields
+  // (Réseau, Langue). Identity fields (Nom/Ville/Région/Adresse/Site web)
+  // stay shared across all 3 types.
+  const isCivilLigue = S("type") === "LIGUE_CIVILE";
 
   // activity grouping
   const now = new Date();
@@ -705,13 +711,13 @@ export default function AdminSchoolDetailPage({ params }: { params: Promise<{ id
       <div className="flex items-center justify-between">
         <div>
           <Link href="/admin/schools" className="text-[12px] text-[#9CA3AF] hover:text-[#E63946] transition-colors">
-            ← Retour aux écoles
+            ← Retour aux établissements
           </Link>
           <p className="text-[11px] text-[#6b7280] mt-2">
-            Écoles <span className="text-[#4a4d56] mx-1">›</span> <span className="text-white">{S("name") || "École"}</span>
+            Établissements <span className="text-[#4a4d56] mx-1">›</span> <span className="text-white">{S("name") || "Établissement"}</span>
           </p>
           <h1 className="font-head text-[28px] sm:text-[32px] font-black text-white uppercase tracking-tight mt-1">
-            {S("name") || "École"}
+            {S("name") || "Établissement"}
           </h1>
         </div>
         <button
@@ -726,7 +732,7 @@ export default function AdminSchoolDetailPage({ params }: { params: Promise<{ id
 
       {/* Editable header form */}
       <section className={`${card} p-6`}>
-        <h2 className="font-head text-[14px] font-black text-white uppercase tracking-tight mb-4">Informations de l&apos;école</h2>
+        <h2 className="font-head text-[14px] font-black text-white uppercase tracking-tight mb-4">Informations de l&apos;établissement</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <label className="space-y-1.5 block">
             <span className={labelCls}>Nom</span>
@@ -749,18 +755,22 @@ export default function AdminSchoolDetailPage({ params }: { params: Promise<{ id
               {regionOptions.map((r) => <option key={r} value={r}>{r}</option>)}
             </select>
           </label>
-          <label className="space-y-1.5 block">
-            <span className={labelCls}>Réseau</span>
-            <select value={S("reseau")} onChange={(e) => setS("reseau", e.target.value || null)} className={inputCls}>
-              {RESEAU_OPTS.map((o) => <option key={o.v} value={o.v}>{o.l}</option>)}
-            </select>
-          </label>
-          <label className="space-y-1.5 block">
-            <span className={labelCls}>Langue</span>
-            <select value={S("langue")} onChange={(e) => setS("langue", e.target.value || null)} className={inputCls}>
-              {LANGUE_OPTS.map((o) => <option key={o.v} value={o.v}>{o.l}</option>)}
-            </select>
-          </label>
+          {!isCivilLigue && (
+            <label className="space-y-1.5 block">
+              <span className={labelCls}>Réseau</span>
+              <select value={S("reseau")} onChange={(e) => setS("reseau", e.target.value || null)} className={inputCls}>
+                {RESEAU_OPTS.map((o) => <option key={o.v} value={o.v}>{o.l}</option>)}
+              </select>
+            </label>
+          )}
+          {!isCivilLigue && (
+            <label className="space-y-1.5 block">
+              <span className={labelCls}>Langue</span>
+              <select value={S("langue")} onChange={(e) => setS("langue", e.target.value || null)} className={inputCls}>
+                {LANGUE_OPTS.map((o) => <option key={o.v} value={o.v}>{o.l}</option>)}
+              </select>
+            </label>
+          )}
           {"address" in (school as object) && (
             <label className="space-y-1.5 block md:col-span-2">
               <span className={labelCls}>Adresse</span>

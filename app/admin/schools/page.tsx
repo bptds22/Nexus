@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import AdminTable, { AdminColumn } from "../_components/AdminTable";
 
-type SchoolType = "SECONDAIRE" | "CEGEP";
+type SchoolType = "SECONDAIRE" | "CEGEP" | "LIGUE_CIVILE";
 type Reseau = "PUBLIC" | "PRIVE";
 type Langue = "FR" | "EN" | "BILINGUE";
 
@@ -28,6 +28,7 @@ interface SchoolRow {
 const TYPE_OPTIONS: { value: SchoolType; label: string }[] = [
   { value: "SECONDAIRE", label: "Secondaire" },
   { value: "CEGEP", label: "CÉGEP" },
+  { value: "LIGUE_CIVILE", label: "Ligue civile" },
 ];
 
 const RESEAU_OPTIONS: { value: Reseau; label: string }[] = [
@@ -334,7 +335,7 @@ export default function AdminSchoolsPage() {
       notify(`Erreur : ${error.message}`);
       return;
     }
-    notify("École ajoutée");
+    notify("Établissement ajouté");
     setForm({ name: "", type: "SECONDAIRE", city: "", region: "", reseau: "", langue: "" });
     setShowAdd(false);
     fetchAll();
@@ -345,22 +346,22 @@ export default function AdminSchoolsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="font-head text-2xl font-black text-white uppercase tracking-tight">
-            Gestion des écoles
+            Gestion des établissements
           </h1>
-          <p className="text-[13px] text-[#6b7280] mt-1">{rows.length} école(s) au total</p>
+          <p className="text-[13px] text-[#6b7280] mt-1">{rows.length} établissement(s) au total</p>
         </div>
         <button
           type="button"
           onClick={() => setShowAdd((v) => !v)}
           className="shrink-0 px-5 py-2.5 rounded-lg border border-[#E63946] text-[#E63946] font-bold text-[13px] uppercase tracking-wider hover:bg-[#E63946]/10 transition-colors"
         >
-          {showAdd ? "Annuler" : "+ Ajouter une école"}
+          {showAdd ? "Annuler" : "+ Ajouter un établissement"}
         </button>
       </div>
 
       {showAdd && (
         <div className="bg-[#1A1D24] border border-[#2D3748] rounded-xl p-5 space-y-4">
-          <h2 className="font-head text-[14px] font-black text-white uppercase">Nouvelle école</h2>
+          <h2 className="font-head text-[14px] font-black text-white uppercase">Nouvel établissement</h2>
           <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
             <input
               type="text"
@@ -546,7 +547,7 @@ export default function AdminSchoolsPage() {
       <div className="flex flex-wrap items-center gap-2 text-[12px]">
         <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-[#1A1D24] border border-[#2D3748] text-[#E0E0E0]">
           <span className="font-bold tabular-nums">{filtered.length}</span>
-          <span className="ml-1 text-[#9CA3AF]">école(s) affichée(s) sur {rows.length}</span>
+          <span className="ml-1 text-[#9CA3AF]">établissement(s) affiché(s) sur {rows.length}</span>
         </span>
         <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-green-500/10 border border-green-500/30 text-green-400">
           <span className="font-bold tabular-nums">{totalWithAthletes}</span>
@@ -565,7 +566,7 @@ export default function AdminSchoolsPage() {
       {loading ? (
         <div className="text-center py-12 text-[#6b7280]">Chargement...</div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-12 text-[#6b7280]">Aucune école</div>
+        <div className="text-center py-12 text-[#6b7280]">Aucun établissement</div>
       ) : (
         <AdminTable<SchoolRow>
           rows={filtered}
