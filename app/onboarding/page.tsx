@@ -374,42 +374,59 @@ export default function OnboardingPage() {
   const progress = ((step + 1) / totalSteps) * 100;
 
   const [stepSaving, setStepSaving] = useState(false);
+  const [navError, setNavError] = useState<string | null>(null);
   const [, setLocalUserVersion] = useState(0);
 
-  function canProceed(): boolean {
-    if (!user) return false;
-
-    // Read latest localStorage state — user state object lags by design
+  // Single source of truth for "did the user complete the institution
+  // step?" — called from canProceed() (gates step 1 → step 2), finish()
+  // (defensive guard against localStorage tampering / race conditions),
+  // and the Terminer button's disabled state. Returns the user-facing
+  // error message so callers don't reinvent the wording.
+  function validateInstitution(): { ok: boolean; error: string } {
+    if (!user) return { ok: false, error: "Session expirée." };
     const raw = localStorage.getItem("nexus_user");
     const localUser = raw ? JSON.parse(raw) : {};
     const role = user.role;
     const context = (user.context ?? localUser.context) as string | undefined;
     const isCivilCoach = role === "coach" && context === "ligue_civile";
+    const inst = localUser.institution as Record<string, unknown> | null;
 
-    // Step 1 enforcement (institution selection)
-    if (step === 1) {
-      if (isCivilCoach) {
-        // Civil coach must (a) select or create a league (as a
-        // LIGUE_CIVILE school) AND (b) have an INSERTed team.
-        // profile.team_id is the persistent signal — set in
-        // localStorage by LeagueCoachLeagueStep only after both
-        // schools + teams + school_coaches + team_coaches INSERTs
-        // succeed. Without this gate, civil coaches could finish
-        // onboarding with no team / no coach attachment, breaking
-        // the athlete-side picker and the team dashboard.
-        const inst = localUser.institution as Record<string, unknown> | null;
-        if (!inst || !inst.name) return false;
-        const profile = localUser.profile as Record<string, unknown> | null;
-        if (!profile?.team_id) return false;
-      } else if (role === "coach" || role === "recruiter") {
-        const inst = localUser.institution as Record<string, unknown> | null;
-        if (!inst || !inst.name) return false;
+    if (isCivilCoach) {
+      // Civil coach must (a) select or create a league (as a
+      // LIGUE_CIVILE school) AND (b) have an INSERTed team.
+      // profile.team_id is the persistent signal — set in
+      // localStorage by LeagueCoachLeagueStep only after both
+      // schools + teams + school_coaches + team_coaches INSERTs
+      // succeed.
+      if (!inst || !inst.name) {
+        return { ok: false, error: "Sélectionne une ligue pour continuer." };
       }
-      // coordinator_league intentionally ungated — separate flow,
-      // tracked in post-launch-bugs.md.
+      const profile = localUser.profile as Record<string, unknown> | null;
+      if (!profile?.team_id) {
+        return { ok: false, error: "Sélectionne ou crée une équipe pour continuer." };
+      }
+      return { ok: true, error: "" };
     }
+    if (role === "coach") {
+      if (!inst || !inst.name) {
+        return { ok: false, error: "Sélectionne une école pour continuer." };
+      }
+      return { ok: true, error: "" };
+    }
+    if (role === "recruiter") {
+      if (!inst || !inst.name) {
+        return { ok: false, error: "Sélectionne un CÉGEP pour continuer." };
+      }
+      return { ok: true, error: "" };
+    }
+    // coordinator_league intentionally ungated — separate flow,
+    // tracked in post-launch-bugs.md.
+    return { ok: true, error: "" };
+  }
 
-    // Other steps currently have no validation rules
+  function canProceed(): boolean {
+    if (!user) return false;
+    if (step === 1) return validateInstitution().ok;
     return true;
   }
 
@@ -451,8 +468,9 @@ export default function OnboardingPage() {
         // institution; the school_coaches + team_coaches INSERTs
         // happen inside LeagueCoachLeagueStep, not here. This block
         // is intentionally for the SECONDAIRE school-coach path.
+        // institution.name is guaranteed present by canProceed() at L418.
         const isCivilCoachStep1 = role === "coach" && localUser.context === "ligue_civile";
-        if (step === 1 && institution.name && role === "coach" && !isCivilCoachStep1) {
+        if (step === 1 && role === "coach" && !isCivilCoachStep1) {
           // Find the school_id from schools table
           const { data: schoolRow } = await supabase.from("schools").select("id").eq("name", institution.name).maybeSingle();
           if (schoolRow) {
@@ -485,12 +503,26 @@ export default function OnboardingPage() {
 
   const prev = () => {
     if (step > 0) {
+      setNavError(null);
       setSlideDir("left");
       setStep((s) => s - 1);
     }
   };
 
   const finish = async () => {
+    // Defense-in-depth: even though canProceed() gates step 1 → step 2,
+    // the Terminer button could be hit if institution was cleared from
+    // localStorage between step 1 and the final step (dev tools, race
+    // condition, future programmatic navigation). Without this guard,
+    // finish() would silently skip the L546/L566 school_id save and
+    // leave users.school_id = NULL — the orphan state this fix addresses.
+    const valid = validateInstitution();
+    if (!valid.ok) {
+      setNavError(valid.error || "Sélection d'établissement requise.");
+      return;
+    }
+    setNavError(null);
+
     save({ onboarding_complete: true });
     setUser((prev) => prev ? { ...prev, onboarding_complete: true } : prev);
 
@@ -542,8 +574,12 @@ export default function OnboardingPage() {
         })
         .eq("id", authUser.id);
 
-      // Save school to users table if coach selected one
-      if (localUser.institution?.name && user?.role === "coach") {
+      // Save school to users table — institution.name guaranteed
+      // present by the validateInstitution() guard at top of finish().
+      // Civil coach path also hits this and is idempotent: LIGUE_CIVILE
+      // pseudo-school + school_coaches INSERT already happened inside
+      // LeagueCoachLeagueStep; this re-upsert is harmless via onConflict.
+      if (user?.role === "coach") {
         const { data: school } = await supabase
           .from("schools")
           .select("id")
@@ -552,7 +588,6 @@ export default function OnboardingPage() {
 
         if (school) {
           await supabase.from("users").update({ school_id: school.id }).eq("id", authUser.id);
-          // Also upsert school_coaches
           await supabase.from("school_coaches").upsert({
             coach_id: authUser.id,
             school_id: school.id,
@@ -562,8 +597,9 @@ export default function OnboardingPage() {
         }
       }
 
-      // Save CÉGEP to users table for recruiter
-      if (localUser.institution?.name && user?.role === "recruiter") {
+      // Save CÉGEP to users table for recruiter — institution.name
+      // guaranteed present by the validateInstitution() guard.
+      if (user?.role === "recruiter") {
         const { data: cegep } = await supabase
           .from("schools")
           .select("id")
@@ -680,11 +716,16 @@ export default function OnboardingPage() {
                 {stepSaving ? "Enregistrement..." : "Suivant →"}
               </button>
             ) : (
-              <button type="button" onClick={finish} className="h-11 px-6 rounded-lg bg-[#E63946] text-sm font-bold text-white hover:bg-[#D42B22] transition-colors">
+              <button type="button" onClick={finish} disabled={!validateInstitution().ok} className="h-11 px-6 rounded-lg bg-[#E63946] text-sm font-bold text-white hover:bg-[#D42B22] transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                 Terminer et accéder à Nexus &rarr;
               </button>
             )}
           </div>
+          {navError && (
+            <div className="mt-4 text-[13px] text-[#EF4444] text-right" role="alert">
+              {navError}
+            </div>
+          )}
         </div>
       </div>
 
