@@ -84,8 +84,6 @@ export default function CoachActivitesPage() {
         .order("created_at", { ascending: false })
         .limit(200);
 
-      console.log("Activities data:", data, "error:", error);
-
       if (data) {
         const mapped: Activity[] = data.map((row: Record<string, unknown>) => {
           const dbType = (row.type as string) || "";

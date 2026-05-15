@@ -943,7 +943,6 @@ export default function AthleteProfilPage() {
         .eq("user_id", user.id)
         .maybeSingle();
 
-      console.log("[Athlete Profile] loaded:", raw?.first_name, raw?.last_name);
       if (!raw) { setLoading(false); return; }
 
       setAthleteId(raw.id);
@@ -1276,7 +1275,6 @@ export default function AthleteProfilPage() {
 
     if (error) { console.error("[Suggestion] insert error:", JSON.stringify(error), error.message, error.code, error.details); showToast("Erreur lors de l'envoi"); return; }
 
-    console.log("[Suggestion] saved:", inserted);
 
     // Add to local state for immediate UI update
     const newSug: AthleteSuggestion = {
@@ -1303,13 +1301,7 @@ export default function AthleteProfilPage() {
     : { percentage: 0, missing: [], checks: [] };
   const pctValue = completionResult.percentage;
   const missingTop = completionResult.missing.slice(0, 6);
-  if (typeof window !== "undefined") {
-    console.log("Completion check:", {
-      percentage: pctValue,
-      missing: completionResult.missing,
-      totalChecks: completionResult.checks.length,
-    });
-  }
+
   const encouragement =
     pctValue === 100 ? "Profil complet — bravo !" :
     pctValue >= 90 ? `Profil complété à ${pctValue}% — presque parfait !` :

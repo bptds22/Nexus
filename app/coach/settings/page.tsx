@@ -201,7 +201,6 @@ function AdminEcoleSection() {
         .from("school_directors")
         .select("id, user_id, role, added_at, users!inner(first_name, last_name, email)")
         .eq("school_id", userRow.school_id);
-      console.log("AdminEcoleSection — directors:", data, error);
 
       if (data) {
         const mapped: Director[] = data.map((d: Record<string, unknown>) => {
@@ -231,7 +230,6 @@ function AdminEcoleSection() {
       .delete()
       .eq("id", directorId)
       .eq("role", "collaborateur");
-    console.log("AdminEcoleSection — remove:", error);
 
     if (error) { showToast("Erreur lors du retrait."); return; }
     setDirectors((prev) => prev.filter((d) => d.id !== directorId));
@@ -261,7 +259,6 @@ function AdminEcoleSection() {
         email: inviteEmail.trim(),
         status: "pending",
       });
-    console.log("AdminEcoleSection — invite:", error);
 
     setInviting(false);
     if (error) { showToast("Erreur lors de l'envoi de l'invitation."); return; }
@@ -292,7 +289,6 @@ function AdminEcoleSection() {
         to_user_id: transferTarget,
         status: "pending",
       });
-    console.log("AdminEcoleSection — transfer:", error);
 
     setTransferring(false);
     setShowTransferModal(false);
@@ -482,7 +478,6 @@ export default function CoachSettingsPage() {
         .select("is_school_admin")
         .eq("id", user.id)
         .single();
-      console.log("CoachSettingsPage — isSchoolAdmin:", data?.is_school_admin);
       if (data?.is_school_admin) setIsSchoolAdmin(true);
     }
     checkAdmin();

@@ -93,7 +93,6 @@ export default function PartnerAthleteProfilePage({ params }: { params: Promise<
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ athlete_id: id }),
       }).catch((err) => {
-        console.warn("[partner profile-view audit] log failed:", err);
       });
     })();
   }, [id]);

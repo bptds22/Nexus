@@ -28,29 +28,21 @@ export default function DeactivationGuard() {
       ]);
 
       if (profileRes.error) {
-        console.log("[DeactivationGuard] profile query error:", profileRes.error.message);
+        console.error("[DeactivationGuard] profile query error:", profileRes.error.message);
         return;
       }
       const profile = profileRes.data;
       const maintenanceOn = maintRes.data?.value === "true";
-      console.log(
-        "[DeactivationGuard] user:", user.id,
-        "status:", profile?.status,
-        "role:", profile?.role,
-        "maintenance:", maintenanceOn,
-      );
 
       if (cancelled) return;
 
       if (profile?.status === "DESACTIVE" && profile?.role !== "SUPER_ADMIN") {
-        console.log("[DeactivationGuard] deactivated account — signing out");
         await supabase.auth.signOut();
         router.replace("/compte-desactive");
         return;
       }
 
       if (maintenanceOn && profile?.role !== "ADMIN" && profile?.role !== "SUPER_ADMIN") {
-        console.log("[DeactivationGuard] maintenance active — redirecting non-admin");
         router.replace("/maintenance");
       }
     })();

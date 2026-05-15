@@ -259,7 +259,6 @@ export default function CoachSuggestionsPage() {
         .eq("coach_id", user.id)
         .order("created_at", { ascending: false });
 
-      console.log("Suggestions data:", data, "error:", error);
 
       if (data) {
         const mapped: CoachSuggestion[] = data.map((row: Record<string, unknown>) => {
@@ -309,7 +308,6 @@ export default function CoachSuggestionsPage() {
   const handleApprove = useCallback(async (id: string) => {
     const supabase = createClient();
     const { error } = await supabase.from("profile_changes").update({ status: "ACKNOWLEDGED" }).eq("id", id);
-    console.log("Approve result:", error);
     if (!error) {
       setSuggestions((prev) => prev.map((s) => s.id === id ? { ...s, status: "approved" as const, reviewed_at: new Date().toISOString() } : s));
       showToast("Suggestion approuvée");
@@ -326,10 +324,8 @@ export default function CoachSuggestionsPage() {
         .from("athletes")
         .update({ [suggestion.field]: suggestion.current_value })
         .eq("id", suggestion.athlete_id);
-      console.log("Revert athlete field:", suggestion.field, "→", suggestion.current_value, "error:", revertError);
     }
     const { error } = await supabase.from("profile_changes").update({ status: "REVERTED" }).eq("id", id);
-    console.log("Reject result:", error);
     if (!error) {
       setSuggestions((prev) => prev.map((s) => s.id === id ? { ...s, status: "rejected" as const, reviewed_at: new Date().toISOString(), rejection_reason: reason } : s));
       showToast("Suggestion rejetée");
@@ -344,7 +340,6 @@ export default function CoachSuggestionsPage() {
       .update({ status: "ACKNOWLEDGED" })
       .eq("coach_id", userId)
       .eq("status", "PENDING");
-    console.log("Approve all result:", error);
     if (!error) {
       setSuggestions((prev) => prev.map((s) => s.status === "pending" ? { ...s, status: "approved" as const, reviewed_at: new Date().toISOString() } : s));
       showToast(`${pendingCount} suggestions approuvées`);

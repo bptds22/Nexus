@@ -433,7 +433,6 @@ export default function CreateAthletePage() {
         .eq("id", authUser.id)
         .single();
 
-      console.log("[CreateAthlete] User context:", userProfile?.context);
 
       // Load coach's school + teams
       if (userProfile?.school_id) {
@@ -449,7 +448,6 @@ export default function CreateAthletePage() {
           .eq("school_id", userProfile.school_id)
           .eq("is_active", true);
 
-        console.log("[CreateAthlete] Loaded teams:", teams?.length);
 
         setCoachTeam({
           school: schoolName,
@@ -495,7 +493,6 @@ export default function CreateAthletePage() {
           })
           .filter((t): t is { id: string; name: string } => !!t?.id);
 
-        console.log("[CreateAthlete] Civil teams for coach:", teams);
 
         if (teams.length > 0) {
           setLeagueTeamId(teams[0].id);
@@ -666,7 +663,6 @@ export default function CreateAthletePage() {
     if (form.sports.secondarySport && form.sports.secondarySport !== "Aucun") {
       const { data: secSportRow } = await supabase.from("sports").select("id").eq("nom", form.sports.secondarySport).maybeSingle();
       sportSecondaireId = secSportRow?.id || null;
-      console.log("Secondary sport lookup:", form.sports.secondarySport, "→", sportSecondaireId);
     }
 
     // Build athlete record
@@ -762,7 +758,6 @@ export default function CreateAthletePage() {
       profile_completion: 0,
     };
 
-    console.log("Academic honors being saved:", form.academic.academicHonors);
 
     const { data: newAthlete, error } = await supabase
       .from("athletes")
@@ -815,12 +810,10 @@ export default function CreateAthletePage() {
       if (evalError) {
         console.error("Evaluation insert error:", JSON.stringify(evalError));
       } else {
-        console.log("Evaluation saved for athlete:", newAthlete.id);
       }
 
       // ── Insert team_athletes assignment if a team was selected ──
       const selectedTeamId = form.sports.selectedTeamId;
-      console.log("[Create] Attempting team_athletes insert:", { team_id: selectedTeamId, athlete_id: newAthlete.id });
       if (selectedTeamId) {
         const { error: teamErr } = await supabase.from("team_athletes").insert({
           team_id: selectedTeamId,
@@ -831,10 +824,8 @@ export default function CreateAthletePage() {
         if (teamErr) {
           console.error("[Create] team_athletes insert failed:", teamErr);
         } else {
-          console.log("[Create] team_athletes insert SUCCESS:", { team_id: selectedTeamId, athlete_id: newAthlete.id });
         }
       } else {
-        console.log("[Create] No team selected — skipping team_athletes insert");
       }
     }
 
@@ -1699,7 +1690,7 @@ export default function CreateAthletePage() {
           <p className={sectionTitle}>Finalisation</p>
           <div>
             <label className={labelCls}>Statut de recrutement{req}</label>
-            <NxSelect value={submission.recruitingStatus} onChange={(v) => { console.log("Recruitment status selected:", v); updateSubmission("recruitingStatus", v); }}
+            <NxSelect value={submission.recruitingStatus} onChange={(v) => { updateSubmission("recruitingStatus", v); }}
               options={[{ value: "OUVERT", label: "Ouvert aux offres" }, { value: "ENGAGE", label: "Engagé / Committé" }, { value: "FERME", label: "Fermé / Non disponible" }]} />
           </div>
         </div>

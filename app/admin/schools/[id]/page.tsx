@@ -162,7 +162,6 @@ export default function AdminSchoolDetailPage({ params }: { params: Promise<{ id
     (async () => {
       setLoading(true);
       const { data: sch, error } = await supabase.from("schools").select("*").eq("id", id).maybeSingle();
-      console.log("[admin/schools] school:", sch, "error:", error);
       if (cancelled) return;
       if (!sch) { setSchool(null); setLoading(false); return; }
       setSchool(sch as SchoolRow);
@@ -187,7 +186,6 @@ export default function AdminSchoolDetailPage({ params }: { params: Promise<{ id
         `)
         .eq("school_id", id)
         .order("last_name");
-      console.log("[admin/schools] athletes raw:", athleteRowsRaw);
       const athleteIds: string[] = ((athleteRowsRaw as { id: string }[] | null) || []).map((a) => a.id);
 
       const mappedAthletes: AthleteRow[] = ((athleteRowsRaw as Record<string, unknown>[] | null) || []).map((r) => {
@@ -240,11 +238,6 @@ export default function AdminSchoolDetailPage({ params }: { params: Promise<{ id
           .eq("role", "COACH")
           .eq("school_id", id),
       ]);
-      console.log(
-        "[admin/schools] school_coaches rows:", scRes.data, "err:", scRes.error,
-        "legacy users(role=COACH,school_id=id):", legacyRes.data, "err:", legacyRes.error,
-        "athleteCoachIds:", athleteCoachIds,
-      );
 
       // Build per-coach metadata (role/sport from school_coaches, when present).
       // Phase 6.1.x : team membership patched in after team_coaches fetch below.
@@ -283,7 +276,6 @@ export default function AdminSchoolDetailPage({ params }: { params: Promise<{ id
           .from("users")
           .select("id, first_name, last_name, email, is_school_admin, role, avatar_url, created_at")
           .in("id", allCoachIds);
-        console.log("[admin/schools] coach users:", userRows, "err:", userErr);
         userById = new Map(((userRows as Record<string, unknown>[] | null) || []).map((u) => [u.id as string, u]));
       }
 
@@ -325,7 +317,6 @@ export default function AdminSchoolDetailPage({ params }: { params: Promise<{ id
         .from("teams")
         .select("*, sports!sport_id(nom)")
         .eq("school_id", id);
-      console.log("[admin/schools] teams:", teamRows, "err:", teamErr);
       const teamList = (teamRows as Record<string, unknown>[] | null) || [];
       const teamIds: string[] = teamList.map((t) => t.id as string);
 
@@ -360,7 +351,6 @@ export default function AdminSchoolDetailPage({ params }: { params: Promise<{ id
           .from("team_coaches")
           .select("team_id, coach_id, role")
           .in("team_id", teamIds);
-        console.log("[admin/schools] team_coaches:", tcRows, "err:", tcErr);
         for (const row of (tcRows as Record<string, unknown>[] | null) || []) {
           const tid = row.team_id as string;
           const cid = row.coach_id as string;
@@ -458,7 +448,6 @@ export default function AdminSchoolDetailPage({ params }: { params: Promise<{ id
           .or(filters.join(","))
           .order("created_at", { ascending: false })
           .limit(30);
-        console.log("[admin/schools] activities:", actRows);
         const mappedAct: ActivityRow[] = ((actRows as Record<string, unknown>[] | null) || []).map((r) => {
           const ath = r.athletes as Record<string, unknown> | null;
           const athName = ath ? `${(ath.first_name as string) || ""} ${(ath.last_name as string) || ""}`.trim() : null;
@@ -500,7 +489,6 @@ export default function AdminSchoolDetailPage({ params }: { params: Promise<{ id
     for (const k of candidateKeys) {
       if (k in school) patch[k] = (school as Record<string, unknown>)[k];
     }
-    console.log("[admin/schools] save patch:", patch);
     const { error } = await supabase.from("schools").update(patch).eq("id", id);
     setSaving(false);
     if (error) {
@@ -529,7 +517,6 @@ export default function AdminSchoolDetailPage({ params }: { params: Promise<{ id
       .update({ role: "COACH" })
       .eq("school_id", id)
       .eq("role", "DIRECTEUR");
-    console.log("[admin/schools] demote DIRECTEUR →", demote);
     if (demote.error) { notify(`Erreur: ${demote.error.message}`); return; }
 
     // 2. Promote the selected coach row.
@@ -537,7 +524,6 @@ export default function AdminSchoolDetailPage({ params }: { params: Promise<{ id
       .from("school_coaches")
       .update({ role: "DIRECTEUR" })
       .eq("id", coach.scId);
-    console.log("[admin/schools] promote →", promote);
     if (promote.error) { notify(`Erreur: ${promote.error.message}`); return; }
 
     setCoaches((prev) => prev.map((c) => {
@@ -555,7 +541,6 @@ export default function AdminSchoolDetailPage({ params }: { params: Promise<{ id
       .neq("id", id)
       .order("name", { ascending: true })
       .limit(10000);
-    console.log("Schools fetched:", data, "Error:", error);
     if (error) {
       notify(`Erreur chargement écoles : ${error.message}`);
       return;
@@ -570,8 +555,6 @@ export default function AdminSchoolDetailPage({ params }: { params: Promise<{ id
   }
 
   async function openTransferModal(coach: CoachRow) {
-    console.log("Transfer clicked for coach:", coach.id, "from school:", id);
-    console.log("Modal opened, fetching schools...");
     setTransferModal({ coach, newSchoolId: "", newRole: "COACH" });
     // Always refetch on open so the dropdown reflects the current DB state
     await loadAllSchools();
@@ -582,7 +565,6 @@ export default function AdminSchoolDetailPage({ params }: { params: Promise<{ id
     const { coach, newSchoolId, newRole } = transferModal;
     const name = `${coach.first_name ?? ""} ${coach.last_name ?? ""}`.trim() || "ce coach";
     const target = allSchools.find((s) => s.id === newSchoolId);
-    console.log("Transfer confirmed:", { coachId: coach.id, newRole, newSchoolId });
     setActionPending(true);
 
     // 1. Remove from current school's coach list (if scId exists)
@@ -619,7 +601,6 @@ export default function AdminSchoolDetailPage({ params }: { params: Promise<{ id
   }
 
   function openDeleteModal(coach: CoachRow) {
-    console.log("Delete clicked for coach:", coach.id);
     setDeleteModal({ coach, ackChecked: false });
   }
 
@@ -627,7 +608,6 @@ export default function AdminSchoolDetailPage({ params }: { params: Promise<{ id
     if (!deleteModal || !deleteModal.ackChecked) return;
     const { coach } = deleteModal;
     const name = `${coach.first_name ?? ""} ${coach.last_name ?? ""}`.trim() || "ce coach";
-    console.log("Delete confirmed");
     setActionPending(true);
 
     // 1. Deactivate user + clear school link
@@ -1151,7 +1131,6 @@ export default function AdminSchoolDetailPage({ params }: { params: Promise<{ id
                           key={opt.value}
                           type="button"
                           onClick={() => {
-                            console.log("Transfer modal - role selected:", opt.value);
                             setTransferModal({ ...transferModal, newRole: opt.value, newSchoolId: "" });
                           }}
                           className={`px-3 py-2.5 rounded-lg border text-[13px] font-bold uppercase tracking-wider transition-colors ${
@@ -1174,7 +1153,6 @@ export default function AdminSchoolDetailPage({ params }: { params: Promise<{ id
                     id="transfer-school"
                     value={transferModal.newSchoolId}
                     onChange={(e) => {
-                      console.log("Transfer modal - school selected:", e.target.value);
                       setTransferModal({ ...transferModal, newSchoolId: e.target.value });
                     }}
                     className={`${inputCls} mt-1.5`}

@@ -105,8 +105,6 @@ export default function NotificationsSection() {
         .select("event_type, courriel, push")
         .eq("user_id", user.id);
 
-      console.log("[Coach NotificationsSection] loaded rows:", rows?.length);
-
       if (rows && rows.length > 0) {
         const built = buildDefaultPrefs();
         for (const row of rows) {
@@ -162,14 +160,13 @@ export default function NotificationsSection() {
           { onConflict: "user_id,event_type" }
         );
       if (upsertErr) {
-        console.log("[Coach Notifications] upsert error:", eventType, upsertErr);
+        console.error("[Coach Notifications] upsert error:", eventType, upsertErr);
         setSaving(false);
         setError("Erreur lors de la sauvegarde.");
         return;
       }
     }
 
-    console.log("[Coach Notifications] saved all prefs");
     setOriginalJson(JSON.stringify(prefs));
     setSaving(false);
     setSaved(true);

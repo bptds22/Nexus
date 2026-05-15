@@ -133,15 +133,12 @@ export default function AthleteProfileView({
     let cancelled = false;
     const load = async () => {
       setLoading(true);
-      console.log("[AthleteProfileView] loading athleteId:", athleteId);
       try {
         const { data: raw, error } = await loadAthleteRaw(athleteId);
         if (error) console.error("[AthleteProfileView] loadAthleteRaw error:", error);
         if (!raw || cancelled) { setLoading(false); return; }
         const rawRec = raw as Record<string, unknown>;
-        console.log("[AthleteProfileView] raw:", rawRec);
         const mapped = mapToRecruiterView(rawRec);
-        console.log("[AthleteProfileView] mapped:", mapped);
         setA(mapped);
 
         const evals = rawRec.evaluations;
@@ -164,7 +161,6 @@ export default function AthleteProfileView({
         if (cancelled) return;
         setViewCount(vc || 0);
         setFavoriteCount(fc || 0);
-        console.log("[AthleteProfileView] engagement:", { vc, fc });
       } catch (err) {
         console.error("[AthleteProfileView] load failed:", err);
       } finally {

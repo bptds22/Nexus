@@ -117,7 +117,6 @@ export default function TableauDeBordPage() {
         .select("id, verified")
         .eq("coach_id", user.id)
         .eq("status", "ACTIF");
-      console.log("Dashboard athletes (claimed by coach):", athleteRows);
 
       const athletes = athleteRows || [];
       const coachAthleteIds = athletes.map((a: { id: string }) => a.id);
@@ -133,7 +132,6 @@ export default function TableauDeBordPage() {
           .eq("stage", "CONTACTE")
           .in("athlete_id", coachAthleteIds);
         unreadMessages = count || 0;
-        console.log("Dashboard unread contacts:", count);
       }
 
       // Banner 2: non-verified profiles
@@ -146,7 +144,6 @@ export default function TableauDeBordPage() {
         .eq("coach_id", user.id)
         .eq("type", "ATHLETE_ADDED")
         .eq("read", false);
-      console.log("Dashboard new athletes (unread):", newAthletesCount);
 
       // Banner 4: pending athlete suggestions
       let pendingSuggestions = 0;
@@ -202,7 +199,6 @@ export default function TableauDeBordPage() {
           .select("recruiter_id")
           .in("athlete_id", coachAthleteIds)
           .in("stage", ["CONTACTE", "EN_DISCUSSION", "VISITE_PLANIFIEE", "ENGAGE"]);
-        console.log("Dashboard active pipeline rows:", activeRows);
         if (activeRows) {
           const uniqueRecruiters = new Set(activeRows.map((r: { recruiter_id: string }) => r.recruiter_id));
           activeConversations = uniqueRecruiters.size;
@@ -259,7 +255,6 @@ export default function TableauDeBordPage() {
         const sorted = [...viewCounts.entries()]
           .sort((a, b) => b[1] - a[1])
           .slice(0, 5);
-        console.log("Hot athletes ranking:", sorted);
 
         if (sorted.length > 0) {
           const topIds = sorted.map(([id]) => id);
@@ -303,7 +298,6 @@ export default function TableauDeBordPage() {
           .limit(20);
         activityRows = data;
       }
-      console.log("Dashboard activities:", activityRows?.length);
 
       if (activityRows && activityRows.length > 0) {
         const TYPE_CONFIG: Record<string, { icon: string; iconColor: string; priority: 1 | 2; label: string }> = {

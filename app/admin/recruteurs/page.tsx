@@ -72,7 +72,6 @@ export default function AdminRecruteursPage() {
   const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
-    console.log("Admin recruteurs page loaded");
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -88,7 +87,7 @@ export default function AdminRecruteursPage() {
       .order("created_at", { ascending: false });
 
     if (rErr) {
-      console.log("[AdminRecruteurs] load error:", rErr.message);
+      console.error("[AdminRecruteurs] load error:", rErr.message);
       setLoading(false);
       return;
     }
@@ -170,8 +169,6 @@ export default function AdminRecruteursPage() {
     const flaggedCount = built.filter(
       (r) => r.flagNoSchool || r.flagSuspiciousEmail || r.flagDuplicateSchool
     ).length;
-    console.log("New recruiters (7 days):", newCount);
-    console.log("Flagged recruiters:", flaggedCount);
 
     setRows(built);
     setLoading(false);

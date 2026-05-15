@@ -248,7 +248,6 @@ function ModifierContent({ id }: { id: string }) {
         .eq("school_id", profile.school_id)
         .eq("is_active", true);
 
-      console.log("[Modifier] Loaded teams:", teams?.length);
 
       setCoachTeam({
         school: school?.name || "",
@@ -276,7 +275,6 @@ function ModifierContent({ id }: { id: string }) {
         .select("team_id")
         .eq("athlete_id", id)
         .maybeSingle();
-      console.log("[Modifier] Current team assignment:", currentTeamAssignment);
       if (currentTeamAssignment?.team_id) {
         const matchedTeam = (teams || []).find((t: any) => t.id === currentTeamAssignment.team_id);
         if (matchedTeam) {
@@ -301,26 +299,16 @@ function ModifierContent({ id }: { id: string }) {
 
     loadAthleteRaw(id).then(({ data, error }) => {
       if (error || !data) {
-        console.log("Modifier: failed to load:", error);
+        console.error("Modifier: failed to load:", error);
         setLoading(false);
         return;
       }
       const raw = data as Record<string, unknown>;
-      console.log("Modifier raw data:", JSON.stringify({
-        numero_jersey: raw.numero_jersey,
-        programme: raw.programme_cegep_vise,
-        ouvert_prive: raw.ouvert_cegep_prive,
-        ouvert_anglo: raw.ouvert_cegep_anglophone,
-        pret_demenager: raw.pret_changer_region,
-        cote: raw.cote_globale_entraineur,
-        notes: raw.notes_coach,
-      }));
       // Build form directly from raw DB data — preserves all values
       const formFromDB = buildFormFromRaw(raw) as unknown as AthleteFormData;
       setForm(formFromDB);
 
       // Load recruitment status fields from athlete record
-      console.log('Recruitment status fields:', { recruitment_status: raw.recruitment_status, committed_school_id: raw.committed_school_id, open_to_offers: raw.open_to_offers });
       if (raw.recruitment_status) setRecruitmentStatus(raw.recruitment_status as string);
       if (raw.committed_school_id) setCommittedSchoolId(raw.committed_school_id as string);
       if (raw.open_to_offers != null) setOpenToOffers(raw.open_to_offers as boolean);
@@ -450,7 +438,7 @@ function ModifierContent({ id }: { id: string }) {
   async function saveToSupabase(): Promise<boolean> {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { console.log("handleSave: no user"); return false; }
+    if (!user) { return false; }
 
     // Auto-calculate cote_globale from trait ratings if in detailed mode
     let coteGlobale = form.scouting.starRating || null;
@@ -471,7 +459,6 @@ function ModifierContent({ id }: { id: string }) {
       email: form.identity.email || null,
       photo_url: form.identity.photo || null,
     };
-    console.log("Saving personal:", personalData);
 
     // ── ACADEMIC ──
     const academicData = {
@@ -484,7 +471,6 @@ function ModifierContent({ id }: { id: string }) {
       pret_changer_region: form.academic.openToRelocate,
       regions_cegep_preferees: form.academic.cegepRegions || [],
     };
-    console.log("Saving academic:", academicData);
 
     // ── PHYSICAL ──
     const physicalData = {
@@ -502,7 +488,6 @@ function ModifierContent({ id }: { id: string }) {
       navette_agilite: form.physical.shuttleAgility || null,
       sprint_100m: form.physical.sprint100m || null,
     };
-    console.log("Saving physical:", physicalData);
 
     // ── SPORT — look up UUIDs from names ──
     let sportId = null;
@@ -510,7 +495,6 @@ function ModifierContent({ id }: { id: string }) {
     if (form.sports.primarySport) {
       const { data: sportRow } = await supabase.from("sports").select("id").eq("nom", form.sports.primarySport).maybeSingle();
       sportId = sportRow?.id || null;
-      console.log("Sport save:", { dropdownValue: form.sports.primarySport, sport_id: sportId });
     }
     if (form.sports.primaryPosition && sportId) {
       const { data: posRow } = await supabase.from("positions").select("id").eq("abreviation", form.sports.primaryPosition).eq("sport_id", sportId).maybeSingle();
@@ -521,7 +505,6 @@ function ModifierContent({ id }: { id: string }) {
       } else {
         positionId = posRow.id;
       }
-      console.log("Position save:", { dropdownValue: form.sports.primaryPosition, position_id: positionId });
     }
 
     // ── SECONDARY SPORT/POSITION ──
@@ -530,13 +513,11 @@ function ModifierContent({ id }: { id: string }) {
     if (form.sports.secondarySport && form.sports.secondarySport !== "Aucun") {
       const { data: secSportRow } = await supabase.from("sports").select("id").eq("nom", form.sports.secondarySport).maybeSingle();
       sportSecondaireId = secSportRow?.id || null;
-      console.log("Secondary sport save:", { dropdownValue: form.sports.secondarySport, sport_secondaire_id: sportSecondaireId });
     }
     // Secondary position = same sport, different position (e.g. OG / LB)
     if (form.sports.secondaryPosition && sportId) {
       const { data: secPosRow } = await supabase.from("positions").select("id").eq("abreviation", form.sports.secondaryPosition).eq("sport_id", sportId).maybeSingle();
       positionSecondaireId = secPosRow?.id || null;
-      console.log("Secondary position save:", { dropdownValue: form.sports.secondaryPosition, position_secondaire_id: positionSecondaireId });
     }
 
     const sportData: Record<string, unknown> = {
@@ -547,14 +528,12 @@ function ModifierContent({ id }: { id: string }) {
     if (positionId) sportData.position_id = positionId;
     sportData.sport_secondaire_id = sportSecondaireId;
     sportData.position_secondaire_id = positionSecondaireId;
-    console.log("Saving sport (full):", JSON.stringify(sportData));
 
     // ── EVALUATION ──
     const evalData = {
       cote_globale_entraineur: coteGlobale,
       notes_coach: form.scouting.coachEndorsement || null,
     };
-    console.log("Saving evaluation:", evalData);
 
     // ── MEDIA ──
     const mediaData = {
@@ -565,7 +544,6 @@ function ModifierContent({ id }: { id: string }) {
       video_match_complet_url: form.media.fullGameVideo || null,
       video_entrainement_url: form.media.trainingVideo || null,
     };
-    console.log("Saving media:", mediaData);
 
     // ── CONSENT ──
     const consentData = {
@@ -581,7 +559,6 @@ function ModifierContent({ id }: { id: string }) {
     };
 
     // ── RECRUITMENT STATUS ──
-    console.log('Saving recruitment status:', { recruitmentStatus, committedSchoolId, openToOffers });
     const recruitmentData: Record<string, unknown> = {
       recruitment_status: recruitmentStatus,
       committed_school_id: recruitmentStatus === 'RECRUTE' ? committedSchoolId || null : null,
@@ -603,9 +580,7 @@ function ModifierContent({ id }: { id: string }) {
       ...recruitmentData,
     };
 
-    console.log("FULL UPDATE PAYLOAD:", JSON.stringify(updateData));
     const { error } = await supabase.from("athletes").update(updateData).eq("id", id);
-    console.log("Save result:", error ? error.message : "SUCCESS");
 
     if (error) {
       console.error("Save failed:", error.message);
@@ -615,7 +590,6 @@ function ModifierContent({ id }: { id: string }) {
 
     // ── UPSERT evaluations table ──
     const tr = form.scouting.traitRatings;
-    console.log("Trait ratings from form:", JSON.stringify(tr));
 
     // Map UI trait keys → DB columns (keys match directly)
     const vitesse_explosivite = tr.vitesse_explosivite || null;
@@ -635,8 +609,6 @@ function ModifierContent({ id }: { id: string }) {
 
     // Distinctions — save full object array (new format)
     const distinctionsToSave = form.scouting.badges.filter((b) => b && b.badge);
-    console.log("Distinctions to save:", distinctionsToSave);
-    console.log("Saving jersey:", form.sports.jerseyNumber);
 
     const evalRecord = {
       coach_id: user.id,
@@ -659,11 +631,9 @@ function ModifierContent({ id }: { id: string }) {
       distinctions: distinctionsToSave,
       rapport_entraineur: form.scouting.coachEndorsement || null,
     };
-    console.log("Saving evaluation:", JSON.stringify(evalRecord));
     const { error: evalError } = await supabase
       .from("evaluations")
       .upsert(evalRecord, { onConflict: "coach_id,athlete_id" });
-    console.log("Evaluation upsert result:", evalError ? evalError.message : "SUCCESS");
 
     // ── SAVE team assignment ──
     const selectedTeamId = form.sports.selectedTeamId;
@@ -675,7 +645,6 @@ function ModifierContent({ id }: { id: string }) {
         athlete_id: id,
         jersey_number: form.sports.jerseyNumber || null,
       });
-      console.log("Team assignment result:", teamErr ? teamErr.message : "SUCCESS");
     } else {
       // No team selected — remove any existing assignment
       await supabase.from("team_athletes").delete().eq("athlete_id", id);

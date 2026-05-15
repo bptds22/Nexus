@@ -71,7 +71,7 @@ export default function VerificationBadge({
   return (
     <button
       type="button"
-      onClick={(e) => { e.stopPropagation(); console.log("Badge clicked, has onClick:", !!onClick); if (onClick) { console.log("Calling parent onClick"); onClick(); } }}
+      onClick={(e) => { e.stopPropagation(); if (onClick) { onClick(); } }}
       className={`flex items-center gap-2 cursor-pointer ${compact ? "min-w-[80px]" : ""} ${onClick ? "hover:opacity-80 transition-opacity" : ""}`}
       title={tooltip}
     >

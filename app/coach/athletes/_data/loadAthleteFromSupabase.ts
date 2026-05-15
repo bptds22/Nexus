@@ -89,7 +89,6 @@ const ATHLETE_SELECT = `
 export async function loadAthleteRaw(athleteId: string) {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  console.log("Auth user:", user?.id, user?.email);
 
   if (!user) return { data: null, error: "Not authenticated" };
 
@@ -99,7 +98,6 @@ export async function loadAthleteRaw(athleteId: string) {
     .eq("id", athleteId)
     .single();
 
-  console.log("Athlete raw from Supabase:", JSON.stringify(data), "error:", error);
 
   // Resolve secondary position name (can't do two FK joins to same table)
   if (data && (data as Record<string, unknown>).position_secondaire_id) {
@@ -125,7 +123,6 @@ export function mapToAthleteProfile(raw: Record<string, unknown>): AthleteProfil
   const schoolObj = schoolRel as { name?: string; city?: string; region?: string } | null;
   const evals = Array.isArray(raw.evaluations) ? raw.evaluations : [];
   const eval0 = evals[0] as Record<string, unknown> | undefined;
-  console.log("School data:", schoolObj?.name, "Coach data:", raw.users);
 
   const heightFt = (raw.taille_pieds as number) || 0;
   const heightIn = (raw.taille_pouces as number) || 0;
@@ -166,7 +163,6 @@ export function mapToAthleteProfile(raw: Record<string, unknown>): AthleteProfil
     openToAnglophone: !!(raw.ouvert_cegep_anglophone),
   };
 
-  console.log("Mapped AthleteProfile:", profile.firstName, profile.lastName, "pos:", profile.position, "sport:", profile.sport);
   return profile;
 }
 
@@ -181,11 +177,6 @@ export function buildFormFromRaw(raw: Record<string, unknown>): Record<string, u
   const evals = Array.isArray(raw.evaluations) ? raw.evaluations : [];
   const eval0 = evals[0] as Record<string, unknown> | undefined;
 
-  console.log("buildFormFromRaw school:", schoolObj);
-  console.log("buildFormFromRaw matieres_fortes:", raw.matieres_fortes);
-  console.log("buildFormFromRaw regions_cegep:", raw.regions_cegep_preferees);
-  console.log("buildFormFromRaw evaluation:", eval0 ? JSON.stringify(eval0) : "null");
-  console.log("buildFormFromRaw distinctions:", eval0?.distinctions);
 
   const heightFt = raw.taille_pieds != null ? String(raw.taille_pieds) : "";
   const heightIn = raw.taille_pouces != null ? String(raw.taille_pouces) : "";
@@ -307,17 +298,6 @@ export function buildFormFromRaw(raw: Record<string, unknown>): Record<string, u
     parentalConsent: !!(raw.consentement_parental),
   };
 
-  console.log("Form initialized from DB:", JSON.stringify({
-    jersey: formData.sports.jerseyNumber,
-    programme: formData.academic.cegepType,
-    openPrivate: formData.academic.openToPrivate,
-    openAnglo: formData.academic.openToAnglophone,
-    relocate: formData.academic.openToRelocate,
-    starRating: formData.scouting.starRating,
-    traitRatings: formData.scouting.traitRatings,
-    highlights: formData.media.highlightVideo,
-    secondaryPosition: formData.sports.secondaryPosition,
-  }));
 
   return formData;
 }
@@ -421,7 +401,6 @@ export function mapToRecruiterView(raw: Record<string, unknown>): AthleteProfile
       if (Array.isArray(p)) arr = p;
       else if (typeof p === "string" && p.startsWith("[")) try { arr = JSON.parse(p); } catch { /* */ }
       else if (typeof p === "string" && p.length > 0) arr = [p];
-      console.log("programme_cegep_vise raw:", p, "parsed:", arr);
       return arr.length > 0 ? arr.join(", ") : undefined;
     })(),
     openToRelocate: !!(raw.pret_changer_region),
@@ -449,6 +428,5 @@ export function mapToRecruiterView(raw: Record<string, unknown>): AthleteProfile
     isOpenToOffers: true,
   };
 
-  console.log("Mapped RecruiterView:", view.firstName, view.lastName, "pos:", view.primaryPosition);
   return view;
 }

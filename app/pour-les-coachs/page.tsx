@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
 import Link from "next/link";
 import MarketingNav from "@/components/marketing/MarketingNav";
 import PlaybookBackground from "@/app/components/PlaybookBackground";
@@ -288,10 +287,6 @@ const REPUTATION_STATS: { label: string; value: string }[] = [
 ══════════════════════════════════════════════════════════════ */
 
 export default function PourLesCoachsPage() {
-  useEffect(() => {
-    console.log("Coach page loaded");
-  }, []);
-
   const progressVar = { "--bar-w": "80%" } as React.CSSProperties;
 
   return (

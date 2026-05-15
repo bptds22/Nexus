@@ -63,7 +63,6 @@ function StatsPage() {
         .eq("coach_id", user.id)
         .limit(1)
         .single();
-      console.log("Stats — my school:", mySchool);
       if (!mySchool) { setLoading(false); return; }
 
       const { data: schoolCoaches } = await supabase
@@ -77,7 +76,6 @@ function StatsPage() {
         .from("athletes")
         .select("id, first_name, last_name, sport_id, coach_id, profile_completion, verified, annee_diplomation, position_id, sports!sport_id(nom), positions!position_id(nom, abreviation)")
         .in("coach_id", coachIds);
-      console.log("Stats — athletes:", athletes);
 
       if (!athletes || athletes.length === 0) { setLoading(false); return; }
       const athleteIds = athletes.map(a => a.id);
@@ -86,7 +84,6 @@ function StatsPage() {
         .from("pipeline")
         .select("id, athlete_id, recruiter_id, status")
         .in("athlete_id", athleteIds);
-      console.log("Stats — pipeline:", pipelineEntries);
       const pipeline = pipelineEntries || [];
 
       const sportIds = [...new Set(athletes.map(a => a.sport_id).filter(Boolean))];

@@ -92,8 +92,6 @@ function RecruteurActivitesPageContent() {
         .order("created_at", { ascending: false })
         .limit(50);
 
-      console.log("[Activities log]", { count: logData?.length, error: logErr });
-
       if (logData && logData.length > 0) {
         // Get athlete names for all referenced athletes
         const athleteIds = [...new Set(logData.map(l => l.athlete_id).filter(Boolean))];
@@ -253,7 +251,6 @@ function RecruteurActivitesPageContent() {
       const oneDayAgo = Date.now() - 86400000;
       for (const item of all) { if (new Date(item.timestamp).getTime() > oneDayAgo) item.isRead = false; }
 
-      console.log("[Activities fallback]", { total: all.length });
       setActivities(all);
       setLoading(false);
     }

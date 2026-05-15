@@ -79,7 +79,7 @@ export default function MarketingNav() {
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => { console.log("[MarketingNav] Language toggle clicked — no-op until translations ready"); }}
+            onClick={() => { }}
             className="hidden sm:flex items-center gap-1 px-3 py-1.5 rounded-full border border-white/20 text-sm font-medium"
           >
             <span className="text-white font-semibold">FR</span>

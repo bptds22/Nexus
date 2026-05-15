@@ -165,9 +165,6 @@ function MessagesPageContent() {
         .eq("recruiter_id", user.id)
         .order("last_message_at", { ascending: false });
 
-      console.log("[Conversations fetch]", { count: data?.length, error });
-      if (data?.[0]) console.log("[Athlete columns check]", data[0]);
-
       if (data) {
         // Get last message for each conversation
         const convIds = data.map((c: Record<string, unknown>) => c.id as string);

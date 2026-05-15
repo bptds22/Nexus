@@ -143,7 +143,6 @@ export default function AdminRecruiterDetailPage() {
     if (!id) return;
     (async () => {
       setLoading(true);
-      console.log("Recruiter detail — id:", id);
 
       const [uRes, pipeRes, convRes] = await Promise.all([
         supabase.from("users").select("id,first_name,last_name,school_id,created_at").eq("id", id).maybeSingle(),
@@ -154,8 +153,6 @@ export default function AdminRecruiterDetailPage() {
       const user = uRes.data as User | null;
       const pipeData = (pipeRes.data || []) as PipeRow[];
       const convs = (convRes.data || []) as ConvRow[];
-      console.log("Recruiter detail — pipeline:", pipeData.length);
-      console.log("Recruiter detail — conversations:", convs.length);
 
       setRecruiter(user);
       setPipe(pipeData);

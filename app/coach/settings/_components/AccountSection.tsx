@@ -50,7 +50,6 @@ export default function AccountSection() {
     async function loadData() {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
-      console.log("AccountSection — auth user:", user);
       if (!user) { setLoading(false); return; }
 
       setEmail(user.email || "");
@@ -74,7 +73,6 @@ export default function AccountSection() {
     setPasswordMsg(null);
     const supabase = createClient();
     const { error } = await supabase.auth.updateUser({ password: newPassword });
-    console.log("AccountSection — password update:", error);
 
     if (error) {
       setPasswordSaving(false);
@@ -106,7 +104,6 @@ export default function AccountSection() {
         reason: deleteReason || null,
         status: "pending",
       });
-    console.log("AccountSection — deletion request:", insertErr);
 
     if (insertErr) {
       setDeleting(false);

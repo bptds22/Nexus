@@ -116,8 +116,6 @@ export default function ThreadDetailPage({ params }: { params: Promise<{ id: str
           .eq("id", id)
           .single();
 
-        console.log("[ThreadDetail] conversation:", conv, "error:", convError);
-
         if (!conv) { setLoading(false); return; }
 
         // Load recruiter info separately (avoids ambiguous FK)
@@ -138,8 +136,6 @@ export default function ThreadDetailPage({ params }: { params: Promise<{ id: str
           .select("*")
           .eq("conversation_id", id)
           .order("created_at", { ascending: true });
-
-        console.log("[ThreadDetail] messages:", msgs, "error:", msgsError);
 
         // Map conversation to thread
         const athleteData = (conv as any).athletes;
@@ -221,7 +217,6 @@ export default function ThreadDetailPage({ params }: { params: Promise<{ id: str
               .update({ unread_count: 0 })
               .eq("id", id);
 
-            console.log("[ThreadDetail] Marked", unreadIds.length, "messages as read");
           }
         }
       } catch (err) {
@@ -260,14 +255,11 @@ export default function ThreadDetailPage({ params }: { params: Promise<{ id: str
         .select()
         .single();
 
-      console.log("[ThreadDetail] Inserted message:", insertedMsg, "error:", msgError);
-
       const { error: convError } = await supabase
         .from("conversations")
         .update({ last_message_at: new Date().toISOString(), status: "envoye" })
         .eq("id", id);
 
-      console.log("[ThreadDetail] Updated conversation status, error:", convError);
     } catch (err) {
       console.error("[ThreadDetail] Error sending message:", err);
     }

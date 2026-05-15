@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import MarketingNav from "@/components/marketing/MarketingNav";
 import PlaybookBackground from "@/app/components/PlaybookBackground";
@@ -259,10 +259,6 @@ function FAQItem({ q, a }: { q: string; a: string }) {
 ══════════════════════════════════════════════════════════════ */
 
 export default function GuideRecrutementPage() {
-  useEffect(() => {
-    console.log("Guide page loaded");
-  }, []);
-
   return (
     <div className="hero-playbook min-h-screen bg-[#111317] text-white font-sans scroll-smooth relative">
       <PlaybookBackground />

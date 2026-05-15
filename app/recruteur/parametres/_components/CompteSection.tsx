@@ -112,7 +112,6 @@ export default function CompteSection({ form, original, onUpdate, onSave, onPass
                 .from("users")
                 .update({ preferred_language: value })
                 .eq("id", user.id);
-              console.log("[CompteSection] preferred_language saved:", value, error);
             }}
             className={inputCls}
           >

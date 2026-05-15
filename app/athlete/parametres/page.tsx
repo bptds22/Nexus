@@ -390,7 +390,6 @@ export default function ParametresPage() {
                       .from("users")
                       .update({ preferred_language: value })
                       .eq("id", user.id);
-                    console.log("[Athlete parametres] preferred_language saved:", value, error);
                     showToast("Préférence de langue sauvegardée");
                   }}
                   className={`${inputCls} max-w-[260px]`}

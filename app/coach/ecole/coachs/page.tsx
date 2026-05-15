@@ -128,7 +128,6 @@ function CoachesListPage() {
         .eq("coach_id", user.id)
         .limit(1)
         .single();
-      console.log("My school:", mySchool);
 
       if (!mySchool) { setLoading(false); return; }
 
@@ -137,7 +136,6 @@ function CoachesListPage() {
         .from("school_coaches")
         .select("coach_id, role, sport, team_name, created_at")
         .eq("school_id", mySchool.school_id);
-      console.log("School coaches:", schoolCoaches, error);
 
       if (error || !schoolCoaches) { setLoading(false); return; }
 
@@ -154,7 +152,6 @@ function CoachesListPage() {
         .from("athletes")
         .select("id, coach_id, profile_completion, verified")
         .in("coach_id", coachIds);
-      console.log("Athletes for coaches:", athletes);
 
       const mapped: CoachOverview[] = schoolCoaches.map(sc => {
         const profile = userProfiles?.find(u => u.id === sc.coach_id);

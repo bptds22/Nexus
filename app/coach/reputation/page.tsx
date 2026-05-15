@@ -62,7 +62,6 @@ export default function CoachReputationPage() {
         .select("*, athletes(first_name, last_name, position_id, positions!position_id(nom, abreviation))")
         .eq("coach_id", user.id)
         .order("created_at", { ascending: false });
-      console.log("Reviews:", reviewRows);
 
       const mappedReviews: CoachReview[] = (reviewRows || []).map((r: Record<string, unknown>) => {
         const ath = r.athletes as Record<string, unknown> | null;
@@ -118,7 +117,6 @@ export default function CoachReputationPage() {
         .from("athletes")
         .select("id, profile_completion, verified")
         .eq("coach_id", user.id);
-      console.log("Athletes for rep:", athleteRows);
 
       const athleteIds = (athleteRows || []).map((a: { id: string }) => a.id);
       if (athleteRows && athleteRows.length > 0) {
@@ -133,7 +131,6 @@ export default function CoachReputationPage() {
           .select("athlete_id", { count: "exact", head: true })
           .in("athlete_id", athleteIds)
           .eq("status", "LETTRE_SIGNEE");
-        console.log("Placements:", count);
         const placements = count || 0;
         setTotalPlacements(placements);
         if (placements >= 5) setHasPlaceurBadge(true);
@@ -144,7 +141,6 @@ export default function CoachReputationPage() {
         .from("conversations")
         .select("created_at, last_message_at")
         .eq("coach_id", user.id);
-      console.log("Conversations for response time:", convRows);
 
       if (convRows && convRows.length > 0) {
         let totalHours = 0;
@@ -173,7 +169,6 @@ export default function CoachReputationPage() {
         .select("ouvert_entraineur_cegep, career_sports, career_regions, career_role, career_bio")
         .eq("id", user.id)
         .single();
-      console.log("Career profile:", userProfile);
       if (userProfile) {
         setCareerOpen(!!(userProfile.ouvert_entraineur_cegep));
         setCareerSports((userProfile.career_sports as string[]) || []);

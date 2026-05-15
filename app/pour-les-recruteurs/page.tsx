@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import {
   Play,
@@ -280,10 +280,6 @@ function FaqItem({
 export default function PourLesRecruteursPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [videoOpen, setVideoOpen] = useState(false);
-
-  useEffect(() => {
-    console.log("Recruiter landing page loaded");
-  }, []);
 
   return (
     <div className="hero-playbook min-h-screen bg-[#111317] text-white font-sans scroll-smooth relative">

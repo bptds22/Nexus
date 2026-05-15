@@ -53,7 +53,6 @@ function DarkTooltip({
 
 export default function SchoolDashboardPage() {
   const { tier, canSee } = useSubscription();
-  console.log("[Mon École] tier:", tier, "canSee mon_ecole:", canSee("can_see_mon_ecole"));
   return <SchoolGate><SchoolDashboardContent /></SchoolGate>;
 }
 
@@ -87,7 +86,6 @@ function SchoolDashboardContent() {
         .eq("coach_id", user.id)
         .limit(1)
         .single();
-      console.log("École dashboard — my school:", mySchool);
 
       if (!mySchool) { setLoading(false); return; }
 
@@ -118,7 +116,6 @@ function SchoolDashboardContent() {
         .from("athletes")
         .select("id, first_name, last_name, sport_id, coach_id, profile_completion")
         .in("coach_id", coachIds);
-      console.log("École dashboard — athletes:", athletes?.length);
       const athleteList = athletes || [];
       const athleteIds = athleteList.map(a => a.id);
 
@@ -140,7 +137,6 @@ function SchoolDashboardContent() {
           .eq("status", "LETTRE_SIGNEE");
         placementsCount = count || 0;
       }
-      console.log("École dashboard — placements:", placementsCount);
 
       setStats({
         totalAthletes,
@@ -185,7 +181,6 @@ function SchoolDashboardContent() {
             counts[p.status] = (counts[p.status] || 0) + 1;
           }
         });
-        console.log("École dashboard — funnel:", counts);
 
         setFunnelData([
           { stage: "Identifiés", value: counts["IDENTIFIE"] || 0, color: "#3B82F6" },

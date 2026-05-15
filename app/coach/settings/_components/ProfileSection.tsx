@@ -53,7 +53,6 @@ export default function ProfileSection() {
         .select("first_name, last_name, email, phone, avatar_url, preferred_language")
         .eq("id", user.id)
         .single();
-      console.log("ProfileSection — user profile:", profile, profileErr);
       if (profile?.preferred_language) setPreferredLanguage(profile.preferred_language);
 
       // Load coach entry
@@ -62,14 +61,12 @@ export default function ProfileSection() {
         .select("id, role, sport")
         .eq("coach_id", user.id)
         .single();
-      console.log("ProfileSection — school_coaches:", coachEntry, coachErr);
 
       // Load sports list
       const { data: sportsList, error: sportsErr } = await supabase
         .from("sports")
         .select("nom")
         .order("nom");
-      console.log("ProfileSection — sports:", sportsList, sportsErr);
 
       if (profile) {
         const firstName = profile.first_name || "";
@@ -131,7 +128,6 @@ export default function ProfileSection() {
         phone: form.phone,
       })
       .eq("id", user.id);
-    console.log("ProfileSection — save user:", userErr);
 
     // Update school_coaches table
     if (coachEntryId) {
@@ -142,7 +138,6 @@ export default function ProfileSection() {
           sport: form.sport,
         })
         .eq("id", coachEntryId);
-      console.log("ProfileSection — save coach:", coachErr);
 
       if (coachErr) { setSaving(false); setError("Erreur lors de la sauvegarde du rôle."); return; }
     }
@@ -276,7 +271,6 @@ export default function ProfileSection() {
                   .from("users")
                   .update({ preferred_language: value })
                   .eq("id", userId);
-                console.log("[ProfileSection] preferred_language saved:", value, langErr);
               }}
               className={input}
             >

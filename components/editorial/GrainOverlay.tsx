@@ -38,7 +38,6 @@ const GRAIN_SVG =
 
 export default function GrainOverlay({ opacity = 0.05, className = "" }: GrainOverlayProps) {
   useEffect(() => {
-    console.log("[GrainOverlay] mounted", { opacity });
   }, [opacity]);
 
   return (

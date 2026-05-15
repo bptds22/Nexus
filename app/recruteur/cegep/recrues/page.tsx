@@ -88,8 +88,6 @@ function RecrusCegepPage() {
         .in("stage", ["ENGAGE", "LETTRE_SIGNEE"])
         .order("updated_at", { ascending: false });
 
-      console.log("[Recrues] loaded", recrueData?.length, "confirmed recruits");
-
       const mapped: RecrueCegep[] = (recrueData || []).map((row) => {
         const ath = row.athletes as unknown as {
           id: string; first_name: string; last_name: string; verified: boolean;

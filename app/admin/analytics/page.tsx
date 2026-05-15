@@ -390,11 +390,6 @@ export default function AdminAnalytiquePage() {
   // Debug logs
   useEffect(() => {
     if (loading) return;
-    console.log("Analytics — athletes:", athletes.length);
-    console.log("Analytics — coaches:", coaches.length);
-    console.log("Analytics — alerts:", activeAlerts);
-    console.log("Analytics — pipeline stages:", stageCounts);
-    console.log("Analytics — messaging:", { avgResponseH, activeConvCount, unansweredActive });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading]);
 

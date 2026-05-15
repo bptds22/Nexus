@@ -352,7 +352,6 @@ function ReassignationPage() {
         };
       });
       setAthletes(athList);
-      console.log("[Reassignation] loaded", recs.length, "recruiters,", athList.length, "athletes");
       setLoading(false);
     }
     load();
@@ -479,8 +478,6 @@ function ReassignationPage() {
         await supabase.from("recruiter_notes").insert({ recruiter_id: destId, athlete_id: athleteId, content: n.content });
       }
     }
-
-    console.log("[Reassignation] transferred", athleteIds.length, "athletes from", sourceId, "to", destId);
 
     // Move athletes in local state
     setAthletes((prev) =>

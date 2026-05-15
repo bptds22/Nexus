@@ -128,7 +128,6 @@ function useClientNow(): number {
   const [now, setNow] = useState(0);
   useEffect(() => {
     setNow(Date.now());
-    console.log("[Pipeline hydration] client mounted, dates initialized");
   }, []);
   return now;
 }
@@ -605,7 +604,6 @@ function SlideOver({
       .insert({ recruiter_id: user.id, athlete_id: card.id, content: noteText.trim() })
       .select("id, content, created_at")
       .single();
-    console.log("[Note posted]", { athlete: card.full_name, error });
     if (data) {
       setNoteHistory(prev => [data, ...prev]);
     }
@@ -811,7 +809,6 @@ function PipelinePageContent() {
     async function fetchPipeline() {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
-      console.log("[Pipeline user ID]", user?.id);
       if (!user) return;
 
       const { data, error } = await supabase
@@ -852,13 +849,9 @@ function PipelinePageContent() {
         .eq("recruiter_id", user.id)
         .order("moved_at", { ascending: false });
 
-      console.log("[Pipeline fetch]", { count: data?.length, error });
-      console.log('Pipeline athlete data:', data);
-      console.log('Pipeline card data:', data?.[0]);
       if (data?.[0]) {
         const sample = data[0].athletes;
         const sAthl = Array.isArray(sample) ? sample[0] : sample;
-        console.log("[Pipeline sample athlete]", { name: sAthl?.first_name, jersey: sAthl?.numero_jersey, type: typeof sAthl?.numero_jersey });
       }
       if (!data) return;
 
@@ -934,8 +927,6 @@ function PipelinePageContent() {
               .neq("recruiter_id", user.id)
               .neq("stage", "RETIRÉ");
 
-            console.log("[Competitor stages]", competitorData);
-
             const cMap: Record<string, number> = {};
             if (competitorData) {
               for (const row of competitorData) {
@@ -981,7 +972,6 @@ function PipelinePageContent() {
         .update({ stage: newStatus.toUpperCase(), moved_at: now, updated_at: now })
         .eq("athlete_id", cardId)
         .eq("recruiter_id", user.id);
-      console.log("[Pipeline PATCH]", { id: cardId, field: "stage", newValue: newStatus, error });
 
       // Re-fetch the athlete's global recruitment_status (trigger may have updated it)
       const { data: updatedAthlete } = await supabase
@@ -1014,7 +1004,6 @@ function PipelinePageContent() {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       const { error } = await supabase.from("recruiter_pipeline").update({ flagged: value }).eq("athlete_id", cardId).eq("recruiter_id", user.id);
-      console.log("[Pipeline PATCH]", { id: cardId, field: "flagged", newValue: value, error });
     }
     showToast(value ? "Marqué prioritaire" : "Priorité retirée");
   }, [showToast, isFreeDemoMode, teaseUpgrade]);
@@ -1031,7 +1020,6 @@ function PipelinePageContent() {
     setActionPopover(null);
     const supabase = createClient();
     const { error } = await supabase.from("recruiter_pipeline").update(fields).eq("id", pipelineId);
-    console.log("[Pipeline PATCH]", { id: pipelineId, field: "next_action", newValue: fields, error });
     showToast("Suivi mis à jour");
   }, [showToast, isFreeDemoMode, teaseUpgrade]);
 

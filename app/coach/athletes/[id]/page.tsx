@@ -236,7 +236,6 @@ export default function CoachAthleteProfilePage() {
 
   useEffect(() => {
     const load = async () => {
-      console.log("Loading athlete profile for id:", id);
       const { data, error } = await loadAthleteRaw(id);
       if (error) {
         console.error("Supabase query error:", error);
@@ -249,10 +248,8 @@ export default function CoachAthleteProfilePage() {
         return;
       }
       const raw = data as Record<string, unknown>;
-      console.log("Profile data loaded:", JSON.stringify(raw));
 
       const mapped = mapToRecruiterView(raw);
-      console.log("Mapped profile:", mapped.firstName, mapped.lastName, "completion:", mapped.profileCompleteness);
       setA(mapped);
       setAthleteHasAccount(!!raw.user_id);
       setLoading(false);
@@ -264,7 +261,6 @@ export default function CoachAthleteProfilePage() {
         .from("pipeline")
         .select("status, updated_at")
         .eq("athlete_id", id);
-      console.log("Pipeline data:", pipeRows);
       if (pipeRows && pipeRows.length > 0) {
         const counts: Record<string, number> = {};
         let maxAt = "";
@@ -283,20 +279,16 @@ export default function CoachAthleteProfilePage() {
       }
 
       // Load full evaluation from evaluations table
-      console.log("Jersey from DB:", raw.numero_jersey, "Mapped jersey:", mapped.jerseyNumber);
-      console.log("Video URL from DB:", raw.video_faits_saillants_url);
       const { data: evalRow } = await supabase
         .from("evaluations")
         .select("*")
         .eq("athlete_id", id)
         .limit(1)
         .maybeSingle();
-      console.log("Evaluations data:", JSON.stringify(evalRow));
       if (evalRow?.distinctions) {
         let d = evalRow.distinctions;
         if (typeof d === "string") { try { d = JSON.parse(d); } catch { d = []; } }
         const parsed = parseDistinctions(d);
-        console.log("Distinctions parsed:", parsed);
         setDbDistinctions(parsed);
       }
 
@@ -307,7 +299,6 @@ export default function CoachAthleteProfilePage() {
       ]);
 
       const totalViews = vc || 0;
-      console.log("Engagement metrics:", { totalViews, favoriteCount: fc });
       setViewCount(totalViews);
       setFavoriteCount(fc || 0);
 
@@ -330,7 +321,6 @@ export default function CoachAthleteProfilePage() {
         .eq("status", "EN_ATTENTE")
         .order("created_at", { ascending: false });
       if (data) setPendingSuggestions(data.map((s) => ({ ...s, valeur_actuelle: s.valeur_actuelle || "", valeur_proposee: s.valeur_proposee || "", message: s.message || "" })));
-      console.log("[Coach] pending suggestions:", data?.length);
     };
     loadSuggestions();
   }, [id]);
@@ -340,7 +330,6 @@ export default function CoachAthleteProfilePage() {
 
     // First verify we can see the row
     const { data: check } = await supabase.from("athlete_suggestions").select("id, status").eq("id", suggestionId).single();
-    console.log("[Approve] pre-check:", check);
 
     if (!check) {
       console.error("[Approve] cannot find suggestion — RLS SELECT blocking");
@@ -354,8 +343,6 @@ export default function CoachAthleteProfilePage() {
       .update({ status: "APPROUVEE" })
       .eq("id", suggestionId);
 
-    console.log("[Approve] update error:", error);
-
     if (error) {
       console.error("[Suggestion approve] error:", JSON.stringify(error));
       showToast("Erreur: " + (error.message || "Impossible d'approuver"));
@@ -364,7 +351,6 @@ export default function CoachAthleteProfilePage() {
 
     // Verify it actually changed
     const { data: verify } = await supabase.from("athlete_suggestions").select("id, status, reviewed_at").eq("id", suggestionId).single();
-    console.log("[Approve] verify:", verify);
 
     if (verify?.status !== "APPROUVEE") {
       console.error("[Approve] status not changed:", verify?.status);
@@ -432,13 +418,6 @@ export default function CoachAthleteProfilePage() {
 
   // FIX 4 — age calculation
   const age = a.dateOfBirth ? Math.floor((new Date().getTime() - new Date(a.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : 0;
-
-  console.log("Profile render values:", {
-    coteGlobale, overallRating: a.overallRating, traitAvg,
-    ratedTraits: ratedTraits.length, dateOfBirth: a.dateOfBirth, age,
-    pipeline: pipelineData, distinctions: dbDistinctions,
-    profileCompletion: a.profileCompleteness, jersey: a.jerseyNumber,
-  });
 
   // Stat strip cells — taille + poids + distinction badges from DB
   const statCells: { top?: string; mid: string; sub?: string; iconName?: string; isBadge?: boolean; badgeChar?: string }[] = [
@@ -794,7 +773,6 @@ export default function CoachAthleteProfilePage() {
       </section>
 
       {/* ══════════ ACADEMIC PROFILE ══════════ */}
-      {(() => { console.log("PROGRAMME DEBUG:", { program: a.program, targetCegepProgram: a.targetCegepProgram, gpa: a.gpa, prefs: { relocate: a.openToRelocate, prive: a.openToPrivate, anglo: a.openToAnglophone } }); return null; })()}
       <section>
         <h2 className={sectionLabel}>Profil académique</h2>
         <div className={`${cardBase} overflow-hidden`}>
@@ -805,7 +783,6 @@ export default function CoachAthleteProfilePage() {
             </div>
             <div className="p-5 text-center">
               {(() => {
-                console.log("PROGRAMME RAW:", a.program, typeof a.program, "targetCegep:", a.targetCegepProgram, typeof a.targetCegepProgram);
                 let display = "—";
                 // Try a.program first (string)
                 if (a.program && typeof a.program === "string" && a.program.length > 0) {
@@ -1064,8 +1041,6 @@ export default function CoachAthleteProfilePage() {
                       last_profile_validation: nowIso,
                     })
                     .eq("id", id);
-
-                  console.log("[Verify athlete]", { athleteId: id, error });
 
                   if (error) {
                     alert("Erreur lors de la vérification: " + error.message);

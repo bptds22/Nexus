@@ -181,8 +181,6 @@ function DemandesContent() {
           .eq("coach_id", user.id)
           .order("last_message_at", { ascending: false });
 
-        console.log("[Demandes] conversations:", conversations, "error:", convError);
-
         if (!conversations || conversations.length === 0) {
           setThreads([]);
           setLoading(false);
@@ -196,8 +194,6 @@ function DemandesContent() {
           .select("content, created_at, conversation_id, sender_id")
           .in("conversation_id", conversationIds)
           .order("created_at", { ascending: false });
-
-        console.log("[Demandes] messages:", latestMessages, "error:", msgError);
 
         // Build maps: latest message + who replied per conversation
         const latestMsgMap: Record<string, { content: string; created_at: string }> = {};

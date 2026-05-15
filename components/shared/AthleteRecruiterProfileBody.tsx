@@ -451,17 +451,10 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
       .single()
       .then(async ({ data, error }) => {
         if (error || !data) { setLoadingAthlete(false); return; }
-        console.log('Profile athlete data:', data);
 
         const d = data as Record<string, unknown>;
         const evals = d.evaluations as Record<string, unknown>[] | null;
         const eval0 = evals?.[0];
-        console.log("DEBUG evaluations raw:", JSON.stringify(d.evaluations));
-        console.log("DEBUG eval0:", JSON.stringify(eval0));
-        console.log("DEBUG distinctions:", eval0?.distinctions);
-        console.log("DEBUG cote_globale:", eval0?.cote_globale);
-        console.log("DEBUG school:", JSON.stringify(d.schools));
-        console.log("DEBUG programme:", JSON.stringify(d.programme_cegep_vise));
 
         // Extract global recruitment fields
         const recruitmentStatusRaw = (d.recruitment_status as string) || "OUVERT";
@@ -730,7 +723,6 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
         .eq("recruiter_id", session.user.id)
         .eq("athlete_id", id)
         .maybeSingle();
-      console.log('My pipeline status:', pipelineData);
       setMyPipelineStage(pipelineData?.stage || null);
     };
     loadPipeline();
@@ -781,7 +773,6 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
         .eq("coach_id", coachId);
 
       const reviewCount = reviews?.length || 0;
-      console.log("[Coach reputation]", { coachId, reviewCount, isAllStar });
       if (reviewCount === 0) { setCoachRepData(null); return; }
 
       const avg = (field: string) => reviews!.reduce((s, r) => s + Number((r as Record<string, unknown>)[field] || 0), 0) / reviewCount;

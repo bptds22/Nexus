@@ -339,8 +339,6 @@ export default function AthleteOnboardingPage() {
         ctxRaw === "ligue_civile" ? "ligue_civile" : "scolaire";
       setUserContext(ctx);
 
-      console.log("[Onboarding] pre-fill from metadata:", { first_name: meta.first_name, last_name: meta.last_name, sport: meta.sport, context: ctx });
-
       // Check if athlete row exists — pre-fill all saved fields.
       // Phase 6.2: civil-context team membership is now read via the
       // team_athletes junction (joined to teams). The legacy
@@ -434,7 +432,6 @@ export default function AthleteOnboardingPage() {
           else if (existing.moyenne_generale || (existing.matieres_fortes && existing.matieres_fortes.length > 0)) setStep(3);
           else setStep(2);
         }
-        console.log("[Onboarding] resumed from saved data, step:", step);
       }
 
       setLoading(false);
@@ -539,7 +536,6 @@ export default function AthleteOnboardingPage() {
         if (error) { console.error("[Onboarding step save] insert:", error); setSaving(false); return; }
         if (data) setExistingAthleteId(data.id);
       }
-      console.log("[Onboarding] step", step, "saved");
       setSaving(false);
       setStep(step + 1);
     } catch (err) {
@@ -552,7 +548,6 @@ export default function AthleteOnboardingPage() {
     if (!userId || !primarySport) return;
     if (!consentProfile || !consentVisibility) return;
     setSaving(true);
-    console.log("[Onboarding] submitting...", { userId, firstName, lastName, primarySport, selectedSchoolId });
 
     try {
     const supabase = createClient();
@@ -651,11 +646,9 @@ export default function AthleteOnboardingPage() {
     let athleteIdForTeam: string | null = existingAthleteId;
     if (existingAthleteId) {
       const { error } = await supabase.from("athletes").update(athleteRecord).eq("id", existingAthleteId);
-      console.log("[Onboarding] update:", error);
       if (error) { console.error("[Onboarding] update failed:", error); setSaving(false); return; }
     } else {
       const { data: inserted, error } = await supabase.from("athletes").insert(athleteRecord).select("id").single();
-      console.log("[Onboarding] insert:", error);
       if (error) { console.error("[Onboarding] insert failed:", error); setSaving(false); return; }
       athleteIdForTeam = (inserted?.id as string) ?? null;
     }

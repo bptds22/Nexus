@@ -56,14 +56,6 @@ function computeAge(dateNaissance: string | null | undefined): number | null {
 export default function AdminLoi25Page() {
   const [tab, setTab] = useState<Tab>("consentements");
 
-  useEffect(() => {
-    console.log("[Admin Loi 25] Page rendered");
-  }, []);
-
-  useEffect(() => {
-    console.log("[Admin Loi 25] Active tab:", tab);
-  }, [tab]);
-
   return (
     <div className="p-6 lg:p-8 max-w-[1400px] mx-auto">
       {/* Header */}
@@ -137,7 +129,7 @@ function ConsentementsTab() {
         .from("athletes")
         .select("id, first_name, last_name, date_naissance, consentement_parental, consentement_parental_date, coach_id, schools!school_id(name), sports!sport_id(nom)")
         .order("last_name", { ascending: true });
-      if (error) { console.log("[Admin Loi 25] consent fetch error:", error.message); setLoading(false); return; }
+      if (error) { console.error("[Admin Loi 25] consent fetch error:", error.message); setLoading(false); return; }
 
       const coachIds = [...new Set(((data || []) as Record<string, unknown>[]).map((a) => a.coach_id as string).filter(Boolean))];
       const coachNames = new Map<string, string>();
@@ -175,7 +167,6 @@ function ConsentementsTab() {
       const obtained = built.filter((r) => r.consentGiven).length;
       const pending = total - obtained;
       const withdrawn = 0; // No source for this yet — TODO loi25_consents
-      console.log("[Admin Loi 25] Consent stats:", { total, obtained, pending, withdrawn });
     })();
   }, [supabase]);
 

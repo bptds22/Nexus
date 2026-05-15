@@ -85,9 +85,8 @@ export default function AdminSidebar({ mobileOpen, onClose }: Props) {
         .select("id", { count: "exact", head: true })
         .eq("status", "EN_ATTENTE");
       if (error) {
-        console.log("[AdminSidebar] reports count error:", error.message);
+        console.error("[AdminSidebar] reports count error:", error.message);
       } else {
-        console.log("[AdminSidebar] pending reports count:", count);
         if (!cancelled) setPendingReports(count ?? 0);
       }
 
@@ -100,9 +99,8 @@ export default function AdminSidebar({ mobileOpen, onClose }: Props) {
         .eq("role", "RECRUTEUR")
         .gte("created_at", sevenAgo.toISOString());
       if (recErr) {
-        console.log("[AdminSidebar] new recruiters count error:", recErr.message);
+        console.error("[AdminSidebar] new recruiters count error:", recErr.message);
       } else {
-        console.log("[AdminSidebar] new recruiters (7d):", recCount);
         if (!cancelled) setNewRecruiters(recCount ?? 0);
       }
     })();

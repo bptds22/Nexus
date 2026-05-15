@@ -416,7 +416,6 @@ export default function OnboardingPage() {
   const next = async () => {
     if (step >= totalSteps - 1) return;
     if (!canProceed()) {
-      console.log("[Onboarding] cannot proceed: validation failed at step", step);
       return;
     }
 
@@ -472,7 +471,6 @@ export default function OnboardingPage() {
           }
         }
 
-        console.log("[Onboarding] step", step, "saved to Supabase for role:", role);
       }
     } catch (err) {
       console.error("[Onboarding] step save error:", err);
@@ -991,7 +989,6 @@ function SchoolStep({ user, save }: { user: NexusUser; save: (u: Partial<NexusUs
       .eq("type", "SECONDAIRE")
       .order("name")
       .then(({ data, error }) => {
-        console.log("Schools:", data?.length, error);
         if (data) {
           setSchools(data.map(s => ({
             name: s.name,
@@ -1509,7 +1506,6 @@ function RecruiterCegepStep({ user, save }: { user: NexusUser; save: (u: Partial
       .eq("has_collegial", true)
       .order("name")
       .then(({ data, error }) => {
-        console.log("CÉGEPs:", data?.length, error);
         if (data) {
           setCegeps(data.map(s => ({
             name: s.name,
@@ -1824,7 +1820,6 @@ function LeagueSelectStep({ user, save, onRequestNew }: {
         .select("id, name, city, region")
         .eq("type", "LIGUE_CIVILE")
         .order("name");
-      console.log("[LeagueSelectStep] Loaded civil leagues:", data, error);
       if (data) {
         const mapped: CivilLeagueRow[] = data.map((row) => {
           const r = row as Record<string, unknown>;

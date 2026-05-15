@@ -255,8 +255,6 @@ function CegepDashboardContent() {
       const recruiterIds = rList.map((r) => r.id);
       const recruiterFullMap = new Map(rList.map((r) => [r.id, `${r.first_name || ""} ${r.last_name || ""}`]));
 
-      console.log("[Mon CEGEP] school:", school?.name, "team members:", recruiterIds.length);
-
       if (recruiterIds.length === 0) { setLoading(false); return; }
 
       // === KPIs (parallel) ===

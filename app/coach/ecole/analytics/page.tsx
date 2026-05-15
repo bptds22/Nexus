@@ -101,7 +101,6 @@ function CoachAnalyticsPage() {
         .eq("coach_id", user.id)
         .limit(1)
         .maybeSingle();
-      console.log("Analytics — school_coaches lookup:", scRow, "err:", scErr);
 
       let mySchoolId = (scRow?.school_id as string | undefined) || null;
       if (!mySchoolId) {
@@ -111,11 +110,9 @@ function CoachAnalyticsPage() {
           .eq("id", user.id)
           .maybeSingle();
         mySchoolId = (userRow?.school_id as string | undefined) || null;
-        console.log("Analytics — users.school_id fallback:", mySchoolId);
       }
 
       if (!mySchoolId) {
-        console.log("Analytics — no school link found; rendering empty state");
         setD(emptyData);
         setLoading(false);
         return;
@@ -143,7 +140,6 @@ function CoachAnalyticsPage() {
           evaluations(leadership, discipline, coachabilite, intelligence_jeu, competitivite, esprit_equipe, resilience, attitude_mentalite, cote_globale, rapport_entraineur, distinctions)
         `)
         .eq("school_id", mySchoolId);
-      console.log("Analytics — school_id:", mySchoolId, "athletes:", athletes, "err:", athleteErr);
 
       const athleteList = athletes || [];
       const totalAthletes = athleteList.length;
@@ -155,18 +151,10 @@ function CoachAnalyticsPage() {
       }
 
       const athleteIds = athleteList.map(a => a.id);
-      console.log("[Analytique] auth user.id:", user.id);
-      console.log("[Analytique] myAthleteIds (", athleteIds.length, "total):", athleteIds);
-      console.log("[Analytique] athletes with their coach_id (RLS read path):",
-        athleteList.map(a => ({ id: a.id, name: `${a.first_name} ${a.last_name}`, coach_id: a.coach_id, verified: a.verified })));
 
       // 4. Pull all recruiter-interest signals in parallel. No date filter — the
       //    page shows lifetime totals (the weekly chart buckets viewed_at itself).
       //    .limit(10000) overrides PostgREST's default 1000-row cap.
-      console.log("[Analytique] BEFORE recruiter_athlete_views query — params:", { athlete_id_in: athleteIds });
-      console.log("[Analytique] BEFORE recruiter_favorites query — params:", { athlete_id_in: athleteIds });
-      console.log("[Analytique] BEFORE conversations query — params:", { athlete_id_in: athleteIds });
-      console.log("[Analytique] BEFORE pipeline query — params:", { athlete_id_in: athleteIds });
 
       const [pipelineRes, viewsRes, favoritesRes, convsRes] = await Promise.all([
         supabase.from("pipeline").select("id, athlete_id, recruiter_id, status", { count: "exact" }).in("athlete_id", athleteIds).limit(10000),
@@ -183,14 +171,6 @@ function CoachAnalyticsPage() {
 
       // `count` is the true row count PostgREST saw (before any .limit()); `data.length` is what
       // was returned after pagination. If they differ for any query, we're being paginated.
-      console.log("[Analytique] recruiter_athlete_views count:", viewsRes.count, "data.length:", profileViews.length, "error:", viewsRes.error);
-      console.log("[Analytique] recruiter_athlete_views raw:", profileViews);
-      console.log("[Analytique] recruiter_favorites count:", favoritesRes.count, "data.length:", favorites.length, "error:", favoritesRes.error);
-      console.log("[Analytique] recruiter_favorites raw:", favorites);
-      console.log("[Analytique] conversations count:", convsRes.count, "data.length:", conversations.length, "error:", convsRes.error);
-      console.log("[Analytique] conversations raw:", conversations);
-      console.log("[Analytique] pipeline count:", pipelineRes.count, "data.length:", pipeline.length, "error:", pipelineRes.error);
-      console.log("[Analytique] pipeline raw:", pipeline);
 
       // Per-athlete breakdown so we can spot mismatches vs. the recruiter-side counter.
       const perAthleteViewTotals: Record<string, number> = {};
@@ -198,13 +178,6 @@ function CoachAnalyticsPage() {
         const aid = v.athlete_id as string;
         perAthleteViewTotals[aid] = (perAthleteViewTotals[aid] || 0) + 1;
       });
-      console.log("[Analytique] views per athlete:",
-        athleteList.map(a => ({
-          name: `${a.first_name} ${a.last_name}`,
-          athlete_id: a.id,
-          views_in_query: perAthleteViewTotals[a.id as string] || 0,
-        }))
-      );
 
       // 5. Get sport names
       const sportIds = [...new Set(athleteList.map(a => a.sport_id).filter(Boolean))];
@@ -259,19 +232,12 @@ function CoachAnalyticsPage() {
           bucketedOlderThan12wk++;
         }
       });
-      console.log("[Analytique] weekly chart — buckets (index 0 = oldest, 11 = this week):", views_weekly);
-      console.log("[Analytique] weekly chart — bucketed in 12-week window:", bucketedIn12wk,
-        "older than 12 weeks:", bucketedOlderThan12wk,
-        "invalid/null viewed_at:", bucketedInvalidDate,
-        "total recruiter_athlete_views rows:", profileViews.length);
 
       // ── Athlete performance (real views/favorites/contacts + live completion) ──
       const athlete_performance = athleteList.map(a => {
         const posRaw = a.positions;
         const posObj = (Array.isArray(posRaw) ? posRaw[0] : posRaw) as { nom?: string; abreviation?: string } | null;
         const completion = calculateProfileCompletion(a as Record<string, unknown>);
-        console.log("[Analytique] completion for", a.first_name, a.last_name, "=", completion,
-          "(stale DB profile_completion was:", (a as Record<string, unknown>).profile_completion, ")");
         return {
           name: `${a.first_name} ${a.last_name}`,
           pos: posObj?.abreviation || posObj?.nom || "—",
@@ -323,7 +289,6 @@ function CoachAnalyticsPage() {
           .map(([name, g]) => ({ name, athleteCount: g.athletes.size, sports: Array.from(g.sports) }))
           .sort((a, b) => b.athleteCount - a.athleteCount);
       }
-      console.log("Analytics — cegeps_interested:", cegeps_interested);
 
       // ── Funnel ─────────────────────────────────────────────────
       const verifiedCount = athleteList.filter(a => a.verified).length;
@@ -358,11 +323,6 @@ function CoachAnalyticsPage() {
         athletes_contacted: athletesContacted.size,  // distinct athletes with ≥1 conversations row
       };
       const pctOrZero = (num: number, denom: number) => (denom > 0 ? Math.round((num / denom) * 100) : 0);
-      console.log("[Analytique] KPI formula: pct = round(numerator / denominator * 100)");
-      console.log("[Analytique] KPI — Taux de visibilité:     num =", kpis.athletes_visible,   "denom =", kpis.total_athletes, "→ pct =", pctOrZero(kpis.athletes_visible,   kpis.total_athletes));
-      console.log("[Analytique] KPI — Taux de favoris:        num =", kpis.athletes_favorited, "denom =", kpis.total_athletes, "→ pct =", pctOrZero(kpis.athletes_favorited, kpis.total_athletes));
-      console.log("[Analytique] KPI — Taux de contact:        num =", kpis.athletes_contacted, "denom =", kpis.total_athletes, "→ pct =", pctOrZero(kpis.athletes_contacted, kpis.total_athletes));
-      console.log("[Analytique] KPI — Taux de placement:      num =", placedCount,             "denom =", totalAthletes,       "→ pct =", placementRate);
 
       // ── Attention needed ──
       const attention_needed: AnalyticsData["attention_needed"] = [];
@@ -413,7 +373,6 @@ function CoachAnalyticsPage() {
         views,
         percent: totalViews > 0 ? Math.round((views / totalViews) * 100) : 0,
       }));
-      console.log("[Analytique] sports_breakdown views:", sportsViews, "totalViews:", totalViews);
 
       setD({
         kpis, views_weekly, week_labels: weekLabels, athlete_performance, cegeps_interested,

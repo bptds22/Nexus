@@ -115,8 +115,6 @@ export default function RecruteurTableauDeBordPage() {
         }
       }
 
-      console.log("[Dashboard] profile:", profile?.first_name, profile?.last_name);
-
       const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
       // === Action Bar ===
@@ -141,7 +139,6 @@ export default function RecruteurTableauDeBordPage() {
         .gte("created_at", sevenDaysAgo);
 
       setActionBarData({ coachReplies, newAthletesThisWeek: newAthletes ?? 0 });
-      console.log("[Dashboard] actionBar:", { coachReplies, newAthletes });
 
       // === Pipeline ===
       const { data: pipeline } = await supabase
@@ -186,7 +183,6 @@ export default function RecruteurTableauDeBordPage() {
         responseRate: (messagesSent ?? 0) > 0 ? Math.round((responsesReceived / (messagesSent ?? 1)) * 100) : 0,
         upcomingVisits: counts.visite_planifiee,
       });
-      console.log("[Dashboard] kpi:", { messagesSent, responsesReceived });
 
       // === Trending Athletes (most viewed this week) ===
       const { data: viewsData } = await supabase
@@ -241,7 +237,6 @@ export default function RecruteurTableauDeBordPage() {
           };
         });
         setTrendingAthletes(trending);
-        console.log("[Dashboard] trending:", trending.length);
       }
 
       // === Activity Feed ===
@@ -287,7 +282,6 @@ export default function RecruteurTableauDeBordPage() {
           };
         });
         setActivityEvents(events);
-        console.log("[Dashboard] activities:", events.length);
       }
 
       setLoading(false);

@@ -308,7 +308,6 @@ export function useSubscription() {
       trialDaysRemaining,
       cancelAtPeriodEnd,
     };
-    console.log("[Subscription] Hook loaded:", { tier: next.tier, role: next.role });
     setSubscription(next);
     setLoading(false);
   }, []);

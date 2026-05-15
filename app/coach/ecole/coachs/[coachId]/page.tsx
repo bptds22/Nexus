@@ -167,7 +167,6 @@ function CoachDetailPage() {
         .select("id, first_name, last_name, email, phone, avatar_url, updated_at")
         .eq("id", coachId)
         .single();
-      console.log("Coach detail profile:", profile);
 
       // Get school_coaches entry
       const { data: schoolCoach } = await supabase
@@ -175,14 +174,12 @@ function CoachDetailPage() {
         .select("role, sport, team_name")
         .eq("coach_id", coachId)
         .single();
-      console.log("Coach detail school_coaches:", schoolCoach);
 
       // Get athletes for this coach
       const { data: athleteRows } = await supabase
         .from("athletes")
         .select("id, first_name, last_name, profile_completion, verified, cote_globale_entraineur, updated_at, positions!position_id(nom, abreviation)")
         .eq("coach_id", coachId);
-      console.log("Coach detail athletes:", athleteRows);
 
       if (profile) {
         const coachAthletes = athleteRows || [];

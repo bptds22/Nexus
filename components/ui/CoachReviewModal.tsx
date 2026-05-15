@@ -129,8 +129,6 @@ export default function CoachReviewModal({
       ({ error } = await supabase.from("coach_reviews").insert(payload));
     }
 
-    console.log("[Coach review submit]", { error, noteGlobale: avg });
-
     if (!error) {
       onSubmitted();
       onClose();

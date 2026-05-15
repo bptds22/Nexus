@@ -79,7 +79,6 @@ export default function AdminSettingsPage() {
       if (!user) return;
       setCurrentUserId(user.id);
       const { data } = await supabase.from("users").select("role").eq("id", user.id).maybeSingle();
-      console.log("[AdminSettings] role:", data?.role, "userId:", user.id);
       setRole((data?.role as string) ?? null);
     })();
   }, [supabase]);
@@ -93,7 +92,7 @@ export default function AdminSettingsPage() {
         .order("created_at", { ascending: false })
         .limit(200);
       if (error) {
-        console.log("[AdminSettings] broadcast history error:", error.message);
+        console.error("[AdminSettings] broadcast history error:", error.message);
         return;
       }
       // Group by created_at (second resolution) to collapse fanned-out inserts into single broadcasts
@@ -107,7 +106,6 @@ export default function AdminSettingsPage() {
         else groups.set(bucket, { message: msg, audience: aud, created_at: row.created_at, count: 1 });
       }
       const list = [...groups.values()].slice(0, 5);
-      console.log("[AdminSettings] broadcast history groups:", list.length);
       setHistory(list);
     })();
   }, [supabase, historyVersion]);
@@ -120,12 +118,11 @@ export default function AdminSettingsPage() {
         .select("*")
         .order("key");
       if (error) {
-        console.log("[AdminSettings] load error:", error.message);
+        console.error("[AdminSettings] load error:", error.message);
         showToast(`Erreur: ${error.message}`, false);
         setLoading(false);
         return;
       }
-      console.log("[AdminSettings] loaded settings:", data?.length ?? 0);
       const mapped: AppSetting[] = (data || []).map((s: Record<string, unknown>) => ({
         key: s.key as string,
         value: (s.value as string) ?? null,
@@ -148,7 +145,6 @@ export default function AdminSettingsPage() {
       const turningOn = newValue === "true";
       const message = settings.find((s) => s.key === "maintenance_message")?.value ?? "";
       const eta = settings.find((s) => s.key === "maintenance_eta")?.value ?? "";
-      console.log("[AdminSettings] maintenance toggle intercepted — turningOn:", turningOn);
       setMaintModal({ turningOn, message, eta });
       return;
     }
@@ -158,13 +154,12 @@ export default function AdminSettingsPage() {
         return;
       }
     }
-    console.log("[AdminSettings] saving:", key, "=", newValue);
     const { error } = await supabase
       .from("app_settings")
       .update({ value: newValue, updated_at: new Date().toISOString() })
       .eq("key", key);
     if (error) {
-      console.log("[AdminSettings] save error:", error.message);
+      console.error("[AdminSettings] save error:", error.message);
       showToast(`Erreur: ${error.message}`, false);
       return;
     }
@@ -175,7 +170,6 @@ export default function AdminSettingsPage() {
   async function confirmMaintenance() {
     if (!maintModal) return;
     const now = new Date().toISOString();
-    console.log("[AdminSettings] confirming maintenance — turningOn:", maintModal.turningOn);
 
     const updates: { key: string; value: string }[] = [
       { key: "maintenance_mode", value: maintModal.turningOn ? "true" : "false" },
@@ -191,7 +185,7 @@ export default function AdminSettingsPage() {
         .update({ value: u.value, updated_at: now })
         .eq("key", u.key);
       if (error) {
-        console.log("[AdminSettings] maintenance save error:", u.key, error.message);
+        console.error("[AdminSettings] maintenance save error:", u.key, error.message);
         showToast(`Erreur: ${error.message}`, false);
         return;
       }
@@ -206,7 +200,6 @@ export default function AdminSettingsPage() {
     if (!broadcastMsg.trim() || !currentUserId) return;
     setSending(true);
     const message = broadcastMsg.trim();
-    console.log("[AdminSettings] broadcasting to:", audience, "message:", message);
 
     let query = supabase.from("users").select("id, role");
     if (audience === "COACH") query = query.eq("role", "COACH");
@@ -215,13 +208,12 @@ export default function AdminSettingsPage() {
 
     const { data: targetUsers, error: targetErr } = await query;
     if (targetErr) {
-      console.log("[AdminSettings] target users error:", targetErr.message);
+      console.error("[AdminSettings] target users error:", targetErr.message);
       showToast(`Erreur: ${targetErr.message}`, false);
       setSending(false);
       return;
     }
     const users = (targetUsers || []) as { id: string; role: string }[];
-    console.log("[AdminSettings] target users fetched:", users.length);
 
     let delivered = 0;
 
@@ -232,7 +224,9 @@ export default function AdminSettingsPage() {
         .from("athletes")
         .select("id, user_id")
         .in("user_id", athleteUsers.map((u) => u.id));
-      if (athErr) console.log("[AdminSettings] athletes lookup error:", athErr.message);
+      if (athErr) {
+        console.error("[AdminSettings] athletes lookup error:", athErr.message);
+      }
       const rows = (athleteRows || []) as { id: string; user_id: string }[];
       if (rows.length > 0) {
         const payload = rows.map((a) => ({
@@ -243,7 +237,7 @@ export default function AdminSettingsPage() {
         }));
         const { error: insErr } = await supabase.from("athlete_notifications").insert(payload);
         if (insErr) {
-          console.log("[AdminSettings] athlete_notifications insert error:", insErr.message);
+          console.error("[AdminSettings] athlete_notifications insert error:", insErr.message);
           showToast(`Erreur athlètes: ${insErr.message}`, false);
           setSending(false);
           return;
@@ -265,7 +259,7 @@ export default function AdminSettingsPage() {
       }));
       const { error: insErr } = await supabase.from("activities").insert(payload);
       if (insErr) {
-        console.log("[AdminSettings] activities insert error:", insErr.message);
+        console.error("[AdminSettings] activities insert error:", insErr.message);
         showToast(`Erreur entraîneurs: ${insErr.message}`, false);
         setSending(false);
         return;
@@ -283,7 +277,7 @@ export default function AdminSettingsPage() {
       }));
       const { error: insErr } = await supabase.from("recruiter_activity_log").insert(payload);
       if (insErr) {
-        console.log("[AdminSettings] recruiter_activity_log insert error:", insErr.message);
+        console.error("[AdminSettings] recruiter_activity_log insert error:", insErr.message);
         showToast(`Erreur recruteurs: ${insErr.message}`, false);
         setSending(false);
         return;
@@ -291,7 +285,6 @@ export default function AdminSettingsPage() {
       delivered += recruiterUsers.length;
     }
 
-    console.log("[AdminSettings] broadcast delivered:", delivered);
     showToast(`Message diffusé à ${delivered} utilisateur${delivered > 1 ? "s" : ""}`, true);
     setBroadcastMsg("");
     setConfirmBroadcast(false);
@@ -310,7 +303,6 @@ export default function AdminSettingsPage() {
         return;
       }
     }
-    console.log("[AdminSettings] adding:", addForm.key);
     const { error } = await supabase.from("app_settings").insert({
       key: addForm.key.trim(),
       value: addForm.value,
@@ -319,7 +311,7 @@ export default function AdminSettingsPage() {
       updated_at: new Date().toISOString(),
     });
     if (error) {
-      console.log("[AdminSettings] insert error:", error.message);
+      console.error("[AdminSettings] insert error:", error.message);
       showToast(`Erreur: ${error.message}`, false);
       return;
     }
@@ -330,10 +322,9 @@ export default function AdminSettingsPage() {
   }
 
   async function deleteSetting(key: string) {
-    console.log("[AdminSettings] deleting:", key);
     const { error } = await supabase.from("app_settings").delete().eq("key", key);
     if (error) {
-      console.log("[AdminSettings] delete error:", error.message);
+      console.error("[AdminSettings] delete error:", error.message);
       showToast(`Erreur: ${error.message}`, false);
       return;
     }

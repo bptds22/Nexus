@@ -173,7 +173,6 @@ function RecruiterThreadPage({ params }: { params: Promise<{ id: string }> }) {
         const distinctions: string[] = rawDistinctions
           .map((d) => (typeof d === "string" ? d : (d && typeof d === "object" ? ((d as { code?: string; id?: string }).code || (d as { code?: string; id?: string }).id || "") : "")))
           .filter((d): d is string => typeof d === "string" && d !== "");
-        console.log('Athlete distinctions:', distinctions);
 
         const cf = (coach?.first_name as string) || "";
         const cl = (coach?.last_name as string) || "";
@@ -219,7 +218,6 @@ function RecruiterThreadPage({ params }: { params: Promise<{ id: string }> }) {
           athleteDistinctions: distinctions,
           status: (conv.status as string) || "ACTIVE",
         };
-        console.log('Athlete card data:', athleteData);
         setCtx(athleteData);
       }
 
@@ -229,8 +227,6 @@ function RecruiterThreadPage({ params }: { params: Promise<{ id: string }> }) {
         .select("id, sender_id, content, created_at")
         .eq("conversation_id", id)
         .order("created_at", { ascending: true });
-
-      console.log("[Thread data]", { conversation: conv, messageCount: msgData?.length });
 
       if (msgData) {
         setMessages(msgData.map(m => ({
@@ -265,7 +261,6 @@ function RecruiterThreadPage({ params }: { params: Promise<{ id: string }> }) {
     if (newMsg) {
       setMessages(prev => [...prev, { id: newMsg.id, senderId: newMsg.sender_id, content: newMsg.content, createdAt: newMsg.created_at }]);
       await supabase.from("conversations").update({ last_message_at: newMsg.created_at, updated_at: new Date().toISOString() }).eq("id", ctx.conversationId);
-      console.log("[Message sent]", { newMsg });
     }
     setReply("");
   }

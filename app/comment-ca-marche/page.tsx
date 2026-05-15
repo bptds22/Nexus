@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
 import Link from "next/link";
 import MarketingNav from "@/components/marketing/MarketingNav";
 import NexusLogo from "@/components/ui/NexusLogo";
@@ -80,10 +79,6 @@ const PERSONAS = [
 ══════════════════════════════════════════════════════════════ */
 
 export default function CommentCaMarche() {
-  useEffect(() => {
-    console.log("Comment ça marche — manifesto page loaded");
-  }, []);
-
   return (
     <div className="hero-playbook min-h-screen bg-[#111317] text-white font-sans scroll-smooth relative">
       <PlaybookBackground />

@@ -171,7 +171,6 @@ function CegepStatsPage() {
         .in("recruiter_id", teamIds);
 
       const pipeline: PipelineRow[] = allPipeline || [];
-      console.log("[Stats] loaded", pipeline.length, "pipeline entries");
       setRawPipeline(pipeline);
 
       // === SPORT BREAKDOWN (separate queries for each column) ===
@@ -375,7 +374,6 @@ function CegepStatsPage() {
       .slice(0, 10)
       .map((t, i) => ({ ...t, rank: i + 1 }));
 
-    console.log("[Stats] topTargets recomputed — count:", targets.length, "filter:", selectedSportId);
     return targets;
   }, [filteredPipeline, team, selectedSportId]);
 
@@ -489,7 +487,6 @@ function CegepStatsPage() {
               value={selectedSportId}
               onChange={(e) => {
                 setSelectedSportId(e.target.value);
-                console.log("[Stats] sport filter →", e.target.value);
               }}
               className="bg-[#13151a] border border-[#2a2d36] rounded-full px-4 py-1.5 text-[13px] text-white focus:border-[#E63946] outline-none transition-colors cursor-pointer"
             >

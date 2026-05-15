@@ -57,7 +57,6 @@ function AthleteSearchCard({ a, onToggleFav, favDisabled, favDisabledReason }: {
   favDisabled: boolean;
   favDisabledReason: string;
 }) {
-  console.log('CARD RENDER:', a.firstName, { sport: a.sport, sportName: a.sportName, position: a.position, jersey: a.jersey });
   return (
     <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] overflow-hidden hover:border-[#E63946]/30 hover:shadow-[0_0_24px_rgba(230,57,70,0.12)] hover:-translate-y-1.5 hover:scale-[1.02] transition-all duration-300 ease-out group flex flex-col">
       {/* Photo area */}
@@ -454,7 +453,6 @@ function RechercheContent() {
       }
 
       const { data: athleteData, error } = await query;
-      console.log("Athletes loaded:", athleteData?.length, error);
 
       if (athleteData) {
         const badgeMap: Record<string, { label: string; icon: string }> = {
@@ -538,7 +536,6 @@ function RechercheContent() {
             context: (a.context as string | null) ?? null,
           };
         });
-        if (mapped[0]) console.log("AFTER MAP:", { name: mapped[0].firstName, jersey: mapped[0].jersey, sport: mapped[0].sport, sportName: mapped[0].sportName, position: mapped[0].position });
 
         // 6.2.f-hotfix : type filter applied client-side (the equivalent
         // server-side .eq on schools.type embed was silently ignored).

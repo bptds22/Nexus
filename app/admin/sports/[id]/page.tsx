@@ -113,7 +113,6 @@ export default function AdminSportDetailPage() {
   async function fetchAll() {
     if (!id) return;
     setLoading(true);
-    console.log("Sport ID from params:", id);
 
     const [sportRes, athletesRes, positionsRes, schoolsRes, platformRes] = await Promise.all([
       supabase.from("sports").select("id,nom").eq("id", id).maybeSingle(),
@@ -135,8 +134,6 @@ export default function AdminSportDetailPage() {
 
     const athletesData = (athletesRes.data || []) as Athlete[];
     const positionsData = (positionsRes.data || []) as Omit<Position, "athlete_count">[];
-    console.log("Athletes count:", athletesData?.length);
-    console.log("Positions count:", positionsData?.length);
 
     setSportName(((sportRes.data as { nom?: string } | null)?.nom as string) || "");
     setAthletes(athletesData);
@@ -162,7 +159,6 @@ export default function AdminSportDetailPage() {
         .in("athlete_id", athleteIds);
       pipelineData = (pipeRes.data || []) as typeof pipelineData;
     }
-    console.log("Pipeline count:", pipelineData?.length);
     const distinctRecruiters = new Set<string>();
     for (const r of pipelineData) if (r.recruiter_id) distinctRecruiters.add(r.recruiter_id);
     setPipelineRecruiters(distinctRecruiters.size);
@@ -239,8 +235,6 @@ export default function AdminSportDetailPage() {
 
   const showCalibrationAlert = ratedCount >= 10 && delta != null && Math.abs(delta) > 1.0;
   const showLowEvalAlert = total >= 5 && unratedPct > 70;
-
-  console.log("Calibration data:", { sportAvg, platformAvg, delta, rated: ratedCount, unrated: unratedCount });
 
   // Breakdowns
   const statusCounts = new Map<string, number>();

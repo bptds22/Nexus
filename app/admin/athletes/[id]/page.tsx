@@ -439,7 +439,6 @@ export default function AdminAthleteDetailPage({
       setPipeline(mappedPipeline);
 
       if (aRes.data) {
-        console.log("[admin/athletes] full athlete record:", aRes.data);
         setAthlete(aRes.data);
         if (aRes.data.coach_id) {
           const cRes = await supabase
@@ -462,7 +461,6 @@ export default function AdminAthleteDetailPage({
             .eq("coach_id", aRes.data.coach_id)
             .maybeSingle();
           if (eRes.data) {
-            console.log("[admin/athletes] coach evaluation:", eRes.data);
             setEvaluation(eRes.data);
             const traitKeys = [
               "leadership", "discipline", "coachabilite", "intelligence_jeu",
@@ -483,7 +481,6 @@ export default function AdminAthleteDetailPage({
         const { data: rawA } = await loadAthleteRaw(id);
         if (rawA) {
           const mapped = mapToRecruiterView(rawA as Record<string, unknown>);
-          console.log("[admin/athletes] aperçu view model:", mapped);
           setPreviewView(mapped);
           const evals = (rawA as Record<string, unknown>).evaluations;
           const evalArr = Array.isArray(evals) ? evals : [];
@@ -503,7 +500,6 @@ export default function AdminAthleteDetailPage({
       ]);
       setViewCount(vc || 0);
       setFavoriteCount(fc || 0);
-      console.log("[admin/athletes] engagement:", { vc, fc });
 
       setSports((spRes.data as Sport[]) || []);
       setPositions((posRes.data as Position[]) || []);
@@ -530,7 +526,6 @@ export default function AdminAthleteDetailPage({
       const { data: uploadData, error: uploadErr } = await supabase.storage
         .from("Ath Photos")
         .upload(path, file, { upsert: true, cacheControl: "3600" });
-      console.log("Upload response:", uploadData, uploadErr);
       if (uploadErr) throw uploadErr;
       const { data: urlData } = supabase.storage.from("Ath Photos").getPublicUrl(path);
       const publicUrl = `${urlData.publicUrl}?t=${Date.now()}`;

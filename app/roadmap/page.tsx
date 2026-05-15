@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
 import Link from "next/link";
 import MarketingNav from "@/components/marketing/MarketingNav";
 import PlaybookBackground from "@/app/components/PlaybookBackground";
@@ -104,10 +103,6 @@ function RedLabel({ children }: { children: React.ReactNode }) {
 ══════════════════════════════════════════════════════════════ */
 
 export default function RoadmapPage() {
-  useEffect(() => {
-    console.log("Roadmap page loaded");
-  }, []);
-
   return (
     <div className="hero-playbook min-h-screen bg-[#111317] text-white font-sans scroll-smooth relative">
       <PlaybookBackground />

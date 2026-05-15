@@ -199,8 +199,6 @@ export default function AdminPipelinePage() {
       setLettreSignee(pipeline.filter((p) => p.stage === "LETTRE_SIGNEE").length);
       setGlobalStagnant(pipeline.filter((p) => p.moved_at && now - new Date(p.moved_at).getTime() > STALE_MS).length);
 
-      console.log("Pipeline page — recruiters:", rows.length);
-      console.log("Pipeline page — total entries:", pipeline.length);
       setLoading(false);
     })();
   }, [supabase]);

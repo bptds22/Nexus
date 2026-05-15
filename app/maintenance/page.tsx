@@ -26,7 +26,6 @@ async function loadSettings() {
       eta: map.get("maintenance_eta") || "",
     };
   } catch (err) {
-    console.log("[maintenance] settings load failed:", err);
     return { message: DEFAULT_MESSAGE, eta: "" };
   }
 }

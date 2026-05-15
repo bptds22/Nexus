@@ -136,7 +136,6 @@ export default function AdminDashboard() {
         activeSchools,
         totalSchools: schoolsTot.count ?? 0,
       };
-      console.log("[AdminDashboard] counts:", nextCounts);
       setCounts(nextCounts);
 
       // Quality
@@ -161,7 +160,6 @@ export default function AdminDashboard() {
         avgCote,
         noEval: noEvalCount.count ?? 0,
       };
-      console.log("[AdminDashboard] quality:", nextQuality);
       setQuality(nextQuality);
 
       // ── Row 2 engagement (tolerate missing `messages` table) ───
@@ -185,7 +183,6 @@ export default function AdminDashboard() {
         msgsThis = mThis.count ?? 0;
         msgsLast = mLast.count ?? 0;
       } catch (err) {
-        console.log("[AdminDashboard] messages query skipped:", err);
       }
       const nextEng: Engagement = {
         viewsThis: viewsThis.count ?? 0,  viewsLast: viewsLast.count ?? 0,
@@ -193,7 +190,6 @@ export default function AdminDashboard() {
         pipeThis: pipeThis.count ?? 0,    pipeLast: pipeLast.count ?? 0,
         msgsThis, msgsLast,
       };
-      console.log("[AdminDashboard] engagement:", nextEng);
       setEng(nextEng);
 
       // ── Row 4 — registrations by week (last 8 weeks) ───────────
@@ -218,7 +214,6 @@ export default function AdminDashboard() {
         const label = weekStart.toLocaleDateString("fr-CA", { day: "numeric", month: "short" });
         series.push({ week: label, count: bucket.get(i) ?? 0 });
       }
-      console.log("[AdminDashboard] registration series:", series);
       setRegistrationSeries(series);
 
       // ── Row 4 — pipeline funnel ────────────────────────────────
@@ -231,7 +226,6 @@ export default function AdminDashboard() {
       const funnelData: StageCount[] = PIPELINE_STAGES.map((s) => ({
         stage: s.key, label: s.label, color: s.color, count: stageCounts.get(s.key) ?? 0,
       }));
-      console.log("[AdminDashboard] funnel:", funnelData);
       setFunnel(funnelData);
 
       // ── Row 5 — top 5 schools by views ─────────────────────────
@@ -248,7 +242,6 @@ export default function AdminDashboard() {
         else schoolCounts.set(schoolId, { name, views: 1 });
       }
       const ranked = [...schoolCounts.values()].sort((a, b) => b.views - a.views).slice(0, 5);
-      console.log("[AdminDashboard] top schools:", ranked);
       setTopSchools(ranked);
 
       // ── Row 5 — recent platform activity ───────────────────────
@@ -267,7 +260,6 @@ export default function AdminDashboard() {
           metadata: (r.metadata as Record<string, unknown>) || {},
         };
       });
-      console.log("[AdminDashboard] recent activity:", mappedActs.length);
       setActivity(mappedActs);
 
       setLoading(false);

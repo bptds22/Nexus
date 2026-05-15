@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
 import NexusLogo from "@/components/ui/NexusLogo";
 import Link from "next/link";
 import PlaybookBackground from "./components/PlaybookBackground";
@@ -37,13 +36,6 @@ const SOCIALS = [
 ];
 
 export default function Home() {
-  useEffect(() => {
-    console.log("[Homepage] Hero section rendered");
-    console.log("[Homepage] Persona cards section rendered");
-    console.log("[Homepage] Trust strip rendered");
-    console.log("[Homepage] Coach CTA button added");
-  }, []);
-
   return (
     <div className="hero-playbook bg-[#111317] min-h-screen">
       <PlaybookBackground />

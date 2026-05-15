@@ -157,8 +157,6 @@ export default function CoachSidebar({ mobileOpen, onClose }: CoachSidebarProps)
           .eq("id", user.id)
           .single();
 
-        console.log("[CoachSidebar] User context:", userCtx?.context);
-
         if (userCtx?.context === "ligue_civile") {
           setIsCivil(true);
           // Phase 6.2.e : league info for subtitle via unified tables.

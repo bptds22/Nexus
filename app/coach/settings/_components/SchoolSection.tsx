@@ -36,7 +36,6 @@ export default function SchoolSection() {
         .select("school_id, is_school_admin")
         .eq("id", user.id)
         .single();
-      console.log("SchoolSection — user:", userRow, userErr);
 
       if (!userRow?.school_id) { setLoading(false); return; }
 
@@ -49,7 +48,6 @@ export default function SchoolSection() {
         .select("name, city, region, division, age_category, conference, team_name, website")
         .eq("id", userRow.school_id)
         .single();
-      console.log("SchoolSection — school:", school, schoolErr);
 
       if (school) {
         setForm({
@@ -93,7 +91,6 @@ export default function SchoolSection() {
         website: form.website,
       })
       .eq("id", schoolId);
-    console.log("SchoolSection — save:", saveErr);
 
     if (saveErr) { setSaving(false); setError("Erreur lors de la sauvegarde."); return; }
 

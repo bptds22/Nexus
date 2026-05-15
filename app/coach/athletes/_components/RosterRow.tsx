@@ -44,7 +44,6 @@ export default function RosterRow({ athlete: a, even, onVerify }: RosterRowProps
     if (!user) return;
 
     if (a.isVerified) {
-      console.log("Unverifying athlete:", a.id);
       const { error } = await supabase
         .from("athletes")
         .update({
@@ -55,9 +54,7 @@ export default function RosterRow({ athlete: a, even, onVerify }: RosterRowProps
           last_profile_validation: null,
         })
         .eq("id", a.id);
-      console.log("Unverify result:", error);
     } else {
-      console.log("Verifying athlete:", a.id);
       const nowIso = new Date().toISOString();
       const { error } = await supabase
         .from("athletes")
@@ -69,7 +66,6 @@ export default function RosterRow({ athlete: a, even, onVerify }: RosterRowProps
           last_profile_validation: nowIso,
         })
         .eq("id", a.id);
-      console.log("Verify result:", error);
     }
 
     setShowConfirm(false);
@@ -120,11 +116,10 @@ export default function RosterRow({ athlete: a, even, onVerify }: RosterRowProps
 
       {/* Statut — clickable */}
       <td className="px-4 py-3.5">
-        {(() => { console.log("Athlete ID:", a.id); return null; })()}
         <VerificationBadge
           isVerified={a.isVerified}
           verification={a.verification}
-          onClick={() => { console.log("CLICK FIRED", a.id); setShowConfirm(true); }}
+          onClick={() => { setShowConfirm(true); }}
         />
       </td>
 
@@ -208,7 +203,6 @@ export default function RosterRow({ athlete: a, even, onVerify }: RosterRowProps
     </tr>
 
     {/* Confirmation modal — rendered via portal to avoid table nesting issues */}
-    {showConfirm && (() => { console.log("Modal visible", showConfirm); return null; })()}
     {showConfirm && (
       <tr style={{ display: "contents" }}>
         <td style={{ display: "contents" }}>

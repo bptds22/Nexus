@@ -94,7 +94,6 @@ export default function AdminUsersPage() {
     (async () => {
       const { data: authData } = await supabase.auth.getUser();
       setCurrentUserId(authData?.user?.id ?? null);
-      console.log("[AdminUsers] current auth user id:", authData?.user?.id);
     })();
   }, [supabase]);
 
@@ -150,10 +149,9 @@ export default function AdminUsersPage() {
   }, [supabase, version]);
 
   async function updateStatus(user: UserRow, newStatus: AccountStatus) {
-    console.log("[AdminUsers] updating status:", user.id, "->", newStatus);
     const { error } = await supabase.from("users").update({ status: newStatus }).eq("id", user.id);
     if (error) {
-      console.log("[AdminUsers] status update error:", error.message);
+      console.error("[AdminUsers] status update error:", error.message);
       setToast(`Erreur: ${error.message}`);
       setTimeout(() => setToast(null), 4000);
       return;

@@ -77,7 +77,6 @@ function ConfirmModal({
 
 /* Stars: use shared StarRating component */
 
-
 /* ── Sport breakdown pills ────────────────────────────────────── */
 
 function SportBreakdown({ athletes }: { athletes: ProspectListAthlete[] }) {
@@ -963,7 +962,6 @@ function ListesPageContent() {
         .eq("recruiter_id", user.id)
         .order("updated_at", { ascending: false });
 
-      console.log("[Lists fetch]", { count: listsData?.length, error: listsErr });
       if (!listsData) { setLoading(false); return; }
 
       // 2. Fetch all list-athlete links
@@ -974,7 +972,6 @@ function ListesPageContent() {
           .from("recruiter_list_members")
           .select("list_id, athlete_id, added_at")
           .in("list_id", listIds);
-        console.log("[List members raw]", linksData, linksErr);
         athleteLinks = linksData || [];
       }
 
@@ -1059,7 +1056,6 @@ function ListesPageContent() {
       .select("id, name, description, created_at, updated_at")
       .single();
 
-    console.log("[List create]", { data, error });
     if (data) {
       const newList: ProspectList = { ...data, description: data.description || "", athletes: [] };
       setLists(prev => [newList, ...prev]);

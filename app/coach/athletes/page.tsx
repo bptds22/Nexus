@@ -342,7 +342,6 @@ function MesAthletesContent() {
       }
 
       const coachSchoolId = coachRow.school_id;
-      console.log("[Coach roster] Loading athletes for school:", coachSchoolId);
 
       const { data, error } = await supabase
         .from("athletes")
@@ -397,8 +396,6 @@ function MesAthletesContent() {
         .eq("school_id", coachSchoolId)
         .eq("status", "ACTIF");
 
-      console.log("Roster query result:", data?.length, "error:", error);
-      console.log("Coach athletes first row:", data?.[0]);
 
       if (!data) { setLoading(false); return; }
 

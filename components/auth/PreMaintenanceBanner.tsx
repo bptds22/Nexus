@@ -24,7 +24,7 @@ export default function PreMaintenanceBanner() {
         .in("key", ["pre_maintenance_warning", "pre_maintenance_message"]);
 
       if (error) {
-        console.log("[PreMaintenanceBanner] load error:", error.message);
+        console.error("[PreMaintenanceBanner] load error:", error.message);
         return;
       }
       const map = new Map<string, string>(
@@ -32,7 +32,6 @@ export default function PreMaintenanceBanner() {
       );
       const active = map.get("pre_maintenance_warning") === "true";
       const msg = map.get("pre_maintenance_message") || "";
-      console.log("[PreMaintenanceBanner] active:", active, "message:", msg);
 
       if (cancelled) return;
       if (!active || !msg) {

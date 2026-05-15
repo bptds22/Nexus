@@ -197,7 +197,6 @@ function AdminCegepSection() {
       setSchoolName(school?.name || "");
 
       const { data: team } = await supabase.from("users").select("id, first_name, last_name, email, role, is_school_admin, created_at").eq("school_id", currentUser.school_id).order("created_at", { ascending: true });
-      console.log("[Admin CEGEP]", { school: school?.name, teamCount: team?.length });
 
       if (team) {
         setMembers(team.map(m => ({
@@ -673,8 +672,6 @@ export default function RecruiterSettingsPage() {
         .eq("id", user.id)
         .single();
 
-      console.log("[Parametres - Mon Compte]", { profile, email: user.email });
-
       // Set email and signup date from auth
       setForm(prev => ({ ...prev, email: user.email || "" }));
       setOriginal(prev => ({ ...prev, email: user.email || "" }));
@@ -687,7 +684,6 @@ export default function RecruiterSettingsPage() {
           const { data: school } = await supabase.from("schools").select("name, region").eq("id", profile.school_id).single();
           schoolName = school ? `${school.name} (${school.region})` : "";
         }
-        console.log("[Parametres - Etablissement]", { schoolName, title: profile.title, sport: profile.sport, division: profile.division });
 
         // Map sport to sportIds array
         const sportIds = (profile.sport as string) ? [(profile.sport as string)] : [];
@@ -696,9 +692,6 @@ export default function RecruiterSettingsPage() {
 
         // Load recruitment preferences
         const prefs = (profile.recruitment_preferences as Record<string, unknown>) || {};
-        console.log("[Recrutement prefs load]", prefs);
-
-        console.log("[Etablissement load]", { school_id: profile.school_id, title: profile.title, sport: profile.sport, division: profile.division });
 
         const updates: Partial<RecruiterSettings> = {
           firstName: (profile.first_name as string) || "",
@@ -732,7 +725,6 @@ export default function RecruiterSettingsPage() {
             emailFrequency: ((notifPrefs.email_frequency as string) || "realtime") as "realtime" | "daily" | "weekly" | "disabled",
           };
         }
-        console.log("[Notifications load]", notifPrefs);
         setMarketingConsent(!!(notifPrefs.marketing_emails));
 
         // Load privacy preferences
@@ -822,15 +814,12 @@ export default function RecruiterSettingsPage() {
         consent_marketing: marketingConsent ? (consentMarketingIso || new Date().toISOString()) : null,
       },
     };
-    console.log("[Parametres SAVE] payload:", JSON.stringify(payload));
 
     const { data, error } = await supabase
       .from("users")
       .update(payload)
       .eq("id", user.id)
       .select();
-
-    console.log("[Parametres save]", { data, error });
 
     if (!error) {
       setOriginal(prev => ({ ...prev, firstName: form.firstName, lastName: form.lastName, phone: form.phone, roleTitle: form.roleTitle, sportIds: form.sportIds, divisions: form.divisions }));
@@ -881,10 +870,9 @@ export default function RecruiterSettingsPage() {
                   const fileExt = file.name.split(".").pop();
                   const filePath = `${user.id}/avatar.${fileExt}`;
                   const { error: uploadError } = await supabase.storage.from("avatars").upload(filePath, file, { upsert: true });
-                  if (uploadError) { console.log("[Photo upload error]", uploadError); return; }
+                  if (uploadError) { console.error("[Photo upload error]", uploadError); return; }
                   const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(filePath);
                   await supabase.from("users").update({ photo_url: urlData.publicUrl }).eq("id", user.id);
-                  console.log("[Photo upload]", { url: urlData.publicUrl });
                   updateField("avatarUrl", urlData.publicUrl);
                 }}
               />

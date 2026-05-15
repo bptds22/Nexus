@@ -1,13 +1,8 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { useEffect } from 'react';
 
 export default function TestAnimationPage() {
-  useEffect(() => {
-    console.log('Framer Motion is working');
-  }, []);
-
   const items = ['Premier', 'Deuxième', 'Troisième'];
 
   return (

@@ -172,8 +172,6 @@ function AdminAthletesPageInner() {
             school_name: u.school_id ? schoolsById.get(u.school_id)?.name ?? null : null,
           }));
 
-        console.log("Athletes page — active filter:", filterParam);
-        console.log("Athletes page — filtered count:", filtered.length);
         setUserRows(filtered);
         setRows([]);
         setStagnantAthleteIds(new Set());
@@ -271,8 +269,6 @@ function AdminAthletesPageInner() {
 
   useEffect(() => {
     if (loading || isUserView) return;
-    console.log("Active filters:", { filter: filterParam, sport: sportParam, school: schoolParam, search: searchQuery });
-    console.log("Filtered results:", filteredRows.length);
   }, [loading, isUserView, filterParam, sportParam, schoolParam, searchQuery, filteredRows.length]);
 
   // Schools that actually have at least one athlete (for the dropdown).

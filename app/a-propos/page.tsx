@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import MarketingNav from "@/components/marketing/MarketingNav";
 import PlaybookBackground from "@/app/components/PlaybookBackground";
 
@@ -58,10 +58,6 @@ export default function AProposPage() {
   const [form, setForm] = useState({ name: "", email: "", subject: "Question générale", message: "" });
   const [submitted, setSubmitted] = useState(false);
   const fadeRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    console.log("À propos page loaded");
-  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));

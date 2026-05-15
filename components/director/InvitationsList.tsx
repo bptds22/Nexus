@@ -47,8 +47,6 @@ export default function InvitationsList() {
       .eq("school_id", userRow.school_id)
       .order("created_at", { ascending: false });
 
-    console.log("Invitations:", data, error);
-
     if (data) {
       setInvitations(data.map((inv: Record<string, unknown>) => ({
         id: inv.id as string,

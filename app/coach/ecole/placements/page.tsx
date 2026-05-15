@@ -28,7 +28,6 @@ function PlacementsPage() {
         .eq("coach_id", user.id)
         .limit(1)
         .single();
-      console.log("Placements — my school:", mySchool);
 
       if (!mySchool) { setLoading(false); return; }
 
@@ -46,7 +45,6 @@ function PlacementsPage() {
         .from("athletes")
         .select("id, first_name, last_name, sport_id, coach_id, position_id, sports!sport_id(nom), positions!position_id(nom, abreviation)")
         .in("coach_id", coachIds);
-      console.log("Placements — athletes:", athletes);
 
       if (!athletes || athletes.length === 0) { setLoading(false); return; }
       const athleteIds = athletes.map(a => a.id);
@@ -57,7 +55,6 @@ function PlacementsPage() {
         .select("id, athlete_id, recruiter_id, updated_at")
         .in("athlete_id", athleteIds)
         .eq("status", "LETTRE_SIGNEE");
-      console.log("Placements — pipeline:", pipelineEntries);
 
       if (!pipelineEntries || pipelineEntries.length === 0) {
         setPlacements([]);

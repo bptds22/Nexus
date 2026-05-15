@@ -207,8 +207,6 @@ function NouveauMessageContent() {
         `)
         .eq("recruiter_id", user.id);
 
-      console.log("[Nouveau - pipeline athletes]", pipeData?.length);
-
       if (pipeData) {
         const mapped: SelectableAthlete[] = pipeData.map((f: Record<string, unknown>) => {
           const aRaw = f.athletes;
@@ -402,14 +400,9 @@ ${recruiterName.first || (profile?.first_name as string) || ""} ${recruiterName.
       .eq("athlete_id", selectedAthlete.id)
       .maybeSingle();
 
-    console.log("[NEW CONV] user.id:", user.id);
-    console.log("[NEW CONV] coach_id:", selectedAthlete.coachId);
-    console.log("[NEW CONV] athlete_id:", selectedAthlete.id);
-
     let convId: string;
     if (existingConv) {
       convId = existingConv.id;
-      console.log("[NEW CONV] existing conversation found:", convId);
     } else {
       const payload = {
         recruiter_id: user.id,
@@ -418,13 +411,11 @@ ${recruiterName.first || (profile?.first_name as string) || ""} ${recruiterName.
         status: "ACTIVE",
         last_message_at: new Date().toISOString(),
       };
-      console.log("[NEW CONV] insert payload:", payload);
       const { data: newConv, error: convErr } = await supabase
         .from("conversations")
         .insert(payload)
         .select("id")
         .single();
-      console.log("[NEW CONV] result:", { newConv, error: convErr });
 
       if (convErr || !newConv) {
         // Detect tier-related denials from RLS. PostgREST surfaces these
@@ -452,7 +443,6 @@ ${recruiterName.first || (profile?.first_name as string) || ""} ${recruiterName.
       sender_id: user.id,
       content: messageBody.trim(),
     }).select("id").single();
-    console.log("[Message sent]", { newMsg: sentMsg, error: sendErr });
 
     if (sendErr || !sentMsg) {
       const isTierDenial =

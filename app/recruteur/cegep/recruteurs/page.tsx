@@ -161,7 +161,6 @@ function TrainersListPage() {
         })
       );
 
-      console.log("[Recruteurs] loaded", trainers.length, "team members");
       setAllTrainers(trainers);
       setLoading(false);
     }

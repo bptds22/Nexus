@@ -323,8 +323,6 @@ function CoachNouveauMessageContent() {
           .eq("id", user.id)
           .single();
 
-        console.log("[Nouveau] coach profile:", coachData, "error:", coachError);
-
         if (coachData) {
           const school = (coachData as any).schools;
           setCoachProfile({
@@ -340,8 +338,6 @@ function CoachNouveauMessageContent() {
           .select("id, first_name, last_name, verified, profile_completion, annee_diplomation, positions!position_id(nom, abreviation)")
           .eq("coach_id", user.id)
           .eq("verified", true);
-
-        console.log("[Nouveau] athletes:", athletes, "error:", athError);
 
         if (athletes) {
           const mapped: RosterAthlete[] = athletes.map((a: any) => ({
@@ -361,8 +357,6 @@ function CoachNouveauMessageContent() {
           .from("conversations")
           .select("users!recruiter_id(id, first_name, last_name, email, school_id, schools!school_id(name))")
           .eq("coach_id", user.id);
-
-        console.log("[Nouveau] conversations for recruiters:", convs, "error:", convError);
 
         if (convs) {
           const seen = new Set<string>();
@@ -474,8 +468,6 @@ ${coachProfile.school}`;
         .select()
         .single();
 
-      console.log("[Nouveau] Created conversation:", conv, "error:", convError);
-
       if (conv) {
         // Create message
         const { data: msg, error: msgError } = await supabase
@@ -488,7 +480,6 @@ ${coachProfile.school}`;
           .select()
           .single();
 
-        console.log("[Nouveau] Created message:", msg, "error:", msgError);
       }
 
       setShowToast(true);

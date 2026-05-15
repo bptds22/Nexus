@@ -51,7 +51,6 @@ export default function TarifsPage() {
   const [billing, setBilling] = useState<Billing>("monthly");
 
   useEffect(() => {
-    console.log("[Tarifs] Page rendered");
     // Read ?role= from URL on mount (avoids Suspense boundary with useSearchParams)
     if (typeof window !== "undefined") {
       const param = new URLSearchParams(window.location.search).get("role");
@@ -63,11 +62,9 @@ export default function TarifsPage() {
   }, []);
 
   useEffect(() => {
-    console.log("[Tarifs] Active persona:", persona);
   }, [persona]);
 
   useEffect(() => {
-    console.log("[Tarifs] Billing toggle:", billing);
   }, [billing]);
 
   const tiers = getTiersForPersona(persona);

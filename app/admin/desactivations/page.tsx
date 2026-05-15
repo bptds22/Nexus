@@ -70,8 +70,6 @@ export default function AdminDesactivationsPage() {
         ((sRes.data || []) as { id: string; name: string }[]).map((s) => [s.id, s.name]),
       );
 
-      console.log("[AdminDeactivations] loaded rows:", uRes.data?.length ?? 0);
-
       const mapped: DeactRow[] = ((uRes.data || []) as RawUser[]).map((u) => ({
         id: u.id,
         first_name: u.first_name,
@@ -95,10 +93,9 @@ export default function AdminDesactivationsPage() {
   }
 
   async function reactivate(id: string) {
-    console.log("[AdminDeactivations] reactivating:", id);
     const { error } = await supabase.from("users").update({ status: "ACTIF" }).eq("id", id);
     if (error) {
-      console.log("[AdminDeactivations] reactivate error:", error.message);
+      console.error("[AdminDeactivations] reactivate error:", error.message);
       showToast(`Erreur: ${error.message}`);
       return;
     }

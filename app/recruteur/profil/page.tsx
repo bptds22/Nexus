@@ -73,8 +73,6 @@ export default function RecruiterProfilPage() {
         .eq("id", user.id)
         .single();
 
-      console.log("[Profile load]", { profile, error });
-
       if (profile) {
         // Get school name
         let schoolName = "";
@@ -115,11 +113,10 @@ export default function RecruiterProfilPage() {
     const filePath = `${user.id}/avatar.${fileExt}`;
 
     const { error: uploadError } = await supabase.storage.from("avatars").upload(filePath, file, { upsert: true });
-    if (uploadError) { console.log("[Photo upload error]", uploadError); return; }
+    if (uploadError) { console.error("[Photo upload error]", uploadError); return; }
 
     const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(filePath);
     await supabase.from("users").update({ photo_url: urlData.publicUrl }).eq("id", user.id);
-    console.log("[Photo upload]", { url: urlData.publicUrl });
     setAvatarUrl(urlData.publicUrl);
   }
 
@@ -147,16 +144,12 @@ export default function RecruiterProfilPage() {
       sport: form.sport || null,
       region: form.region || null,
     };
-    console.log("[SAVE] user:", user.id, "payload:", payload);
 
     const { data, error } = await supabase
       .from("users")
       .update(payload)
       .eq("id", user.id)
       .select();
-
-    console.log("[SAVE] result:", data, "error:", error);
-    console.log("[SAVE] full result:", JSON.stringify(data));
 
     if (error) {
       alert("Erreur: " + error.message);
