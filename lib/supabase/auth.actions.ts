@@ -7,12 +7,13 @@ import { createClient } from '@/lib/supabase/client'
 //     and civil-league branches. Phase 6.2 dropped any coach_league
 //     pseudo-role; the wizard now switches on users.context.
 //
-// Works in tandem with the `handle_new_auth_user` trigger on auth.users
-// (migration 20260423030000). The trigger mirrors the signup into
-// public.users from auth.raw_user_meta_data in the common case. The
-// upsert below is a belt-and-braces fallback so this helper is
-// functionally independent of the trigger — if the trigger is ever
-// disabled or fails, the row still ends up in public.users.
+// public.users row is created entirely by the handle_new_auth_user
+// trigger on auth.users (migration 20260516150000), which reads
+// role / first_name / last_name / context from raw_user_meta_data
+// (set via options.data below). The trigger is SECURITY DEFINER so
+// it bypasses RLS + GRANT — necessary because the only INSERT
+// policy on public.users is TO service_role, and a client-side
+// INSERT/upsert from `authenticated` reliably returned 42501.
 export async function signUp(
   email: string,
   password: string,
@@ -40,37 +41,14 @@ export async function signUp(
 
   if (error) return { error }
 
-  // Defensive upsert: idempotent against the trigger. Common path =
-  // trigger wrote the row first, this upsert hits the id-conflict and
-  // no-ops on already-correct columns. Failure path = trigger missing,
-  // this creates the row. We log but don't hard-fail — the auth
-  // session is already valid and the user can sign in regardless; any
-  // downstream issues will surface as real symptoms against a missing
-  // public.users row.
-  //
-  // `context` is the school/league/CÉGEP discriminator (DB CHECK:
-  // 'scolaire' | 'collegial' | 'ligue_civile'). Today the
-  // handle_new_auth_user trigger doesn't read context from
-  // raw_user_meta_data, so the defensive upsert is the only path that
-  // lands it in public.users.context — keep it in sync if the trigger
-  // is ever extended.
-  if (data.user) {
-    const { error: upsertError } = await supabase
-      .from('users')
-      .upsert({
-        id: data.user.id,
-        email,
-        first_name: firstName,
-        last_name: lastName,
-        role,
-        status: 'ACTIF',
-        ...(context ? { context } : {}),
-      }, { onConflict: 'id' })
-
-    if (upsertError) {
-      console.error('[signUp] public.users upsert warning:', upsertError)
-    }
-  }
+  // No client-side public.users write here on purpose. The
+  // handle_new_auth_user trigger on auth.users (migration
+  // 20260516150000) reads role / first_name / last_name / context
+  // out of raw_user_meta_data (set above in options.data) and writes
+  // the full public.users row as SECURITY DEFINER. That bypasses
+  // RLS + GRANT, which is what we need — the only INSERT policy on
+  // public.users is TO service_role, so any client-side INSERT or
+  // upsert from `authenticated` fails 42501.
 
   return { data }
 }
