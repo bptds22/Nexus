@@ -228,6 +228,173 @@ function CivilTeamPicker({
   );
 }
 
+/* ─────────────────────────────────────────────────────────────────
+   SchoolTeamPicker — school-context self-join picker (Phase 1).
+
+   Filters `teams` by the athlete's selected school + sport. Mirrors
+   CivilTeamPicker's UX (search, single-select, opt-out) but scoped
+   to one school instead of aggregating across LIGUE_CIVILE schools.
+
+   Renders at step 4 once primarySport is known and selectedSchoolId
+   is set. By then the athletes row was INSERTed at end of step 1 with
+   school_id populated, so the "Athletes see their teams" RLS policy
+   on `teams` is satisfied.
+
+   Always optional. If no team matches or the athlete opts out, the
+   coach can still claim the athlete later via existing flows.
+───────────────────────────────────────────────────────────────── */
+
+type SchoolTeamRow = {
+  id: string;
+  name: string;
+  age_group: string | null;
+  division: string | null;
+};
+
+function SchoolTeamPicker({
+  schoolId,
+  sportName,
+  selectedTeamId,
+  onSelect,
+  onContinueWithoutTeam,
+}: {
+  schoolId: string;
+  sportName: string;
+  selectedTeamId: string | null;
+  onSelect: (team: SchoolTeamRow) => void;
+  onContinueWithoutTeam: () => void;
+}) {
+  const [teams, setTeams] = useState<SchoolTeamRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [skipped, setSkipped] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadTeams() {
+      setLoading(true);
+      const supabase = createClient();
+
+      // Resolve sport_id from name — fail-soft to empty list (the
+      // skip path still works) if the sport doesn't exist.
+      const { data: sportRow } = await supabase
+        .from("sports")
+        .select("id")
+        .eq("nom", sportName)
+        .maybeSingle();
+      if (!sportRow?.id) {
+        if (!cancelled) { setTeams([]); setLoading(false); }
+        return;
+      }
+
+      const { data: rows } = await supabase
+        .from("teams")
+        .select("id, name, age_group, division")
+        .eq("school_id", schoolId)
+        .eq("sport_id", sportRow.id)
+        .eq("is_active", true)
+        .order("name");
+
+      if (!cancelled) {
+        setTeams((rows ?? []).map((r: Record<string, unknown>) => ({
+          id: r.id as string,
+          name: r.name as string,
+          age_group: (r.age_group as string) ?? null,
+          division: (r.division as string) ?? null,
+        })));
+        setLoading(false);
+      }
+    }
+    if (schoolId && sportName) loadTeams();
+    else { setTeams([]); setLoading(false); }
+    return () => { cancelled = true; };
+  }, [schoolId, sportName]);
+
+  const visible = search.trim().length > 0
+    ? teams.filter((t) => t.name.toLowerCase().includes(search.toLowerCase().trim()))
+    : teams;
+
+  if (skipped) {
+    return (
+      <p className="text-[13px] text-[#9CA3AF] italic">
+        Tu pourras associer ton équipe plus tard — ton coach peut aussi te réclamer depuis son portail.
+      </p>
+    );
+  }
+
+  if (loading) {
+    return <p className="text-[13px] text-[#6b7280]">Chargement des équipes...</p>;
+  }
+
+  if (teams.length === 0) {
+    return (
+      <div className="bg-[#13151a] border border-[#2D3748] rounded-lg px-4 py-5">
+        <p className="text-[13px] text-[#9CA3AF] mb-1">Aucune équipe pour {sportName || "ton sport"} à cette école pour l&apos;instant.</p>
+        <p className="text-[12px] text-[#6b7280] mb-4">Pas grave — finis ton inscription, ton coach pourra te réclamer plus tard.</p>
+        <button
+          type="button"
+          onClick={() => { setSkipped(true); onContinueWithoutTeam(); }}
+          className="h-10 px-5 rounded-lg border border-[#E63946]/40 text-[12px] font-bold text-[#E63946] hover:bg-[#E63946]/10 transition-colors"
+        >
+          Continuer sans équipe →
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <input
+        type="text"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        placeholder="Rechercher ton équipe..."
+        className={inputCls}
+      />
+      <div className="space-y-2 max-h-[280px] overflow-y-auto">
+        {visible.map((t) => {
+          const isSelected = selectedTeamId === t.id;
+          const meta = [t.age_group, t.division].filter(Boolean).join(" · ");
+          return (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => onSelect(t)}
+              className={`w-full text-left rounded-lg px-4 py-3 transition-colors border ${
+                isSelected
+                  ? "bg-[#E63946]/10 border-[#E63946]"
+                  : "bg-[#13151a] border-[#2D3748] hover:border-[#4a4d56]"
+              }`}
+            >
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-[14px] font-bold text-white truncate">{t.name}</p>
+                  {meta && <p className="text-[11px] text-[#6b7280] truncate">{meta}</p>}
+                </div>
+                {isSelected && (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2.5" strokeLinecap="round" className="shrink-0">
+                    <path d="M20 6L9 17l-5-5" />
+                  </svg>
+                )}
+              </div>
+            </button>
+          );
+        })}
+        {visible.length === 0 && (
+          <p className="text-[12px] text-[#6b7280] px-1 py-2">Aucune équipe ne correspond à « {search} ».</p>
+        )}
+      </div>
+      <button
+        type="button"
+        onClick={() => { setSkipped(true); onContinueWithoutTeam(); }}
+        className="text-[12px] text-[#6b7280] hover:text-[#E63946] transition-colors underline"
+      >
+        Mon équipe n&apos;est pas listée — continuer sans équipe
+      </button>
+    </div>
+  );
+}
+
 export default function AthleteOnboardingPage() {
   const router = useRouter();
   const [step, setStep] = useState(1);
@@ -656,7 +823,13 @@ export default function AthleteOnboardingPage() {
     // Phase 6.2: for civil athletes who picked a team, record the
     // membership in the team_athletes junction (the new unified
     // anchor). Idempotent — ignore unique-violation on rejoin.
-    if (isCivil && selectedTeamId && athleteIdForTeam) {
+    //
+    // Phase 1 (school self-join): same junction INSERT for school
+    // athletes who picked a team via SchoolTeamPicker at step 4. The
+    // condition is unified — `selectedTeamId` is null whenever the
+    // athlete skipped or no picker was rendered (out-of-context),
+    // so this block silently no-ops for those paths.
+    if (selectedTeamId && athleteIdForTeam) {
       const { error: taErr } = await supabase.from("team_athletes").insert({
         team_id: selectedTeamId,
         athlete_id: athleteIdForTeam,
@@ -1013,6 +1186,24 @@ export default function AthleteOnboardingPage() {
               <label className={labelCls}>Numéro de jersey</label>
               <input type="text" value={jerseyNumber} onChange={(e) => setJerseyNumber(e.target.value)} placeholder="12" className={`${inputCls} max-w-[120px]`} />
             </div>
+
+            {/* Phase 1: school athletes self-join an existing team
+                (optional). Filtered by selectedSchoolId + primarySport.
+                Civil athletes pick their team in step 1 via the
+                CivilTeamPicker; this block is school-context only. */}
+            {userContext === "scolaire" && selectedSchoolId && primarySport && (
+              <div className="mt-5 mb-5">
+                <label className={labelCls}>Ton équipe (optionnel)</label>
+                <p className="text-[12px] text-[#6b7280] mb-3">Sélectionne ton équipe actuelle à {selectedSchoolName || "ton école"}. Si elle n&apos;apparaît pas, ton coach pourra te réclamer plus tard.</p>
+                <SchoolTeamPicker
+                  schoolId={selectedSchoolId}
+                  sportName={primarySport}
+                  selectedTeamId={selectedTeamId}
+                  onSelect={(t) => { setSelectedTeamId(t.id); setSelectedTeamName(t.name); }}
+                  onContinueWithoutTeam={() => { setSelectedTeamId(null); setSelectedTeamName(""); }}
+                />
+              </div>
+            )}
 
             <div className={sectionTitle}><div className="w-0.5 h-4 bg-[#E63946] rounded-full" />Liens vidéo</div>
             <div className="space-y-3">
