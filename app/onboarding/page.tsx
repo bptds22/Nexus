@@ -555,16 +555,25 @@ export default function OnboardingPage() {
       // Item 11-Security: a school coach who picks Directeur/Interim
       // (school_admin_type set + role=coach + context!=ligue_civile)
       // must go through admin_claims PENDING review before
-      // is_school_admin = true is granted. Civil coach + cegep
-      // recruiter paths are out of scope for the claim workflow and
-      // continue to set is_school_admin immediately on finish.
+      // is_school_admin = true is granted. Civil coach path remains
+      // out of scope for the claim workflow.
+      //
+      // Item 11-Recruteur: a CÉGEP recruteur who picks Directeur
+      // (cegep_admin_type='owner') goes through the same PENDING
+      // review. CÉGEP has no Interim equivalent (out of scope).
       const isSchoolCoachAdminClaim =
         user?.role === "coach"
         && localUser.context !== "ligue_civile"
         && (localUser.school_admin_type === "owner" || localUser.school_admin_type === "interim");
 
+      const isRecruiterCegepClaim =
+        user?.role === "recruiter"
+        && localUser.cegep_admin_type === "owner";
+
+      const isAdminClaim = isSchoolCoachAdminClaim || isRecruiterCegepClaim;
+
       const adminUpdates: Record<string, unknown> = {};
-      if (localUser.is_school_admin === true && !isSchoolCoachAdminClaim) {
+      if (localUser.is_school_admin === true && !isAdminClaim) {
         adminUpdates.is_school_admin = true;
       }
       const profileData = {
@@ -640,6 +649,24 @@ export default function OnboardingPage() {
 
         if (cegep) {
           await supabase.from("users").update({ school_id: cegep.id }).eq("id", authUser.id);
+
+          // Item 11-Recruteur: file the admin_claims row when a
+          // recruteur claimed Directeur CÉGEP. CÉGEP only has
+          // DIRECTEUR (no INTERIM equivalent per spec). Trigger flips
+          // users.is_school_admin + profile_data.admin_type='owner' on
+          // APPROVED. PendingAdminClaimBanner reads from this row
+          // until the platform admin reviews from /admin/approvals.
+          if (isRecruiterCegepClaim) {
+            const { error: claimErr } = await supabase
+              .from("admin_claims")
+              .insert({
+                user_id: authUser.id,
+                school_id: cegep.id,
+                claim_type: "DIRECTEUR",
+                status: "PENDING",
+              });
+            if (claimErr) console.error("[Onboarding] admin_claims insert (recruteur):", claimErr);
+          }
         }
       }
 
@@ -813,7 +840,7 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
     ? (user.institution as Record<string, string>)?.name || "ton organisation"
     : "ton organisation";
 
-  const [choice, setChoice] = useState<"self" | "invite" | "interim" | "coach_only" | "">("");
+  const [choice, setChoice] = useState<"self" | "invite" | "interim" | "coach_only" | "recruteur_only" | "">("");
   const [selfEmail, setSelfEmail] = useState(user.email || "");
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteFirstName, setInviteFirstName] = useState("");
@@ -870,9 +897,13 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
   }, [isSchool, user.institution]);
 
   const showSelf = !isSchool || !schoolAdminState.hasPermanent;
-  const showInvite = !isSchool || !schoolAdminState.hasPermanent;
+  // Item 11-Recruteur: cegep flow drops the standalone "Inviter quelqu'un"
+  // card — the invite-the-director CTA moves inside the "Recruteur
+  // seulement" expanded sub-form (non-blocking, optional).
+  const showInvite = (!isSchool && !isCegep) || (isSchool && !schoolAdminState.hasPermanent);
   const showInterim = isSchool && !schoolAdminState.hasPermanent && !schoolAdminState.hasInterim;
   const showCoachOnly = isSchool;
+  const showRecruteurOnly = isCegep;
 
   const inputCls = "w-full bg-[#111317] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white placeholder:text-[#6B7280] focus:border-[#E63946] outline-none transition-colors";
   const labelCls = "block text-[10px] font-bold tracking-[0.25em] uppercase text-[#6B7280] mb-1.5";
@@ -904,6 +935,19 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
         [coachKey]: true,
         [typeKey]: null,
         pending_director_invite: null,
+      });
+    } else if (choice === "recruteur_only") {
+      // Item 11-Recruteur: explicit "Recruteur seulement" — no admin
+      // claim filed. The optional invite sub-form below can populate
+      // pending_director_invite without setting any admin flag.
+      const invite = inviteEmail
+        ? { email: inviteEmail, firstName: inviteFirstName, lastName: inviteLastName, message: inviteMessage, sent_at: new Date().toISOString(), type: "cegep" as const }
+        : null;
+      save({
+        [adminKey]: false,
+        [coachKey]: true,
+        [typeKey]: null,
+        pending_director_invite: invite,
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -942,7 +986,7 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
         2: "sm:grid-cols-2",
         3: "sm:grid-cols-3",
         4: "sm:grid-cols-4",
-      } as Record<number, string>)[[showSelf, showInvite, showInterim, showCoachOnly].filter(Boolean).length || 1]}`}>
+      } as Record<number, string>)[[showSelf, showInvite, showInterim, showCoachOnly, showRecruteurOnly].filter(Boolean).length || 1]}`}>
         {/* Card 1: C'EST MOI */}
         {showSelf && (
         <button
@@ -1028,6 +1072,28 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
             <span className="text-[11px] text-[#6B7280] leading-snug">Pas de responsabilité administrative pour l&apos;instant — je m&apos;occupe juste de mes athlètes</span>
           </button>
         )}
+
+        {/* Card 5: RECRUTEUR SEULEMENT — Item 11-Recruteur */}
+        {showRecruteurOnly && (
+          <button
+            type="button"
+            onClick={() => setChoice("recruteur_only")}
+            className={`flex flex-col items-center gap-3 p-5 rounded-xl border transition-all text-center ${
+              choice === "recruteur_only"
+                ? "border-[#E63946] bg-[rgba(230,57,70,0.08)]"
+                : "border-white/10 hover:border-white/20"
+            }`}
+          >
+            <div className={`w-12 h-12 rounded-full flex items-center justify-center ${choice === "recruteur_only" ? "bg-[#3B82F6]/20" : "bg-[#1A1D24]"}`}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
+            </div>
+            <span className="font-head font-black text-[13px] uppercase tracking-[0.1em] text-white">Recruteur seulement</span>
+            <span className="text-[11px] text-[#6B7280] leading-snug">Pas de responsabilité administrative pour l&apos;instant — je m&apos;occupe juste de mon recrutement</span>
+          </button>
+        )}
       </div>
       </>
       )}
@@ -1091,6 +1157,44 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
               <p className="text-[11px] text-[#9CA3AF] leading-relaxed mt-2">
                 Tu auras les pleins pouvoirs administratifs (gérer les autres entraîneurs, voir les stats de l&apos;école, approuver les profils). Si un directeur officiel s&apos;inscrit plus tard et choisit «&nbsp;C&apos;est moi&nbsp;», ton rôle sera automatiquement ramené à entraîneur et tu seras notifié.
               </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* RECRUTEUR SEULEMENT expanded — Item 11-Recruteur */}
+      {choice === "recruteur_only" && isCegep && (
+        <div className="animate-fade-slide-down space-y-4 bg-[#111317]/60 rounded-xl p-5 border border-white/5">
+          <p className="text-[12px] text-[#9CA3AF] leading-relaxed">
+            Tu auras accès au recrutement sur Nexus sans rôle administratif. Tu pourras chercher des athlètes, créer ton pipeline, et contacter les coachs.
+          </p>
+
+          {/* Optional director invite sub-CTA */}
+          <div className="pt-4 border-t border-white/5">
+            <div className="flex items-start gap-2 mb-3">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5">
+                <path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="8.5" cy="7" r="4" /><line x1="20" y1="8" x2="20" y2="14" /><line x1="23" y1="11" x2="17" y2="11" />
+              </svg>
+              <div>
+                <p className="text-[12px] text-white font-bold">Tu veux inviter ton directeur sportif ?</p>
+                <p className="text-[11px] text-[#6B7280] mt-0.5 leading-snug">Optionnel — on enverra une invite dès que les comptes seront approuvés.</p>
+              </div>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <label className={labelCls}>Courriel du directeur</label>
+                <input type="email" placeholder="directeur@cegep.qc.ca" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} className={inputCls} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelCls}>Prénom</label>
+                  <input type="text" placeholder="Prénom" value={inviteFirstName} onChange={(e) => setInviteFirstName(e.target.value)} className={inputCls} />
+                </div>
+                <div>
+                  <label className={labelCls}>Nom</label>
+                  <input type="text" placeholder="Nom" value={inviteLastName} onChange={(e) => setInviteLastName(e.target.value)} className={inputCls} />
+                </div>
+              </div>
             </div>
           </div>
         </div>
