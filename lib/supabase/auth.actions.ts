@@ -40,38 +40,35 @@ export async function signUp(
 
   if (error) return { error }
 
-  // UPDATE the missing fields. The handle_new_auth_user trigger
-  // (SECURITY DEFINER) already inserted the row with id, email, role,
-  // status — see pg function. The previous defensive `upsert` here
-  // hit code 42501 because authenticated has no INSERT grant on
-  // public.users (only service_role does, via the "Service role can
-  // insert users" policy). PostgREST's upsert sends INSERT...ON
-  // CONFLICT, and even when the conflict branch would take the UPDATE
-  // path, the INSERT permission check still has to pass — it didn't.
-  // Pure UPDATE goes through "users update own" (id = auth.uid()),
-  // which authenticated does have, so this lands the remaining
-  // fields without touching the GRANT or RLS.
+  // Defensive upsert: idempotent against the trigger. Common path =
+  // trigger wrote the row first, this upsert hits the id-conflict and
+  // no-ops on already-correct columns. Failure path = trigger missing,
+  // this creates the row. We log but don't hard-fail — the auth
+  // session is already valid and the user can sign in regardless; any
+  // downstream issues will surface as real symptoms against a missing
+  // public.users row.
   //
   // `context` is the school/league/CÉGEP discriminator (DB CHECK:
-  // 'scolaire' | 'collegial' | 'ligue_civile'). The trigger doesn't
-  // read it from raw_user_meta_data, so this UPDATE is the only path
-  // that lands it in public.users.context — keep it in sync if the
-  // trigger is ever extended.
+  // 'scolaire' | 'collegial' | 'ligue_civile'). Today the
+  // handle_new_auth_user trigger doesn't read context from
+  // raw_user_meta_data, so the defensive upsert is the only path that
+  // lands it in public.users.context — keep it in sync if the trigger
+  // is ever extended.
   if (data.user) {
-    const { error: updateError } = await supabase
+    const { error: upsertError } = await supabase
       .from('users')
-      .update({
+      .upsert({
+        id: data.user.id,
+        email,
         first_name: firstName,
         last_name: lastName,
+        role,
+        status: 'ACTIF',
         ...(context ? { context } : {}),
-      })
-      .eq('id', data.user.id)
+      }, { onConflict: 'id' })
 
-    if (updateError) {
-      // Non-blocking — the auth session is already valid. The
-      // onboarding wizard re-writes most of these fields per-step
-      // anyway and can recover from a missed initial seed.
-      console.error('[signUp] public.users update failed:', updateError.message)
+    if (upsertError) {
+      console.error('[signUp] public.users upsert warning:', upsertError)
     }
   }
 
