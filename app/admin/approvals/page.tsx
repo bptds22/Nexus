@@ -46,28 +46,58 @@ export default function AdminApprovalsPage() {
 
   const fetchClaims = useCallback(async () => {
     const supabase = createClient();
-    const { data, error } = await supabase
+
+    // Step 1: claims + schools embed (both live in `public` so PostgREST
+    // resolves the FK fine). The users embed used to live here too but
+    // admin_claims.user_id FKs to auth.users — PostgREST can't auto-join
+    // across schemas, so the embed was failing the entire query with
+    // "Could not find a relationship between 'admin_claims' and 'user_id'".
+    const { data: rawClaims, error: claimsErr } = await supabase
       .from("admin_claims")
       .select(`
         id, user_id, school_id, claim_type, status, created_at,
-        users:user_id (email, first_name, last_name),
         schools:school_id (name, type)
       `)
       .eq("status", "PENDING")
       .order("created_at", { ascending: true });
 
-    if (error) {
-      console.error("[AdminApprovals] fetch error:", error.message);
+    if (claimsErr) {
+      console.error("[AdminApprovals] fetch claims error:", claimsErr.message);
       showToast("Erreur lors du chargement de la liste.");
       setLoading(false);
       return;
     }
 
-    const rows: PendingClaim[] = (data ?? []).map((c: Record<string, unknown>) => {
-      const userRel = c.users as { email?: string; first_name?: string; last_name?: string } | { email?: string; first_name?: string; last_name?: string }[] | null;
+    // Step 2: hydrate user fields via a separate public.users lookup.
+    const userIds = Array.from(new Set((rawClaims ?? []).map((c: Record<string, unknown>) => c.user_id as string)));
+    let usersMap = new Map<string, { email: string | null; first_name: string | null; last_name: string | null }>();
+
+    if (userIds.length > 0) {
+      const { data: usersData, error: usersErr } = await supabase
+        .from("users")
+        .select("id, email, first_name, last_name")
+        .in("id", userIds);
+
+      if (usersErr) {
+        console.error("[AdminApprovals] fetch users error:", usersErr.message);
+      } else {
+        usersMap = new Map(
+          (usersData ?? []).map((u: Record<string, unknown>) => [
+            u.id as string,
+            {
+              email: (u.email as string | null) ?? null,
+              first_name: (u.first_name as string | null) ?? null,
+              last_name: (u.last_name as string | null) ?? null,
+            },
+          ])
+        );
+      }
+    }
+
+    const rows: PendingClaim[] = (rawClaims ?? []).map((c: Record<string, unknown>) => {
       const schoolRel = c.schools as { name?: string; type?: string } | { name?: string; type?: string }[] | null;
-      const u = Array.isArray(userRel) ? userRel[0] : userRel;
       const s = Array.isArray(schoolRel) ? schoolRel[0] : schoolRel;
+      const u = usersMap.get(c.user_id as string);
       return {
         id: c.id as string,
         user_id: c.user_id as string,
