@@ -252,36 +252,55 @@ export default function AthleteLayout({ children }: { children: React.ReactNode 
   useEffect(() => {
     async function checkAccess() {
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
 
-      if (!user) {
+      if (!session) {
         router.replace("/auth");
         return;
       }
 
-      const { data } = await supabase
-        .from("users")
-        .select("role, onboarding_complete")
-        .eq("id", user.id)
-        .single();
+      // Role comes from the session JWT metadata (set at signup via
+      // signUp()'s options.data and surfaced by Supabase on every
+      // session refresh). Zero DB hit, zero RLS timing race —
+      // critical for the moment right after signup where the JWT
+      // cookie hasn't fully propagated yet and a SELECT on
+      // public.users returns 403, which used to silently bounce the
+      // user back to /auth via the `if (!data)` branch.
+      const role = (session.user.user_metadata?.role as string) ?? "ATHLETE";
 
-      if (!data) {
-        router.replace("/auth");
-        return;
-      }
-
-      if (data.role === "COACH" || data.role === "RECRUTEUR") {
-        setWrongRole(data.role);
+      if (role === "COACH" || role === "RECRUTEUR") {
+        setWrongRole(role as "COACH" | "RECRUTEUR");
         setState("wrong-role");
         return;
       }
 
-      if (data.role === "ATHLETE" && !data.onboarding_complete && pathname !== "/athlete/onboarding") {
+      if (role !== "ATHLETE") {
+        // Unexpected role (ADMIN, etc.) — punt back to auth rather
+        // than render the athlete shell.
+        router.replace("/auth");
+        return;
+      }
+
+      // onboarding_complete IS NOT in metadata (the trigger only
+      // sets DB fields), so this read is still required. On any
+      // error (RLS timing race, missing row), default to routing to
+      // the wizard — /athlete/onboarding's own init re-checks
+      // profile completion against the athletes table and bounces
+      // to /athlete/dashboard if the user is actually done.
+      const { data, error } = await supabase
+        .from("users")
+        .select("onboarding_complete")
+        .eq("id", session.user.id)
+        .single();
+
+      const isComplete = !error && data?.onboarding_complete === true;
+
+      if (!isComplete && pathname !== "/athlete/onboarding") {
         router.replace("/athlete/onboarding");
         return;
       }
 
-      if (data.role === "ATHLETE" && data.onboarding_complete && pathname === "/athlete/onboarding") {
+      if (isComplete && pathname === "/athlete/onboarding") {
         router.replace("/athlete/dashboard");
         return;
       }
