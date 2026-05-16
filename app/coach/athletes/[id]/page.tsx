@@ -252,6 +252,7 @@ export default function CoachAthleteProfilePage() {
       const mapped = mapToRecruiterView(raw);
       setA(mapped);
       setAthleteHasAccount(!!raw.user_id);
+      setAthleteEmail((raw.email as string | null) ?? null);
       setLoading(false);
 
       // Load pipeline data (how many recruiters are interested)
@@ -379,6 +380,8 @@ export default function CoachAthleteProfilePage() {
   const [consentGiven, setConsentGiven] = useState(true);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [athleteHasAccount, setAthleteHasAccount] = useState(false);
+  const [athleteEmail, setAthleteEmail] = useState<string | null>(null);
+  const [claimLinkCopied, setClaimLinkCopied] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
   const [toast, setToast] = useState<string | null>(null);
   const searchParams = useSearchParams();
@@ -507,6 +510,57 @@ export default function CoachAthleteProfilePage() {
               )}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Phase 2 athlete claim: orphan profile not yet claimed by an
+          athlete signup. Coach copies the prefill link and shares it
+          via their own channels (email, SMS, in-person). The athlete
+          lands on /auth?email=…, signs up, and the wizard's claim
+          modal links the orphan row at submit. Hidden once
+          athletes.user_id is populated. */}
+      {!recruiterView && !isPreview && !athleteHasAccount && athleteEmail && (
+        <div className="bg-[#F59E0B]/10 border border-[#F59E0B]/30 rounded-xl px-5 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            <div>
+              <p className="text-[13px] font-bold text-[#F59E0B]">Compte non réclamé</p>
+              <p className="text-[12px] text-[#FCD34D] mt-1 leading-snug">
+                {a.firstName ?? "L'athlète"} n&apos;a pas encore activé son compte. Envoie-lui le lien d&apos;inscription par tes propres canaux — la réclamation pré-remplit son wizard avec les infos déjà saisies.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              if (!athleteEmail) return;
+              const link = `${window.location.origin}/auth?email=${encodeURIComponent(athleteEmail)}`;
+              navigator.clipboard.writeText(link).then(() => {
+                setClaimLinkCopied(true);
+                setTimeout(() => setClaimLinkCopied(false), 2500);
+              }).catch((err) => {
+                console.error("[Claim link copy] clipboard error:", err);
+                showToast("Erreur copie. Copie l'URL manuellement.");
+              });
+            }}
+            className="shrink-0 inline-flex items-center gap-2 h-10 px-4 rounded-lg bg-[#F59E0B] hover:bg-[#D97706] text-black font-bold text-[12px] uppercase tracking-wider transition-colors whitespace-nowrap"
+          >
+            {claimLinkCopied ? (
+              <>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
+                Lien copié
+              </>
+            ) : (
+              <>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
+                Copier le lien
+              </>
+            )}
+          </button>
         </div>
       )}
 

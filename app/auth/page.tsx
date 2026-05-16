@@ -51,7 +51,9 @@ export default function AuthPage() {
 function AuthContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const initialMode = searchParams.get("mode") === "signup" ? "signup" : "login";
+  // Phase 2 athlete claim: presence of ?email=… implies the visitor
+  // landed via a coach-shared signup link, so default to signup mode.
+  const initialMode = (searchParams.get("mode") === "signup" || searchParams.get("email")) ? "signup" : "login";
   const [mode, setMode] = useState<"login" | "signup">(initialMode);
   const fadeRef = useRef<HTMLDivElement>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -72,7 +74,10 @@ function AuthContent() {
   /* ── Signup state ── */
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState("");
+  // Phase 2 athlete claim: prefill signup email from ?email=… so the
+  // coach-shared claim link lands ready to submit. Soft prefill —
+  // the user can edit before signing up.
+  const [email, setEmail] = useState(searchParams.get("email") ?? "");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPwd, setShowPwd] = useState(false);

@@ -10,6 +10,7 @@ import DatePicker from "@/app/coach/components/DatePicker";
 import SchoolSelect from "@/components/ui/SchoolSelect";
 import CoachPicker from "@/components/coach/CoachPicker";
 import PartnerVisibilityConsentCard from "@/components/shared/PartnerVisibilityConsentCard";
+import ClaimProfileModal, { type OrphanProfile } from "@/components/auth/ClaimProfileModal";
 
 const SPORTS = [
   "Football", "Basketball", "Soccer", "Hockey", "Volleyball",
@@ -403,6 +404,14 @@ export default function AthleteOnboardingPage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [existingAthleteId, setExistingAthleteId] = useState<string | null>(null);
 
+  // Phase 2 athlete claim: if a coach-created orphan athlete row
+  // matches this signup's email, we surface the modal at mount and
+  // route into the existing UPDATE path (via existingAthleteId) on
+  // claim. Skip means we leave the orphan alone and INSERT a fresh
+  // row at end of step 1, just like a no-match signup.
+  const [orphanMatch, setOrphanMatch] = useState<OrphanProfile | null>(null);
+  const [showClaimModal, setShowClaimModal] = useState(false);
+
   // Step 1 — Identity
   const [photo, setPhoto] = useState("");
   const [firstName, setFirstName] = useState("");
@@ -599,12 +608,118 @@ export default function AthleteOnboardingPage() {
           else if (existing.moyenne_generale || (existing.matieres_fortes && existing.matieres_fortes.length > 0)) setStep(3);
           else setStep(2);
         }
+      } else if (user.email) {
+        // Phase 2 athlete claim: no existing athlete row for this
+        // auth.uid(). Check whether a coach pre-created an orphan
+        // profile (user_id IS NULL) with this email. RLS policy
+        // "athletes can read own orphan match" (migration
+        // 20260516130000) scopes the SELECT to auth.users.email so
+        // a malicious signup can't query for someone else's profile.
+        const { data: orphan } = await supabase
+          .from("athletes")
+          .select("id, first_name, last_name, sports:sport_id(nom), schools:school_id(name), users:coach_id(first_name, last_name)")
+          .ilike("email", user.email)
+          .is("user_id", null)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (orphan) {
+          const sportRel = Array.isArray(orphan.sports) ? orphan.sports[0] : orphan.sports;
+          const schoolRel = Array.isArray(orphan.schools) ? orphan.schools[0] : orphan.schools;
+          const coachRel = Array.isArray(orphan.users) ? orphan.users[0] : orphan.users;
+          const coachObj = coachRel as { first_name?: string; last_name?: string } | null;
+          const coachName = coachObj
+            ? `${coachObj.first_name ?? ""} ${coachObj.last_name ?? ""}`.trim() || null
+            : null;
+          setOrphanMatch({
+            id: orphan.id as string,
+            first_name: (orphan.first_name as string) ?? null,
+            last_name: (orphan.last_name as string) ?? null,
+            sport_name: ((sportRel as { nom?: string } | null)?.nom) ?? null,
+            school_name: ((schoolRel as { name?: string } | null)?.name) ?? null,
+            coach_name: coachName,
+          });
+          setShowClaimModal(true);
+        }
       }
 
       setLoading(false);
     }
     init();
   }, [router]);
+
+  // Phase 2 athlete claim: pull the full orphan record, pre-fill all
+  // wizard state, then point existingAthleteId at the orphan id so
+  // every downstream save UPDATE-targets it. The first UPDATE will
+  // set user_id = auth.uid() (already in the standard athleteRecord
+  // payload), satisfying the orphan-claim policy's WITH CHECK.
+  async function handleClaimOrphan() {
+    if (!orphanMatch) return;
+    const supabase = createClient();
+    const { data: full } = await supabase
+      .from("athletes")
+      .select("*, schools!school_id(name, type), sports!sport_id(nom), positions!position_id(abreviation)")
+      .eq("id", orphanMatch.id)
+      .maybeSingle();
+    if (!full) {
+      // RLS rejected or row disappeared — fall back to skip path.
+      setShowClaimModal(false);
+      setOrphanMatch(null);
+      return;
+    }
+
+    if (full.first_name) setFirstName(full.first_name);
+    if (full.last_name) setLastName(full.last_name);
+    if (full.date_naissance) setDateOfBirth(full.date_naissance);
+    if (full.genre) setGender(full.genre);
+    if (full.photo_url) setPhoto(full.photo_url);
+    if (full.telephone) setPhone(full.telephone);
+    if (full.annee_diplomation) setGradYear(String(full.annee_diplomation));
+    const schoolRel = Array.isArray(full.schools) ? full.schools[0] : full.schools;
+    if (full.school_id && (schoolRel as { type?: string } | null)?.type !== "LIGUE_CIVILE") {
+      setSelectedSchoolId(full.school_id as string);
+      if ((schoolRel as { name?: string } | null)?.name) setSelectedSchoolName((schoolRel as { name?: string }).name as string);
+    }
+    if (full.coach_id) setSelectedCoachId(full.coach_id as string);
+    if (full.nom_parent || full.parent_first_name) {
+      if (full.parent_first_name) setParentFirstName(full.parent_first_name);
+      if (full.parent_last_name) setParentLastName(full.parent_last_name);
+    }
+    if (full.parent_email) setParentEmail(full.parent_email);
+    if (full.telephone_parent) setParentPhone(full.telephone_parent);
+    if (full.parent_relationship) setParentRelationship(full.parent_relationship);
+    if (full.moyenne_generale) setGpa(String(full.moyenne_generale));
+    if (full.matieres_fortes) setStrongSubjects(full.matieres_fortes);
+    if (full.mentions_academiques) setAcademicHonors(full.mentions_academiques);
+    if (full.taille_pieds) setHeightFeet(String(full.taille_pieds));
+    if (full.taille_pouces) setHeightInches(String(full.taille_pouces));
+    if (full.poids_lbs) setWeightLbs(String(full.poids_lbs));
+    if (full.main_dominante) setDominantHand(full.main_dominante);
+    if (full.pied_dominant) setDominantFoot(full.pied_dominant);
+    if (full.numero_jersey) setJerseyNumber(full.numero_jersey);
+    const sportRel = Array.isArray(full.sports) ? full.sports[0] : full.sports;
+    if ((sportRel as { nom?: string } | null)?.nom) setPrimarySport((sportRel as { nom?: string }).nom as string);
+    const posRel = Array.isArray(full.positions) ? full.positions[0] : full.positions;
+    if ((posRel as { abreviation?: string } | null)?.abreviation) setPrimaryPosition((posRel as { abreviation?: string }).abreviation as string);
+    if (full.video_faits_saillants_url) setHighlightVideo(full.video_faits_saillants_url);
+    if (full.hudl_url) setHudlLink(full.hudl_url);
+    if (full.youtube_url) setYoutubeLink(full.youtube_url);
+    if (full.instagram_url) setInstagramLink(full.instagram_url);
+
+    // Critical: route every downstream save into the UPDATE branch
+    // targeting the orphan row. The athleteRecord payload already
+    // sets user_id = userId, so the first UPDATE satisfies the
+    // claim policy's WITH CHECK (user_id = auth.uid()) and the row
+    // transitions from orphan to owned in a single write.
+    setExistingAthleteId(orphanMatch.id);
+    setShowClaimModal(false);
+  }
+
+  function handleSkipClaim() {
+    setShowClaimModal(false);
+    setOrphanMatch(null);
+  }
 
   function canProceed(): boolean {
     switch (step) {
@@ -876,6 +991,14 @@ export default function AthleteOnboardingPage() {
   return (
     <div className="hero-playbook nx-no-glow bg-[#111317] min-h-screen flex flex-col items-center px-4 py-8">
       <PlaybookBackground />
+
+      {showClaimModal && orphanMatch && (
+        <ClaimProfileModal
+          orphan={orphanMatch}
+          onClaim={handleClaimOrphan}
+          onSkip={handleSkipClaim}
+        />
+      )}
 
       <div className="relative z-10 w-full max-w-2xl space-y-6">
         {/* Logo */}
