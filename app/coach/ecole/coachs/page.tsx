@@ -308,13 +308,6 @@ function CoachesListPage() {
             {coaches.length} entraineurs dans votre ecole
           </p>
         </div>
-        <Link
-          href="/coach/ecole/inviter"
-          className="inline-flex items-center justify-center bg-[#E63946] text-white font-bold text-[13px] uppercase tracking-[0.12em] rounded-lg px-5 h-10 hover:bg-[#D93C3C] transition-colors"
-          style={{ fontFamily: "var(--wl-font-head)" }}
-        >
-          + Inviter un coach
-        </Link>
       </div>
 
       {/* Filters bar */}

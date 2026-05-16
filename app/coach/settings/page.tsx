@@ -175,8 +175,6 @@ function AdminEcoleSection({ isCivilCoach = false }: { isCivilCoach?: boolean })
   const [toast, setToast] = useState<string | null>(null);
   const [directors, setDirectors] = useState<Director[]>([]);
   const [loading, setLoading] = useState(true);
-  const [inviteEmail, setInviteEmail] = useState("");
-  const [inviting, setInviting] = useState(false);
   const [showTransferModal, setShowTransferModal] = useState(false);
   const [transferTarget, setTransferTarget] = useState("");
   const [transferring, setTransferring] = useState(false);
@@ -234,36 +232,6 @@ function AdminEcoleSection({ isCivilCoach = false }: { isCivilCoach?: boolean })
     if (error) { showToast("Erreur lors du retrait."); return; }
     setDirectors((prev) => prev.filter((d) => d.id !== directorId));
     showToast(isCivilCoach ? "Coordinateur retiré avec succès." : "Directeur retiré avec succès.");
-  }
-
-  async function handleInvite() {
-    if (!inviteEmail.trim()) return;
-    setInviting(true);
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setInviting(false); showToast("Non authentifié."); return; }
-
-    const { data: userRow } = await supabase
-      .from("users")
-      .select("school_id")
-      .eq("id", user.id)
-      .single();
-
-    if (!userRow?.school_id) { setInviting(false); showToast(isCivilCoach ? "Ligue introuvable." : "École introuvable."); return; }
-
-    const { error } = await supabase
-      .from("director_invitations")
-      .insert({
-        school_id: userRow.school_id,
-        invited_by: user.id,
-        email: inviteEmail.trim(),
-        status: "pending",
-      });
-
-    setInviting(false);
-    if (error) { showToast("Erreur lors de l'envoi de l'invitation."); return; }
-    setInviteEmail("");
-    showToast("Invitation envoyée avec succès.");
   }
 
   async function handleTransfer() {
@@ -368,41 +336,6 @@ function AdminEcoleSection({ isCivilCoach = false }: { isCivilCoach?: boolean })
                 ))}
               </tbody>
             </table>
-          </div>
-        </div>
-
-        {/* Invite director */}
-        <div className="border-t border-[#2D3748]/40 pt-6">
-          <h2 className="font-head text-lg font-black text-white uppercase tracking-tight mb-4">
-            {isCivilCoach ? "Inviter un coordinateur de ligue" : "Inviter un directeur sportif"}
-          </h2>
-          <div className="max-w-md space-y-4">
-            <div>
-              <label className="block text-[12px] font-bold tracking-[0.25em] uppercase text-[#6B7280] mb-1.5">
-                {isCivilCoach ? "Courriel du coordinateur" : "Courriel du directeur"}
-              </label>
-              <input
-                type="email"
-                title={isCivilCoach ? "Courriel du coordinateur" : "Courriel du directeur"}
-                placeholder={isCivilCoach ? "coordinateur@ligue.qc.ca" : "directeur@ecole.qc.ca"}
-                value={inviteEmail}
-                onChange={(e) => setInviteEmail(e.target.value)}
-                className="w-full bg-[#13151a] border border-[#2a2d36] rounded-lg px-4 py-2.5 text-[14px] text-[#e0e0e0] placeholder:text-[#4a4d56] focus:border-[#E63946] outline-none transition-colors"
-              />
-            </div>
-            <button
-              type="button"
-              onClick={handleInvite}
-              disabled={inviting}
-              className="h-10 px-5 rounded-lg bg-[#E63946] text-white font-bold text-[12px] uppercase tracking-wider hover:bg-[#D42B22] transition-colors disabled:opacity-50"
-            >
-              {inviting ? "Envoi..." : "Envoyer l\u2019invitation"}
-            </button>
-            <p className="text-[11px] text-[#4a4d56]">
-              {isCivilCoach
-                ? "Le coordinateur invité aura accès gratuit à toutes les fonctionnalités de gestion de la ligue."
-                : "Le directeur invité aura accès gratuit à toutes les fonctionnalités de gestion d’école."}
-            </p>
           </div>
         </div>
 

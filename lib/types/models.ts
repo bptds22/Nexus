@@ -608,19 +608,6 @@ export interface RecruitmentStatsBySport {
   placements: number;
 }
 
-export interface Invitation {
-  id: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  sports: string[];
-  role?: string;
-  message?: string;
-  sentAt: string;
-  status: "pending" | "accepted" | "expired";
-}
-
-
 /* ══════════════════════════════════════════════════════════════
    CÉGEP DIRECTOR DASHBOARD — Value & ROI
 ══════════════════════════════════════════════════════════════ */
