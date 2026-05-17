@@ -15,16 +15,17 @@ RETURNS uuid
 LANGUAGE plpgsql
 SECURITY DEFINER
 STABLE
+SET row_security = off  -- prevents recursion via "users read coaches at their school" policy on users
 AS $$
 DECLARE
   v_role text;
   v_school_id uuid;
 BEGIN
-  SELECT role INTO v_role FROM users WHERE id = auth.uid();
+  SELECT role INTO v_role FROM public.users WHERE id = auth.uid();
   IF v_role = 'ATHLETE' THEN
-    SELECT school_id INTO v_school_id FROM athletes WHERE user_id = auth.uid();
+    SELECT school_id INTO v_school_id FROM public.athletes WHERE user_id = auth.uid();
   ELSE
-    SELECT school_id INTO v_school_id FROM users WHERE id = auth.uid();
+    SELECT school_id INTO v_school_id FROM public.users WHERE id = auth.uid();
   END IF;
   RETURN v_school_id;
 END;

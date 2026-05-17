@@ -48,6 +48,11 @@
 -- A. Bonus dedupe — 17 duplicate rows merged onto 17 canonical rows.
 -- ────────────────────────────────────────────────────────────────
 
+-- DROP IF EXISTS guards against re-runs in the same psql session
+-- where Supabase's migration runner might keep the connection alive
+-- across migration files. TEMP tables auto-drop at session end so
+-- this is a no-op in the common path.
+DROP TABLE IF EXISTS _dedupe_map;
 CREATE TEMP TABLE _dedupe_map (
   canonical_id uuid NOT NULL,
   duplicate_id uuid NOT NULL
@@ -143,6 +148,7 @@ END $$;
 --    micro-colleges that don't field RSEQ sports teams.
 -- ────────────────────────────────────────────────────────────────
 
+DROP TABLE IF EXISTS _delete_outright;
 CREATE TEMP TABLE _delete_outright (id uuid NOT NULL);
 
 WITH targets(name, city) AS (VALUES

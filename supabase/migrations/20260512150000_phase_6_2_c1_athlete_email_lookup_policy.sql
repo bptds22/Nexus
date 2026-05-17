@@ -31,6 +31,7 @@ LANGUAGE sql
 SECURITY DEFINER
 STABLE
 SET search_path = public
+SET row_security = off  -- prevents recursion via "Coaches lookup athletes by email" policy on users
 AS $$
   SELECT EXISTS (
     SELECT 1 FROM public.users

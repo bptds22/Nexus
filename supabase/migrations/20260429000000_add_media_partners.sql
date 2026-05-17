@@ -28,12 +28,17 @@ ALTER TABLE public.users
 ADD COLUMN IF NOT EXISTS is_platform_admin BOOLEAN NOT NULL DEFAULT false;
 
 CREATE OR REPLACE FUNCTION is_platform_admin(uid UUID)
-RETURNS BOOLEAN AS $$
+RETURNS BOOLEAN
+LANGUAGE SQL
+STABLE
+SECURITY DEFINER
+SET row_security = off  -- prevents recursion if any users RLS policy ever calls this
+AS $$
   SELECT COALESCE(
     (SELECT is_platform_admin FROM public.users WHERE id = uid),
     false
   );
-$$ LANGUAGE SQL STABLE SECURITY DEFINER;
+$$;
 
 -- Bruno (founder/sole platform admin for closed beta)
 UPDATE public.users

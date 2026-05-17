@@ -51,6 +51,9 @@
 --     different institutions (post-secondary vs secondary).
 -- ═══════════════════════════════════════════════════════════════
 
+-- DROP IF EXISTS guards against re-runs in the same psql session.
+-- TEMP tables auto-drop at session end so this is a no-op normally.
+DROP TABLE IF EXISTS _dedupe_map;
 CREATE TEMP TABLE _dedupe_map (
   canonical_id uuid NOT NULL,
   duplicate_id uuid NOT NULL
@@ -85,25 +88,36 @@ INSERT INTO _dedupe_map (canonical_id, duplicate_id)
 SELECT
   (SELECT id FROM public.schools WHERE name = p.keep_name AND city IS NOT DISTINCT FROM p.keep_city),
   (SELECT id FROM public.schools WHERE name = p.drop_name AND city IS NOT DISTINCT FROM p.drop_city)
-FROM pairs p;
+FROM pairs p
+WHERE
+  (SELECT id FROM public.schools WHERE name = p.keep_name AND city IS NOT DISTINCT FROM p.keep_city) IS NOT NULL
+  AND (SELECT id FROM public.schools WHERE name = p.drop_name AND city IS NOT DISTINCT FROM p.drop_city) IS NOT NULL;
 
 -- Validate every mapping resolved to two real rows. RAISE EXCEPTION
 -- triggers an automatic rollback of the entire migration.
+--
+-- 0 matches is allowed (fresh DB without the seed data — migration
+-- is a no-op). 20 matches is the production case. Anything in
+-- between is a real anomaly (partial seed, manual edits) and still
+-- aborts so we don't silently corrupt half-deduplicated state.
 DO $$
 DECLARE
   resolved integer;
   null_count integer;
 BEGIN
   SELECT COUNT(*) INTO resolved FROM _dedupe_map;
-  IF resolved != 20 THEN
-    RAISE EXCEPTION 'Expected 20 dedupe mappings, got %', resolved;
+  IF resolved NOT IN (0, 20) THEN
+    RAISE EXCEPTION 'Expected 0 (fresh DB no-op) or 20 dedupe mappings, got %', resolved;
   END IF;
-  SELECT COUNT(*) INTO null_count FROM _dedupe_map
-    WHERE canonical_id IS NULL OR duplicate_id IS NULL;
-  IF null_count > 0 THEN
-    RAISE EXCEPTION
-      '% mappings could not resolve in target DB — schools rows '
-      'may have been renamed or already deduped.', null_count;
+  -- null_count check skipped when resolved=0 (no rows to evaluate).
+  IF resolved > 0 THEN
+    SELECT COUNT(*) INTO null_count FROM _dedupe_map
+      WHERE canonical_id IS NULL OR duplicate_id IS NULL;
+    IF null_count > 0 THEN
+      RAISE EXCEPTION
+        '% mappings could not resolve in target DB — schools rows '
+        'may have been renamed or already deduped.', null_count;
+    END IF;
   END IF;
 END $$;
 
