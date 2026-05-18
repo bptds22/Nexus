@@ -30,15 +30,27 @@ const SPORT_DISPLAY: Record<string, string> = Object.fromEntries(
   Object.entries(SPORT_NAME_MAP).map(([display, key]) => [key, display])
 );
 
-const TRAIT_LIST: { key: keyof AthleteTraitRatings; label: string }[] = [
-  { key: "leadership", label: "Leadership" },
-  { key: "discipline", label: "Discipline" },
-  { key: "coachability", label: "Coachabilité" },
-  { key: "gameIQ", label: "Intelligence de jeu" },
-  { key: "competitiveness", label: "Compétitivité" },
-  { key: "teamwork", label: "Esprit d'équipe" },
-  { key: "resilience", label: "Résilience" },
-  { key: "attitude", label: "Attitude / Mentalité" },
+const TRAIT_GROUPS: { title: string; traits: { key: keyof AthleteTraitRatings; label: string }[] }[] = [
+  { title: "Capacités athlétiques", traits: [
+    { key: "speed",     label: "Vitesse / Explosivité" },
+    { key: "power",     label: "Force / Puissance" },
+    { key: "endurance", label: "Endurance / Cardio" },
+    { key: "agility",   label: "Agilité / Coordination" },
+  ]},
+  { title: "Intelligence sportive", traits: [
+    { key: "gameVision", label: "Vision du jeu" },
+    { key: "tactics",    label: "Sens tactique" },
+  ]},
+  { title: "Caractère", traits: [
+    { key: "leadership",      label: "Leadership" },
+    { key: "discipline",      label: "Discipline / Éthique de travail" },
+    { key: "coachability",    label: "Coachabilité" },
+    { key: "gameIQ",          label: "Intelligence de jeu" },
+    { key: "competitiveness", label: "Compétitivité" },
+    { key: "teamwork",        label: "Esprit d'équipe" },
+    { key: "resilience",      label: "Résilience" },
+    { key: "attitude",        label: "Attitude / Mentalité" },
+  ]},
 ];
 
 /* ── Shared components (same as recruiter view) ───────────────── */
@@ -766,28 +778,37 @@ export default function CoachAthleteProfilePage() {
 
               {isDetailed && (
                 <div className="mt-5 pl-5">
-                  <div className="flex items-center gap-3 mb-4">
+                  {/* (1) Cote globale prominent — matches modifier card */}
+                  <div className="bg-[#13151a] border border-[#2a2d36] rounded-xl p-4 flex items-center justify-between mb-4">
+                    <div>
+                      <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#6b7280]">Cote globale (moyenne auto)</p>
+                      <p className="text-[28px] font-head font-black text-[#F59E0B] leading-none mt-1">{coteGlobale.toFixed(1)}<span className="text-[14px] text-[#6b7280] font-normal ml-1">/ 5</span></p>
+                    </div>
                     <StarRating rating={coteGlobale} size="md" showNumber={false} />
-                    <span className="text-[18px] font-head font-black text-white">{coteGlobale.toFixed(1)}<span className="text-[14px] text-[#6B7280] font-normal">/5</span></span>
-                    <span className="text-[12px] text-[#6B7280] uppercase tracking-wider font-bold">Cote Globale</span>
                   </div>
 
-                  {a.traitRatings && (
-                    <div className="border-t border-[#2D3748]/50 pt-4">
-                      <p className="text-[11px] font-bold tracking-[0.15em] uppercase text-[#6b7280] mb-3">Détail par trait</p>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1">
-                        {TRAIT_LIST.map((trait) => {
-                          const val = a.traitRatings ? a.traitRatings[trait.key] : 0;
-                          return (
-                            <div key={trait.key} className="flex items-center justify-between py-2.5 border-b border-[#2D3748]/30">
-                              <span className="text-[13px] text-[#c8c8cc]">{trait.label}</span>
-                              {val > 0 ? <StarRating rating={val} size="sm" /> : <span className="text-[13px] text-[#4a4d56]">—</span>}
-                            </div>
-                          );
-                        })}
+                  {/* (2-4) Capacités athlétiques / Intelligence sportive / Caractère */}
+                  <div className="space-y-4">
+                    {TRAIT_GROUPS.map((group) => (
+                      <div key={group.title} className="bg-[#13151a] border border-[#2a2d36] rounded-xl p-5">
+                        <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#6b7280] mb-3">{group.title}</p>
+                        <div className="space-y-1">
+                          {group.traits.map((trait) => {
+                            const val = a.traitRatings ? a.traitRatings[trait.key] : 0;
+                            return (
+                              <div key={trait.key} className="flex items-center justify-between py-2 px-2 rounded-lg">
+                                <span className="text-[13px] text-[#c8c8cc]">{trait.label}</span>
+                                <div className="flex items-center gap-2">
+                                  <StarRating rating={val} size="sm" />
+                                  <span className="text-[12px] font-bold text-[#6b7280] w-10 text-right">{val}/5</span>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    ))}
+                  </div>
 
                   {dbDistinctions.length > 0 && (
                     <div className="border-t border-[#2D3748]/50 pt-4 mt-4">
