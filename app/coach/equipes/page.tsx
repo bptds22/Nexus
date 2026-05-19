@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { getCurrentSeason } from "@/lib/utils/season";
 
 /* ═══════════════════════════════════════════════════════════════
    Mes Équipes — Team management for coaches
@@ -46,7 +47,7 @@ export default function EquipesPage() {
   const [newAgeGroup, setNewAgeGroup] = useState("");
   const [newDivision, setNewDivision] = useState("");
   const [newLeague, setNewLeague] = useState("RSEQ");
-  const [newSeason, setNewSeason] = useState("2025-2026");
+  const [newSeason, setNewSeason] = useState(getCurrentSeason());
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -137,7 +138,7 @@ export default function EquipesPage() {
           ageGroup: t.age_group || "",
           division: t.division || "",
           league: t.league || "",
-          season: t.season || "2025-2026",
+          season: t.season || getCurrentSeason(),
           sportName: sport?.nom || "",
           coachCount: coaches.length,
           athleteCount: (t.team_athletes || []).length,
@@ -168,7 +169,7 @@ export default function EquipesPage() {
     await supabase.from("team_coaches").insert({ team_id: team.id, coach_id: user.id, role: "head_coach" });
 
     // Reset form & reload
-    setNewName(""); setNewSportId(""); setNewAgeGroup(""); setNewDivision(""); setNewLeague("RSEQ"); setNewSeason("2025-2026");
+    setNewName(""); setNewSportId(""); setNewAgeGroup(""); setNewDivision(""); setNewLeague("RSEQ"); setNewSeason(getCurrentSeason());
     setShowCreate(false);
     setSaving(false);
     loadTeams();

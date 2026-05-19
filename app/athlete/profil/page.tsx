@@ -1465,14 +1465,14 @@ export default function AthleteProfilPage() {
                     const f = e.target.files?.[0]; if (!f || !athleteId) return;
                     const supabase = createClient();
                     const { data: { user } } = await supabase.auth.getUser(); if (!user) return;
-                    const path = `athletes/${user.id}/${Date.now()}.${f.name.split(".").pop()}`;
-                    const { error: uploadError } = await supabase.storage.from("Ath Photos").upload(path, f, { upsert: true });
+                    const path = `${user.id}/${Date.now()}.${f.name.split(".").pop()}`;
+                    const { error: uploadError } = await supabase.storage.from("avatars").upload(path, f, { upsert: true });
                     if (uploadError) {
                       console.error("[Photo upload]", uploadError);
                       showToast("Erreur lors de l'upload");
                       return;
                     }
-                    const { data: urlData } = supabase.storage.from("Ath Photos").getPublicUrl(path);
+                    const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
                     await supabase.from("athletes").update({ photo_url: urlData.publicUrl }).eq("id", athleteId);
                     setA((prev: AnyProfile) => ({ ...prev, photoUrl: urlData.publicUrl }));
                     showToast("Photo mise à jour!");

@@ -4,10 +4,11 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
 import type { GlobalRecruitmentStatus } from "@/lib/types/models";
 import { relativeTimeFr } from "@/lib/utils/relativeTime";
 import { orgLabelPossessive, isCivilType, type SchoolType } from "@/lib/utils/orgLabel";
+import { getCurrentSeason } from "@/lib/utils/season";
+import CoachAthleteRow from "@/components/coach/CoachAthleteRow";
 
 /* ═══════════════════════════════════════════════════════════════
    Team Detail — Manage coaches + athletes for a single team.
@@ -27,10 +28,6 @@ import { orgLabelPossessive, isCivilType, type SchoolType } from "@/lib/utils/or
 
 interface TeamCoach { id: string; coachId: string; name: string; role: string }
 
-// Shared rich-row fields. Mirrors the visual contract of
-// CoachAthleteRow at /coach/athletes/page.tsx without extracting it
-// (P3 captures the future shared-component refactor — see
-// post-launch-bugs.md).
 interface TeamAthlete {
   id: string;          // team_athletes junction row id
   athleteId: string;
@@ -234,7 +231,7 @@ export default function TeamDetailPage() {
     setEditAgeGroup(teamState.ageGroup);
     setEditDivision(teamState.division);
     setEditLeague(teamState.league);
-    setEditSeason(teamState.season || "2025-2026");
+    setEditSeason(teamState.season || getCurrentSeason());
 
     // ── Coaches ──────────────────────────────────────────────
     const { data: tc } = await supabase
@@ -619,72 +616,32 @@ export default function TeamDetailPage() {
         ) : (
           <div className="space-y-2">
             {athletes.map((a) => (
-              <div key={a.id} className="bg-[#1A1D24] rounded-lg border border-[#2D3748] hover:border-[#E63946]/30 transition-all duration-200 ease-out flex items-center px-4 py-3 gap-3 group">
-                {/* Avatar + verified */}
-                <Link href={`/coach/athletes/${a.athleteId}`} className="relative w-10 h-10 shrink-0 block">
-                  <div className="w-10 h-10 rounded-full bg-[#2D3748] flex items-center justify-center">
-                    <span className="text-[11px] font-bold text-[#9CA3AF]">
-                      {a.name.split(" ").filter(Boolean).map((n) => n[0]).join("").slice(0, 2) || "?"}
-                    </span>
-                  </div>
-                  {a.verified && (
-                    <div className="absolute -top-0.5 -right-0.5 z-10">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="#3B82F6" stroke="none">
-                        <circle cx="12" cy="12" r="10" />
-                        <path d="M9 12l2 2 4-4" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-                      </svg>
-                    </div>
-                  )}
-                </Link>
-                {/* Name + school sub-line (blank for civil) */}
-                <div className="w-[180px] shrink-0">
-                  <Link href={`/coach/athletes/${a.athleteId}`} className="text-[14px] font-bold text-white hover:text-[#E63946] transition-colors truncate block">
-                    {a.name || "—"}
-                  </Link>
-                  {a.school && <p className="text-[12px] text-[#6b7280] truncate">{a.school}</p>}
-                </div>
-                {/* Position */}
-                <div className="w-[50px] shrink-0">
-                  {a.position ? (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-[#2D3748] text-[#c0c4cc] text-[11px] font-bold uppercase tracking-wider">{a.position}</span>
-                  ) : <span className="text-[#4a4d56]">—</span>}
-                </div>
-                {/* Status badge */}
-                <div className="w-[140px] shrink-0">
-                  <RecruitmentStatusBadge
-                    status={(a.recruitmentStatus || "OUVERT") as GlobalRecruitmentStatus}
-                    committedSchoolName={a.committedSchoolName || undefined}
-                    openToOffers={a.openToOffers}
-                    size="sm"
-                  />
-                </div>
-                {/* Region + height/weight */}
-                <div className="w-[130px] shrink-0">
-                  {a.region && <span className="text-[12px] text-[#9CA3AF] block truncate">{a.region}</span>}
-                  {a.heightWeight && <span className="text-[11px] text-[#6b7280]">{a.heightWeight}</span>}
-                </div>
-                {/* Year */}
-                <div className="w-[45px] shrink-0">
-                  {a.gradYear != null ? (
-                    <span className="text-[13px] text-[#9CA3AF]">{a.gradYear}</span>
-                  ) : <span className="text-[#4a4d56]">—</span>}
-                </div>
-                {/* Rating stars */}
-                <div className="w-[110px] shrink-0">
-                  {a.stars > 0 ? (
-                    <div className="flex items-center gap-0.5">
-                      {Array.from({ length: 5 }, (_, i) => (
-                        <svg key={i} width="11" height="11" viewBox="0 0 24 24" fill={a.stars >= i + 1 ? "#F59E0B" : "#374151"} stroke="none">
-                          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                        </svg>
-                      ))}
-                      <span className="text-[11px] font-bold text-[#F59E0B] ml-0.5">{a.stars.toFixed(1)}</span>
-                    </div>
-                  ) : <span />}
-                </div>
+              <CoachAthleteRow
+                key={a.id}
+                athleteId={a.athleteId}
+                firstName={a.name.split(" ")[0] || ""}
+                lastName={a.name.split(" ").slice(1).join(" ") || ""}
+                isVerified={a.verified}
+                school={isCivil ? "Ligue civile" : a.school}
+                position={a.position}
+                recruitmentStatus={a.recruitmentStatus}
+                committedSchoolName={a.committedSchoolName}
+                openToOffers={a.openToOffers}
+                region={a.region}
+                heightWeight={a.heightWeight}
+                gradYear={a.gradYear}
+                stars={a.stars}
+                showRegion={false}
+                showYear={false}
+              >
+                {/* Spacer takes leftover row width so the action group
+                    anchors against the right edge. Caller-side because
+                    the athletes-page row already has a flex-1 child
+                    (badges) and doesn't need this. */}
+                <div className="flex-1 min-w-0" />
                 {/* Actions: Modifier (école/cégep) + Voir → + remove ✕
                     on hover (any coach via team_athletes RLS) */}
-                <div className="flex-1 flex items-center justify-end gap-3">
+                <div className="flex items-center gap-3 shrink-0">
                   {!isCivil && (
                     <Link href={`/coach/athletes/${a.athleteId}/modifier`} className="text-[13px] font-bold text-[#E63946] hover:text-[#D42B22] transition-colors shrink-0">Modifier</Link>
                   )}
@@ -702,7 +659,7 @@ export default function TeamDetailPage() {
                     </svg>
                   </button>
                 </div>
-              </div>
+              </CoachAthleteRow>
             ))}
           </div>
         )}

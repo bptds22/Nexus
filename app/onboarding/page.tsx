@@ -8,6 +8,7 @@ import PlaybookBackground from "../components/PlaybookBackground";
 import TeamSearchOrCreate, { type TeamSearchRow } from "@/components/onboarding/TeamSearchOrCreate";
 import TeamCreateForm, { type TeamFormData } from "@/components/onboarding/TeamCreateForm";
 import { findOrCreateSchool } from "@/lib/onboarding/findOrCreateSchool";
+import { getCurrentSeason } from "@/lib/utils/season";
 
 /* ─────────────────────────────────────────────────────────────────
    Nexus — Onboarding Wizard
@@ -2362,7 +2363,7 @@ function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Part
         ageGroup: team.age_group,
         gender: team.gender,
         category: team.division,
-        season: "2025-2026",
+        season: getCurrentSeason(),
         schoolId: team.school_id,
         schoolName: team.school_name,
       });

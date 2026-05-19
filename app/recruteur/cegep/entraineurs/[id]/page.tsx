@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import FeatureGate from "@/components/subscription/FeatureGate";
 import CegepGate from "@/components/subscription/CegepGate";
 import { useSubscription } from "@/lib/hooks/useSubscription";
+import { getCurrentSeason } from "@/lib/utils/season";
 
 /* ═══════════════════════════════════════════════════════════════
    Recruiter Detail — Admin CÉGEP coaching tool
@@ -323,7 +324,7 @@ function RecruiterDetailPage() {
           { val: k.favorites, label: "Favoris actifs", trend: `+${k.favoritesTrend} ce mois`, trendColor: k.favoritesTrend > 0 ? "#22C55E" : "#E63946" },
           { val: k.messages30d, label: "Messages envoyés", trend: `${k.messagesTrend > 0 ? "+" : ""}${k.messagesTrend} vs mois dernier`, trendColor: k.messagesTrend > 0 ? "#22C55E" : "#E63946" },
           { val: k.pipelineActive, label: "Pipeline actif", trend: `${k.pipelineCommitment} en commitment`, trendColor: "#6B7280" },
-          { val: k.recrues, label: "Recrues confirmées", trend: "Saison 2025-2026", trendColor: "#6B7280", valColor: "#E63946" },
+          { val: k.recrues, label: "Recrues confirmées", trend: `Saison ${getCurrentSeason()}`, trendColor: "#6B7280", valColor: "#E63946" },
           { val: `${k.conversionRate}%`, label: "Taux de conversion", trend: "Identifié → Lettre", trendColor: "#6B7280" },
         ].map((c, i) => (
           <div key={i} className="group bg-[#1A1D24] rounded-xl border border-[#1e2128] hover:border-[#E63946]/20 p-4 overflow-hidden transition-all relative">

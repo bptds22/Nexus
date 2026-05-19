@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { getCurrentSeason } from "@/lib/utils/season";
 
 /* ═══════════════════════════════════════════════════════════════
    TeamCreateForm — pure-presentation form for creating a civil
@@ -31,7 +32,8 @@ import { createClient } from "@/lib/supabase/client";
      league_id_if_existing (id). Editing the field after a selection
      diverges from the cached name → reset league_id_if_existing.
 
-   Season default is hardcoded to "2025-2026". Gender values match
+   Season default is derived from getCurrentSeason() (evaluated once
+   at module load — see lib/utils/season.ts). Gender values match
    the team-level convention: lowercase, no accents — "masculin",
    "feminin", "mixte".
 ═══════════════════════════════════════════════════════════════ */
@@ -66,7 +68,7 @@ const GENDER_OPTIONS: { value: Gender; label: string }[] = [
   { value: "feminin", label: "Féminin" },
   { value: "mixte", label: "Mixte" },
 ];
-const DEFAULT_SEASON = "2025-2026";
+const DEFAULT_SEASON = getCurrentSeason();
 
 const inputCls =
   "w-full h-11 px-4 bg-[#111317] border border-white/10 rounded-lg text-white font-sans text-sm placeholder:text-[#6B7280] focus:border-[#E63946] focus:outline-none transition-colors";

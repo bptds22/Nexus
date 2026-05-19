@@ -9,6 +9,7 @@ import KpiCard from "@/components/director/KpiCard";
 import KpiCardRow from "@/components/director/KpiCardRow";
 import FunnelChart from "@/components/director/FunnelChart";
 import type { CoachOverview } from "@/lib/types/models";
+import { getCurrentSeason } from "@/lib/utils/season";
 import {
   BarChart,
   Bar,
@@ -421,7 +422,7 @@ function SchoolDashboardContent() {
 
       {/* ── Section 3: Funnel ──────────────────────────────── */}
       <FunnelChart
-        title="Pipeline de recrutement &mdash; Saison 2025-2026"
+        title={`Pipeline de recrutement — Saison ${getCurrentSeason()}`}
         data={funnelData}
       />
 

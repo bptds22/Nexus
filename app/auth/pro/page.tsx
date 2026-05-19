@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import NexusLogo from "@/components/ui/NexusLogo";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import PlaybookBackground from "@/app/components/PlaybookBackground";
 import ErrorToast, { type ErrorToastData } from "@/components/ui/ErrorToast";
 import { translateAuthError } from "@/lib/utils/translateAuthError";
@@ -59,11 +59,22 @@ const CTA_LABELS: Record<ProRole, string> = {
 };
 
 export default function ProSignupPage() {
+  return (
+    <Suspense>
+      <ProSignupContent />
+    </Suspense>
+  );
+}
+
+function ProSignupContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const invitationToken = searchParams.get("invitation_token") ?? "";
+  const lockedEmail = invitationToken ? searchParams.get("email") ?? "" : "";
   const [selectedRole, setSelectedRole] = useState<ProRole | "">("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(lockedEmail);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPwd, setShowPwd] = useState(false);
@@ -112,7 +123,7 @@ export default function ProSignupPage() {
       role,
       firstName,
       lastName,
-      undefined,
+      invitationToken ? { invitation_token: invitationToken } : undefined,
       selectedRole as ProRole,
     );
 
@@ -194,7 +205,14 @@ export default function ProSignupPage() {
                   </div>
                   <div>
                     <label className={`${label} text-[#9CA3AF] mb-1.5 block`}>Courriel <span className="text-[#EF4444]">*</span></label>
-                    <input type="email" placeholder="coach@ecole.qc.ca" value={email} onChange={(e) => setEmail(e.target.value)} className={`${inputClass} ${fieldErr(!!email)}`} />
+                    <input
+                      type="email"
+                      placeholder="coach@ecole.qc.ca"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      readOnly={!!lockedEmail}
+                      className={`${inputClass} ${fieldErr(!!email)} ${lockedEmail ? "opacity-70 cursor-not-allowed" : ""}`}
+                    />
                   </div>
                   <div>
                     <label className={`${label} text-[#9CA3AF] mb-1.5 block`}>Mot de passe <span className="text-[#EF4444]">*</span></label>

@@ -21,6 +21,7 @@ import { useSubscription } from "@/lib/hooks/useSubscription";
 import { useFavoritesCount } from "@/lib/hooks/useFavoritesCount";
 import CelebrationToast from "@/app/recruteur/_components/CelebrationToast";
 import UpgradeModal from "@/components/ui/UpgradeModal";
+import SuccessToast, { type SuccessToastData } from "@/components/ui/SuccessToast";
 import NxIcon from "@/components/ui/NxIcon";
 import StarRating from "@/components/ui/StarRating";
 import VideoEmbed from "@/components/ui/VideoEmbed";
@@ -378,6 +379,7 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
       .from("athletes")
       .select(`
         id,
+        user_id,
         first_name,
         last_name,
         photo_url,
@@ -453,6 +455,7 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
         if (error || !data) { setLoadingAthlete(false); return; }
 
         const d = data as Record<string, unknown>;
+        setAthleteUserId((d.user_id as string | null) ?? null);
         const evals = d.evaluations as Record<string, unknown>[] | null;
         const eval0 = evals?.[0];
 
@@ -808,6 +811,9 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
   const [flagReason, setFlagReason] = useState("");
   const [flagDetails, setFlagDetails] = useState("");
   const [flagSubmitted, setFlagSubmitted] = useState(false);
+  const [flagSubmitting, setFlagSubmitting] = useState(false);
+  const [athleteUserId, setAthleteUserId] = useState<string | null>(null);
+  const [flagSuccessToast, setFlagSuccessToast] = useState<SuccessToastData | null>(null);
 
   // Pipeline status tracking
   const initialTracking = getAthleteTracking(id);
@@ -818,6 +824,52 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
 
   function handleStatusChange(newStatus: RecruitmentStatus, _extra?: { visitDate?: string; retireReason?: RetireReason }) {
     setPipelineStatus(newStatus);
+  }
+
+  // INSERT into public.reports. type/status forced to DB CHECK-allowed
+  // values ('PROFIL' / 'OUVERT'); reported_user_id has FK to users(id)
+  // and is NOT NULL, so orphan athletes (user_id null) can't be reported
+  // — handled by disabling the button when athleteUserId is null.
+  async function handleFlagSubmit() {
+    if (!flagReason || flagSubmitting) return;
+    if (!athleteUserId) {
+      console.error("[Signaler] athlete has no user_id (orphan profile) — cannot file report");
+      if (typeof window !== "undefined") window.alert("Ce profil n'est pas réclamé par un compte utilisateur. Le signalement ne peut pas être déposé pour le moment.");
+      return;
+    }
+    setFlagSubmitting(true);
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        console.error("[Signaler] no authenticated user");
+        if (typeof window !== "undefined") window.alert("Tu dois être connecté pour signaler un profil.");
+        return;
+      }
+      const { data: inserted, error } = await supabase.from("reports").insert({
+        type: "PROFIL",
+        target_id: id,
+        target_type: "athlete",
+        reported_user_id: athleteUserId,
+        reported_by_id: user.id,
+        raison: flagReason,
+        contenu_signale: flagDetails || null,
+        status: "OUVERT",
+      }).select("id").single();
+      if (error) {
+        console.error("[Signaler] insert failed:", error);
+        if (typeof window !== "undefined") window.alert("Échec de l'envoi du signalement. Réessaie plus tard.");
+        return;
+      }
+      setFlagSubmitted(true);
+      setShowFlagModal(false);
+      setFlagSuccessToast({
+        message: "Signalement envoyé",
+        referenceId: (inserted?.id as string | undefined)?.slice(0, 8),
+      });
+    } finally {
+      setFlagSubmitting(false);
+    }
   }
 
   // Trait average — only average non-zero (rated) traits
@@ -1578,21 +1630,23 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
                 </button>
                 <button
                   type="button"
-                  disabled={!flagReason}
-                  onClick={() => { setFlagSubmitted(true); setShowFlagModal(false); }}
+                  disabled={!flagReason || flagSubmitting || !athleteUserId}
+                  onClick={handleFlagSubmit}
                   className="flex items-center gap-2 bg-[#F59E0B] text-[#111317] rounded-lg px-5 py-2.5 font-bold text-[14px] uppercase tracking-wider transition-all hover:bg-[#D97706] active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
                     <line x1="4" y1="22" x2="4" y2="15" />
                   </svg>
-                  Envoyer le signalement
+                  {flagSubmitting ? "Envoi…" : "Envoyer le signalement"}
                 </button>
               </div>
             </div>
           </div>
         </div>
       )}
+
+      <SuccessToast data={flagSuccessToast} onDismiss={() => setFlagSuccessToast(null)} />
 
       <UpgradeModal
         open={showUpgradeModal}

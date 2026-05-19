@@ -879,7 +879,7 @@ export default function CreateAthletePage() {
                   const { data: { user } } = await supabase.auth.getUser();
                   if (!user) return;
                   const fileExt = f.name.split('.').pop();
-                  const filePath = `athletes/${user.id}/${Date.now()}.${fileExt}`;
+                  const filePath = `${user.id}/${Date.now()}.${fileExt}`;
                   const { error: uploadError } = await supabase.storage.from("avatars").upload(filePath, f, { upsert: true });
                   if (uploadError) { console.error("Photo upload error:", JSON.stringify(uploadError), uploadError.message, uploadError.statusCode); return; }
                   const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(filePath);

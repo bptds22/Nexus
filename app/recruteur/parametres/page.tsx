@@ -14,6 +14,7 @@ import TransfertSection from "./_components/TransfertSection";
 import DangerSection from "./_components/DangerSection";
 import ConfirmModal from "./_components/ConfirmModal";
 import SaveToast from "./_components/SaveToast";
+import InvitationLinkModal from "@/components/ui/InvitationLinkModal";
 
 /* ═══════════════════════════════════════════════════════════════
    Recruiter Settings — /recruteur/parametres
@@ -175,10 +176,11 @@ function AdminCegepSection() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteRole, setInviteRole] = useState("RECRUTEUR");
   const [inviteMsg, setInviteMsg] = useState("");
   const [sToast, setSToast] = useState<string | null>(null);
   const [removeTarget, setRemoveTarget] = useState<{ id: string; name: string } | null>(null);
+  const [invitationLink, setInvitationLink] = useState<string>("");
+  const [showInvitationModal, setShowInvitationModal] = useState(false);
 
   const showToast = (msg: string) => { setSToast(msg); setTimeout(() => setSToast(null), 3000); };
 
@@ -220,8 +222,29 @@ function AdminCegepSection() {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    const { error } = await supabase.from("invitations").insert({ invited_by: user.id, email: inviteEmail.trim(), role: inviteRole, school_id: schoolId, message: inviteMsg.trim() || null });
-    if (error) { showToast("Erreur: " + error.message); } else { showToast("Invitation envoyée"); setInviteEmail(""); setInviteMsg(""); }
+
+    // Generate URL-safe base64 token (~22 chars from 16 random bytes).
+    const tokenBytes = crypto.getRandomValues(new Uint8Array(16));
+    const token = btoa(String.fromCharCode(...tokenBytes))
+      .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+
+    const { data, error } = await supabase.from("invitations").insert({
+      token,
+      email: inviteEmail.trim(),
+      invited_by: user.id,
+      school_id: schoolId,
+      message: inviteMsg.trim() || null,
+      locale: "fr-CA",
+    }).select("token").single();
+
+    if (error) { showToast("Erreur: " + error.message); return; }
+
+    const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+    const invitationUrl = `${baseUrl}/auth/invitation?token=${data.token}`;
+    setInvitationLink(invitationUrl);
+    setShowInvitationModal(true);
+    setInviteEmail("");
+    setInviteMsg("");
   }
 
   async function handleRemove(memberId: string) {
@@ -313,13 +336,6 @@ function AdminCegepSection() {
         <p className="text-[10px] font-bold tracking-[0.25em] uppercase text-[#6b7280] mb-4">Inviter un membre</p>
         <div className="max-w-md space-y-4">
           <div>
-            <label className={labelCls}>Rôle</label>
-            <select title="Rôle" value={inviteRole} onChange={(e) => setInviteRole(e.target.value)} className={inputCls}>
-              <option value="DIRECTEUR">Directeur sportif</option>
-              <option value="RECRUTEUR">Recruteur</option>
-            </select>
-          </div>
-          <div>
             <label className={labelCls}>Courriel</label>
             <input type="email" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} placeholder="nom@cegep.qc.ca" className={inputCls} />
           </div>
@@ -330,7 +346,7 @@ function AdminCegepSection() {
           <button type="button" onClick={handleInvite} disabled={!inviteEmail.trim()} className="px-5 py-2.5 rounded-lg bg-[#E63946] hover:bg-[#D42B22] disabled:bg-[#2D3748] disabled:text-[#4a4d56] text-white font-bold text-[12px] uppercase tracking-widest transition-colors">
             Envoyer l&apos;invitation
           </button>
-          <p className="text-[11px] text-[#4a4d56]">L&apos;invité recevra un courriel avec un lien d&apos;inscription Nexus pré-associé à votre CÉGEP.</p>
+          <p className="text-[11px] text-[#4a4d56]">Un lien d&apos;invitation sera généré. Partagez-le directement avec la personne. L&apos;invitation expire dans 30 jours.</p>
         </div>
       </div>
 
@@ -354,6 +370,13 @@ function AdminCegepSection() {
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5" /></svg>
           {sToast}
         </div>
+      )}
+
+      {showInvitationModal && (
+        <InvitationLinkModal
+          link={invitationLink}
+          onClose={() => setShowInvitationModal(false)}
+        />
       )}
     </div>
   );

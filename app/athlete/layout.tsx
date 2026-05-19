@@ -82,7 +82,7 @@ function AthleteSidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose:
       .from("athletes")
       .select("id, first_name, last_name, verified, sports!sport_id(nom), positions!position_id(abreviation), schools!school_id(name), team_athletes(teams!team_id(name))")
       .eq("user_id", user.id)
-      .single();
+      .maybeSingle();
     if (!athlete) return;
 
     // Civil/scolaire discriminator — mirror 5.3b pattern (separate

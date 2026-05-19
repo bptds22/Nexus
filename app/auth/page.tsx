@@ -76,8 +76,12 @@ function AuthContent() {
   const [lastName, setLastName] = useState("");
   // Phase 2 athlete claim: prefill signup email from ?email=… so the
   // coach-shared claim link lands ready to submit. Soft prefill —
-  // the user can edit before signing up.
+  // the user can edit before signing up. For invitation flow
+  // (?invitation_token=…), the email field locks since the invitation
+  // pinned that email and editing would orphan the token.
   const [email, setEmail] = useState(searchParams.get("email") ?? "");
+  const invitationToken = searchParams.get("invitation_token") ?? "";
+  const emailLockedByInvitation = !!invitationToken && !!searchParams.get("email");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPwd, setShowPwd] = useState(false);
@@ -149,7 +153,7 @@ function AuthContent() {
       "ATHLETE",
       firstName,
       lastName,
-      { sport: selectedSport },
+      { sport: selectedSport, ...(invitationToken ? { invitation_token: invitationToken } : {}) },
       selectedContext as "scolaire" | "ligue_civile",
     );
 
@@ -386,7 +390,14 @@ function AuthContent() {
                         </div>
                         <div>
                           <label className={`${label} text-[#9CA3AF] mb-1.5 block`}>Courriel <span className="text-[#EF4444]">*</span></label>
-                          <input type="email" placeholder="marc-antoine@gmail.com" value={email} onChange={(e) => setEmail(e.target.value)} className={`${inputClass} ${fieldErr(!!email)}`} />
+                          <input
+                            type="email"
+                            placeholder="marc-antoine@gmail.com"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            readOnly={emailLockedByInvitation}
+                            className={`${inputClass} ${fieldErr(!!email)} ${emailLockedByInvitation ? "opacity-70 cursor-not-allowed" : ""}`}
+                          />
                         </div>
                         <div>
                           <label className={`${label} text-[#9CA3AF] mb-1.5 block`}>Mot de passe <span className="text-[#EF4444]">*</span></label>
