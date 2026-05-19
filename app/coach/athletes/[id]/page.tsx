@@ -206,7 +206,7 @@ function PlayerCard({ a }: { a: AthleteProfileRecruiterView }) {
                 ))}
                 <div className="card-star-shimmer absolute inset-0 pointer-events-none" />
               </div>
-              <div style={{ fontFamily: 'var(--font-heading), sans-serif', fontWeight: 700, fontSize: 13, letterSpacing: '0.1em', textTransform: 'uppercase' as const, color: '#1E2128', marginBottom: 2, lineHeight: 1.2 }}>{a.schoolName}</div>
+              <div style={{ fontFamily: 'var(--font-heading), sans-serif', fontWeight: 700, fontSize: 13, letterSpacing: '0.1em', textTransform: 'uppercase' as const, color: '#1E2128', marginBottom: 2, lineHeight: 1.2 }}>{a.isCivil ? (a.teamName || a.leagueName || "") : a.schoolName}</div>
               <div style={{ fontFamily: 'var(--font-heading), sans-serif', fontWeight: 700, fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#9CA3AF', lineHeight: 1.2 }}>{a.region}</div>
               <div style={{ fontFamily: 'var(--font-heading), sans-serif', fontWeight: 700, fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#E63946', marginTop: 4 }}>Promotion {a.graduationYear}</div>
             </div>
@@ -895,7 +895,7 @@ export default function CoachAthleteProfilePage() {
               <InfoRow label="Genre" value={a.gender === "M" ? "Masculin" : a.gender === "F" ? "Féminin" : "Autre"} icon="user" />
               <InfoRow label="Ville" value={a.city} icon="mapPin" />
               <InfoRow label="Région" value={a.region} icon="map" />
-              <InfoRow label="École" value={a.schoolName} icon="building" />
+              <InfoRow label={a.isCivil ? "Équipe civile" : "École"} value={a.isCivil ? (a.teamName || a.leagueName || "—") : (a.schoolName || "—")} icon="building" />
               <InfoRow label="Graduation" value={a.graduationYear} icon="gradCap" />
             </div>
           </section>

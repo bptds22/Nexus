@@ -401,7 +401,7 @@ export default function AthleteProfileView({
               <InfoRow label="Genre" value={a.gender === "M" ? "Masculin" : a.gender === "F" ? "Féminin" : "Autre"} icon="user" />
               <InfoRow label="Ville" value={a.city} icon="mapPin" />
               <InfoRow label="Région" value={a.region} icon="map" />
-              <InfoRow label="École" value={a.schoolName} icon="building" />
+              <InfoRow label={a.isCivil ? "Équipe civile" : "École"} value={a.isCivil ? (a.teamName || a.leagueName || "—") : (a.schoolName || "—")} icon="building" />
               <InfoRow label="Graduation" value={a.graduationYear} icon="gradCap" />
             </div>
           </section>

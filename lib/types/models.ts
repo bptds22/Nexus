@@ -769,6 +769,7 @@ export interface AthleteProfileRecruiterView {
   practiceVideoUrl?: string;
 
   // Meta
+  isCivil: boolean;
   isVerified: boolean;
   lastValidation?: string | null;
   profileCompleteness: number;

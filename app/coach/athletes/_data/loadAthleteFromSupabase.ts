@@ -72,7 +72,7 @@ const ATHLETE_SELECT = `
   coach_id,
   sports!sport_id(nom),
   positions!position_id(nom, abreviation),
-  schools!school_id(name, city, region),
+  schools!school_id(name, city, region, type),
   committed_school:schools!committed_school_id(name),
   team_athletes(team_id, teams!team_id(name, schools!school_id(name, type))),
   evaluations(
@@ -120,7 +120,7 @@ export function mapToAthleteProfile(raw: Record<string, unknown>): AthleteProfil
   const schoolRel = Array.isArray(raw.schools) ? raw.schools[0] : raw.schools;
   const sportObj = sportRel as { nom?: string } | null;
   const posObj = posRel as { nom?: string; abreviation?: string } | null;
-  const schoolObj = schoolRel as { name?: string; city?: string; region?: string } | null;
+  const schoolObj = schoolRel as { name?: string; city?: string; region?: string; type?: string } | null;
   const evals = Array.isArray(raw.evaluations) ? raw.evaluations : [];
   const eval0 = evals[0] as Record<string, unknown> | undefined;
 
@@ -173,7 +173,7 @@ export function buildFormFromRaw(raw: Record<string, unknown>): Record<string, u
   const schoolRel = Array.isArray(raw.schools) ? raw.schools[0] : raw.schools;
   const sportObj = sportRel as { nom?: string } | null;
   const posObj = posRel as { nom?: string; abreviation?: string } | null;
-  const schoolObj = schoolRel as { name?: string; city?: string; region?: string } | null;
+  const schoolObj = schoolRel as { name?: string; city?: string; region?: string; type?: string } | null;
   const evals = Array.isArray(raw.evaluations) ? raw.evaluations : [];
   const eval0 = evals[0] as Record<string, unknown> | undefined;
 
@@ -308,7 +308,7 @@ export function mapToRecruiterView(raw: Record<string, unknown>): AthleteProfile
   const schoolRel = Array.isArray(raw.schools) ? raw.schools[0] : raw.schools;
   const sportObj = sportRel as { nom?: string } | null;
   const posObj = posRel as { nom?: string; abreviation?: string } | null;
-  const schoolObj = schoolRel as { name?: string; city?: string; region?: string } | null;
+  const schoolObj = schoolRel as { name?: string; city?: string; region?: string; type?: string } | null;
   const evals = Array.isArray(raw.evaluations) ? raw.evaluations : [];
   const eval0 = evals[0] as Record<string, unknown> | undefined;
   const coach = raw.users as { first_name?: string; last_name?: string } | null;
@@ -344,20 +344,32 @@ export function mapToRecruiterView(raw: Record<string, unknown>): AthleteProfile
     age: 0,
     gender: ((raw.genre as string) || "M") as "M" | "F" | "Autre",
     photoUrl: (raw.photo_url as string) || "",
-    // schoolName overloaded for civil context: civil athletes carry
-    // their team name (or "Ligue Civile" label) so the
-    // 4-way-duplicated PlayerCard tickets render the right label
-    // without needing component changes. Tech debt logged P3.
-    // Phase 6.2.h : team name read from team_athletes junction
-    // (replaces legacy league_teams!league_team_id embed).
-    schoolName: (() => {
-      if (raw.school_id) return schoolObj?.name || "";
+    // Phase 1 audit (post-Phase 6.1): schoolName overload eliminated.
+    // Canonical "civil" rule = no school_id OR school.type ===
+    // 'LIGUE_CIVILE'. Each affiliation field carries one meaning:
+    //   schoolName: real école name, empty for civil
+    //   teamName:   civil team name when present
+    //   leagueName: "Ligue Civile" label when civil but no team
+    //   isCivil:    discriminator the view layer branches on
+    isCivil: !raw.school_id || schoolObj?.type === "LIGUE_CIVILE",
+    schoolName: (!raw.school_id || schoolObj?.type === "LIGUE_CIVILE") ? "" : (schoolObj?.name || ""),
+    teamName: (() => {
+      const civil = !raw.school_id || schoolObj?.type === "LIGUE_CIVILE";
+      if (!civil) return undefined;
       const taRel = (raw as Record<string, unknown>).team_athletes;
       const ta = (Array.isArray(taRel) ? taRel[0] : taRel) as { teams?: unknown } | null;
       const teamRel = ta?.teams;
       const team = (Array.isArray(teamRel) ? teamRel[0] : teamRel) as { name?: string } | null;
-      if (team?.name) return team.name;
-      return "Ligue Civile";
+      return team?.name;
+    })(),
+    leagueName: (() => {
+      const civil = !raw.school_id || schoolObj?.type === "LIGUE_CIVILE";
+      if (!civil) return undefined;
+      const taRel = (raw as Record<string, unknown>).team_athletes;
+      const ta = (Array.isArray(taRel) ? taRel[0] : taRel) as { teams?: unknown } | null;
+      const teamRel = ta?.teams;
+      const team = (Array.isArray(teamRel) ? teamRel[0] : teamRel) as { name?: string } | null;
+      return team?.name ? undefined : "Ligue Civile";
     })(),
     city: "",
     region: "",

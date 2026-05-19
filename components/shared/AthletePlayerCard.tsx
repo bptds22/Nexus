@@ -63,9 +63,18 @@ function positionAbbr(pos: string): string {
 export default function AthletePlayerCard({
   a,
   format = "compact",
+  clipOverflow = false,
 }: {
   a: AthleteProfileRecruiterView;
   format?: CardFormat;
+  /**
+   * When true, the outer dims wrapper sets overflow: hidden — needed
+   * by the html-to-image capture pipeline so the resulting PNG has
+   * clean bounds. Defaults to false so in-page renders preserve the
+   * card's intentional outside-edge content (ticket overhang, hover
+   * tilt, NEXUS sidebar).
+   */
+  clipOverflow?: boolean;
 }) {
   const dims = FORMAT_CONFIG[format];
   const ratingValue = a.overallRating;
@@ -82,7 +91,7 @@ export default function AthletePlayerCard({
         position: "relative",
         width: dims.width,
         height: dims.height,
-        overflow: "hidden",
+        overflow: clipOverflow ? "hidden" : "visible",
       }}
     >
       <div
@@ -168,7 +177,7 @@ export default function AthletePlayerCard({
                   </svg>
                 ))}
               </div>
-              <div style={{ fontFamily: "var(--font-outfit), sans-serif", fontWeight: 700, fontSize: 13, letterSpacing: "0.08em", textTransform: "uppercase", color: "#1E2128", marginBottom: 2, lineHeight: 1.2 }}>{a.schoolName}</div>
+              <div style={{ fontFamily: "var(--font-outfit), sans-serif", fontWeight: 700, fontSize: 13, letterSpacing: "0.08em", textTransform: "uppercase", color: "#1E2128", marginBottom: 2, lineHeight: 1.2 }}>{a.isCivil ? (a.teamName || a.leagueName || "") : a.schoolName}</div>
               <div style={{ fontFamily: "var(--font-outfit), sans-serif", fontWeight: 700, fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: "#9CA3AF", lineHeight: 1.2 }}>{a.region}</div>
               <div style={{ fontFamily: "var(--font-outfit), sans-serif", fontWeight: 700, fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: "#E63946", marginTop: 4 }}>Promotion {a.graduationYear}</div>
             </div>

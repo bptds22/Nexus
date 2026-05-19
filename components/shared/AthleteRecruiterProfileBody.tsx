@@ -258,7 +258,9 @@ function PlayerCard({ a }: { a: AthleteProfileRecruiterView }) {
                 ))}
                 <div className="card-star-shimmer absolute inset-0 pointer-events-none" />
               </div>
-              <div style={{ fontFamily: 'var(--font-outfit), sans-serif', fontWeight: 700, fontSize: 13, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#1E2128', marginBottom: 2, lineHeight: 1.2, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden' }}>{(a.schoolName || "").replace(/^École secondaire /i, "É.S. ").replace(/^École sec\. /i, "É.S. ")}</div>
+              <div style={{ fontFamily: 'var(--font-outfit), sans-serif', fontWeight: 700, fontSize: 13, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#1E2128', marginBottom: 2, lineHeight: 1.2, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden' }}>{a.isCivil
+                ? (a.teamName || a.leagueName || "")
+                : (a.schoolName || "").replace(/^École secondaire /i, "É.S. ").replace(/^École sec\. /i, "É.S. ")}</div>
               <div style={{ fontFamily: 'var(--font-outfit), sans-serif', fontWeight: 700, fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase' as const, color: '#9CA3AF', lineHeight: 1.2, whiteSpace: 'nowrap' as const }}>{a.region}</div>
               <div style={{ fontFamily: 'var(--font-outfit), sans-serif', fontWeight: 700, fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: '#E63946', marginTop: 4 }}>Promotion {a.graduationYear}</div>
             </div>
@@ -561,26 +563,33 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
           primaryPosition: pos?.abreviation ? `${pos.nom} (${pos.abreviation})` : pos?.nom || "",
           secondarySport: secondarySportName,
           secondaryPosition: secondaryPositionName,
-          // schoolName is overloaded for civil context: when an athlete
-          // is anchored to a LIGUE_CIVILE school, it carries the team
-          // name (preferred) or the league/school name as fallback;
-          // when there's no anchor at all, it shows "Ligue Civile".
-          // Post-Phase 6.1 unified model — civil athletes are anchored
-          // via athletes.school_id to a LIGUE_CIVILE school, and team
-          // membership comes from team_athletes. Acceptable overload
-          // to avoid touching the 4-way duplicated PlayerCard; logged
-          // as P3 tech debt for proper consolidation.
+          // Phase 1 audit (post-Phase 6.1): schoolName overload split
+          // into isCivil / schoolName / teamName / leagueName. Canonical
+          // civil rule = no school_id OR school.type === 'LIGUE_CIVILE'.
+          isCivil: !d.school_id || school?.type === "LIGUE_CIVILE",
           schoolName: (() => {
-            if (!d.school_id) return "Ligue Civile";
-            if (school?.type !== "LIGUE_CIVILE") return school?.name || "";
-            // Civil athlete : prefer team name from team_athletes
-            // embed, fall back to the LIGUE_CIVILE school's name.
+            if (!d.school_id) return "";
+            if (school?.type === "LIGUE_CIVILE") return "";
+            return school?.name || "";
+          })(),
+          teamName: (() => {
+            const civil = !d.school_id || school?.type === "LIGUE_CIVILE";
+            if (!civil) return undefined;
             const taRel = d.team_athletes as unknown;
             const taArr = Array.isArray(taRel) ? taRel : taRel ? [taRel] : [];
             const firstTa = taArr[0] as Record<string, unknown> | null;
             const teamRel = firstTa ? (Array.isArray(firstTa.teams) ? firstTa.teams[0] : firstTa.teams) : null;
-            const teamName = (teamRel as { name?: string } | null)?.name;
-            return teamName || school?.name || "Ligue Civile";
+            return (teamRel as { name?: string } | null)?.name;
+          })(),
+          leagueName: (() => {
+            const civil = !d.school_id || school?.type === "LIGUE_CIVILE";
+            if (!civil) return undefined;
+            const taRel = d.team_athletes as unknown;
+            const taArr = Array.isArray(taRel) ? taRel : taRel ? [taRel] : [];
+            const firstTa = taArr[0] as Record<string, unknown> | null;
+            const teamRel = firstTa ? (Array.isArray(firstTa.teams) ? firstTa.teams[0] : firstTa.teams) : null;
+            const hasTeam = !!(teamRel as { name?: string } | null)?.name;
+            return hasTeam ? undefined : "Ligue Civile";
           })(),
           region: school?.region || "",
           city: school?.city || "",
@@ -1221,7 +1230,7 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
               <div className={`${cardBase} p-5`}>
                 {affiliation === "school" && (
                   <>
-                    <InfoRow label="École" value={a.schoolName} icon="building" />
+                    <InfoRow label={a.isCivil ? "Équipe civile" : "École"} value={a.isCivil ? (a.teamName || a.leagueName || "—") : (a.schoolName || "—")} icon="building" />
                     <InfoRow label="Région" value={a.region} icon="map" />
                     <InfoRow label="Ville" value={a.city} icon="mapPin" />
                   </>
@@ -1563,7 +1572,7 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
             firstName: a.firstName,
             lastName: a.lastName,
             position: a.primaryPosition,
-            school: a.schoolName,
+            school: a.isCivil ? (a.teamName || a.leagueName || "") : a.schoolName,
             graduationYear: a.graduationYear,
           }}
           coachName={a.coachName || "Coach"}

@@ -494,7 +494,7 @@ export default function ParametresPage() {
                       style={{ position: "fixed", left: -99999, top: 0, pointerEvents: "none", zIndex: -1 }}
                     >
                       <div ref={captureRef}>
-                        <AthletePlayerCard a={cardAthlete} format="publication" />
+                        <AthletePlayerCard a={cardAthlete} format="publication" clipOverflow={true} />
                       </div>
                     </div>
                   </>

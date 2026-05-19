@@ -35,27 +35,27 @@ export default function PartnerVisibilityConsentCard({ checked, onChange }: Part
       </div>
 
       <p className="text-[13px] text-[#9CA3AF] leading-relaxed">
-        Nexus collabore avec des partenaires approuvés — journalistes sportifs, pages de contenu sportif, podcasts, camps de sport spécialisés, et autres organisations qui apportent de la valeur aux athlètes québécois. Ces partenaires peuvent télécharger la carte officielle Nexus de votre enfant pour la publier dans leurs articles, publications sur les réseaux sociaux, blogs ou autres contenus.
+        Nexus collabore avec des partenaires approuvés — journalistes sportifs, pages de contenu sportif, podcasts, camps de sport spécialisés, et autres organisations qui apportent de la valeur aux athlètes québécois. Ces partenaires peuvent télécharger ta carte officielle Nexus pour la publier dans leurs articles, publications sur les réseaux sociaux, blogs ou autres contenus.
       </p>
 
       <p className="text-[13px] text-[#9CA3AF] leading-relaxed mt-3">
         <span className="font-bold text-white">Ce qui apparaît sur la carte :</span>{" "}
-        le nom de votre enfant, son école, sa cote, sa position et sa photo.
+        ton nom, ton école, ta cote, ta position et ta photo.
       </p>
 
       <p className="text-[13px] font-bold text-white leading-relaxed mt-3">
         Ce que cela signifie concrètement :
       </p>
       <ul className="list-disc pl-5 mt-1.5 space-y-1.5 text-[13px] text-[#9CA3AF] leading-relaxed">
-        <li>La carte de votre enfant peut apparaître dans des publications de partenaires approuvés</li>
-        <li>Aucun partenaire ne peut contacter directement votre enfant</li>
+        <li>Ta carte peut apparaître dans des publications de partenaires approuvés</li>
+        <li>Aucun partenaire ne peut te contacter directement</li>
         <li>Les partenaires sont vérifiés par l&apos;équipe Nexus et s&apos;engagent par contrat à un usage éditorial responsable</li>
         <li>
           <span className="font-bold text-white">
             Une fois la carte téléchargée par un partenaire, celui-ci devient responsable de l&apos;usage qu&apos;il en fait dans ses publications, conformément à la Loi 25
           </span>
         </li>
-        <li>Vous pouvez modifier ce choix à tout moment dans les paramètres</li>
+        <li>Tu peux modifier ce choix à tout moment dans tes paramètres</li>
       </ul>
 
       <label className="flex items-start gap-3 cursor-pointer group mt-5">
@@ -73,12 +73,12 @@ export default function PartnerVisibilityConsentCard({ checked, onChange }: Part
           )}
         </div>
         <span className="text-[13px] text-white font-semibold leading-snug">
-          J&apos;autorise l&apos;utilisation de la carte Nexus de mon enfant par les partenaires Nexus.
+          Mes parents autorisent l&apos;utilisation de ma carte Nexus par les partenaires Nexus.
         </span>
       </label>
 
       <p className="text-[11px] italic text-[#6b7280] leading-relaxed mt-3 pl-8">
-        Vous pouvez compléter l&apos;inscription sans cocher cette case. Ce choix peut être ajouté ou retiré plus tard.
+        Tu peux compléter ton inscription sans cocher cette case. Ce choix peut être ajusté plus tard dans tes paramètres.
       </p>
     </div>
   );

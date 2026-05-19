@@ -219,10 +219,10 @@ export default function PartnerAthleteProfilePage({ params }: { params: Promise<
       {/* Off-screen full-size renderings for capture (one per format, both kept ready) */}
       <div aria-hidden="true" className="nx-capture-clean" style={{ position: "fixed", left: -99999, top: 0, pointerEvents: "none", zIndex: -1 }}>
         <div ref={captureRefPub}>
-          <AthletePlayerCard a={athlete} format="publication" />
+          <AthletePlayerCard a={athlete} format="publication" clipOverflow={true} />
         </div>
         <div ref={captureRefStory}>
-          <AthletePlayerCard a={athlete} format="story" />
+          <AthletePlayerCard a={athlete} format="story" clipOverflow={true} />
         </div>
       </div>
 

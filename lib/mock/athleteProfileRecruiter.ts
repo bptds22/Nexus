@@ -8,6 +8,7 @@ import type { AthleteProfileRecruiterView } from "@/lib/types/models";
 /* ── Marc-Antoine Tremblay — QB Football, 92% complete ───────── */
 export const mockAthleteProfileFull: AthleteProfileRecruiterView = {
   id: "r-001",
+  isCivil: false,
   firstName: "Marc-Antoine",
   lastName: "Tremblay",
   age: 17,
@@ -104,6 +105,7 @@ export const mockAthleteProfileFull: AthleteProfileRecruiterView = {
 /* ── Samuel Côté — OL Football, 55% complete ─────────────────── */
 export const mockAthleteProfilePartial: AthleteProfileRecruiterView = {
   id: "r-006",
+  isCivil: false,
   firstName: "Samuel",
   lastName: "Côté",
   age: 17,
@@ -187,6 +189,7 @@ export const mockAthleteProfilePartial: AthleteProfileRecruiterView = {
 /* ── Bruno-Philippe Simard — LB Football, 100% complete ──────── */
 export const mockBrunoProfile: AthleteProfileRecruiterView = {
   id: "r-020",
+  isCivil: false,
   firstName: "Bruno-Philippe",
   lastName: "Simard",
   age: 16,

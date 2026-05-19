@@ -935,7 +935,7 @@ export default function AthleteProfilPage() {
           *,
           sports!sport_id(nom),
           positions!position_id(nom, abreviation),
-          schools!school_id(name, region, city),
+          schools!school_id(name, region, city, type),
           team_athletes(team_id, teams!team_id(name)),
           evaluations(vitesse_explosivite, force_puissance, endurance_cardio, agilite_coordination, vision_du_jeu, sens_tactique, leadership, discipline, coachabilite, intelligence_jeu, competitivite, esprit_equipe, resilience, attitude_mentalite, cote_globale, rapport_entraineur, distinctions),
           users!athletes_coach_id_fkey(first_name, last_name)
@@ -967,12 +967,11 @@ export default function AthleteProfilPage() {
       const teamRel = (Array.isArray(teamRelRaw) ? teamRelRaw[0] : teamRelRaw) as { name?: string } | null;
       const evalRel = Array.isArray(raw.evaluations) ? raw.evaluations[0] : raw.evaluations;
       const coachRel = Array.isArray(raw.users) ? raw.users[0] : raw.users;
-      const isCivil = !raw.school_id;
-      const schoolNameOverloaded = raw.school_id
-        ? (schoolRel?.name || "")
-        : teamRel?.name
-          ? teamRel.name
-          : "Ligue Civile";
+      const schoolType = (schoolRel as { type?: string } | null)?.type;
+      const isCivil = !raw.school_id || schoolType === "LIGUE_CIVILE";
+      const schoolName = isCivil ? "" : (schoolRel?.name || "");
+      const teamName = isCivil ? teamRel?.name : undefined;
+      const leagueName = isCivil && !teamRel?.name ? "Ligue Civile" : undefined;
 
       const heightFt = raw.taille_pieds;
       const heightIn = raw.taille_pouces;
@@ -1019,7 +1018,9 @@ export default function AthleteProfilPage() {
         primaryPosition: posRel?.nom || posRel?.abreviation || "",
         secondarySport: secondarySportName,
         secondaryPosition: secondaryPositionName,
-        schoolName: schoolNameOverloaded,
+        schoolName,
+        teamName,
+        leagueName,
         isCivil,
         city: schoolRel?.city || "",
         region: schoolRel?.region || "",
@@ -1028,8 +1029,6 @@ export default function AthleteProfilPage() {
         gender: raw.genre || "",
         telephone: raw.telephone || "",
         jerseyNumber: raw.numero_jersey || "",
-        teamName: "",
-        leagueName: "",
         heightDisplay,
         weightDisplay,
         wingspan: raw.envergure || "",
@@ -1116,12 +1115,11 @@ export default function AthleteProfilPage() {
     const teamRel = (Array.isArray(teamRelRaw) ? teamRelRaw[0] : teamRelRaw) as { name?: string } | null;
     const evalRel = Array.isArray(raw.evaluations) ? raw.evaluations[0] : raw.evaluations;
     const coachRel = Array.isArray(raw.users) ? raw.users[0] : raw.users;
-    const isCivil = !raw.school_id;
-    const schoolNameOverloaded = raw.school_id
-      ? (schoolRel?.name || "")
-      : teamRel?.name
-        ? teamRel.name
-        : "Ligue Civile";
+    const schoolType = (schoolRel as { type?: string } | null)?.type;
+    const isCivil = !raw.school_id || schoolType === "LIGUE_CIVILE";
+    const schoolName = isCivil ? "" : (schoolRel?.name || "");
+    const teamName = isCivil ? teamRel?.name : undefined;
+    const leagueName = isCivil && !teamRel?.name ? "Ligue Civile" : undefined;
     const heightDisplay = raw.taille_pieds ? `${raw.taille_pieds}'${raw.taille_pouces || 0}"` : "";
     const weightDisplay = raw.poids_lbs ? `${raw.poids_lbs} lbs` : "";
     let age = 0;
@@ -1147,7 +1145,7 @@ export default function AthleteProfilPage() {
       ...a,
       firstName: raw.first_name||"", lastName: raw.last_name||"", isVerified: raw.verified===true, profileCompleteness,
       primarySport: sportRel?.nom||"", primaryPosition: posRel?.nom||posRel?.abreviation||"",
-      schoolName: schoolNameOverloaded, isCivil, city: schoolRel?.city||"", region: schoolRel?.region||"",
+      schoolName, teamName, leagueName, isCivil, city: schoolRel?.city||"", region: schoolRel?.region||"",
       graduationYear: raw.annee_diplomation||"", age, gender: raw.genre||"", telephone: raw.telephone||"", jerseyNumber: raw.numero_jersey||"",
       heightDisplay, weightDisplay, wingspan: raw.envergure||"", handSize: raw.taille_mains||"",
       dominantHand: raw.main_dominante||"", dominantFoot: raw.pied_dominant||"",
@@ -1495,7 +1493,7 @@ export default function AthleteProfilPage() {
                   <span className="px-2 py-0.5 rounded bg-[#E63946]/20 text-[#E63946] text-[11px] font-bold uppercase tracking-wider">{a.primarySport}</span>
                   <span className="text-[13px] font-bold text-[#9CA3AF]">{a.primaryPosition}</span>
                   <span className="text-[#2D3748]">·</span>
-                  <span className="text-[13px] text-[#9CA3AF]">{a.schoolName}</span>
+                  <span className="text-[13px] text-[#9CA3AF]">{a.isCivil ? (a.teamName || a.leagueName || "—") : (a.schoolName || "—")}</span>
                   <span className="text-[#2D3748]">·</span>
                   <span className="text-[13px] text-[#9CA3AF]">Promotion {a.graduationYear}</span>
                 </div>
@@ -1514,7 +1512,7 @@ export default function AthleteProfilPage() {
                 <LockedField label="Genre" value={a.gender === "M" ? "Masculin" : a.gender === "F" ? "Féminin" : a.gender === "X" ? "Autre" : null} recruiterView={recruiterView} />
                 <LockedField label="Ville" value={a.city} recruiterView={recruiterView} />
                 <LockedField label="Région" value={a.region} recruiterView={recruiterView} />
-                <LockedField label={a.isCivil ? "Équipe civile" : "École"} value={a.schoolName} recruiterView={recruiterView} />
+                <LockedField label={a.isCivil ? "Équipe civile" : "École"} value={a.isCivil ? (a.teamName || a.leagueName || "—") : (a.schoolName || "—")} recruiterView={recruiterView} />
                 <LockedField label="Graduation" value={a.graduationYear ? String(a.graduationYear) : null} recruiterView={recruiterView} />
                 <LockedField label="Téléphone" value={a.telephone} recruiterView={recruiterView} />
               </>
