@@ -123,10 +123,16 @@ export default function AdminPartenairesPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) updates.approved_by = user.id;
     }
-    const { error } = await supabase.from("media_partners").update(updates).eq("id", partnerId);
+    const { data, error } = await supabase.from("media_partners").update(updates).eq("id", partnerId).select();
     if (error) {
       console.error("[admin/partenaires] status update:", error);
       showToast("error", `Erreur : ${error.message}`);
+      return;
+    }
+    // 0 rows + no error = RLS silently filtered the update. Without
+    // .select() this returns {data:null,error:null} and looks like success.
+    if (!data || data.length === 0) {
+      showToast("error", "Action refusée — vérifie tes permissions.");
       return;
     }
     showToast("success", `Statut mis à jour : ${STATUS_COLORS[status].label}`);
@@ -135,13 +141,20 @@ export default function AdminPartenairesPage() {
 
   async function toggleHomepage(partnerId: string, current: boolean) {
     const supabase = createClient();
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("media_partners")
       .update({ show_on_homepage: !current })
-      .eq("id", partnerId);
+      .eq("id", partnerId)
+      .select();
     if (error) {
       console.error("[admin/partenaires] homepage toggle:", error);
       showToast("error", `Erreur : ${error.message}`);
+      return;
+    }
+    // 0 rows + no error = RLS silently filtered the update. Without
+    // .select() this returns {data:null,error:null} and looks like success.
+    if (!data || data.length === 0) {
+      showToast("error", "Action refusée — vérifie tes permissions.");
       return;
     }
     showToast("success", !current ? "Affiché en page d'accueil" : "Retiré de la page d'accueil");
