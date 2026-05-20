@@ -915,6 +915,8 @@ export interface MediaPartner {
   homepage_order: number | null;
   created_at: string;
   updated_at: string;
+  terms_accepted_at: string | null;
+  password_reset_completed_at: string | null;
 }
 
 export interface PartnerCardDownload {

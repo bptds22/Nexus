@@ -24,12 +24,28 @@ const STATUS_COLORS: Record<PartnerStatus, { bg: string; text: string; label: st
   REVOKED: { bg: "bg-[#EF4444]/15", text: "text-[#EF4444]", label: "Révoqué" },
 };
 
+/* Activation state — derived from media_partners columns, not stored.
+   Partners are created APPROVED with a temp password; this tracks
+   whether they've actually onboarded. Priority order matters. */
+type ActivationState = "pending" | "terms" | "active";
+function getActivationState(p: MediaPartner): ActivationState {
+  if (!p.password_reset_completed_at) return "pending";
+  if (!p.terms_accepted_at) return "terms";
+  return "active";
+}
+const ACTIVATION_META: Record<ActivationState, { bg: string; text: string; label: string }> = {
+  pending: { bg: "bg-[#F59E0B]/15", text: "text-[#F59E0B]", label: "En attente d'activation" },
+  terms:   { bg: "bg-[#FB923C]/15", text: "text-[#FB923C]", label: "Conditions non acceptées" },
+  active:  { bg: "bg-[#22C55E]/15", text: "text-[#22C55E]", label: "Actif" },
+};
+
 const inputCls = "w-full bg-[#13151a] border border-[#2a2d36] rounded-lg px-4 py-2.5 text-[14px] text-[#e0e0e0] placeholder:text-[#4a4d56] focus:border-[#E63946] outline-none transition-colors";
 const labelCls = "block text-[12px] font-bold tracking-[0.25em] uppercase text-[#6B7280] mb-1.5";
 
 export default function AdminPartenairesPage() {
   const [partners, setPartners] = useState<MediaPartner[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activationFilter, setActivationFilter] = useState<"all" | "inactive">("all");
   const [showCreate, setShowCreate] = useState(false);
   const [toast, setToast] = useState<{ kind: "success" | "error"; message: string } | null>(null);
   const showToast = (kind: "success" | "error", message: string) => {
@@ -132,6 +148,10 @@ export default function AdminPartenairesPage() {
     await loadPartners();
   }
 
+  const filteredPartners = activationFilter === "all"
+    ? partners
+    : partners.filter((p) => getActivationState(p) !== "active");
+
   return (
     <div className="px-6 sm:px-10 py-8 max-w-[1280px] mx-auto space-y-6">
       <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -168,16 +188,31 @@ export default function AdminPartenairesPage() {
       {/* Partner list */}
       <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] overflow-hidden">
         <div className="px-5 py-4 border-b border-[#2D3748] flex items-center justify-between">
-          <h2 className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#6b7280]">Liste des partenaires ({partners.length})</h2>
+          <h2 className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#6b7280]">Liste des partenaires ({filteredPartners.length})</h2>
+          <div className="flex items-center bg-[#13151a] border border-[#2a2d36] rounded-lg overflow-hidden">
+            <button type="button" onClick={() => setActivationFilter("all")}
+              className={`px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider transition-colors ${activationFilter === "all" ? "bg-[#E63946] text-white" : "text-[#6b7280] hover:text-white"}`}>
+              Tous
+            </button>
+            <button type="button" onClick={() => setActivationFilter("inactive")}
+              className={`px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider transition-colors ${activationFilter === "inactive" ? "bg-[#E63946] text-white" : "text-[#6b7280] hover:text-white"}`}>
+              Non activés
+            </button>
+          </div>
         </div>
         {loading ? (
           <p className="px-5 py-8 text-[13px] text-[#6B7280]">Chargement…</p>
-        ) : partners.length === 0 ? (
-          <p className="px-5 py-8 text-[13px] text-[#6B7280] text-center">Aucun partenaire pour l&apos;instant. Crée le premier ci-dessus.</p>
+        ) : filteredPartners.length === 0 ? (
+          <p className="px-5 py-8 text-[13px] text-[#6B7280] text-center">
+            {activationFilter === "inactive"
+              ? "Tous les partenaires sont activés."
+              : "Aucun partenaire pour l'instant. Crée le premier ci-dessus."}
+          </p>
         ) : (
           <div className="divide-y divide-[#2D3748]/40">
-            {partners.map((p) => {
+            {filteredPartners.map((p) => {
               const cfg = STATUS_COLORS[p.status];
+              const act = ACTIVATION_META[getActivationState(p)];
               return (
                 <div key={p.id} className="px-5 py-4 flex items-center gap-4 flex-wrap">
                   <div className="flex-1 min-w-0">
@@ -185,6 +220,9 @@ export default function AdminPartenairesPage() {
                       <p className="text-[15px] font-bold text-white">{p.organization_name}</p>
                       <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${cfg.bg} ${cfg.text}`}>
                         {cfg.label}
+                      </span>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${act.bg} ${act.text}`}>
+                        {act.label}
                       </span>
                       {p.show_on_homepage && (
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#3B82F6]/15 text-[#3B82F6]">
