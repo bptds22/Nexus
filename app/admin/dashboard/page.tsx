@@ -325,7 +325,7 @@ export default function AdminDashboard() {
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card title="Inscriptions — 8 dernières semaines">
           <div className="h-[240px]">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height={240}>
               <AreaChart data={registrationSeries}>
                 <defs>
                   <linearGradient id="regFill" x1="0" y1="0" x2="0" y2="1">
@@ -350,7 +350,7 @@ export default function AdminDashboard() {
         </Card>
         <Card title="Entonnoir de recrutement">
           <div className="h-[240px]">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height={240}>
               <BarChart data={funnel} layout="vertical" margin={{ top: 4, right: 24, bottom: 4, left: 12 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#2D3748" horizontal={false} />
                 <XAxis type="number" stroke="#6b7280" fontSize={11} tickLine={false} axisLine={false} allowDecimals={false} />
