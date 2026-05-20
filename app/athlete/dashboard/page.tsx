@@ -163,16 +163,30 @@ export default function AthleteDashboardPage() {
         // ── Activity feed ──────────────────────────────────────
         const { data: activityRows } = await supabase
           .from("recruiter_activity_log")
-          .select("id, action_type, created_at, recruiter:recruiter_id(region)")
+          .select("id, action_type, created_at, recruiter_id")
           .eq("athlete_id", athleteRow.id)
           .order("created_at", { ascending: false })
           .limit(20);
 
+        // Resolve recruiter regions via public.users (recruiter_id FK points at auth.users,
+        // which isn't embeddable — same two-step pattern as the favorites region lookup above)
+        const activityRecruiterIds = [
+          ...new Set((activityRows ?? []).map((r) => r.recruiter_id).filter(Boolean)),
+        ];
+        let regionById = new Map<string, string | null>();
+        if (activityRecruiterIds.length > 0) {
+          const { data: activityRecruiters } = await supabase
+            .from("users")
+            .select("id, region")
+            .in("id", activityRecruiterIds);
+          regionById = new Map(
+            (activityRecruiters ?? []).map((u): [string, string | null] => [u.id, u.region]),
+          );
+        }
+
         if (activityRows && activityRows.length > 0) {
-          const mapped: ActivityItem[] = activityRows.map((row: { id: string; action_type: string; created_at: string; recruiter: { region?: string | null } | { region?: string | null }[] | null }) => {
-            const recruiterRegion = Array.isArray(row.recruiter)
-              ? row.recruiter[0]?.region
-              : row.recruiter?.region;
+          const mapped: ActivityItem[] = activityRows.map((row: { id: string; action_type: string; created_at: string; recruiter_id: string }) => {
+            const recruiterRegion = regionById.get(row.recruiter_id) ?? null;
             const regionLabel = recruiterRegion ? ` de la région ${recruiterRegion}` : "";
             let type: ActivityItem["type"] = "profile_viewed";
             let message = "";
