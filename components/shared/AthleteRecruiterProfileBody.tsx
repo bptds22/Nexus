@@ -178,7 +178,7 @@ function positionAbbr(pos: string): string {
   return pos.length > 4 ? pos.slice(0, 3).toUpperCase() : pos.toUpperCase();
 }
 
-function PlayerCard({ a }: { a: AthleteProfileRecruiterView }) {
+function PlayerCard({ a, isFree }: { a: AthleteProfileRecruiterView; isFree: boolean }) {
   const ratingValue = a.overallRating;
   const posAbbr = positionAbbr(a.primaryPosition);
   const sportKey = SPORT_NAME_MAP[a.primarySport];
@@ -223,9 +223,9 @@ function PlayerCard({ a }: { a: AthleteProfileRecruiterView }) {
             className="object-[center_15%]"
           />
           <div className="absolute bottom-0 left-0 right-0 h-1/2 z-[2]" style={{ background: 'linear-gradient(to top, rgba(11,18,32,0.97) 0%, rgba(11,18,32,0.7) 35%, transparent 100%)' }} />
-          <div className="absolute bottom-4 left-4 z-[3]">
-            <p style={{ fontFamily: 'var(--font-outfit), sans-serif', fontSize: 28, fontWeight: 900, color: '#fff', letterSpacing: '0.04em', lineHeight: 1, textTransform: 'uppercase' }}>{a.firstName}</p>
-            <p style={{ fontFamily: 'var(--font-outfit), sans-serif', fontSize: 28, fontWeight: 900, color: '#fff', letterSpacing: '0.04em', lineHeight: 1, textTransform: 'uppercase' }}>{a.lastName}</p>
+          <div className={`absolute bottom-4 left-4 z-[3]${isFree ? " select-none pointer-events-none blur-[5px]" : ""}`}>
+            <p style={{ fontFamily: 'var(--font-outfit), sans-serif', fontSize: 28, fontWeight: 900, color: '#fff', letterSpacing: '0.04em', lineHeight: 1, textTransform: 'uppercase' }}>{isFree ? "Prénom" : a.firstName}</p>
+            <p style={{ fontFamily: 'var(--font-outfit), sans-serif', fontSize: 28, fontWeight: 900, color: '#fff', letterSpacing: '0.04em', lineHeight: 1, textTransform: 'uppercase' }}>{isFree ? "Nom" : a.lastName}</p>
           </div>
         </div>
 
@@ -325,6 +325,22 @@ function CoachReputationCard({ rep, coachName }: { rep: NonNullable<AthleteProfi
   );
 }
 
+/* Free-tier content lock — replaces a gated section body with a
+   dashed-border placeholder. Reused for videos / academic / coach
+   report on the recruiter profile. */
+function FreeLock() {
+  return (
+    <div className="bg-[#1A1D24] rounded-xl border border-dashed border-white/10 px-6 py-12 flex flex-col items-center justify-center text-center">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mb-3">
+        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+        <path d="M7 11V7a5 5 0 0110 0v4" />
+      </svg>
+      <p className="text-[14px] text-[#9CA3AF] font-semibold mb-1">Passe à Pro pour voir</p>
+      <p className="text-[13px] text-[#6B7280] max-w-md">Cette section est réservée aux recruteurs Pro.</p>
+    </div>
+  );
+}
+
 /* ═══════════════════════════════════════════════════════════════
    MAIN COMPONENT
 ═══════════════════════════════════════════════════════════════ */
@@ -337,9 +353,12 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
   // broaden its meaning.
   const isPreview = viewerMode !== "recruiter";
   const isPartner = viewerMode === "partner";
-  const { maxFavorites, tier } = useSubscription();
+  const { maxFavorites, tier, loading: tierLoading } = useSubscription();
   const canMessageCoach = tier === "pro" || tier === "all_star";
   const canUsePipeline = tier === "pro" || tier === "all_star";
+  // Free recruiters only — excludes preview (athlete self-view) and
+  // partner (own gating). Drives the name strip + content locks.
+  const isFreeRecruiter = viewerMode === "recruiter" && tier === "free";
   const { count: myFavCount, setCount: setMyFavCount } = useFavoritesCount();
   const [a, setA] = useState<AthleteProfileRecruiterView>(mockAthleteProfileFull);
   const [loadingAthlete, setLoadingAthlete] = useState(true);
@@ -376,14 +395,17 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
   } | null>(null);
 
   useEffect(() => {
+    if (tierLoading) return;
     const supabase = createClient();
+    // Free recruiters don't receive athlete names — stripped
+    // server-side (not CSS-only). Preview/partner/Pro get them.
+    const identityCols = isFreeRecruiter ? "" : "first_name, last_name,";
     supabase
       .from("athletes")
       .select(`
         id,
         user_id,
-        first_name,
-        last_name,
+        ${identityCols}
         photo_url,
         verified,
         profile_completion,
@@ -450,7 +472,7 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
           cote_globale, rapport_entraineur, distinctions
         ),
         users!athletes_coach_id_fkey(first_name, last_name)
-      `)
+      ` as unknown as "*")
       .eq("id", id)
       .single()
       .then(async ({ data, error }) => {
@@ -672,7 +694,7 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
 
         setLoadingAthlete(false);
       });
-  }, [id]);
+  }, [id, isFreeRecruiter, tierLoading]);
 
   const [mode, setMode] = useState<"simple" | "detailed">("simple");
   // Partners only see the simplified canonical view; the detailed
@@ -951,12 +973,22 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
         {/* ══════════ HERO — 2 Columns ══════════ */}
         <section className="flex flex-col lg:flex-row gap-8 lg:gap-12 items-stretch">
           <div className="shrink-0 flex justify-center lg:justify-start">
-            <PlayerCard a={a} />
+            <PlayerCard a={a} isFree={isFreeRecruiter} />
           </div>
 
           <div className="flex-1 min-w-0 lg:pt-2 space-y-5">
             <h1 className="font-head text-[36px] sm:text-[46px] font-black text-white uppercase tracking-tight leading-[0.92]">
-              {a.firstName}<br />{a.lastName}
+              {isFreeRecruiter ? (
+                <span className="inline-flex items-start gap-3" title="Nom réservé aux recruteurs Pro">
+                  <span aria-hidden="true" className="select-none pointer-events-none blur-[6px]">Prénom<br />Nom</span>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="mt-1 shrink-0">
+                    <rect x="3" y="11" width="18" height="11" rx="2" />
+                    <path d="M7 11V7a5 5 0 0110 0v4" />
+                  </svg>
+                </span>
+              ) : (
+                <>{a.firstName}<br />{a.lastName}</>
+              )}
               {a.jerseyNumber && <span className="text-[#E63946] ml-3">#{a.jerseyNumber}</span>}
             </h1>
 
@@ -1056,7 +1088,12 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
         </section>
 
         {/* ══════════ COACH REPORT (both modes — content varies) ══════════ */}
-        {(a.coachReport || coteGlobale >= 0) && (
+        {isFreeRecruiter ? (
+          <section>
+            <h2 className={sectionLabel}>Rapport de l&apos;entraîneur</h2>
+            <FreeLock />
+          </section>
+        ) : (a.coachReport || coteGlobale >= 0) ? (
           <section>
             <h2 className={sectionLabel}>Rapport de l&apos;entraîneur</h2>
             <div className={`relative ${cardBase} p-6 sm:p-8 pl-8 sm:pl-10 overflow-hidden`}>
@@ -1138,12 +1175,14 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
               </div>
             </div>
           </section>
-        )}
+        ) : null}
 
         {/* ══════════ FAITS SAILLANTS (VIDEO) ══════════ */}
         <section>
           <h2 className={sectionLabel}>Faits saillants</h2>
-          {a.highlightVideoUrl || a.fullGameUrl ? (
+          {isFreeRecruiter ? (
+            <FreeLock />
+          ) : a.highlightVideoUrl || a.fullGameUrl ? (
             <div className="flex flex-col gap-4">
               {a.highlightVideoUrl && (
                 <VideoEmbed url={a.highlightVideoUrl} title="Faits saillants" />
@@ -1178,6 +1217,11 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
                 Ces informations académiques ne sont pas partagées avec les partenaires Nexus.
               </p>
             </div>
+          </section>
+        ) : isFreeRecruiter ? (
+          <section>
+            <h2 className={sectionLabel}>Profil académique</h2>
+            <FreeLock />
           </section>
         ) : (
           <section>

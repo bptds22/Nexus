@@ -430,7 +430,7 @@ function RechercheContent() {
         .eq("status", "ACTIF");
 
       // Server-side filters
-      if (search.trim().length >= 3) {
+      if (!isFreeRecruiter && search.trim().length >= 3) {
         const q = search.trim().replace(/[%,]/g, "");
         query = query.or(`first_name.ilike.%${q}%,last_name.ilike.%${q}%`);
       }
@@ -730,10 +730,12 @@ function RechercheContent() {
           </svg>
           <input
             type="text"
-            placeholder="Rechercher par nom..."
-            value={search}
+            placeholder={isFreeRecruiter ? "Recherche par nom (Pro)" : "Rechercher par nom..."}
+            value={isFreeRecruiter ? "" : search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-[#13151a] border border-[#2a2d36] rounded-lg pl-10 pr-4 py-3 text-[14px] text-[#e0e0e0] placeholder:text-[#6b7280] focus:border-[#E63946] outline-none transition-colors"
+            disabled={isFreeRecruiter}
+            title={isFreeRecruiter ? "La recherche par nom est réservée aux recruteurs Pro" : undefined}
+            className={`w-full bg-[#13151a] border border-[#2a2d36] rounded-lg pl-10 pr-4 py-3 text-[14px] text-[#e0e0e0] placeholder:text-[#6b7280] focus:border-[#E63946] outline-none transition-colors${isFreeRecruiter ? " opacity-60 cursor-not-allowed" : ""}`}
           />
         </div>
 
