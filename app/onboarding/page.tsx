@@ -573,10 +573,6 @@ export default function OnboardingPage() {
 
       const isAdminClaim = isSchoolCoachAdminClaim || isRecruiterCegepClaim;
 
-      const adminUpdates: Record<string, unknown> = {};
-      if (localUser.is_school_admin === true && !isAdminClaim) {
-        adminUpdates.is_school_admin = true;
-      }
       const profileData = {
         bio: localUser.profile?.bio || null,
         experience_years: localUser.profile?.experience_years || null,
@@ -592,10 +588,20 @@ export default function OnboardingPage() {
           first_name: localUser.firstName || user?.firstName,
           last_name: localUser.lastName || user?.lastName,
           phone: localUser.profile?.phone || null,
-          ...adminUpdates,
           profile_data: profileData,
         })
         .eq("id", authUser.id);
+
+      // Civil-league coach admin grant. is_school_admin is pinned in the
+      // users update own RLS policy — it can no longer be self-written
+      // client-side. claim_civil_league_admin() validates stored
+      // role='COACH' + context='ligue_civile' server-side and sets the
+      // flag with row_security=off. School/CÉGEP claims still defer to
+      // the admin_claims review (isAdminClaim branch below).
+      if (localUser.is_school_admin === true && !isAdminClaim) {
+        const { error: rpcErr } = await supabase.rpc("claim_civil_league_admin");
+        if (rpcErr) console.error("[onboarding] civil admin claim failed", rpcErr);
+      }
 
       // Save school to users table — institution.name guaranteed
       // present by the validateInstitution() guard at top of finish().
