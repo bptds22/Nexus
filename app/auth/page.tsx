@@ -554,23 +554,6 @@ function AuthContent() {
                     <span className="text-[11px] text-[#9CA3AF]">Pas encore de compte? <span className="text-[#E63946] font-bold">Crée ton profil athlète en 2 minutes →</span></span>
                   </button>
 
-                  {/* Demo links */}
-                  <p className="font-sans text-[11px] text-[#4a4d56] text-center mt-4">
-                    <a href="/auth/invite?athlete=Marc-Antoine+Tremblay&coach=Coach+Bergeron&school=Saint-Jean-Eudes" className="hover:text-[#9CA3AF] transition-colors underline">
-                      DÉMO : Simuler une invitation athlète
-                    </a>
-                  </p>
-                  <p className="font-sans text-[11px] text-[#4a4d56] text-center mt-2">
-                    <a href="/auth/invite-admin?type=school&school=De+Mortagne&coach=Patrick+Tremblay&email=directeur@demo.qc.ca" className="hover:text-[#9CA3AF] transition-colors underline">
-                      DÉMO : Invitation directeur école
-                    </a>
-                  </p>
-                  <p className="font-sans text-[11px] text-[#4a4d56] text-center mt-2">
-                    <a href="/auth/invite-admin?type=cegep&cegep=Garneau&recruiter=Pierre+Dufour&email=directeur@cegep.qc.ca" className="hover:text-[#9CA3AF] transition-colors underline">
-                      DÉMO : Invitation directeur CÉGEP
-                    </a>
-                  </p>
-
                   {/* Demo: referral */}
                   {!referralCode && (
                     <p className="font-sans text-[11px] text-[#4a4d56] text-center mt-2">
