@@ -87,7 +87,7 @@ const RECRUITER_FEATURES: Record<SubscriptionTier, FeatureSet> = {
     can_use_pipeline: true,
     pipeline_limit: 50,
     can_see_pipeline_analytics: false,
-    can_use_custom_lists: false,
+    can_use_custom_lists: true,
     can_see_activity_feed: true,
     can_see_response_rates: false,
     can_see_competition_signals: false,
