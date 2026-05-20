@@ -554,14 +554,6 @@ function AuthContent() {
                     <span className="text-[11px] text-[#9CA3AF]">Pas encore de compte? <span className="text-[#E63946] font-bold">Crée ton profil athlète en 2 minutes →</span></span>
                   </button>
 
-                  {/* Demo: referral */}
-                  {!referralCode && (
-                    <p className="font-sans text-[11px] text-[#4a4d56] text-center mt-2">
-                      <a href="/auth?mode=signup&ref=COACH-DEMO-01" className="hover:text-[#9CA3AF] transition-colors underline">
-                        DÉMO : Simuler un référal
-                      </a>
-                    </p>
-                  )}
                 </>
               )}
 
