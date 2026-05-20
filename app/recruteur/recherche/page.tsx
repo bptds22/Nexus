@@ -51,11 +51,12 @@ const sportLabel = (value: string): string => {
 
 /* ── Athlete Search Card ──────────────────────────────────── */
 
-function AthleteSearchCard({ a, onToggleFav, favDisabled, favDisabledReason }: {
+function AthleteSearchCard({ a, onToggleFav, favDisabled, favDisabledReason, isFree }: {
   a: ExtendedAthlete;
   onToggleFav: (id: string) => void;
   favDisabled: boolean;
   favDisabledReason: string;
+  isFree: boolean;
 }) {
   return (
     <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] overflow-hidden hover:border-[#E63946]/30 hover:shadow-[0_0_24px_rgba(230,57,70,0.12)] hover:-translate-y-1.5 hover:scale-[1.02] transition-all duration-300 ease-out group flex flex-col">
@@ -109,9 +110,21 @@ function AthleteSearchCard({ a, onToggleFav, favDisabled, favDisabledReason }: {
       <div className="p-4 flex flex-col flex-1">
         {/* Name + position pill + jersey */}
         <div className="flex items-center gap-2 flex-wrap">
-          <Link href={`/recruteur/athletes/${a.id}`} className="text-[17px] font-bold text-white hover:text-[#E63946] transition-colors">
-            {a.firstName} {a.lastName}
-          </Link>
+          {isFree ? (
+            <span className="inline-flex items-center gap-1.5" title="Nom réservé aux recruteurs Pro">
+              <span aria-hidden="true" className="text-[17px] font-bold text-white select-none pointer-events-none blur-[5px]">
+                Prénom Nom
+              </span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" />
+                <path d="M7 11V7a5 5 0 0110 0v4" />
+              </svg>
+            </span>
+          ) : (
+            <Link href={`/recruteur/athletes/${a.id}`} className="text-[17px] font-bold text-white hover:text-[#E63946] transition-colors">
+              {a.firstName} {a.lastName}
+            </Link>
+          )}
           {a.position && (
             <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-[#2D3748] text-[#c0c4cc] text-[12px] font-bold uppercase tracking-wider">
               {a.position}
@@ -177,11 +190,12 @@ function AthleteSearchCard({ a, onToggleFav, favDisabled, favDisabledReason }: {
 
 /* ── Athlete Search Row (list view) ─────────────────────────── */
 
-function AthleteSearchRow({ a, onToggleFav, favDisabled, favDisabledReason }: {
+function AthleteSearchRow({ a, onToggleFav, favDisabled, favDisabledReason, isFree }: {
   a: ExtendedAthlete;
   onToggleFav: (id: string) => void;
   favDisabled: boolean;
   favDisabledReason: string;
+  isFree: boolean;
 }) {
   return (
     <div className="bg-[#1A1D24] rounded-lg border border-[#2D3748] hover:border-[#E63946]/30 hover:shadow-[0_0_24px_rgba(230,57,70,0.12)] transition-all duration-300 ease-out flex items-center px-4 py-3 gap-4">
@@ -209,9 +223,21 @@ function AthleteSearchRow({ a, onToggleFav, favDisabled, favDisabledReason }: {
 
       {/* Name + school + stars */}
       <div className="min-w-[180px] max-w-[220px]">
-        <Link href={`/recruteur/athletes/${a.id}`} className="text-[15px] font-bold text-white hover:text-[#E63946] transition-colors truncate block">
-          {a.firstName} {a.lastName}
-        </Link>
+        {isFree ? (
+          <span className="inline-flex items-center gap-1.5" title="Nom réservé aux recruteurs Pro">
+            <span aria-hidden="true" className="text-[15px] font-bold text-white select-none pointer-events-none blur-[5px]">
+              Prénom Nom
+            </span>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" />
+              <path d="M7 11V7a5 5 0 0110 0v4" />
+            </svg>
+          </span>
+        ) : (
+          <Link href={`/recruteur/athletes/${a.id}`} className="text-[15px] font-bold text-white hover:text-[#E63946] transition-colors truncate block">
+            {a.firstName} {a.lastName}
+          </Link>
+        )}
         {a.noTeam ? (
           <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold uppercase tracking-wider text-[#9CA3AF]">
             Ligue Civile
@@ -295,7 +321,8 @@ export default function RecherchePage() {
 
 function RechercheContent() {
   const searchParams = useSearchParams();
-  const { maxSearchResults, maxFavorites, loading: tierLoading } = useSubscription();
+  const { maxSearchResults, maxFavorites, tier, loading: tierLoading } = useSubscription();
+  const isFreeRecruiter = tier === "free";
   const [search, setSearch] = useState("");
   const [sport, setSport] = useState("");
   const [position, setPosition] = useState("");
@@ -374,10 +401,15 @@ function RechercheContent() {
       setLoading(true);
       const supabase = createClient();
 
+      // Free recruiters don't receive athlete names — stripped server-side
+      // (not CSS-only) so devtools can't reveal them. Pro/All-Star/admin
+      // get the real name columns.
+      const identityCols = isFreeRecruiter ? "" : "first_name, last_name,";
+
       let query = supabase
         .from("athletes")
         .select(`
-          id, first_name, last_name, photo_url, verified, last_profile_validation,
+          id, ${identityCols} photo_url, verified, last_profile_validation,
           annee_diplomation, numero_jersey, video_faits_saillants_url, school_id,
           cote_globale_entraineur,
           taille_pieds,
@@ -394,7 +426,7 @@ function RechercheContent() {
           committed_school:schools!committed_school_id(name),
           context,
           evaluations(distinctions)
-        `)
+        ` as unknown as "*")
         .eq("status", "ACTIF");
 
       // Server-side filters
@@ -470,8 +502,8 @@ function RechercheContent() {
           const distinctions: string[] = ((evalRel as Record<string, unknown> | null)?.distinctions as string[]) || [];
           return {
             id: a.id as string,
-            firstName: a.first_name as string,
-            lastName: a.last_name as string,
+            firstName: (a.first_name as string) || "",
+            lastName: (a.last_name as string) || "",
             photo: (a.photo_url as string) || "",
             sport: ((sportRel as Record<string, string> | null)?.nom || "").toLowerCase().replace(/ /g, "_") as any,
             position: (posRel as Record<string, string> | null)?.abreviation || "",
@@ -557,7 +589,7 @@ function RechercheContent() {
     };
     loadData();
   }, [
-    tierLoading, maxSearchResults,
+    tierLoading, maxSearchResults, isFreeRecruiter,
     search, sport, sportId, promotion, verifiedOnly, withVideoOnly,
     orgType, minGpa, minRating,
     filterOuvertDemenager, filterOuvertPrive, filterOuvertAnglophone, filterNewOnly,
@@ -916,6 +948,7 @@ function RechercheContent() {
                     onToggleFav={toggleFav}
                     favDisabled={atFavCap && !a.isFavorited}
                     favDisabledReason={favDisabledReason}
+                    isFree={isFreeRecruiter}
                   />
                 ))}
               </div>
@@ -928,6 +961,7 @@ function RechercheContent() {
                     onToggleFav={toggleFav}
                     favDisabled={atFavCap && !a.isFavorited}
                     favDisabledReason={favDisabledReason}
+                    isFree={isFreeRecruiter}
                   />
                 ))}
               </div>
