@@ -250,6 +250,7 @@ type SchoolTeamRow = {
   name: string;
   age_group: string | null;
   division: string | null;
+  gender: string | null;
 };
 
 function SchoolTeamPicker({
@@ -290,7 +291,7 @@ function SchoolTeamPicker({
 
       const { data: rows } = await supabase
         .from("teams")
-        .select("id, name, age_group, division")
+        .select("id, name, age_group, division, gender")
         .eq("school_id", schoolId)
         .eq("sport_id", sportRow.id)
         .eq("is_active", true)
@@ -302,6 +303,7 @@ function SchoolTeamPicker({
           name: r.name as string,
           age_group: (r.age_group as string) ?? null,
           division: (r.division as string) ?? null,
+          gender: (r.gender as string) ?? null,
         })));
         setLoading(false);
       }
@@ -355,7 +357,7 @@ function SchoolTeamPicker({
       <div className="space-y-2 max-h-[280px] overflow-y-auto">
         {visible.map((t) => {
           const isSelected = selectedTeamId === t.id;
-          const meta = [t.age_group, t.division].filter(Boolean).join(" · ");
+          const meta = [t.age_group, t.division, t.gender].filter(Boolean).join(" · ");
           return (
             <button
               key={t.id}
