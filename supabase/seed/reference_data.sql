@@ -2408,3 +2408,84 @@ FROM public.schools WHERE rseq_institution_id = 'e9e627f3-9fff-4801-be2a-a37d37f
 SELECT count(*) AS teams_total, count(*) FILTER (WHERE school_id IS NULL) AS orphans FROM public.teams;
 
 COMMIT;
+
+-- Round 1c — 4 deferred schools + bridge 5 (rseq_institution_id) + their
+-- basketball teams. Self-ordered: INSERT schools, then bridge GUIDs, then
+-- INSERT … SELECT teams (school_id resolves via the GUID join). COALESCE on
+-- the bridge so a re-run never clobbers. Terrebonne already existed (it was
+-- NO_MATCH'd earlier only due to name-length scoring) — bridged in place.
+-- ================================================================
+BEGIN;
+
+-- ---- 4 new schools ----
+INSERT INTO public.schools (name, type, city, region, has_secondaire, has_collegial) VALUES
+  ('École secondaire Jean-de-Brébeuf', 'SECONDAIRE', 'Québec', 'Capitale-Nationale', true, false),
+  ('Collège Jean-de-Brébeuf', 'SECONDAIRE', 'Montréal', 'Montréal', true, false),
+  ('École polyvalente Saint-Jérôme', 'SECONDAIRE', 'Saint-Jérôme', 'Laurentides', true, false),
+  ('Collège Universel', 'CEGEP', 'Gatineau', 'Outaouais', false, true);
+
+-- ---- bridge rseq_institution_id (4 new + existing Terrebonne) ----
+-- École secondaire Jean-de-Brébeuf (Québec)
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, '1c0f4ae7-0be7-462e-b4a2-10651e85d304') WHERE name = 'École secondaire Jean-de-Brébeuf' AND city = 'Québec';
+-- Collège Jean-de-Brébeuf · SECONDAIRE (Montréal)
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, '3b32768d-44d7-4d7b-8d33-802725cd7f43') WHERE name = 'Collège Jean-de-Brébeuf' AND city = 'Montréal' AND type = 'SECONDAIRE';
+-- École polyvalente Saint-Jérôme
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, 'ed9b6130-3ee6-40fe-83b2-ef97dc94d8aa') WHERE name = 'École polyvalente Saint-Jérôme' AND city = 'Saint-Jérôme';
+-- Collège Universel (Gatineau)
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, '5fef61ce-4d19-4f1e-9928-2f33a15d48b8') WHERE name = 'Collège Universel' AND city = 'Gatineau';
+-- Cégep régional de Lanaudière à Terrebonne (existing)
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, 'dc7ca5c8-4be5-4cc8-9d13-7154e10bcd69') WHERE id = '12500ceb-c937-4529-b284-d3433b931326';
+
+-- ---- 12 deferred basketball teams (GUID-join) ----
+-- Terrebonne / D3 / Collégial / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Terrebonne', 'D3', 'RSEQ — Sud-Ouest — A', 'Collégial', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = 'dc7ca5c8-4be5-4cc8-9d13-7154e10bcd69';
+-- Universel / D3 / Collégial / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Universel', 'D3', 'RSEQ — Sud-Ouest — A', 'Collégial', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '5fef61ce-4d19-4f1e-9928-2f33a15d48b8';
+-- É. pol. Saint-Jérôme / D2 / Benjamin / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'É. pol. Saint-Jérôme', 'D2', 'RSEQ', 'Benjamin', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = 'ed9b6130-3ee6-40fe-83b2-ef97dc94d8aa';
+-- É. sec. Jean-de-Brébeuf / D2 / Benjamin / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'É. sec. Jean-de-Brébeuf', 'D2', 'RSEQ', 'Benjamin', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '1c0f4ae7-0be7-462e-b4a2-10651e85d304';
+-- Collège Jean-de-Brébeuf / D1 / Benjamin / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Collège Jean-de-Brébeuf', 'D1', 'RSEQ', 'Benjamin', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '3b32768d-44d7-4d7b-8d33-802725cd7f43';
+-- É. sec. Jean-de-Brébeuf / D1 / Benjamin / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'É. sec. Jean-de-Brébeuf', 'D1', 'RSEQ', 'Benjamin', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '1c0f4ae7-0be7-462e-b4a2-10651e85d304';
+-- Collège Jean-de-Brébeuf / D1 / Cadet / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Collège Jean-de-Brébeuf', 'D1', 'RSEQ', 'Cadet', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '3b32768d-44d7-4d7b-8d33-802725cd7f43';
+-- É. sec. Jean-de-Brébeuf / D1 / Cadet / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'É. sec. Jean-de-Brébeuf', 'D1', 'RSEQ', 'Cadet', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '1c0f4ae7-0be7-462e-b4a2-10651e85d304';
+-- É. sec. Jean-de-Brébeuf / D2 / Juvénile / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'É. sec. Jean-de-Brébeuf', 'D2', 'RSEQ — A1', 'Juvénile', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '1c0f4ae7-0be7-462e-b4a2-10651e85d304';
+-- Collège Jean-de-Brébeuf / D1 / Juvénile / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Collège Jean-de-Brébeuf', 'D1', 'RSEQ', 'Juvénile', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '3b32768d-44d7-4d7b-8d33-802725cd7f43';
+-- É. sec. Jean-de-Brébeuf / D1 / Juvénile / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'É. sec. Jean-de-Brébeuf', 'D1', 'RSEQ', 'Juvénile', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '1c0f4ae7-0be7-462e-b4a2-10651e85d304';
+-- É. sec. Jean-de-Brébeuf / D2 / Juvénile / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'É. sec. Jean-de-Brébeuf', 'D2', 'RSEQ — A', 'Juvénile', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '1c0f4ae7-0be7-462e-b4a2-10651e85d304';
+
+SELECT count(*) AS teams_total, count(*) FILTER (WHERE school_id IS NULL) AS orphans FROM public.teams;
+
+COMMIT;
