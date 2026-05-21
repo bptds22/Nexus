@@ -2,6 +2,7 @@ import { cache } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import PlaybookBackground from "../../components/PlaybookBackground";
 
 /* ═══════════════════════════════════════════════════════════════
    /partenaires/[id] — PUBLIC partner promo page (anon-readable).
@@ -208,44 +209,53 @@ export default async function PartnerPublicPage(
     .join("");
 
   return (
-    <main className="min-h-screen bg-[#111317] flex flex-col items-center px-6 py-12 sm:py-20">
-      <div className="w-full max-w-xl">
-        {/* ── Hero card ── */}
-        <div className="bg-[#1A1D24] border border-[#2D3748] rounded-2xl p-8 sm:p-10 flex flex-col items-center text-center">
-          {/* Logo */}
-          <div className="w-28 h-28 rounded-2xl bg-[#13151a] border border-[#2D3748] flex items-center justify-center overflow-hidden shrink-0">
-            {partner.logo_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={partner.logo_url}
-                alt={`Logo ${partner.organization_name}`}
-                className="w-full h-full object-contain p-2"
-              />
-            ) : (
-              <span className="font-head text-3xl font-black text-[#6B7280]">{initials}</span>
-            )}
+    <main className="hero-playbook bg-[#111317] min-h-screen relative overflow-hidden">
+      <PlaybookBackground />
+
+      {/* ── Hero band ── */}
+      <section className="relative overflow-hidden">
+        <div className="nx-hero-glow" aria-hidden />
+        <div className="relative z-10 max-w-3xl mx-auto px-6 pt-20 sm:pt-28 pb-16 flex flex-col items-center text-center">
+          {/* Eyebrow — Nexus section-label motif */}
+          <div className="inline-flex items-center gap-3 mb-8">
+            <span className="w-10 h-px bg-[#E63946]" />
+            <span className="text-[10px] font-bold tracking-[0.25em] uppercase text-[#E63946]">
+              Partenaire officiel
+            </span>
+            <span className="w-10 h-px bg-[#E63946]" />
+          </div>
+
+          {/* Logo — layered tile over a red halo */}
+          <div className="relative mb-7">
+            <div className="absolute -inset-5 bg-[#E63946]/20 blur-3xl rounded-full" aria-hidden />
+            <div className="relative w-32 h-32 sm:w-36 sm:h-36 rounded-2xl bg-gradient-to-b from-[#1E222B] to-[#13151a] border border-white/10 shadow-[0_24px_60px_rgba(0,0,0,0.55)] flex items-center justify-center overflow-hidden">
+              {partner.logo_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={partner.logo_url}
+                  alt={`Logo ${partner.organization_name}`}
+                  className="w-full h-full object-contain p-3"
+                />
+              ) : (
+                <span className="font-head text-4xl font-black text-[#6B7280]">{initials}</span>
+              )}
+            </div>
           </div>
 
           {/* Name */}
-          <h1 className="font-head text-2xl sm:text-3xl font-black text-white uppercase tracking-tight mt-5">
+          <h1 className="nx-display text-4xl sm:text-5xl lg:text-6xl font-black uppercase text-white leading-[0.95] tracking-tight break-words max-w-2xl">
             {partner.organization_name}
           </h1>
 
-          {/* Partner tag */}
-          <div className="mt-2 inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-[#9CA3AF]">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#E63946]" />
-            Partenaire Nexus
-          </div>
-
           {/* Short description */}
           {partner.description && (
-            <p className="text-[15px] text-[#9CA3AF] leading-relaxed mt-4 max-w-md">
+            <p className="font-sans text-[15px] sm:text-base text-[#9CA3AF] leading-relaxed mt-5 max-w-lg">
               {partner.description}
             </p>
           )}
 
           {/* Social row — all 6 always render; colored+clickable if set, gray+inert if not */}
-          <div className="flex items-center justify-center gap-2.5 mt-6">
+          <div className="flex items-center justify-center gap-2.5 mt-8">
             {socials.map((s) =>
               s.href ? (
                 <a
@@ -279,7 +289,7 @@ export default async function PartnerPublicPage(
               href={partner.website_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-7 inline-flex items-center gap-2 h-11 px-6 rounded-lg bg-[#E63946] text-[14px] font-bold text-white hover:bg-[#D42B22] transition-colors"
+              className="mt-9 inline-flex items-center gap-2.5 h-12 px-7 rounded bg-[#E63946] text-white font-head font-black text-sm uppercase tracking-widest hover:bg-[#D42B22] hover:-translate-y-0.5 hover:shadow-[0_12px_40px_rgba(230,57,70,0.4)] transition-all"
             >
               Visiter le site
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -290,31 +300,36 @@ export default async function PartnerPublicPage(
             </a>
           )}
         </div>
+      </section>
 
-        {/* ── About section ── */}
-        {partner.about_text && (
-          <div className="bg-[#1A1D24] border border-[#2D3748] rounded-2xl p-6 sm:p-8 mt-4">
-            <h2 className="font-head text-[13px] font-bold uppercase tracking-[0.18em] text-[#6B7280] mb-3">
-              À propos
-            </h2>
-            <p className="text-[15px] text-[#D1D5DB] leading-relaxed whitespace-pre-line">
+      {/* ── About section — editorial card floating over the playbook ── */}
+      {partner.about_text && (
+        <section className="relative z-10 max-w-3xl mx-auto px-6 pb-6">
+          <div className="editorial-grain bg-[#1A1D24] border border-[#2D3748] rounded-2xl p-7 sm:p-10 shadow-[0_24px_60px_rgba(0,0,0,0.45)]">
+            <div className="inline-flex items-center gap-3 mb-5">
+              <span className="w-8 h-px bg-[#E63946]" />
+              <span className="text-[10px] font-bold tracking-[0.25em] uppercase text-[#E63946]">
+                À propos
+              </span>
+            </div>
+            <p className="font-sans text-[15px] sm:text-base text-[#D1D5DB] leading-relaxed whitespace-pre-line">
               {partner.about_text}
             </p>
           </div>
-        )}
+        </section>
+      )}
 
-        {/* ── Back link ── */}
-        <div className="text-center mt-8">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 text-[13px] font-bold text-[#6B7280] hover:text-white transition-colors"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-              <path d="M19 12H5" /><path d="M12 19l-7-7 7-7" />
-            </svg>
-            Retour à Nexus
-          </Link>
-        </div>
+      {/* ── Back link ── */}
+      <div className="relative z-10 text-center pt-6 pb-16">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 text-[12px] font-bold uppercase tracking-[0.18em] text-[#6B7280] hover:text-white transition-colors"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <path d="M19 12H5" /><path d="M12 19l-7-7 7-7" />
+          </svg>
+          Retour à Nexus
+        </Link>
       </div>
     </main>
   );
