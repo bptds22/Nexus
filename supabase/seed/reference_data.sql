@@ -1532,3 +1532,162 @@ UPDATE public.schools SET city = COALESCE(city, '2121 Rue de l''Alizé, Mascouch
 
 
 COMMIT;
+
+-- RSEQ bridge — populate rseq_institution_id for 73 confirmed schools.
+-- One-time name-match bridge (basketball standings, GPS-validated where
+-- name-ambiguous). COALESCE: fills only NULL, never clobbers. Re-applies
+-- idempotently on db reset. Future RSEQ scrapes join on this GUID — no
+-- re-matching. Column added by migration 20260521130000.
+-- ================================================================
+BEGIN;
+
+-- Ahuntsic  ->  Collège Ahuntsic
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, '6ef80f06-c78b-40ad-bb6e-8ec578dffcfd') WHERE id = 'f6ffbe4c-8d82-411a-8188-8b8256816ec6';
+-- Ch.-Lennoxville  ->  Champlain College Lennoxville
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, 'dff9008f-4586-4145-96ec-03ced687de6d') WHERE id = '85419c0f-03e8-4e4e-accb-8a30cc4b52c0';
+-- Ch.-St-Lambert  ->  Champlain College Saint-Lambert
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, '95f51ccf-0424-40df-b3b0-78e0858b67e2') WHERE id = '8a2f3c2b-0e78-47ee-b6cc-bb9a80c6ca2d';
+-- Dawson  ->  Dawson College
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, '0e892f13-171e-4ada-887e-e9dcabd286c4') WHERE id = '6a9c6dce-7521-4bb9-b8c7-1af4671e9889';
+-- Montmorency  ->  Collège Montmorency
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, 'd68f21e3-3635-43ec-9eec-645bad3f50fc') WHERE id = 'ee2d611c-d140-417c-bbaf-d6353a7a1229';
+-- Sainte-Foy  ->  Cégep de Sainte-Foy
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, 'fb3aae30-d707-4854-ac1f-f471d7e27f6f') WHERE id = '9bff70c3-f656-44e7-9566-79355ea716bd';
+-- Saint-Jean  ->  (GPS-confirmed)
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, 'eb646e5f-53ed-4fe7-b9d0-e31f57870232') WHERE id = 'f09a5ec6-20af-465c-a97a-0d71d8c8b291';
+-- Trois-Rivières  ->  Cégep de Trois-Rivières
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, '5c81d21b-afdd-4db6-ab0e-1541fd1ce7da') WHERE id = '61ed3f9a-f089-4983-87e9-85bab65e1693';
+-- Vanier  ->  Vanier College
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, '22ff13d0-7023-4c2f-a748-415e211586f8') WHERE id = '968ed36e-bca7-45d0-b63e-3b41ba385f6b';
+-- Édouard-Montpetit  ->  Cégep Édouard-Montpetit
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, '8f5daba9-7301-4e9c-aa64-5b291ba87261') WHERE id = '197886cf-3948-4c69-afa8-0d24de26c37f';
+-- Jean-de-Brébeuf  ->  Collège Jean-de-Brébeuf
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, 'c4830e7e-862c-45fb-8819-270f5a5629d4') WHERE id = '53c3d88d-452a-4e2e-8e4d-aeab3b6b14a5';
+-- John Abbott  ->  John Abbott College
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, '0de88660-bf06-4982-90e7-922bb03faafd') WHERE id = 'f32b2687-9b6a-4c25-8502-323a9ad5ce6d';
+-- Outaouais  ->  Cégep de l'Outaouais
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, '8ce89fbe-0fc0-4630-b5a7-5680bd6bc655') WHERE id = '103c0ac1-9e07-4341-a5a2-af799d0879a8';
+-- Sherbrooke  ->  Cégep de Sherbrooke
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, '095e8f11-f6e5-4f03-89fe-1478cbc6df14') WHERE id = '8a330cf7-76fa-4761-8cbd-df223e6c4cbd';
+-- Thetford  ->  Cégep de Thetford
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, 'eaa606f0-ed1e-44a0-bbeb-f7ebadc73f49') WHERE id = '55925e8f-3575-4c5b-8b4c-7a018e3cee7e';
+-- Ch.-St-Lawrence  ->  (GPS-confirmed)
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, '30b7b1d1-bf5a-4704-9654-8c2c42d52b8c') WHERE id = '3c5d9f7d-8188-4b9a-8209-cd0a262c0bca';
+-- Chicoutimi  ->  Cégep de Chicoutimi
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, '869aed10-2ddb-4e77-b41b-b9a7c64500e9') WHERE id = '039bb660-34c4-4065-af23-63437d1fcbba';
+-- Garneau  ->  Cégep Garneau
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, '7d33abf5-461d-4b7d-85f7-27165c7fbc14') WHERE id = 'eade6d14-a725-409f-a6d9-47f4770eda4a';
+-- Jonquière  ->  Cégep de Jonquière
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, '0847e395-6b47-4cce-b13a-7849211d8a2d') WHERE id = '1031135c-56eb-4ce9-8bc0-01a42b7707f4';
+-- Limoilou  ->  Cégep de Limoilou
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, 'a65ee58e-e0b7-4960-82c1-68d7d07f557e') WHERE id = '03bd95e3-3c3c-4161-ae63-5b0678545a66';
+-- Baie-Comeau  ->  Cégep de Baie-Comeau
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, '93378c11-4521-49f0-be38-cf16598f3e0d') WHERE id = 'a262966a-6210-4c13-8c76-7edfc288b31e';
+-- Beauce-Appalaches  ->  Cégep Beauce-Appalaches
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, 'ed73ba4e-5d0f-4408-ae13-42adc783e6e0') WHERE id = 'eab74df7-0aa6-438d-b5d8-2bcca8f6048a';
+-- Lévis  ->  Cégep de Lévis
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, '48398f9e-6604-4ad5-abba-1b1b829d2752') WHERE id = 'de1f23ea-a64e-483a-b7a6-7e2c2fdf053a';
+-- Mérici  ->  Collège Mérici
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, '92fde0a3-4e71-4a91-b8bb-6fab51b2d72f') WHERE id = '742dc634-7cf6-4a41-b296-1f37c35a3610';
+-- Notre-Dame  ->  (GPS-confirmed)
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, 'db18d59a-c6de-4e76-901e-c19388d3f4b6') WHERE id = 'fbe59ef8-99b1-4be6-a72d-2d7768f92299';
+-- Alma  ->  Cégep d'Alma
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, 'a68f5b47-4eee-4806-9366-8e36931a92fc') WHERE id = 'fda8a4a6-5a48-4a75-8d6e-fb8140dc419a';
+-- Rimouski  ->  Cégep de Rimouski
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, '657bd035-d5e8-49c8-98e0-576e9e461e9d') WHERE id = '3ab3f7ad-4396-4c57-b823-27c8b105d2b0';
+-- La Pocatière  ->  Cégep de La Pocatière
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, '1ecb8bcd-cb80-4abb-875c-a4814a4b9bf6') WHERE id = '4927bfc9-4003-4ce3-ba80-df53343d15ad';
+-- Matane  ->  Cégep de Matane
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, '0e9b0b9e-1ac0-4949-b59f-b81b550d291b') WHERE id = '53428e56-7850-49b2-a110-b8c5540bae28';
+-- Rivière-du-Loup  ->  Cégep de Rivière-du-Loup
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, '2b492c7b-513e-451d-bc88-e1e1a7e01e35') WHERE id = '52e99123-379b-40cc-b3df-4bb05b7db5ce';
+-- Abitibi-Témisc.  ->  Cégep de l'Abitibi-Témiscamingue
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, 'b76b2736-571a-402b-be36-c2df541e0dcc') WHERE id = 'e55589cc-4ac2-409e-bcab-60bd531f8186';
+-- Saint-Jérôme  ->  Cégep de Saint-Jérôme
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, '3178e485-f97d-4ef3-aca8-5238cfd3ebbc') WHERE id = '20d2b5d3-0916-4fd0-b645-1b604a3c4877';
+-- André-Laurendeau  ->  Cégep André-Laurendeau
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, '9c98f01c-0c65-45be-b8cb-52118b0ee7a5') WHERE id = '442b3b2a-fe74-4443-ad92-feb9988c39b5';
+-- Bois-de-Boulogne  ->  Collège de Bois-de-Boulogne
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, '905046ed-b0fa-4268-bc79-1a31b14e9e1e') WHERE id = '38b003b6-be02-4f7a-a548-d26e103f7e97';
+-- Héritage  ->  Heritage College
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, '20feefb7-9e6e-4afe-953b-09dd08697223') WHERE id = '64786fab-69f4-4c57-b910-558cd2cbb58e';
+-- L'Assomption  ->  Collège de l'Assomption
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, '15a7435d-4df1-49b1-9cb1-a8b42efbe3d0') WHERE id = '64d62dd8-0a96-4f23-9ee7-b6fdc735fcde';
+-- Lionel-Groulx  ->  Collège Lionel-Groulx
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, '59197f81-d4fa-46fe-ab55-1e377f017f28') WHERE id = 'f7fafd77-a20b-4f96-8db5-afb999e7e4d9';
+-- Marie-Victorin  ->  Cégep Marie-Victorin
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, '344a9be1-03c0-458f-a374-36c57a3e3d90') WHERE id = '35ed7851-535d-4620-8673-13e71a7c3dc3';
+-- Rosemont  ->  Collège de Rosemont
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, '53c950c5-945d-4108-83f3-fbac6e0b17f8') WHERE id = 'e9276c29-1aee-4bee-a5fc-8a5a9e554f37';
+-- Saint-Laurent  ->  Cégep de Saint-Laurent
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, '2311c152-f852-416c-8798-ab17ca811fd7') WHERE id = '90d2fe15-c4ce-4340-8c94-394f5fd15233';
+-- Vieux Montréal  ->  Cégep du Vieux Montréal
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, 'e00c66a7-c4f1-490b-b6bc-6cefc0ee2376') WHERE id = '2ecca369-433b-402d-9c35-3eaba59e0563';
+-- Maisonneuve  ->  Collège de Maisonneuve
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, '38962c87-b991-4e60-b632-7da3a1b28a65') WHERE id = 'af3e3ada-eadb-41ff-8d9f-2f34dd149317';
+-- Valleyfield  ->  Collège de Valleyfield
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, '71b02ae2-2c88-42ce-83ca-0b145f571ef8') WHERE id = '24c038d8-0a12-4516-8404-bca92543cb6a';
+-- Académie Saint-Louis  ->  Académie Saint-Louis
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, 'f1cff57a-f994-429b-9f68-3d3b8bbf9d24') WHERE id = '2c79f18c-9e49-411e-ace9-7bb54dc68438';
+-- Coll. Notre-Dame-de-Lourdes  ->  Collège Notre-Dame-de-Lourdes
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, '2a32eb09-dfc0-4fd8-a266-89a2c5f8befc') WHERE id = '649030c8-e01d-48cc-aca7-4efde967cdb4';
+-- Collège St-Jean-Vianney  ->  Collège St-Jean-Vianney
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, '4a90a041-8e50-45b9-9368-b6f45e018f97') WHERE id = '24ee7ebf-fede-47dd-b666-bd1530b303ad';
+-- É. sec. Antoine-de-St-Exupéry  ->  École secondaire Antoine-de-Saint-Exupéry
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, '60a333f6-c2f3-417b-ba69-158debdaea3b') WHERE id = 'b7aa9702-a73c-4664-98cf-9efc50c1273e';
+-- É. sec. Gérard-Filion  ->  École Gérard-Filion
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, '1d7a6b55-d993-428b-a932-cf9527654769') WHERE id = 'a149d738-3794-4271-809b-c2f99ad59c6e';
+-- É. sec. Henri-Bourassa  ->  École secondaire Henri-Bourassa
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, '0899d6a1-6726-4c8b-84cb-fe61da08940e') WHERE id = 'eb6b9a6d-3190-4724-a0ad-51385bd821a0';
+-- É. sec. Le Boisé  ->  École secondaire Le boisé
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, '20dbb037-19a0-4dca-9486-532bd70b0f04') WHERE id = '54c10224-313b-4fb7-98fd-36f28f3bfcd5';
+-- Séminaire Saint-François  ->  Séminaire Saint-François
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, '44d2fa63-6b97-46ec-8668-79988e31c667') WHERE id = 'aad2a33e-ece0-4db1-9c96-66a5918f6679';
+-- Coll. Jésus-Marie de Sillery  ->  Collège Jésus-Marie de Sillery
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, '60218181-a513-4713-9c23-6123399fd6c2') WHERE id = '1c629d33-eb80-4799-a20c-4b42ae772a4a';
+-- Collège Charles-Lemoyne  ->  Collège Charles-Lemoyne
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, '76774ba8-a447-46f9-99b5-44a8c890589f') WHERE id = '7a577203-fe75-4f57-b569-ec9c05be9ffd';
+-- É. pol. Hyacinthe-Delorme  ->  Polyvalente Hyacinthe-Delorme
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, '52cf6a0e-576c-4bb1-922a-c3d57b538eba') WHERE id = 'afe552fe-dde3-4cc6-9ebf-a7a17b170808';
+-- É. sec. d'Amos  ->  École secondaire d'Amos
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, '59037b4d-f9e6-4dda-bedd-0b7b93390c49') WHERE id = '9bde8e7e-fdfe-4e8c-9916-549d28feab27';
+-- É. sec. de Rochebelle  ->  École secondaire De Rochebelle
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, 'a7f8edba-ac21-4ddd-9aa5-9f465e5a7433') WHERE id = '3e439f09-ced4-4810-9cae-b8a69a2f9dd1';
+-- É. sec. Félix-Leclerc  ->  École secondaire Félix-Leclerc
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, '70eccd36-7a97-456e-8555-d7f067105e0e') WHERE id = '61f47ab5-0b59-4983-8885-e0a8eada1663';
+-- Coll. Durocher Saint-Lambert  ->  Collège Durocher Saint-Lambert
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, '0de9d600-4d89-481f-8823-b2fe32323a58') WHERE id = '4a3e8e63-4bd3-407a-b4bd-84b04b607a88';
+-- É. sec. Jean-Grou  ->  École secondaire Jean-Grou
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, '9a98004f-a388-4f8e-b7c7-b89e7d15a407') WHERE id = '0a884190-2dc9-4373-a035-5fb193a070f0';
+-- Académie les Estacades  ->  Académie les Estacades
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, '41e27254-7e84-45a9-8af4-3aef611ba1f2') WHERE id = '84cc3b3b-8582-48e8-9eb0-a7c917bf058f';
+-- É. pol. Nicolas-Gatineau  ->  École Polyvalente Nicolas-Gatineau
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, 'dddbfb23-f41b-457b-8930-9455742f0486') WHERE id = 'e2a80888-3531-4cf9-b1ab-58fd69d17394';
+-- É. sec. du Triolet  ->  École du Triolet
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, 'a6ee3fd8-a94f-4d5f-a963-5d8d5d96aea1') WHERE id = '7d59545c-415c-48d1-8a1e-3e02554247f0';
+-- Saint-Jean-Eudes  ->  Saint-Jean-Eudes
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, '13b6795d-7f48-43ac-a1ed-1e782369aa34') WHERE id = '4f0e52ad-e9c7-4797-9b7b-92b25ed1307b';
+-- Coll. mariste de Québec  ->  Collège mariste de Québec
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, '01d3bfba-b350-4b38-afcf-b5131f479db0') WHERE id = 'd3f457f4-3873-49dd-a92a-dcc6c6a27ab1';
+-- É. pol. Arvida  ->  École polyvalente Arvida
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, '9ddc8351-cf22-4cbb-8a3a-5d374b01cb69') WHERE id = '510f39ad-1133-4158-9bfb-0e70ed425936';
+-- É. sec. de l'Odyssée  ->  École secondaire de l'Odyssée
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, '53d8efcf-e31c-412a-a44b-b3b6e516a1ca') WHERE id = '45e63fa1-7662-4fb6-b1d4-bd1226c3555d';
+-- É. sec. Marie-Rivier  ->  École Marie-Rivier
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, '5d32ab0d-ca82-4e4e-8496-6afe120d5a8b') WHERE id = 'f54909d5-fbad-43cd-bd7b-4324e661be82';
+-- Collège Laval  ->  Collège Laval
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, 'ae84149b-f295-4c65-913b-0617cdceb516') WHERE id = 'bb250d92-fb4f-476a-a9cb-1b3176ccaa84';
+-- É. sec. de la Seigneurie  ->  École de la Seigneurie
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, 'e313c763-adf8-4a39-8290-5460a18c429a') WHERE id = 'deeb91d4-d07f-4100-b8aa-6008da51004f';
+-- É. sec. Paul-Hubert  ->  École Paul-Hubert
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, '1cb97ab6-db76-49d3-bfd0-ad28c4e4731a') WHERE id = '46453351-3337-44c3-936f-c45c4bcfd8be';
+-- É. sec. De Mortagne  ->  École secondaire De Mortagne
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, '90e0157e-7b4f-4c5f-80c1-a80066d38fb0') WHERE id = 'aea73880-b3ed-48d0-a2ba-291b9e055bd6';
+-- É. sec. Jeanne-Mance  ->  École Jeanne-Mance
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, 'b4f4a1df-33cc-4617-968d-8d404a5798f1') WHERE id = 'a6084c1b-0e93-4a75-9ae5-804ded4ca267';
+-- Séminaire Sainte-Marie  ->  Séminaire Sainte-Marie
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, 'e9e627f3-9fff-4801-be2a-a37d37fbb21c') WHERE id = '7e114ee9-ab4d-4317-b578-8cec94f4d748';
+
+SELECT count(*) AS bridged FROM public.schools WHERE rseq_institution_id IS NOT NULL;
+
+COMMIT;
