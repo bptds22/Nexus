@@ -3,6 +3,7 @@
 import NexusLogo from "@/components/ui/NexusLogo";
 import Link from "next/link";
 import PlaybookBackground from "./components/PlaybookBackground";
+import PartnerCarousel from "./components/PartnerCarousel";
 import MarketingNav from "@/components/marketing/MarketingNav";
 
 /* ─────────────────────────────────────────────────────────────────
@@ -173,36 +174,9 @@ export default function Home() {
       </section>
 
       {/* ══════════════════════════════════════════
-          SECTION 2 — PARTNER CAROUSEL
-          Placeholder slots — swap with real partner logos.
+          SECTION 2 — PARTNER CAROUSEL (live media_partners)
       ══════════════════════════════════════════ */}
-      <section className="relative bg-transparent py-20 overflow-hidden">
-
-        <div className="max-w-6xl mx-auto px-6 mb-12 text-center">
-          <div className="inline-flex items-center gap-3">
-            <span className="w-10 h-px bg-[#E63946]" />
-            <span className={`${label} text-[#E63946]`}>Ils nous font confiance</span>
-            <span className="w-10 h-px bg-[#E63946]" />
-          </div>
-        </div>
-
-        <div className="nx-marquee" aria-label="Partenaires Nexus">
-          <div className="nx-marquee-track">
-            {[
-              "Partenaire 1", "Partenaire 2", "Partenaire 3",
-              "Partenaire 4", "Partenaire 5", "Partenaire 6",
-              // Duplicated below for seamless infinite loop — do not remove
-              "Partenaire 1", "Partenaire 2", "Partenaire 3",
-              "Partenaire 4", "Partenaire 5", "Partenaire 6",
-            ].map((name, i) => (
-              <div key={i} className="nx-partner-slot" aria-hidden={i >= 6 ? "true" : "false"}>
-                <span className="nx-display text-2xl text-white/30 tracking-wider">{name}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-      </section>
+      <PartnerCarousel />
 
       {/* ══════════════════════════════════════════
           SECTION 4 — FOOTER (unchanged)
