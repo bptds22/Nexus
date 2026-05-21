@@ -95,6 +95,7 @@ export default function MonParcoursPage() {
 
   // Module 3 — readiness (auto sources + manual jsonb)
   const [highlightUrl, setHighlightUrl] = useState<string | null>(null);
+  const [matchVideoUrl, setMatchVideoUrl] = useState<string | null>(null);
   const [coteGlobale, setCoteGlobale] = useState<number | null>(null);
   const [moyenne, setMoyenne] = useState<number | null>(null);
   const [parentalConsent, setParentalConsent] = useState(false);
@@ -138,7 +139,7 @@ export default function MonParcoursPage() {
       const { data } = await supabase
         .from("athletes")
         .select(
-          "id, first_name, profile_completion, video_faits_saillants_url, cote_globale_entraineur, moyenne_generale, consentement_parental, parcours_readiness",
+          "id, first_name, profile_completion, video_faits_saillants_url, video_match_complet_url, cote_globale_entraineur, moyenne_generale, consentement_parental, parcours_readiness",
         )
         .eq("user_id", user.id)
         .maybeSingle();
@@ -146,6 +147,7 @@ export default function MonParcoursPage() {
       setFirstName((data.first_name as string) || "");
       setProfileCompletion((data.profile_completion as number) || 0);
       setHighlightUrl((data.video_faits_saillants_url as string | null) ?? null);
+      setMatchVideoUrl((data.video_match_complet_url as string | null) ?? null);
       setCoteGlobale((data.cote_globale_entraineur as number | null) ?? null);
       setMoyenne((data.moyenne_generale as number | null) ?? null);
       setParentalConsent(data.consentement_parental === true);
@@ -371,7 +373,7 @@ export default function MonParcoursPage() {
     .filter((c) => !targetedIds.has(c.id))
     .filter((c) => (q ? c.name.toLowerCase().includes(q) : true));
 
-  // ── Module 3 — the 11 readiness items (6 auto + 5 manual) ──
+  // ── Module 3 — the 12 readiness items (7 auto + 5 manual) ──
   const checklist: ChecklistItem[] = [
     {
       key: "highlight", type: "auto", label: "Highlight reel", tag: "Vitrine",
@@ -379,6 +381,13 @@ export default function MonParcoursPage() {
       href: "/athlete/profil",
       why: "C'est la première chose qu'un recruteur regarde — souvent avant même de lire ton profil.",
       how: "2-3 minutes max. Tes meilleurs jeux en premier. Ton numéro visible. Pas de musique ni d'effets — les recruteurs veulent voir toi, pas le montage.",
+    },
+    {
+      key: "match_video", type: "auto", label: "Vidéo d'un match complet", tag: "Vitrine",
+      done: !!matchVideoUrl && matchVideoUrl.trim() !== "",
+      href: "/athlete/profil",
+      why: "Les highlights ouvrent la porte; un match complet, c'est ce qu'un recruteur regarde pour décider. Il veut voir ta constance, pas juste tes meilleurs moments.",
+      how: "Filme un match complet — ou au moins une mi-temps. Caméra fixe, vue large pour qu'on voie tout le jeu. Indique ton numéro et la couleur de ton chandail. Aucun montage nécessaire.",
     },
     {
       key: "profile", type: "auto", label: "Profil complet", tag: "Profil",
@@ -757,7 +766,7 @@ export default function MonParcoursPage() {
               <p className="text-[13px] text-[#9CA3AF] leading-relaxed mt-5">{encouragement}</p>
             </div>
 
-            {/* 11-item checklist */}
+            {/* 12-item checklist */}
             <div className="flex-1 min-w-0 space-y-2">
               {checklist.map((item) => {
                 const open = expanded.has(item.key);
