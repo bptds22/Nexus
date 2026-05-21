@@ -22,29 +22,23 @@ import { toPng } from "html-to-image";
 ═══════════════════════════════════════════════════════════════ */
 
 const STEPS = [
-  { label: "Entraînement d'été" },
-  { label: "Camps & essais" },
-  { label: "Saison Sec 5" },
-  { label: "Fenêtre de signature" },
+  { label: "Entraînement d'été", phase: "entrainement" },
+  { label: "Camps & essais", phase: "camps" },
+  { label: "Saison Sec 5", phase: "saison" },
+  { label: "Fenêtre de signature", phase: "signature" },
 ];
 
-// v1: the current step is static — the page ships for the summer
-// prep window, so the athlete is at "Camps & essais".
-const CURRENT_STEP = 1;
+// Season label — currentYear–(currentYear+1), computed, never hardcoded.
+const SEASON_YEAR = new Date().getFullYear();
+const SEASON_LABEL = `${SEASON_YEAR}–${SEASON_YEAR + 1}`;
 
 // The 6 named badges — "custom" is excluded (empty label, free-text).
 const NAMED_BADGES = BADGE_ORDER.filter((k) => k !== "custom");
 
-function readinessColor(pct: number): string {
-  if (pct < 40) return "#EF4444";
-  if (pct < 70) return "#F59E0B";
-  return "#22C55E";
-}
-
 type Cegep = { id: string; name: string; city: string | null; region: string | null };
 type TargetRow = { id: string; schoolId: string; name: string; city: string | null; region: string | null };
 type ManualKey = "instagram_ready" | "knows_how_to_respond";
-type Readiness = { instagram_ready?: boolean; knows_how_to_respond?: boolean };
+type Readiness = { instagram_ready?: boolean; knows_how_to_respond?: boolean; current_phase?: string };
 
 type ChecklistItem = {
   key: string;
@@ -93,6 +87,7 @@ export default function MonParcoursPage() {
   const [parentalConsent, setParentalConsent] = useState(false);
   const [readiness, setReadiness] = useState<Readiness>({});
   const [togglingKey, setTogglingKey] = useState<ManualKey | null>(null);
+  const [phaseSaving, setPhaseSaving] = useState(false);
 
   const showToast = useCallback((kind: "success" | "error", message: string) => {
     setToast({ kind, message });
@@ -294,14 +289,52 @@ export default function MonParcoursPage() {
     }
   }
 
-  const pctColor = readinessColor(profileCompletion);
+  async function setPhase(phase: string) {
+    if (phaseSaving) return;
+    setPhaseSaving(true);
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        showToast("error", "Session expirée. Reconnecte-toi.");
+        return;
+      }
+      // Merge — set current_phase, preserve the manual-checkbox keys.
+      const next: Readiness = { ...readiness, current_phase: phase };
+      const { data, error } = await supabase
+        .from("athletes")
+        .update({ parcours_readiness: next })
+        .eq("user_id", user.id)
+        .select("id");
+      if (error) {
+        console.error("[mon-parcours] phase write:", error);
+        showToast("error", `Erreur : ${error.message}`);
+        return;
+      }
+      // 0 rows + no error = RLS silently filtered the update.
+      if (!data || data.length === 0) {
+        showToast("error", "Action refusée — vérifie tes permissions.");
+        return;
+      }
+      setReadiness(next);
+    } finally {
+      setPhaseSaving(false);
+    }
+  }
+
+  // Current phase from the readiness jsonb; defaults to the first step.
+  const currentPhase = readiness.current_phase ?? "entrainement";
+  const currentStepIndex = Math.max(
+    0,
+    STEPS.findIndex((s) => s.phase === currentPhase),
+  );
   // Track spans node-0 centre → node-3 centre (left/right inset 12.5%).
   // Fill reaches the current node: one 25%-of-container segment per step.
-  const fillWidth = (CURRENT_STEP * 75) / (STEPS.length - 1);
+  const fillWidth = (currentStepIndex * 75) / (STEPS.length - 1);
 
   const steps = STEPS.map((s, i) => ({
     ...s,
-    state: i < CURRENT_STEP ? "done" : i === CURRENT_STEP ? "current" : "upcoming",
+    state: i < currentStepIndex ? "done" : i === currentStepIndex ? "current" : "upcoming",
   }));
 
   // CÉGEPs not yet targeted, filtered by the picker search.
@@ -376,7 +409,7 @@ export default function MonParcoursPage() {
         <div className="inline-flex items-center gap-2.5 mb-4">
           <span className="w-8 h-px bg-[#E63946]" />
           <span className="text-[10px] sm:text-[11px] font-bold tracking-[0.22em] uppercase text-[#E63946]">
-            Saison 2026–2027 · ta dernière au secondaire
+            Saison {SEASON_LABEL}
           </span>
         </div>
         <h1 className="font-head text-4xl sm:text-5xl font-black text-white uppercase tracking-tight leading-[0.95]">
@@ -390,19 +423,9 @@ export default function MonParcoursPage() {
 
       {/* ── Timeline spine ── */}
       <div className="bg-[#1A1D24] border border-[#2D3748] rounded-xl p-6 sm:p-8">
-        <div className="flex items-end justify-between flex-wrap gap-3 mb-9">
-          <h2 className="font-head text-lg sm:text-xl font-black text-white uppercase tracking-tight">
-            Ta ligne du temps vers le CÉGEP
-          </h2>
-          <div className="flex items-baseline gap-1.5">
-            <span className="font-head text-3xl font-black leading-none" style={{ color: pctColor }}>
-              {profileCompletion}%
-            </span>
-            <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#6b7280]">
-              prêt
-            </span>
-          </div>
-        </div>
+        <h2 className="font-head text-lg sm:text-xl font-black text-white uppercase tracking-tight mb-9">
+          Ta ligne du temps vers le CÉGEP
+        </h2>
 
         {/* Spine — 3 stacked rows: markers · track+nodes · labels */}
         <div className="space-y-2.5">
@@ -429,14 +452,18 @@ export default function MonParcoursPage() {
             <div className="relative h-full flex">
               {steps.map((step, i) => (
                 <div key={i} className="flex-1 flex items-center justify-center">
-                  <span
-                    className={
+                  <button
+                    type="button"
+                    onClick={() => setPhase(step.phase)}
+                    disabled={phaseSaving}
+                    aria-label={`Marquer : ${step.label}`}
+                    className={`transition-transform hover:scale-110 disabled:opacity-60 ${
                       step.state === "done"
                         ? "w-7 h-7 rounded-full bg-[#E63946] flex items-center justify-center"
                         : step.state === "current"
                           ? "w-7 h-7 rounded-full bg-[#E63946] ring-4 ring-[#E63946]/25 flex items-center justify-center"
-                          : "w-7 h-7 rounded-full bg-[#13151a] border-2 border-[#2D3748]"
-                    }
+                          : "w-7 h-7 rounded-full bg-[#13151a] border-2 border-[#2D3748] hover:border-[#E63946]"
+                    }`}
                   >
                     {step.state === "done" && (
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
@@ -446,7 +473,7 @@ export default function MonParcoursPage() {
                     {step.state === "current" && (
                       <span className="w-2 h-2 rounded-full bg-white" />
                     )}
-                  </span>
+                  </button>
                 </div>
               ))}
             </div>
@@ -464,7 +491,7 @@ export default function MonParcoursPage() {
                   {step.label}
                 </p>
                 {step.state === "current" && (
-                  <p className="mt-1 text-[10px] text-[#6b7280]">Saison 2026-2027</p>
+                  <p className="mt-1 text-[10px] text-[#6b7280]">Saison {SEASON_LABEL}</p>
                 )}
               </div>
             ))}
