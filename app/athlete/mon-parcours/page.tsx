@@ -434,7 +434,7 @@ export default function MonParcoursPage() {
       key: "numbers", type: "manual", manualKey: "knows_numbers",
       label: "Connais tes chiffres", done: readiness.knows_numbers === true,
       why: "Un recruteur va te demander ton 40 verges, ton développé, tes stats — sur le coup. Pas savoir, ça fait amateur.",
-      how: "Apprends tes mesurables par cœur. Tes stats de saison aussi. Sois prêt à répondre sans hésiter.",
+      how: "Apprends tes stats par cœur. Sois prêt à répondre sans hésiter.",
     },
     {
       key: "contacted", type: "manual", manualKey: "contacted_program",
