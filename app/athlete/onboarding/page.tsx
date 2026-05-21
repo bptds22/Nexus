@@ -162,7 +162,7 @@ function CivilTeamPicker({
     return (
       <div className="bg-[#13151a] border border-[#2D3748] rounded-lg px-4 py-5">
         <p className="text-[13px] text-[#9CA3AF] mb-1">Aucune équipe civile trouvée pour {sportName || "ton sport"}.</p>
-        <p className="text-[12px] text-[#6b7280] mb-4">Demande à ton entraîneur de créer son équipe sur Nexus, ou continue sans équipe — tu pourras l&apos;associer plus tard.</p>
+        <p className="text-[12px] text-[#6b7280] mb-4">Si ton équipe n&apos;apparaît pas, continue — tu pourras l&apos;associer plus tard.</p>
         <button
           type="button"
           onClick={() => { setSkipped(true); onContinueWithoutTeam(); }}
@@ -256,12 +256,14 @@ type SchoolTeamRow = {
 function SchoolTeamPicker({
   schoolId,
   sportName,
+  selectedCoachId,
   selectedTeamId,
   onSelect,
   onContinueWithoutTeam,
 }: {
   schoolId: string;
   sportName: string;
+  selectedCoachId: string | null;
   selectedTeamId: string | null;
   onSelect: (team: SchoolTeamRow) => void;
   onContinueWithoutTeam: () => void;
@@ -289,13 +291,28 @@ function SchoolTeamPicker({
         return;
       }
 
-      const { data: rows } = await supabase
+      let query = supabase
         .from("teams")
         .select("id, name, age_group, division, gender")
         .eq("school_id", schoolId)
         .eq("sport_id", sportRow.id)
-        .eq("is_active", true)
-        .order("name");
+        .eq("is_active", true);
+
+      // Narrow to the selected coach's teams — but ONLY if that coach
+      // has linked teams (team_coaches). That table fills organically
+      // via the coach portal; until a coach has links, fall back to all
+      // school teams rather than hide them behind an empty picker.
+      if (selectedCoachId) {
+        const { data: ct } = await supabase
+          .from("team_coaches")
+          .select("team_id")
+          .eq("coach_id", selectedCoachId);
+        if (ct && ct.length > 0) {
+          query = query.in("id", ct.map((r) => r.team_id as string));
+        }
+      }
+
+      const { data: rows } = await query.order("name");
 
       if (!cancelled) {
         setTeams((rows ?? []).map((r: Record<string, unknown>) => ({
@@ -311,7 +328,7 @@ function SchoolTeamPicker({
     if (schoolId && sportName) loadTeams();
     else { setTeams([]); setLoading(false); }
     return () => { cancelled = true; };
-  }, [schoolId, sportName]);
+  }, [schoolId, sportName, selectedCoachId]);
 
   const visible = search.trim().length > 0
     ? teams.filter((t) => t.name.toLowerCase().includes(search.toLowerCase().trim()))
@@ -320,7 +337,7 @@ function SchoolTeamPicker({
   if (skipped) {
     return (
       <p className="text-[13px] text-[#9CA3AF] italic">
-        Tu pourras associer ton équipe plus tard — ton coach peut aussi te réclamer depuis son portail.
+        Tu pourras associer ton équipe plus tard.
       </p>
     );
   }
@@ -333,7 +350,7 @@ function SchoolTeamPicker({
     return (
       <div className="bg-[#13151a] border border-[#2D3748] rounded-lg px-4 py-5">
         <p className="text-[13px] text-[#9CA3AF] mb-1">Aucune équipe pour {sportName || "ton sport"} à cette école pour l&apos;instant.</p>
-        <p className="text-[12px] text-[#6b7280] mb-4">Pas grave — finis ton inscription, ton coach pourra te réclamer plus tard.</p>
+        <p className="text-[12px] text-[#6b7280] mb-4">Pas grave — finis ton inscription, tu pourras associer ton équipe plus tard.</p>
         <button
           type="button"
           onClick={() => { setSkipped(true); onContinueWithoutTeam(); }}
@@ -1319,10 +1336,11 @@ export default function AthleteOnboardingPage() {
             {userContext === "scolaire" && selectedSchoolId && primarySport && (
               <div className="mt-5 mb-5">
                 <label className={labelCls}>Ton équipe (optionnel)</label>
-                <p className="text-[12px] text-[#6b7280] mb-3">Sélectionne ton équipe actuelle à {selectedSchoolName || "ton école"}. Si elle n&apos;apparaît pas, ton coach pourra te réclamer plus tard.</p>
+                <p className="text-[12px] text-[#6b7280] mb-3">Sélectionne ton équipe actuelle à {selectedSchoolName || "ton école"}. Si elle n&apos;apparaît pas, tu pourras l&apos;associer plus tard.</p>
                 <SchoolTeamPicker
                   schoolId={selectedSchoolId}
                   sportName={primarySport}
+                  selectedCoachId={selectedCoachId}
                   selectedTeamId={selectedTeamId}
                   onSelect={(t) => { setSelectedTeamId(t.id); setSelectedTeamName(t.name); }}
                   onContinueWithoutTeam={() => { setSelectedTeamId(null); setSelectedTeamName(""); }}
