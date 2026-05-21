@@ -1,16 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
+import AthletePlayerCard from "@/components/shared/AthletePlayerCard";
+import { loadAthleteRaw, mapToRecruiterView } from "@/app/coach/athletes/_data/loadAthleteFromSupabase";
+import type { AthleteProfileRecruiterView } from "@/lib/types/models";
+import { BADGE_CONFIG, BADGE_ORDER, parseDistinctions } from "@/lib/config/badges";
+import { toPng } from "html-to-image";
 
 /* ═══════════════════════════════════════════════════════════════
    /athlete/mon-parcours — "L'été où tout se joue"
 
-   Chunk 2: page scaffold, hero, and the season timeline spine.
-   Modules (card, Mes Cibles, readiness) land in chunks 3-5.
+   Chunk 2: scaffold, hero, season timeline spine.
+   Chunk 3: Module 1 "Ma carte" — reuses AthletePlayerCard, the
+   downloadCard/toPng pattern, and BADGE_CONFIG. Modules 2-3
+   (Mes Cibles, readiness) land in chunks 4-5.
 
    Athlete voice throughout — tutoiement, never a counsellor tone.
-   The timeline uses a season label ("2026-2027"), no date ranges.
 ═══════════════════════════════════════════════════════════════ */
 
 const STEPS = [
@@ -24,6 +30,9 @@ const STEPS = [
 // prep window, so the athlete is at "Camps & essais".
 const CURRENT_STEP = 1;
 
+// The 6 named badges — "custom" is excluded (empty label, free-text).
+const NAMED_BADGES = BADGE_ORDER.filter((k) => k !== "custom");
+
 function readinessColor(pct: number): string {
   if (pct < 40) return "#EF4444";
   if (pct < 70) return "#F59E0B";
@@ -33,6 +42,10 @@ function readinessColor(pct: number): string {
 export default function MonParcoursPage() {
   const [firstName, setFirstName] = useState("");
   const [profileCompletion, setProfileCompletion] = useState(0);
+  const [cardAthlete, setCardAthlete] = useState<AthleteProfileRecruiterView | null>(null);
+  const [earnedBadges, setEarnedBadges] = useState<Set<string>>(new Set());
+  const [downloading, setDownloading] = useState(false);
+  const captureRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     (async () => {
@@ -41,15 +54,71 @@ export default function MonParcoursPage() {
       if (!user) return;
       const { data } = await supabase
         .from("athletes")
-        .select("first_name, profile_completion")
+        .select("id, first_name, profile_completion")
         .eq("user_id", user.id)
         .maybeSingle();
-      if (data) {
-        setFirstName((data.first_name as string) || "");
-        setProfileCompletion((data.profile_completion as number) || 0);
+      if (!data) return;
+      setFirstName((data.first_name as string) || "");
+      setProfileCompletion((data.profile_completion as number) || 0);
+
+      const athleteId = data.id as string;
+
+      // Module 1 — player card. Reuse the coach data loader + the
+      // recruiter-view mapper (same path the settings-page card uses).
+      try {
+        const result = await loadAthleteRaw(athleteId);
+        if (result?.data) {
+          setCardAthlete(mapToRecruiterView(result.data as Record<string, unknown>));
+        }
+      } catch (e) {
+        console.error("[mon-parcours] card load failed:", e);
+      }
+
+      // Module 1 — earned badges. Distinctions are coach-awarded and
+      // live in evaluations.distinctions; union across all evaluations.
+      const { data: evals } = await supabase
+        .from("evaluations")
+        .select("distinctions")
+        .eq("athlete_id", athleteId);
+      if (evals) {
+        const earned = new Set<string>();
+        for (const row of evals) {
+          for (const entry of parseDistinctions((row as { distinctions: unknown }).distinctions)) {
+            earned.add(entry.badge);
+          }
+        }
+        setEarnedBadges(earned);
       }
     })();
   }, []);
+
+  async function downloadCard() {
+    if (!captureRef.current || !cardAthlete) return;
+    setDownloading(true);
+    try {
+      // Wait for fonts so the captured PNG has the right typography.
+      if (typeof document !== "undefined" && document.fonts) {
+        await document.fonts.ready;
+      }
+      const dataUrl = await toPng(captureRef.current, {
+        pixelRatio: 1,
+        cacheBust: true,
+        backgroundColor: undefined,
+        style: { animation: "none", transition: "none" },
+      });
+      const link = document.createElement("a");
+      const safe = `${cardAthlete.firstName}-${cardAthlete.lastName}`
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-");
+      link.download = `nexus-carte-${safe}.png`;
+      link.href = dataUrl;
+      link.click();
+    } catch (e) {
+      console.error("[mon-parcours] card export failed:", e);
+    } finally {
+      setDownloading(false);
+    }
+  }
 
   const pctColor = readinessColor(profileCompletion);
   // Track spans node-0 centre → node-3 centre (left/right inset 12.5%).
@@ -163,6 +232,113 @@ export default function MonParcoursPage() {
           </div>
         </div>
       </div>
+
+      {/* ── Module 1 — Ma carte ── */}
+      <section>
+        <div className="flex items-baseline gap-2.5 mb-1">
+          <span className="font-head text-base font-black text-[#E63946]">01</span>
+          <span className="text-[#3a3d46]">·</span>
+          <h2 className="font-head text-xl sm:text-2xl font-black text-white uppercase tracking-tight">
+            Ma carte
+          </h2>
+        </div>
+        <p className="text-[14px] text-[#9CA3AF] leading-relaxed mb-6 max-w-2xl">
+          C&apos;est toi, en une image. Ta carte se met à jour quand tu progresses. Télécharge-la
+          et publie-la.
+        </p>
+
+        <div className="bg-[#1A1D24] border border-[#2D3748] rounded-xl p-6 sm:p-8">
+          <div className="flex flex-col lg:flex-row gap-8 lg:gap-10">
+            {/* Card + download */}
+            <div className="flex flex-col items-center gap-5 shrink-0">
+              {cardAthlete ? (
+                <AthletePlayerCard a={cardAthlete} />
+              ) : (
+                <div className="w-[300px] h-[460px] rounded-xl bg-[#13151a] border border-[#2D3748] flex items-center justify-center">
+                  <div className="w-7 h-7 border-2 border-[#E63946] border-t-transparent rounded-full animate-spin" />
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={downloadCard}
+                disabled={!cardAthlete || downloading}
+                className="inline-flex items-center gap-2 h-11 px-6 rounded-lg bg-[#E63946] text-[14px] font-bold text-white hover:bg-[#D42B22] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {downloading ? "Génération…" : "Télécharger ma carte"}
+                {!downloading && (
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+                    <polyline points="7 10 12 15 17 10" />
+                    <line x1="12" y1="15" x2="12" y2="3" />
+                  </svg>
+                )}
+              </button>
+            </div>
+
+            {/* Badges to chase */}
+            <div className="flex-1 min-w-0">
+              <h3 className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#6b7280]">
+                Badges à viser
+              </h3>
+              <p className="text-[12px] text-[#6b7280] mt-1 mb-4">
+                Décernés par ton entraîneur — continue de performer pour les mériter.
+              </p>
+              <ul className="space-y-2">
+                {NAMED_BADGES.map((key) => {
+                  const earned = earnedBadges.has(key);
+                  return (
+                    <li
+                      key={key}
+                      className={`flex items-center gap-3 px-3.5 py-3 rounded-lg border ${
+                        earned
+                          ? "bg-[#E63946]/[0.08] border-[#E63946]/30"
+                          : "bg-[#13151a] border-[#2D3748]"
+                      }`}
+                    >
+                      {earned ? (
+                        <span className="w-6 h-6 rounded-full bg-[#E63946] flex items-center justify-center shrink-0">
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M20 6L9 17l-5-5" />
+                          </svg>
+                        </span>
+                      ) : (
+                        <span className="w-6 h-6 rounded-full border-2 border-[#2D3748] shrink-0" />
+                      )}
+                      <span
+                        className={`text-[14px] font-bold ${
+                          earned ? "text-white" : "text-[#6b7280]"
+                        }`}
+                      >
+                        {BADGE_CONFIG[key].label}
+                      </span>
+                      {earned && (
+                        <span className="ml-auto text-[10px] font-black uppercase tracking-wider text-[#E63946]">
+                          Obtenu
+                        </span>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Off-screen full-size render for the html-to-image capture.
+          format="publication" is intrinsically 1080×1350; nx-capture-clean
+          disables the editorial tilt so the PNG is axis-aligned. */}
+      {cardAthlete && (
+        <div
+          aria-hidden="true"
+          className="nx-capture-clean"
+          style={{ position: "fixed", left: -99999, top: 0, pointerEvents: "none", zIndex: -1 }}
+        >
+          <div ref={captureRef}>
+            <AthletePlayerCard a={cardAthlete} format="publication" clipOverflow={true} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
