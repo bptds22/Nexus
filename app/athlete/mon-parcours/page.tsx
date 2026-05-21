@@ -446,22 +446,28 @@ export default function MonParcoursPage() {
           <div className="relative h-7">
             <div className="absolute left-[12.5%] right-[12.5%] top-1/2 -translate-y-1/2 h-[3px] bg-[#2D3748] rounded-full" />
             <div
-              className="absolute left-[12.5%] top-1/2 -translate-y-1/2 h-[3px] rounded-full bg-gradient-to-r from-[#E63946]/60 to-[#E63946]"
+              className="absolute left-[12.5%] top-1/2 -translate-y-1/2 h-[3px] rounded-full bg-gradient-to-r from-[#E63946]/60 to-[#E63946] transition-[width] duration-700 ease-out"
               style={{ width: `${fillWidth}%` }}
             />
             <div className="relative h-full flex">
               {steps.map((step, i) => (
-                <div key={i} className="flex-1 flex items-center justify-center">
+                <div key={i} className="flex-1 flex items-center justify-center relative">
+                  {step.state === "current" && (
+                    <span
+                      aria-hidden
+                      className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-[#E63946]/40 blur-md animate-pulse"
+                    />
+                  )}
                   <button
                     type="button"
                     onClick={() => setPhase(step.phase)}
                     disabled={phaseSaving}
                     aria-label={`Marquer : ${step.label}`}
-                    className={`transition-transform hover:scale-110 disabled:opacity-60 ${
+                    className={`relative transition-all duration-300 hover:scale-110 disabled:opacity-60 ${
                       step.state === "done"
                         ? "w-7 h-7 rounded-full bg-[#E63946] flex items-center justify-center"
                         : step.state === "current"
-                          ? "w-7 h-7 rounded-full bg-[#E63946] ring-4 ring-[#E63946]/25 flex items-center justify-center"
+                          ? "w-7 h-7 rounded-full bg-[#E63946] ring-4 ring-[#E63946]/25 shadow-[0_0_14px_rgba(230,57,70,0.6)] flex items-center justify-center"
                           : "w-7 h-7 rounded-full bg-[#13151a] border-2 border-[#2D3748] hover:border-[#E63946]"
                     }`}
                   >
@@ -484,7 +490,7 @@ export default function MonParcoursPage() {
             {steps.map((step, i) => (
               <div key={i} className="flex-1 px-1 text-center">
                 <p
-                  className={`text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.06em] leading-tight ${
+                  className={`text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.06em] leading-tight transition-colors duration-300 ${
                     step.state === "upcoming" ? "text-[#6b7280]" : "text-white"
                   }`}
                 >
