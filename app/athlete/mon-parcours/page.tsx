@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import AthletePlayerCard from "@/components/shared/AthletePlayerCard";
 import { loadAthleteRaw, mapToRecruiterView } from "@/app/coach/athletes/_data/loadAthleteFromSupabase";
@@ -12,9 +12,10 @@ import { toPng } from "html-to-image";
    /athlete/mon-parcours — "L'été où tout se joue"
 
    Chunk 2: scaffold, hero, season timeline spine.
-   Chunk 3: Module 1 "Ma carte" — reuses AthletePlayerCard, the
-   downloadCard/toPng pattern, and BADGE_CONFIG. Modules 2-3
-   (Mes Cibles, readiness) land in chunks 4-5.
+   Chunk 3: Module 1 "Ma carte" — reuses AthletePlayerCard + the
+   downloadCard/toPng pattern + BADGE_CONFIG.
+   Chunk 4: Module 2 "Mes cibles" — CÉGEP shortlist (name-only),
+   add/remove against the athlete_targets table. Module 3 = chunk 5.
 
    Athlete voice throughout — tutoiement, never a counsellor tone.
 ═══════════════════════════════════════════════════════════════ */
@@ -39,6 +40,20 @@ function readinessColor(pct: number): string {
   return "#22C55E";
 }
 
+type Cegep = { id: string; name: string; city: string | null; region: string | null };
+type TargetRow = { id: string; schoolId: string; name: string; city: string | null; region: string | null };
+
+// schools embed comes back as an object (or array under some PostgREST
+// versions) — normalise to a single record.
+function pickOne<T>(rel: T | T[] | null | undefined): T | null {
+  if (Array.isArray(rel)) return rel[0] ?? null;
+  return rel ?? null;
+}
+
+function locationLine(city: string | null, region: string | null): string {
+  return [city, region].filter(Boolean).join(" · ");
+}
+
 export default function MonParcoursPage() {
   const [firstName, setFirstName] = useState("");
   const [profileCompletion, setProfileCompletion] = useState(0);
@@ -46,6 +61,42 @@ export default function MonParcoursPage() {
   const [earnedBadges, setEarnedBadges] = useState<Set<string>>(new Set());
   const [downloading, setDownloading] = useState(false);
   const captureRef = useRef<HTMLDivElement>(null);
+
+  // Module 2 — Mes cibles
+  const [athleteId, setAthleteId] = useState<string | null>(null);
+  const [targets, setTargets] = useState<TargetRow[]>([]);
+  const [cegeps, setCegeps] = useState<Cegep[]>([]);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [toast, setToast] = useState<{ kind: "success" | "error"; message: string } | null>(null);
+
+  const showToast = useCallback((kind: "success" | "error", message: string) => {
+    setToast({ kind, message });
+    setTimeout(() => setToast(null), 4000);
+  }, []);
+
+  const loadTargets = useCallback(async (id: string) => {
+    const supabase = createClient();
+    const { data } = await supabase
+      .from("athlete_targets")
+      .select("id, school_id, schools!school_id(name, city, region)")
+      .eq("athlete_id", id)
+      .order("created_at", { ascending: true });
+    const rows = (data as Record<string, unknown>[] | null) ?? [];
+    setTargets(
+      rows.map((r) => {
+        const school = pickOne(r.schools as { name?: string; city?: string | null; region?: string | null } | null);
+        return {
+          id: r.id as string,
+          schoolId: r.school_id as string,
+          name: school?.name ?? "CÉGEP",
+          city: school?.city ?? null,
+          region: school?.region ?? null,
+        };
+      }),
+    );
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -61,12 +112,13 @@ export default function MonParcoursPage() {
       setFirstName((data.first_name as string) || "");
       setProfileCompletion((data.profile_completion as number) || 0);
 
-      const athleteId = data.id as string;
+      const id = data.id as string;
+      setAthleteId(id);
 
       // Module 1 — player card. Reuse the coach data loader + the
       // recruiter-view mapper (same path the settings-page card uses).
       try {
-        const result = await loadAthleteRaw(athleteId);
+        const result = await loadAthleteRaw(id);
         if (result?.data) {
           setCardAthlete(mapToRecruiterView(result.data as Record<string, unknown>));
         }
@@ -79,7 +131,7 @@ export default function MonParcoursPage() {
       const { data: evals } = await supabase
         .from("evaluations")
         .select("distinctions")
-        .eq("athlete_id", athleteId);
+        .eq("athlete_id", id);
       if (evals) {
         const earned = new Set<string>();
         for (const row of evals) {
@@ -89,8 +141,17 @@ export default function MonParcoursPage() {
         }
         setEarnedBadges(earned);
       }
+
+      // Module 2 — saved targets + the CÉGEP list for the picker.
+      await loadTargets(id);
+      const { data: cegepRows } = await supabase
+        .from("schools")
+        .select("id, name, city, region")
+        .eq("type", "CEGEP")
+        .order("name", { ascending: true });
+      setCegeps((cegepRows as Cegep[] | null) ?? []);
     })();
-  }, []);
+  }, [loadTargets]);
 
   async function downloadCard() {
     if (!captureRef.current || !cardAthlete) return;
@@ -120,6 +181,57 @@ export default function MonParcoursPage() {
     }
   }
 
+  async function addTarget(cegepId: string) {
+    if (!athleteId) return;
+    setBusy(true);
+    try {
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from("athlete_targets")
+        .insert({ athlete_id: athleteId, school_id: cegepId, rank: targets.length + 1 })
+        .select("id");
+      if (error) {
+        console.error("[mon-parcours] add target:", error);
+        showToast("error", `Erreur : ${error.message}`);
+        return;
+      }
+      // 0 rows + no error = RLS silently filtered the insert.
+      if (!data || data.length === 0) {
+        showToast("error", "Action refusée — vérifie tes permissions.");
+        return;
+      }
+      await loadTargets(athleteId);
+      showToast("success", "CÉGEP ajouté à tes cibles");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function removeTarget(targetId: string) {
+    if (!athleteId) return;
+    setBusy(true);
+    try {
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from("athlete_targets")
+        .delete()
+        .eq("id", targetId)
+        .select("id");
+      if (error) {
+        console.error("[mon-parcours] remove target:", error);
+        showToast("error", `Erreur : ${error.message}`);
+        return;
+      }
+      if (!data || data.length === 0) {
+        showToast("error", "Action refusée — vérifie tes permissions.");
+        return;
+      }
+      await loadTargets(athleteId);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   const pctColor = readinessColor(profileCompletion);
   // Track spans node-0 centre → node-3 centre (left/right inset 12.5%).
   // Fill reaches the current node: one 25%-of-container segment per step.
@@ -129,6 +241,13 @@ export default function MonParcoursPage() {
     ...s,
     state: i < CURRENT_STEP ? "done" : i === CURRENT_STEP ? "current" : "upcoming",
   }));
+
+  // CÉGEPs not yet targeted, filtered by the picker search.
+  const targetedIds = new Set(targets.map((t) => t.schoolId));
+  const q = search.trim().toLowerCase();
+  const addableCegeps = cegeps
+    .filter((c) => !targetedIds.has(c.id))
+    .filter((c) => (q ? c.name.toLowerCase().includes(q) : true));
 
   return (
     <div className="px-6 sm:px-10 py-8 max-w-[1100px] mx-auto space-y-8">
@@ -325,6 +444,75 @@ export default function MonParcoursPage() {
         </div>
       </section>
 
+      {/* ── Module 2 — Mes cibles ── */}
+      <section>
+        <div className="flex items-baseline gap-2.5 mb-1">
+          <span className="font-head text-base font-black text-[#E63946]">02</span>
+          <span className="text-[#3a3d46]">·</span>
+          <h2 className="font-head text-xl sm:text-2xl font-black text-white uppercase tracking-tight">
+            Mes cibles
+          </h2>
+        </div>
+        <p className="text-[14px] text-[#9CA3AF] leading-relaxed mb-6 max-w-2xl">
+          Choisis les CÉGEPs où tu veux jouer. Construis ta liste, sache vers quoi tu travailles.
+        </p>
+
+        <div className="bg-[#1A1D24] border border-[#2D3748] rounded-xl p-6 sm:p-8">
+          {targets.length === 0 ? (
+            <div className="text-center py-8">
+              <div className="w-12 h-12 rounded-full bg-[#13151a] border border-[#2D3748] flex items-center justify-center mx-auto mb-3">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                </svg>
+              </div>
+              <p className="text-[14px] text-[#9CA3AF]">
+                Tu n&apos;as pas encore de cibles — ajoute ton premier CÉGEP.
+              </p>
+            </div>
+          ) : (
+            <ul className="space-y-2.5 mb-5">
+              {targets.map((t) => {
+                const loc = locationLine(t.city, t.region);
+                return (
+                  <li
+                    key={t.id}
+                    className="flex items-center gap-3 px-4 py-3.5 rounded-lg bg-[#13151a] border border-[#2D3748]"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[14px] font-bold text-white truncate">{t.name}</p>
+                      {loc && <p className="text-[12px] text-[#6b7280] truncate">{loc}</p>}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeTarget(t.id)}
+                      disabled={busy}
+                      aria-label={`Retirer ${t.name}`}
+                      className="w-8 h-8 shrink-0 rounded-lg flex items-center justify-center text-[#6b7280] hover:text-[#E63946] hover:bg-[#E63946]/10 transition-colors disabled:opacity-40"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M18 6L6 18" /><path d="M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+
+          <button
+            type="button"
+            onClick={() => { setSearch(""); setPickerOpen(true); }}
+            disabled={!athleteId}
+            className="inline-flex items-center gap-2 h-11 px-5 rounded-lg bg-[#13151a] border border-[#2a2d36] text-[14px] font-bold text-white hover:border-[#E63946] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 5v14" /><path d="M5 12h14" />
+            </svg>
+            Ajouter un CÉGEP
+          </button>
+        </div>
+      </section>
+
       {/* Off-screen full-size render for the html-to-image capture.
           format="publication" is intrinsically 1080×1350; nx-capture-clean
           disables the editorial tilt so the PNG is axis-aligned. */}
@@ -337,6 +525,90 @@ export default function MonParcoursPage() {
           <div ref={captureRef}>
             <AthletePlayerCard a={cardAthlete} format="publication" clipOverflow={true} />
           </div>
+        </div>
+      )}
+
+      {/* ── CÉGEP picker modal ── */}
+      {pickerOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+          onClick={() => setPickerOpen(false)}
+        >
+          <div
+            className="w-full max-w-md bg-[#1A1D24] border border-white/10 rounded-xl shadow-2xl flex flex-col max-h-[80vh]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[#2D3748]">
+              <h3 className="font-head text-base font-black text-white uppercase tracking-tight">
+                Ajouter un CÉGEP
+              </h3>
+              <button
+                type="button"
+                onClick={() => setPickerOpen(false)}
+                aria-label="Fermer"
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-[#6b7280] hover:text-white hover:bg-white/5 transition-colors"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M18 6L6 18" /><path d="M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="p-4 border-b border-[#2D3748]">
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Rechercher un CÉGEP…"
+                aria-label="Rechercher un CÉGEP"
+                className="w-full bg-[#13151a] border border-[#2a2d36] rounded-lg px-4 py-2.5 text-[14px] text-[#e0e0e0] placeholder:text-[#4a4d56] focus:border-[#E63946] outline-none transition-colors"
+              />
+            </div>
+
+            <div className="overflow-y-auto nx-scrollbar p-2">
+              {addableCegeps.length === 0 ? (
+                <p className="text-[13px] text-[#6b7280] text-center py-8">
+                  {cegeps.length > 0 && targetedIds.size >= cegeps.length
+                    ? "Tu as ajouté tous les CÉGEPs disponibles."
+                    : "Aucun CÉGEP trouvé."}
+                </p>
+              ) : (
+                addableCegeps.map((c) => {
+                  const loc = locationLine(c.city, c.region);
+                  return (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => addTarget(c.id)}
+                      disabled={busy}
+                      className="w-full flex items-center gap-3 text-left px-3.5 py-3 rounded-lg hover:bg-white/5 transition-colors disabled:opacity-40"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[14px] font-bold text-white truncate">{c.name}</p>
+                        {loc && <p className="text-[12px] text-[#6b7280] truncate">{loc}</p>}
+                      </div>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                        <path d="M12 5v14" /><path d="M5 12h14" />
+                      </svg>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toast */}
+      {toast && (
+        <div
+          className={`fixed bottom-6 right-6 z-[60] px-5 py-3 rounded-lg text-[14px] font-bold shadow-lg border ${
+            toast.kind === "success"
+              ? "bg-[#22C55E]/15 text-[#22C55E] border-[#22C55E]/30"
+              : "bg-[#EF4444]/15 text-[#EF4444] border-[#EF4444]/30"
+          }`}
+        >
+          {toast.message}
         </div>
       )}
     </div>
