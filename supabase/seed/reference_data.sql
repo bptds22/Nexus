@@ -1691,3 +1691,720 @@ UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, 'e
 SELECT count(*) AS bridged FROM public.schools WHERE rseq_institution_id IS NOT NULL;
 
 COMMIT;
+
+-- RSEQ basketball teams — populated from the standings scrape.
+-- school_id resolves via the GUID join: schools.rseq_institution_id is set
+-- earlier in this seed (RSEQ bridge block), so each INSERT … SELECT lands
+-- on the right school. Teams on unbridged / universitaire institutions are
+-- not emitted. Season intentionally not stored.
+-- ================================================================
+BEGIN;
+
+-- Collège Ahuntsic  —  Ahuntsic / D1 / Collégial / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Ahuntsic', 'D1', 'RSEQ — Provincial', 'Collégial', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '6ef80f06-c78b-40ad-bb6e-8ec578dffcfd';
+-- Champlain College Lennoxville  —  Ch.-Lennoxville / D1 / Collégial / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Ch.-Lennoxville', 'D1', 'RSEQ — Provincial', 'Collégial', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = 'dff9008f-4586-4145-96ec-03ced687de6d';
+-- Champlain College Saint-Lambert  —  Ch.-St-Lambert / D1 / Collégial / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Ch.-St-Lambert', 'D1', 'RSEQ — Provincial', 'Collégial', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '95f51ccf-0424-40df-b3b0-78e0858b67e2';
+-- Dawson College  —  Dawson / D1 / Collégial / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Dawson', 'D1', 'RSEQ — Provincial', 'Collégial', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '0e892f13-171e-4ada-887e-e9dcabd286c4';
+-- Collège Montmorency  —  Montmorency / D1 / Collégial / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Montmorency', 'D1', 'RSEQ — Provincial', 'Collégial', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = 'd68f21e3-3635-43ec-9eec-645bad3f50fc';
+-- Cégep de Sainte-Foy  —  Sainte-Foy / D1 / Collégial / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Sainte-Foy', 'D1', 'RSEQ — Provincial', 'Collégial', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = 'fb3aae30-d707-4854-ac1f-f471d7e27f6f';
+-- Cégep de Saint-Jean-sur-Richelieu  —  Saint-Jean / D1 / Collégial / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Saint-Jean', 'D1', 'RSEQ — Provincial', 'Collégial', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = 'eb646e5f-53ed-4fe7-b9d0-e31f57870232';
+-- Cégep de Trois-Rivières  —  Trois-Rivières / D1 / Collégial / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Trois-Rivières', 'D1', 'RSEQ — Provincial', 'Collégial', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '5c81d21b-afdd-4db6-ab0e-1541fd1ce7da';
+-- Vanier College  —  Vanier / D1 / Collégial / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Vanier', 'D1', 'RSEQ — Provincial', 'Collégial', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '22ff13d0-7023-4c2f-a748-415e211586f8';
+-- Collège Ahuntsic  —  Ahuntsic / D1 / Collégial / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Ahuntsic', 'D1', 'RSEQ — Provincial', 'Collégial', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '6ef80f06-c78b-40ad-bb6e-8ec578dffcfd';
+-- Champlain College Saint-Lambert  —  Ch.-St-Lambert / D1 / Collégial / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Ch.-St-Lambert', 'D1', 'RSEQ — Provincial', 'Collégial', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '95f51ccf-0424-40df-b3b0-78e0858b67e2';
+-- Dawson College  —  Dawson / D1 / Collégial / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Dawson', 'D1', 'RSEQ — Provincial', 'Collégial', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '0e892f13-171e-4ada-887e-e9dcabd286c4';
+-- Cégep Édouard-Montpetit  —  Édouard-Montpetit / D1 / Collégial / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Édouard-Montpetit', 'D1', 'RSEQ — Provincial', 'Collégial', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '8f5daba9-7301-4e9c-aa64-5b291ba87261';
+-- Collège Jean-de-Brébeuf  —  Jean-de-Brébeuf / D1 / Collégial / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Jean-de-Brébeuf', 'D1', 'RSEQ — Provincial', 'Collégial', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = 'c4830e7e-862c-45fb-8819-270f5a5629d4';
+-- John Abbott College  —  John Abbott / D1 / Collégial / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'John Abbott', 'D1', 'RSEQ — Provincial', 'Collégial', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '0de88660-bf06-4982-90e7-922bb03faafd';
+-- Collège Montmorency  —  Montmorency / D1 / Collégial / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Montmorency', 'D1', 'RSEQ — Provincial', 'Collégial', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = 'd68f21e3-3635-43ec-9eec-645bad3f50fc';
+-- Cégep de l'Outaouais  —  Outaouais / D1 / Collégial / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Outaouais', 'D1', 'RSEQ — Provincial', 'Collégial', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '8ce89fbe-0fc0-4630-b5a7-5680bd6bc655';
+-- Cégep de Sainte-Foy  —  Sainte-Foy / D1 / Collégial / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Sainte-Foy', 'D1', 'RSEQ — Provincial', 'Collégial', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = 'fb3aae30-d707-4854-ac1f-f471d7e27f6f';
+-- Cégep de Sherbrooke  —  Sherbrooke / D1 / Collégial / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Sherbrooke', 'D1', 'RSEQ — Provincial', 'Collégial', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '095e8f11-f6e5-4f03-89fe-1478cbc6df14';
+-- Cégep de Thetford  —  Thetford / D1 / Collégial / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Thetford', 'D1', 'RSEQ — Provincial', 'Collégial', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = 'eaa606f0-ed1e-44a0-bbeb-f7ebadc73f49';
+-- Vanier College  —  Vanier / D1 / Collégial / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Vanier', 'D1', 'RSEQ — Provincial', 'Collégial', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '22ff13d0-7023-4c2f-a748-415e211586f8';
+-- Champlain College St-Lawrence  —  Ch.-St-Lawrence / D2 / Collégial / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Ch.-St-Lawrence', 'D2', 'RSEQ — Nord-Est — QCA-EDQ-SLSJ', 'Collégial', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '30b7b1d1-bf5a-4704-9654-8c2c42d52b8c';
+-- Cégep de Chicoutimi  —  Chicoutimi / D2 / Collégial / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Chicoutimi', 'D2', 'RSEQ — Nord-Est — QCA-EDQ-SLSJ', 'Collégial', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '869aed10-2ddb-4e77-b41b-b9a7c64500e9';
+-- Cégep Garneau  —  Garneau / D2 / Collégial / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Garneau', 'D2', 'RSEQ — Nord-Est — QCA-EDQ-SLSJ', 'Collégial', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '7d33abf5-461d-4b7d-85f7-27165c7fbc14';
+-- Cégep de Jonquière  —  Jonquière / D2 / Collégial / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Jonquière', 'D2', 'RSEQ — Nord-Est — QCA-EDQ-SLSJ', 'Collégial', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '0847e395-6b47-4cce-b13a-7849211d8a2d';
+-- Cégep de Limoilou  —  Limoilou / D2 / Collégial / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Limoilou', 'D2', 'RSEQ — Nord-Est — QCA-EDQ-SLSJ', 'Collégial', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = 'a65ee58e-e0b7-4960-82c1-68d7d07f557e';
+-- Cégep de Sainte-Foy  —  Sainte-Foy / D2 / Collégial / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Sainte-Foy', 'D2', 'RSEQ — Nord-Est — QCA-EDQ-SLSJ', 'Collégial', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = 'fb3aae30-d707-4854-ac1f-f471d7e27f6f';
+-- Cégep de Thetford  —  Thetford / D2 / Collégial / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Thetford', 'D2', 'RSEQ — Nord-Est — QCA-EDQ-SLSJ', 'Collégial', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = 'eaa606f0-ed1e-44a0-bbeb-f7ebadc73f49';
+-- Cégep de Baie-Comeau  —  Baie-Comeau / D3 / Collégial / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Baie-Comeau', 'D3', 'RSEQ — Nord-Est', 'Collégial', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '93378c11-4521-49f0-be38-cf16598f3e0d';
+-- Cégep Beauce-Appalaches  —  Beauce-Appalaches / D3 / Collégial / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Beauce-Appalaches', 'D3', 'RSEQ — Nord-Est', 'Collégial', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = 'ed73ba4e-5d0f-4408-ae13-42adc783e6e0';
+-- Champlain College St-Lawrence  —  Ch.-St-Lawrence / D3 / Collégial / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Ch.-St-Lawrence', 'D3', 'RSEQ — Nord-Est', 'Collégial', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '30b7b1d1-bf5a-4704-9654-8c2c42d52b8c';
+-- Cégep Garneau  —  Garneau / D3 / Collégial / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Garneau', 'D3', 'RSEQ — Nord-Est', 'Collégial', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '7d33abf5-461d-4b7d-85f7-27165c7fbc14';
+-- Cégep de Lévis  —  Lévis / D3 / Collégial / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Lévis', 'D3', 'RSEQ — Nord-Est', 'Collégial', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '48398f9e-6604-4ad5-abba-1b1b829d2752';
+-- Cégep de Limoilou  —  Limoilou / D3 / Collégial / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Limoilou', 'D3', 'RSEQ — Nord-Est', 'Collégial', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = 'a65ee58e-e0b7-4960-82c1-68d7d07f557e';
+-- Collège Mérici  —  Mérici / D3 / Collégial / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Mérici', 'D3', 'RSEQ — Nord-Est', 'Collégial', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '92fde0a3-4e71-4a91-b8bb-6fab51b2d72f';
+-- Campus Notre-Dame-de-Foy  —  Notre-Dame / D3 / Collégial / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Notre-Dame', 'D3', 'RSEQ — Nord-Est', 'Collégial', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = 'db18d59a-c6de-4e76-901e-c19388d3f4b6';
+-- Cégep de Sainte-Foy  —  Sainte-Foy / D3 / Collégial / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Sainte-Foy', 'D3', 'RSEQ — Nord-Est', 'Collégial', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = 'fb3aae30-d707-4854-ac1f-f471d7e27f6f';
+-- Cégep d'Alma  —  Alma / D2 / Collégial / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Alma', 'D2', 'RSEQ — Nord-Est — QCA-EDQ-SLSJ', 'Collégial', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = 'a68f5b47-4eee-4806-9366-8e36931a92fc';
+-- Champlain College St-Lawrence  —  Ch.-St-Lawrence / D2 / Collégial / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Ch.-St-Lawrence', 'D2', 'RSEQ — Nord-Est — QCA-EDQ-SLSJ', 'Collégial', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '30b7b1d1-bf5a-4704-9654-8c2c42d52b8c';
+-- Cégep Garneau  —  Garneau / D2 / Collégial / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Garneau', 'D2', 'RSEQ — Nord-Est — QCA-EDQ-SLSJ', 'Collégial', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '7d33abf5-461d-4b7d-85f7-27165c7fbc14';
+-- Cégep de Jonquière  —  Jonquière / D2 / Collégial / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Jonquière', 'D2', 'RSEQ — Nord-Est — QCA-EDQ-SLSJ', 'Collégial', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '0847e395-6b47-4cce-b13a-7849211d8a2d';
+-- Cégep de Limoilou  —  Limoilou / D2 / Collégial / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Limoilou', 'D2', 'RSEQ — Nord-Est — QCA-EDQ-SLSJ', 'Collégial', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = 'a65ee58e-e0b7-4960-82c1-68d7d07f557e';
+-- Cégep de Rimouski  —  Rimouski / D2 / Collégial / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Rimouski', 'D2', 'RSEQ — Nord-Est — QCA-EDQ-SLSJ', 'Collégial', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '657bd035-d5e8-49c8-98e0-576e9e461e9d';
+-- Cégep de Sainte-Foy  —  Sainte-Foy / D2 / Collégial / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Sainte-Foy', 'D2', 'RSEQ — Nord-Est — QCA-EDQ-SLSJ', 'Collégial', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = 'fb3aae30-d707-4854-ac1f-f471d7e27f6f';
+-- Cégep de Thetford  —  Thetford / D2 / Collégial / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Thetford', 'D2', 'RSEQ — Nord-Est — QCA-EDQ-SLSJ', 'Collégial', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = 'eaa606f0-ed1e-44a0-bbeb-f7ebadc73f49';
+-- Cégep Beauce-Appalaches  —  Beauce-Appalaches / D3 / Collégial / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Beauce-Appalaches', 'D3', 'RSEQ — Nord-Est — QCA-EDQ', 'Collégial', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = 'ed73ba4e-5d0f-4408-ae13-42adc783e6e0';
+-- Cégep Garneau  —  Garneau / D3 / Collégial / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Garneau', 'D3', 'RSEQ — Nord-Est — QCA-EDQ', 'Collégial', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '7d33abf5-461d-4b7d-85f7-27165c7fbc14';
+-- Cégep de La Pocatière  —  La Pocatière / D3 / Collégial / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'La Pocatière', 'D3', 'RSEQ — Nord-Est — QCA-EDQ', 'Collégial', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '1ecb8bcd-cb80-4abb-875c-a4814a4b9bf6';
+-- Cégep de Lévis  —  Lévis / D3 / Collégial / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Lévis', 'D3', 'RSEQ — Nord-Est — QCA-EDQ', 'Collégial', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '48398f9e-6604-4ad5-abba-1b1b829d2752';
+-- Cégep de Limoilou  —  Limoilou / D3 / Collégial / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Limoilou', 'D3', 'RSEQ — Nord-Est — QCA-EDQ', 'Collégial', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = 'a65ee58e-e0b7-4960-82c1-68d7d07f557e';
+-- Cégep de Matane  —  Matane / D3 / Collégial / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Matane', 'D3', 'RSEQ — Nord-Est — QCA-EDQ', 'Collégial', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '0e9b0b9e-1ac0-4949-b59f-b81b550d291b';
+-- Collège Mérici  —  Mérici / D3 / Collégial / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Mérici', 'D3', 'RSEQ — Nord-Est — QCA-EDQ', 'Collégial', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '92fde0a3-4e71-4a91-b8bb-6fab51b2d72f';
+-- Campus Notre-Dame-de-Foy  —  Notre-Dame / D3 / Collégial / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Notre-Dame', 'D3', 'RSEQ — Nord-Est — QCA-EDQ', 'Collégial', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = 'db18d59a-c6de-4e76-901e-c19388d3f4b6';
+-- Cégep de Rivière-du-Loup  —  Rivière-du-Loup / D3 / Collégial / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Rivière-du-Loup', 'D3', 'RSEQ — Nord-Est — QCA-EDQ', 'Collégial', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '2b492c7b-513e-451d-bc88-e1e1a7e01e35';
+-- Cégep de Sainte-Foy  —  Sainte-Foy / D3 / Collégial / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Sainte-Foy', 'D3', 'RSEQ — Nord-Est — QCA-EDQ', 'Collégial', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = 'fb3aae30-d707-4854-ac1f-f471d7e27f6f';
+-- Cégep de l'Abitibi-Témiscamingue  —  Abitibi-Témisc. / D2 / Collégial / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Abitibi-Témisc.', 'D2', 'RSEQ — Sud-Ouest', 'Collégial', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = 'b76b2736-571a-402b-be36-c2df541e0dcc';
+-- Collège Ahuntsic  —  Ahuntsic / D2 / Collégial / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Ahuntsic', 'D2', 'RSEQ — Sud-Ouest', 'Collégial', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '6ef80f06-c78b-40ad-bb6e-8ec578dffcfd';
+-- Dawson College  —  Dawson / D2 / Collégial / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Dawson', 'D2', 'RSEQ — Sud-Ouest', 'Collégial', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '0e892f13-171e-4ada-887e-e9dcabd286c4';
+-- Cégep Édouard-Montpetit  —  Édouard-Montpetit / D2 / Collégial / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Édouard-Montpetit', 'D2', 'RSEQ — Sud-Ouest', 'Collégial', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '8f5daba9-7301-4e9c-aa64-5b291ba87261';
+-- Collège Montmorency  —  Montmorency / D2 / Collégial / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Montmorency', 'D2', 'RSEQ — Sud-Ouest', 'Collégial', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = 'd68f21e3-3635-43ec-9eec-645bad3f50fc';
+-- Cégep de Saint-Jérôme  —  Saint-Jérôme / D2 / Collégial / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Saint-Jérôme', 'D2', 'RSEQ — Sud-Ouest', 'Collégial', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '3178e485-f97d-4ef3-aca8-5238cfd3ebbc';
+-- Cégep André-Laurendeau  —  André-Laurendeau / D3 / Collégial / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'André-Laurendeau', 'D3', 'RSEQ — Sud-Ouest', 'Collégial', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '9c98f01c-0c65-45be-b8cb-52118b0ee7a5';
+-- Collège de Bois-de-Boulogne  —  Bois-de-Boulogne / D3 / Collégial / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Bois-de-Boulogne', 'D3', 'RSEQ — Sud-Ouest', 'Collégial', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '905046ed-b0fa-4268-bc79-1a31b14e9e1e';
+-- Heritage College  —  Héritage / D3 / Collégial / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Héritage', 'D3', 'RSEQ — Sud-Ouest', 'Collégial', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '20feefb7-9e6e-4afe-953b-09dd08697223';
+-- Collège Jean-de-Brébeuf  —  Jean-de-Brébeuf / D3 / Collégial / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Jean-de-Brébeuf', 'D3', 'RSEQ — Sud-Ouest', 'Collégial', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = 'c4830e7e-862c-45fb-8819-270f5a5629d4';
+-- John Abbott College  —  John Abbott / D3 / Collégial / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'John Abbott', 'D3', 'RSEQ — Sud-Ouest', 'Collégial', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '0de88660-bf06-4982-90e7-922bb03faafd';
+-- Collège de l'Assomption  —  L'Assomption / D3 / Collégial / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'L''Assomption', 'D3', 'RSEQ — Sud-Ouest', 'Collégial', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '15a7435d-4df1-49b1-9cb1-a8b42efbe3d0';
+-- Collège Lionel-Groulx  —  Lionel-Groulx / D3 / Collégial / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Lionel-Groulx', 'D3', 'RSEQ — Sud-Ouest', 'Collégial', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '59197f81-d4fa-46fe-ab55-1e377f017f28';
+-- Cégep Marie-Victorin  —  Marie-Victorin / D3 / Collégial / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Marie-Victorin', 'D3', 'RSEQ — Sud-Ouest', 'Collégial', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '344a9be1-03c0-458f-a374-36c57a3e3d90';
+-- Cégep de l'Outaouais  —  Outaouais / D3 / Collégial / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Outaouais', 'D3', 'RSEQ — Sud-Ouest', 'Collégial', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '8ce89fbe-0fc0-4630-b5a7-5680bd6bc655';
+-- Collège de Rosemont  —  Rosemont / D3 / Collégial / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Rosemont', 'D3', 'RSEQ — Sud-Ouest', 'Collégial', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '53c950c5-945d-4108-83f3-fbac6e0b17f8';
+-- Cégep de Saint-Laurent  —  Saint-Laurent / D3 / Collégial / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Saint-Laurent', 'D3', 'RSEQ — Sud-Ouest', 'Collégial', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '2311c152-f852-416c-8798-ab17ca811fd7';
+-- Cégep du Vieux Montréal  —  Vieux Montréal / D3 / Collégial / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Vieux Montréal', 'D3', 'RSEQ — Sud-Ouest', 'Collégial', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = 'e00c66a7-c4f1-490b-b6bc-6cefc0ee2376';
+-- Collège Ahuntsic  —  Ahuntsic / D2 / Collégial / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Ahuntsic', 'D2', 'RSEQ — Sud-Ouest', 'Collégial', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '6ef80f06-c78b-40ad-bb6e-8ec578dffcfd';
+-- Cégep André-Laurendeau  —  André-Laurendeau / D2 / Collégial / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'André-Laurendeau', 'D2', 'RSEQ — Sud-Ouest', 'Collégial', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '9c98f01c-0c65-45be-b8cb-52118b0ee7a5';
+-- Dawson College  —  Dawson / D2 / Collégial / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Dawson', 'D2', 'RSEQ — Sud-Ouest', 'Collégial', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '0e892f13-171e-4ada-887e-e9dcabd286c4';
+-- Cégep Édouard-Montpetit  —  Édouard-Montpetit / D2 / Collégial / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Édouard-Montpetit', 'D2', 'RSEQ — Sud-Ouest', 'Collégial', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '8f5daba9-7301-4e9c-aa64-5b291ba87261';
+-- Heritage College  —  Héritage / D2 / Collégial / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Héritage', 'D2', 'RSEQ — Sud-Ouest', 'Collégial', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '20feefb7-9e6e-4afe-953b-09dd08697223';
+-- Collège Jean-de-Brébeuf  —  Jean-de-Brébeuf / D2 / Collégial / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Jean-de-Brébeuf', 'D2', 'RSEQ — Sud-Ouest', 'Collégial', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = 'c4830e7e-862c-45fb-8819-270f5a5629d4';
+-- Collège Montmorency  —  Montmorency / D2 / Collégial / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Montmorency', 'D2', 'RSEQ — Sud-Ouest', 'Collégial', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = 'd68f21e3-3635-43ec-9eec-645bad3f50fc';
+-- Cégep de l'Outaouais  —  Outaouais / D2 / Collégial / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Outaouais', 'D2', 'RSEQ — Sud-Ouest', 'Collégial', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '8ce89fbe-0fc0-4630-b5a7-5680bd6bc655';
+-- Vanier College  —  Vanier / D2 / Collégial / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Vanier', 'D2', 'RSEQ — Sud-Ouest', 'Collégial', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '22ff13d0-7023-4c2f-a748-415e211586f8';
+-- Cégep de l'Abitibi-Témiscamingue  —  Abitibi-Témisc. / D3 / Collégial / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Abitibi-Témisc.', 'D3', 'RSEQ — Sud-Ouest — A', 'Collégial', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = 'b76b2736-571a-402b-be36-c2df541e0dcc';
+-- Collège Lionel-Groulx  —  Lionel-Groulx / D3 / Collégial / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Lionel-Groulx', 'D3', 'RSEQ — Sud-Ouest — A', 'Collégial', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '59197f81-d4fa-46fe-ab55-1e377f017f28';
+-- Collège de Maisonneuve  —  Maisonneuve / D3 / Collégial / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Maisonneuve', 'D3', 'RSEQ — Sud-Ouest — A', 'Collégial', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '38962c87-b991-4e60-b632-7da3a1b28a65';
+-- Cégep de Saint-Jean-sur-Richelieu  —  Saint-Jean / D3 / Collégial / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Saint-Jean', 'D3', 'RSEQ — Sud-Ouest — A', 'Collégial', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = 'eb646e5f-53ed-4fe7-b9d0-e31f57870232';
+-- Cégep de Saint-Jérôme  —  Saint-Jérôme / D3 / Collégial / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Saint-Jérôme', 'D3', 'RSEQ — Sud-Ouest — A', 'Collégial', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '3178e485-f97d-4ef3-aca8-5238cfd3ebbc';
+-- Cégep de Saint-Laurent  —  Saint-Laurent / D3 / Collégial / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Saint-Laurent', 'D3', 'RSEQ — Sud-Ouest — A', 'Collégial', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '2311c152-f852-416c-8798-ab17ca811fd7';
+-- Collège de Valleyfield  —  Valleyfield / D3 / Collégial / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Valleyfield', 'D3', 'RSEQ — Sud-Ouest — A', 'Collégial', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '71b02ae2-2c88-42ce-83ca-0b145f571ef8';
+-- Académie Saint-Louis  —  Académie Saint-Louis / D1 / Benjamin / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Académie Saint-Louis', 'D1', 'RSEQ', 'Benjamin', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = 'f1cff57a-f994-429b-9f68-3d3b8bbf9d24';
+-- Collège Notre-Dame-de-Lourdes  —  Coll. Notre-Dame-de-Lourdes / D1 / Benjamin / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Coll. Notre-Dame-de-Lourdes', 'D1', 'RSEQ', 'Benjamin', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '2a32eb09-dfc0-4fd8-a266-89a2c5f8befc';
+-- Collège St-Jean-Vianney  —  Collège St-Jean-Vianney / D1 / Benjamin / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Collège St-Jean-Vianney', 'D1', 'RSEQ', 'Benjamin', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '4a90a041-8e50-45b9-9368-b6f45e018f97';
+-- École secondaire Antoine-de-Saint-Exupéry  —  É. sec. Antoine-de-St-Exupéry / D1 / Benjamin / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'É. sec. Antoine-de-St-Exupéry', 'D1', 'RSEQ', 'Benjamin', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '60a333f6-c2f3-417b-ba69-158debdaea3b';
+-- École Gérard-Filion  —  É. sec. Gérard-Filion / D1 / Benjamin / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'É. sec. Gérard-Filion', 'D1', 'RSEQ', 'Benjamin', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '1d7a6b55-d993-428b-a932-cf9527654769';
+-- École secondaire Henri-Bourassa  —  É. sec. Henri-Bourassa / D1 / Benjamin / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'É. sec. Henri-Bourassa', 'D1', 'RSEQ', 'Benjamin', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '0899d6a1-6726-4c8b-84cb-fe61da08940e';
+-- École secondaire Le boisé  —  É. sec. Le Boisé / D1 / Benjamin / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'É. sec. Le Boisé', 'D1', 'RSEQ', 'Benjamin', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '20dbb037-19a0-4dca-9486-532bd70b0f04';
+-- Séminaire Saint-François  —  Séminaire Saint-François / D1 / Benjamin / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Séminaire Saint-François', 'D1', 'RSEQ', 'Benjamin', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '44d2fa63-6b97-46ec-8668-79988e31c667';
+-- Collège Jésus-Marie de Sillery  —  Coll. Jésus-Marie de Sillery / D2 / Benjamin / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Coll. Jésus-Marie de Sillery', 'D2', 'RSEQ', 'Benjamin', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '60218181-a513-4713-9c23-6123399fd6c2';
+-- Collège Charles-Lemoyne  —  Collège Charles-Lemoyne / D2 / Benjamin / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Collège Charles-Lemoyne', 'D2', 'RSEQ', 'Benjamin', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '76774ba8-a447-46f9-99b5-44a8c890589f';
+-- Polyvalente Hyacinthe-Delorme  —  É. pol. Hyacinthe-Delorme / D2 / Benjamin / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'É. pol. Hyacinthe-Delorme', 'D2', 'RSEQ', 'Benjamin', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '52cf6a0e-576c-4bb1-922a-c3d57b538eba';
+-- École secondaire d'Amos  —  É. sec. d'Amos / D2 / Benjamin / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'É. sec. d''Amos', 'D2', 'RSEQ', 'Benjamin', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '59037b4d-f9e6-4dda-bedd-0b7b93390c49';
+-- École secondaire De Rochebelle  —  É. sec. de Rochebelle / D2 / Benjamin / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'É. sec. de Rochebelle', 'D2', 'RSEQ', 'Benjamin', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = 'a7f8edba-ac21-4ddd-9aa5-9f465e5a7433';
+-- École secondaire Félix-Leclerc  —  É. sec. Félix-Leclerc / D2 / Benjamin / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'É. sec. Félix-Leclerc', 'D2', 'RSEQ', 'Benjamin', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '70eccd36-7a97-456e-8555-d7f067105e0e';
+-- Collège Durocher Saint-Lambert  —  Coll. Durocher Saint-Lambert / D1 / Benjamin / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Coll. Durocher Saint-Lambert', 'D1', 'RSEQ', 'Benjamin', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '0de9d600-4d89-481f-8823-b2fe32323a58';
+-- Collège Notre-Dame-de-Lourdes  —  Coll. Notre-Dame-de-Lourdes / D1 / Benjamin / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Coll. Notre-Dame-de-Lourdes', 'D1', 'RSEQ', 'Benjamin', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '2a32eb09-dfc0-4fd8-a266-89a2c5f8befc';
+-- Collège Charles-Lemoyne  —  Collège Charles-Lemoyne / D1 / Benjamin / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Collège Charles-Lemoyne', 'D1', 'RSEQ', 'Benjamin', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '76774ba8-a447-46f9-99b5-44a8c890589f';
+-- Collège St-Jean-Vianney  —  Collège St-Jean-Vianney / D1 / Benjamin / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Collège St-Jean-Vianney', 'D1', 'RSEQ', 'Benjamin', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '4a90a041-8e50-45b9-9368-b6f45e018f97';
+-- École secondaire Antoine-de-Saint-Exupéry  —  É. sec. Antoine-de-St-Exupéry / D1 / Benjamin / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'É. sec. Antoine-de-St-Exupéry', 'D1', 'RSEQ', 'Benjamin', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '60a333f6-c2f3-417b-ba69-158debdaea3b';
+-- École secondaire Félix-Leclerc  —  É. sec. Félix-Leclerc / D1 / Benjamin / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'É. sec. Félix-Leclerc', 'D1', 'RSEQ', 'Benjamin', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '70eccd36-7a97-456e-8555-d7f067105e0e';
+-- École Gérard-Filion  —  É. sec. Gérard-Filion / D1 / Benjamin / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'É. sec. Gérard-Filion', 'D1', 'RSEQ', 'Benjamin', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '1d7a6b55-d993-428b-a932-cf9527654769';
+-- École secondaire Henri-Bourassa  —  É. sec. Henri-Bourassa / D1 / Benjamin / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'É. sec. Henri-Bourassa', 'D1', 'RSEQ', 'Benjamin', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '0899d6a1-6726-4c8b-84cb-fe61da08940e';
+-- École secondaire Jean-Grou  —  É. sec. Jean-Grou / D1 / Benjamin / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'É. sec. Jean-Grou', 'D1', 'RSEQ', 'Benjamin', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '9a98004f-a388-4f8e-b7c7-b89e7d15a407';
+-- Séminaire Saint-François  —  Séminaire Saint-François / D1 / Benjamin / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Séminaire Saint-François', 'D1', 'RSEQ', 'Benjamin', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '44d2fa63-6b97-46ec-8668-79988e31c667';
+-- Académie les Estacades  —  Académie les Estacades / D2 / Benjamin / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Académie les Estacades', 'D2', 'RSEQ', 'Benjamin', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '41e27254-7e84-45a9-8af4-3aef611ba1f2';
+-- École Polyvalente Nicolas-Gatineau  —  É. pol. Nicolas-Gatineau / D2 / Benjamin / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'É. pol. Nicolas-Gatineau', 'D2', 'RSEQ', 'Benjamin', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = 'dddbfb23-f41b-457b-8930-9455742f0486';
+-- École secondaire d'Amos  —  É. sec. d'Amos / D2 / Benjamin / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'É. sec. d''Amos', 'D2', 'RSEQ', 'Benjamin', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '59037b4d-f9e6-4dda-bedd-0b7b93390c49';
+-- École secondaire De Rochebelle  —  É. sec. de Rochebelle / D2 / Benjamin / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'É. sec. de Rochebelle', 'D2', 'RSEQ', 'Benjamin', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = 'a7f8edba-ac21-4ddd-9aa5-9f465e5a7433';
+-- École du Triolet  —  É. sec. du Triolet / D2 / Benjamin / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'É. sec. du Triolet', 'D2', 'RSEQ', 'Benjamin', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = 'a6ee3fd8-a94f-4d5f-a963-5d8d5d96aea1';
+-- École secondaire Le boisé  —  É. sec. Le Boisé / D2 / Benjamin / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'É. sec. Le Boisé', 'D2', 'RSEQ', 'Benjamin', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '20dbb037-19a0-4dca-9486-532bd70b0f04';
+-- Saint-Jean-Eudes  —  Saint-Jean-Eudes / D2 / Benjamin / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Saint-Jean-Eudes', 'D2', 'RSEQ', 'Benjamin', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '13b6795d-7f48-43ac-a1ed-1e782369aa34';
+-- Académie Saint-Louis  —  Académie Saint-Louis / D1 / Cadet / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Académie Saint-Louis', 'D1', 'RSEQ — A', 'Cadet', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = 'f1cff57a-f994-429b-9f68-3d3b8bbf9d24';
+-- École secondaire De Rochebelle  —  É. sec. de Rochebelle / D1 / Cadet / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'É. sec. de Rochebelle', 'D1', 'RSEQ — A', 'Cadet', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = 'a7f8edba-ac21-4ddd-9aa5-9f465e5a7433';
+-- École secondaire Le boisé  —  É. sec. Le Boisé / D1 / Cadet / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'É. sec. Le Boisé', 'D1', 'RSEQ — A', 'Cadet', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '20dbb037-19a0-4dca-9486-532bd70b0f04';
+-- Séminaire Saint-François  —  Séminaire Saint-François / D1 / Cadet / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Séminaire Saint-François', 'D1', 'RSEQ — A', 'Cadet', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '44d2fa63-6b97-46ec-8668-79988e31c667';
+-- Collège Jésus-Marie de Sillery  —  Coll. Jésus-Marie de Sillery / D2 / Cadet / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Coll. Jésus-Marie de Sillery', 'D2', 'RSEQ — A', 'Cadet', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '60218181-a513-4713-9c23-6123399fd6c2';
+-- Collège mariste de Québec  —  Coll. mariste de Québec / D2 / Cadet / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Coll. mariste de Québec', 'D2', 'RSEQ — A', 'Cadet', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '01d3bfba-b350-4b38-afcf-b5131f479db0';
+-- École polyvalente Arvida  —  É. pol. Arvida / D2 / Cadet / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'É. pol. Arvida', 'D2', 'RSEQ — A', 'Cadet', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '9ddc8351-cf22-4cbb-8a3a-5d374b01cb69';
+-- École secondaire de l'Odyssée  —  É. sec. de l'Odyssée / D2 / Cadet / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'É. sec. de l''Odyssée', 'D2', 'RSEQ — A', 'Cadet', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '53d8efcf-e31c-412a-a44b-b3b6e516a1ca';
+-- École Marie-Rivier  —  É. sec. Marie-Rivier / D2 / Cadet / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'É. sec. Marie-Rivier', 'D2', 'RSEQ — A', 'Cadet', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '5d32ab0d-ca82-4e4e-8496-6afe120d5a8b';
+-- Collège Durocher Saint-Lambert  —  Coll. Durocher Saint-Lambert / D1 / Cadet / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Coll. Durocher Saint-Lambert', 'D1', 'RSEQ', 'Cadet', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '0de9d600-4d89-481f-8823-b2fe32323a58';
+-- Collège Notre-Dame-de-Lourdes  —  Coll. Notre-Dame-de-Lourdes / D1 / Cadet / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Coll. Notre-Dame-de-Lourdes', 'D1', 'RSEQ', 'Cadet', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '2a32eb09-dfc0-4fd8-a266-89a2c5f8befc';
+-- Collège Charles-Lemoyne  —  Collège Charles-Lemoyne / D1 / Cadet / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Collège Charles-Lemoyne', 'D1', 'RSEQ', 'Cadet', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '76774ba8-a447-46f9-99b5-44a8c890589f';
+-- Collège Laval  —  Collège Laval / D1 / Cadet / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Collège Laval', 'D1', 'RSEQ', 'Cadet', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = 'ae84149b-f295-4c65-913b-0617cdceb516';
+-- Collège St-Jean-Vianney  —  Collège St-Jean-Vianney / D1 / Cadet / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Collège St-Jean-Vianney', 'D1', 'RSEQ', 'Cadet', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '4a90a041-8e50-45b9-9368-b6f45e018f97';
+-- École Polyvalente Nicolas-Gatineau  —  É. pol. Nicolas-Gatineau / D1 / Cadet / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'É. pol. Nicolas-Gatineau', 'D1', 'RSEQ', 'Cadet', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = 'dddbfb23-f41b-457b-8930-9455742f0486';
+-- École secondaire De Rochebelle  —  É. sec. de Rochebelle / D1 / Cadet / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'É. sec. de Rochebelle', 'D1', 'RSEQ', 'Cadet', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = 'a7f8edba-ac21-4ddd-9aa5-9f465e5a7433';
+-- École Gérard-Filion  —  É. sec. Gérard-Filion / D1 / Cadet / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'É. sec. Gérard-Filion', 'D1', 'RSEQ', 'Cadet', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '1d7a6b55-d993-428b-a932-cf9527654769';
+-- École secondaire Jean-Grou  —  É. sec. Jean-Grou / D1 / Cadet / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'É. sec. Jean-Grou', 'D1', 'RSEQ', 'Cadet', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '9a98004f-a388-4f8e-b7c7-b89e7d15a407';
+-- Séminaire Saint-François  —  Séminaire Saint-François / D1 / Cadet / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Séminaire Saint-François', 'D1', 'RSEQ', 'Cadet', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '44d2fa63-6b97-46ec-8668-79988e31c667';
+-- Académie les Estacades  —  Académie les Estacades / D2 / Cadet / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Académie les Estacades', 'D2', 'RSEQ — A', 'Cadet', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '41e27254-7e84-45a9-8af4-3aef611ba1f2';
+-- Académie Saint-Louis  —  Académie Saint-Louis / D2 / Cadet / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Académie Saint-Louis', 'D2', 'RSEQ — A', 'Cadet', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = 'f1cff57a-f994-429b-9f68-3d3b8bbf9d24';
+-- Collège mariste de Québec  —  Coll. mariste de Québec / D2 / Cadet / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Coll. mariste de Québec', 'D2', 'RSEQ — A', 'Cadet', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '01d3bfba-b350-4b38-afcf-b5131f479db0';
+-- École polyvalente Arvida  —  É. pol. Arvida / D2 / Cadet / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'É. pol. Arvida', 'D2', 'RSEQ — A', 'Cadet', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '9ddc8351-cf22-4cbb-8a3a-5d374b01cb69';
+-- École de la Seigneurie  —  É. sec. de la Seigneurie / D2 / Cadet / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'É. sec. de la Seigneurie', 'D2', 'RSEQ — A', 'Cadet', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = 'e313c763-adf8-4a39-8290-5460a18c429a';
+-- École secondaire de l'Odyssée  —  É. sec. de l'Odyssée / D2 / Cadet / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'É. sec. de l''Odyssée', 'D2', 'RSEQ — A', 'Cadet', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '53d8efcf-e31c-412a-a44b-b3b6e516a1ca';
+-- École Paul-Hubert  —  É. sec. Paul-Hubert / D2 / Cadet / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'É. sec. Paul-Hubert', 'D2', 'RSEQ — A', 'Cadet', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '1cb97ab6-db76-49d3-bfd0-ad28c4e4731a';
+-- Saint-Jean-Eudes  —  Saint-Jean-Eudes / D2 / Cadet / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Saint-Jean-Eudes', 'D2', 'RSEQ — A', 'Cadet', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '13b6795d-7f48-43ac-a1ed-1e782369aa34';
+-- Académie Saint-Louis  —  Académie Saint-Louis / D1 / Juvénile / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Académie Saint-Louis', 'D1', 'RSEQ — A', 'Juvénile', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = 'f1cff57a-f994-429b-9f68-3d3b8bbf9d24';
+-- École secondaire Le boisé  —  É. sec. Le Boisé / D1 / Juvénile / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'É. sec. Le Boisé', 'D1', 'RSEQ — A', 'Juvénile', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '20dbb037-19a0-4dca-9486-532bd70b0f04';
+-- Séminaire Saint-François  —  Séminaire Saint-François / D1 / Juvénile / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Séminaire Saint-François', 'D1', 'RSEQ — A', 'Juvénile', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '44d2fa63-6b97-46ec-8668-79988e31c667';
+-- Collège Jésus-Marie de Sillery  —  Coll. Jésus-Marie de Sillery / D2 / Juvénile / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Coll. Jésus-Marie de Sillery', 'D2', 'RSEQ — A1', 'Juvénile', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '60218181-a513-4713-9c23-6123399fd6c2';
+-- Collège mariste de Québec  —  Coll. mariste de Québec / D2 / Juvénile / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Coll. mariste de Québec', 'D2', 'RSEQ — A1', 'Juvénile', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '01d3bfba-b350-4b38-afcf-b5131f479db0';
+-- École polyvalente Arvida  —  É. pol. Arvida / D2 / Juvénile / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'É. pol. Arvida', 'D2', 'RSEQ — A1', 'Juvénile', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '9ddc8351-cf22-4cbb-8a3a-5d374b01cb69';
+-- École secondaire de l'Odyssée  —  É. sec. de l'Odyssée / D2 / Juvénile / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'É. sec. de l''Odyssée', 'D2', 'RSEQ — A1', 'Juvénile', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '53d8efcf-e31c-412a-a44b-b3b6e516a1ca';
+-- École secondaire De Rochebelle  —  É. sec. de Rochebelle / D2 / Juvénile / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'É. sec. de Rochebelle', 'D2', 'RSEQ — A1', 'Juvénile', 'Féminin', NULL, true
+FROM public.schools WHERE rseq_institution_id = 'a7f8edba-ac21-4ddd-9aa5-9f465e5a7433';
+-- Collège Durocher Saint-Lambert  —  Coll. Durocher Saint-Lambert / D1 / Juvénile / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Coll. Durocher Saint-Lambert', 'D1', 'RSEQ', 'Juvénile', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '0de9d600-4d89-481f-8823-b2fe32323a58';
+-- Collège Notre-Dame-de-Lourdes  —  Coll. Notre-Dame-de-Lourdes / D1 / Juvénile / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Coll. Notre-Dame-de-Lourdes', 'D1', 'RSEQ', 'Juvénile', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '2a32eb09-dfc0-4fd8-a266-89a2c5f8befc';
+-- Collège Laval  —  Collège Laval / D1 / Juvénile / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Collège Laval', 'D1', 'RSEQ', 'Juvénile', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = 'ae84149b-f295-4c65-913b-0617cdceb516';
+-- Collège St-Jean-Vianney  —  Collège St-Jean-Vianney / D1 / Juvénile / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Collège St-Jean-Vianney', 'D1', 'RSEQ', 'Juvénile', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '4a90a041-8e50-45b9-9368-b6f45e018f97';
+-- Polyvalente Hyacinthe-Delorme  —  É. pol. Hyacinthe-Delorme / D1 / Juvénile / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'É. pol. Hyacinthe-Delorme', 'D1', 'RSEQ', 'Juvénile', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '52cf6a0e-576c-4bb1-922a-c3d57b538eba';
+-- École Polyvalente Nicolas-Gatineau  —  É. pol. Nicolas-Gatineau / D1 / Juvénile / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'É. pol. Nicolas-Gatineau', 'D1', 'RSEQ', 'Juvénile', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = 'dddbfb23-f41b-457b-8930-9455742f0486';
+-- École secondaire De Mortagne  —  É. sec. De Mortagne / D1 / Juvénile / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'É. sec. De Mortagne', 'D1', 'RSEQ', 'Juvénile', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '90e0157e-7b4f-4c5f-80c1-a80066d38fb0';
+-- École secondaire De Rochebelle  —  É. sec. de Rochebelle / D1 / Juvénile / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'É. sec. de Rochebelle', 'D1', 'RSEQ', 'Juvénile', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = 'a7f8edba-ac21-4ddd-9aa5-9f465e5a7433';
+-- École Gérard-Filion  —  É. sec. Gérard-Filion / D1 / Juvénile / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'É. sec. Gérard-Filion', 'D1', 'RSEQ', 'Juvénile', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '1d7a6b55-d993-428b-a932-cf9527654769';
+-- École secondaire Henri-Bourassa  —  É. sec. Henri-Bourassa / D1 / Juvénile / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'É. sec. Henri-Bourassa', 'D1', 'RSEQ', 'Juvénile', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '0899d6a1-6726-4c8b-84cb-fe61da08940e';
+-- École secondaire Jean-Grou  —  É. sec. Jean-Grou / D1 / Juvénile / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'É. sec. Jean-Grou', 'D1', 'RSEQ', 'Juvénile', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '9a98004f-a388-4f8e-b7c7-b89e7d15a407';
+-- École Jeanne-Mance  —  É. sec. Jeanne-Mance / D1 / Juvénile / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'É. sec. Jeanne-Mance', 'D1', 'RSEQ', 'Juvénile', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = 'b4f4a1df-33cc-4617-968d-8d404a5798f1';
+-- Séminaire Saint-François  —  Séminaire Saint-François / D1 / Juvénile / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Séminaire Saint-François', 'D1', 'RSEQ', 'Juvénile', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '44d2fa63-6b97-46ec-8668-79988e31c667';
+-- Académie Saint-Louis  —  Académie Saint-Louis / D2 / Juvénile / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Académie Saint-Louis', 'D2', 'RSEQ — A', 'Juvénile', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = 'f1cff57a-f994-429b-9f68-3d3b8bbf9d24';
+-- Collège mariste de Québec  —  Coll. mariste de Québec / D2 / Juvénile / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Coll. mariste de Québec', 'D2', 'RSEQ — A', 'Juvénile', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '01d3bfba-b350-4b38-afcf-b5131f479db0';
+-- École polyvalente Arvida  —  É. pol. Arvida / D2 / Juvénile / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'É. pol. Arvida', 'D2', 'RSEQ — A', 'Juvénile', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '9ddc8351-cf22-4cbb-8a3a-5d374b01cb69';
+-- École de la Seigneurie  —  É. sec. de la Seigneurie / D2 / Juvénile / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'É. sec. de la Seigneurie', 'D2', 'RSEQ — A', 'Juvénile', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = 'e313c763-adf8-4a39-8290-5460a18c429a';
+-- École secondaire de l'Odyssée  —  É. sec. de l'Odyssée / D2 / Juvénile / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'É. sec. de l''Odyssée', 'D2', 'RSEQ — A', 'Juvénile', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '53d8efcf-e31c-412a-a44b-b3b6e516a1ca';
+-- École Paul-Hubert  —  É. sec. Paul-Hubert / D2 / Juvénile / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'É. sec. Paul-Hubert', 'D2', 'RSEQ — A', 'Juvénile', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '1cb97ab6-db76-49d3-bfd0-ad28c4e4731a';
+-- Saint-Jean-Eudes  —  Saint-Jean-Eudes / D2 / Juvénile / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Saint-Jean-Eudes', 'D2', 'RSEQ — A', 'Juvénile', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = '13b6795d-7f48-43ac-a1ed-1e782369aa34';
+-- Séminaire Sainte-Marie  —  Séminaire Sainte-Marie / D2 / Juvénile / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT id, '5dd6a7c8-2aa4-4b0e-a150-4ac77255f492', 'Séminaire Sainte-Marie', 'D2', 'RSEQ — A', 'Juvénile', 'Masculin', NULL, true
+FROM public.schools WHERE rseq_institution_id = 'e9e627f3-9fff-4801-be2a-a37d37fbb21c';
+
+SELECT count(*) AS teams_total, count(*) FILTER (WHERE school_id IS NULL) AS orphans FROM public.teams;
+
+COMMIT;
