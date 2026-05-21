@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef, useCallback } from "react";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import AthletePlayerCard from "@/components/shared/AthletePlayerCard";
 import { loadAthleteRaw, mapToRecruiterView } from "@/app/coach/athletes/_data/loadAthleteFromSupabase";
@@ -12,10 +13,10 @@ import { toPng } from "html-to-image";
    /athlete/mon-parcours — "L'été où tout se joue"
 
    Chunk 2: scaffold, hero, season timeline spine.
-   Chunk 3: Module 1 "Ma carte" — reuses AthletePlayerCard + the
-   downloadCard/toPng pattern + BADGE_CONFIG.
-   Chunk 4: Module 2 "Mes cibles" — CÉGEP shortlist (name-only),
-   add/remove against the athlete_targets table. Module 3 = chunk 5.
+   Chunk 3: Module 1 "Ma carte" — AthletePlayerCard + download + badges.
+   Chunk 4: Module 2 "Mes cibles" — CÉGEP shortlist (athlete_targets).
+   Chunk 5: Module 3 "Quand le CÉGEP cogne" — 8-item readiness
+            checklist (6 auto-derived + 2 manual) + progress ring.
 
    Athlete voice throughout — tutoiement, never a counsellor tone.
 ═══════════════════════════════════════════════════════════════ */
@@ -42,6 +43,20 @@ function readinessColor(pct: number): string {
 
 type Cegep = { id: string; name: string; city: string | null; region: string | null };
 type TargetRow = { id: string; schoolId: string; name: string; city: string | null; region: string | null };
+type ManualKey = "instagram_ready" | "knows_how_to_respond";
+type Readiness = { instagram_ready?: boolean; knows_how_to_respond?: boolean };
+
+type ChecklistItem = {
+  key: string;
+  type: "auto" | "manual";
+  label: string;
+  done: boolean;
+  tag?: string;       // auto — category shown when done
+  hint?: string;      // auto — how to complete, shown when not done
+  href?: string;      // auto — where to go to complete
+  why?: string;       // manual — always-shown rationale
+  manualKey?: ManualKey;
+};
 
 // schools embed comes back as an object (or array under some PostgREST
 // versions) — normalise to a single record.
@@ -70,6 +85,14 @@ export default function MonParcoursPage() {
   const [search, setSearch] = useState("");
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<{ kind: "success" | "error"; message: string } | null>(null);
+
+  // Module 3 — readiness (auto sources + manual jsonb)
+  const [highlightUrl, setHighlightUrl] = useState<string | null>(null);
+  const [coteGlobale, setCoteGlobale] = useState<number | null>(null);
+  const [moyenne, setMoyenne] = useState<number | null>(null);
+  const [parentalConsent, setParentalConsent] = useState(false);
+  const [readiness, setReadiness] = useState<Readiness>({});
+  const [togglingKey, setTogglingKey] = useState<ManualKey | null>(null);
 
   const showToast = useCallback((kind: "success" | "error", message: string) => {
     setToast({ kind, message });
@@ -105,12 +128,19 @@ export default function MonParcoursPage() {
       if (!user) return;
       const { data } = await supabase
         .from("athletes")
-        .select("id, first_name, profile_completion")
+        .select(
+          "id, first_name, profile_completion, video_faits_saillants_url, cote_globale_entraineur, moyenne_generale, consentement_parental, parcours_readiness",
+        )
         .eq("user_id", user.id)
         .maybeSingle();
       if (!data) return;
       setFirstName((data.first_name as string) || "");
       setProfileCompletion((data.profile_completion as number) || 0);
+      setHighlightUrl((data.video_faits_saillants_url as string | null) ?? null);
+      setCoteGlobale((data.cote_globale_entraineur as number | null) ?? null);
+      setMoyenne((data.moyenne_generale as number | null) ?? null);
+      setParentalConsent(data.consentement_parental === true);
+      setReadiness((data.parcours_readiness as Readiness) ?? {});
 
       const id = data.id as string;
       setAthleteId(id);
@@ -232,6 +262,38 @@ export default function MonParcoursPage() {
     }
   }
 
+  async function toggleManual(key: ManualKey) {
+    setTogglingKey(key);
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        showToast("error", "Session expirée. Reconnecte-toi.");
+        return;
+      }
+      // Merge — flip one key, preserve the other.
+      const next: Readiness = { ...readiness, [key]: !readiness[key] };
+      const { data, error } = await supabase
+        .from("athletes")
+        .update({ parcours_readiness: next })
+        .eq("user_id", user.id)
+        .select("id");
+      if (error) {
+        console.error("[mon-parcours] readiness toggle:", error);
+        showToast("error", `Erreur : ${error.message}`);
+        return;
+      }
+      // 0 rows + no error = RLS silently filtered the update.
+      if (!data || data.length === 0) {
+        showToast("error", "Action refusée — vérifie tes permissions.");
+        return;
+      }
+      setReadiness(next);
+    } finally {
+      setTogglingKey(null);
+    }
+  }
+
   const pctColor = readinessColor(profileCompletion);
   // Track spans node-0 centre → node-3 centre (left/right inset 12.5%).
   // Fill reaches the current node: one 25%-of-container segment per step.
@@ -248,6 +310,64 @@ export default function MonParcoursPage() {
   const addableCegeps = cegeps
     .filter((c) => !targetedIds.has(c.id))
     .filter((c) => (q ? c.name.toLowerCase().includes(q) : true));
+
+  // ── Module 3 — the 8 readiness items ──
+  const checklist: ChecklistItem[] = [
+    {
+      key: "highlight", type: "auto", label: "Highlight reel prêt", tag: "Vitrine",
+      done: !!highlightUrl && highlightUrl.trim() !== "",
+      hint: "Ajoute ton lien de faits saillants dans ton profil.", href: "/athlete/profil",
+    },
+    {
+      key: "profile", type: "auto", label: "Profil complet", tag: "Profil",
+      done: profileCompletion >= 100,
+      hint: "Complète ton profil jusqu'à 100 %.", href: "/athlete/profil",
+    },
+    {
+      key: "coach", type: "auto", label: "Évalué par ton coach", tag: "Crédibilité",
+      done: coteGlobale !== null,
+      hint: "Demande à ton entraîneur de t'évaluer.",
+    },
+    {
+      key: "targets", type: "auto", label: "Cibles choisies", tag: "Plan",
+      done: targets.length > 0,
+      hint: "Ajoute au moins un CÉGEP dans Mes cibles ci-dessus.",
+    },
+    {
+      key: "moyenne", type: "auto", label: "Moyenne générale à jour", tag: "Académique",
+      done: moyenne !== null,
+      hint: "Ajoute ta moyenne générale dans ton profil.", href: "/athlete/profil",
+    },
+    {
+      key: "instagram", type: "manual", manualKey: "instagram_ready",
+      label: "Instagram recruteur-ready", done: readiness.instagram_ready === true,
+      why: "Le recruteur te cherche en ligne avant de t'appeler.",
+    },
+    {
+      key: "respond", type: "manual", manualKey: "knows_how_to_respond",
+      label: "Tu sais répondre à un recruteur", done: readiness.knows_how_to_respond === true,
+      why: "Premier message, ton, quoi dire.",
+    },
+    {
+      key: "consent", type: "auto", label: "Consentement parental", tag: "Famille",
+      done: parentalConsent,
+      hint: "Tes parents doivent confirmer leur consentement.",
+    },
+  ];
+  const completedCount = checklist.filter((i) => i.done).length;
+  const ringPct = Math.round((completedCount / checklist.length) * 100);
+  const remaining = checklist.length - completedCount;
+  const encouragement =
+    remaining === 0
+      ? "Tu es prêt. Vas-y."
+      : remaining === 1
+        ? "Plus qu'un élément avant d'être prêt pour la saison."
+        : `Plus que ${remaining} éléments avant d'être prêt pour la saison.`;
+
+  // Ring geometry — progress arc from 12 o'clock.
+  const RING_R = 54;
+  const RING_C = 2 * Math.PI * RING_R;
+  const ringDash = (ringPct / 100) * RING_C;
 
   return (
     <div className="px-6 sm:px-10 py-8 max-w-[1100px] mx-auto space-y-8">
@@ -510,6 +630,139 @@ export default function MonParcoursPage() {
             </svg>
             Ajouter un CÉGEP
           </button>
+        </div>
+      </section>
+
+      {/* ── Module 3 — Quand le CÉGEP cogne ── */}
+      <section>
+        <div className="flex items-baseline gap-2.5 mb-1">
+          <span className="font-head text-base font-black text-[#E63946]">03</span>
+          <span className="text-[#3a3d46]">·</span>
+          <h2 className="font-head text-xl sm:text-2xl font-black text-white uppercase tracking-tight">
+            Quand le CÉGEP cogne
+          </h2>
+        </div>
+        <p className="text-[14px] text-[#9CA3AF] leading-relaxed mb-6 max-w-2xl">
+          Un recruteur peut t&apos;écrire demain. Sois prêt à répondre comme un pro. Coche chaque
+          élément avant que la saison commence.
+        </p>
+
+        <div className="bg-[#1A1D24] border border-[#2D3748] rounded-xl p-6 sm:p-8">
+          <div className="flex flex-col lg:flex-row gap-8 lg:gap-10">
+            {/* Progress ring */}
+            <div className="flex flex-col items-center text-center shrink-0 lg:w-[210px]">
+              <div className="relative w-[150px] h-[150px]">
+                <svg width="150" height="150" viewBox="0 0 140 140">
+                  <circle cx="70" cy="70" r={RING_R} fill="none" stroke="#2D3748" strokeWidth="12" />
+                  <circle
+                    cx="70" cy="70" r={RING_R} fill="none" stroke="#E63946" strokeWidth="12"
+                    strokeLinecap="round" strokeDasharray={`${ringDash} ${RING_C}`}
+                    transform="rotate(-90 70 70)"
+                  />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="font-head text-4xl font-black text-white leading-none">
+                    {ringPct}%
+                  </span>
+                  <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mt-1.5">
+                    prêt
+                  </span>
+                </div>
+              </div>
+              <p className="text-[13px] text-[#9CA3AF] leading-relaxed mt-5">{encouragement}</p>
+            </div>
+
+            {/* 8-item checklist */}
+            <div className="flex-1 min-w-0 space-y-2">
+              {checklist.map((item) => {
+                const box = item.done ? (
+                  <span className="w-6 h-6 shrink-0 rounded-md bg-[#22C55E] flex items-center justify-center mt-0.5">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M20 6L9 17l-5-5" />
+                    </svg>
+                  </span>
+                ) : (
+                  <span className="w-6 h-6 shrink-0 rounded-md border-2 border-[#3a3d46] mt-0.5" />
+                );
+
+                const labelEl = (
+                  <span
+                    className={`text-[14px] font-bold ${
+                      item.done ? "text-[#6b7280] line-through" : "text-white"
+                    }`}
+                  >
+                    {item.label}
+                  </span>
+                );
+
+                if (item.type === "manual" && item.manualKey) {
+                  const mk = item.manualKey;
+                  return (
+                    <button
+                      key={item.key}
+                      type="button"
+                      onClick={() => toggleManual(mk)}
+                      disabled={togglingKey === mk}
+                      className={`w-full flex items-start gap-3 text-left px-4 py-3.5 rounded-lg border transition-colors disabled:opacity-60 ${
+                        item.done
+                          ? "bg-[#22C55E]/[0.06] border-[#22C55E]/25"
+                          : "bg-[#13151a] border-[#2D3748] hover:border-[#E63946]/50"
+                      }`}
+                    >
+                      {box}
+                      <span className="flex-1 min-w-0">
+                        <span className="flex items-center gap-2">
+                          {labelEl}
+                          <span className="text-[9px] font-black uppercase tracking-[0.12em] text-[#6b7280]">
+                            À toi
+                          </span>
+                        </span>
+                        <span className="block text-[12px] text-[#6b7280] mt-0.5">{item.why}</span>
+                      </span>
+                    </button>
+                  );
+                }
+
+                // AUTO item — reflects data, not a checkbox.
+                return (
+                  <div
+                    key={item.key}
+                    className={`flex items-start gap-3 px-4 py-3.5 rounded-lg border ${
+                      item.done
+                        ? "bg-[#22C55E]/[0.06] border-[#22C55E]/25"
+                        : "bg-[#13151a] border-[#2D3748]"
+                    }`}
+                  >
+                    {box}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {labelEl}
+                        {item.done && item.tag && (
+                          <span className="text-[9px] font-black uppercase tracking-[0.12em] text-[#22C55E]">
+                            {item.tag}
+                          </span>
+                        )}
+                      </div>
+                      {!item.done && item.hint && (
+                        <p className="text-[12px] text-[#6b7280] mt-0.5">{item.hint}</p>
+                      )}
+                      {!item.done && item.href && (
+                        <Link
+                          href={item.href}
+                          className="inline-flex items-center gap-1 text-[12px] font-bold text-[#E63946] hover:text-[#D93C3C] transition-colors mt-1.5"
+                        >
+                          Compléter
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M5 12h14" /><path d="M12 5l7 7-7 7" />
+                          </svg>
+                        </Link>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </section>
 
