@@ -38,18 +38,30 @@ const NAMED_BADGES = BADGE_ORDER.filter((k) => k !== "custom");
 
 type Cegep = { id: string; name: string; city: string | null; region: string | null };
 type TargetRow = { id: string; schoolId: string; name: string; city: string | null; region: string | null };
-type ManualKey = "instagram_ready" | "knows_how_to_respond";
-type Readiness = { instagram_ready?: boolean; knows_how_to_respond?: boolean; current_phase?: string };
+type ManualKey =
+  | "instagram_ready"
+  | "knows_how_to_respond"
+  | "coach_knows_goals"
+  | "knows_numbers"
+  | "contacted_program";
+type Readiness = {
+  instagram_ready?: boolean;
+  knows_how_to_respond?: boolean;
+  coach_knows_goals?: boolean;
+  knows_numbers?: boolean;
+  contacted_program?: boolean;
+  current_phase?: string;
+};
 
 type ChecklistItem = {
   key: string;
   type: "auto" | "manual";
   label: string;
   done: boolean;
+  why: string;        // always visible — one-line rationale
+  how: string;        // revealed by the "En savoir plus" accordion
   tag?: string;       // auto — category shown when done
-  hint?: string;      // auto — how to complete, shown when not done
-  href?: string;      // auto — where to go to complete
-  why?: string;       // manual — always-shown rationale
+  href?: string;      // auto — "Compléter" link target when not done
   manualKey?: ManualKey;
 };
 
@@ -89,6 +101,7 @@ export default function MonParcoursPage() {
   const [readiness, setReadiness] = useState<Readiness>({});
   const [togglingKey, setTogglingKey] = useState<ManualKey | null>(null);
   const [phaseSaving, setPhaseSaving] = useState(false);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
   const showToast = useCallback((kind: "success" | "error", message: string) => {
     setToast({ kind, message });
@@ -327,6 +340,15 @@ export default function MonParcoursPage() {
     }
   }
 
+  function toggleExpand(key: string) {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
+
   // Current phase from the readiness jsonb; defaults to the first step.
   const currentPhase = readiness.current_phase ?? "entrainement";
   const currentStepIndex = Math.max(
@@ -349,47 +371,76 @@ export default function MonParcoursPage() {
     .filter((c) => !targetedIds.has(c.id))
     .filter((c) => (q ? c.name.toLowerCase().includes(q) : true));
 
-  // ── Module 3 — the 8 readiness items ──
+  // ── Module 3 — the 11 readiness items (6 auto + 5 manual) ──
   const checklist: ChecklistItem[] = [
     {
-      key: "highlight", type: "auto", label: "Highlight reel prêt", tag: "Vitrine",
+      key: "highlight", type: "auto", label: "Highlight reel", tag: "Vitrine",
       done: !!highlightUrl && highlightUrl.trim() !== "",
-      hint: "Ajoute ton lien de faits saillants dans ton profil.", href: "/athlete/profil",
+      href: "/athlete/profil",
+      why: "C'est la première chose qu'un recruteur regarde — souvent avant même de lire ton profil.",
+      how: "2-3 minutes max. Tes meilleurs jeux en premier. Ton numéro visible. Pas de musique ni d'effets — les recruteurs veulent voir toi, pas le montage.",
     },
     {
       key: "profile", type: "auto", label: "Profil complet", tag: "Profil",
       done: profileCompletion >= 100,
-      hint: "Complète ton profil jusqu'à 100 %.", href: "/athlete/profil",
+      href: "/athlete/profil",
+      why: "Un profil à moitié rempli, ça donne l'air d'un athlète pas sérieux.",
+      how: "Remplis chaque champ. Les recruteurs filtrent par position, taille, région — un champ vide, c'est une recherche où tu n'apparais pas.",
     },
     {
       key: "coach", type: "auto", label: "Évalué par ton coach", tag: "Crédibilité",
       done: coteGlobale !== null,
-      hint: "Demande à ton entraîneur de t'évaluer.",
+      why: "La parole de ton coach, c'est ce qu'un recruteur croit le plus. Au Québec, le monde du recrutement est petit — les coachs se parlent.",
+      how: "Demande à ton entraîneur de remplir ton évaluation Nexus. C'est souvent la première chose qu'un recruteur lit.",
     },
     {
       key: "targets", type: "auto", label: "Cibles choisies", tag: "Plan",
       done: targets.length > 0,
-      hint: "Ajoute au moins un CÉGEP dans Mes cibles ci-dessus.",
+      why: "Savoir où tu veux jouer change tout — tu te prépares différemment pour du D1 que pour du D2.",
+      how: "Choisis 3 à 5 CÉGEPs réalistes. Mélange des rêves et des choix sûrs.",
     },
     {
       key: "moyenne", type: "auto", label: "Moyenne générale à jour", tag: "Académique",
       done: moyenne !== null,
-      hint: "Ajoute ta moyenne générale dans ton profil.", href: "/athlete/profil",
+      href: "/athlete/profil",
+      why: "Les programmes contingentés refusent sur les notes, peu importe le talent.",
+      how: "Garde-la à jour. Certains programmes ne regarderont même pas ton dossier sous un certain seuil.",
     },
     {
       key: "instagram", type: "manual", manualKey: "instagram_ready",
       label: "Instagram recruteur-ready", done: readiness.instagram_ready === true,
-      why: "Le recruteur te cherche en ligne avant de t'appeler.",
+      why: "Un recruteur te cherche en ligne avant de t'appeler. Qu'est-ce qu'il trouve?",
+      how: "Enlève les photos de party. Mets du contenu d'entraînement, de matchs. Public, mais propre. Présente-toi comme un athlète.",
     },
     {
       key: "respond", type: "manual", manualKey: "knows_how_to_respond",
       label: "Tu sais répondre à un recruteur", done: readiness.knows_how_to_respond === true,
-      why: "Premier message, ton, quoi dire.",
+      why: "Ton premier message donne le ton. Le manquer, ça peut coûter l'intérêt.",
+      how: "Garde ça simple : remercie, confirme ton intérêt, pose une bonne question, et mets ton coach ou tes parents dans la boucle. Réponds vite — dans les 24h.",
     },
     {
       key: "consent", type: "auto", label: "Consentement parental", tag: "Famille",
       done: parentalConsent,
-      hint: "Tes parents doivent confirmer leur consentement.",
+      why: "C'est obligatoire, et ça montre au recruteur qu'un parent est impliqué.",
+      how: "Fais remplir le consentement par ton parent dans Nexus.",
+    },
+    {
+      key: "coach_goals", type: "manual", manualKey: "coach_knows_goals",
+      label: "Ton coach actuel connaît tes objectifs", done: readiness.coach_knows_goals === true,
+      why: "Ton coach actuel, c'est ton plus gros allié. Les recruteurs l'appellent — s'il sait que tu vises le CÉGEP, il va te vendre.",
+      how: "Assieds-toi avec lui. Dis-lui où tu veux jouer. Un coach au courant te défend; un coach surpris ne peut pas t'aider.",
+    },
+    {
+      key: "numbers", type: "manual", manualKey: "knows_numbers",
+      label: "Connais tes chiffres", done: readiness.knows_numbers === true,
+      why: "Un recruteur va te demander ton 40 verges, ton développé, tes stats — sur le coup. Pas savoir, ça fait amateur.",
+      how: "Apprends tes mesurables par cœur. Tes stats de saison aussi. Sois prêt à répondre sans hésiter.",
+    },
+    {
+      key: "contacted", type: "manual", manualKey: "contacted_program",
+      label: "Tu as contacté ou visité un programme", done: readiness.contacted_program === true,
+      why: "Prendre les devants — écrire à un coach, aller à une journée portes ouvertes — ça montre que t'es sérieux et ça te met sur le radar tôt.",
+      how: "Choisis un CÉGEP dans tes cibles, trouve le coach, envoie un courriel court et poli. Ou va voir un match, une pratique, un camp.",
     },
   ];
   const completedCount = checklist.filter((i) => i.done).length;
@@ -706,9 +757,11 @@ export default function MonParcoursPage() {
               <p className="text-[13px] text-[#9CA3AF] leading-relaxed mt-5">{encouragement}</p>
             </div>
 
-            {/* 8-item checklist */}
+            {/* 11-item checklist */}
             <div className="flex-1 min-w-0 space-y-2">
               {checklist.map((item) => {
+                const open = expanded.has(item.key);
+
                 const labelEl = (
                   <span
                     className={`text-[14px] font-bold ${
@@ -719,69 +772,100 @@ export default function MonParcoursPage() {
                   </span>
                 );
 
-                if (item.type === "manual" && item.manualKey) {
-                  const mk = item.manualKey;
-                  // Manual — a real toggleable checkbox: a SQUARE box and the
-                  // row is a button (cursor-pointer + hover). The only items
-                  // the athlete is meant to click.
-                  return (
+                // Why (always visible) + the "En savoir plus" accordion (how).
+                const detail = (
+                  <>
+                    <p className="text-[12px] text-[#9CA3AF] leading-relaxed">{item.why}</p>
                     <button
-                      key={item.key}
                       type="button"
-                      onClick={() => toggleManual(mk)}
-                      disabled={togglingKey === mk}
-                      className={`w-full flex items-start gap-3 text-left px-4 py-3.5 rounded-lg border cursor-pointer transition-colors disabled:opacity-60 ${
-                        item.done
-                          ? "bg-[#22C55E]/[0.06] border-[#22C55E]/25 hover:border-[#22C55E]/45"
-                          : "bg-[#13151a] border-[#2D3748] hover:border-[#E63946]/50"
+                      onClick={() => toggleExpand(item.key)}
+                      className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-[0.12em] text-[#6b7280] hover:text-white transition-colors mt-2"
+                    >
+                      En savoir plus
+                      <svg
+                        width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"
+                        className={`transition-transform duration-300 ${open ? "rotate-180" : ""}`}
+                      >
+                        <path d="M6 9l6 6 6-6" />
+                      </svg>
+                    </button>
+                    <div
+                      className={`grid transition-[grid-template-rows] duration-300 ease-out ${
+                        open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
                       }`}
                     >
-                      {item.done ? (
-                        <span className="w-6 h-6 shrink-0 rounded-md bg-[#22C55E] flex items-center justify-center mt-0.5">
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M20 6L9 17l-5-5" />
-                          </svg>
-                        </span>
-                      ) : (
-                        <span className="w-6 h-6 shrink-0 rounded-md border-2 border-[#6b7280] mt-0.5" />
-                      )}
-                      <span className="flex-1 min-w-0">
+                      <div className="overflow-hidden">
+                        <p className="text-[12px] text-[#6b7280] leading-relaxed pt-2">{item.how}</p>
+                      </div>
+                    </div>
+                  </>
+                );
+
+                if (item.type === "manual" && item.manualKey) {
+                  const mk = item.manualKey;
+                  // Manual — a real toggleable checkbox: SQUARE box; the
+                  // checkbox + label header is the toggle button.
+                  return (
+                    <div
+                      key={item.key}
+                      className={`rounded-lg border ${
+                        item.done
+                          ? "bg-[#22C55E]/[0.06] border-[#22C55E]/25"
+                          : "bg-[#13151a] border-[#2D3748]"
+                      }`}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => toggleManual(mk)}
+                        disabled={togglingKey === mk}
+                        className="w-full flex items-start gap-3 text-left px-4 pt-3.5 pb-2 cursor-pointer disabled:opacity-60"
+                      >
+                        {item.done ? (
+                          <span className="w-6 h-6 shrink-0 rounded-md bg-[#22C55E] flex items-center justify-center mt-0.5">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M20 6L9 17l-5-5" />
+                            </svg>
+                          </span>
+                        ) : (
+                          <span className="w-6 h-6 shrink-0 rounded-md border-2 border-[#6b7280] mt-0.5" />
+                        )}
                         <span className="flex items-center gap-2 flex-wrap">
                           {labelEl}
                           <span className="text-[9px] font-black uppercase tracking-[0.12em] text-[#E63946]/80">
                             À cocher toi-même
                           </span>
                         </span>
-                        <span className="block text-[12px] text-[#6b7280] mt-0.5">{item.why}</span>
-                      </span>
-                    </button>
+                      </button>
+                      <div className="pr-4 pb-3.5 pl-[3.25rem]">{detail}</div>
+                    </div>
                   );
                 }
 
                 // Auto — reflects data, NOT toggleable. A CIRCLE status
                 // indicator (never an empty checkbox); the affordance is the
-                // "Compléter →" link, not the row.
+                // "Compléter" link, not the row.
                 return (
                   <div
                     key={item.key}
-                    className={`flex items-start gap-3 px-4 py-3.5 rounded-lg border ${
+                    className={`rounded-lg border ${
                       item.done
                         ? "bg-[#22C55E]/[0.06] border-[#22C55E]/25"
                         : "bg-[#13151a] border-[#2D3748]"
                     }`}
                   >
-                    {item.done ? (
-                      <span className="w-6 h-6 shrink-0 rounded-full bg-[#22C55E] flex items-center justify-center mt-0.5">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M20 6L9 17l-5-5" />
-                        </svg>
-                      </span>
-                    ) : (
-                      <span className="w-6 h-6 shrink-0 rounded-full border-2 border-[#3a3d46] flex items-center justify-center mt-0.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#3a3d46]" />
-                      </span>
-                    )}
-                    <div className="flex-1 min-w-0">
+                    <div className="flex items-start gap-3 px-4 pt-3.5 pb-2">
+                      {item.done ? (
+                        <span className="w-6 h-6 shrink-0 rounded-full bg-[#22C55E] flex items-center justify-center mt-0.5">
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M20 6L9 17l-5-5" />
+                          </svg>
+                        </span>
+                      ) : (
+                        <span className="w-6 h-6 shrink-0 rounded-full border-2 border-[#3a3d46] flex items-center justify-center mt-0.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#3a3d46]" />
+                        </span>
+                      )}
                       <div className="flex items-center gap-2 flex-wrap">
                         {labelEl}
                         {item.done && item.tag && (
@@ -795,13 +879,13 @@ export default function MonParcoursPage() {
                           </span>
                         )}
                       </div>
-                      {!item.done && item.hint && (
-                        <p className="text-[12px] text-[#6b7280] mt-0.5">{item.hint}</p>
-                      )}
+                    </div>
+                    <div className="pr-4 pb-3.5 pl-[3.25rem]">
+                      {detail}
                       {!item.done && item.href && (
                         <Link
                           href={item.href}
-                          className="inline-flex items-center gap-1 text-[12px] font-bold text-[#E63946] hover:text-[#D93C3C] transition-colors mt-1.5"
+                          className="inline-flex items-center gap-1 text-[12px] font-bold text-[#E63946] hover:text-[#D93C3C] transition-colors mt-2.5"
                         >
                           Compléter
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
