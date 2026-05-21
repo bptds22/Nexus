@@ -6,7 +6,8 @@ import { createClient } from "@/lib/supabase/client";
 import AthletePlayerCard from "@/components/shared/AthletePlayerCard";
 import { loadAthleteRaw, mapToRecruiterView } from "@/app/coach/athletes/_data/loadAthleteFromSupabase";
 import type { AthleteProfileRecruiterView } from "@/lib/types/models";
-import { BADGE_CONFIG, BADGE_ORDER, parseDistinctions } from "@/lib/config/badges";
+import { BADGE_ORDER, parseDistinctions } from "@/lib/config/badges";
+import DistinctionBadge from "@/components/shared/DistinctionBadge";
 import { toPng } from "html-to-image";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -67,7 +68,7 @@ export default function MonParcoursPage() {
   const [firstName, setFirstName] = useState("");
   const [profileCompletion, setProfileCompletion] = useState(0);
   const [cardAthlete, setCardAthlete] = useState<AthleteProfileRecruiterView | null>(null);
-  const [earnedBadges, setEarnedBadges] = useState<Set<string>>(new Set());
+  const [earnedBadges, setEarnedBadges] = useState<Map<string, string | undefined>>(new Map());
   const [downloading, setDownloading] = useState(false);
   const captureRef = useRef<HTMLDivElement>(null);
 
@@ -158,10 +159,14 @@ export default function MonParcoursPage() {
         .select("distinctions")
         .eq("athlete_id", id);
       if (evals) {
-        const earned = new Set<string>();
+        // Keep the full entry (badge + detail); on a repeat badge, prefer
+        // the occurrence that carries a stat detail.
+        const earned = new Map<string, string | undefined>();
         for (const row of evals) {
           for (const entry of parseDistinctions((row as { distinctions: unknown }).distinctions)) {
-            earned.add(entry.badge);
+            if (!earned.has(entry.badge) || (earned.get(entry.badge) == null && entry.detail != null)) {
+              earned.set(entry.badge, entry.detail);
+            }
           }
         }
         setEarnedBadges(earned);
@@ -547,7 +552,7 @@ export default function MonParcoursPage() {
               </button>
             </div>
 
-            {/* Badges to chase */}
+            {/* Badges to chase — real DistinctionBadge emblems */}
             <div className="flex-1 min-w-0">
               <h3 className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#6b7280]">
                 Badges à viser
@@ -555,43 +560,39 @@ export default function MonParcoursPage() {
               <p className="text-[12px] text-[#6b7280] mt-1 mb-4">
                 Décernés par ton entraîneur — continue de performer pour les mériter.
               </p>
-              <ul className="space-y-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {NAMED_BADGES.map((key) => {
                   const earned = earnedBadges.has(key);
+                  const detail = earnedBadges.get(key);
                   return (
-                    <li
+                    <div
                       key={key}
-                      className={`flex items-center gap-3 px-3.5 py-3 rounded-lg border ${
+                      className={`flex flex-col items-center gap-2 rounded-xl border p-4 ${
                         earned
-                          ? "bg-[#E63946]/[0.08] border-[#E63946]/30"
+                          ? "bg-[#E63946]/[0.06] border-[#E63946]/25"
                           : "bg-[#13151a] border-[#2D3748]"
                       }`}
                     >
+                      <div className={earned ? "" : "grayscale opacity-40"}>
+                        <DistinctionBadge badge={key} detail={detail} size="lg" />
+                      </div>
                       {earned ? (
-                        <span className="w-6 h-6 rounded-full bg-[#E63946] flex items-center justify-center shrink-0">
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M20 6L9 17l-5-5" />
-                          </svg>
-                        </span>
-                      ) : (
-                        <span className="w-6 h-6 rounded-full border-2 border-[#2D3748] shrink-0" />
-                      )}
-                      <span
-                        className={`text-[14px] font-bold ${
-                          earned ? "text-white" : "text-[#6b7280]"
-                        }`}
-                      >
-                        {BADGE_CONFIG[key].label}
-                      </span>
-                      {earned && (
-                        <span className="ml-auto text-[10px] font-black uppercase tracking-wider text-[#E63946]">
+                        <span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#E63946]">
                           Obtenu
                         </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.14em] text-[#6b7280]">
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <rect x="3" y="11" width="18" height="11" rx="2" />
+                            <path d="M7 11V7a5 5 0 0110 0v4" />
+                          </svg>
+                          À viser
+                        </span>
                       )}
-                    </li>
+                    </div>
                   );
                 })}
-              </ul>
+              </div>
             </div>
           </div>
         </div>
@@ -708,16 +709,6 @@ export default function MonParcoursPage() {
             {/* 8-item checklist */}
             <div className="flex-1 min-w-0 space-y-2">
               {checklist.map((item) => {
-                const box = item.done ? (
-                  <span className="w-6 h-6 shrink-0 rounded-md bg-[#22C55E] flex items-center justify-center mt-0.5">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M20 6L9 17l-5-5" />
-                    </svg>
-                  </span>
-                ) : (
-                  <span className="w-6 h-6 shrink-0 rounded-md border-2 border-[#3a3d46] mt-0.5" />
-                );
-
                 const labelEl = (
                   <span
                     className={`text-[14px] font-bold ${
@@ -730,24 +721,35 @@ export default function MonParcoursPage() {
 
                 if (item.type === "manual" && item.manualKey) {
                   const mk = item.manualKey;
+                  // Manual — a real toggleable checkbox: a SQUARE box and the
+                  // row is a button (cursor-pointer + hover). The only items
+                  // the athlete is meant to click.
                   return (
                     <button
                       key={item.key}
                       type="button"
                       onClick={() => toggleManual(mk)}
                       disabled={togglingKey === mk}
-                      className={`w-full flex items-start gap-3 text-left px-4 py-3.5 rounded-lg border transition-colors disabled:opacity-60 ${
+                      className={`w-full flex items-start gap-3 text-left px-4 py-3.5 rounded-lg border cursor-pointer transition-colors disabled:opacity-60 ${
                         item.done
-                          ? "bg-[#22C55E]/[0.06] border-[#22C55E]/25"
+                          ? "bg-[#22C55E]/[0.06] border-[#22C55E]/25 hover:border-[#22C55E]/45"
                           : "bg-[#13151a] border-[#2D3748] hover:border-[#E63946]/50"
                       }`}
                     >
-                      {box}
+                      {item.done ? (
+                        <span className="w-6 h-6 shrink-0 rounded-md bg-[#22C55E] flex items-center justify-center mt-0.5">
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M20 6L9 17l-5-5" />
+                          </svg>
+                        </span>
+                      ) : (
+                        <span className="w-6 h-6 shrink-0 rounded-md border-2 border-[#6b7280] mt-0.5" />
+                      )}
                       <span className="flex-1 min-w-0">
-                        <span className="flex items-center gap-2">
+                        <span className="flex items-center gap-2 flex-wrap">
                           {labelEl}
-                          <span className="text-[9px] font-black uppercase tracking-[0.12em] text-[#6b7280]">
-                            À toi
+                          <span className="text-[9px] font-black uppercase tracking-[0.12em] text-[#E63946]/80">
+                            À cocher toi-même
                           </span>
                         </span>
                         <span className="block text-[12px] text-[#6b7280] mt-0.5">{item.why}</span>
@@ -756,7 +758,9 @@ export default function MonParcoursPage() {
                   );
                 }
 
-                // AUTO item — reflects data, not a checkbox.
+                // Auto — reflects data, NOT toggleable. A CIRCLE status
+                // indicator (never an empty checkbox); the affordance is the
+                // "Compléter →" link, not the row.
                 return (
                   <div
                     key={item.key}
@@ -766,13 +770,28 @@ export default function MonParcoursPage() {
                         : "bg-[#13151a] border-[#2D3748]"
                     }`}
                   >
-                    {box}
+                    {item.done ? (
+                      <span className="w-6 h-6 shrink-0 rounded-full bg-[#22C55E] flex items-center justify-center mt-0.5">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M20 6L9 17l-5-5" />
+                        </svg>
+                      </span>
+                    ) : (
+                      <span className="w-6 h-6 shrink-0 rounded-full border-2 border-[#3a3d46] flex items-center justify-center mt-0.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#3a3d46]" />
+                      </span>
+                    )}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         {labelEl}
                         {item.done && item.tag && (
                           <span className="text-[9px] font-black uppercase tracking-[0.12em] text-[#22C55E]">
                             {item.tag}
+                          </span>
+                        )}
+                        {!item.done && (
+                          <span className="text-[9px] font-black uppercase tracking-[0.12em] text-[#6b7280]">
+                            Suivi auto
                           </span>
                         )}
                       </div>
