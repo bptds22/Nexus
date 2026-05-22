@@ -28,6 +28,16 @@ const SPORTS = [
   "Ski alpin", "Ski de fond", "Judo", "Handball", "Water-polo",
 ];
 const REGIONS = ["Montréal", "Québec", "Saguenay-Lac-Saint-Jean", "Estrie", "Outaouais", "Mauricie", "Laurentides", "Lanaudière", "Montérégie", "Chaudière-Appalaches", "Laval", "Centre-du-Québec", "Bas-Saint-Laurent", "Abitibi-Témiscamingue", "Côte-Nord", "Nord-du-Québec", "Gaspésie"];
+
+// School-card city + region — never renders "X, X" when city == region (or
+// region is blank). `sep` covers the two separators the pickers use.
+function cityRegion(city?: string | null, region?: string | null, sep = ", "): string {
+  const c = (city || "").trim();
+  const r = (region || "").trim();
+  if (!c) return r;
+  if (!r || r.toLowerCase() === c.toLowerCase()) return c;
+  return `${c}${sep}${r}`;
+}
 const MOCK_SCHOOLS = [
   { name: "De Mortagne", city: "Boucherville", region: "Montérégie", conference: "Sud-Ouest", sports: ["Football", "Basketball", "Soccer"] },
   { name: "Saint-Jean-Eudes", city: "Québec", region: "Québec", conference: "Nord-Est", sports: ["Football", "Hockey", "Soccer"] },
@@ -1326,8 +1336,8 @@ function SchoolStep({ user, save }: { user: NexusUser; save: (u: Partial<NexusUs
         renderItem={(item) => (
           <div>
             <p className="font-bold">{item.name}</p>
-            {[item.city, item.region].filter(Boolean).join(" — ") && (
-              <p className="text-[10px] text-[#6B7280]">{[item.city, item.region].filter(Boolean).join(" — ")}</p>
+            {cityRegion(item.city, item.region, " — ") && (
+              <p className="text-[10px] text-[#6B7280]">{cityRegion(item.city, item.region, " — ")}</p>
             )}
           </div>
         )}
@@ -1337,8 +1347,8 @@ function SchoolStep({ user, save }: { user: NexusUser; save: (u: Partial<NexusUs
       {selected && (
         <div className="bg-[#111317] border border-white/10 rounded-lg p-5 space-y-3">
           <h3 className="font-head font-black text-lg text-white">{selected.name}</h3>
-          {[selected.city, selected.region].filter(Boolean).join(", ") && (
-            <p className="text-xs text-[#9CA3AF]">{[selected.city, selected.region].filter(Boolean).join(", ")}</p>
+          {cityRegion(selected.city, selected.region) && (
+            <p className="text-xs text-[#9CA3AF]">{cityRegion(selected.city, selected.region)}</p>
           )}
           {selected.conference && <p className="text-xs text-[#6B7280]">Conférence RSEQ: {selected.conference}</p>}
           <div className="flex flex-wrap gap-2">
@@ -1492,7 +1502,7 @@ function CoachConfirmation({ user }: { user: NexusUser }) {
   const ecoleRows: ConfirmationRow[] = [
     ...profilRows,
     inst.name ? { label: "École", value: inst.name as string } : null,
-    [inst.city, inst.region].filter(Boolean).join(", ") ? { label: "Ville", value: [inst.city, inst.region].filter(Boolean).join(", ") } : null,
+    cityRegion(inst.city as string, inst.region as string) ? { label: "Ville", value: cityRegion(inst.city as string, inst.region as string) } : null,
     inst.conference ? { label: "Conférence RSEQ", value: inst.conference as string } : null,
   ].filter(Boolean) as ConfirmationRow[];
 
@@ -1600,7 +1610,7 @@ function CegepStep({ user, save }: { user: NexusUser; save: (u: Partial<NexusUse
         renderItem={(item) => (
           <div>
             <p className="font-bold">{item.name}</p>
-            {item.city && <p className="text-[10px] text-[#6B7280]">{item.city}{item.region ? ` — ${item.region}` : ""}</p>}
+            {cityRegion(item.city, item.region, " — ") && <p className="text-[10px] text-[#6B7280]">{cityRegion(item.city, item.region, " — ")}</p>}
           </div>
         )}
       />
@@ -1608,8 +1618,8 @@ function CegepStep({ user, save }: { user: NexusUser; save: (u: Partial<NexusUse
       {selected && (
         <div className="bg-[#111317] border border-white/10 rounded-lg p-5 space-y-2">
           <h3 className="font-head font-black text-lg text-white">{selected.name}</h3>
-          {(selected.city || selected.region) && (
-            <p className="text-xs text-[#9CA3AF]">{[selected.city, selected.region].filter(Boolean).join(" — ")}</p>
+          {cityRegion(selected.city, selected.region, " — ") && (
+            <p className="text-xs text-[#9CA3AF]">{cityRegion(selected.city, selected.region, " — ")}</p>
           )}
           <p className="text-xs text-[#22C55E] font-bold flex items-center gap-1">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
@@ -1850,8 +1860,8 @@ function RecruiterCegepStep({ user, save }: { user: NexusUser; save: (u: Partial
                 className="w-full text-left bg-[#111317] border border-white/5 rounded-lg px-4 py-3 hover:border-[#E63946]/30 transition-colors"
               >
                 <p className="text-[14px] font-bold text-white">{c.name}</p>
-                {[c.city, c.region].filter(Boolean).join(", ") && (
-                  <p className="text-[12px] text-[#6B7280]">{[c.city, c.region].filter(Boolean).join(", ")}</p>
+                {cityRegion(c.city, c.region) && (
+                  <p className="text-[12px] text-[#6B7280]">{cityRegion(c.city, c.region)}</p>
                 )}
               </button>
             ))}
@@ -1867,7 +1877,7 @@ function RecruiterCegepStep({ user, save }: { user: NexusUser; save: (u: Partial
           <div className="flex items-center justify-between">
             <div>
               <p className="text-[15px] font-bold text-white">{selected}</p>
-              <p className="text-[12px] text-[#6B7280]">{[(inst as Record<string, string>)?.city, (inst as Record<string, string>)?.region].filter(Boolean).join(", ")}</p>
+              <p className="text-[12px] text-[#6B7280]">{cityRegion((inst as Record<string, string>)?.city, (inst as Record<string, string>)?.region)}</p>
             </div>
             <span className="text-[12px] font-bold text-[#22C55E]">✓ Sélectionné</span>
           </div>
@@ -2185,8 +2195,8 @@ function LeagueSelectStep({ user, save, onRequestNew }: {
           renderItem={(item) => (
             <div>
               <p className="font-bold">{item.name}</p>
-              {[item.city, item.region].filter(Boolean).join(" — ") && (
-                <p className="text-[10px] text-[#6B7280]">{[item.city, item.region].filter(Boolean).join(" — ")}</p>
+              {cityRegion(item.city, item.region, " — ") && (
+                <p className="text-[10px] text-[#6B7280]">{cityRegion(item.city, item.region, " — ")}</p>
               )}
             </div>
           )}
@@ -2196,8 +2206,8 @@ function LeagueSelectStep({ user, save, onRequestNew }: {
       {selected && (
         <div className="bg-[#111317] border border-white/10 rounded-lg p-5 space-y-3">
           <h3 className="font-head font-black text-lg text-white">{selected.name}</h3>
-          {[selected.city, selected.region].filter(Boolean).join(", ") && (
-            <p className="text-xs text-[#9CA3AF]">{[selected.city, selected.region].filter(Boolean).join(", ")}</p>
+          {cityRegion(selected.city, selected.region) && (
+            <p className="text-xs text-[#9CA3AF]">{cityRegion(selected.city, selected.region)}</p>
           )}
           <p className="text-xs text-[#22C55E] font-bold flex items-center gap-1">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
