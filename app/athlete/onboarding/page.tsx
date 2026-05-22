@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import NexusLogo from "@/components/ui/NexusLogo";
 import { createClient } from "@/lib/supabase/client";
+import { genderLabel } from "@/lib/config/gender";
 import { calculateProfileCompletion } from "@/lib/utils/calculateProfileCompletion";
 import SportPositionSelect from "@/app/coach/components/SportPositionSelect";
 import DatePicker from "@/app/coach/components/DatePicker";
@@ -374,7 +375,7 @@ function SchoolTeamPicker({
       <div className="space-y-2 max-h-[280px] overflow-y-auto">
         {visible.map((t) => {
           const isSelected = selectedTeamId === t.id;
-          const meta = [t.age_group, t.division, t.gender].filter(Boolean).join(" · ");
+          const meta = [t.age_group, t.division, t.gender ? genderLabel(t.gender) : null].filter(Boolean).join(" · ");
           return (
             <button
               key={t.id}

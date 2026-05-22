@@ -4,6 +4,7 @@ import { use, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { genderLabel } from "@/lib/config/gender";
 
 /* ═══════════════════════════════════════════════════════════════
    Admin School Detail — inline-editable header, stats bar, 4 tabs.
@@ -47,23 +48,6 @@ function frRelative(iso: string | null | undefined): string {
   if (days === 1) return "Hier";
   if (days < 7) return `Il y a ${days}j`;
   return d.toLocaleDateString("fr-CA", { year: "numeric", month: "short", day: "numeric" });
-}
-
-// Team gender — DB values are already display-ready ("Masculin"/"Féminin"/
-// "Mixte"), but map defensively so any raw form ("feminin", "M"/"F") still
-// renders accented French. Unknown values pass through unchanged.
-const GENDER_DISPLAY: Record<string, string> = {
-  masculin: "Masculin",
-  feminin: "Féminin",
-  "féminin": "Féminin",
-  mixte: "Mixte",
-  m: "Masculin",
-  f: "Féminin",
-  h: "Masculin",
-};
-function genderLabel(g: string | null | undefined): string {
-  if (!g) return "—";
-  return GENDER_DISPLAY[g.toLowerCase()] ?? g;
 }
 
 interface CoachRow {
