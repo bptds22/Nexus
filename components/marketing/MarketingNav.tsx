@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
+import { Menu, X } from "lucide-react";
 import NexusLogo from "@/components/ui/NexusLogo";
 
 const DROPDOWN_ITEMS = [
@@ -9,9 +11,20 @@ const DROPDOWN_ITEMS = [
   { label: "Pour les étudiants-athlètes", href: "/pour-les-etudiant-athlete" },
 ];
 
+// Main nav links — mirrored into the mobile hamburger menu. The desktop <ul>
+// below stays the source of truth for desktop and is left untouched.
+const NAV_LINKS = [
+  { label: "Comment ça marche", href: "/comment-ca-marche", accent: false },
+  { label: "Tarifs", href: "/tarifs", accent: true },
+  { label: "Roadmap", href: "/roadmap", accent: false },
+  { label: "À propos", href: "/a-propos", accent: false },
+];
+
 const label = "text-[10px] font-bold tracking-[0.25em] uppercase";
 
 export default function MarketingNav() {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const closeMenu = () => setMenuOpen(false);
   return (
     <nav className="sticky top-0 z-50 bg-[#111317] border-b border-[#1E2D4A]">
       <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
@@ -92,9 +105,64 @@ export default function MarketingNav() {
           <Link href="/auth?mode=signup" className="nx-ghost-btn h-9 px-5 border font-head font-black text-xs uppercase tracking-widest inline-flex items-center">
             S&apos;inscrire
           </Link>
+
+          <button
+            type="button"
+            onClick={() => setMenuOpen((o) => !o)}
+            aria-label={menuOpen ? "Fermer le menu" : "Ouvrir le menu"}
+            aria-expanded={menuOpen}
+            aria-controls="mobile-menu"
+            className="md:hidden flex items-center justify-center w-9 h-9 -mr-1 text-white"
+          >
+            {menuOpen ? <X size={22} /> : <Menu size={22} />}
+          </button>
         </div>
 
       </div>
+
+      {/* Mobile menu — hamburger drawer; mirrors the desktop nav links */}
+      {menuOpen && (
+        <div id="mobile-menu" className="md:hidden border-t border-[#1E2D4A] bg-[#111317] px-6 py-3">
+          <p className="px-2 pt-2 pb-1 text-[10px] font-bold tracking-[0.25em] uppercase text-[#475569]">
+            Découvrir Nexus
+          </p>
+          {DROPDOWN_ITEMS.map((d) => (
+            <Link
+              key={d.href}
+              href={d.href}
+              onClick={closeMenu}
+              className="block px-4 py-2.5 text-[12px] font-bold tracking-[0.18em] uppercase text-[#9AA3B2] hover:text-white transition-colors"
+            >
+              {d.label}
+            </Link>
+          ))}
+          {NAV_LINKS.map((l) => (
+            <Link
+              key={l.href}
+              href={l.href}
+              onClick={closeMenu}
+              className={`block px-2 py-2.5 text-[12px] font-bold tracking-[0.18em] uppercase transition-colors hover:text-white ${l.accent ? "text-[#E63946]" : "text-[#9AA3B2]"}`}
+            >
+              {l.label}
+            </Link>
+          ))}
+          <div className="border-t border-[#1E2D4A] my-2" />
+          <Link
+            href="/auth"
+            onClick={closeMenu}
+            className="block px-2 py-2.5 text-[12px] font-bold tracking-[0.18em] uppercase text-wl-red hover:text-white transition-colors"
+          >
+            Connexion
+          </Link>
+          <Link
+            href="/auth?mode=signup"
+            onClick={closeMenu}
+            className="nx-ghost-btn mt-2 h-10 border font-head font-black text-xs uppercase tracking-widest flex items-center justify-center"
+          >
+            S&apos;inscrire
+          </Link>
+        </div>
+      )}
     </nav>
   );
 }

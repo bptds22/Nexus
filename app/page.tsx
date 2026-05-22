@@ -64,10 +64,10 @@ export default function Home() {
         </div>
 
         {/* ── Mobile-first stacking + absolute on lg ── */}
-        <div className="relative z-10 max-w-7xl mx-auto px-6 pt-12 pb-32 lg:pt-0 lg:pb-0 lg:min-h-[calc(100vh-72px)]">
+        <div className="relative z-10 max-w-7xl mx-auto px-6 pt-12 pb-32 lg:pt-0 lg:pb-0 lg:min-h-[calc(100vh-72px)] flex flex-col lg:block">
 
           {/* ── Athlete card v30 — UNCHANGED, just repositioned ── */}
-          <div className="flex justify-center mb-16 lg:mb-0 lg:absolute lg:top-1/2 lg:right-[3%] lg:-translate-y-1/2 lg:scale-125 lg:origin-right lg:z-20">
+          <div className="order-2 flex justify-center mt-16 lg:mt-0 lg:absolute lg:top-1/2 lg:right-[3%] lg:-translate-y-1/2 lg:scale-125 lg:origin-right lg:z-20">
             <div className="nx-v30-wrap relative" style={{ width: 340, paddingTop: 6, paddingBottom: 10 }}>
 
               {/* Verified badge — 3D lapel pin */}
@@ -133,7 +133,7 @@ export default function Home() {
           </div>
 
           {/* ── Text cluster — bottom-left on lg, normal flow on mobile ── */}
-          <div className="lg:absolute lg:bottom-24 lg:left-14 lg:max-w-2xl lg:z-30">
+          <div className="order-1 lg:absolute lg:bottom-24 lg:left-14 lg:max-w-2xl lg:z-30">
             <div className="inline-flex items-center gap-3 mb-6">
               <span className="w-10 h-px bg-[#E63946]" />
               <span className={`${label} text-[#E63946]`}>Plateforme officielle · Québec 2026</span>
