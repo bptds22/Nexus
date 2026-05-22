@@ -308,6 +308,17 @@ Remove-Item .next\dev\lock         # stuck lock file
 rd /s /q .next && npx next dev --port 3002  # full rebuild
 ```
 
+### Applying SQL to the local DB (Windows — critical, learned the hard way)
+
+- **Apply SQL files via `docker cp` + `psql -f`, NEVER `Get-Content file.sql | docker exec -i psql`.** The PowerShell pipe corrupts UTF-8 — accented chars (é, è, à) and em-dashes silently become `??`. It once corrupted 188 teams + 4 schools and cost a full `db reset` recovery.
+  ```
+  docker cp file.sql supabase_db_Nexus:/tmp/file.sql
+  docker exec -e PGCLIENTENCODING=UTF8 supabase_db_Nexus psql -U postgres -d postgres -f /tmp/file.sql
+  ```
+  Run that `docker exec` from the **PowerShell tool**, not Bash — git-bash rewrites `/tmp/...` into a Windows path (MSYS path conversion).
+- **Verify accented content by bytes, not by eye:** `SELECT octet_length(col), char_length(col)`. An accented char is 2 bytes, an em-dash 3 — so `octet_length > char_length` for clean accented text; `octet_length == char_length` on an accented string means it is corrupt (`??`). Terminal mojibake and real stored corruption look identical in psql output — only the byte count is trustworthy.
+- Exporting with `\copy … TO STDOUT` also needs `-e PGCLIENTENCODING=UTF8`, or accents come out as `?`.
+
 ---
 
 ## GIT WORKFLOW
