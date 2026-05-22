@@ -771,6 +771,7 @@ export interface AthleteProfileRecruiterView {
   // Meta
   isCivil: boolean;
   isVerified: boolean;
+  parentalConsent: boolean;        // athletes.consentement_parental
   lastValidation?: string | null;
   profileCompleteness: number;
   favoriteCount: number;

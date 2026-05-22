@@ -433,6 +433,7 @@ export function mapToRecruiterView(raw: Record<string, unknown>): AthleteProfile
     fullGameUrl: (raw.video_match_complet_url as string) || "",
     practiceVideoUrl: (raw.video_entrainement_url as string) || "",
     isVerified: !!(raw.verified),
+    parentalConsent: !!(raw.consentement_parental),
     lastValidation: (raw.last_profile_validation as string) || null,
     profileCompleteness: calculateCompletion(raw as AthleteLike, (eval0 as EvalLike) || null, null).percentage,
     favoriteCount: 0,

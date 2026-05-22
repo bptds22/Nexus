@@ -388,8 +388,25 @@ export default function CoachAthleteProfilePage() {
     showToast("Suggestion rejetée");
   }
 
+  // Coach confirms parental consent — real write to athletes (RLS: coaches
+  // update own athletes). Refreshes the athlete so consentGiven reflects it.
+  async function confirmConsent() {
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("athletes")
+      .update({ consentement_parental: true, consentement_parental_date: new Date().toISOString() })
+      .eq("id", id);
+    if (error) {
+      console.error("[Consent confirm]", error);
+      showToast("Erreur : " + (error.message || "Impossible de confirmer le consentement"));
+      return;
+    }
+    const { data: refreshed } = await loadAthleteRaw(id);
+    if (refreshed) setA(mapToRecruiterView(refreshed as Record<string, unknown>));
+    showToast("Consentement parental confirmé");
+  }
+
   const [mode, setMode] = useState<"simple" | "detailed">("simple");
-  const [consentGiven, setConsentGiven] = useState(true);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [athleteHasAccount, setAthleteHasAccount] = useState(false);
   const [athleteEmail, setAthleteEmail] = useState<string | null>(null);
@@ -424,6 +441,9 @@ export default function CoachAthleteProfilePage() {
       </div>
     );
   }
+
+  // Real parental consent (athletes.consentement_parental) — gates the invite.
+  const consentGiven = a.parentalConsent;
 
   // Trait calculations — only average non-zero (rated) traits
   const traitEntries = a.traitRatings ? Object.entries(a.traitRatings) as [keyof AthleteTraitRatings, number][] : [];
@@ -480,7 +500,7 @@ export default function CoachAthleteProfilePage() {
               <div className="flex items-center gap-2">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#EAB308" strokeWidth="2" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
                 <span className="text-[12px] font-bold text-[#EAB308]">Consentement non confirmé</span>
-                <button type="button" onClick={() => { setConsentGiven(true); showToast("Consentement confirmé (POC)"); }} className="px-3 py-1 bg-[#EAB308] hover:bg-[#CA8A04] text-white text-[11px] font-bold rounded transition-colors">Confirmer</button>
+                <button type="button" onClick={confirmConsent} className="px-3 py-1 bg-[#EAB308] hover:bg-[#CA8A04] text-white text-[11px] font-bold rounded transition-colors">Confirmer</button>
               </div>
             )}
 

@@ -86,6 +86,7 @@ export const mockAthleteProfileFull: AthleteProfileRecruiterView = {
 
   // Meta
   isVerified: true,
+  parentalConsent: true,
   profileCompleteness: 92,
   favoriteCount: 3,
   viewsThisMonth: 34,
@@ -176,6 +177,7 @@ export const mockAthleteProfilePartial: AthleteProfileRecruiterView = {
 
   // Meta
   isVerified: false,
+  parentalConsent: false,
   profileCompleteness: 55,
   favoriteCount: 0,
   viewsThisMonth: 12,
@@ -267,6 +269,7 @@ export const mockBrunoProfile: AthleteProfileRecruiterView = {
 
   // Meta
   isVerified: true,
+  parentalConsent: true,
   profileCompleteness: 100,
   favoriteCount: 5,
   viewsThisMonth: 41,
