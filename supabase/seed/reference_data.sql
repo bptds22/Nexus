@@ -6366,3 +6366,34 @@ INSERT INTO public.schools (name, type, region, website, city, has_secondaire, h
 SELECT count(*) AS ligue_civile FROM public.schools WHERE type = 'LIGUE_CIVILE';
 
 COMMIT;
+
+-- Elite civil hockey franchises — civil-league round 2.
+-- 15 Ligue de hockey M18 AAA + 2 LHEQ-F Volet Féminin as flat LIGUE_CIVILE
+-- rows (franchise = the entity, 1:1; no club layer, no teams rows — teams
+-- come organically via coach onboarding). 6 LHEQ-F franchises deferred
+-- (feminin.lheq.ca is Spordle-protected — coach self-declares).
+-- ================================================================
+BEGIN;
+
+INSERT INTO public.schools (name, type, city, region, has_secondaire, has_collegial) VALUES
+  ('Forestiers d''Amos', 'LIGUE_CIVILE', 'Amos', 'Abitibi-Témiscamingue', false, false),
+  ('Grenadiers de Châteauguay', 'LIGUE_CIVILE', 'Châteauguay', 'Montérégie', false, false),
+  ('Riverains du Collège Charles-Lemoyne', 'LIGUE_CIVILE', 'Sainte-Catherine', 'Montérégie', false, false),
+  ('Phénix du Collège Esther-Blondin', 'LIGUE_CIVILE', 'Saint-Jacques', 'Lanaudière', false, false),
+  ('Albatros du Collège Notre-Dame', 'LIGUE_CIVILE', 'Montréal', 'Montréal', false, false),
+  ('L''Intrépide de Gatineau', 'LIGUE_CIVILE', 'Gatineau', 'Outaouais', false, false),
+  ('Élites de Jonquière', 'LIGUE_CIVILE', 'Jonquière', 'Saguenay-Lac-Saint-Jean', false, false),
+  ('Lions du Lac St-Louis', 'LIGUE_CIVILE', 'Pointe-Claire', 'Montréal — Lac-Saint-Louis', false, false),
+  ('Rousseau Royal de Laval-Montréal', 'LIGUE_CIVILE', 'Laval', 'Laval', false, false),
+  ('Chevaliers de Lévis', 'LIGUE_CIVILE', 'Lévis', 'Chaudière-Appalaches', false, false),
+  ('Cantonniers de Magog', 'LIGUE_CIVILE', 'Magog', 'Estrie', false, false),
+  ('Vikings de Saint-Eustache', 'LIGUE_CIVILE', 'Saint-Eustache', 'Laurentides', false, false),
+  ('Gaulois de Saint-Hyacinthe', 'LIGUE_CIVILE', 'Saint-Hyacinthe', 'Montérégie', false, false),
+  ('Blizzard du Séminaire Saint-François', 'LIGUE_CIVILE', 'Québec', 'Capitale-Nationale', false, false),
+  ('Estacades de Trois-Rivières', 'LIGUE_CIVILE', 'Trois-Rivières', 'Mauricie', false, false),
+  ('As de Québec', 'LIGUE_CIVILE', 'Québec', 'Capitale-Nationale / SLQNE', false, false),
+  ('Stars 55 — Mauricie-Centre-du-Québec', 'LIGUE_CIVILE', 'Trois-Rivières', 'Mauricie / Centre-du-Québec', false, false);
+
+SELECT count(*) AS ligue_civile FROM public.schools WHERE type = 'LIGUE_CIVILE';
+
+COMMIT;
