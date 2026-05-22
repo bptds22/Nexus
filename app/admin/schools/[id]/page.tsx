@@ -49,11 +49,21 @@ function frRelative(iso: string | null | undefined): string {
   return d.toLocaleDateString("fr-CA", { year: "numeric", month: "short", day: "numeric" });
 }
 
-function frDate(iso: string | null | undefined): string {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return "—";
-  return d.toLocaleDateString("fr-CA", { year: "numeric", month: "short", day: "numeric" });
+// Team gender — DB values are already display-ready ("Masculin"/"Féminin"/
+// "Mixte"), but map defensively so any raw form ("feminin", "M"/"F") still
+// renders accented French. Unknown values pass through unchanged.
+const GENDER_DISPLAY: Record<string, string> = {
+  masculin: "Masculin",
+  feminin: "Féminin",
+  "féminin": "Féminin",
+  mixte: "Mixte",
+  m: "Masculin",
+  f: "Féminin",
+  h: "Masculin",
+};
+function genderLabel(g: string | null | undefined): string {
+  if (!g) return "—";
+  return GENDER_DISPLAY[g.toLowerCase()] ?? g;
 }
 
 interface CoachRow {
@@ -80,6 +90,10 @@ interface TeamRow {
   coach_name: string | null;
   created_at: string | null;
   athleteCount: number;
+  division: string | null;
+  age_group: string | null;
+  gender: string | null;
+  league: string | null;
 }
 
 interface AthleteRow {
@@ -116,6 +130,8 @@ export default function AdminSchoolDetailPage({ params }: { params: Promise<{ id
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("coachs");
+  // Loi 25 logo gate — true only when ≥1 confirmed staff user is linked.
+  const [logoAllowed, setLogoAllowed] = useState(false);
 
   const [stats, setStats] = useState({
     totalAthletes: 0,
@@ -171,6 +187,18 @@ export default function AdminSchoolDetailPage({ params }: { params: Promise<{ id
       const regs = Array.from(new Set(((regRows as { region: string | null }[] | null) || [])
         .map((r) => r.region).filter((r): r is string => !!r))).sort((a, b) => a.localeCompare(b, "fr"));
       if (!cancelled) setRegionOptions(regs);
+
+      // Logo gate (Loi 25 — image rights). Show the school logo ONLY if ≥1
+      // staff user (coach / recruteur / directeur — linked via users.school_id)
+      // has completed onboarding. A half-finished signup (linked but
+      // onboarding_complete = false) does NOT count — no real consent. A null
+      // count (query error / RLS) → 0 → false → no logo (fail-safe).
+      const { count: staffCount } = await supabase
+        .from("users")
+        .select("id", { count: "exact", head: true })
+        .eq("school_id", id)
+        .eq("onboarding_complete", true);
+      if (!cancelled) setLogoAllowed((staffCount ?? 0) > 0);
 
       // NOTE: Transfer dropdown fetches schools on demand (see loadAllSchools()).
 
@@ -408,6 +436,10 @@ export default function AdminSchoolDetailPage({ params }: { params: Promise<{ id
           coach_name: coachName,
           created_at: (t.created_at as string) ?? null,
           athleteCount: teamAthleteCount.get(t.id as string) || 0,
+          division: (t.division as string) ?? null,
+          age_group: (t.age_group as string) ?? null,
+          gender: (t.gender as string) ?? null,
+          league: (t.league as string) ?? null,
         };
       });
       mappedTeams.sort((a, b) => a.nom.localeCompare(b.nom, "fr"));
@@ -666,6 +698,10 @@ export default function AdminSchoolDetailPage({ params }: { params: Promise<{ id
   // stay shared across all 3 types.
   const isCivilLigue = S("type") === "LIGUE_CIVILE";
 
+  // iso_active is a boolean — render as Oui/Non, "—" when NULL.
+  const isoActiveRaw = (school as Record<string, unknown>).iso_active;
+  const isoActiveLabel = isoActiveRaw === true ? "Oui" : isoActiveRaw === false ? "Non" : "—";
+
   // activity grouping
   const now = new Date();
   const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -713,6 +749,31 @@ export default function AdminSchoolDetailPage({ params }: { params: Promise<{ id
       {/* Editable header form */}
       <section className={`${card} p-6`}>
         <h2 className="font-head text-[14px] font-black text-white uppercase tracking-tight mb-4">Informations de l&apos;établissement</h2>
+
+        {/* Logo — Loi 25 gated. Renders only when a confirmed staff user is
+            linked to this school; otherwise hidden (no consent = no image). */}
+        <div className="flex items-center gap-4 mb-5 pb-5 border-b border-[#2D3748]">
+          <div className="w-20 h-20 rounded-lg bg-[#111317] border border-[#2D3748] flex items-center justify-center overflow-hidden shrink-0">
+            {logoAllowed && S("logo_url") ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img src={S("logo_url")} alt={`Logo ${S("name")}`} className="w-full h-full object-contain" />
+            ) : (
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4a4d56" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4" />
+              </svg>
+            )}
+          </div>
+          <div className="text-[12px] leading-relaxed min-w-0">
+            {!S("logo_url") ? (
+              <span className="text-[#6b7280]">Aucun logo importé pour cet établissement.</span>
+            ) : logoAllowed ? (
+              <span className="text-[#9CA3AF]">Logo affiché — au moins un utilisateur confirmé est rattaché à cet établissement.</span>
+            ) : (
+              <span className="text-[#F59E0B]">Logo masqué — aucun utilisateur confirmé rattaché. L&apos;affichage reste bloqué tant qu&apos;aucun consentement réel n&apos;existe (Loi 25, droits d&apos;image).</span>
+            )}
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <label className="space-y-1.5 block">
             <span className={labelCls}>Nom</span>
@@ -787,6 +848,26 @@ export default function AdminSchoolDetailPage({ params }: { params: Promise<{ id
               <input type="text" value={S("site_web")} onChange={(e) => setS("site_web", e.target.value)} className={inputCls} />
             </label>
           )}
+        </div>
+
+        {/* Données importées — read-only reference fields surfaced from the
+            RSEQ / open-data import (not editable from this panel). */}
+        <div className="mt-6 pt-5 border-t border-[#2D3748]">
+          <h3 className="text-[11px] font-bold tracking-[0.12em] uppercase text-[#6b7280] mb-3">Données importées</h3>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            {([
+              ["Code postal", S("postal_code") || "—"],
+              ["Identifiant (slug)", S("slug") || "—"],
+              ["ISO actif", isoActiveLabel],
+              ["Nom d'équipe / mascotte", S("team_name") || "—"],
+              ["ID institution RSEQ", S("rseq_institution_id") || "—"],
+            ] as [string, string][]).map(([fieldLabel, value]) => (
+              <div key={fieldLabel}>
+                <span className={labelCls}>{fieldLabel}</span>
+                <p className="text-[13px] text-[#E0E0E0] mt-1 break-all">{value}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -959,9 +1040,10 @@ export default function AdminSchoolDetailPage({ params }: { params: Promise<{ id
                   <tr>
                     <th className="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-[0.1em] text-[#9CA3AF]">Équipe</th>
                     <th className="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-[0.1em] text-[#9CA3AF]">Sport</th>
-                    <th className="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-[0.1em] text-[#9CA3AF]">Coach</th>
-                    <th className="px-4 py-3 text-right text-[11px] font-bold uppercase tracking-[0.1em] text-[#9CA3AF]"># Athlètes</th>
-                    <th className="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-[0.1em] text-[#9CA3AF]">Créée le</th>
+                    <th className="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-[0.1em] text-[#9CA3AF]">Division</th>
+                    <th className="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-[0.1em] text-[#9CA3AF]">Catégorie</th>
+                    <th className="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-[0.1em] text-[#9CA3AF]">Genre</th>
+                    <th className="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-[0.1em] text-[#9CA3AF]">Ligue</th>
                     <th className="px-4 py-3 text-right text-[11px] font-bold uppercase tracking-[0.1em] text-[#9CA3AF]">Actions</th>
                   </tr>
                 </thead>
@@ -970,9 +1052,10 @@ export default function AdminSchoolDetailPage({ params }: { params: Promise<{ id
                     <tr key={t.id} className="border-b border-[#2D3748] hover:bg-[#22252D]">
                       <td className="px-4 py-3 text-white font-bold">{t.nom}</td>
                       <td className="px-4 py-3 text-[#9CA3AF]">{t.sport_name || "—"}</td>
-                      <td className="px-4 py-3 text-[#9CA3AF]">{t.coach_name || "—"}</td>
-                      <td className="px-4 py-3 text-right tabular-nums">{t.athleteCount}</td>
-                      <td className="px-4 py-3 text-[#9CA3AF]">{frDate(t.created_at)}</td>
+                      <td className="px-4 py-3 text-[#9CA3AF]">{t.division || "—"}</td>
+                      <td className="px-4 py-3 text-[#9CA3AF]">{t.age_group || "—"}</td>
+                      <td className="px-4 py-3 text-[#9CA3AF]">{genderLabel(t.gender)}</td>
+                      <td className="px-4 py-3 text-[#9CA3AF]">{t.league || "—"}</td>
                       <td className="px-4 py-3 text-right">
                         <button
                           type="button"
