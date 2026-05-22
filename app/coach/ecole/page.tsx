@@ -132,10 +132,10 @@ function SchoolDashboardContent() {
       let placementsCount = 0;
       if (athleteIds.length > 0) {
         const { count } = await supabase
-          .from("pipeline")
+          .from("recruiter_pipeline")
           .select("id", { count: "exact", head: true })
           .in("athlete_id", athleteIds)
-          .eq("status", "LETTRE_SIGNEE");
+          .eq("stage", "LETTRE_SIGNEE");
         placementsCount = count || 0;
       }
 
@@ -172,14 +172,14 @@ function SchoolDashboardContent() {
       // Funnel — count pipeline by status
       if (athleteIds.length > 0) {
         const { data: pipelineEntries } = await supabase
-          .from("pipeline")
-          .select("status")
+          .from("recruiter_pipeline")
+          .select("stage")
           .in("athlete_id", athleteIds);
 
         const counts: Record<string, number> = {};
-        (pipelineEntries || []).forEach((p: { status: string }) => {
-          if (p.status !== "NONE" && p.status !== "RETIRE") {
-            counts[p.status] = (counts[p.status] || 0) + 1;
+        (pipelineEntries || []).forEach((p: { stage: string }) => {
+          if (p.stage !== "NONE" && p.stage !== "RETIRE") {
+            counts[p.stage] = (counts[p.stage] || 0) + 1;
           }
         });
 

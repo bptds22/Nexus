@@ -157,7 +157,7 @@ function CoachAnalyticsPage() {
       //    .limit(10000) overrides PostgREST's default 1000-row cap.
 
       const [pipelineRes, viewsRes, favoritesRes, convsRes] = await Promise.all([
-        supabase.from("pipeline").select("id, athlete_id, recruiter_id, status", { count: "exact" }).in("athlete_id", athleteIds).limit(10000),
+        supabase.from("recruiter_pipeline").select("id, athlete_id, recruiter_id, stage", { count: "exact" }).in("athlete_id", athleteIds).limit(10000),
         // recruiter_athlete_views is the authoritative view-tracking table (matches the
         // counter shown on the recruiter-side athlete profile page).
         supabase.from("recruiter_athlete_views").select("athlete_id, recruiter_id, viewed_at", { count: "exact" }).in("athlete_id", athleteIds).limit(10000),
@@ -252,7 +252,7 @@ function CoachAnalyticsPage() {
       });
 
       // ── CÉGEPs interested — union of pipeline + favorites + conversations recruiter ids ──
-      const activePipeline = pipeline.filter(p => p.status !== "NONE" && p.status !== "RETIRE");
+      const activePipeline = pipeline.filter(p => p.stage !== "NONE" && p.stage !== "RETIRE");
       type InterestRow = { athlete_id: string; recruiter_id: string };
       const interestRows: InterestRow[] = [
         ...activePipeline
@@ -297,7 +297,7 @@ function CoachAnalyticsPage() {
 
       const distinctAthletesByStatuses = (statuses: string[]) => {
         const set = new Set<string>();
-        pipeline.forEach(p => { if (statuses.includes(p.status)) set.add(p.athlete_id); });
+        pipeline.forEach(p => { if (statuses.includes(p.stage)) set.add(p.athlete_id); });
         return set.size;
       };
 

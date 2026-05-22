@@ -51,10 +51,10 @@ function PlacementsPage() {
 
       // Get pipeline entries with LETTRE_SIGNEE
       const { data: pipelineEntries } = await supabase
-        .from("pipeline")
+        .from("recruiter_pipeline")
         .select("id, athlete_id, recruiter_id, updated_at")
         .in("athlete_id", athleteIds)
-        .eq("status", "LETTRE_SIGNEE");
+        .eq("stage", "LETTRE_SIGNEE");
 
       if (!pipelineEntries || pipelineEntries.length === 0) {
         setPlacements([]);

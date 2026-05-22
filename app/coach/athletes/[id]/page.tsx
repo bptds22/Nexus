@@ -271,14 +271,14 @@ export default function CoachAthleteProfilePage() {
       const { createClient } = await import("@/lib/supabase/client");
       const supabase = createClient();
       const { data: pipeRows } = await supabase
-        .from("pipeline")
-        .select("status, updated_at")
+        .from("recruiter_pipeline")
+        .select("stage, updated_at")
         .eq("athlete_id", id);
       if (pipeRows && pipeRows.length > 0) {
         const counts: Record<string, number> = {};
         let maxAt = "";
-        pipeRows.forEach((r: { status: string; updated_at: string }) => {
-          counts[r.status] = (counts[r.status] || 0) + 1;
+        pipeRows.forEach((r: { stage: string; updated_at: string }) => {
+          counts[r.stage] = (counts[r.stage] || 0) + 1;
           if (r.updated_at && r.updated_at > maxAt) maxAt = r.updated_at;
         });
         setPipelineData(Object.entries(counts).map(([status, count]) => ({ status, count })));

@@ -81,8 +81,8 @@ function StatsPage() {
       const athleteIds = athletes.map(a => a.id);
 
       const { data: pipelineEntries } = await supabase
-        .from("pipeline")
-        .select("id, athlete_id, recruiter_id, status")
+        .from("recruiter_pipeline")
+        .select("id, athlete_id, recruiter_id, stage")
         .in("athlete_id", athleteIds);
       const pipeline = pipelineEntries || [];
 
@@ -107,8 +107,8 @@ function StatsPage() {
         if (!ath) return;
         const sportName = sportsMap[ath.sport_id] || "Inconnu";
         if (!sportGroups[sportName]) return;
-        if (CONTACT_STATUSES.includes(p.status)) sportGroups[sportName].contacts += 1;
-        if (p.status === "LETTRE_SIGNEE") sportGroups[sportName].placements += 1;
+        if (CONTACT_STATUSES.includes(p.stage)) sportGroups[sportName].contacts += 1;
+        if (p.stage === "LETTRE_SIGNEE") sportGroups[sportName].placements += 1;
       });
       const builtStats: StatBySport[] = Object.entries(sportGroups).map(([sport, g]) => ({
         sport, athletes: g.athletes.size, profilesCompleted: g.completed, views: 0, contacts: g.contacts, placements: g.placements,
@@ -119,12 +119,12 @@ function StatsPage() {
       // ── Pipeline counts for funnel ──
       const counts: PipelineCounts = { IDENTIFIE: 0, CONTACTE: 0, EN_DISCUSSION: 0, ENGAGE: 0, LETTRE_SIGNEE: 0 };
       pipeline.forEach(p => {
-        if (p.status in counts) counts[p.status as keyof PipelineCounts] += 1;
+        if (p.stage in counts) counts[p.stage as keyof PipelineCounts] += 1;
       });
       setPipelineCounts(counts);
 
       // ── CÉGEPs intéressés — group by CÉGEP, count distinct athletes ──
-      const activePipeline = pipeline.filter(p => p.status !== "NONE" && p.status !== "RETIRE");
+      const activePipeline = pipeline.filter(p => p.stage !== "NONE" && p.stage !== "RETIRE");
       const recruiterIds = [...new Set(activePipeline.map(p => p.recruiter_id).filter(Boolean))];
       let cegepList: InterestedCegep[] = [];
       if (recruiterIds.length > 0) {
@@ -153,7 +153,7 @@ function StatsPage() {
       const athletePipelineMap: Record<string, string[]> = {};
       pipeline.forEach(p => {
         if (!athletePipelineMap[p.athlete_id]) athletePipelineMap[p.athlete_id] = [];
-        athletePipelineMap[p.athlete_id].push(p.status);
+        athletePipelineMap[p.athlete_id].push(p.stage);
       });
       const sorted = [...athletes].sort((a, b) => (athletePipelineMap[b.id]?.length || 0) - (athletePipelineMap[a.id]?.length || 0));
       const top10: TopAthlete[] = sorted.slice(0, 10).map(a => {

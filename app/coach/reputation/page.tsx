@@ -127,10 +127,10 @@ export default function CoachReputationPage() {
       // 3. Placed athletes
       if (athleteIds.length > 0) {
         const { count } = await supabase
-          .from("pipeline")
+          .from("recruiter_pipeline")
           .select("athlete_id", { count: "exact", head: true })
           .in("athlete_id", athleteIds)
-          .eq("status", "LETTRE_SIGNEE");
+          .eq("stage", "LETTRE_SIGNEE");
         const placements = count || 0;
         setTotalPlacements(placements);
         if (placements >= 5) setHasPlaceurBadge(true);

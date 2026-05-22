@@ -108,7 +108,7 @@ export default function AdminRecruteursPage() {
       });
 
       const { data: pipes } = await supabase
-        .from("pipeline")
+        .from("recruiter_pipeline")
         .select("recruiter_id")
         .in("recruiter_id", recruiterIds);
       (pipes || []).forEach((p) => {
@@ -125,7 +125,7 @@ export default function AdminRecruteursPage() {
 
     const [convsMonth, pipeMonth] = await Promise.all([
       supabase.from("conversations").select("recruiter_id").gte("created_at", monthStartIso),
-      supabase.from("pipeline").select("recruiter_id").gte("updated_at", monthStartIso),
+      supabase.from("recruiter_pipeline").select("recruiter_id").gte("updated_at", monthStartIso),
     ]);
     const activeIds = new Set<string>();
     (convsMonth.data || []).forEach((r) => activeIds.add(r.recruiter_id as string));
