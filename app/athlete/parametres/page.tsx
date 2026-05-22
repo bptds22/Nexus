@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import SubscriptionSection from "@/components/subscription/SubscriptionSection";
 import AthletePlayerCard from "@/components/shared/AthletePlayerCard";
 import CoachPicker from "@/components/coach/CoachPicker";
@@ -55,6 +56,7 @@ const NOTIF_PREFS = [
 ];
 
 export default function ParametresPage() {
+  const router = useRouter();
   const [section, setSection] = useState<SectionKey>("compte");
   const [toast, setToast] = useState<string | null>(null);
   const [showPwdForm, setShowPwdForm] = useState(false);
@@ -63,6 +65,7 @@ export default function ParametresPage() {
   );
   const [showRevokeModal, setShowRevokeModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [actionPending, setActionPending] = useState(false);
   const [profile, setProfile] = useState<{
     email: string;
     context: string | null;
@@ -99,6 +102,31 @@ export default function ParametresPage() {
   const captureRef = useRef<HTMLDivElement | null>(null);
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
+
+  // ── Loi 25 — consent revocation + soft account deactivation ──────
+  // Both call the deactivate_my_account RPC (SECURITY DEFINER, keyed on
+  // auth.uid()): users.status is locked against direct self-updates, so
+  // the RPC is the only path. status='DESACTIVE' = soft deactivation +
+  // data retention (NO hard delete). Middleware doesn't kill a live
+  // session → sign out explicitly. A failed RPC aborts before sign-out
+  // so we never claim success or strand the user half-deactivated.
+  async function revokeConsent() {
+    setActionPending(true);
+    const supabase = createClient();
+    const { error } = await supabase.rpc("deactivate_my_account", { p_revoke_consent: true });
+    if (error) { setActionPending(false); showToast("Erreur : " + error.message); return; }
+    await supabase.auth.signOut();
+    router.replace("/compte-desactive");
+  }
+
+  async function deactivateAccount() {
+    setActionPending(true);
+    const supabase = createClient();
+    const { error } = await supabase.rpc("deactivate_my_account", { p_revoke_consent: false });
+    if (error) { setActionPending(false); showToast("Erreur : " + error.message); return; }
+    await supabase.auth.signOut();
+    router.replace("/compte-desactive");
+  }
 
   const loadProfile = useCallback(async () => {
     const supabase = createClient();
@@ -680,7 +708,7 @@ export default function ParametresPage() {
             <p className="text-[11px] text-[#6b7280] mt-2">Cette action peut être annulée en contactant ton coach.</p>
             <div className="flex items-center justify-end gap-3 mt-5">
               <button type="button" onClick={() => setShowRevokeModal(false)} className="px-4 py-2 text-[13px] font-bold text-[#9CA3AF] hover:text-white transition-colors">Annuler</button>
-              <button type="button" onClick={() => { setShowRevokeModal(false); showToast("Consentement retiré (POC)"); }} className="px-5 py-2 bg-[#E63946] hover:bg-[#D42B22] text-white text-[13px] font-bold rounded-lg transition-colors">Retirer le consentement</button>
+              <button type="button" disabled={actionPending} onClick={revokeConsent} className="px-5 py-2 bg-[#E63946] hover:bg-[#D42B22] text-white text-[13px] font-bold rounded-lg transition-colors disabled:opacity-50">{actionPending ? "..." : "Retirer le consentement"}</button>
             </div>
           </div>
         </div>
@@ -695,7 +723,7 @@ export default function ParametresPage() {
             <p className="text-[13px] text-[#9CA3AF] mt-2 leading-relaxed">Ton profil sera désactivé et tu perdras l&apos;accès à ton espace athlète. La suppression définitive sera effectuée après 30 jours.</p>
             <div className="flex items-center justify-end gap-3 mt-5">
               <button type="button" onClick={() => setShowDeleteModal(false)} className="px-4 py-2 text-[13px] font-bold text-[#9CA3AF] hover:text-white transition-colors">Annuler</button>
-              <button type="button" onClick={() => { setShowDeleteModal(false); showToast("Demande de suppression envoyée (POC)"); }} className="px-5 py-2 bg-[#E63946] hover:bg-[#D42B22] text-white text-[13px] font-bold rounded-lg transition-colors">Confirmer la suppression</button>
+              <button type="button" disabled={actionPending} onClick={deactivateAccount} className="px-5 py-2 bg-[#E63946] hover:bg-[#D42B22] text-white text-[13px] font-bold rounded-lg transition-colors disabled:opacity-50">{actionPending ? "..." : "Confirmer la suppression"}</button>
             </div>
           </div>
         </div>
