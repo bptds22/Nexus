@@ -6076,3 +6076,116 @@ FROM public.schools s WHERE s.rseq_institution_id = 'd4ca50f7-ba6a-4f83-b1bd-e2f
 SELECT count(*) AS teams_total, count(*) FILTER (WHERE school_id IS NULL) AS orphans FROM public.teams;
 
 COMMIT;
+
+-- Close the API-sports import — 4 new schools + bridge 6 + their teams.
+-- Self-ordered: INSERT schools, bridge rseq_institution_id (COALESCE), then
+-- INSERT … SELECT teams (school_id via the GUID join). NOT EXISTS dedupe.
+-- ================================================================
+BEGIN;
+
+-- ---- 4 new schools ----
+INSERT INTO public.schools (name, type, city, region, has_secondaire, has_collegial) VALUES
+  ('Cégep de Charlevoix', 'CEGEP', 'La Malbaie', 'Capitale-Nationale', false, true),
+  ('Centre d''études collégiales de la Matapédie', 'CEGEP', 'Amqui', 'Bas-Saint-Laurent', false, true),
+  ('Centre d''études collégiales à Chibougamau', 'CEGEP', 'Chibougamau', 'Nord-du-Québec', false, true),
+  ('Séminaire de Sherbrooke', 'SECONDAIRE', 'Sherbrooke', 'Estrie', true, false);
+
+-- ---- bridge 6 (rseq_institution_id, COALESCE) ----
+-- Charlevoix → Cégep de Charlevoix (new)
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, 'bbd25ba4-b78f-4946-8310-8348591c0ea9') WHERE name = 'Cégep de Charlevoix' AND city = 'La Malbaie' AND type = 'CEGEP';
+-- Matapédien → Centre d'études collégiales de la Matapédie (new)
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, '2c58754f-957f-4f03-8ac2-67e8c45a38ca') WHERE name = 'Centre d''études collégiales de la Matapédie' AND city = 'Amqui' AND type = 'CEGEP';
+-- Chibougamau → Centre d'études collégiales à Chibougamau (new)
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, '37bf3df1-85fe-4fc1-ae38-9b4424b3f4d0') WHERE name = 'Centre d''études collégiales à Chibougamau' AND city = 'Chibougamau' AND type = 'CEGEP';
+-- Séminaire de Sherbrooke · SECONDAIRE (new) — SECONDAIRE institution_id
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, '0f16387e-0d7a-4005-891a-af4e63ece5a5') WHERE name = 'Séminaire de Sherbrooke' AND city = 'Sherbrooke' AND type = 'SECONDAIRE';
+-- Sainte-Anne → existing Collégial international Sainte-Anne
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, '06b92bc5-391b-4eaf-99d5-96c2a51bb17b') WHERE name = 'Collégial international Sainte-Anne' AND type = 'CEGEP';
+-- Lanaudière → existing Cégep régional de Lanaudière (umbrella)
+UPDATE public.schools SET rseq_institution_id = COALESCE(rseq_institution_id, 'afea5181-9f60-4e0d-8b9a-85f4706cb3f7') WHERE name = 'Cégep régional de Lanaudière' AND city = 'Repentigny';
+
+-- ---- 8 team-sport teams (GUID-join) ----
+-- Football: Lanaudière / D3 / Collégial / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT s.id, '4b859bf1-5832-4258-897c-e094062926af', 'Lanaudière', 'D3', 'RSEQ — Provincial — Sud-Ouest', 'Collégial', 'Masculin', NULL, true
+FROM public.schools s WHERE s.rseq_institution_id = 'afea5181-9f60-4e0d-8b9a-85f4706cb3f7'
+  AND NOT EXISTS (SELECT 1 FROM public.teams t WHERE t.school_id = s.id
+    AND t.sport_id = '4b859bf1-5832-4258-897c-e094062926af' AND t.name = 'Lanaudière'
+    AND t.age_group IS NOT DISTINCT FROM 'Collégial'
+    AND t.division IS NOT DISTINCT FROM 'D3'
+    AND t.gender IS NOT DISTINCT FROM 'Masculin'
+    AND t.season IS NULL);
+-- Flag football: Charlevoix / D3 / Collégial / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT s.id, 'f1c283ba-7ef2-44a5-acff-d16017562d67', 'Charlevoix', 'D3', 'RSEQ — Nord-Est — QCA-EDQ', 'Collégial', 'Féminin', NULL, true
+FROM public.schools s WHERE s.rseq_institution_id = 'bbd25ba4-b78f-4946-8310-8348591c0ea9'
+  AND NOT EXISTS (SELECT 1 FROM public.teams t WHERE t.school_id = s.id
+    AND t.sport_id = 'f1c283ba-7ef2-44a5-acff-d16017562d67' AND t.name = 'Charlevoix'
+    AND t.age_group IS NOT DISTINCT FROM 'Collégial'
+    AND t.division IS NOT DISTINCT FROM 'D3'
+    AND t.gender IS NOT DISTINCT FROM 'Féminin'
+    AND t.season IS NULL);
+-- Volleyball: Matapédien / D2 / Collégial / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT s.id, '063752bb-e786-4009-ac46-bb3c4eccfdee', 'Matapédien', 'D2', 'RSEQ — Nord-Est — QCA-EDQ', 'Collégial', 'Féminin', NULL, true
+FROM public.schools s WHERE s.rseq_institution_id = '2c58754f-957f-4f03-8ac2-67e8c45a38ca'
+  AND NOT EXISTS (SELECT 1 FROM public.teams t WHERE t.school_id = s.id
+    AND t.sport_id = '063752bb-e786-4009-ac46-bb3c4eccfdee' AND t.name = 'Matapédien'
+    AND t.age_group IS NOT DISTINCT FROM 'Collégial'
+    AND t.division IS NOT DISTINCT FROM 'D2'
+    AND t.gender IS NOT DISTINCT FROM 'Féminin'
+    AND t.season IS NULL);
+-- Volleyball: Chibougamau / D3 / Collégial / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT s.id, '063752bb-e786-4009-ac46-bb3c4eccfdee', 'Chibougamau', 'D3', 'RSEQ — Nord-Est — A-SLSJ-CN', 'Collégial', 'Féminin', NULL, true
+FROM public.schools s WHERE s.rseq_institution_id = '37bf3df1-85fe-4fc1-ae38-9b4424b3f4d0'
+  AND NOT EXISTS (SELECT 1 FROM public.teams t WHERE t.school_id = s.id
+    AND t.sport_id = '063752bb-e786-4009-ac46-bb3c4eccfdee' AND t.name = 'Chibougamau'
+    AND t.age_group IS NOT DISTINCT FROM 'Collégial'
+    AND t.division IS NOT DISTINCT FROM 'D3'
+    AND t.gender IS NOT DISTINCT FROM 'Féminin'
+    AND t.season IS NULL);
+-- Badminton: Sainte-Anne / D3 / Collégial / Mixte
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT s.id, 'aff40e75-09e4-4e5c-8dd5-99736cf9bea3', 'Sainte-Anne', 'D3', 'RSEQ — Sud-Ouest', 'Collégial', 'Mixte', NULL, true
+FROM public.schools s WHERE s.rseq_institution_id = '06b92bc5-391b-4eaf-99d5-96c2a51bb17b'
+  AND NOT EXISTS (SELECT 1 FROM public.teams t WHERE t.school_id = s.id
+    AND t.sport_id = 'aff40e75-09e4-4e5c-8dd5-99736cf9bea3' AND t.name = 'Sainte-Anne'
+    AND t.age_group IS NOT DISTINCT FROM 'Collégial'
+    AND t.division IS NOT DISTINCT FROM 'D3'
+    AND t.gender IS NOT DISTINCT FROM 'Mixte'
+    AND t.season IS NULL);
+-- Flag football: Sainte-Anne / D3 / Collégial / Masculin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT s.id, 'f1c283ba-7ef2-44a5-acff-d16017562d67', 'Sainte-Anne', 'D3', 'RSEQ — Sud-Ouest', 'Collégial', 'Masculin', NULL, true
+FROM public.schools s WHERE s.rseq_institution_id = '06b92bc5-391b-4eaf-99d5-96c2a51bb17b'
+  AND NOT EXISTS (SELECT 1 FROM public.teams t WHERE t.school_id = s.id
+    AND t.sport_id = 'f1c283ba-7ef2-44a5-acff-d16017562d67' AND t.name = 'Sainte-Anne'
+    AND t.age_group IS NOT DISTINCT FROM 'Collégial'
+    AND t.division IS NOT DISTINCT FROM 'D3'
+    AND t.gender IS NOT DISTINCT FROM 'Masculin'
+    AND t.season IS NULL);
+-- Ultimate: Sainte-Anne /  / Collégial / Mixte
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT s.id, '0f3d4984-605a-4af1-86a9-432499ab8fd9', 'Sainte-Anne', NULL, 'RSEQ — Sud-Ouest', 'Collégial', 'Mixte', NULL, true
+FROM public.schools s WHERE s.rseq_institution_id = '06b92bc5-391b-4eaf-99d5-96c2a51bb17b'
+  AND NOT EXISTS (SELECT 1 FROM public.teams t WHERE t.school_id = s.id
+    AND t.sport_id = '0f3d4984-605a-4af1-86a9-432499ab8fd9' AND t.name = 'Sainte-Anne'
+    AND t.age_group IS NOT DISTINCT FROM 'Collégial'
+    AND t.division IS NOT DISTINCT FROM NULL
+    AND t.gender IS NOT DISTINCT FROM 'Mixte'
+    AND t.season IS NULL);
+-- Volleyball: Séminaire de Sherbrooke / D1 / Juvénile / Féminin
+INSERT INTO public.teams (school_id, sport_id, name, division, league, age_group, gender, season, is_active)
+SELECT s.id, '063752bb-e786-4009-ac46-bb3c4eccfdee', 'Séminaire de Sherbrooke', 'D1', 'RSEQ', 'Juvénile', 'Féminin', NULL, true
+FROM public.schools s WHERE s.rseq_institution_id = '0f16387e-0d7a-4005-891a-af4e63ece5a5'
+  AND NOT EXISTS (SELECT 1 FROM public.teams t WHERE t.school_id = s.id
+    AND t.sport_id = '063752bb-e786-4009-ac46-bb3c4eccfdee' AND t.name = 'Séminaire de Sherbrooke'
+    AND t.age_group IS NOT DISTINCT FROM 'Juvénile'
+    AND t.division IS NOT DISTINCT FROM 'D1'
+    AND t.gender IS NOT DISTINCT FROM 'Féminin'
+    AND t.season IS NULL);
+
+SELECT count(*) AS teams_total, count(*) FILTER (WHERE school_id IS NULL) AS orphans FROM public.teams;
+
+COMMIT;
