@@ -121,7 +121,9 @@ export default function AdminSidebar({ mobileOpen, onClose }: Props) {
       }
     })();
     return () => { cancelled = true; };
-  }, []);
+    // Re-count on every navigation — was a mount-only snapshot that went
+    // stale (e.g. approving a claim left a phantom badge until full reload).
+  }, [pathname]);
 
   const badges: Record<string, number> = {
     "/admin/moderation": pendingReports,
