@@ -54,6 +54,11 @@ export default function RosterRow({ athlete: a, even, onVerify }: RosterRowProps
           last_profile_validation: null,
         })
         .eq("id", a.id);
+      if (error) {
+        console.error("[RosterRow] unverify error:", error.message);
+        alert("Erreur lors de la mise à jour : " + error.message);
+        return;
+      }
     } else {
       const nowIso = new Date().toISOString();
       const { error } = await supabase
@@ -66,6 +71,11 @@ export default function RosterRow({ athlete: a, even, onVerify }: RosterRowProps
           last_profile_validation: nowIso,
         })
         .eq("id", a.id);
+      if (error) {
+        console.error("[RosterRow] verify error:", error.message);
+        alert("Erreur lors de la mise à jour : " + error.message);
+        return;
+      }
     }
 
     setShowConfirm(false);
