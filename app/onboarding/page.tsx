@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import NexusLogo from "@/components/ui/NexusLogo";
 import { createClient } from "@/lib/supabase/client";
@@ -9,6 +9,9 @@ import TeamSearchOrCreate, { type TeamSearchRow } from "@/components/onboarding/
 import TeamCreateForm, { type TeamFormData } from "@/components/onboarding/TeamCreateForm";
 import { findOrCreateSchool } from "@/lib/onboarding/findOrCreateSchool";
 import { getCurrentSeason } from "@/lib/utils/season";
+
+// TODO(emails): verify — codebase has both nexus-sport.ca and nexus-sports.ca. Part of the pending email review pass.
+const NEXUS_CONTACT_EMAIL = "support@nexus-sport.ca";
 
 /* ─────────────────────────────────────────────────────────────────
    Nexus — Onboarding Wizard
@@ -1279,6 +1282,59 @@ function CoachProfile({ profile, save }: { profile: Record<string, unknown>; sav
   );
 }
 
+/* ── Establishment-not-found block — replaces the old custom-school form.
+   Message + mailto: to Nexus + an on-screen confirmation #. It saves NOTHING,
+   so a user who can't find their school cannot complete onboarding
+   (validateInstitution gates next/finish on a non-empty institution name). */
+function randomCode(len: number): string {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no ambiguous 0/O/1/I
+  let s = "";
+  for (let i = 0; i < len; i++) s += chars[Math.floor(Math.random() * chars.length)];
+  return s;
+}
+
+function SchoolNotFound({ kind }: { kind: "ecole" | "cegep" }) {
+  const isCegep = kind === "cegep";
+  // One confirmation # per onboarding session — also the email subject.
+  const confirmId = useMemo(
+    () => `NEXUS-${isCegep ? "CEGEP" : "ECOLE"}-${randomCode(4)}`,
+    [isCegep],
+  );
+  const noun = isCegep ? "CÉGEP" : "école";
+  const heading = `Ton ${noun} n'est pas dans la liste?`;
+  const message = isCegep
+    ? "Envoie-nous ses infos — on l'ajoute rapidement. Tu devras recommencer l'inscription une fois le CÉGEP ajouté (rien n'est sauvegardé d'ici là)."
+    : "Envoie-nous ses infos — on l'ajoute rapidement. Tu devras recommencer l'inscription une fois l'école ajoutée (rien n'est sauvegardé d'ici là).";
+  const body =
+    `Demande d'ajout — ${confirmId}\n\n` +
+    "Nom de l'établissement :\n" +
+    "Adresse :\n" +
+    "Ville :\n" +
+    "Région :\n" +
+    "Type (secondaire / cégep) :\n" +
+    "Mon courriel (pour le suivi) :\n";
+  const mailtoHref =
+    `mailto:${NEXUS_CONTACT_EMAIL}` +
+    `?subject=${encodeURIComponent(`${confirmId} — Demande d'ajout d'établissement`)}` +
+    `&body=${encodeURIComponent(body)}`;
+
+  return (
+    <div className="bg-[#111317] border border-white/10 rounded-lg p-4 space-y-3">
+      <p className="text-[13px] font-bold text-white">{heading}</p>
+      <p className="text-[12px] text-[#9CA3AF] leading-relaxed">{message}</p>
+      <a
+        href={mailtoHref}
+        className="inline-flex h-10 items-center px-5 rounded-lg bg-[#E63946] text-xs font-bold text-white hover:bg-[#D42B22] transition-colors"
+      >
+        Envoyer les infos à Nexus
+      </a>
+      <p className="text-[11px] text-[#6B7280]">
+        Numéro de demande : <span className="font-mono text-[#9CA3AF]">{confirmId}</span>
+      </p>
+    </div>
+  );
+}
+
 /* ── School step (shared by Coach + Director École) ── */
 function SchoolStep({ user, save }: { user: NexusUser; save: (u: Partial<NexusUser>) => void }) {
   const [schools, setSchools] = useState<{ name: string; city: string; region: string; conference: string; sports: string[] }[]>([]);
@@ -1286,10 +1342,6 @@ function SchoolStep({ user, save }: { user: NexusUser; save: (u: Partial<NexusUs
   const [selected, setSelected] = useState<{ name: string; city: string; region: string; conference: string; sports: string[] } | null>(
     user.institution ? { name: (user.institution as Record<string, string>).name, city: (user.institution as Record<string, string>).city || "", region: (user.institution as Record<string, string>).region || "", conference: "", sports: [] } : null
   );
-  const [showCustom, setShowCustom] = useState(false);
-  const [customName, setCustomName] = useState("");
-  const [customCity, setCustomCity] = useState("");
-  const [customRegion, setCustomRegion] = useState("");
 
   useEffect(() => {
     const supabase = createClient();
@@ -1363,27 +1415,8 @@ function SchoolStep({ user, save }: { user: NexusUser; save: (u: Partial<NexusUs
         </div>
       )}
 
-      {/* Custom school */}
-      {!selected && (
-        <>
-          <button type="button" onClick={() => setShowCustom(!showCustom)} className="text-xs text-[#9CA3AF] hover:text-white transition-colors underline">
-            Mon école n&apos;est pas dans la liste
-          </button>
-          {showCustom && (
-            <div className="space-y-3 bg-[#111317] border border-white/10 rounded-lg p-4">
-              <input type="text" placeholder="Nom de l'école" value={customName} onChange={(e) => setCustomName(e.target.value)} className={inputClass} />
-              <input type="text" placeholder="Ville" value={customCity} onChange={(e) => setCustomCity(e.target.value)} className={inputClass} />
-              <select value={customRegion} onChange={(e) => setCustomRegion(e.target.value)} className={`${inputClass} appearance-none`}>
-                <option value="">Région</option>
-                {REGIONS.map((r) => <option key={r} value={r}>{r}</option>)}
-              </select>
-              <button type="button" onClick={() => { save({ institution: { name: customName, city: customCity, region: customRegion, conference: "", sports: [] } }); setShowCustom(false); }} className="h-10 px-6 rounded-lg bg-[#E63946] text-xs font-bold text-white hover:bg-[#D42B22] transition-colors">
-                Soumettre une demande
-              </button>
-            </div>
-          )}
-        </>
-      )}
+      {/* School not in the list — message + mailto to Nexus, saves nothing */}
+      {!selected && <SchoolNotFound kind="ecole" />}
     </div>
   );
 }
@@ -1800,10 +1833,6 @@ function RecruiterCegepStep({ user, save }: { user: NexusUser; save: (u: Partial
   const inst = user.institution as Record<string, string> | null;
   const [selected, setSelected] = useState(inst?.name || "");
   const [search, setSearch] = useState("");
-  const [showCustom, setShowCustom] = useState(false);
-  const [customName, setCustomName] = useState("");
-  const [customCity, setCustomCity] = useState("");
-  const [customSubmitted, setCustomSubmitted] = useState(false);
   const [cegeps, setCegeps] = useState<{ name: string; city: string; region: string }[]>([]);
 
   const inputCls = "w-full bg-[#111317] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white placeholder:text-[#6B7280] focus:border-[#E63946] outline-none transition-colors";
@@ -1842,7 +1871,7 @@ function RecruiterCegepStep({ user, save }: { user: NexusUser; save: (u: Partial
         <p className="text-sm text-[#9CA3AF] mt-1">Associe-toi à ton CÉGEP pour commencer le recrutement.</p>
       </div>
 
-      {!selected && !showCustom && (
+      {!selected && (
         <>
           <input
             type="text"
@@ -1866,9 +1895,7 @@ function RecruiterCegepStep({ user, save }: { user: NexusUser; save: (u: Partial
               </button>
             ))}
           </div>
-          <button type="button" onClick={() => setShowCustom(true)} className="text-[12px] text-[#E63946] font-bold hover:text-[#D42B22] transition-colors">
-            Mon CÉGEP n&apos;est pas dans la liste →
-          </button>
+          <SchoolNotFound kind="cegep" />
         </>
       )}
 
@@ -1887,23 +1914,6 @@ function RecruiterCegepStep({ user, save }: { user: NexusUser; save: (u: Partial
         </div>
       )}
 
-      {showCustom && !selected && (
-        <div className="bg-[#111317] border border-white/5 rounded-xl p-5 space-y-3">
-          <p className="text-[13px] font-bold text-white">Demander l&apos;ajout de ton CÉGEP</p>
-          <input type="text" placeholder="Nom du CÉGEP" value={customName} onChange={(e) => setCustomName(e.target.value)} className={inputCls} />
-          <input type="text" placeholder="Ville" value={customCity} onChange={(e) => setCustomCity(e.target.value)} className={inputCls} />
-          {!customSubmitted ? (
-            <button type="button" onClick={() => { setCustomSubmitted(true); if (customName) { setSelected(customName); save({ institution: { name: customName, city: customCity } }); } }} className="h-10 px-5 rounded-lg bg-[#E63946] text-white font-bold text-[12px] uppercase tracking-wider hover:bg-[#D42B22] transition-colors">
-              Soumettre
-            </button>
-          ) : (
-            <p className="text-[12px] text-[#22C55E] font-bold">✓ Demande soumise (POC)</p>
-          )}
-          <button type="button" onClick={() => setShowCustom(false)} className="text-[11px] text-[#6B7280] hover:text-white transition-colors block">
-            ← Retour à la liste
-          </button>
-        </div>
-      )}
     </div>
   );
 }
