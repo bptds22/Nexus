@@ -253,32 +253,41 @@ export default function CoachSuggestionsPage() {
       if (!user) { setLoading(false); return; }
       setUserId(user.id);
 
+      // Live: read athlete_suggestions — same source as coach/athletes/[id].
+      // The insert in app/athlete/profil populates coach_id on the suggestion
+      // row, so .eq("coach_id", user.id) gives this coach's inbox cleanly.
+      // Embed athletes for name + sport; raison_rejet/reviewed_at come along
+      // for the approved/rejected tabs.
       const { data, error } = await supabase
-        .from("profile_changes")
-        .select("*, athletes(first_name, last_name, sport_id, verified, sports!sport_id(nom))")
+        .from("athlete_suggestions")
+        .select("id, athlete_id, champ, valeur_actuelle, valeur_proposee, message, status, raison_rejet, reviewed_at, created_at, athletes!athlete_id(first_name, last_name, sport_id, verified, sports!sport_id(nom))")
         .eq("coach_id", user.id)
         .order("created_at", { ascending: false });
 
-
-      if (data) {
+      if (error) {
+        console.error("[CoachSuggestions] load error:", error.message);
+      } else if (data) {
         const mapped: CoachSuggestion[] = data.map((row: Record<string, unknown>) => {
-          const athleteRaw = row.athletes as Record<string, unknown> | null;
-          const sportRaw = athleteRaw?.sports;
+          const athleteRaw = row.athletes as Record<string, unknown> | Record<string, unknown>[] | null;
+          const ath = (Array.isArray(athleteRaw) ? athleteRaw[0] : athleteRaw) as Record<string, unknown> | null;
+          const sportRaw = ath?.sports;
           const sport = Array.isArray(sportRaw) ? sportRaw[0] : sportRaw;
           const sportObj = sport as { nom?: string } | null;
 
           return {
             id: row.id as string,
             athlete_id: row.athlete_id as string,
-            athlete_name: athleteRaw ? `${(athleteRaw.first_name as string) || ""} ${(athleteRaw.last_name as string) || ""}`.trim() : "Athlète",
+            athlete_name: ath ? `${(ath.first_name as string) || ""} ${(ath.last_name as string) || ""}`.trim() : "Athlète",
             athlete_sport: sportObj?.nom || "",
-            athlete_verified: !!(athleteRaw?.verified),
-            field: (row.field_name as string) || "",
-            current_value: (row.old_value as string) || null,
-            proposed_value: (row.new_value as string) || "",
+            athlete_verified: !!(ath?.verified),
+            field: (row.champ as string) || "",
+            current_value: (row.valeur_actuelle as string) || null,
+            proposed_value: (row.valeur_proposee as string) || "",
             message: (row.message as string) || null,
             status: mapDbStatus((row.status as string) || ""),
             submitted_at: (row.created_at as string) || "",
+            reviewed_at: (row.reviewed_at as string) || undefined,
+            rejection_reason: (row.raison_rejet as string) || undefined,
           };
         });
         setSuggestions(mapped);
@@ -305,46 +314,68 @@ export default function CoachSuggestionsPage() {
     return list;
   }, [suggestions, filter, athleteFilter]);
 
+  // Approve goes through the same write path as coach/athletes/[id]: flipping
+  // athlete_suggestions.status to APPROUVEE fires the apply_approved_suggestion
+  // trigger which writes the value back to the athletes row. We do NOT touch
+  // the athlete row directly.
   const handleApprove = useCallback(async (id: string) => {
     const supabase = createClient();
-    const { error } = await supabase.from("profile_changes").update({ status: "ACKNOWLEDGED" }).eq("id", id);
-    if (!error) {
-      setSuggestions((prev) => prev.map((s) => s.id === id ? { ...s, status: "approved" as const, reviewed_at: new Date().toISOString() } : s));
-      showToast("Suggestion approuvée");
+    const { error } = await supabase.from("athlete_suggestions").update({ status: "APPROUVEE" }).eq("id", id);
+    if (error) {
+      console.error("[CoachSuggestions] approve error:", error.message);
+      showToast("Erreur : " + error.message);
+      return;
     }
+    setSuggestions((prev) => prev.map((s) => s.id === id ? { ...s, status: "approved" as const, reviewed_at: new Date().toISOString() } : s));
+    showToast("Suggestion approuvée");
   }, [showToast]);
 
+  // Reject flips status + saves the reason. The athlete row is NOT touched —
+  // an athlete_suggestion never lands on the athlete until APPROUVEE, so there
+  // is nothing to revert. (The old path tried to write `field_name` back to
+  // athletes, but field_name is a French label like "Numéro", not an athlete
+  // column — that path was broken anyway.)
   const handleReject = useCallback(async (id: string, reason: string) => {
     const supabase = createClient();
-    // Find the suggestion to get old_value and field_name
-    const suggestion = suggestions.find((s) => s.id === id);
-    if (suggestion && suggestion.current_value) {
-      // Revert the athlete field to old value
-      const { error: revertError } = await supabase
-        .from("athletes")
-        .update({ [suggestion.field]: suggestion.current_value })
-        .eq("id", suggestion.athlete_id);
+    const { error } = await supabase
+      .from("athlete_suggestions")
+      .update({ status: "REJETEE", raison_rejet: reason || null })
+      .eq("id", id);
+    if (error) {
+      console.error("[CoachSuggestions] reject error:", error.message);
+      showToast("Erreur : " + error.message);
+      return;
     }
-    const { error } = await supabase.from("profile_changes").update({ status: "REVERTED" }).eq("id", id);
-    if (!error) {
-      setSuggestions((prev) => prev.map((s) => s.id === id ? { ...s, status: "rejected" as const, reviewed_at: new Date().toISOString(), rejection_reason: reason } : s));
-      showToast("Suggestion rejetée");
-    }
-  }, [showToast, suggestions]);
+    setSuggestions((prev) => prev.map((s) => s.id === id ? { ...s, status: "rejected" as const, reviewed_at: new Date().toISOString(), rejection_reason: reason } : s));
+    showToast("Suggestion rejetée");
+  }, [showToast]);
 
+  // Per-row loop instead of a single bulk UPDATE: the apply_approved_suggestion
+  // trigger can RAISE on an unhandled champ or an unresolvable Position name,
+  // which would abort a bulk update all-or-nothing. Looping isolates each row
+  // so the valid ones still land.
   const handleApproveAll = useCallback(async () => {
     if (!userId) return;
+    const pendingIds = suggestions.filter((s) => s.status === "pending").map((s) => s.id);
+    if (pendingIds.length === 0) return;
     const supabase = createClient();
-    const { error } = await supabase
-      .from("profile_changes")
-      .update({ status: "ACKNOWLEDGED" })
-      .eq("coach_id", userId)
-      .eq("status", "PENDING");
-    if (!error) {
-      setSuggestions((prev) => prev.map((s) => s.status === "pending" ? { ...s, status: "approved" as const, reviewed_at: new Date().toISOString() } : s));
-      showToast(`${pendingCount} suggestions approuvées`);
+    const succeeded = new Set<string>();
+    const failures: string[] = [];
+    for (const id of pendingIds) {
+      const { error } = await supabase.from("athlete_suggestions").update({ status: "APPROUVEE" }).eq("id", id);
+      if (error) failures.push(`${id}: ${error.message}`);
+      else succeeded.add(id);
     }
-  }, [userId, pendingCount, showToast]);
+    setSuggestions((prev) => prev.map((s) =>
+      succeeded.has(s.id) ? { ...s, status: "approved" as const, reviewed_at: new Date().toISOString() } : s
+    ));
+    if (failures.length > 0) {
+      console.error("[CoachSuggestions] bulk approve failures:", failures);
+      showToast(`${succeeded.size} approuvée(s), ${failures.length} échec(s)`);
+    } else {
+      showToast(`${succeeded.size} suggestion${succeeded.size > 1 ? "s" : ""} approuvée${succeeded.size > 1 ? "s" : ""}`);
+    }
+  }, [userId, suggestions, showToast]);
 
   const TABS: { key: FilterKey; label: string; count: number; color: string }[] = [
     { key: "pending", label: "En attente", count: pendingCount, color: "#EAB308" },

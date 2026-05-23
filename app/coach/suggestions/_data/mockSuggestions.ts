@@ -19,11 +19,14 @@ export interface CoachSuggestion {
   rejection_reason?: string;
 }
 
-/** Map DB status to local status */
+/** Map DB status to local status. Live source is athlete_suggestions
+ *  (EN_ATTENTE / APPROUVEE / REJETEE); the older PENDING / ACKNOWLEDGED /
+ *  REVERTED forms from the dead profile_changes shape are kept so any
+ *  mock data still resolves. */
 export function mapDbStatus(s: string): CoachSuggestion["status"] {
   const lower = s?.toLowerCase();
-  if (lower === "pending") return "pending";
-  if (lower === "acknowledged" || lower === "approved") return "approved";
-  if (lower === "reverted" || lower === "rejected") return "rejected";
+  if (lower === "en_attente" || lower === "pending") return "pending";
+  if (lower === "approuvee" || lower === "acknowledged" || lower === "approved") return "approved";
+  if (lower === "rejetee" || lower === "reverted" || lower === "rejected") return "rejected";
   return "pending";
 }
