@@ -32,9 +32,9 @@ export interface AdminUserRow {
 
 export const ADMIN_USERS: AdminUserRow[] = [
   // Admins (3)
-  { id: "u-001", full_name: "Charles-Alexandre Déry", email: "ca.dery@nexus-sport.ca", role: "admin", school_or_cegep: "Nexus HQ", status: "active", created_at: "2024-09-01T10:00:00Z", last_login_at: "2026-03-16T08:30:00Z" },
-  { id: "u-002", full_name: "Bruno-Philippe Desfossés", email: "bp.desfosses@nexus-sport.ca", role: "admin", school_or_cegep: "Nexus HQ", status: "active", created_at: "2024-09-01T10:00:00Z", last_login_at: "2026-03-15T19:45:00Z" },
-  { id: "u-003", full_name: "Marie-Ève Lavoie", email: "me.lavoie@nexus-sport.ca", role: "admin", school_or_cegep: "Nexus HQ", status: "active", created_at: "2024-11-15T14:00:00Z", last_login_at: "2026-03-14T11:20:00Z" },
+  { id: "u-001", full_name: "Charles-Alexandre Déry", email: "ca.dery@nexussports.ca", role: "admin", school_or_cegep: "Nexus HQ", status: "active", created_at: "2024-09-01T10:00:00Z", last_login_at: "2026-03-16T08:30:00Z" },
+  { id: "u-002", full_name: "Bruno-Philippe Desfossés", email: "bp.desfosses@nexussports.ca", role: "admin", school_or_cegep: "Nexus HQ", status: "active", created_at: "2024-09-01T10:00:00Z", last_login_at: "2026-03-15T19:45:00Z" },
+  { id: "u-003", full_name: "Marie-Ève Lavoie", email: "me.lavoie@nexussports.ca", role: "admin", school_or_cegep: "Nexus HQ", status: "active", created_at: "2024-11-15T14:00:00Z", last_login_at: "2026-03-14T11:20:00Z" },
 
   // Coaches (8 — 7 active, 1 suspended)
   { id: "u-010", full_name: "Marc-André Pelletier", email: "ma.pelletier@rochebelle.qc.ca", role: "coach", school_or_cegep: "École De Rochebelle", status: "active", created_at: "2025-01-10T09:00:00Z", last_login_at: "2026-03-15T14:10:00Z" },

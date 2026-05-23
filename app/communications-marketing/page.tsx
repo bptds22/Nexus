@@ -85,7 +85,7 @@ const SECTIONS = [
     bullets: [
       "Paramètres : dans votre espace Paramètres > Confidentialité, désactivez le toggle « Communications marketing »",
       "Lien de désabonnement : chaque courriel marketing contient un lien « Se désabonner » en pied de page",
-      "Courriel direct : envoyez votre demande à confidentialite@nexus-sport.ca",
+      "Courriel direct : envoyez votre demande à confidentialite@nexussports.ca",
     ],
     after: [
       "Le retrait prend effet immédiatement. Vous pourriez recevoir des communications déjà programmées dans un délai maximum de 48 heures après le retrait.",
@@ -130,7 +130,7 @@ const SECTIONS = [
     ],
     bullets: [
       "RPRP : Bruno-Philippe Desfossés Simard",
-      "Courriel : confidentialite@nexus-sport.ca",
+      "Courriel : confidentialite@nexussports.ca",
       "Adresse : 856 Basile-Routhier, Repentigny, Québec",
     ],
     after: [
@@ -294,8 +294,8 @@ export default function CommunicationsMarketingPage() {
             <h2 className="nx-display text-4xl font-black text-white uppercase leading-tight">Contacte-nous</h2>
           </div>
           <div className="flex gap-3 flex-shrink-0">
-            <a href="mailto:confidentialite@nexus-sport.ca" className="h-12 px-8 bg-wl-red text-white font-head font-black text-xs uppercase tracking-widest hover:bg-wl-red-hover transition-colors hover:shadow-[0_8px_28px_rgba(232,72,72,0.38)] hover:-translate-y-0.5 inline-flex items-center">
-              confidentialite@nexus-sport.ca
+            <a href="mailto:confidentialite@nexussports.ca" className="h-12 px-8 bg-wl-red text-white font-head font-black text-xs uppercase tracking-widest hover:bg-wl-red-hover transition-colors hover:shadow-[0_8px_28px_rgba(232,72,72,0.38)] hover:-translate-y-0.5 inline-flex items-center">
+              confidentialite@nexussports.ca
             </a>
             <Link href="/confidentialite" className="nx-ghost-btn h-12 px-8 border font-head font-black text-xs uppercase tracking-widest inline-flex items-center">
               Politique de confidentialit&eacute;

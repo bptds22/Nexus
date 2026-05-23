@@ -220,7 +220,7 @@ export default function ConfidentialiteSection({ form, original, onUpdateVisibil
           <p className="text-[14px] font-bold text-white">Bruno-Philippe Desfossés Simard</p>
           <div className="flex items-center gap-2">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round"><rect x="2" y="4" width="20" height="16" rx="2" /><path d="M22 7l-10 7L2 7" /></svg>
-            <a href="mailto:confidentialite@nexus-sport.ca" className="text-[12px] text-[#9CA3AF] hover:text-white transition-colors">confidentialite@nexus-sport.ca</a>
+            <a href="mailto:confidentialite@nexussports.ca" className="text-[12px] text-[#9CA3AF] hover:text-white transition-colors">confidentialite@nexussports.ca</a>
           </div>
           <div className="flex items-center gap-2">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" /><circle cx="12" cy="10" r="3" /></svg>

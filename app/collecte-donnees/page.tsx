@@ -164,14 +164,14 @@ const SECTIONS = [
       "Conformément à la Loi 25, vous disposez de droits sur vos données personnelles. Pour les exercer, contactez notre RPRP :",
     ],
     bullets: [
-      "Accès : demandez une copie complète de vos données à confidentialite@nexus-sport.ca",
+      "Accès : demandez une copie complète de vos données à confidentialite@nexussports.ca",
       "Rectification : corrigez vos informations directement dans votre profil ou contactez-nous",
       "Suppression : demandez la suppression de votre compte via les paramètres ou par courriel",
       "Portabilité : demandez l'export de vos données en format JSON ou CSV",
       "Retrait du consentement : retirez votre consentement à tout moment (sauf consentements requis pour le service)",
     ],
     after: [
-      "Responsable de la protection des renseignements personnels (RPRP) : Bruno-Philippe Desfossés Simard — confidentialite@nexus-sport.ca — 856 Basile-Routhier, Repentigny, Québec.",
+      "Responsable de la protection des renseignements personnels (RPRP) : Bruno-Philippe Desfossés Simard — confidentialite@nexussports.ca — 856 Basile-Routhier, Repentigny, Québec.",
       "Délai de réponse : 30 jours ouvrables maximum.",
     ],
   },
@@ -332,8 +332,8 @@ export default function CollecteDonneesPage() {
             <h2 className="nx-display text-4xl font-black text-white uppercase leading-tight">Contacte-nous</h2>
           </div>
           <div className="flex gap-3 flex-shrink-0">
-            <a href="mailto:confidentialite@nexus-sport.ca" className="h-12 px-8 bg-wl-red text-white font-head font-black text-xs uppercase tracking-widest hover:bg-wl-red-hover transition-colors hover:shadow-[0_8px_28px_rgba(232,72,72,0.38)] hover:-translate-y-0.5 inline-flex items-center">
-              confidentialite@nexus-sport.ca
+            <a href="mailto:confidentialite@nexussports.ca" className="h-12 px-8 bg-wl-red text-white font-head font-black text-xs uppercase tracking-widest hover:bg-wl-red-hover transition-colors hover:shadow-[0_8px_28px_rgba(232,72,72,0.38)] hover:-translate-y-0.5 inline-flex items-center">
+              confidentialite@nexussports.ca
             </a>
             <Link href="/confidentialite" className="nx-ghost-btn h-12 px-8 border font-head font-black text-xs uppercase tracking-widest inline-flex items-center">
               Politique de confidentialit&eacute;

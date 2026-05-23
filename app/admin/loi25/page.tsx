@@ -613,7 +613,7 @@ const MOCK_RPRP = [
 
 function RprpTab() {
   const [nexusName, setNexusName] = useState("Bruno-Philippe Desfosses Simard");
-  const [nexusEmail, setNexusEmail] = useState("confidentialite@nexus-sport.ca");
+  const [nexusEmail, setNexusEmail] = useState("confidentialite@nexussports.ca");
   const [nexusDate, setNexusDate] = useState("2026-01-01");
   const [toast, setToast] = useState<string | null>(null);
   const missingCount = MOCK_RPRP.filter((r) => !r.active).length;

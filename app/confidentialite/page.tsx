@@ -138,7 +138,7 @@ const SECTIONS = [
       "Droit d'être informé : vous serez avisé de tout incident de confidentialité susceptible de vous causer un préjudice",
     ],
     after: [
-      "Pour exercer ces droits, contactez notre responsable de la protection des renseignements personnels à support@nexus-sport.ca. Nous répondrons dans un délai de 30 jours.",
+      "Pour exercer ces droits, contactez notre responsable de la protection des renseignements personnels à support@nexussports.ca. Nous répondrons dans un délai de 30 jours.",
     ],
   },
   {

@@ -117,12 +117,12 @@ export default function AProposPage() {
                 <div className="h-px bg-white/[0.06] my-6" />
 
                 <div className="space-y-3">
-                  <a href="mailto:bp@nexus-sport.ca" className="flex items-center gap-3 text-[14px] text-white/65 hover:text-[#E63946] transition-colors">
+                  <a href="mailto:bp@nexussports.ca" className="flex items-center gap-3 text-[14px] text-white/65 hover:text-[#E63946] transition-colors">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
                       <rect x="2" y="4" width="20" height="16" rx="2" />
                       <path d="M22 7l-10 7L2 7" />
                     </svg>
-                    bp@nexus-sport.ca
+                    bp@nexussports.ca
                   </a>
                   <a href="tel:4384980494" className="flex items-center gap-3 text-[14px] text-white/65 hover:text-[#E63946] transition-colors">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
@@ -152,12 +152,12 @@ export default function AProposPage() {
                 <div className="h-px bg-white/[0.06] my-6" />
 
                 <div className="space-y-3">
-                  <a href="mailto:chuck@nexus-sport.ca" className="flex items-center gap-3 text-[14px] text-white/65 hover:text-[#E63946] transition-colors">
+                  <a href="mailto:chuck@nexussports.ca" className="flex items-center gap-3 text-[14px] text-white/65 hover:text-[#E63946] transition-colors">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
                       <rect x="2" y="4" width="20" height="16" rx="2" />
                       <path d="M22 7l-10 7L2 7" />
                     </svg>
-                    chuck@nexus-sport.ca
+                    chuck@nexussports.ca
                   </a>
                 </div>
               </div>

@@ -10,8 +10,8 @@ import TeamCreateForm, { type TeamFormData } from "@/components/onboarding/TeamC
 import { findOrCreateSchool } from "@/lib/onboarding/findOrCreateSchool";
 import { getCurrentSeason } from "@/lib/utils/season";
 
-// TODO(emails): verify — codebase has both nexus-sport.ca and nexus-sports.ca. Part of the pending email review pass.
-const NEXUS_CONTACT_EMAIL = "support@nexus-sport.ca";
+// Canonical Nexus support inbox for user-driven contact (school-not-found, etc.).
+const NEXUS_CONTACT_EMAIL = "support@nexussports.ca";
 
 /* ─────────────────────────────────────────────────────────────────
    Nexus — Onboarding Wizard

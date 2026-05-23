@@ -110,7 +110,7 @@ export default function PendingPage() {
           <Link href="/" className="flex-1 h-11 flex items-center justify-center rounded-lg border border-white/10 text-sm font-bold text-white hover:border-white/20 transition-colors">
             Retour à l&apos;accueil
           </Link>
-          <a href="mailto:support@nexus-sport.ca" className="flex-1 h-11 flex items-center justify-center rounded-lg bg-[#E63946] text-sm font-bold text-white hover:bg-[#D42B22] transition-colors">
+          <a href="mailto:support@nexussports.ca" className="flex-1 h-11 flex items-center justify-center rounded-lg bg-[#E63946] text-sm font-bold text-white hover:bg-[#D42B22] transition-colors">
             Contacter le support
           </a>
         </div>
