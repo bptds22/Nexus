@@ -634,30 +634,71 @@ function AuditTab() {
    TAB 4 — PORTABILITÉ
 ═══════════════════════════════════════════════════════════════ */
 
-// TODO: Wire to loi25_portability_requests table.
-interface PortabilityRequest {
+// Real tracker — backed by public.loi25_portability_requests (admin-only).
+interface PortabilityRow {
   id: string;
-  dateReceived: string;
-  requester: string;
-  type: string;
-  target: string;
-  status: "reçu" | "en_cours" | "complété" | "expiré";
-  daysElapsed: number;
+  requester_name: string;
+  requester_email: string | null;
+  request_type: string;
+  submitted_at: string;
+  deadline: string;
+  status: string;
+  fulfilled_at: string | null;
+  notes: string | null;
 }
-const MOCK_PORTABILITY: PortabilityRequest[] = [
-  { id: "PORT-001", dateReceived: "2026-04-01", requester: "Marie Côté (Parent)", type: "Portabilité", target: "Athlète #087", status: "complété", daysElapsed: 12 },
-  { id: "PORT-002", dateReceived: "2026-04-10", requester: "Coach Simard",         type: "Mes données", target: "—",           status: "en_cours", daysElapsed: 6 },
-];
+
+const PORTABILITY_TYPE_LABEL: Record<string, string> = {
+  access: "Accès",
+  portability: "Portabilité",
+  rectification: "Rectification",
+  deletion: "Suppression",
+};
 
 function PortabiliteTab() {
+  const supabase = useMemo(() => createClient(), []);
+  const [requests, setRequests] = useState<PortabilityRow[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const notify = (m: string) => { setToast(m); setTimeout(() => setToast(null), 2500); };
 
+  const refresh = useCallback(async () => {
+    const { data, error } = await supabase
+      .from("loi25_portability_requests")
+      .select("id, requester_name, requester_email, request_type, submitted_at, deadline, status, fulfilled_at, notes")
+      .order("deadline", { ascending: true });
+    if (error) {
+      console.error("[Admin Loi 25] portability fetch error:", error.message);
+      setRequests([]);
+    } else {
+      setRequests((data || []) as PortabilityRow[]);
+    }
+    setLoading(false);
+  }, [supabase]);
+
+  useEffect(() => { refresh(); }, [refresh]);
+
+  async function setStatus(id: string, status: string, fulfilledAt: string | null) {
+    const { error } = await supabase
+      .from("loi25_portability_requests")
+      .update({ status, fulfilled_at: fulfilledAt })
+      .eq("id", id);
+    if (error) {
+      console.error("[Loi 25 portability] update error:", error.message);
+      notify("Erreur : " + error.message);
+      return;
+    }
+    await refresh();
+    notify("Statut mis à jour");
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <p className="text-[13px] text-[#9CA3AF]">Demandes de portabilité et d&apos;accès aux données (Loi 25 Phase 3 — délai légal de 30 jours).</p>
+        <p className="text-[13px] text-[#9CA3AF]">Demandes Loi 25 (accès / portabilité / rectification / suppression — délai légal de 30 jours).</p>
         <button type="button" onClick={() => setShowForm(true)}
           className="inline-flex items-center gap-2 h-10 px-4 rounded-lg bg-[#E63946] text-white text-[12px] font-bold uppercase tracking-wider hover:bg-[#D42B22]">
           <Plus size={14} /> Nouvelle demande
@@ -668,63 +709,138 @@ function PortabiliteTab() {
         <table className="w-full text-[13px]">
           <thead className="bg-white/[0.02] border-b border-[#1e2128]">
             <tr className="text-left text-[11px] text-[#6b7280] uppercase tracking-wider">
-              <th className="px-4 py-3 font-bold">#</th>
-              <th className="px-4 py-3 font-bold">Date</th>
+              <th className="px-4 py-3 font-bold">Reçue</th>
               <th className="px-4 py-3 font-bold">Demandeur</th>
               <th className="px-4 py-3 font-bold">Type</th>
-              <th className="px-4 py-3 font-bold">Cible</th>
               <th className="px-4 py-3 font-bold">Statut</th>
-              <th className="px-4 py-3 font-bold">Délai</th>
+              <th className="px-4 py-3 font-bold">Échéance</th>
               <th className="px-4 py-3 font-bold text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#1e2128]">
-            {MOCK_PORTABILITY.map((req) => (
-              <tr key={req.id} className="hover:bg-white/[0.03]">
-                <td className="px-4 py-3 text-white font-mono text-[12px]">{req.id}</td>
-                <td className="px-4 py-3 text-[#9CA3AF]">{formatDate(req.dateReceived)}</td>
-                <td className="px-4 py-3 text-white">{req.requester}</td>
-                <td className="px-4 py-3 text-[#9CA3AF]">{req.type}</td>
-                <td className="px-4 py-3 text-[#9CA3AF]">{req.target}</td>
-                <td className="px-4 py-3"><PortabilityStatusBadge status={req.status} /></td>
-                <td className="px-4 py-3 text-[12px] text-[#9CA3AF]">
-                  <Clock size={12} className="inline mr-1" />
-                  {req.daysElapsed}j / 30
-                </td>
-                <td className="px-4 py-3 text-right">
-                  <button type="button" onClick={() => notify(`Export généré pour ${req.id} (placeholder)`)}
-                    className="text-[11px] font-bold uppercase tracking-wider text-[#F59E0B] hover:text-white">
-                    {req.status === "complété" ? "Voir" : "Traiter"}
-                  </button>
-                </td>
-              </tr>
-            ))}
+            {loading && <tr><td colSpan={6} className="px-4 py-8 text-center text-[#6b7280]">Chargement…</td></tr>}
+            {!loading && requests.length === 0 && <tr><td colSpan={6} className="px-4 py-8 text-center text-[#6b7280]">Aucune demande enregistrée.</td></tr>}
+            {requests.map((req) => {
+              const deadlineDate = new Date(req.deadline);
+              deadlineDate.setHours(0, 0, 0, 0);
+              const daysLeft = Math.ceil((deadlineDate.getTime() - today.getTime()) / 86400000);
+              const open = req.status === "pending" || req.status === "in_progress";
+              const cls = !open
+                ? "text-[#6b7280]"
+                : daysLeft <= 0
+                ? "text-[#E63946] font-bold"
+                : daysLeft <= 7
+                ? "text-[#F59E0B] font-bold"
+                : "text-[#9CA3AF]";
+              const label = !open
+                ? formatDate(req.deadline)
+                : daysLeft <= 0
+                ? `${Math.abs(daysLeft)}j en retard`
+                : `${daysLeft}j restants`;
+              return (
+                <tr key={req.id} className="hover:bg-white/[0.03]">
+                  <td className="px-4 py-3 text-[#9CA3AF] whitespace-nowrap">{formatDate(req.submitted_at)}</td>
+                  <td className="px-4 py-3">
+                    <p className="text-white">{req.requester_name}</p>
+                    {req.requester_email && <p className="text-[11px] text-[#6b7280]">{req.requester_email}</p>}
+                  </td>
+                  <td className="px-4 py-3 text-[#9CA3AF]">{PORTABILITY_TYPE_LABEL[req.request_type] ?? req.request_type}</td>
+                  <td className="px-4 py-3"><PortabilityStatusBadge status={req.status} /></td>
+                  <td className="px-4 py-3 text-[12px]">
+                    <Clock size={12} className="inline mr-1 text-[#6b7280]" />
+                    <span className={cls}>{label}</span>
+                    {req.fulfilled_at && <p className="text-[10px] text-[#6b7280] mt-0.5">Complétée : {formatDate(req.fulfilled_at)}</p>}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    {open && (
+                      <div className="inline-flex gap-3">
+                        <button type="button" onClick={() => setStatus(req.id, "fulfilled", new Date().toISOString().slice(0, 10))}
+                          className="text-[11px] font-bold uppercase tracking-wider text-[#10B981] hover:text-white">Compléter</button>
+                        <button type="button" onClick={() => setStatus(req.id, "refused", null)}
+                          className="text-[11px] font-bold uppercase tracking-wider text-[#E63946] hover:text-white">Refuser</button>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
 
-      {showForm && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-[520px] bg-[#1A1D24] border border-white/10 rounded-xl shadow-2xl">
-            <div className="px-6 py-5 border-b border-white/10"><h3 className="text-[17px] font-bold text-white">Nouvelle demande</h3></div>
-            <form onSubmit={(e) => { e.preventDefault(); setShowForm(false); notify("Demande enregistrée (UI seulement — à wire à loi25_portability_requests)"); }} className="px-6 py-5 space-y-3 text-[13px]">
-              <FormField label="Demandeur" />
-              <FormField label="Type" select options={["Portabilité athlète", "Portabilité coach", "Portabilité recruteur", "Suppression"]} />
-              <FormField label="Athlète concerné" />
-              <label className="flex items-center gap-2 text-white/80">
-                <input type="checkbox" className="accent-[#E63946]" />
-                Vérification d&apos;identité reçue
-              </label>
-              <FormField label="Notes" textarea />
-              <div className="flex gap-2 justify-end pt-2 border-t border-white/10">
-                <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 rounded-lg text-[12px] font-bold uppercase tracking-wider text-[#9CA3AF] hover:text-white">Annuler</button>
-                <button type="submit" className="px-4 py-2 rounded-lg bg-[#E63946] text-white text-[12px] font-bold uppercase tracking-wider hover:bg-[#D42B22]">Créer</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {showForm && <PortabilityFormModal onClose={() => setShowForm(false)} onSaved={() => { setShowForm(false); refresh(); notify("Demande enregistrée"); }} />}
       <Toast text={toast} onClose={() => setToast(null)} />
+    </div>
+  );
+}
+
+function PortabilityFormModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
+  const supabase = useMemo(() => createClient(), []);
+  const [submitting, setSubmitting] = useState(false);
+  const [form, setForm] = useState({
+    requester_name: "",
+    requester_email: "",
+    request_type: "access",
+    notes: "",
+  });
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setSubmitting(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    const { error } = await supabase.from("loi25_portability_requests").insert({
+      requester_name: form.requester_name,
+      requester_email: form.requester_email || null,
+      request_type: form.request_type,
+      notes: form.notes || null,
+      created_by: user?.id ?? null,
+    });
+    setSubmitting(false);
+    if (error) {
+      console.error("[Loi 25 portability] insert error:", error.message);
+      alert("Erreur : " + error.message);
+      return;
+    }
+    onSaved();
+  }
+
+  const inputCls = "w-full h-9 px-3 rounded-lg bg-[#111317] border border-white/[0.06] text-[13px] text-white focus:border-[#E63946] focus:outline-none";
+  const textareaCls = "w-full px-3 py-2 rounded-lg bg-[#111317] border border-white/[0.06] text-[13px] text-white focus:border-[#E63946] focus:outline-none";
+  const labelCls = "block text-[10px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mb-1.5";
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="w-full max-w-[520px] bg-[#1A1D24] border border-white/10 rounded-xl shadow-2xl">
+        <div className="px-6 py-5 border-b border-white/10"><h3 className="text-[17px] font-bold text-white">Nouvelle demande</h3></div>
+        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-3 text-[13px]">
+          <div>
+            <label htmlFor="port-name" className={labelCls}>Demandeur</label>
+            <input id="port-name" type="text" required value={form.requester_name} onChange={(e) => setForm({ ...form, requester_name: e.target.value })} className={inputCls} />
+          </div>
+          <div>
+            <label htmlFor="port-email" className={labelCls}>Courriel (optionnel)</label>
+            <input id="port-email" type="email" value={form.requester_email} onChange={(e) => setForm({ ...form, requester_email: e.target.value })} className={inputCls} />
+          </div>
+          <div>
+            <label htmlFor="port-type" className={labelCls}>Type de demande</label>
+            <select id="port-type" value={form.request_type} onChange={(e) => setForm({ ...form, request_type: e.target.value })} className={inputCls}>
+              <option value="access">Accès</option>
+              <option value="portability">Portabilité</option>
+              <option value="rectification">Rectification</option>
+              <option value="deletion">Suppression</option>
+            </select>
+          </div>
+          <div>
+            <label htmlFor="port-notes" className={labelCls}>Notes</label>
+            <textarea id="port-notes" rows={3} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className={textareaCls} />
+          </div>
+          <p className="text-[11px] text-[#6b7280]">L&apos;échéance (30 jours) est calculée automatiquement à partir de la date de soumission.</p>
+          <div className="flex gap-2 justify-end pt-2 border-t border-white/10">
+            <button type="button" onClick={onClose} disabled={submitting} className="px-4 py-2 rounded-lg text-[12px] font-bold uppercase tracking-wider text-[#9CA3AF] hover:text-white">Annuler</button>
+            <button type="submit" disabled={submitting} className="px-4 py-2 rounded-lg bg-[#E63946] text-white text-[12px] font-bold uppercase tracking-wider hover:bg-[#D42B22] disabled:opacity-50">{submitting ? "..." : "Créer"}</button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
@@ -996,14 +1112,14 @@ function IncidentStatusBadge({ status }: { status: string }) {
   return <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${s.cls}`}>{s.label}</span>;
 }
 
-function PortabilityStatusBadge({ status }: { status: PortabilityRequest["status"] }) {
-  const map = {
-    reçu:      { cls: "bg-[#F59E0B]/15 text-[#F59E0B]", label: "Reçu" },
-    en_cours:  { cls: "bg-[#3B82F6]/15 text-[#3B82F6]", label: "En cours" },
-    complété:  { cls: "bg-[#10B981]/15 text-[#10B981]", label: "Complété" },
-    expiré:    { cls: "bg-[#E63946]/15 text-[#E63946]", label: "Expiré" },
-  } as const;
-  const s = map[status];
+function PortabilityStatusBadge({ status }: { status: string }) {
+  const map: Record<string, { cls: string; label: string }> = {
+    pending:     { cls: "bg-[#F59E0B]/15 text-[#F59E0B]", label: "En attente" },
+    in_progress: { cls: "bg-[#3B82F6]/15 text-[#3B82F6]", label: "En cours" },
+    fulfilled:   { cls: "bg-[#10B981]/15 text-[#10B981]", label: "Complétée" },
+    refused:     { cls: "bg-white/5 text-white/60",       label: "Refusée" },
+  };
+  const s = map[status] ?? { cls: "bg-white/5 text-white/60", label: status };
   return <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${s.cls}`}>{s.label}</span>;
 }
 
