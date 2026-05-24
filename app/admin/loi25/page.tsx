@@ -16,7 +16,7 @@ import {
 
 /* ═══════════════════════════════════════════════════════════════
    Admin — Loi 25 compliance dashboard.
-   6 tabs: Consentements · Incidents · Audit · Portabilité · RPRP · Conformité.
+   5 tabs: Consentements · Incidents · Audit · Portabilité · RPRP.
 
    Storage:
      - loi25_incidents          → 20260523120100 migration
@@ -27,7 +27,7 @@ import {
      - Audit-export is on-demand from existing signals (no audit_log table).
 ═══════════════════════════════════════════════════════════════ */
 
-type Tab = "consentements" | "incidents" | "audit" | "portabilite" | "rprp" | "conformite";
+type Tab = "consentements" | "incidents" | "audit" | "portabilite" | "rprp";
 
 const TABS: { key: Tab; label: string }[] = [
   { key: "consentements", label: "Consentements" },
@@ -35,7 +35,6 @@ const TABS: { key: Tab; label: string }[] = [
   { key: "audit",         label: "Audit" },
   { key: "portabilite",   label: "Portabilité" },
   { key: "rprp",          label: "RPRP" },
-  { key: "conformite",    label: "Conformité" },
 ];
 
 function formatDate(iso: string | null | undefined): string {
@@ -88,7 +87,6 @@ export default function AdminLoi25Page() {
       {tab === "audit"         && <AuditTab />}
       {tab === "portabilite"   && <PortabiliteTab />}
       {tab === "rprp"          && <RprpTab />}
-      {tab === "conformite"    && <ConformiteTab />}
     </div>
   );
 }
@@ -1567,111 +1565,6 @@ function RprpTab() {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   TAB 6 — CONFORMITÉ
-═══════════════════════════════════════════════════════════════ */
-
-type CheckStatus = "done" | "partial" | "missing";
-
-interface ChecklistItem { label: string; status: CheckStatus; description?: string }
-
-// TODO: This checklist is hardcoded and reflects the current state of the codebase
-// and infrastructure. Eventually it should be dynamic, driven by real state checks.
-const CHECKLIST: { phase: string; description: string; items: ChecklistItem[] }[] = [
-  {
-    phase: "Phase 0 — Fondations légales",
-    description: "À compléter avant la production.",
-    items: [
-      { label: "Politique de confidentialité publiée (/confidentialite)", status: "done" },
-      { label: "RLS activé sur Supabase", status: "done" },
-      { label: "Chiffrement TLS 1.3 en transit", status: "done" },
-      { label: "Hébergement au Québec (OVHcloud planifié)", status: "done" },
-      { label: "ÉFVP formelle", status: "partial", description: "Document interne rédigé, révision en cours." },
-      { label: "RPRP Nexus désigné", status: "partial" },
-      { label: "Contrats de sous-traitance écoles", status: "missing" },
-      { label: "Contrats de sous-traitance CÉGEPs", status: "missing" },
-      { label: "Formulaire de consentement parental validé par avocat", status: "missing" },
-    ],
-  },
-  {
-    phase: "Phase 1 — Consentement et conformité de base",
-    description: "Exigences immédiates après mise en ligne.",
-    items: [
-      { label: "Consentement parental intégré dans le flux de création", status: "done" },
-      { label: "Badge de consentement sur les profils", status: "done" },
-      { label: "Tableau de bord des consentements (admin — cette page)", status: "partial" },
-      { label: "Bannière cookies (CMP) sur le site", status: "missing" },
-      { label: "Conditions d'utilisation avec acceptation obligatoire", status: "missing" },
-      { label: "Blocage activation sans consentement (mode brouillon)", status: "missing" },
-    ],
-  },
-  {
-    phase: "Phase 2 — Traçabilité et sécurité",
-    description: "Infrastructure d'audit et de suivi.",
-    items: [
-      { label: "Audit log complet", status: "missing" },
-      { label: "Export de portabilité (bouton UI)", status: "missing" },
-      { label: "Registre d'incidents intégré", status: "missing" },
-      { label: "Renouvellement annuel des consentements", status: "missing" },
-      { label: "Champ RPRP dans paramètres établissements", status: "missing" },
-    ],
-  },
-  {
-    phase: "Phase 3 — Conformité complète",
-    description: "Maturité opérationnelle.",
-    items: [
-      { label: "Migration Vercel → OVHcloud", status: "missing" },
-      { label: "Destruction automatisée (2 ans post-graduation)", status: "missing" },
-      { label: "Rapport CAI exportable", status: "missing" },
-      { label: "Anonymisation des données historiques", status: "missing" },
-    ],
-  },
-];
-
-function ConformiteTab() {
-  const allItems = CHECKLIST.flatMap((p) => p.items);
-  const total = allItems.length;
-  const completed = allItems.filter((i) => i.status === "done").length;
-  const partial = allItems.filter((i) => i.status === "partial").length;
-  // Count "done" + half of "partial" for the progress ring.
-  const score = total > 0 ? Math.round(((completed + partial * 0.5) / total) * 100) : 0;
-
-  return (
-    <div className="space-y-6">
-      {/* Score card */}
-      <div className="bg-[#1A1D24] border border-white/10 rounded-xl p-6 flex flex-col sm:flex-row items-center gap-6">
-        <ScoreRing pct={score} />
-        <div>
-          <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#E63946]">Score de conformité</p>
-          <p className="font-head text-[32px] sm:text-[40px] font-black text-white leading-none mt-1">{score}%</p>
-          <p className="text-[13px] text-[#9CA3AF] mt-2">
-            <span className="text-white font-semibold">{completed}</span> complété · <span className="text-[#F59E0B]">{partial}</span> partiel · <span className="text-[#E63946]">{total - completed - partial}</span> manquant
-          </p>
-        </div>
-      </div>
-
-      {/* Checklist by phase */}
-      {CHECKLIST.map((phase) => (
-        <div key={phase.phase} className="bg-[#1A1D24] border border-white/10 rounded-xl p-6">
-          <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#E63946]">{phase.phase}</p>
-          <p className="text-[12px] text-[#9CA3AF] mt-1">{phase.description}</p>
-          <ul className="mt-4 space-y-2">
-            {phase.items.map((item, i) => (
-              <li key={`${phase.phase}-${i}`} className="flex items-start gap-3 py-1">
-                <ChecklistIcon status={item.status} />
-                <div className="flex-1 min-w-0">
-                  <p className="text-[13px] text-white/85">{item.label}</p>
-                  {item.description && <p className="text-[11px] text-[#6b7280] mt-0.5">{item.description}</p>}
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-/* ═══════════════════════════════════════════════════════════════
    Shared atoms
 ═══════════════════════════════════════════════════════════════ */
 
@@ -1739,32 +1632,6 @@ function PortabilityStatusBadge({ status }: { status: string }) {
   };
   const s = map[status] ?? { cls: "bg-white/5 text-white/60", label: status };
   return <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${s.cls}`}>{s.label}</span>;
-}
-
-function ChecklistIcon({ status }: { status: CheckStatus }) {
-  if (status === "done") {
-    return <span className="shrink-0 mt-0.5 w-[18px] h-[18px] rounded-full bg-[#10B981]/15 text-[#10B981] flex items-center justify-center"><Check size={11} strokeWidth={3} /></span>;
-  }
-  if (status === "partial") {
-    return <span className="shrink-0 mt-0.5 w-[18px] h-[18px] rounded-full bg-[#F59E0B]/15 text-[#F59E0B] flex items-center justify-center"><AlertTriangle size={11} strokeWidth={2.5} /></span>;
-  }
-  return <span className="shrink-0 mt-0.5 w-[18px] h-[18px] rounded-full bg-[#E63946]/15 text-[#E63946] flex items-center justify-center"><XIcon size={11} strokeWidth={3} /></span>;
-}
-
-function ScoreRing({ pct }: { pct: number }) {
-  // Simple ring using SVG stroke-dasharray so it works without recharts.
-  const radius = 48;
-  const circumference = 2 * Math.PI * radius;
-  const dash = (pct / 100) * circumference;
-  return (
-    <svg width="120" height="120" viewBox="0 0 120 120" className="shrink-0">
-      <circle cx="60" cy="60" r={radius} stroke="#2D3748" strokeWidth="10" fill="none" />
-      <circle cx="60" cy="60" r={radius} stroke="#10B981" strokeWidth="10" fill="none"
-        strokeDasharray={`${dash} ${circumference - dash}`}
-        strokeDashoffset={circumference / 4}
-        strokeLinecap="round" />
-    </svg>
-  );
 }
 
 function FormField({ label, type = "text", textarea, select, options }: { label: string; type?: string; textarea?: boolean; select?: boolean; options?: string[] }) {
