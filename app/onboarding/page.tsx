@@ -447,22 +447,12 @@ export default function OnboardingPage() {
   function canProceed(): boolean {
     if (!user) return false;
     if (step === 1) return validateInstitution().ok;
-    // Step 2 is DirectorChoiceStep for coach/recruiter/league flows. If the
-    // user is becoming director ("self" / "interim" — they ARE the director),
-    // the Loi 25 RPRP designation checkbox must be ticked before proceeding.
-    // The "invite" branch sets admin_type=owner too (the inviter is temp
-    // admin), but the actual RPRP will be the invitee — they'll consent
-    // when they themselves go through onboarding, so we skip the gate when
-    // pending_director_invite is set. "coach_only" / "recruteur_only" have
-    // admin_type=null and are naturally not gated.
-    if (step === 2) {
-      const isDirectorChoice =
-        user.school_admin_type === "owner"
-        || user.school_admin_type === "interim"
-        || user.cegep_admin_type === "owner";
-      const isInviteFlow = !!user.pending_director_invite;
-      if (isDirectorChoice && !isInviteFlow && !user.rprp_consent) return false;
-    }
+    // Step 2 (DirectorChoiceStep) was previously hard-gated on rprp_consent
+    // for owner/interim. Loi 25 designation is now non-blocking: the director
+    // can proceed without accepting RPRP, and the decline surfaces in the
+    // admin tab (profile_data.rprp_declined_at) + dashboard alert. The
+    // inline notice rendered inside DirectorChoiceStep tells the user what
+    // declining means; finish() records the decision either way.
     return true;
   }
 
@@ -608,17 +598,25 @@ export default function OnboardingPage() {
 
       const isAdminClaim = isSchoolCoachAdminClaim || isRecruiterCegepClaim;
 
-      // Loi 25 — capture the explicit RPRP designation timestamp when the
-      // user consented as director ("self" / "interim", not "invite": the
-      // invitee will consent during their own onboarding). The admin RPRP
-      // tab prefers this date over admin_claims.reviewed_at when present.
+      // Loi 25 — capture the RPRP designation decision when the user is the
+      // actual director ("self"/"interim", not "invite": the invitee will
+      // decide during their own onboarding). Non-blocking — declining
+      // doesn't stop onboarding, it just records the decline so the admin
+      // tab + dashboard alert can surface unassigned-RPRP establishments.
+      //
+      // The two timestamps are mutually exclusive: every director-path
+      // write sets exactly one of accepted/declined and clears the other,
+      // so an admin reader never sees both at once and the user can change
+      // their stance later via /coach/settings (not yet built — same JSONB
+      // keys will apply). Non-director paths (coach_only/recruteur_only/
+      // invite) write neither key — both stay null/undefined.
       const adminTypeValue = (localUser.school_admin_type || localUser.cegep_admin_type || null) as
         | "owner" | "interim" | null;
       const isInviteFlow = !!localUser.pending_director_invite;
-      const rprpAcceptedAt =
-        adminTypeValue && !isInviteFlow && localUser.rprp_consent === true
-          ? new Date().toISOString()
-          : null;
+      const isActualDirector = !!adminTypeValue && !isInviteFlow;
+      const nowIso = new Date().toISOString();
+      const rprpAcceptedAt = isActualDirector && localUser.rprp_consent === true ? nowIso : null;
+      const rprpDeclinedAt = isActualDirector && localUser.rprp_consent !== true ? nowIso : null;
 
       const profileData = {
         bio: localUser.profile?.bio || null,
@@ -626,6 +624,7 @@ export default function OnboardingPage() {
         admin_type: adminTypeValue,
         pending_director_invite: localUser.pending_director_invite || null,
         rprp_accepted_at: rprpAcceptedAt,
+        rprp_declined_at: rprpDeclinedAt,
       };
 
       // Save profile data to users table
@@ -863,10 +862,12 @@ export default function OnboardingPage() {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   RPRP CONSENT CHECKBOX — Loi 25 designation
-   Used inside DirectorChoiceStep when the user picks "self" or "interim".
-   The wizard's canProceed() at step 2 reads user.rprp_consent (set via the
-   onChange handler) and finish() converts it to profile_data.rprp_accepted_at.
+   RPRP CONSENT CHECKBOX + DECLINE NOTICE — Loi 25 designation
+   Rendered inside DirectorChoiceStep when the user picks "self" or "interim".
+   Non-blocking: the director can proceed unchecked. finish() records
+   profile_data.rprp_accepted_at when checked, rprp_declined_at when not —
+   mutually exclusive (each write clears the opposite key). The admin RPRP
+   tab + dashboard alert surface declines.
 ═══════════════════════════════════════════════════════════════ */
 function RprpConsentCheckbox({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
   return (
@@ -891,9 +892,24 @@ function RprpConsentCheckbox({ checked, onChange }: { checked: boolean; onChange
         aria-label="J'accepte d'être désigné(e) responsable de la protection des renseignements personnels"
       />
       <span className="text-[12px] text-[#c8c8cc] leading-relaxed">
-        J&apos;accepte d&apos;être désigné(e) responsable de la protection des renseignements personnels (RPRP) pour mon établissement, conformément à la Loi 25. <span className="text-[#EF4444]">*</span>
+        J&apos;accepte d&apos;être désigné(e) responsable de la protection des renseignements personnels (RPRP) pour mon établissement, conformément à la Loi 25.
       </span>
     </label>
+  );
+}
+
+function RprpDeclineNotice() {
+  return (
+    <div className="flex items-start gap-2 rounded-lg border border-[#F59E0B]/30 bg-[#F59E0B]/10 px-3 py-2">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5" aria-hidden="true">
+        <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+        <line x1="12" y1="9" x2="12" y2="13" />
+        <line x1="12" y1="17" x2="12.01" y2="17" />
+      </svg>
+      <p className="text-[11px] text-[#F59E0B] leading-snug">
+        Tu continues sans accepter le rôle de RPRP. Ton établissement n&apos;aura pas de responsable désigné et un administrateur sera avisé.
+      </p>
+    </div>
   );
 }
 
@@ -1204,6 +1220,7 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
             Tu seras {isCegep ? "Recruteur" : "Entraîneur"} ET {RoleLabel} de {orgName}. Tu pourras gérer les autres {isCegep ? "recruteurs" : isLeague ? "entraîneurs" : "coachs"}, voir les stats {isCegep ? "globales de recrutement" : "de recrutement"}, et superviser {isCegep ? "le pipeline de tout le CÉGEP" : "les profils athlètes"}.
           </p>
           <RprpConsentCheckbox checked={rprpConsent} onChange={(v) => { setRprpConsent(v); save({ rprp_consent: v }); }} />
+          {!rprpConsent && <RprpDeclineNotice />}
         </div>
       )}
 
@@ -1260,6 +1277,7 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
             </div>
           </div>
           <RprpConsentCheckbox checked={rprpConsent} onChange={(v) => { setRprpConsent(v); save({ rprp_consent: v }); }} />
+          {!rprpConsent && <RprpDeclineNotice />}
         </div>
       )}
 
