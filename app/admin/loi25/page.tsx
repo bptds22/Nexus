@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
+import JSZip from "jszip";
 import { createClient } from "@/lib/supabase/client";
 import {
   AlertTriangle,
@@ -537,93 +538,447 @@ function IncidentFormModal({ onClose, onSaved }: { onClose: () => void; onSaved:
    TAB 3 — AUDIT
 ═══════════════════════════════════════════════════════════════ */
 
-// TODO: Wire to loi25_audit_log table.
-// Columns: id, timestamp, user_id, user_role, action_type, target_type, target_id, details, ip_address
-const MOCK_AUDIT = [
-  { ts: "2026-04-16 14:23", user: "Marc Tremblay (Recruteur)", action: "Consultation", target: "Athlète #142", details: "Vue simplifiée" },
-  { ts: "2026-04-16 14:20", user: "Bruno Simard (Coach)",       action: "Modification", target: "Athlète #087", details: "Cote globale : 7.2 → 8.1" },
-  { ts: "2026-04-16 13:55", user: "Admin",                      action: "Export",       target: "Athlète #142", details: "Export JSON portabilité" },
-  { ts: "2026-04-16 12:10", user: "Marie Côté (Recruteur)",     action: "Consultation", target: "Athlète #201", details: "Vue complète (Pro)" },
-];
+/* ── Audit export — on-demand, from existing signals. No loi25_audit_log
+   table, no write-path instrumentation. Two scopes:
+   1. User-scoped: ZIP of per-table CSVs (full message bodies). Serves Loi 25
+      access / portability requests (Art. 27).
+   2. Date-range: single flat timeline CSV (messages metadata only). Serves
+      CAI investigations / forensics. */
+
+interface UserOption {
+  id: string;
+  email: string;
+  first_name: string | null;
+  last_name: string | null;
+  role: string;
+}
+
+// CSV cell escape — wraps in "..." if it contains a comma/quote/newline,
+// doubles internal quotes. Objects are JSON-stringified.
+function csvEscape(v: unknown): string {
+  if (v === null || v === undefined) return "";
+  const s = typeof v === "object" ? JSON.stringify(v) : String(v);
+  return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+
+// Build a CSV with a UTF-8 BOM (so Excel renders accents correctly).
+function toCsv(rows: Record<string, unknown>[]): string {
+  const BOM = "﻿";
+  if (rows.length === 0) return BOM + "(aucune donnée)\n";
+  const headers = Array.from(new Set(rows.flatMap((r) => Object.keys(r))));
+  const lines = [headers.join(",")];
+  for (const row of rows) lines.push(headers.map((h) => csvEscape(row[h])).join(","));
+  return BOM + lines.join("\n") + "\n";
+}
+
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function todayIso(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function safeSlug(s: string): string {
+  return s.replace(/[^a-zA-Z0-9._-]/g, "_");
+}
 
 function AuditTab() {
-  const [actionType, setActionType] = useState("all");
-  const [userRole, setUserRole] = useState("all");
-  const [period, setPeriod] = useState("7d");
-  const [query, setQuery] = useState("");
+  const supabase = useMemo(() => createClient(), []);
+  const [scope, setScope] = useState<"user" | "period">("user");
+  const [userSearch, setUserSearch] = useState("");
+  const [userResults, setUserResults] = useState<UserOption[]>([]);
+  const [pickedUser, setPickedUser] = useState<UserOption | null>(null);
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [generating, setGenerating] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const notify = (m: string) => { setToast(m); setTimeout(() => setToast(null), 3500); };
+
+  // Debounced user search (skipped while a user is picked).
+  useEffect(() => {
+    const q = userSearch.trim();
+    if (q.length < 2 || pickedUser) { setUserResults([]); return; }
+    const handle = setTimeout(async () => {
+      const { data } = await supabase
+        .from("users")
+        .select("id, email, first_name, last_name, role")
+        .or(`email.ilike.%${q}%,first_name.ilike.%${q}%,last_name.ilike.%${q}%`)
+        .limit(10);
+      setUserResults((data || []) as UserOption[]);
+    }, 300);
+    return () => clearTimeout(handle);
+  }, [userSearch, pickedUser, supabase]);
+
+  // Convert YYYY-MM-DD to inclusive UTC bounds for timestamptz filters.
+  function dateBounds(): { startIso: string; endIso: string } | null {
+    if (!startDate || !endDate) return null;
+    return { startIso: `${startDate}T00:00:00Z`, endIso: `${endDate}T23:59:59.999Z` };
+  }
+
+  // ── Scope 1 — user-scoped ZIP of per-table CSVs (full message content) ──
+  async function generateUserExport() {
+    if (!pickedUser) return;
+    setGenerating(true);
+    try {
+      const zip = new JSZip();
+      const dr = dateBounds();
+
+      // Profile snapshot — users row + (for ATHLETE) athletes row.
+      const { data: userRow } = await supabase.from("users").select("*").eq("id", pickedUser.id).single();
+      const profileRows: Record<string, unknown>[] = [];
+      if (userRow) profileRows.push({ _table: "users", ...(userRow as Record<string, unknown>) });
+      let athleteId: string | null = null;
+      if (pickedUser.role === "ATHLETE") {
+        const { data: ath } = await supabase.from("athletes").select("*").eq("user_id", pickedUser.id).maybeSingle();
+        if (ath) {
+          athleteId = (ath as { id: string }).id;
+          profileRows.push({ _table: "athletes", ...(ath as Record<string, unknown>) });
+        }
+      }
+      zip.file("profile.csv", toCsv(profileRows));
+
+      // Role-specific event tables.
+      if (pickedUser.role === "ATHLETE" && athleteId) {
+        async function fetchByAthlete(table: string, tsCol: string, fname: string) {
+          let q = supabase.from(table).select("*").eq("athlete_id", athleteId);
+          if (dr) q = q.gte(tsCol, dr.startIso).lte(tsCol, dr.endIso);
+          const { data } = await q;
+          zip.file(fname, toCsv((data || []) as Record<string, unknown>[]));
+        }
+        await fetchByAthlete("consent_audit_trail",     "created_at", "consent_audit_trail.csv");
+        await fetchByAthlete("activities",              "created_at", "activities.csv");
+        await fetchByAthlete("recruiter_athlete_views", "viewed_at",  "recruiter_views.csv");
+        await fetchByAthlete("recruiter_activity_log",  "created_at", "recruiter_activity_log.csv");
+        await fetchByAthlete("partner_profile_views",   "viewed_at",  "partner_profile_views.csv");
+        await fetchByAthlete("athlete_suggestions",     "created_at", "athlete_suggestions.csv");
+      } else if (pickedUser.role === "COACH") {
+        // activities — coach or actor
+        let q1 = supabase.from("activities").select("*").or(`coach_id.eq.${pickedUser.id},actor_id.eq.${pickedUser.id}`);
+        if (dr) q1 = q1.gte("created_at", dr.startIso).lte("created_at", dr.endIso);
+        const { data: actRows } = await q1;
+        zip.file("activities.csv", toCsv((actRows || []) as Record<string, unknown>[]));
+
+        let q2 = supabase.from("athlete_suggestions").select("*").eq("coach_id", pickedUser.id);
+        if (dr) q2 = q2.gte("created_at", dr.startIso).lte("created_at", dr.endIso);
+        const { data: sugRows } = await q2;
+        zip.file("athlete_suggestions.csv", toCsv((sugRows || []) as Record<string, unknown>[]));
+
+        let q3 = supabase.from("consent_audit_trail").select("*").eq("coach_id", pickedUser.id);
+        if (dr) q3 = q3.gte("created_at", dr.startIso).lte("created_at", dr.endIso);
+        const { data: catRows } = await q3;
+        zip.file("consent_audit_trail.csv", toCsv((catRows || []) as Record<string, unknown>[]));
+      } else if (pickedUser.role === "RECRUTEUR") {
+        let q1 = supabase.from("recruiter_athlete_views").select("*").eq("recruiter_id", pickedUser.id);
+        if (dr) q1 = q1.gte("viewed_at", dr.startIso).lte("viewed_at", dr.endIso);
+        const { data: ravRows } = await q1;
+        zip.file("recruiter_views.csv", toCsv((ravRows || []) as Record<string, unknown>[]));
+
+        let q2 = supabase.from("recruiter_activity_log").select("*").eq("recruiter_id", pickedUser.id);
+        if (dr) q2 = q2.gte("created_at", dr.startIso).lte("created_at", dr.endIso);
+        const { data: ralRows } = await q2;
+        zip.file("recruiter_activity_log.csv", toCsv((ralRows || []) as Record<string, unknown>[]));
+      } else if (pickedUser.role === "ADMIN") {
+        let q1 = supabase.from("loi25_incidents").select("*").eq("created_by", pickedUser.id);
+        if (dr) q1 = q1.gte("created_at", dr.startIso).lte("created_at", dr.endIso);
+        const { data: incRows } = await q1;
+        zip.file("loi25_incidents.csv", toCsv((incRows || []) as Record<string, unknown>[]));
+
+        let q2 = supabase.from("loi25_portability_requests").select("*").eq("created_by", pickedUser.id);
+        if (dr) q2 = q2.gte("created_at", dr.startIso).lte("created_at", dr.endIso);
+        const { data: pReqRows } = await q2;
+        zip.file("loi25_portability_requests.csv", toCsv((pReqRows || []) as Record<string, unknown>[]));
+      }
+
+      // Messages — full content. Find conversations the user is involved in.
+      let convoFilter = "";
+      if (pickedUser.role === "ATHLETE" && athleteId) convoFilter = `athlete_id.eq.${athleteId}`;
+      else if (pickedUser.role === "COACH") convoFilter = `coach_id.eq.${pickedUser.id}`;
+      else if (pickedUser.role === "RECRUTEUR") convoFilter = `recruiter_id.eq.${pickedUser.id}`;
+      if (convoFilter) {
+        const { data: convos } = await supabase.from("conversations").select("id").or(convoFilter);
+        const convoIds = ((convos || []) as { id: string }[]).map((c) => c.id);
+        if (convoIds.length > 0) {
+          let q = supabase.from("messages").select("*").in("conversation_id", convoIds);
+          if (dr) q = q.gte("created_at", dr.startIso).lte("created_at", dr.endIso);
+          const { data: msgs } = await q;
+          zip.file("messages.csv", toCsv((msgs || []) as Record<string, unknown>[]));
+        } else {
+          zip.file("messages.csv", toCsv([]));
+        }
+      }
+
+      const blob = await zip.generateAsync({ type: "blob" });
+      const fname = `loi25_export_${safeSlug(pickedUser.email)}_${todayIso()}.zip`;
+      downloadBlob(blob, fname);
+      notify(`Exporté : ${fname}`);
+    } catch (err) {
+      console.error("[Audit export user]", err);
+      notify("Erreur — voir la console");
+    } finally {
+      setGenerating(false);
+    }
+  }
+
+  // ── Scope 2 — date-range flat CSV (messages = metadata only) ──
+  async function generatePeriodExport() {
+    const dr = dateBounds();
+    if (!dr) return;
+    setGenerating(true);
+    try {
+      const optUser = pickedUser?.id ?? null;
+      const allRows: Record<string, unknown>[] = [];
+      function push(ts: string, source_table: string, event_type: string, actor_id: string | null, actor_role: string | null, target_athlete_id: string | null, details: Record<string, unknown>) {
+        allRows.push({ timestamp: ts, source_table, event_type, actor_id, actor_role, target_athlete_id, details_json: details });
+      }
+
+      // consent_audit_trail
+      {
+        let q = supabase.from("consent_audit_trail").select("*").gte("created_at", dr.startIso).lte("created_at", dr.endIso);
+        if (optUser) q = q.eq("coach_id", optUser);
+        const { data } = await q;
+        for (const r of (data || []) as Record<string, unknown>[]) {
+          push(r.created_at as string, "consent_audit_trail", (r.action as string) || "", (r.coach_id as string) ?? null, "COACH", (r.athlete_id as string) ?? null,
+            { previous_status: r.previous_status, new_status: r.new_status, ip_address: r.ip_address, metadata: r.metadata });
+        }
+      }
+      // activities
+      {
+        let q = supabase.from("activities").select("*").gte("created_at", dr.startIso).lte("created_at", dr.endIso);
+        if (optUser) q = q.or(`actor_id.eq.${optUser},coach_id.eq.${optUser}`);
+        const { data } = await q;
+        for (const r of (data || []) as Record<string, unknown>[]) {
+          push(r.created_at as string, "activities", (r.type as string) || "", (r.actor_id as string) ?? null, (r.actor_role as string) ?? null, (r.athlete_id as string) ?? null,
+            { coach_id: r.coach_id, metadata: r.metadata });
+        }
+      }
+      // recruiter_athlete_views
+      {
+        let q = supabase.from("recruiter_athlete_views").select("*").gte("viewed_at", dr.startIso).lte("viewed_at", dr.endIso);
+        if (optUser) q = q.eq("recruiter_id", optUser);
+        const { data } = await q;
+        for (const r of (data || []) as Record<string, unknown>[]) {
+          push(r.viewed_at as string, "recruiter_athlete_views", "PROFILE_VIEW", (r.recruiter_id as string) ?? null, "RECRUTEUR", (r.athlete_id as string) ?? null, {});
+        }
+      }
+      // recruiter_activity_log
+      {
+        let q = supabase.from("recruiter_activity_log").select("*").gte("created_at", dr.startIso).lte("created_at", dr.endIso);
+        if (optUser) q = q.eq("recruiter_id", optUser);
+        const { data } = await q;
+        for (const r of (data || []) as Record<string, unknown>[]) {
+          push(r.created_at as string, "recruiter_activity_log", (r.action_type as string) || "", (r.recruiter_id as string) ?? null, "RECRUTEUR", (r.athlete_id as string) ?? null,
+            { list_id: r.list_id, details: r.details });
+        }
+      }
+      // partner_profile_views — partner_id is media_partners.id, not users.id.
+      // If optUser is set, resolve to that user's media_partners.id first.
+      {
+        let partnerIds: string[] | null = null;
+        if (optUser) {
+          const { data: mps } = await supabase.from("media_partners").select("id").eq("user_id", optUser);
+          partnerIds = ((mps || []) as { id: string }[]).map((m) => m.id);
+        }
+        if (partnerIds === null || partnerIds.length > 0) {
+          let q = supabase.from("partner_profile_views").select("*").gte("viewed_at", dr.startIso).lte("viewed_at", dr.endIso);
+          if (partnerIds) q = q.in("partner_id", partnerIds);
+          const { data } = await q;
+          for (const r of (data || []) as Record<string, unknown>[]) {
+            push(r.viewed_at as string, "partner_profile_views", "PARTNER_VIEW", (r.partner_id as string) ?? null, "PARTNER", (r.athlete_id as string) ?? null, {});
+          }
+        }
+      }
+      // athlete_suggestions
+      {
+        let q = supabase.from("athlete_suggestions").select("*").gte("created_at", dr.startIso).lte("created_at", dr.endIso);
+        if (optUser) q = q.or(`submitted_by.eq.${optUser},coach_id.eq.${optUser}`);
+        const { data } = await q;
+        for (const r of (data || []) as Record<string, unknown>[]) {
+          push(r.created_at as string, "athlete_suggestions", `SUGGESTION_${r.status ?? ""}`, (r.submitted_by as string) ?? null, null, (r.athlete_id as string) ?? null,
+            { champ: r.champ, valeur_proposee: r.valeur_proposee, status: r.status });
+        }
+      }
+      // messages — METADATA ONLY (no body content)
+      {
+        let q = supabase.from("messages").select("id, conversation_id, sender_id, created_at").gte("created_at", dr.startIso).lte("created_at", dr.endIso);
+        if (optUser) q = q.eq("sender_id", optUser);
+        const { data } = await q;
+        for (const r of (data || []) as Record<string, unknown>[]) {
+          push(r.created_at as string, "messages", "MESSAGE_SENT", (r.sender_id as string) ?? null, null, null, { conversation_id: r.conversation_id });
+        }
+      }
+      // loi25_incidents
+      {
+        let q = supabase.from("loi25_incidents").select("*").gte("created_at", dr.startIso).lte("created_at", dr.endIso);
+        if (optUser) q = q.eq("created_by", optUser);
+        const { data } = await q;
+        for (const r of (data || []) as Record<string, unknown>[]) {
+          push(r.created_at as string, "loi25_incidents", `INCIDENT_${r.status ?? ""}`, (r.created_by as string) ?? null, "ADMIN", null,
+            { severity: r.severity, type: r.type, affected_users_count: r.affected_users_count, cai_notified: r.cai_notified });
+        }
+      }
+      // loi25_portability_requests
+      {
+        let q = supabase.from("loi25_portability_requests").select("*").gte("created_at", dr.startIso).lte("created_at", dr.endIso);
+        if (optUser) q = q.eq("created_by", optUser);
+        const { data } = await q;
+        for (const r of (data || []) as Record<string, unknown>[]) {
+          push(r.created_at as string, "loi25_portability_requests", `PORT_${r.status ?? ""}`, (r.created_by as string) ?? null, "ADMIN", null,
+            { request_type: r.request_type, requester_name: r.requester_name });
+        }
+      }
+
+      allRows.sort((a, b) => String(a.timestamp).localeCompare(String(b.timestamp)));
+      const csv = toCsv(allRows);
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+      const fname = `loi25_activite_${startDate}_${endDate}${optUser ? "_" + safeSlug(pickedUser!.email) : ""}.csv`;
+      downloadBlob(blob, fname);
+      notify(`Exporté : ${fname} (${allRows.length} événement${allRows.length > 1 ? "s" : ""})`);
+    } catch (err) {
+      console.error("[Audit export period]", err);
+      notify("Erreur — voir la console");
+    } finally {
+      setGenerating(false);
+    }
+  }
+
+  const inputCls = "w-full h-9 px-3 rounded-lg bg-[#111317] border border-white/[0.06] text-[13px] text-white placeholder:text-white/25 focus:border-[#E63946] focus:outline-none";
+  const labelCls = "block text-[10px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mb-1.5";
+
+  function clearPickedUser() {
+    setPickedUser(null);
+    setUserSearch("");
+    setUserResults([]);
+  }
+
+  function PickedUserChip({ onClear, label }: { onClear: () => void; label: string }) {
+    return (
+      <div className="flex items-center justify-between bg-[#111317] border border-[#E63946]/40 rounded-lg px-3 py-2.5">
+        <div>
+          <p className="text-[13px] text-white">{`${pickedUser!.first_name ?? ""} ${pickedUser!.last_name ?? ""}`.trim() || pickedUser!.email}</p>
+          <p className="text-[11px] text-[#6b7280]">{pickedUser!.email} · {pickedUser!.role}</p>
+        </div>
+        <button type="button" onClick={onClear} className="text-[11px] font-bold uppercase tracking-wider text-[#9CA3AF] hover:text-white">{label}</button>
+      </div>
+    );
+  }
+
+  function UserSearchInput({ inputId, placeholder }: { inputId: string; placeholder: string }) {
+    return (
+      <>
+        <input id={inputId} type="text" placeholder={placeholder} value={userSearch} onChange={(e) => setUserSearch(e.target.value)} className={inputCls} />
+        {userResults.length > 0 && (
+          <div className="mt-2 space-y-1 max-h-[200px] overflow-y-auto">
+            {userResults.map((u) => (
+              <button key={u.id} type="button" onClick={() => { setPickedUser(u); setUserSearch(""); setUserResults([]); }}
+                className="w-full text-left bg-[#111317] border border-white/[0.06] rounded-lg px-3 py-2 hover:border-[#E63946]/40 transition-colors">
+                <p className="text-[13px] text-white">{`${u.first_name ?? ""} ${u.last_name ?? ""}`.trim() || u.email}</p>
+                <p className="text-[11px] text-[#6b7280]">{u.email} · {u.role}</p>
+              </button>
+            ))}
+          </div>
+        )}
+      </>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <p className="text-[13px] text-[#9CA3AF]">Journal d&apos;accès aux renseignements personnels (Loi 25 Phase 3).</p>
-        <button type="button"
-          onClick={() => { setToast("Export CSV généré (placeholder)"); setTimeout(() => setToast(null), 2500); }}
-          className="inline-flex items-center gap-2 h-10 px-4 rounded-lg border border-white/20 text-white text-[12px] font-bold uppercase tracking-wider hover:bg-white/5">
-          <Download size={14} /> Exporter le journal
-        </button>
-      </div>
+      <p className="text-[13px] text-[#9CA3AF]">Export Loi 25 à la demande — depuis les signaux déjà enregistrés (pas de journal toujours actif).</p>
 
-      <div className="flex flex-wrap gap-3 items-end">
-        <FilterSelect label="Action" value={actionType} onChange={setActionType}
-          options={[
-            { value: "all", label: "Toutes" },
-            { value: "consult", label: "Consultation" },
-            { value: "modify", label: "Modification" },
-            { value: "delete", label: "Suppression" },
-            { value: "export", label: "Export" },
-            { value: "login", label: "Connexion" },
-          ]} />
-        <FilterSelect label="Rôle" value={userRole} onChange={setUserRole}
-          options={[
-            { value: "all", label: "Tous" },
-            { value: "coach", label: "Coach" },
-            { value: "recruteur", label: "Recruteur" },
-            { value: "admin", label: "Admin" },
-          ]} />
-        <FilterSelect label="Période" value={period} onChange={setPeriod}
-          options={[
-            { value: "today", label: "Aujourd'hui" },
-            { value: "7d", label: "7 jours" },
-            { value: "30d", label: "30 jours" },
-            { value: "custom", label: "Personnalisé" },
-          ]} />
-        <div className="flex-1 min-w-[200px]">
-          <label htmlFor="audit-search" className="block text-[10px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mb-1.5">Recherche</label>
-          <input id="audit-search" type="text" value={query} onChange={(e) => setQuery(e.target.value)}
-            placeholder="Utilisateur ou cible…"
-            className="w-full h-9 px-3 rounded-lg bg-[#1A1D24] border border-white/[0.06] text-[13px] text-white placeholder:text-white/25 focus:border-[#E63946] focus:outline-none" />
+      {/* Scope picker */}
+      <div className="bg-[#1A1D24] border border-white/[0.06] rounded-xl p-5">
+        <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mb-3">Mode d&apos;export</p>
+        <div className="space-y-3">
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input type="radio" name="audit-scope" value="user" checked={scope === "user"} onChange={() => setScope("user")} className="accent-[#E63946] mt-1" />
+            <div>
+              <p className="text-[13px] text-white font-bold">Tout sur un utilisateur</p>
+              <p className="text-[11px] text-[#6b7280]">ZIP de CSV par table — pour les demandes d&apos;accès / portabilité (Loi 25 Art. 27).</p>
+            </div>
+          </label>
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input type="radio" name="audit-scope" value="period" checked={scope === "period"} onChange={() => setScope("period")} className="accent-[#E63946] mt-1" />
+            <div>
+              <p className="text-[13px] text-white font-bold">Activité par période</p>
+              <p className="text-[11px] text-[#6b7280]">CSV plat (chronologie) — pour les enquêtes CAI et la forensique.</p>
+            </div>
+          </label>
         </div>
       </div>
 
-      <div className="bg-[#1A1D24] border border-[#1e2128] rounded-xl overflow-hidden">
-        <table className="w-full text-[13px]">
-          <thead className="bg-white/[0.02] border-b border-[#1e2128]">
-            <tr className="text-left text-[11px] text-[#6b7280] uppercase tracking-wider">
-              <th className="px-4 py-3 font-bold">Date/heure</th>
-              <th className="px-4 py-3 font-bold">Utilisateur</th>
-              <th className="px-4 py-3 font-bold">Action</th>
-              <th className="px-4 py-3 font-bold">Cible</th>
-              <th className="px-4 py-3 font-bold">Détails</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[#1e2128]">
-            {MOCK_AUDIT.map((row, i) => (
-              <tr key={i} className="hover:bg-white/[0.03]">
-                <td className="px-4 py-3 text-[#9CA3AF] font-mono text-[12px] whitespace-nowrap">{row.ts}</td>
-                <td className="px-4 py-3 text-white">{row.user}</td>
-                <td className="px-4 py-3 text-[#9CA3AF]">{row.action}</td>
-                <td className="px-4 py-3 text-[#9CA3AF]">{row.target}</td>
-                <td className="px-4 py-3 text-[#6b7280]">{row.details}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {/* Scope 1 — user-scoped */}
+      {scope === "user" && (
+        <div className="bg-[#1A1D24] border border-white/[0.06] rounded-xl p-5 space-y-4">
+          <div>
+            <label htmlFor="aud-user" className={labelCls}>Utilisateur (nom ou courriel)</label>
+            {pickedUser
+              ? <PickedUserChip onClear={clearPickedUser} label="Changer" />
+              : <UserSearchInput inputId="aud-user" placeholder="Tape un nom ou un courriel…" />}
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label htmlFor="aud-u-start" className={labelCls}>Date de début (optionnel)</label>
+              <input id="aud-u-start" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className={inputCls} />
+            </div>
+            <div>
+              <label htmlFor="aud-u-end" className={labelCls}>Date de fin (optionnel)</label>
+              <input id="aud-u-end" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className={inputCls} />
+            </div>
+          </div>
+          <button type="button" disabled={!pickedUser || generating} onClick={generateUserExport}
+            className="inline-flex items-center gap-2 h-10 px-5 rounded-lg bg-[#E63946] text-white text-[12px] font-bold uppercase tracking-wider hover:bg-[#D42B22] transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+            <Download size={14} /> {generating ? "Génération…" : "Générer le ZIP"}
+          </button>
+        </div>
+      )}
 
-      <p className="text-[11px] text-[#6b7280] italic">
-        Données de démonstration. Création de la table <code className="text-[#9CA3AF]">loi25_audit_log</code> requise pour la production.
-      </p>
+      {/* Scope 2 — period */}
+      {scope === "period" && (
+        <div className="bg-[#1A1D24] border border-white/[0.06] rounded-xl p-5 space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label htmlFor="aud-p-start" className={labelCls}>Date de début</label>
+              <input id="aud-p-start" type="date" required value={startDate} onChange={(e) => setStartDate(e.target.value)} className={inputCls} />
+            </div>
+            <div>
+              <label htmlFor="aud-p-end" className={labelCls}>Date de fin</label>
+              <input id="aud-p-end" type="date" required value={endDate} onChange={(e) => setEndDate(e.target.value)} className={inputCls} />
+            </div>
+          </div>
+          <div>
+            <label htmlFor="aud-p-user" className={labelCls}>Filtrer par utilisateur (optionnel)</label>
+            {pickedUser
+              ? <PickedUserChip onClear={clearPickedUser} label="Effacer" />
+              : <UserSearchInput inputId="aud-p-user" placeholder="Tape un nom ou un courriel pour filtrer…" />}
+          </div>
+          <button type="button" disabled={!startDate || !endDate || generating} onClick={generatePeriodExport}
+            className="inline-flex items-center gap-2 h-10 px-5 rounded-lg bg-[#E63946] text-white text-[12px] font-bold uppercase tracking-wider hover:bg-[#D42B22] transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+            <Download size={14} /> {generating ? "Génération…" : "Générer la chronologie"}
+          </button>
+        </div>
+      )}
+
+      {/* Scope note — what's covered and what isn't. */}
+      <div className="bg-[#F59E0B]/10 border border-[#F59E0B]/20 rounded-xl p-4">
+        <p className="text-[12px] font-bold text-[#F59E0B] mb-2">Périmètre de l&apos;export</p>
+        <p className="text-[12px] text-[#9CA3AF] leading-relaxed">
+          <span className="text-white/90">Inclus :</span> consentements (parental_consents + consent_audit_trail), vues RP (recruteurs, partenaires médias), actions recruteurs (notes, pipeline, favoris), suggestions de profil, registre d&apos;incidents, demandes de portabilité, snapshot du profil utilisateur, et — dans l&apos;export par utilisateur seulement — le contenu complet des messages où l&apos;utilisateur a participé.
+        </p>
+        <p className="text-[12px] text-[#9CA3AF] mt-2 leading-relaxed">
+          <span className="text-white/90">Non couvert :</span> événements de connexion, journal des lectures SQL, diff exhaustif de chaque modification de champ. L&apos;export ne reconstruit que ce qui a été enregistré dans les tables ci-dessus.
+        </p>
+        <p className="text-[12px] text-[#9CA3AF] mt-2 leading-relaxed">
+          <span className="text-white/90">Messages :</span> l&apos;export par utilisateur inclut les corps (les données de l&apos;utilisateur, droit d&apos;accès Loi 25). L&apos;export par période ne montre que les métadonnées (horodatage, expéditeur, conversation) — pas les corps.
+        </p>
+      </div>
 
       <Toast text={toast} onClose={() => setToast(null)} />
     </div>
