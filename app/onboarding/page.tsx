@@ -92,12 +92,18 @@ interface NexusUser {
   // School admin fields
   is_school_admin?: boolean;
   is_also_coach?: boolean;
-  school_admin_type?: "owner" | "collaborator" | null;
-  // CÉGEP admin fields (reuses is_school_admin — role infers school vs CÉGEP)
+  school_admin_type?: "owner" | "interim" | null;
+  // CÉGEP admin fields (reuses is_school_admin — role infers school vs CÉGEP).
+  // CÉGEP has no interim equivalent — only "owner" per spec.
   is_also_recruiter?: boolean;
-  cegep_admin_type?: "owner" | "collaborator" | null;
+  cegep_admin_type?: "owner" | null;
   // Shared
   pending_director_invite?: Record<string, unknown> | null;
+  // Loi 25 — explicit RPRP consent at director onboarding. Required to
+  // proceed when school_admin_type or cegep_admin_type is set to
+  // 'owner'/'interim'. finish() converts this into profile_data.rprp_accepted_at
+  // (timestamp) so the admin RPRP tab can show the real consent date.
+  rprp_consent?: boolean;
   subscription?: Record<string, unknown>;
   tier?: string;
   referral_code?: string | null;
@@ -441,6 +447,22 @@ export default function OnboardingPage() {
   function canProceed(): boolean {
     if (!user) return false;
     if (step === 1) return validateInstitution().ok;
+    // Step 2 is DirectorChoiceStep for coach/recruiter/league flows. If the
+    // user is becoming director ("self" / "interim" — they ARE the director),
+    // the Loi 25 RPRP designation checkbox must be ticked before proceeding.
+    // The "invite" branch sets admin_type=owner too (the inviter is temp
+    // admin), but the actual RPRP will be the invitee — they'll consent
+    // when they themselves go through onboarding, so we skip the gate when
+    // pending_director_invite is set. "coach_only" / "recruteur_only" have
+    // admin_type=null and are naturally not gated.
+    if (step === 2) {
+      const isDirectorChoice =
+        user.school_admin_type === "owner"
+        || user.school_admin_type === "interim"
+        || user.cegep_admin_type === "owner";
+      const isInviteFlow = !!user.pending_director_invite;
+      if (isDirectorChoice && !isInviteFlow && !user.rprp_consent) return false;
+    }
     return true;
   }
 
@@ -586,11 +608,24 @@ export default function OnboardingPage() {
 
       const isAdminClaim = isSchoolCoachAdminClaim || isRecruiterCegepClaim;
 
+      // Loi 25 — capture the explicit RPRP designation timestamp when the
+      // user consented as director ("self" / "interim", not "invite": the
+      // invitee will consent during their own onboarding). The admin RPRP
+      // tab prefers this date over admin_claims.reviewed_at when present.
+      const adminTypeValue = (localUser.school_admin_type || localUser.cegep_admin_type || null) as
+        | "owner" | "interim" | null;
+      const isInviteFlow = !!localUser.pending_director_invite;
+      const rprpAcceptedAt =
+        adminTypeValue && !isInviteFlow && localUser.rprp_consent === true
+          ? new Date().toISOString()
+          : null;
+
       const profileData = {
         bio: localUser.profile?.bio || null,
         experience_years: localUser.profile?.experience_years || null,
-        admin_type: localUser.school_admin_type || localUser.cegep_admin_type || null,
+        admin_type: adminTypeValue,
         pending_director_invite: localUser.pending_director_invite || null,
+        rprp_accepted_at: rprpAcceptedAt,
       };
 
       // Save profile data to users table
@@ -828,6 +863,41 @@ export default function OnboardingPage() {
 }
 
 /* ═══════════════════════════════════════════════════════════════
+   RPRP CONSENT CHECKBOX — Loi 25 designation
+   Used inside DirectorChoiceStep when the user picks "self" or "interim".
+   The wizard's canProceed() at step 2 reads user.rprp_consent (set via the
+   onChange handler) and finish() converts it to profile_data.rprp_accepted_at.
+═══════════════════════════════════════════════════════════════ */
+function RprpConsentCheckbox({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <label className="flex items-start gap-3 cursor-pointer group">
+      <span
+        className={`mt-0.5 w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
+          checked ? "bg-[#E63946] border-[#E63946]" : "border-[#6B7280] group-hover:border-white/30"
+        }`}
+        aria-hidden="true"
+      >
+        {checked && (
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round">
+            <path d="M20 6L9 17l-5-5" />
+          </svg>
+        )}
+      </span>
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        className="sr-only"
+        aria-label="J'accepte d'être désigné(e) responsable de la protection des renseignements personnels"
+      />
+      <span className="text-[12px] text-[#c8c8cc] leading-relaxed">
+        J&apos;accepte d&apos;être désigné(e) responsable de la protection des renseignements personnels (RPRP) pour mon établissement, conformément à la Loi 25. <span className="text-[#EF4444]">*</span>
+      </span>
+    </label>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
    COACH ONBOARDING STEPS
 ═══════════════════════════════════════════════════════════════ */
 function CoachStep({ step, user, save }: { step: number; user: NexusUser; save: (u: Partial<NexusUser>) => void; onFinish: () => void }) {
@@ -866,6 +936,11 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
   const [inviteFirstName, setInviteFirstName] = useState("");
   const [inviteLastName, setInviteLastName] = useState("");
   const [inviteMessage, setInviteMessage] = useState("");
+  // Loi 25 — RPRP designation consent. Required when the user is becoming
+  // director or interim. Cleared (false) when switching to a non-director
+  // choice so the gate stays accurate if they toggle back. canProceed() at
+  // step 2 reads user.rprp_consent.
+  const [rprpConsent, setRprpConsent] = useState<boolean>(!!user.rprp_consent);
 
   // Item 11: query the selected school's existing admin state so the
   // wizard can hide options that are already taken. Only applies to
@@ -950,11 +1025,14 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
     } else if (choice === "coach_only") {
       // Item 11: explicit "Entraîneur seulement" — clear any prior
       // admin flags the user may have toggled on/off in this step.
+      // Also clear rprp_consent — they're no longer becoming director,
+      // so the consent doesn't apply and shouldn't carry over to finish().
       save({
         [adminKey]: false,
         [coachKey]: true,
         [typeKey]: null,
         pending_director_invite: null,
+        rprp_consent: false,
       });
     } else if (choice === "recruteur_only") {
       // Item 11-Recruteur: explicit "Recruteur seulement" — no admin
@@ -968,6 +1046,7 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
         [coachKey]: true,
         [typeKey]: null,
         pending_director_invite: invite,
+        rprp_consent: false,
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1120,10 +1199,11 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
 
       {/* C'EST MOI expanded */}
       {choice === "self" && (
-        <div className="animate-fade-slide-down bg-[#111317]/60 rounded-xl p-5 border border-white/5">
+        <div className="animate-fade-slide-down space-y-4 bg-[#111317]/60 rounded-xl p-5 border border-white/5">
           <p className="text-[12px] text-[#9CA3AF] leading-relaxed">
             Tu seras {isCegep ? "Recruteur" : "Entraîneur"} ET {RoleLabel} de {orgName}. Tu pourras gérer les autres {isCegep ? "recruteurs" : isLeague ? "entraîneurs" : "coachs"}, voir les stats {isCegep ? "globales de recrutement" : "de recrutement"}, et superviser {isCegep ? "le pipeline de tout le CÉGEP" : "les profils athlètes"}.
           </p>
+          <RprpConsentCheckbox checked={rprpConsent} onChange={(v) => { setRprpConsent(v); save({ rprp_consent: v }); }} />
         </div>
       )}
 
@@ -1163,7 +1243,7 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
 
       {/* INTÉRIMAIRE expanded */}
       {choice === "interim" && type === "school" && (
-        <div className="animate-fade-slide-down bg-[#111317]/60 rounded-xl p-5 border border-white/5">
+        <div className="animate-fade-slide-down space-y-4 bg-[#111317]/60 rounded-xl p-5 border border-white/5">
           <div className="flex items-start gap-3">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5">
               <circle cx="12" cy="12" r="10" />
@@ -1179,6 +1259,7 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
               </p>
             </div>
           </div>
+          <RprpConsentCheckbox checked={rprpConsent} onChange={(v) => { setRprpConsent(v); save({ rprp_consent: v }); }} />
         </div>
       )}
 
