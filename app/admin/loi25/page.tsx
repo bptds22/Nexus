@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import {
   AlertTriangle,
@@ -313,25 +313,51 @@ function ConsentementsTab() {
    TAB 2 — INCIDENTS
 ═══════════════════════════════════════════════════════════════ */
 
-// TODO: Wire to loi25_incidents table.
-const MOCK_INCIDENTS = [
-  { id: "INC-001", date: "2026-02-15", type: "Accès non autorisé", severity: "Élevée", school: "Saint-Jean-Eudes", status: "Résolu" },
-  { id: "INC-002", date: "2026-03-22", type: "Divulgation accidentelle", severity: "Moyenne", school: "CÉGEP Garneau", status: "En cours" },
-];
+// Real registry — backed by public.loi25_incidents (admin-only RLS).
+interface IncidentRow {
+  id: string;
+  date_incident: string;
+  severity: string;
+  type: string | null;
+  description: string | null;
+  affected_users_count: number;
+  cause: string | null;
+  containment: string | null;
+  cai_notified: boolean;
+  cai_notified_at: string | null;
+  status: string;
+  created_at: string;
+}
 
 function IncidentsTab() {
+  const supabase = useMemo(() => createClient(), []);
+  const [incidents, setIncidents] = useState<IncidentRow[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [selected, setSelected] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
-
   const notify = (m: string) => { setToast(m); setTimeout(() => setToast(null), 2500); };
+
+  const refresh = useCallback(async () => {
+    const { data, error } = await supabase
+      .from("loi25_incidents")
+      .select("id, date_incident, severity, type, description, affected_users_count, cause, containment, cai_notified, cai_notified_at, status, created_at")
+      .order("date_incident", { ascending: false });
+    if (error) {
+      console.error("[Admin Loi 25] incidents fetch error:", error.message);
+      setIncidents([]);
+    } else {
+      setIncidents((data || []) as IncidentRow[]);
+    }
+    setLoading(false);
+  }, [supabase]);
+
+  useEffect(() => { refresh(); }, [refresh]);
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <p className="text-[13px] text-[#9CA3AF]">Registre des incidents de confidentialité (Loi 25 Phase 1).</p>
-        </div>
+        <p className="text-[13px] text-[#9CA3AF]">Registre des incidents de confidentialité (Loi 25 — saisie manuelle par l&apos;admin).</p>
         <button type="button" onClick={() => setShowForm(true)}
           className="inline-flex items-center gap-2 h-10 px-4 rounded-lg bg-[#E63946] text-white text-[12px] font-bold uppercase tracking-wider hover:bg-[#D42B22]">
           <Plus size={14} /> Signaler un incident
@@ -342,77 +368,164 @@ function IncidentsTab() {
         <table className="w-full text-[13px]">
           <thead className="bg-white/[0.02] border-b border-[#1e2128]">
             <tr className="text-left text-[11px] text-[#6b7280] uppercase tracking-wider">
-              <th className="px-4 py-3 font-bold">#</th>
               <th className="px-4 py-3 font-bold">Date</th>
               <th className="px-4 py-3 font-bold">Type</th>
               <th className="px-4 py-3 font-bold">Sévérité</th>
-              <th className="px-4 py-3 font-bold">Établissement</th>
+              <th className="px-4 py-3 font-bold text-right">Affectés</th>
+              <th className="px-4 py-3 font-bold">CAI</th>
               <th className="px-4 py-3 font-bold">Statut</th>
               <th className="px-4 py-3 font-bold text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#1e2128]">
-            {MOCK_INCIDENTS.map((inc) => (
-              <tr key={inc.id} className="hover:bg-white/[0.03]">
-                <td className="px-4 py-3 text-white font-mono text-[12px]">{inc.id}</td>
-                <td className="px-4 py-3 text-[#9CA3AF]">{formatDate(inc.date)}</td>
-                <td className="px-4 py-3 text-white">{inc.type}</td>
-                <td className="px-4 py-3"><SeverityBadge level={inc.severity} /></td>
-                <td className="px-4 py-3 text-[#9CA3AF]">{inc.school}</td>
-                <td className="px-4 py-3"><IncidentStatusBadge status={inc.status} /></td>
-                <td className="px-4 py-3 text-right">
-                  <button type="button" onClick={() => setSelected(inc.id)}
-                    className="text-[11px] font-bold uppercase tracking-wider text-[#3B82F6] hover:text-white">Voir</button>
-                </td>
-              </tr>
+            {loading && <tr><td colSpan={7} className="px-4 py-8 text-center text-[#6b7280]">Chargement…</td></tr>}
+            {!loading && incidents.length === 0 && <tr><td colSpan={7} className="px-4 py-8 text-center text-[#6b7280]">Aucun incident enregistré.</td></tr>}
+            {incidents.map((inc) => (
+              <Fragment key={inc.id}>
+                <tr className="hover:bg-white/[0.03]">
+                  <td className="px-4 py-3 text-[#9CA3AF] whitespace-nowrap">{formatDate(inc.date_incident)}</td>
+                  <td className="px-4 py-3 text-white">{inc.type || "—"}</td>
+                  <td className="px-4 py-3"><SeverityBadge level={inc.severity} /></td>
+                  <td className="px-4 py-3 text-right tabular-nums text-[#9CA3AF]">{inc.affected_users_count}</td>
+                  <td className="px-4 py-3 text-[12px] text-[#9CA3AF]">{inc.cai_notified ? `Oui (${formatDate(inc.cai_notified_at)})` : "Non"}</td>
+                  <td className="px-4 py-3"><IncidentStatusBadge status={inc.status} /></td>
+                  <td className="px-4 py-3 text-right">
+                    <button type="button" onClick={() => setExpandedId(expandedId === inc.id ? null : inc.id)}
+                      className="text-[11px] font-bold uppercase tracking-wider text-[#3B82F6] hover:text-white">
+                      {expandedId === inc.id ? "Fermer" : "Voir"}
+                    </button>
+                  </td>
+                </tr>
+                {expandedId === inc.id && (
+                  <tr className="bg-white/[0.02]">
+                    <td colSpan={7} className="px-6 py-4 text-[13px] text-[#9CA3AF]">
+                      <div className="space-y-3">
+                        {inc.description && <div><span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#6b7280]">Description</span><p className="text-white/85 mt-1">{inc.description}</p></div>}
+                        {inc.cause && <div><span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#6b7280]">Cause</span><p className="text-white/85 mt-1">{inc.cause}</p></div>}
+                        {inc.containment && <div><span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#6b7280]">Confinement</span><p className="text-white/85 mt-1">{inc.containment}</p></div>}
+                        <p className="text-[11px] text-[#6b7280]">Enregistré le {formatDate(inc.created_at)}</p>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </Fragment>
             ))}
           </tbody>
         </table>
       </div>
 
-      {selected && (
-        <div className="bg-[#1A1D24] border border-white/10 rounded-xl p-6">
-          <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#E63946]">Chronologie — {selected}</p>
-          <ul className="mt-4 space-y-3 text-[13px]">
-            <li className="flex gap-3"><span className="text-[#6b7280] w-32">15 fév 2026</span><span className="text-white">Détecté par le système</span></li>
-            <li className="flex gap-3"><span className="text-[#6b7280] w-32">15 fév 2026</span><span className="text-white">Confinement : accès bloqué</span></li>
-            <li className="flex gap-3"><span className="text-[#6b7280] w-32">16 fév 2026</span><span className="text-white">Évaluation : 3 profils d&apos;athlètes consultés</span></li>
-            <li className="flex gap-3"><span className="text-[#6b7280] w-32">17 fév 2026</span><span className="text-white">CAI notifiée</span></li>
-            <li className="flex gap-3"><span className="text-[#6b7280] w-32">18 fév 2026</span><span className="text-white">Parents des 3 athlètes notifiés</span></li>
-            <li className="flex gap-3"><span className="text-[#6b7280] w-32">20 fév 2026</span><span className="text-[#10B981]">Résolu — mot de passe réinitialisé, MFA activé</span></li>
-          </ul>
-          <button type="button" onClick={() => setSelected(null)} className="mt-4 text-[11px] font-bold uppercase tracking-wider text-[#6b7280] hover:text-white">Fermer</button>
-        </div>
-      )}
-
-      {showForm && <IncidentFormModal onClose={() => setShowForm(false)} onSubmit={() => { setShowForm(false); notify("Incident enregistré (localStorage — à wire à loi25_incidents)"); }} />}
+      {showForm && <IncidentFormModal onClose={() => setShowForm(false)} onSaved={() => { setShowForm(false); refresh(); notify("Incident enregistré"); }} />}
       <Toast text={toast} onClose={() => setToast(null)} />
     </div>
   );
 }
 
-function IncidentFormModal({ onClose, onSubmit }: { onClose: () => void; onSubmit: () => void }) {
-  // TODO: Wire to loi25_incidents table via Supabase insert.
+function IncidentFormModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
+  const supabase = useMemo(() => createClient(), []);
+  const [submitting, setSubmitting] = useState(false);
+  const [form, setForm] = useState({
+    date_incident: new Date().toISOString().slice(0, 10),
+    severity: "Moyenne",
+    type: "",
+    description: "",
+    affected_users_count: 0,
+    cause: "",
+    containment: "",
+    cai_notified: false,
+    cai_notified_at: "",
+    status: "OPEN",
+  });
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setSubmitting(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    const { error } = await supabase.from("loi25_incidents").insert({
+      date_incident: form.date_incident,
+      severity: form.severity,
+      type: form.type || null,
+      description: form.description || null,
+      affected_users_count: form.affected_users_count,
+      cause: form.cause || null,
+      containment: form.containment || null,
+      cai_notified: form.cai_notified,
+      cai_notified_at: form.cai_notified && form.cai_notified_at ? form.cai_notified_at : null,
+      status: form.status,
+      created_by: user?.id ?? null,
+    });
+    setSubmitting(false);
+    if (error) {
+      console.error("[Loi 25 incident] insert error:", error.message);
+      alert("Erreur : " + error.message);
+      return;
+    }
+    onSaved();
+  }
+
+  const inputCls = "w-full h-9 px-3 rounded-lg bg-[#111317] border border-white/[0.06] text-[13px] text-white focus:border-[#E63946] focus:outline-none";
+  const textareaCls = "w-full px-3 py-2 rounded-lg bg-[#111317] border border-white/[0.06] text-[13px] text-white focus:border-[#E63946] focus:outline-none";
+  const labelCls = "block text-[10px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mb-1.5";
+
   return (
     <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
       <div className="w-full max-w-[560px] bg-[#1A1D24] border border-white/10 rounded-xl shadow-2xl max-h-[90vh] overflow-y-auto">
         <div className="px-6 py-5 border-b border-white/10"><h3 className="text-[17px] font-bold text-white">Signaler un incident</h3></div>
-        <form onSubmit={(e) => { e.preventDefault(); onSubmit(); }} className="px-6 py-5 space-y-3 text-[13px]">
-          <FormField label="Date de l'incident" type="date" />
-          <FormField label="Type" select options={["Accès non autorisé", "Divulgation accidentelle", "Perte de données", "Tentative d'intrusion", "Autre"]} />
-          <FormField label="Description" textarea />
-          <FormField label="RP concernés" textarea />
-          <FormField label="Nombre de personnes affectées" type="number" />
-          <FormField label="Sévérité" select options={["Critique", "Élevée", "Moyenne", "Faible"]} />
-          <FormField label="Établissement concerné" />
-          <FormField label="Mesures prises" textarea />
+        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-3 text-[13px]">
+          <div>
+            <label htmlFor="inc-date" className={labelCls}>Date de l&apos;incident</label>
+            <input id="inc-date" type="date" required value={form.date_incident} onChange={(e) => setForm({ ...form, date_incident: e.target.value })} className={inputCls} />
+          </div>
+          <div>
+            <label htmlFor="inc-severity" className={labelCls}>Sévérité</label>
+            <select id="inc-severity" value={form.severity} onChange={(e) => setForm({ ...form, severity: e.target.value })} className={inputCls}>
+              {["Critique", "Élevée", "Moyenne", "Faible"].map((o) => <option key={o} value={o}>{o}</option>)}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="inc-type" className={labelCls}>Type</label>
+            <select id="inc-type" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} className={inputCls}>
+              <option value="">—</option>
+              {["Accès non autorisé", "Divulgation accidentelle", "Perte de données", "Tentative d'intrusion", "Autre"].map((o) => <option key={o} value={o}>{o}</option>)}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="inc-desc" className={labelCls}>Description</label>
+            <textarea id="inc-desc" rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className={textareaCls} />
+          </div>
+          <div>
+            <label htmlFor="inc-affected" className={labelCls}>Nombre de personnes affectées</label>
+            <input id="inc-affected" type="number" min="0" value={form.affected_users_count} onChange={(e) => setForm({ ...form, affected_users_count: parseInt(e.target.value) || 0 })} className={inputCls} />
+          </div>
+          <div>
+            <label htmlFor="inc-cause" className={labelCls}>Cause</label>
+            <textarea id="inc-cause" rows={2} value={form.cause} onChange={(e) => setForm({ ...form, cause: e.target.value })} className={textareaCls} />
+          </div>
+          <div>
+            <label htmlFor="inc-containment" className={labelCls}>Mesures de confinement</label>
+            <textarea id="inc-containment" rows={2} value={form.containment} onChange={(e) => setForm({ ...form, containment: e.target.value })} className={textareaCls} />
+          </div>
+          <div>
+            <label htmlFor="inc-status" className={labelCls}>Statut</label>
+            <select id="inc-status" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className={inputCls}>
+              <option value="OPEN">Ouvert</option>
+              <option value="IN_PROGRESS">En cours</option>
+              <option value="RESOLVED">Résolu</option>
+              <option value="CLOSED">Fermé</option>
+            </select>
+          </div>
           <label className="flex items-center gap-2 text-white/80">
-            <input type="checkbox" className="accent-[#E63946]" />
+            <input type="checkbox" checked={form.cai_notified} onChange={(e) => setForm({ ...form, cai_notified: e.target.checked })} className="accent-[#E63946]" />
             Signalé à la CAI
           </label>
+          {form.cai_notified && (
+            <div>
+              <label htmlFor="inc-cai-at" className={labelCls}>Date de notification CAI</label>
+              <input id="inc-cai-at" type="date" value={form.cai_notified_at} onChange={(e) => setForm({ ...form, cai_notified_at: e.target.value })} className={inputCls} />
+            </div>
+          )}
           <div className="flex gap-2 justify-end pt-2 border-t border-white/10">
-            <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg text-[12px] font-bold uppercase tracking-wider text-[#9CA3AF] hover:text-white">Annuler</button>
-            <button type="submit" className="px-4 py-2 rounded-lg bg-[#E63946] text-white text-[12px] font-bold uppercase tracking-wider hover:bg-[#D42B22]">Enregistrer</button>
+            <button type="button" onClick={onClose} disabled={submitting} className="px-4 py-2 rounded-lg text-[12px] font-bold uppercase tracking-wider text-[#9CA3AF] hover:text-white">Annuler</button>
+            <button type="submit" disabled={submitting} className="px-4 py-2 rounded-lg bg-[#E63946] text-white text-[12px] font-bold uppercase tracking-wider hover:bg-[#D42B22] disabled:opacity-50">{submitting ? "..." : "Enregistrer"}</button>
           </div>
         </form>
       </div>
@@ -873,11 +986,14 @@ function SeverityBadge({ level }: { level: string }) {
 }
 
 function IncidentStatusBadge({ status }: { status: string }) {
-  const cls = status === "Résolu" ? "bg-[#10B981]/15 text-[#10B981]"
-    : status === "En cours" ? "bg-[#3B82F6]/15 text-[#3B82F6]"
-    : status === "Signalé à la CAI" ? "border border-[#E63946] text-[#E63946]"
-    : "bg-[#F59E0B]/15 text-[#F59E0B]";
-  return <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${cls}`}>{status}</span>;
+  const map: Record<string, { cls: string; label: string }> = {
+    OPEN:        { cls: "bg-[#F59E0B]/15 text-[#F59E0B]", label: "Ouvert" },
+    IN_PROGRESS: { cls: "bg-[#3B82F6]/15 text-[#3B82F6]", label: "En cours" },
+    RESOLVED:    { cls: "bg-[#10B981]/15 text-[#10B981]", label: "Résolu" },
+    CLOSED:      { cls: "bg-white/5 text-white/60",       label: "Fermé" },
+  };
+  const s = map[status] ?? { cls: "bg-white/5 text-white/60", label: status };
+  return <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${s.cls}`}>{s.label}</span>;
 }
 
 function PortabilityStatusBadge({ status }: { status: PortabilityRequest["status"] }) {
