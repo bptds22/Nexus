@@ -47,6 +47,14 @@ type Quality = {
   noEval: number;
 };
 
+// Loi 25 compliance gauges. rprpDeclined = directors in poste who declined
+// the RPRP designation (profile_data.rprp_declined_at set, no rprp_accepted_at).
+// Derived live, no admin_notifications row needed — the user record is the
+// source of truth, same shape as every other dashboard metric.
+type Compliance = {
+  rprpDeclined: number;
+};
+
 type WeekPoint = { week: string; count: number };
 type StageCount = { stage: string; label: string; color: string; count: number };
 type SchoolRank = { name: string; views: number };
@@ -91,6 +99,7 @@ export default function AdminDashboard() {
   const [counts, setCounts] = useState<Counts | null>(null);
   const [eng, setEng] = useState<Engagement | null>(null);
   const [quality, setQuality] = useState<Quality | null>(null);
+  const [compliance, setCompliance] = useState<Compliance | null>(null);
   const [registrationSeries, setRegistrationSeries] = useState<WeekPoint[]>([]);
   const [funnel, setFunnel] = useState<StageCount[]>([]);
   const [topSchools, setTopSchools] = useState<SchoolRank[]>([]);
@@ -108,7 +117,7 @@ export default function AdminDashboard() {
       const [
         athletesTot, athletesWeek, coachesTot, recruitersTot,
         schoolsTot, activeSchoolsData, verifiedCount, noEvalCount,
-        athletesCompletion, evalsCote,
+        athletesCompletion, evalsCote, complianceDirectors,
       ] = await Promise.all([
         supabase.from("athletes").select("id", { count: "exact", head: true }),
         supabase.from("athletes").select("id", { count: "exact", head: true }).gte("created_at", startOfWeekISO),
@@ -120,6 +129,11 @@ export default function AdminDashboard() {
         supabase.from("athletes").select("id", { count: "exact", head: true }).is("coach_id", null),
         supabase.from("athletes").select("profile_completion"),
         supabase.from("evaluations").select("cote_globale").not("cote_globale", "is", null),
+        // Loi 25 compliance — fetch director profile_data (small population:
+        // 1 per school) and count declines client-side. Mirrors the RPRP
+        // tab's approach; avoids PostgREST JSONB-key-IS-NULL filter syntax
+        // gymnastics that may differ across supabase-js versions.
+        supabase.from("users").select("profile_data").eq("is_school_admin", true),
       ]);
 
       const totalAthletes = athletesTot.count ?? 0;
@@ -161,6 +175,14 @@ export default function AdminDashboard() {
         noEval: noEvalCount.count ?? 0,
       };
       setQuality(nextQuality);
+
+      // ── Loi 25 compliance ─────────────────────────────────────
+      const directorRows = (complianceDirectors.data ?? []) as { profile_data: Record<string, unknown> | null }[];
+      const rprpDeclined = directorRows.filter((d) => {
+        const pd = d.profile_data;
+        return !!(pd && pd["rprp_declined_at"]);
+      }).length;
+      setCompliance({ rprpDeclined });
 
       // ── Row 2 engagement (tolerate missing `messages` table) ───
       const [
@@ -318,6 +340,19 @@ export default function AdminDashboard() {
           <PercentStat label="Complétion profil moyenne" percent={quality?.avgCompletion ?? 0} loading={loading} />
           <StarStat label="Cote globale moyenne" value={quality?.avgCote ?? 0} loading={loading} />
           <WarningStat label="Athlètes sans évaluation" value={quality?.noEval ?? 0} sublabel="besoin d'évaluation" loading={loading} />
+        </div>
+      </section>
+
+      {/* ═══════ ROW 3b — CONFORMITÉ LOI 25 ═══════ */}
+      <section className="space-y-3">
+        <h2 className={SECTION_HEADING}>Conformité Loi 25</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <WarningStat
+            label="RPRP refusé"
+            value={compliance?.rprpDeclined ?? 0}
+            sublabel="Action requise — établissement sans responsable"
+            loading={loading}
+          />
         </div>
       </section>
 
