@@ -114,6 +114,10 @@ function ConsentementsTab() {
   const supabase = useMemo(() => createClient(), []);
   const [rows, setRows] = useState<ConsentRow[]>([]);
   const [loading, setLoading] = useState(true);
+  // Attestation pipeline counts (parental_consents) — power the 4 KPI cards.
+  // Separate from the per-row athlete self-reported view below (the boolean
+  // athletes.consentement_parental from athlete onboarding).
+  const [attestCounts, setAttestCounts] = useState({ ATTESTED: 0, PENDING: 0, WITHDRAWN: 0, EXPIRED: 0 });
   const [statusFilter, setStatusFilter] = useState<ConsentStatus>("all");
   const [schoolFilter, setSchoolFilter] = useState<string>("all");
   const [sportFilter, setSportFilter] = useState<string>("all");
@@ -163,17 +167,22 @@ function ConsentementsTab() {
       setRows(built);
       setLoading(false);
 
-      const total = built.length;
-      const obtained = built.filter((r) => r.consentGiven).length;
-      const pending = total - obtained;
-      const withdrawn = 0; // No source for this yet — TODO loi25_consents
+      // Attestation pipeline counts — read parental_consents (the coach-
+      // attestation Loi 25 flow). Admin-only via the new SELECT policy.
+      const { data: pcRows, error: pcErr } = await supabase
+        .from("parental_consents")
+        .select("status");
+      if (pcErr) {
+        console.error("[Admin Loi 25] parental_consents fetch error:", pcErr.message);
+      } else {
+        const counts = { ATTESTED: 0, PENDING: 0, WITHDRAWN: 0, EXPIRED: 0 };
+        for (const r of (pcRows || []) as { status: string }[]) {
+          if (r.status in counts) counts[r.status as keyof typeof counts] += 1;
+        }
+        setAttestCounts(counts);
+      }
     })();
   }, [supabase]);
-
-  const totalMinors = rows.length;
-  const obtained = rows.filter((r) => r.consentGiven).length;
-  const pending = totalMinors - obtained;
-  const withdrawn = 0;
 
   const schools = [...new Set(rows.map((r) => r.schoolName))].sort();
   const sports = [...new Set(rows.map((r) => r.sportName))].sort();
@@ -196,21 +205,28 @@ function ConsentementsTab() {
 
   return (
     <div className="space-y-6">
-      {/* KPI row */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <KpiCard label="Total athlètes mineurs" value={totalMinors} />
-        <KpiCard label="Consentements obtenus" value={obtained} color="text-[#10B981]"
-          footnote={totalMinors > 0 ? `${Math.round((obtained / totalMinors) * 100)}% des mineurs` : undefined} />
-        <KpiCard label="En attente" value={pending} color="text-[#F59E0B]" />
-        <KpiCard label="Retirés / expirés" value={withdrawn} color="text-[#E63946]" />
+      {/* Cards = coach-attestation pipeline (parental_consents). The per-row
+          table below is the parallel athlete self-registration boolean — the
+          two mechanisms are intentionally distinct, the caption flags it. */}
+      <div>
+        <p className="text-[12px] text-[#6b7280] mb-2">
+          Pipeline d&apos;attestation (Loi 25 — formulaire signé par le coach). Distinct du
+          consentement auto-déclaré à l&apos;inscription de l&apos;athlète, montré dans la liste ci-dessous.
+        </p>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <KpiCard label="Obtenus (attestés)" value={attestCounts.ATTESTED} color="text-[#10B981]" />
+          <KpiCard label="En attente" value={attestCounts.PENDING} color="text-[#F59E0B]" />
+          <KpiCard label="Retirés" value={attestCounts.WITHDRAWN} color="text-[#E63946]" />
+          <KpiCard label="Expirés" value={attestCounts.EXPIRED} color="text-[#E63946]" />
+        </div>
       </div>
 
-      {/* Renewal banner (hardcoded heuristic for now) */}
-      {pending > 0 && (
+      {/* Renewal banner — based on the attestation pipeline. */}
+      {attestCounts.PENDING > 0 && (
         <div className="bg-[#F59E0B]/10 border border-[#F59E0B]/30 rounded-xl p-4 flex items-center gap-3">
           <AlertTriangle size={18} className="text-[#F59E0B] shrink-0" />
           <div className="flex-1 text-[13px] text-[#F59E0B]">
-            {pending} consentement(s) à obtenir avant la prochaine saison. Planifier les rappels.
+            {attestCounts.PENDING} attestation(s) en attente. Planifier les rappels aux coachs.
           </div>
         </div>
       )}
