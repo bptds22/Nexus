@@ -1,32 +1,35 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 /* ═══════════════════════════════════════════════════════════════
-   TeamSearchOrCreate — search existing civil teams by name within
-   the coach's chosen sport.
+   TeamSearchOrCreate — civil-coach team search.
 
-   Phase 6.2: ported to the unified model. Teams now live in the
-   `teams` table anchored on `schools` (with type='LIGUE_CIVILE');
-   coach attachments live in `team_coaches` instead of league_coaches.
+   UX model (post-redesign): the coach types ONLY the team name.
+   Division / league / age / gender are scraper values that decorate
+   each card to help the coach recognize their team — never typed or
+   selected. Multi-word input (e.g. "Wildcats Bantam AA") triggers
+   token matching: each token must appear somewhere across the
+   team's name/age_group/division/league/gender fields. Single-token
+   input behaves as a name contains-match. Empty input lists all
+   civil-league teams for the chosen sport.
 
-   Mental model: a civil coach is looking for *their team*, not their
-   league. The league (now a LIGUE_CIVILE school) is an attribute of
-   the team, not a top-level selector. The component shows team
-   results first with the school name as a secondary subtitle.
+   Sport: defaults to the prop sportId (resolved upstream from
+   localStorage.sport_principal — the coach's declared sport) but a
+   local <select> at the top lets the coach re-scope the search to a
+   different sport without altering their declared sport (the
+   selector is search-scope-only; finish() still saves the
+   step-0 sport_principal unchanged).
 
-   Search behavior:
-   - 250ms debounce
-   - min 2 chars before query fires
-   - LIMIT 20 server-side
-   - filtered to LIGUE_CIVILE schools only (via inner join filter)
-   - filtered to the coach's chosen sport (sport_id from step 0)
+   Results render as paginated cards (5/page mobile, 8/page desktop)
+   with swipe-left/right + prev/next + page indicator. No silent
+   result cap — pagination scrolls through everything.
 
-   Result rows render: team name, age_group + gender pills, school
-   (league) name (atténué), coach count signal. Teams with 0 coaches
-   are intentionally surfaced — the orphan signal helps the user
-   decide whether to join or start fresh.
+   Sport scope filter: .eq('sport_id', searchSportId).
+   Civil filter: client-side schools.type === 'LIGUE_CIVILE'
+     (PostgREST embed can't filter parent on child column without
+     a more invasive refactor; small candidate set keeps this fine).
 ═══════════════════════════════════════════════════════════════ */
 
 export interface TeamSearchRow {
@@ -35,6 +38,7 @@ export interface TeamSearchRow {
   age_group: string | null;
   gender: string | null;
   division: string | null;
+  league: string | null;
   school_id: string;
   school_name: string;
   coach_count: number;
@@ -48,12 +52,15 @@ export interface TeamSearchOrCreateProps {
   className?: string;
 }
 
+interface SportOption { id: string; nom: string }
+
 interface RawRow {
   id: string;
   name: string;
   age_group: string | null;
   gender: string | null;
   division: string | null;
+  league: string | null;
   school_id: string;
   schools: { id: string; name: string; type: string | null } | { id: string; name: string; type: string | null }[] | null;
   team_coaches: { coach_id: string }[] | null;
@@ -61,6 +68,33 @@ interface RawRow {
 
 const inputCls =
   "w-full h-11 px-4 bg-[#111317] border border-white/10 rounded-lg text-white font-sans text-sm placeholder:text-[#6B7280] focus:border-[#E63946] focus:outline-none transition-colors";
+const labelCls =
+  "block text-[10px] font-bold tracking-[0.25em] uppercase text-[#9CA3AF] mb-1.5";
+
+// Lowercase + NFD-strip diacritics so "Nemesis" matches "Némésis"
+// and "chateauguay" matches "Châteauguay" in token filters. The
+// regex range U+0300-U+036F is the Unicode "combining diacritical
+// marks" block — NFD decomposes "é" → "e" + U+0301, then strip.
+function normalize(s: string | null | undefined): string {
+  if (!s) return "";
+  return s.toLowerCase().normalize("NFD").replace(/\p{Mn}/gu, "");
+}
+
+// Display-only normalization: map the casing/accent variants of
+// gender values the DB carries (RSEQ seed: "Féminin"/"Masculin"/
+// "Mixte"; civil-create form: "feminin"/"masculin"/"mixte") to a
+// single canonical render. Stored values are left alone.
+function displayGender(raw: string | null): string | null {
+  if (!raw) return null;
+  switch (normalize(raw)) {
+    case "feminin":   return "Féminin";
+    case "masculin":  return "Masculin";
+    case "mixte":     return "Mixte";
+    default:          return raw;
+  }
+}
+
+const SWIPE_THRESHOLD_PX = 50;
 
 export default function TeamSearchOrCreate({
   sportId,
@@ -76,11 +110,49 @@ export default function TeamSearchOrCreate({
   const [hasSearched, setHasSearched] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Local search-scope sport. Seeded from the prop (the coach's
+  // declared sport from step 0). Never written back — finish() reads
+  // sport_principal from localStorage, which this selector doesn't
+  // touch.
+  const [searchSportId, setSearchSportId] = useState<string>(sportId);
+  const [sportOptions, setSportOptions] = useState<SportOption[]>([]);
+
+  // Pagination + responsive page size.
+  const [pageSize, setPageSize] = useState(5);
+  const [currentPage, setCurrentPage] = useState(0);
+  const touchStartXRef = useRef<number | null>(null);
+
+  // Fetch sport list once on mount.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const supabase = createClient();
+      const { data } = await supabase.from("sports").select("id, nom").order("nom");
+      if (cancelled) return;
+      setSportOptions((data ?? []) as SportOption[]);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Responsive page size: 5 on narrow viewports, 8 on md+.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mq = window.matchMedia("(min-width: 768px)");
+    const update = () => setPageSize(mq.matches ? 8 : 5);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+
+  // Reset to page 0 whenever the result set changes shape.
+  useEffect(() => {
+    setCurrentPage(0);
+  }, [search, searchSportId]);
+
+  // Fetch + token-filter results whenever search or sport changes.
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
-
-    const trimmed = search.trim();
-    if (trimmed.length < 2 || !sportId) {
+    if (!searchSportId) {
       setResults([]);
       setHasSearched(false);
       setLoading(false);
@@ -90,15 +162,29 @@ export default function TeamSearchOrCreate({
     setLoading(true);
     debounceRef.current = setTimeout(async () => {
       const supabase = createClient();
-      const { data, error: queryError } = await supabase
+      const trimmed = search.trim();
+      const tokens = trimmed.length > 0
+        ? trimmed.split(/\s+/).filter(Boolean)
+        : [];
+
+      // Candidate fetch. The FIRST token is the user's most-likely
+      // name token (people type the team name first, then modifiers).
+      // Server-side .ilike narrows the candidate set; full token
+      // matching happens client-side across all fields.
+      let query = supabase
         .from("teams")
         .select(
-          "id, name, age_group, gender, division, school_id, schools!school_id(id, name, type), team_coaches(coach_id)"
+          "id, name, age_group, gender, division, league, school_id, schools!school_id(id, name, type), team_coaches(coach_id)"
         )
-        .ilike("name", `%${trimmed}%`)
-        .eq("sport_id", sportId)
+        .eq("sport_id", searchSportId)
         .order("name")
-        .limit(20);
+        .limit(500);
+
+      if (tokens.length > 0) {
+        query = query.ilike("name", `%${tokens[0]}%`);
+      }
+
+      const { data, error: queryError } = await query;
 
       if (queryError) {
         console.error("[TeamSearchOrCreate] search failed:", queryError);
@@ -109,17 +195,27 @@ export default function TeamSearchOrCreate({
         return;
       }
 
-      // Filter to LIGUE_CIVILE schools client-side. PostgREST embed
-      // can't filter the parent rows on a child column without an
-      // inner join — for a small result set client-side filter is
-      // simpler than refactoring the query shape.
+      // Civil-only filter (schools.type embed).
       const civilOnly = (data ?? []).filter((row) => {
         const r = row as unknown as RawRow;
         const school = Array.isArray(r.schools) ? r.schools[0] : r.schools;
         return school?.type === "LIGUE_CIVILE";
       });
 
-      const mapped: TeamSearchRow[] = civilOnly.map((row) => {
+      // Token narrowing: build per-team haystack from name + helper
+      // fields, require every token to be a substring (normalized).
+      // Empty input → tokens is [] → no filter applied (show all).
+      const normTokens = tokens.map(normalize);
+      const matched = civilOnly.filter((row) => {
+        if (normTokens.length === 0) return true;
+        const r = row as unknown as RawRow;
+        const haystack = [r.name, r.age_group, r.division, r.league, r.gender]
+          .map(normalize)
+          .join(" ");
+        return normTokens.every((t) => haystack.includes(t));
+      });
+
+      const mapped: TeamSearchRow[] = matched.map((row) => {
         const r = row as unknown as RawRow;
         const school = Array.isArray(r.schools) ? r.schools[0] : r.schools;
         return {
@@ -128,6 +224,7 @@ export default function TeamSearchOrCreate({
           age_group: r.age_group,
           gender: r.gender,
           division: r.division,
+          league: r.league,
           school_id: r.school_id,
           school_name: school?.name ?? "",
           coach_count: r.team_coaches?.length ?? 0,
@@ -143,26 +240,65 @@ export default function TeamSearchOrCreate({
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [search, sportId]);
+  }, [search, searchSportId]);
 
+  // Pagination derived state. Clamp currentPage if results shrink.
+  const totalPages = Math.max(1, Math.ceil(results.length / pageSize));
+  const pageIndex = Math.min(currentPage, totalPages - 1);
+  const pagedResults = useMemo(() => {
+    const start = pageIndex * pageSize;
+    return results.slice(start, start + pageSize);
+  }, [results, pageIndex, pageSize]);
+
+  function goPage(next: number) {
+    setCurrentPage(Math.max(0, Math.min(totalPages - 1, next)));
+  }
+
+  function onTouchStart(e: React.TouchEvent<HTMLDivElement>) {
+    touchStartXRef.current = e.changedTouches[0]?.clientX ?? null;
+  }
+  function onTouchEnd(e: React.TouchEvent<HTMLDivElement>) {
+    const startX = touchStartXRef.current;
+    touchStartXRef.current = null;
+    if (startX == null) return;
+    const endX = e.changedTouches[0]?.clientX ?? startX;
+    const dx = endX - startX;
+    if (Math.abs(dx) < SWIPE_THRESHOLD_PX) return;
+    // Swipe left (dx < 0) → next page; swipe right → prev page.
+    if (dx < 0) goPage(pageIndex + 1);
+    else goPage(pageIndex - 1);
+  }
+
+  // Selected-team confirmation UI (post-pick). Preserved from the
+  // prior component shape so the wizard's existing select handler
+  // chains in unchanged — just enriched with the new pills.
   if (selectedTeam) {
+    const genderLabel = displayGender(selectedTeam.gender);
     return (
       <div className={`bg-[#111317] border border-[#22C55E]/30 rounded-lg p-5 space-y-3 ${className}`}>
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <h3 className="font-head font-black text-lg text-white">{selectedTeam.name}</h3>
-              {selectedTeam.age_group && (
+              {selectedTeam.division && (
                 <span className="px-2 py-0.5 rounded-full bg-[#E63946]/10 text-[10px] font-bold text-[#E63946] uppercase border border-[#E63946]/20">
+                  {selectedTeam.division}
+                </span>
+              )}
+              {selectedTeam.age_group && (
+                <span className="px-2 py-0.5 rounded-full bg-[#3B82F6]/10 text-[10px] font-bold text-[#3B82F6] uppercase border border-[#3B82F6]/20">
                   {selectedTeam.age_group}
                 </span>
               )}
-              {selectedTeam.gender && (
+              {genderLabel && (
                 <span className="px-2 py-0.5 rounded-full bg-white/5 text-[10px] font-bold text-[#9CA3AF] uppercase border border-white/10">
-                  {selectedTeam.gender}
+                  {genderLabel}
                 </span>
               )}
             </div>
+            {selectedTeam.league && (
+              <p className="text-[11px] text-[#9CA3AF] mt-2">{selectedTeam.league}</p>
+            )}
             <p className="text-xs text-[#6B7280] mt-1">{selectedTeam.school_name}</p>
             <p className="text-[11px] text-[#22C55E] font-bold mt-2 flex items-center gap-1">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2" strokeLinecap="round">
@@ -177,22 +313,46 @@ export default function TeamSearchOrCreate({
   }
 
   const trimmed = search.trim();
-  const showInitialEmpty = !hasSearched && trimmed.length < 2;
-  const showNoResults = hasSearched && !loading && results.length === 0 && trimmed.length >= 2;
+  const showNoResults = hasSearched && !loading && results.length === 0;
 
   return (
     <div className={`space-y-4 ${className}`}>
+      {/* Sport selector — search-scope only, never written back. */}
       <div>
+        <label htmlFor="team-search-sport" className={labelCls}>Sport</label>
+        <select
+          id="team-search-sport"
+          value={searchSportId}
+          onChange={(e) => setSearchSportId(e.target.value)}
+          className={`${inputCls} appearance-none cursor-pointer`}
+          aria-label="Sport pour la recherche d'équipe"
+        >
+          {sportOptions.length === 0 && (
+            <option value={searchSportId}>Chargement...</option>
+          )}
+          {sportOptions.map((s) => (
+            <option key={s.id} value={s.id}>{s.nom}</option>
+          ))}
+        </select>
+        <p className="text-[11px] text-[#6B7280] mt-1.5">
+          Change le sport pour chercher une équipe d&apos;un autre sport — ça ne modifie pas ton sport déclaré.
+        </p>
+      </div>
+
+      {/* Name search input. */}
+      <div>
+        <label htmlFor="team-search-input" className={labelCls}>Nom de l&apos;équipe</label>
         <input
+          id="team-search-input"
           type="text"
-          placeholder="Cherche ton équipe par nom (ex: Patriotes, Cobras AAA)"
+          placeholder="Cherche ton équipe par nom (ex: Wildcats, Cobras AAA)"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className={inputCls}
-          aria-label="Rechercher une équipe civile"
+          aria-label="Rechercher une équipe civile par nom"
         />
         <p className="text-[11px] text-[#6B7280] mt-1.5">
-          Tape au moins 2 caractères. Si ton équipe n&apos;existe pas, tu pourras la créer.
+          Tape le nom de ton équipe — tu peux ajouter d&apos;autres mots (catégorie, division) pour préciser.
         </p>
       </div>
 
@@ -210,53 +370,111 @@ export default function TeamSearchOrCreate({
       )}
 
       {!loading && results.length > 0 && (
-        <div className="space-y-2">
-          {results.map((team) => (
-            <button
-              key={team.id}
-              type="button"
-              onClick={() => onSelect(team)}
-              className="w-full text-left bg-[#111317] border border-white/10 hover:border-[#E63946]/40 rounded-lg p-4 transition-colors"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <p className="font-bold text-white text-sm truncate">{team.name}</p>
-                    {team.age_group && (
-                      <span className="shrink-0 px-2 py-0.5 rounded-full bg-[#E63946]/10 text-[10px] font-bold text-[#E63946] uppercase border border-[#E63946]/20">
-                        {team.age_group}
-                      </span>
-                    )}
-                    {team.gender && (
-                      <span className="shrink-0 px-2 py-0.5 rounded-full bg-white/5 text-[10px] font-bold text-[#9CA3AF] uppercase border border-white/10">
-                        {team.gender}
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-[11px] text-[#6B7280] mt-1 truncate">{team.school_name}</p>
-                </div>
-                <span
-                  className={`shrink-0 text-[10px] font-bold uppercase tracking-wider ${
-                    team.coach_count === 0 ? "text-[#6B7280]" : "text-[#9CA3AF]"
-                  }`}
+        <>
+          {/* Swipeable card grid. Touch handlers on the wrapper let
+              users swipe between pages on mobile; the buttons +
+              indicator below cover desktop / non-touch. */}
+          <div
+            className="grid grid-cols-1 md:grid-cols-2 gap-2 touch-pan-y"
+            onTouchStart={onTouchStart}
+            onTouchEnd={onTouchEnd}
+          >
+            {pagedResults.map((team) => {
+              const genderLabel = displayGender(team.gender);
+              return (
+                <button
+                  key={team.id}
+                  type="button"
+                  onClick={() => onSelect(team)}
+                  className="text-left bg-[#111317] border border-white/10 hover:border-[#E63946]/40 rounded-lg p-4 transition-colors"
                 >
-                  {team.coach_count === 0
-                    ? "Aucun coach inscrit"
-                    : `${team.coach_count} coach${team.coach_count === 1 ? "" : "s"}`}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-white text-sm truncate">{team.name}</p>
+                      <div className="flex items-center gap-1.5 flex-wrap mt-2">
+                        {team.division && (
+                          <span className="shrink-0 px-2 py-0.5 rounded-full bg-[#E63946]/10 text-[10px] font-bold text-[#E63946] uppercase border border-[#E63946]/20">
+                            {team.division}
+                          </span>
+                        )}
+                        {team.age_group && (
+                          <span className="shrink-0 px-2 py-0.5 rounded-full bg-[#3B82F6]/10 text-[10px] font-bold text-[#3B82F6] uppercase border border-[#3B82F6]/20">
+                            {team.age_group}
+                          </span>
+                        )}
+                        {genderLabel && (
+                          <span className="shrink-0 px-2 py-0.5 rounded-full bg-white/5 text-[10px] font-bold text-[#9CA3AF] uppercase border border-white/10">
+                            {genderLabel}
+                          </span>
+                        )}
+                      </div>
+                      {team.league && (
+                        <p className="text-[11px] text-[#9CA3AF] mt-2 truncate">{team.league}</p>
+                      )}
+                      <p className="text-[11px] text-[#6B7280] mt-1 truncate">{team.school_name}</p>
+                    </div>
+                    <span
+                      className={`shrink-0 text-[10px] font-bold uppercase tracking-wider ${
+                        team.coach_count === 0 ? "text-[#6B7280]" : "text-[#9CA3AF]"
+                      }`}
+                    >
+                      {team.coach_count === 0
+                        ? "Aucun coach"
+                        : `${team.coach_count} coach${team.coach_count === 1 ? "" : "s"}`}
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Pagination controls — visible even when only one page so
+              the user always knows the result count. */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => goPage(pageIndex - 1)}
+                disabled={pageIndex === 0}
+                className="h-9 px-3 rounded-lg border border-white/10 text-[12px] font-bold text-[#9CA3AF] hover:text-white hover:border-white/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                aria-label="Page précédente"
+              >
+                ← Précédent
+              </button>
+              <div className="flex items-center gap-1.5" aria-label={`Page ${pageIndex + 1} sur ${totalPages}`}>
+                {Array.from({ length: totalPages }).map((_, i) => (
+                  <span
+                    key={i}
+                    className={`w-1.5 h-1.5 rounded-full ${i === pageIndex ? "bg-[#E63946]" : "bg-white/15"}`}
+                  />
+                ))}
+                <span className="ml-2 text-[11px] text-[#6B7280] tabular-nums">
+                  {pageIndex + 1} / {totalPages}
                 </span>
               </div>
-            </button>
-          ))}
-        </div>
+              <button
+                type="button"
+                onClick={() => goPage(pageIndex + 1)}
+                disabled={pageIndex >= totalPages - 1}
+                className="h-9 px-3 rounded-lg border border-white/10 text-[12px] font-bold text-[#9CA3AF] hover:text-white hover:border-white/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                aria-label="Page suivante"
+              >
+                Suivant →
+              </button>
+            </div>
+          )}
+        </>
       )}
 
-      {(showInitialEmpty || showNoResults) && (
+      {showNoResults && (
         <div className="bg-[#111317] border border-white/5 rounded-lg p-6 text-center space-y-3">
-          {showNoResults && (
-            <p className="text-sm text-[#9CA3AF]">
-              Aucune équipe trouvée pour <span className="font-bold text-white">&ldquo;{trimmed}&rdquo;</span>.
-            </p>
-          )}
+          <p className="text-sm text-[#9CA3AF]">
+            {trimmed.length > 0 ? (
+              <>Aucune équipe trouvée pour <span className="font-bold text-white">&ldquo;{trimmed}&rdquo;</span>. Vérifie le nom ou crée ton équipe.</>
+            ) : (
+              <>Aucune équipe civile pour ce sport. Crée la tienne.</>
+            )}
+          </p>
           <button
             type="button"
             onClick={onCreate}

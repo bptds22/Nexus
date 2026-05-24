@@ -2397,6 +2397,7 @@ function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Part
       age_group: (teamData.age_group as string) ?? null,
       gender: (teamData.gender as string) ?? null,
       division: (teamData.category as string) ?? null,
+      league: (teamData.league as string) ?? null,
       school_id: ((profileData.school_id ?? profileData.league_id) as string) ?? "",
       school_name:
         ((localUser.institution as Record<string, unknown> | null)?.name as string) ?? "",
@@ -2614,6 +2615,7 @@ function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Part
         age_group: formData.age_group,
         gender: formData.gender,
         division: null,
+        league: null,
         school_id: schoolId,
         school_name: schoolName,
         coach_count: 1,
