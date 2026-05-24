@@ -18,13 +18,13 @@ import {
    Admin — Loi 25 compliance dashboard.
    6 tabs: Consentements · Incidents · Audit · Portabilité · RPRP · Conformité.
 
-   TODO: tables to create later:
-     - loi25_incidents
-     - loi25_audit_log
-     - loi25_portability_requests
-     - loi25_consents (detailed consent tracking beyond the boolean)
-     - schools.rprp_name, schools.rprp_email
-   Most tabs use mock data until these tables exist.
+   Storage:
+     - loi25_incidents          → 20260523120100 migration
+     - loi25_portability_requests → 20260523120200 migration
+     - loi25_settings (singleton, Nexus RPRP) → 20260524130000 migration
+     - Per-school RPRP = the is_school_admin director user on each school
+       (read live; no schools.rprp_* columns — director user IS the RPRP).
+     - Audit-export is on-demand from existing signals (no audit_log table).
 ═══════════════════════════════════════════════════════════════ */
 
 type Tab = "consentements" | "incidents" | "audit" | "portabilite" | "rprp" | "conformite";
@@ -1204,59 +1204,274 @@ function PortabilityFormModal({ onClose, onSaved }: { onClose: () => void; onSav
    TAB 5 — RPRP
 ═══════════════════════════════════════════════════════════════ */
 
-// TODO: Add rprp_name + rprp_email columns to schools table and read from there.
-const MOCK_RPRP = [
-  { org: "Saint-Jean-Eudes", type: "École", name: "Marie Lavoie", email: "m.lavoie@sje.qc.ca", date: "2026-01-10", active: true },
-  { org: "CÉGEP Garneau",    type: "CÉGEP", name: null,            email: null,                  date: null,        active: false },
-  { org: "De Mortagne",      type: "École", name: "Paul Martin",   email: "p.martin@dm.qc.ca",   date: "2025-09-01", active: true },
-];
+// Per-school RPRP is the school's is_school_admin director user. Read live —
+// no rprp_name/rprp_email cols on schools (would drift from the user record
+// every rename / email change). Nomination date prefers the explicit consent
+// timestamp (profile_data.rprp_accepted_at, written by DirectorChoiceStep
+// from commit 2) and falls back to admin_claims.reviewed_at — the approval
+// date is when the director was officially designated.
+//
+// Nexus-level RPRP lives in the loi25_settings singleton (admin-only RLS).
+
+interface SchoolRprpRow {
+  school_id: string;
+  org: string;
+  type: string;            // "École" | "CÉGEP" | "Mixte" | "—"
+  director_name: string | null;
+  director_email: string | null;
+  admin_type: string | null;   // "owner" | "interim" | null
+  nominated_at: string | null; // ISO date — prefers rprp_accepted_at over admin_claims.reviewed_at
+}
+
+interface SchoolRow {
+  id: string;
+  name: string;
+  has_secondaire: boolean | null;
+  has_collegial: boolean | null;
+}
+
+interface DirectorUserRow {
+  id: string;
+  school_id: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  email: string | null;
+  profile_data: Record<string, unknown> | null;
+}
+
+interface ApprovedClaimRow {
+  user_id: string;
+  reviewed_at: string | null;
+}
+
+function schoolTypeLabel(s: SchoolRow): string {
+  if (s.has_secondaire && s.has_collegial) return "Mixte";
+  if (s.has_collegial) return "CÉGEP";
+  if (s.has_secondaire) return "École";
+  return "—";
+}
+
+function directorTypeLabel(t: string | null): string {
+  if (t === "owner") return "Directeur";
+  if (t === "interim") return "Directeur intérimaire";
+  return "—";
+}
 
 function RprpTab() {
-  const [nexusName, setNexusName] = useState("Bruno-Philippe Desfosses Simard");
-  const [nexusEmail, setNexusEmail] = useState("confidentialite@nexussports.ca");
-  const [nexusDate, setNexusDate] = useState("2026-01-01");
+  const supabase = useMemo(() => createClient(), []);
+  const [rows, setRows] = useState<SchoolRprpRow[] | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  // Nexus singleton state — name/email/date are seeded from loi25_settings.
+  const [nexusName, setNexusName] = useState("");
+  const [nexusEmail, setNexusEmail] = useState("");
+  const [nexusDate, setNexusDate] = useState("");
+  const [nexusLoaded, setNexusLoaded] = useState(false);
+  const [savingNexus, setSavingNexus] = useState(false);
+
   const [toast, setToast] = useState<string | null>(null);
-  const missingCount = MOCK_RPRP.filter((r) => !r.active).length;
+
+  // Load per-school RPRPs + Nexus singleton in parallel on mount.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      // schools table is seeded from MEQ open data (>1000 rows). Scope the RPRP
+      // matrix to organisations actually using Nexus — i.e. schools with at least
+      // one user (coach/admin/athlete). MEQ rows with zero users aren't Nexus
+      // organisations and don't need a designated RPRP.
+      const [schoolsWithUsersRes, directorsRes, claimsRes, settingsRes] = await Promise.all([
+        supabase
+          .from("users")
+          .select("school_id")
+          .not("school_id", "is", null),
+        supabase
+          .from("users")
+          .select("id,school_id,first_name,last_name,email,profile_data")
+          .eq("is_school_admin", true)
+          .not("school_id", "is", null),
+        supabase
+          .from("admin_claims")
+          .select("user_id,reviewed_at")
+          .eq("status", "APPROVED"),
+        supabase
+          .from("loi25_settings")
+          .select("rprp_name,rprp_email,rprp_named_at")
+          .eq("id", true)
+          .maybeSingle(),
+      ]);
+
+      if (cancelled) return;
+
+      if (schoolsWithUsersRes.error) {
+        setLoadError(schoolsWithUsersRes.error.message);
+        setRows([]);
+        return;
+      }
+
+      const activeSchoolIds = Array.from(
+        new Set(
+          ((schoolsWithUsersRes.data ?? []) as { school_id: string | null }[])
+            .map((r) => r.school_id)
+            .filter((id): id is string => !!id),
+        ),
+      );
+
+      const schoolsRes = activeSchoolIds.length === 0
+        ? { data: [] as SchoolRow[], error: null }
+        : await supabase
+            .from("schools")
+            .select("id,name,has_secondaire,has_collegial")
+            .in("id", activeSchoolIds)
+            .order("name");
+
+      if (schoolsRes.error || directorsRes.error || claimsRes.error) {
+        setLoadError(
+          schoolsRes.error?.message
+            || directorsRes.error?.message
+            || claimsRes.error?.message
+            || "Erreur de chargement",
+        );
+        setRows([]);
+        return;
+      }
+
+      const schools = (schoolsRes.data ?? []) as SchoolRow[];
+      const directors = (directorsRes.data ?? []) as DirectorUserRow[];
+      const claims = (claimsRes.data ?? []) as ApprovedClaimRow[];
+
+      // Latest APPROVED claim per user (defensive: re-approve cycles).
+      const claimByUser = new Map<string, string | null>();
+      for (const c of claims) {
+        const prior = claimByUser.get(c.user_id) ?? null;
+        if (!prior || (c.reviewed_at && c.reviewed_at > prior)) {
+          claimByUser.set(c.user_id, c.reviewed_at);
+        }
+      }
+
+      // Pick one director per school — owner wins over interim.
+      const bySchool = new Map<string, DirectorUserRow>();
+      for (const d of directors) {
+        if (!d.school_id) continue;
+        const current = bySchool.get(d.school_id);
+        const dType = (d.profile_data as Record<string, unknown> | null)?.["admin_type"] ?? null;
+        if (!current) { bySchool.set(d.school_id, d); continue; }
+        const cType = (current.profile_data as Record<string, unknown> | null)?.["admin_type"] ?? null;
+        // Owner outranks interim; otherwise keep first match.
+        if (dType === "owner" && cType !== "owner") bySchool.set(d.school_id, d);
+      }
+
+      const built: SchoolRprpRow[] = schools.map((s) => {
+        const d = bySchool.get(s.id) ?? null;
+        const profile = (d?.profile_data ?? null) as Record<string, unknown> | null;
+        const adminType = (profile?.["admin_type"] as string | null) ?? null;
+        const acceptedAt = (profile?.["rprp_accepted_at"] as string | null) ?? null;
+        const approvedAt = d ? (claimByUser.get(d.id) ?? null) : null;
+        const nominatedAt = acceptedAt ?? approvedAt;
+        const dirName = d ? [d.first_name, d.last_name].filter(Boolean).join(" ").trim() || null : null;
+        return {
+          school_id: s.id,
+          org: s.name,
+          type: schoolTypeLabel(s),
+          director_name: dirName,
+          director_email: d?.email ?? null,
+          admin_type: adminType,
+          nominated_at: nominatedAt,
+        };
+      });
+
+      // Missing first, then alpha.
+      built.sort((a, b) => {
+        const aMissing = !a.director_name;
+        const bMissing = !b.director_name;
+        if (aMissing !== bMissing) return aMissing ? -1 : 1;
+        return a.org.localeCompare(b.org, "fr-CA");
+      });
+
+      setRows(built);
+
+      if (settingsRes.data) {
+        setNexusName(settingsRes.data.rprp_name ?? "");
+        setNexusEmail(settingsRes.data.rprp_email ?? "");
+        setNexusDate(settingsRes.data.rprp_named_at ?? "");
+      }
+      setNexusLoaded(true);
+    })();
+
+    return () => { cancelled = true; };
+  }, [supabase]);
+
+  async function saveNexus() {
+    setSavingNexus(true);
+    const { error } = await supabase
+      .from("loi25_settings")
+      .update({
+        rprp_name: nexusName.trim() || null,
+        rprp_email: nexusEmail.trim() || null,
+        rprp_named_at: nexusDate || null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", true);
+    setSavingNexus(false);
+    if (error) {
+      setToast(`Erreur : ${error.message}`);
+    } else {
+      setToast("RPRP Nexus enregistré");
+    }
+    setTimeout(() => setToast(null), 3000);
+  }
+
+  const missingCount = rows ? rows.filter((r) => !r.director_name).length : 0;
 
   return (
     <div className="space-y-6">
       <p className="text-[13px] text-[#9CA3AF]">Responsable de la protection des renseignements personnels — chaque organisation doit en désigner un.</p>
 
-      {/* Nexus RPRP card */}
+      {/* Nexus RPRP card — backed by loi25_settings singleton */}
       <div className="bg-[#1A1D24] border-2 border-[#E63946]/40 rounded-xl p-6">
         <p className="text-[11px] font-bold tracking-[0.2em] uppercase text-[#E63946]">Nexus — RPRP de la plateforme</p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
           <div>
             <label htmlFor="rprp-nexus-name" className="block text-[10px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mb-1.5">Nom</label>
             <input id="rprp-nexus-name" type="text" value={nexusName} onChange={(e) => setNexusName(e.target.value)}
-              className="w-full h-9 px-3 rounded-lg bg-[#111317] border border-white/[0.06] text-[13px] text-white focus:border-[#E63946] focus:outline-none" />
+              disabled={!nexusLoaded}
+              className="w-full h-9 px-3 rounded-lg bg-[#111317] border border-white/[0.06] text-[13px] text-white focus:border-[#E63946] focus:outline-none disabled:opacity-50" />
           </div>
           <div>
             <label htmlFor="rprp-nexus-email" className="block text-[10px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mb-1.5">Courriel</label>
             <input id="rprp-nexus-email" type="email" value={nexusEmail} onChange={(e) => setNexusEmail(e.target.value)}
-              className="w-full h-9 px-3 rounded-lg bg-[#111317] border border-white/[0.06] text-[13px] text-white focus:border-[#E63946] focus:outline-none" />
+              disabled={!nexusLoaded}
+              className="w-full h-9 px-3 rounded-lg bg-[#111317] border border-white/[0.06] text-[13px] text-white focus:border-[#E63946] focus:outline-none disabled:opacity-50" />
           </div>
           <div>
             <label htmlFor="rprp-nexus-date" className="block text-[10px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mb-1.5">Date de nomination</label>
             <input id="rprp-nexus-date" type="date" value={nexusDate} onChange={(e) => setNexusDate(e.target.value)}
-              className="w-full h-9 px-3 rounded-lg bg-[#111317] border border-white/[0.06] text-[13px] text-white focus:border-[#E63946] focus:outline-none" />
+              disabled={!nexusLoaded}
+              className="w-full h-9 px-3 rounded-lg bg-[#111317] border border-white/[0.06] text-[13px] text-white focus:border-[#E63946] focus:outline-none disabled:opacity-50" />
           </div>
         </div>
-        <button type="button" onClick={() => { setToast("Enregistré (placeholder — à persister dans settings)"); setTimeout(() => setToast(null), 2500); }}
-          className="mt-4 inline-flex items-center h-9 px-4 rounded-lg bg-[#E63946] text-white text-[12px] font-bold uppercase tracking-wider hover:bg-[#D42B22]">Enregistrer</button>
+        <button type="button" onClick={saveNexus} disabled={!nexusLoaded || savingNexus}
+          className="mt-4 inline-flex items-center h-9 px-4 rounded-lg bg-[#E63946] text-white text-[12px] font-bold uppercase tracking-wider hover:bg-[#D42B22] disabled:opacity-50">
+          {savingNexus ? "Enregistrement…" : "Enregistrer"}
+        </button>
       </div>
 
       {/* Missing RPRP alert */}
-      {missingCount > 0 && (
+      {rows && missingCount > 0 && (
         <div className="bg-[#E63946]/10 border border-[#E63946]/40 rounded-xl p-4 flex items-center gap-3">
           <AlertTriangle size={18} className="text-[#E63946] shrink-0" />
           <div className="flex-1 text-[13px] text-[#E63946]">
-            {missingCount} établissement(s) n&apos;ont pas désigné leur RPRP. Ceci constitue une non-conformité à la Loi 25 (Phase 1).
+            {missingCount} établissement(s) n&apos;ont pas désigné leur RPRP. Ceci constitue une non-conformité à la Loi 25.
           </div>
         </div>
       )}
 
-      {/* Schools/CÉGEPs table */}
+      {loadError && (
+        <div className="bg-[#E63946]/10 border border-[#E63946]/40 rounded-xl p-4 text-[13px] text-[#E63946]">
+          Erreur : {loadError}
+        </div>
+      )}
+
+      {/* Schools/CÉGEPs table — live from director users */}
       <div className="bg-[#1A1D24] border border-[#1e2128] rounded-xl overflow-hidden">
         <table className="w-full text-[13px]">
           <thead className="bg-white/[0.02] border-b border-[#1e2128]">
@@ -1265,37 +1480,50 @@ function RprpTab() {
               <th className="px-4 py-3 font-bold">Type</th>
               <th className="px-4 py-3 font-bold">RPRP désigné</th>
               <th className="px-4 py-3 font-bold">Courriel</th>
+              <th className="px-4 py-3 font-bold">Rôle</th>
               <th className="px-4 py-3 font-bold">Nomination</th>
               <th className="px-4 py-3 font-bold">Statut</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#1e2128]">
-            {MOCK_RPRP.map((r, i) => (
-              <tr key={i} className="hover:bg-white/[0.03]">
-                <td className="px-4 py-3 text-white font-medium">{r.org}</td>
-                <td className="px-4 py-3 text-[#9CA3AF]">{r.type}</td>
-                <td className="px-4 py-3 text-white">{r.name ?? <span className="text-[#E63946]">—</span>}</td>
-                <td className="px-4 py-3 text-[#9CA3AF]">{r.email ?? "—"}</td>
-                <td className="px-4 py-3 text-[#9CA3AF]">{formatDate(r.date)}</td>
-                <td className="px-4 py-3">
-                  {r.active ? (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-[#10B981]/15 text-[#10B981] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider">
-                      <Check size={10} strokeWidth={3} /> Actif
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-[#E63946]/15 text-[#E63946] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider">
-                      <AlertTriangle size={10} /> Non désigné
-                    </span>
-                  )}
-                </td>
-              </tr>
-            ))}
+            {rows === null && (
+              <tr><td colSpan={7} className="px-4 py-6 text-center text-[#6b7280]">Chargement…</td></tr>
+            )}
+            {rows && rows.length === 0 && (
+              <tr><td colSpan={7} className="px-4 py-6 text-center text-[#6b7280]">Aucune organisation.</td></tr>
+            )}
+            {rows && rows.map((r) => {
+              const active = !!r.director_name;
+              return (
+                <tr key={r.school_id} className="hover:bg-white/[0.03]">
+                  <td className="px-4 py-3 text-white font-medium">{r.org}</td>
+                  <td className="px-4 py-3 text-[#9CA3AF]">{r.type}</td>
+                  <td className="px-4 py-3 text-white">{r.director_name ?? <span className="text-[#E63946]">Aucun RPRP désigné</span>}</td>
+                  <td className="px-4 py-3 text-[#9CA3AF]">{r.director_email ?? "—"}</td>
+                  <td className="px-4 py-3 text-[#9CA3AF]">{directorTypeLabel(r.admin_type)}</td>
+                  <td className="px-4 py-3 text-[#9CA3AF]">{formatDate(r.nominated_at)}</td>
+                  <td className="px-4 py-3">
+                    {active ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-[#10B981]/15 text-[#10B981] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider">
+                        <Check size={10} strokeWidth={3} /> Actif
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-[#E63946]/15 text-[#E63946] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider">
+                        <AlertTriangle size={10} /> Non désigné
+                      </span>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
 
       <p className="text-[11px] text-[#6b7280] italic">
-        Données de démonstration. Ajouter les colonnes <code className="text-[#9CA3AF]">rprp_name</code> et <code className="text-[#9CA3AF]">rprp_email</code> à la table <code className="text-[#9CA3AF]">schools</code>.
+        Le RPRP de chaque établissement est son utilisateur directeur (<code className="text-[#9CA3AF]">is_school_admin = true</code>).
+        La date de nomination provient du consentement explicite à la désignation RPRP (<code className="text-[#9CA3AF]">profile_data.rprp_accepted_at</code>),
+        sinon de l&apos;approbation de la revendication d&apos;administration (<code className="text-[#9CA3AF]">admin_claims.reviewed_at</code>).
       </p>
 
       <Toast text={toast} onClose={() => setToast(null)} />

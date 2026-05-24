@@ -6456,3 +6456,10 @@ INSERT INTO public.schools (name, type, city, region, has_secondaire, has_colleg
 SELECT count(*) AS ligue_civile FROM public.schools WHERE type = 'LIGUE_CIVILE';
 
 COMMIT;
+
+--
+-- Data for Name: loi25_settings; Type: TABLE DATA; Schema: public; Owner: postgres
+-- Loi 25 Nexus-level RPRP singleton. Per-school RPRP = the school's director user (read live).
+--
+
+INSERT INTO public.loi25_settings (id, rprp_name, rprp_email, rprp_named_at) VALUES (true, 'Bruno-Philippe Desfosses Simard', 'confidentialite@nexussports.ca', '2026-01-01') ON CONFLICT (id) DO NOTHING;
