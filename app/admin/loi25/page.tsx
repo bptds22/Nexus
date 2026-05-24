@@ -1220,7 +1220,14 @@ interface SchoolRprpRow {
   director_name: string | null;
   director_email: string | null;
   admin_type: string | null;   // "owner" | "interim" | null
-  nominated_at: string | null; // ISO date — prefers rprp_accepted_at over admin_claims.reviewed_at
+  // Nomination date — prefers rprp_accepted_at, then rprp_declined_at
+  // (for declined directors, surface the decline date), then
+  // admin_claims.reviewed_at (legacy directors with no explicit consent).
+  nominated_at: string | null;
+  // rprp_status discriminator: "active" (consented OR legacy approved with
+  // no explicit decline), "declined" (rprp_declined_at set), "missing"
+  // (no director user at all). Drives the Statut pill in the table.
+  rprp_status: "active" | "declined" | "missing";
 }
 
 interface SchoolRow {
@@ -1365,9 +1372,19 @@ function RprpTab() {
         const profile = (d?.profile_data ?? null) as Record<string, unknown> | null;
         const adminType = (profile?.["admin_type"] as string | null) ?? null;
         const acceptedAt = (profile?.["rprp_accepted_at"] as string | null) ?? null;
+        const declinedAt = (profile?.["rprp_declined_at"] as string | null) ?? null;
         const approvedAt = d ? (claimByUser.get(d.id) ?? null) : null;
-        const nominatedAt = acceptedAt ?? approvedAt;
+        // Surface the most relevant date: explicit consent > explicit
+        // decline > legacy approval. Mutual exclusivity is enforced at
+        // write time (finish() always sets exactly one of accepted/declined).
+        const nominatedAt = acceptedAt ?? declinedAt ?? approvedAt;
         const dirName = d ? [d.first_name, d.last_name].filter(Boolean).join(" ").trim() || null : null;
+        // Discriminator precedence: declined > active > missing.
+        const rprpStatus: "active" | "declined" | "missing" = declinedAt
+          ? "declined"
+          : dirName
+            ? "active"
+            : "missing";
         return {
           school_id: s.id,
           org: s.name,
@@ -1376,14 +1393,15 @@ function RprpTab() {
           director_email: d?.email ?? null,
           admin_type: adminType,
           nominated_at: nominatedAt,
+          rprp_status: rprpStatus,
         };
       });
 
-      // Missing first, then alpha.
+      // Sort: missing first (most urgent), then declined, then active, alpha within.
+      const statusOrder: Record<SchoolRprpRow["rprp_status"], number> = { missing: 0, declined: 1, active: 2 };
       built.sort((a, b) => {
-        const aMissing = !a.director_name;
-        const bMissing = !b.director_name;
-        if (aMissing !== bMissing) return aMissing ? -1 : 1;
+        const orderDiff = statusOrder[a.rprp_status] - statusOrder[b.rprp_status];
+        if (orderDiff !== 0) return orderDiff;
         return a.org.localeCompare(b.org, "fr-CA");
       });
 
@@ -1420,7 +1438,8 @@ function RprpTab() {
     setTimeout(() => setToast(null), 3000);
   }
 
-  const missingCount = rows ? rows.filter((r) => !r.director_name).length : 0;
+  const missingCount = rows ? rows.filter((r) => r.rprp_status === "missing").length : 0;
+  const declinedCount = rows ? rows.filter((r) => r.rprp_status === "declined").length : 0;
 
   return (
     <div className="space-y-6">
@@ -1465,6 +1484,16 @@ function RprpTab() {
         </div>
       )}
 
+      {/* Declined RPRP alert — director onboarded but refused the RPRP role. */}
+      {rows && declinedCount > 0 && (
+        <div className="bg-[#F59E0B]/10 border border-[#F59E0B]/40 rounded-xl p-4 flex items-center gap-3">
+          <AlertTriangle size={18} className="text-[#F59E0B] shrink-0" />
+          <div className="flex-1 text-[13px] text-[#F59E0B]">
+            {declinedCount} directeur(s) ont refusé la désignation RPRP — un responsable doit être nommé pour ces établissements.
+          </div>
+        </div>
+      )}
+
       {loadError && (
         <div className="bg-[#E63946]/10 border border-[#E63946]/40 rounded-xl p-4 text-[13px] text-[#E63946]">
           Erreur : {loadError}
@@ -1492,38 +1521,44 @@ function RprpTab() {
             {rows && rows.length === 0 && (
               <tr><td colSpan={7} className="px-4 py-6 text-center text-[#6b7280]">Aucune organisation.</td></tr>
             )}
-            {rows && rows.map((r) => {
-              const active = !!r.director_name;
-              return (
-                <tr key={r.school_id} className="hover:bg-white/[0.03]">
-                  <td className="px-4 py-3 text-white font-medium">{r.org}</td>
-                  <td className="px-4 py-3 text-[#9CA3AF]">{r.type}</td>
-                  <td className="px-4 py-3 text-white">{r.director_name ?? <span className="text-[#E63946]">Aucun RPRP désigné</span>}</td>
-                  <td className="px-4 py-3 text-[#9CA3AF]">{r.director_email ?? "—"}</td>
-                  <td className="px-4 py-3 text-[#9CA3AF]">{directorTypeLabel(r.admin_type)}</td>
-                  <td className="px-4 py-3 text-[#9CA3AF]">{formatDate(r.nominated_at)}</td>
-                  <td className="px-4 py-3">
-                    {active ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-[#10B981]/15 text-[#10B981] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider">
-                        <Check size={10} strokeWidth={3} /> Actif
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-[#E63946]/15 text-[#E63946] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider">
-                        <AlertTriangle size={10} /> Non désigné
-                      </span>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
+            {rows && rows.map((r) => (
+              <tr key={r.school_id} className="hover:bg-white/[0.03]">
+                <td className="px-4 py-3 text-white font-medium">{r.org}</td>
+                <td className="px-4 py-3 text-[#9CA3AF]">{r.type}</td>
+                <td className="px-4 py-3 text-white">
+                  {r.director_name ?? <span className="text-[#E63946]">Aucun RPRP désigné</span>}
+                </td>
+                <td className="px-4 py-3 text-[#9CA3AF]">{r.director_email ?? "—"}</td>
+                <td className="px-4 py-3 text-[#9CA3AF]">{directorTypeLabel(r.admin_type)}</td>
+                <td className="px-4 py-3 text-[#9CA3AF]">{formatDate(r.nominated_at)}</td>
+                <td className="px-4 py-3">
+                  {r.rprp_status === "active" && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-[#10B981]/15 text-[#10B981] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider">
+                      <Check size={10} strokeWidth={3} /> Actif
+                    </span>
+                  )}
+                  {r.rprp_status === "declined" && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-[#F59E0B]/15 text-[#F59E0B] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider">
+                      <AlertTriangle size={10} /> RPRP refusé
+                    </span>
+                  )}
+                  {r.rprp_status === "missing" && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-[#E63946]/15 text-[#E63946] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider">
+                      <AlertTriangle size={10} /> Non désigné
+                    </span>
+                  )}
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
 
       <p className="text-[11px] text-[#6b7280] italic">
         Le RPRP de chaque établissement est son utilisateur directeur (<code className="text-[#9CA3AF]">is_school_admin = true</code>).
-        La date de nomination provient du consentement explicite à la désignation RPRP (<code className="text-[#9CA3AF]">profile_data.rprp_accepted_at</code>),
-        sinon de l&apos;approbation de la revendication d&apos;administration (<code className="text-[#9CA3AF]">admin_claims.reviewed_at</code>).
+        La date de nomination provient du consentement explicite (<code className="text-[#9CA3AF]">profile_data.rprp_accepted_at</code>),
+        sinon du refus (<code className="text-[#9CA3AF]">rprp_declined_at</code>) ou de l&apos;approbation de la revendication d&apos;administration (<code className="text-[#9CA3AF]">admin_claims.reviewed_at</code>).
+        Le statut « RPRP refusé » signale un directeur en poste qui n&apos;a pas accepté la désignation Loi 25 — il faut nommer un responsable.
       </p>
 
       <Toast text={toast} onClose={() => setToast(null)} />
