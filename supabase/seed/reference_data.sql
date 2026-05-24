@@ -6397,3 +6397,62 @@ INSERT INTO public.schools (name, type, city, region, has_secondaire, has_colleg
 SELECT count(*) AS ligue_civile FROM public.schools WHERE type = 'LIGUE_CIVILE';
 
 COMMIT;
+-- Basketball-Quebec civil clubs - civil-league round 2.
+-- 43 clubs from the 17 regional PDFs (publicationsports.com/ressources/files/737/),
+-- extracted with pdfplumber.extract_tables(). Dropped: 30 governing bodies
+-- (URLS / RSEQ / Loisir et sport / Corporation regionale / Commission*) + 3
+-- borderlines (Brebeuf=school, GMAA=league, Maison des Jeunes=youth org).
+-- PDF column-wrap artifacts cleaned + 2 standard-spelling fixes
+-- (Dollard-des-Ormeaux hyphen, Cavaliers Ile-Perrot accent).
+-- type=LIGUE_CIVILE, with cities; no website/tier/rseq_institution_id.
+-- =================================================================
+BEGIN;
+
+INSERT INTO public.schools (name, type, city, region, has_secondaire, has_collegial) VALUES
+  ('Basketball Rouyn-Noranda', 'LIGUE_CIVILE', 'Rouyn-Noranda', 'Abitibi-Témiscamingue', false, false),
+  ('Basketball la Relève', 'LIGUE_CIVILE', 'Val d''Or', 'Abitibi-Témiscamingue', false, false),
+  ('Club basketball Les Astéries', 'LIGUE_CIVILE', 'Victoriaville', 'Centre-du-Québec', false, false),
+  ('Association du basketball de Rimouski', 'LIGUE_CIVILE', 'Rimouski', 'Est-du-Québec', false, false),
+  ('Basketball Sherbrooke', 'LIGUE_CIVILE', 'Sherbrooke', 'Estrie', false, false),
+  ('Club de basketball Magog', 'LIGUE_CIVILE', 'Magog', 'Estrie', false, false),
+  ('Association de Basketball Brookwood de Pierrefonds', 'LIGUE_CIVILE', 'Pierrefonds', 'Lac St-Louis', false, false),
+  ('Association de basketball de Lachine', 'LIGUE_CIVILE', 'Lachine', 'Lac St-Louis', false, false),
+  ('Champs Basketball', 'LIGUE_CIVILE', 'Dollard-des-Ormeaux', 'Lac St-Louis', false, false),
+  ('Comité de basketball Saint-Laurent', 'LIGUE_CIVILE', 'St-Laurent', 'Lac St-Louis', false, false),
+  ('Red Rush', 'LIGUE_CIVILE', 'Lasalle', 'Lac St-Louis', false, false),
+  ('West Island Lakers Basketball Association', 'LIGUE_CIVILE', 'Pointe-Claire', 'Lac St-Louis', false, false),
+  ('Association de basketball Némésis', 'LIGUE_CIVILE', 'Terrebonne', 'Lanaudière', false, false),
+  ('Association de basketball de Lanaudière(LANO)', 'LIGUE_CIVILE', 'Repentigny', 'Lanaudière', false, false),
+  ('Panthères Club de basketball rive-nord', 'LIGUE_CIVILE', 'Rosemère', 'Laurentides', false, false),
+  ('Révolution', 'LIGUE_CIVILE', 'Rosemère', 'Laurentides', false, false),
+  ('AMAZONES BASKETBALL', 'LIGUE_CIVILE', 'Laval', 'Laval', false, false),
+  ('Basketball Laval', 'LIGUE_CIVILE', 'Laval', 'Laval', false, false),
+  ('Sports-Laval', 'LIGUE_CIVILE', 'Laval', 'Laval', false, false),
+  ('5 Majeur', 'LIGUE_CIVILE', 'Trois-Rivières', 'Mauricie', false, false),
+  ('Association de basketball de Trois-Rivières-STORM', 'LIGUE_CIVILE', 'Trois-Rivières', 'Mauricie', false, false),
+  ('Association de Basketball Pagé', 'LIGUE_CIVILE', 'Montréal', 'Montréal', false, false),
+  ('Bluehounds', 'LIGUE_CIVILE', 'Montréal', 'Montréal', false, false),
+  ('Club de basketball de Montréal-nord', 'LIGUE_CIVILE', 'Montréal', 'Montréal', false, false),
+  ('DOD Basketball/ EMBC Avatars', 'LIGUE_CIVILE', 'Montréal', 'Montréal', false, false),
+  ('Downtown Community Blues', 'LIGUE_CIVILE', 'Montréal', 'Montréal', false, false),
+  ('Philippine Basketball Association of Montreal', 'LIGUE_CIVILE', 'Montréal', 'Montréal', false, false),
+  ('Association de basketball de Gatineau', 'LIGUE_CIVILE', 'Gatineau', 'Outaouais', false, false),
+  ('Phénix de Gatineau', 'LIGUE_CIVILE', 'Gatineau', 'Outaouais', false, false),
+  ('EDEM Basketball', 'LIGUE_CIVILE', 'Québec', 'Québec-Chaudière-Appalaches', false, false),
+  ('École de mini basketball de Québec (EMBQ)', 'LIGUE_CIVILE', 'Québec', 'Québec-Chaudière-Appalaches', false, false),
+  ('Vikings de St-Hyacinthe', 'LIGUE_CIVILE', 'Saint-Hyacinthe', 'Richelieu-Yamaska', false, false),
+  ('Association de basketball de Saint-Bruno', 'LIGUE_CIVILE', 'Saint-Bruno', 'Rive-Sud', false, false),
+  ('Association de basketball de St-Jean-sur-Richelieu', 'LIGUE_CIVILE', 'St-Jean-sur-Richelieu', 'Rive-Sud', false, false),
+  ('Basketball Boucherville', 'LIGUE_CIVILE', 'Boucherville', 'Rive-Sud', false, false),
+  ('DJ Sports Club', 'LIGUE_CIVILE', 'Brossard', 'Rive-Sud', false, false),
+  ('SLAM CAMP', 'LIGUE_CIVILE', 'St-Lambert', 'Rive-Sud', false, false),
+  ('Tornades de Longueuil', 'LIGUE_CIVILE', 'Longueuil', 'Rive-Sud', false, false),
+  ('Club de Basket-ball Jonquière', 'LIGUE_CIVILE', 'Jonquière', 'Saguenay-Lac-Saint-Jean', false, false),
+  ('Académie de Basketball LTL', 'LIGUE_CIVILE', 'Vaudreuil-Soulanges', 'Sud-Ouest', false, false),
+  ('Association de Basketball de Châteauguay', 'LIGUE_CIVILE', 'Châteauguay', 'Sud-Ouest', false, false),
+  ('Cavaliers Île-Perrot', 'LIGUE_CIVILE', 'NDIP', 'Sud-Ouest', false, false),
+  ('Elite Basketball Skills Academy', 'LIGUE_CIVILE', 'Châteauguay', 'Sud-Ouest', false, false);
+
+SELECT count(*) AS ligue_civile FROM public.schools WHERE type = 'LIGUE_CIVILE';
+
+COMMIT;
