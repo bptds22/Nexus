@@ -100,7 +100,7 @@ export default function AProposPage() {
 
               {/* Bruno-Philippe */}
               <div className="bg-[#1A1D24] rounded-xl border border-white/[0.06] p-8">
-                <FounderPhoto initials="BP" alt="Bruno-Philippe Simard" />
+                <FounderPhoto initials="BP" src="/brand/profile-bruno.jpg" alt="Bruno-Philippe Simard" />
                 <div className="text-center mt-6">
                   <h3 className="nx-display text-[22px] font-bold text-white">Bruno-Philippe Simard</h3>
                   <p className="text-[12px] font-bold tracking-[0.2em] uppercase text-[#E63946] mt-1">Fondateur · Ancien athlète</p>

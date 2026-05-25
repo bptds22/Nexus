@@ -491,9 +491,11 @@ body.light-mode footer[class*="border-[#1E2D4A]"] {
   transition: color 0.22s ease, filter 0.22s ease, transform 0.22s ease;
 }
 
+/* Per-icon brand color on hover is applied via Tailwind utility
+   classes in the footer markup (hover:text-[#E1306C], etc.). We
+   keep the scale lift here but drop the red color + red drop-
+   shadow so they don't override the per-icon brand color. */
 .nx-social-icon:hover {
-  color: #E63946;
-  filter: drop-shadow(0 0 7px rgba(230, 57, 70, 0.60));
   transform: scale(1.18);
 }
 
