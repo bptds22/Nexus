@@ -66,6 +66,15 @@ export interface TeamCreateFormProps {
   onSubmit: (data: TeamFormData) => void;
   onCancel: () => void;
   className?: string;
+  /**
+   * When set, the form skips its internal LIGUE_CIVILE autocomplete and
+   * locks the team to the given club. The locked id flows through as
+   * league_id_if_existing so handleCreateTeam reuses it instead of
+   * find-or-creating a duplicate club. The club name is shown read-only
+   * for context. Pass both or neither.
+   */
+  lockedSchoolId?: string;
+  lockedSchoolName?: string;
 }
 
 interface LeagueOption {
@@ -91,7 +100,15 @@ export default function TeamCreateForm({
   onSubmit,
   onCancel,
   className = "",
+  lockedSchoolId,
+  lockedSchoolName,
 }: TeamCreateFormProps) {
+  // Locked-by-name : the upstream club pick passes a name (always)
+  // and an id (only when picking an EXISTING LIGUE_CIVILE row). New
+  // clubs lock the name but leave id undefined — caller's
+  // handleCreateTeam findOrCreateSchool()s the club at submit time.
+  const isLocked = !!lockedSchoolName;
+
   const [teamName, setTeamName] = useState("");
   const [ageGroup, setAgeGroup] = useState("");
   const [ageOther, setAgeOther] = useState("");
@@ -100,19 +117,27 @@ export default function TeamCreateForm({
   const [gender, setGender] = useState<Gender | "">("");
   const [season, setSeason] = useState(DEFAULT_SEASON);
 
-  // League autocomplete state
+  // League autocomplete state. When locked, both fields are seeded
+  // from props and the autocomplete UI is hidden — on submit the
+  // locked id (if present) flows through as league_id_if_existing
+  // so the caller's find-or-create short-circuits and reuses the
+  // existing club; when id is absent, league_id_if_existing stays
+  // null and findOrCreateSchool runs with the locked name.
   const [leagueOptions, setLeagueOptions] = useState<LeagueOption[]>([]);
-  const [leaguesLoading, setLeaguesLoading] = useState(true);
-  const [leagueInput, setLeagueInput] = useState("");
-  const [leagueIdIfExisting, setLeagueIdIfExisting] = useState<string | null>(null);
+  const [leaguesLoading, setLeaguesLoading] = useState(!isLocked);
+  const [leagueInput, setLeagueInput] = useState(isLocked ? lockedSchoolName! : "");
+  const [leagueIdIfExisting, setLeagueIdIfExisting] = useState<string | null>(
+    lockedSchoolId ?? null,
+  );
   const [leagueOpen, setLeagueOpen] = useState(false);
   const leagueWrapperRef = useRef<HTMLDivElement | null>(null);
 
-  // Fetch civil leagues on mount. Phase 6.2: leagues now live in
-  // `schools` with type='LIGUE_CIVILE'. Sport is no longer an
-  // attribute of the league — keep the sportId prop for caller
-  // compatibility but don't filter on it here.
+  // Fetch civil leagues on mount — only when NOT locked. Phase 6.2:
+  // leagues live in `schools` with type='LIGUE_CIVILE'. Sport is no
+  // longer an attribute of the league — keep the sportId prop for
+  // caller compatibility but don't filter on it here.
   useEffect(() => {
+    if (isLocked) return;
     let cancelled = false;
     (async () => {
       const supabase = createClient();
@@ -134,7 +159,7 @@ export default function TeamCreateForm({
     return () => {
       cancelled = true;
     };
-  }, [sportId]);
+  }, [sportId, isLocked]);
 
   // Close suggestion dropdown when clicking outside the wrapper.
   useEffect(() => {
@@ -320,7 +345,6 @@ export default function TeamCreateForm({
                     ? "bg-[rgba(230,57,70,0.1)] border border-[#E63946] text-white"
                     : "bg-[#111317] border border-white/10 text-[#9CA3AF] hover:border-white/20"
                 }`}
-                aria-pressed={selected}
               >
                 {opt.label}
               </button>
@@ -329,44 +353,56 @@ export default function TeamCreateForm({
         </div>
       </div>
 
-      <div ref={leagueWrapperRef} className="relative">
-        <label htmlFor="team-league" className={labelCls}>
-          Ligue <span className="text-[#EF4444]">*</span>
-        </label>
-        <input
-          id="team-league"
-          type="text"
-          placeholder={leaguesLoading ? "Chargement des ligues..." : "Ex: LFL, LBQ, LCFQ"}
-          value={leagueInput}
-          onChange={(e) => handleLeagueChange(e.target.value)}
-          onFocus={() => setLeagueOpen(true)}
-          disabled={leaguesLoading}
-          className={inputCls}
-          autoComplete="off"
-        />
-        <p className="text-[10px] text-[#6B7280] mt-1">
-          {leagueIdIfExisting
-            ? "Ligue existante reconnue"
-            : leagueInput.trim().length > 0 && !exactMatch
-            ? "Nouvelle ligue — sera créée à la soumission"
-            : "Sélectionne une ligue existante ou tape un nouveau nom"}
-        </p>
-
-        {leagueOpen && !leaguesLoading && filteredLeagues.length > 0 && (
-          <div className="absolute z-20 w-full mt-1 bg-[#1A1D24] border border-white/10 rounded-lg max-h-60 overflow-y-auto shadow-xl">
-            {filteredLeagues.map((option) => (
-              <button
-                key={option.id}
-                type="button"
-                onClick={() => pickSuggestion(option)}
-                className="w-full text-left px-4 py-3 text-sm text-white hover:bg-white/5 transition-colors border-b border-white/5 last:border-b-0"
-              >
-                {option.name}
-              </button>
-            ))}
+      {isLocked ? (
+        <div>
+          <span className={labelCls}>Club</span>
+          <div className="h-11 px-4 flex items-center bg-[#111317]/60 border border-white/[0.06] rounded-lg text-sm text-white">
+            {lockedSchoolName}
           </div>
-        )}
-      </div>
+          <p className="text-[10px] text-[#6B7280] mt-1">
+            Club verrouillé depuis l&apos;étape précédente — la nouvelle équipe y sera rattachée.
+          </p>
+        </div>
+      ) : (
+        <div ref={leagueWrapperRef} className="relative">
+          <label htmlFor="team-league" className={labelCls}>
+            Ligue <span className="text-[#EF4444]">*</span>
+          </label>
+          <input
+            id="team-league"
+            type="text"
+            placeholder={leaguesLoading ? "Chargement des ligues..." : "Ex: LFL, LBQ, LCFQ"}
+            value={leagueInput}
+            onChange={(e) => handleLeagueChange(e.target.value)}
+            onFocus={() => setLeagueOpen(true)}
+            disabled={leaguesLoading}
+            className={inputCls}
+            autoComplete="off"
+          />
+          <p className="text-[10px] text-[#6B7280] mt-1">
+            {leagueIdIfExisting
+              ? "Ligue existante reconnue"
+              : leagueInput.trim().length > 0 && !exactMatch
+              ? "Nouvelle ligue — sera créée à la soumission"
+              : "Sélectionne une ligue existante ou tape un nouveau nom"}
+          </p>
+
+          {leagueOpen && !leaguesLoading && filteredLeagues.length > 0 && (
+            <div className="absolute z-20 w-full mt-1 bg-[#1A1D24] border border-white/10 rounded-lg max-h-60 overflow-y-auto shadow-xl">
+              {filteredLeagues.map((option) => (
+                <button
+                  key={option.id}
+                  type="button"
+                  onClick={() => pickSuggestion(option)}
+                  className="w-full text-left px-4 py-3 text-sm text-white hover:bg-white/5 transition-colors border-b border-white/5 last:border-b-0"
+                >
+                  {option.name}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       <div>
         <label htmlFor="team-season" className={labelCls}>
