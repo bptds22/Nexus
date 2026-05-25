@@ -5,6 +5,7 @@ import Link from "next/link";
 import PlaybookBackground from "./components/PlaybookBackground";
 import PartnerCarousel from "./components/PartnerCarousel";
 import MarketingNav from "@/components/marketing/MarketingNav";
+import { useTranslation } from "@/lib/i18n/useTranslation";
 
 /* ─────────────────────────────────────────────────────────────────
    Nexus — Homepage (rewrite)
@@ -37,6 +38,7 @@ const SOCIALS = [
 ];
 
 export default function Home() {
+  const { t } = useTranslation();
   return (
     <div className="hero-playbook bg-[#111317] min-h-screen">
       <PlaybookBackground />
@@ -103,7 +105,7 @@ export default function Home() {
                 <div className="nx-v30-ticket absolute z-[999] overflow-hidden" style={{ bottom: -16, right: -26, borderRadius: 4, border: '1.5px solid rgba(255,255,255,0.08)' }}>
                   <div className="flex" style={{ width: 364 }}>
                     <div className="flex flex-col justify-between" style={{ background: '#1E2128', padding: '14px 16px 14px 18px', minWidth: 109, gap: 5 }}>
-                      {[{ lbl: "Sport", val: "Football" }, { lbl: "Pos", val: "QB" }, { lbl: "No.", val: "#12" }].map((r) => (
+                      {[{ lbl: t.home.card.sportLabel, val: "Football" }, { lbl: t.home.card.positionLabel, val: "QB" }, { lbl: t.home.card.numberLabel, val: "#12" }].map((r) => (
                         <div key={r.lbl}>
                           <div style={{ fontFamily: 'var(--font-heading), sans-serif', fontSize: 7, fontWeight: 800, letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.38)', marginBottom: 2 }}>{r.lbl}</div>
                           <div style={{ fontFamily: 'var(--font-heading), sans-serif', fontSize: 18, color: '#fff', letterSpacing: '0.06em', lineHeight: 1 }}>{r.val}</div>
@@ -121,9 +123,9 @@ export default function Home() {
                           <path key={x} d="M11,0L13.5,8L22,8L15.5,13L18,21L11,16.2L4,21L6.5,13L0,8L8.5,8Z" fill="#F59E0B" transform={`translate(${x},0)`}/>
                         ))}
                       </svg>
-                      <div style={{ fontFamily: 'var(--font-heading), sans-serif', fontWeight: 800, fontSize: 14, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#1E2128', marginBottom: 2 }}>École secondaire Saint-Jean-Eudes</div>
-                      <div style={{ fontFamily: 'var(--font-heading), sans-serif', fontWeight: 700, fontSize: 13, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#9CA3AF' }}>Québec, QC</div>
-                      <div style={{ fontFamily: 'var(--font-heading), sans-serif', fontWeight: 700, fontSize: 13, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#E63946', marginTop: 2 }}>Promotion 2026</div>
+                      <div style={{ fontFamily: 'var(--font-heading), sans-serif', fontWeight: 800, fontSize: 14, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#1E2128', marginBottom: 2 }}>{t.home.card.schoolName}</div>
+                      <div style={{ fontFamily: 'var(--font-heading), sans-serif', fontWeight: 700, fontSize: 13, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#9CA3AF' }}>{t.home.card.location}</div>
+                      <div style={{ fontFamily: 'var(--font-heading), sans-serif', fontWeight: 700, fontSize: 13, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#E63946', marginTop: 2 }}>{t.home.card.promotion}</div>
                     </div>
                     <div className="flex items-center justify-center flex-shrink-0" style={{ background: '#E63946', width: 26, writingMode: 'vertical-rl', fontFamily: 'var(--font-heading), sans-serif', fontSize: 11, letterSpacing: '0.22em', color: 'rgba(255,255,255,0.7)' }}>NEXUS</div>
                   </div>
@@ -136,17 +138,17 @@ export default function Home() {
           <div className="order-1 lg:absolute lg:bottom-24 lg:left-14 lg:max-w-2xl lg:z-30">
             <div className="inline-flex items-center gap-3 mb-6">
               <span className="w-10 h-px bg-[#E63946]" />
-              <span className={`${label} text-[#E63946]`}>Plateforme officielle · Québec 2026</span>
+              <span className={`${label} text-[#E63946]`}>{t.home.hero.eyebrow}</span>
             </div>
 
             <h1 className="nx-display text-6xl lg:text-8xl xl:text-[112px] font-black uppercase leading-[0.9] tracking-tight mb-6">
-              <span className="block text-white">Fais-toi voir.</span>
-              <span className="block text-[#E63946]">Fais-toi recruter.</span>
+              <span className="block text-white">{t.home.hero.titleLine1}</span>
+              <span className="block text-[#E63946]">{t.home.hero.titleLine2}</span>
             </h1>
 
             <p className="font-sans text-base text-[#9CA3AF] leading-relaxed max-w-[480px] mb-8">
-              <strong className="text-white/85 font-semibold">La plateforme #1 de recrutement d&apos;athlètes au Québec.</strong>{' '}
-              Connecte les athlètes du secondaire aux programmes sport-études des CÉGEP.
+              <strong className="text-white/85 font-semibold">{t.home.hero.ledeStrong}</strong>{' '}
+              {t.home.hero.lede}
             </p>
 
             <div className="flex flex-wrap items-center gap-6">
@@ -154,7 +156,7 @@ export default function Home() {
                 href="/inscription?role=ATHLETE"
                 className="inline-flex items-center gap-3 h-12 px-7 bg-[#E63946] text-white font-head font-black text-sm uppercase tracking-widest hover:bg-[#D42B22] hover:-translate-y-0.5 hover:shadow-[0_12px_40px_rgba(230,57,70,0.4)] transition-all rounded"
               >
-                Sois le next
+                {t.home.hero.ctaPrimary}
                 <span aria-hidden>→</span>
               </Link>
 
@@ -165,7 +167,7 @@ export default function Home() {
                 <span className="w-10 h-10 rounded-full border-[1.5px] border-white/35 inline-flex items-center justify-center group-hover:border-white group-hover:bg-white/5 transition-colors">
                   <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden><path d="M2 1 L10 6 L2 11 Z" fill="#fff"/></svg>
                 </span>
-                Voir comment ça marche
+                {t.home.hero.ctaSecondary}
               </Link>
             </div>
           </div>
@@ -189,14 +191,14 @@ export default function Home() {
             <div className="flex items-center gap-3">
               <NexusLogo variant="white" height={22} href="/" className="opacity-80" />
               <span className={`${label} text-[#475569]`}>
-                Construit pour les étudiants-athlètes québécois
+                {t.home.footer.tagline}
               </span>
             </div>
 
             <nav className="flex items-center gap-8">
-              <Link href="/confidentialite" className={`${label} text-[#475569] hover:text-[#9CA3AF] transition-colors`}>Confidentialité</Link>
-              <Link href="/conditions" className={`${label} text-[#475569] hover:text-[#9CA3AF] transition-colors`}>Conditions</Link>
-              <Link href="/contact" className={`${label} text-[#475569] hover:text-[#9CA3AF] transition-colors`}>Contact</Link>
+              <Link href="/confidentialite" className={`${label} text-[#475569] hover:text-[#9CA3AF] transition-colors`}>{t.home.footer.privacy}</Link>
+              <Link href="/conditions" className={`${label} text-[#475569] hover:text-[#9CA3AF] transition-colors`}>{t.home.footer.terms}</Link>
+              <Link href="/contact" className={`${label} text-[#475569] hover:text-[#9CA3AF] transition-colors`}>{t.home.footer.contact}</Link>
             </nav>
 
             <div className="flex items-center gap-5">
@@ -213,7 +215,7 @@ export default function Home() {
           </div>
 
           <p className={`${label} text-[#2E3D55] text-center pt-5 flex items-center justify-center gap-2`}>
-            <span>© 2026 Nexus — Propulsé par</span>
+            <span>{t.home.footer.copyright}</span>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/brand/logo-white-red.png" alt="WeLead" className="h-4 w-auto" />
           </p>

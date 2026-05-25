@@ -7,6 +7,8 @@
 Each item is actionable as a stand-alone PR. Grouped by impact, not by
 file.
 
+> **2026-05-25 — i18n system introduced.** Lightweight client-side FR/EN dictionary system added at `lib/i18n/` (LanguageContext + dictionaries + useTranslation). Default = FR, persisted via localStorage key `nexus-lang`. Pilot page is `app/page.tsx`. Other marketing homepages (`pour-les-coachs`, `pour-les-recruteurs`, `pour-les-athletes`, `comment-ca-marche`, `tarifs`, `confidentialite`, `conditions`, `contact`, etc.) still hold hardcoded FR — one-per-PR migration to follow. Toggle button wiring is owned outside this commit.
+
 ---
 
 ## P0 — Affect new user onboarding
