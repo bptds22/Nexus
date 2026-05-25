@@ -1736,6 +1736,7 @@ export default function CreateAthletePage() {
         </div>
 
         <PartnerVisibilityConsentCard
+          audience="coach"
           checked={form.partnerVisibilityConsent}
           onChange={(next) => setForm((prev) => ({ ...prev, partnerVisibilityConsent: next }))}
         />
