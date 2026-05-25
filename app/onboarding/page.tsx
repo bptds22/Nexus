@@ -2357,12 +2357,14 @@ function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Part
 
   const [sportId, setSportId] = useState<string | null>(null);
   const [sportLoading, setSportLoading] = useState(true);
-  // Create flow is now three sub-steps: club_pick → umbrella → create.
-  // The umbrella renders existing teams under the chosen club FIRST so
-  // the coach can join an existing row before being offered the create
-  // form — the dedup guardrail. Locked club id/name flow into both
-  // umbrella (as query scope) and TeamCreateForm (as locked props).
-  const [mode, setMode] = useState<"search" | "club_pick" | "umbrella" | "create">("search");
+  // Create flow is two sub-steps after the merged search: umbrella →
+  // create. The merged team+club search (mode='search') already
+  // surfaces matching clubs alongside matching teams — picking a club
+  // routes straight to umbrella (existing teams under that club) with
+  // an inline create CTA when the coach's team isn't listed. Locked
+  // club id/name flow into both umbrella (as query scope) and
+  // TeamCreateForm (as locked props).
+  const [mode, setMode] = useState<"search" | "umbrella" | "create">("search");
   const [lockedSchoolId, setLockedSchoolId] = useState<string | null>(null);
   const [lockedSchoolName, setLockedSchoolName] = useState<string>("");
   const [selectedTeam, setSelectedTeam] = useState<TeamSearchRow | null>(null);
@@ -2660,8 +2662,7 @@ function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Part
   }
 
   const heading: Record<typeof mode, { title: string; subtitle: string }> = {
-    search:    { title: "Trouve ton équipe", subtitle: "Cherche ton équipe parmi celles déjà inscrites, ou crée une nouvelle équipe." },
-    club_pick: { title: "Choisis ton club", subtitle: "Sélectionne le club auquel ta nouvelle équipe sera rattachée." },
+    search:    { title: "Trouve ton équipe", subtitle: "Cherche ton équipe ou ton club. Joins une équipe existante ou crée la tienne sous un club connu." },
     umbrella:  { title: "Équipes existantes", subtitle: "Voici les équipes déjà inscrites sous ce club. Si la tienne y figure, joins-la. Sinon, crée-la." },
     create:    { title: "Crée ta nouvelle équipe", subtitle: "Remplis les détails — la nouvelle équipe sera rattachée au club choisi." },
   };
@@ -2684,35 +2685,27 @@ function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Part
           sportId={sportId}
           selectedTeam={selectedTeam}
           onSelect={handleJoinExistingTeam}
-          onCreate={() => {
-            setError(null);
-            setMode("club_pick");
-          }}
-        />
-      )}
-
-      {mode === "club_pick" && (
-        <ClubPickStep
-          onPickExisting={(id, name) => {
+          onSelectClub={(id, name) => {
+            // Club picked from the merged search results → lock and
+            // jump straight to the umbrella. Reuses the existing
+            // umbrella + locked-create path entirely.
             setLockedSchoolId(id);
             setLockedSchoolName(name);
             setError(null);
             setMode("umbrella");
           }}
-          onPickNew={(name) => {
-            // Brand-new club name. Skip the umbrella (nothing to
-            // dedupe against — the club has no teams yet) and go
-            // straight to create with a name-only lock. The parent's
-            // handleCreateTeam will findOrCreateSchool() on submit
-            // to materialize the club row alongside the team row.
+          onCreate={() => {
+            // Empty-state "Crée ta nouvelle équipe" — no team and no
+            // club matched. Lock the typed search input as the new
+            // club's name (no id yet) and skip straight to create.
+            // handleCreateTeam will findOrCreateSchool() on submit.
+            // Falls back to empty name if the search input is empty,
+            // in which case TeamCreateForm's required-field gating
+            // will catch it.
             setLockedSchoolId(null);
-            setLockedSchoolName(name);
+            setLockedSchoolName("");
             setError(null);
             setMode("create");
-          }}
-          onBack={() => {
-            setError(null);
-            setMode("search");
           }}
         />
       )}
@@ -2728,13 +2721,17 @@ function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Part
             setMode("create");
           }}
           onBack={() => {
+            // Back from the umbrella returns to the merged search.
+            // The locked club state stays around so we can still
+            // route back into umbrella if the coach picks the same
+            // club again — but it's not consulted by mode='search'.
             setError(null);
-            setMode("club_pick");
+            setMode("search");
           }}
         />
       )}
 
-      {mode === "create" && lockedSchoolName && (
+      {mode === "create" && (
         <TeamCreateForm
           sportId={sportId}
           sportName={sportName}
@@ -2742,12 +2739,12 @@ function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Part
           onCancel={() => {
             setError(null);
             // From an existing-club lock, back goes to umbrella;
-            // from a new-club lock there's no umbrella to return
-            // to, so back goes to club_pick instead.
-            setMode(lockedSchoolId ? "umbrella" : "club_pick");
+            // from a name-only / empty-state lock there's no
+            // umbrella to return to, so back goes to search.
+            setMode(lockedSchoolId ? "umbrella" : "search");
           }}
           lockedSchoolId={lockedSchoolId ?? undefined}
-          lockedSchoolName={lockedSchoolName}
+          lockedSchoolName={lockedSchoolName || undefined}
         />
       )}
 
@@ -2757,157 +2754,25 @@ function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Part
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   CLUB PICK STEP — sub-step A of the civil create flow.
-
-   Hoisted out of TeamCreateForm so the umbrella query has a
-   school_id BEFORE the create dropdowns render (umbrella-first
-   is the dedup guardrail). Coach picks a known LIGUE_CIVILE
-   club OR types a new name; the parent persists the resolved
-   {id, name} as lockedSchoolId / lockedSchoolName.
-
-   "My club isn't listed" path : typing a name that doesn't match
-   any suggestion is allowed — the parent's handleCreateTeam will
-   findOrCreateSchool() it. This stays available but it's NOT the
-   encouraged path; the umbrella step that follows is.
-═══════════════════════════════════════════════════════════════ */
-function ClubPickStep({
-  onPickExisting,
-  onPickNew,
-  onBack,
-}: {
-  onPickExisting: (id: string, name: string) => void;
-  onPickNew: (name: string) => void;
-  onBack: () => void;
-}) {
-  const [options, setOptions] = useState<Array<{ id: string; name: string }>>([]);
-  const [loading, setLoading] = useState(true);
-  const [input, setInput] = useState("");
-  const [open, setOpen] = useState(false);
-  const wrapperRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const supabase = createClient();
-      const { data, error: queryError } = await supabase
-        .from("schools")
-        .select("id, name")
-        .eq("type", "LIGUE_CIVILE")
-        .order("name");
-      if (cancelled) return;
-      if (queryError) {
-        console.error("[ClubPickStep] schools fetch failed:", queryError);
-        setOptions([]);
-      } else {
-        setOptions((data ?? []) as Array<{ id: string; name: string }>);
-      }
-      setLoading(false);
-    })();
-    return () => { cancelled = true; };
-  }, []);
-
-  useEffect(() => {
-    const onDocClick = (e: MouseEvent) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", onDocClick);
-    return () => document.removeEventListener("mousedown", onDocClick);
-  }, []);
-
-  const trimmed = input.trim().toLowerCase();
-  const filtered = trimmed.length === 0
-    ? options.slice(0, 8)
-    : options.filter((o) => o.name.toLowerCase().includes(trimmed)).slice(0, 10);
-
-  const exactMatch = options.find((o) => o.name.toLowerCase() === trimmed);
-  const canContinueAsNew = !exactMatch && input.trim().length > 0;
-
-  function pickSuggestion(option: { id: string; name: string }) {
-    onPickExisting(option.id, option.name);
-  }
-
-  function continueAsNew() {
-    // "My club isn't listed" — name-only lock, no id yet. Parent
-    // skips the umbrella (nothing to dedupe against) and routes
-    // straight to create. handleCreateTeam will findOrCreateSchool()
-    // at submit time to materialize the new club row alongside the
-    // new team row.
-    onPickNew(input.trim());
-  }
-
-  return (
-    <div ref={wrapperRef} className="space-y-3">
-      <label htmlFor="club-pick-input" className="block text-[10px] font-bold tracking-[0.25em] uppercase text-[#9CA3AF] mb-1.5">
-        Club
-      </label>
-      <input
-        id="club-pick-input"
-        type="text"
-        placeholder={loading ? "Chargement des clubs..." : "Tape le nom de ton club"}
-        value={input}
-        onChange={(e) => { setInput(e.target.value); setOpen(true); }}
-        onFocus={() => setOpen(true)}
-        disabled={loading}
-        className="w-full h-11 px-4 bg-[#111317] border border-white/10 rounded-lg text-white font-sans text-sm placeholder:text-[#6B7280] focus:border-[#E63946] focus:outline-none transition-colors"
-        autoComplete="off"
-      />
-
-      {open && !loading && filtered.length > 0 && (
-        <div className="relative">
-          <div className="absolute z-20 w-full mt-1 bg-[#1A1D24] border border-white/10 rounded-lg max-h-60 overflow-y-auto shadow-xl">
-            {filtered.map((opt) => (
-              <button
-                key={opt.id}
-                type="button"
-                onClick={() => pickSuggestion(opt)}
-                className="w-full text-left px-4 py-3 text-sm text-white hover:bg-white/5 transition-colors border-b border-white/5 last:border-b-0"
-              >
-                {opt.name}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {canContinueAsNew && (
-        <div className="bg-[#111317] border border-white/5 rounded-lg p-4 text-[12px] text-[#9CA3AF]">
-          <p>Aucun club existant ne correspond à <span className="text-white font-bold">&ldquo;{input.trim()}&rdquo;</span>.</p>
-          <button
-            type="button"
-            onClick={continueAsNew}
-            className="mt-3 inline-flex items-center gap-2 h-10 px-4 rounded-lg bg-[#E63946] hover:bg-[#D42B22] text-white text-[12px] font-bold transition-colors"
-          >
-            Continuer avec ce nouveau club
-          </button>
-        </div>
-      )}
-
-      <button
-        type="button"
-        onClick={onBack}
-        className="h-9 px-3 text-[12px] text-[#9CA3AF] hover:text-white transition-colors"
-      >
-        ← Retour à la recherche
-      </button>
-    </div>
-  );
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   UMBRELLA STEP — sub-step B of the civil create flow.
+   UMBRELLA STEP — destination for both an existing-team join and
+   a locked-club create. Reached either from a TEAM card pick in
+   the merged search (which goes through handleJoinExistingTeam
+   directly, not through here) or from a CLUB card pick in the
+   merged search (locked id+name flow into this component).
 
    Renders existing teams under the locked club for the chosen
    sport, deduped by (name, age_group, division, gender). The
    encouraged path : if the coach's team is here, they join it
    via the same handleJoinExistingTeam used by the cross-club
    search. Only if their team isn't listed do they fall through
-   to the create form (sub-step C).
+   to the create form.
 
    RLS : "Civil league teams are publicly discoverable" allows
    authenticated users to SELECT teams where the parent school
    has type='LIGUE_CIVILE'. No coupling to current_user_school_id.
 
-   Empty schoolId (the "not listed" path from ClubPickStep) skips
+   Empty schoolId (the "no team and no club matched" name-only
+   path) skips
    the query entirely — the umbrella renders the empty state with
    the "pas dans la liste" CTA leading straight to create.
 ═══════════════════════════════════════════════════════════════ */
@@ -3065,7 +2930,7 @@ function UmbrellaStep({
         onClick={onBack}
         className="h-9 px-3 text-[12px] text-[#9CA3AF] hover:text-white transition-colors"
       >
-        ← Changer de club
+        ← Retour à la recherche
       </button>
     </div>
   );

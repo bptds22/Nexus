@@ -45,10 +45,28 @@ export interface TeamSearchRow {
   coach_count: number;
 }
 
+export interface ClubSearchRow {
+  id: string;
+  name: string;
+  city: string | null;
+  region: string | null;
+}
+
+// Discriminated union for the merged result list. Teams render first
+// (the join path is preferred when an existing team matches); clubs
+// render after (the create path — pick a club to scaffold a new team
+// under it). Clubs are NOT filtered by sport — schools has no
+// sport_id column, so the umbrella's empty state ("no teams in this
+// sport") carries the sport-relevance signal instead.
+export type MergedResult =
+  | { kind: "team"; team: TeamSearchRow }
+  | { kind: "club"; club: ClubSearchRow };
+
 export interface TeamSearchOrCreateProps {
   sportId: string;
   selectedTeam: TeamSearchRow | null;
   onSelect: (team: TeamSearchRow) => void;
+  onSelectClub: (id: string, name: string) => void;
   onCreate: () => void;
   className?: string;
 }
@@ -63,6 +81,13 @@ interface RawRow {
   school_id: string;
   schools: { id: string; name: string; type: string | null } | { id: string; name: string; type: string | null }[] | null;
   team_coaches: { coach_id: string }[] | null;
+}
+
+interface RawClubRow {
+  id: string;
+  name: string;
+  city: string | null;
+  region: string | null;
 }
 
 const inputCls =
@@ -85,11 +110,12 @@ export default function TeamSearchOrCreate({
   sportId,
   selectedTeam,
   onSelect,
+  onSelectClub,
   onCreate,
   className = "",
 }: TeamSearchOrCreateProps) {
   const [search, setSearch] = useState("");
-  const [results, setResults] = useState<TeamSearchRow[]>([]);
+  const [results, setResults] = useState<MergedResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
@@ -130,11 +156,15 @@ export default function TeamSearchOrCreate({
         ? trimmed.split(/\s+/).filter(Boolean)
         : [];
 
-      // Candidate fetch. The FIRST token is the user's most-likely
-      // name token (people type the team name first, then modifiers).
-      // Server-side .ilike narrows the candidate set; full token
-      // matching happens client-side across all fields.
-      let query = supabase
+      // TWO queries in parallel:
+      // - teams: sport-scoped, name .ilike on the first token, civil-only
+      //   client-side filter, token-match across all fields.
+      // - clubs: ALL LIGUE_CIVILE schools, name .ilike on the first token,
+      //   token-match across name + city + region. NOT sport-filtered —
+      //   schools has no sport_id; the umbrella's empty state covers the
+      //   relevance signal when a coach picks a club whose teams are all
+      //   in a different sport.
+      let teamsQuery = supabase
         .from("teams")
         .select(
           "id, name, age_group, gender, division, league, school_id, schools!school_id(id, name, type), team_coaches(coach_id)"
@@ -143,14 +173,25 @@ export default function TeamSearchOrCreate({
         .order("name")
         .limit(500);
 
+      let clubsQuery = supabase
+        .from("schools")
+        .select("id, name, city, region")
+        .eq("type", "LIGUE_CIVILE")
+        .order("name")
+        .limit(500);
+
       if (tokens.length > 0) {
-        query = query.ilike("name", `%${tokens[0]}%`);
+        teamsQuery = teamsQuery.ilike("name", `%${tokens[0]}%`);
+        clubsQuery = clubsQuery.ilike("name", `%${tokens[0]}%`);
       }
 
-      const { data, error: queryError } = await query;
+      const [teamsRes, clubsRes] = await Promise.all([teamsQuery, clubsQuery]);
 
-      if (queryError) {
-        console.error("[TeamSearchOrCreate] search failed:", queryError);
+      if (teamsRes.error || clubsRes.error) {
+        console.error(
+          "[TeamSearchOrCreate] search failed:",
+          teamsRes.error || clubsRes.error,
+        );
         setError("Erreur de recherche — réessaie dans un instant");
         setResults([]);
         setLoading(false);
@@ -158,18 +199,18 @@ export default function TeamSearchOrCreate({
         return;
       }
 
-      // Civil-only filter (schools.type embed).
-      const civilOnly = (data ?? []).filter((row) => {
+      // Civil-only filter for teams (schools.type embed).
+      const civilTeams = (teamsRes.data ?? []).filter((row) => {
         const r = row as unknown as RawRow;
         const school = Array.isArray(r.schools) ? r.schools[0] : r.schools;
         return school?.type === "LIGUE_CIVILE";
       });
 
-      // Token narrowing: build per-team haystack from name + helper
-      // fields, require every token to be a substring (normalized).
-      // Empty input → tokens is [] → no filter applied (show all).
+      // Token narrowing: build a per-row haystack and require every
+      // token to be a substring (normalized). Empty input → no filter.
       const normTokens = tokens.map(normalize);
-      const matched = civilOnly.filter((row) => {
+
+      const teamMatches = civilTeams.filter((row) => {
         if (normTokens.length === 0) return true;
         const r = row as unknown as RawRow;
         const haystack = [r.name, r.age_group, r.division, r.league, r.gender]
@@ -178,7 +219,14 @@ export default function TeamSearchOrCreate({
         return normTokens.every((t) => haystack.includes(t));
       });
 
-      const mapped: TeamSearchRow[] = matched.map((row) => {
+      const clubMatches = (clubsRes.data ?? []).filter((row) => {
+        if (normTokens.length === 0) return true;
+        const r = row as unknown as RawClubRow;
+        const haystack = [r.name, r.city, r.region].map(normalize).join(" ");
+        return normTokens.every((t) => haystack.includes(t));
+      });
+
+      const teamRows: TeamSearchRow[] = teamMatches.map((row) => {
         const r = row as unknown as RawRow;
         const school = Array.isArray(r.schools) ? r.schools[0] : r.schools;
         return {
@@ -194,7 +242,22 @@ export default function TeamSearchOrCreate({
         };
       });
 
-      setResults(mapped);
+      const clubRows: ClubSearchRow[] = (clubMatches as RawClubRow[]).map((r) => ({
+        id: r.id,
+        name: r.name,
+        city: r.city,
+        region: r.region,
+      }));
+
+      // Order: existing teams first (join path is preferred), clubs
+      // after (the create path). Both sub-lists were ORDER BY name
+      // server-side and inherit that order.
+      const merged: MergedResult[] = [
+        ...teamRows.map((team) => ({ kind: "team" as const, team })),
+        ...clubRows.map((club) => ({ kind: "club" as const, club })),
+      ];
+
+      setResults(merged);
       setError(null);
       setLoading(false);
       setHasSearched(true);
@@ -322,50 +385,75 @@ export default function TeamSearchOrCreate({
             onTouchStart={onTouchStart}
             onTouchEnd={onTouchEnd}
           >
-            {pagedResults.map((team) => {
-              const genderText = team.gender ? genderLabel(team.gender) : null;
+            {pagedResults.map((result) => {
+              if (result.kind === "team") {
+                const team = result.team;
+                const genderText = team.gender ? genderLabel(team.gender) : null;
+                return (
+                  <button
+                    key={`team-${team.id}`}
+                    type="button"
+                    onClick={() => onSelect(team)}
+                    className="text-left bg-[#111317] border border-white/10 hover:border-[#E63946]/40 rounded-lg p-4 transition-colors"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-white text-sm truncate">{team.name}</p>
+                        <div className="flex items-center gap-1.5 flex-wrap mt-2">
+                          {team.division && (
+                            <span className="shrink-0 px-2 py-0.5 rounded-full bg-white/5 text-[10px] font-bold text-white/70 uppercase border border-white/10">
+                              {team.division}
+                            </span>
+                          )}
+                          {team.age_group && (
+                            <span className="shrink-0 px-2 py-0.5 rounded-full bg-white/5 text-[10px] font-bold text-white/70 uppercase border border-white/10">
+                              {team.age_group}
+                            </span>
+                          )}
+                          {genderText && (
+                            <span className="shrink-0 px-2 py-0.5 rounded-full bg-white/5 text-[10px] font-bold text-white/70 uppercase border border-white/10">
+                              {genderText}
+                            </span>
+                          )}
+                        </div>
+                        {team.league && (
+                          <p className="text-[11px] text-[#9CA3AF] mt-2 truncate">{team.league}</p>
+                        )}
+                        <p className="text-[11px] text-[#6B7280] mt-1 truncate">{team.school_name}</p>
+                      </div>
+                      <span
+                        className={`shrink-0 text-[10px] font-bold uppercase tracking-wider ${
+                          team.coach_count === 0 ? "text-[#6B7280]" : "text-[#9CA3AF]"
+                        }`}
+                      >
+                        {team.coach_count === 0
+                          ? "Aucun coach"
+                          : `${team.coach_count} coach${team.coach_count === 1 ? "" : "s"}`}
+                      </span>
+                    </div>
+                  </button>
+                );
+              }
+
+              // result.kind === "club" — visually distinct from team
+              // cards: no pills, a "Créer une équipe pour ce club"
+              // affordance, dashed border hint that this is the
+              // create path (not join).
+              const club = result.club;
+              const cityRegion = [club.city, club.region].filter(Boolean).join(" · ");
               return (
                 <button
-                  key={team.id}
+                  key={`club-${club.id}`}
                   type="button"
-                  onClick={() => onSelect(team)}
-                  className="text-left bg-[#111317] border border-white/10 hover:border-[#E63946]/40 rounded-lg p-4 transition-colors"
+                  onClick={() => onSelectClub(club.id, club.name)}
+                  className="text-left bg-[#111317] border border-dashed border-white/10 hover:border-[#E63946]/40 rounded-lg p-4 transition-colors"
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <p className="font-bold text-white text-sm truncate">{team.name}</p>
-                      <div className="flex items-center gap-1.5 flex-wrap mt-2">
-                        {team.division && (
-                          <span className="shrink-0 px-2 py-0.5 rounded-full bg-white/5 text-[10px] font-bold text-white/70 uppercase border border-white/10">
-                            {team.division}
-                          </span>
-                        )}
-                        {team.age_group && (
-                          <span className="shrink-0 px-2 py-0.5 rounded-full bg-white/5 text-[10px] font-bold text-white/70 uppercase border border-white/10">
-                            {team.age_group}
-                          </span>
-                        )}
-                        {genderText && (
-                          <span className="shrink-0 px-2 py-0.5 rounded-full bg-white/5 text-[10px] font-bold text-white/70 uppercase border border-white/10">
-                            {genderText}
-                          </span>
-                        )}
-                      </div>
-                      {team.league && (
-                        <p className="text-[11px] text-[#9CA3AF] mt-2 truncate">{team.league}</p>
-                      )}
-                      <p className="text-[11px] text-[#6B7280] mt-1 truncate">{team.school_name}</p>
-                    </div>
-                    <span
-                      className={`shrink-0 text-[10px] font-bold uppercase tracking-wider ${
-                        team.coach_count === 0 ? "text-[#6B7280]" : "text-[#9CA3AF]"
-                      }`}
-                    >
-                      {team.coach_count === 0
-                        ? "Aucun coach"
-                        : `${team.coach_count} coach${team.coach_count === 1 ? "" : "s"}`}
-                    </span>
-                  </div>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#6B7280]">Club</p>
+                  <p className="font-bold text-white text-sm truncate mt-1">{club.name}</p>
+                  {cityRegion && (
+                    <p className="text-[11px] text-[#9CA3AF] mt-1 truncate">{cityRegion}</p>
+                  )}
+                  <p className="text-[11px] text-[#E63946] font-bold mt-3">Créer une équipe pour ce club →</p>
                 </button>
               );
             })}
