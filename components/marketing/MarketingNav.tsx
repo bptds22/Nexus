@@ -4,27 +4,32 @@ import { useState } from "react";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
 import NexusLogo from "@/components/ui/NexusLogo";
-
-const DROPDOWN_ITEMS = [
-  { label: "Pour les coachs", href: "/pour-les-coachs" },
-  { label: "Pour les recruteurs", href: "/pour-les-recruteurs" },
-  { label: "Pour les étudiants-athlètes", href: "/pour-les-etudiant-athlete" },
-];
-
-// Main nav links — mirrored into the mobile hamburger menu. The desktop <ul>
-// below stays the source of truth for desktop and is left untouched.
-const NAV_LINKS = [
-  { label: "Comment ça marche", href: "/comment-ca-marche", accent: false },
-  { label: "Tarifs", href: "/tarifs", accent: true },
-  { label: "Roadmap", href: "/roadmap", accent: false },
-  { label: "À propos", href: "/a-propos", accent: false },
-];
+import { useTranslation } from "@/lib/i18n/useTranslation";
 
 const label = "text-[10px] font-bold tracking-[0.25em] uppercase";
 
 export default function MarketingNav() {
+  const { t } = useTranslation();
   const [menuOpen, setMenuOpen] = useState(false);
   const closeMenu = () => setMenuOpen(false);
+
+  // Built inside the component so labels stay in sync with the
+  // active language (useTranslation re-renders on toggle).
+  const DROPDOWN_ITEMS = [
+    { label: t.nav.forCoaches, href: "/pour-les-coachs" },
+    { label: t.nav.forRecruiters, href: "/pour-les-recruteurs" },
+    { label: t.nav.forAthletes, href: "/pour-les-etudiant-athlete" },
+  ];
+
+  // Mirrored into the mobile hamburger menu. Desktop <ul> below
+  // stays the source of truth for desktop and is left untouched.
+  const NAV_LINKS = [
+    { label: t.nav.howItWorks, href: "/comment-ca-marche", accent: false },
+    { label: t.nav.pricing, href: "/tarifs", accent: true },
+    { label: t.nav.roadmap, href: "/roadmap", accent: false },
+    { label: t.nav.about, href: "/a-propos", accent: false },
+  ];
+
   return (
     <nav className="sticky top-0 z-50 bg-[#111317] border-b border-[#1E2D4A]">
       <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
@@ -38,7 +43,7 @@ export default function MarketingNav() {
           {/* Dropdown — Coaches & Recruteurs */}
           <li className="relative group">
             <span className={`${label} text-[#9AA3B2] group-hover:text-white transition-colors cursor-default flex items-center gap-1`}>
-              Découvrir Nexus
+              {t.nav.discover}
               <svg width="14" height="14" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" className="mt-px opacity-70 group-hover:opacity-100 transition-opacity">
                 <path d="M2.5 4 5 6.5 7.5 4" />
               </svg>
@@ -66,25 +71,25 @@ export default function MarketingNav() {
 
           <li>
             <Link href="/comment-ca-marche" className={`${label} text-[#9AA3B2] hover:text-white transition-colors`}>
-              Comment ça marche
+              {t.nav.howItWorks}
             </Link>
           </li>
 
           <li>
             <Link href="/tarifs" className={`${label} text-[#E63946] hover:text-white transition-colors`}>
-              Tarifs
+              {t.nav.pricing}
             </Link>
           </li>
 
           <li>
             <Link href="/roadmap" className={`${label} text-[#9AA3B2] hover:text-white transition-colors`}>
-              Roadmap
+              {t.nav.roadmap}
             </Link>
           </li>
 
           <li>
             <Link href="/a-propos" className={`${label} text-[#9AA3B2] hover:text-white transition-colors`}>
-              À propos
+              {t.nav.about}
             </Link>
           </li>
         </ul>
@@ -100,16 +105,16 @@ export default function MarketingNav() {
             <span className="text-gray-500">EN</span>
           </button>
           <Link href="/auth" className={`hidden sm:block ${label} text-wl-red transition-colors px-4 h-9 leading-9 hover:drop-shadow-[0_0_8px_rgba(232,72,72,0.6)]`}>
-            Connexion
+            {t.nav.login}
           </Link>
           <Link href="/auth?mode=signup" className="nx-ghost-btn h-9 px-5 border font-head font-black text-xs uppercase tracking-widest inline-flex items-center">
-            S&apos;inscrire
+            {t.nav.signup}
           </Link>
 
           <button
             type="button"
             onClick={() => setMenuOpen((o) => !o)}
-            aria-label={menuOpen ? "Fermer le menu" : "Ouvrir le menu"}
+            aria-label={menuOpen ? t.nav.closeMenu : t.nav.openMenu}
             aria-expanded={menuOpen}
             aria-controls="mobile-menu"
             className="md:hidden flex items-center justify-center w-9 h-9 -mr-1 text-white"
@@ -124,7 +129,7 @@ export default function MarketingNav() {
       {menuOpen && (
         <div id="mobile-menu" className="md:hidden border-t border-[#1E2D4A] bg-[#111317] px-6 py-3">
           <p className="px-2 pt-2 pb-1 text-[10px] font-bold tracking-[0.25em] uppercase text-[#475569]">
-            Découvrir Nexus
+            {t.nav.discover}
           </p>
           {DROPDOWN_ITEMS.map((d) => (
             <Link
@@ -152,14 +157,14 @@ export default function MarketingNav() {
             onClick={closeMenu}
             className="block px-2 py-2.5 text-[12px] font-bold tracking-[0.18em] uppercase text-wl-red hover:text-white transition-colors"
           >
-            Connexion
+            {t.nav.login}
           </Link>
           <Link
             href="/auth?mode=signup"
             onClick={closeMenu}
             className="nx-ghost-btn mt-2 h-10 border font-head font-black text-xs uppercase tracking-widest flex items-center justify-center"
           >
-            S&apos;inscrire
+            {t.nav.signup}
           </Link>
         </div>
       )}

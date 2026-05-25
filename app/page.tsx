@@ -209,14 +209,14 @@ export default function Home() {
                 <img src="/brand/icon-white.svg" alt="" className="h-[22px] w-auto opacity-40" />
               </Link>
               <span className={`${label} text-[#475569]`}>
-                {t.home.footer.tagline}
+                {t.footer.tagline}
               </span>
             </div>
 
             <nav className="flex items-center gap-8">
-              <Link href="/confidentialite" className={`${label} text-[#475569] hover:text-[#9CA3AF] transition-colors`}>{t.home.footer.privacy}</Link>
-              <Link href="/conditions" className={`${label} text-[#475569] hover:text-[#9CA3AF] transition-colors`}>{t.home.footer.terms}</Link>
-              <Link href="/contact" className={`${label} text-[#475569] hover:text-[#9CA3AF] transition-colors`}>{t.home.footer.contact}</Link>
+              <Link href="/confidentialite" className={`${label} text-[#475569] hover:text-[#9CA3AF] transition-colors`}>{t.footer.privacy}</Link>
+              <Link href="/conditions" className={`${label} text-[#475569] hover:text-[#9CA3AF] transition-colors`}>{t.footer.terms}</Link>
+              <Link href="/contact" className={`${label} text-[#475569] hover:text-[#9CA3AF] transition-colors`}>{t.footer.contact}</Link>
             </nav>
 
             <div className="flex items-center gap-5">
@@ -234,7 +234,7 @@ export default function Home() {
           </div>
 
           <p className={`${label} text-[#2E3D55] text-center pt-5`}>
-            {t.home.footer.copyright}
+            {t.footer.copyright}
           </p>
 
         </div>

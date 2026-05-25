@@ -6,9 +6,11 @@
  * so TypeScript flags any key added on one side but missing on
  * the other.
  *
- * Seeded with the strings extracted from app/page.tsx (the root
- * marketing homepage — first translated surface). Other marketing
- * pages will land here as they're migrated, one PR at a time.
+ * Top-level keys are scoped: `home` (homepage only),
+ * `nav` (MarketingNav — global chrome), `footer` (marketing
+ * footer — global chrome). Anything global is hoisted out of
+ * `home` so future marketing pages can consume the same keys
+ * without going through the homepage namespace.
  *
  * Translation discipline : any EN string where the translation
  * isn't confident is left as the FR value with a trailing
@@ -43,13 +45,27 @@ export interface Dictionary {
       location: string;
       promotion: string;
     };
-    footer: {
-      tagline: string;
-      privacy: string;
-      terms: string;
-      contact: string;
-      copyright: string;
-    };
+  };
+  nav: {
+    discover: string;
+    forCoaches: string;
+    forRecruiters: string;
+    forAthletes: string;
+    howItWorks: string;
+    pricing: string;
+    roadmap: string;
+    about: string;
+    login: string;
+    signup: string;
+    openMenu: string;
+    closeMenu: string;
+  };
+  footer: {
+    tagline: string;
+    privacy: string;
+    terms: string;
+    contact: string;
+    copyright: string;
   };
 }
 
@@ -60,9 +76,10 @@ export const dictionaries: Record<Lang, Dictionary> = {
         eyebrow: "Plateforme officielle · Québec 2026",
         titleLine1: "Fais-toi voir.",
         titleLine2: "Fais-toi recruter.",
-        ledeStrong: "La plateforme #1 de recrutement d'athlètes au Québec.",
-        lede: "Connecte les athlètes du secondaire aux programmes sport-études des CÉGEP.",
-        ctaPrimary: "Sois le next",
+        ledeStrong: "Les recruteurs des CÉGEP cherchent des athlètes comme toi.",
+        lede: "Assure-toi qu'ils te trouvent.",
+        // Intentional brand pun on 'Nexus' — do NOT autocorrect to 'next' (FR + EN)
+        ctaPrimary: "Sois le nex",
         ctaSecondary: "Voir comment ça marche",
       },
       card: {
@@ -73,13 +90,27 @@ export const dictionaries: Record<Lang, Dictionary> = {
         location: "Québec, QC",
         promotion: "Promotion 2026",
       },
-      footer: {
-        tagline: "Construit pour les étudiants-athlètes québécois",
-        privacy: "Confidentialité",
-        terms: "Conditions",
-        contact: "Contact",
-        copyright: "© 2026 Nexus",
-      },
+    },
+    nav: {
+      discover: "Découvrir Nexus",
+      forCoaches: "Pour les coachs",
+      forRecruiters: "Pour les recruteurs",
+      forAthletes: "Pour les étudiants-athlètes",
+      howItWorks: "Comment ça marche",
+      pricing: "Tarifs",
+      roadmap: "Roadmap",
+      about: "À propos",
+      login: "Connexion",
+      signup: "S'inscrire",
+      openMenu: "Ouvrir le menu",
+      closeMenu: "Fermer le menu",
+    },
+    footer: {
+      tagline: "Construit pour les étudiants-athlètes québécois",
+      privacy: "Confidentialité",
+      terms: "Conditions",
+      contact: "Contact",
+      copyright: "© 2026 Nexus",
     },
   },
   en: {
@@ -88,10 +119,10 @@ export const dictionaries: Record<Lang, Dictionary> = {
         eyebrow: "Official platform · Québec 2026",
         titleLine1: "Get seen.",
         titleLine2: "Get recruited.",
-        ledeStrong: "Québec's #1 athlete recruitment platform.",
-        lede: "Connecting high-school athletes with sport-études programs at CÉGEPs.",
-        // Per CLAUDE.md the brand tagline is "Be the Next" (NEXT embedded in NEXUS).
-        ctaPrimary: "Be the next",
+        ledeStrong: "CÉGEP recruiters are looking for athletes like you.",
+        lede: "Make sure they find you.",
+        // Intentional brand pun on 'Nexus' — do NOT autocorrect to 'next' (FR + EN)
+        ctaPrimary: "Be the nex",
         ctaSecondary: "See how it works",
       },
       card: {
@@ -103,13 +134,27 @@ export const dictionaries: Record<Lang, Dictionary> = {
         location: "Québec, QC",
         promotion: "Class of 2026",
       },
-      footer: {
-        tagline: "Built for Québec's student-athletes",
-        privacy: "Privacy",
-        terms: "Terms",
-        contact: "Contact",
-        copyright: "© 2026 Nexus",
-      },
+    },
+    nav: {
+      discover: "Discover Nexus",
+      forCoaches: "For coaches",
+      forRecruiters: "For recruiters",
+      forAthletes: "For student-athletes",
+      howItWorks: "How it works",
+      pricing: "Pricing",
+      roadmap: "Roadmap",
+      about: "About",
+      login: "Log in",
+      signup: "Sign up",
+      openMenu: "Open menu",
+      closeMenu: "Close menu",
+    },
+    footer: {
+      tagline: "Built for Québec's student-athletes",
+      privacy: "Privacy",
+      terms: "Terms",
+      contact: "Contact",
+      copyright: "© 2026 Nexus",
     },
   },
 };
