@@ -16,7 +16,7 @@ const STAGE_LABEL: Record<Stage, string> = {
 };
 const STAGE_BADGE: Record<Stage, string> = {
   IDENTIFIE: "bg-gray-500/20 text-gray-400",
-  CONTACTE: "bg-blue-500/20 text-blue-400",
+  CONTACTE: "bg-indigo-500/20 text-indigo-400",
   VISITE_PLANIFIEE: "bg-amber-500/20 text-amber-400",
   ENGAGE: "bg-amber-500/20 text-amber-400",
   LETTRE_SIGNEE: "bg-green-500/20 text-green-400",

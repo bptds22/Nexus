@@ -144,8 +144,8 @@ export default function CommentCaMarche() {
               </div>
 
               {/* Blue check */}
-              <div className="bg-[#1A1D24] rounded-2xl border border-[#2563EB]/40 p-8">
-                <div className="w-12 h-12 rounded-full bg-[#2563EB] flex items-center justify-center mb-5">
+              <div className="bg-[#1A1D24] rounded-2xl border border-[#3B82F6]/40 p-8">
+                <div className="w-12 h-12 rounded-full bg-[#3B82F6] flex items-center justify-center mb-5">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="20 6 9 17 4 12" />
                   </svg>

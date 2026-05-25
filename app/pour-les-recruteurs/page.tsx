@@ -104,7 +104,7 @@ const PILLAR_STYLES: Record<
   red: { bg: "bg-[#E63946]/15", fg: "text-[#E63946]" },
   blue: { bg: "bg-[#3B82F6]/15", fg: "text-[#3B82F6]" },
   amber: { bg: "bg-[#F59E0B]/15", fg: "text-[#F59E0B]" },
-  blueCheck: { bg: "bg-[#2563EB]/15", fg: "text-[#2563EB]" },
+  blueCheck: { bg: "bg-[#3B82F6]/15", fg: "text-[#3B82F6]" },
 };
 
 type PricingTier = {

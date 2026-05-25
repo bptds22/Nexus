@@ -204,7 +204,7 @@ Follow these instructions exactly. Updated April 2026.
 - Card/surface: #1A1D24
 - Card border: border-[#2D3748] or border-white/5
 - Red accent: #E63946 (both coach and recruiter portals)
-- Blue: #3B82F6 (verification only)
+- Blue: #3B82F6 is the verified-check signal — used on verification badges/checks. Do NOT use blue on elements in athlete/verification contexts where it could be misread as a false verified signal (e.g. info pills on athlete/team cards). Blue is otherwise an acceptable accent/status hue elsewhere in the app (charts, KPIs, IN_PROGRESS status, etc.). Indigo is the distinct hue for CONTACTE pipeline status.
 - Green: #22C55E (positive status, active)
 - Gold: #F59E0B (star ratings)
 - Error red: #EF4444 (critical alerts only)

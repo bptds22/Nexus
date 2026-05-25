@@ -978,7 +978,7 @@ body.light-mode .nx-hero-glow {
   user-select: none;
 }
 .nx-particle.red { color: #E63946; }
-.nx-particle.blue { color: #2563EB; opacity: 0.5; }
+.nx-particle.blue { color: #6B7280; opacity: 0.5; }
 .nx-particle:nth-child(odd) { animation-duration: 12s; animation-delay: -2s; }
 .nx-particle:nth-child(3n) { animation-duration: 15s; animation-delay: -5s; }
 

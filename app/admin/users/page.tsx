@@ -190,7 +190,7 @@ export default function AdminUsersPage() {
         const opt = ROLE_OPTIONS.find((o) => o.value === r.role);
         const cls =
           r.role === "COACH"     ? "bg-amber-500/20 text-amber-400" :
-          r.role === "ATHLETE"   ? "bg-blue-500/20 text-blue-400" :
+          r.role === "ATHLETE"   ? "bg-gray-500/20 text-gray-400" :
           r.role === "RECRUTEUR" ? "bg-red-500/20 text-red-400" :
           r.role === "ADMIN"     ? "bg-green-500/20 text-green-400" :
                                    "bg-[#3B82F6]/15 text-[#3B82F6]";

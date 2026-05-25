@@ -182,7 +182,7 @@ function GlowFrame({ children }: { children: React.ReactNode }) {
 function MessagesMockup() {
   const items = [
     { name: "Jean-François L.", org: "Collège André-Grasset",    preview: "Bonjour coach, j'aimerais discuter du profil d'Alexandre…", time: "2h", dot: "bg-[#E63946]", unread: true  },
-    { name: "Caroline M.",      org: "CÉGEP de Sherbrooke",      preview: "Merci pour l'évaluation. On planifie une visite…",         time: "1j", dot: "bg-[#2563EB]", unread: false },
+    { name: "Caroline M.",      org: "CÉGEP de Sherbrooke",      preview: "Merci pour l'évaluation. On planifie une visite…",         time: "1j", dot: "bg-white/20", unread: false },
     { name: "Philippe D.",      org: "Campus Notre-Dame-de-Foy", preview: "Est-ce qu'Émilie serait disponible pour…",                   time: "3j", dot: "bg-white/20",  unread: false },
   ];
   return (

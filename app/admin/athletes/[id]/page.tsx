@@ -1160,7 +1160,7 @@ export default function AdminAthleteDetailPage({
               disabled={togglingVerified}
               className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold border transition-colors disabled:opacity-40 cursor-pointer ${
                 A("verified")
-                  ? "bg-[#2563EB]/10 text-[#2563EB] border-[#2563EB]/30 hover:bg-[#2563EB]/20"
+                  ? "bg-[#3B82F6]/10 text-[#3B82F6] border-[#3B82F6]/30 hover:bg-[#3B82F6]/20"
                   : "bg-[#2A2D35] text-gray-400 border-[#2A2D35] hover:bg-[#333842]"
               }`}
             >

@@ -30,7 +30,7 @@ type DownloadRow = {
 
 const FORMAT_PILL: Record<DownloadRow["format"], { className: string; label: string }> = {
   publication: {
-    className: "bg-blue-500/20 text-blue-400 border border-blue-500/30",
+    className: "bg-gray-500/20 text-gray-400 border border-gray-500/30",
     label: "Publication",
   },
   story: {
