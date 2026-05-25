@@ -6463,3 +6463,41 @@ COMMIT;
 --
 
 INSERT INTO public.loi25_settings (id, rprp_name, rprp_email, rprp_named_at) VALUES (true, 'Bruno-Philippe Desfosses Simard', 'confidentialite@nexussports.ca', '2026-01-01') ON CONFLICT (id) DO NOTHING;
+
+--
+-- Data for Name: teams (M18 AAA Masculin hockey); Type: TABLE DATA; Schema: public; Owner: postgres
+-- 15 civil-hockey teams under their already-seeded LIGUE_CIVILE clubs (data/import/elite_civil_leagues.json — LHM18AAAQ).
+-- Name-joined to schools so a db reset recreates rows under whichever club UUIDs were generated this run.
+--
+
+WITH team_names(name) AS (
+  VALUES
+    ('Forestiers d''Amos'),
+    ('Grenadiers de Châteauguay'),
+    ('Riverains du Collège Charles-Lemoyne'),
+    ('Phénix du Collège Esther-Blondin'),
+    ('Albatros du Collège Notre-Dame'),
+    ('L''Intrépide de Gatineau'),
+    ('Élites de Jonquière'),
+    ('Lions du Lac St-Louis'),
+    ('Rousseau Royal de Laval-Montréal'),
+    ('Chevaliers de Lévis'),
+    ('Cantonniers de Magog'),
+    ('Vikings de Saint-Eustache'),
+    ('Gaulois de Saint-Hyacinthe'),
+    ('Blizzard du Séminaire Saint-François'),
+    ('Estacades de Trois-Rivières')
+)
+INSERT INTO public.teams (school_id, sport_id, name, age_group, division, gender, league, season, is_active)
+SELECT s.id,
+       '119362e8-7b98-47fb-84da-c9ce10fbda2a'::uuid,
+       t.name,
+       'M18',
+       'AAA Civil — Élite',
+       'Masculin',
+       'M18 AAA',
+       '2025-2026',
+       true
+FROM team_names t
+JOIN public.schools s ON s.name = t.name AND s.type = 'LIGUE_CIVILE'
+ON CONFLICT ON CONSTRAINT teams_identity_unique DO NOTHING;
