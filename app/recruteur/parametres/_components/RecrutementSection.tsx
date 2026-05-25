@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { RecruiterSettings } from "@/lib/types/models";
-import { QC_REGIONS } from "@/lib/mock/recruiterSettings";
+import { QC_REGIONS } from "@/lib/config/recruiterReferenceData";
 import { POSITIONS } from "@/lib/sports-data";
 import RangeSliderInput from "./RangeSliderInput";
 import SettingsToggle from "./SettingsToggle";

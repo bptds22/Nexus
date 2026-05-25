@@ -42,37 +42,6 @@ function cityRegion(city?: string | null, region?: string | null, sep = ", "): s
   if (!r || r.toLowerCase() === c.toLowerCase()) return c;
   return `${c}${sep}${r}`;
 }
-const MOCK_SCHOOLS = [
-  { name: "De Mortagne", city: "Boucherville", region: "Montérégie", conference: "Sud-Ouest", sports: ["Football", "Basketball", "Soccer"] },
-  { name: "Saint-Jean-Eudes", city: "Québec", region: "Québec", conference: "Nord-Est", sports: ["Football", "Hockey", "Soccer"] },
-  { name: "De Rochebelle", city: "Québec", region: "Québec", conference: "Nord-Est", sports: ["Football", "Basketball", "Volleyball"] },
-  { name: "Roger-Comtois", city: "Québec", region: "Québec", conference: "Nord-Est", sports: ["Football", "Basketball"] },
-  { name: "Mont-Royal", city: "Montréal", region: "Montréal", conference: "Sud-Ouest", sports: ["Football", "Soccer", "Basketball"] },
-  { name: "Académie les Estacades", city: "Trois-Rivières", region: "Mauricie", conference: "Nord-Est", sports: ["Football", "Hockey"] },
-  { name: "Armand-Corbeil", city: "Terrebonne", region: "Lanaudière", conference: "Sud-Ouest", sports: ["Football", "Soccer"] },
-  { name: "L’Odyssée", city: "Chicoutimi", region: "Saguenay-Lac-Saint-Jean", conference: "Nord-Est", sports: ["Football", "Volleyball"] },
-  { name: "Le Sommet", city: "Québec", region: "Québec", conference: "Nord-Est", sports: ["Basketball", "Volleyball"] },
-  { name: "Louis-Riel", city: "Montréal", region: "Montréal", conference: "Sud-Ouest", sports: ["Football", "Soccer", "Basketball"] },
-  { name: "Curé-Antoine-Labelle", city: "Laval", region: "Laval", conference: "Sud-Ouest", sports: ["Football", "Soccer"] },
-  { name: "Saint-Joseph", city: "Saint-Hyacinthe", region: "Montérégie", conference: "Sud-Ouest", sports: ["Football", "Basketball"] },
-  { name: "Thérèse-Martin", city: "Joliette", region: "Lanaudière", conference: "Sud-Ouest", sports: ["Football", "Hockey"] },
-  { name: "Le Tremplin", city: "Drummondville", region: "Centre-du-Québec", conference: "Nord-Est", sports: ["Hockey", "Volleyball"] },
-  { name: "Pierre-Laporte", city: "Montréal", region: "Montréal", conference: "Sud-Ouest", sports: ["Football", "Basketball", "Natation"] },
-];
-const MOCK_CEGEPS = [
-  { name: "Garneau", city: "Québec", region: "Québec", conference: "Nord-Est", type: "Public", programs: ["Sciences nature", "Sciences humaines", "Informatique"], sports: [{ sport: "Football", division: "D1", gender: "Masculin" }, { sport: "Basketball", division: "D2", gender: "Les deux" }] },
-  { name: "Sainte-Foy", city: "Québec", region: "Québec", conference: "Nord-Est", type: "Public", programs: ["Sciences nature", "Administration"], sports: [{ sport: "Football", division: "D1", gender: "Masculin" }] },
-  { name: "Limoilou", city: "Québec", region: "Québec", conference: "Nord-Est", type: "Public", programs: ["Arts", "Sciences humaines"], sports: [{ sport: "Soccer", division: "D2", gender: "Les deux" }] },
-  { name: "Vieux-Montréal", city: "Montréal", region: "Montréal", conference: "Sud-Ouest", type: "Public", programs: ["Sciences nature", "Techniques"], sports: [{ sport: "Football", division: "D1", gender: "Masculin" }] },
-  { name: "André-Laurendeau", city: "Montréal", region: "Montréal", conference: "Sud-Ouest", type: "Public", programs: ["Sciences humaines", "Informatique"], sports: [{ sport: "Football", division: "D2", gender: "Masculin" }] },
-  { name: "Édouard-Montpetit", city: "Longueuil", region: "Montérégie", conference: "Sud-Ouest", type: "Public", programs: ["Sciences nature", "Administration"], sports: [{ sport: "Football", division: "D1", gender: "Masculin" }, { sport: "Hockey", division: "D1", gender: "Masculin" }] },
-  { name: "Sherbrooke", city: "Sherbrooke", region: "Estrie", conference: "Nord-Est", type: "Public", programs: ["Sciences nature", "Sciences humaines", "Arts"], sports: [{ sport: "Football", division: "D2", gender: "Masculin" }] },
-  { name: "Jonquière", city: "Saguenay", region: "Saguenay-Lac-Saint-Jean", conference: "Nord-Est", type: "Public", programs: ["Sciences humaines", "Techniques"], sports: [{ sport: "Football", division: "D3", gender: "Masculin" }] },
-  { name: "Lévis", city: "Lévis", region: "Chaudière-Appalaches", conference: "Nord-Est", type: "Public", programs: ["Sciences nature", "Administration"], sports: [{ sport: "Football", division: "D2", gender: "Masculin" }] },
-  { name: "Saint-Laurent", city: "Montréal", region: "Montréal", conference: "Sud-Ouest", type: "Public", programs: ["Sciences humaines", "Arts"], sports: [{ sport: "Soccer", division: "D1", gender: "Les deux" }] },
-  { name: "Bois-de-Boulogne", city: "Montréal", region: "Montréal", conference: "Sud-Ouest", type: "Public", programs: ["Sciences nature", "Informatique"], sports: [{ sport: "Basketball", division: "D1", gender: "Les deux" }] },
-  { name: "Champlain-Lennoxville", city: "Sherbrooke", region: "Estrie", conference: "Nord-Est", type: "Public", programs: ["Sciences nature", "Sciences humaines"], sports: [{ sport: "Football", division: "D3", gender: "Masculin" }] },
-];
 const FOOTBALL_POSITIONS = ["QB", "RB", "WR", "TE", "OL", "DL", "LB", "CB", "S", "K/P"];
 const GRAD_YEARS = [2025, 2026, 2027, 2028, 2029];
 

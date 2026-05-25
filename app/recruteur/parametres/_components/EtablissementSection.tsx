@@ -1,7 +1,7 @@
 "use client";
 
 import type { RecruiterSettings } from "@/lib/types/models";
-import { RSEQ_SPORTS } from "@/lib/mock/recruiterSettings";
+import { RSEQ_SPORTS } from "@/lib/config/recruiterReferenceData";
 import { POSITIONS } from "@/lib/sports-data";
 import SchoolSelect from "@/components/ui/SchoolSelect";
 
