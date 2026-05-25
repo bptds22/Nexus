@@ -63,13 +63,22 @@ export type MergedResult =
   | { kind: "club"; club: ClubSearchRow };
 
 export interface TeamSearchOrCreateProps {
+  /**
+   * Working sport id — driven by the parent's lifted state. The
+   * selector below writes BACK to that parent via onSportChange so
+   * the same value scopes the team query here, the umbrella query,
+   * and the new-team INSERT sport_id (single source of truth).
+   */
   sportId: string;
+  onSportChange: (sportId: string) => void;
   selectedTeam: TeamSearchRow | null;
   onSelect: (team: TeamSearchRow) => void;
   onSelectClub: (id: string, name: string) => void;
   onCreate: () => void;
   className?: string;
 }
+
+interface SportOption { id: string; nom: string }
 
 interface RawRow {
   id: string;
@@ -108,6 +117,7 @@ const SWIPE_THRESHOLD_PX = 50;
 
 export default function TeamSearchOrCreate({
   sportId,
+  onSportChange,
   selectedTeam,
   onSelect,
   onSelectClub,
@@ -120,6 +130,23 @@ export default function TeamSearchOrCreate({
   const [error, setError] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Sport options for the working-sport <select>. Selector value is
+  // the sportId prop (parent-owned); writes flow through
+  // onSportChange so the parent's workingSportId stays the single
+  // source of truth for team search + umbrella + create. No local
+  // sport state here — that pattern was the propagation gap.
+  const [sportOptions, setSportOptions] = useState<SportOption[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const supabase = createClient();
+      const { data } = await supabase.from("sports").select("id, nom").order("nom");
+      if (cancelled) return;
+      setSportOptions((data ?? []) as SportOption[]);
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   // Pagination + responsive page size.
   const [pageSize, setPageSize] = useState(5);
@@ -343,9 +370,35 @@ export default function TeamSearchOrCreate({
 
   return (
     <div className={`space-y-4 ${className}`}>
-      {/* Name search input. Sport scope is inherited from Profil
-          (sport_principal → sports.id resolved in LeagueCoachLeagueStep
-          and passed as the sportId prop) — no in-step sport override. */}
+      {/* Working-sport selector. Value = the sportId prop
+          (parent's workingSportId, seeded from Profil's
+          sport_principal). Writing back via onSportChange means the
+          same value scopes the team query below, the umbrella's
+          teams-under-club query, AND the sport_id of any team
+          created from here. The club query intentionally does NOT
+          read this — clubs are sport-agnostic by design. */}
+      <div>
+        <label htmlFor="team-search-sport" className={labelCls}>Sport</label>
+        <select
+          id="team-search-sport"
+          value={sportId}
+          onChange={(e) => onSportChange(e.target.value)}
+          className={`${inputCls} appearance-none cursor-pointer`}
+          aria-label="Sport pour la recherche et la création d'équipe"
+        >
+          {sportOptions.length === 0 && (
+            <option value={sportId}>Chargement...</option>
+          )}
+          {sportOptions.map((s) => (
+            <option key={s.id} value={s.id}>{s.nom}</option>
+          ))}
+        </select>
+        <p className="text-[11px] text-[#6B7280] mt-1.5">
+          Le sport de l&apos;équipe que tu veux trouver ou créer. Ne change pas ton sport déclaré.
+        </p>
+      </div>
+
+      {/* Name search input. */}
       <div>
         <label htmlFor="team-search-input" className={labelCls}>Nom de l&apos;équipe</label>
         <input

@@ -2357,6 +2357,17 @@ function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Part
 
   const [sportId, setSportId] = useState<string | null>(null);
   const [sportLoading, setSportLoading] = useState(true);
+  // Working sport — single source of truth shared by ALL three
+  // consumers (team search, umbrella, create form). Seeded once from
+  // the Profil-resolved sportId; the in-step <select> writes back
+  // here via onSportChange so changing it scopes EVERYTHING (team
+  // results + umbrella's teams-under-this-club + the sport_id a new
+  // team is created with). Lifting state to the parent closes the
+  // old propagation gap where a local-to-search selector reached
+  // only the team query, leaving the umbrella + create stuck on the
+  // Profil sportId. Never written back to users.sport /
+  // sport_principal — finish() still reads the declared sport.
+  const [workingSportId, setWorkingSportId] = useState<string>("");
   // Create flow is two sub-steps after the merged search: umbrella →
   // create. The merged team+club search (mode='search') already
   // surfaces matching clubs alongside matching teams — picking a club
@@ -2390,6 +2401,17 @@ function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Part
         setSportLoading(false);
       });
   }, [sportName]);
+
+  // Seed workingSportId once when the Profil resolution lands. After
+  // that, the selector takes over — re-running this effect on
+  // sportId change would clobber the coach's choice if they switched
+  // mid-flow and then back-navigated. Gate on workingSportId being
+  // empty so the seed fires exactly once per mount.
+  useEffect(() => {
+    if (sportId && !workingSportId) {
+      setWorkingSportId(sportId);
+    }
+  }, [sportId, workingSportId]);
 
   // Resume support: if the user already picked/created a team in a
   // previous session and is back at step 1 (e.g. via Précédent),
@@ -2513,7 +2535,12 @@ function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Part
   }
 
   async function handleCreateTeam(formData: TeamFormData) {
-    if (!sportId) {
+    // Working sport drives the new team's sport_id — closes the
+    // propagation gap where the create INSERT used the Profil-
+    // resolved sportId even when the coach had switched the in-step
+    // selector to a different sport.
+    const effectiveSportId = workingSportId || sportId;
+    if (!effectiveSportId) {
       setError("Sport non résolu. Reviens à l'étape 1.");
       return;
     }
@@ -2577,7 +2604,7 @@ function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Part
           division: formData.division,
           gender: formData.gender,
           season: formData.season,
-          sport_id: sportId,
+          sport_id: effectiveSportId,
         })
         .select()
         .single();
@@ -2682,7 +2709,8 @@ function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Part
 
       {mode === "search" && (
         <TeamSearchOrCreate
-          sportId={sportId}
+          sportId={workingSportId || sportId}
+          onSportChange={setWorkingSportId}
           selectedTeam={selectedTeam}
           onSelect={handleJoinExistingTeam}
           onSelectClub={(id, name) => {
@@ -2714,7 +2742,7 @@ function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Part
         <UmbrellaStep
           schoolId={lockedSchoolId}
           schoolName={lockedSchoolName}
-          sportId={sportId}
+          sportId={workingSportId || sportId}
           onSelect={handleJoinExistingTeam}
           onCreate={() => {
             setError(null);
@@ -2733,7 +2761,7 @@ function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Part
 
       {mode === "create" && (
         <TeamCreateForm
-          sportId={sportId}
+          sportId={workingSportId || sportId}
           sportName={sportName}
           onSubmit={handleCreateTeam}
           onCancel={() => {
