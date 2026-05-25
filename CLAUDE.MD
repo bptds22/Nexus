@@ -245,12 +245,28 @@ Follow these instructions exactly. Updated April 2026.
 - Pre-seeded from MEQ open data (Données Québec)
 - Coaches join existing schools, never create them
 
-### Civil Leagues
-- No centralized open data source exists
-- Coach self-declaration populates leagues table organically
+### Civil Leagues & Clubs — data model (May 2026)
+
+**Conceptual model**
+- Civil clubs are CLUBS / CORPORATIONS, not schools. They live in the `schools` table with `type='LIGUE_CIVILE'` for shared plumbing only — do NOT describe them as schools in UI copy, reasoning, or new code.
+- `schools` has NO `sport_id` column. Sport lives ONLY on `teams.sport_id`. Civil clubs are sport-agnostic — any sport's teams can hang under any club. Do NOT add `sport_id` to schools; do NOT sport-filter the club search query.
+- Civil team model: `club (LIGUE_CIVILE schools row) → teams (each carrying name, division, age_group, gender, league as text, sport_id)`. Mirrors the school → teams model.
+
+**Per-sport data reality**
+- **Hockey** — RE-SHAPED from `data/import/elite_civil_leagues.json`. 15 M18 AAA Masculin teams seeded under their existing LIGUE_CIVILE clubs. LHEQ-F deferred (only 2 of 8 franchises publicly named).
+- **Soccer** — COACH-CREATION. ~146 civil clubs seeded from Soccer Québec directory; teams are not centrally published, coaches create theirs via the onboarding flow.
+- **Football** — COACH-CREATION. 40 civil clubs seeded from Football Québec directory (LFMM/MRFL/QBFL/QMFL/LFJMQ-QMJFL/LFQ9/LFFMQ, deduped). No team-level division/age/gender published per club.
+- **Basketball** — COACH-CREATION today. ~32 civil clubs seeded from the regional PDFs (per-club category extraction was garbage with pdfplumber). A re-scrape with better extraction (Adobe PDF Extract API, Camelot lattice mode, or LLM-vision) plus Playwright/Puppeteer for Kreezee-hosted LBQ/CBQ standings is a PARKED future project — would move basketball to re-shaped status.
+
+**Civil onboarding search flow**
+- Sport comes from the Profil step's `sport_principal` (declared sport, persisted to `users.sport`). The step-2 search has a working-sport selector that defaults to the declared sport, is modifiable mid-search, and does NOT write back to `users.sport` / `sport_principal`.
+- The selector's value is OWNED BY THE PARENT (`workingSportId` in `LeagueCoachLeagueStep`) and passed down to ALL three consumers (team search, umbrella, create form) so changing the sport scopes everything coherently. The old local-to-search version had a silent propagation gap where the umbrella + create used the Profil sport even after the coach switched the selector.
+- The merged search surfaces matching TEAMS (sport-filtered) + matching CLUBS (all sports, since clubs are sport-agnostic). Picking a club routes to the umbrella (teams under that club for the working sport). The umbrella's empty state ("no teams in this sport") is the sport-relevance signal for clubs.
+- Centralized vocab: `lib/config/civilVocab.ts` exports `AGE_OPTIONS`, `DIVISION_OPTIONS`, `AUTRE_VALUE`. Mirrors the `pricing.ts` shape (JSDoc + interface + named arrays). The team-create form imports from there — "Autre" on either select reveals a required free-text input whose typed value substitutes for the literal "Autre" on submit.
 
 ### Director Roles
-- Director roles fully removed. Only 4 roles exist: COACH, RECRUTEUR, ATHLETE, ADMIN. School/CÉGEP admin status is determined by the is_school_admin boolean (school vs CÉGEP is inferred from role).
+- Director roles fully removed. The user_role enum has 5 values: COACH, RECRUTEUR, ATHLETE, ADMIN, PARTNER. School/CÉGEP admin status is determined by the is_school_admin boolean (school vs CÉGEP is inferred from role).
+- Platform-level admin elevation (the founder account) is the separate is_platform_admin boolean on users — independent of the role enum. is_school_admin and is_platform_admin can coexist; both default to false.
 - Free Pro/All Star access via is_school_admin flag
 
 ### Two Separate Evaluation Systems — NEVER CONFLATE
@@ -453,7 +469,7 @@ If a field is empty (coach used simplified), show nothing — no placeholder, ju
 
 ### RPRP (Responsable de la Protection des Renseignements Personnels)
 - Designated: Bruno-Philippe Desfosses Simard
-- Contact: confidentialite@nexus-sport.ca
+- Contact: confidentialite@nexussports.ca
 - Address: 856 Basile-Routhier, Repentigny, Quebec
 
 ### Key Decisions
@@ -502,7 +518,7 @@ If a field is empty (coach used simplified), show nothing — no placeholder, ju
 
 - **Total pages:** ~70 (56 across portals + 14 admin)
 - **Portals:** Coach, Recruiter (each with Free/Pro/All Star tiers)
-- **Director portals removed:** Only COACH, RECRUTEUR, ATHLETE, ADMIN roles exist; school/CÉGEP admin status is a boolean flag (is_school_admin) on a coach or recruiter user
+- **Director portals removed:** user_role enum has 5 values (COACH, RECRUTEUR, ATHLETE, ADMIN, PARTNER); school/CÉGEP admin status is a boolean flag (is_school_admin) on a coach or recruiter user. Platform admin (the founder) is the separate is_platform_admin boolean.
 - **Admin portal:** 14 pages, Phase 2A/2B/2C prioritization
 
 ---
