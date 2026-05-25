@@ -394,7 +394,7 @@ export default function TeamSearchOrCreate({
           ))}
         </select>
         <p className="text-[11px] text-[#6B7280] mt-1.5">
-          Le sport de l&apos;équipe que tu veux trouver ou créer. Ne change pas ton sport déclaré.
+          Pré-rempli depuis ton profil — change-le pour chercher ou créer une équipe dans un autre sport. Ne change pas ton sport déclaré.
         </p>
       </div>
 
