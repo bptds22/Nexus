@@ -1,235 +1,474 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import NexusLogo from "@/components/ui/NexusLogo";
+import { useState, useEffect, useRef, ReactNode } from "react";
 import Link from "next/link";
 import MarketingNav from "@/components/marketing/MarketingNav";
 import PlaybookBackground from "../components/PlaybookBackground";
+import Footer from "@/components/marketing/Footer";
 
 /* ─────────────────────────────────────────────────────────────────
-   Nexus — Conditions d'utilisation
-   Same visual language as confidentialite page:
-   dark navy, playbook bg, Montserrat headings, red accents,
-   sidebar TOC with scroll-spy.
+   Nexus — Conditions d'utilisation (Loi 25 aligned, v2.0)
+   15 sections + subsections, callouts, code-of-conduct lists.
 ───────────────────────────────────────────────────────────────── */
 
 const label = "text-[10px] font-bold tracking-[0.25em] uppercase";
 
-const SOCIALS = [
-  {
-    name: "Instagram",
-    href: "#",
-    d: "M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z",
-  },
-  {
-    name: "Facebook",
-    href: "#",
-    d: "M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z",
-  },
-  {
-    name: "YouTube",
-    href: "#",
-    d: "M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.546 12 3.546 12 3.546s-7.505 0-9.377.504A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.504 9.376.504 9.376.504s7.505 0 9.377-.504a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z",
-  },
-  {
-    name: "TikTok",
-    href: "#",
-    d: "M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z",
-  },
+/* ── Block model ─────────────────────────────────────────────── */
+
+type Block =
+  | { type: "p"; text: string }
+  | { type: "bullets"; items: string[] }
+  | { type: "callout"; tone: "red" | "yellow" | "green" | "blue"; title?: string; text: string }
+  | { type: "contact-card"; rows: { label: string; value: string; href?: string }[] }
+  | { type: "subsection"; id: string; title: string; blocks: Block[] };
+
+type Section = { id: string; title: string; emphasized?: boolean; blocks: Block[] };
+
+const RPRP_CONTACT_ROWS: { label: string; value: string; href?: string }[] = [
+  { label: "RPRP", value: "Bruno-Philippe Taillon Desfossés Simard" },
+  { label: "Courriel", value: "confidentialite@nexussports.ca", href: "mailto:confidentialite@nexussports.ca" },
+  { label: "Téléphone", value: "438-498-0494", href: "tel:4384980494" },
+  { label: "Adresse", value: "856, rue Basile-Routhier, Repentigny (Québec) J6A 7Y4" },
 ];
 
 /* ── Terms sections ──────────────────────────────────────────── */
 
-const SECTIONS = [
+const SECTIONS: Section[] = [
   {
     id: "acceptation",
     title: "Acceptation des conditions",
-    content: [
-      "En accédant à la plateforme Nexus (ci-après « la plateforme », « nous », « notre »), vous acceptez d'être lié par les présentes conditions d'utilisation. Si vous n'acceptez pas ces conditions, veuillez ne pas utiliser la plateforme.",
-      "Ces conditions constituent un accord juridique entre vous et Nexus. Votre utilisation continue de la plateforme après la publication de modifications constitue votre acceptation des conditions mises à jour.",
+    blocks: [
+      { type: "p", text: "En accédant à la plateforme Nexus, vous acceptez d'être lié par les présentes conditions d'utilisation. Ces conditions constituent un accord juridique entre vous et Nexus. Votre utilisation continue après la publication de modifications constitue votre acceptation des conditions mises à jour." },
+      { type: "p", text: "Les présentes conditions sont complétées par notre Politique de confidentialité, qui décrit nos pratiques en matière de protection des renseignements personnels conformément à la Loi 25 du Québec." },
     ],
   },
   {
     id: "admissibilite",
     title: "Admissibilité",
-    content: [
-      "Pour créer un compte sur Nexus, vous devez :",
-    ],
-    bullets: [
-      "Être âgé d'au moins 18 ans ou avoir le consentement d'un parent ou tuteur légal",
-      "Être affilié à une école secondaire ou un programme CÉGEP du Québec en tant qu'entraîneur, directeur ou recruteur",
-      "Fournir des renseignements exacts et complets lors de l'inscription",
-      "Disposer de l'autorité nécessaire pour agir au nom de votre organisation, le cas échéant",
-    ],
-    after: [
-      "Les profils d'étudiants-athlètes sont créés et gérés par des entraîneurs autorisés. Les athlètes mineurs ne disposent pas de compte individuel dans la version actuelle de la plateforme.",
+    blocks: [
+      { type: "p", text: "Pour créer un compte sur Nexus, vous devez :" },
+      {
+        type: "bullets",
+        items: [
+          "Être âgé d'au moins 18 ans ou, si vous êtes un athlète de 14 à 17 ans, avoir obtenu le consentement de votre parent ou tuteur légal",
+          "Être affilié à une école secondaire ou un programme CÉGEP du Québec",
+          "Fournir des renseignements exacts et complets",
+          "Disposer de l'autorité nécessaire pour agir au nom de votre organisation, le cas échéant",
+          "Être rattaché à un établissement ayant signé une entente de sous-traitance avec Nexus (Loi 25)",
+        ],
+      },
+      { type: "p", text: "Les profils d'étudiants-athlètes mineurs sont créés et gérés par des entraîneurs autorisés. Un athlète de 14 à 17 ans peut également initier la création de son propre profil, sous réserve du consentement parental." },
     ],
   },
   {
     id: "comptes",
     title: "Comptes utilisateurs",
-    content: [
-      "Vous êtes responsable de maintenir la confidentialité de vos identifiants de connexion et de toute activité effectuée sous votre compte.",
+    blocks: [
+      { type: "p", text: "Vous êtes responsable de maintenir la confidentialité de vos identifiants de connexion et de toute activité effectuée sous votre compte." },
+      {
+        type: "bullets",
+        items: [
+          "Ne partagez pas vos identifiants avec des tiers",
+          "Informez-nous immédiatement de toute utilisation non autorisée de votre compte",
+          "Vous êtes responsable de la véracité des informations associées à votre compte",
+          "Nexus se réserve le droit de suspendre ou de supprimer tout compte en cas de violation des présentes conditions",
+        ],
+      },
+      {
+        type: "callout",
+        tone: "blue",
+        title: "Contrat institutionnel Loi 25",
+        text: "L'accès aux données d'athlètes est conditionnel à la signature d'une entente de sous-traitance par votre établissement. Sans cette entente, votre compte est actif mais les fonctionnalités de consultation des profils d'athlètes sont désactivées.",
+      },
     ],
-    bullets: [
-      "Ne partagez pas vos identifiants de connexion avec des tiers",
-      "Informez-nous immédiatement de toute utilisation non autorisée de votre compte",
-      "Vous êtes responsable de la véracité des informations associées à votre compte",
-      "Nexus se réserve le droit de suspendre ou de supprimer tout compte en cas de violation des présentes conditions",
+  },
+  {
+    id: "rseq",
+    title: "Alignement RSEQ et sport étudiant",
+    emphasized: true,
+    blocks: [
+      {
+        type: "callout",
+        tone: "green",
+        text: "Nexus s'inscrit dans l'écosystème du sport étudiant québécois et s'engage à respecter les principes de la Politique en matière de protection de l'intégrité du RSEQ (mise à jour juin 2025). Tous les utilisateurs de Nexus sont tenus de se conformer aux codes de conduite applicables du RSEQ.",
+      },
+      {
+        type: "subsection",
+        id: "rseq-communication",
+        title: "4.1 — Communication avec les mineurs",
+        blocks: [
+          {
+            type: "callout",
+            tone: "red",
+            title: "Principe coach-as-intermediary",
+            text: "Conformément à la Politique d'intégrité du RSEQ, toute communication électronique avec un participant de moins de 18 ans doit inclure les parents. Nexus applique ce principe.",
+          },
+          {
+            type: "bullets",
+            items: [
+              "Aucun recruteur ne peut communiquer directement avec un athlète mineur. Toute communication passe par l'entraîneur.",
+              "L'entraîneur agit comme intermédiaire (modèle coach-as-intermediary du RSEQ).",
+              "Les coordonnées personnelles de l'athlète mineur ne sont jamais communiquées aux recruteurs sans consentement parental spécifique additionnel.",
+              "Les messages de groupe sont privilégiés par rapport aux messages privés.",
+            ],
+          },
+        ],
+      },
+      {
+        type: "subsection",
+        id: "rseq-integrite",
+        title: "4.2 — Protection de l'intégrité",
+        blocks: [
+          { type: "p", text: "Nexus adopte les principes fondamentaux de la Politique d'intégrité du RSEQ. Aucune forme d'abus, de harcèlement, de négligence ou de violence n'est tolérée sur la Plateforme. Tout manquement entraîne la suspension immédiate du compte et le signalement à l'établissement d'attache." },
+        ],
+      },
+      {
+        type: "subsection",
+        id: "rseq-signalement",
+        title: "4.3 — Obligation de signalement",
+        blocks: [
+          {
+            type: "callout",
+            tone: "red",
+            title: "Loi sur la protection de la jeunesse",
+            text: "Conformément à la Loi sur la protection de la jeunesse du Québec, toute personne ayant des motifs raisonnables de soupçonner une situation d'abus sexuel ou physique commis sur un mineur doit le signaler au Directeur de la protection de la jeunesse (DPJ), peu importe l'auteur présumé. DPJ : 1-800-361-5310.",
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: "codes",
+    title: "Codes de conduite par rôle",
+    blocks: [
+      { type: "p", text: "Chaque rôle sur la Plateforme s'engage à respecter le code de conduite suivant, en complément des codes RSEQ et des règles propres à son établissement." },
+      {
+        type: "subsection",
+        id: "codes-entraineurs",
+        title: "5.1 — Entraîneurs",
+        blocks: [
+          {
+            type: "bullets",
+            items: [
+              "S'assurer du consentement parental valide avant d'activer le profil d'un athlète mineur",
+              "Saisir des données exactes et à jour, provenant de sources institutionnelles fiables",
+              "Ne pas évaluer un athlète sur des critères discriminatoires (origine, religion, orientation, etc.)",
+              "Agir comme intermédiaire neutre dans toute communication entre recruteur et athlète mineur",
+              "Signaler tout incident, manquement éthique ou violation des droits d'un athlète",
+              "Ne pas exploiter sa position pour obtenir des avantages personnels d'un recruteur",
+            ],
+          },
+        ],
+      },
+      {
+        type: "subsection",
+        id: "codes-recruteurs",
+        title: "5.2 — Recruteurs",
+        blocks: [
+          {
+            type: "bullets",
+            items: [
+              "Ne consulter les profils d'athlètes qu'aux fins de recrutement pour son CÉGEP d'attache",
+              "Ne jamais contacter directement un athlète mineur — toute communication passe par l'entraîneur",
+              "Ne pas effectuer d'extraction massive (capture d'écran systématique, export, scraping) des données d'athlètes",
+              "Respecter les statuts du pipeline et ne pas faire pression sur un athlète déjà engagé ailleurs",
+              "Évaluer les athlètes sur la base de leurs compétences sportives et académiques, sans discrimination",
+              "Respecter le droit de l'athlète au retrait à toute étape du processus de recrutement",
+            ],
+          },
+        ],
+      },
+      {
+        type: "subsection",
+        id: "codes-directeurs-ecoles",
+        title: "5.3 — Directeurs (écoles secondaires)",
+        blocks: [
+          {
+            type: "bullets",
+            items: [
+              "S'assurer que l'école a signé l'entente de sous-traitance Loi 25 avant toute utilisation",
+              "Désigner et soutenir un RPRP d'établissement",
+              "Encadrer les entraîneurs de son école dans le respect du consentement parental et du code de conduite",
+              "Recevoir et traiter les plaintes ou signalements provenant des parents ou athlètes",
+              "Veiller à la révocation des accès des entraîneurs quittant l'établissement",
+            ],
+          },
+        ],
+      },
+      {
+        type: "subsection",
+        id: "codes-directeurs-cegeps",
+        title: "5.4 — Directeurs (CÉGEPs)",
+        blocks: [
+          {
+            type: "bullets",
+            items: [
+              "S'assurer que le CÉGEP a signé l'entente de sous-traitance Loi 25 avant toute utilisation",
+              "Désigner et soutenir un RPRP d'établissement",
+              "Encadrer les recruteurs de son CÉGEP dans le respect du modèle coach-as-intermediary",
+              "Vérifier que les communications avec les athlètes mineurs passent toujours par l'entraîneur",
+              "Recevoir et traiter les plaintes ou signalements provenant des écoles ou des familles",
+            ],
+          },
+        ],
+      },
+      {
+        type: "subsection",
+        id: "codes-athletes",
+        title: "5.5 — Athlètes",
+        blocks: [
+          {
+            type: "bullets",
+            items: [
+              "Fournir des renseignements exacts (résultats scolaires, données physiques, statistiques)",
+              "Ne pas créer plusieurs comptes ou se faire passer pour quelqu'un d'autre",
+              "Respecter le droit à la vie privée des autres athlètes",
+              "Signaler à l'entraîneur ou au RPRP tout comportement inapproprié d'un utilisateur de la Plateforme",
+              "Comprendre que le retrait du consentement entraîne la désactivation du profil sans préjudice",
+            ],
+          },
+        ],
+      },
     ],
   },
   {
     id: "utilisation",
     title: "Utilisation acceptable",
-    content: [
-      "En utilisant Nexus, vous vous engagez à respecter les règles suivantes :",
-    ],
-    bullets: [
-      "Utiliser la plateforme uniquement à des fins de recrutement sportif légitime",
-      "Ne pas publier de contenu faux, trompeur, diffamatoire ou offensant",
-      "Ne pas tenter d'accéder à des données ou fonctionnalités auxquelles vous n'avez pas droit",
-      "Ne pas utiliser de robots, scripts ou outils automatisés pour extraire des données de la plateforme",
-      "Ne pas contourner les mesures de sécurité ou les restrictions d'accès",
-      "Respecter la vie privée des athlètes, en particulier celle des mineurs",
-      "Ne pas utiliser les coordonnées obtenues via la plateforme à des fins commerciales ou publicitaires non sollicitées",
-    ],
-    after: [
-      "Toute violation de ces règles peut entraîner la suspension ou la suppression de votre compte, sans préavis.",
+    blocks: [
+      { type: "p", text: "En utilisant Nexus, vous vous engagez à respecter les règles suivantes :" },
+      {
+        type: "bullets",
+        items: [
+          "Utiliser la Plateforme uniquement à des fins de recrutement sportif légitime",
+          "Ne pas publier de contenu faux, trompeur, diffamatoire ou offensant",
+          "Ne pas tenter d'accéder à des données ou fonctionnalités auxquelles vous n'avez pas droit",
+          "Ne pas utiliser de robots, scripts ou outils automatisés pour extraire des données de la Plateforme",
+          "Ne pas contourner les mesures de sécurité ou les restrictions d'accès",
+          "Respecter la vie privée des athlètes, en particulier celle des mineurs",
+          "Ne pas utiliser les coordonnées obtenues via la Plateforme à des fins commerciales ou publicitaires non sollicitées",
+        ],
+      },
+      { type: "p", text: "Toute violation de ces règles peut entraîner la suspension ou la suppression de votre compte, sans préavis, ainsi qu'un signalement à votre établissement d'attache." },
     ],
   },
   {
     id: "contenu",
     title: "Contenu et soumissions",
-    content: [
-      "En soumettant du contenu sur Nexus (profils d'athlètes, statistiques, liens vidéo, commentaires), vous déclarez que :",
-    ],
-    bullets: [
-      "Vous disposez des droits nécessaires pour publier ce contenu",
-      "Le contenu est exact et ne viole aucun droit de tiers",
-      "Vous accordez à Nexus une licence non exclusive pour afficher et distribuer ce contenu dans le cadre du fonctionnement de la plateforme",
-      "Les profils d'athlètes mineurs sont soumis avec le consentement approprié de l'école et des parents ou tuteurs",
-    ],
-    after: [
-      "Nexus se réserve le droit de retirer tout contenu qui viole les présentes conditions ou qui est jugé inapproprié, sans préavis ni obligation de justification.",
+    blocks: [
+      { type: "p", text: "En soumettant du contenu sur Nexus (profils d'athlètes, statistiques, liens vidéo, commentaires), vous déclarez que :" },
+      {
+        type: "bullets",
+        items: [
+          "Vous disposez des droits nécessaires pour publier ce contenu",
+          "Le contenu est exact et ne viole aucun droit de tiers",
+          "Vous accordez à Nexus une licence non exclusive pour afficher et distribuer ce contenu dans le cadre du fonctionnement de la Plateforme",
+          "Les profils d'athlètes mineurs sont soumis avec le consentement approprié de l'école et des parents ou tuteurs",
+        ],
+      },
+      { type: "p", text: "Nexus se réserve le droit de retirer tout contenu qui viole les présentes conditions ou qui est jugé inapproprié, sans préavis ni obligation de justification." },
     ],
   },
   {
     id: "disponibilite",
-    title: "Disponibilité de la plateforme",
-    content: [
-      "Nexus s'efforce de maintenir la plateforme accessible en tout temps. Cependant, nous ne garantissons pas une disponibilité ininterrompue.",
-    ],
-    bullets: [
-      "La plateforme peut être temporairement indisponible pour maintenance, mises à jour ou améliorations",
-      "Des interruptions imprévues peuvent survenir en raison de problèmes techniques, de serveurs ou de réseau",
-      "Nexus n'est pas responsable des pertes ou inconvénients résultant d'une indisponibilité temporaire",
+    title: "Disponibilité",
+    blocks: [
+      { type: "p", text: "Nexus s'efforce de maintenir la Plateforme accessible en tout temps. Cependant, nous ne garantissons pas une disponibilité ininterrompue." },
+      {
+        type: "bullets",
+        items: [
+          "La Plateforme peut être temporairement indisponible pour maintenance, mises à jour ou améliorations",
+          "Des interruptions imprévues peuvent survenir en raison de problèmes techniques, de serveurs ou de réseau",
+          "Nexus n'est pas responsable des pertes ou inconvénients résultant d'une indisponibilité temporaire",
+        ],
+      },
     ],
   },
   {
     id: "propriete",
     title: "Propriété intellectuelle",
-    content: [
-      "La plateforme Nexus, incluant son design, son code source, ses logos, sa marque et son contenu original, est protégée par les lois sur la propriété intellectuelle.",
-    ],
-    bullets: [
-      "Vous ne pouvez pas copier, reproduire, distribuer ou créer des oeuvres dérivées à partir du contenu de la plateforme sans autorisation écrite",
-      "Les marques de commerce « Nexus » et « WeLead » sont la propriété exclusive de leurs détenteurs respectifs",
-      "Le contenu soumis par les utilisateurs reste la propriété de ses auteurs, sous réserve de la licence accordée à Nexus",
-    ],
-  },
-  {
-    id: "tiers",
-    title: "Liens et services tiers",
-    content: [
-      "La plateforme peut contenir des liens vers des sites ou services tiers (Hudl, YouTube, réseaux sociaux, etc.).",
-    ],
-    bullets: [
-      "Nexus n'est pas responsable du contenu, des pratiques de confidentialité ou de la disponibilité des sites tiers",
-      "L'inclusion d'un lien ne constitue pas une approbation du site ou service tiers",
-      "Votre utilisation de services tiers est soumise à leurs propres conditions d'utilisation",
+    blocks: [
+      { type: "p", text: "La Plateforme Nexus, incluant son design, son code source, ses logos, sa marque et son contenu original, est protégée par les lois sur la propriété intellectuelle." },
+      {
+        type: "bullets",
+        items: [
+          "Vous ne pouvez pas copier, reproduire, distribuer ou créer des œuvres dérivées à partir du contenu de la Plateforme sans autorisation écrite",
+          "La marque de commerce « Nexus » est la propriété exclusive de ses détenteurs",
+          "Le contenu soumis par les utilisateurs reste la propriété de ses auteurs, sous réserve de la licence accordée à Nexus pour le fonctionnement de la Plateforme",
+        ],
+      },
     ],
   },
   {
     id: "avertissements",
     title: "Avertissements et exclusions",
-    content: [
-      "La plateforme est fournie « telle quelle » et « selon disponibilité ». Nexus ne fait aucune déclaration ou garantie, expresse ou implicite, concernant :",
-    ],
-    bullets: [
-      "L'exactitude, la fiabilité ou l'exhaustivité des profils d'athlètes ou des statistiques",
-      "L'adéquation de la plateforme à vos besoins spécifiques de recrutement",
-      "L'absence d'erreurs, de virus ou de composants nuisibles",
-      "Les résultats que vous pourriez obtenir en utilisant la plateforme",
-    ],
-    after: [
-      "Les décisions de recrutement restent entièrement sous votre responsabilité. Nexus agit uniquement comme outil de mise en relation et ne garantit aucun résultat.",
+    blocks: [
+      { type: "p", text: "La Plateforme est fournie « telle quelle » et « selon disponibilité ». Nexus ne fait aucune déclaration ou garantie, expresse ou implicite, concernant :" },
+      {
+        type: "bullets",
+        items: [
+          "L'exactitude, la fiabilité ou l'exhaustivité des profils d'athlètes ou des statistiques",
+          "L'adéquation de la Plateforme à vos besoins spécifiques de recrutement",
+          "L'absence d'erreurs, de virus ou de composants nuisibles",
+          "Les résultats que vous pourriez obtenir en utilisant la Plateforme",
+        ],
+      },
+      { type: "p", text: "Les décisions de recrutement restent entièrement sous votre responsabilité. Nexus agit uniquement comme outil de mise en relation et ne garantit aucun résultat." },
     ],
   },
   {
     id: "responsabilite",
     title: "Limitation de responsabilité",
-    content: [
-      "Dans les limites permises par la loi applicable, Nexus et ses dirigeants, employés, partenaires et fournisseurs ne seront en aucun cas responsables de :",
-    ],
-    bullets: [
-      "Tout dommage indirect, accessoire, spécial, consécutif ou punitif",
-      "Toute perte de données, de revenus, de profits ou d'opportunités",
-      "Tout dommage résultant de l'utilisation ou de l'impossibilité d'utiliser la plateforme",
-      "Tout dommage résultant d'un accès non autorisé à vos données ou transmissions",
-    ],
-    after: [
-      "La responsabilité totale de Nexus envers vous ne dépassera en aucun cas le montant que vous avez payé pour l'utilisation de la plateforme au cours des douze (12) mois précédant la réclamation.",
+    blocks: [
+      { type: "p", text: "Dans les limites permises par la loi applicable, Nexus et ses dirigeants, employés, partenaires et fournisseurs ne seront en aucun cas responsables de :" },
+      {
+        type: "bullets",
+        items: [
+          "Tout dommage indirect, accessoire, spécial, consécutif ou punitif",
+          "Toute perte de données, de revenus, de profits ou d'opportunités",
+          "Tout dommage résultant de l'utilisation ou de l'impossibilité d'utiliser la Plateforme",
+          "Tout dommage résultant d'un accès non autorisé à vos données ou transmissions, sauf en cas de faute prouvée de Nexus",
+        ],
+      },
+      { type: "p", text: "La responsabilité totale de Nexus envers vous ne dépassera en aucun cas le montant que vous avez payé pour l'utilisation de la Plateforme au cours des douze (12) mois précédant la réclamation." },
     ],
   },
   {
-    id: "resiliation",
-    title: "Résiliation",
-    content: [
-      "Vous pouvez résilier votre compte à tout moment en nous contactant directement. Nexus se réserve également le droit de résilier ou de suspendre votre accès dans les cas suivants :",
-    ],
-    bullets: [
-      "Violation des présentes conditions d'utilisation",
-      "Activité frauduleuse ou comportement abusif sur la plateforme",
-      "Inactivité prolongée du compte (plus de 24 mois)",
-      "Demande d'une autorité compétente",
-    ],
-    after: [
-      "En cas de résiliation, vos données seront traitées conformément à notre politique de confidentialité. Les profils d'athlètes associés à votre compte pourront être transférés à un autre entraîneur autorisé de votre organisation.",
+    id: "sanctions",
+    title: "Sanctions et résiliation",
+    blocks: [
+      { type: "p", text: "Vous pouvez résilier votre compte à tout moment en nous contactant directement. Nexus se réserve également le droit de résilier ou de suspendre votre accès dans les cas suivants :" },
+      {
+        type: "bullets",
+        items: [
+          "Violation des présentes conditions d'utilisation ou du code de conduite applicable",
+          "Activité frauduleuse, harcèlement ou comportement abusif sur la Plateforme",
+          "Manquement à l'obligation d'obtenir le consentement parental valide",
+          "Inactivité prolongée du compte (plus de 24 mois)",
+          "Demande d'une autorité compétente",
+        ],
+      },
+      { type: "p", text: "En cas de résiliation, vos données seront traitées conformément à notre Politique de confidentialité. Les profils d'athlètes associés à votre compte pourront être transférés à un autre entraîneur autorisé de votre organisation, sous réserve du consentement parental." },
     ],
   },
   {
     id: "modifications",
-    title: "Modifications des conditions",
-    content: [
-      "Nexus se réserve le droit de modifier les présentes conditions d'utilisation à tout moment.",
-      "En cas de modification substantielle, nous vous en informerons par courriel ou par un avis visible sur la plateforme au moins 30 jours avant l'entrée en vigueur des nouvelles conditions.",
-      "La date de dernière mise à jour sera indiquée en haut de cette page. Votre utilisation continue de la plateforme après l'entrée en vigueur des modifications constitue votre acceptation des nouvelles conditions.",
+    title: "Modifications",
+    blocks: [
+      { type: "p", text: "Nexus se réserve le droit de modifier les présentes conditions d'utilisation à tout moment." },
+      { type: "p", text: "En cas de modification substantielle, nous vous en informerons par courriel ou par un avis visible sur la Plateforme au moins 30 jours avant l'entrée en vigueur des nouvelles conditions." },
+      { type: "p", text: "La date de dernière mise à jour figure en haut de cette page. Votre utilisation continue de la Plateforme après l'entrée en vigueur des modifications constitue votre acceptation des nouvelles conditions." },
     ],
   },
   {
     id: "loi",
     title: "Loi applicable",
-    content: [
-      "Les présentes conditions sont régies par les lois de la province de Québec et les lois fédérales du Canada qui s'y appliquent.",
-      "Tout litige découlant des présentes conditions ou de l'utilisation de la plateforme sera soumis à la compétence exclusive des tribunaux de la province de Québec, district de Montréal.",
-      "Si une disposition des présentes conditions est jugée invalide ou inapplicable, les autres dispositions demeureront pleinement en vigueur.",
+    blocks: [
+      { type: "p", text: "Les présentes conditions sont régies par les lois de la province de Québec et les lois fédérales du Canada qui s'y appliquent." },
+      { type: "p", text: "Tout litige découlant des présentes conditions ou de l'utilisation de la Plateforme sera soumis à la compétence exclusive des tribunaux de la province de Québec, district de Montréal." },
+      { type: "p", text: "Si une disposition des présentes conditions est jugée invalide ou inapplicable, les autres dispositions demeureront pleinement en vigueur." },
     ],
   },
   {
     id: "contact",
     title: "Nous contacter",
-    content: [
-      "Pour toute question concernant les présentes conditions d'utilisation, vous pouvez nous contacter :",
-    ],
-    bullets: [
-      "Par courriel : info@welead.ca",
-      "Par la page de contact de la plateforme",
-    ],
-    after: [
-      "Nous nous engageons à répondre à toute demande dans un délai de 30 jours ouvrables.",
+    blocks: [
+      { type: "p", text: "Pour toute question concernant les présentes conditions d'utilisation, vous pouvez nous contacter :" },
+      { type: "contact-card", rows: RPRP_CONTACT_ROWS },
+      { type: "p", text: "Nous nous engageons à répondre à toute demande dans un délai de 30 jours ouvrables." },
     ],
   },
 ];
+
+/* ── Block renderer ──────────────────────────────────────────── */
+
+function renderBlocks(blocks: Block[]): ReactNode {
+  return blocks.map((block, i) => {
+    switch (block.type) {
+      case "p":
+        return (
+          <p key={i} className="font-sans text-sm text-[#C4CDD8] leading-relaxed mb-4">
+            {block.text}
+          </p>
+        );
+
+      case "bullets":
+        return (
+          <ul key={i} className="flex flex-col gap-3 my-5 pl-1">
+            {block.items.map((b, bi) => (
+              <li key={bi} className="flex items-start gap-3">
+                <span className="w-5 h-px bg-wl-red mt-2.5 flex-shrink-0" />
+                <span className="font-sans text-sm text-[#9AA3B2] leading-relaxed">{b}</span>
+              </li>
+            ))}
+          </ul>
+        );
+
+      case "callout": {
+        const tones = {
+          red: { border: "border-l-wl-red", bg: "bg-wl-red/10", text: "text-wl-red" },
+          yellow: { border: "border-l-[#F59E0B]", bg: "bg-[#F59E0B]/10", text: "text-[#F59E0B]" },
+          green: { border: "border-l-[#22C55E]", bg: "bg-[#22C55E]/10", text: "text-[#22C55E]" },
+          blue: { border: "border-l-[#3B82F6]", bg: "bg-[#3B82F6]/10", text: "text-[#3B82F6]" },
+        }[block.tone];
+        return (
+          <div
+            key={i}
+            className={`my-5 border-l-4 ${tones.border} ${tones.bg} px-5 py-4 rounded-r`}
+          >
+            {block.title && (
+              <div className={`${label} ${tones.text} mb-2`}>{block.title}</div>
+            )}
+            <p className="font-sans text-sm text-[#E5E7EB] leading-relaxed">
+              {block.text}
+            </p>
+          </div>
+        );
+      }
+
+      case "contact-card":
+        return (
+          <div
+            key={i}
+            className="my-5 bg-[#0A1428] border border-[#1E2D4A] rounded-md p-5"
+          >
+            <dl className="grid grid-cols-1 sm:grid-cols-[140px_1fr] gap-y-3 gap-x-4">
+              {block.rows.map((r, ri) => (
+                <div key={ri} className="contents">
+                  <dt className={`${label} text-[#475569] pt-0.5`}>{r.label}</dt>
+                  <dd className="font-sans text-sm text-[#E5E7EB] leading-relaxed">
+                    {r.href ? (
+                      <a href={r.href} className="hover:text-wl-red transition-colors">
+                        {r.value}
+                      </a>
+                    ) : (
+                      r.value
+                    )}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        );
+
+      case "subsection":
+        return (
+          <section
+            key={i}
+            id={block.id}
+            className="mt-8 pt-4 border-t border-[#1E2D4A]/60 scroll-mt-24"
+          >
+            <h3 className="font-head font-black text-base text-white uppercase tracking-tight mb-4">
+              {block.title}
+            </h3>
+            {renderBlocks(block.blocks)}
+          </section>
+        );
+
+      default:
+        return null;
+    }
+  });
+}
 
 /* ── Component ───────────────────────────────────────────────── */
 
@@ -237,7 +476,6 @@ export default function ConditionsPage() {
   const [activeSection, setActiveSection] = useState(SECTIONS[0].id);
   const sectionRefs = useRef<Map<string, IntersectionObserverEntry>>(new Map());
 
-  /* Track which section is currently in view via IntersectionObserver */
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -290,12 +528,12 @@ export default function ConditionsPage() {
             <span className="text-wl-red">d&apos;utilisation</span>
           </h1>
 
-          <p className="font-sans text-base text-[#9AA3B2] leading-relaxed max-w-[520px] mx-auto mb-4">
-            Les présentes conditions régissent votre utilisation de la plateforme Nexus. En créant un compte ou en utilisant nos services, vous acceptez ces conditions.
+          <p className="font-sans text-base text-[#9AA3B2] leading-relaxed max-w-[560px] mx-auto mb-4">
+            Règles d&apos;utilisation et d&apos;accès à la plateforme Nexus
           </p>
 
           <p className={`${label} text-[#475569] mt-4`}>
-            Dernière mise à jour : 6 mars 2026
+            Dernière mise à jour : Mars 2026 · Version 2.0
           </p>
 
         </div>
@@ -322,10 +560,10 @@ export default function ConditionsPage() {
                     <a
                       key={s.id}
                       href={`#${s.id}`}
-                      className={`group flex items-center gap-3 py-2 transition-colors duration-300 ${
+                      className={`group flex items-center gap-3 py-2 transition-colors duration-300 border-l-2 pl-3 -ml-3 ${
                         activeSection === s.id
-                          ? "text-wl-red"
-                          : "text-[#9AA3B2] hover:text-white"
+                          ? "text-wl-red border-wl-red"
+                          : "text-[#9AA3B2] hover:text-white border-transparent"
                       }`}
                     >
                       <span className={`${label} w-6 flex-shrink-0 ${
@@ -367,7 +605,9 @@ export default function ConditionsPage() {
                 <article
                   key={section.id}
                   id={section.id}
-                  className="nx-policy-section scroll-mt-24 pb-12 mb-12 border-b border-[#1E2D4A] last:border-b-0 last:mb-0 last:pb-0"
+                  className={`nx-policy-section scroll-mt-24 pb-12 mb-12 border-b border-[#1E2D4A] last:border-b-0 last:mb-0 last:pb-0 ${
+                    section.emphasized ? "border-l-4 border-l-[#F59E0B] pl-6" : ""
+                  }`}
                 >
                   {/* Section number + title */}
                   <div className="flex items-center gap-4 mb-6">
@@ -379,33 +619,7 @@ export default function ConditionsPage() {
                     </h2>
                   </div>
 
-                  {/* Paragraphs */}
-                  {section.content.map((p, pi) => (
-                    <p key={pi} className="font-sans text-sm text-[#C4CDD8] leading-relaxed mb-4">
-                      {p}
-                    </p>
-                  ))}
-
-                  {/* Bullet list */}
-                  {section.bullets && (
-                    <ul className="flex flex-col gap-3 my-5 pl-1">
-                      {section.bullets.map((b, bi) => (
-                        <li key={bi} className="flex items-start gap-3">
-                          <span className="w-5 h-px bg-wl-red mt-2.5 flex-shrink-0" />
-                          <span className="font-sans text-sm text-[#9AA3B2] leading-relaxed">
-                            {b}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-
-                  {/* After-bullets paragraphs */}
-                  {section.after?.map((p, pi) => (
-                    <p key={pi} className="font-sans text-sm text-[#C4CDD8] leading-relaxed mt-4">
-                      {p}
-                    </p>
-                  ))}
+                  {renderBlocks(section.blocks)}
                 </article>
               ))}
             </div>
@@ -427,12 +641,12 @@ export default function ConditionsPage() {
           <div>
             <div className={`${label} text-wl-red mb-3`}>Des questions?</div>
             <h2 className="nx-display text-4xl font-black text-white uppercase leading-tight">
-              Contacte-nous
+              Contactez-nous
             </h2>
           </div>
           <div className="flex gap-3 flex-shrink-0">
-            <a href="mailto:info@welead.ca" className="h-12 px-8 bg-wl-red text-white font-head font-black text-xs uppercase tracking-widest hover:bg-wl-red-hover transition-colors hover:shadow-[0_8px_28px_rgba(232,72,72,0.38)] hover:-translate-y-0.5 inline-flex items-center">
-              info@welead.ca
+            <a href="mailto:confidentialite@nexussports.ca" className="h-12 px-8 bg-wl-red text-white font-head font-black text-xs uppercase tracking-widest hover:bg-wl-red-hover transition-colors hover:shadow-[0_8px_28px_rgba(232,72,72,0.38)] hover:-translate-y-0.5 inline-flex items-center">
+              confidentialite@nexussports.ca
             </a>
             <Link
               href="/"
@@ -444,44 +658,7 @@ export default function ConditionsPage() {
         </div>
       </section>
 
-      {/* ══════════════════════════════════════════
-          FOOTER
-      ══════════════════════════════════════════ */}
-      <footer className="bg-[#030609]/80 border-t border-[#1E2D4A]">
-        <div className="max-w-6xl mx-auto px-6 pt-10 pb-6">
-
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6 pb-6 border-b border-[#1E2D4A]">
-
-            <div className="flex items-center gap-3">
-              <NexusLogo variant="white" height={22} href="/" className="opacity-80" />
-              <span className={`${label} text-[#475569]`}>
-                Construit pour les étudiants-athlètes québécois
-              </span>
-            </div>
-
-            <nav className="flex items-center gap-8">
-              <Link href="/confidentialite" className={`${label} text-[#475569] hover:text-[#9AA3B2] transition-colors`}>Confidentialité</Link>
-              <Link href="/conditions" className={`${label} text-[#475569] hover:text-[#9AA3B2] transition-colors`}>Conditions</Link>
-              <Link href="/contact" className={`${label} text-[#475569] hover:text-[#9AA3B2] transition-colors`}>Contact</Link>
-            </nav>
-
-            <div className="flex items-center gap-5">
-              {SOCIALS.map(({ name, href, d }) => (
-                <a key={name} href={href} aria-label={name} target="_blank" rel="noopener noreferrer"
-                  className="nx-social-icon">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-                    <path d={d} />
-                  </svg>
-                </a>
-              ))}
-            </div>
-
-          </div>
-
-          <p className={`${label} text-[#2E3D55] text-center pt-5`}>&copy; 2026 Nexus — Propulsé par <img src="/brand/logo-white-red.png" alt="WeLead" style={{height:16}} /></p>
-
-        </div>
-      </footer>
+      <Footer />
 
     </div>
   );

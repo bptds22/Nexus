@@ -1,228 +1,769 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import NexusLogo from "@/components/ui/NexusLogo";
+import { useState, useEffect, useRef, ReactNode } from "react";
 import Link from "next/link";
 import MarketingNav from "@/components/marketing/MarketingNav";
 import PlaybookBackground from "../components/PlaybookBackground";
+import Footer from "@/components/marketing/Footer";
 
 /* ─────────────────────────────────────────────────────────────────
-   Nexus — Politique de confidentialité
-   Same visual language as landing / auth / comment-ca-marche:
-   dark navy, playbook bg, Montserrat headings, red accents.
+   Nexus — Politique de confidentialité (Loi 25, v2.0)
+   15 sections, subsections, tables, callouts, definitions, contact card
 ───────────────────────────────────────────────────────────────── */
 
 const label = "text-[10px] font-bold tracking-[0.25em] uppercase";
 
-const SOCIALS = [
-  {
-    name: "Instagram",
-    href: "#",
-    d: "M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z",
-  },
-  {
-    name: "Facebook",
-    href: "#",
-    d: "M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z",
-  },
-  {
-    name: "YouTube",
-    href: "#",
-    d: "M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.546 12 3.546 12 3.546s-7.505 0-9.377.504A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.504 9.376.504 9.376.504s7.505 0 9.377-.504a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z",
-  },
-  {
-    name: "TikTok",
-    href: "#",
-    d: "M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z",
-  },
+/* ── Block model ─────────────────────────────────────────────── */
+
+type Block =
+  | { type: "p"; text: string }
+  | { type: "bullets"; items: string[] }
+  | { type: "table"; headers: string[]; rows: string[][] }
+  | { type: "callout"; tone: "red" | "yellow" | "green" | "blue"; title?: string; text: string }
+  | { type: "definitions"; items: { term: string; def: string }[] }
+  | { type: "contact-card"; rows: { label: string; value: string; href?: string }[] }
+  | { type: "subsection"; id: string; title: string; blocks: Block[] };
+
+type Section = { id: string; title: string; emphasized?: boolean; blocks: Block[] };
+
+const RPRP_CONTACT_ROWS: { label: string; value: string; href?: string }[] = [
+  { label: "Nom", value: "Bruno-Philippe Taillon Desfossés Simard" },
+  { label: "Titre", value: "Responsable de la protection des renseignements personnels" },
+  { label: "Courriel", value: "confidentialite@nexussports.ca", href: "mailto:confidentialite@nexussports.ca" },
+  { label: "Téléphone", value: "438-498-0494", href: "tel:4384980494" },
+  { label: "Adresse", value: "856, rue Basile-Routhier, Repentigny (Québec) J6A 7Y4" },
 ];
 
 /* ── Policy sections ─────────────────────────────────────────── */
 
-const SECTIONS = [
+const SECTIONS: Section[] = [
   {
     id: "introduction",
     title: "Introduction",
-    content: [
-      "Nexus (ci-après « nous », « notre » ou « la plateforme ») est une plateforme de recrutement sportif dédiée aux étudiants-athlètes du secondaire et aux programmes collégiaux (CÉGEP) du Québec.",
-      "La présente politique de confidentialité décrit comment nous recueillons, utilisons, partageons et protégeons vos renseignements personnels lorsque vous utilisez notre plateforme, nos services et notre site web.",
-      "En utilisant Nexus, vous acceptez les pratiques décrites dans la présente politique. Si vous n'êtes pas d'accord avec ces pratiques, veuillez ne pas utiliser la plateforme.",
+    blocks: [
+      { type: "p", text: "Nexus (ci-après « la Plateforme », « nous », « notre » ou « nos ») est une plateforme numérique de recrutement sportif opérée au Québec, mise à la disposition des écoles secondaires et des CÉGEPs du réseau du sport étudiant du Québec (RSEQ). La Plateforme facilite la mise en relation entre les athlètes-étudiants et les programmes sportifs des CÉGEPs." },
+      { type: "p", text: "Nexus s'engage à protéger les renseignements personnels de l'ensemble de ses utilisateurs, et particulièrement ceux des athlètes mineurs qui utilisent la Plateforme. La présente politique est rédigée conformément aux exigences de la Loi modernisant des dispositions législatives en matière de protection des renseignements personnels (Loi 25 du Québec), de la Loi sur la protection des renseignements personnels dans le secteur privé du Québec, et de la Loi sur la protection des renseignements personnels et les documents électroniques (LPRPDE/PIPEDA)." },
+      {
+        type: "callout",
+        tone: "red",
+        title: "IMPORTANT — MINEURS",
+        text: "La Plateforme traite des renseignements personnels d'athlètes dont la majorité sont âgés de 14 à 17 ans. Des mesures de protection renforcées sont appliquées conformément à la Loi 25 et au Code civil du Québec. Le consentement parental est requis pour tout athlète mineur.",
+      },
+      {
+        type: "subsection",
+        id: "definitions",
+        title: "1.1 — Définitions",
+        blocks: [
+          {
+            type: "definitions",
+            items: [
+              { term: "« Renseignement personnel »", def: "toute information qui concerne une personne physique et qui permet de l'identifier directement ou indirectement." },
+              { term: "« Renseignement personnel sensible »", def: "tout renseignement personnel qui, de par sa nature (notamment médical, biométrique ou autrement intime) ou en raison du contexte de son utilisation, suscite un haut degré d'attente raisonnable en matière de vie privée. Dans le contexte de Nexus, les renseignements d'athlètes mineurs (évaluations sportives, données physiques, résultats scolaires) sont considérés comme sensibles en raison de l'âge des personnes concernées." },
+              { term: "« Incident de confidentialité »", def: "tout accès, utilisation ou communication non autorisé par la loi d'un renseignement personnel, ainsi que toute perte ou autre atteinte à la protection de ce renseignement." },
+              { term: "« Évaluation des facteurs relatifs à la vie privée » ou « ÉFVP »", def: "démarche préventive visant à mieux protéger les renseignements personnels et à respecter la vie privée des individus." },
+              { term: "« Cycle de vie »", def: "l'ensemble des étapes de traitement d'un renseignement personnel : collecte, utilisation, communication, conservation et destruction." },
+              { term: "« Profilage »", def: "collecte et utilisation de renseignements personnels afin d'évaluer certaines caractéristiques d'une personne physique. Dans le contexte de Nexus, les évaluations sportives (11 critères) et le pipeline de recrutement (8 statuts) constituent des formes de profilage assisté par des personnes humaines, et non des décisions automatisées." },
+              { term: "« RPRP »", def: "Responsable de la Protection des Renseignements Personnels." },
+              { term: "« CAI »", def: "Commission d'accès à l'information du Québec." },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: "responsable",
+    title: "Responsable (RPRP)",
+    blocks: [
+      { type: "p", text: "Conformément à la Loi 25, Nexus a désigné un Responsable de la Protection des Renseignements Personnels (RPRP). Toute question, demande d'accès, de rectification, de portabilité ou plainte peut être adressée à :" },
+      { type: "contact-card", rows: RPRP_CONTACT_ROWS },
+      { type: "p", text: "Vous avez également le droit de déposer une plainte auprès de la Commission d'accès à l'information du Québec (CAI) à tout moment. Nous vous invitons cependant à nous contacter d'abord afin que nous puissions tenter de résoudre votre préoccupation." },
+    ],
+  },
+  {
+    id: "roles",
+    title: "Rôles et responsabilités",
+    blocks: [
+      { type: "p", text: "Nexus opère dans un écosystème multi-organisationnel. Chaque partie a des responsabilités distinctes :" },
+      {
+        type: "table",
+        headers: ["Partie", "Rôle", "Responsabilités"],
+        rows: [
+          ["Nexus (la plateforme)", "Sous-traitant", "Hébergement sécurisé, architecture de protection par défaut, outils de conformité"],
+          ["Écoles secondaires", "Responsable du traitement", "Collecte initiale des données, obtention du consentement parental, désignation de leur propre RPRP"],
+          ["CÉGEPs", "Responsable du traitement", "Utilisation des données pour le recrutement, encadrement de leurs recruteurs, désignation de leur propre RPRP"],
+          ["Parents / tuteurs", "Autorité parentale", "Consentement à la présence de leur enfant mineur sur la Plateforme"],
+          ["Athlètes", "Personnes concernées", "Propriétaires de leurs renseignements personnels; droits d'accès, de rectification et de portabilité"],
+        ],
+      },
+      { type: "p", text: "Chaque école secondaire et chaque CÉGEP utilisant Nexus est tenu de désigner son propre RPRP et de signer une entente de sous-traitance avec Nexus avant que ses utilisateurs puissent accéder aux données d'athlètes." },
+      {
+        type: "subsection",
+        id: "roles-saisie",
+        title: "3.1 — Saisie au nom d'autrui",
+        blocks: [
+          { type: "p", text: "Les entraîneurs et directeurs qui saisissent des renseignements personnels d'athlètes agissent au nom de leur école secondaire. En saisissant ces renseignements, ils confirment que : (a) le consentement parental valide a été obtenu; (b) les renseignements fournis sont exacts et proviennent de sources fiables (registres scolaires); (c) ils sont autorisés par leur établissement à effectuer cette saisie. L'entraîneur ne peut activer un profil d'athlète mineur sans avoir préalablement confirmé l'obtention du consentement parental dans la Plateforme." },
+        ],
+      },
+      {
+        type: "subsection",
+        id: "roles-chaine",
+        title: "3.2 — Chaîne de responsabilité",
+        blocks: [
+          { type: "p", text: "La responsabilité en matière de protection des renseignements personnels est partagée :" },
+          { type: "p", text: "L'école secondaire est responsable de la collecte initiale, de l'obtention du consentement parental et de l'exactitude des données saisies. Elle demeure le responsable du traitement au sens de la loi." },
+          { type: "p", text: "Nexus agit à titre de sous-traitant. Nexus est responsable de la sécurité de l'hébergement, de l'intégrité des données, de l'application des contrôles d'accès (isolation par établissement, chiffrement, journalisation) et de la mise à disposition des outils de conformité." },
+          { type: "p", text: "Le CÉGEP accède aux renseignements des athlètes aux fins de recrutement sportif. Il est responsable de l'encadrement de ses recruteurs, du respect des limites d'accès et de la confidentialité des informations consultées." },
+          { type: "p", text: "En cas d'incident de confidentialité, la responsabilité est déterminée selon l'origine de l'incident : si l'incident résulte d'une faille de la Plateforme, Nexus en assume la responsabilité; si l'incident résulte d'une action d'un utilisateur, l'établissement d'attache de cet utilisateur en est responsable." },
+        ],
+      },
+      {
+        type: "subsection",
+        id: "roles-finalite",
+        title: "3.3 — Finalité unique et déclarée",
+        blocks: [
+          { type: "p", text: "La communication des renseignements personnels des athlètes aux recruteurs des CÉGEPs constitue la finalité principale et déclarée de la Plateforme, et non une utilisation secondaire ou dérivée. Cette finalité est explicitement indiquée dans le formulaire de consentement parental et dans l'entente de sous-traitance. Aucun renseignement personnel n'est utilisé à des fins incompatibles avec cette finalité sans l'obtention d'un nouveau consentement." },
+        ],
+      },
     ],
   },
   {
     id: "collecte",
-    title: "Renseignements que nous recueillons",
-    content: [
-      "Nous recueillons différents types de renseignements selon votre rôle sur la plateforme :",
-    ],
-    bullets: [
-      "Renseignements d'inscription : nom, prénom, adresse courriel, mot de passe, rôle (entraîneur, directeur, recruteur)",
-      "Renseignements d'organisation : nom de l'école secondaire ou du CÉGEP, ville, région",
-      "Profils d'athlètes : nom, prénom, année de graduation, taille, poids, position, ville d'origine, région, statistiques sportives",
-      "Liens externes : URLs vers des vidéos Hudl, YouTube ou autres plateformes de faits saillants",
-      "Données d'utilisation : pages consultées, fonctionnalités utilisées, horodatages de connexion",
-      "Données techniques : adresse IP, type de navigateur, système d'exploitation, résolution d'écran",
-    ],
-    after: [
-      "Nous ne recueillons pas la date de naissance des athlètes. Les profils d'athlètes mineurs sont créés et gérés par les entraîneurs autorisés.",
+    title: "Renseignements collectés",
+    blocks: [
+      {
+        type: "subsection",
+        id: "collecte-athletes",
+        title: "4.1 — Athlètes (mineurs 14-17 ans)",
+        blocks: [
+          {
+            type: "table",
+            headers: ["Renseignement", "Type", "Obligatoire?", "Finalité"],
+            rows: [
+              ["Nom et prénom", "Identifiant direct", "Oui", "Identification pour le recrutement"],
+              ["Date de naissance", "Identifiant direct", "Oui", "Vérification de l'âge, catégorie sportive"],
+              ["Sexe", "Identifiant indirect", "Oui", "Catégories sportives"],
+              ["École secondaire", "Identifiant indirect", "Oui", "Rattachement organisationnel"],
+              ["Sport(s) et position", "Donnée sportive", "Oui", "Critères de recherche pour les recruteurs"],
+              ["Taille et poids", "Donnée physique", "Oui", "Critères physiques de recrutement"],
+              ["Évaluations sportives (11 critères)", "Donnée d'appréciation", "Oui", "Cote globale pour le recrutement"],
+              ["Résultats scolaires", "Donnée académique", "Oui", "Admissibilité au CÉGEP"],
+              ["Photo de profil", "Identifiant direct", "Non", "Identification visuelle (optionnel)"],
+              ["Vidéos de performance", "Contenu multimédia", "Non", "Démonstration des habiletés (optionnel)"],
+              ["Coordonnées (courriel, téléphone)", "Identifiant direct", "Non", "Communication directe (avec consentement spécifique additionnel)"],
+            ],
+          },
+          {
+            type: "callout",
+            tone: "yellow",
+            title: "Note importante",
+            text: "Les coordonnées personnelles de l'athlète ne sont JAMAIS communiquées aux recruteurs sans un consentement spécifique additionnel du parent ou tuteur. Le premier contact entre un recruteur et un athlète mineur se fait toujours par l'intermédiaire de l'entraîneur.",
+          },
+        ],
+      },
+      {
+        type: "subsection",
+        id: "collecte-entraineurs",
+        title: "4.2 — Entraîneurs",
+        blocks: [
+          { type: "p", text: "Nom et prénom, courriel professionnel, école d'attache, sport(s) entraîné(s), évaluations de réputation reçues (anonymisées)." },
+        ],
+      },
+      {
+        type: "subsection",
+        id: "collecte-recruteurs",
+        title: "4.3 — Recruteurs",
+        blocks: [
+          { type: "p", text: "Nom et prénom, courriel professionnel, CÉGEP d'attache, activité sur la Plateforme (consultations, favoris, pipeline de recrutement)." },
+        ],
+      },
+      {
+        type: "subsection",
+        id: "collecte-directeurs",
+        title: "4.4 — Directeurs",
+        blocks: [
+          { type: "p", text: "Nom et prénom, courriel professionnel, établissement d'attache, activité de supervision." },
+        ],
+      },
+      {
+        type: "subsection",
+        id: "collecte-techniques",
+        title: "4.5 — Données techniques",
+        blocks: [
+          {
+            type: "bullets",
+            items: [
+              "Adresse IP",
+              "Type de navigateur et système d'exploitation",
+              "Pages visitées et durée des visites",
+              "Données de cookies (voir section 12)",
+            ],
+          },
+        ],
+      },
     ],
   },
   {
-    id: "utilisation",
-    title: "Utilisation des renseignements",
-    content: [
-      "Nous utilisons les renseignements recueillis aux fins suivantes :",
-    ],
-    bullets: [
-      "Fournir, maintenir et améliorer les services de la plateforme",
-      "Permettre aux entraîneurs de créer et gérer les profils d'athlètes",
-      "Permettre aux recruteurs de rechercher, filtrer et consulter les profils approuvés",
-      "Faciliter les demandes de contact entre recruteurs et entraîneurs",
-      "Gérer les comptes utilisateurs et les rôles au sein des organisations",
-      "Assurer la sécurité de la plateforme et prévenir les utilisations frauduleuses",
-      "Envoyer des communications liées au service (confirmations, notifications, mises à jour)",
-      "Analyser l'utilisation de la plateforme pour améliorer l'expérience utilisateur",
-    ],
-  },
-  {
-    id: "partage",
-    title: "Partage des renseignements",
-    content: [
-      "Nous ne vendons pas vos renseignements personnels. Nous pouvons partager vos données dans les cas suivants :",
-    ],
-    bullets: [
-      "Avec les utilisateurs autorisés : les profils d'athlètes approuvés sont visibles par les recruteurs vérifiés de programmes CÉGEP",
-      "Avec votre organisation : les directeurs peuvent consulter les données des entraîneurs et athlètes de leur école",
-      "Avec nos fournisseurs de services : hébergement, authentification et outils d'analyse, sous contrat de confidentialité",
-      "Pour respecter la loi : si requis par une ordonnance judiciaire, une loi applicable ou une autorité réglementaire",
-      "Pour protéger nos droits : en cas de violation des conditions d'utilisation ou de menace à la sécurité de la plateforme",
+    id: "finalites",
+    title: "Finalités de la collecte",
+    blocks: [
+      {
+        type: "table",
+        headers: ["Finalité", "Description", "Base légale"],
+        rows: [
+          ["Recrutement sportif", "Permettre aux recruteurs des CÉGEPs de consulter les profils d'athlètes", "Consentement parental (mineurs) / Consentement de l'utilisateur (majeurs)"],
+          ["Évaluation sportive", "Permettre aux entraîneurs d'évaluer les compétences de leurs athlètes", "Consentement parental"],
+          ["Communication", "Faciliter les échanges entre entraîneurs et recruteurs", "Consentement parental + consentement de l'entraîneur"],
+          ["Gestion des comptes", "Création et gestion des comptes utilisateurs", "Exécution du contrat de service"],
+          ["Amélioration du service", "Analyse de l'utilisation de la Plateforme", "Consentement (cookies analytiques)"],
+          ["Conformité légale", "Tenue du registre d'incidents, réponse aux demandes de portabilité", "Obligation légale (Loi 25)"],
+          ["Sécurité", "Détection des accès non autorisés, protection contre les cyberattaques", "Intérêt légitime / Obligation légale"],
+        ],
+      },
+      { type: "p", text: "Nous ne collectons et n'utilisons vos renseignements personnels qu'aux fins pour lesquelles ils ont été recueillis." },
     ],
   },
   {
-    id: "conservation",
-    title: "Conservation des données",
-    content: [
-      "Nous conservons vos renseignements personnels aussi longtemps que votre compte est actif ou que nécessaire pour fournir nos services.",
-      "Les profils d'athlètes archivés sont conservés pendant une période maximale de 3 ans après leur archivage, puis supprimés de façon permanente.",
-      "Vous pouvez demander la suppression de votre compte et de vos données à tout moment en nous contactant directement.",
+    id: "consentement",
+    title: "Consentement parental",
+    emphasized: true,
+    blocks: [
+      {
+        type: "subsection",
+        id: "consentement-exigence",
+        title: "6.1 — Exigence de consentement",
+        blocks: [
+          {
+            type: "table",
+            headers: ["Âge de l'athlète", "Exigence"],
+            rows: [
+              ["Moins de 14 ans", "Consentement parental OBLIGATOIRE. Inscription uniquement via le parent ou tuteur légal."],
+              ["14 à 17 ans", "Consentement parental fortement recommandé et requis par Nexus. L'athlète ET le parent doivent consentir."],
+              ["18 ans et plus", "Consentement de l'athlète seul."],
+            ],
+          },
+        ],
+      },
+      {
+        type: "subsection",
+        id: "consentement-processus",
+        title: "6.2 — Processus de consentement",
+        blocks: [
+          {
+            type: "bullets",
+            items: [
+              "L'entraîneur crée le profil en mode BROUILLON (invisible aux recruteurs)",
+              "Un formulaire de consentement personnalisé est généré",
+              "Le parent signe (électroniquement ou sur papier)",
+              "Le profil est activé uniquement après réception du consentement valide",
+              "Le consentement doit être renouvelé chaque année scolaire",
+            ],
+          },
+        ],
+      },
+      {
+        type: "subsection",
+        id: "consentement-granularite",
+        title: "6.3 — Granularité du consentement",
+        blocks: [
+          { type: "p", text: "Le parent peut consentir au profil de base tout en refusant le partage de coordonnées directes ou de contenu multimédia." },
+        ],
+      },
+      {
+        type: "subsection",
+        id: "consentement-retrait",
+        title: "6.4 — Retrait du consentement",
+        blocks: [
+          { type: "p", text: "Le parent peut retirer son consentement à tout moment, sans pénalité. Le retrait entraîne la désactivation immédiate du profil de l'athlète." },
+        ],
+      },
+      {
+        type: "subsection",
+        id: "consentement-age",
+        title: "6.5 — Vérification de l'âge",
+        blocks: [
+          { type: "p", text: "L'âge de l'athlète est déterminé à partir de sa date de naissance, fournie par l'entraîneur au nom de l'école secondaire. Nexus s'appuie sur les registres scolaires comme source institutionnelle fiable. L'athlète ne s'inscrit pas lui-même; son profil est créé par un adulte autorisé rattaché à un établissement ayant signé une entente avec Nexus." },
+        ],
+      },
+      {
+        type: "subsection",
+        id: "consentement-invalide",
+        title: "6.6 — Collecte sans consentement valide",
+        blocks: [
+          { type: "p", text: "Si Nexus découvre qu'un profil a été activé sans consentement parental valide, ou que des renseignements d'un mineur ont été recueillis par inadvertance sans autorisation : (1) le profil sera désactivé immédiatement; (2) l'entraîneur et le directeur seront avisés; (3) le parent sera contacté pour l'informer et lui offrir la possibilité de consentir ou de demander la suppression. Si aucun consentement n'est obtenu dans un délai de 30 jours, les renseignements seront détruits." },
+        ],
+      },
+      {
+        type: "subsection",
+        id: "consentement-mecanisme",
+        title: "6.7 — Mécanisme de consentement",
+        blocks: [
+          { type: "p", text: "Le consentement peut être obtenu par : (a) signature électronique via un lien sécurisé; (b) signature manuscrite sur le formulaire imprimé, numérisé et téléversé; (c) consentement en personne, documenté par un formulaire signé. Un registre horodaté de chaque consentement est conservé." },
+        ],
+      },
     ],
   },
   {
-    id: "cookies",
-    title: "Cookies et technologies de suivi",
-    content: [
-      "Nexus utilise des cookies et technologies similaires pour :",
-    ],
-    bullets: [
-      "Maintenir votre session de connexion active",
-      "Mémoriser vos préférences (thème, langue, filtres)",
-      "Analyser l'utilisation de la plateforme de manière agrégée",
-      "Améliorer les performances et la stabilité du service",
-    ],
-    after: [
-      "Vous pouvez configurer votre navigateur pour refuser les cookies. Cependant, certaines fonctionnalités de la plateforme pourraient ne pas fonctionner correctement sans cookies.",
-    ],
-  },
-  {
-    id: "droits",
-    title: "Loi 25 — Vos droits",
-    content: [
-      "Conformément à la Loi 25 sur la protection des renseignements personnels du Québec et aux lois canadiennes applicables, vous disposez des droits suivants :",
-    ],
-    bullets: [
-      "Droit d'accès : vous pouvez demander une copie de toutes les données personnelles que nous détenons à votre sujet",
-      "Droit de rectification : vous pouvez demander la correction de renseignements inexacts ou incomplets",
-      "Droit de suppression : vous pouvez demander la suppression de vos renseignements personnels",
-      "Droit de retrait du consentement : vous pouvez retirer votre consentement à tout moment, sans motif",
-      "Droit de portabilité : vous pouvez obtenir une copie de vos données dans un format structuré et couramment utilisé",
-      "Droit d'être informé : vous serez avisé de tout incident de confidentialité susceptible de vous causer un préjudice",
-    ],
-    after: [
-      "Pour exercer ces droits, contactez notre responsable de la protection des renseignements personnels à support@nexussports.ca. Nous répondrons dans un délai de 30 jours.",
+    id: "communication",
+    title: "Communication des renseignements",
+    blocks: [
+      {
+        type: "subsection",
+        id: "communication-tiers",
+        title: "7.1 — Tiers ayant accès",
+        blocks: [
+          { type: "p", text: "Les renseignements personnels des athlètes sont accessibles uniquement aux recruteurs vérifiés rattachés à un CÉGEP ayant signé une entente de sous-traitance avec Nexus, aux entraîneurs et directeurs de l'école secondaire d'attache de l'athlète, ainsi qu'au personnel autorisé de Nexus aux seules fins de support technique et de conformité." },
+        ],
+      },
+      {
+        type: "subsection",
+        id: "communication-vente",
+        title: "7.2 — Aucune vente de données",
+        blocks: [
+          { type: "p", text: "Nexus ne vend, ne loue, ni ne monnaie d'aucune façon les renseignements personnels des utilisateurs. Aucune publicité ciblée n'est diffusée sur la Plateforme à partir des renseignements collectés." },
+        ],
+      },
+      {
+        type: "subsection",
+        id: "communication-fournisseurs",
+        title: "7.3 — Fournisseurs de services",
+        blocks: [
+          { type: "p", text: "Nexus a recours au fournisseur de services suivant pour le fonctionnement de la Plateforme :" },
+          {
+            type: "bullets",
+            items: [
+              "OVHcloud (Beauharnois, Québec) : Hébergement de l'infrastructure (serveurs, base de données, stockage de fichiers).",
+            ],
+          },
+          { type: "p", text: "Ce fournisseur est lié à Nexus par une entente écrite l'obligeant à respecter des standards de sécurité équivalents à ceux de Nexus et à n'utiliser les données qu'aux seules fins de la prestation de services." },
+        ],
+      },
+      {
+        type: "subsection",
+        id: "communication-loi",
+        title: "7.4 — Communication requise par la loi",
+        blocks: [
+          { type: "p", text: "Nexus peut être tenu de communiquer des renseignements personnels en réponse à une ordonnance judiciaire, une assignation, une demande d'une autorité compétente ou pour se conformer à une obligation légale. Dans la mesure permise par la loi, la personne concernée sera informée d'une telle communication." },
+        ],
+      },
     ],
   },
   {
     id: "securite",
-    title: "Sécurité des données",
-    content: [
-      "Nous mettons en place des mesures techniques et organisationnelles appropriées pour protéger vos renseignements personnels :",
-    ],
-    bullets: [
-      "Chiffrement des données en transit (HTTPS/TLS) et au repos",
-      "Contrôle d'accès basé sur les rôles (RBAC) pour limiter l'accès aux données",
-      "Authentification sécurisée avec hachage des mots de passe",
-      "Hébergement des données au Québec (OVHcloud Beauharnois), conforme aux exigences de résidence des données de la Loi 25",
-      "Surveillance continue et journaux d'audit des accès",
-    ],
-    after: [
-      "Aucune méthode de transmission ou de stockage électronique n'est totalement sécurisée. Bien que nous nous efforcions de protéger vos données, nous ne pouvons garantir une sécurité absolue.",
+    title: "Hébergement et sécurité",
+    blocks: [
+      {
+        type: "subsection",
+        id: "securite-localisation",
+        title: "8.1 — Localisation des données",
+        blocks: [
+          {
+            type: "callout",
+            tone: "blue",
+            title: "Hébergement 100 % Québec",
+            text: "Tous les renseignements personnels traités par Nexus sont hébergés exclusivement au Québec, dans le centre de données d'OVHcloud situé à Beauharnois. Aucune donnée personnelle n'est transférée à l'extérieur du Québec ou du Canada.",
+          },
+        ],
+      },
+      {
+        type: "subsection",
+        id: "securite-mesures",
+        title: "8.2 — Mesures de sécurité",
+        blocks: [
+          { type: "p", text: "Nexus met en place des mesures techniques et organisationnelles appropriées pour protéger les renseignements personnels :" },
+          {
+            type: "bullets",
+            items: [
+              "Chiffrement des données en transit (HTTPS/TLS 1.3) et au repos",
+              "Authentification sécurisée avec hachage des mots de passe (bcrypt)",
+              "Contrôle d'accès basé sur les rôles (RBAC) et isolation des données par établissement",
+              "Journaux d'audit horodatés pour chaque accès aux profils d'athlètes",
+              "Surveillance continue, sauvegardes régulières et plan de reprise après incident",
+              "Mises à jour de sécurité appliquées en continu",
+            ],
+          },
+          { type: "p", text: "Aucune méthode de transmission ou de stockage électronique n'est totalement sécurisée. Bien que nous nous efforcions de protéger vos données, nous ne pouvons garantir une sécurité absolue." },
+        ],
+      },
+      {
+        type: "subsection",
+        id: "securite-defaut",
+        title: "8.3 — Confidentialité par défaut",
+        blocks: [
+          { type: "p", text: "Conformément au principe de confidentialité par défaut prévu à la Loi 25, les paramètres les plus restrictifs sont appliqués au moment de la création d'un compte. L'utilisateur doit explicitement choisir d'élargir la visibilité de ses renseignements." },
+        ],
+      },
     ],
   },
   {
-    id: "tiers",
-    title: "Services tiers",
-    content: [
-      "Nexus peut intégrer ou faire appel à des services tiers pour le fonctionnement de la plateforme. Ces services incluent, sans s'y limiter :",
-    ],
-    bullets: [
-      "Supabase : authentification et base de données",
-      "Vercel : hébergement et déploiement de l'application",
-      "Google Analytics : analyse de l'utilisation (données agrégées uniquement)",
-    ],
-    after: [
-      "Chaque service tiers dispose de sa propre politique de confidentialité. Nous vous encourageons à les consulter. Nous sélectionnons nos partenaires en fonction de leurs engagements en matière de protection des données.",
+    id: "conservation",
+    title: "Conservation et destruction",
+    blocks: [
+      {
+        type: "subsection",
+        id: "conservation-durees",
+        title: "9.1 — Durées de conservation",
+        blocks: [
+          {
+            type: "table",
+            headers: ["Type de donnée", "Durée"],
+            rows: [
+              ["Profil d'athlète actif", "Pendant toute la durée d'utilisation de la Plateforme par l'athlète"],
+              ["Profil d'athlète archivé", "Maximum 3 ans après archivage, puis destruction"],
+              ["Comptes entraîneur / recruteur / directeur", "Pendant toute la durée d'utilisation, puis 12 mois après désactivation"],
+              ["Journaux d'audit", "5 ans (obligation légale)"],
+              ["Registre des consentements", "5 ans après la fin du consentement"],
+              ["Registre des incidents", "5 ans après la clôture de l'incident"],
+            ],
+          },
+        ],
+      },
+      {
+        type: "subsection",
+        id: "conservation-destruction",
+        title: "9.2 — Destruction",
+        blocks: [
+          { type: "p", text: "À l'expiration de la durée de conservation, les renseignements personnels sont détruits de façon sécurisée et irréversible (suppression cryptographique des sauvegardes incluses)." },
+        ],
+      },
+      {
+        type: "subsection",
+        id: "conservation-anonymisation",
+        title: "9.3 — Anonymisation",
+        blocks: [
+          { type: "p", text: "Certaines données peuvent être conservées au-delà des durées prévues à des fins statistiques ou de recherche, à condition d'être anonymisées de manière irréversible. Une fois anonymisées, ces données ne constituent plus des renseignements personnels au sens de la loi." },
+        ],
+      },
     ],
   },
   {
-    id: "mineurs",
-    title: "Protection des données des mineurs",
-    content: [
-      "Nexus est conçu pour faciliter le recrutement d'étudiants-athlètes, dont certains sont mineurs. Conformément à la Loi 25, nous appliquons des mesures renforcées pour la protection de leurs données :",
+    id: "droits",
+    title: "Vos droits",
+    blocks: [
+      { type: "p", text: "Conformément à la Loi 25 et aux lois canadiennes applicables, vous disposez des droits suivants à l'égard de vos renseignements personnels :" },
+      {
+        type: "subsection",
+        id: "droits-acces",
+        title: "10.1 — Droit d'accès",
+        blocks: [
+          { type: "p", text: "Vous pouvez demander une copie de tous les renseignements personnels que Nexus détient à votre sujet." },
+        ],
+      },
+      {
+        type: "subsection",
+        id: "droits-rectification",
+        title: "10.2 — Droit de rectification",
+        blocks: [
+          { type: "p", text: "Vous pouvez demander la correction de renseignements inexacts, incomplets ou périmés." },
+          { type: "contact-card", rows: RPRP_CONTACT_ROWS },
+        ],
+      },
+      {
+        type: "subsection",
+        id: "droits-portabilite",
+        title: "10.3 — Droit à la portabilité",
+        blocks: [
+          { type: "p", text: "Vous pouvez obtenir une copie des renseignements que vous avez fournis dans un format structuré, couramment utilisé et lisible par machine, ou en demander la transmission directe à un tiers de votre choix." },
+        ],
+      },
+      {
+        type: "subsection",
+        id: "droits-desindexation",
+        title: "10.4 — Droit à la désindexation",
+        blocks: [
+          { type: "p", text: "Vous pouvez exiger que cesse la diffusion d'un renseignement personnel vous concernant ou demander la désindexation de tout lien permettant d'y accéder lorsque sa diffusion vous cause préjudice." },
+        ],
+      },
+      {
+        type: "subsection",
+        id: "droits-retrait",
+        title: "10.5 — Droit de retrait du consentement",
+        blocks: [
+          { type: "p", text: "Vous pouvez retirer votre consentement à tout moment, sans motif et sans pénalité. Le retrait du consentement parental entraîne la désactivation immédiate du profil de l'athlète mineur." },
+        ],
+      },
+      {
+        type: "subsection",
+        id: "droits-automatise",
+        title: "10.6 — Droit relatif aux décisions automatisées",
+        blocks: [
+          { type: "p", text: "Nexus n'utilise pas de prise de décision exclusivement automatisée produisant un effet juridique ou vous affectant de manière similaire. Les évaluations sportives et le pipeline de recrutement sont effectués par des personnes humaines (entraîneurs, recruteurs). Vous pouvez néanmoins demander de l'information sur les facteurs ayant mené à une décision vous concernant." },
+        ],
+      },
+      {
+        type: "subsection",
+        id: "droits-exercer",
+        title: "10.7 — Comment exercer vos droits",
+        blocks: [
+          { type: "p", text: "Pour exercer un de vos droits, écrivez au RPRP de Nexus à confidentialite@nexussports.ca en précisant la nature de votre demande. Une preuve d'identité pourra être demandée afin de protéger vos renseignements. Nexus répond à toute demande dans un délai de 30 jours." },
+        ],
+      },
     ],
-    bullets: [
-      "Les profils d'athlètes mineurs sont créés et gérés exclusivement par des entraîneurs autorisés et vérifiés",
-      "Le consentement parental est requis avant toute publication de profil d'athlète mineur sur la plateforme",
-      "Les parents ou tuteurs légaux peuvent retirer leur consentement à tout moment en contactant l'entraîneur ou Nexus directement",
-      "Aucune donnée de naissance n'est recueillie dans la version actuelle de la plateforme",
-      "Les coordonnées personnelles des athlètes ne sont pas accessibles directement aux recruteurs",
-      "Un système de demandes de contact encadre toute communication entre recruteurs et entraîneurs",
-      "Les profils doivent être approuvés par un administrateur avant d'être visibles aux recruteurs",
-      "Les données des athlètes sont supprimées 2 ans après leur année de graduation prévue",
-      "Les données sont hébergées au Québec (OVHcloud Beauharnois) et ne quittent pas le territoire canadien",
+  },
+  {
+    id: "incidents",
+    title: "Gestion des incidents",
+    blocks: [
+      { type: "p", text: "Conformément à la Loi 25, Nexus tient un registre des incidents de confidentialité. En cas d'incident présentant un risque de préjudice sérieux, Nexus avise sans délai la Commission d'accès à l'information du Québec ainsi que les personnes concernées." },
+      { type: "p", text: "Les utilisateurs sont tenus de signaler tout incident ou soupçon d'incident au RPRP de Nexus dans les plus brefs délais à confidentialite@nexussports.ca." },
+      {
+        type: "callout",
+        tone: "red",
+        title: "Signalement immédiat",
+        text: "Si vous soupçonnez un accès non autorisé à votre compte ou une fuite de données, contactez immédiatement le RPRP afin que les mesures de confinement et d'évaluation du risque soient déclenchées.",
+      },
+    ],
+  },
+  {
+    id: "cookies",
+    title: "Cookies",
+    blocks: [
+      { type: "p", text: "La Plateforme utilise des témoins de connexion (cookies) et des technologies similaires pour assurer son bon fonctionnement et améliorer votre expérience." },
+      {
+        type: "subsection",
+        id: "cookies-types",
+        title: "12.1 — Types de témoins utilisés",
+        blocks: [
+          {
+            type: "table",
+            headers: ["Catégorie", "Finalité", "Consentement"],
+            rows: [
+              ["Essentiels", "Maintien de la session, sécurité, fonctionnement de base", "Non requis (nécessaire au service)"],
+              ["Préférences", "Mémorisation de vos paramètres (thème, langue, filtres)", "Implicite par l'utilisation"],
+              ["Mesure d'audience", "Statistiques agrégées sur l'utilisation de la Plateforme", "Requis (peut être refusé)"],
+            ],
+          },
+        ],
+      },
+      {
+        type: "subsection",
+        id: "cookies-preferences",
+        title: "12.2 — Gestion de vos préférences",
+        blocks: [
+          { type: "p", text: "Vous pouvez configurer votre navigateur pour refuser les témoins. Certaines fonctionnalités de la Plateforme pourraient toutefois ne plus fonctionner correctement." },
+        ],
+      },
+    ],
+  },
+  {
+    id: "gouvernance",
+    title: "Gouvernance interne",
+    blocks: [
+      {
+        type: "subsection",
+        id: "gouvernance-rprp",
+        title: "13.1 — Mandat opérationnel du RPRP",
+        blocks: [
+          { type: "p", text: "Le RPRP de Nexus est désigné par écrit par la personne exerçant la plus haute autorité au sein de Nexus. Il est chargé de :" },
+          {
+            type: "bullets",
+            items: [
+              "Être consulté dès le début de tout projet impliquant des renseignements personnels",
+              "Superviser la réalisation des ÉFVP",
+              "Superviser la tenue du registre des incidents et du registre des communications",
+              "Participer à l'évaluation du risque de préjudice sérieux lié à un incident",
+              "Vérifier la conformité des fournisseurs et sous-traitants",
+              "Recevoir et traiter les demandes d'exercice de droits dans les délais prescrits",
+              "Produire un rapport annuel sur la conformité de Nexus",
+            ],
+          },
+        ],
+      },
+      {
+        type: "subsection",
+        id: "gouvernance-utilisateurs",
+        title: "13.2 — Obligations des utilisateurs de la Plateforme",
+        blocks: [
+          { type: "p", text: "Toute personne qui traite des renseignements personnels via Nexus s'engage à :" },
+          {
+            type: "bullets",
+            items: [
+              "N'accéder qu'aux renseignements nécessaires à l'exercice de ses fonctions",
+              "Ne pas communiquer de renseignements personnels à des personnes non autorisées, y compris par capture d'écran",
+              "Protéger l'accès à son compte par un mot de passe sécurisé et ne jamais partager ses identifiants",
+              "Signaler immédiatement tout incident ou faille de sécurité",
+              "S'assurer que le consentement parental a été obtenu avant de saisir ou d'activer le profil d'un athlète mineur (entraîneurs et directeurs)",
+              "Ne pas télécharger ou exporter en masse les données d'athlètes à des fins non autorisées (recruteurs)",
+              "Ne pas conserver de renseignements personnels après la cessation de ses fonctions ou la désactivation de son compte",
+              "Participer aux activités de formation et de sensibilisation",
+            ],
+          },
+          { type: "p", text: "Tout manquement peut entraîner la désactivation du compte et le signalement à l'établissement d'attache. L'activité de chaque utilisateur est journalisée à des fins de traçabilité." },
+        ],
+      },
+    ],
+  },
+  {
+    id: "plaintes",
+    title: "Traitement des plaintes",
+    blocks: [
+      { type: "p", text: "Toute personne qui croit que ses droits en matière de protection des renseignements personnels n'ont pas été respectés peut adresser une plainte au RPRP de Nexus. La plainte doit décrire la situation, les démarches déjà entreprises et le résultat souhaité." },
+      { type: "p", text: "Le RPRP accuse réception de la plainte dans un délai de 10 jours ouvrables et fournit une réponse motivée dans un délai maximal de 30 jours. À défaut d'une réponse satisfaisante, le plaignant peut s'adresser à la Commission d'accès à l'information du Québec (CAI)." },
+      { type: "contact-card", rows: RPRP_CONTACT_ROWS },
     ],
   },
   {
     id: "modifications",
-    title: "Modifications de la politique",
-    content: [
-      "Nous pouvons mettre à jour cette politique de confidentialité de temps à autre pour refléter les changements apportés à nos pratiques ou aux exigences légales.",
-      "En cas de modification substantielle, nous vous en informerons par courriel ou par un avis visible sur la plateforme. La date de dernière mise à jour sera indiquée en haut de cette page.",
-      "Votre utilisation continue de la plateforme après la publication des modifications constitue votre acceptation de la politique mise à jour.",
-    ],
-  },
-  {
-    id: "contact",
-    title: "Nous contacter",
-    content: [
-      "Pour toute question ou demande concernant cette politique de confidentialité ou le traitement de vos renseignements personnels, vous pouvez nous contacter :",
-    ],
-    bullets: [
-      "Par courriel : info@welead.ca",
-      "Par la page de contact de la plateforme",
-    ],
-    after: [
-      "Nous nous engageons à répondre à toute demande dans un délai de 30 jours ouvrables.",
+    title: "Modifications",
+    blocks: [
+      { type: "p", text: "Nexus peut mettre à jour la présente politique de confidentialité afin de refléter l'évolution de ses pratiques, de la législation ou des technologies." },
+      { type: "p", text: "En cas de modification substantielle, vous serez informé par courriel ou par un avis visible sur la Plateforme au moins 30 jours avant l'entrée en vigueur des modifications. La date de dernière mise à jour figure en haut de cette page." },
+      { type: "p", text: "Votre utilisation continue de la Plateforme après l'entrée en vigueur des modifications constitue votre acceptation de la version mise à jour." },
     ],
   },
 ];
 
-/* ── Table of contents (built from sections) ─────────────────── */
+/* ── Block renderer ──────────────────────────────────────────── */
+
+function renderBlocks(blocks: Block[]): ReactNode {
+  return blocks.map((block, i) => {
+    switch (block.type) {
+      case "p":
+        return (
+          <p key={i} className="font-sans text-sm text-[#C4CDD8] leading-relaxed mb-4">
+            {block.text}
+          </p>
+        );
+
+      case "bullets":
+        return (
+          <ul key={i} className="flex flex-col gap-3 my-5 pl-1">
+            {block.items.map((b, bi) => (
+              <li key={bi} className="flex items-start gap-3">
+                <span className="w-5 h-px bg-wl-red mt-2.5 flex-shrink-0" />
+                <span className="font-sans text-sm text-[#9AA3B2] leading-relaxed">{b}</span>
+              </li>
+            ))}
+          </ul>
+        );
+
+      case "table":
+        return (
+          <div key={i} className="my-6 -mx-2 overflow-x-auto">
+            <table className="w-full min-w-[520px] border-collapse text-left">
+              <thead>
+                <tr className="bg-[#0F1A30] border-b-2 border-wl-red/40">
+                  {block.headers.map((h, hi) => (
+                    <th
+                      key={hi}
+                      className={`${label} text-white px-3 py-3 align-top`}
+                    >
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {block.rows.map((row, ri) => (
+                  <tr
+                    key={ri}
+                    className={`border-b border-[#1E2D4A] ${
+                      ri % 2 === 0 ? "bg-[#0A1428]/40" : "bg-transparent"
+                    }`}
+                  >
+                    {row.map((cell, ci) => (
+                      <td
+                        key={ci}
+                        className="font-sans text-[13px] text-[#C4CDD8] leading-relaxed px-3 py-3 align-top"
+                      >
+                        {cell}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        );
+
+      case "callout": {
+        const tones = {
+          red: { border: "border-l-wl-red", bg: "bg-wl-red/10", text: "text-wl-red" },
+          yellow: { border: "border-l-[#F59E0B]", bg: "bg-[#F59E0B]/10", text: "text-[#F59E0B]" },
+          green: { border: "border-l-[#22C55E]", bg: "bg-[#22C55E]/10", text: "text-[#22C55E]" },
+          blue: { border: "border-l-[#3B82F6]", bg: "bg-[#3B82F6]/10", text: "text-[#3B82F6]" },
+        }[block.tone];
+        return (
+          <div
+            key={i}
+            className={`my-5 border-l-4 ${tones.border} ${tones.bg} px-5 py-4 rounded-r`}
+          >
+            {block.title && (
+              <div className={`${label} ${tones.text} mb-2`}>{block.title}</div>
+            )}
+            <p className="font-sans text-sm text-[#E5E7EB] leading-relaxed">
+              {block.text}
+            </p>
+          </div>
+        );
+      }
+
+      case "definitions":
+        return (
+          <dl key={i} className="my-5 flex flex-col gap-4">
+            {block.items.map((d, di) => (
+              <div key={di} className="grid grid-cols-1 md:grid-cols-[1fr_2fr] gap-1 md:gap-4">
+                <dt className="font-head font-black text-sm text-white">{d.term}</dt>
+                <dd className="font-sans text-sm text-[#9AA3B2] leading-relaxed">{d.def}</dd>
+              </div>
+            ))}
+          </dl>
+        );
+
+      case "contact-card":
+        return (
+          <div
+            key={i}
+            className="my-5 bg-[#0A1428] border border-[#1E2D4A] rounded-md p-5"
+          >
+            <dl className="grid grid-cols-1 sm:grid-cols-[140px_1fr] gap-y-3 gap-x-4">
+              {block.rows.map((r, ri) => (
+                <div key={ri} className="contents">
+                  <dt className={`${label} text-[#475569] pt-0.5`}>{r.label}</dt>
+                  <dd className="font-sans text-sm text-[#E5E7EB] leading-relaxed">
+                    {r.href ? (
+                      <a
+                        href={r.href}
+                        className="hover:text-wl-red transition-colors"
+                      >
+                        {r.value}
+                      </a>
+                    ) : (
+                      r.value
+                    )}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        );
+
+      case "subsection":
+        return (
+          <section
+            key={i}
+            id={block.id}
+            className="mt-8 pt-4 border-t border-[#1E2D4A]/60 scroll-mt-24"
+          >
+            <h3 className="font-head font-black text-base text-white uppercase tracking-tight mb-4">
+              {block.title}
+            </h3>
+            {renderBlocks(block.blocks)}
+          </section>
+        );
+
+      default:
+        return null;
+    }
+  });
+}
+
+/* ── Component ───────────────────────────────────────────────── */
 
 export default function ConfidentialitePage() {
   const [activeSection, setActiveSection] = useState(SECTIONS[0].id);
   const sectionRefs = useRef<Map<string, IntersectionObserverEntry>>(new Map());
 
-  /* Track which section is currently in view via IntersectionObserver */
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -230,7 +771,6 @@ export default function ConfidentialitePage() {
           sectionRefs.current.set(entry.target.id, entry);
         });
 
-        /* Find the topmost visible section */
         let topSection = "";
         let topY = Infinity;
         sectionRefs.current.forEach((entry, id) => {
@@ -245,7 +785,6 @@ export default function ConfidentialitePage() {
       { rootMargin: "-80px 0px -60% 0px", threshold: 0 }
     );
 
-    /* Observe all section elements */
     SECTIONS.forEach((s) => {
       const el = document.getElementById(s.id);
       if (el) observer.observe(el);
@@ -277,12 +816,12 @@ export default function ConfidentialitePage() {
             <span className="text-wl-red">confidentialité</span>
           </h1>
 
-          <p className="font-sans text-base text-[#9AA3B2] leading-relaxed max-w-[520px] mx-auto mb-4">
-            La protection de vos renseignements personnels est une priorité pour Nexus. Cette politique explique comment nous recueillons, utilisons et protégeons vos données.
+          <p className="font-sans text-base text-[#9AA3B2] leading-relaxed max-w-[560px] mx-auto mb-4">
+            Protection des renseignements personnels — Loi 25 du Québec
           </p>
 
           <p className={`${label} text-[#475569] mt-4`}>
-            Dernière mise à jour : 6 mars 2026
+            Dernière mise à jour : Mars 2026 · Version 2.0
           </p>
 
         </div>
@@ -309,10 +848,10 @@ export default function ConfidentialitePage() {
                     <a
                       key={s.id}
                       href={`#${s.id}`}
-                      className={`group flex items-center gap-3 py-2 transition-colors duration-300 ${
+                      className={`group flex items-center gap-3 py-2 transition-colors duration-300 border-l-2 pl-3 -ml-3 ${
                         activeSection === s.id
-                          ? "text-wl-red"
-                          : "text-[#9AA3B2] hover:text-white"
+                          ? "text-wl-red border-wl-red"
+                          : "text-[#9AA3B2] hover:text-white border-transparent"
                       }`}
                     >
                       <span className={`${label} w-6 flex-shrink-0 ${
@@ -354,7 +893,9 @@ export default function ConfidentialitePage() {
                 <article
                   key={section.id}
                   id={section.id}
-                  className="nx-policy-section scroll-mt-24 pb-12 mb-12 border-b border-[#1E2D4A] last:border-b-0 last:mb-0 last:pb-0"
+                  className={`nx-policy-section scroll-mt-24 pb-12 mb-12 border-b border-[#1E2D4A] last:border-b-0 last:mb-0 last:pb-0 ${
+                    section.emphasized ? "border-l-4 border-l-[#F59E0B] pl-6" : ""
+                  }`}
                 >
                   {/* Section number + title */}
                   <div className="flex items-center gap-4 mb-6">
@@ -366,33 +907,7 @@ export default function ConfidentialitePage() {
                     </h2>
                   </div>
 
-                  {/* Paragraphs */}
-                  {section.content.map((p, pi) => (
-                    <p key={pi} className="font-sans text-sm text-[#C4CDD8] leading-relaxed mb-4">
-                      {p}
-                    </p>
-                  ))}
-
-                  {/* Bullet list */}
-                  {section.bullets && (
-                    <ul className="flex flex-col gap-3 my-5 pl-1">
-                      {section.bullets.map((b, bi) => (
-                        <li key={bi} className="flex items-start gap-3">
-                          <span className="w-5 h-px bg-wl-red mt-2.5 flex-shrink-0" />
-                          <span className="font-sans text-sm text-[#9AA3B2] leading-relaxed">
-                            {b}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-
-                  {/* After-bullets paragraphs */}
-                  {section.after?.map((p, pi) => (
-                    <p key={pi} className="font-sans text-sm text-[#C4CDD8] leading-relaxed mt-4">
-                      {p}
-                    </p>
-                  ))}
+                  {renderBlocks(section.blocks)}
                 </article>
               ))}
             </div>
@@ -412,14 +927,14 @@ export default function ConfidentialitePage() {
       <section className="bg-[#060A14]/75">
         <div className="max-w-6xl mx-auto px-6 py-16 flex flex-col md:flex-row items-center justify-between gap-8">
           <div>
-            <div className={`${label} text-wl-red mb-3`}>Des questions?</div>
+            <div className={`${label} text-wl-red mb-3`}>Des questions sur vos données?</div>
             <h2 className="nx-display text-4xl font-black text-white uppercase leading-tight">
-              Contacte-nous
+              Contactez le RPRP
             </h2>
           </div>
           <div className="flex gap-3 flex-shrink-0">
-            <a href="mailto:info@welead.ca" className="h-12 px-8 bg-wl-red text-white font-head font-black text-xs uppercase tracking-widest hover:bg-wl-red-hover transition-colors hover:shadow-[0_8px_28px_rgba(232,72,72,0.38)] hover:-translate-y-0.5 inline-flex items-center">
-              info@welead.ca
+            <a href="mailto:confidentialite@nexussports.ca" className="h-12 px-8 bg-wl-red text-white font-head font-black text-xs uppercase tracking-widest hover:bg-wl-red-hover transition-colors hover:shadow-[0_8px_28px_rgba(232,72,72,0.38)] hover:-translate-y-0.5 inline-flex items-center">
+              confidentialite@nexussports.ca
             </a>
             <Link
               href="/"
@@ -431,44 +946,7 @@ export default function ConfidentialitePage() {
         </div>
       </section>
 
-      {/* ══════════════════════════════════════════
-          FOOTER
-      ══════════════════════════════════════════ */}
-      <footer className="bg-[#030609]/80 border-t border-[#1E2D4A]">
-        <div className="max-w-6xl mx-auto px-6 pt-10 pb-6">
-
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6 pb-6 border-b border-[#1E2D4A]">
-
-            <div className="flex items-center gap-3">
-              <NexusLogo variant="white" height={22} href="/" className="opacity-80" />
-              <span className={`${label} text-[#475569]`}>
-                Construit pour les étudiants-athlètes québécois
-              </span>
-            </div>
-
-            <nav className="flex items-center gap-8">
-              <Link href="/confidentialite" className={`${label} text-[#475569] hover:text-[#9AA3B2] transition-colors`}>Confidentialité</Link>
-              <Link href="/conditions" className={`${label} text-[#475569] hover:text-[#9AA3B2] transition-colors`}>Conditions</Link>
-              <Link href="/contact" className={`${label} text-[#475569] hover:text-[#9AA3B2] transition-colors`}>Contact</Link>
-            </nav>
-
-            <div className="flex items-center gap-5">
-              {SOCIALS.map(({ name, href, d }) => (
-                <a key={name} href={href} aria-label={name} target="_blank" rel="noopener noreferrer"
-                  className="nx-social-icon">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-                    <path d={d} />
-                  </svg>
-                </a>
-              ))}
-            </div>
-
-          </div>
-
-          <p className={`${label} text-[#2E3D55] text-center pt-5`}>&copy; 2026 Nexus — Propulsé par <img src="/brand/logo-white-red.png" alt="WeLead" style={{height:16}} /></p>
-
-        </div>
-      </footer>
+      <Footer />
 
     </div>
   );
