@@ -447,6 +447,20 @@ export default function OnboardingPage() {
 
   function canProceed(): boolean {
     if (!user) return false;
+    // Step 0 (Profil) for coach role: require sport_principal. Without
+    // it the wizard advances but LeagueCoachLeagueStep at step 1 hits
+    // a dead-end — sportName="" → sportId null → red "ton sport
+    // principal n'a pas été reconnu" error screen with no inline
+    // recovery. School coaches with null sport also leave users.sport
+    // null, which hides their athletes from sport-scoped recruiter
+    // searches. Gate at the source.
+    if (step === 0 && user.role === "coach") {
+      const raw = typeof window !== "undefined" ? localStorage.getItem("nexus_user") : null;
+      const localUser = raw ? JSON.parse(raw) : {};
+      const profile = localUser.profile as Record<string, unknown> | null;
+      const sportPrincipal = profile?.sport_principal;
+      return typeof sportPrincipal === "string" && sportPrincipal.trim().length > 0;
+    }
     if (step === 1) return validateInstitution().ok;
     // Step 2 (DirectorChoiceStep) was previously hard-gated on rprp_consent
     // for owner/interim. Loi 25 designation is now non-blocking: the director
