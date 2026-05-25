@@ -3,7 +3,6 @@ import ProblemSection from "@/components/marketing/ProblemSection";
 import SolutionGrid from "@/components/marketing/SolutionGrid";
 import HowItWorks from "@/components/marketing/HowItWorks";
 import FeatureGrid from "@/components/marketing/FeatureGrid";
-import TestimonialSection from "@/components/marketing/TestimonialSection";
 import CtaSection from "@/components/marketing/CtaSection";
 import PlaybookBackground from "@/app/components/PlaybookBackground";
 import MarketingNav from "@/components/marketing/MarketingNav";
@@ -18,7 +17,7 @@ export default function PourLesEtudiantAthletePage() {
         eyebrow="POUR LES ÉTUDIANTS-ATHLÈTES"
         title="FAIS-TOI REPÉRER PAR LES CÉGEPS"
         subtitle="Ton coach crée ton profil sur Nexus. Les recruteurs CÉGEP de tout le Québec peuvent te découvrir, voir tes stats, ta vidéo et ton parcours académique."
-        ctaPrimary={{ label: "PARLE À TON COACH →", href: "/comment-ca-marche" }}
+        ctaPrimary={{ label: "SOIS LE NEXT →", href: "/inscription?role=ATHLETE" }}
         ctaSecondary={{ label: "COMMENT ÇA MARCHE", href: "/comment-ca-marche" }}
       />
 
@@ -26,19 +25,19 @@ export default function PourLesEtudiantAthletePage() {
         title="T'ES PRÊT. MAIS QUI LE SAIT ?"
         problems={[
           {
-            icon: "🤷",
+            icon: "eyeOff",
             title: "Invisible",
             description:
               "T'es peut-être le meilleur QB de ta ligue, mais les CÉGEPs hors de ta région ne le savent pas.",
           },
           {
-            icon: "📱",
+            icon: "monitor",
             title: "Pas de vitrine",
             description:
               "Ton highlight reel est sur TikTok entre des vidéos de chats. Aucun endroit professionnel pour te présenter.",
           },
           {
-            icon: "🎓",
+            icon: "gradCap",
             title: "Le sport ET l'école",
             description:
               "Les recruteurs veulent voir tes stats ET ta moyenne générale. Aucun outil ne combine les deux.",
@@ -50,25 +49,25 @@ export default function PourLesEtudiantAthletePage() {
         title="TON PROFIL. TA CHANCE."
         solutions={[
           {
-            icon: "🏆",
+            icon: "trophy",
             title: "Profil étudiant-athlète complet",
             description:
               "Stats, position, highlight vidéo, parcours académique, moyenne générale — tout sur une page.",
           },
           {
-            icon: "👁️",
+            icon: "search",
             title: "Vu par 54 CÉGEPs",
             description:
               "Les recruteurs de tous les CÉGEPs RSEQ peuvent te découvrir et contacter ton coach.",
           },
           {
-            icon: "⭐",
+            icon: "allstar",
             title: "Évaluation de ton coach",
             description:
               "Ton coach te note sur 11 critères reconnus. C'est ta lettre de recommandation intégrée.",
           },
           {
-            icon: "🔵",
+            icon: "shield",
             title: "Badge vérifié",
             description:
               "Un profil complet = un badge bleu qui te démarque des profils incomplets.",
@@ -80,21 +79,21 @@ export default function PourLesEtudiantAthletePage() {
         steps={[
           {
             number: "01",
-            title: "Parle à ton coach",
+            title: "Inscris-toi en quelques minutes",
             description:
-              "Demande à ton entraîneur de s'inscrire sur Nexus et de créer ton profil.",
+              "Crée ton profil tout de suite — pas besoin d'attendre. Stats, position, vidéo, parcours : tu remplis ce que tu peux et tu peaufines plus tard.",
           },
           {
             number: "02",
-            title: "Ton profil est créé",
+            title: "Ton coach te vérifie (recommandé)",
             description:
-              "Ton coach entre tes stats, ta vidéo et tes infos académiques. Toi, tu joues.",
+              "Demande-lui d'ajouter son évaluation et de valider tes stats. Le badge bleu fait monter ton profil dans les recherches des recruteurs.",
           },
           {
             number: "03",
             title: "Les recruteurs te trouvent",
             description:
-              "Ton profil apparaît dans les recherches des recruteurs CÉGEP. Ils contactent ton coach s'ils sont intéressés.",
+              "Ton profil apparaît dans les recherches des recruteurs CÉGEP. Ils peuvent te contacter (ou contacter ton coach) s'ils sont intéressés.",
           },
         ]}
       />
@@ -135,37 +134,9 @@ export default function PourLesEtudiantAthletePage() {
         ]}
       />
 
-      <TestimonialSection
-        testimonials={[
-          {
-            name: "Marc-Antoine Tremblay",
-            role: "QB, École De Rochebelle — recruté par CÉGEP Garneau",
-            quote:
-              "Mon coach a créé mon profil un mardi. Le jeudi, un recruteur de Garneau l'avait déjà contacté.",
-          },
-          {
-            name: "Jérémy Lavoie",
-            role: "Meneur, Polyvalente Deux-Montagnes — recruté par Montmorency",
-            quote:
-              "Sans Nexus, j'aurais jamais été vu par Montmorency. Ils recrutent pas dans ma région d'habitude.",
-          },
-          {
-            name: "Alexis Bouchard",
-            role: "WR, Collège Saint-Bernard",
-            quote:
-              "Le badge vérifié m'a démarqué. Les recruteurs m'ont dit qu'ils regardent les vérifiés en premier.",
-          },
-        ]}
-        stats={[
-          { value: "200+", label: "Étudiants-athlètes inscrits" },
-          { value: "54", label: "CÉGEPs connectés" },
-          { value: "4h", label: "Temps de réponse moyen" },
-        ]}
-      />
-
       <CtaSection
         title="TON FUTUR CÉGEP TE CHERCHE PEUT-ÊTRE EN CE MOMENT"
-        ctaPrimary={{ label: "PARLE À TON COACH →", href: "/comment-ca-marche" }}
+        ctaPrimary={{ label: "SOIS LE NEXT →", href: "/inscription?role=ATHLETE" }}
         subtext="Demande à ton entraîneur de te créer un profil Nexus."
       />
     </div>

@@ -55,10 +55,10 @@ const BADGE_SHOWCASE = [
   { key: "captain", name: "Capitaine", desc: "Désigné capitaine de son équipe. Leadership officiel reconnu par le coach." },
   { key: "allstar", name: "Étoile provinciale", desc: "Sélectionné parmi les meilleurs de sa catégorie au niveau provincial." },
   { key: "progression", name: "Progression marquée", desc: "A démontré une évolution significative sur une ou plusieurs saisons." },
-  { key: "team_leader", name: "Meneur d'équipe", detail: "Points", desc: "Chef de file statistique de son équipe — le coach précise la catégorie (points, plaqués, buts, etc.)." },
-  { key: "league_leader", name: "Meneur de la ligue", detail: "Plaqués", desc: "Chef de file statistique dans sa ligue. Accomplissement dominant verrouillé par chiffres." },
+  { key: "team_leader", name: "Meneur d'équipe", detail: "Catégorie au choix", desc: "Chef de file statistique de son équipe. Le coach choisit la catégorie qui s'applique au sport (points, plaqués, buts, passes, interceptions, etc.)." },
+  { key: "league_leader", name: "Meneur de la ligue", detail: "Catégorie au choix", desc: "Chef de file statistique dans sa ligue. Le coach choisit la catégorie dominante — toute stat mesurable de son sport." },
   { key: "mvp", name: "Joueur par excellence", desc: "Reconnu comme joueur clé par son entraîneur pour sa saison ou sa carrière." },
-  { key: "custom", name: "Distinction personnalisée", detail: "Champion régional", desc: "Accomplissement spécifique reconnu par le coach — le texte est personnalisé pour refléter la réalité de l'athlète." },
+  { key: "custom", name: "Distinction personnalisée", detail: "Texte personnalisé", desc: "Accomplissement spécifique reconnu par le coach — le texte est libre et reflète la réalité de l'athlète (ex. titre régional, record d'équipe, distinction du tournoi)." },
 ];
 
 const REPUTATION_BADGES = [

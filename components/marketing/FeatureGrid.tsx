@@ -22,9 +22,9 @@ export default function FeatureGrid({ title, features, id }: FeatureGridProps) {
               key={index}
               className="group bg-[#1A1D24] rounded-xl border border-[#1e2128] p-5 sm:p-6 hover:bg-[#22262E] hover:border-[#E63946]/20 transition-all duration-300 relative overflow-hidden"
             >
-              {/* Red top accent on hover */}
+              {/* Red top accent on hover — replaces the orphan
+                  dot accent that read as "broken icon" in context. */}
               <div className="absolute top-0 left-0 right-0 h-[2px] bg-[#E63946] scale-x-0 group-hover:scale-x-100 transition-transform origin-left" />
-              <div className="w-1.5 h-1.5 rounded-full bg-[#E63946] mb-3" />
               <h3 className="text-[14px] font-bold text-white mb-1.5">
                 {feature.title}
               </h3>

@@ -1,3 +1,5 @@
+import NxIcon from "@/components/ui/NxIcon";
+
 interface SolutionItem {
   icon: string;
   title: string;
@@ -31,7 +33,7 @@ export default function SolutionGrid({
               className="bg-[#1A1D24] rounded-xl border border-[#1e2128] p-6 sm:p-7 group transition-all hover:border-l-[3px] hover:border-l-[#E63946] hover:bg-[#22262E]"
             >
               <div className="w-12 h-12 bg-[rgba(230,57,70,0.1)] rounded-full flex items-center justify-center">
-                <span className="text-[24px]">{solution.icon}</span>
+                <NxIcon name={solution.icon} size={22} className="text-[#E63946]" />
               </div>
               <h3 className="nx-display text-[16px] font-bold text-white mt-4 mb-2">
                 {solution.title}
