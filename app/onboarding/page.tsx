@@ -64,9 +64,12 @@ interface NexusUser {
   is_also_coach?: boolean;
   school_admin_type?: "owner" | "interim" | null;
   // CÉGEP admin fields (reuses is_school_admin — role infers school vs CÉGEP).
-  // CÉGEP has no interim equivalent — only "owner" per spec.
+  // CÉGEP now mirrors school: "owner" (DIRECTEUR) | "interim" (INTERIM) | null.
+  // The interim path lets a recruiter stand in temporarily until the
+  // permanent CÉGEP director claims — auto-demoted by the existing
+  // apply_admin_claim_approval cascade when DIRECTEUR is approved.
   is_also_recruiter?: boolean;
-  cegep_admin_type?: "owner" | null;
+  cegep_admin_type?: "owner" | "interim" | null;
   // Shared
   pending_director_invite?: Record<string, unknown> | null;
   // Loi 25 — explicit RPRP consent at director onboarding. Required to
@@ -578,7 +581,7 @@ export default function OnboardingPage() {
 
       const isRecruiterCegepClaim =
         user?.role === "recruiter"
-        && localUser.cegep_admin_type === "owner";
+        && (localUser.cegep_admin_type === "owner" || localUser.cegep_admin_type === "interim");
 
       const isAdminClaim = isSchoolCoachAdminClaim || isRecruiterCegepClaim;
 
@@ -689,18 +692,22 @@ export default function OnboardingPage() {
           await supabase.from("users").update({ school_id: cegep.id }).eq("id", authUser.id);
 
           // Item 11-Recruteur: file the admin_claims row when a
-          // recruteur claimed Directeur CÉGEP. CÉGEP only has
-          // DIRECTEUR (no INTERIM equivalent per spec). Trigger flips
-          // users.is_school_admin + profile_data.admin_type='owner' on
-          // APPROVED. PendingAdminClaimBanner reads from this row
-          // until the platform admin reviews from /admin/approvals.
+          // recruteur claimed Directeur OR Intérimaire for the CÉGEP.
+          // claim_type is derived from cegep_admin_type — mirrors the
+          // school-coach block. Trigger flips is_school_admin +
+          // profile_data.admin_type ('owner' for DIRECTEUR / 'interim'
+          // for INTERIM) on APPROVED. The existing demotion cascade
+          // is school_id-scoped and role-agnostic — when a CÉGEP
+          // DIRECTEUR claim is approved later, any sitting recruiter-
+          // interim at the same CÉGEP is auto-demoted.
           if (isRecruiterCegepClaim) {
+            const claimType = localUser.cegep_admin_type === "owner" ? "DIRECTEUR" : "INTERIM";
             const { error: claimErr } = await supabase
               .from("admin_claims")
               .insert({
                 user_id: authUser.id,
                 school_id: cegep.id,
-                claim_type: "DIRECTEUR",
+                claim_type: claimType,
                 status: "PENDING",
               });
             if (claimErr) console.error("[Onboarding] admin_claims insert (recruteur):", claimErr);
@@ -952,8 +959,12 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
   // "coach_only" is always available.
   const [schoolAdminState, setSchoolAdminState] = useState<{ hasPermanent: boolean; hasInterim: boolean; loading: boolean }>({ hasPermanent: false, hasInterim: false, loading: true });
 
+  // Runs for BOTH school + CÉGEP now (was school-only). Same query
+  // shape — admins are detected via is_school_admin=true + admin_type
+  // in profile_data, regardless of whether the institution is a
+  // SECONDAIRE or a CEGEP schools row. Skips for league (separate flow).
   useEffect(() => {
-    if (!isSchool || !user.institution) {
+    if ((!isSchool && !isCegep) || !user.institution) {
       setSchoolAdminState({ hasPermanent: false, hasInterim: false, loading: false });
       return;
     }
@@ -989,14 +1000,16 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
       setSchoolAdminState({ hasPermanent, hasInterim, loading: false });
     })();
     return () => { cancelled = true; };
-  }, [isSchool, user.institution]);
+  }, [isSchool, isCegep, user.institution]);
 
-  const showSelf = !isSchool || !schoolAdminState.hasPermanent;
+  const showSelf = (!isSchool && !isCegep) || !schoolAdminState.hasPermanent;
   // Item 11-Recruteur: cegep flow drops the standalone "Inviter quelqu'un"
   // card — the invite-the-director CTA moves inside the "Recruteur
   // seulement" expanded sub-form (non-blocking, optional).
   const showInvite = (!isSchool && !isCegep) || (isSchool && !schoolAdminState.hasPermanent);
-  const showInterim = isSchool && !schoolAdminState.hasPermanent && !schoolAdminState.hasInterim;
+  // Interim now available for both school AND CÉGEP. Same gate :
+  // only when no permanent + no sitting interim already exists.
+  const showInterim = (isSchool || isCegep) && !schoolAdminState.hasPermanent && !schoolAdminState.hasInterim;
   const showCoachOnly = isSchool;
   const showRecruteurOnly = isCegep;
 
@@ -1061,20 +1074,22 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
         </p>
       </div>
 
-      {/* Loading state — block UI until we know which options to show */}
-      {isSchool && schoolAdminState.loading ? (
+      {/* Loading state — block UI until we know which options to show.
+          Fires for both school and CÉGEP now that the pre-check runs
+          for both. */}
+      {(isSchool || isCegep) && schoolAdminState.loading ? (
         <div className="flex items-center justify-center py-8">
           <div className="w-6 h-6 border-2 border-[#E63946] border-t-transparent rounded-full animate-spin" />
         </div>
       ) : (
       <>
-      {/* Status hint when admin slot is already filled (2nd+ coach case) */}
-      {isSchool && schoolAdminState.hasPermanent && (
+      {/* Status hint when admin slot is already filled. */}
+      {(isSchool || isCegep) && schoolAdminState.hasPermanent && (
         <div className="bg-[#1A1D24]/60 border border-white/[0.06] rounded-lg px-4 py-3 text-[12px] text-[#9CA3AF]">
-          Un directeur sportif est déjà en place pour {orgName}. Tu peux rejoindre l&apos;équipe comme entraîneur.
+          Un directeur sportif est déjà en place pour {orgName}. Tu peux rejoindre l&apos;équipe comme {isCegep ? "recruteur" : "entraîneur"}.
         </div>
       )}
-      {isSchool && !schoolAdminState.hasPermanent && schoolAdminState.hasInterim && (
+      {(isSchool || isCegep) && !schoolAdminState.hasPermanent && schoolAdminState.hasInterim && (
         <div className="bg-[#1A1D24]/60 border border-white/[0.06] rounded-lg px-4 py-3 text-[12px] text-[#9CA3AF]">
           Un directeur intérimaire est en place. Si tu deviens directeur permanent, il sera rétrogradé automatiquement.
         </div>
@@ -1146,7 +1161,11 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
               </svg>
             </div>
             <span className="font-head font-black text-[13px] uppercase tracking-[0.1em] text-white">Je serai intérimaire</span>
-            <span className="text-[11px] text-[#6B7280] leading-snug">Aucun directeur sportif n&apos;est en place pour l&apos;instant — je vais assumer ce rôle temporairement</span>
+            <span className="text-[11px] text-[#6B7280] leading-snug">
+              {isCegep
+                ? "Aucun directeur sportif n'est en place au CÉGEP — je vais assumer ce rôle temporairement"
+                : "Aucun directeur sportif n'est en place pour l'instant — je vais assumer ce rôle temporairement"}
+            </span>
           </button>
         )}
 
@@ -1242,8 +1261,8 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
         </div>
       )}
 
-      {/* INTÉRIMAIRE expanded */}
-      {choice === "interim" && type === "school" && (
+      {/* INTÉRIMAIRE expanded — renders for both school and CÉGEP */}
+      {choice === "interim" && (type === "school" || type === "cegep") && (
         <div className="animate-fade-slide-down space-y-4 bg-[#111317]/60 rounded-xl p-5 border border-white/5">
           <div className="flex items-start gap-3">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5">
@@ -1256,7 +1275,9 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
                 Tu seras Directeur intérimaire jusqu&apos;à l&apos;arrivée d&apos;un directeur permanent.
               </p>
               <p className="text-[11px] text-[#9CA3AF] leading-relaxed mt-2">
-                Tu auras les pleins pouvoirs administratifs (gérer les autres entraîneurs, voir les stats de l&apos;école, approuver les profils). Si un directeur officiel s&apos;inscrit plus tard et choisit «&nbsp;C&apos;est moi&nbsp;», ton rôle sera automatiquement ramené à entraîneur et tu seras notifié.
+                {isCegep
+                  ? <>Tu auras les pleins pouvoirs administratifs (gérer les autres recruteurs du CÉGEP, voir les stats globales de recrutement, superviser le pipeline). Si un directeur officiel s&apos;inscrit plus tard et choisit «&nbsp;C&apos;est moi&nbsp;», ton rôle sera automatiquement ramené à recruteur et tu seras notifié.</>
+                  : <>Tu auras les pleins pouvoirs administratifs (gérer les autres entraîneurs, voir les stats de l&apos;école, approuver les profils). Si un directeur officiel s&apos;inscrit plus tard et choisit «&nbsp;C&apos;est moi&nbsp;», ton rôle sera automatiquement ramené à entraîneur et tu seras notifié.</>}
               </p>
             </div>
           </div>
