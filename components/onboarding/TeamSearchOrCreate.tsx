@@ -53,8 +53,6 @@ export interface TeamSearchOrCreateProps {
   className?: string;
 }
 
-interface SportOption { id: string; nom: string }
-
 interface RawRow {
   id: string;
   name: string;
@@ -97,29 +95,10 @@ export default function TeamSearchOrCreate({
   const [hasSearched, setHasSearched] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Local search-scope sport. Seeded from the prop (the coach's
-  // declared sport from step 0). Never written back — finish() reads
-  // sport_principal from localStorage, which this selector doesn't
-  // touch.
-  const [searchSportId, setSearchSportId] = useState<string>(sportId);
-  const [sportOptions, setSportOptions] = useState<SportOption[]>([]);
-
   // Pagination + responsive page size.
   const [pageSize, setPageSize] = useState(5);
   const [currentPage, setCurrentPage] = useState(0);
   const touchStartXRef = useRef<number | null>(null);
-
-  // Fetch sport list once on mount.
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const supabase = createClient();
-      const { data } = await supabase.from("sports").select("id, nom").order("nom");
-      if (cancelled) return;
-      setSportOptions((data ?? []) as SportOption[]);
-    })();
-    return () => { cancelled = true; };
-  }, []);
 
   // Responsive page size: 5 on narrow viewports, 8 on md+.
   useEffect(() => {
@@ -134,17 +113,14 @@ export default function TeamSearchOrCreate({
   // Reset to page 0 whenever the result set changes shape.
   useEffect(() => {
     setCurrentPage(0);
-  }, [search, searchSportId]);
+  }, [search, sportId]);
 
   // Fetch + token-filter results whenever search or sport changes.
+  // The parent (LeagueCoachLeagueStep) hard-guards `if (!sportId)`
+  // before mounting this component, so the prop is always truthy
+  // here — no defensive early-return needed.
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (!searchSportId) {
-      setResults([]);
-      setHasSearched(false);
-      setLoading(false);
-      return;
-    }
 
     setLoading(true);
     debounceRef.current = setTimeout(async () => {
@@ -163,7 +139,7 @@ export default function TeamSearchOrCreate({
         .select(
           "id, name, age_group, gender, division, league, school_id, schools!school_id(id, name, type), team_coaches(coach_id)"
         )
-        .eq("sport_id", searchSportId)
+        .eq("sport_id", sportId)
         .order("name")
         .limit(500);
 
@@ -227,7 +203,7 @@ export default function TeamSearchOrCreate({
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [search, searchSportId]);
+  }, [search, sportId]);
 
   // Pagination derived state. Clamp currentPage if results shrink.
   const totalPages = Math.max(1, Math.ceil(results.length / pageSize));
@@ -304,29 +280,9 @@ export default function TeamSearchOrCreate({
 
   return (
     <div className={`space-y-4 ${className}`}>
-      {/* Sport selector — search-scope only, never written back. */}
-      <div>
-        <label htmlFor="team-search-sport" className={labelCls}>Sport</label>
-        <select
-          id="team-search-sport"
-          value={searchSportId}
-          onChange={(e) => setSearchSportId(e.target.value)}
-          className={`${inputCls} appearance-none cursor-pointer`}
-          aria-label="Sport pour la recherche d'équipe"
-        >
-          {sportOptions.length === 0 && (
-            <option value={searchSportId}>Chargement...</option>
-          )}
-          {sportOptions.map((s) => (
-            <option key={s.id} value={s.id}>{s.nom}</option>
-          ))}
-        </select>
-        <p className="text-[11px] text-[#6B7280] mt-1.5">
-          Change le sport pour chercher une équipe d&apos;un autre sport — ça ne modifie pas ton sport déclaré.
-        </p>
-      </div>
-
-      {/* Name search input. */}
+      {/* Name search input. Sport scope is inherited from Profil
+          (sport_principal → sports.id resolved in LeagueCoachLeagueStep
+          and passed as the sportId prop) — no in-step sport override. */}
       <div>
         <label htmlFor="team-search-input" className={labelCls}>Nom de l&apos;équipe</label>
         <input
