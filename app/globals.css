@@ -491,11 +491,14 @@ body.light-mode footer[class*="border-[#1E2D4A]"] {
   transition: color 0.22s ease, filter 0.22s ease, transform 0.22s ease;
 }
 
-/* Per-icon brand color on hover is applied via Tailwind utility
-   classes in the footer markup (hover:text-[#E1306C], etc.). We
-   keep the scale lift here but drop the red color + red drop-
-   shadow so they don't override the per-icon brand color. */
+/* Per-icon brand color on hover. Each <a> sets --hover-color via
+   the inline style attribute (one CSS variable per platform :
+   IG pink, FB blue, YT red, TikTok turquoise). The rule below
+   reads that variable. CSS vars beat Tailwind arbitrary-value
+   classes here because they don't rely on JIT detecting a
+   composite className string at build time. Scale lift kept. */
 .nx-social-icon:hover {
+  color: var(--hover-color, #E63946);
   transform: scale(1.18);
 }
 
