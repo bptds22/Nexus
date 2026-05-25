@@ -3013,17 +3013,17 @@ function UmbrellaStep({
                 <p className="font-bold text-white text-sm truncate">{team.name}</p>
                 <div className="flex items-center gap-1.5 flex-wrap mt-2">
                   {team.division && (
-                    <span className="shrink-0 px-2 py-0.5 rounded-full bg-[#E63946]/10 text-[10px] font-bold text-[#E63946] uppercase border border-[#E63946]/20">
+                    <span className="shrink-0 px-2 py-0.5 rounded-full bg-white/5 text-[10px] font-bold text-white/70 uppercase border border-white/10">
                       {team.division}
                     </span>
                   )}
                   {team.age_group && (
-                    <span className="shrink-0 px-2 py-0.5 rounded-full bg-[#3B82F6]/10 text-[10px] font-bold text-[#3B82F6] uppercase border border-[#3B82F6]/20">
+                    <span className="shrink-0 px-2 py-0.5 rounded-full bg-white/5 text-[10px] font-bold text-white/70 uppercase border border-white/10">
                       {team.age_group}
                     </span>
                   )}
                   {genderText && (
-                    <span className="shrink-0 px-2 py-0.5 rounded-full bg-white/5 text-[10px] font-bold text-[#9CA3AF] uppercase border border-white/10">
+                    <span className="shrink-0 px-2 py-0.5 rounded-full bg-white/5 text-[10px] font-bold text-white/70 uppercase border border-white/10">
                       {genderText}
                     </span>
                   )}
