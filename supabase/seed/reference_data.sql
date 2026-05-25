@@ -6501,3 +6501,62 @@ SELECT s.id,
 FROM team_names t
 JOIN public.schools s ON s.name = t.name AND s.type = 'LIGUE_CIVILE'
 ON CONFLICT ON CONSTRAINT teams_identity_unique DO NOTHING;
+
+--
+-- Data for Name: schools (football LIGUE_CIVILE clubs); Type: TABLE DATA; Schema: public; Owner: postgres
+-- 40 civil-football clubs from the Football Québec directory (footballquebec.com/fr/football/reseauxdecompetition).
+-- Coach-creation sport: clubs only, no team rows. NOT EXISTS guard so db reset is a no-op when the rows already exist.
+-- has_secondaire / has_collegial omitted — they default to false (school-level flags, not meaningful on clubs).
+--
+
+WITH new_clubs(name, region) AS (
+  VALUES
+    ('Aces Pointe Saint-Charles',                          'Montréal'),
+    ('Football civil de Saint-Jean-sur-Richelieu (AFSCJ)', 'Rive-Sud'),
+    ('Diablos de LaPrairie',                               'Rive-Sud'),
+    ('Barons de Saint-Bruno',                              'Rive-Sud'),
+    ('Vandoos de Drummondville',                           'Centre-du-Québec'),
+    ('Rhinos de Lanaudière',                               'Lanaudière'),
+    ('Packers de Greenfield',                              'Rive-Sud'),
+    ('Grizzlis de Boucherville',                           'Rive-Sud'),
+    ('Wildcats Laurentides-Lanaudière',                    'Laurentides'),
+    ('Pirates du Richelieu',                               'Rive-Sud'),
+    ('Vicas de Victoriaville',                             'Centre-du-Québec'),
+    ('Vikings de Laval-Nord',                              'Laval'),
+    ('Patriotes de l''Ouest',                              'Lac St-Louis'),
+    ('Stallions de Saint-Lazare',                          'Lac St-Louis'),
+    ('Warriors de LaSalle',                                'Lac St-Louis'),
+    ('Blues de Chomedey',                                  'Laval'),
+    ('Dragons de Laval',                                   'Laval'),
+    ('Bulldogs de Laval',                                  'Laval'),
+    ('Cougars de Lakeshore',                               'Lac St-Louis'),
+    ('Cougars de Saint-Léonard',                           'Bourassa'),
+    ('Vikings de Gatineau',                                'Outaouais'),
+    ('Hornets de Sun Youth',                               'Montréal'),
+    ('North Shore',                                        'Montréal — Lac-Saint-Louis'),
+    ('Raiders de Chateauguay',                             'Sud-Ouest'),
+    ('Spartans de Saint-Laurent',                          'Lac St-Louis'),
+    ('North Shore Broncos',                                'Montréal — Lac-Saint-Louis'),
+    ('Nos Jeunes à Cœur / Loups du Nord',                  'Laurentides'),
+    ('Ottawa Junior Riders Football',                      'Outaouais'),
+    ('South Shore Jr Packers',                             'Rive-Sud'),
+    ('Hornets de la Rive-Sud',                             'Rive-Sud'),
+    ('Rebelles de Québec',                                 'Capitale-Nationale'),
+    ('Nomades de la Beauce',                               'Chaudière-Appalaches'),
+    ('Mercenaires du Saguenay',                            'Saguenay-Lac-Saint-Jean'),
+    ('Assurancia Groupe Tardif',                           'Mauricie'),
+    ('Phénix de la Mauricie',                              'Mauricie'),
+    ('Blitz de Montréal',                                  'Montréal'),
+    ('Jaguars de la Rive-Sud',                             'Rive-Sud'),
+    ('Cobras de Laval',                                    'Laval'),
+    ('Valkyries de Gatineau',                              'Outaouais'),
+    ('Renegade de North Shore',                            'Montréal — Lac-Saint-Louis')
+)
+INSERT INTO public.schools (name, type, city, region)
+SELECT n.name, 'LIGUE_CIVILE', NULL, n.region
+FROM new_clubs n
+WHERE NOT EXISTS (
+  SELECT 1 FROM public.schools s
+  WHERE lower(s.name) = lower(n.name)
+    AND s.type = 'LIGUE_CIVILE'
+);
