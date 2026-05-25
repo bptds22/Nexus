@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { genderLabel } from "@/lib/config/gender";
 
 /* ═══════════════════════════════════════════════════════════════
    TeamSearchOrCreate — civil-coach team search.
@@ -78,20 +79,6 @@ const labelCls =
 function normalize(s: string | null | undefined): string {
   if (!s) return "";
   return s.toLowerCase().normalize("NFD").replace(/\p{Mn}/gu, "");
-}
-
-// Display-only normalization: map the casing/accent variants of
-// gender values the DB carries (RSEQ seed: "Féminin"/"Masculin"/
-// "Mixte"; civil-create form: "feminin"/"masculin"/"mixte") to a
-// single canonical render. Stored values are left alone.
-function displayGender(raw: string | null): string | null {
-  if (!raw) return null;
-  switch (normalize(raw)) {
-    case "feminin":   return "Féminin";
-    case "masculin":  return "Masculin";
-    case "mixte":     return "Mixte";
-    default:          return raw;
-  }
 }
 
 const SWIPE_THRESHOLD_PX = 50;
@@ -273,7 +260,7 @@ export default function TeamSearchOrCreate({
   // prior component shape so the wizard's existing select handler
   // chains in unchanged — just enriched with the new pills.
   if (selectedTeam) {
-    const genderLabel = displayGender(selectedTeam.gender);
+    const genderText = selectedTeam.gender ? genderLabel(selectedTeam.gender) : null;
     return (
       <div className={`bg-[#111317] border border-[#22C55E]/30 rounded-lg p-5 space-y-3 ${className}`}>
         <div className="flex items-start justify-between gap-3">
@@ -290,9 +277,9 @@ export default function TeamSearchOrCreate({
                   {selectedTeam.age_group}
                 </span>
               )}
-              {genderLabel && (
+              {genderText && (
                 <span className="px-2 py-0.5 rounded-full bg-white/5 text-[10px] font-bold text-[#9CA3AF] uppercase border border-white/10">
-                  {genderLabel}
+                  {genderText}
                 </span>
               )}
             </div>
@@ -380,7 +367,7 @@ export default function TeamSearchOrCreate({
             onTouchEnd={onTouchEnd}
           >
             {pagedResults.map((team) => {
-              const genderLabel = displayGender(team.gender);
+              const genderText = team.gender ? genderLabel(team.gender) : null;
               return (
                 <button
                   key={team.id}
@@ -402,9 +389,9 @@ export default function TeamSearchOrCreate({
                             {team.age_group}
                           </span>
                         )}
-                        {genderLabel && (
+                        {genderText && (
                           <span className="shrink-0 px-2 py-0.5 rounded-full bg-white/5 text-[10px] font-bold text-[#9CA3AF] uppercase border border-white/10">
-                            {genderLabel}
+                            {genderText}
                           </span>
                         )}
                       </div>

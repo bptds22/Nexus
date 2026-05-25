@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { getCurrentSeason } from "@/lib/utils/season";
+import { AGE_OPTIONS, AUTRE_VALUE, DIVISION_OPTIONS } from "@/lib/config/civilVocab";
 
 /* ═══════════════════════════════════════════════════════════════
    TeamCreateForm — pure-presentation form for creating a civil
@@ -17,8 +18,19 @@ import { getCurrentSeason } from "@/lib/utils/season";
    and id respectively.
 
    Pure-presentation by design: the form collects {team_name,
-   age_group, gender, league_input, league_id_if_existing, season}
-   and emits via onSubmit. The caller owns the find-or-create logic.
+   age_group, division, gender, league_input, league_id_if_existing,
+   season} and emits via onSubmit. The caller owns the find-or-create
+   logic.
+
+   Constrained vocab : age_group + division both come from
+   lib/config/civilVocab (single combined list across sports). Each
+   has an "Autre" branch that reveals a required free-text input —
+   the typed value is what gets emitted, never the literal "Autre".
+
+   Gender : the form writes the canonical accented form
+   ("Masculin"/"Féminin"/"Mixte") so new rows stop drifting against
+   the RSEQ seed casing. Display normalization lives in
+   lib/config/gender.ts (genderLabel) for any legacy lowercase rows.
 
    School (league) autocomplete:
    - On mount, fetch all LIGUE_CIVILE schools. Civil league count
@@ -33,16 +45,15 @@ import { getCurrentSeason } from "@/lib/utils/season";
      diverges from the cached name → reset league_id_if_existing.
 
    Season default is derived from getCurrentSeason() (evaluated once
-   at module load — see lib/utils/season.ts). Gender values match
-   the team-level convention: lowercase, no accents — "masculin",
-   "feminin", "mixte".
+   at module load — see lib/utils/season.ts).
 ═══════════════════════════════════════════════════════════════ */
 
-export type Gender = "masculin" | "feminin" | "mixte";
+export type Gender = "Masculin" | "Féminin" | "Mixte";
 
 export interface TeamFormData {
   team_name: string;
   age_group: string;
+  division: string;
   gender: Gender;
   league_input: string;
   league_id_if_existing: string | null;
@@ -62,11 +73,10 @@ interface LeagueOption {
   name: string;
 }
 
-const AGE_GROUPS = ["U13", "U15", "U17", "U18", "Senior", "Autre"];
 const GENDER_OPTIONS: { value: Gender; label: string }[] = [
-  { value: "masculin", label: "Masculin" },
-  { value: "feminin", label: "Féminin" },
-  { value: "mixte", label: "Mixte" },
+  { value: "Masculin", label: "Masculin" },
+  { value: "Féminin",  label: "Féminin" },
+  { value: "Mixte",    label: "Mixte" },
 ];
 const DEFAULT_SEASON = getCurrentSeason();
 
@@ -84,6 +94,9 @@ export default function TeamCreateForm({
 }: TeamCreateFormProps) {
   const [teamName, setTeamName] = useState("");
   const [ageGroup, setAgeGroup] = useState("");
+  const [ageOther, setAgeOther] = useState("");
+  const [division, setDivision] = useState("");
+  const [divisionOther, setDivisionOther] = useState("");
   const [gender, setGender] = useState<Gender | "">("");
   const [season, setSeason] = useState(DEFAULT_SEASON);
 
@@ -171,9 +184,22 @@ export default function TeamCreateForm({
     setLeagueOpen(false);
   }
 
+  // "Autre" handling : substitute the trimmed text-input value when
+  // either select is on Autre. The substitution is the only way the
+  // canSubmit guard accepts the form — blocks empty Autre text inputs.
+  const ageOtherTrimmed = ageOther.trim();
+  const divisionOtherTrimmed = divisionOther.trim();
+  const ageValueForSubmit =
+    ageGroup === AUTRE_VALUE ? ageOtherTrimmed : ageGroup;
+  const divisionValueForSubmit =
+    division === AUTRE_VALUE ? divisionOtherTrimmed : division;
+  const ageValid = ageGroup !== "" && (ageGroup !== AUTRE_VALUE || ageOtherTrimmed.length > 0);
+  const divisionValid = division !== "" && (division !== AUTRE_VALUE || divisionOtherTrimmed.length > 0);
+
   const canSubmit =
     teamName.trim().length > 0 &&
-    ageGroup !== "" &&
+    ageValid &&
+    divisionValid &&
     gender !== "" &&
     leagueInput.trim().length > 0 &&
     season.trim().length > 0;
@@ -185,7 +211,8 @@ export default function TeamCreateForm({
     const finalGender = gender as Gender;
     onSubmit({
       team_name: teamName.trim(),
-      age_group: ageGroup,
+      age_group: ageValueForSubmit,
+      division: divisionValueForSubmit,
       gender: finalGender,
       league_input: leagueInput.trim(),
       league_id_if_existing: leagueIdIfExisting,
@@ -227,12 +254,53 @@ export default function TeamCreateForm({
           className={`${inputCls} appearance-none cursor-pointer`}
         >
           <option value="">Sélectionner...</option>
-          {AGE_GROUPS.map((g) => (
-            <option key={g} value={g}>
-              {g}
+          {AGE_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
             </option>
           ))}
         </select>
+        {ageGroup === AUTRE_VALUE && (
+          <input
+            type="text"
+            placeholder="Précise la catégorie d'âge"
+            value={ageOther}
+            onChange={(e) => setAgeOther(e.target.value)}
+            className={`${inputCls} mt-2`}
+            aria-label="Catégorie d'âge personnalisée"
+            required
+          />
+        )}
+      </div>
+
+      <div>
+        <label htmlFor="team-division" className={labelCls}>
+          Division <span className="text-[#EF4444]">*</span>
+        </label>
+        <select
+          id="team-division"
+          value={division}
+          onChange={(e) => setDivision(e.target.value)}
+          className={`${inputCls} appearance-none cursor-pointer`}
+        >
+          <option value="">Sélectionner...</option>
+          {DIVISION_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+        {division === AUTRE_VALUE && (
+          <input
+            type="text"
+            placeholder="Précise la division"
+            value={divisionOther}
+            onChange={(e) => setDivisionOther(e.target.value)}
+            className={`${inputCls} mt-2`}
+            aria-label="Division personnalisée"
+            required
+          />
+        )}
       </div>
 
       <div>
@@ -252,7 +320,7 @@ export default function TeamCreateForm({
                     ? "bg-[rgba(230,57,70,0.1)] border border-[#E63946] text-white"
                     : "bg-[#111317] border border-white/10 text-[#9CA3AF] hover:border-white/20"
                 }`}
-                aria-pressed={selected ? "true" : "false"}
+                aria-pressed={selected}
               >
                 {opt.label}
               </button>

@@ -2553,15 +2553,18 @@ function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Part
       }
 
       // 2. INSERT the team row. Phase 6.2: teams.school_id replaces
-      //    league_teams.league_id; teams has no `division` or
-      //    `owner_id` column (DIRECTEUR ownership is captured via
-      //    school_coaches.role per D5).
+      //    league_teams.league_id. teams.division IS a real column
+      //    (text, nullable) — the form collects it from the locked
+      //    civilVocab list (with an "Autre" free-text fallback that's
+      //    substituted upstream in TeamCreateForm). DIRECTEUR ownership
+      //    is captured via school_coaches.role per D5, separate path.
       const { data: newTeam, error: ltError } = await supabase
         .from("teams")
         .insert({
           school_id: schoolId,
           name: formData.team_name,
           age_group: formData.age_group,
+          division: formData.division,
           gender: formData.gender,
           season: formData.season,
           sport_id: sportId,
@@ -2614,7 +2617,7 @@ function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Part
         name: formData.team_name,
         age_group: formData.age_group,
         gender: formData.gender,
-        division: null,
+        division: formData.division,
         league: null,
         school_id: schoolId,
         school_name: schoolName,
