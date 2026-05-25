@@ -19,6 +19,8 @@ import {
   PERSONA_SAVINGS,
   getTiersForPersona,
 } from "@/lib/config/pricing";
+import { useTranslation } from "@/lib/i18n/useTranslation";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
 
 /* ═══════════════════════════════════════════════════════════════
    Tarifs — Unified pricing (Recruteur / Coach / Athlète)
@@ -47,6 +49,8 @@ function isValidPersona(v: string | null): v is Persona {
 ══════════════════════════════════════════════════════════════ */
 
 export default function TarifsPage() {
+  const { t } = useTranslation();
+  const T = t.pricing;
   const [persona, setPersona] = useState<Persona>("recruteur");
   const [billing, setBilling] = useState<Billing>("monthly");
 
@@ -79,13 +83,13 @@ export default function TarifsPage() {
       <section>
         <div className="max-w-[1200px] mx-auto px-6 pt-20 pb-10 text-center">
           <p className="text-[12px] sm:text-[13px] font-bold tracking-[0.25em] uppercase text-[#E63946]">
-            Tarifs
+            {T.hero.eyebrow}
           </p>
           <h1 className="nx-display text-[40px] sm:text-[48px] font-extrabold text-white uppercase leading-[1.05] tracking-tight mt-4">
-            Choisis ton plan
+            {T.hero.title}
           </h1>
           <p className="text-[15px] sm:text-[16px] text-[#9CA3AF] leading-relaxed mt-5 max-w-[600px] mx-auto">
-            Commence gratuitement. Passe à Pro quand tu es prêt.
+            {T.hero.lede}
           </p>
         </div>
       </section>
@@ -95,9 +99,9 @@ export default function TarifsPage() {
         <div className="max-w-[1200px] mx-auto px-6 flex justify-center">
           <div className="inline-flex items-center gap-1 bg-[#1A1D24] rounded-full p-1.5 border border-white/[0.06]">
             {([
-              { key: "recruteur", label: "Recruteur" },
-              { key: "coach", label: "Coach" },
-              { key: "athlete", label: "Athlète" },
+              { key: "recruteur", label: T.personaToggle.recruiter },
+              { key: "coach", label: T.personaToggle.coach },
+              { key: "athlete", label: T.personaToggle.athlete },
             ] as { key: Persona; label: string }[]).map((p) => (
               <button
                 key={p.key}
@@ -127,7 +131,7 @@ export default function TarifsPage() {
                 billing === "monthly" ? "bg-[#2A2D34] text-white" : "text-[#9CA3AF] hover:text-white"
               }`}
             >
-              Mensuel
+              {T.billingToggle.monthly}
             </button>
             <button
               type="button"
@@ -136,9 +140,9 @@ export default function TarifsPage() {
                 billing === "annual" ? "bg-[#2A2D34] text-white" : "text-[#9CA3AF] hover:text-white"
               }`}
             >
-              Annuel
+              {T.billingToggle.annual}
               {savingsPct > 0 && (
-                <span className="text-[10px] font-normal ml-1 opacity-80">(économise {savingsPct}%)</span>
+                <span className="text-[10px] font-normal ml-1 opacity-80">({T.billingToggle.saveLabel} {savingsPct}%)</span>
               )}
             </button>
           </div>
@@ -151,15 +155,15 @@ export default function TarifsPage() {
           {tiers.length === 2 ? (
             /* 2 tiers (Athlète — Pro + Free; All Star hidden for MVP) */
             <div className="max-w-[820px] mx-auto grid grid-cols-1 md:grid-cols-2 gap-5 items-stretch">
-              <PricingCard tier={tiers[1]} billing={billing} orderCls="order-1 md:order-2" />
-              <PricingCard tier={tiers[0]} billing={billing} orderCls="order-2 md:order-1" />
+              <PricingCard tier={tiers[1]} billing={billing} orderCls="order-1 md:order-2" cardLabels={T.card} />
+              <PricingCard tier={tiers[0]} billing={billing} orderCls="order-2 md:order-1" cardLabels={T.card} />
             </div>
           ) : (
             /* 3 tiers (Recruteur, Coach) — Pro centered, Free left, All Star right */
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-stretch">
-              <PricingCard tier={tiers[1]} billing={billing} orderCls="order-1 md:order-2" />
-              <PricingCard tier={tiers[0]} billing={billing} orderCls="order-2 md:order-1" />
-              <PricingCard tier={tiers[2]} billing={billing} orderCls="order-3 md:order-3" />
+              <PricingCard tier={tiers[1]} billing={billing} orderCls="order-1 md:order-2" cardLabels={T.card} />
+              <PricingCard tier={tiers[0]} billing={billing} orderCls="order-2 md:order-1" cardLabels={T.card} />
+              <PricingCard tier={tiers[2]} billing={billing} orderCls="order-3 md:order-3" cardLabels={T.card} />
             </div>
           )}
         </div>
@@ -174,16 +178,16 @@ export default function TarifsPage() {
                 <GraduationCap size={22} className="text-[#E63946]" strokeWidth={2} />
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="text-[16px] font-semibold text-white">Forfait CÉGEP — plusieurs recruteurs?</h3>
+                <h3 className="text-[16px] font-semibold text-white">{T.cegepBanner.title}</h3>
                 <p className="text-[14px] text-[#9CA3AF] mt-1.5 leading-relaxed">
-                  Votre programme a plus d&apos;un recruteur? Contactez l&apos;équipe Nexus pour un forfait organisationnel adapté à votre CÉGEP avec tarification de groupe et gestion centralisée.
+                  {T.cegepBanner.body}
                 </p>
               </div>
               <Link
                 href="/contact"
                 className="shrink-0 inline-flex items-center h-11 px-5 rounded-lg border border-[#E63946] text-[#E63946] text-[12px] font-bold uppercase tracking-wider hover:bg-[#E63946]/10 transition-colors"
               >
-                Contacter l&apos;équipe Nexus →
+                {T.cegepBanner.cta}
               </Link>
             </div>
           </div>
@@ -195,13 +199,13 @@ export default function TarifsPage() {
         <section>
           <div className="max-w-[820px] mx-auto px-6 pb-14 text-center">
             <p className="text-[12px] sm:text-[13px] font-bold tracking-[0.25em] uppercase text-[#F59E0B]">
-              Pourquoi Pro?
+              {T.whyPro.eyebrow}
             </p>
             <h2 className="nx-display text-[28px] sm:text-[34px] font-extrabold text-white uppercase leading-tight tracking-tight mt-3">
-              Tu sais que tu es regardé. Maintenant, sache par qui.
+              {T.whyPro.title}
             </h2>
             <p className="text-[15px] text-[#9CA3AF] leading-relaxed mt-5 max-w-[640px] mx-auto">
-              Chaque mois, ton profil est consulté par des recruteurs de partout au Québec. Avec Pro, tu vois leurs noms, leurs CÉGEPs, et combien de fois ils reviennent.
+              {T.whyPro.lede}
             </p>
           </div>
         </section>
@@ -213,17 +217,17 @@ export default function TarifsPage() {
           <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-[#9CA3AF] text-sm">
             <span className="inline-flex items-center gap-2">
               <Building2 size={16} strokeWidth={2} className="text-[#9CA3AF]" />
-              Hébergé au Québec
+              {T.trust.quebecHost}
             </span>
             <span className="hidden sm:inline text-[#475569]">·</span>
             <span className="inline-flex items-center gap-2">
               <ShieldCheck size={16} strokeWidth={2} className="text-[#9CA3AF]" />
-              Conforme Loi 25
+              {T.trust.loi25}
             </span>
             <span className="hidden sm:inline text-[#475569]">·</span>
             <span className="inline-flex items-center gap-2">
               <BadgeCheck size={16} strokeWidth={2} className="text-[#9CA3AF]" />
-              Profils vérifiés
+              {T.trust.verifiedProfiles}
             </span>
           </div>
         </div>
@@ -238,10 +242,12 @@ function PricingCard({
   tier,
   billing,
   orderCls,
+  cardLabels,
 }: {
   tier: Tier;
   billing: Billing;
   orderCls: string;
+  cardLabels: Dictionary["pricing"]["card"];
 }) {
   const isFree = tier.monthly === 0;
   const showAnnual = billing === "annual" && tier.annual > 0;
@@ -253,7 +259,7 @@ function PricingCard({
     : isFree
     ? "$0"
     : formatPrice(tier.monthly);
-  const periodShort = isFree ? "" : showAnnual ? "/an" : "/mois";
+  const periodShort = isFree ? "" : showAnnual ? cardLabels.perYear : cardLabels.perMonth;
 
   return (
     <div className={`relative bg-[#1A1D24] rounded-xl ${tier.border} ${tier.glow} ${orderCls} p-6 sm:p-7 flex flex-col`}>
@@ -278,14 +284,14 @@ function PricingCard({
         )}
       </div>
       {isFree ? (
-        <p className="text-[12px] text-[#9CA3AF] mt-2">pour toujours</p>
+        <p className="text-[12px] text-[#9CA3AF] mt-2">{cardLabels.forever}</p>
       ) : (
         <div className="mt-2 space-y-0.5">
           <p className="text-[12px] text-[#c8c8cc]">
-            À partir de <span className="font-bold text-white">{formatPrice(tier.annualMonthlyEq ?? tier.monthly)}/mois</span> facturé annuellement
+            {cardLabels.fromPrefix}<span className="font-bold text-white">{formatPrice(tier.annualMonthlyEq ?? tier.monthly)}{cardLabels.perMonth}</span>{cardLabels.fromSuffixAnnual}
           </p>
           <p className="text-[11px] text-[#6b7280]">
-            ou {formatPrice(tier.monthly)}/mois facturé mensuellement
+            {cardLabels.orPrefix}{formatPrice(tier.monthly)}{cardLabels.perMonth}{cardLabels.orSuffixMonthly}
           </p>
         </div>
       )}

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import MarketingNav from "@/components/marketing/MarketingNav";
 import PlaybookBackground from "@/app/components/PlaybookBackground";
+import { useTranslation } from "@/lib/i18n/useTranslation";
 
 /* ═══════════════════════════════════════════════════════════════
    Pour les coachs — public marketing landing page
@@ -10,113 +11,36 @@ import PlaybookBackground from "@/app/components/PlaybookBackground";
    reputation section, no ressources/guide.
 ═══════════════════════════════════════════════════════════════ */
 
-const HOW_STEPS = [
-  {
-    n: "01",
-    role: "Inscription",
-    title: "Inscris-toi",
-    body: "Crée ton compte en 2 minutes et associe-toi à ton école. C'est gratuit.",
-  },
-  {
-    n: "02",
-    role: "Vérification",
-    title: "Vérifie tes athlètes",
-    body: "Tes joueurs remplissent leur profil eux-mêmes. Tu confirmes leurs infos et tu ajoutes ton évaluation. Leur profil passe de visible à crédible.",
-  },
-  {
-    n: "03",
-    role: "Réputation",
-    title: "Bâtis ta réputation",
-    body: "Chaque vérification et chaque placement comptent. Tes badges Coach Élite et Placeur disent aux recruteurs que tu connais tes joueurs.",
-  },
-  {
-    n: "04",
-    role: "Contact",
-    title: "Deviens le point de contact",
-    body: "Selon les règles du RSEQ, les recruteurs CÉGEP communiquent d'abord avec l'entraîneur — pas directement avec l'athlète mineur. Sur Nexus, tu gères cette communication via la messagerie intégrée. Tu facilites le lien entre tes joueurs et les programmes CÉGEP, dans le respect des règles.",
-  },
-];
-
 type TierKey = "FREE" | "PRO";
-const FEATURES: { title: string; body: string; tier: TierKey }[] = [
-  { title: "Compte entraîneur",      body: "Crée ton compte, associe-toi à ton école.",                                   tier: "FREE" },
-  { title: "Gestion des athlètes",   body: "Crée et gère les profils. Ajout illimité.",                                    tier: "FREE" },
-  { title: "Vérification",           body: "Vérifie les profils. Badge bleu = crédibilité.",                                tier: "FREE" },
-  { title: "Évaluation simplifiée",  body: "Évalue sur les critères essentiels. Visible par les recruteurs.",               tier: "FREE" },
-  { title: "Messagerie entrante",    body: "Reçois les messages des recruteurs intéressés par tes joueurs.",                tier: "FREE" },
-  { title: "Notifications",          body: "Sois alerté quand un recruteur consulte un de tes athlètes.",                  tier: "FREE" },
-  { title: "Mon école",              body: "Page complète de ton école — tous les sports, tous les athlètes, tous les coachs.", tier: "PRO" },
-  { title: "Stats école",            body: "Vues, profils consultés, tendances par sport.",                                 tier: "PRO" },
-  { title: "Placement",              body: "Suis tes athlètes — qui est recruté, par quel CÉGEP.",                          tier: "PRO" },
-  { title: "Ma réputation",          body: "Tes badges, ton historique, ta crédibilité.",                                   tier: "PRO" },
-  { title: "Analytics",              body: "Tendances, activité recruteurs, performance pipeline.",                         tier: "PRO" },
+
+// Tier per feature card — order matches t.coachLanding.features.items
+const FEATURE_TIERS: TierKey[] = [
+  "FREE", "FREE", "FREE", "FREE", "FREE", "FREE",
+  "PRO", "PRO", "PRO", "PRO", "PRO",
 ];
 
-type PricingTier = {
-  name: string;
-  price: string;
-  priceSuffix?: string;
+// Visual config for the pricing cards (order matches dictionary tiers)
+type PricingVisual = {
   priceColor: string;
-  subtitle: string;
-  subheader?: string;
-  bullets: string[];
   checkColor: string;
   highlighted?: boolean;
-  badge?: string;
-  note?: string;
   buttonVariant: "outline-red" | "filled-red" | "outline-amber";
 };
 
-const PRICING_TIERS: PricingTier[] = [
+const PRICING_VISUALS: PricingVisual[] = [
   {
-    name: "Gratuit",
-    price: "0$",
     priceColor: "text-[#22C55E]",
-    subtitle: "Pour commencer",
-    bullets: [
-      "Créer un compte et rejoindre une école",
-      "Créer et gérer les profils athlètes",
-      "Évaluations simplifiées (5 critères)",
-      "Vérifier les profils (badge bleu)",
-      "Recevoir les messages de recruteurs",
-      "Notifications d'activité",
-    ],
     checkColor: "text-[#22C55E] bg-[#22C55E]/15",
     buttonVariant: "outline-red",
   },
   {
-    name: "Pro",
-    price: "9,99$",
-    priceSuffix: "/mois",
     priceColor: "text-white",
-    subtitle: "ou 79$/an — économise 34%",
-    subheader: "Tout ce qui est gratuit, plus :",
-    bullets: [
-      "Accès à Mon école (page complète de ton école)",
-      "Stats école (vues, tendances, activité)",
-      "Placement (suivi de tes athlètes recrutés)",
-      "Ma réputation (badges et historique)",
-      "Analytics avancé (tendances et performance)",
-    ],
     checkColor: "text-[#E63946] bg-[#E63946]/15",
     highlighted: true,
-    badge: "Populaire",
     buttonVariant: "filled-red",
   },
   {
-    name: "All Star",
-    price: "19,99$",
-    priceSuffix: "/mois",
     priceColor: "text-white",
-    subtitle: "ou 159$/an — économise 34%",
-    subheader: "Tout du plan Pro, plus :",
-    bullets: [
-      "Gestion complète de l'école (ajout et gestion des coachs)",
-      "Analytique avancée par athlète et par équipe",
-      "Suivi détaillé des placements en CÉGEP",
-      "Statistiques d'école complètes",
-      "Outils d'invitation pour les entraîneurs",
-    ],
     checkColor: "text-[#F59E0B] bg-[#F59E0B]/15",
     buttonVariant: "outline-amber",
   },
@@ -140,20 +64,9 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   );
 }
 
-function TierPill({ tier }: { tier: TierKey }) {
-  if (tier === "FREE") return <span className="inline-flex px-2 py-0.5 rounded-full bg-[#22C55E]/15 text-[#22C55E] text-[10px] font-bold uppercase tracking-wider">Gratuit</span>;
-  if (tier === "PRO")  return <span className="inline-flex px-2 py-0.5 rounded-full bg-[#E63946]/15 text-[#E63946] text-[10px] font-bold uppercase tracking-wider">Pro · 9,99$/mois</span>;
-  // "ALLSTAR" tier is retained in the FEATURES typing for backward compat but
-  // coach has only 2 tiers — collapse any ALLSTAR pill to the Pro label.
-  return <span className="inline-flex px-2 py-0.5 rounded-full bg-[#E63946]/15 text-[#E63946] text-[10px] font-bold uppercase tracking-wider">Pro · 9,99$/mois</span>;
-}
-
-function Check({ className = "" }: { className?: string }) {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <polyline points="20 6 9 17 4 12" />
-    </svg>
-  );
+function TierPill({ tier, freeLabel, proLabel }: { tier: TierKey; freeLabel: string; proLabel: string }) {
+  if (tier === "FREE") return <span className="inline-flex px-2 py-0.5 rounded-full bg-[#22C55E]/15 text-[#22C55E] text-[10px] font-bold uppercase tracking-wider">{freeLabel}</span>;
+  return <span className="inline-flex px-2 py-0.5 rounded-full bg-[#E63946]/15 text-[#E63946] text-[10px] font-bold uppercase tracking-wider">{proLabel}</span>;
 }
 
 function GlowFrame({ children }: { children: React.ReactNode }) {
@@ -179,32 +92,38 @@ function GlowFrame({ children }: { children: React.ReactNode }) {
 
 /* ── Messaging mockup (fake names) ──────────────────────────── */
 
-function MessagesMockup() {
-  const items = [
-    { name: "Jean-François L.", org: "Collège André-Grasset",    preview: "Bonjour coach, j'aimerais discuter du profil d'Alexandre…", time: "2h", dot: "bg-[#E63946]", unread: true  },
-    { name: "Caroline M.",      org: "CÉGEP de Sherbrooke",      preview: "Merci pour l'évaluation. On planifie une visite…",         time: "1j", dot: "bg-white/20", unread: false },
-    { name: "Philippe D.",      org: "Campus Notre-Dame-de-Foy", preview: "Est-ce qu'Émilie serait disponible pour…",                   time: "3j", dot: "bg-white/20",  unread: false },
-  ];
+function MessagesMockup({
+  mockupLabel,
+  items,
+}: {
+  mockupLabel: string;
+  items: { name: string; org: string; preview: string; time: string }[];
+}) {
+  // First item is the "unread" highlight by convention.
   return (
     <div className="bg-[#15171c] rounded-2xl border border-white/[0.06] overflow-hidden shadow-2xl">
       <div className="px-7 py-5 border-b border-white/[0.05] bg-[#1A1D24]">
-        <p className="text-[12px] font-bold text-[#6b7280] uppercase tracking-[0.2em]">Messagerie</p>
+        <p className="text-[12px] font-bold text-[#6b7280] uppercase tracking-[0.2em]">{mockupLabel}</p>
       </div>
       <ul className="divide-y divide-white/[0.05]">
-        {items.map((m) => (
-          <li key={m.name} className={`flex items-start gap-4 px-7 py-5 ${m.unread ? "bg-[#E63946]/[0.04]" : ""}`}>
-            <span className={`shrink-0 mt-2 w-2.5 h-2.5 rounded-full ${m.dot}`} />
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between gap-4">
-                <p className="text-[16px] font-bold text-white truncate">
-                  {m.name} <span className="text-[#6b7280] font-semibold">· {m.org}</span>
-                </p>
-                <span className="text-[13px] text-[#6b7280] shrink-0">{m.time}</span>
+        {items.map((m, i) => {
+          const unread = i === 0;
+          const dot = unread ? "bg-[#E63946]" : "bg-white/20";
+          return (
+            <li key={m.name} className={`flex items-start gap-4 px-7 py-5 ${unread ? "bg-[#E63946]/[0.04]" : ""}`}>
+              <span className={`shrink-0 mt-2 w-2.5 h-2.5 rounded-full ${dot}`} />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-4">
+                  <p className="text-[16px] font-bold text-white truncate">
+                    {m.name} <span className="text-[#6b7280] font-semibold">· {m.org}</span>
+                  </p>
+                  <span className="text-[13px] text-[#6b7280] shrink-0">{m.time}</span>
+                </div>
+                <p className="text-[15px] text-white/75 leading-snug mt-1.5 truncate">{m.preview}</p>
               </div>
-              <p className="text-[15px] text-white/75 leading-snug mt-1.5 truncate">{m.preview}</p>
-            </div>
-          </li>
-        ))}
+            </li>
+          );
+        })}
       </ul>
     </div>
   );
@@ -212,19 +131,15 @@ function MessagesMockup() {
 
 /* ── Reputation badges (full-width horizontal) ──────────────── */
 
-type ReputationBadge = {
-  name: string;
-  threshold: string;
+type ReputationBadgeVisual = {
   border: string;
   iconBg: string;
   iconColor: string;
   icon: React.ReactNode;
 };
 
-const REPUTATION_BADGES: ReputationBadge[] = [
+const REPUTATION_BADGE_VISUALS: ReputationBadgeVisual[] = [
   {
-    name: "Évalué",
-    threshold: "3 évaluations",
     border: "border-white/10",
     iconBg: "bg-white/5",
     iconColor: "text-[#9CA3AF]",
@@ -236,8 +151,6 @@ const REPUTATION_BADGES: ReputationBadge[] = [
     ),
   },
   {
-    name: "Recommandé",
-    threshold: "5 évaluations",
     border: "border-white/25",
     iconBg: "bg-white/10",
     iconColor: "text-white",
@@ -248,8 +161,6 @@ const REPUTATION_BADGES: ReputationBadge[] = [
     ),
   },
   {
-    name: "Coach Élite",
-    threshold: "15 évaluations",
     border: "border-[#F59E0B]/40",
     iconBg: "bg-[#F59E0B]/15",
     iconColor: "text-[#F59E0B]",
@@ -260,8 +171,6 @@ const REPUTATION_BADGES: ReputationBadge[] = [
     ),
   },
   {
-    name: "Placeur",
-    threshold: "5 athlètes avec lettre signée",
     border: "border-[#E63946]/50",
     iconBg: "bg-[#E63946]/15",
     iconColor: "text-[#E63946]",
@@ -276,17 +185,13 @@ const REPUTATION_BADGES: ReputationBadge[] = [
   },
 ];
 
-const REPUTATION_STATS: { label: string; value: string }[] = [
-  { label: "Temps de réponse moyen", value: "2h" },
-  { label: "Athlètes placés",        value: "8"  },
-  { label: "Profils complétés",      value: "87%" },
-];
-
 /* ══════════════════════════════════════════════════════════════
    Page
 ══════════════════════════════════════════════════════════════ */
 
 export default function PourLesCoachsPage() {
+  const { t } = useTranslation();
+  const T = t.coachLanding;
   const progressVar = { "--bar-w": "80%" } as React.CSSProperties;
 
   return (
@@ -298,16 +203,16 @@ export default function PourLesCoachsPage() {
         {/* ─── SECTION 1 — HERO (centered, full-width mockup below) */}
         <section id="hero" className="border-b border-white/[0.06]">
           <div className="max-w-[1200px] mx-auto px-6 py-20 lg:py-28 text-center">
-            <RedLabel>Pour les entraîneurs du secondaire</RedLabel>
+            <RedLabel>{T.hero.eyebrow}</RedLabel>
             <h1 className="nx-display text-[42px] sm:text-[48px] font-extrabold leading-[1.05] tracking-tight mt-4">
-              Tes joueurs méritent d&apos;être vus.<br />
-              <span className="text-[#E63946]">Ta réputation aussi.</span>
+              {T.hero.titleLine1}<br />
+              <span className="text-[#E63946]">{T.hero.titleLine2}</span>
             </h1>
             <p className="text-[18px] text-white/75 leading-relaxed mt-6 max-w-[640px] mx-auto">
-              Vérifie tes athlètes, ajoute ton évaluation, et bâtis ta réputation comme entraîneur. Les recruteurs CÉGEP font confiance aux coachs qui connaissent leurs joueurs.
+              {T.hero.lede}
             </p>
             <p className="text-[15px] text-white/55 mt-4 max-w-[640px] mx-auto">
-              Tes joueurs s&apos;inscrivent. Tu les vérifies. Tout le monde y gagne.
+              {T.hero.ledeSmall}
             </p>
             <div className="flex items-center justify-center gap-3 mt-9 flex-wrap">
               <Link
@@ -315,7 +220,7 @@ export default function PourLesCoachsPage() {
                 className="inline-flex items-center rounded-lg bg-[#E63946] text-white font-bold uppercase tracking-wider hover:bg-[#D42B22] transition-colors"
                 style={{ fontSize: 16, padding: "14px 32px" }}
               >
-                Sois le Nex
+                {T.hero.cta}
               </Link>
             </div>
 
@@ -324,7 +229,7 @@ export default function PourLesCoachsPage() {
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src="/Image/Coach%20Dashboard.png"
-                  alt="Tableau de bord entraîneur — Mes athlètes"
+                  alt={T.hero.mockupAlt}
                   style={{ width: "100%", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.15)" }}
                 />
               </GlowFrame>
@@ -336,32 +241,35 @@ export default function PourLesCoachsPage() {
         <section id="comment-ca-marche" className="border-b border-white/[0.06]">
           <div className="max-w-[1200px] mx-auto px-6 py-20">
             <div className="max-w-[700px]">
-              <RedLabel>Comment ça marche</RedLabel>
-              <SectionTitle>4 étapes. Un impact réel.</SectionTitle>
+              <RedLabel>{T.howItWorks.eyebrow}</RedLabel>
+              <SectionTitle>{T.howItWorks.title}</SectionTitle>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-6 mt-14">
-              {HOW_STEPS.map((step, i) => (
-                <div
-                  key={step.n}
-                  className={`relative pl-6 py-4 ${
-                    i === 0 ? "border-l-[3px] border-[#E63946]/30" : "border-l-[3px] border-white/[0.04]"
-                  }`}
-                >
-                  <span className="nx-display text-[56px] sm:text-[64px] font-black leading-none text-white/25 tracking-tighter block">
-                    {step.n}
-                  </span>
-                  <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-[#E63946] mt-5">
-                    {step.role}
-                  </p>
-                  <h3 className="nx-display text-[18px] font-extrabold uppercase text-white tracking-tight mt-2.5">
-                    {step.title}
-                  </h3>
-                  <p className="text-[14px] text-white/75 leading-relaxed mt-3">
-                    {step.body}
-                  </p>
-                </div>
-              ))}
+              {T.howItWorks.steps.map((step, i) => {
+                const n = String(i + 1).padStart(2, "0");
+                return (
+                  <div
+                    key={n}
+                    className={`relative pl-6 py-4 ${
+                      i === 0 ? "border-l-[3px] border-[#E63946]/30" : "border-l-[3px] border-white/[0.04]"
+                    }`}
+                  >
+                    <span className="nx-display text-[56px] sm:text-[64px] font-black leading-none text-white/25 tracking-tighter block">
+                      {n}
+                    </span>
+                    <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-[#E63946] mt-5">
+                      {step.role}
+                    </p>
+                    <h3 className="nx-display text-[18px] font-extrabold uppercase text-white tracking-tight mt-2.5">
+                      {step.title}
+                    </h3>
+                    <p className="text-[14px] text-white/75 leading-relaxed mt-3">
+                      {step.body}
+                    </p>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </section>
@@ -369,20 +277,20 @@ export default function PourLesCoachsPage() {
         {/* ─── SECTION 4 — TON ÉVALUATION (stacked) ─────────── */}
         <section id="evaluation" className="border-b border-white/[0.06]">
           <div className="max-w-[1300px] mx-auto px-6 py-20 text-center">
-            <RedLabel>Ton évaluation</RedLabel>
-            <SectionTitle>Ton évaluation, c&apos;est ce qui fait la différence.</SectionTitle>
+            <RedLabel>{T.evaluation.eyebrow}</RedLabel>
+            <SectionTitle>{T.evaluation.title}</SectionTitle>
             <p className="text-[15px] text-white/75 leading-relaxed mt-5 max-w-[600px] mx-auto">
-              N&apos;importe quel athlète peut dire qu&apos;il est bon. Quand tu le vérifies et que tu l&apos;évalues sur 8 critères — leadership, discipline, coachabilité, intelligence de jeu, compétitivité, esprit d&apos;équipe, résilience, attitude — les recruteurs savent que c&apos;est vrai. Ton rapport est lu par chaque recruteur qui consulte le profil.
+              {T.evaluation.body}
             </p>
             <Link href="/inscription" className="inline-flex items-center gap-1 mt-6 text-[13px] font-bold text-[#E63946] hover:text-[#FF5C58] transition-colors">
-              Sois le Nex →
+              {T.evaluation.cta}
             </Link>
             <div className="mt-12 max-w-[1200px] mx-auto">
               <GlowFrame>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src="/Image/Screenshot%202026-04-15%20164443.png"
-                  alt="Profil athlète vérifié avec évaluation du coach"
+                  alt={T.evaluation.mockupAlt}
                   style={{ width: "100%", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.15)", boxShadow: "0 40px 100px -20px rgba(0,0,0,0.85)" }}
                 />
               </GlowFrame>
@@ -393,35 +301,38 @@ export default function PourLesCoachsPage() {
         {/* ─── SECTION 5 — MA RÉPUTATION (FULL WIDTH) ───────── */}
         <section id="reputation" className="border-b border-white/[0.06]">
           <div className="max-w-[1200px] mx-auto px-6 py-24 text-center">
-            <RedLabel>Ma réputation</RedLabel>
-            <SectionTitle>Ta réputation te précède.</SectionTitle>
+            <RedLabel>{T.reputation.eyebrow}</RedLabel>
+            <SectionTitle>{T.reputation.title}</SectionTitle>
             <p className="text-[15px] text-white/75 leading-relaxed mt-5 max-w-[700px] mx-auto">
-              Chaque vérification et chaque placement comptent. Quand un recruteur clique sur ton nom, il voit ta page de réputation — ton historique, tes évaluations, tes badges. C&apos;est ce qui te distingue.
+              {T.reputation.lede}
             </p>
 
             {/* Badge row */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-14">
-              {REPUTATION_BADGES.map((b) => (
-                <div
-                  key={b.name}
-                  className={`bg-[#1A1D24] rounded-2xl border ${b.border} p-6 text-left flex flex-col gap-3`}
-                >
-                  <div className={`w-11 h-11 rounded-xl ${b.iconBg} ${b.iconColor} flex items-center justify-center`}>
-                    {b.icon}
+              {T.reputation.badges.map((b, i) => {
+                const v = REPUTATION_BADGE_VISUALS[i];
+                return (
+                  <div
+                    key={b.name}
+                    className={`bg-[#1A1D24] rounded-2xl border ${v.border} p-6 text-left flex flex-col gap-3`}
+                  >
+                    <div className={`w-11 h-11 rounded-xl ${v.iconBg} ${v.iconColor} flex items-center justify-center`}>
+                      {v.icon}
+                    </div>
+                    <div>
+                      <p className="nx-display text-[15px] font-extrabold uppercase tracking-wide text-white">
+                        {b.name}
+                      </p>
+                      <p className="text-[11px] text-white/55 mt-1">{b.threshold}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="nx-display text-[15px] font-extrabold uppercase tracking-wide text-white">
-                      {b.name}
-                    </p>
-                    <p className="text-[11px] text-white/55 mt-1">{b.threshold}</p>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* Stat pills */}
             <div className="mt-6 flex flex-wrap items-center justify-center gap-2.5">
-              {REPUTATION_STATS.map((s) => (
+              {T.reputation.stats.map((s) => (
                 <span
                   key={s.label}
                   className="inline-flex items-center gap-2 bg-[#1A1D24] border border-white/[0.06] rounded-full px-4 py-2 text-[12px]"
@@ -435,14 +346,14 @@ export default function PourLesCoachsPage() {
             {/* Progress strip */}
             <div className="mt-8 max-w-[640px] mx-auto bg-[#1A1D24] border border-white/[0.06] rounded-xl p-5 text-left">
               <div className="flex items-center justify-between text-[12px] mb-2">
-                <span className="text-white font-bold">Prochain badge — Coach Élite</span>
+                <span className="text-white font-bold">{T.reputation.progressTitle}</span>
                 <span className="text-[#F59E0B] font-bold tabular-nums">12 / 15</span>
               </div>
               <div className="h-2 rounded-full bg-[#2D3748] overflow-hidden">
                 {/* eslint-disable-next-line react/forbid-dom-props -- width is dynamic */}
                 <div className="h-full rounded-full bg-[#F59E0B] w-[var(--bar-w)]" style={progressVar} />
               </div>
-              <p className="text-[11px] text-white/55 mt-2">Coach Élite dans 3 évaluations.</p>
+              <p className="text-[11px] text-white/55 mt-2">{T.reputation.progressFooter}</p>
             </div>
           </div>
         </section>
@@ -450,17 +361,17 @@ export default function PourLesCoachsPage() {
         {/* ─── SECTION 6 — MES ATHLÈTES (stacked) ───────────── */}
         <section id="mes-athletes" className="border-b border-white/[0.06]">
           <div className="max-w-[1300px] mx-auto px-6 py-20 text-center">
-            <RedLabel>Mes athlètes</RedLabel>
-            <SectionTitle>Tous tes joueurs. Un seul endroit.</SectionTitle>
+            <RedLabel>{T.myAthletes.eyebrow}</RedLabel>
+            <SectionTitle>{T.myAthletes.title}</SectionTitle>
             <p className="text-[15px] text-white/75 leading-relaxed mt-5 max-w-[600px] mx-auto">
-              Vois d&apos;un coup d&apos;œil qui est vérifié, qui a un profil complet, qui est en processus de recrutement. Gère ton équipe sans tableur et sans papier.
+              {T.myAthletes.body}
             </p>
             <div className="mt-12 max-w-[1200px] mx-auto">
               <GlowFrame>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src="/Image/Mes%20ath%20(2).png"
-                  alt="Tableau de bord entraîneur — gestion des athlètes"
+                  alt={T.myAthletes.mockupAlt}
                   style={{ width: "100%", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.15)" }}
                 />
               </GlowFrame>
@@ -471,14 +382,14 @@ export default function PourLesCoachsPage() {
         {/* ─── SECTION 7 — MESSAGERIE (stacked) ─────────────── */}
         <section id="messagerie" className="border-b border-white/[0.06]">
           <div className="max-w-[1300px] mx-auto px-6 py-20 text-center">
-            <RedLabel>Messagerie</RedLabel>
-            <SectionTitle>Tu es le premier point de contact.</SectionTitle>
+            <RedLabel>{T.messaging.eyebrow}</RedLabel>
+            <SectionTitle>{T.messaging.title}</SectionTitle>
             <p className="text-[15px] text-white/75 leading-relaxed mt-5 max-w-[600px] mx-auto">
-              Quand un recruteur s&apos;intéresse à un de tes joueurs, il te contacte via Nexus — pas le parent, pas l&apos;athlète. Tu contrôles la communication. Tu facilites le processus. C&apos;est ton rôle.
+              {T.messaging.body}
             </p>
             <div className="mt-12 max-w-[1200px] mx-auto">
               <GlowFrame>
-                <MessagesMockup />
+                <MessagesMockup mockupLabel={T.messaging.mockupLabel} items={T.messaging.items} />
               </GlowFrame>
             </div>
           </div>
@@ -488,23 +399,26 @@ export default function PourLesCoachsPage() {
         <section id="fonctionnalites" className="border-b border-white/[0.06]">
           <div className="max-w-[1200px] mx-auto px-6 py-20">
             <div className="max-w-[700px]">
-              <RedLabel>Fonctionnalités</RedLabel>
-              <SectionTitle>Tout ce qu&apos;il te faut pour gérer tes athlètes.</SectionTitle>
+              <RedLabel>{T.features.eyebrow}</RedLabel>
+              <SectionTitle>{T.features.title}</SectionTitle>
               <p className="text-[14px] text-white/75 leading-relaxed mt-4">
-                Crée des profils et vérifie tes athlètes gratuitement. Débloque l&apos;intelligence avec Pro.
+                {T.features.lede}
               </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-12">
-              {FEATURES.map((f) => (
-                <div key={f.title} className="bg-[#1A1D24] rounded-2xl border border-white/[0.06] p-8">
-                  <div className="flex items-center justify-between mb-4">
-                    <TierPill tier={f.tier} />
+              {T.features.items.map((f, i) => {
+                const tier = FEATURE_TIERS[i] ?? "PRO";
+                return (
+                  <div key={f.title} className="bg-[#1A1D24] rounded-2xl border border-white/[0.06] p-8">
+                    <div className="flex items-center justify-between mb-4">
+                      <TierPill tier={tier} freeLabel={T.features.tierFree} proLabel={T.features.tierPro} />
+                    </div>
+                    <h3 className="nx-display text-[18px] font-extrabold text-white">{f.title}</h3>
+                    <p className="text-[14px] text-white/75 leading-relaxed mt-2">{f.body}</p>
                   </div>
-                  <h3 className="nx-display text-[18px] font-extrabold text-white">{f.title}</h3>
-                  <p className="text-[14px] text-white/75 leading-relaxed mt-2">{f.body}</p>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </section>
@@ -513,57 +427,58 @@ export default function PourLesCoachsPage() {
         <section id="prix" className="border-b border-white/[0.06]">
           <div className="max-w-[1200px] mx-auto px-6 py-20">
             <div className="text-center">
-              <RedLabel>Prix</RedLabel>
-              <SectionTitle>Un seul objectif — tes joueurs.</SectionTitle>
+              <RedLabel>{T.pricing.eyebrow}</RedLabel>
+              <SectionTitle>{T.pricing.title}</SectionTitle>
             </div>
 
             <div className="mt-14 mx-auto max-w-[1000px] flex flex-col md:flex-row items-stretch gap-4">
-              {PRICING_TIERS.map((t) => {
+              {T.pricing.tiers.map((tier, i) => {
+                const v = PRICING_VISUALS[i];
                 const btnClass =
-                  t.buttonVariant === "filled-red"
+                  v.buttonVariant === "filled-red"
                     ? "bg-[#E63946] text-white hover:bg-[#D42B22] border border-[#E63946]"
-                    : t.buttonVariant === "outline-amber"
+                    : v.buttonVariant === "outline-amber"
                     ? "border border-[#F59E0B] text-[#F59E0B] hover:bg-[#F59E0B]/10"
                     : "border border-[#E63946] text-[#E63946] hover:bg-[#E63946]/10";
                 return (
                   <div
-                    key={t.name}
+                    key={tier.name}
                     className={`relative flex-1 bg-[#1A1D24] rounded-xl flex flex-col min-h-[620px] p-8 ${
-                      t.highlighted ? "border-2 border-[#E63946]" : "border border-white/[0.06]"
+                      v.highlighted ? "border-2 border-[#E63946]" : "border border-white/[0.06]"
                     }`}
                   >
-                    {t.badge && (
+                    {tier.badge && (
                       <span className="absolute -top-3 left-1/2 -translate-x-1/2 inline-flex px-3 py-1 rounded-full bg-[#E63946] text-white text-[10px] font-bold uppercase tracking-wider">
-                        {t.badge}
+                        {tier.badge}
                       </span>
                     )}
 
                     {/* Header */}
-                    <h3 className="text-[20px] font-bold text-white">{t.name}</h3>
+                    <h3 className="text-[20px] font-bold text-white">{tier.name}</h3>
 
                     {/* Price */}
                     <div className="mt-4 flex items-baseline gap-1.5">
-                      <span className={`nx-display text-[36px] font-extrabold leading-none ${t.priceColor}`}>
-                        {t.price}
+                      <span className={`nx-display text-[36px] font-extrabold leading-none ${v.priceColor}`}>
+                        {tier.price}
                       </span>
-                      {t.priceSuffix && (
-                        <span className="text-[16px] text-white/55 font-semibold">{t.priceSuffix}</span>
+                      {tier.priceSuffix && (
+                        <span className="text-[16px] text-white/55 font-semibold">{tier.priceSuffix}</span>
                       )}
                     </div>
-                    <p className="text-[12px] text-white/55 mt-2">{t.subtitle}</p>
+                    <p className="text-[12px] text-white/55 mt-2">{tier.subtitle}</p>
 
                     {/* Divider */}
                     <div className="h-px bg-white/[0.06] my-6" />
 
                     {/* Feature list */}
                     <div className="flex-1">
-                      {t.subheader && (
-                        <p className="text-[13px] text-white/55 mb-3">{t.subheader}</p>
+                      {tier.subheader && (
+                        <p className="text-[13px] text-white/55 mb-3">{tier.subheader}</p>
                       )}
                       <ul className="space-y-2">
-                        {t.bullets.map((b) => (
+                        {tier.bullets.map((b) => (
                           <li key={b} className="flex items-start gap-3 text-[14px] text-white/85 leading-snug">
-                            <span className={`shrink-0 mt-0.5 w-[18px] h-[18px] rounded-full flex items-center justify-center ${t.checkColor}`}>
+                            <span className={`shrink-0 mt-0.5 w-[18px] h-[18px] rounded-full flex items-center justify-center ${v.checkColor}`}>
                               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                                 <polyline points="20 6 9 17 4 12" />
                               </svg>
@@ -572,11 +487,6 @@ export default function PourLesCoachsPage() {
                           </li>
                         ))}
                       </ul>
-                      {t.note && (
-                        <p className="text-[12px] text-white/55 mt-4 italic leading-snug">
-                          {t.note}
-                        </p>
-                      )}
                     </div>
 
                     {/* Button pinned to bottom */}
@@ -584,7 +494,7 @@ export default function PourLesCoachsPage() {
                       href="/inscription"
                       className={`mt-8 inline-flex items-center justify-center w-full rounded-lg font-bold uppercase tracking-wider text-[13px] py-3 px-5 transition-colors ${btnClass}`}
                     >
-                      Sois le Nex
+                      {T.pricing.cta}
                     </Link>
                   </div>
                 );
@@ -599,11 +509,11 @@ export default function PourLesCoachsPage() {
             <span className="inline-block w-10 h-[2px] bg-[#E63946] mb-8" />
 
             <h2 className="nx-display text-[40px] sm:text-[56px] font-extrabold text-white leading-[1.05] tracking-tight">
-              Prêt à faire la <span className="text-[#E63946]">différence</span> pour tes joueurs?
+              {T.cta.title1}<span className="text-[#E63946]">{T.cta.title2}</span>{T.cta.title3}
             </h2>
 
             <p className="text-[16px] sm:text-[17px] text-white/75 leading-relaxed mt-6 max-w-[560px] mx-auto">
-              Inscris-toi gratuitement. Vérifie tes athlètes. Bâtis ta réputation.
+              {T.cta.body}
             </p>
 
             <div className="mt-10">
@@ -612,23 +522,23 @@ export default function PourLesCoachsPage() {
                 className="inline-flex items-center justify-center rounded-lg bg-[#E63946] text-white font-bold uppercase tracking-wider hover:bg-[#D42B22] transition-colors"
                 style={{ fontSize: 16, padding: "16px 40px" }}
               >
-                Sois le Nex
+                {T.cta.button}
               </Link>
             </div>
 
             <div className="mt-6 flex items-center justify-center gap-5 text-[12px] text-white/55">
               <span className="inline-flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#22C55E]" />
-                100% gratuit
+                {T.cta.trustFree}
               </span>
               <span className="w-px h-3 bg-white/15" />
-              <span>Inscription en 2 min</span>
+              <span>{T.cta.trustQuick}</span>
             </div>
 
             <p className="text-[13px] text-white/55 mt-10">
-              Pas de joueurs inscrits?{" "}
+              {T.cta.noPlayersPrefix}
               <Link href="/pour-les-etudiant-athlete" className="text-[#E63946] font-semibold hover:underline">
-                Envoie-leur ce lien →
+                {T.cta.noPlayersLink}
               </Link>
             </p>
           </div>

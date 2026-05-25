@@ -22,196 +22,61 @@ import {
 } from "lucide-react";
 import MarketingNav from "@/components/marketing/MarketingNav";
 import PlaybookBackground from "@/app/components/PlaybookBackground";
+import { useTranslation } from "@/lib/i18n/useTranslation";
 
 /* ═══════════════════════════════════════════════════════════════
    Pour les recruteurs — B2B landing page
    Identity: Stripe/Linear-style SaaS, outcome-driven, vouvoiement.
    Distinct from athlete (emotional) and coach (reputation) pages.
-
-   TODO (copy review — flagged, not rewritten):
-   - "drag-and-drop" (All Star tier) — anglicism, could be "glisser-déposer".
-   - "Besoins de roster publiables (Roster Needs)" — English parenthetical
-     is redundant; consider dropping "(Roster Needs)" or "Besoins en effectif".
-   - FAQ Q4 "voir qui je scoute" — "scouter/scoute" is an anglicism;
-     consider "qui je suis" or "sur qui j'ai l'œil".
-   - "Kanban" kept as-is — standard international term in project management.
 ═══════════════════════════════════════════════════════════════ */
 
-/* ── Data ───────────────────────────────────────────────────── */
-
-const STATS = [
-  { value: "70+ CÉGEPs", desc: "membres du RSEQ couverts" },
-  { value: "16 sports", desc: "supportés par Nexus" },
-  { value: "ROI", desc: "plus de signatures, moins de temps perdu" },
-  { value: "Loi 25", desc: "hébergement au Québec" },
-];
-
-const PAIN_POINTS = [
-  "Vous ne voyez que les athlètes de votre réseau de coachs",
-  "Vos conversations sont dispersées — courriel, texto, Facebook, téléphone",
-  "Aucune façon de savoir quels athlètes intéressent la concurrence",
-  "Suivi des prospects dans un tableur Excel — ou simplement de mémoire",
-  "Impossible d'évaluer un athlète du Saguenay depuis Montréal sans y passer la journée",
-  "Les infos des athlètes varient selon le coach — stats, vidéos, évaluations",
-];
-
-const SOLUTIONS = [
-  "Base de données de tous les athlètes vérifiés du Québec, filtrable en 10 secondes",
-  "Messagerie intégrée par athlète — historique complet, zéro message perdu",
-  "Visibilité complète sur le processus de chaque athlète — combien de recruteurs le suivent, quels CÉGEPs sont déjà en discussion, et à quelle étape chacun en est",
-  "Gérez votre processus de recrutement pour chaque athlète — du moment où vous le repérez jusqu'à sa signature de lettre d'engagement",
-  "Évaluez les athlètes de partout au Québec depuis votre bureau — peu importe l'heure, peu importe la région",
-  "Chaque profil a la même structure, les mêmes critères, le même standard",
-];
+/* ── Pillar visual config (icon + color band, keyed by index) ── */
 
 type PillarColor = "red" | "blue" | "amber" | "blueCheck";
-const PILLARS: {
-  icon: React.ReactNode;
-  color: PillarColor;
-  title: string;
-  body: string;
-}[] = [
-  {
-    icon: <Search size={22} strokeWidth={2.2} />,
-    color: "red",
-    title: "Recherche avancée",
-    body: "Filtrez les athlètes par sport, position, région, année de diplomation, vérification, distinctions, et présence vidéo. Trouvez un QB de Sec. 5 en Mauricie en 10 secondes.",
-  },
-  {
-    icon: <UserCircle2 size={22} strokeWidth={2.2} />,
-    color: "blue",
-    title: "Profils 30 secondes",
-    body: "Chaque athlète a la même structure — physique, stats saison, vidéo, académique, évaluation coach. Décidez en 30 secondes si vous voulez contacter le coach.",
-  },
-  {
-    icon: <LayoutGrid size={22} strokeWidth={2.2} />,
-    color: "amber",
-    title: "Suivi visuel",
-    body: "Tableau Kanban: Découvert → Contacté → Visite → Lettre signée. Voyez votre entonnoir de recrutement d'un coup d'œil. Aucun prospect oublié.",
-  },
-  {
-    icon: <BadgeCheck size={40} strokeWidth={2} />,
-    color: "blueCheck",
-    title: "Check bleu",
-    body: "Chaque profil doit être validé par un entraîneur du secondaire. Le coach met sa réputation en jeu pour confirmer les informations — identité, stats, position, école. Ce qui signifie que tout ce que vous voyez a été vérifié par un adulte nommé et responsable.",
-  },
+
+const PILLAR_VISUALS: { icon: React.ReactNode; color: PillarColor }[] = [
+  { icon: <Search size={22} strokeWidth={2.2} />, color: "red" },
+  { icon: <UserCircle2 size={22} strokeWidth={2.2} />, color: "blue" },
+  { icon: <LayoutGrid size={22} strokeWidth={2.2} />, color: "amber" },
+  { icon: <BadgeCheck size={40} strokeWidth={2} />, color: "blueCheck" },
 ];
 
-const PILLAR_STYLES: Record<
-  PillarColor,
-  { bg: string; fg: string }
-> = {
+const PILLAR_STYLES: Record<PillarColor, { bg: string; fg: string }> = {
   red: { bg: "bg-[#E63946]/15", fg: "text-[#E63946]" },
   blue: { bg: "bg-[#3B82F6]/15", fg: "text-[#3B82F6]" },
   amber: { bg: "bg-[#F59E0B]/15", fg: "text-[#F59E0B]" },
   blueCheck: { bg: "bg-[#3B82F6]/15", fg: "text-[#3B82F6]" },
 };
 
-type PricingTier = {
-  name: string;
-  price: string;
-  priceSuffix?: string;
+/* ── Pricing visual config (order matches dictionary tiers) ──── */
+
+type PricingVisual = {
   priceColor: string;
-  subtitle: string;
-  subheader?: string;
-  bullets: string[];
   checkColor: string;
   highlighted?: boolean;
-  badge?: string;
-  buttonLabel: string;
-  buttonHref: string;
   buttonVariant: "outline-red" | "filled-red" | "outline-amber";
   borderClass: string;
 };
 
-const PRICING_TIERS: PricingTier[] = [
+const PRICING_VISUALS: PricingVisual[] = [
   {
-    name: "Gratuit",
-    price: "$0",
     priceColor: "text-[#22C55E]",
-    subtitle: "Pour explorer la plateforme",
-    bullets: [
-      "Recherche d'athlètes (filtres de base)",
-      "Profils complets des athlètes vérifiés",
-      "5 messages/mois vers les coachs",
-      "Favoris (max 25 athlètes)",
-    ],
     checkColor: "text-[#22C55E] bg-[#22C55E]/15",
-    buttonLabel: "Créer un compte",
-    buttonHref: "/inscription",
     buttonVariant: "outline-red",
     borderClass: "border border-white/[0.06]",
   },
   {
-    name: "Pro",
-    price: "$19.99",
-    priceSuffix: "/mois",
     priceColor: "text-white",
-    subtitle: "Pour les recruteurs actifs",
-    subheader: "Tout ce qui est gratuit, plus :",
-    bullets: [
-      "Recherche avancée (tous les filtres, badges, vidéo)",
-      "Messages illimités aux coachs",
-      "Favoris illimités + listes nommées",
-      "Tableau de bord recruteur complet",
-      "Notifications temps réel",
-      "Historique des vues par athlète",
-    ],
     checkColor: "text-[#E63946] bg-[#E63946]/15",
     highlighted: true,
-    badge: "Populaire",
-    buttonLabel: "Choisir Pro",
-    buttonHref: "/inscription",
     buttonVariant: "filled-red",
     borderClass: "border-2 border-[#E63946]",
   },
   {
-    name: "All Star",
-    price: "$29.99",
-    priceSuffix: "/mois",
     priceColor: "text-white",
-    subtitle: "Pour les programmes compétitifs",
-    subheader: "Tout ce qui est Pro, plus :",
-    bullets: [
-      "Tableau Kanban avec drag-and-drop",
-      "Besoins de roster publiables (Roster Needs)",
-      "Analytique de recrutement (conversion, temps moyen, etc.)",
-      "Export CSV/Excel pour intégration CRM",
-      "Multi-utilisateurs (entraîneur-chef + adjoints)",
-      "Support prioritaire",
-    ],
     checkColor: "text-[#F59E0B] bg-[#F59E0B]/15",
-    buttonLabel: "Choisir All Star",
-    buttonHref: "/inscription",
     buttonVariant: "outline-amber",
     borderClass: "border border-[#F59E0B]/40",
-  },
-];
-
-const FAQS: { q: string; a: string }[] = [
-  {
-    q: "Comment Nexus respecte-t-elle la Loi 25?",
-    a: "Toutes les données sont hébergées au Québec (OVHcloud Beauharnois). Le consentement parental est documenté pour chaque athlète mineur avant la mise en ligne du profil. Les recruteurs signent une entente de confidentialité à l'inscription. Le droit à l'effacement et à la portabilité est respecté selon les délais légaux.",
-  },
-  {
-    q: "Comment Nexus respecte-t-elle le calendrier RSEQ?",
-    a: "Nexus ne s'insère pas dans le processus de recrutement officiel du RSEQ — c'est votre responsabilité de connaître et respecter les périodes de recrutement de votre sport. Ce que Nexus fait : la communication avec un athlète mineur passe obligatoirement par son entraîneur du secondaire, conforme à l'esprit des règles RSEQ. L'entraîneur décide quand et comment impliquer l'athlète. Vous restez maître de votre démarche; Nexus ne vous bloque ni ne vous dicte quoi que ce soit côté calendrier.",
-  },
-  {
-    q: "Est-ce que je peux contacter directement un athlète?",
-    a: "Non. Pour les athlètes mineurs, toutes les communications passent par leur entraîneur du secondaire. C'est la règle RSEQ et c'est aussi une protection pour vous — l'entraîneur sert de filtre et de contexte. Vous évitez les malentendus et les situations inconfortables.",
-  },
-  {
-    q: "Mes concurrents CÉGEP peuvent-ils voir qui je scoute?",
-    a: "Par défaut, les coachs voient quels CÉGEPs ont consulté leurs athlètes (pour créer un signal d'intérêt utile). Vos concurrents directs ne voient PAS vos listes de favoris — seulement les coachs des athlètes concernés. Vous pouvez ajuster votre visibilité dans les paramètres.",
-  },
-  {
-    q: "Comment Nexus différencie-t-elle un vrai recruteur d'un imposteur?",
-    a: "Chaque recruteur doit compléter son profil avec son CÉGEP, son sport, sa division et son rôle. L'équipe Nexus est notifiée de chaque nouvelle inscription et valide l'affiliation déclarée. Les coachs du secondaire voient l'identité complète du recruteur — son nom, son CÉGEP, son sport — avant de répondre à tout message. En cas de profil suspect, l'équipe Nexus peut désactiver un compte à tout moment.",
-  },
-  {
-    q: "Est-ce qu'il faut un engagement annuel?",
-    a: "Les abonnements mensuels sont flexibles et peuvent être annulés en tout temps. Les abonnements annuels offrent une économie significative (~20-40% selon le tier) pour les recruteurs engagés sur la saison. Aucune pénalité d'annulation sur un plan mensuel.",
   },
 ];
 
@@ -278,6 +143,8 @@ function FaqItem({
 ══════════════════════════════════════════════════════════════ */
 
 export default function PourLesRecruteursPage() {
+  const { t } = useTranslation();
+  const T = t.recruiterLanding;
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [videoOpen, setVideoOpen] = useState(false);
 
@@ -293,17 +160,17 @@ export default function PourLesRecruteursPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
               {/* Left — copy */}
               <div>
-                <RedLabel>Pour les recruteurs CÉGEP</RedLabel>
+                <RedLabel>{T.hero.eyebrow}</RedLabel>
                 <h1 className="nx-display text-[38px] sm:text-[44px] lg:text-[48px] font-extrabold leading-[1.05] tracking-tight mt-4">
-                  Trouvez les athlètes<br />
-                  que votre réseau<br />
-                  <span className="text-[#E63946]">ne verra jamais.</span>
+                  {T.hero.titleLine1}<br />
+                  {T.hero.titleLine2}<br />
+                  <span className="text-[#E63946]">{T.hero.titleLine3}</span>
                 </h1>
                 <p className="text-[17px] sm:text-[18px] text-white/75 leading-relaxed mt-6">
-                  Nexus donne aux recruteurs CÉGEP accès à tous les athlètes vérifiés du Québec — filtrés par sport, position, région, et année de diplomation. Peu importe l&apos;école. Peu importe le réseau.
+                  {T.hero.lede}
                 </p>
                 <p className="text-[14px] sm:text-[15px] text-white/55 mt-4">
-                  Plateforme 100% québécoise. Conforme Loi 25. Hébergée au Québec.
+                  {T.hero.ledeSmall}
                 </p>
                 <div className="mt-8">
                   <a
@@ -311,10 +178,10 @@ export default function PourLesRecruteursPage() {
                     className="inline-flex items-center gap-2 rounded-lg bg-[#E63946] text-white font-bold uppercase tracking-wider hover:bg-[#D42B22] transition-colors text-[14px] px-7 py-[13px]"
                   >
                     <Play size={14} strokeWidth={2.5} fill="currentColor" />
-                    Voir la plateforme en action
+                    {T.hero.cta}
                   </a>
                   <p className="text-[13px] text-white/55 mt-3">
-                    Découvrez Nexus en 2 minutes 30.
+                    {T.hero.ctaSubtitle}
                   </p>
                 </div>
               </div>
@@ -325,7 +192,7 @@ export default function PourLesRecruteursPage() {
                   type="button"
                   onClick={() => setVideoOpen(true)}
                   className="group relative block w-full aspect-video bg-[#0d0f12] rounded-2xl border border-white/[0.08] overflow-hidden shadow-2xl hover:border-[#E63946]/40 transition-colors"
-                  aria-label="Lancer la vidéo de démo"
+                  aria-label={T.hero.videoAriaLabel}
                 >
                   {/* Gradient overlay */}
                   <div
@@ -342,16 +209,16 @@ export default function PourLesRecruteursPage() {
                   <div className="absolute top-4 left-4">
                     <span className="inline-flex items-center gap-1.5 rounded-full bg-black/60 backdrop-blur border border-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-white">
                       <span className="w-1.5 h-1.5 rounded-full bg-[#E63946]" />
-                      Démo · 2 min 30
+                      {T.hero.videoBadge}
                     </span>
                   </div>
                 </button>
                 <p className="mt-4 text-[14px] text-white/55 text-center">
-                  Comment un recruteur CÉGEP utilise Nexus au quotidien
+                  {T.hero.videoCaption}
                 </p>
                 {videoOpen && (
                   <p className="mt-2 text-[12px] text-[#E63946] text-center">
-                    La vidéo sera disponible sous peu.
+                    {T.hero.videoComing}
                   </p>
                 )}
               </div>
@@ -363,7 +230,7 @@ export default function PourLesRecruteursPage() {
         <section id="stats" className="bg-[#0d0f12] border-b border-white/[0.06]">
           <div className="max-w-[1200px] mx-auto px-6 py-14">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-0">
-              {STATS.map((s, i) => (
+              {T.stats.map((s, i) => (
                 <div
                   key={s.value}
                   className={`text-center lg:px-6 ${
@@ -386,12 +253,12 @@ export default function PourLesRecruteursPage() {
         <section id="probleme" className="border-b border-white/[0.06]">
           <div className="max-w-[1200px] mx-auto px-6 py-20">
             <div className="max-w-[780px]">
-              <RedLabel>Le problème</RedLabel>
+              <RedLabel>{T.problem.eyebrow}</RedLabel>
               <SectionTitle>
-                Le recrutement CÉGEP roule sur 10-15 contacts personnels.
+                {T.problem.title}
               </SectionTitle>
               <p className="text-[15px] sm:text-[16px] text-white/75 leading-relaxed mt-5">
-                Vous connaissez les entraîneurs-chefs des grosses écoles de votre région. Vous assistez à leurs gros matchs. Vous appelez les mêmes numéros chaque année. Ce système fonctionne — mais il vous rend invisible aux talents hors de votre cercle.
+                {T.problem.lede}
               </p>
             </div>
 
@@ -399,13 +266,13 @@ export default function PourLesRecruteursPage() {
               {/* Sans Nexus */}
               <div className="bg-[#1A1D24] border border-white/[0.06] rounded-2xl p-7">
                 <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-white/55">
-                  Le statu quo
+                  {T.problem.statusQuoEyebrow}
                 </p>
                 <h3 className="nx-display text-[20px] font-extrabold text-white/85 mt-2">
-                  Sans Nexus
+                  {T.problem.statusQuoTitle}
                 </h3>
                 <ul className="space-y-3.5 mt-6">
-                  {PAIN_POINTS.map((p) => (
+                  {T.problem.pains.map((p) => (
                     <li key={p} className="flex items-start gap-3 text-[14px] text-white/70 leading-snug">
                       <span className="shrink-0 mt-0.5 w-[20px] h-[20px] rounded-full bg-white/5 text-white/40 flex items-center justify-center">
                         <XIcon size={13} strokeWidth={2.5} />
@@ -419,13 +286,13 @@ export default function PourLesRecruteursPage() {
               {/* Avec Nexus */}
               <div className="bg-[#1A1D24] border-2 border-[#E63946]/40 rounded-2xl p-7 relative">
                 <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-[#E63946]">
-                  Le recrutement réinventé
+                  {T.problem.reinventedEyebrow}
                 </p>
                 <h3 className="nx-display text-[20px] font-extrabold text-white mt-2">
-                  Avec <span className="text-[#E63946]">Nexus</span>
+                  {T.problem.reinventedTitlePrefix}<span className="text-[#E63946]">{T.problem.reinventedTitleBrand}</span>
                 </h3>
                 <ul className="space-y-3.5 mt-6">
-                  {SOLUTIONS.map((s) => (
+                  {T.problem.solutions.map((s) => (
                     <li key={s} className="flex items-start gap-3 text-[14px] text-white/85 leading-snug">
                       <span className="shrink-0 mt-0.5 w-[20px] h-[20px] rounded-full bg-[#22C55E]/15 text-[#22C55E] flex items-center justify-center">
                         <Check size={13} strokeWidth={3} />
@@ -443,23 +310,24 @@ export default function PourLesRecruteursPage() {
         <section id="pilliers" className="border-b border-white/[0.06]">
           <div className="max-w-[1200px] mx-auto px-6 py-20">
             <div className="max-w-[700px]">
-              <RedLabel>Ce que vous pouvez faire</RedLabel>
+              <RedLabel>{T.pillars.eyebrow}</RedLabel>
               <SectionTitle>
-                Tout ce qu&apos;il faut pour recruter efficacement.
+                {T.pillars.title}
               </SectionTitle>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-12">
-              {PILLARS.map((p) => {
-                const s = PILLAR_STYLES[p.color];
-                const boxSize = p.color === "blueCheck" ? "w-14 h-14" : "w-11 h-11";
+              {T.pillars.items.map((p, i) => {
+                const v = PILLAR_VISUALS[i];
+                const s = PILLAR_STYLES[v.color];
+                const boxSize = v.color === "blueCheck" ? "w-14 h-14" : "w-11 h-11";
                 return (
                   <div
                     key={p.title}
                     className="bg-[#1A1D24] border border-white/[0.06] rounded-2xl p-8"
                   >
                     <div className={`${boxSize} rounded-xl flex items-center justify-center ${s.bg} ${s.fg}`}>
-                      {p.icon}
+                      {v.icon}
                     </div>
                     <h3 className="nx-display text-[20px] font-extrabold text-white tracking-tight mt-5">
                       {p.title}
@@ -480,20 +348,14 @@ export default function PourLesRecruteursPage() {
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-10 lg:gap-12 items-center">
               {/* Text left (2/5) */}
               <div className="lg:col-span-2">
-                <RedLabel>Le badge de vérification</RedLabel>
+                <RedLabel>{T.verification.eyebrow}</RedLabel>
                 <SectionTitle>
-                  Chaque profil vérifié est appuyé par un coach nommé.
+                  {T.verification.title}
                 </SectionTitle>
                 <div className="space-y-4 mt-6 text-[14px] sm:text-[15px] text-white/75 leading-relaxed">
-                  <p>
-                    Sur Nexus, un athlète avec un badge de vérification n&apos;est pas juste un profil en ligne. C&apos;est un athlète dont un entraîneur du secondaire a révisé chaque champ — identité, stats, école, position — et a mis sa propre réputation en jeu pour confirmer que tout est vrai.
-                  </p>
-                  <p>
-                    La vérification est mensuelle. Les athlètes inactifs ou dont les infos ne sont plus à jour perdent leur badge de vérification. Vous n&apos;évaluez jamais un profil zombie.
-                  </p>
-                  <p>
-                    Quand vous voyez un badge de vérification, vous voyez la crédibilité du coach transférée à l&apos;athlète. C&apos;est du temps économisé et du risque réduit.
-                  </p>
+                  <p>{T.verification.p1}</p>
+                  <p>{T.verification.p2}</p>
+                  <p>{T.verification.p3}</p>
                 </div>
               </div>
 
@@ -504,7 +366,7 @@ export default function PourLesRecruteursPage() {
                     <span className="inline-flex items-center gap-2 rounded-full bg-[#3B82F6]/15 border border-[#3B82F6]/30 px-3 py-1.5">
                       <CheckCircle2 size={14} className="text-[#3B82F6]" strokeWidth={2.5} />
                       <span className="text-[12px] font-bold uppercase tracking-wider text-[#3B82F6]">
-                        Vérifié
+                        {T.verification.verifiedPill}
                       </span>
                     </span>
                     <div className="flex items-center gap-0.5">
@@ -516,28 +378,28 @@ export default function PourLesRecruteursPage() {
                   </div>
 
                   <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-white/45 mt-6">
-                    Vérifié par
+                    {T.verification.verifiedByLabel}
                   </p>
                   <p className="text-[16px] font-bold text-white mt-1.5">
-                    Coach Pelletier · <span className="text-white/70 font-semibold">É.S. De Mortagne</span>
+                    {T.verification.verifiedByName} · <span className="text-white/70 font-semibold">{T.verification.verifiedBySchool}</span>
                   </p>
 
                   <blockquote className="mt-5 pl-4 border-l-2 border-[#E63946] text-[14px] italic text-white/85 leading-relaxed">
-                    « Joueur complet, très intelligent au jeu. Lit les défenses avant le snap. Leader naturel dans le vestiaire. Prêt pour le niveau CÉGEP division 1. »
+                    {T.verification.quote}
                   </blockquote>
 
                   <div className="flex flex-wrap gap-2 mt-6">
                     <span className="inline-flex items-center gap-1.5 rounded-full bg-[#E63946]/15 border border-[#E63946]/30 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-[#E63946]">
                       <Shield size={11} strokeWidth={2.5} />
-                      Capitaine
+                      {T.verification.badgeCaptain}
                     </span>
                     <span className="inline-flex items-center gap-1.5 rounded-full bg-[#E63946]/15 border border-[#E63946]/30 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-[#E63946]">
                       <Star size={11} strokeWidth={2.5} />
-                      Équipe d&apos;étoiles
+                      {T.verification.badgeAllstar}
                     </span>
                     <span className="inline-flex items-center gap-1.5 rounded-full bg-[#E63946]/15 border border-[#E63946]/30 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-[#E63946]">
                       <Award size={11} strokeWidth={2.5} />
-                      Leader
+                      {T.verification.badgeLeader}
                     </span>
                   </div>
                 </div>
@@ -551,12 +413,12 @@ export default function PourLesRecruteursPage() {
           <div className="max-w-[1200px] mx-auto px-6 py-20">
             {/* Header + intro */}
             <div className="text-center max-w-[720px] mx-auto">
-              <RedLabel>La fiabilité des coachs</RedLabel>
+              <RedLabel>{T.reliability.eyebrow}</RedLabel>
               <SectionTitle>
-                Un problème vieux comme le recrutement — et notre solution.
+                {T.reliability.title}
               </SectionTitle>
               <p className="text-[15px] sm:text-[16px] text-white/75 leading-relaxed mt-6">
-                On vous le dit honnêtement : le recrutement sportif a toujours eu un défi de fiabilité. Comment savoir si un coach gonfle ses joueurs pour les aider à se placer? Comment évaluer la crédibilité de ce qu&apos;on vous raconte? Ce problème existait avant Nexus et continuera d&apos;exister hors de Nexus. La différence, c&apos;est qu&apos;ici, vous avez les outils pour le gérer.
+                {T.reliability.lede}
               </p>
             </div>
 
@@ -564,18 +426,12 @@ export default function PourLesRecruteursPage() {
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-10 lg:gap-12 items-start mt-14">
               <div className="lg:col-span-2">
                 <h3 className="nx-display text-[20px] sm:text-[22px] font-extrabold text-white tracking-tight leading-tight">
-                  La réputation des coachs, construite par les recruteurs.
+                  {T.reliability.subTitle}
                 </h3>
                 <div className="space-y-4 mt-5 text-[14px] sm:text-[15px] text-white/75 leading-relaxed">
-                  <p>
-                    Sur Nexus, chaque coach a une réputation publique — visible à tous les recruteurs avant qu&apos;ils ne lisent une seule évaluation. Cette réputation est construite par vous et vos collègues recruteurs.
-                  </p>
-                  <p>
-                    Après chaque interaction avec un coach — message, visite, recrutement — vous pouvez évaluer la qualité et la fiabilité de ses observations. Ces évaluations s&apos;accumulent au fil du temps. Un coach qui gonfle systématiquement ses joueurs verra sa réputation refléter cette tendance. Un coach qui évalue avec justesse devient une référence dans son réseau.
-                  </p>
-                  <p>
-                    Le système se corrige lui-même. Pas par Nexus, mais par la communauté de recruteurs CÉGEP.
-                  </p>
+                  <p>{T.reliability.p1}</p>
+                  <p>{T.reliability.p2}</p>
+                  <p>{T.reliability.p3}</p>
                 </div>
               </div>
 
@@ -588,10 +444,10 @@ export default function PourLesRecruteursPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-[17px] font-bold text-white leading-tight">
-                        Coach Pelletier
+                        {T.reliability.coachName}
                       </p>
                       <p className="text-[13px] text-white/55 mt-0.5">
-                        É.S. De Mortagne
+                        {T.reliability.coachSchool}
                       </p>
                     </div>
                   </div>
@@ -606,7 +462,7 @@ export default function PourLesRecruteursPage() {
                     </span>
                   </div>
                   <p className="text-[12px] text-white/55 mt-2">
-                    Note de fiabilité — basée sur 14 évaluations de recruteurs
+                    {T.reliability.reliabilityCaption}
                   </p>
 
                   <div className="h-px bg-white/[0.06] my-6" />
@@ -614,7 +470,7 @@ export default function PourLesRecruteursPage() {
                   <div className="space-y-4">
                     <div>
                       <div className="flex items-center justify-between text-[13px] mb-1.5">
-                        <span className="text-white/75">Précision des évaluations</span>
+                        <span className="text-white/75">{T.reliability.precisionLabel}</span>
                         <span className="text-[#22C55E] font-bold tabular-nums">87%</span>
                       </div>
                       <div className="h-1.5 rounded-full bg-[#2D3748] overflow-hidden">
@@ -623,12 +479,12 @@ export default function PourLesRecruteursPage() {
                     </div>
 
                     <div className="flex items-center justify-between text-[13px]">
-                      <span className="text-white/75">Athlètes placés en CÉGEP</span>
+                      <span className="text-white/75">{T.reliability.placedLabel}</span>
                       <span className="text-white font-bold tabular-nums">12</span>
                     </div>
 
                     <div className="flex items-center justify-between text-[13px]">
-                      <span className="text-white/75">Délai moyen de réponse</span>
+                      <span className="text-white/75">{T.reliability.responseLabel}</span>
                       <span className="text-white font-bold tabular-nums">6h</span>
                     </div>
                   </div>
@@ -637,18 +493,18 @@ export default function PourLesRecruteursPage() {
 
                   <div className="flex flex-wrap gap-2">
                     <span className="inline-flex items-center rounded-full bg-[#22C55E]/15 border border-[#22C55E]/30 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-[#22C55E]">
-                      Recommandé
+                      {T.reliability.pillRecommended}
                     </span>
                     <span className="inline-flex items-center rounded-full bg-[#3B82F6]/15 border border-[#3B82F6]/30 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-[#3B82F6]">
-                      Réponse rapide
+                      {T.reliability.pillFastResponse}
                     </span>
                     <span className="inline-flex items-center rounded-full bg-[#E63946]/15 border border-[#E63946]/30 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-[#E63946]">
-                      Placeur
+                      {T.reliability.pillPlacer}
                     </span>
                   </div>
 
                   <p className="text-[11px] text-white/45 mt-6">
-                    Évalué pour la dernière fois il y a 3 jours par un recruteur de Vanier
+                    {T.reliability.lastEvaluated}
                   </p>
                 </div>
               </div>
@@ -673,7 +529,7 @@ export default function PourLesRecruteursPage() {
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
                             src="/preview-athlete-player-card.png"
-                            alt="Carte joueur Alexandre Tremblay"
+                            alt={T.intelligence.cardAlt}
                             className="w-full h-auto block"
                           />
                           {/* Blue verified check top-right */}
@@ -693,7 +549,7 @@ export default function PourLesRecruteursPage() {
                           <span className="text-[#E63946]">#7</span>
                         </p>
                         <p className="text-[11px] text-white/45 uppercase tracking-[0.2em] mt-1">
-                          Football · POS LB · Promotion 2027
+                          {T.intelligence.cardCategory}
                         </p>
                       </div>
 
@@ -704,23 +560,23 @@ export default function PourLesRecruteursPage() {
                             <Eye size={12} className="text-white/55" strokeWidth={2.2} />
                             <span className="text-[15px] font-black text-white tabular-nums">47</span>
                           </div>
-                          <p className="text-[9px] text-white/45 uppercase tracking-wider mt-0.5">Vues</p>
+                          <p className="text-[9px] text-white/45 uppercase tracking-wider mt-0.5">{T.intelligence.viewsLabel}</p>
                         </div>
                         <div className="px-2 text-center">
                           <div className="flex items-center justify-center gap-1">
                             <Heart size={12} fill="currentColor" className="text-[#E63946]" />
                             <span className="text-[15px] font-black text-[#E63946] tabular-nums">3</span>
                           </div>
-                          <p className="text-[9px] text-white/45 uppercase tracking-wider mt-0.5">Favoris</p>
+                          <p className="text-[9px] text-white/45 uppercase tracking-wider mt-0.5">{T.intelligence.favoritesLabel}</p>
                         </div>
                         <div className="px-2 text-center">
-                          <p className="text-[9px] text-white/45 uppercase tracking-wider">Mon statut</p>
-                          <p className="text-[11px] font-bold text-white mt-0.5 leading-tight">Visite planifiée</p>
+                          <p className="text-[9px] text-white/45 uppercase tracking-wider">{T.intelligence.myStatusLabel}</p>
+                          <p className="text-[11px] font-bold text-white mt-0.5 leading-tight">{T.intelligence.myStatusValue}</p>
                         </div>
                         <div className="px-2 text-center">
-                          <p className="text-[9px] text-white/45 uppercase tracking-wider">Recrutement</p>
+                          <p className="text-[9px] text-white/45 uppercase tracking-wider">{T.intelligence.recruitmentLabel}</p>
                           <span className="inline-flex items-center rounded-full bg-[#F59E0B]/15 border border-[#F59E0B]/30 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-[#F59E0B] mt-0.5">
-                            En processus
+                            {T.intelligence.recruitmentValue}
                           </span>
                         </div>
                       </div>
@@ -730,8 +586,8 @@ export default function PourLesRecruteursPage() {
                         <p className="flex items-start gap-2 text-[11px] text-white/70 leading-relaxed">
                           <Zap size={13} className="shrink-0 mt-0.5 text-[#E63946]" strokeWidth={2.2} />
                           <span>
-                            <span className="font-bold text-white">Le recrutement global avance.</span>{" "}
-                            L&apos;athlète est en processus avec un CÉGEP — comparez à votre propre statut pour savoir si vous devez accélérer.
+                            <span className="font-bold text-white">{T.intelligence.annotationLead}</span>{" "}
+                            {T.intelligence.annotationBody}
                           </span>
                         </p>
                       </div>
@@ -742,20 +598,16 @@ export default function PourLesRecruteursPage() {
 
               {/* Text right */}
               <div className="order-1 lg:order-2">
-                <RedLabel>Intelligence concurrentielle</RedLabel>
+                <RedLabel>{T.intelligence.eyebrow}</RedLabel>
                 <SectionTitle>
-                  Sachez où vous en êtes — par rapport au reste.
+                  {T.intelligence.title}
                 </SectionTitle>
                 <div className="space-y-4 mt-6 text-[14px] sm:text-[15px] text-white/75 leading-relaxed">
+                  <p>{T.intelligence.p1}</p>
                   <p>
-                    Un recruteur sans Nexus apprend par la rumeur qu&apos;un athlète discute avec un autre CÉGEP. Sur Nexus, l&apos;information est sur le profil : le statut de recrutement de l&apos;athlète change dès qu&apos;il avance dans son processus.
+                    {T.intelligence.p2Pre}<span className="text-white font-semibold">{T.intelligence.p2YourStatus}</span>{T.intelligence.p2Mid}<span className="text-white font-semibold">{T.intelligence.p2GlobalStatus}</span>{T.intelligence.p2Post}
                   </p>
-                  <p>
-                    Sur chaque profil, deux indicateurs côte à côte : <span className="text-white font-semibold">votre propre statut</span> avec cet athlète, et le <span className="text-white font-semibold">statut de recrutement global</span> qu&apos;il porte (Ouvert, En processus, Recruté). Si le statut global passe à « En processus » alors que vous êtes encore à « Identifié », l&apos;écart est visible.
-                  </p>
-                  <p>
-                    Le nombre de recruteurs qui l&apos;ont mis en favori complète le portrait — combien de CÉGEPs s&apos;intéressent à lui en ce moment. Pas de noms par CÉGEP, pas d&apos;étapes par concurrent : juste les signaux qui comptent pour décider si vous devez accélérer.
-                  </p>
+                  <p>{T.intelligence.p3}</p>
                 </div>
               </div>
             </div>
@@ -766,58 +618,59 @@ export default function PourLesRecruteursPage() {
         <section id="tarification" className="border-b border-white/[0.06]">
           <div className="max-w-[1200px] mx-auto px-6 py-20">
             <div className="text-center">
-              <RedLabel>Tarification</RedLabel>
-              <SectionTitle>Un prix selon votre niveau de recrutement.</SectionTitle>
+              <RedLabel>{T.pricing.eyebrow}</RedLabel>
+              <SectionTitle>{T.pricing.title}</SectionTitle>
               <p className="text-[14px] sm:text-[15px] text-white/75 leading-relaxed mt-5 max-w-[640px] mx-auto">
-                Recrutement 100% québécois. Paiement en dollars canadiens. TPS/TVQ incluses dans les tarifs affichés.
+                {T.pricing.lede}
               </p>
             </div>
 
             <div className="mt-14 mx-auto max-w-[1000px] flex flex-col md:flex-row items-stretch gap-4">
-              {PRICING_TIERS.map((t) => {
+              {T.pricing.tiers.map((tier, i) => {
+                const v = PRICING_VISUALS[i];
                 const btnClass =
-                  t.buttonVariant === "filled-red"
+                  v.buttonVariant === "filled-red"
                     ? "bg-[#E63946] text-white hover:bg-[#D42B22] border border-[#E63946]"
-                    : t.buttonVariant === "outline-amber"
+                    : v.buttonVariant === "outline-amber"
                     ? "border border-[#F59E0B] text-[#F59E0B] hover:bg-[#F59E0B]/10"
                     : "border border-[#E63946] text-[#E63946] hover:bg-[#E63946]/10";
                 return (
                   <div
-                    key={t.name}
-                    className={`relative flex-1 bg-[#1A1D24] rounded-xl flex flex-col min-h-[640px] p-8 ${t.borderClass}`}
+                    key={tier.name}
+                    className={`relative flex-1 bg-[#1A1D24] rounded-xl flex flex-col min-h-[640px] p-8 ${v.borderClass}`}
                   >
-                    {t.badge && (
+                    {tier.badge && (
                       <span className="absolute -top-3 left-1/2 -translate-x-1/2 inline-flex px-3 py-1 rounded-full bg-[#E63946] text-white text-[10px] font-bold uppercase tracking-wider">
-                        {t.badge}
+                        {tier.badge}
                       </span>
                     )}
 
-                    <h3 className="text-[20px] font-bold text-white">{t.name}</h3>
+                    <h3 className="text-[20px] font-bold text-white">{tier.name}</h3>
 
                     <div className="mt-4 flex items-baseline gap-1.5 flex-wrap">
-                      <span className={`nx-display text-[32px] sm:text-[36px] font-extrabold leading-none ${t.priceColor}`}>
-                        {t.price}
+                      <span className={`nx-display text-[32px] sm:text-[36px] font-extrabold leading-none ${v.priceColor}`}>
+                        {tier.price}
                       </span>
-                      {t.priceSuffix && (
-                        <span className="text-[15px] text-white/55 font-semibold">{t.priceSuffix}</span>
+                      {tier.priceSuffix && (
+                        <span className="text-[15px] text-white/55 font-semibold">{tier.priceSuffix}</span>
                       )}
                     </div>
-                    <p className="text-[12px] text-white/55 mt-2">{t.subtitle}</p>
+                    <p className="text-[12px] text-white/55 mt-2">{tier.subtitle}</p>
 
                     <div className="h-px bg-white/[0.06] my-6" />
 
                     <div className="flex-1">
-                      {t.subheader && (
-                        <p className="text-[13px] text-white/55 mb-3">{t.subheader}</p>
+                      {tier.subheader && (
+                        <p className="text-[13px] text-white/55 mb-3">{tier.subheader}</p>
                       )}
                       <ul className="space-y-2.5">
-                        {t.bullets.map((b) => (
+                        {tier.bullets.map((b) => (
                           <li
                             key={b}
                             className="flex items-start gap-3 text-[14px] text-white/85 leading-snug"
                           >
                             <span
-                              className={`shrink-0 mt-0.5 w-[18px] h-[18px] rounded-full flex items-center justify-center ${t.checkColor}`}
+                              className={`shrink-0 mt-0.5 w-[18px] h-[18px] rounded-full flex items-center justify-center ${v.checkColor}`}
                             >
                               <Check size={11} strokeWidth={3} />
                             </span>
@@ -828,10 +681,10 @@ export default function PourLesRecruteursPage() {
                     </div>
 
                     <Link
-                      href={t.buttonHref}
+                      href="/inscription"
                       className={`mt-8 inline-flex items-center justify-center w-full rounded-lg font-bold uppercase tracking-wider text-[13px] py-3 px-5 transition-colors ${btnClass}`}
                     >
-                      {t.buttonLabel}
+                      {tier.buttonLabel}
                     </Link>
                   </div>
                 );
@@ -844,12 +697,12 @@ export default function PourLesRecruteursPage() {
         <section id="faq" className="border-b border-white/[0.06]">
           <div className="max-w-[860px] mx-auto px-6 py-20">
             <div className="text-center">
-              <RedLabel>Questions fréquentes</RedLabel>
-              <SectionTitle>Les réponses aux questions que vous vous posez.</SectionTitle>
+              <RedLabel>{T.faq.eyebrow}</RedLabel>
+              <SectionTitle>{T.faq.title}</SectionTitle>
             </div>
 
             <div className="space-y-3 mt-12">
-              {FAQS.map((item, i) => (
+              {T.faq.items.map((item, i) => (
                 <FaqItem
                   key={item.q}
                   q={item.q}
@@ -868,11 +721,11 @@ export default function PourLesRecruteursPage() {
             <span className="inline-block w-10 h-[2px] bg-[#E63946] mb-8" />
 
             <h2 className="nx-display text-[38px] sm:text-[52px] font-extrabold text-white leading-[1.05] tracking-tight">
-              Prêt à voir tous les <span className="text-[#E63946]">talents</span> du Québec?
+              {T.cta.title1}<span className="text-[#E63946]">{T.cta.title2}</span>{T.cta.title3}
             </h2>
 
             <p className="text-[15px] sm:text-[17px] text-white/75 leading-relaxed mt-6 max-w-[560px] mx-auto">
-              Créez votre compte gratuit. Explorez la plateforme. Mettez Pro à l&apos;épreuve pendant 14 jours sans frais.
+              {T.cta.body}
             </p>
 
             <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
@@ -880,12 +733,12 @@ export default function PourLesRecruteursPage() {
                 href="/inscription"
                 className="inline-flex items-center justify-center rounded-lg bg-[#E63946] text-white font-bold uppercase tracking-wider hover:bg-[#D42B22] transition-colors text-[15px] px-9 py-[15px]"
               >
-                Créer un compte gratuit
+                {T.cta.button}
               </Link>
             </div>
 
             <p className="text-[13px] text-white/55 mt-8">
-              Aucune carte de crédit requise. Configurez votre profil en 2 minutes.
+              {T.cta.footer}
             </p>
           </div>
         </section>

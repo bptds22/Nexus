@@ -1,3 +1,5 @@
+"use client";
+
 import MarketingHero from "@/components/marketing/MarketingHero";
 import ProblemSection from "@/components/marketing/ProblemSection";
 import SolutionGrid from "@/components/marketing/SolutionGrid";
@@ -6,138 +8,69 @@ import FeatureGrid from "@/components/marketing/FeatureGrid";
 import CtaSection from "@/components/marketing/CtaSection";
 import PlaybookBackground from "@/app/components/PlaybookBackground";
 import MarketingNav from "@/components/marketing/MarketingNav";
+import { useTranslation } from "@/lib/i18n/useTranslation";
+
+// Icon keys + image-related metadata stay in code; only the text content
+// flows from the dictionary. Icons are referenced by string name into
+// the NxIcon component, so the dictionary stays purely textual.
+const PROBLEM_ICONS = ["eyeOff", "monitor", "gradCap"] as const;
+const SOLUTION_ICONS = ["trophy", "search", "allstar", "shield"] as const;
 
 export default function PourLesEtudiantAthletePage() {
+  const { t } = useTranslation();
+  const T = t.athleteLanding;
+
   return (
     <div className="hero-playbook bg-[#060A14] min-h-screen">
       <PlaybookBackground />
       <MarketingNav />
 
       <MarketingHero
-        eyebrow="POUR LES ÉTUDIANTS-ATHLÈTES"
-        title="FAIS-TOI REPÉRER PAR LES CÉGEPS"
-        subtitle="Ton coach crée ton profil sur Nexus. Les recruteurs CÉGEP de tout le Québec peuvent te découvrir, voir tes stats, ta vidéo et ton parcours académique."
-        ctaPrimary={{ label: "SOIS LE NEXT →", href: "/inscription?role=ATHLETE" }}
-        ctaSecondary={{ label: "COMMENT ÇA MARCHE", href: "/comment-ca-marche" }}
+        eyebrow={T.hero.eyebrow}
+        title={T.hero.title}
+        subtitle={T.hero.subtitle}
+        ctaPrimary={{ label: T.hero.ctaPrimary, href: "/inscription?role=ATHLETE" }}
+        ctaSecondary={{ label: T.hero.ctaSecondary, href: "/comment-ca-marche" }}
       />
 
       <ProblemSection
-        title="T'ES PRÊT. MAIS QUI LE SAIT ?"
-        problems={[
-          {
-            icon: "eyeOff",
-            title: "Invisible",
-            description:
-              "T'es peut-être le meilleur QB de ta ligue, mais les CÉGEPs hors de ta région ne le savent pas.",
-          },
-          {
-            icon: "monitor",
-            title: "Pas de vitrine",
-            description:
-              "Ton highlight reel est sur TikTok entre des vidéos de chats. Aucun endroit professionnel pour te présenter.",
-          },
-          {
-            icon: "gradCap",
-            title: "Le sport ET l'école",
-            description:
-              "Les recruteurs veulent voir tes stats ET ta moyenne générale. Aucun outil ne combine les deux.",
-          },
-        ]}
+        title={T.problem.title}
+        problems={T.problem.items.map((p, i) => ({
+          icon: PROBLEM_ICONS[i],
+          title: p.title,
+          description: p.description,
+        }))}
       />
 
       <SolutionGrid
-        title="TON PROFIL. TA CHANCE."
-        solutions={[
-          {
-            icon: "trophy",
-            title: "Profil étudiant-athlète complet",
-            description:
-              "Stats, position, highlight vidéo, parcours académique, moyenne générale — tout sur une page.",
-          },
-          {
-            icon: "search",
-            title: "Vu par 54 CÉGEPs",
-            description:
-              "Les recruteurs de tous les CÉGEPs RSEQ peuvent te découvrir et contacter ton coach.",
-          },
-          {
-            icon: "allstar",
-            title: "Évaluation de ton coach",
-            description:
-              "Ton coach te note sur 11 critères reconnus. C'est ta lettre de recommandation intégrée.",
-          },
-          {
-            icon: "shield",
-            title: "Badge vérifié",
-            description:
-              "Un profil complet = un badge bleu qui te démarque des profils incomplets.",
-          },
-        ]}
+        title={T.solution.title}
+        solutions={T.solution.items.map((s, i) => ({
+          icon: SOLUTION_ICONS[i],
+          title: s.title,
+          description: s.description,
+        }))}
       />
 
       <HowItWorks
-        steps={[
-          {
-            number: "01",
-            title: "Inscris-toi en quelques minutes",
-            description:
-              "Crée ton profil tout de suite — pas besoin d'attendre. Stats, position, vidéo, parcours : tu remplis ce que tu peux et tu peaufines plus tard.",
-          },
-          {
-            number: "02",
-            title: "Ton coach te vérifie (recommandé)",
-            description:
-              "Demande-lui d'ajouter son évaluation et de valider tes stats. Le badge bleu fait monter ton profil dans les recherches des recruteurs.",
-          },
-          {
-            number: "03",
-            title: "Les recruteurs te trouvent",
-            description:
-              "Ton profil apparaît dans les recherches des recruteurs CÉGEP. Ils peuvent te contacter (ou contacter ton coach) s'ils sont intéressés.",
-          },
-        ]}
+        steps={T.steps.items.map((step) => ({
+          number: step.number,
+          title: step.title,
+          description: step.description,
+        }))}
       />
 
       <FeatureGrid
-        title="TON AVANTAGE COMPÉTITIF"
-        features={[
-          {
-            title: "Vidéo highlights",
-            description:
-              "Ton meilleur highlight reel, intégré directement dans ton profil. Les recruteurs le voient en premier.",
-          },
-          {
-            title: "Stats complètes",
-            description:
-              "Toutes tes stats de saison — triées, formatées, comparables. Pas de PDF flou.",
-          },
-          {
-            title: "Moyenne générale visible",
-            description:
-              "Les recruteurs voient ta moyenne générale. Ça ouvre les portes des programmes contingentés.",
-          },
-          {
-            title: "Évaluation 11 critères",
-            description:
-              "Force, vitesse, QI sportif, leadership — ton coach te note sur une grille que tous les recruteurs comprennent.",
-          },
-          {
-            title: "Notifications à ton coach",
-            description:
-              "Quand un recruteur consulte ton profil, ton coach le sait. Plus de silence radio.",
-          },
-          {
-            title: "Multi-sport",
-            description:
-              "Tu joues football ET basketball ? Ton profil supporte plusieurs sports.",
-          },
-        ]}
+        title={T.features.title}
+        features={T.features.items.map((f) => ({
+          title: f.title,
+          description: f.description,
+        }))}
       />
 
       <CtaSection
-        title="TON FUTUR CÉGEP TE CHERCHE PEUT-ÊTRE EN CE MOMENT"
-        ctaPrimary={{ label: "SOIS LE NEXT →", href: "/inscription?role=ATHLETE" }}
-        subtext="Demande à ton entraîneur de te créer un profil Nexus."
+        title={T.cta.title}
+        ctaPrimary={{ label: T.cta.button, href: "/inscription?role=ATHLETE" }}
+        subtext={T.cta.subtext}
       />
     </div>
   );

@@ -13,6 +13,8 @@ file.
 
 > **2026-05-25 — Language toggle fixed.** MarketingNav's FR/EN toggle was a no-op (`onClick={() => {}}`) and mobile had no toggle at all. Desktop pill now calls `toggleLang`, FR/EN span colors are state-driven from `lang`, and a matching toggle was added to the mobile drawer. Both drive the same `LanguageContext`.
 
+> **2026-05-25 — All 7 marketing landing pages bilingual.** Extracted `/comment-ca-marche`, `/pour-les-coachs`, `/pour-les-recruteurs`, `/pour-les-etudiant-athlete`, `/tarifs` (chrome only — `lib/config/pricing.ts` untouched), `/roadmap`, `/a-propos` into `dictionaries.ts` under new top-level keys (`howItWorks`, `coachLanding`, `recruiterLanding`, `athleteLanding`, `pricing`, `roadmap`, `about`). 45 `// TODO-EN` flags on brand-voice strings for founder review. Legal pages (/confidentialite, /conditions) and auth pages deferred to a separate pass.
+
 ---
 
 ## P0 — Affect new user onboarding

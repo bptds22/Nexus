@@ -3,6 +3,7 @@
 import Link from "next/link";
 import MarketingNav from "@/components/marketing/MarketingNav";
 import PlaybookBackground from "@/app/components/PlaybookBackground";
+import { useTranslation } from "@/lib/i18n/useTranslation";
 
 /* ═══════════════════════════════════════════════════════════════
    Roadmap — phased timeline, dots + text only (no cards)
@@ -10,67 +11,8 @@ import PlaybookBackground from "@/app/components/PlaybookBackground";
 
 type PhaseTone = "amber" | "blue" | "red" | "white";
 
-interface Feature { title: string; body: string }
-
-interface Phase {
-  code: string;           // e.g. "Release 2"
-  label: string;          // e.g. "Croissance commerciale"
-  tone: PhaseTone;
-  items: Feature[];
-}
-
-const PHASES: Phase[] = [
-  {
-    code: "Release 2",
-    label: "Croissance commerciale",
-    tone: "amber",
-    items: [
-      { title: "Page CÉGEP détaillée", body: "Chaque CÉGEP a sa propre page — sports offerts, programmes d'études, contacts, et présentation." },
-      { title: "Recherche d'écoles interactive", body: "Trouve les CÉGEPs par localisation, sport, programme d'études. Carte interactive incluse." },
-      { title: "Comparaison d'athlètes", body: "Compare deux athlètes côte à côte — stats, évaluations, distinctions, profil académique." },
-      { title: "Historique des évaluations", body: "Voir les évaluations passées d'un athlète pour montrer sa progression d'une saison à l'autre." },
-      { title: "Blog Nexus", body: "Articles, conseils, et analyses sur le recrutement sportif au Québec." },
-      { title: "Webinaires CÉGEP", body: "Les CÉGEPs présentent leurs programmes sport-études directement aux coachs du secondaire." },
-      { title: "Guide de recrutement avancé", body: "Version interactive et personnalisée du guide — timeline adaptée à ta situation et ton sport." },
-      { title: "Calendrier de showcases et événements", body: "Camps, showcases, portes ouvertes, combines — tous les événements de recrutement au Québec au même endroit." },
-      { title: "Tableau d'engagements public", body: "Qui a signé où? Un tableau en temps réel des lettres d'intention et des engagements confirmés par sport et par année." },
-    ],
-  },
-  {
-    code: "Release 3",
-    label: "Valeur CÉGEP",
-    tone: "blue",
-    items: [
-      { title: "Gestion des effectifs CÉGEP", body: "Tableau des besoins par sport et position vs joueurs actuels. Le directeur voit les trous dans son roster." },
-      { title: "Blog CÉGEP", body: "Chaque CÉGEP publie sur sa page — résultats, témoignages, journées portes ouvertes. Visibilité et contenu." },
-      { title: "Suivi des anciens (Alumni)", body: "Suivre où sont les athlètes recrutés après 1, 2, 3 ans. Preuve sociale pour le CÉGEP et le coach." },
-      { title: "Portail de transfert", body: "Athlètes qui changent de CÉGEP en cours de parcours. Visibilité pour les programmes qui ont des places à combler." },
-    ],
-  },
-  {
-    code: "Release 4",
-    label: "Intelligence",
-    tone: "red",
-    items: [
-      { title: "Analyse des besoins par IA", body: "Analyse du roster actuel, des finissants, et des gaps de position. Suggestions automatiques de prospects." },
-      { title: "Optimisation de tournée de recrutement", body: "Planification intelligente : quels prospects visiter, dans quel ordre, optimisé par distance et priorité." },
-      { title: "Score de préparation au recrutement", body: "Le coach voit quels athlètes sont « prêts à être présentés » aux recruteurs — basé sur la complétion, la vidéo et les évaluations." },
-      { title: "Notifications intelligentes", body: "« 3 nouveaux athlètes correspondent à tes critères cette semaine » — « Ce QB est consulté par 5 CÉGEPs, agis vite »." },
-      { title: "Carte thermique régionale", body: "Carte du Québec montrant la densité d'athlètes par région et par sport. Outil stratégique pour recruteurs." },
-    ],
-  },
-  {
-    code: "Release 5",
-    label: "Expansion",
-    tone: "white",
-    items: [
-      { title: "Passerelle universités → CÉGEP", body: "Les universités canadiennes recrutent depuis les CÉGEPs. Même modèle, un niveau au-dessus. Nouveau segment payant." },
-      { title: "Expansion pan-canadienne", body: "Adapter Nexus pour les provinces anglophones : high school → college/university. Traduction bilingue. Marché 10x plus grand." },
-      { title: "Application native (iOS/Android)", body: "Réécriture mobile complète pour une expérience optimale sur téléphone." },
-      { title: "API publique", body: "Permettre aux écoles et CÉGEPs d'intégrer les données Nexus dans leurs systèmes (Clara, Omnivox)." },
-    ],
-  },
-];
+// Tone per phase (order matches the dictionary's phases array).
+const PHASE_TONES: PhaseTone[] = ["amber", "blue", "red", "white"];
 
 /* ── Tone → classes ────────────────────────────────────────── */
 
@@ -103,6 +45,9 @@ function RedLabel({ children }: { children: React.ReactNode }) {
 ══════════════════════════════════════════════════════════════ */
 
 export default function RoadmapPage() {
+  const { t } = useTranslation();
+  const T = t.roadmap;
+
   return (
     <div className="hero-playbook min-h-screen bg-[#111317] text-white font-sans scroll-smooth relative">
       <PlaybookBackground />
@@ -112,12 +57,12 @@ export default function RoadmapPage() {
         {/* ─── HERO ──────────────────────────────────────────── */}
         <section>
           <div className="max-w-[1200px] mx-auto px-6 pt-20 pb-12 text-center">
-            <RedLabel>Roadmap</RedLabel>
+            <RedLabel>{T.hero.eyebrow}</RedLabel>
             <h1 className="nx-display text-[40px] sm:text-[48px] font-extrabold text-white leading-[1.05] tracking-tight mt-4">
-              Ce qui s&apos;en vient.
+              {T.hero.title}
             </h1>
             <p className="text-[16px] text-white/60 leading-[1.7] mt-5 max-w-[640px] mx-auto">
-              On construit Nexus en continu. Pas de dates promises — juste la direction et les priorités.
+              {T.hero.lede}
             </p>
           </div>
         </section>
@@ -126,9 +71,10 @@ export default function RoadmapPage() {
         <section className="pb-16">
           <div className="max-w-[800px] mx-auto px-6">
             <div className="relative border-l-2 border-white/10 ml-[7px]">
-              {PHASES.map((phase, pi) => {
-                const header = TONE_HEADER[phase.tone];
-                const featureDot = TONE_FEATURE_DOT[phase.tone];
+              {T.phases.map((phase, pi) => {
+                const tone = PHASE_TONES[pi] ?? "white";
+                const header = TONE_HEADER[tone];
+                const featureDot = TONE_FEATURE_DOT[tone];
                 return (
                   <div key={phase.code} className={pi > 0 ? "pt-[60px]" : ""}>
                     {/* Phase header */}
@@ -173,16 +119,16 @@ export default function RoadmapPage() {
         <section className="bg-[#0d0f12] border-t border-white/[0.06]">
           <div className="max-w-[600px] mx-auto px-6 py-16 sm:py-20 text-center">
             <h3 className="nx-display text-[24px] sm:text-[28px] font-extrabold text-white tracking-tight">
-              Une idée?
+              {T.bottom.title}
             </h3>
             <p className="text-[15px] text-white/65 leading-relaxed mt-4">
-              On construit Nexus pour toi. Si une fonctionnalité te manque, on veut le savoir.
+              {T.bottom.body}
             </p>
             <Link
               href="/a-propos"
               className="inline-block mt-6 text-[14px] font-bold uppercase tracking-wider text-[#E63946] hover:text-[#FF5C58] transition-colors"
             >
-              Nous écrire →
+              {T.bottom.cta}
             </Link>
           </div>
         </section>
