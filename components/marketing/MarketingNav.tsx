@@ -9,9 +9,10 @@ import { useTranslation } from "@/lib/i18n/useTranslation";
 const label = "text-[10px] font-bold tracking-[0.25em] uppercase";
 
 export default function MarketingNav() {
-  const { t } = useTranslation();
+  const { t, lang, toggleLang } = useTranslation();
   const [menuOpen, setMenuOpen] = useState(false);
   const closeMenu = () => setMenuOpen(false);
+  const langSwitchLabel = lang === "fr" ? "Switch to English" : "Passer en français";
 
   // Built inside the component so labels stay in sync with the
   // active language (useTranslation re-renders on toggle).
@@ -97,12 +98,13 @@ export default function MarketingNav() {
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => { }}
+            onClick={toggleLang}
+            aria-label={langSwitchLabel}
             className="hidden sm:flex items-center gap-1 px-3 py-1.5 rounded-full border border-white/20 text-sm font-medium"
           >
-            <span className="text-white font-semibold">FR</span>
+            <span className={lang === "fr" ? "text-white font-semibold" : "text-gray-500"}>FR</span>
             <span className="text-gray-600">/</span>
-            <span className="text-gray-500">EN</span>
+            <span className={lang === "en" ? "text-white font-semibold" : "text-gray-500"}>EN</span>
           </button>
           <Link href="/auth" className={`hidden sm:block ${label} text-wl-red transition-colors px-4 h-9 leading-9 hover:drop-shadow-[0_0_8px_rgba(232,72,72,0.6)]`}>
             {t.nav.login}
@@ -166,6 +168,20 @@ export default function MarketingNav() {
           >
             {t.nav.signup}
           </Link>
+
+          {/* Mobile language toggle — same toggleLang as the desktop pill,
+              one shared LanguageContext. Kept inside the menu (does not
+              auto-close) so the user can see labels swap before navigating. */}
+          <button
+            type="button"
+            onClick={toggleLang}
+            aria-label={langSwitchLabel}
+            className="mt-3 w-full flex items-center justify-center gap-1.5 px-2 py-2.5 text-[12px] font-bold tracking-[0.18em] uppercase border-t border-[#1E2D4A] pt-3"
+          >
+            <span className={lang === "fr" ? "text-white" : "text-gray-500"}>FR</span>
+            <span className="text-gray-600">/</span>
+            <span className={lang === "en" ? "text-white" : "text-gray-500"}>EN</span>
+          </button>
         </div>
       )}
     </nav>

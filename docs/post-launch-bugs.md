@@ -11,6 +11,8 @@ file.
 
 > **2026-05-25 — Hero lede + dict refactor.** Homepage hero lede rewritten to athlete-direct copy ("CÉGEP recruiters are looking for athletes like you. / Make sure they find you."); CTA is now "Sois le nex" / "Be the nex" (intentional brand pun on Nexus, do NOT autocorrect to "next"). `home.footer.*` extracted to top-level `footer.*`; new top-level `nav.*` keys added and `MarketingNav` wired through `useTranslation`. FR/EN parity preserved via Dictionary interface + Record<Lang, Dictionary>.
 
+> **2026-05-25 — Language toggle fixed.** MarketingNav's FR/EN toggle was a no-op (`onClick={() => {}}`) and mobile had no toggle at all. Desktop pill now calls `toggleLang`, FR/EN span colors are state-driven from `lang`, and a matching toggle was added to the mobile drawer. Both drive the same `LanguageContext`.
+
 ---
 
 ## P0 — Affect new user onboarding
