@@ -41,11 +41,7 @@ function getEntityRoute(type: EntityType, id: string, portal: Portal): string {
       return "#";
 
     case "school":
-      return `/ecoles/${id}`;
-
     case "cegep":
-      return `/cegeps/${id}`;
-
     case "trainer":
       return "#";
 
