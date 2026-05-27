@@ -1,0 +1,106 @@
+{
+  "timestamp": "2026-05-27T18:37:09.593Z",
+  "authedOk": true,
+  "results": [
+    {
+      "slug": "01-auth-login",
+      "path": "/auth",
+      "label": "Login page (PUBLIC)",
+      "requiresAuth": false,
+      "status": 200,
+      "finalUrl": "http://localhost:3000/auth",
+      "screenshot": "c:\\Users\\bptds\\Documents\\Nexus\\docs\\audits\\mobile-screenshots\\01-auth-login.png",
+      "redirected": false
+    },
+    {
+      "slug": "02-athlete-dashboard",
+      "path": "/athlete/dashboard",
+      "label": "Athlete dashboard",
+      "requiresAuth": true,
+      "status": 200,
+      "finalUrl": "http://localhost:3000/auth",
+      "screenshot": "c:\\Users\\bptds\\Documents\\Nexus\\docs\\audits\\mobile-screenshots\\02-athlete-dashboard.png",
+      "redirected": true
+    },
+    {
+      "slug": "03-coach-tableau-de-bord",
+      "path": "/coach/tableau-de-bord",
+      "label": "Coach dashboard",
+      "requiresAuth": true,
+      "status": 200,
+      "finalUrl": "http://localhost:3000/coach/tableau-de-bord",
+      "screenshot": "c:\\Users\\bptds\\Documents\\Nexus\\docs\\audits\\mobile-screenshots\\03-coach-tableau-de-bord.png",
+      "redirected": false
+    },
+    {
+      "slug": "04-recruteur-tableau-de-bord",
+      "path": "/recruteur/tableau-de-bord",
+      "label": "Recruteur dashboard",
+      "requiresAuth": true,
+      "status": 200,
+      "finalUrl": "http://localhost:3000/recruteur/tableau-de-bord",
+      "screenshot": "c:\\Users\\bptds\\Documents\\Nexus\\docs\\audits\\mobile-screenshots\\04-recruteur-tableau-de-bord.png",
+      "redirected": false
+    },
+    {
+      "slug": "05-admin-dashboard",
+      "path": "/admin/dashboard",
+      "label": "Admin dashboard",
+      "requiresAuth": true,
+      "status": 200,
+      "finalUrl": "http://localhost:3000/auth",
+      "screenshot": "c:\\Users\\bptds\\Documents\\Nexus\\docs\\audits\\mobile-screenshots\\05-admin-dashboard.png",
+      "redirected": true
+    },
+    {
+      "slug": "06-recruteur-athlete-profile",
+      "path": "/recruteur/athletes/f35a5cdb-76ac-413f-8bce-26f4ee4f7a0f",
+      "label": "Athlete profile (vue recruteur)",
+      "requiresAuth": true,
+      "status": 200,
+      "finalUrl": "http://localhost:3000/recruteur/athletes/f35a5cdb-76ac-413f-8bce-26f4ee4f7a0f",
+      "screenshot": "c:\\Users\\bptds\\Documents\\Nexus\\docs\\audits\\mobile-screenshots\\06-recruteur-athlete-profile.png",
+      "redirected": false
+    },
+    {
+      "slug": "07-recruteur-pipeline",
+      "path": "/recruteur/pipeline",
+      "label": "Recruteur pipeline",
+      "requiresAuth": true,
+      "status": 200,
+      "finalUrl": "http://localhost:3000/recruteur/pipeline",
+      "screenshot": "c:\\Users\\bptds\\Documents\\Nexus\\docs\\audits\\mobile-screenshots\\07-recruteur-pipeline.png",
+      "redirected": false
+    },
+    {
+      "slug": "08-recruteur-recherche",
+      "path": "/recruteur/recherche",
+      "label": "Recruteur search/filters",
+      "requiresAuth": true,
+      "status": 200,
+      "finalUrl": "http://localhost:3000/recruteur/recherche",
+      "screenshot": "c:\\Users\\bptds\\Documents\\Nexus\\docs\\audits\\mobile-screenshots\\08-recruteur-recherche.png",
+      "redirected": false
+    },
+    {
+      "slug": "09-coach-settings",
+      "path": "/coach/settings",
+      "label": "Coach settings",
+      "requiresAuth": true,
+      "status": 200,
+      "finalUrl": "http://localhost:3000/coach/settings",
+      "screenshot": "c:\\Users\\bptds\\Documents\\Nexus\\docs\\audits\\mobile-screenshots\\09-coach-settings.png",
+      "redirected": false
+    },
+    {
+      "slug": "10-coach-athletes-create",
+      "path": "/coach/athletes/create",
+      "label": "Create athlete form",
+      "requiresAuth": true,
+      "status": 200,
+      "finalUrl": "http://localhost:3000/coach/athletes/create",
+      "screenshot": "c:\\Users\\bptds\\Documents\\Nexus\\docs\\audits\\mobile-screenshots\\10-coach-athletes-create.png",
+      "redirected": false
+    }
+  ]
+}
