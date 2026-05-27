@@ -6,6 +6,7 @@ import MarketingNav from "@/components/marketing/MarketingNav";
 import PlaybookBackground from "../components/PlaybookBackground";
 import Footer from "@/components/marketing/Footer";
 
+import { notFound } from "next/navigation";
 /* ─────────────────────────────────────────────────────────────────
    Nexus — Collecte et traitement des données
    Same visual language as /confidentialite.
@@ -171,6 +172,8 @@ const SECTIONS = [
 ];
 
 export default function CollecteDonneesPage() {
+  // Mobile build (Capacitor): page exclue.
+  if (process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true") notFound();
   const [activeSection, setActiveSection] = useState(SECTIONS[0].id);
   const sectionRefs = useRef<Map<string, IntersectionObserverEntry>>(new Map());
 

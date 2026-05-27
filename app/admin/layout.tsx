@@ -1,4 +1,4 @@
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import AdminShell from "./_components/AdminShell";
 
@@ -23,6 +23,10 @@ import AdminShell from "./_components/AdminShell";
 ───────────────────────────────────────────────────────────────── */
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+  // Mobile build (Capacitor): segment /admin/* entirely excluded.
+  // notFound() cascades to all child pages → they render as 404 in the static export.
+  if (process.env.CAPACITOR_BUILD === "true") notFound();
+
   const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();

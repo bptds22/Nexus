@@ -5,6 +5,7 @@ import MarketingNav from "@/components/marketing/MarketingNav";
 import PlaybookBackground from "@/app/components/PlaybookBackground";
 import { useTranslation } from "@/lib/i18n/useTranslation";
 
+import { notFound } from "next/navigation";
 /* ═══════════════════════════════════════════════════════════════
    Roadmap — phased timeline, dots + text only (no cards)
 ═══════════════════════════════════════════════════════════════ */
@@ -45,6 +46,8 @@ function RedLabel({ children }: { children: React.ReactNode }) {
 ══════════════════════════════════════════════════════════════ */
 
 export default function RoadmapPage() {
+  // Mobile build (Capacitor): page exclue.
+  if (process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true") notFound();
   const { t } = useTranslation();
   const T = t.roadmap;
 

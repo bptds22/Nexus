@@ -6,6 +6,7 @@ import MarketingNav from "@/components/marketing/MarketingNav";
 import PlaybookBackground from "../components/PlaybookBackground";
 import Footer from "@/components/marketing/Footer";
 
+import { notFound } from "next/navigation";
 /* ─────────────────────────────────────────────────────────────────
    Nexus — Conditions d'utilisation (Loi 25 aligned, v2.0)
    15 sections + subsections, callouts, code-of-conduct lists.
@@ -473,6 +474,8 @@ function renderBlocks(blocks: Block[]): ReactNode {
 /* ── Component ───────────────────────────────────────────────── */
 
 export default function ConditionsPage() {
+  // Mobile build (Capacitor): page exclue.
+  if (process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true") notFound();
   const [activeSection, setActiveSection] = useState(SECTIONS[0].id);
   const sectionRefs = useRef<Map<string, IntersectionObserverEntry>>(new Map());
 

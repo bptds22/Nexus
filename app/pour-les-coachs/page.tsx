@@ -5,6 +5,7 @@ import MarketingNav from "@/components/marketing/MarketingNav";
 import PlaybookBackground from "@/app/components/PlaybookBackground";
 import { useTranslation } from "@/lib/i18n/useTranslation";
 
+import { notFound } from "next/navigation";
 /* ═══════════════════════════════════════════════════════════════
    Pour les coachs — public marketing landing page
    Own identity: no scrolling ticker, 4-step process, full-width
@@ -190,6 +191,8 @@ const REPUTATION_BADGE_VISUALS: ReputationBadgeVisual[] = [
 ══════════════════════════════════════════════════════════════ */
 
 export default function PourLesCoachsPage() {
+  // Mobile build (Capacitor): page exclue.
+  if (process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true") notFound();
   const { t } = useTranslation();
   const T = t.coachLanding;
   const progressVar = { "--bar-w": "80%" } as React.CSSProperties;

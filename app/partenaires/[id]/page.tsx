@@ -1,8 +1,23 @@
-import { cache } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { notFound } from "next/navigation";
+import { createClient as createSbClient } from "@supabase/supabase-js";
 import PlaybookBackground from "../../components/PlaybookBackground";
+
+// Anon-role client (no cookies — public RLS handles row scoping). Required
+// because importing the cookies-based server client would prevent static
+// export of this page.
+const supabase = createSbClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+);
+
+// Static export needs at least one param to generate; we use a sentinel
+// placeholder id. Mobile build is gated by the notFound() guard below,
+// so even the sentinel page renders as 404.
+export async function generateStaticParams(): Promise<{ id: string }[]> {
+  return [{ id: "placeholder" }];
+}
 
 /* ═══════════════════════════════════════════════════════════════
    /partenaires/[id] — PUBLIC partner promo page (anon-readable).
@@ -33,10 +48,8 @@ type PartnerPublic = {
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-// cache() dedupes the fetch between generateMetadata and the page render.
-const getPartner = cache(async (id: string): Promise<PartnerPublic | null> => {
+async function getPartner(id: string): Promise<PartnerPublic | null> {
   if (!UUID_RE.test(id)) return null;
-  const supabase = await createClient();
   const { data } = await supabase
     .from("media_partners")
     .select(
@@ -45,19 +58,13 @@ const getPartner = cache(async (id: string): Promise<PartnerPublic | null> => {
     .eq("id", id)
     .maybeSingle();
   return (data as PartnerPublic | null) ?? null;
-});
-
-export async function generateMetadata(
-  { params }: { params: Promise<{ id: string }> },
-): Promise<Metadata> {
-  const { id } = await params;
-  const partner = await getPartner(id);
-  if (!partner) return { title: "Partenaire introuvable — Nexus" };
-  return {
-    title: `${partner.organization_name} — Partenaire Nexus`,
-    description: partner.description || `${partner.organization_name}, partenaire de Nexus.`,
-  };
 }
+
+// generateMetadata temporarily disabled to isolate Turbopack gSP detection bug.
+// TODO restore once build:mobile passes.
+// export async function generateMetadata(
+//   { params }: { params: Promise<{ id: string }> },
+// ): Promise<Metadata> { ... }
 
 /* ── Brand SVG icons (currentColor — color set by the wrapper) ── */
 
@@ -149,6 +156,7 @@ function NotFound() {
 export default async function PartnerPublicPage(
   { params }: { params: Promise<{ id: string }> },
 ) {
+  if (process.env.CAPACITOR_BUILD === "true") notFound();
   const { id } = await params;
   const partner = await getPartner(id);
 

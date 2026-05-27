@@ -5,6 +5,7 @@ import MarketingNav from "@/components/marketing/MarketingNav";
 import PlaybookBackground from "@/app/components/PlaybookBackground";
 import { useTranslation } from "@/lib/i18n/useTranslation";
 
+import { notFound } from "next/navigation";
 /* ═══════════════════════════════════════════════════════════════
    À propos — Founders-forward page with contact form
    Public marketing, no auth, no Supabase.
@@ -46,6 +47,8 @@ function FounderPhoto({ initials, src, alt }: { initials: string; src?: string; 
 ══════════════════════════════════════════════════════════════ */
 
 export default function AProposPage() {
+  // Mobile build (Capacitor): page exclue.
+  if (process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true") notFound();
   const { t } = useTranslation();
   const T = t.about;
 

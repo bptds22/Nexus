@@ -6,6 +6,7 @@ import MarketingNav from "@/components/marketing/MarketingNav";
 import PlaybookBackground from "../components/PlaybookBackground";
 import Footer from "@/components/marketing/Footer";
 
+import { notFound } from "next/navigation";
 /* ─────────────────────────────────────────────────────────────────
    Nexus — Politique de confidentialité (Loi 25, v2.0)
    15 sections, subsections, tables, callouts, definitions, contact card
@@ -761,6 +762,8 @@ function renderBlocks(blocks: Block[]): ReactNode {
 /* ── Component ───────────────────────────────────────────────── */
 
 export default function ConfidentialitePage() {
+  // Mobile build (Capacitor): page exclue.
+  if (process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true") notFound();
   const [activeSection, setActiveSection] = useState(SECTIONS[0].id);
   const sectionRefs = useRef<Map<string, IntersectionObserverEntry>>(new Map());
 

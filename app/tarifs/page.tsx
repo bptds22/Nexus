@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import {
   Building2,
   ShieldCheck,
@@ -49,6 +50,8 @@ function isValidPersona(v: string | null): v is Persona {
 ══════════════════════════════════════════════════════════════ */
 
 export default function TarifsPage() {
+  // Mobile build (Capacitor): page exclue.
+  if (process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true") notFound();
   const { t } = useTranslation();
   const T = t.pricing;
   const [persona, setPersona] = useState<Persona>("recruteur");

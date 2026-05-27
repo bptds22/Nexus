@@ -6,6 +6,7 @@ import MarketingNav from "@/components/marketing/MarketingNav";
 import PlaybookBackground from "../components/PlaybookBackground";
 import Footer from "@/components/marketing/Footer";
 
+import { notFound } from "next/navigation";
 /* ─────────────────────────────────────────────────────────────────
    Nexus — Contact Us Page
    Two-column layout: contact info (left) + form (right).
@@ -49,6 +50,8 @@ const CONTACT_INFO = [
 ];
 
 export default function ContactPage() {
+  // Mobile build (Capacitor): page exclue.
+  if (process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true") notFound();
   const [form, setForm] = useState({ name: "", email: "", subject: "", message: "" });
   const [submitted, setSubmitted] = useState(false);
   const fadeRef = useRef<HTMLDivElement>(null);

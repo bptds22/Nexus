@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { notFound, usePathname, useRouter } from "next/navigation";
 import PartnerSidebar from "./_components/PartnerSidebar";
 import PlaybookBackground from "@/app/components/PlaybookBackground";
 import { createClient } from "@/lib/supabase/client";
@@ -17,6 +17,9 @@ import PreMaintenanceBanner from "@/components/auth/PreMaintenanceBanner";
 type GuardState = "loading" | "ok" | "wrong-role";
 
 export default function PartenaireLayout({ children }: { children: React.ReactNode }) {
+  // Mobile build (Capacitor): /partenaire/* segment entirely excluded.
+  if (process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true") notFound();
+
   const router = useRouter();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);

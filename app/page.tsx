@@ -1,6 +1,8 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import PlaybookBackground from "./components/PlaybookBackground";
 import PartnerCarousel from "./components/PartnerCarousel";
 import MarketingNav from "@/components/marketing/MarketingNav";
@@ -15,6 +17,17 @@ import { useTranslation } from "@/lib/i18n/useTranslation";
 const label = "text-[10px] font-bold tracking-[0.25em] uppercase";
 
 export default function Home() {
+  const router = useRouter();
+  const isCapacitor = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
+
+  // Mobile build (Capacitor): client-side redirect to /auth on mount.
+  // Server-side redirect() during SSG would 404 the index.html — Capacitor
+  // needs a real index.html, so we let the marketing page render briefly
+  // then router.replace.
+  useEffect(() => {
+    if (isCapacitor) router.replace("/auth");
+  }, [isCapacitor, router]);
+
   const { t } = useTranslation();
   return (
     <div className="hero-playbook bg-[#111317] min-h-screen">
