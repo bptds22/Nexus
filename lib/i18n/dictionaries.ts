@@ -494,6 +494,71 @@ export interface Dictionary {
       toast: string;
     };
   };
+  auth: {
+    eyebrow: string;
+    titleLogin: string;
+    titleSignup: string;
+    subtitleLogin: string;
+    subtitleSignup: string;
+    tabs: { login: string; signup: string };
+    google: string;
+    orEmail: string;
+    referralBanner: string;
+    toasts: { socialPhase2: string; forgotPhase2: string };
+    signup: {
+      choice: {
+        title: string;
+        lede: string;
+        cta: string;
+        notAthlete: string;
+        coach: { title: string; sub: string };
+        civilLeague: { title: string; sub: string };
+        recruiter: { title: string; sub: string };
+      };
+      form: {
+        back: string;
+        heading: string;
+        headingSub: string;
+        labels: {
+          firstName: string;
+          lastName: string;
+          email: string;
+          password: string;
+          confirm: string;
+          context: string;
+          sport: string;
+        };
+        placeholders: {
+          firstName: string;
+          lastName: string;
+          email: string;
+          password: string;
+        };
+        passwordHint: string;
+        passwordMismatch: string;
+        context: {
+          scolaire: { title: string; sub: string };
+          civile: { title: string; sub: string };
+        };
+        consent: {
+          policy: { before: string; privacy: string; and: string; terms: string; after: string };
+          data: { before: string; link: string; after: string };
+          marketing: { before: string; link: string; after: string; optional: string };
+          error: string;
+        };
+        submit: string;
+      };
+      switchToLogin: { prompt: string; cta: string };
+    };
+    login: {
+      forgot: string;
+      loading: string;
+      submit: string;
+      switchToSignup: { prompt: string; cta: string };
+      placeholderEmail: string;
+      placeholderPassword: string;
+    };
+  };
 }
 
 export const dictionaries: Record<Lang, Dictionary> = {
@@ -1179,6 +1244,93 @@ export const dictionaries: Record<Lang, Dictionary> = {
           other: "Autre",
         },
         toast: "Message envoyé! On vous revient dans les 48 heures.",
+      },
+    },
+    auth: {
+      eyebrow: "Plateforme de recrutement",
+      titleLogin: "Connexion",
+      titleSignup: "Inscription",
+      subtitleLogin: "Accède à ton espace et connecte-toi avec ton réseau.",
+      subtitleSignup: "Rejoins la plateforme #1 de recrutement sportif au Québec.",
+      tabs: { login: "Connexion", signup: "Inscription" },
+      google: "Continuer avec Google",
+      orEmail: "ou par courriel",
+      referralBanner: "Tu as été invité par un ambassadeur Nexus!",
+      toasts: {
+        socialPhase2: "Connexion sociale — disponible en Phase 2",
+        forgotPhase2: "Disponible en Phase 2",
+      },
+      signup: {
+        choice: {
+          title: "Es-tu le prochain à être recruté?",
+          lede: "Crée ton profil en 2 minutes. Sois visible par tous les recruteurs CÉGEP du Québec.",
+          // Intentional brand pun on 'Nexus' — do NOT autocorrect to 'next'
+          cta: "Je suis le NEX →",
+          notAthlete: "Tu n'es pas un athlète?",
+          coach: { title: "Entraîneur", sub: "École secondaire" },
+          civilLeague: { title: "Ligue civile", sub: "Coach ou coord." },
+          recruiter: { title: "Recruteur", sub: "CÉGEP" },
+        },
+        form: {
+          back: "Retour",
+          heading: "Crée ton profil",
+          headingSub: "— Es-tu le prochain à être recruté?",
+          labels: {
+            firstName: "Prénom",
+            lastName: "Nom",
+            email: "Courriel",
+            password: "Mot de passe",
+            confirm: "Confirmer",
+            context: "Tu joues pour...",
+            sport: "Ton sport principal",
+          },
+          placeholders: {
+            firstName: "Marc-Antoine",
+            lastName: "Tremblay",
+            email: "marc-antoine@gmail.com",
+            password: "Mot de passe",
+          },
+          passwordHint: "Minimum 8 caractères",
+          passwordMismatch: "Les mots de passe ne correspondent pas",
+          context: {
+            scolaire: { title: "École secondaire", sub: "RSEQ, équipe scolaire" },
+            civile: { title: "Ligue civile ou club", sub: "Hors RSEQ, équipe communautaire" },
+          },
+          consent: {
+            policy: {
+              before: "J'ai lu et j'accepte la ",
+              privacy: "Politique de confidentialité",
+              and: " et les ",
+              terms: "Conditions d'utilisation",
+              after: " de Nexus.",
+            },
+            data: {
+              before: "J'accepte la ",
+              link: "collecte et le traitement de mes données",
+              after: " par Nexus aux fins décrites.",
+            },
+            marketing: {
+              before: "J'accepte de recevoir des ",
+              link: "communications marketing",
+              after: " de Nexus (nouvelles fonctionnalités, conseils, promotions). Maximum 2 courriels par mois.",
+              optional: "(optionnel)",
+            },
+            error: "Tu dois accepter les deux premiers consentements pour continuer.",
+          },
+          submit: "Créer mon profil athlète →",
+        },
+        switchToLogin: { prompt: "Déjà un compte?", cta: "Se connecter" },
+      },
+      login: {
+        forgot: "Mot de passe oublié?",
+        loading: "Connexion...",
+        submit: "Se connecter →",
+        switchToSignup: {
+          prompt: "Pas encore de compte?",
+          cta: "Crée ton profil athlète en 2 minutes →",
+        },
+        placeholderEmail: "coach@ecole.qc.ca",
+        placeholderPassword: "Mot de passe",
       },
     },
   },
@@ -1871,6 +2023,93 @@ export const dictionaries: Record<Lang, Dictionary> = {
           other: "Other",
         },
         toast: "Message sent! We'll get back to you within 48 hours.",
+      },
+    },
+    auth: {
+      eyebrow: "Recruitment platform",
+      titleLogin: "Log in",
+      titleSignup: "Sign up",
+      subtitleLogin: "Access your space and connect with your network.",
+      subtitleSignup: "Join Québec's #1 sports recruitment platform.", // TODO-EN
+      tabs: { login: "Log in", signup: "Sign up" },
+      google: "Continue with Google",
+      orEmail: "or with email",
+      referralBanner: "You've been invited by a Nexus ambassador!", // TODO-EN
+      toasts: {
+        socialPhase2: "Social login — available in Phase 2",
+        forgotPhase2: "Available in Phase 2",
+      },
+      signup: {
+        choice: {
+          title: "Are you next to be recruited?", // TODO-EN
+          lede: "Build your profile in 2 minutes. Get seen by every CÉGEP recruiter in Québec.", // TODO-EN
+          // Intentional brand pun on 'Nexus' — do NOT autocorrect to 'next'
+          cta: "Be the nex",
+          notAthlete: "Not an athlete?",
+          coach: { title: "Coach", sub: "High school" },
+          civilLeague: { title: "Civil league", sub: "Coach or coord." },
+          recruiter: { title: "Recruiter", sub: "CÉGEP" },
+        },
+        form: {
+          back: "Back",
+          heading: "Build your profile",
+          headingSub: "— Are you next to be recruited?", // TODO-EN
+          labels: {
+            firstName: "First name",
+            lastName: "Last name",
+            email: "Email",
+            password: "Password",
+            confirm: "Confirm",
+            context: "You play for...",
+            sport: "Your main sport",
+          },
+          placeholders: {
+            firstName: "Marc-Antoine",
+            lastName: "Tremblay",
+            email: "marc-antoine@gmail.com",
+            password: "Password",
+          },
+          passwordHint: "Minimum 8 characters",
+          passwordMismatch: "Passwords don't match",
+          context: {
+            scolaire: { title: "High school", sub: "RSEQ, school team" },
+            civile: { title: "Civil league or club", sub: "Outside RSEQ, community team" },
+          },
+          consent: {
+            policy: {
+              before: "I have read and accept Nexus's ",
+              privacy: "Privacy policy",
+              and: " and ",
+              terms: "Terms of use",
+              after: ".",
+            },
+            data: {
+              before: "I accept Nexus's ",
+              link: "collection and processing of my data",
+              after: " for the stated purposes.",
+            },
+            marketing: {
+              before: "I accept to receive ",
+              link: "marketing communications",
+              after: " from Nexus (new features, tips, promotions). Maximum 2 emails per month.",
+              optional: "(optional)",
+            },
+            error: "You must accept the first two consents to continue.",
+          },
+          submit: "Create my athlete profile →", // TODO-EN
+        },
+        switchToLogin: { prompt: "Already have an account?", cta: "Log in" },
+      },
+      login: {
+        forgot: "Forgot password?",
+        loading: "Logging in...",
+        submit: "Log in →",
+        switchToSignup: {
+          prompt: "Don't have an account yet?",
+          cta: "Build your athlete profile in 2 minutes →", // TODO-EN
+        },
+        placeholderEmail: "coach@ecole.qc.ca",
+        placeholderPassword: "Password",
       },
     },
   },
