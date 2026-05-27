@@ -632,11 +632,17 @@ function ModifierContent({ id }: { id: string }) {
       resilience,
       attitude_mentalite,
       distinctions: distinctionsToSave,
-      rapport_entraineur: form.scouting.coachEndorsement || null,
+      rapport_entraineur: form.scouting.coachEndorsement.trim() || null,
     };
     const { error: evalError } = await supabase
       .from("evaluations")
       .upsert(evalRecord, { onConflict: "coach_id,athlete_id" });
+
+    if (evalError) {
+      console.error("[saveAthlete] evaluations upsert failed:", evalError);
+      alert("Échec de la sauvegarde de l'évaluation : " + evalError.message);
+      return false;
+    }
 
     // ── SAVE team assignment ──
     const selectedTeamId = form.sports.selectedTeamId;
