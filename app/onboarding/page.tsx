@@ -80,6 +80,16 @@ interface NexusUser {
   subscription?: Record<string, unknown>;
   tier?: string;
   referral_code?: string | null;
+  // Recruiter onboarding — single CÉGEP program (teams row) the
+  // recruiter primarily works with. Stored in localStorage during the
+  // Programme step; finish() writes id to users.primary_team_id.
+  primary_team?: {
+    id: string;
+    name: string;
+    age_group: string | null;
+    gender: string | null;
+    division: string | null;
+  } | null;
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -355,15 +365,19 @@ export default function OnboardingPage() {
   }, []);
 
   const totalStepsMap: Record<string, number> = {
-    // Coach has 4 steps for both scolaire and ligue_civile contexts —
-    // the civil branch swaps step 1 (école → ligue/team) but the
-    // step count is identical (profil, école/ligue, directeur/coach
-    // principal, confirmation).
-    coach: 4,
-    recruiter: 4,       // profil, cégep, directeur, critères
+    // School-coach flow is 5 steps (profil, école, équipe, directeur,
+    // confirmation) — équipe was added May 2026 between école and
+    // directeur. The civil-coach flow stays at 4 (profil, ligue+team
+    // merged, coach principal, confirmation) since the team selection
+    // is already embedded in the LeagueCoachLeagueStep.
+    coach: 4, // see isCivilCoachLabel branch below — school gets +1
+    recruiter: 5,       // profil, cégep, programme, directeur, critères
     coordinator_league: 3,
   };
-  const totalSteps = totalStepsMap[user?.role ?? ""] || 3;
+  const isCivilCoachFlow = user?.role === "coach" && user?.context === "ligue_civile";
+  const totalSteps = user?.role === "coach"
+    ? (isCivilCoachFlow ? 4 : 5)
+    : (totalStepsMap[user?.role ?? ""] || 3);
   const progress = ((step + 1) / totalSteps) * 100;
 
   const [stepSaving, setStepSaving] = useState(false);
@@ -434,11 +448,17 @@ export default function OnboardingPage() {
       return typeof sportPrincipal === "string" && sportPrincipal.trim().length > 0;
     }
     if (step === 1) return validateInstitution().ok;
-    // Step 2 (DirectorChoiceStep) was previously hard-gated on rprp_consent
-    // for owner/interim. Loi 25 designation is now non-blocking: the director
-    // can proceed without accepting RPRP, and the decline surfaces in the
-    // admin tab (profile_data.rprp_declined_at) + dashboard alert. The
-    // inline notice rendered inside DirectorChoiceStep tells the user what
+    // School-coach step 2 (SchoolCoachTeamStep) is intentionally
+    // ungated — team selection is optional. The card click writes
+    // profile.team_id directly; advancing without a pick is fine.
+    // Recruiter step 2 (RecruiterProgramStep) is likewise ungated —
+    // primary_team is optional; finish() only writes it when set.
+    // DirectorChoiceStep (step 2 civil / step 3 school) was previously
+    // hard-gated on rprp_consent for owner/interim. Loi 25 designation
+    // is now non-blocking: the director can proceed without accepting
+    // RPRP, and the decline surfaces in the admin tab
+    // (profile_data.rprp_declined_at) + dashboard alert. The inline
+    // notice rendered inside DirectorChoiceStep tells the user what
     // declining means; finish() records the decision either way.
     return true;
   }
@@ -689,7 +709,19 @@ export default function OnboardingPage() {
           .maybeSingle();
 
         if (cegep) {
-          await supabase.from("users").update({ school_id: cegep.id }).eq("id", authUser.id);
+          // Atomic update — school_id always written; primary_team_id
+          // only added to the payload when the recruiter picked a
+          // program in RecruiterProgramStep. Skipping it leaves the
+          // column at its NULL default (FK + ON DELETE SET NULL on
+          // teams already handles cleanup if the row vanishes later).
+          const updatePayload: { school_id: string; primary_team_id?: string | null } = {
+            school_id: cegep.id,
+          };
+          const selectedProgramId = (localUser.primary_team as { id?: string } | undefined)?.id ?? null;
+          if (selectedProgramId) {
+            updatePayload.primary_team_id = selectedProgramId;
+          }
+          await supabase.from("users").update(updatePayload).eq("id", authUser.id);
 
           // Item 11-Recruteur: file the admin_claims row when a
           // recruteur claimed Directeur OR Intérimaire for the CÉGEP.
@@ -770,10 +802,10 @@ export default function OnboardingPage() {
   const isCivilCoachLabel = user.role === "coach" && user.context === "ligue_civile";
   const coachLabels = isCivilCoachLabel
     ? ["Profil", "Ligue", "Coach principal", "Confirmation"]
-    : ["Profil", "École", "Directeur", "Confirmation"];
+    : ["Profil", "École", "Équipe", "Directeur", "Confirmation"];
   const stepLabelsMap: Record<string, string[]> = {
     coach: coachLabels,
-    recruiter: ["Profil", "CÉGEP", "Directeur", "Critères"],
+    recruiter: ["Profil", "CÉGEP", "Programme", "Directeur", "Critères"],
     coordinator_league: ["Profil", "Ligue", "Invitations"],
   };
   const stepLabels = stepLabelsMap[user.role] || ["1", "2", "3"];
@@ -910,9 +942,15 @@ function RprpDeclineNotice() {
 function CoachStep({ step, user, save }: { step: number; user: NexusUser; save: (u: Partial<NexusUser>) => void; onFinish: () => void }) {
   const p = (user.profile || {}) as Record<string, unknown>;
 
+  // School-coach flow: 5 steps total (profil, école, équipe, directeur,
+  // confirmation). The new Équipe step at index 2 surfaces existing teams
+  // under the coach's school + sport and lets them join one without a
+  // create path. Team selection is optional — the wizard advances even
+  // with no match.
   if (step === 0) return <CoachProfile profile={p} save={save} />;
   if (step === 1) return <SchoolStep user={user} save={save} />;
-  if (step === 2) return <DirectorChoiceStep user={user} save={save} type="school" />;
+  if (step === 2) return <SchoolCoachTeamStep user={user} save={save} />;
+  if (step === 3) return <DirectorChoiceStep user={user} save={save} type="school" />;
   return <CoachConfirmation user={user} />;
 }
 
@@ -1397,6 +1435,97 @@ function randomCode(len: number): string {
   return s;
 }
 
+/* ── Team-join helpers (shared by SchoolCoachTeamStep + LeagueCoachLeagueStep) ──
+   These were previously component-local inside LeagueCoachLeagueStep. Lifted
+   to module scope so the new school-coach team step can call the exact same
+   INSERT pair (school_coaches role=COACH + team_coaches role=assistant,
+   23505 tolerated) and write the identical localStorage shape. State
+   management (setSubmitting/setError/setSelectedTeam) stays at each
+   callsite — these helpers are pure side-effect + result. */
+
+interface PersistTeamLocallyArgs {
+  teamId: string;
+  teamName: string;
+  ageGroup: string | null;
+  gender: string | null;
+  category: string | null;
+  season: string;
+  schoolId: string;
+  // school_name retained for callsite symmetry — not persisted directly
+  // since institution.name already carries it.
+  schoolName?: string;
+}
+
+// Writes profile.team + profile.team_id + profile.school_id to
+// localStorage. Does NOT touch institution — callers manage that via
+// save({ institution: ... }) when they need to overwrite it (civil flow
+// promotes the LIGUE_CIVILE pseudo-school here; school flow leaves
+// SchoolStep's prior write intact).
+function persistTeamLocally(args: PersistTeamLocallyArgs) {
+  const rawNow = typeof window !== "undefined" ? localStorage.getItem("nexus_user") : null;
+  if (!rawNow) return;
+  const current = JSON.parse(rawNow) as NexusUser;
+  const updated = {
+    ...current,
+    profile: {
+      ...(current.profile || {}),
+      team: {
+        id: args.teamId,
+        name: args.teamName,
+        age_group: args.ageGroup,
+        gender: args.gender,
+        category: args.category,
+        season: args.season,
+      },
+      school_id: args.schoolId,
+      team_id: args.teamId,
+    },
+  };
+  localStorage.setItem("nexus_user", JSON.stringify(updated));
+}
+
+// Module-level join helper. Performs ONLY the two INSERTs (school_coaches
+// role=COACH, team_coaches role=assistant) with 23505 tolerated on both.
+// State (submitting / error / selectedTeam) and localStorage persistence
+// are the caller's responsibility — keep this pure so both the civil and
+// school flows can wrap it identically.
+async function joinExistingTeam(
+  team: TeamSearchRow,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    const supabase = createClient();
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser) {
+      return { ok: false, error: "Session expirée. Reconnecte-toi pour continuer." };
+    }
+
+    const { error: scError } = await supabase.from("school_coaches").insert({
+      coach_id: authUser.id,
+      school_id: team.school_id,
+      role: "COACH",
+    });
+    if (scError && scError.code !== "23505") {
+      console.error("[joinExistingTeam] school_coaches insert failed:", scError);
+      return { ok: false, error: "Impossible de rejoindre l'équipe. Réessaie." };
+    }
+
+    const { error: tcError } = await supabase.from("team_coaches").insert({
+      coach_id: authUser.id,
+      team_id: team.id,
+      role: "assistant",
+    });
+    if (tcError && tcError.code !== "23505") {
+      console.error("[joinExistingTeam] team_coaches insert failed:", tcError);
+      return { ok: false, error: "Impossible de rejoindre l'équipe. Réessaie." };
+    }
+
+    return { ok: true };
+  } catch (err) {
+    console.error("[joinExistingTeam] exception:", err);
+    return { ok: false, error: "Une erreur est survenue. Réessaie." };
+  }
+}
+
 function SchoolNotFound({ kind }: { kind: "ecole" | "cegep" }) {
   const isCegep = kind === "cegep";
   // One confirmation # per onboarding session — also the email subject.
@@ -1439,12 +1568,26 @@ function SchoolNotFound({ kind }: { kind: "ecole" | "cegep" }) {
   );
 }
 
-/* ── School step (shared by Coach + Director École) ── */
+/* ── School step (shared by Coach + Director École) ──
+   Persists the school's id alongside name/city/region in localUser.institution
+   so the downstream SchoolCoachTeamStep can query teams.school_id without a
+   second roundtrip. The id field was added in May 2026 — code that reads
+   institution should tolerate it being absent on legacy in-flight sessions. */
+type SchoolRow = { id: string; name: string; city: string; region: string; conference: string; sports: string[] };
 function SchoolStep({ user, save }: { user: NexusUser; save: (u: Partial<NexusUser>) => void }) {
-  const [schools, setSchools] = useState<{ name: string; city: string; region: string; conference: string; sports: string[] }[]>([]);
+  const [schools, setSchools] = useState<SchoolRow[]>([]);
   const [schoolsLoading, setSchoolsLoading] = useState(true);
-  const [selected, setSelected] = useState<{ name: string; city: string; region: string; conference: string; sports: string[] } | null>(
-    user.institution ? { name: (user.institution as Record<string, string>).name, city: (user.institution as Record<string, string>).city || "", region: (user.institution as Record<string, string>).region || "", conference: "", sports: [] } : null
+  const [selected, setSelected] = useState<SchoolRow | null>(
+    user.institution
+      ? {
+          id: ((user.institution as Record<string, unknown>).id as string) || "",
+          name: (user.institution as Record<string, string>).name,
+          city: (user.institution as Record<string, string>).city || "",
+          region: (user.institution as Record<string, string>).region || "",
+          conference: "",
+          sports: [],
+        }
+      : null
   );
 
   useEffect(() => {
@@ -1457,6 +1600,7 @@ function SchoolStep({ user, save }: { user: NexusUser; save: (u: Partial<NexusUs
       .then(({ data, error }) => {
         if (data) {
           setSchools(data.map(s => ({
+            id: s.id,
             name: s.name,
             city: s.city || "",
             region: s.region || "",
@@ -1470,7 +1614,7 @@ function SchoolStep({ user, save }: { user: NexusUser; save: (u: Partial<NexusUs
 
   useEffect(() => {
     if (selected) {
-      save({ institution: { name: selected.name, city: selected.city, region: selected.region, conference: selected.conference, sports: selected.sports } });
+      save({ institution: { id: selected.id, name: selected.name, city: selected.city, region: selected.region, conference: selected.conference, sports: selected.sports } });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected]);
@@ -1521,6 +1665,184 @@ function SchoolStep({ user, save }: { user: NexusUser; save: (u: Partial<NexusUs
 
       {/* School not in the list — message + mailto to Nexus, saves nothing */}
       {!selected && <SchoolNotFound kind="ecole" />}
+    </div>
+  );
+}
+
+/* ── School-coach team step (between SchoolStep and DirectorChoiceStep) ──
+   Mirrors the civil UmbrellaStep: lists existing teams for the coach's
+   school + sport, lets them join one. No create path — school coaches
+   only join existing teams (admin onboards new teams out-of-band). When
+   no teams match, the step renders the empty-state copy and the coach
+   can still advance (selection is optional). */
+function SchoolCoachTeamStep({ user, save }: { user: NexusUser; save: (u: Partial<NexusUser>) => void }) {
+  // Read fresh localStorage so we see SchoolStep's id write even when
+  // the React `user` prop is stale (same pattern as LeagueCoachLeagueStep).
+  const raw = typeof window !== "undefined" ? localStorage.getItem("nexus_user") : null;
+  const localUser = raw ? (JSON.parse(raw) as NexusUser) : user;
+  const inst = (localUser.institution || {}) as Record<string, unknown>;
+  const schoolNameFromLocal = (inst.name as string) || "";
+  // SchoolStep now stores id alongside name (May 2026). For sessions that
+  // started before that change, fall back to a one-shot lookup by name.
+  const schoolIdFromLocal = (inst.id as string) || "";
+  const profileData = (localUser.profile || {}) as Record<string, unknown>;
+  const sportName = (profileData.sport_principal as string) || "";
+
+  const [schoolId, setSchoolId] = useState<string>(schoolIdFromLocal);
+  const [sportId, setSportId] = useState<string | null>(null);
+  const [resolving, setResolving] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [joinedTeam, setJoinedTeam] = useState<TeamSearchRow | null>(null);
+
+  // Resolve sport_principal (name) → sport_id (uuid). Mirrors the
+  // resolution in LeagueCoachLeagueStep — same query, same fallback.
+  // Also resolves the school id if SchoolStep didn't persist it (legacy
+  // in-flight sessions).
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const supabase = createClient();
+      if (sportName) {
+        const { data } = await supabase.from("sports").select("id").eq("nom", sportName).maybeSingle();
+        if (!cancelled) setSportId((data?.id as string) ?? null);
+      }
+      if (!schoolId && schoolNameFromLocal) {
+        const { data } = await supabase.from("schools").select("id").eq("name", schoolNameFromLocal).maybeSingle();
+        if (!cancelled) setSchoolId((data?.id as string) ?? "");
+      }
+      if (!cancelled) setResolving(false);
+    })();
+    return () => { cancelled = true; };
+  }, [sportName, schoolNameFromLocal, schoolId]);
+
+  // Resume support — if the coach already joined a team in a prior
+  // session (profile.team_id set), surface it as the confirmed pick.
+  useEffect(() => {
+    if (joinedTeam) return;
+    const teamData = profileData.team as Record<string, unknown> | undefined;
+    if (!teamData?.id) return;
+    setJoinedTeam({
+      id: teamData.id as string,
+      name: (teamData.name as string) ?? "",
+      age_group: (teamData.age_group as string) ?? null,
+      gender: (teamData.gender as string) ?? null,
+      division: (teamData.category as string) ?? null,
+      league: null,
+      school_id: schoolId,
+      school_name: schoolNameFromLocal,
+      coach_count: 0,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function handlePick(team: TeamSearchRow) {
+    setSubmitting(true);
+    setError(null);
+    try {
+      const result = await joinExistingTeam(team);
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      // School flow keeps the SECONDAIRE institution write from
+      // SchoolStep — no institution override needed. We still bump
+      // localUserVersion via save({}) so anything reading profile.team
+      // re-renders.
+      persistTeamLocally({
+        teamId: team.id,
+        teamName: team.name,
+        ageGroup: team.age_group,
+        gender: team.gender,
+        category: team.division,
+        season: getCurrentSeason(),
+        schoolId: team.school_id,
+        schoolName: team.school_name,
+      });
+      save({});
+      setJoinedTeam(team);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  if (resolving) {
+    return (
+      <div className="space-y-5">
+        <p className="text-sm text-[#6B7280]">Chargement des équipes…</p>
+      </div>
+    );
+  }
+
+  if (!sportName || !sportId) {
+    return (
+      <div className="space-y-5">
+        <p className="text-sm text-[#EF4444]">
+          Erreur : ton sport principal n&apos;a pas été reconnu. Reviens à l&apos;étape Profil
+          et sélectionne un sport.
+        </p>
+      </div>
+    );
+  }
+
+  if (!schoolId) {
+    return (
+      <div className="space-y-5">
+        <p className="text-sm text-[#EF4444]">
+          Erreur : ton école n&apos;a pas été reconnue. Reviens à l&apos;étape École
+          et sélectionne ton établissement.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-5">
+      <div>
+        <h2 className="font-head text-xl font-black text-white uppercase">Choisis ton équipe</h2>
+        <p className="text-sm text-[#9CA3AF] mt-1">
+          Si elle est déjà sur Nexus, sélectionne-la. Sinon, tu pourras la créer plus tard avec l&apos;aide de notre équipe.
+        </p>
+      </div>
+
+      {error && (
+        <div className="bg-[#EF4444]/10 border border-[#EF4444]/30 rounded-lg p-3">
+          <p className="text-[12px] text-[#EF4444]">{error}</p>
+        </div>
+      )}
+
+      {/* Read-only sport scope header — mirrors the civil umbrella's
+          "Club : X" line and the recruiter step's "Sport : X". A school
+          coach has ONE declared sport (canProceed gates step 0 on
+          sport_principal for role==="coach"), and joining a team in
+          another sport would mismatch the coach's profile. Display
+          only — NOT a picker. sportName is guaranteed non-empty here
+          because the guard at line ~1777 already redirected to an
+          error screen if it couldn't resolve. */}
+      <div className="bg-[#111317]/60 border border-white/[0.06] rounded-lg p-3 text-[12px] text-[#9CA3AF]">
+        Ton sport : <span className="text-white font-bold">{sportName}</span>
+      </div>
+
+      <UmbrellaStep
+        schoolId={schoolId}
+        schoolName={schoolNameFromLocal}
+        sportId={sportId}
+        onSelect={handlePick}
+        scopeLabel="École"
+        showBack={false}
+        emptyMessage="Aucune équipe trouvée pour cette école. Contacte-nous pour ajouter ton équipe."
+      />
+
+      {joinedTeam && (
+        <div className="bg-[#22C55E]/10 border border-[#22C55E]/30 rounded-lg p-3 flex items-center gap-2">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+          <p className="text-[12px] text-[#22C55E] font-bold">
+            Tu as rejoint {joinedTeam.name}. Tu peux continuer.
+          </p>
+        </div>
+      )}
+
+      {submitting && <p className="text-[12px] text-[#9CA3AF]">Enregistrement en cours...</p>}
     </div>
   );
 }
@@ -1866,7 +2188,12 @@ function InviteStep({ role }: { role: string; onFinish: () => void }) {
 function RecruiterStep({ step, user, save }: { step: number; user: NexusUser; save: (u: Partial<NexusUser>) => void; onFinish: () => void }) {
   if (step === 0) return <RecruiterProfile user={user} save={save} />;
   if (step === 1) return <RecruiterCegepStep user={user} save={save} />;
-  if (step === 2) return <DirectorChoiceStep user={user} save={save} type="cegep" />;
+  // Step 2 = Programme. Optional — canProceed() defaults to true here.
+  // Recruiters pick a single team (program) under their CÉGEP. The
+  // pick lives in localStorage as `primary_team` until finish() writes
+  // it to users.primary_team_id.
+  if (step === 2) return <RecruiterProgramStep user={user} save={save} />;
+  if (step === 3) return <DirectorChoiceStep user={user} save={save} type="cegep" />;
   return <RecruiterCriteria user={user} save={save} />;
 }
 
@@ -1937,7 +2264,11 @@ function RecruiterCegepStep({ user, save }: { user: NexusUser; save: (u: Partial
   const inst = user.institution as Record<string, string> | null;
   const [selected, setSelected] = useState(inst?.name || "");
   const [search, setSearch] = useState("");
-  const [cegeps, setCegeps] = useState<{ name: string; city: string; region: string }[]>([]);
+  // CÉGEP rows now carry `id` so the downstream RecruiterProgramStep
+  // can query teams.school_id without a second roundtrip — mirrors the
+  // SchoolStep parity refactor (May 2026). Legacy in-flight sessions
+  // may have institution without id; the program step handles that.
+  const [cegeps, setCegeps] = useState<{ id: string; name: string; city: string; region: string }[]>([]);
 
   const inputCls = "w-full bg-[#111317] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white placeholder:text-[#6B7280] focus:border-[#E63946] outline-none transition-colors";
 
@@ -1945,12 +2276,13 @@ function RecruiterCegepStep({ user, save }: { user: NexusUser; save: (u: Partial
     const supabase = createClient();
     supabase
       .from("schools")
-      .select("name, city, region")
+      .select("id, name, city, region")
       .eq("has_collegial", true)
       .order("name")
       .then(({ data, error }) => {
         if (data) {
           setCegeps(data.map(s => ({
+            id: s.id,
             name: s.name,
             city: s.city || "",
             region: s.region || "",
@@ -1963,9 +2295,9 @@ function RecruiterCegepStep({ user, save }: { user: NexusUser; save: (u: Partial
     c.name.toLowerCase().includes(search.toLowerCase()) || c.city.toLowerCase().includes(search.toLowerCase())
   );
 
-  const selectCegep = (c: { name: string; city: string; region: string }) => {
+  const selectCegep = (c: { id: string; name: string; city: string; region: string }) => {
     setSelected(c.name);
-    save({ institution: { name: c.name, city: c.city, region: c.region } });
+    save({ institution: { id: c.id, name: c.name, city: c.city, region: c.region } });
   };
 
   return (
@@ -2018,6 +2350,179 @@ function RecruiterCegepStep({ user, save }: { user: NexusUser; save: (u: Partial
         </div>
       )}
 
+    </div>
+  );
+}
+
+/* ── Recruiter Programme step (between CÉGEP and Directeur) ──
+   Reuses UmbrellaStep to surface every team under the recruiter's
+   CÉGEP — no sport filter (recruiters span all sports). The pick is
+   stored in local state as primary_team; finish() writes it to
+   users.primary_team_id alongside the school_id write. Selection is
+   OPTIONAL — the recruiter can advance without picking. No DB write
+   happens during the step (recruiters are neither coaches nor
+   directors — school_coaches / team_coaches are off-limits here). */
+function RecruiterProgramStep({ user, save }: { user: NexusUser; save: (u: Partial<NexusUser>) => void }) {
+  // Read fresh localStorage so we see RecruiterCegepStep's id write
+  // even when the React `user` prop is stale (same pattern as
+  // SchoolCoachTeamStep).
+  const raw = typeof window !== "undefined" ? localStorage.getItem("nexus_user") : null;
+  const localUser = raw ? (JSON.parse(raw) as NexusUser) : user;
+  const inst = (localUser.institution || {}) as Record<string, unknown>;
+  const cegepNameFromLocal = (inst.name as string) || "";
+  // RecruiterCegepStep now stores id alongside name. Legacy in-flight
+  // sessions that pre-date that change fall back to a one-shot lookup
+  // by name below.
+  const cegepIdFromLocal = (inst.id as string) || "";
+
+  // Pre-fill the sport filter from the recruiter's profile step
+  // (sport_principal). NOT hard-gated: canProceed() at the top of this
+  // file only enforces sport_principal for coaches (step 0 && role===coach).
+  // A recruiter can land here with profileSportName="" if they skipped
+  // the profile sport selector — in that case sportId stays "" and the
+  // list defaults to all sports (UmbrellaStep skips .eq("sport_id", ...)
+  // when sportId === "").
+  const profileData = (localUser.profile || {}) as Record<string, unknown>;
+  const profileSportName = (profileData.sport_principal as string) || "";
+
+  const [cegepId, setCegepId] = useState<string>(cegepIdFromLocal);
+  const [sportId, setSportId] = useState<string>("");
+  const [sportOptions, setSportOptions] = useState<{ id: string; nom: string }[]>([]);
+  const [resolving, setResolving] = useState<boolean>(true);
+  const [selected, setSelected] = useState<NexusUser["primary_team"]>(
+    (localUser.primary_team ?? null) as NexusUser["primary_team"]
+  );
+
+  // Fetch the sports list (picker options + name → id seed) and, when
+  // missing, fall back to looking up CÉGEP id by name (legacy resume).
+  // Both run in one effect so `resolving` flips once everything is ready
+  // and UmbrellaStep mounts with the right sportId on first render
+  // (avoids the all-sports-then-filtered flash).
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const supabase = createClient();
+
+      // Sports list — always needed (picker + seed lookup).
+      const sportsRes = await supabase.from("sports").select("id, nom").order("nom");
+      if (cancelled) return;
+      const opts = (sportsRes.data ?? []) as { id: string; nom: string }[];
+      setSportOptions(opts);
+      if (profileSportName) {
+        // RecruiterProfile (line ~2228) writes the FR sport name (e.g.
+        // "Football") from the SPORTS constant. Match by exact nom; if
+        // no match (typo / stale schema / empty), sportId stays "" and
+        // the picker shows "Tous les sports" — no hard error.
+        const match = opts.find((s) => s.nom === profileSportName);
+        if (match) setSportId(match.id);
+      }
+
+      // CÉGEP id fallback for pre-id-persistence sessions.
+      if (!cegepId && cegepNameFromLocal) {
+        const { data } = await supabase
+          .from("schools")
+          .select("id")
+          .eq("name", cegepNameFromLocal)
+          .maybeSingle();
+        if (cancelled) return;
+        setCegepId((data?.id as string) ?? "");
+      }
+
+      setResolving(false);
+    })();
+    return () => { cancelled = true; };
+  }, [cegepId, cegepNameFromLocal, profileSportName]);
+
+  function handlePick(team: TeamSearchRow) {
+    // Toggle off if the same card is clicked twice; otherwise swap.
+    const isSame = selected?.id === team.id;
+    const next = isSame
+      ? null
+      : {
+          id: team.id,
+          name: team.name,
+          age_group: team.age_group,
+          gender: team.gender,
+          division: team.division,
+        };
+    setSelected(next);
+    save({ primary_team: next });
+  }
+
+  if (resolving) {
+    return (
+      <div className="space-y-5">
+        <p className="text-sm text-[#6B7280]">Chargement des programmes…</p>
+      </div>
+    );
+  }
+
+  if (!cegepId) {
+    return (
+      <div className="space-y-5">
+        <p className="text-sm text-[#EF4444]">
+          Erreur : votre CÉGEP n&apos;a pas été reconnu. Revenez à l&apos;étape CÉGEP
+          et sélectionnez votre établissement.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-5">
+      <div>
+        <h2 className="font-head text-xl font-black text-white uppercase">Sélectionnez votre programme principal</h2>
+        <p className="text-sm text-[#9CA3AF] mt-1">
+          Le programme avec lequel vous travaillez le plus. Vous pourrez en consulter d&apos;autres dans la plateforme. (Optionnel — vous pouvez passer cette étape.)
+        </p>
+      </div>
+
+      {/* Sport filter picker. Value = sportId state, seeded from
+          profile.sport_principal on mount. Recruiter can switch to
+          browse other sports — purely a search scope, doesn't alter
+          their declared sport. Empty value = "Tous les sports"; the
+          UmbrellaStep contract treats sportId === "" as no filter
+          (parity with the SchoolCoachTeamStep / civil flow patterns,
+          but the recruiter is the only consumer that ever sends ""). */}
+      <div>
+        <label htmlFor="recruiter-program-sport" className={`${label} text-[#9CA3AF] mb-1.5 block`}>Sport</label>
+        <select
+          id="recruiter-program-sport"
+          value={sportId}
+          onChange={(e) => setSportId(e.target.value)}
+          className={`${inputClass} appearance-none cursor-pointer`}
+          aria-label="Filtrer les programmes par sport"
+        >
+          <option value="">Tous les sports</option>
+          {sportOptions.map((s) => (
+            <option key={s.id} value={s.id}>{s.nom}</option>
+          ))}
+        </select>
+        <p className="text-[11px] text-[#6B7280] mt-1.5">
+          Pré-rempli depuis votre profil — changez-le pour parcourir les programmes d&apos;un autre sport.
+        </p>
+      </div>
+
+      <UmbrellaStep
+        schoolId={cegepId}
+        schoolName={cegepNameFromLocal}
+        sportId={sportId}
+        onSelect={handlePick}
+        scopeLabel="CÉGEP"
+        showBack={false}
+        emptyMessage="Aucun programme trouvé pour ce CÉGEP. Contactez-nous pour l'ajouter."
+        cardCtaText="Sélectionner →"
+        selectedTeamId={selected?.id ?? null}
+      />
+
+      {selected && (
+        <div className="bg-[#22C55E]/10 border border-[#22C55E]/30 rounded-lg p-3 flex items-center gap-2">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+          <p className="text-[12px] text-[#22C55E] font-bold">
+            Programme sélectionné : {selected.name}.
+          </p>
+        </div>
+      )}
     </div>
   );
 }
@@ -2442,83 +2947,26 @@ function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Part
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  function persistTeamLocally(args: {
-    teamId: string;
-    teamName: string;
-    ageGroup: string | null;
-    gender: string | null;
-    category: string | null;
-    season: string;
-    schoolId: string;
-    schoolName: string;
-  }) {
-    // Phase 6.2: institution is now a LIGUE_CIVILE schools row.
-    // profile.team holds the team metadata; profile.team_id is the
-    // canonical signal used by canProceed (was league_team_id pre-6.2).
-    save({
-      institution: { id: args.schoolId, name: args.schoolName, type: "ligue_civile" },
-    });
-    const rawNow = localStorage.getItem("nexus_user");
-    if (!rawNow) return;
-    const current = JSON.parse(rawNow) as NexusUser;
-    const updated = {
-      ...current,
-      profile: {
-        ...(current.profile || {}),
-        team: {
-          id: args.teamId,
-          name: args.teamName,
-          age_group: args.ageGroup,
-          gender: args.gender,
-          category: args.category,
-          season: args.season,
-        },
-        school_id: args.schoolId,
-        team_id: args.teamId,
-      },
-    };
-    localStorage.setItem("nexus_user", JSON.stringify(updated));
-  }
-
+  // Thin civil-flow wrapper around the module-level joinExistingTeam +
+  // persistTeamLocally helpers. The INSERT pair (school_coaches role=COACH
+  // + team_coaches role=assistant, 23505 tolerated) is identical to the
+  // pre-lift behavior. Only the local component state (submitting/error/
+  // selected) and the civil-specific institution promotion (LIGUE_CIVILE
+  // pseudo-school) stay here.
   async function handleJoinExistingTeam(team: TeamSearchRow) {
     setSubmitting(true);
     setError(null);
     try {
-      const supabase = createClient();
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      if (!authUser) {
-        setError("Session expirée. Reconnecte-toi pour continuer.");
+      const result = await joinExistingTeam(team);
+      if (!result.ok) {
+        setError(result.error);
         return;
       }
-
-      // Phase 6.2: attach the joiner to BOTH school_coaches (institution
-      // level, role=COACH) and team_coaches (team level, role=assistant).
-      // The unified model requires both to satisfy RLS and to mirror
-      // the dual visibility the legacy league_coaches single-row carried.
-      const { error: scError } = await supabase.from("school_coaches").insert({
-        coach_id: authUser.id,
-        school_id: team.school_id,
-        role: "COACH",
+      // Phase 6.2: institution is now a LIGUE_CIVILE schools row.
+      // Promoted via save() so the wizard's localUserVersion ticks.
+      save({
+        institution: { id: team.school_id, name: team.school_name, type: "ligue_civile" },
       });
-      // 23505 = duplicate key. Coach already attached to this school —
-      // surface as success rather than an error.
-      if (scError && scError.code !== "23505") {
-        console.error("[LeagueCoachLeagueStep] school_coaches insert failed:", scError);
-        setError("Impossible de rejoindre l'équipe. Réessaie.");
-        return;
-      }
-
-      const { error: tcError } = await supabase.from("team_coaches").insert({
-        coach_id: authUser.id,
-        team_id: team.id,
-        role: "assistant",
-      });
-      if (tcError && tcError.code !== "23505") {
-        console.error("[LeagueCoachLeagueStep] team_coaches insert failed:", tcError);
-        setError("Impossible de rejoindre l'équipe. Réessaie.");
-        return;
-      }
-
       persistTeamLocally({
         teamId: team.id,
         teamName: team.name,
@@ -2530,9 +2978,6 @@ function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Part
         schoolName: team.school_name,
       });
       setSelectedTeam(team);
-    } catch (err) {
-      console.error("[LeagueCoachLeagueStep] join exception:", err);
-      setError("Une erreur est survenue. Réessaie.");
     } finally {
       setSubmitting(false);
     }
@@ -2642,6 +3087,13 @@ function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Part
         console.error("[LeagueCoachLeagueStep] team_coaches insert failed:", tcError);
       }
 
+      // Phase 6.2: institution is now a LIGUE_CIVILE schools row.
+      // Promoted via save() so the wizard's localUserVersion ticks
+      // (matches the pre-lift behavior, when persistTeamLocally did
+      // the institution write internally).
+      save({
+        institution: { id: schoolId, name: schoolName, type: "ligue_civile" },
+      });
       persistTeamLocally({
         teamId: newTeam.id,
         teamName: formData.team_name,
@@ -2815,13 +3267,38 @@ function UmbrellaStep({
   onSelect,
   onCreate,
   onBack,
+  emptyMessage,
+  scopeLabel = "Club",
+  showBack = true,
+  cardCtaText = "C'est mon équipe →",
+  selectedTeamId,
 }: {
   schoolId: string;
   schoolName: string;
+  // Empty string disables sport filtering — the recruiter Programme
+  // step passes "" to surface every team at the CÉGEP regardless of
+  // sport (a recruiter spans all sports). Coach flows always pass a
+  // real sport_id.
   sportId: string;
   onSelect: (team: TeamSearchRow) => void;
-  onCreate: () => void;
-  onBack: () => void;
+  // Optional — when absent, the "Mon équipe n'est pas dans la liste"
+  // create CTA row is hidden. School-coach flow uses this to disable
+  // ad-hoc team creation (school coaches only join existing teams).
+  onCreate?: () => void;
+  onBack?: () => void;
+  // Custom empty-state copy. Defaults to the civil flow's wording.
+  emptyMessage?: string;
+  // Override the "Club: <name>" header label (school flow says "École").
+  scopeLabel?: string;
+  // Hide the back link entirely (school-coach flow is a single step).
+  showBack?: boolean;
+  // Card footer CTA — coach contexts use "C'est mon équipe →"
+  // (tutoiement), recruiter Programme uses "Sélectionner →".
+  cardCtaText?: string;
+  // When set, the matching card is highlighted as currently selected.
+  // Used by the recruiter Programme step (selection stays visible
+  // without dismissing the grid). Coach flows leave this undefined.
+  selectedTeamId?: string | null;
 }) {
   const [teams, setTeams] = useState<TeamSearchRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -2835,12 +3312,17 @@ function UmbrellaStep({
     let cancelled = false;
     (async () => {
       const supabase = createClient();
-      const { data, error: queryError } = await supabase
+      // sportId === "" means "any sport at this school" — the recruiter
+      // Programme step uses this to surface every team at the CÉGEP
+      // regardless of sport. Coach flows always pass a real sport_id.
+      let query = supabase
         .from("teams")
         .select("id, name, age_group, gender, division, league, school_id, team_coaches(coach_id)")
-        .eq("school_id", schoolId)
-        .eq("sport_id", sportId)
-        .order("name");
+        .eq("school_id", schoolId);
+      if (sportId) {
+        query = query.eq("sport_id", sportId);
+      }
+      const { data, error: queryError } = await query.order("name");
       if (cancelled) return;
       if (queryError) {
         console.error("[UmbrellaStep] teams fetch failed:", queryError);
@@ -2882,7 +3364,7 @@ function UmbrellaStep({
   return (
     <div className="space-y-3">
       <div className="bg-[#111317]/60 border border-white/[0.06] rounded-lg p-3 text-[12px] text-[#9CA3AF]">
-        Club : <span className="text-white font-bold">{schoolName}</span>
+        {scopeLabel} : <span className="text-white font-bold">{schoolName}</span>
       </div>
 
       {loading && (
@@ -2900,12 +3382,17 @@ function UmbrellaStep({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
           {teams.map((team) => {
             const genderText = team.gender ? genderLabel(team.gender) : null;
+            const isSelected = selectedTeamId === team.id;
             return (
               <button
                 key={team.id}
                 type="button"
                 onClick={() => onSelect(team)}
-                className="text-left bg-[#111317] border border-white/10 hover:border-[#E63946]/40 rounded-lg p-4 transition-colors"
+                className={`text-left bg-[#111317] border rounded-lg p-4 transition-colors ${
+                  isSelected
+                    ? "border-[#E63946]"
+                    : "border-white/10 hover:border-[#E63946]/40"
+                }`}
               >
                 <p className="font-bold text-white text-sm truncate">{team.name}</p>
                 <div className="flex items-center gap-1.5 flex-wrap mt-2">
@@ -2928,7 +3415,9 @@ function UmbrellaStep({
                 {team.league && (
                   <p className="text-[11px] text-[#9CA3AF] mt-2 truncate">{team.league}</p>
                 )}
-                <p className="text-[11px] text-[#22C55E] font-bold mt-3">C&apos;est mon équipe →</p>
+                <p className="text-[11px] text-[#22C55E] font-bold mt-3">
+                  {isSelected ? "✓ Sélectionné" : cardCtaText}
+                </p>
               </button>
             );
           })}
@@ -2937,33 +3426,37 @@ function UmbrellaStep({
 
       {!loading && teams.length === 0 && (
         <div className="bg-[#111317] border border-white/5 rounded-lg p-4 text-[12px] text-[#9CA3AF]">
-          Aucune équipe n&apos;est inscrite sous ce club pour ce sport.
+          {emptyMessage ?? "Aucune équipe n'est inscrite sous ce club pour ce sport."}
         </div>
       )}
 
-      <div className="bg-[#111317] border border-white/5 rounded-lg p-4 flex items-start justify-between gap-3">
-        <div className="flex-1 min-w-0">
-          <p className="text-[12px] text-white font-bold">Mon équipe n&apos;est pas dans la liste</p>
-          <p className="text-[11px] text-[#6B7280] mt-0.5">
-            Crée ta nouvelle équipe — elle sera rattachée à ce club.
-          </p>
+      {onCreate && (
+        <div className="bg-[#111317] border border-white/5 rounded-lg p-4 flex items-start justify-between gap-3">
+          <div className="flex-1 min-w-0">
+            <p className="text-[12px] text-white font-bold">Mon équipe n&apos;est pas dans la liste</p>
+            <p className="text-[11px] text-[#6B7280] mt-0.5">
+              Crée ta nouvelle équipe — elle sera rattachée à ce club.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onCreate}
+            className="shrink-0 h-10 px-4 rounded-lg bg-[#E63946] hover:bg-[#D42B22] text-white text-[12px] font-bold transition-colors"
+          >
+            Créer une équipe
+          </button>
         </div>
+      )}
+
+      {showBack && onBack && (
         <button
           type="button"
-          onClick={onCreate}
-          className="shrink-0 h-10 px-4 rounded-lg bg-[#E63946] hover:bg-[#D42B22] text-white text-[12px] font-bold transition-colors"
+          onClick={onBack}
+          className="h-9 px-3 text-[12px] text-[#9CA3AF] hover:text-white transition-colors"
         >
-          Créer une équipe
+          ← Retour à la recherche
         </button>
-      </div>
-
-      <button
-        type="button"
-        onClick={onBack}
-        className="h-9 px-3 text-[12px] text-[#9CA3AF] hover:text-white transition-colors"
-      >
-        ← Retour à la recherche
-      </button>
+      )}
     </div>
   );
 }
