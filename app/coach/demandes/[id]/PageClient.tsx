@@ -7,6 +7,7 @@ import { STATUS_CONFIG, mapDbStatus, type Message, type ThreadStatus, type Conve
 import EntityLink from "@/components/shared/EntityLink";
 import StarRating from "@/components/ui/StarRating";
 import { createClient } from "@/lib/supabase/client";
+import { parseDistinctions, type DistinctionEntry } from "@/lib/config/badges";
 
 /* ═══════════════════════════════════════════════════════════════
    Thread Detail — Conversation View
@@ -180,7 +181,7 @@ export default function ThreadDetailPage() {
           _athleteRelocate: athleteData?.pret_changer_region || false,
           _athletePrivate: athleteData?.ouvert_cegep_prive || false,
           _athleteAnglophone: athleteData?.ouvert_cegep_anglophone || false,
-          _athleteDistinctions: (() => { const e = athleteData?.evaluations; const ev = Array.isArray(e) ? e[0] : e; return (ev?.distinctions as string[]) || []; })(),
+          _athleteDistinctions: (() => { const e = athleteData?.evaluations; const ev = Array.isArray(e) ? e[0] : e; return parseDistinctions(ev?.distinctions); })(),
           messages: [],
           status: mapDbStatus(conv.status, (msgs || []).some((m: any) => m.sender_id === conv.coach_id), (msgs || []).some((m: any) => m.sender_id === conv.recruiter_id)),
           lastMessagePreview: "",
@@ -498,14 +499,14 @@ export default function ThreadDetailPage() {
             )}
 
             {/* Distinctions */}
-            {(thread as any)._athleteDistinctions?.length > 0 && (
+            {((thread as any)._athleteDistinctions as DistinctionEntry[])?.length > 0 && (
               <div className="pt-3 border-t border-[#2D3748] mb-3">
                 <div className="flex flex-wrap gap-1.5">
-                  {((thread as any)._athleteDistinctions as string[]).map((d: string) => {
+                  {((thread as any)._athleteDistinctions as DistinctionEntry[]).map((e) => {
                     const labels: Record<string, string> = { captain: "Capitaine", allstar: "Étoile", team_leader: "Leader", points_leader: "Pointeur", mvp: "MVP", progression: "Progression" };
                     return (
-                      <span key={d} className="inline-flex items-center px-2.5 py-1 rounded-full bg-[#E63946]/15 border border-[#E63946]/30 text-[11px] font-bold text-[#E63946]">
-                        {labels[d] || d}
+                      <span key={e.badge} className="inline-flex items-center px-2.5 py-1 rounded-full bg-[#E63946]/15 border border-[#E63946]/30 text-[11px] font-bold text-[#E63946]">
+                        {labels[e.badge] || e.badge}
                       </span>
                     );
                   })}
