@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import PlaybookBackground from "./components/PlaybookBackground";
@@ -21,6 +21,12 @@ export default function Home() {
   const router = useRouter();
   const isCapacitor = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
+  // State initialisé à une valeur STABLE (identique serveur/client au 1er
+  // render) pour éviter tout mismatch d'hydratation (React #418).
+  // false au départ → le 1er render client === le HTML statique = homepage.
+  // useEffect bascule ensuite à true si on est en fallback mobile.
+  const [mobileRedirecting, setMobileRedirecting] = useState(false);
+
   // Sur le build mobile (Capacitor), trois cas :
   // 1. L'utilisateur est vraiment sur "/" → rediriger vers /auth
   // 2. URL est une route [id] non-pré-générée (ex: /recruteur/athletes/<uuid>) :
@@ -30,6 +36,10 @@ export default function Home() {
   //    window.location.replace vers le shell placeholder pré-généré. Le
   //    PageClient lit le vrai id via useDynamicParam (qui lit sessionStorage).
   // 3. URL inconnue (pas une route [id] mappée) → /auth par sécurité.
+  //
+  // TOUTE la détection se fait post-mount (useEffect) — aucune lecture de
+  // window pendant le render, sinon on déclenche un mismatch d'hydratation
+  // (React #418) qui casse l'app.
   useEffect(() => {
     if (!isCapacitor) return;
     if (typeof window === "undefined") return;
@@ -38,35 +48,49 @@ export default function Home() {
     const isRoot = path === "/" || path === "" || path === "/index.html";
 
     if (isRoot) {
+      setMobileRedirecting(true);
       router.replace("/auth");
       return;
     }
 
     const matched = matchDynamicRoute(path);
     if (matched) {
+      setMobileRedirecting(true);
       sessionStorage.setItem(
         `${SESSION_KEY_PREFIX}${matched.paramKey}`,
         matched.realId,
       );
-      window.location.replace(matched.placeholderPath);
-    } else {
-      router.replace("/auth");
+      // Client-router navigation (pas window.location.replace). Le shell
+      // placeholder est une route STATIQUE pré-générée → le client router
+      // sait la rendre sans hard reload, donc sans repasser par errorPath
+      // → index.html → boucle de Home.
+      router.replace(matched.placeholderPath);
+      return;
     }
-  }, [isCapacitor, router]);
 
-  // Masquer le flash de la homepage marketing quand on est en fallback
-  // errorPath (pathname !== "/"). Sur le web, ou sur "/" en mobile, on
-  // rend la homepage normalement.
-  const isFallbackRender =
-    isCapacitor &&
-    typeof window !== "undefined" &&
-    window.location.pathname !== "/" &&
-    window.location.pathname !== "" &&
-    window.location.pathname !== "/index.html";
+    // Filet de sécurité : le pathname EST déjà un shell placeholder.
+    // Cela arrive si un hard reload (ou un errorPath inattendu) a servi
+    // index.html avec un path placeholder. On laisse le client router
+    // rendre la route placeholder (le PageClient lira le uuid via
+    // sessionStorage déjà stashé).
+    if (path.includes("/placeholder")) {
+      setMobileRedirecting(true);
+      router.replace(path);
+      return;
+    }
+
+    setMobileRedirecting(true);
+    router.replace("/auth");
+  }, [isCapacitor, router]);
 
   const { t } = useTranslation();
 
-  if (isFallbackRender) {
+  // Affichage piloté UNIQUEMENT par le state (pas de lecture de window
+  // pendant le render). Au 1er render serveur ET client, mobileRedirecting
+  // est false → on rend la homepage. Hydratation cohérente → pas de #418.
+  // Le useEffect bascule ensuite à true → re-render → spinner pendant que
+  // la redirection vers placeholder s'exécute.
+  if (mobileRedirecting) {
     return (
       <div
         style={{
