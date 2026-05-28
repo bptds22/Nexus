@@ -1,7 +1,8 @@
 "use client";
 
 import { } from "react";
-import { useSearchParams, useParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { useDynamicParam } from "@/lib/platform/useDynamicParam";
 import AthleteRecruiterProfileBody, { type AthleteProfileViewerMode } from "@/components/shared/AthleteRecruiterProfileBody";
 /* ═══════════════════════════════════════════════════════════════
    Recruiter Athlete Profile — thin wrapper.
@@ -20,8 +21,7 @@ import AthleteRecruiterProfileBody, { type AthleteProfileViewerMode } from "@/co
 ═══════════════════════════════════════════════════════════════ */
 
 export default function RecruiterAthletePage() {
-  const params = useParams<{ id: string }>();
-  const id = params.id;
+  const id = useDynamicParam("id");
   const searchParams = useSearchParams();
   const viewer = searchParams?.get("viewer");
   const isPreview = searchParams?.get("preview") === "true";

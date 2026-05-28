@@ -1,7 +1,8 @@
 "use client";
 
 import {  useState, useCallback, useEffect, Suspense } from "react";
-import { useSearchParams, useParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { useDynamicParam } from "@/lib/platform/useDynamicParam";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { loadAthleteRaw, buildFormFromRaw } from "../../_data/loadAthleteFromSupabase";
@@ -195,8 +196,7 @@ function mapStepParam(param: string | null): number {
 ══════════════════════════════════════════════════════════════ */
 
 export default function ModifierPage() {
-  const params = useParams<{ id: string }>();
-  const id = params.id;
+  const id = useDynamicParam("id");
   return (
     <Suspense>
       <ReadOnlyIfPending>

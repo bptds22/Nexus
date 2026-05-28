@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useDynamicParam } from "@/lib/platform/useDynamicParam";
 import { loadAthleteRaw, mapToRecruiterView } from "../_data/loadAthleteFromSupabase";
 import type { AthleteProfileRecruiterView, AthleteTraitRatings } from "@/lib/types/models";
 import { SPORT_NAME_MAP } from "@/lib/config/sportBadges";
@@ -239,9 +240,8 @@ function Toast({ message, onDone }: { message: string; onDone: () => void }) {
 ═══════════════════════════════════════════════════════════════ */
 
 export default function CoachAthleteProfilePage() {
-  const params = useParams();
   const router = useRouter();
-  const id = params.id as string;
+  const id = useDynamicParam("id");
 
   const [a, setA] = useState<AthleteProfileRecruiterView | null>(null);
   const [loading, setLoading] = useState(true);

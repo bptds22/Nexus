@@ -2,7 +2,7 @@
 
 import {  useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useDynamicParam } from "@/lib/platform/useDynamicParam";
 import { createClient } from "@/lib/supabase/client";
 import CoachInfoCard from "@/components/recruteur/CoachInfoCard";
 import AthleteInfoCard from "@/components/recruteur/AthleteInfoCard";
@@ -117,8 +117,7 @@ export default function Page() {
 }
 
 function RecruiterThreadPage() {
-  const params = useParams<{ id: string }>();
-  const id = params.id;
+  const id = useDynamicParam("id");
   const [ctx, setCtx] = useState<ThreadContext | null>(null);
   const [messages, setMessages] = useState<MessageData[]>([]);
   const [reply, setReply] = useState("");

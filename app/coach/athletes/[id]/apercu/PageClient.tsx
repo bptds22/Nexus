@@ -1,7 +1,8 @@
 "use client";
-import { useParams, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
+import { useDynamicParam } from "@/lib/platform/useDynamicParam";
 export default function ApercuRedirect() {
-  const { id } = useParams();
+  const id = useDynamicParam("id");
   redirect(`/coach/athletes/${id}`);
   return null;
 }

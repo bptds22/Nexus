@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useDynamicParam } from "@/lib/platform/useDynamicParam";
 import FeatureGate from "@/components/subscription/FeatureGate";
 import CegepGate from "@/components/subscription/CegepGate";
 import { useSubscription } from "@/lib/hooks/useSubscription";
@@ -225,8 +225,7 @@ function RecruiterDetailWrapper() {
 }
 
 function RecruiterDetailPage() {
-  const params = useParams();
-  const id = params.id as string;
+  const id = useDynamicParam("id");
   const profile = PROFILES[id];
   const [toast, setToast] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);

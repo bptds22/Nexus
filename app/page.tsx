@@ -8,6 +8,7 @@ import PartnerCarousel from "./components/PartnerCarousel";
 import MarketingNav from "@/components/marketing/MarketingNav";
 import Footer from "@/components/marketing/Footer";
 import { useTranslation } from "@/lib/i18n/useTranslation";
+import { matchDynamicRoute, SESSION_KEY_PREFIX } from "@/lib/platform/mobileRoutes";
 
 /* ─────────────────────────────────────────────────────────────────
    Nexus — Homepage (rewrite)
@@ -20,15 +21,77 @@ export default function Home() {
   const router = useRouter();
   const isCapacitor = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
-  // Mobile build (Capacitor): client-side redirect to /auth on mount.
-  // Server-side redirect() during SSG would 404 the index.html — Capacitor
-  // needs a real index.html, so we let the marketing page render briefly
-  // then router.replace.
+  // Sur le build mobile (Capacitor), trois cas :
+  // 1. L'utilisateur est vraiment sur "/" → rediriger vers /auth
+  // 2. URL est une route [id] non-pré-générée (ex: /recruteur/athletes/<uuid>) :
+  //    Capacitor a servi index.html via errorPath. Le router Next.js ne peut
+  //    PAS résoudre cette URL côté client (pas de RSC payload) → boucle infinie.
+  //    Solution : stocker le vrai uuid dans sessionStorage, rediriger via
+  //    window.location.replace vers le shell placeholder pré-généré. Le
+  //    PageClient lit le vrai id via useDynamicParam (qui lit sessionStorage).
+  // 3. URL inconnue (pas une route [id] mappée) → /auth par sécurité.
   useEffect(() => {
-    if (isCapacitor) router.replace("/auth");
+    if (!isCapacitor) return;
+    if (typeof window === "undefined") return;
+
+    const path = window.location.pathname;
+    const isRoot = path === "/" || path === "" || path === "/index.html";
+
+    if (isRoot) {
+      router.replace("/auth");
+      return;
+    }
+
+    const matched = matchDynamicRoute(path);
+    if (matched) {
+      sessionStorage.setItem(
+        `${SESSION_KEY_PREFIX}${matched.paramKey}`,
+        matched.realId,
+      );
+      window.location.replace(matched.placeholderPath);
+    } else {
+      router.replace("/auth");
+    }
   }, [isCapacitor, router]);
 
+  // Masquer le flash de la homepage marketing quand on est en fallback
+  // errorPath (pathname !== "/"). Sur le web, ou sur "/" en mobile, on
+  // rend la homepage normalement.
+  const isFallbackRender =
+    isCapacitor &&
+    typeof window !== "undefined" &&
+    window.location.pathname !== "/" &&
+    window.location.pathname !== "" &&
+    window.location.pathname !== "/index.html";
+
   const { t } = useTranslation();
+
+  if (isFallbackRender) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          background: "#111317",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <div
+          style={{
+            width: 32,
+            height: 32,
+            border: "3px solid rgba(230,57,70,0.25)",
+            borderTopColor: "#E63946",
+            borderRadius: "50%",
+            animation: "nx-spin 0.7s linear infinite",
+          }}
+        />
+        <style>{`@keyframes nx-spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
+
   return (
     <div className="hero-playbook bg-[#111317] min-h-screen">
       <PlaybookBackground />

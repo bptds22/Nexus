@@ -2,7 +2,7 @@
 
 import {  useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useDynamicParam } from "@/lib/platform/useDynamicParam";
 import { STATUS_CONFIG, mapDbStatus, type Message, type ThreadStatus, type ConversationThread } from "../_data/mockThreadsData";
 import EntityLink from "@/components/shared/EntityLink";
 import StarRating from "@/components/ui/StarRating";
@@ -92,8 +92,7 @@ function DaySeparator({ date }: { date: string }) {
 ═══════════════════════════════════════════════════════════════ */
 
 export default function ThreadDetailPage() {
-  const params = useParams<{ id: string }>();
-  const id = params.id;
+  const id = useDynamicParam("id");
 
   const [thread, setThread] = useState<ConversationThread | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);

@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
+import { useDynamicParam } from "@/lib/platform/useDynamicParam";
 import { createClient } from "@/lib/supabase/client";
 import type { GlobalRecruitmentStatus } from "@/lib/types/models";
 import { relativeTimeFr } from "@/lib/utils/relativeTime";
@@ -100,7 +101,7 @@ const labelCls = "block text-[11px] font-bold tracking-[0.2em] uppercase text-[#
 const sectionTitle = "text-[11px] font-bold tracking-[0.15em] uppercase text-[#9CA3AF] mb-4";
 
 export default function TeamDetailPage() {
-  const { teamId } = useParams<{ teamId: string }>();
+  const teamId = useDynamicParam("teamId");
   const router = useRouter();
 
   const [team, setTeam] = useState<TeamState | null>(null);

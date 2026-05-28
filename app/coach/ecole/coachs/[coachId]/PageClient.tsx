@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
+import { useDynamicParam } from "@/lib/platform/useDynamicParam";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import SchoolGate from "@/components/subscription/SchoolGate";
@@ -148,9 +149,8 @@ export default function CoachDetailPageWrapper() {
 }
 
 function CoachDetailPage() {
-  const params = useParams();
   const router = useRouter();
-  const coachId = params.coachId as string;
+  const coachId = useDynamicParam("coachId");
 
   const [coach, setCoach] = useState<CoachOverview | null>(null);
   const [athletes, setAthletes] = useState<CoachAthlete[]>([]);

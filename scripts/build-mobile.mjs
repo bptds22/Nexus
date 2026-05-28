@@ -63,14 +63,31 @@ function hide() {
   }
 }
 
+let cleanedUp = false;
 function restore() {
-  for (const { from, to } of moved.reverse()) {
-    if (existsSync(from)) {
-      renameSync(from, to);
+  if (cleanedUp) return;
+  cleanedUp = true;
+  for (const { from, to } of moved.slice().reverse()) {
+    try {
+      if (existsSync(from)) renameSync(from, to);
+    } catch (e) {
+      console.error(`[mobile-build] Failed to restore ${to}:`, e.message);
     }
   }
   console.log(`[mobile-build] Restored ${moved.length} pages`);
 }
+
+// Restore on Ctrl+C or kill so the repo is never left with .disabled files.
+process.on('SIGINT', () => {
+  console.log('\n[mobile-build] Interrupted (SIGINT) — restoring hidden pages...');
+  restore();
+  process.exit(130);
+});
+process.on('SIGTERM', () => {
+  console.log('\n[mobile-build] Interrupted (SIGTERM) — restoring hidden pages...');
+  restore();
+  process.exit(143);
+});
 
 async function runBuild() {
   return new Promise((resolve) => {
