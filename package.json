@@ -10,7 +10,9 @@
     "build:mobile": "node scripts/build-mobile.mjs",
     "mobile:sync": "npm run build:mobile && npx cap sync",
     "mobile:android": "npm run mobile:sync && npx cap open android",
-    "mobile:run:android": "npm run mobile:sync && npx cap run android"
+    "mobile:run:android": "npm run mobile:sync && npx cap run android",
+    "mobile:dev:server": "cross-env NEXT_PUBLIC_CAPACITOR_BUILD=true next dev -H 0.0.0.0 -p 3000",
+    "mobile:dev:android": "npx cap run android --live-reload --external --host 10.0.2.2 --port 3000"
   },
   "dependencies": {
     "@capacitor/android": "^8.3.4",
