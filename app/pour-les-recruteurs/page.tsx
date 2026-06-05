@@ -146,7 +146,6 @@ export default function PourLesRecruteursPage() {
   const { t } = useTranslation();
   const T = t.recruiterLanding;
   const [openFaq, setOpenFaq] = useState<number | null>(0);
-  const [videoOpen, setVideoOpen] = useState(false);
 
   return (
     <div className="hero-playbook min-h-screen bg-[#111317] text-white font-sans scroll-smooth relative">
@@ -157,9 +156,11 @@ export default function PourLesRecruteursPage() {
         {/* ─── SECTION 1 — HERO (two-column, video right) ───── */}
         <section id="hero" className="border-b border-white/[0.06]">
           <div className="max-w-[1200px] mx-auto px-6 py-20 lg:py-24">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+            {/* Iter — colonne vidéo agrandie : 2/5 texte vs 3/5 vidéo (60/40)
+                pour laisser respirer le laptop mockup. */}
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-12 lg:gap-16 items-center">
               {/* Left — copy */}
-              <div>
+              <div className="lg:col-span-2">
                 <RedLabel>{T.hero.eyebrow}</RedLabel>
                 <h1 className="nx-display text-[38px] sm:text-[44px] lg:text-[48px] font-extrabold leading-[1.05] tracking-tight mt-4">
                   {T.hero.titleLine1}<br />
@@ -186,41 +187,53 @@ export default function PourLesRecruteursPage() {
                 </div>
               </div>
 
-              {/* Right — video placeholder */}
-              <div id="demo-video">
-                <button
-                  type="button"
-                  onClick={() => setVideoOpen(true)}
-                  className="group relative block w-full aspect-video bg-[#0d0f12] rounded-2xl border border-white/[0.08] overflow-hidden shadow-2xl hover:border-[#E63946]/40 transition-colors"
-                  aria-label={T.hero.videoAriaLabel}
-                >
-                  {/* Gradient overlay */}
+              {/* Right — démo vidéo YouTube embed (laptop mockup Nexus).
+                  Iter : passage de <video> local (~130 MB, dépassait la limite
+                  GitHub 100 MB + LCP médiocre) → iframe YouTube streaming +
+                  CDN. Mêmes 2 couches de halo rouge derrière (profondeur). */}
+              <div id="demo-video" className="lg:col-span-3">
+                <div className="relative">
+                  {/* Couche ambiante TRÈS large — nappe rouge qui déborde
+                      bien au-delà du laptop pour donner une vraie profondeur. */}
                   <div
                     aria-hidden="true"
-                    className="absolute inset-0 bg-gradient-to-br from-[#E63946]/10 via-transparent to-[#3B82F6]/5"
+                    className="absolute inset-0 pointer-events-none"
+                    style={{
+                      background: "radial-gradient(ellipse at center, rgba(230,57,70,0.40) 0%, rgba(230,57,70,0.15) 45%, transparent 80%)",
+                      filter: "blur(120px)",
+                      transform: "scale(1.6)",
+                      zIndex: 0,
+                    }}
                   />
-                  {/* Play button */}
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="flex items-center justify-center w-20 h-20 rounded-full bg-[#E63946] shadow-[0_0_40px_rgba(230,57,70,0.5)] group-hover:scale-110 transition-transform">
-                      <Play size={32} strokeWidth={2.5} className="text-white ml-1" fill="currentColor" />
-                    </span>
+                  {/* Couche cœur — saturée, juste derrière l'écran du laptop. */}
+                  <div
+                    aria-hidden="true"
+                    className="absolute inset-0 pointer-events-none"
+                    style={{
+                      background: "radial-gradient(ellipse at center, rgba(230,57,70,0.65) 0%, rgba(230,57,70,0.20) 40%, transparent 75%)",
+                      filter: "blur(60px)",
+                      transform: "scale(1.1, 0.95)",
+                      zIndex: 1,
+                    }}
+                  />
+                  <div
+                    className="relative w-full aspect-video overflow-hidden rounded-xl"
+                    style={{ zIndex: 10 }}
+                    aria-label={T.hero.videoAriaLabel}
+                  >
+                    <iframe
+                      src="https://www.youtube.com/embed/zioDKPq5fmc?rel=0&modestbranding=1&playsinline=1"
+                      title="Nexus — Démo recruteurs"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      allowFullScreen
+                      loading="lazy"
+                      className="w-full h-full"
+                    />
                   </div>
-                  {/* Top-left duration badge */}
-                  <div className="absolute top-4 left-4">
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-black/60 backdrop-blur border border-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-white">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#E63946]" />
-                      {T.hero.videoBadge}
-                    </span>
-                  </div>
-                </button>
+                </div>
                 <p className="mt-4 text-[14px] text-white/55 text-center">
                   {T.hero.videoCaption}
                 </p>
-                {videoOpen && (
-                  <p className="mt-2 text-[12px] text-[#E63946] text-center">
-                    {T.hero.videoComing}
-                  </p>
-                )}
               </div>
             </div>
           </div>
