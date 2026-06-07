@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import FeatureGate from "@/components/subscription/FeatureGate";
 import CegepGate from "@/components/subscription/CegepGate";
 import KpiCard from "@/components/director/KpiCard";
 import KpiCardRow from "@/components/director/KpiCardRow";
-import { createClient } from "@/lib/supabase/client";
+import { useCegepStats } from "@/lib/queries/recruiter/useCegepStats";
 import {
   BarChart,
   Bar,
@@ -203,164 +203,22 @@ interface ActivityRow {
 }
 
 function CegepDashboardContent() {
-  const [loading, setLoading] = useState(true);
-  const [schoolName, setSchoolName] = useState("Mon CÉGEP");
+  // Migration TanStack (iter 5.3a) — 10 queries séquentielles regroupées en 1 hook.
+  // Cache 10 min → navigation tab → CÉGEP instantanée la 2e visite.
+  const { data: stats, isLoading: loading } = useCegepStats();
 
-  // KPIs
-  const [recruesCount, setRecruesCount] = useState(0);
-  const [pipelineCount, setPipelineCount] = useState(0);
-  const [messagesCount, setMessagesCount] = useState(0);
-  const [viewsCount, setViewsCount] = useState(0);
+  const schoolName = stats?.schoolName ?? "Mon CÉGEP";
+  const recruesCount = stats?.recruesCount ?? 0;
+  const pipelineCount = stats?.pipelineCount ?? 0;
+  const messagesCount = stats?.messagesCount ?? 0;
+  const viewsCount = stats?.viewsCount ?? 0;
+  const pipelineBySport = stats?.pipelineBySport ?? [];
+  const recruiterActivity = stats?.recruiterActivity ?? [];
+  const regionData = stats?.regionData ?? [];
+  const regionTotal = stats?.regionTotal ?? 0;
+  const recentActivity = stats?.recentActivity ?? [];
 
-  // Charts
-  const [pipelineBySport, setPipelineBySport] = useState<{ sport: string; consulted: number; favorited: number; contacted: number; recruited: number }[]>([]);
-  const [recruiterActivity, setRecruiterActivity] = useState<{ short: string; name: string; messages: number }[]>([]);
-  const [regionData, setRegionData] = useState<{ region: string; count: number }[]>([]);
-  const [regionTotal, setRegionTotal] = useState(0);
-
-  // Activity feed
-  const [recentActivity, setRecentActivity] = useState<(ActivityRow & { recruiterName: string })[]>([]);
-
-  useEffect(() => {
-    async function load() {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { setLoading(false); return; }
-
-      // Get current user's school
-      const { data: currentUser } = await supabase
-        .from("users")
-        .select("school_id")
-        .eq("id", user.id)
-        .single();
-
-      if (!currentUser?.school_id) { setLoading(false); return; }
-
-      // School name
-      const { data: school } = await supabase
-        .from("schools")
-        .select("name")
-        .eq("id", currentUser.school_id)
-        .single();
-
-      if (school) setSchoolName(school.name);
-
-      // All team members at this school (coaches, recruiters, admins — anyone who may have pipeline data)
-      const { data: teamMembers } = await supabase
-        .from("users")
-        .select("id, first_name, last_name, role")
-        .eq("school_id", currentUser.school_id);
-
-      const rList = teamMembers || [];
-      const recruiterIds = rList.map((r) => r.id);
-      const recruiterFullMap = new Map(rList.map((r) => [r.id, `${r.first_name || ""} ${r.last_name || ""}`]));
-
-      if (recruiterIds.length === 0) { setLoading(false); return; }
-
-      // === KPIs (parallel) ===
-      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-
-      const [recruesRes, pipelineRes, messagesRes, viewsRes] = await Promise.all([
-        supabase.from("recruiter_pipeline").select("*", { count: "exact", head: true }).in("recruiter_id", recruiterIds).eq("stage", "LETTRE_SIGNEE"),
-        supabase.from("recruiter_pipeline").select("athlete_id").in("recruiter_id", recruiterIds),
-        supabase.from("messages").select("*", { count: "exact", head: true }).in("sender_id", recruiterIds).gte("created_at", thirtyDaysAgo),
-        supabase.from("recruiter_athlete_views").select("*", { count: "exact", head: true }).in("recruiter_id", recruiterIds).gte("viewed_at", thirtyDaysAgo),
-      ]);
-
-      setRecruesCount(recruesRes.count ?? 0);
-      const uniqueAthletes = new Set(pipelineRes.data?.map((p) => p.athlete_id) || []);
-      setPipelineCount(uniqueAthletes.size);
-      setMessagesCount(messagesRes.count ?? 0);
-      setViewsCount(viewsRes.count ?? 0);
-
-      // === Pipeline par sport ===
-      const { data: pipelineSports } = await supabase
-        .from("recruiter_pipeline")
-        .select("stage, athletes!athlete_id(sports!sport_id(nom))")
-        .in("recruiter_id", recruiterIds);
-
-      if (pipelineSports) {
-        const sportMap = new Map<string, { consulted: number; favorited: number; contacted: number; recruited: number }>();
-        for (const row of pipelineSports) {
-          const athleteRel = row.athletes as unknown as { sports?: { nom?: string } | { nom?: string }[] | null } | null;
-          const sportsRel = athleteRel?.sports;
-          const sportObj = Array.isArray(sportsRel) ? sportsRel[0] : sportsRel;
-          const sportName = sportObj?.nom || "Autre";
-          if (!sportMap.has(sportName)) sportMap.set(sportName, { consulted: 0, favorited: 0, contacted: 0, recruited: 0 });
-          const entry = sportMap.get(sportName)!;
-          const stage = row.stage as string;
-          if (stage === "IDENTIFIE") entry.consulted++;
-          else if (stage === "CONTACTE") entry.contacted++;
-          else if (stage === "EN_DISCUSSION" || stage === "VISITE_PLANIFIEE") entry.favorited++;
-          else if (stage === "ENGAGE" || stage === "LETTRE_SIGNEE") entry.recruited++;
-        }
-        setPipelineBySport(
-          Array.from(sportMap.entries())
-            .map(([sport, counts]) => ({ sport, ...counts }))
-            .sort((a, b) => (b.consulted + b.favorited + b.contacted + b.recruited) - (a.consulted + a.favorited + a.contacted + a.recruited))
-        );
-      }
-
-      // === Recruiter activity bar chart ===
-      const activityBars: { short: string; name: string; messages: number }[] = [];
-      for (const r of rList) {
-        const { count } = await supabase
-          .from("recruiter_pipeline")
-          .select("*", { count: "exact", head: true })
-          .eq("recruiter_id", r.id);
-        activityBars.push({
-          short: `${(r.first_name || "")[0] || ""}. ${r.last_name || ""}`,
-          name: `${r.first_name || ""} ${r.last_name || ""}`,
-          messages: count || 0,
-        });
-      }
-      setRecruiterActivity(activityBars.sort((a, b) => b.messages - a.messages));
-
-      // === Provenance des recrues (donut) ===
-      const { data: recrueRegions } = await supabase
-        .from("recruiter_pipeline")
-        .select("athletes!athlete_id(schools!school_id(region))")
-        .in("recruiter_id", recruiterIds)
-        .in("stage", ["ENGAGE", "LETTRE_SIGNEE"]);
-
-      if (recrueRegions) {
-        const regionMap = new Map<string, number>();
-        for (const row of recrueRegions) {
-          const athleteRel = row.athletes as unknown as { schools?: { region?: string } | { region?: string }[] | null } | null;
-          const schoolRel = athleteRel?.schools;
-          const schoolObj = Array.isArray(schoolRel) ? schoolRel[0] : schoolRel;
-          const region = schoolObj?.region || "Inconnue";
-          regionMap.set(region, (regionMap.get(region) || 0) + 1);
-        }
-        const regions = Array.from(regionMap.entries())
-          .map(([region, count]) => ({ region, count }))
-          .sort((a, b) => b.count - a.count);
-        setRegionData(regions);
-        setRegionTotal(regions.reduce((s, r) => s + r.count, 0));
-      }
-
-      // === Recent activity feed ===
-      const { data: activityData } = await supabase
-        .from("recruiter_activity_log")
-        .select("id, action_type, details, created_at, recruiter_id")
-        .in("recruiter_id", recruiterIds)
-        .order("created_at", { ascending: false })
-        .limit(10);
-
-      if (activityData) {
-        setRecentActivity(
-          activityData.map((a) => ({
-            ...a,
-            details: (a.details as Record<string, unknown>) || {},
-            recruiterName: recruiterFullMap.get(a.recruiter_id) || "Recruteur",
-          }))
-        );
-      }
-
-      setLoading(false);
-    }
-    load();
-  }, []);
+  // Ex-mega useEffect retiré en iter 5.3a — logique vit dans useCegepStats.
 
   if (loading) {
     return (

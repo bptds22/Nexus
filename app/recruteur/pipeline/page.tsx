@@ -1,9 +1,13 @@
 "use client";
 
 import { useState, useMemo, useCallback, memo, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useSubscription } from "@/lib/hooks/useSubscription";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { usePipelineCards } from "@/lib/queries/recruiter/usePipelineCards";
+import { usePipelineNotes } from "@/lib/queries/recruiter/usePipelineNotes";
+import { useRemoveFromPipeline } from "@/lib/queries/recruiter/useRemoveFromPipeline";
 import {
   DndContext,
   DragOverlay,
@@ -29,7 +33,10 @@ import {
 } from "./_data/mockKanbanData";
 import type { PipelineKanbanCard } from "./_data/mockKanbanData";
 import AthletePhotoFill from "@/components/shared/AthletePhotoFill";
+import { RecruteurPipelineMobile } from "@/components/shared/RecruteurPipelineMobile";
 // MOCK_KANBAN no longer imported — all data from Supabase recruiter_pipeline
+
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
 /* ═══════════════════════════════════════════════════════════════
    Pipeline de Recrutement — Kanban Board with Drag-and-Drop
@@ -565,30 +572,15 @@ function SlideOver({
   onTeaseUpgrade: () => void;
 }) {
   const [noteText, setNoteText] = useState("");
-  const [noteHistory, setNoteHistory] = useState<NoteEntry[]>([]);
+  // Migration TanStack (iter 5.3b) — notes en cache per-athlete on-demand.
+  const queryClient = useQueryClient();
+  const { data: noteHistory = [] } = usePipelineNotes(card.id);
   const [posting, setPosting] = useState(false);
   const [pendingStatus, setPendingStatus] = useState<RecruitmentStatus | null>(null);
   const [retireReason, setRetireReason] = useState("");
   const currentCol = KANBAN_COLUMNS.find((c) => c.id === card.status);
 
-  // Load note history from recruiter_notes
-  useEffect(() => {
-    async function loadNotes() {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const { data } = await supabase
-        .from("recruiter_notes")
-        .select("id, content, created_at")
-        .eq("recruiter_id", user.id)
-        .eq("athlete_id", card.id)
-        .order("created_at", { ascending: false });
-      if (data) setNoteHistory(data);
-    }
-    loadNotes();
-  }, [card.id]);
-
-  // Post a new note
+  // Post a new note + invalidation cache
   const handlePostNote = async () => {
     if (!noteText.trim()) return;
     if (isFreeDemoMode) {
@@ -600,14 +592,12 @@ function SlideOver({
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setPosting(false); return; }
-    const { data, error } = await supabase
+    await supabase
       .from("recruiter_notes")
       .insert({ recruiter_id: user.id, athlete_id: card.id, content: noteText.trim() })
       .select("id, content, created_at")
       .single();
-    if (data) {
-      setNoteHistory(prev => [data, ...prev]);
-    }
+    queryClient.invalidateQueries({ queryKey: ["pipeline-notes"] });
     setNoteText("");
     setPosting(false);
   };
@@ -786,7 +776,15 @@ export default function Page() {
 }
 
 function PipelinePageContent() {
-  const [cards, setCards] = useState<PipelineKanbanCard[]>([]);
+  if (IS_CAPACITOR) return <RecruteurPipelineMobile />;
+
+  // Migration TanStack (iter 5.3b) — kanban cards + competitorMap via hook.
+  // Cache 60s → navigation tab → Pipeline instantanée.
+  const queryClient = useQueryClient();
+  const { data: pipelineData } = usePipelineCards();
+  const cards = pipelineData?.cards ?? [];
+  const competitorMap = pipelineData?.competitorMap ?? {};
+
   const [selectedCard, setSelectedCard] = useState<PipelineKanbanCard | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [mobileTab, setMobileTab] = useState<RecruitmentStatus>("identifie");
@@ -794,7 +792,6 @@ function PipelinePageContent() {
   const [pendingDrop, setPendingDrop] = useState<{ cardId: string; from: RecruitmentStatus; to: RecruitmentStatus } | null>(null);
   const [retireReason, setRetireReason] = useState("");
   const [actionPopover, setActionPopover] = useState<PipelineKanbanCard | null>(null);
-  const [competitorMap, setCompetitorMap] = useState<Record<string, number>>({});
   const [sportFilter, setSportFilter] = useState("");
   const now = useClientNow();
 
@@ -804,144 +801,7 @@ function PipelinePageContent() {
   const { tier } = useSubscription();
   const isFreeDemoMode = tier === "free";
 
-  /* ── Supabase fetch ──────────────────────────────────────── */
-
-  useEffect(() => {
-    async function fetchPipeline() {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data, error } = await supabase
-        .from("recruiter_pipeline")
-        .select(`
-          id,
-          recruiter_id,
-          athlete_id,
-          stage,
-          notes,
-          flagged,
-          next_action_at,
-          next_action_note,
-          moved_at,
-          created_at,
-          updated_at,
-          athletes!athlete_id(
-            id,
-            first_name,
-            last_name,
-            photo_url,
-            verified,
-            profile_completion,
-            video_faits_saillants_url,
-            annee_diplomation,
-            numero_jersey,
-            cote_globale_entraineur,
-            recruitment_status,
-            committed_school_id,
-            school_id,
-            open_to_offers,
-            sports!sport_id(nom),
-            positions!position_id(nom, abreviation),
-            schools!school_id(name, region),
-            committed_school:schools!committed_school_id(name)
-          )
-        `)
-        .eq("recruiter_id", user.id)
-        .order("moved_at", { ascending: false });
-
-      if (data?.[0]) {
-        const sample = data[0].athletes;
-        const sAthl = Array.isArray(sample) ? sample[0] : sample;
-      }
-      if (!data) return;
-
-          const mapped: PipelineKanbanCard[] = data.map((p: Record<string, unknown>) => {
-            const aRaw = p.athletes;
-            const a = (Array.isArray(aRaw) ? aRaw[0] : aRaw) as {
-              id: string; first_name: string; last_name: string; photo_url: string | null; verified: boolean;
-              profile_completion: number; video_faits_saillants_url: string | null;
-              annee_diplomation: number | null; numero_jersey: string | null;
-              cote_globale_entraineur: number | null;
-              recruitment_status: string | null;
-              committed_school_id: string | null;
-              school_id: string | null;
-              open_to_offers: boolean | null;
-              sports: { nom: string } | { nom: string }[] | null;
-              positions: { nom: string; abreviation: string } | { nom: string; abreviation: string }[] | null;
-              schools: { name: string; region: string } | { name: string; region: string }[] | null;
-              committed_school: { name: string } | { name: string }[] | null;
-            } | null;
-
-            const sportRel = a?.sports;
-            const sport = (Array.isArray(sportRel) ? sportRel[0] : sportRel) as { nom?: string } | null;
-            const posRel = a?.positions;
-            const pos = (Array.isArray(posRel) ? posRel[0] : posRel) as { abreviation?: string } | null;
-            const schoolRel = a?.schools;
-            const school = (Array.isArray(schoolRel) ? schoolRel[0] : schoolRel) as { name?: string; region?: string } | null;
-            const committedSchoolRel = a?.committed_school;
-            const committedSchool = (Array.isArray(committedSchoolRel) ? committedSchoolRel[0] : committedSchoolRel) as { name?: string } | null;
-
-            const movedAt = (p.moved_at as string) || (p.updated_at as string) || null;
-            const daysSinceMove = movedAt ? Math.floor((Date.now() - new Date(movedAt).getTime()) / 86400000) : 0;
-            const stageRaw = ((p.stage as string) || "IDENTIFIE").toLowerCase();
-
-            return {
-              id: a?.id || (p.athlete_id as string),
-              pipeline_id: p.id as string,
-              full_name: a ? `${a.first_name} ${a.last_name}` : "Athlète inconnu",
-              photo_url: a?.photo_url || "",
-              sport: sport?.nom || "",
-              position: pos?.abreviation || "",
-              school: school?.name || "",
-              region: school?.region || "",
-              division: "D1" as const,
-              graduation_year: a?.annee_diplomation || 0,
-              coach_rating: a?.cote_globale_entraineur || 0,
-              profile_completeness: a?.profile_completion || 0,
-              is_verified: a?.verified || false,
-              has_video: !!a?.video_faits_saillants_url,
-              jersey: a?.numero_jersey ? String(a.numero_jersey) : "",
-              recruitment_status: (a?.recruitment_status as string) || "OUVERT",
-              committed_school_name: committedSchool?.name || "",
-              open_to_offers: (a?.open_to_offers as boolean | null) ?? null,
-              status: stageRaw as RecruitmentStatus,
-              days_in_status: daysSinceMove,
-              notes: (p.notes as string) || "",
-              last_activity: movedAt ? `Mis à jour il y a ${daysSinceMove} jours` : "",
-              flagged: !!(p.flagged),
-              next_action_at: (p.next_action_at as string) || null,
-              next_action_note: (p.next_action_note as string) || null,
-              moved_at: movedAt,
-              noTeam: !a?.school_id,
-            };
-          });
-          setCards(mapped);
-
-          // Competitor stages query
-          const athleteIds = mapped.map(c => c.id);
-          if (athleteIds.length > 0) {
-            const { data: competitorData } = await supabase
-              .from("recruiter_pipeline")
-              .select("athlete_id, stage")
-              .in("athlete_id", athleteIds)
-              .neq("recruiter_id", user.id)
-              .neq("stage", "RETIRÉ");
-
-            const cMap: Record<string, number> = {};
-            if (competitorData) {
-              for (const row of competitorData) {
-                const order = STAGE_ORDER[row.stage.toLowerCase()] ?? 0;
-                if (!cMap[row.athlete_id] || order > cMap[row.athlete_id]) {
-                  cMap[row.athlete_id] = order;
-                }
-              }
-            }
-            setCompetitorMap(cMap);
-          }
-    }
-    fetchPipeline();
-  }, []);
+  // Ex-mega useEffect fetchPipeline (200+ lignes) retiré en iter 5.3b — logique dans usePipelineCards.
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -957,6 +817,10 @@ function PipelinePageContent() {
     showToast("Passe à Pro pour sauvegarder ton pipeline");
   }, [showToast]);
 
+  // Iter 6.1b — hook DELETE pour le statut "retire" qui violait
+  // chk_recruiter_pipeline_stage en UPDATE (RETIRE pas dans l'enum DB).
+  const removeFromPipeline = useRemoveFromPipeline();
+
   /* ── Status change handler ─────────────────────────────────── */
   const handleStatusChange = useCallback(async (cardId: string, newStatus: RecruitmentStatus) => {
     if (isFreeDemoMode) {
@@ -964,50 +828,49 @@ function PipelinePageContent() {
       setSelectedCard(null);
       return;
     }
+    // Fix 10 iter 6.1b — "retire" = DELETE row (et non UPDATE stage='RETIRE'
+    // qui échouait silencieusement à cause de chk_recruiter_pipeline_stage).
+    if (newStatus === "retire") {
+      try {
+        await removeFromPipeline.mutateAsync({ cardId });
+        setSelectedCard(null);
+        showToast("Athlète retiré du pipeline");
+      } catch {
+        showToast("Erreur lors du retrait");
+      }
+      return;
+    }
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       const now = new Date().toISOString();
-      const { error } = await supabase
+      await supabase
         .from("recruiter_pipeline")
         .update({ stage: newStatus.toUpperCase(), moved_at: now, updated_at: now })
         .eq("athlete_id", cardId)
         .eq("recruiter_id", user.id);
 
-      // Re-fetch the athlete's global recruitment_status (trigger may have updated it)
-      const { data: updatedAthlete } = await supabase
-        .from("athletes")
-        .select("recruitment_status")
-        .eq("id", cardId)
-        .single();
-      if (updatedAthlete) {
-        setCards((prev) => prev.map((c) => c.id === cardId
-          ? { ...c, status: newStatus, days_in_status: 0, moved_at: new Date().toISOString(), recruitment_status: updatedAthlete.recruitment_status || "OUVERT" }
-          : c
-        ));
-      } else {
-        setCards((prev) => prev.map((c) => c.id === cardId ? { ...c, status: newStatus, days_in_status: 0, moved_at: new Date().toISOString() } : c));
-      }
-    } else {
-      setCards((prev) => prev.map((c) => c.id === cardId ? { ...c, status: newStatus, days_in_status: 0, moved_at: new Date().toISOString() } : c));
+      // Invalidations TanStack (iter 5.3b) — pipeline + dashboard.kpi (pipelineCounts).
+      queryClient.invalidateQueries({ queryKey: ["pipeline"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard", "kpi"] });
     }
     setSelectedCard(null);
     showToast(`Statut changé → ${KANBAN_COLUMNS.find((col) => col.id === newStatus)?.label || newStatus}`);
-  }, [showToast, isFreeDemoMode, teaseUpgrade]);
+  }, [showToast, isFreeDemoMode, teaseUpgrade, queryClient, removeFromPipeline]);
 
   const handleTogglePriority = useCallback(async (cardId: string, value: boolean) => {
     if (isFreeDemoMode) {
       teaseUpgrade();
       return;
     }
-    setCards((prev) => prev.map((c) => c.id === cardId ? { ...c, flagged: value } : c));
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
-      const { error } = await supabase.from("recruiter_pipeline").update({ flagged: value }).eq("athlete_id", cardId).eq("recruiter_id", user.id);
+      await supabase.from("recruiter_pipeline").update({ flagged: value }).eq("athlete_id", cardId).eq("recruiter_id", user.id);
+      queryClient.invalidateQueries({ queryKey: ["pipeline"] });
     }
     showToast(value ? "Marqué prioritaire" : "Priorité retirée");
-  }, [showToast, isFreeDemoMode, teaseUpgrade]);
+  }, [showToast, isFreeDemoMode, teaseUpgrade, queryClient]);
 
   /* ── Save next action ───────────────────────────────────────── */
   const handleSaveAction = useCallback(async (pipelineId: string, fields: { flagged: boolean; next_action_at: string | null; next_action_note: string | null }) => {
@@ -1016,13 +879,12 @@ function PipelinePageContent() {
       setActionPopover(null);
       return;
     }
-    // Optimistic update
-    setCards((prev) => prev.map((c) => c.pipeline_id === pipelineId ? { ...c, ...fields } : c));
     setActionPopover(null);
     const supabase = createClient();
-    const { error } = await supabase.from("recruiter_pipeline").update(fields).eq("id", pipelineId);
+    await supabase.from("recruiter_pipeline").update(fields).eq("id", pipelineId);
+    queryClient.invalidateQueries({ queryKey: ["pipeline"] });
     showToast("Suivi mis à jour");
-  }, [showToast, isFreeDemoMode, teaseUpgrade]);
+  }, [showToast, isFreeDemoMode, teaseUpgrade, queryClient]);
 
   const openSlideOver = useCallback((card: PipelineKanbanCard) => {
     const fresh = cards.find((c) => c.id === card.id) || card;
@@ -1056,14 +918,9 @@ function PipelinePageContent() {
     if (card.status === targetCol) return;
 
     if (isFreeDemoMode) {
-      // Demo mode: visually move the card, then snap back with a
-      // tease toast. No DB write, no confirm modal.
-      const originalStatus = card.status;
-      setCards((prev) => prev.map((c) => c.id === card.id ? { ...c, status: targetCol } : c));
-      setTimeout(() => {
-        setCards((prev) => prev.map((c) => c.id === card.id ? { ...c, status: originalStatus } : c));
-        teaseUpgrade();
-      }, 600);
+      // Demo mode (iter 5.3b) : pas de visual move car cards vient du cache
+      // TanStack (read-only). Juste le tease toast — UX dégradée acceptée.
+      teaseUpgrade();
       return;
     }
 

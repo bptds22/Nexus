@@ -1,8 +1,14 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import SchoolSelect from "@/components/ui/SchoolSelect";
+import { useRecruiterProfile } from "@/lib/queries/recruiter/useRecruiterProfile";
+import { useSchoolsList } from "@/lib/queries/shared/useSchoolsList";
+import { RecruteurProfilMobile } from "@/components/shared/RecruteurProfilMobile";
+
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
 /* ═══════════════════════════════════════════════════════════════
    Recruiter Profile — Form + Live Preview
@@ -42,62 +48,56 @@ interface FormData {
 }
 
 export default function RecruiterProfilPage() {
+  // Iter 7.39 — dispatch IS_CAPACITOR vers la version mobile dédiée (rows iOS,
+  // sheet recherche CÉGEP, MobilePicker pour titres/division/sport).
+  if (IS_CAPACITOR) return <RecruteurProfilMobile />;
+  return <RecruiterProfilDesktop />;
+}
+
+function RecruiterProfilDesktop() {
+  // Migration TanStack (iter 5.3a). Form state RESTE DÉCOUPLÉ des data
+  // récupérées : on init le form une seule fois quand profileData arrive
+  // via useEffect, puis l'utilisateur édite librement le form local.
+  const queryClient = useQueryClient();
+  const { data: profileData, isLoading: loadingProfile } = useRecruiterProfile();
+  const { data: schools = [], isLoading: loadingSchools } = useSchoolsList();
+  const loading = loadingProfile || loadingSchools;
+
   const [form, setForm] = useState<FormData>({
     firstName: "", lastName: "", title: "", schoolId: "", schoolName: "",
     division: "", teamName: "", sport: "", region: "",
   });
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [schools, setSchools] = useState<{ id: string; name: string }[]>([]);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [formInitialized, setFormInitialized] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const update = (key: keyof FormData, val: string) => setForm(prev => ({ ...prev, [key]: val }));
 
-  // Load profile + schools
+  // Init form une seule fois quand profileData + schools arrivent (iter 5.3a).
+  // Découple data récupérée / state du formulaire : l'utilisateur peut éditer
+  // librement sans que les refetch background le ramènent en arrière.
   useEffect(() => {
-    async function load() {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { setLoading(false); return; }
-
-      // Load schools for dropdown
-      const { data: schoolsData } = await supabase.from("schools").select("id, name").order("name");
-      if (schoolsData) setSchools(schoolsData);
-
-      // Load profile
-      const { data: profile, error } = await supabase
-        .from("users")
-        .select("first_name, last_name, role, school_id, photo_url, title, division, team_name, sport, region")
-        .eq("id", user.id)
-        .single();
-
-      if (profile) {
-        // Get school name
-        let schoolName = "";
-        if (profile.school_id && schoolsData) {
-          const found = schoolsData.find((s: { id: string }) => s.id === profile.school_id);
-          schoolName = found?.name || "";
-        }
-
-        setForm({
-          firstName: (profile.first_name as string) || "",
-          lastName: (profile.last_name as string) || "",
-          title: (profile.title as string) || "",
-          schoolId: (profile.school_id as string) || "",
-          schoolName,
-          division: (profile.division as string) || "",
-          teamName: (profile.team_name as string) || "",
-          sport: (profile.sport as string) || "",
-          region: (profile.region as string) || "",
-        });
-        if (profile.photo_url) setAvatarUrl(profile.photo_url as string);
-      }
-      setLoading(false);
+    if (!formInitialized && profileData && schools.length > 0) {
+      const schoolName = profileData.school_id
+        ? (schools.find((s) => s.id === profileData.school_id)?.name || "")
+        : "";
+      setForm({
+        firstName: profileData.first_name || "",
+        lastName: profileData.last_name || "",
+        title: profileData.title || "",
+        schoolId: profileData.school_id || "",
+        schoolName,
+        division: profileData.division || "",
+        teamName: profileData.team_name || "",
+        sport: profileData.sport || "",
+        region: profileData.region || "",
+      });
+      if (profileData.photo_url) setAvatarUrl(profileData.photo_url);
+      setFormInitialized(true);
     }
-    load();
-  }, []);
+  }, [profileData, schools, formInitialized]);
 
   async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -118,6 +118,14 @@ export default function RecruiterProfilPage() {
     const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(filePath);
     await supabase.from("users").update({ photo_url: urlData.publicUrl }).eq("id", user.id);
     setAvatarUrl(urlData.publicUrl);
+    invalidateProfileCaches();
+  }
+
+  // Invalidations centralisées : profil + dashboard header + currentUser
+  function invalidateProfileCaches() {
+    queryClient.invalidateQueries({ queryKey: ["currentUser"] });
+    queryClient.invalidateQueries({ queryKey: ["recruiterProfile"] });
+    queryClient.invalidateQueries({ queryKey: ["dashboard", "header"] });
   }
 
   async function removeAvatar() {
@@ -126,6 +134,7 @@ export default function RecruiterProfilPage() {
     if (user) await supabase.from("users").update({ photo_url: null }).eq("id", user.id);
     setAvatarUrl(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
+    invalidateProfileCaches();
   }
 
   async function handleSave() {
@@ -145,7 +154,7 @@ export default function RecruiterProfilPage() {
       region: form.region || null,
     };
 
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from("users")
       .update(payload)
       .eq("id", user.id)
@@ -156,6 +165,7 @@ export default function RecruiterProfilPage() {
     } else {
       setToast("Profil sauvegardé");
       setTimeout(() => setToast(null), 3000);
+      invalidateProfileCaches();
     }
     setSaving(false);
   }

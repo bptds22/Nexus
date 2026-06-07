@@ -11,8 +11,8 @@
     "mobile:sync": "npm run build:mobile && npx cap sync",
     "mobile:android": "npm run mobile:sync && npx cap open android",
     "mobile:run:android": "npm run mobile:sync && npx cap run android",
-    "mobile:dev:server": "cross-env NEXT_PUBLIC_CAPACITOR_BUILD=true next dev -H 0.0.0.0 -p 3000",
-    "mobile:dev:android": "npx cap run android --live-reload --external --host 10.0.2.2 --port 3000"
+    "dev:mobile": "cross-env NEXT_PUBLIC_CAPACITOR_BUILD=true next dev -H 0.0.0.0 -p 3000",
+    "cap:dev": "npx cap run android --live-reload --host 10.0.2.2 --port 3000"
   },
   "dependencies": {
     "@capacitor/android": "^8.3.4",
@@ -22,11 +22,15 @@
     "@capacitor/haptics": "^8.0.2",
     "@capacitor/preferences": "^8.0.1",
     "@capacitor/push-notifications": "^8.1.1",
+    "@capacitor/share": "^8.0.1",
+    "@capacitor/splash-screen": "^8.0.1",
     "@capacitor/status-bar": "^8.0.2",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@supabase/ssr": "^0.10.0",
     "@supabase/supabase-js": "^2.100.1",
+    "@tanstack/react-query": "^5.100.14",
+    "@tanstack/react-query-devtools": "^5.100.14",
     "framer-motion": "^12.38.0",
     "html-to-image": "^1.11.13",
     "jszip": "^3.10.1",

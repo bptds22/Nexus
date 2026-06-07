@@ -58,6 +58,7 @@ export default function CoachReviewModal({
   const [submitting, setSubmitting] = useState(false);
   const [existingId, setExistingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   // Check for existing review
   useEffect(() => {
@@ -66,12 +67,14 @@ export default function CoachReviewModal({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setLoading(false); return; }
 
+      // Iter 7.8e — modèle A restauré : check existant scopé (recruteur, coach)
+      // uniquement (cohérent avec UNIQUE(recruiter_id, coach_id)). athlete_id
+      // n'entre pas dans le filtre — il reste enregistré comme contexte.
       const { data: existing } = await supabase
         .from("coach_reviews")
         .select("id, qualite_profils, reactivite, honnetete_evaluations, professionnalisme, recommande, commentaire")
         .eq("recruiter_id", user.id)
         .eq("coach_id", coachId)
-        .eq("athlete_id", athleteId)
         .maybeSingle();
 
       if (existing) {
@@ -88,7 +91,7 @@ export default function CoachReviewModal({
       setLoading(false);
     }
     check();
-  }, [coachId, athleteId]);
+  }, [coachId]);
 
   const noteGlobale = useMemo(() => {
     const vals = Object.values(ratings);
@@ -103,6 +106,7 @@ export default function CoachReviewModal({
   async function handleSubmit() {
     if (!canSubmit) return;
     setSubmitting(true);
+    setSubmitError(null);
 
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -132,6 +136,17 @@ export default function CoachReviewModal({
     if (!error) {
       onSubmitted();
       onClose();
+    } else {
+      // Iter 7.8e — modèle A : UNIQUE(recruiter, coach). Le code 23505 ne
+      // peut survenir que si le check existant a manqué une review (race
+      // condition entre 2 onglets, par exemple) — copy ajustée en
+      // conséquence.
+      console.error("[CoachReviewModal] submit error:", error);
+      setSubmitError(
+        error.code === "23505"
+          ? "Tu as déjà une évaluation pour ce coach. Recharge la page."
+          : error.message || "Erreur lors de l'enregistrement de ton avis."
+      );
     }
     setSubmitting(false);
   }
@@ -158,7 +173,7 @@ export default function CoachReviewModal({
           <>
             {existingId && (
               <div className="bg-[#F59E0B]/10 border border-[#F59E0B]/30 rounded-lg px-4 py-2.5 mb-5">
-                <p className="text-[12px] font-bold text-[#F59E0B]">Vous avez déjà évalué ce coach pour cet athlète. Modifiez votre avis ci-dessous.</p>
+                <p className="text-[12px] font-bold text-[#F59E0B]">Vous avez déjà évalué ce coach. Modifiez votre avis ci-dessous.</p>
               </div>
             )}
 
@@ -233,6 +248,13 @@ export default function CoachReviewModal({
                 Votre évaluation est anonyme. Le coach verra uniquement la note et le commentaire, jamais votre identité.
               </p>
             </div>
+
+            {/* Erreur submit (Iter 7.8c — surface l'erreur au lieu de l'avaler) */}
+            {submitError && (
+              <div className="mb-3 px-3 py-2.5 rounded-lg bg-[#EF4444]/10 border border-[#EF4444]/30">
+                <p className="text-[13px] text-[#EF4444] font-medium">{submitError}</p>
+              </div>
+            )}
 
             {/* Actions */}
             <div className="flex items-center justify-end gap-3">

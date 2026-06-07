@@ -7,6 +7,9 @@ import { createClient } from "@/lib/supabase/client";
 import CoachInfoCard from "@/components/recruteur/CoachInfoCard";
 import AthleteInfoCard from "@/components/recruteur/AthleteInfoCard";
 import FeatureGate from "@/components/subscription/FeatureGate";
+import { RecruteurMessagesThreadMobile } from "@/components/shared/RecruteurMessagesThreadMobile";
+
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
 /* ═══════════════════════════════════════════════════════════════
    Thread Detail — Recruiter side
@@ -109,6 +112,14 @@ function DaySeparator({ date }: { date: string }) {
 }
 
 export default function Page() {
+  // Iter 7.8b — mobile early return wrappé dans FeatureGate (ceinture+bretelles).
+  if (IS_CAPACITOR) {
+    return (
+      <FeatureGate feature="messaging" requiredTier="pro">
+        <RecruteurMessagesThreadMobile />
+      </FeatureGate>
+    );
+  }
   return (
     <FeatureGate feature="messaging" requiredTier="pro">
       <RecruiterThreadPage />

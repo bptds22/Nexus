@@ -15,7 +15,12 @@ const config: CapacitorConfig = {
   },
   plugins: {
     SplashScreen: {
-      launchShowDuration: 1500,
+      // Iter 7.47 — launchAutoHide:false → la native splash reste tant
+      // que React ne l'a pas hidée manuellement via SplashScreen.hide().
+      // Permet le handoff invisible vers SplashAnimMobile (X rouge centré
+      // statique → animation React qui prend le relais).
+      launchShowDuration: 3000,
+      launchAutoHide: false,
       backgroundColor: '#111317',
       showSpinner: false,
       androidScaleType: 'CENTER_CROP',

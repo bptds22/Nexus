@@ -9,6 +9,7 @@ import PreMaintenanceBanner from "@/components/auth/PreMaintenanceBanner";
 import PendingAdminClaimBanner from "@/components/auth/PendingAdminClaimBanner";
 import DevTierSwitcher from "@/components/dev/DevTierSwitcher";
 import MobileTabBar from "@/app/_components/mobile/MobileTabBar";
+import { AnimatedRoute } from "./_components/AnimatedRoute";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -76,9 +77,13 @@ function RecruteurLayoutInner({ children }: { children: React.ReactNode }) {
             masqué par la MobileTabBar (~56px + safe-area). */}
         <main
           className="relative z-10 flex-1"
-          style={IS_CAPACITOR ? { paddingBottom: "calc(64px + env(safe-area-inset-bottom))" } : undefined}
+          style={
+            IS_CAPACITOR
+              ? { paddingBottom: "calc(64px + env(safe-area-inset-bottom))", position: "relative", overflowX: "hidden" }
+              : undefined
+          }
         >
-          {children}
+          <AnimatedRoute>{children}</AnimatedRoute>
         </main>
       </div>
       <DevTierSwitcher />

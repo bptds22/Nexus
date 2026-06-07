@@ -49,6 +49,12 @@ export interface TrendingAthlete {
   stars: number;
   viewsThisWeek: number;
   favoritedBy: number;
+  // Iter 6.2-fix — exposés par useTrendingAthletes pour rendering mobile premium
+  // (carrousel Dashboard avec AthletePhotoFill). Optionnels pour ne pas casser
+  // le seed mock qui n'a pas ces champs.
+  photoUrl?: string | null;
+  firstName?: string;
+  lastName?: string;
 }
 
 export const TRENDING_ATHLETES: TrendingAthlete[] = [

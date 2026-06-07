@@ -74,6 +74,12 @@ const DYNAMIC_ROUTES: DynamicRoute[] = [
     paramKey: 'id',
     toPlaceholder: () => '/recruteur/cegep/entraineurs/placeholder/',
   },
+  // recruteur/listes/[id] (iter 7.19 — manquait au Sprint 2, cause du "retour login")
+  {
+    pattern: /^\/recruteur\/listes\/([^/]+)\/?$/,
+    paramKey: 'id',
+    toPlaceholder: () => '/recruteur/listes/placeholder/',
+  },
 ];
 
 export interface MatchedDynamicRoute {

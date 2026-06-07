@@ -85,6 +85,14 @@ export default function Home() {
 
   const { t } = useTranslation();
 
+  // Iter 7.47b BUG 3 — En Capacitor, render NULL. Évite le flash de la
+  // landing marketing visible ~50-200ms avant que le useEffect ne fire
+  // le router.replace("/auth"). La SplashGate au RootLayout couvre
+  // l'écran pendant ce temps (overlay zIndex 9999).
+  // ⚠️ Hooks ci-dessus (useRouter, useState, useEffect, useTranslation)
+  // restent en HAUT, AVANT cette early return → canon 7.8d intact.
+  if (isCapacitor) return null;
+
   // Affichage piloté UNIQUEMENT par le state (pas de lecture de window
   // pendant le render). Au 1er render serveur ET client, mobileRedirecting
   // est false → on rend la homepage. Hydratation cohérente → pas de #418.

@@ -7,6 +7,10 @@ import { useRouter, useSearchParams } from "next/navigation";
 import PlaybookBackground from "@/app/components/PlaybookBackground";
 import ErrorToast, { type ErrorToastData } from "@/components/ui/ErrorToast";
 import { translateAuthError } from "@/lib/utils/translateAuthError";
+import {
+  persistInitialConsents,
+  buildConsentMetadata,
+} from "@/lib/legal/persistInitialConsents";
 
 /* ─────────────────────────────────────────────────────────────────
    Nexus — Pro Signup (Coach / Recruiter / Coordinator)
@@ -110,6 +114,15 @@ function ProSignupContent() {
     const { signUp } = await import('@/lib/supabase/auth.actions');
     const role = ROLE_MAP[selectedRole as ProRole];
 
+    // Iter 7.53 (dette Loi 25) — consents transmis via extraMetadata pour
+    // traçabilité raw_user_meta_data (preuve légale, garantie même si
+    // l'UPDATE app-side ci-dessous échoue). DIAG 7.45 §B.3.
+    const consentMeta = buildConsentMetadata({
+      policy: consentPolicy,
+      data: consentData,
+      marketing: consentMarketing,
+    });
+
     // selectedRole carries the scolaire/collegial/ligue_civile
     // discriminator that the wizard reads via users.context to
     // branch the coach onboarding flow into the civil-league variant
@@ -117,19 +130,36 @@ function ProSignupContent() {
     // wizard now switches on context directly). Without this
     // pass-through, the "Ligue ou club sportif" choice silently
     // collapses to école and the league branch is unreachable.
-    const { error } = await signUp(
+    const { data, error } = await signUp(
       email,
       password,
       role,
       firstName,
       lastName,
-      invitationToken ? { invitation_token: invitationToken } : undefined,
+      {
+        ...(invitationToken ? { invitation_token: invitationToken } : {}),
+        ...consentMeta,
+      },
       selectedRole as ProRole,
     );
 
     if (error) {
       setErrorToast({ message: translateAuthError(error.message), showUpgrade: false });
       return;
+    }
+
+    // Iter 7.53 — UPDATE app-side best-effort de users.privacy_preferences.
+    // COALESCE anti-écrasement (helper). Non-bloquant : trace garantie
+    // dans raw_user_meta_data via extraMetadata même si l'UPDATE rate.
+    if (data?.user?.id) {
+      const persistResult = await persistInitialConsents(data.user.id, {
+        policy: consentPolicy,
+        data: consentData,
+        marketing: consentMarketing,
+      });
+      if (!persistResult.ok) {
+        console.warn("[signup consents pro] persist failed:", persistResult.error);
+      }
     }
 
     router.push('/onboarding');

@@ -11,6 +11,13 @@ import Footer from "@/components/marketing/Footer";
 import ErrorToast, { type ErrorToastData } from "@/components/ui/ErrorToast";
 import { translateAuthError } from "@/lib/utils/translateAuthError";
 import { useTranslation } from "@/lib/i18n/useTranslation";
+import { AuthMobileDispatcher } from "@/components/mobile/auth/AuthMobileDispatcher";
+import {
+  persistInitialConsents,
+  buildConsentMetadata,
+} from "@/lib/legal/persistInitialConsents";
+
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
 /* ─────────────────────────────────────────────────────────────────
    Nexus — Auth Page (Login / Sign Up)
@@ -38,9 +45,17 @@ function Toast({ message, onClose }: { message: string; onClose: () => void }) {
 export default function AuthPage() {
   return (
     <Suspense>
-      <AuthContent />
+      <AuthRouter />
     </Suspense>
   );
+}
+
+/* Iter 7.46 — dispatcher Capacitor (Welcome / Login mobile / session
+   passthrough). Desktop reste rigoureusement inchangé via le fallback
+   <AuthContent />. */
+function AuthRouter() {
+  if (!IS_CAPACITOR) return <AuthContent />;
+  return <AuthMobileDispatcher desktopFallback={<AuthContent />} />;
 }
 
 function AuthContent() {
@@ -140,6 +155,15 @@ function AuthContent() {
 
     const { signUp } = await import("@/lib/supabase/auth.actions");
 
+    // Iter 7.53 (dette Loi 25) — consents transmis via extraMetadata pour
+    // traçabilité auth.users.raw_user_meta_data (preuve légale, garantie
+    // même si l'UPDATE app-side ci-dessous échoue). DIAG 7.45 §B.3.
+    const consentMeta = buildConsentMetadata({
+      policy: consentPolicy,
+      data: consentData,
+      marketing: consentMarketing,
+    });
+
     // selectedContext is guaranteed non-empty here because
     // signupValid (checked above) requires it. The cast narrows
     // the union from "" | "scolaire" | "ligue_civile" → the two
@@ -150,7 +174,11 @@ function AuthContent() {
       "ATHLETE",
       firstName,
       lastName,
-      { sport: selectedSport, ...(invitationToken ? { invitation_token: invitationToken } : {}) },
+      {
+        sport: selectedSport,
+        ...(invitationToken ? { invitation_token: invitationToken } : {}),
+        ...consentMeta,
+      },
       selectedContext as "scolaire" | "ligue_civile",
     );
 
@@ -158,6 +186,21 @@ function AuthContent() {
       setErrorToast({ message: translateAuthError(error.message), showUpgrade: false });
       setLoading(false);
       return;
+    }
+
+    // Iter 7.53 — UPDATE app-side best-effort de users.privacy_preferences.
+    // COALESCE anti-écrasement intégré (helper). Si l'UPDATE rate (RLS
+    // session-less edge case), la trace reste dans raw_user_meta_data.
+    if (data?.user?.id) {
+      const persistResult = await persistInitialConsents(data.user.id, {
+        policy: consentPolicy,
+        data: consentData,
+        marketing: consentMarketing,
+      });
+      if (!persistResult.ok) {
+        // Non-bloquant : log uniquement, l'utilisateur poursuit.
+        console.warn("[signup consents] persist failed:", persistResult.error);
+      }
     }
 
     setLoading(false);

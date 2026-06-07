@@ -177,6 +177,13 @@ export default function MobileTabBar({ role }: MobileTabBarProps) {
   const [moreOpen, setMoreOpen] = useState(false);
   const [upgradeModal, setUpgradeModal] = useState<{ tierId: string; lockedFeatureTitle: string } | null>(null);
 
+  // Iter 7.42 — Signal global "nx-more-panel" écouté par SaveBarPortal et tout
+  // composant body-level qui doit céder la place au panel Plus (sans Context).
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.dispatchEvent(new CustomEvent("nx-more-panel", { detail: { open: moreOpen } }));
+  }, [moreOpen]);
+
   /* ── Badges per rôle ──
      - msgBadge : compteur sur le tab Messages (recruteur uniquement)
      - actBadge : compteur affiché à côté de l'item correspondant dans le panel Plus

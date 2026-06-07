@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import type { RecruiterSettings } from "@/lib/types/models";
 import { createClient } from "@/lib/supabase/client";
 import { useSubscription } from "@/lib/hooks/useSubscription";
+import { RecruteurParametresMobile } from "@/components/shared/RecruteurParametresMobile";
 import RecruiterSettingsNav, { type SectionKey } from "./_components/RecruiterSettingsNav";
 import CompteSection from "./_components/CompteSection";
 import EtablissementSection from "./_components/EtablissementSection";
@@ -15,6 +16,8 @@ import DangerSection from "./_components/DangerSection";
 import ConfirmModal from "./_components/ConfirmModal";
 import SaveToast from "./_components/SaveToast";
 import InvitationLinkModal from "@/components/ui/InvitationLinkModal";
+
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
 /* ═══════════════════════════════════════════════════════════════
    Recruiter Settings — /recruteur/parametres
@@ -638,6 +641,12 @@ function DemoRecruiterAccessToggle() {
 }
 
 export default function RecruiterSettingsPage() {
+  // Iter 7.39 — dispatch IS_CAPACITOR vers la version mobile.
+  if (IS_CAPACITOR) return <RecruteurParametresMobile />;
+  return <RecruiterSettingsDesktop />;
+}
+
+function RecruiterSettingsDesktop() {
   /* ── Form state ─────────────────────────────────────────────── */
   const emptySettings: RecruiterSettings = {
     accountId: "", firstName: "", lastName: "", email: "", phone: "", avatarUrl: "",

@@ -1,12 +1,15 @@
 "use client";
 
 import FeatureGate from "@/components/subscription/FeatureGate";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
 import StarRating from "@/components/ui/StarRating";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
 import type { GlobalRecruitmentStatus } from "@/lib/types/models";
+import { useConversations } from "@/lib/queries/recruiter/useConversations";
+import { RecruteurMessagesMobile } from "@/components/shared/RecruteurMessagesMobile";
+
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
 /* ═══════════════════════════════════════════════════════════════
    Messages — Thread List (Recruiter perspective)
@@ -130,6 +133,9 @@ function ThreadCard({ thread: t }: { thread: ThreadData }) {
 }
 
 export default function Page() {
+  // Iter 7.8a — mobile early return AVANT le FeatureGate desktop : la mobile
+  // gère son propre gating Free (blur + tease) en interne.
+  if (IS_CAPACITOR) return <RecruteurMessagesMobile />;
   return (
     <FeatureGate feature="messaging" requiredTier="pro">
       <MessagesPageContent />
@@ -140,87 +146,8 @@ export default function Page() {
 function MessagesPageContent() {
   const [search, setSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState<FilterPreset>("tous");
-  const [threads, setThreads] = useState<ThreadData[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    async function load() {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { setLoading(false); return; }
-
-      const { data, error } = await supabase
-        .from("conversations")
-        .select(`
-          id, status, last_message_at, unread_count, created_at,
-          coach:users!coach_id(id, first_name, last_name, school_id, schools!school_id(name)),
-          athlete:athletes!athlete_id(
-            id, first_name, last_name, verified, cote_globale_entraineur,
-            numero_jersey, annee_diplomation, recruitment_status,
-            sports!sport_id(nom),
-            positions!position_id(nom, abreviation),
-            schools!school_id(name, region)
-          )
-        `)
-        .eq("recruiter_id", user.id)
-        .order("last_message_at", { ascending: false });
-
-      if (data) {
-        // Get last message for each conversation
-        const convIds = data.map((c: Record<string, unknown>) => c.id as string);
-        const { data: msgData } = await supabase
-          .from("messages")
-          .select("conversation_id, content")
-          .in("conversation_id", convIds)
-          .order("created_at", { ascending: false });
-
-        const lastMsgMap = new Map<string, string>();
-        if (msgData) {
-          for (const m of msgData) {
-            if (!lastMsgMap.has(m.conversation_id)) lastMsgMap.set(m.conversation_id, m.content);
-          }
-        }
-
-        const mapped: ThreadData[] = data.map((c: Record<string, unknown>) => {
-          const coachRaw = c.coach;
-          const coach = (Array.isArray(coachRaw) ? coachRaw[0] : coachRaw) as Record<string, unknown> | null;
-          const coachSchoolRaw = coach?.schools;
-          const coachSchool = (Array.isArray(coachSchoolRaw) ? coachSchoolRaw[0] : coachSchoolRaw) as { name?: string } | null;
-          const athleteRaw = c.athlete;
-          const athlete = (Array.isArray(athleteRaw) ? athleteRaw[0] : athleteRaw) as Record<string, unknown> | null;
-          const posRaw = athlete?.positions;
-          const pos = (Array.isArray(posRaw) ? posRaw[0] : posRaw) as { abreviation?: string } | null;
-
-          const coachFirst = (coach?.first_name as string) || "";
-          const coachLast = (coach?.last_name as string) || "";
-          const athFirst = (athlete?.first_name as string) || "";
-          const athLast = (athlete?.last_name as string) || "";
-
-          return {
-            id: c.id as string,
-            coachName: `${coachFirst} ${coachLast}`.trim() || "Coach",
-            coachInitials: `${coachFirst[0] || ""}${coachLast[0] || ""}`.toUpperCase(),
-            coachSchool: coachSchool?.name || "",
-            coachId: (coach?.id as string) || "",
-            athleteName: `${athFirst} ${athLast}`.trim() || "Athlète",
-            athleteInitials: `${athFirst[0] || ""}${athLast[0] || ""}`.toUpperCase(),
-            athleteId: (athlete?.id as string) || "",
-            athletePosition: pos?.abreviation || "",
-            athleteVerified: !!(athlete?.verified),
-            athleteStars: (athlete?.cote_globale_entraineur as number) || 0,
-            athleteRecruitmentStatus: (athlete?.recruitment_status as string) || "OUVERT",
-            lastMessage: lastMsgMap.get(c.id as string) || "",
-            lastMessageAt: (c.last_message_at as string) || (c.created_at as string) || "",
-            unreadCount: (c.unread_count as number) || 0,
-            status: (c.status as string) || "ACTIVE",
-          };
-        });
-        setThreads(mapped);
-      }
-      setLoading(false);
-    }
-    load();
-  }, []);
+  // Migration TanStack (iter 5.2) — fetch + transformation déléguées au hook
+  const { data: threads = [], isLoading: loading } = useConversations();
 
   const unreadCount = threads.filter(t => t.unreadCount > 0).length;
 
