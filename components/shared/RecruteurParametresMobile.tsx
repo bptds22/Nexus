@@ -273,14 +273,14 @@ export function RecruteurParametresMobile() {
 
   if (loading) {
     return (
-      <div className="min-h-screen w-full overflow-x-hidden bg-[#111317] text-white pb-[calc(64px+env(safe-area-inset-bottom))]">
+      <div className="min-h-screen w-full overflow-x-hidden bg-[#111317] text-white nx-mobile-pb-tabbar">
         <div className="px-4 pt-10 pb-3 text-[#6b7280] text-[14px]">Chargement…</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen w-full overflow-x-hidden bg-[#111317] text-white pb-[calc(64px+env(safe-area-inset-bottom))]">
+    <div className="min-h-screen w-full overflow-x-hidden bg-[#111317] text-white nx-mobile-pb-tabbar">
       {/* Header */}
       <div className="sticky top-0 z-30 bg-[#111317]" style={{ paddingTop: "env(safe-area-inset-top)" }}>
         <div className="h-11 flex items-center px-4">
@@ -602,7 +602,7 @@ function ToggleRow({
       style={{ minHeight: 52, borderTop: isFirst ? undefined : "0.5px solid rgba(255,255,255,0.06)" }}
     >
       <div className="flex-1 min-w-0 pr-3">
-        <p className="text-[14px] text-white">{label}</p>
+        <p className="text-[15px] text-white">{label}</p>
         {sublabel && <p className="text-[11px] text-[#6b7280] mt-0.5">{sublabel}</p>}
       </div>
       <Toggle checked={checked} onChange={onChange} />
@@ -624,7 +624,7 @@ function NavRow({
       style={{ minHeight: 52, borderTop: isFirst ? undefined : "0.5px solid rgba(255,255,255,0.06)" }}
     >
       <div className="flex-1 min-w-0 py-3">
-        <p className="text-[14px] text-white">{label}</p>
+        <p className="text-[15px] text-white">{label}</p>
         {sublabel && <p className="text-[11px] text-[#6b7280] mt-0.5">{sublabel}</p>}
       </div>
       {rightChevron === "external" ? (
@@ -797,7 +797,7 @@ function PasswordChangeSheet({ open, onClose }: { open: boolean; onClose: () => 
             value={newPw}
             onChange={(e) => setNewPw(e.target.value)}
             placeholder="Nouveau mot de passe"
-            className="w-full bg-[#13151a] border border-[#2a2d36] rounded-xl px-4 py-3 text-[15px] text-white placeholder:text-[#4a4d56] focus:outline-none focus:border-[#E63946]/50"
+            className="w-full bg-[#13151a] border border-[#2a2d36] rounded-xl px-4 py-3 text-[16px] text-white placeholder:text-[#4a4d56] focus:outline-none focus:border-[#E63946]/50"
           />
           {newPw.length > 0 && (
             <div className="grid grid-cols-2 gap-1.5 mt-3">
@@ -814,7 +814,7 @@ function PasswordChangeSheet({ open, onClose }: { open: boolean; onClose: () => 
             value={confirmPw}
             onChange={(e) => setConfirmPw(e.target.value)}
             placeholder="Confirmer le mot de passe"
-            className="w-full mt-4 bg-[#13151a] border border-[#2a2d36] rounded-xl px-4 py-3 text-[15px] text-white placeholder:text-[#4a4d56] focus:outline-none focus:border-[#E63946]/50"
+            className="w-full mt-4 bg-[#13151a] border border-[#2a2d36] rounded-xl px-4 py-3 text-[16px] text-white placeholder:text-[#4a4d56] focus:outline-none focus:border-[#E63946]/50"
           />
           {confirmPw.length > 0 && !match && (
             <p className="text-[12px] text-[#E63946] mt-2">Les mots de passe ne correspondent pas.</p>

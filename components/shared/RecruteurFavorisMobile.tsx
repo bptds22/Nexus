@@ -123,7 +123,7 @@ export function RecruteurFavorisMobile() {
   }, [queryClient, favoritesKey, userId, toast, reinsertFavorite]);
 
   return (
-    <div className="min-h-screen bg-[#111317] text-white pb-[calc(64px+env(safe-area-inset-bottom))]">
+    <div className="min-h-screen bg-[#111317] text-white nx-mobile-pb-tabbar">
       {/* Header sticky : titre + count */}
       <div
         className="sticky top-0 z-30 bg-[#111317]"
@@ -152,7 +152,7 @@ export function RecruteurFavorisMobile() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Filtrer par nom"
-                className="w-full bg-white/[0.06] rounded-xl pl-9 pr-9 py-2.5 text-[14px] text-white placeholder:text-white/40 outline-none"
+                className="w-full bg-white/[0.06] rounded-xl pl-9 pr-9 py-2.5 text-[16px] text-white placeholder:text-white/40 outline-none"
               />
               {search && (
                 <button
@@ -172,7 +172,12 @@ export function RecruteurFavorisMobile() {
       </div>
 
       <div className="px-4 pt-3">
-        {isLoading ? (
+        {/* Iter 7.54 — skeleton AFFICHÉ UNIQUEMENT au cold load (aucune
+            donnée encore). Pendant un refetch déclenché par retrait
+            optimistic, athletes.length > 0 (grâce au placeholderData
+            de useAthletesByIds) → on saute le skeleton → l'AnimatePresence
+            reste montée → exit anim des cartes peut jouer. */}
+        {isLoading && athletes.length === 0 ? (
           <div className="grid grid-cols-2 gap-3">
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="aspect-[4/5] rounded-2xl bg-[#1A1D24] animate-pulse" />
@@ -245,7 +250,7 @@ function EmptyState() {
         </svg>
       </div>
       <p className="text-[16px] font-bold text-white">Aucun favori pour le moment</p>
-      <p className="text-[13px] text-white/55 mt-2 max-w-xs leading-relaxed">
+      <p className="text-[15px] text-white/55 mt-2 max-w-xs leading-relaxed">
         Tap le cœur sur une carte de Recherche pour ajouter un athlète à tes favoris. Tu pourras les retrouver ici à tout moment.
       </p>
     </div>

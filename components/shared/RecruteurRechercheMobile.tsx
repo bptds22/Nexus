@@ -170,7 +170,7 @@ function MobileSearchBar({
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2" strokeLinecap="round">
             <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
           </svg>
-          <span className={`text-[14px] truncate text-left flex-1 ${search ? "text-white" : "text-[#6B7280]"}`}>
+          <span className={`text-[16px] truncate text-left flex-1 ${search ? "text-white" : "text-[#6B7280]"}`}>
             {search || placeholder}
           </span>
         </button>
@@ -235,8 +235,8 @@ function SuggestionItem({ id, firstName, lastName, photoUrl, subtitle, query, on
         <AthletePhoto photoUrl={photoUrl ?? ""} firstName={firstName} lastName={lastName} size={44} />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-white font-semibold text-[14px] truncate">{renderName()}</p>
-        <p className="text-[11px] text-[#9CA3AF] truncate">{subtitle}</p>
+        <p className="text-white font-semibold text-[15px] truncate">{renderName()}</p>
+        <p className="text-[13px] text-[#9CA3AF] truncate">{subtitle}</p>
       </div>
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4a4d56" strokeWidth="2.5" strokeLinecap="round">
         <polyline points="9 18 15 12 9 6" />
@@ -396,7 +396,7 @@ function ExpandedSearchOverlay({
               value={search}
               onChange={(e) => onSearchChange(e.target.value)}
               disabled={isFreeRecruiter}
-              className="flex-1 bg-transparent text-[14px] text-white placeholder:text-[#6B7280] outline-none"
+              className="flex-1 bg-transparent text-[16px] text-white placeholder:text-[#6B7280] outline-none"
             />
             {search.length > 0 && (
               <button type="button" onClick={() => onSearchChange("")} className="text-[#6B7280] active:text-white" aria-label="Effacer">
@@ -568,7 +568,7 @@ export function AthleteCardMobile({ a, isFree, favDisabled, onToggleFav, lastTab
           {/* Iter 7.5 Section E — position + verified check inline (déplacé
               depuis le top-left). Pattern Twitter : badge collé à l'identité. */}
           <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
-            <p className="text-[13px] text-[#9CA3AF] truncate">
+            <p className="text-[15px] text-[#9CA3AF] truncate">
               {a.position || a.sportName || "—"}
             </p>
             {verifiedActive && (
@@ -1137,7 +1137,7 @@ export function RecruteurRechercheMobile() {
   }, [loading, filtered.length]);
 
   return (
-    <div className="min-h-screen bg-[#111317] text-white">
+    <div className="min-h-screen bg-[#111317] text-white nx-mobile-pb-tabbar">
       {/* Pull-to-refresh indicator */}
       {(isPulling || isRefreshing) && (
         <div

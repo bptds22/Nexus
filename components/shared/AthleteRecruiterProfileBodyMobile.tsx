@@ -427,11 +427,11 @@ function FlatRow({ label, value, icon }: { label: string; value?: string | numbe
   if (value === undefined || value === null || value === "") return null;
   return (
     <div className={mobileRow}>
-      <span className="text-[13px] text-[#9CA3AF] flex items-center gap-2">
+      <span className="text-[15px] text-[#9CA3AF] flex items-center gap-2">
         {icon && <NxIcon name={icon} size={14} className="text-[#6B7280]" />}
         {label}
       </span>
-      <span className="text-[14px] font-bold text-white text-right">{value}</span>
+      <span className="text-[16px] font-bold text-white text-right">{value}</span>
     </div>
   );
 }
@@ -2347,7 +2347,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
                 value={flagDetails}
                 onChange={(e) => setFlagDetails(e.target.value)}
                 rows={3}
-                className="w-full rounded-xl px-4 py-3 text-[14px] text-white resize-none focus:outline-none"
+                className="w-full rounded-xl px-4 py-3 text-[16px] text-white resize-none focus:outline-none"
                 style={{ background: "#0C0E12" }}
                 placeholder="Précise si besoin..."
               />

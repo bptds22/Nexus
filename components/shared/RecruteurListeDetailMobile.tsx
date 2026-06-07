@@ -312,7 +312,7 @@ function AthleteNotesSheet({
                   onChange={(e) => setContent(e.target.value.slice(0, 500))}
                   placeholder="Ajouter une note…"
                   rows={2}
-                  className="flex-1 bg-white/[0.06] rounded-2xl px-3 py-2.5 text-[14px] text-white placeholder:text-white/40 outline-none resize-none"
+                  className="flex-1 bg-white/[0.06] rounded-2xl px-3 py-2.5 text-[16px] text-white placeholder:text-white/40 outline-none resize-none"
                 />
                 <button
                   type="button"
@@ -410,7 +410,7 @@ function ListNotesPanel({ listId }: { listId: string }) {
             onChange={(e) => setContent(e.target.value.slice(0, 500))}
             placeholder="Note datée pour cette liste…"
             rows={2}
-            className="flex-1 bg-white/[0.06] rounded-2xl px-3 py-2.5 text-[14px] text-white placeholder:text-white/40 outline-none resize-none"
+            className="flex-1 bg-white/[0.06] rounded-2xl px-3 py-2.5 text-[16px] text-white placeholder:text-white/40 outline-none resize-none"
           />
           <button
             type="button"

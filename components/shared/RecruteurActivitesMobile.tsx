@@ -282,7 +282,7 @@ function ActivitesInner() {
        w-max remontaient via la chaîne flex (right-column flex-1 + main flex-1
        sans min-w-0 par défaut), l'overflow-x: hidden de main était contourné.
        Ceinture : overflow-x-hidden ici clippe au niveau page. */
-    <div className="min-h-screen w-full overflow-x-hidden bg-[#111317] text-white pb-[calc(64px+env(safe-area-inset-bottom))]">
+    <div className="min-h-screen w-full overflow-x-hidden bg-[#111317] text-white nx-mobile-pb-tabbar">
       {/* Header sticky opaque (canon 14.11) */}
       <div className="sticky top-0 z-30 bg-[#111317]" style={{ paddingTop: "env(safe-area-inset-top)" }}>
         <div className="px-4 pt-3 pb-3">

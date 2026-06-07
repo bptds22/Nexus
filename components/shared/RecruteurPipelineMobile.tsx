@@ -261,7 +261,7 @@ function PipelineCardMobile({ card, onTap }: { card: PipelineKanbanCard; onTap: 
         </div>
 
         {/* Ligne 2 : position · numéro UNIQUEMENT (Fix 3 — école + promo retirées) */}
-        <p className="text-[13px] text-[#9CA3AF] mt-1 truncate">
+        <p className="text-[15px] text-[#9CA3AF] mt-1 truncate">
           {[card.position || card.sport, card.jersey ? `#${card.jersey}` : null]
             .filter(Boolean).join(" · ") || "—"}
         </p>
@@ -1040,7 +1040,7 @@ function PipelineDetailSheet({
                     onChange={(e) => setNoteText(e.target.value)}
                     placeholder="Ajouter une note…"
                     disabled={isFreeDemoMode}
-                    className="flex-1 px-3 py-2.5 bg-[#0C0E12] rounded-lg text-[13px] text-white placeholder:text-[#4a4d56] border border-white/[0.06] outline-none focus:border-[#E63946]/40 disabled:opacity-50"
+                    className="flex-1 px-3 py-2.5 bg-[#0C0E12] rounded-lg text-[16px] text-white placeholder:text-[#4a4d56] border border-white/[0.06] outline-none focus:border-[#E63946]/40 disabled:opacity-50"
                     onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleAddNote(); } }}
                   />
                   <button
@@ -1405,7 +1405,7 @@ export function RecruteurPipelineMobile() {
   const isEmpty = !loading && cards.length === 0;
 
   return (
-    <div className="min-h-screen bg-[#111317] text-white">
+    <div className="min-h-screen bg-[#111317] text-white nx-mobile-pb-tabbar">
       {/* Pull-to-refresh indicator */}
       {(isPulling || isRefreshing) && (
         <div

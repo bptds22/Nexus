@@ -26,13 +26,12 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { translateAuthError } from "@/lib/utils/translateAuthError";
 import { postLoginDispatch } from "@/lib/auth/postLoginDispatch";
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import { NexusLogoSvg } from "./NexusLogoSvg";
-import { useSplashLogoLayoutId } from "./SplashGate";
+import { SocialButtonsMobile } from "./SocialButtonsMobile";
 
 async function triggerHaptic(intensity: "Light" | "Medium" = "Light") {
   try {
@@ -56,7 +55,6 @@ export function LoginMobile({ onShowWelcome }: LoginMobileProps) {
   // Hooks AVANT toute condition (canon 7.8d).
   const router = useRouter();
   const toast = useMobileToast();
-  const logoLayoutId = useSplashLogoLayoutId();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -145,16 +143,9 @@ export function LoginMobile({ onShowWelcome }: LoginMobileProps) {
       {/* HEADER — logo centré + headline + subtitle */}
       <div className="relative z-10 px-6 shrink-0" style={{ paddingTop: 24 }}>
         <div className="flex justify-center">
-          {/* Iter 7.47d : NexusLogoSvg wrappé en motion.div layoutId
-              pour le glide morph depuis la splash. logoLayoutId vient
-              du context — défini pendant la fenêtre splash + morph,
-              undefined ensuite. */}
-          <motion.div
-            layoutId={logoLayoutId}
-            transition={{ layout: { duration: 0.45, ease: [0.4, 0, 0.2, 1] } }}
-          >
-            <NexusLogoSvg width={91} />
-          </motion.div>
+          {/* Iter 7.47g : logo STATIQUE, plus de motion.div layoutId
+              (le splash sort par fade simple, rien ne "voyage"). */}
+          <NexusLogoSvg width={91} />
         </div>
         <div className="mt-8">
           <h1
@@ -293,6 +284,10 @@ export function LoginMobile({ onShowWelcome }: LoginMobileProps) {
               "Se connecter"
             )}
           </button>
+
+          {/* Boutons social (iter 7.60) — UI seulement, toast "Bientôt" au tap.
+              Câblage OAuth réel = session infra dédiée. */}
+          <SocialButtonsMobile topMargin={20} />
         </form>
       </div>
 
@@ -313,7 +308,7 @@ export function LoginMobile({ onShowWelcome }: LoginMobileProps) {
         <button
           type="button"
           onClick={handleBackToWelcome}
-          className="w-full text-center text-[13px] text-[#9CA3AF] active:text-white py-2"
+          className="w-full text-center text-[14px] text-[#9CA3AF] active:text-white py-2"
         >
           Pas de compte ?{" "}
           <span className="text-white font-bold underline underline-offset-4 decoration-1">

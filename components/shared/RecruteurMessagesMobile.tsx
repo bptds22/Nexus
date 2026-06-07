@@ -279,10 +279,10 @@ function ThreadItem({
                 {relativeTime(thread.lastMessageAt)}
               </span>
             </div>
-            <p className="text-[13px] text-white/55 mt-0.5 truncate">
+            <p className="text-[15px] text-white/55 mt-0.5 truncate">
               Coach {thread.coachName}
             </p>
-            <p className="text-[13px] text-white/40 mt-0.5 truncate">
+            <p className="text-[15px] text-white/40 mt-0.5 truncate">
               {thread.lastMessage || "Aucun message"}
             </p>
           </div>
@@ -478,7 +478,10 @@ export function RecruteurMessagesMobile() {
     filter === "archive" ? "archive" : "all";
 
   return (
-    <div className="min-h-screen bg-[#111317] text-white" style={{ paddingBottom: editMode ? 80 : 0 }}>
+    <div
+      className={`min-h-screen bg-[#111317] text-white${editMode ? "" : " nx-mobile-pb-tabbar"}`}
+      style={editMode ? { paddingBottom: 80 } : undefined}
+    >
       {/* Header sticky */}
       <div
         className="sticky top-0 z-30"
@@ -548,7 +551,7 @@ export function RecruteurMessagesMobile() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               disabled={isFree}
-              className="flex-1 bg-transparent text-[15px] text-white placeholder:text-white/40 outline-none"
+              className="flex-1 bg-transparent text-[16px] text-white placeholder:text-white/40 outline-none"
             />
             {search && (
               <button type="button" onClick={() => setSearch("")} className="text-white/60 active:text-white" aria-label="Effacer">

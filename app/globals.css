@@ -1074,3 +1074,14 @@ body.light-mode .nx-partner-slot:hover {
 body.light-mode .nx-partner-slot span {
   color: rgba(13, 17, 23, 0.4) !important;
 }
+
+/* ── Mobile design tokens (iter 7.60) ────────────────────────────
+   Source CSS pour les valeurs partagées coach/recruteur/athlete en
+   mode mobile. Miroir du module JS `lib/config/mobileTokens.ts` ;
+   garder les valeurs synchronisées. Importé par toutes les routes
+   via `app/globals.css` (root). */
+.nx-mobile-pb-tabbar    { padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
+.nx-mobile-edge-x       { padding-left: 16px; padding-right: 16px; }
+.nx-mobile-radius-card  { border-radius: 16px; }
+.nx-mobile-radius-sheet { border-top-left-radius: 16px; border-top-right-radius: 16px; }
+.nx-mobile-touch-min    { min-height: 44px; min-width: 44px; }

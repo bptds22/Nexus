@@ -342,7 +342,7 @@ function TrendingAthleteCard({ athlete, isFavorited, onTap }: {
         <p className="text-white font-bold text-base truncate leading-tight">
           {athlete.name || "—"}
         </p>
-        <p className="text-[13px] text-[#9CA3AF] mt-0.5 truncate">
+        <p className="text-[15px] text-[#9CA3AF] mt-0.5 truncate">
           {athlete.position || "—"}
         </p>
       </div>

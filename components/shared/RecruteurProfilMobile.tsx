@@ -161,7 +161,7 @@ function CegepSearchSheet({ open, onClose, currentId, onPick }: CegepSearchSheet
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Rechercher un CÉGEP…"
             autoFocus
-            className="w-full bg-[#13151a] border border-[#2a2d36] rounded-xl px-4 py-2.5 text-[14px] text-white placeholder:text-[#6b7280] focus:outline-none focus:border-[#E63946]/50"
+            className="w-full bg-[#13151a] border border-[#2a2d36] rounded-xl px-4 py-2.5 text-[16px] text-white placeholder:text-[#6b7280] focus:outline-none focus:border-[#E63946]/50"
           />
         </div>
         <div className="overflow-y-auto flex-1">
@@ -730,7 +730,7 @@ function TextRow({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="flex-1 bg-transparent text-[15px] text-white placeholder:text-[#4a4d56] focus:outline-none py-3 text-right"
+        className="flex-1 bg-transparent text-[16px] text-white placeholder:text-[#4a4d56] focus:outline-none py-3 text-right"
       />
     </div>
   );
@@ -740,8 +740,8 @@ function ReadonlyRow({ label, value, hint }: { label: string; value: string; hin
   return (
     <div className="px-4 py-3" style={{ borderTop: "0.5px solid rgba(255,255,255,0.06)" }}>
       <div className="flex items-center">
-        <span className="text-[14px] text-[#9CA3AF] w-[110px] shrink-0">{label}</span>
-        <span className="flex-1 text-[15px] text-[#6b7280] text-right truncate">{value || "—"}</span>
+        <span className="text-[15px] text-[#9CA3AF] w-[110px] shrink-0">{label}</span>
+        <span className="flex-1 text-[16px] text-[#6b7280] text-right truncate">{value || "—"}</span>
       </div>
       {hint && <p className="text-[11px] text-[#4a4d56] mt-1 text-right">{hint}</p>}
     </div>
@@ -764,10 +764,10 @@ function PickerRow({
       className="w-full flex items-center px-4 text-left active:bg-white/[0.04]"
       style={{ minHeight: 52, borderTop: "0.5px solid rgba(255,255,255,0.06)" }}
     >
-      <span className="text-[14px] text-[#9CA3AF] w-[110px] shrink-0">
+      <span className="text-[15px] text-[#9CA3AF] w-[110px] shrink-0">
         {label}{required && <span className="text-[#E63946] ml-0.5">*</span>}
       </span>
-      <span className={`flex-1 text-[15px] truncate text-right ${value ? "text-white" : "text-[#4a4d56]"}`}>
+      <span className={`flex-1 text-[16px] truncate text-right ${value ? "text-white" : "text-[#4a4d56]"}`}>
         {value || placeholder}
       </span>
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-2 shrink-0">

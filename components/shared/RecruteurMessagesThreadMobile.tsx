@@ -86,7 +86,7 @@ function MessageBubble({ msg, isMe }: { msg: MessageRow; isMe: boolean }) {
             : "bg-[#262628] rounded-bl-md"
         }`}
       >
-        <p className="text-[14px] text-white leading-relaxed whitespace-pre-wrap break-words">
+        <p className="text-[16px] text-white leading-relaxed whitespace-pre-wrap break-words">
           {msg.content}
         </p>
       </div>
@@ -488,7 +488,7 @@ function CoachDetailsSheet({
                           onChange={(e) => setEditCommentaire(e.target.value)}
                           placeholder="Détaille ton expérience…"
                           rows={3}
-                          className="w-full bg-white/[0.06] rounded-xl px-3 py-2.5 text-[14px] text-white placeholder:text-white/40 outline-none resize-none"
+                          className="w-full bg-white/[0.06] rounded-xl px-3 py-2.5 text-[16px] text-white placeholder:text-white/40 outline-none resize-none"
                         />
                       </div>
 
@@ -982,7 +982,7 @@ export function RecruteurMessagesThreadMobile() {
               onChange={(e) => setReply(e.target.value)}
               placeholder="Message…"
               rows={1}
-              className="flex-1 bg-transparent text-[15px] text-white placeholder:text-white/40 outline-none resize-none max-h-[120px]"
+              className="flex-1 bg-transparent text-[16px] text-white placeholder:text-white/40 outline-none resize-none max-h-[120px]"
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();

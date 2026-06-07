@@ -19,9 +19,8 @@
 ═══════════════════════════════════════════════════════════════ */
 
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
 import { NexusLogoSvg } from "./NexusLogoSvg";
-import { useSplashLogoLayoutId } from "./SplashGate";
+import { SocialButtonsMobile } from "./SocialButtonsMobile";
 
 async function triggerHaptic(intensity: "Light" | "Medium" = "Medium") {
   try {
@@ -46,7 +45,6 @@ interface WelcomeMobileProps {
 export function WelcomeMobile({ onShowLogin }: WelcomeMobileProps) {
   // Hooks AVANT toute condition (canon).
   const router = useRouter();
-  const logoLayoutId = useSplashLogoLayoutId();
 
   async function handleCreateAccount() {
     triggerHaptic("Medium");
@@ -87,17 +85,9 @@ export function WelcomeMobile({ onShowLogin }: WelcomeMobileProps) {
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 40px)" }}
       >
         {/* Logo 32px de hauteur (width = 32 * 2.86 ≈ 91).
-            Iter 7.47d : remplace <NexusLogo> PNG par NexusLogoSvg
-            wrappé en motion.div layoutId pour le glide morph depuis
-            la splash. logoLayoutId vient du context SplashLogoContext :
-            défini pendant la fenêtre splash + morph, undefined après
-            (évite le morph parasite lors du slide Welcome↔Login). */}
-        <motion.div
-          layoutId={logoLayoutId}
-          transition={{ layout: { duration: 0.45, ease: [0.4, 0, 0.2, 1] } }}
-        >
-          <NexusLogoSvg width={91} />
-        </motion.div>
+            Iter 7.47g : logo STATIQUE, plus de motion.div layoutId
+            (le splash sort par fade simple, rien ne "voyage"). */}
+        <NexusLogoSvg width={91} />
 
         {/* Headline — Anton ALL-CAPS, points finaux blancs (canon 7.46d).
             mt 28px = mt-7. */}
@@ -136,12 +126,17 @@ export function WelcomeMobile({ onShowLogin }: WelcomeMobileProps) {
           Créer un compte
         </button>
 
+        {/* Boutons social (iter 7.60) — UI seulement, toast "Bientôt" au tap.
+            Câblage OAuth réel = session infra dédiée (Google Cloud + Apple
+            Developer + Supabase providers + flow Capacitor). */}
+        <SocialButtonsMobile topMargin={20} />
+
         {/* Lien Login — centré. mt 20px = mt-5 */}
         <button
           type="button"
           onClick={handleLogin}
           className="w-full text-center text-[#9CA3AF] active:text-white transition-colors mt-5"
-          style={{ fontSize: 13 }}
+          style={{ fontSize: 14 }}
         >
           Déjà un compte ?{" "}
           <span className="text-white font-bold underline underline-offset-4 decoration-1">

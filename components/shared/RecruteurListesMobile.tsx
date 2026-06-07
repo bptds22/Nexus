@@ -137,7 +137,7 @@ function CreateListSheet({ open, onClose }: { open: boolean; onClose: () => void
                   onChange={(e) => setDescription(e.target.value.slice(0, 200))}
                   placeholder="Décris l'objectif de cette liste…"
                   rows={3}
-                  className="w-full bg-white/[0.06] rounded-xl px-3 py-2.5 text-[14px] text-white placeholder:text-white/40 outline-none resize-none"
+                  className="w-full bg-white/[0.06] rounded-xl px-3 py-2.5 text-[16px] text-white placeholder:text-white/40 outline-none resize-none"
                 />
                 <p className="text-[11px] text-white/40 mt-1 text-right tabular-nums">{description.length}/200</p>
               </div>
@@ -244,7 +244,7 @@ function ListCard({
           <div className="flex-1 min-w-0">
             <p className="text-[16px] font-bold text-white truncate">{list.name}</p>
             {list.description && (
-              <p className="text-[13px] text-white/55 mt-0.5 truncate">{list.description}</p>
+              <p className="text-[15px] text-white/55 mt-0.5 truncate">{list.description}</p>
             )}
             <div className="flex items-center gap-2 mt-2 text-[13px] text-white/70">
               <span className="tabular-nums">
@@ -346,7 +346,7 @@ function ListesInner() {
   }, [confirmTarget, deleteMut, toast]);
 
   return (
-    <div className="min-h-screen bg-[#111317] text-white pb-[calc(64px+env(safe-area-inset-bottom))]">
+    <div className="min-h-screen bg-[#111317] text-white nx-mobile-pb-tabbar">
       {/* Header sticky opaque (canon 14.11 : pas de backdrop-blur) */}
       <div className="sticky top-0 z-30 bg-[#111317]" style={{ paddingTop: "env(safe-area-inset-top)" }}>
         <div className="px-4 pt-3 pb-3 flex items-center justify-between">

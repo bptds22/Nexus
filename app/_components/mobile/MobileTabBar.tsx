@@ -287,6 +287,18 @@ export default function MobileTabBar({ role }: MobileTabBarProps) {
 
   if (!IS_CAPACITOR) return null;
 
+  // Iter 7.60 — masquer la TabBar sur les drill-down conversation (canon iOS
+  // Messages : la TabBar disparaît pendant qu'on lit une conversation pour
+  // laisser le composer respirer + éviter qu'elle cache la dernière bulle).
+  // /recruteur/messages → liste (TabBar visible)
+  // /recruteur/messages/[id] → thread (TabBar masquée)
+  // /recruteur/messages/nouveau → wizard (TabBar masquée aussi, même pattern).
+  const messagesDrillDown =
+    role === "recruteur" &&
+    pathname.startsWith("/recruteur/messages/") &&
+    pathname !== "/recruteur/messages";
+  if (messagesDrillDown) return null;
+
   const tabs = TABS_BY_ROLE[role];
 
   function isActive(tab: TabConfig): boolean {
