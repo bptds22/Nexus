@@ -494,7 +494,7 @@ export function RecruteurMessagesMobile() {
           paddingTop: "calc(env(safe-area-inset-top) + 8px)",
         }}
       >
-        {/* Row : Edit pill / Filter pill (Iter 7.8b Section C — pills iOS) */}
+        {/* Row : Edit pill / + (nouveau) / Filter pill (Iter 7.8b Section C — pills iOS) */}
         <div className="flex items-center justify-between px-4 h-11">
           <button
             type="button"
@@ -510,27 +510,56 @@ export function RecruteurMessagesMobile() {
           >
             {editMode ? "OK" : "Modifier"}
           </button>
-          <button
-            type="button"
-            disabled={isFree}
-            onClick={() => { triggerHaptic("Light"); setFilterSheetOpen(true); }}
-            className={`relative w-11 h-11 rounded-full flex items-center justify-center transition-colors ${
-              isFree
-                ? "bg-white/[0.04] opacity-50"
-                : "bg-white/[0.08] active:bg-white/[0.14]"
-            }`}
-            aria-label="Filtres"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="4" y1="21" x2="4" y2="14" /><line x1="4" y1="10" x2="4" y2="3" />
-              <line x1="12" y1="21" x2="12" y2="12" /><line x1="12" y1="8" x2="12" y2="3" />
-              <line x1="20" y1="21" x2="20" y2="16" /><line x1="20" y1="12" x2="20" y2="3" />
-              <line x1="1" y1="14" x2="7" y2="14" /><line x1="9" y1="8" x2="15" y2="8" /><line x1="17" y1="16" x2="23" y2="16" />
-            </svg>
-            {isActiveFilter && (
-              <span className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-[#E63946] border-2 border-[#111317]" />
-            )}
-          </button>
+          <div className="flex items-center gap-2">
+            {/* Iter 7.64 — Bouton + nouvelle conversation. Pro+ requis
+                (RLS messages_insert / conversations_insert gated). Free
+                tap → toast upgrade pour éviter le rejet RLS dégueu. */}
+            <button
+              type="button"
+              onClick={() => {
+                triggerHaptic("Light");
+                if (isFree) {
+                  toast.info({
+                    message: "Abonnement Pro requis",
+                    detail: "L'envoi de messages est réservé Pro.",
+                  });
+                  return;
+                }
+                router.push("/recruteur/messages/nouveau");
+              }}
+              className={`w-11 h-11 rounded-full flex items-center justify-center transition-colors ${
+                isFree
+                  ? "bg-white/[0.04] opacity-50"
+                  : "bg-[#E63946] active:bg-[#D42B22] shadow-[0_4px_12px_rgba(230,57,70,0.35)]"
+              }`}
+              aria-label="Nouveau message"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2.6" strokeLinecap="round">
+                <path d="M12 5v14" /><path d="M5 12h14" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              disabled={isFree}
+              onClick={() => { triggerHaptic("Light"); setFilterSheetOpen(true); }}
+              className={`relative w-11 h-11 rounded-full flex items-center justify-center transition-colors ${
+                isFree
+                  ? "bg-white/[0.04] opacity-50"
+                  : "bg-white/[0.08] active:bg-white/[0.14]"
+              }`}
+              aria-label="Filtres"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="4" y1="21" x2="4" y2="14" /><line x1="4" y1="10" x2="4" y2="3" />
+                <line x1="12" y1="21" x2="12" y2="12" /><line x1="12" y1="8" x2="12" y2="3" />
+                <line x1="20" y1="21" x2="20" y2="16" /><line x1="20" y1="12" x2="20" y2="3" />
+                <line x1="1" y1="14" x2="7" y2="14" /><line x1="9" y1="8" x2="15" y2="8" /><line x1="17" y1="16" x2="23" y2="16" />
+              </svg>
+              {isActiveFilter && (
+                <span className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-[#E63946] border-2 border-[#111317]" />
+              )}
+            </button>
+          </div>
         </div>
 
         {/* Large title iOS */}

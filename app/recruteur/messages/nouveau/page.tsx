@@ -10,10 +10,18 @@ import FeatureGate from "@/components/subscription/FeatureGate";
 import CoachInfoCard from "@/components/recruteur/CoachInfoCard";
 import AthleteInfoCard from "@/components/recruteur/AthleteInfoCard";
 import type { GlobalRecruitmentStatus } from "@/lib/types/models";
+import { MessageNouveauMobile } from "@/components/shared/MessageNouveauMobile";
+
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
 /* ═══════════════════════════════════════════════════════════════
    Nouveau Message — Compose Page (Recruiter)
    Wired to Supabase: recruiter_pipeline + athletes + conversations
+
+   Iter 7.64 — en mode Capacitor (mobile natif), rendu remplacé par
+   <MessageNouveauMobile/> (variante 2-étapes picker → composer). Le
+   layout desktop reste inchangé byte-pour-byte ; seule la racine
+   ajoute un guard `if (IS_CAPACITOR)`.
 ═══════════════════════════════════════════════════════════════ */
 
 interface SelectableAthlete {
@@ -147,6 +155,18 @@ function AthleteCombobox({
 /* ── Main Page ─────────────────────────────────────────────── */
 
 export default function NouveauMessagePage() {
+  // Iter 7.64 — bascule mobile. La FeatureGate Pro reste appliquée
+  // dans les 2 branches (la messagerie est tier-gated quelle que soit
+  // la plateforme).
+  if (IS_CAPACITOR) {
+    return (
+      <FeatureGate feature="messaging" requiredTier="pro">
+        <Suspense fallback={<div className="min-h-screen bg-[#111317] text-white px-4 pt-10 text-[14px] text-[#6b7280]">Chargement…</div>}>
+          <MessageNouveauMobile />
+        </Suspense>
+      </FeatureGate>
+    );
+  }
   return (
     <FeatureGate feature="messaging" requiredTier="pro">
       <Suspense fallback={<div className="px-6 sm:px-10 py-8 max-w-[1280px] mx-auto text-[#6b7280]">Chargement...</div>}>
