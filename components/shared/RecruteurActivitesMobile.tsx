@@ -15,6 +15,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import FeatureGate from "@/components/subscription/FeatureGate";
 import { useActivityList, type ActivityListItem } from "@/lib/queries/recruiter/useActivityList";
+import { EmptyState as SharedEmptyState } from "@/components/mobile/EmptyState";
 import { useMarkAllActivitiesRead } from "@/lib/queries/recruiter/useMarkAllActivitiesRead";
 import { formatRelativeDate } from "@/lib/utils/formatRelativeDate";
 
@@ -428,17 +429,11 @@ function ActivityCard({ item, onTap }: { item: ActivityListItem; onTap: () => vo
 function EmptyState({ filter }: { filter: FilterKey }) {
   const label = filter === "tous" ? "" : ` « ${FILTER_LABELS[filter]} »`;
   return (
-    <div className="flex flex-col items-center text-center py-20 px-6">
-      <div className="w-16 h-16 rounded-full bg-[#1A1D24] flex items-center justify-center mb-4">
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#4a4d56" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-        </svg>
-      </div>
-      <p className="text-[16px] font-bold text-white">Aucune activité{label}</p>
-      <p className="text-[13px] text-white/55 mt-2 max-w-xs leading-relaxed">
-        L&apos;activité apparaîtra ici dès qu&apos;un coach met à jour un athlète, que tu ajoutes une note, ou que tu organises tes prospects.
-      </p>
-    </div>
+    <SharedEmptyState
+      image="/empty/nexus-empty-shortlist.png"
+      title={`Aucune activité${label}`}
+      description="L'activité apparaîtra ici dès qu'un coach met à jour un athlète, que tu ajoutes une note, ou que tu organises tes prospects."
+    />
   );
 }
 

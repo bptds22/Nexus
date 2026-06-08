@@ -24,6 +24,7 @@ import { createPortal } from "react-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence, useMotionValue, useTransform } from "framer-motion";
 import AthletePhotoFill from "@/components/shared/AthletePhotoFill";
+import { EmptyState as SharedEmptyState } from "@/components/mobile/EmptyState";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import { useSubscription } from "@/lib/hooks/useSubscription";
 import { usePipelineCards } from "@/lib/queries/recruiter/usePipelineCards";
@@ -695,17 +696,11 @@ function PipelineMenuSheet({
 
 function EmptyStageState({ stage }: { stage: StageConfig }) {
   return (
-    <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
-      <div className="w-14 h-14 rounded-full bg-[#1A1D24] flex items-center justify-center mb-3">
-        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: stage.color }} />
-      </div>
-      <p className="text-[13px] text-[#9CA3AF] font-semibold">
-        Aucun athlète à ce stage
-      </p>
-      <p className="text-[11px] text-[#6B7280] mt-1 max-w-xs">
-        Les athlètes apparaîtront ici quand tu les passes à <span className="text-white">{stage.label}</span>.
-      </p>
-    </div>
+    <SharedEmptyState
+      image="/empty/nexus-empty-effectif.png"
+      title="Aucun athlète à ce stage"
+      description={`Les athlètes apparaîtront ici quand tu les passes à ${stage.label}.`}
+    />
   );
 }
 
@@ -1170,22 +1165,13 @@ function PipelineDetailSheet({
 
 function EmptyState({ isFreeDemo }: { isFreeDemo: boolean }) {
   return (
-    <div className="flex flex-col items-center justify-center px-6 py-20 text-center">
-      <div className="w-16 h-16 rounded-full bg-[#1A1D24] flex items-center justify-center mb-4">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4a4d56" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" />
-          <line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" />
-        </svg>
-      </div>
-      <h3 className="font-head text-[18px] font-black text-white uppercase tracking-tight mb-1">
-        {isFreeDemo ? "Processus réservé Pro" : "Processus vide"}
-      </h3>
-      <p className="text-[13px] text-[#9CA3AF] max-w-sm">
-        {isFreeDemo
-          ? "Passe à Pro pour gérer ton processus de recrutement et suivre tes athlètes."
-          : "Ajoute un athlète en favori depuis Recherche pour commencer à le suivre dans ton processus."}
-      </p>
-    </div>
+    <SharedEmptyState
+      image="/empty/nexus-empty-effectif.png"
+      title={isFreeDemo ? "Processus réservé Pro" : "Processus vide"}
+      description={isFreeDemo
+        ? "Passe à Pro pour gérer ton processus de recrutement et suivre tes athlètes."
+        : "Ajoute un athlète en favori depuis Recherche pour commencer à le suivre dans ton processus."}
+    />
   );
 }
 

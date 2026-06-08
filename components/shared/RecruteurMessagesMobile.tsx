@@ -24,6 +24,7 @@ import { useSubscription } from "@/lib/hooks/useSubscription";
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import { useDebouncedValue } from "@/lib/utils/useDebouncedValue";
 import { createClient } from "@/lib/supabase/client";
+import { EmptyState as SharedEmptyState } from "@/components/mobile/EmptyState";
 
 async function triggerHaptic(intensity: "Light" | "Medium" = "Light") {
   try {
@@ -314,17 +315,11 @@ function EmptyState({ kind }: { kind: "all" | "search" | "non_lu" | "archive" })
     archive: { title: "Aucune conversation archivée", sub: "Les conversations archivées apparaîtront ici." },
   }[kind];
   return (
-    <div className="flex flex-col items-center justify-center px-6 py-20 text-center">
-      <div className="w-16 h-16 rounded-full bg-[#1A1D24] flex items-center justify-center mb-4">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4a4d56" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-        </svg>
-      </div>
-      <h3 className="font-head text-[18px] font-black text-white uppercase tracking-tight mb-1">
-        {msg.title}
-      </h3>
-      <p className="text-[13px] text-white/55 max-w-sm">{msg.sub}</p>
-    </div>
+    <SharedEmptyState
+      image="/empty/nexus-empty-messagerie.png"
+      title={msg.title}
+      description={msg.sub}
+    />
   );
 }
 

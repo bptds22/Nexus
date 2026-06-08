@@ -23,6 +23,7 @@ import AthletePhotoFill from "@/components/shared/AthletePhotoFill";
 import AthletePhoto from "@/components/shared/AthletePhoto";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
 import type { GlobalRecruitmentStatus } from "@/lib/types/models";
+import { EmptyState as SharedEmptyState } from "@/components/mobile/EmptyState";
 import { isValidationExpired } from "@/lib/utils/profileValidation";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import { useFavorites } from "@/lib/queries/shared/useFavorites";
@@ -903,24 +904,15 @@ function SkeletonGrid() {
 
 function EmptyState({ hasFilters, onReset }: { hasFilters: boolean; onReset: () => void }) {
   return (
-    <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
-      <div className="w-16 h-16 rounded-full bg-[#1A1D24] flex items-center justify-center mb-4">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4a4d56" strokeWidth="2" strokeLinecap="round">
-          <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
-        </svg>
-      </div>
-      <h3 className="font-head text-[18px] font-black text-white uppercase tracking-tight mb-1">Aucun athlète trouvé</h3>
-      <p className="text-[13px] text-[#9CA3AF] max-w-sm mb-4">Essaie d&apos;élargir tes critères de recherche.</p>
-      {hasFilters && (
-        <button
-          type="button"
-          onClick={() => { triggerHaptic("Light"); onReset(); }}
-          className="px-5 py-2.5 rounded-full bg-[#E63946] text-white text-[13px] font-bold active:bg-[#D42B22]"
-        >
-          Réinitialiser les filtres
-        </button>
-      )}
-    </div>
+    <SharedEmptyState
+      image="/empty/nexus-empty-recherche.png"
+      title="Aucun athlète trouvé"
+      description="Essaie d'élargir tes critères de recherche."
+      action={hasFilters ? {
+        label: "Réinitialiser les filtres",
+        onClick: () => { triggerHaptic("Light"); onReset(); },
+      } : undefined}
+    />
   );
 }
 

@@ -14,6 +14,7 @@ import { createPortal } from "react-dom";
 import { motion, AnimatePresence, useMotionValue, useTransform } from "framer-motion";
 import FeatureGate from "@/components/subscription/FeatureGate";
 import { useMobileToast } from "@/components/mobile/MobileToast";
+import { EmptyState as SharedEmptyState } from "@/components/mobile/EmptyState";
 import { useListAthletes, type ListAthlete, type ListMetadata } from "@/lib/queries/recruiter/useListAthletes";
 import { useRemoveListMember } from "@/lib/queries/recruiter/useRemoveListMember";
 import { useDeleteList } from "@/lib/queries/recruiter/useDeleteList";
@@ -923,27 +924,12 @@ function DetailInner({ listId }: { listId: string }) {
 
 function EmptyState({ onAdd }: { onAdd: () => void }) {
   return (
-    <div className="flex flex-col items-center text-center py-20 px-6">
-      <div className="w-16 h-16 rounded-full bg-[#1A1D24] flex items-center justify-center mb-4">
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#4a4d56" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-          <circle cx="9" cy="7" r="4" />
-          <line x1="19" y1="8" x2="19" y2="14" /><line x1="22" y1="11" x2="16" y2="11" />
-        </svg>
-      </div>
-      {/* Iter 7.24 Sprint 4b — flow ajout désormais en place : vrai bouton CTA. */}
-      <p className="text-[16px] font-bold text-white">Aucun athlète dans cette liste</p>
-      <p className="text-[13px] text-white/55 mt-2 max-w-xs leading-relaxed">
-        Ajoute des athlètes depuis tes favoris pour commencer à les organiser ici.
-      </p>
-      <button
-        type="button"
-        onClick={onAdd}
-        className="mt-5 px-4 py-3 rounded-2xl bg-[#E63946] active:bg-[#D42B22] text-white font-bold text-[14px] transition-colors"
-      >
-        Ajouter un athlète
-      </button>
-    </div>
+    <SharedEmptyState
+      image="/empty/nexus-empty-shortlist.png"
+      title="Aucun athlète dans cette liste"
+      description="Ajoute des athlètes depuis tes favoris pour commencer à les organiser ici."
+      action={{ label: "Ajouter un athlète", onClick: onAdd }}
+    />
   );
 }
 

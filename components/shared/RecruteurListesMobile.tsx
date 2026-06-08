@@ -15,6 +15,7 @@ import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import FeatureGate from "@/components/subscription/FeatureGate";
 import { useMobileToast } from "@/components/mobile/MobileToast";
+import { EmptyState as SharedEmptyState } from "@/components/mobile/EmptyState";
 import { useRecruiterLists, type RecruiterListSummary } from "@/lib/queries/recruiter/useRecruiterLists";
 import { useCreateList } from "@/lib/queries/recruiter/useCreateList";
 import { useDeleteList } from "@/lib/queries/recruiter/useDeleteList";
@@ -281,24 +282,12 @@ function ListCard({
 
 function EmptyState({ onCreate }: { onCreate: () => void }) {
   return (
-    <div className="flex flex-col items-center text-center py-20 px-6">
-      <div className="w-16 h-16 rounded-full bg-[#1A1D24] flex items-center justify-center mb-4">
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#4a4d56" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M3 6h18" /><path d="M3 12h18" /><path d="M3 18h18" />
-        </svg>
-      </div>
-      <p className="text-[16px] font-bold text-white">Aucune liste pour le moment</p>
-      <p className="text-[13px] text-white/55 mt-2 max-w-xs leading-relaxed">
-        Crée des listes pour organiser tes prospects par sport, position ou stratégie de recrutement.
-      </p>
-      <button
-        type="button"
-        onClick={onCreate}
-        className="mt-5 px-4 py-3 rounded-2xl bg-[#E63946] active:bg-[#D42B22] text-white font-bold text-[14px]"
-      >
-        Créer ma première liste
-      </button>
-    </div>
+    <SharedEmptyState
+      image="/empty/nexus-empty-shortlist.png"
+      title="Aucune liste pour le moment"
+      description="Crée des listes pour organiser tes prospects par sport, position ou stratégie de recrutement."
+      action={{ label: "Créer ma première liste", onClick: onCreate }}
+    />
   );
 }
 
