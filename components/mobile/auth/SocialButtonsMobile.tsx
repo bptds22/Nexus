@@ -1,7 +1,7 @@
 "use client";
 
 /* ═══════════════════════════════════════════════════════════════
-   SocialButtonsMobile — iter 7.60
+   SocialButtonsMobile — iter 7.60 → 7.60b
 
    UI uniquement : "Continuer avec Google" + "Continuer avec Apple".
    Aucun OAuth réel. Au tap → toast "Bientôt disponible" (canon
@@ -10,6 +10,17 @@
    à recevoir le vrai handler quand le câblage OAuth (Google Cloud
    + Apple Developer + Supabase providers + flow Capacitor) sera
    fait dans une session dédiée.
+
+   Iter 7.60b — match exact CTA :
+   - Radius des 2 boutons social ALIGNÉ sur le CTA primaire rouge :
+     `rounded-2xl` (16px). Welcome "Créer un compte" + Login
+     "Se connecter" utilisent déjà rounded-2xl → uniformisation des
+     coins sur les 3 boutons de chaque écran.
+   - Égalisation visuelle Google / Apple : le glyphe Apple est
+     naturellement plus étroit que le G Google. Rendu Apple à 22×22
+     vs Google 20×20 (~+10%) pour matcher le POIDS optique, pas la
+     taille de boîte. Conteneur uniforme 24×24 centré pour aligner
+     l'axe vertical du texte.
 
    Logos officiels : SVG inline (G multicolore Google, Apple noir/
    blanc). Pas d'asset externe, pas de dépendance icône.
@@ -28,6 +39,7 @@ async function triggerHaptic() {
 }
 
 function GoogleLogo() {
+  // 20×20 = taille de référence (G remplit ~85% du viewBox).
   return (
     <svg width="20" height="20" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg" aria-hidden>
       <path
@@ -51,8 +63,11 @@ function GoogleLogo() {
 }
 
 function AppleLogo() {
+  // 22×22 = +10% vs Google (20×20) pour compenser le glyphe Apple
+  // naturellement plus étroit/haut. Donne un poids OPTIQUE équivalent
+  // (convention iOS / Twitter / Stripe).
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="#FFFFFF" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="#FFFFFF" xmlns="http://www.w3.org/2000/svg" aria-hidden>
       <path d="M17.05 20.28c-.98.95-2.05.86-3.08.42-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.42C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
     </svg>
   );
@@ -85,25 +100,31 @@ export function SocialButtonsMobile({ topMargin = 20 }: SocialButtonsMobileProps
         <div className="flex-1 h-px bg-white/[0.10]" />
       </div>
 
-      {/* Google */}
+      {/* Google — radius rounded-2xl identique au CTA primaire ; logo
+          dans un conteneur 24×24 pour aligner l'axe vertical du texte. */}
       <button
         type="button"
         onClick={handleSocialTap}
-        className="w-full h-14 mt-4 nx-mobile-radius-card bg-[#1A1D24] border border-white/[0.10] text-white font-semibold flex items-center justify-center gap-3 active:scale-[0.97] active:bg-[#22262e] transition-all"
+        className="w-full h-14 mt-4 rounded-2xl bg-[#1A1D24] border border-white/[0.10] text-white font-semibold flex items-center justify-center gap-3 active:scale-[0.97] active:bg-[#22262e] transition-all"
         style={{ fontSize: 15 }}
       >
-        <GoogleLogo />
+        <span className="inline-flex items-center justify-center w-6 h-6" aria-hidden>
+          <GoogleLogo />
+        </span>
         Continuer avec Google
       </button>
 
-      {/* Apple */}
+      {/* Apple — même radius + conteneur 24×24. Apple à 22×22 (+10%)
+          pour égaliser le poids OPTIQUE vs Google 20×20. */}
       <button
         type="button"
         onClick={handleSocialTap}
-        className="w-full h-14 mt-3 nx-mobile-radius-card bg-[#1A1D24] border border-white/[0.10] text-white font-semibold flex items-center justify-center gap-3 active:scale-[0.97] active:bg-[#22262e] transition-all"
+        className="w-full h-14 mt-3 rounded-2xl bg-[#1A1D24] border border-white/[0.10] text-white font-semibold flex items-center justify-center gap-3 active:scale-[0.97] active:bg-[#22262e] transition-all"
         style={{ fontSize: 15 }}
       >
-        <AppleLogo />
+        <span className="inline-flex items-center justify-center w-6 h-6" aria-hidden>
+          <AppleLogo />
+        </span>
         Continuer avec Apple
       </button>
     </>
