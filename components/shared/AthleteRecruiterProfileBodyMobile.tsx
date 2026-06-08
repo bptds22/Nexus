@@ -60,7 +60,7 @@ const pillBase = "inline-flex items-center gap-1.5 text-[12px] font-bold px-3 py
 
 // Mobile flat — pas de bg/border (style list iOS Settings)
 const mobileSection = "px-1";
-const mobileSubtle = "bg-white/[0.02] rounded-lg";
+const mobileSubtle = "bg-white/[0.02] rounded-2xl";
 const mobileRow = "flex items-center justify-between py-3 border-b border-white/[0.06] last:border-b-0";
 
 // Helper haptic (Fix 7 iter 3.1) — no-op silencieux si plugin manquant (web build)
@@ -309,7 +309,7 @@ function PlayerCardMobile({ a, isFree, starsRevealed = 5, cardRevealed = true, p
 
 function FreeLock() {
   return (
-    <div className="bg-white/[0.02] rounded-xl border border-dashed border-white/10 px-6 py-10 flex flex-col items-center justify-center text-center">
+    <div className="bg-white/[0.02] rounded-2xl border border-dashed border-white/10 px-6 py-10 flex flex-col items-center justify-center text-center">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mb-3">
         <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
         <path d="M7 11V7a5 5 0 0110 0v4" />
@@ -324,7 +324,7 @@ function FreeLock() {
 function HeroMiniAvatar({ a, isFree }: { a: AthleteProfileRecruiterView; isFree: boolean }) {
   const badgeActive = a.isVerified && !isValidationExpired({ verified: !!a.isVerified, last_profile_validation: a.lastValidation ?? null });
   return (
-    <div className="relative w-[56px] h-[56px] rounded-xl overflow-hidden flex-shrink-0 border border-white/10 bg-[#2F3440]">
+    <div className="relative w-[56px] h-[56px] rounded-2xl overflow-hidden flex-shrink-0 border border-white/10 bg-[#2F3440]">
       <AthletePhotoFill
         photoUrl={a.photoUrl}
         firstName={isFree ? "" : a.firstName}
@@ -1359,8 +1359,8 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
           <div className="h-8 rounded-full mx-auto nx-skel" style={{ width: "60%", animationDelay: "200ms" }} />
           {/* Skeleton 2 cubes KPI */}
           <div className="flex justify-center gap-3 pt-2">
-            <div className="h-24 w-[100px] rounded-xl nx-skel" style={{ animationDelay: "300ms" }} />
-            <div className="h-24 w-[100px] rounded-xl nx-skel" style={{ animationDelay: "300ms" }} />
+            <div className="h-24 w-[100px] rounded-2xl nx-skel" style={{ animationDelay: "300ms" }} />
+            <div className="h-24 w-[100px] rounded-2xl nx-skel" style={{ animationDelay: "300ms" }} />
           </div>
           {/* Skeleton badges */}
           <div className="flex justify-center gap-4 pt-2">
@@ -1861,7 +1861,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
                       <h2 className={sectionLabel}>{affiliation === "school" ? "École" : "Équipe civile"}</h2>
                       {/* Carte unique centrée (Fix 6 iter 2.7) — école/équipe en gros, lieu/détails en sous-titre */}
                       {affiliation === "school" && a.schoolName && (
-                        <div className="rounded-xl py-6 px-4 flex flex-col items-center text-center" style={{ background: "#1A1D24" }}>
+                        <div className="rounded-2xl py-6 px-4 flex flex-col items-center text-center" style={{ background: "#1A1D24" }}>
                           <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mb-3">
                             <path d="M3 21h18" /><path d="M5 21V7l8-4 8 4v14" /><path d="M9 9v.01M9 13v.01M9 17v.01M15 9v.01M15 13v.01M15 17v.01" />
                           </svg>
@@ -1874,7 +1874,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
                         </div>
                       )}
                       {affiliation === "civil_with_team" && civilTeamInfo && (
-                        <div className="rounded-xl py-6 px-4 flex flex-col items-center text-center" style={{ background: "#1A1D24" }}>
+                        <div className="rounded-2xl py-6 px-4 flex flex-col items-center text-center" style={{ background: "#1A1D24" }}>
                           <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mb-3">
                             <path d="M4 22h16" /><path d="M7 10v12" /><path d="M17 10v12" /><path d="M7 5v5l-3 0V5l3 0z" /><path d="M17 5v5l3 0V5l-3 0z" /><path d="M7 5h10v5H7z" />
                           </svg>
@@ -1895,7 +1895,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
                         </div>
                       )}
                       {affiliation === "civil_no_team" && (
-                        <div className="rounded-xl py-6 px-4 text-center" style={{ background: "#1A1D24" }}>
+                        <div className="rounded-2xl py-6 px-4 text-center" style={{ background: "#1A1D24" }}>
                           <p className="text-[13px] text-[#9CA3AF] italic">Athlète en ligue civile sans équipe rattachée.</p>
                         </div>
                       )}
@@ -2194,7 +2194,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
               type="button"
               onClick={handleContactCoach}
               disabled={contactingCoach || !coachId}
-              className={`flex-1 flex items-center justify-center gap-2 bg-[#E63946] text-white rounded-xl px-4 py-3 font-head font-bold text-[13px] uppercase tracking-widest active:bg-[#D42B22] shadow-[0_0_20px_rgba(230,57,70,0.3)] ${
+              className={`flex-1 flex items-center justify-center gap-2 bg-[#E63946] text-white rounded-2xl px-4 py-3 font-head font-bold text-[13px] uppercase tracking-widest active:bg-[#D42B22] shadow-[0_0_20px_rgba(230,57,70,0.3)] ${
                 contactingCoach || !coachId ? "opacity-70" : ""
               }`}
             >
@@ -2213,7 +2213,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
               type="button"
               onClick={() => { triggerHaptic("Light"); setAddToListOpen(true); }}
               aria-label="Ajouter à une liste"
-              className="w-12 h-12 rounded-xl flex items-center justify-center border bg-[#1A1D24] border-[#2D3748] text-white active:bg-white/[0.06] transition-colors flex-shrink-0"
+              className="w-12 h-12 rounded-2xl flex items-center justify-center border bg-[#1A1D24] border-[#2D3748] text-white active:bg-white/[0.06] transition-colors flex-shrink-0"
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M3 6h13" /><path d="M3 12h13" /><path d="M3 18h9" />
@@ -2222,7 +2222,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
             </button>
           )}
           <div
-            className={`w-12 h-12 rounded-xl flex items-center justify-center border transition-colors ${favButtonDisabled ? "opacity-40" : ""} ${isFavorited ? "bg-[#E63946]/10 border-[#E63946]/30" : "bg-[#1A1D24] border-[#2D3748]"}`}
+            className={`w-12 h-12 rounded-2xl flex items-center justify-center border transition-colors ${favButtonDisabled ? "opacity-40" : ""} ${isFavorited ? "bg-[#E63946]/10 border-[#E63946]/30" : "bg-[#1A1D24] border-[#2D3748]"}`}
             title={favButtonDisabled ? favDisabledTitle : undefined}
           >
             <HeartButton
@@ -2328,7 +2328,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
                   key={reason}
                   type="button"
                   onClick={() => { triggerHaptic("Light"); setFlagReason(reason); }}
-                  className={`w-full text-left px-4 py-3 rounded-xl transition-colors ${
+                  className={`w-full text-left px-4 py-3 rounded-2xl transition-colors ${
                     flagReason === reason
                       ? "bg-[#E63946]/10 border border-[#E63946]/30"
                       : "border border-transparent"
@@ -2347,7 +2347,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
                 value={flagDetails}
                 onChange={(e) => setFlagDetails(e.target.value)}
                 rows={3}
-                className="w-full rounded-xl px-4 py-3 text-[16px] text-white resize-none focus:outline-none"
+                className="w-full rounded-2xl px-4 py-3 text-[16px] text-white resize-none focus:outline-none"
                 style={{ background: "#0C0E12" }}
                 placeholder="Précise si besoin..."
               />
@@ -2358,7 +2358,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
               <button
                 type="button"
                 onClick={() => { triggerHaptic("Light"); setShowFlagModal(false); }}
-                className="flex-1 py-3 rounded-xl text-[14px] font-bold text-white"
+                className="flex-1 py-3 rounded-2xl text-[14px] font-bold text-white"
                 style={{ background: "#0C0E12" }}
               >
                 Annuler
@@ -2367,7 +2367,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
                 type="button"
                 onClick={() => { triggerHaptic("Medium"); handleFlagSubmit(); }}
                 disabled={!flagReason || flagSubmitting || !athleteUserId}
-                className="flex-1 py-3 rounded-xl bg-[#E63946] text-[14px] font-bold text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 py-3 rounded-2xl bg-[#E63946] text-[14px] font-bold text-white disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {flagSubmitting ? "Envoi..." : "Signaler"}
               </button>

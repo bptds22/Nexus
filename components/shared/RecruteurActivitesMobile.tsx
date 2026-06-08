@@ -368,7 +368,7 @@ function ActivitesInner() {
               <button
                 type="button"
                 onClick={() => { triggerHaptic("Light"); setShowCount((c) => c + PAGE_SIZE); }}
-                className="w-full py-3 rounded-xl bg-white/[0.06] active:bg-white/[0.10] text-white font-semibold text-[14px] transition-colors"
+                className="w-full py-3 rounded-2xl bg-white/[0.06] active:bg-white/[0.10] text-white font-semibold text-[14px] transition-colors"
               >
                 Voir plus
               </button>

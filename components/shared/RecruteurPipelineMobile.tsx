@@ -101,7 +101,7 @@ function PipelineHeader({ totalCount, onMenuTap }: { totalCount: number; onMenuT
           type="button"
           onClick={() => { triggerHaptic("Light"); onMenuTap(); }}
           aria-label="Menu"
-          className="w-10 h-10 rounded-full flex items-center justify-center active:bg-white/5 flex-shrink-0"
+          className="w-11 h-11 rounded-full flex items-center justify-center active:bg-white/5 flex-shrink-0"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round">
             <circle cx="5" cy="12" r="1" /><circle cx="12" cy="12" r="1" /><circle cx="19" cy="12" r="1" />
@@ -152,7 +152,7 @@ function StageTabsSticky({
                 type="button"
                 data-tab={stage.lower}
                 onClick={() => { triggerHaptic("Light"); onTabTap(stage.lower); }}
-                className={`px-3.5 py-1.5 rounded-full text-[12px] font-bold uppercase tracking-wider whitespace-nowrap transition-colors ${
+                className={`min-h-[44px] inline-flex items-center px-4 rounded-full text-[13px] font-bold uppercase tracking-wider whitespace-nowrap transition-colors ${
                   isActive
                     ? "bg-[#E63946] text-white"
                     : "bg-[#1A1D24] text-[#9CA3AF] active:bg-white/5"
@@ -336,11 +336,11 @@ function SwipeableCard({
   const [leftLine1, leftLine2] = splitLabel(leftLabel);
 
   return (
-    <div className="relative overflow-hidden rounded-xl">
+    <div className="relative overflow-hidden rounded-2xl">
       {/* Overlay ROUGE (révélé quand swipe droite = avancer) */}
       <motion.div
         style={{ opacity: overlayRightOpacity }}
-        className="absolute inset-0 flex items-center justify-start px-5 pointer-events-none rounded-xl bg-gradient-to-r from-[#E63946]/30 via-[#E63946]/15 to-transparent"
+        className="absolute inset-0 flex items-center justify-start px-5 pointer-events-none rounded-2xl bg-gradient-to-r from-[#E63946]/30 via-[#E63946]/15 to-transparent"
       >
         <div className="flex items-center gap-2">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -362,7 +362,7 @@ function SwipeableCard({
       {/* Overlay GRIS (révélé quand swipe gauche = reculer) */}
       <motion.div
         style={{ opacity: overlayLeftOpacity }}
-        className="absolute inset-0 flex items-center justify-end px-5 pointer-events-none rounded-xl bg-gradient-to-l from-[#6B7280]/30 via-[#6B7280]/15 to-transparent"
+        className="absolute inset-0 flex items-center justify-end px-5 pointer-events-none rounded-2xl bg-gradient-to-l from-[#6B7280]/30 via-[#6B7280]/15 to-transparent"
       >
         <div className="flex items-center gap-2">
           <div className="flex flex-col items-end leading-tight">
@@ -483,7 +483,7 @@ function PipelineMenuSheet({
             animate={{ y: dragOffset }}
             exit={{ y: "100%" }}
             transition={isDragging ? { duration: 0 } : { duration: 0.32, ease: [0.34, 1.56, 0.64, 1] }}
-            className="fixed inset-x-0 bottom-0 z-[60] bg-[#111317] rounded-t-3xl flex flex-col"
+            className="fixed inset-x-0 bottom-0 z-[60] bg-[#111317] rounded-t-2xl flex flex-col"
             style={{ maxHeight: "85vh", paddingBottom: "env(safe-area-inset-bottom)" }}
           >
             {/* Drag handle */}
@@ -533,7 +533,7 @@ function PipelineMenuSheet({
                     <h3 className="text-[11px] uppercase tracking-[0.18em] text-[#6B7280] font-bold mb-2">
                       Statistiques de mon processus
                     </h3>
-                    <div className="bg-[#1A1D24] rounded-xl p-4 mb-3">
+                    <div className="bg-[#1A1D24] rounded-2xl p-4 mb-3">
                       <p className="text-[10px] uppercase tracking-[0.18em] text-[#6B7280] font-bold mb-1">
                         Total athlètes suivis
                       </p>
@@ -549,7 +549,7 @@ function PipelineMenuSheet({
                           const survival = N > 0 ? Math.round((reachedAtLeast / N) * 100) : 0;
                           return (
                             <div key={stage.key} className="flex items-center gap-2">
-                              <div className="bg-[#1A1D24] rounded-lg px-3 py-2 min-w-[88px] text-center">
+                              <div className="bg-[#1A1D24] rounded-2xl px-3 py-2 min-w-[88px] text-center">
                                 <p
                                   className="font-head text-[22px] font-black leading-none"
                                   style={{ color: STATS_STAGE_COLOR_MAP[stage.key] ?? stage.color }}
@@ -580,7 +580,7 @@ function PipelineMenuSheet({
               {/* Section Trier par */}
               <section>
                 <h3 className="text-[11px] uppercase tracking-[0.18em] text-[#6B7280] font-bold mb-2">Trier les athlètes par</h3>
-                <div className="bg-[#1A1D24] rounded-xl overflow-hidden">
+                <div className="bg-[#1A1D24] rounded-2xl overflow-hidden">
                   {SORT_OPTIONS.map((opt) => {
                     const active = sortBy === opt.value;
                     return (
@@ -608,7 +608,7 @@ function PipelineMenuSheet({
                 <button
                   type="button"
                   onClick={() => { triggerHaptic("Light"); setSportPickerOpen(true); }}
-                  className="flex items-center justify-between w-full px-4 py-3.5 bg-[#1A1D24] rounded-xl text-left active:bg-white/[0.03] transition-colors"
+                  className="flex items-center justify-between w-full px-4 py-3.5 bg-[#1A1D24] rounded-2xl text-left active:bg-white/[0.03] transition-colors"
                 >
                   <span className="text-[15px] text-white/95 font-medium">Sport</span>
                   <div className="flex items-center gap-1.5">
@@ -628,7 +628,7 @@ function PipelineMenuSheet({
                 <button
                   type="button"
                   onClick={() => { triggerHaptic("Light"); setFocusMode(!focusMode); }}
-                  className="flex items-start justify-between w-full px-4 py-3.5 bg-[#1A1D24] rounded-xl text-left active:bg-white/[0.03] transition-colors"
+                  className="flex items-start justify-between w-full px-4 py-3.5 bg-[#1A1D24] rounded-2xl text-left active:bg-white/[0.03] transition-colors"
                 >
                   <div className="flex-1 pr-3">
                     <p className="text-[15px] text-white/95 font-medium">Cacher recrutés ailleurs</p>
@@ -656,7 +656,7 @@ function PipelineMenuSheet({
                     setSortBy("moved_at_desc"); setFilterSport(null); setFocusMode(false);
                     toast.info({ message: "Filtres réinitialisés" });
                   }}
-                  className="w-full px-4 py-3.5 rounded-xl text-[14px] text-[#E63946] font-bold active:bg-[#E63946]/10 transition-colors"
+                  className="w-full px-4 py-3.5 rounded-2xl text-[14px] text-[#E63946] font-bold active:bg-[#E63946]/10 transition-colors"
                 >
                   Réinitialiser tous les filtres
                 </button>
@@ -872,7 +872,7 @@ function PipelineDetailSheet({
             animate={{ y: dragOffset }}
             exit={{ y: "100%" }}
             transition={isDragging ? { duration: 0 } : { duration: 0.32, ease: [0.34, 1.56, 0.64, 1] }}
-            className="fixed inset-x-0 bottom-0 z-[60] bg-[#111317] rounded-t-3xl flex flex-col"
+            className="fixed inset-x-0 bottom-0 z-[60] bg-[#111317] rounded-t-2xl flex flex-col"
             style={{ maxHeight: "90vh", paddingBottom: "env(safe-area-inset-bottom)" }}
           >
             {/* Handle iOS — drag area (swipe-down to close, Fix 5+7) */}
@@ -912,7 +912,7 @@ function PipelineDetailSheet({
               {/* Header athlète : photo + meta + pill statut global (Fix 6)
                   + fade horizontal blend (Fix 1 iter 6.1e — bg #111317 du sheet) */}
               <div className="flex items-start gap-3">
-                <div className="relative w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 bg-[#2F3440]">
+                <div className="relative w-16 h-16 rounded-2xl overflow-hidden flex-shrink-0 bg-[#2F3440]">
                   {(() => {
                     const [f, ...r] = (card.full_name || "").split(/\s+/);
                     return <AthletePhotoFill photoUrl={card.photo_url} firstName={f} lastName={r.join(" ")} initialsFontSize={22} className="object-[center_15%]" />;
@@ -1040,14 +1040,14 @@ function PipelineDetailSheet({
                     onChange={(e) => setNoteText(e.target.value)}
                     placeholder="Ajouter une note…"
                     disabled={isFreeDemoMode}
-                    className="flex-1 px-3 py-2.5 bg-[#0C0E12] rounded-lg text-[16px] text-white placeholder:text-[#4a4d56] border border-white/[0.06] outline-none focus:border-[#E63946]/40 disabled:opacity-50"
+                    className="flex-1 px-3 py-2.5 bg-[#0C0E12] rounded-2xl text-[16px] text-white placeholder:text-[#4a4d56] border border-white/[0.06] outline-none focus:border-[#E63946]/40 disabled:opacity-50"
                     onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleAddNote(); } }}
                   />
                   <button
                     type="button"
                     onClick={handleAddNote}
                     disabled={!noteText.trim() || posting || isFreeDemoMode}
-                    className={`px-4 py-2.5 rounded-lg text-[11px] uppercase tracking-wider font-bold transition-colors ${
+                    className={`px-4 py-2.5 rounded-2xl text-[11px] uppercase tracking-wider font-bold transition-colors ${
                       noteText.trim() && !posting && !isFreeDemoMode
                         ? "bg-[#E63946] text-white active:bg-[#D42B22]"
                         : "bg-white/[0.06] text-[#4a4d56]"
@@ -1099,7 +1099,7 @@ function PipelineDetailSheet({
                         type="button"
                         onClick={() => handleStageChange(stage.key)}
                         disabled={isActive || isFreeDemoMode}
-                        className={`py-3 rounded-lg text-[11px] uppercase tracking-wider font-bold transition-colors ${
+                        className={`py-3 rounded-2xl text-[11px] uppercase tracking-wider font-bold transition-colors ${
                           isActive
                             ? "bg-[#E63946] text-white"
                             : isFreeDemoMode
@@ -1119,7 +1119,7 @@ function PipelineDetailSheet({
                 <button
                   type="button"
                   onClick={handleViewProfile}
-                  className="w-full flex items-center justify-center gap-2 py-3 rounded-lg bg-[#1A1D24] text-white text-[13px] font-bold active:bg-white/5"
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-[#1A1D24] text-white text-[13px] font-bold active:bg-white/5"
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
@@ -1131,7 +1131,7 @@ function PipelineDetailSheet({
                 <button
                   type="button"
                   onClick={handleSendMessage}
-                  className="w-full flex items-center justify-center gap-2 py-3 rounded-lg bg-[#1A1D24] text-white text-[13px] font-bold active:bg-white/5"
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-[#1A1D24] text-white text-[13px] font-bold active:bg-white/5"
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
@@ -1144,7 +1144,7 @@ function PipelineDetailSheet({
                   type="button"
                   onClick={handleRemove}
                   disabled={isFreeDemoMode}
-                  className={`w-full flex items-center justify-center gap-2 py-3 rounded-lg border text-[13px] font-bold transition-all ${
+                  className={`w-full flex items-center justify-center gap-2 py-3 rounded-2xl border text-[13px] font-bold transition-all ${
                     confirmRemove
                       ? "border-[#E63946] bg-[#E63946] text-white nx-confirm-pulse"
                       : "border-[#E63946]/30 bg-transparent text-[#E63946] active:bg-[#E63946]/10"
@@ -1193,8 +1193,8 @@ function SkeletonList() {
   return (
     <div className="px-4 py-4 space-y-3">
       {Array.from({ length: 5 }).map((_, i) => (
-        <div key={i} className="flex items-center gap-3 p-3 bg-[#1A1D24] rounded-xl">
-          <div className="w-14 h-14 rounded-lg nx-pulse-skel-pl" />
+        <div key={i} className="flex items-center gap-3 p-3 bg-[#1A1D24] rounded-2xl">
+          <div className="w-14 h-14 rounded-2xl nx-pulse-skel-pl" />
           <div className="flex-1 space-y-1.5">
             <div className="h-3 rounded nx-pulse-skel-pl" style={{ width: "60%" }} />
             <div className="h-2.5 rounded nx-pulse-skel-pl" style={{ width: "40%" }} />
@@ -1433,7 +1433,7 @@ export function RecruteurPipelineMobile() {
 
       {/* Free demo banner */}
       {isFreeDemoMode && !loading && cards.length > 0 && (
-        <div className="mx-4 mb-2 bg-[#1A1D24] border border-[#F59E0B]/30 rounded-lg px-4 py-2.5 flex items-center gap-2">
+        <div className="mx-4 mb-2 bg-[#1A1D24] border border-[#F59E0B]/30 rounded-2xl px-4 py-2.5 flex items-center gap-2">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2" strokeLinecap="round" className="flex-shrink-0">
             <circle cx="12" cy="12" r="10" /><path d="M12 8v4M12 16h.01" />
           </svg>

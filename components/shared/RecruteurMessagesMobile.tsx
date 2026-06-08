@@ -129,7 +129,7 @@ function FilterSheet({
             animate={{ y: dragOffset }}
             exit={{ y: "100%" }}
             transition={isDragging ? { duration: 0 } : { duration: 0.32, ease: [0.34, 1.56, 0.64, 1] }}
-            className="fixed inset-x-0 bottom-0 z-[60] bg-[#111317] rounded-t-3xl flex flex-col"
+            className="fixed inset-x-0 bottom-0 z-[60] bg-[#111317] rounded-t-2xl flex flex-col"
             style={{ maxHeight: "60vh", paddingBottom: "env(safe-area-inset-bottom)" }}
           >
             <div
@@ -153,7 +153,7 @@ function FilterSheet({
             <h2 className="px-5 pb-3 text-[12px] uppercase tracking-[0.18em] text-white/50 font-bold">
               Filtrer
             </h2>
-            <div className="mx-4 mb-4 bg-[#1A1D24] rounded-xl overflow-hidden">
+            <div className="mx-4 mb-4 bg-[#1A1D24] rounded-2xl overflow-hidden">
               {FILTER_OPTIONS.map((opt) => {
                 const active = value === opt.value;
                 return (
@@ -514,7 +514,7 @@ export function RecruteurMessagesMobile() {
             type="button"
             disabled={isFree}
             onClick={() => { triggerHaptic("Light"); setFilterSheetOpen(true); }}
-            className={`relative w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
+            className={`relative w-11 h-11 rounded-full flex items-center justify-center transition-colors ${
               isFree
                 ? "bg-white/[0.04] opacity-50"
                 : "bg-white/[0.08] active:bg-white/[0.14]"
@@ -540,7 +540,7 @@ export function RecruteurMessagesMobile() {
 
         {/* Search bar */}
         <div className="px-4 pb-3">
-          <div className={`flex items-center gap-2 px-3 h-10 rounded-xl bg-white/[0.08] ${isFree ? "opacity-50" : ""}`}>
+          <div className={`flex items-center gap-2 px-3 h-10 rounded-2xl bg-white/[0.08] ${isFree ? "opacity-50" : ""}`}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round">
               <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
             </svg>
@@ -616,7 +616,7 @@ export function RecruteurMessagesMobile() {
               <button
                 type="button"
                 onClick={() => { triggerHaptic("Light"); router.push("/tarifs"); }}
-                className="mt-4 w-full py-2.5 rounded-xl bg-[#E63946] text-white font-bold text-[14px] active:bg-[#D42B22] transition-colors"
+                className="mt-4 w-full py-2.5 rounded-2xl bg-[#E63946] text-white font-bold text-[14px] active:bg-[#D42B22] transition-colors"
               >
                 Voir les forfaits
               </button>
@@ -635,7 +635,7 @@ export function RecruteurMessagesMobile() {
             type="button"
             onClick={handleArchiveSelected}
             disabled={selected.size === 0}
-            className={`w-full py-3 rounded-xl font-bold text-[15px] transition-colors ${selected.size === 0 ? "bg-white/[0.06] text-white/40" : "bg-[#E63946] text-white active:bg-[#D42B22]"}`}
+            className={`w-full py-3 rounded-2xl font-bold text-[15px] transition-colors ${selected.size === 0 ? "bg-white/[0.06] text-white/40" : "bg-[#E63946] text-white active:bg-[#D42B22]"}`}
           >
             {selected.size === 0 ? "Sélectionne des conversations" : `Archiver (${selected.size})`}
           </button>

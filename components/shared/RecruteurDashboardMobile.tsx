@@ -267,7 +267,7 @@ function MonProcessusFunnel({
         <button
           type="button"
           onClick={() => { triggerHaptic("Light"); onSeeAll(); }}
-          className="mt-5 w-full py-3 rounded-xl bg-white/[0.04] active:bg-white/[0.08] text-[#E63946] font-semibold text-base flex items-center justify-center gap-2 transition-colors"
+          className="mt-5 w-full py-3 rounded-2xl bg-white/[0.04] active:bg-white/[0.08] text-[#E63946] font-semibold text-base flex items-center justify-center gap-2 transition-colors"
         >
           Voir le processus complet
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -502,7 +502,7 @@ function DashboardSkeleton() {
       </div>
       <div className="flex gap-2 overflow-hidden">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="w-20 h-16 rounded-xl nx-pulse-dash" />
+          <div key={i} className="w-20 h-16 rounded-2xl nx-pulse-dash" />
         ))}
       </div>
     </div>
@@ -679,7 +679,7 @@ export function RecruteurDashboardMobile() {
             <button
               type="button"
               onClick={() => { triggerHaptic("Light"); router.push("/recruteur/activites"); }}
-              className="w-full py-3 rounded-xl bg-white/[0.03] active:bg-white/[0.06] text-[#E63946] font-semibold text-base transition-colors"
+              className="w-full py-3 rounded-2xl bg-white/[0.03] active:bg-white/[0.06] text-[#E63946] font-semibold text-base transition-colors"
             >
               Voir toutes les activités
             </button>

@@ -246,18 +246,18 @@ function AthleteNotesSheet({
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ duration: 0.32, ease: [0.34, 1.56, 0.64, 1] }}
-            className="fixed inset-x-0 bottom-0 z-[75] bg-[#111317] rounded-t-3xl flex flex-col"
+            className="fixed inset-x-0 bottom-0 z-[75] bg-[#111317] rounded-t-2xl flex flex-col"
             style={{ maxHeight: "85vh", paddingBottom: "env(safe-area-inset-bottom)" }}
           >
             <div className="flex justify-center pt-3 pb-2">
               <div className="w-10 h-1 rounded-full bg-white/20" />
             </div>
-            <div className="px-5 pb-3 flex items-center justify-between border-b border-white/[0.06]">
+            <div className="px-4 pb-3 flex items-center justify-between border-b border-white/[0.06]">
               <button
                 type="button"
                 onClick={onClose}
                 aria-label="Fermer"
-                className="w-9 h-9 rounded-full bg-white/[0.06] active:bg-white/[0.10] flex items-center justify-center"
+                className="w-11 h-11 rounded-full bg-white/[0.06] active:bg-white/[0.10] flex items-center justify-center"
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2.4" strokeLinecap="round">
                   <path d="M18 6L6 18" /><path d="M6 6l12 12" />
@@ -267,7 +267,7 @@ function AthleteNotesSheet({
               <div className="w-9" />
             </div>
 
-            <div className="px-5 py-4 border-b border-white/[0.06]">
+            <div className="px-4 py-4 border-b border-white/[0.06]">
               <p className="font-head text-[18px] font-black text-white uppercase tracking-tight truncate">
                 {fullName}
               </p>
@@ -276,11 +276,11 @@ function AthleteNotesSheet({
               </p>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
+            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
               {isLoading ? (
                 <>
-                  <div className="h-16 rounded-xl nx-pulse-notes" />
-                  <div className="h-16 rounded-xl nx-pulse-notes" />
+                  <div className="h-16 rounded-2xl nx-pulse-notes" />
+                  <div className="h-16 rounded-2xl nx-pulse-notes" />
                 </>
               ) : notes.length === 0 ? (
                 <p className="text-[14px] text-white/55 italic text-center py-8">
@@ -288,7 +288,7 @@ function AthleteNotesSheet({
                 </p>
               ) : (
                 notes.map((n) => (
-                  <div key={n.id} className="rounded-xl bg-white/[0.04] px-3 py-2.5">
+                  <div key={n.id} className="rounded-2xl bg-white/[0.04] px-3 py-2.5">
                     <p className="text-[14px] text-white leading-relaxed whitespace-pre-wrap break-words">
                       {n.content}
                     </p>
@@ -300,9 +300,9 @@ function AthleteNotesSheet({
               )}
             </div>
 
-            <div className="px-5 pt-3 pb-4 border-t border-white/[0.06] space-y-2">
+            <div className="px-4 pt-3 pb-4 border-t border-white/[0.06] space-y-2">
               {error && (
-                <div className="px-3 py-2 rounded-xl bg-[#EF4444]/10 border border-[#EF4444]/30">
+                <div className="px-3 py-2 rounded-2xl bg-[#EF4444]/10 border border-[#EF4444]/30">
                   <p className="text-[12px] text-[#EF4444] font-medium">{error}</p>
                 </div>
               )}
@@ -319,7 +319,7 @@ function AthleteNotesSheet({
                   onClick={() => { if (canSubmit) { handleSubmit().catch(() => { toast.error({ message: "Échec" }); }); } }}
                   disabled={!canSubmit}
                   aria-label="Ajouter"
-                  className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${
+                  className={`w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${
                     canSubmit ? "bg-[#E63946] active:bg-[#D42B22]" : "bg-white/[0.06]"
                   }`}
                 >
@@ -373,8 +373,8 @@ function ListNotesPanel({ listId }: { listId: string }) {
       <div className="px-4 pt-3 pb-3 space-y-3">
         {isLoading ? (
           <>
-            <div className="h-16 rounded-xl nx-pulse-notes" />
-            <div className="h-16 rounded-xl nx-pulse-notes" />
+            <div className="h-16 rounded-2xl nx-pulse-notes" />
+            <div className="h-16 rounded-2xl nx-pulse-notes" />
           </>
         ) : notes.length === 0 ? (
           <p className="text-[14px] text-white/55 italic text-center py-12">
@@ -382,7 +382,7 @@ function ListNotesPanel({ listId }: { listId: string }) {
           </p>
         ) : (
           notes.map((n) => (
-            <div key={n.id} className="rounded-xl bg-white/[0.04] px-3 py-2.5">
+            <div key={n.id} className="rounded-2xl bg-white/[0.04] px-3 py-2.5">
               <p className="text-[14px] text-white leading-relaxed whitespace-pre-wrap break-words">
                 {n.content}
               </p>
@@ -400,7 +400,7 @@ function ListNotesPanel({ listId }: { listId: string }) {
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 12px)", bottom: "calc(64px + env(safe-area-inset-bottom))" }}
       >
         {error && (
-          <div className="px-3 py-2 rounded-xl bg-[#EF4444]/10 border border-[#EF4444]/30">
+          <div className="px-3 py-2 rounded-2xl bg-[#EF4444]/10 border border-[#EF4444]/30">
             <p className="text-[12px] text-[#EF4444] font-medium">{error}</p>
           </div>
         )}
@@ -417,7 +417,7 @@ function ListNotesPanel({ listId }: { listId: string }) {
             onClick={() => { if (canSubmit) { handleSubmit().catch(() => { toast.error({ message: "Échec" }); }); } }}
             disabled={!canSubmit}
             aria-label="Ajouter"
-            className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${
+            className={`w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${
               canSubmit ? "bg-[#E63946] active:bg-[#D42B22]" : "bg-white/[0.06]"
             }`}
           >
@@ -450,7 +450,7 @@ function SegmentedTabs<T extends string>({
             key={it.value}
             type="button"
             onClick={() => { triggerHaptic("Light"); onChange(it.value); }}
-            className={`flex-1 px-4 py-2 rounded-full text-[13px] font-bold uppercase tracking-[0.08em] transition-all ${
+            className={`nx-mobile-touch-min inline-flex items-center justify-center flex-1 px-4 rounded-full text-[13px] font-bold uppercase tracking-[0.08em] transition-all ${
               active
                 ? "bg-[#E63946] text-white shadow-[0_0_10px_rgba(230,57,70,0.25)]"
                 : "text-[#9CA3AF] active:text-white"
@@ -515,7 +515,7 @@ function ListActionSheet({
                   type="button"
                   disabled={a.disabled}
                   onClick={a.disabled ? undefined : () => { triggerHaptic("Light"); a.onClick(); }}
-                  className={`w-full flex items-center gap-3 px-5 h-14 text-left transition-colors ${
+                  className={`w-full flex items-center gap-3 px-4 h-14 text-left transition-colors ${
                     idx > 0 ? "border-t border-white/[0.06]" : ""
                   } ${
                     a.disabled ? "opacity-40" : "active:bg-white/[0.04]"
@@ -573,13 +573,13 @@ function ConfirmDeleteListSheet({
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ duration: 0.32, ease: [0.34, 1.56, 0.64, 1] }}
-            className="fixed inset-x-0 bottom-0 z-[75] bg-[#111317] rounded-t-3xl flex flex-col"
+            className="fixed inset-x-0 bottom-0 z-[75] bg-[#111317] rounded-t-2xl flex flex-col"
             style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
           >
             <div className="flex justify-center pt-3 pb-2">
               <div className="w-10 h-1 rounded-full bg-white/20" />
             </div>
-            <div className="px-5 py-5 space-y-3">
+            <div className="px-4 py-5 space-y-3">
               <p className="font-head text-[18px] font-black text-white uppercase tracking-tight">
                 Supprimer cette liste ?
               </p>
@@ -591,18 +591,18 @@ function ConfirmDeleteListSheet({
                 de tes favoris, juste retirés de cette liste.
               </p>
             </div>
-            <div className="px-5 pb-5 space-y-2">
+            <div className="px-4 pb-5 space-y-2">
               <button
                 type="button"
                 onClick={onConfirm}
-                className="w-full py-3 rounded-xl bg-[#E63946] active:bg-[#D42B22] text-white font-bold text-[15px] transition-colors"
+                className="w-full py-3 rounded-2xl bg-[#E63946] active:bg-[#D42B22] text-white font-bold text-[15px] transition-colors"
               >
                 Supprimer
               </button>
               <button
                 type="button"
                 onClick={onClose}
-                className="w-full py-3 rounded-xl bg-white/[0.06] active:bg-white/[0.10] text-white font-semibold text-[15px] transition-colors"
+                className="w-full py-3 rounded-2xl bg-white/[0.06] active:bg-white/[0.10] text-white font-semibold text-[15px] transition-colors"
               >
                 Annuler
               </button>
@@ -740,12 +740,12 @@ function DetailInner({ listId }: { listId: string }) {
     <div className="min-h-screen bg-[#111317] text-white pb-[calc(64px+env(safe-area-inset-bottom))]">
       {/* Header sticky opaque (canon 14.11) */}
       <div className="sticky top-0 z-30 bg-[#111317]" style={{ paddingTop: "env(safe-area-inset-top)" }}>
-        <div className="px-3 pt-2 pb-2 flex items-center gap-2 min-h-[52px]">
+        <div className="px-4 pt-2 pb-2 flex items-center gap-2 min-h-[52px]">
           <button
             type="button"
             onClick={handleBack}
             aria-label="Retour"
-            className="w-9 h-9 rounded-full flex items-center justify-center active:bg-white/[0.08] flex-shrink-0"
+            className="w-11 h-11 rounded-full flex items-center justify-center active:bg-white/[0.08] flex-shrink-0"
           >
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="15 18 9 12 15 6" />
@@ -776,7 +776,7 @@ function DetailInner({ listId }: { listId: string }) {
             type="button"
             aria-label="Ajouter un athlète"
             onClick={() => { triggerHaptic("Light"); setAddAthleteOpen(true); }}
-            className="w-9 h-9 rounded-full flex items-center justify-center active:bg-white/[0.08] flex-shrink-0 text-white"
+            className="w-11 h-11 rounded-full flex items-center justify-center active:bg-white/[0.08] flex-shrink-0 text-white"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 5v14" /><path d="M5 12h14" />
@@ -787,7 +787,7 @@ function DetailInner({ listId }: { listId: string }) {
             type="button"
             aria-label="Plus d'options"
             onClick={() => { triggerHaptic("Light"); setActionSheetOpen(true); }}
-            className="w-9 h-9 rounded-full flex items-center justify-center active:bg-white/[0.08] flex-shrink-0 text-white/70"
+            className="w-11 h-11 rounded-full flex items-center justify-center active:bg-white/[0.08] flex-shrink-0 text-white/70"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
               <circle cx="12" cy="5" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="12" cy="19" r="1.5" />
@@ -939,7 +939,7 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
       <button
         type="button"
         onClick={onAdd}
-        className="mt-5 px-5 py-3 rounded-xl bg-[#E63946] active:bg-[#D42B22] text-white font-bold text-[14px] transition-colors"
+        className="mt-5 px-4 py-3 rounded-2xl bg-[#E63946] active:bg-[#D42B22] text-white font-bold text-[14px] transition-colors"
       >
         Ajouter un athlète
       </button>

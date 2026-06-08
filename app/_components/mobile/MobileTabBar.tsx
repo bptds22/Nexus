@@ -387,7 +387,7 @@ export default function MobileTabBar({ role }: MobileTabBarProps) {
                   </span>
                 )}
               </span>
-              <span className="text-[10px] font-medium tracking-[0.04em]">{tab.label}</span>
+              <span className="text-[11px] font-medium tracking-[0.04em] whitespace-nowrap">{tab.label}</span>
             </Link>
           );
         })}
@@ -406,7 +406,7 @@ export default function MobileTabBar({ role }: MobileTabBarProps) {
               <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-[#E63946]" aria-hidden />
             )}
           </span>
-          <span className="text-[10px] font-medium tracking-[0.04em]">Plus</span>
+          <span className="text-[11px] font-medium tracking-[0.04em] whitespace-nowrap">Plus</span>
         </button>
       </nav>
 

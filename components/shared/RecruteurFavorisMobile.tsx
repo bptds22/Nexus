@@ -152,18 +152,20 @@ export function RecruteurFavorisMobile() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Filtrer par nom"
-                className="w-full bg-white/[0.06] rounded-xl pl-9 pr-9 py-2.5 text-[16px] text-white placeholder:text-white/40 outline-none"
+                className="w-full bg-white/[0.06] rounded-2xl pl-9 pr-9 py-2.5 text-[16px] text-white placeholder:text-white/40 outline-none"
               />
               {search && (
                 <button
                   type="button"
                   onClick={() => setSearch("")}
                   aria-label="Effacer"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-white/[0.10] flex items-center justify-center active:bg-white/[0.18]"
+                  className="absolute right-0 top-1/2 -translate-y-1/2 nx-mobile-touch-min flex items-center justify-center"
                 >
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2.4" strokeLinecap="round">
-                    <path d="M18 6L6 18" /><path d="M6 6l12 12" />
-                  </svg>
+                  <span className="w-6 h-6 rounded-full bg-white/[0.10] flex items-center justify-center active:bg-white/[0.18]">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2.4" strokeLinecap="round">
+                      <path d="M18 6L6 18" /><path d="M6 6l12 12" />
+                    </svg>
+                  </span>
                 </button>
               )}
             </div>

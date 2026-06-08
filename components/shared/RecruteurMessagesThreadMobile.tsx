@@ -301,7 +301,7 @@ function CoachDetailsSheet({
               animate={{ y: 0 }}
               exit={{ y: "-100%" }}
               transition={{ duration: 0.32, ease: [0.34, 1.56, 0.64, 1] }}
-              className="fixed inset-x-0 top-0 z-[65] bg-[#111317] rounded-b-3xl flex flex-col"
+              className="fixed inset-x-0 top-0 z-[65] bg-[#111317] rounded-b-2xl flex flex-col"
               style={{ maxHeight: "92vh", paddingTop: "env(safe-area-inset-top)" }}
             >
               {/* Iter 7.9 Section 5 — barre titre sheet coach contient désormais
@@ -313,7 +313,7 @@ function CoachDetailsSheet({
                   type="button"
                   onClick={() => { triggerHaptic("Light"); onClose(); }}
                   aria-label="Fermer"
-                  className="w-9 h-9 rounded-full bg-white/[0.06] active:bg-white/[0.10] flex items-center justify-center flex-shrink-0"
+                  className="w-11 h-11 rounded-full bg-white/[0.06] active:bg-white/[0.10] flex items-center justify-center flex-shrink-0"
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2.4" strokeLinecap="round">
                     <path d="M18 6L6 18" /><path d="M6 6l12 12" />
@@ -370,7 +370,7 @@ function CoachDetailsSheet({
                   </h3>
                   {repLoading ? (
                     <div className="space-y-3">
-                      <div className="h-12 rounded-xl nx-pulse-thread" />
+                      <div className="h-12 rounded-2xl nx-pulse-thread" />
                       <div className="h-5 rounded nx-pulse-thread" />
                       <div className="h-5 rounded nx-pulse-thread" />
                       <div className="h-5 rounded nx-pulse-thread" />
@@ -431,7 +431,7 @@ function CoachDetailsSheet({
                   </h3>
 
                   {myReviewLoading ? (
-                    <div className="h-24 rounded-xl nx-pulse-thread" />
+                    <div className="h-24 rounded-2xl nx-pulse-thread" />
                   ) : editing ? (
                     <div className="space-y-5">
                       {/* 4 critères ClickableStars éditables */}
@@ -448,7 +448,7 @@ function CoachDetailsSheet({
                       </div>
 
                       {/* Note globale calculée */}
-                      <div className="flex items-center justify-between bg-white/[0.04] rounded-xl px-4 py-3">
+                      <div className="flex items-center justify-between bg-white/[0.04] rounded-2xl px-4 py-3">
                         <span className="text-[12px] uppercase tracking-wider text-white/55 font-semibold">Note globale</span>
                         <span className="text-[18px] font-bold text-white tabular-nums">
                           {editNoteGlobale.toFixed(1)} <span className="text-[12px] text-white/45">/5</span>
@@ -462,7 +462,7 @@ function CoachDetailsSheet({
                           <button
                             type="button"
                             onClick={() => { triggerHaptic("Light"); setEditRecommande(true); }}
-                            className={`flex-1 py-3 rounded-xl text-[14px] font-bold transition-colors ${
+                            className={`flex-1 py-3 rounded-2xl text-[14px] font-bold transition-colors ${
                               editRecommande === true ? "bg-[#22C55E] text-white" : "bg-white/[0.06] text-white/70 active:bg-white/[0.10]"
                             }`}
                           >
@@ -471,7 +471,7 @@ function CoachDetailsSheet({
                           <button
                             type="button"
                             onClick={() => { triggerHaptic("Light"); setEditRecommande(false); }}
-                            className={`flex-1 py-3 rounded-xl text-[14px] font-bold transition-colors ${
+                            className={`flex-1 py-3 rounded-2xl text-[14px] font-bold transition-colors ${
                               editRecommande === false ? "bg-[#E63946] text-white" : "bg-white/[0.06] text-white/70 active:bg-white/[0.10]"
                             }`}
                           >
@@ -488,12 +488,12 @@ function CoachDetailsSheet({
                           onChange={(e) => setEditCommentaire(e.target.value)}
                           placeholder="Détaille ton expérience…"
                           rows={3}
-                          className="w-full bg-white/[0.06] rounded-xl px-3 py-2.5 text-[16px] text-white placeholder:text-white/40 outline-none resize-none"
+                          className="w-full bg-white/[0.06] rounded-2xl px-3 py-2.5 text-[16px] text-white placeholder:text-white/40 outline-none resize-none"
                         />
                       </div>
 
                       {/* Bandeau anonymat */}
-                      <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-white/[0.04]">
+                      <div className="flex items-start gap-2 px-3 py-2.5 rounded-2xl bg-white/[0.04]">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 mt-0.5">
                           <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0110 0v4" />
                         </svg>
@@ -503,7 +503,7 @@ function CoachDetailsSheet({
                       </div>
 
                       {editError && (
-                        <div className="px-3 py-2.5 rounded-xl bg-[#EF4444]/10 border border-[#EF4444]/30">
+                        <div className="px-3 py-2.5 rounded-2xl bg-[#EF4444]/10 border border-[#EF4444]/30">
                           <p className="text-[13px] text-[#EF4444] font-medium">{editError}</p>
                         </div>
                       )}
@@ -529,7 +529,7 @@ function CoachDetailsSheet({
                         </span>
                       </div>
                       {myReview.commentaire && (
-                        <p className="text-[13px] text-white/80 leading-relaxed bg-white/[0.04] rounded-xl px-3 py-2.5">
+                        <p className="text-[13px] text-white/80 leading-relaxed bg-white/[0.04] rounded-2xl px-3 py-2.5">
                           &laquo; {myReview.commentaire} &raquo;
                         </p>
                       )}
@@ -598,7 +598,7 @@ function AthleteThreadSheet({
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ duration: 0.32, ease: [0.34, 1.56, 0.64, 1] }}
-            className="fixed inset-x-0 bottom-0 z-[65] bg-[#111317] rounded-t-3xl flex flex-col"
+            className="fixed inset-x-0 bottom-0 z-[65] bg-[#111317] rounded-t-2xl flex flex-col"
             style={{ maxHeight: "85vh", paddingBottom: "env(safe-area-inset-bottom)" }}
           >
             <div className="flex justify-center pt-3 pb-2">
@@ -611,7 +611,7 @@ function AthleteThreadSheet({
                 type="button"
                 onClick={() => { triggerHaptic("Light"); onClose(); }}
                 aria-label="Fermer"
-                className="w-9 h-9 rounded-full bg-white/[0.06] active:bg-white/[0.10] flex items-center justify-center"
+                className="w-11 h-11 rounded-full bg-white/[0.06] active:bg-white/[0.10] flex items-center justify-center"
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2.4" strokeLinecap="round">
                   <path d="M18 6L6 18" /><path d="M6 6l12 12" />
@@ -624,10 +624,10 @@ function AthleteThreadSheet({
             <div className="flex-1 overflow-y-auto px-5 py-6 space-y-6">
               {isLoading || !summary ? (
                 <div className="space-y-4">
-                  <div className="h-24 rounded-xl nx-pulse-thread" />
-                  <div className="h-14 rounded-xl nx-pulse-thread" />
-                  <div className="h-14 rounded-xl nx-pulse-thread" />
-                  <div className="h-12 rounded-xl nx-pulse-thread" />
+                  <div className="h-24 rounded-2xl nx-pulse-thread" />
+                  <div className="h-14 rounded-2xl nx-pulse-thread" />
+                  <div className="h-14 rounded-2xl nx-pulse-thread" />
+                  <div className="h-12 rounded-2xl nx-pulse-thread" />
                 </div>
               ) : (
                 <>
@@ -672,7 +672,7 @@ function AthleteThreadSheet({
 
                   {/* Pill statut recrutement */}
                   {statusConfig && (
-                    <div className="flex items-center justify-between bg-white/[0.04] rounded-xl px-4 py-3">
+                    <div className="flex items-center justify-between bg-white/[0.04] rounded-2xl px-4 py-3">
                       <span className="text-[13px] uppercase tracking-wider text-white/55 font-semibold">Statut</span>
                       <span
                         className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[13px] font-bold"
@@ -691,7 +691,7 @@ function AthleteThreadSheet({
                   )}
 
                   {/* Cote globale entraîneur */}
-                  <div className="flex items-center justify-between bg-white/[0.04] rounded-xl px-4 py-3">
+                  <div className="flex items-center justify-between bg-white/[0.04] rounded-2xl px-4 py-3">
                     <span className="text-[13px] uppercase tracking-wider text-white/55 font-semibold">Cote coach</span>
                     <div className="flex items-center gap-2.5">
                       <StarBar value={Math.round(cote)} />
@@ -700,7 +700,7 @@ function AthleteThreadSheet({
                   </div>
 
                   {/* Profil complété */}
-                  <div className="bg-white/[0.04] rounded-xl px-4 py-3">
+                  <div className="bg-white/[0.04] rounded-2xl px-4 py-3">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-[13px] uppercase tracking-wider text-white/55 font-semibold">Profil complété</span>
                       <span className="text-[15px] font-bold text-white tabular-nums">{completion}%</span>
@@ -714,7 +714,7 @@ function AthleteThreadSheet({
                   <button
                     type="button"
                     onClick={goToProfile}
-                    className="w-full mt-3 py-3.5 rounded-xl bg-[#E63946] active:bg-[#D42B22] text-white font-bold text-[15px] transition-colors"
+                    className="w-full mt-3 py-3.5 rounded-2xl bg-[#E63946] active:bg-[#D42B22] text-white font-bold text-[15px] transition-colors"
                   >
                     Voir le profil complet
                   </button>
@@ -876,12 +876,12 @@ export function RecruteurMessagesThreadMobile() {
         className="sticky top-0 z-30 bg-[#111317]/95 backdrop-blur-md border-b border-white/[0.06]"
         style={{ paddingTop: "env(safe-area-inset-top)" }}
       >
-        <div className="flex items-center px-3 py-2 gap-2 min-h-[64px]">
+        <div className="flex items-center px-4 py-2 gap-2 min-h-[64px]">
           <button
             type="button"
             onClick={handleBack}
             aria-label="Retour"
-            className="w-9 h-9 rounded-full flex items-center justify-center active:bg-white/5 flex-shrink-0"
+            className="w-11 h-11 rounded-full flex items-center justify-center active:bg-white/5 flex-shrink-0"
           >
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="15 18 9 12 15 6" />
@@ -974,7 +974,7 @@ export function RecruteurMessagesThreadMobile() {
         className="sticky bottom-0 z-20 bg-[#111317]/95 backdrop-blur-md border-t border-white/[0.06]"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        <div className="px-3 py-2 flex items-end gap-2">
+        <div className="px-4 py-2 flex items-end gap-2">
           <div className="flex-1 bg-white/[0.06] rounded-2xl px-3 py-2 min-h-[40px] flex items-center">
             <textarea
               ref={inputRef}
@@ -996,7 +996,7 @@ export function RecruteurMessagesThreadMobile() {
             onClick={handleSend}
             disabled={!reply.trim()}
             aria-label="Envoyer"
-            className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors flex-shrink-0 ${
+            className={`w-11 h-11 rounded-full flex items-center justify-center transition-colors flex-shrink-0 ${
               reply.trim()
                 ? "bg-[#E63946] active:bg-[#D42B22]"
                 : "bg-white/[0.06]"

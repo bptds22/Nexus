@@ -161,7 +161,7 @@ function CegepSearchSheet({ open, onClose, currentId, onPick }: CegepSearchSheet
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Rechercher un CÉGEP…"
             autoFocus
-            className="w-full bg-[#13151a] border border-[#2a2d36] rounded-xl px-4 py-2.5 text-[16px] text-white placeholder:text-[#6b7280] focus:outline-none focus:border-[#E63946]/50"
+            className="w-full bg-[#13151a] border border-[#2a2d36] rounded-2xl px-4 py-2.5 text-[16px] text-white placeholder:text-[#6b7280] focus:outline-none focus:border-[#E63946]/50"
           />
         </div>
         <div className="overflow-y-auto flex-1">
@@ -454,7 +454,7 @@ export function RecruteurProfilMobile() {
             type="button"
             aria-label="Retour"
             onClick={handleBack}
-            className="w-9 h-9 rounded-full flex items-center justify-center active:bg-white/[0.08] text-[#8a8d96]"
+            className="w-11 h-11 rounded-full flex items-center justify-center active:bg-white/[0.08] text-[#8a8d96]"
           >
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="15 18 9 12 15 6" />

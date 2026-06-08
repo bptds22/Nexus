@@ -288,7 +288,7 @@ export function RecruteurParametresMobile() {
             type="button"
             aria-label="Retour"
             onClick={handleBack}
-            className="w-9 h-9 rounded-full flex items-center justify-center active:bg-white/[0.08] text-[#8a8d96]"
+            className="w-11 h-11 rounded-full flex items-center justify-center active:bg-white/[0.08] text-[#8a8d96]"
           >
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="15 18 9 12 15 6" />
@@ -355,7 +355,7 @@ export function RecruteurParametresMobile() {
             type="button"
             onClick={saveNotifs}
             disabled={savingNotifs}
-            className="w-full h-11 rounded-xl bg-[#E63946] text-white text-[14px] font-semibold active:bg-[#D42B22] disabled:opacity-60"
+            className="w-full h-11 rounded-2xl bg-[#E63946] text-white text-[14px] font-semibold active:bg-[#D42B22] disabled:opacity-60"
           >
             {savingNotifs ? "Sauvegarde…" : "Enregistrer les notifications"}
           </button>
@@ -393,7 +393,7 @@ export function RecruteurParametresMobile() {
             type="button"
             onClick={savePrivacy}
             disabled={savingPrivacy}
-            className="w-full h-11 rounded-xl bg-[#E63946] text-white text-[14px] font-semibold active:bg-[#D42B22] disabled:opacity-60"
+            className="w-full h-11 rounded-2xl bg-[#E63946] text-white text-[14px] font-semibold active:bg-[#D42B22] disabled:opacity-60"
           >
             {savingPrivacy ? "Sauvegarde…" : "Enregistrer la confidentialité"}
           </button>
@@ -720,7 +720,7 @@ function TierCard({
       </ul>
       {status === "upgrade" && (
         <div className="mt-3 pt-3 border-t border-white/[0.05]">
-          <div className="flex items-center justify-center h-9 rounded-xl bg-white/[0.04] text-[12px] font-semibold text-[#9CA3AF] italic">
+          <div className="flex items-center justify-center h-9 rounded-2xl bg-white/[0.04] text-[12px] font-semibold text-[#9CA3AF] italic">
             Bientôt disponible
           </div>
         </div>
@@ -797,7 +797,7 @@ function PasswordChangeSheet({ open, onClose }: { open: boolean; onClose: () => 
             value={newPw}
             onChange={(e) => setNewPw(e.target.value)}
             placeholder="Nouveau mot de passe"
-            className="w-full bg-[#13151a] border border-[#2a2d36] rounded-xl px-4 py-3 text-[16px] text-white placeholder:text-[#4a4d56] focus:outline-none focus:border-[#E63946]/50"
+            className="w-full bg-[#13151a] border border-[#2a2d36] rounded-2xl px-4 py-3 text-[16px] text-white placeholder:text-[#4a4d56] focus:outline-none focus:border-[#E63946]/50"
           />
           {newPw.length > 0 && (
             <div className="grid grid-cols-2 gap-1.5 mt-3">
@@ -814,7 +814,7 @@ function PasswordChangeSheet({ open, onClose }: { open: boolean; onClose: () => 
             value={confirmPw}
             onChange={(e) => setConfirmPw(e.target.value)}
             placeholder="Confirmer le mot de passe"
-            className="w-full mt-4 bg-[#13151a] border border-[#2a2d36] rounded-xl px-4 py-3 text-[16px] text-white placeholder:text-[#4a4d56] focus:outline-none focus:border-[#E63946]/50"
+            className="w-full mt-4 bg-[#13151a] border border-[#2a2d36] rounded-2xl px-4 py-3 text-[16px] text-white placeholder:text-[#4a4d56] focus:outline-none focus:border-[#E63946]/50"
           />
           {confirmPw.length > 0 && !match && (
             <p className="text-[12px] text-[#E63946] mt-2">Les mots de passe ne correspondent pas.</p>

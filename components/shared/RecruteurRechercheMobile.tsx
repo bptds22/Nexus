@@ -165,7 +165,7 @@ function MobileSearchBar({
           type="button"
           onClick={() => { if (!disabled) { triggerHaptic("Light"); onExpand(); } }}
           disabled={disabled}
-          className={`flex-1 rounded-full bg-[#1A1D24] px-4 h-11 flex items-center gap-3 ${disabled ? "opacity-50" : "active:bg-white/[0.04]"}`}
+          className={`flex-1 rounded-2xl bg-[#1A1D24] px-4 h-11 flex items-center gap-3 ${disabled ? "opacity-50" : "active:bg-white/[0.04]"}`}
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2" strokeLinecap="round">
             <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
@@ -229,7 +229,7 @@ function SuggestionItem({ id, firstName, lastName, photoUrl, subtitle, query, on
     <Link
       href={`/recruteur/athletes/${id}`}
       onClick={onTap}
-      className="flex items-center gap-3 p-2 rounded-lg active:bg-[#1A1D24] transition-colors"
+      className="flex items-center gap-3 p-2 rounded-2xl active:bg-[#1A1D24] transition-colors"
     >
       <div className="relative w-11 h-11 rounded-full overflow-hidden flex-shrink-0 bg-[#2F3440]">
         <AthletePhoto photoUrl={photoUrl ?? ""} firstName={firstName} lastName={lastName} size={44} />
@@ -378,13 +378,13 @@ function ExpandedSearchOverlay({
             type="button"
             onClick={() => { triggerHaptic("Light"); onClose(); }}
             aria-label="Fermer"
-            className="w-10 h-10 rounded-full flex items-center justify-center active:bg-white/5"
+            className="w-11 h-11 rounded-full flex items-center justify-center active:bg-white/5"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" />
             </svg>
           </button>
-          <div className="flex-1 rounded-full bg-[#1A1D24] px-4 h-11 flex items-center gap-3">
+          <div className="flex-1 rounded-2xl bg-[#1A1D24] px-4 h-11 flex items-center gap-3">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2" strokeLinecap="round">
               <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
             </svg>
@@ -598,11 +598,11 @@ function AthleteRowMobile({ a, isFree, favDisabled, onToggleFav }: AthleteCardPr
   const pill = statusPillFromStatus(a.recruitmentStatus);
   return (
     <Link href={`/recruteur/athletes/${a.id}`} className="block">
-      <div className="flex items-center gap-3 p-3 bg-[#1A1D24] rounded-xl active:bg-[#22262e] transition-colors">
+      <div className="flex items-center gap-3 p-3 bg-[#1A1D24] rounded-2xl active:bg-[#22262e] transition-colors">
         {/* Avatar carré 64x64 avec layoutId pour transition */}
         <motion.div
           layoutId={`athlete-photo-${a.id}`}
-          className="relative w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 bg-[#2F3440]"
+          className="relative w-16 h-16 rounded-2xl overflow-hidden flex-shrink-0 bg-[#2F3440]"
         >
           <AthletePhoto photoUrl={a.photo} firstName={a.firstName} lastName={a.lastName} size={64} />
           {verifiedActive && (
@@ -696,7 +696,7 @@ function TogglePill({ active, label, onTap }: { active: boolean; label: string; 
     <button
       type="button"
       onClick={() => { triggerHaptic("Light"); onTap(); }}
-      className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-[12px] font-bold transition-colors ${
+      className={`nx-mobile-touch-min inline-flex items-center gap-1.5 px-4 rounded-full text-[12px] font-bold transition-colors ${
         active
           ? "bg-[#E63946]/15 text-[#E63946] border border-[#E63946]/30"
           : "bg-[#0C0E12] text-[#9CA3AF] border border-transparent"
