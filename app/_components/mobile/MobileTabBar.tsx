@@ -299,6 +299,18 @@ export default function MobileTabBar({ role }: MobileTabBarProps) {
     pathname !== "/recruteur/messages";
   if (messagesDrillDown) return null;
 
+  // Iter 7.50-a5 — masquer la TabBar pendant le wizard d'onboarding athlète
+  // plein écran (canon iOS : pas de nav globale durant un flow de capture
+  // critique). Sans ce guard, la TabBar z-40 couvre le CTA "Continuer" z-30
+  // de AthleteOnboardingMobile → l'utilisateur tap un onglet au lieu du CTA
+  // → rebond vers dashboard → re-mount onboarding → boucle (DIAG 7.50-a4).
+  // L'athlète en onboarding (onboarding_complete=false) n'a aucun usage de
+  // la TabBar puisque le layout shell le bounce vers /athlete/onboarding
+  // dès qu'il tente d'aller ailleurs. Même pattern que messagesDrillDown.
+  const athleteOnboarding =
+    role === "athlete" && pathname === "/athlete/onboarding";
+  if (athleteOnboarding) return null;
+
   const tabs = TABS_BY_ROLE[role];
 
   function isActive(tab: TabConfig): boolean {

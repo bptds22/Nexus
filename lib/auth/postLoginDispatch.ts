@@ -59,10 +59,20 @@ export async function postLoginDispatch(
   const role = (profile?.role as string) || (user.user_metadata?.role as string);
   const onboardingComplete = profile?.onboarding_complete;
 
-  // 3) Si profil existe explicitement et onboarding pas fini → /onboarding
-  //    (couvre aussi le cas profil chargé sans onboarding_complete posé)
+  // 3) Si profil existe explicitement et onboarding pas fini → onboarding
+  //    par rôle (couvre aussi le cas profil chargé sans
+  //    onboarding_complete posé).
+  //    Iter 7.50-a-bis — fix DIAG 7.50-a3 §6 : avant ce sprint, ATHLETE
+  //    avec onboarding_complete=false était routé sur /onboarding (le
+  //    wizard COACH/RECRUTEUR 3619 LOC) qui n'a pas de branche athlète
+  //    et tombait sur le fallback "coach" → cassé. Maintenant routé
+  //    explicitement vers /athlete/onboarding pour atteindre
+  //    AthleteOnboardingMobile (en Capacitor) ou la wizard desktop
+  //    /athlete/onboarding. COACH / RECRUTEUR / ADMIN / PARTNER restent
+  //    sur /onboarding — comportement actuel préservé.
   if (profile && !onboardingComplete) {
-    router.push("/onboarding");
+    if (role === "ATHLETE") router.push("/athlete/onboarding");
+    else router.push("/onboarding");
     return { kind: "onboarding" };
   }
 

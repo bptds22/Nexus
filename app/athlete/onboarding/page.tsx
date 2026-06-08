@@ -12,6 +12,9 @@ import SchoolSelect from "@/components/ui/SchoolSelect";
 import CoachPicker from "@/components/coach/CoachPicker";
 import PartnerVisibilityConsentCard from "@/components/shared/PartnerVisibilityConsentCard";
 import ClaimProfileModal, { type OrphanProfile } from "@/components/auth/ClaimProfileModal";
+import { AthleteOnboardingMobile } from "@/components/shared/AthleteOnboardingMobile";
+
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
 const SPORTS = [
   "Football", "Basketball", "Soccer", "Hockey", "Volleyball",
@@ -417,6 +420,15 @@ function SchoolTeamPicker({
 }
 
 export default function AthleteOnboardingPage() {
+  // Iter 7.50-a — Capacitor (mobile natif) route vers le nouveau flow
+  // minimal "Construis ta carte" (3 écrans). Le desktop ci-dessous reste
+  // byte-identique : aucune ligne supprimée/modifiée.
+  if (IS_CAPACITOR) return <AthleteOnboardingMobile />;
+
+  return <AthleteOnboardingDesktop />;
+}
+
+function AthleteOnboardingDesktop() {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
