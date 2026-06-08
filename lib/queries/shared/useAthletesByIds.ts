@@ -67,5 +67,12 @@ export function useAthletesByIds(ids: string[]) {
     },
     enabled: stableIds.length > 0,
     staleTime: 5 * 60 * 1000,
+    // Iter 7.54 — garde les données précédentes pendant le refetch
+    // déclenché par un changement de queryKey (ex: retrait d'un favori
+    // → favoriteIds change → nouvelle queryKey). Sans ça, isLoading
+    // bascule à true et le consommateur (Favoris mobile) swap vers le
+    // skeleton plein écran, démontant l'AnimatePresence et empêchant
+    // l'exit animation des cartes. Pattern TanStack standard, safe.
+    placeholderData: (prev) => prev,
   });
 }
