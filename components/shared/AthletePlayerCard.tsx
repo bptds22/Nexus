@@ -160,7 +160,11 @@ export default function AthletePlayerCard({
               ].map((r) => (
                 <div key={r.lbl}>
                   <div style={{ fontFamily: "var(--font-outfit), sans-serif", fontSize: 7, fontWeight: 800, letterSpacing: "0.22em", textTransform: "uppercase", color: "rgba(255,255,255,0.38)", marginBottom: 1 }}>{r.lbl}</div>
-                  <div style={{ fontFamily: "var(--font-outfit), sans-serif", fontSize: 16, fontWeight: 900, color: "#fff", letterSpacing: "0.06em", lineHeight: 1 }}>{r.val}</div>
+                  {/* Sprint WOW-finitions §C — fontSize 16 → 15 pour que les
+                      noms de sports longs ("Basketball", "Volleyball") tiennent
+                      dans la colonne ticket. Impact app-wide (composant partagé)
+                      bénéfique — pas de troncature, sports courts toujours nets. */}
+                  <div style={{ fontFamily: "var(--font-outfit), sans-serif", fontSize: 15, fontWeight: 900, color: "#fff", letterSpacing: "0.06em", lineHeight: 1 }}>{r.val}</div>
                 </div>
               ))}
             </div>

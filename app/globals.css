@@ -809,6 +809,147 @@ body.light-mode .nx-social-auth-btn:hover {
   to   { transform: translateX(0); }
 }
 
+/* ── Mobile bottom sheets (LegalSheetMobile, SearchSheet, MobilePicker) ─
+   Référencés en `style={{ animation: "nx-modal-slideup ..." }}` côté JS.
+   Le drag-to-dismiss prend ensuite le relais via `transform: translateY(dragOffset)`
+   en inline-style — il a la priorité une fois l'animation terminée (forwards). */
+@keyframes nx-modal-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes nx-modal-slideup {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
+/* ── WOW athlete onboarding (AthleteOnboardingWowMobile, iter 7.50-b3) ─
+   GPU-clean : transform + opacity uniquement (la gauge pipeline width
+   est animée inline via transition, hors keyframe). */
+
+/* ACTE 1 — anticipation flamme + scan doré */
+@keyframes nx-wow-flame {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.08); }
+}
+@keyframes nx-wow-scan {
+  0%   { transform: translateX(-120%) skewX(-22deg); }
+  100% { transform: translateX(220%)  skewX(-22deg); }
+}
+
+/* ACTE 2 — sheen sweep diagonal sur la carte à chaque étoile.
+   Key sur wowStars dans le JSX → l'anim rejoue une fois par étoile. */
+@keyframes nx-wow-sheen {
+  0%   { transform: translateX(-120%) skewX(-22deg); opacity: 0; }
+  30%  { opacity: 1; }
+  70%  { opacity: 1; }
+  100% { transform: translateX(420%)  skewX(-22deg); opacity: 0; }
+}
+
+/* ACTE 2+3 — idle float : carte respire en boucle une fois révélée.
+   Appliqué à un wrapper dédié pour ne pas écraser le transform parent
+   (scale ACT 3). transform-only. */
+.nx-wow-idle {
+  animation: nx-wow-idle-float 5.2s ease-in-out infinite;
+}
+@keyframes nx-wow-idle-float {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50%      { transform: translateY(-4px) scale(1.005); }
+}
+
+/* ACTE 2+3 — sparks : petites particules dorées/rouges qui montent et
+   s'estompent derrière la carte. delay/duration variés par index. */
+@keyframes nx-wow-spark {
+  0%   { transform: translateY(0) scale(0.6);  opacity: 0; }
+  20%  { opacity: 0.9; }
+  100% { transform: translateY(-160px) scale(1); opacity: 0; }
+}
+
+/* ACTE 3 — Lettre signée : halo qui pulse en boucle une fois atteint
+   (legacy nx-wow-dot-breathe — gardée pour potentiel réusage). */
+@keyframes nx-wow-dot-breathe {
+  0%, 100% { transform: translate(-50%, -50%) scale(1);    opacity: 0.55; }
+  50%      { transform: translate(-50%, -50%) scale(1.55); opacity: 0.15; }
+}
+
+/* ACTE 3 sprint 3.6 — point ROUGE voyageur : pulsation infinie après
+   arrivée sur Lettre signée. scale + box-shadow intensifié pour battement
+   "vivant" (le translateX absolu reste contrôlé en inline-style, l'anim
+   n'écrase pas left puisqu'elle ne touche que transform). */
+@keyframes nx-wow-red-pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 14px rgba(230,57,70,0.65), 0 0 28px rgba(230,57,70,0.35);
+  }
+  50% {
+    transform: scale(1.18);
+    box-shadow: 0 0 22px rgba(230,57,70,0.85), 0 0 44px rgba(230,57,70,0.50);
+  }
+}
+
+/* ACTE 2 sprint 3.3 — Vérifié : ring bleu sonar qui pulse autour du
+   badge à l'apparition (transform + opacity). 700ms forwards. */
+@keyframes nx-wow-verified-flash {
+  0%   { transform: scale(0.4); opacity: 0; }
+  18%  { opacity: 0.95; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
+
+/* ACTE 2 sprint b3-fix3 — Foil reveal one-shot : balayage lumineux
+   diagonal qui traverse la carte au moment du reveal ("carte fraîchement
+   frappée"). 820ms forwards. GPU-clean. */
+@keyframes nx-wow-foil-reveal {
+  0%   { transform: translateX(-130%) skewX(-22deg); opacity: 0; }
+  20%  { opacity: 1; }
+  100% { transform: translateX(220%)  skewX(-22deg); opacity: 0; }
+}
+
+/* ACTE 2-4 sprint b3-fix3 — Foil shimmer continu : reflet holographique
+   subtil qui boucle lentement (overlay en mix-blend-mode screen côté JS). */
+@keyframes nx-wow-foil-shimmer {
+  0%, 100% { transform: translateX(-30%) skewX(-22deg); opacity: 0.10; }
+  50%      { transform: translateX(140%) skewX(-22deg); opacity: 0.22; }
+}
+
+/* ACTE 3 sprint b3-fix3 — Pill pop : entrée bouncy à chaque morphe de
+   titre (key sur safe stage côté JS). Scale + opacity. */
+@keyframes nx-wow-pill-pop {
+  0%   { transform: scale(0.85); opacity: 0; }
+  60%  { transform: scale(1.06); opacity: 1; }
+  100% { transform: scale(1);    opacity: 1; }
+}
+
+/* ACTE 3 sprint b3-fix3 — Pill pulse final (Lettre signée) : respire en
+   boucle. Scale + box-shadow intensifié (le bg-color est dynamique côté
+   JS, l'anim ne touche que transform / box-shadow). */
+@keyframes nx-wow-pill-pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 8px 26px rgba(230,57,70,0.45), 0 0 32px rgba(230,57,70,0.55);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 10px 36px rgba(230,57,70,0.65), 0 0 56px rgba(230,57,70,0.75);
+  }
+}
+
+/* ACTE 2-4 sprint b3-fix3 — Auto-tilt fallback (si DeviceOrientation
+   indispo). Léger rotateY + rotateX en boucle, transform-only. La classe
+   .nx-wow-auto-tilt est appliquée par le JS quand hasGyro === false. */
+@keyframes nx-wow-auto-tilt {
+  0%, 100% { transform: rotateY(-2.5deg) rotateX(1.2deg); }
+  50%      { transform: rotateY(2.5deg)  rotateX(-1.2deg); }
+}
+.nx-wow-auto-tilt {
+  animation: nx-wow-auto-tilt 6s ease-in-out infinite;
+}
+
+/* ACTE 1 sprint WOW-finitions §B — "Chargement..." 3 points qui clignotent
+   en cascade. Délai d'animation 0 / 0.2 / 0.4 s côté JSX → vague droite. */
+@keyframes nx-wow-load-dot {
+  0%, 80%, 100% { opacity: 0.25; transform: translateY(0); }
+  40%           { opacity: 1;    transform: translateY(-2px); }
+}
+
 /* ── Filter bar (recruiter search) ───────────────────────── */
 .nx-filter-select {
   background-color: #1A1D24;

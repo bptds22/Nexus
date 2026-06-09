@@ -39,9 +39,10 @@ import { createClient } from "@/lib/supabase/client";
 import { postLoginDispatch } from "@/lib/auth/postLoginDispatch";
 import { WelcomeMobile } from "./WelcomeMobile";
 import { LoginMobile } from "./LoginMobile";
+import { SignupMobile } from "./SignupMobile";
 import { PlaybookHeroArt } from "./PlaybookTileStatic";
 
-type Phase = "boot" | "welcome" | "login" | "desktop";
+type Phase = "boot" | "welcome" | "login" | "signup" | "desktop";
 
 interface AuthMobileDispatcherProps {
   desktopFallback: ReactNode;
@@ -83,6 +84,10 @@ const slideTransition = {
 const PLAYBOOK_X_BY_VIEW = {
   welcome: "0vw",
   login: "-10vw",
+  // Iter 7.50-a-bis-2a — signup parallax opposé au login (effet de
+  // profondeur cohérent : welcome au centre, login à gauche, signup
+  // à droite). Même amplitude que login pour symétrie visuelle.
+  signup: "10vw",
 };
 
 const PLAYBOOK_OPACITY_BY_VIEW = {
@@ -91,6 +96,10 @@ const PLAYBOOK_OPACITY_BY_VIEW = {
   // interne masque la zone basse. 0.09 compense pour rendre le playbook
   // clairement visible sous le form, pas un cercle fantôme.
   login: 0.09,
+  // Iter 7.50-a-bis-2a — signup proche du welcome (header + 3 écrans
+  // form, le playbook respire surtout en bas via le gradient interne
+  // du composant). 0.07 cohérent avec welcome.
+  signup: 0.07,
 };
 
 export function AuthMobileDispatcher({ desktopFallback }: AuthMobileDispatcherProps) {
@@ -153,6 +162,13 @@ export function AuthMobileDispatcher({ desktopFallback }: AuthMobileDispatcherPr
     setDirection(-1);
     setPhase("welcome");
   };
+  // Iter 7.50-a-bis-2a — phase signup native (role-picker + 3 écrans
+  // athlète). Direction +1 depuis welcome (push droite → gauche, slide
+  // vers la gauche), -1 pour retour vers welcome.
+  const goToSignup = () => {
+    setDirection(1);
+    setPhase("signup");
+  };
 
   // Boot : noir vide (splash Capacitor visible).
   if (phase === "boot") {
@@ -163,8 +179,8 @@ export function AuthMobileDispatcher({ desktopFallback }: AuthMobileDispatcherPr
     return <>{desktopFallback}</>;
   }
 
-  // phase === "welcome" ou "login" : montage de la paire animée.
-  const view: "welcome" | "login" = phase;
+  // phase === "welcome" | "login" | "signup" : montage de la paire animée.
+  const view: "welcome" | "login" | "signup" = phase;
   const playbookX = PLAYBOOK_X_BY_VIEW[view];
   const playbookOpacity = PLAYBOOK_OPACITY_BY_VIEW[view];
 
@@ -224,9 +240,11 @@ export function AuthMobileDispatcher({ desktopFallback }: AuthMobileDispatcherPr
           transition={slideTransition}
         >
           {view === "welcome" ? (
-            <WelcomeMobile onShowLogin={goToLogin} />
-          ) : (
+            <WelcomeMobile onShowLogin={goToLogin} onShowSignup={goToSignup} />
+          ) : view === "login" ? (
             <LoginMobile onShowWelcome={goToWelcome} />
+          ) : (
+            <SignupMobile onShowWelcome={goToWelcome} onShowLogin={goToLogin} />
           )}
         </motion.div>
       </AnimatePresence>

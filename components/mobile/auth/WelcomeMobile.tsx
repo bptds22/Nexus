@@ -18,7 +18,6 @@
    conservés (7.46d).
 ═══════════════════════════════════════════════════════════════ */
 
-import { useRouter } from "next/navigation";
 import { NexusLogoSvg } from "./NexusLogoSvg";
 import { SocialButtonsMobile } from "./SocialButtonsMobile";
 
@@ -40,16 +39,19 @@ async function setHasLaunched(): Promise<void> {
 interface WelcomeMobileProps {
   /** Callback vers LoginMobile (transition interne sans navigation URL). */
   onShowLogin: () => void;
+  /** Iter 7.50-a-bis-2a — callback vers SignupMobile (role-picker +
+      3 écrans athlète natif). Remplace le router.push vers /auth?_web=1
+      qui rendait le desktop dans la WebView. */
+  onShowSignup: () => void;
 }
 
-export function WelcomeMobile({ onShowLogin }: WelcomeMobileProps) {
+export function WelcomeMobile({ onShowLogin, onShowSignup }: WelcomeMobileProps) {
   // Hooks AVANT toute condition (canon).
-  const router = useRouter();
 
   async function handleCreateAccount() {
     triggerHaptic("Medium");
     await setHasLaunched();
-    router.push("/auth?mode=signup&_web=1");
+    onShowSignup();
   }
 
   async function handleLogin() {

@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import NexusLogo from "@/components/ui/NexusLogo";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -76,6 +76,22 @@ function ProSignupContent() {
   const invitationToken = searchParams.get("invitation_token") ?? "";
   const lockedEmail = invitationToken ? searchParams.get("email") ?? "" : "";
   const [selectedRole, setSelectedRole] = useState<ProRole | "">("");
+
+  // Iter 7.50-a-bis-2a — pré-sélection role via query param (additif).
+  // Lecture au mount : si ?role=scolaire|collegial|ligue_civile, on
+  // pré-coche la carte correspondante. Permet au role-picker du
+  // SignupMobile de router vers /auth/pro?role=X et de faire arriver
+  // l'utilisateur directement sur le form au lieu de re-cliquer une
+  // carte. Param absent ou invalide → ignoré (comportement actuel).
+  useEffect(() => {
+    const r = searchParams.get("role");
+    if (r === "scolaire" || r === "collegial" || r === "ligue_civile") {
+      setSelectedRole(r);
+    }
+    // searchParams ne change pas après mount sur cette page (pas de
+    // navigation interne qui le modifie) ; lecture one-shot.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState(lockedEmail);

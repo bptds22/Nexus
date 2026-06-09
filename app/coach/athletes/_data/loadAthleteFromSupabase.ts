@@ -371,8 +371,13 @@ export function mapToRecruiterView(raw: Record<string, unknown>): AthleteProfile
       const team = (Array.isArray(teamRel) ? teamRel[0] : teamRel) as { name?: string } | null;
       return team?.name ? undefined : "Ligue Civile";
     })(),
-    city: "",
-    region: "",
+    // Iter 7.50-b3 — la jointure schools (ATHLETE_SELECT) charge city +
+    // region, mais le mapper les laissait à "" depuis toujours. Bug
+    // latent : la carte recruteur (et le ticket bottom V30) affichait
+    // vide pour tous les athlètes scolaires. Fix sans changement de
+    // contrat (le type reste `string`, on tire juste la vraie valeur).
+    city: schoolObj?.city || "",
+    region: schoolObj?.region || "",
     graduationYear: (raw.annee_diplomation as number) || 0,
     dateOfBirth: (raw.date_naissance as string) || "",
     primarySport: sportObj?.nom || "",
