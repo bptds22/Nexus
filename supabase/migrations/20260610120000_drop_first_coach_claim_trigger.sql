@@ -1,0 +1,59 @@
+-- ═══════════════════════════════════════════════════════════════
+-- iter coach-responsable-2b-trigger — Neutralisation du legacy
+-- first_coach_claim auto-promotion.
+--
+-- Contexte
+-- --------
+-- Le trigger BEFORE INSERT trg_first_coach_claim (migration 20260423,
+-- amendée 20260423200000_fix_first_coach_claim_trigger.sql) auto-
+-- promeut le PREMIER coach d'une école sans director ni autres coachs
+-- de COACH → DIRECTEUR_INTERIM. C'était un "premier arrivé = intérim"
+-- historique, AVANT que le workflow admin_claims (Item 11-Security)
+-- soit introduit.
+--
+-- Aujourd'hui, le workflow est :
+--   1. Le coach choisit DIRECTEUR/INTERIM au step Directeur (RPRP
+--      attesté Loi 25).
+--   2. finish_coach_school_onboarding RPC insère school_coaches.role=
+--      'COACH' + admin_claims (DIRECTEUR/INTERIM) PENDING.
+--   3. Modération admin → APPROVED → trigger apply_admin_claim_approval
+--      flippe users.is_school_admin=true + profile_data.admin_type.
+--
+-- Le legacy trigger court-circuite ce flux : il force school_coaches.
+-- role='DIRECTEUR_INTERIM' au 1er INSERT, sans passer par RPRP ni
+-- modération. Conflit conceptuel direct avec le principe Loi 25
+-- "consentement RPRP explicite avant rôle de responsable".
+--
+-- Tests empiriques (sprint coach-responsable-2b) ont confirmé :
+--   ✅ users.is_school_admin reste à false (sync_user_admin_flag ne
+--      flippe que sur role='DIRECTEUR', pas DIRECTEUR_INTERIM).
+--   ⚠️ MAIS school_coaches.role est promu — visible dans /coach/
+--      tableau-de-bord (UX "vous êtes intérimaire" affichée à tort).
+--
+-- Décision : DROP (Option A du recon).
+-- ------------------------------------
+-- Raison : un seul système (admin_claims attesté). L'auto-promotion
+-- silencieuse n'a plus sa place dans le workflow Loi 25.
+--
+-- Effets secondaires :
+-- - Policy "Coaches insert school_coaches" garde sa branche
+--   `role IN ('DIRECTEUR','DIRECTEUR_INTERIM')` — c'est OK, elle
+--   reste valide pour les rares cas où un DIRECTEUR/INTERIM légitime
+--   ajoute un autre coach. Le self-arm coach_id=auth.uid() couvre les
+--   onboardings normaux.
+-- - app code (CoachSidebar, ProfileSection, tableau-de-bord) lit
+--   encore role='DIRECTEUR_INTERIM' pour UX. Après ce drop, plus
+--   aucun row n'aura ce role par auto-promotion → l'UX "intérimaire"
+--   se taira proprement (cohérent : il faut admin_claims APPROVED).
+--   Le code app reste fonctionnel pour les rows INTERIM légitimes
+--   (créées par admin manuel ou processus futur de promotion APPROVED).
+--
+-- ⚠️ Cleanup données legacy : NON exécuté ici. 1 row dans la base
+-- locale (footcivilcoach@gmail.com / Phénix du Collège Esther-Blondin),
+-- créée par le trigger en mai 2026. À normaliser via UPDATE manuel
+-- après validation BP (sprint suivant).
+-- ═══════════════════════════════════════════════════════════════
+
+-- Drop le trigger (BEFORE INSERT) puis sa fonction. Idempotent.
+DROP TRIGGER IF EXISTS trg_first_coach_claim ON public.school_coaches;
+DROP FUNCTION IF EXISTS public.first_coach_claim();
