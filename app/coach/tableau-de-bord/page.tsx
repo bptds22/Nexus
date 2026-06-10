@@ -49,13 +49,17 @@ export default function TableauDeBordPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setLoading(false); return; }
 
-      // Load coach profile + school name
+      // Load coach profile + school name + interim status fields.
+      // Interim source of truth = users.is_school_admin + profile_data.admin_type
+      // ('interim'). school_coaches.role est toujours 'COACH' dans le workflow
+      // admin_claims (RPRP attesté + modération) — ne plus s'y fier ici.
       const { data: profile } = await supabase
         .from("users")
-        .select("first_name, last_name, school_id, schools!school_id(name)")
+        .select("first_name, last_name, school_id, is_school_admin, profile_data, schools!school_id(name)")
         .eq("id", user.id)
         .single();
 
+      let resolvedSchoolName = "";
       if (profile) {
         const firstName = (profile.first_name as string) || "";
         const lastName = (profile.last_name as string) || "";
@@ -64,7 +68,14 @@ export default function TableauDeBordPage() {
         const schoolRaw = profile.schools;
         const school = Array.isArray(schoolRaw) ? schoolRaw[0] : schoolRaw;
         const schoolObj = school as { name?: string } | null;
-        setSchoolName(schoolObj?.name || "");
+        resolvedSchoolName = schoolObj?.name || "";
+        setSchoolName(resolvedSchoolName);
+
+        const adminType = (profile.profile_data as { admin_type?: string } | null)?.admin_type;
+        if (profile.is_school_admin === true && adminType === "interim") {
+          setIsInterimDirector(true);
+          setInterimSchoolName(resolvedSchoolName);
+        }
       }
 
       const coachSchoolId = (profile?.school_id as string) || null;
@@ -76,21 +87,6 @@ export default function TableauDeBordPage() {
       if (!coachSchoolId) {
         setLoading(false);
         return;
-      }
-
-      // Check if coach is currently DIRECTEUR_INTERIM at any school
-      const { data: interimRows } = await supabase
-        .from("school_coaches")
-        .select("school_id, schools!school_id(name)")
-        .eq("coach_id", user.id)
-        .eq("role", "DIRECTEUR_INTERIM");
-
-      if (interimRows && interimRows.length > 0) {
-        setIsInterimDirector(true);
-        const firstSchool = Array.isArray(interimRows[0].schools)
-          ? interimRows[0].schools[0]
-          : interimRows[0].schools;
-        setInterimSchoolName((firstSchool as { name?: string } | null)?.name || "");
       }
 
       // Load unread INTERIM_DEMOTED notifications

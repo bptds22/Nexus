@@ -12,12 +12,18 @@ import type { CoachProfile } from "../_data/mockSettingsData";
 const label = "text-[12px] font-bold tracking-[0.25em] uppercase text-[#6b7280] mb-1.5";
 const input = "w-full bg-[#13151a] border border-[#2a2d36] rounded-lg px-4 py-2.5 text-[14px] text-[#e0e0e0] placeholder:text-[#4a4d56] focus:border-[#E63946] outline-none transition-colors";
 
-const ROLE_LABELS: Record<string, string> = {
-  COACH: "Coach",
-  DIRECTEUR: "Directeur sportif",
-  DIRECTEUR_INTERIM: "Directeur sportif intérimaire",
-  PENDING: "En attente",
-};
+/* ─────────────────────────────────────────────────────────────────
+   Sprint coach-profilesection-fix — Statut "rôle" désormais READ-ONLY,
+   dérivé de la source de vérité (users.is_school_admin +
+   profile_data.admin_type), plus de la colonne school_coaches.role
+   qu'un coach pouvait s'auto-écrire ici. Le statut de responsable
+   est porté par admin_claims modéré (Loi 25).
+─────────────────────────────────────────────────────────────────── */
+function deriveRoleLabel(isSchoolAdmin: boolean, adminType: string | null | undefined): string {
+  if (isSchoolAdmin && adminType === "owner") return "Directeur sportif";
+  if (isSchoolAdmin && adminType === "interim") return "Directeur sportif intérimaire";
+  return "Entraîneur";
+}
 
 export default function ProfileSection() {
   const [form, setForm] = useState<CoachProfile>({
@@ -46,19 +52,21 @@ export default function ProfileSection() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setLoading(false); return; }
 
-      // Load user profile
+      // Load user profile — incluant is_school_admin + profile_data
+      // pour dériver le label du rôle responsable (Loi 25, plus de
+      // self-promote depuis ce form).
       setUserId(user.id);
       const { data: profile, error: profileErr } = await supabase
         .from("users")
-        .select("first_name, last_name, email, phone, avatar_url, preferred_language")
+        .select("first_name, last_name, email, phone, avatar_url, preferred_language, is_school_admin, profile_data")
         .eq("id", user.id)
         .single();
       if (profile?.preferred_language) setPreferredLanguage(profile.preferred_language);
 
-      // Load coach entry
+      // Load coach entry — role retiré du SELECT, plus écrit ici.
       const { data: coachEntry, error: coachErr } = await supabase
         .from("school_coaches")
-        .select("id, role, sport")
+        .select("id, sport")
         .eq("coach_id", user.id)
         .single();
 
@@ -71,12 +79,14 @@ export default function ProfileSection() {
       if (profile) {
         const firstName = profile.first_name || "";
         const lastName = profile.last_name || "";
+        const adminType = (profile.profile_data as { admin_type?: string } | null)?.admin_type ?? null;
+        const isSchoolAdmin = profile.is_school_admin === true;
         setForm({
           firstName,
           lastName,
           email: profile.email || user.email || "",
           phone: profile.phone || "",
-          role: coachEntry?.role || "",
+          role: deriveRoleLabel(isSchoolAdmin, adminType),
           sport: coachEntry?.sport || "",
           avatarInitials: `${firstName[0] || ""}${lastName[0] || ""}`.toUpperCase(),
         });
@@ -129,17 +139,17 @@ export default function ProfileSection() {
       })
       .eq("id", user.id);
 
-    // Update school_coaches table
+    // Update school_coaches table — UNIQUEMENT le sport. Le rôle
+    // (school_coaches.role) n'est PLUS auto-éditable depuis ce form
+    // (sprint coach-profilesection-fix). Le statut de responsable est
+    // porté par admin_claims modéré (Loi 25).
     if (coachEntryId) {
       const { error: coachErr } = await supabase
         .from("school_coaches")
-        .update({
-          role: form.role,
-          sport: form.sport,
-        })
+        .update({ sport: form.sport })
         .eq("id", coachEntryId);
 
-      if (coachErr) { setSaving(false); setError("Erreur lors de la sauvegarde du rôle."); return; }
+      if (coachErr) { setSaving(false); setError("Erreur lors de la sauvegarde du sport."); return; }
     }
 
     if (userErr) { setSaving(false); setError("Erreur lors de la sauvegarde du profil."); return; }
@@ -233,12 +243,12 @@ export default function ProfileSection() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
               <p className={label}>Rôle</p>
-              <select title="Rôle" value={form.role} onChange={(e) => update("role", e.target.value)} className={input}>
-                <option value="">— Sélectionner —</option>
-                <option value="COACH">Coach</option>
-                <option value="DIRECTEUR">Directeur sportif</option>
-                <option value="DIRECTEUR_INTERIM">Directeur sportif intérimaire</option>
-              </select>
+              <div className={`${input} opacity-70 cursor-not-allowed flex items-center`}>
+                {form.role || "Entraîneur"}
+              </div>
+              <p className="text-[11px] text-[#6b7280] mt-1 leading-snug">
+                Le statut de responsable est géré via une demande de responsabilité validée par Nexus.
+              </p>
             </div>
             <div>
               <p className={label}>Sport</p>
@@ -319,7 +329,7 @@ export default function ProfileSection() {
             <p className="font-head text-[16px] font-black text-white uppercase tracking-tight">
               {form.firstName} {form.lastName}
             </p>
-            <p className="text-[12px] text-[#9CA3AF] mt-1">{ROLE_LABELS[form.role] || form.role}</p>
+            <p className="text-[12px] text-[#9CA3AF] mt-1">{form.role}</p>
             <p className="text-[12px] text-[#6b7280] mt-0.5">{form.sport}</p>
 
             <div className="w-full h-px bg-[#2D3748] my-4" />
