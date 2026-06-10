@@ -8,7 +8,7 @@ import type { ActionBarData } from "../_data/mockDashboardData";
 ───────────────────────────────────────────────────────────────── */
 
 export default function ActionBar({ data }: { data: ActionBarData }) {
-  const hasAnything = data.unreadMessages > 0 || data.incompleteProfiles > 0 || data.newAthletes > 0 || data.pendingSuggestions > 0;
+  const hasAnything = data.unreadMessages > 0 || data.incompleteProfiles > 0 || data.newAthletes > 0 || data.pendingSuggestions > 0 || data.missingEvals > 0;
 
   if (!hasAnything) return null;
 
@@ -64,6 +64,35 @@ export default function ActionBar({ data }: { data: ActionBarData }) {
           <div className="flex items-center gap-3 shrink-0">
             <span className="inline-flex items-center justify-center min-w-[28px] h-7 px-2 rounded-full bg-[#3B82F6] text-white text-[13px] font-black">
               {data.incompleteProfiles}
+            </span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round"
+              className="opacity-0 group-hover:opacity-100 transition-opacity">
+              <path d="M5 12h14" /><path d="M12 5l7 7-7 7" />
+            </svg>
+          </div>
+        </Link>
+      )}
+
+      {/* ── Missing evaluations ────────────────────────────────── */}
+      {data.missingEvals > 0 && (
+        <Link
+          href="/coach/a-traiter"
+          className="group flex items-center gap-4 rounded-xl px-6 py-5 transition-all border-l-4 bg-[#F59E0B]/[0.06] border-l-[#F59E0B] hover:bg-[#F59E0B]/[0.10]"
+        >
+          <div className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 bg-[#F59E0B]/20">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="#F59E0B" stroke="none">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+            </svg>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[15px] font-bold text-white">
+              {data.missingEvals} évaluation{data.missingEvals > 1 ? "s" : ""} manquante{data.missingEvals > 1 ? "s" : ""}
+            </p>
+            <p className="text-[13px] text-[#9CA3AF] mt-0.5">Donne une cote globale ou un rapport à ces athlètes</p>
+          </div>
+          <div className="flex items-center gap-3 shrink-0">
+            <span className="inline-flex items-center justify-center min-w-[28px] h-7 px-2 rounded-full bg-[#F59E0B] text-[#111317] text-[13px] font-black">
+              {data.missingEvals}
             </span>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round"
               className="opacity-0 group-hover:opacity-100 transition-opacity">

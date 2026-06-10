@@ -12,6 +12,11 @@ export interface ActionBarData {
   incompleteProfiles: number;
   newAthletes: number;
   pendingSuggestions: number;
+  /** Évaluations manquantes — coach n'a pas (encore) saisi une cote OU un
+   *  rapport pour cet athlète. Compté par lib/coach/tasks.loadCoachTaskCounts.
+   *  Ajouté lors du Step 3c (convergence "à traiter") — le tab badge, le
+   *  dashboard et la page /coach/a-traiter consomment tous le même helper. */
+  missingEvals: number;
 }
 
 export const ACTION_BAR: ActionBarData = {
@@ -19,6 +24,7 @@ export const ACTION_BAR: ActionBarData = {
   incompleteProfiles: 5,
   newAthletes: 0,
   pendingSuggestions: 0,
+  missingEvals: 0,
 };
 
 /* ── KPI Cards ──────────────────────────────────────────────────── */

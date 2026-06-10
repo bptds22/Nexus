@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useSubscription } from "@/lib/hooks/useSubscription";
 import UpgradeModal from "@/components/ui/UpgradeModal";
 import MorePanel from "./MorePanel";
+import { loadCoachTaskCounts } from "@/lib/coach/tasks";
 
 /* ─────────────────────────────────────────────────────────────────
    MobileTabBar — bottom navigation bar for Capacitor mobile builds.
@@ -250,33 +251,17 @@ export default function MobileTabBar({ role }: MobileTabBarProps) {
           .eq("coach_id", user.id)
           .eq("read", false);
 
-        // À traiter — MÊME source que dashboard ActionBar (page.tsx L118-159).
-        // Une seule définition de "non vérifié" / "à traiter" partagée entre
-        // le tab bar et les cartes du dashboard.
-        const { data: athleteRows } = await supabase
-          .from("athletes")
-          .select("id, verified")
-          .eq("coach_id", user.id)
-          .eq("status", "ACTIF");
-        const athletes = athleteRows || [];
-        const coachAthleteIds = athletes.map((a: { id: string }) => a.id);
-        const verifiedCount = athletes.filter((a: { verified: boolean }) => a.verified).length;
-        const unverifiedCount = athletes.length - verifiedCount;
-
-        let pendingSuggestions = 0;
-        if (coachAthleteIds.length > 0) {
-          const { count: sugCount } = await supabase
-            .from("athlete_suggestions")
-            .select("id", { count: "exact", head: true })
-            .in("athlete_id", coachAthleteIds)
-            .eq("status", "EN_ATTENTE");
-          pendingSuggestions = sugCount || 0;
-        }
+        // ÉTAPE 3c — convergence "à traiter" : on consomme le helper partagé
+        // (lib/coach/tasks.loadCoachTaskCounts) à la place de l'ancien calcul
+        // inline. Le badge inclut maintenant missingEval (était absent avant),
+        // donc le compteur monte chez les coachs qui n'ont pas évalué tous
+        // leurs athlètes — intentionnel : le badge doit matcher /coach/a-traiter.
+        const counts = await loadCoachTaskCounts(supabase, user.id);
 
         if (cancelled) return;
         setMsgBadge(0);
         setActBadge(actCount ?? 0);
-        setATraiterBadge(unverifiedCount + pendingSuggestions);
+        setATraiterBadge(counts.total);
         setMoreDotActive((actCount ?? 0) > 0);
         return;
       }

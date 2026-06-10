@@ -7,6 +7,7 @@ import KpiCards from "./_components/KpiCards";
 import HotAthletes from "./_components/HotAthletes";
 import ActivityFeed from "./_components/ActivityFeed";
 import { CoachDashboardMobile } from "@/components/shared/CoachDashboardMobile";
+import { loadCoachTaskCounts } from "@/lib/coach/tasks";
 
 import type { ActionBarData, KpiData, HotAthlete } from "./_data/mockDashboardData";
 import type { ActivityEvent } from "@/lib/types/activityEvents";
@@ -35,7 +36,7 @@ export default function TableauDeBordPage() {
 
   const [coachName, setCoachName] = useState("");
   const [schoolName, setSchoolName] = useState("");
-  const [actionBar, setActionBar] = useState<ActionBarData>({ unreadMessages: 0, incompleteProfiles: 0, newAthletes: 0, pendingSuggestions: 0 });
+  const [actionBar, setActionBar] = useState<ActionBarData>({ unreadMessages: 0, incompleteProfiles: 0, newAthletes: 0, pendingSuggestions: 0, missingEvals: 0 });
   const [kpi, setKpi] = useState<KpiData>({ totalAthletes: 0, completeProfiles: 0, totalProfiles: 0, completePct: 0, recruiterViews: 0, viewsTrend: 0, activeConversations: 0 });
   const [hotAthletes, setHotAthletes] = useState<HotAthlete[]>([]);
   const [activities, setActivities] = useState<ActivityEvent[]>([]);
@@ -137,10 +138,13 @@ export default function TableauDeBordPage() {
         unreadMessages = count || 0;
       }
 
-      // Banner 2: non-verified profiles
-      const unverifiedCount = totalAthletes - verifiedCount;
+      // Banner 2 + 3b + 4: tâches "à traiter" via le helper partagé.
+      // ÉTAPE 3c — convergence sur lib/coach/tasks.loadCoachTaskCounts pour que
+      // le tab badge, le dashboard et la page /coach/a-traiter soient tous
+      // alimentés par UNE SEULE source. Adds 'missingEvals' (ÉTAPE 3b nouveau).
+      const taskCounts = await loadCoachTaskCounts(supabase, user.id);
 
-      // Banner 3: new athletes added (unread)
+      // Banner 3: new athletes added (unread) — séparé, pas une "tâche"
       const { count: newAthletesCount } = await supabase
         .from("activities")
         .select("id", { count: "exact", head: true })
@@ -148,22 +152,12 @@ export default function TableauDeBordPage() {
         .eq("type", "ATHLETE_ADDED")
         .eq("read", false);
 
-      // Banner 4: pending athlete suggestions
-      let pendingSuggestions = 0;
-      if (coachAthleteIds.length > 0) {
-        const { count: sugCount } = await supabase
-          .from("athlete_suggestions")
-          .select("id", { count: "exact", head: true })
-          .in("athlete_id", coachAthleteIds)
-          .eq("status", "EN_ATTENTE");
-        pendingSuggestions = sugCount || 0;
-      }
-
       setActionBar({
         unreadMessages,
-        incompleteProfiles: unverifiedCount,
+        incompleteProfiles: taskCounts.unverified,
+        missingEvals: taskCounts.missingEval,
+        pendingSuggestions: taskCounts.pendingSuggestions,
         newAthletes: newAthletesCount || 0,
-        pendingSuggestions,
       });
 
       // ── KPI 3: Recruiter views (this month vs last month) ──

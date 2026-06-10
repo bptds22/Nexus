@@ -20,6 +20,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { ActivityEvent } from "@/lib/types/activityEvents";
+import { loadCoachTaskCounts } from "@/lib/coach/tasks";
 
 /* ── Helpers (verbatim recruteur dashboard) ──────────────────── */
 
@@ -70,6 +71,9 @@ interface ActionBarData {
   incompleteProfiles: number;
   newAthletes: number;
   pendingSuggestions: number;
+  /** ÉTAPE 3c — évaluations manquantes (manque cote OU rapport coach).
+   *  Compté par lib/coach/tasks.loadCoachTaskCounts.missingEval. */
+  missingEvals: number;
 }
 
 interface KpiData {
@@ -389,17 +393,19 @@ function KpiTrio({ data }: { data: KpiData }) {
 ═══════════════════════════════════════════════════════════════ */
 
 function CoachActionBar({
-  data, onTapMessages, onTapIncomplete, onTapNewAthletes, onTapSuggestions,
+  data, onTapMessages, onTapIncomplete, onTapMissingEvals, onTapNewAthletes, onTapSuggestions,
 }: {
   data: ActionBarData;
   onTapMessages: () => void;
   onTapIncomplete: () => void;
+  /** ÉTAPE 3c — nouvelle carte "Évaluations manquantes" (gold + star). */
+  onTapMissingEvals: () => void;
   onTapNewAthletes: () => void;
   onTapSuggestions: () => void;
 }) {
   const hasAny =
     data.unreadMessages > 0 || data.incompleteProfiles > 0 ||
-    data.newAthletes > 0 || data.pendingSuggestions > 0;
+    data.newAthletes > 0 || data.pendingSuggestions > 0 || data.missingEvals > 0;
 
   if (!hasAny) return null;
 
@@ -444,6 +450,25 @@ function CoachActionBar({
             badge={data.incompleteProfiles}
             badgeBg="#4a4d56"
             onTap={onTapIncomplete}
+          />
+        )}
+
+        {/* Évaluations manquantes (gold #F59E0B — star icon, domaine rating).
+            ÉTAPE 3c : nouvelle catégorie alimentée par loadCoachTaskCounts.missingEval. */}
+        {data.missingEvals > 0 && (
+          <ActionRow
+            accent="#F59E0B"
+            iconBg="#F59E0B"
+            icon={
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="#FFFFFF" stroke="none">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+              </svg>
+            }
+            title={`${data.missingEvals} évaluation${data.missingEvals > 1 ? "s" : ""} manquante${data.missingEvals > 1 ? "s" : ""}`}
+            subtitle="Donne une cote globale ou un rapport à ces athlètes"
+            badge={data.missingEvals}
+            badgeBg="#F59E0B"
+            onTap={onTapMissingEvals}
           />
         )}
 
@@ -754,7 +779,7 @@ export function CoachDashboardMobile() {
   const [coachName, setCoachName] = useState("");
   const [schoolName, setSchoolName] = useState("");
   const [actionBar, setActionBar] = useState<ActionBarData>({
-    unreadMessages: 0, incompleteProfiles: 0, newAthletes: 0, pendingSuggestions: 0,
+    unreadMessages: 0, incompleteProfiles: 0, newAthletes: 0, pendingSuggestions: 0, missingEvals: 0,
   });
   const [kpi, setKpi] = useState<KpiData>({
     totalAthletes: 0, verifiedCount: 0, completePct: 0, recruiterViews: 0, viewsTrend: 0,
@@ -887,10 +912,13 @@ export function CoachDashboardMobile() {
         unreadMessages = count || 0;
       }
 
-      // ActionBar #2: non-verified profiles
-      const unverifiedCount = totalAthletes - verifiedCount;
+      // ÉTAPE 3c — ActionBar #2/#4/#5 (non-vérifiés + suggestions + éval
+      // manquante) viennent du helper partagé lib/coach/tasks.loadCoachTaskCounts.
+      // Une seule source de vérité — tab badge, web dashboard, mobile dashboard
+      // et /coach/a-traiter consomment tous le même helper. Adds missingEvals.
+      const taskCounts = await loadCoachTaskCounts(supabase, user.id);
 
-      // ActionBar #3: new athletes added (unread)
+      // ActionBar #3: new athletes added (unread) — séparé, pas une "tâche"
       const { count: newAthletesCount } = await supabase
         .from("activities")
         .select("id", { count: "exact", head: true })
@@ -898,22 +926,12 @@ export function CoachDashboardMobile() {
         .eq("type", "ATHLETE_ADDED")
         .eq("read", false);
 
-      // ActionBar #4: pending athlete suggestions
-      let pendingSuggestions = 0;
-      if (coachAthleteIds.length > 0) {
-        const { count: sugCount } = await supabase
-          .from("athlete_suggestions")
-          .select("id", { count: "exact", head: true })
-          .in("athlete_id", coachAthleteIds)
-          .eq("status", "EN_ATTENTE");
-        pendingSuggestions = sugCount || 0;
-      }
-
       setActionBar({
         unreadMessages,
-        incompleteProfiles: unverifiedCount,
+        incompleteProfiles: taskCounts.unverified,
+        missingEvals: taskCounts.missingEval,
+        pendingSuggestions: taskCounts.pendingSuggestions,
         newAthletes: newAthletesCount || 0,
-        pendingSuggestions,
       });
 
       // KPI: recruiter views ce mois vs mois dernier
@@ -1200,6 +1218,7 @@ export function CoachDashboardMobile() {
           data={actionBar}
           onTapMessages={() => router.push("/coach/demandes")}
           onTapIncomplete={() => router.push("/coach/athletes?filtre=non_verifies")}
+          onTapMissingEvals={() => router.push("/coach/a-traiter")}
           onTapNewAthletes={() => router.push("/coach/activites")}
           onTapSuggestions={() => router.push("/coach/suggestions")}
         />
