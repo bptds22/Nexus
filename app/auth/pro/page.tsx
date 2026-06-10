@@ -94,6 +94,11 @@ function ProSignupContent() {
   }, []);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  // Iter coach-dob-migration — date de naissance capturée aussi sur le
+  // web (parité avec SignupMobile). Stash dans raw_user_meta_data via
+  // signUp() extraMetadata ; le trigger handle_new_auth_user (étendu)
+  // l'écrit dans users.date_naissance via cast safe ISO YYYY-MM-DD.
+  const [birthdate, setBirthdate] = useState("");
   const [email, setEmail] = useState(lockedEmail);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -108,7 +113,7 @@ function ProSignupContent() {
 
   const pwdMeetsMin = password.length >= 8;
   const pwdMismatch = confirmPassword.length > 0 && password !== confirmPassword;
-  const signupValid = firstName && lastName && email && pwdMeetsMin && !pwdMismatch && selectedRole && consentPolicy && consentData;
+  const signupValid = firstName && lastName && email && pwdMeetsMin && !pwdMismatch && selectedRole && birthdate && consentPolicy && consentData;
 
   const fieldErr = (filled: boolean) => submitted && !filled ? "border-[#EF4444]" : "";
 
@@ -155,6 +160,10 @@ function ProSignupContent() {
       {
         ...(invitationToken ? { invitation_token: invitationToken } : {}),
         ...consentMeta,
+        // Iter coach-dob-migration — date_naissance stashée dans
+        // raw_user_meta_data. Trigger handle_new_auth_user (étendu)
+        // écrit la colonne users.date_naissance via cast safe ISO.
+        ...(birthdate ? { date_naissance: birthdate } : {}),
       },
       selectedRole as ProRole,
     );
@@ -275,6 +284,22 @@ function ProSignupContent() {
                       <EyeToggle show={showConfirmPwd} onClick={() => setShowConfirmPwd(!showConfirmPwd)} />
                     </div>
                     {pwdMismatch && <p className="text-xs mt-1.5 text-[#EF4444]">Les mots de passe ne correspondent pas</p>}
+                  </div>
+
+                  {/* Iter coach-dob-migration — date de naissance (parité
+                      mobile). Required. Stashée dans raw_user_meta_data
+                      via signUp() → persistée par le trigger dans
+                      users.date_naissance (cast safe ISO YYYY-MM-DD). */}
+                  <div>
+                    <label htmlFor="pro-signup-birthdate" className={`${label} text-[#9CA3AF] mb-1.5 block`}>Date de naissance <span className="text-[#EF4444]">*</span></label>
+                    <input
+                      id="pro-signup-birthdate"
+                      type="date"
+                      title="Date de naissance"
+                      value={birthdate}
+                      onChange={(e) => setBirthdate(e.target.value)}
+                      className={`${inputClass} ${fieldErr(!!birthdate)}`}
+                    />
                   </div>
 
                   {/* Consent checkboxes */}

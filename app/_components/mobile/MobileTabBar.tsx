@@ -311,6 +311,22 @@ export default function MobileTabBar({ role }: MobileTabBarProps) {
     role === "athlete" && pathname === "/athlete/onboarding";
   if (athleteOnboarding) return null;
 
+  // Iter coach-3 — même guard pour le coach pendant son onboarding.
+  // Route /onboarding (le wizard coach/recruteur web — branche mobile
+  // coach école via dispatch IS_CAPACITOR). Couvre automatiquement le
+  // sprint coach-4 (civil) et le sprint recruteur mobile à venir.
+  const coachOnboarding =
+    role === "coach" && pathname === "/onboarding";
+  if (coachOnboarding) return null;
+
+  // Iter recruteur-onboarding-mobile — même guard pour le recruteur en
+  // onboarding. /onboarding route → wizard recruteur web ou natif via
+  // dispatch IS_CAPACITOR. Note : TabBar utilise 'recruteur' (FR) en
+  // interne alors que user.role est 'recruiter' (EN) côté front.
+  const recruiterOnboarding =
+    role === "recruteur" && pathname === "/onboarding";
+  if (recruiterOnboarding) return null;
+
   const tabs = TABS_BY_ROLE[role];
 
   function isActive(tab: TabConfig): boolean {
