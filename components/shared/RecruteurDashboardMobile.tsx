@@ -88,22 +88,38 @@ function DashboardHero({
         style={{
           top: 50, right: -60,
           width: 300, height: 300,
-          opacity: 0.70,
+          opacity: 1,
         }}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/brand/icon-white.svg" alt="" className="w-full h-full object-contain" />
       </div>
+      {/* Front layer : recoloré au token bg page (#111317) pour donner
+          l'illusion que la page transparaît à travers le dégradé rouge.
+          <img src=svg> ne se recolore pas en CSS → on utilise l'asset
+          comme mask-image (stencil) et background-color porte la couleur. */}
       <div
         className="absolute z-0 pointer-events-none"
         style={{
           top: 48, right: -58,
           width: 300, height: 300,
-          opacity: 0.95,
+          opacity: 1,
         }}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/brand/icon-black.svg" alt="" className="w-full h-full object-contain" />
+        <div
+          className="w-full h-full"
+          style={{
+            backgroundColor: "#111317",
+            WebkitMaskImage: "url(/brand/icon-black.svg)",
+            WebkitMaskRepeat: "no-repeat",
+            WebkitMaskPosition: "center",
+            WebkitMaskSize: "contain",
+            maskImage: "url(/brand/icon-black.svg)",
+            maskRepeat: "no-repeat",
+            maskPosition: "center",
+            maskSize: "contain",
+          }}
+        />
       </div>
       <div className="relative z-10">
         {/* Eyebrow : date à gauche + chip CÉGEP à droite (full width — la

@@ -145,10 +145,17 @@ interface MobileSearchBarProps {
   disabled?: boolean;
   placeholder: string;
   onExpand: () => void;
+  /** Iter 2b — single view-toggle button (replaces le segmented). Icône =
+   *  mode vers lequel on bascule (iOS canon : list icon en grid, grid icon
+   *  en list). Optionnel pour backward-compat. */
+  viewMode?: "grid" | "list";
+  onToggleViewMode?: () => void;
+  showViewToggle?: boolean;
 }
 
 function MobileSearchBar({
   search, activeFiltersCount, onOpenFilters, scrolled, disabled, placeholder, onExpand,
+  viewMode, onToggleViewMode, showViewToggle,
 }: MobileSearchBarProps) {
   return (
     <div
@@ -175,6 +182,24 @@ function MobileSearchBar({
             {search || placeholder}
           </span>
         </button>
+        {showViewToggle && onToggleViewMode && (
+          <button
+            type="button"
+            onClick={() => { triggerHaptic("Light"); onToggleViewMode(); }}
+            className="w-11 h-11 rounded-full bg-[#1A1D24] flex items-center justify-center active:bg-white/5"
+            aria-label={viewMode === "grid" ? "Vue liste" : "Vue grille"}
+          >
+            {viewMode === "grid" ? (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round">
+                <path d="M8 6h13" /><path d="M8 12h13" /><path d="M8 18h13" /><path d="M3 6h.01" /><path d="M3 12h.01" /><path d="M3 18h.01" />
+              </svg>
+            ) : (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round">
+                <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="7" height="7" />
+              </svg>
+            )}
+          </button>
+        )}
         <button
           type="button"
           onClick={() => { triggerHaptic("Light"); onOpenFilters(); }}
@@ -446,9 +471,27 @@ export interface AthleteCardProps {
    *  avant push vers le profil pour que le back-nav du profil revienne
    *  à l'onglet d'origine (Recherche / Favoris / Pipeline). Default "recherche". */
   lastTabKey?: string;
+  /** Coach roster mode — display-only count de recruteurs ayant favorisé
+   *  cet athlète. Quand défini, remplace le HeartButton du top-left par
+   *  un badge compteur (no toggle). Le coach ne favorise pas son roster. */
+  favoritesCount?: number;
+  /** Claim mode — quand onToggleSelect est défini, la carte entière
+   *  agit comme un toggle de sélection (no nav, no double-tap-to-like).
+   *  Rend une checkbox dans le top-left à la place du heart/count. */
+  selected?: boolean;
+  onToggleSelect?: (id: string) => void;
+  /** Override de la destination de navigation. Défaut = /recruteur/athletes/{id}. */
+  profileHref?: string;
+  /** Préfixe pour motion layoutId — évite la collision shared-element
+   *  si le recruteur ET le coach montent la même carte pendant une
+   *  transition. Défaut "athlete-photo". Use "coach-athlete-photo" côté coach. */
+  layoutIdPrefix?: string;
 }
 
-export function AthleteCardMobile({ a, isFree, favDisabled, onToggleFav, lastTabKey = "recherche" }: AthleteCardProps) {
+export function AthleteCardMobile({
+  a, isFree, favDisabled, onToggleFav, lastTabKey = "recherche",
+  favoritesCount, selected, onToggleSelect, profileHref, layoutIdPrefix,
+}: AthleteCardProps) {
   const router = useRouter();
   const verifiedActive = a.isVerified && !isValidationExpired({ verified: !!a.isVerified, last_profile_validation: a.lastValidation ?? null });
   // Iter 7.3 Section B — status pill retiré du grid card
@@ -458,13 +501,31 @@ export function AthleteCardMobile({ a, isFree, favDisabled, onToggleFav, lastTab
 
   useEffect(() => () => { if (navTimerRef.current) clearTimeout(navTimerRef.current); }, []);
 
+  const isClaimMode = !!onToggleSelect;
+  const isCoachRosterMode = !isClaimMode && favoritesCount !== undefined;
+
   // Iter 6.0d — désambiguïsation tap simple vs double-tap, double-tap TOGGLE
   // complet (like ↔ unlike, pas Instagram strict). Tap 1 : nav programmée à
   // +300ms (annulable). Tap 2 dans la fenêtre : cancel nav + toggle fav +
   // pop coeur géant comme feedback (visible aussi sur unlike).
+  // Coach modes (claim / roster) court-circuitent ce flow — pas de
+  // double-tap-to-like (le coach ne favorise pas son propre roster).
   const handlePhotoClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    // Claim mode — carte entière = toggle de sélection
+    if (isClaimMode) {
+      triggerHaptic("Light");
+      onToggleSelect!(a.id);
+      return;
+    }
+    // Coach roster mode — tap direct → nav (pas de double-tap-to-like)
+    if (isCoachRosterMode) {
+      triggerHaptic("Light");
+      router.push(profileHref ?? `/recruteur/athletes/${a.id}`);
+      return;
+    }
+    // Recruteur — comportement original (nav + double-tap toggle)
     const now = Date.now();
     const since = now - lastTapRef.current;
     if (since < 300 && since > 0) {
@@ -480,7 +541,7 @@ export function AthleteCardMobile({ a, isFree, favDisabled, onToggleFav, lastTab
     lastTapRef.current = now;
     navTimerRef.current = setTimeout(() => {
       try { sessionStorage.setItem("lastRecruiterTab", lastTabKey); } catch { /* no-op */ }
-      router.push(`/recruteur/athletes/${a.id}`);
+      router.push(profileHref ?? `/recruteur/athletes/${a.id}`);
       navTimerRef.current = null;
     }, 300);
   };
@@ -497,8 +558,10 @@ export function AthleteCardMobile({ a, isFree, favDisabled, onToggleFav, lastTab
   return (
     <div onClick={handlePhotoClick} role="link" tabIndex={0} className="block cursor-pointer">
       <motion.div
-        layoutId={`athlete-photo-${a.id}`}
-        className="relative aspect-[4/5] rounded-2xl overflow-hidden bg-[#1A1D24]"
+        layoutId={`${layoutIdPrefix ?? "athlete-photo"}-${a.id}`}
+        className={`relative aspect-[4/5] rounded-2xl overflow-hidden bg-[#1A1D24] ${
+          selected ? "ring-2 ring-[#E63946] shadow-[0_0_20px_rgba(230,57,70,0.3)]" : ""
+        }`}
       >
         <AthletePhotoFill
           photoUrl={a.photo}
@@ -515,19 +578,43 @@ export function AthleteCardMobile({ a, isFree, favDisabled, onToggleFav, lastTab
         />
         {/* Iter 7.5 Section E — top-left ÉPURÉ : heart SEUL (action favori).
             Le verified check passe inline près de la position (bottom overlay).
-            Container 32x32 pour matcher la taille native du HeartButton sm. */}
+            Container 32x32 pour matcher la taille native du HeartButton sm.
+            Coach claim mode → checkbox · Coach roster mode → favorites count badge. */}
         <div className="absolute top-2 left-2 z-10">
-          <div
-            onClick={handleHeartTap}
-            className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]"
-          >
-            <HeartButton
-              isFavorited={a.isFavorited}
-              onToggle={() => onToggleFav(a.id)}
-              size="sm"
-              disabled={favDisabled}
-            />
-          </div>
+          {isClaimMode ? (
+            <div className={`w-7 h-7 rounded-md flex items-center justify-center transition-colors ${
+              selected
+                ? "bg-[#E63946] border-2 border-[#E63946]"
+                : "bg-[#111317]/80 border-2 border-[#4a4d56]"
+            }`}>
+              {selected && (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 6L9 17l-5-5" />
+                </svg>
+              )}
+            </div>
+          ) : isCoachRosterMode ? (
+            (favoritesCount ?? 0) > 0 ? (
+              <div className="flex items-center gap-1 bg-black/60 backdrop-blur-sm rounded-full px-2 py-1 drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="#E63946" stroke="none">
+                  <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
+                </svg>
+                <span className="text-[12px] font-bold text-white leading-none">{favoritesCount}</span>
+              </div>
+            ) : null
+          ) : (
+            <div
+              onClick={handleHeartTap}
+              className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]"
+            >
+              <HeartButton
+                isFavorited={a.isFavorited}
+                onToggle={() => onToggleFav(a.id)}
+                size="sm"
+                disabled={favDisabled}
+              />
+            </div>
+          )}
         </div>
         {/* Top-right : stars pill (Iter 7.4 Section B — 14px lisible) */}
         <div className="absolute top-2 right-2 flex items-center gap-1 bg-black/60 backdrop-blur-sm rounded-full px-2 py-1 z-10">
@@ -1163,35 +1250,17 @@ export function RecruteurRechercheMobile() {
         disabled={isFreeRecruiter && false /* on permet le tap pour l'overlay même free */}
         placeholder={isFreeRecruiter ? "Recherche par nom (Pro)" : "Rechercher un athlète…"}
         onExpand={() => setSearchExpanded(true)}
+        viewMode={viewMode}
+        onToggleViewMode={() => setViewMode(viewMode === "grid" ? "list" : "grid")}
+        showViewToggle
       />
 
-      {/* Header info row + ViewToggle */}
-      <div className="px-4 py-2 flex items-center justify-between">
+      {/* Iter 2b — count seul, right-aligned. Le segmented view-toggle a
+          migré dans MobileSearchBar (bouton unique au top). */}
+      <div className="px-4 py-2 flex items-center justify-end">
         <span className="text-[12px] font-bold text-[#6B7280]">
           {loading ? "Chargement…" : `${filtered.length} athlète${filtered.length !== 1 ? "s" : ""}`}
         </span>
-        <div className="flex items-center gap-1 bg-[#1A1D24] rounded-full p-0.5">
-          <button
-            type="button"
-            onClick={() => { triggerHaptic("Light"); setViewMode("grid"); }}
-            className={`px-3 py-1.5 rounded-full transition-colors ${viewMode === "grid" ? "bg-[#E63946]" : ""}`}
-            aria-label="Vue grille"
-          >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={viewMode === "grid" ? "#fff" : "#6B7280"} strokeWidth="2" strokeLinecap="round">
-              <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="7" height="7" />
-            </svg>
-          </button>
-          <button
-            type="button"
-            onClick={() => { triggerHaptic("Light"); setViewMode("list"); }}
-            className={`px-3 py-1.5 rounded-full transition-colors ${viewMode === "list" ? "bg-[#E63946]" : ""}`}
-            aria-label="Vue liste"
-          >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={viewMode === "list" ? "#fff" : "#6B7280"} strokeWidth="2" strokeLinecap="round">
-              <path d="M8 6h13" /><path d="M8 12h13" /><path d="M8 18h13" /><path d="M3 6h.01" /><path d="M3 12h.01" /><path d="M3 18h.01" />
-            </svg>
-          </button>
-        </div>
       </div>
 
       {/* Content with crossfade between grid/list */}

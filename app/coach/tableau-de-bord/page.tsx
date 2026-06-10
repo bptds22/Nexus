@@ -6,9 +6,12 @@ import ActionBar from "./_components/ActionBar";
 import KpiCards from "./_components/KpiCards";
 import HotAthletes from "./_components/HotAthletes";
 import ActivityFeed from "./_components/ActivityFeed";
+import { CoachDashboardMobile } from "@/components/shared/CoachDashboardMobile";
 
 import type { ActionBarData, KpiData, HotAthlete } from "./_data/mockDashboardData";
 import type { ActivityEvent } from "@/lib/types/activityEvents";
+
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
 /* ─────────────────────────────────────────────────────────────────
    Nexus — Coach Tableau de Bord
@@ -26,6 +29,10 @@ function frenchDate(): string {
 }
 
 export default function TableauDeBordPage() {
+  // Iter coach-dashboard-mobile : Capacitor → composant mobile-native.
+  // Web (non-Capacitor) garde son layout existant intact.
+  if (IS_CAPACITOR) return <CoachDashboardMobile />;
+
   const [coachName, setCoachName] = useState("");
   const [schoolName, setSchoolName] = useState("");
   const [actionBar, setActionBar] = useState<ActionBarData>({ unreadMessages: 0, incompleteProfiles: 0, newAthletes: 0, pendingSuggestions: 0 });

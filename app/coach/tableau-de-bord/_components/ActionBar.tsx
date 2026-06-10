@@ -18,10 +18,10 @@ export default function ActionBar({ data }: { data: ActionBarData }) {
       {data.unreadMessages > 0 && (
         <Link
           href="/coach/demandes"
-          className="group flex items-center gap-4 rounded-xl px-6 py-5 transition-all border-l-4 bg-[#E63946]/[0.08] border-l-[#E63946] hover:bg-[#E63946]/[0.14]"
+          className="group flex items-center gap-4 rounded-xl px-6 py-5 transition-all border-l-4 bg-[#22C55E]/[0.08] border-l-[#22C55E] hover:bg-[#22C55E]/[0.14]"
         >
-          <div className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 bg-[#E63946]/20">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <div className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 bg-[#22C55E]/20">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
               <polyline points="22,6 12,13 2,6" />
             </svg>
@@ -33,7 +33,7 @@ export default function ActionBar({ data }: { data: ActionBarData }) {
             <p className="text-[13px] text-[#9CA3AF] mt-0.5">Cliquez pour consulter les messages</p>
           </div>
           <div className="flex items-center gap-3 shrink-0">
-            <span className="inline-flex items-center justify-center min-w-[28px] h-7 px-2 rounded-full bg-[#E63946] text-white text-[13px] font-black">
+            <span className="inline-flex items-center justify-center min-w-[28px] h-7 px-2 rounded-full bg-[#22C55E] text-white text-[13px] font-black">
               {data.unreadMessages}
             </span>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round"

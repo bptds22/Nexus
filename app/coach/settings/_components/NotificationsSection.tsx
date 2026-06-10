@@ -33,7 +33,7 @@ interface NotifRowData {
 }
 
 const RECRUTEMENT_ROWS: NotifRowData[] = [
-  { key: "newContactRequest", icon: "📨", iconColor: "#3B82F6", label: "Nouvelle demande de contact", sublabel: "Un recruteur veut contacter un de vos athlètes" },
+  { key: "newContactRequest", icon: "📨", iconColor: "#22C55E", label: "Nouvelle demande de contact", sublabel: "Un recruteur veut contacter un de vos athlètes" },
   { key: "athleteFavorited", icon: "❤️", iconColor: "#E63946", label: "Athlète ajouté en favori", sublabel: "Un recruteur a ajouté un de vos athlètes en favori" },
   { key: "pipelineMovement", icon: "📋", iconColor: "#F59E0B", label: "Mouvement dans un pipeline", sublabel: "Un athlète a changé de stage dans un pipeline recruteur" },
   { key: "letterOfIntent", icon: "✍️", iconColor: "#22C55E", label: "Lettre d'intention signée", sublabel: "Un de vos athlètes a signé une lettre d'intention" },

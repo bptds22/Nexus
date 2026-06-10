@@ -282,7 +282,7 @@ function RecruiterThreadPage() {
     return (
       <div className="px-6 sm:px-10 py-8 max-w-[1280px] mx-auto">
         <p className="text-[14px] text-[#9CA3AF]">Conversation introuvable.</p>
-        <Link href="/recruteur/messages" className="text-[13px] text-[#3B82F6] hover:underline mt-2 inline-block">Retour aux messages</Link>
+        <Link href="/recruteur/messages" className="text-[13px] text-[#22C55E] hover:underline mt-2 inline-block">Retour aux messages</Link>
       </div>
     );
   }
@@ -345,9 +345,9 @@ function RecruiterThreadPage() {
                 onKeyDown={(e) => { if (e.key === "Enter" && e.ctrlKey) { e.preventDefault(); handleSend(); } }}
                 placeholder="Écrire une réponse..."
                 rows={2}
-                className="flex-1 bg-[#111317] border border-[#2D3748] rounded-xl px-4 py-3 text-[14px] text-[#e0e0e0] placeholder:text-[#6b7280] focus:border-[#3B82F6] outline-none transition-colors resize-none"
+                className="flex-1 bg-[#111317] border border-[#2D3748] rounded-xl px-4 py-3 text-[14px] text-[#e0e0e0] placeholder:text-[#6b7280] focus:border-[#22C55E] outline-none transition-colors resize-none"
               />
-              <button type="button" onClick={handleSend} disabled={!reply.trim()} aria-label="Envoyer" className="shrink-0 w-11 h-11 rounded-xl bg-[#3B82F6] flex items-center justify-center text-white transition-all active:scale-95 disabled:opacity-40">
+              <button type="button" onClick={handleSend} disabled={!reply.trim()} aria-label="Envoyer" className="shrink-0 w-11 h-11 rounded-xl bg-[#22C55E] flex items-center justify-center text-white transition-all active:scale-95 disabled:opacity-40">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" /></svg>
               </button>
             </div>

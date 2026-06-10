@@ -107,6 +107,13 @@ const Icons = {
       <path d="M12 2L2 7l10 5 10-5-10-5z" /><path d="M2 17l10 5 10-5" /><path d="M2 12l10 5 10-5" />
     </svg>
   ),
+  checklist: (
+    <svg {...SVG_PROPS}>
+      <rect x="5" y="4" width="14" height="17" rx="2" />
+      <path d="M9 4V3a1 1 0 011-1h4a1 1 0 011 1v1" />
+      <path d="M9 12l2 2 4-4" />
+    </svg>
+  ),
   /* ── Athlete ── */
   flag: (
     <svg {...SVG_PROPS}>
@@ -147,8 +154,8 @@ const RECRUTEUR_TABS: TabConfig[] = [
 const COACH_TABS: TabConfig[] = [
   { key: "dashboard", label: "Accueil", href: "/coach/tableau-de-bord", icon: Icons.dashboard, activeMatch: "/coach/tableau-de-bord" },
   // /coach/athletes couvre la liste + les sous-routes [id] (profil, modifier, apercu)
-  { key: "athletes", label: "Athlètes", href: "/coach/athletes", icon: Icons.users, activeMatch: "/coach/athletes" },
-  { key: "equipes", label: "Équipes", href: "/coach/equipes", icon: Icons.layers, activeMatch: "/coach/equipes" },
+  { key: "athletes", label: "Mes athlètes", href: "/coach/athletes", icon: Icons.users, activeMatch: "/coach/athletes" },
+  { key: "a-traiter", label: "À traiter", href: "/coach/a-traiter", icon: Icons.checklist, activeMatch: "/coach/a-traiter" },
   { key: "messages", label: "Messages", href: "/coach/demandes", icon: Icons.envelope, activeMatch: "/coach/demandes" },
 ];
 
@@ -192,6 +199,10 @@ export default function MobileTabBar({ role }: MobileTabBarProps) {
                        items hors actBadge, ex: suggestions athlète) */
   const [msgBadge, setMsgBadge] = useState(0);
   const [actBadge, setActBadge] = useState(0);
+  // À traiter : non-vérifiés + suggestions EN_ATTENTE. Source/filtres IDENTIQUES
+  // au dashboard coach ActionBar (page.tsx L118-122, L141, L153-159) — un seul
+  // "à traiter" pour tout le coach mobile.
+  const [aTraiterBadge, setATraiterBadge] = useState(0);
   const [moreDotActive, setMoreDotActive] = useState(false);
 
   useEffect(() => {
@@ -238,9 +249,34 @@ export default function MobileTabBar({ role }: MobileTabBarProps) {
           .select("id", { count: "exact", head: true })
           .eq("coach_id", user.id)
           .eq("read", false);
+
+        // À traiter — MÊME source que dashboard ActionBar (page.tsx L118-159).
+        // Une seule définition de "non vérifié" / "à traiter" partagée entre
+        // le tab bar et les cartes du dashboard.
+        const { data: athleteRows } = await supabase
+          .from("athletes")
+          .select("id, verified")
+          .eq("coach_id", user.id)
+          .eq("status", "ACTIF");
+        const athletes = athleteRows || [];
+        const coachAthleteIds = athletes.map((a: { id: string }) => a.id);
+        const verifiedCount = athletes.filter((a: { verified: boolean }) => a.verified).length;
+        const unverifiedCount = athletes.length - verifiedCount;
+
+        let pendingSuggestions = 0;
+        if (coachAthleteIds.length > 0) {
+          const { count: sugCount } = await supabase
+            .from("athlete_suggestions")
+            .select("id", { count: "exact", head: true })
+            .in("athlete_id", coachAthleteIds)
+            .eq("status", "EN_ATTENTE");
+          pendingSuggestions = sugCount || 0;
+        }
+
         if (cancelled) return;
         setMsgBadge(0);
         setActBadge(actCount ?? 0);
+        setATraiterBadge(unverifiedCount + pendingSuggestions);
         setMoreDotActive((actCount ?? 0) > 0);
         return;
       }
@@ -396,7 +432,12 @@ export default function MobileTabBar({ role }: MobileTabBarProps) {
         {tabs.map((tab) => {
           const locked = !meetsRequiredTier(tier, tab.requiredTier, isSchoolAdmin, tab.adminBypass);
           const active = isActive(tab);
-          const showBadge = tab.key === "messages" && msgBadge > 0 && !locked;
+          // Badge par tab key : messages (recruteur), a-traiter (coach).
+          const tabBadgeCount =
+            tab.key === "messages" ? msgBadge
+            : tab.key === "a-traiter" ? aTraiterBadge
+            : 0;
+          const showBadge = tabBadgeCount > 0 && !locked;
           const color = active ? "text-[#E63946]" : locked ? "text-[#8a8d96]/60" : "text-[#8a8d96]";
           return (
             <Link
@@ -411,7 +452,7 @@ export default function MobileTabBar({ role }: MobileTabBarProps) {
                 {locked && tab.requiredTier && <LockIcon />}
                 {showBadge && (
                   <span className="absolute -top-1.5 -right-2 inline-flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full bg-[#E63946] text-white text-[9px] font-black leading-none">
-                    {msgBadge > 99 ? "99+" : msgBadge}
+                    {tabBadgeCount > 99 ? "99+" : tabBadgeCount}
                   </span>
                 )}
               </span>

@@ -38,6 +38,11 @@ export interface EmptyStateProps {
   action?: EmptyStateAction;
   /** Override taille image (défaut 132px). */
   imageSize?: number;
+  /** Optical offset horizontal en px pour compenser une PNG dont le poids
+   *  visuel est asymétrique (ex. effectif.png left-weighted → +14).
+   *  Undefined = aucune transformation (défaut, backward-compat).
+   *  Retirer si l'asset est re-exporté balancé. */
+  imageOffsetX?: number;
 }
 
 export function EmptyState({
@@ -47,12 +52,17 @@ export function EmptyState({
   description,
   action,
   imageSize = 132,
+  imageOffsetX,
 }: EmptyStateProps) {
   return (
     <div className="flex flex-col items-center text-center px-4 py-12 max-w-md mx-auto">
       <div
         className="relative flex-shrink-0"
-        style={{ width: imageSize, height: imageSize }}
+        style={{
+          width: imageSize,
+          height: imageSize,
+          transform: imageOffsetX ? `translateX(${imageOffsetX}px)` : undefined,
+        }}
       >
         <Image
           src={image}

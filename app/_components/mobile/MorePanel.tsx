@@ -213,21 +213,21 @@ export default function MorePanel({
       const out: PanelSection[] = [
         {
           items: [
+            // "Mes équipes" déplacé de la tab bar (refonte 5 slots : Accueil /
+            // Mes athlètes / À traiter / Messages / Plus).
+            { key: "equipes", label: "Mes équipes", href: "/coach/equipes", icon: Icons.layers },
             { key: "activites", label: "Activités", href: "/coach/activites", icon: Icons.bell, badge: actBadge },
             { key: "reputation", label: "Ma réputation", href: "/coach/reputation", icon: Icons.star },
           ],
         },
       ];
-      // Gestion École : uniquement coach école admin (PAS civil)
+      // Gestion d'école : uniquement coach école admin (PAS civil).
+      // Pages NON portées en mobile → external Browser.open vers le web public.
       if (!isCivil && isSchoolAdmin) {
         out.push({
           title: "Gestion École",
           items: [
-            { key: "mon-ecole", label: "Mon école", href: "/coach/ecole", icon: Icons.school },
-            { key: "coachs", label: "Coachs", href: "/coach/ecole/coachs", icon: Icons.users },
-            { key: "stats", label: "Stats école", href: "/coach/ecole/stats", icon: Icons.barChart },
-            { key: "analytics", label: "Analytique", href: "/coach/ecole/analytics", icon: Icons.activity },
-            { key: "placements", label: "Placements", href: "/coach/ecole/placements", icon: Icons.trophy },
+            { key: "ecole-web", label: "Gestion d'école", href: `${PUBLIC_BASE}/coach/ecole`, icon: Icons.school, external: true },
           ],
         });
       }

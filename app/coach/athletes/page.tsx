@@ -15,6 +15,9 @@ import { isValidationExpired } from "@/lib/utils/profileValidation";
 import { getCurrentSeason } from "@/lib/utils/season";
 import AthletePhotoFill from "@/components/shared/AthletePhotoFill";
 import CoachAthleteRow from "@/components/coach/CoachAthleteRow";
+import { CoachAthletesMobile } from "@/components/shared/CoachAthletesMobile";
+
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
 /* ═══════════════════════════════════════════════════════════════
    Mes Athlètes — Card/list layout matching recruiter search
@@ -167,6 +170,10 @@ export default function MesAthletesPage() {
 }
 
 function MesAthletesContent() {
+  // Iter coach-athletes-mobile : Capacitor → composant mobile-native
+  // (Roster + À réclamer). Web (non-Capacitor) garde son layout existant.
+  if (IS_CAPACITOR) return <CoachAthletesMobile />;
+
   const searchParams = useSearchParams();
   const urlFilter = searchParams.get("filtre");
 

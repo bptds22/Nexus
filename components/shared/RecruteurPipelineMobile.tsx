@@ -700,6 +700,8 @@ function EmptyStageState({ stage }: { stage: StageConfig }) {
       image="/empty/nexus-empty-effectif.png"
       title="Aucun athlète à ce stage"
       description={`Les athlètes apparaîtront ici quand tu les passes à ${stage.label}.`}
+      /* optical offset for left-weighted PNG — remove if asset re-exported balanced */
+      imageOffsetX={14}
     />
   );
 }
@@ -1171,6 +1173,8 @@ function EmptyState({ isFreeDemo }: { isFreeDemo: boolean }) {
       description={isFreeDemo
         ? "Passe à Pro pour gérer ton processus de recrutement et suivre tes athlètes."
         : "Ajoute un athlète en favori depuis Recherche pour commencer à le suivre dans ton processus."}
+      /* optical offset for left-weighted PNG — remove if asset re-exported balanced */
+      imageOffsetX={14}
     />
   );
 }
