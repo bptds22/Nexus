@@ -111,14 +111,19 @@ export function SignupMobile({ onShowWelcome, onShowLogin }: SignupMobileProps) 
   const toast = useMobileToast();
 
   // 0 = role picker ; 1 = compte ; 2 = Toi (identité + âge + consents
-  // génériques) ; 3 = Tes parents (consents parentaux + partner).
-  // Iter signup-reorg — annule la fusion du sprint polish-2 : on REVIENT
-  // à 2 sections distinctes Toi / Tes parents pour pouvoir ensuite (sprint
-  // suivant après recon âge) gater conditionnellement l'écran parents
-  // selon l'âge. Les 3 consents génériques (policy/data/marketing) sont
-  // DÉPLACÉS de l'écran 1 vers l'écran 2 → écran 1 reste propre (compte
-  // + sociaux).
+  // génériques) ; 3 = Tes parents (athlète mineur uniquement).
+  // Iter coach-signup — userType bascule entre athlete (flow existant
+  // 3 écrans + age-gate) et coach (flow 2 écrans sans parent, adulte).
+  // Le step machine reste 0..3 mais le coach n'atteint jamais step 3.
   const [step, setStep] = useState<0 | 1 | 2 | 3>(0);
+  const [userType, setUserType] = useState<"athlete" | "coach" | "recruiter">("athlete");
+  // coachContext : 'scolaire' | 'ligue_civile' selon la carte coach choisie au
+  // picker. Passé en 7e arg de signUp() → trigger handle_new_auth_user
+  // l'écrit dans users.context (whitelist scolaire/collegial/ligue_civile).
+  // Iter recruteur-signup-mobile — la carte Recruteur CÉGEP ouvre désormais
+  // le flow natif (userType='recruiter') ; users.context est posé à
+  // 'collegial' au signUp (hardcoded, pas via coachContext).
+  const [coachContext, setCoachContext] = useState<"scolaire" | "ligue_civile" | null>(null);
 
   // Form state athlète
   const [email, setEmail] = useState("");
@@ -189,20 +194,24 @@ export function SignupMobile({ onShowWelcome, onShowLogin }: SignupMobileProps) 
   // Réévalué à chaque render : si l'utilisateur revient à l'écran 2 et
   // change sa date, le flow se rebranche tout seul.
   const userIsAdult = isAdult(birthdate);
-  // Iter age-gate §B — canSubmit :
-  //   - Majeur : canProceedStep2 suffit. Pas de parent_* requis, pas de
-  //     consentement parental requis (Loi 25 : consentement adulte =
-  //     consent_policy + consent_data déjà cochés à l'écran 2).
-  //   - Mineur : ancien flow (parent_* + 2 consents parentaux). Partner
-  //     consent reste optionnel hors gate.
-  const canSubmit = userIsAdult
+  // canSubmit — 4 branches :
+  //   - COACH (iter coach-signup) : canProceedStep2 suffit. Adulte par
+  //     définition, pas de parent_*, pas de consentement parental.
+  //   - RECRUTEUR (iter recruteur-signup-mobile) : idem coach (adulte).
+  //   - Athlète majeur (age-gate §B) : canProceedStep2 suffit.
+  //   - Athlète mineur : ancien flow (parent_* + 2 consents parentaux,
+  //     partner consent reste opt hors gate).
+  const isProAdult = userType === "coach" || userType === "recruiter";
+  const canSubmit = isProAdult
     ? (canProceedStep2 && !saving)
-    : (canProceedStep2
-        && parentFirstName.trim().length > 0
-        && parentLastName.trim().length > 0
-        && parentEmailValid
-        && consentProfile && consentVisibility
-        && !saving);
+    : (userIsAdult
+        ? (canProceedStep2 && !saving)
+        : (canProceedStep2
+            && parentFirstName.trim().length > 0
+            && parentLastName.trim().length > 0
+            && parentEmailValid
+            && consentProfile && consentVisibility
+            && !saving));
 
   /* ── Role-picker handlers ────────────────────────────────── */
 
@@ -213,27 +222,43 @@ export function SignupMobile({ onShowWelcome, onShowLogin }: SignupMobileProps) 
 
   const handlePickPro = useCallback((role: "scolaire" | "collegial" | "ligue_civile") => {
     triggerHaptic("Light");
-    // ⚠️ TODO interne — placeholder web : signup natif pro (école /
-    // ligue civile / recruteur) à venir dans un sprint futur. Pour
-    // l'instant on route vers /auth/pro pré-sélectionné (mini-fix
-    // 7.50-a-bis-2a : useEffect lit ?role=X et coche la carte).
-    router.push(`/auth/pro?role=${role}`);
-  }, [router]);
+    // Iter coach-signup — scolaire / ligue_civile → flow natif coach.
+    // Iter recruteur-signup-mobile — collegial → flow natif recruteur
+    // (userType='recruiter', context='collegial' posé directement au signUp).
+    if (role === "collegial") {
+      setUserType("recruiter");
+      setCoachContext(null); // pas pertinent pour le recruteur
+      setStep(1);
+      return;
+    }
+    setUserType("coach");
+    setCoachContext(role);
+    setStep(1);
+  }, []);
 
   /* ── Navigation athlète ──────────────────────────────────── */
 
   const handleNext = useCallback(() => {
     triggerHaptic("Light");
     if (step === 1 && canProceedStep1) setStep(2);
-    // Iter age-gate §B — Step 2 → Step 3 UNIQUEMENT si mineur. Pour un
-    // majeur, le CTA passe sur "Créer mon compte" et appelle handleSubmit
-    // directement (cf gating §CTA plus bas).
-    else if (step === 2 && canProceedStep2 && !userIsAdult) setStep(3);
-  }, [step, canProceedStep1, canProceedStep2, userIsAdult]);
+    // Step 2 → Step 3 UNIQUEMENT pour un athlète mineur.
+    // Iter coach-signup — un coach ne va JAMAIS au step 3 (adulte, pas
+    // de parental). Pour un athlète majeur (age-gate §B), le CTA bascule
+    // directement sur "Créer mon compte" et appelle handleSubmit.
+    else if (step === 2 && canProceedStep2 && userType === "athlete" && !userIsAdult) setStep(3);
+  }, [step, canProceedStep1, canProceedStep2, userType, userIsAdult]);
 
   const handleBack = useCallback(() => {
     triggerHaptic("Light");
     if (step === 0) { onShowWelcome(); return; }
+    // Iter coach-signup — retour au picker depuis step 1 : reset userType
+    // pour que le re-pick (athlète ou coach) reparte propre.
+    if (step === 1) {
+      setStep(0);
+      setUserType("athlete");
+      setCoachContext(null);
+      return;
+    }
     setStep((s) => (s - 1) as 0 | 1 | 2);
   }, [step, onShowWelcome]);
 
@@ -246,6 +271,121 @@ export function SignupMobile({ onShowWelcome, onShowLogin }: SignupMobileProps) 
 
     const { signUp } = await import("@/lib/supabase/auth.actions");
 
+    // Iter recruteur-signup-mobile — branche RECRUTEUR.
+    // Adulte par définition. 3 consents génériques (pas de parental).
+    // Context = 'collegial' hardcoded passé en 7e arg de signUp() →
+    // trigger handle_new_auth_user écrit users.context='collegial' +
+    // users.role='RECRUTEUR'. date_naissance stashée comme coach.
+    // Redirect → /onboarding (wizard recruteur web pour l'instant ;
+    // natif au sprint recruteur-onboarding-mobile suivant).
+    if (userType === "recruiter") {
+      const consentMeta = buildConsentMetadata({
+        policy: consentPolicy,
+        data: consentData,
+        marketing: consentMarketing,
+      });
+
+      const { data, error } = await signUp(
+        email.trim(),
+        password,
+        "RECRUTEUR",
+        firstName.trim(),
+        lastName.trim(),
+        {
+          ...consentMeta,
+          ...(birthdate ? { date_naissance: birthdate } : {}),
+        },
+        "collegial",
+      );
+
+      if (error) {
+        toast.error({
+          message: "Inscription impossible",
+          detail: translateAuthError(error.message),
+        });
+        setSaving(false);
+        return;
+      }
+
+      if (data?.user?.id) {
+        const persistResult = await persistInitialConsents(data.user.id, {
+          policy: consentPolicy,
+          data: consentData,
+          marketing: consentMarketing,
+        });
+        if (!persistResult.ok) {
+          console.warn("[SignupMobile recruteur] persistInitialConsents:", persistResult.error);
+        }
+      }
+
+      triggerHaptic("Medium");
+      setEntering(true);
+      setTimeout(() => {
+        router.replace("/onboarding");
+      }, 400);
+      return;
+    }
+
+    // Iter coach-signup — branche COACH ↔ ATHLETE.
+    // COACH : adulte par définition. 3 consents génériques (pas de
+    //   parental). Context = scolaire | ligue_civile passé en 7e arg de
+    //   signUp() → trigger handle_new_auth_user écrit users.context.
+    //   date_naissance stashée en raw_user_meta_data ; sera persistée
+    //   dans users.profile_data au coach onboarding finish (sprint
+    //   suivant). Redirect → /onboarding (wizard coach, encore web).
+    // ATHLETE : flow existant (age-gate adulte vs mineur).
+    if (userType === "coach") {
+      const consentMeta = buildConsentMetadata({
+        policy: consentPolicy,
+        data: consentData,
+        marketing: consentMarketing,
+      });
+
+      const { data, error } = await signUp(
+        email.trim(),
+        password,
+        "COACH",
+        firstName.trim(),
+        lastName.trim(),
+        {
+          ...consentMeta,
+          ...(birthdate ? { date_naissance: birthdate } : {}),
+        },
+        coachContext ?? undefined,
+      );
+
+      if (error) {
+        toast.error({
+          message: "Inscription impossible",
+          detail: translateAuthError(error.message),
+        });
+        setSaving(false);
+        return;
+      }
+
+      if (data?.user?.id) {
+        const persistResult = await persistInitialConsents(data.user.id, {
+          policy: consentPolicy,
+          data: consentData,
+          marketing: consentMarketing,
+        });
+        if (!persistResult.ok) {
+          console.warn("[SignupMobile coach] persistInitialConsents:", persistResult.error);
+        }
+      }
+
+      triggerHaptic("Medium");
+
+      // Voile #111317 + redirect vers le wizard coach (encore web pour
+      // l'instant — natif via dispatch IS_CAPACITOR au sprint suivant).
+      setEntering(true);
+      setTimeout(() => {
+        router.replace("/onboarding");
+      }, 400);
+      return;
+    }
+
+    // ─── Athlete branch (existant) ──────────────────────────────
     // Iter age-gate §C — branche selon majorité :
     //   - Majeur (userIsAdult) : NE PAS passer parentalProfile/Visibility
     //     /PartnerVisibility ni parent PII. raw_user_meta_data ne reçoit
@@ -279,7 +419,7 @@ export function SignupMobile({ onShowWelcome, onShowLogin }: SignupMobileProps) 
           },
         );
 
-    // ⚠️ context (scolaire/civil) NON capturé au signup — capté à
+    // ⚠️ context (scolaire/civil) NON capturé au signup athlète — capté à
     // l'onboarding écran 2 (sport+école/équipe). signUp() accepte
     // context optionnel (8e arg) ; on omet, le wizard d'onboarding
     // le déduit ou propose un picker plus tard.
@@ -345,7 +485,8 @@ export function SignupMobile({ onShowWelcome, onShowLogin }: SignupMobileProps) 
       router.replace("/athlete/onboarding");
     }, 400);
   }, [
-    canSubmit, email, password, firstName, lastName, birthdate, userIsAdult,
+    canSubmit, email, password, firstName, lastName, birthdate,
+    userType, coachContext, userIsAdult,
     parentFirstName, parentLastName, parentEmail, parentRelationship,
     consentPolicy, consentData, consentMarketing,
     consentProfile, consentVisibility, consentPartnerVisibility,
@@ -387,11 +528,12 @@ export function SignupMobile({ onShowWelcome, onShowLogin }: SignupMobileProps) 
         <div className="flex-1 flex justify-center">
           <NexusLogoSvg width={68} />
         </div>
-        {/* Progress dots — 3 dots si mineur, 2 si majeur (iter age-gate).
-            On évalue userIsAdult LIVE : si l'utilisateur change sa date
-            au step 2, le 3e dot apparaît/disparaît dynamiquement. */}
+        {/* Progress dots :
+              - Coach (iter coach-signup) : 2 dots (compte + Toi).
+              - Athlète majeur (age-gate §B) : 2 dots.
+              - Athlète mineur : 3 dots (compte + Toi + Parents). */}
         <div className="w-11 flex items-center justify-end gap-1 flex-shrink-0">
-          {step >= 1 && (userIsAdult ? [1, 2] : [1, 2, 3]).map((s) => (
+          {step >= 1 && ((userType === "coach" || userType === "recruiter" || userIsAdult) ? [1, 2] : [1, 2, 3]).map((s) => (
             <div
               key={s}
               className={`w-2 h-2 rounded-full transition-colors ${
@@ -427,6 +569,7 @@ export function SignupMobile({ onShowWelcome, onShowLogin }: SignupMobileProps) 
           consentMarketing={consentMarketing} setConsentMarketing={setConsentMarketing}
           onOpenLegal={(key) => setLegalSheet(key)}
           setInputFocused={setInputFocused}
+          audience={userType}
         />
       )}
       {step === 3 && (
@@ -458,14 +601,15 @@ export function SignupMobile({ onShowWelcome, onShowLogin }: SignupMobileProps) 
           }}
           aria-hidden={footerHidden ? "true" : "false"}
         >
-          {/* Iter age-gate §B — CTA logic :
-              - Step 1 : "Continuer" gated sur canProceedStep1.
-              - Step 2 MINEUR : "Continuer" gated sur canProceedStep2 (→ step 3).
-              - Step 2 MAJEUR : "Créer mon compte" gated sur canSubmit (submit
-                direct, écran parents sauté).
-              - Step 3 : "Créer mon compte" gated sur canSubmit.
-              On bascule en mode submit-button dès step 2 si majeur OU step 3. */}
-          {(step < 2) || (step === 2 && !userIsAdult) ? (
+          {/* CTA logic — 3 grammars superposées :
+              - Step 1 : toujours "Continuer" (canProceedStep1).
+              - Step 2 ATHLÈTE MINEUR : "Continuer" → step 3.
+              - Step 2 ATHLÈTE MAJEUR (age-gate §B) : "Créer mon compte".
+              - Step 2 COACH (iter coach-signup) : "Créer mon compte".
+              - Step 3 : "Créer mon compte".
+              Bascule submit-button dès qu'on est au dernier step pour le
+              type d'utilisateur courant. */}
+          {(step < 2) || (step === 2 && userType === "athlete" && !userIsAdult) ? (
             <button
               type="button"
               onClick={handleNext}
@@ -842,16 +986,27 @@ interface Step2YouProps {
   consentMarketing: boolean; setConsentMarketing: (v: boolean) => void;
   onOpenLegal: (key: LegalDocKey) => void;
   setInputFocused: (v: boolean) => void;
+  /** Iter coach-signup + recruteur-signup-mobile — audience audience-aware
+   *  copy + champ email conditionnel.
+   *  "athlete" (défaut) : subtitle carte joueur + email affiché en re-confirmation.
+   *  "coach" / "recruiter" : subtitle générique + pas d'email re-confirm
+   *  (déjà validé à l'écran 1, pas un athlète avec carte). */
+  audience?: "athlete" | "coach" | "recruiter";
 }
 
 function Step2You(p: Step2YouProps) {
+  const audience = p.audience ?? "athlete";
+  const subtitle = audience === "coach" || audience === "recruiter"
+    ? "Quelques infos sur toi."
+    : "Le nom qui ira sur ta carte joueur + ta date de naissance.";
+  const showEmail = audience === "athlete";
   return (
     <div className="relative z-10 flex-1 px-6 pt-4 overflow-y-auto">
       <h1 className="font-head font-black text-white uppercase tracking-tight" style={{ fontSize: 28, lineHeight: 0.95 }}>
         Toi.
       </h1>
       <p className="text-[14px] text-[#9CA3AF] mt-2 leading-snug">
-        Le nom qui ira sur ta carte joueur + ta date de naissance.
+        {subtitle}
       </p>
 
       <div className="space-y-3 mt-6">
@@ -887,27 +1042,31 @@ function Step2You(p: Step2YouProps) {
           />
         </div>
 
-        <div className={fieldCls}>
-          <label htmlFor="signup-email-confirm" className={labelCls}>Ton courriel</label>
-          <input
-            id="signup-email-confirm"
-            type="email"
-            inputMode="email"
-            autoCapitalize="off"
-            autoCorrect="off"
-            spellCheck={false}
-            autoComplete="email"
-            value={p.email}
-            onChange={(e) => p.setEmail(e.target.value)}
-            onFocus={() => p.setInputFocused(true)}
-            onBlur={() => p.setInputFocused(false)}
-            placeholder="nom@exemple.ca"
-            className={inputCls}
-            style={{ fontSize: 17 }}
-          />
-        </div>
-        {p.email && !p.emailValid && (
-          <p className="text-[12px] text-[#EF4444] -mt-1 px-1">Format de courriel invalide.</p>
+        {showEmail && (
+          <>
+            <div className={fieldCls}>
+              <label htmlFor="signup-email-confirm" className={labelCls}>Ton courriel</label>
+              <input
+                id="signup-email-confirm"
+                type="email"
+                inputMode="email"
+                autoCapitalize="off"
+                autoCorrect="off"
+                spellCheck={false}
+                autoComplete="email"
+                value={p.email}
+                onChange={(e) => p.setEmail(e.target.value)}
+                onFocus={() => p.setInputFocused(true)}
+                onBlur={() => p.setInputFocused(false)}
+                placeholder="nom@exemple.ca"
+                className={inputCls}
+                style={{ fontSize: 17 }}
+              />
+            </div>
+            {p.email && !p.emailValid && (
+              <p className="text-[12px] text-[#EF4444] -mt-1 px-1">Format de courriel invalide.</p>
+            )}
+          </>
         )}
 
         {/* Iter signup-reorg — date de naissance (input type=date natif).
