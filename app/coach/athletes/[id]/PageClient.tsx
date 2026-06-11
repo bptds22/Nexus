@@ -17,6 +17,14 @@ import VideoEmbed from "@/components/ui/VideoEmbed";
 import type { GlobalRecruitmentStatus } from "@/lib/types/models";
 import { isValidationExpired } from "@/lib/utils/profileValidation";
 import AthletePhotoFill from "@/components/shared/AthletePhotoFill";
+import ConsentAlert from "@/components/coach/profile/ConsentAlert";
+import VerifyAlert from "@/components/coach/profile/VerifyAlert";
+import SuggestionsAlert from "@/components/coach/profile/SuggestionsAlert";
+// Step 6 unification — coach profile = shared body avec viewer="coach".
+// CoachAthleteProfileBodyMobile (paraphrase copy) supprimé.
+import AthleteRecruiterProfileBodyMobile from "@/components/shared/AthleteRecruiterProfileBodyMobile";
+
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
 /* ═══════════════════════════════════════════════════════════════
    Coach Athlete Profile — Same design as recruiter view
@@ -243,6 +251,12 @@ export default function CoachAthleteProfilePage() {
   const router = useRouter();
   const id = useDynamicParam("id");
 
+  // Profile Step 6 unification — Capacitor → shared mobile body avec viewer="coach".
+  // Web (non-Capacitor) garde tout le PageClient existant intact ci-dessous.
+  if (IS_CAPACITOR) {
+    return <AthleteRecruiterProfileBodyMobile athleteId={id} viewerMode="recruiter" viewer="coach" />;
+  }
+
   const [a, setA] = useState<AthleteProfileRecruiterView | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -378,13 +392,11 @@ export default function CoachAthleteProfilePage() {
     showToast("Suggestion approuvée — valeur mise à jour");
   }
 
-  async function rejectSuggestion(suggestionId: string) {
+  async function rejectSuggestion(suggestionId: string, reason: string) {
     const supabase = createClient();
-    const { error } = await supabase.from("athlete_suggestions").update({ status: "REJETEE", raison_rejet: rejectReason || null }).eq("id", suggestionId);
+    const { error } = await supabase.from("athlete_suggestions").update({ status: "REJETEE", raison_rejet: reason || null }).eq("id", suggestionId);
     if (error) { console.error("[Suggestion reject]", error); return; }
     setPendingSuggestions((prev) => prev.filter((s) => s.id !== suggestionId));
-    setRejectingId(null);
-    setRejectReason("");
     showToast("Suggestion rejetée");
   }
 
@@ -428,8 +440,6 @@ export default function CoachAthleteProfilePage() {
   const [committedSchoolName, setCommittedSchoolName] = useState("");
   const [openToOffers, setOpenToOffers] = useState<boolean | null>(null);
   const [pendingSuggestions, setPendingSuggestions] = useState<{ id: string; champ: string; valeur_actuelle: string; valeur_proposee: string; message: string; created_at: string }[]>([]);
-  const [rejectingId, setRejectingId] = useState<string | null>(null);
-  const [rejectReason, setRejectReason] = useState("");
 
   const isDetailed = mode === "detailed";
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
@@ -485,25 +495,15 @@ export default function CoachAthleteProfilePage() {
         </div>
       )}
 
+      {/* ── Profile alerts (consent / verify / suggestions) ─── */}
+      {!recruiterView && !isPreview && (
+        <ConsentAlert consentGiven={consentGiven} onConfirm={confirmConsent} />
+      )}
+
       {/* ── Coach Action Bar ──────────────────────────────────── */}
       {!recruiterView && !isPreview && (
         <div className={`${cardBase} p-4 sm:p-5`}>
           <div className="flex flex-wrap items-center gap-4">
-
-            {/* Consent indicator */}
-            {consentGiven ? (
-              <div className="flex items-center gap-2">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><path d="M9 12l2 2 4-4" /></svg>
-                <span className="text-[12px] font-bold text-[#22C55E]">Consentement parental confirmé</span>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#EAB308" strokeWidth="2" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
-                <span className="text-[12px] font-bold text-[#EAB308]">Consentement non confirmé</span>
-                <button type="button" onClick={confirmConsent} className="px-3 py-1 bg-[#EAB308] hover:bg-[#CA8A04] text-white text-[11px] font-bold rounded transition-colors">Confirmer</button>
-              </div>
-            )}
-
             <div className="flex-1" />
 
             {/* Invite */}
@@ -604,82 +604,23 @@ export default function CoachAthleteProfilePage() {
         </div>
       )}
 
-      {/* Unverified warning banner */}
-      {!recruiterView && !isPreview && !a.isVerified && (
-        <div className="bg-[#F59E0B]/10 border border-[#F59E0B]/30 rounded-xl px-5 py-4 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-              <line x1="12" y1="9" x2="12" y2="13" />
-              <line x1="12" y1="17" x2="12.01" y2="17" />
-            </svg>
-            <div>
-              <p className="text-[13px] font-bold text-[#F59E0B]">Profil non vérifié</p>
-              <p className="text-[12px] text-[#9CA3AF]">Ce profil n&apos;est pas visible par les recruteurs tant qu&apos;il n&apos;est pas vérifié.</p>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={() => setShowVerifyModal(true)}
-            className="shrink-0 px-5 py-2.5 rounded-lg bg-[#3B82F6] text-white font-bold text-[12px] uppercase tracking-[0.1em] hover:bg-[#2563EB] transition-colors cursor-pointer"
-          >
-            Vérifier maintenant
-          </button>
-        </div>
+      {/* Unverified warning banner — web keeps the existing VerifyModal
+          confirm step ; mobile will fire the 5-col write directly. Both
+          surfaces consume the same VerifyAlert component. */}
+      {!recruiterView && !isPreview && (
+        <VerifyAlert
+          isVerified={!!a.isVerified}
+          onVerify={() => setShowVerifyModal(true)}
+        />
       )}
 
       {/* ── Pending Suggestions ──────────────────────────────── */}
-      {!recruiterView && !isPreview && pendingSuggestions.length > 0 && (
-        <div className="bg-[#1A1D24] rounded-xl border border-[#EAB308]/20 p-5">
-          <div className="flex items-center gap-2 mb-4">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#EAB308" strokeWidth="2" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
-            <h3 className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#EAB308]">
-              {pendingSuggestions.length} suggestion{pendingSuggestions.length > 1 ? "s" : ""} en attente
-            </h3>
-          </div>
-          <div className="space-y-3">
-            {pendingSuggestions.map((s) => {
-              const diffMs = Date.now() - new Date(s.created_at).getTime();
-              const diffMin = Math.floor(diffMs / 60000);
-              const relTime = diffMin < 60 ? `Il y a ${diffMin} min` : diffMin < 1440 ? `Il y a ${Math.floor(diffMin / 60)}h` : `Il y a ${Math.floor(diffMin / 1440)}j`;
-
-              return (
-                <div key={s.id} className="bg-[#13151a] rounded-lg border border-[#EAB308]/10 p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[13px] font-bold text-white">{s.champ}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        {s.valeur_actuelle && <span className="text-[12px] text-[#6b7280] line-through">{s.valeur_actuelle}</span>}
-                        <span className="text-[12px] text-[#6b7280]">→</span>
-                        <span className="text-[13px] font-bold text-[#EAB308]">{s.valeur_proposee}</span>
-                      </div>
-                      {s.message && <p className="text-[11px] text-[#6b7280] italic mt-1">&ldquo;{s.message}&rdquo;</p>}
-                      <p className="text-[10px] text-[#4a4d56] mt-1">{relTime}</p>
-                    </div>
-                    {rejectingId === s.id ? (
-                      <div className="flex flex-col gap-2 shrink-0">
-                        <input type="text" value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} placeholder="Raison (optionnel)" className="bg-[#111317] border border-[#2D3748] rounded px-2 py-1 text-[11px] text-white w-40 focus:border-[#E63946] outline-none" />
-                        <div className="flex gap-2">
-                          <button type="button" onClick={() => rejectSuggestion(s.id)} className="px-3 py-1 bg-[#E63946] text-white text-[10px] font-bold rounded hover:bg-[#D42B22] transition-colors">Confirmer</button>
-                          <button type="button" onClick={() => { setRejectingId(null); setRejectReason(""); }} className="text-[10px] text-[#6b7280] hover:text-white transition-colors">Annuler</button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2 shrink-0">
-                        <button type="button" onClick={() => approveSuggestion(s.id)} className="px-3 py-1.5 bg-[#22C55E] hover:bg-[#16A34A] text-white text-[10px] font-bold uppercase tracking-wider rounded-lg transition-colors">
-                          Approuver
-                        </button>
-                        <button type="button" onClick={() => setRejectingId(s.id)} className="px-3 py-1.5 border border-[#E63946]/30 text-[#E63946] text-[10px] font-bold uppercase tracking-wider rounded-lg hover:bg-[#E63946]/10 transition-colors">
-                          Rejeter
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+      {!recruiterView && !isPreview && (
+        <SuggestionsAlert
+          pendingSuggestions={pendingSuggestions}
+          onApprove={approveSuggestion}
+          onReject={rejectSuggestion}
+        />
       )}
 
       {/* ── Toggle + Completeness ─────────────────────────────── */}

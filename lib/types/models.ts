@@ -779,6 +779,16 @@ export interface AthleteProfileRecruiterView {
   isOpenToOffers: boolean;
   commitmentStatus?: string;
 
+  // Athlete recruitment status — drives <RecruitmentStatusBadgeGlobal> on
+  // the profile. Mapped from athletes.recruitment_status + the joined
+  // committed_school.name. (Distinct from the recruteur-side pipeline
+  // stage AND from the coach override athletes.statut_recrutement_override.)
+  // Note : open_to_offers est LEGACY côté coach profile mobile et n'est
+  // PAS porté ici — la pill du coach ne doit PAS afficher la sous-ligne
+  // "Ouvert/Fermé aux offres" (one pill, recruitment_status only).
+  recruitmentStatus?: string;
+  committedSchoolName?: string;
+
   // Coach reputation (if public)
   coachReputation?: {
     overallScore: number;

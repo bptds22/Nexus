@@ -37,6 +37,7 @@ import {
   type CoachTaskSuggestion,
 } from "@/lib/coach/tasks";
 import { useMobileToast } from "@/components/mobile/MobileToast";
+import SuggestionSheet from "@/components/coach/SuggestionSheet";
 import AthletePhoto from "@/components/shared/AthletePhoto";
 
 /* ── Types ────────────────────────────────────────────────────── */
@@ -330,8 +331,21 @@ function SuggestionsSummaryBlock({
   suggestions: CoachTaskSuggestion[];
   onTapSuggestion: (s: CoachTaskSuggestion) => void;
 }) {
-  if (suggestions.length === 0) return null;
+  /* Exit animations : block-level quand la liste se vide ; row-level
+     quand UNE suggestion est résolue (les autres restent). ~240ms ease-out,
+     fade + height collapse + scale léger. Cohérent avec SuggestionsAlert
+     sur le coach profile. */
   return (
+    <AnimatePresence initial={false}>
+      {suggestions.length > 0 && (
+        <motion.div
+          key="sug-summary-block"
+          initial={{ opacity: 0, height: 0, scale: 0.97 }}
+          animate={{ opacity: 1, height: "auto", scale: 1 }}
+          exit={{ opacity: 0, height: 0, scale: 0.97 }}
+          transition={{ duration: 0.24, ease: "easeOut" }}
+          style={{ overflow: "hidden" }}
+        >
     <div className="bg-[#0C0E12] rounded-xl px-3 py-3">
       <div className="flex items-center gap-2 mb-2">
         <div className="w-7 h-7 rounded-full bg-[#E63946]/15 flex items-center justify-center flex-shrink-0">
@@ -344,149 +358,31 @@ function SuggestionsSummaryBlock({
         <span className="text-[11px] text-[#6B7280] tabular-nums">{suggestions.length}</span>
       </div>
       <div className="space-y-0.5">
-        {suggestions.map((s) => (
-          <SuggestionSummaryLine key={s.id} suggestion={s} onTap={() => onTapSuggestion(s)} />
-        ))}
+        <AnimatePresence initial={false} mode="popLayout">
+          {suggestions.map((s) => (
+            <motion.div
+              key={s.id}
+              layout
+              initial={{ opacity: 0, height: 0, scale: 0.97 }}
+              animate={{ opacity: 1, height: "auto", scale: 1 }}
+              exit={{ opacity: 0, height: 0, scale: 0.97 }}
+              transition={{ duration: 0.24, ease: "easeOut" }}
+              style={{ overflow: "hidden" }}
+            >
+              <SuggestionSummaryLine suggestion={s} onTap={() => onTapSuggestion(s)} />
+            </motion.div>
+          ))}
+        </AnimatePresence>
       </div>
     </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
 
-function SuggestionSheet({
-  open, suggestion, athleteName, rejecting, rejectReason,
-  onClose, onStartReject, onCancelReject, onChangeReason, onApprove, onReject,
-}: {
-  open: boolean;
-  suggestion: CoachTaskSuggestion | null;
-  athleteName: string;
-  rejecting: boolean;
-  rejectReason: string;
-  onClose: () => void;
-  onStartReject: () => void;
-  onCancelReject: () => void;
-  onChangeReason: (v: string) => void;
-  onApprove: () => void;
-  onReject: () => void;
-}) {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => { setMounted(true); }, []);
-  if (!mounted || !open || !suggestion) return null;
-
-  return createPortal(
-    <>
-      <div
-        className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm"
-        onClick={onClose}
-        style={{ animation: "nx-at-fade 200ms ease-out forwards" }}
-      />
-      <div
-        className="fixed bottom-0 left-0 right-0 z-[70] bg-[#1A1D24] rounded-t-2xl shadow-2xl"
-        role="dialog"
-        aria-modal="true"
-        style={{
-          paddingBottom: "env(safe-area-inset-bottom)",
-          animation: "nx-at-sheet-up 280ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards",
-        }}
-      >
-        <div className="flex justify-center pt-3 pb-2">
-          <div className="w-10 h-1 rounded-full bg-white/20" />
-        </div>
-        <div className="px-6 pt-2 pb-6">
-          {/* Header */}
-          <div className="flex items-center gap-2.5 mb-1.5">
-            <div className="w-8 h-8 rounded-full bg-[#E63946]/15 flex items-center justify-center flex-shrink-0">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 20h9" />
-                <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
-              </svg>
-            </div>
-            <h3 className="font-head text-[15px] font-black text-white uppercase tracking-tight">
-              {champLabel(suggestion.champ)}
-            </h3>
-          </div>
-          {athleteName && (
-            <p className="text-[12px] text-[#9CA3AF] mb-4">
-              Proposée par <span className="text-white font-bold">{athleteName}</span>
-            </p>
-          )}
-
-          {/* Diff */}
-          <div className="flex items-center gap-3 bg-[#0C0E12] rounded-xl px-4 py-3 mb-3">
-            {suggestion.valeurActuelle && (
-              <>
-                <span className="text-[14px] text-[#6B7280] line-through truncate flex-1">{suggestion.valeurActuelle}</span>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4a4d56" strokeWidth="2.5" strokeLinecap="round" className="flex-shrink-0" aria-hidden>
-                  <path d="M5 12h14" /><path d="M12 5l7 7-7 7" />
-                </svg>
-              </>
-            )}
-            <span className="text-[15px] text-white font-bold truncate flex-1 text-right">{suggestion.valeurProposee}</span>
-          </div>
-
-          {/* Message + time */}
-          {suggestion.message && (
-            <p className="text-[13px] text-[#9CA3AF] italic mb-2 leading-relaxed">
-              &laquo; {suggestion.message} &raquo;
-            </p>
-          )}
-          <p className="text-[11px] text-[#4a4d56] mb-5">{relativeTime(suggestion.createdAt)}</p>
-
-          {/* Actions */}
-          {rejecting ? (
-            <div className="space-y-3">
-              <input
-                type="text"
-                value={rejectReason}
-                onChange={(e) => onChangeReason(e.target.value)}
-                placeholder="Raison du rejet (optionnel)"
-                aria-label="Raison du rejet"
-                className="w-full bg-[#0C0E12] border border-white/[0.06] rounded-2xl px-4 py-3 text-[14px] text-white placeholder:text-[#6B7280] focus:border-[#E63946] outline-none"
-              />
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={onCancelReject}
-                  className="flex-1 h-12 rounded-2xl bg-[#0C0E12] text-[#9CA3AF] text-[14px] font-bold active:bg-white/5"
-                >
-                  Annuler
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { triggerHaptic("Medium"); onReject(); }}
-                  className="flex-1 h-12 rounded-2xl bg-[#E63946] text-white text-[14px] font-bold active:bg-[#D42B22]"
-                >
-                  Confirmer le rejet
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={onStartReject}
-                className="flex-1 h-12 rounded-2xl border-2 border-[#E63946] text-[#E63946] text-[14px] font-bold active:bg-[#E63946]/10"
-              >
-                Rejeter
-              </button>
-              <button
-                type="button"
-                onClick={() => { triggerHaptic("Medium"); onApprove(); }}
-                className="flex-1 h-12 rounded-2xl bg-[#22C55E] text-white text-[14px] font-bold active:bg-[#16A34A]"
-              >
-                Approuver
-              </button>
-            </div>
-          )}
-        </div>
-        <style jsx>{`
-          @keyframes nx-at-fade { from { opacity: 0; } to { opacity: 1; } }
-          @keyframes nx-at-sheet-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
-        `}</style>
-      </div>
-    </>,
-    document.body,
-  );
-}
+/* SuggestionSheet a été extrait vers components/coach/SuggestionSheet.tsx
+   (Step 4 — réutilisé par CoachAthleteProfileBodyMobile). Import au top. */
 
 /* ── Athlete accordion card (per-athlete view) ────────────────── */
 

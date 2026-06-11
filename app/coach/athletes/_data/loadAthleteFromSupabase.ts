@@ -443,7 +443,22 @@ export function mapToRecruiterView(raw: Record<string, unknown>): AthleteProfile
     profileCompleteness: calculateCompletion(raw as AthleteLike, (eval0 as EvalLike) || null, null).percentage,
     favoriteCount: 0,
     viewsThisMonth: 0,
+    // isOpenToOffers : hardcoded true. Champ REQUIS sur le type
+    // AthleteProfileRecruiterView (héritage), aucun composant ne le lit
+    // en JSX. Stub conservé pour compatibilité de type — ne pas le câbler
+    // à la pill du coach (la sous-ligne "Ouvert/Fermé aux offres" est
+    // legacy côté coach mobile et n'est PAS surfacée).
     isOpenToOffers: true,
+    // Athlete recruitment status fields — fix : étaient droppés, badge
+    // tombait toujours sur "OUVERT" côté coach mobile même pour des
+    // athlètes recrutés. open_to_offers volontairement NON porté ici
+    // (one pill = recruitment_status seul ; voir commentaire isOpenToOffers).
+    recruitmentStatus: (raw.recruitment_status as string) || "OUVERT",
+    committedSchoolName: (() => {
+      const cs = raw.committed_school;
+      const csObj = Array.isArray(cs) ? cs[0] : cs;
+      return (csObj as { name?: string } | null)?.name || "";
+    })(),
   };
 
   return view;

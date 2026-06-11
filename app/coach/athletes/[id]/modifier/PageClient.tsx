@@ -1,11 +1,12 @@
 "use client";
 
-import {  useState, useCallback, useEffect, Suspense } from "react";
+import {  useState, useCallback, useEffect, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useDynamicParam } from "@/lib/platform/useDynamicParam";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { loadAthleteRaw, buildFormFromRaw } from "../../_data/loadAthleteFromSupabase";
+import { saveAthleteEdit } from "../../_data/saveAthlete";
 import { BADGE_CONFIG, BADGE_ORDER, MAX_BADGES, MAX_DETAIL_LENGTH, getSportStats, type DistinctionEntry } from "@/lib/config/badges";
 import DistinctionBadge from "@/components/shared/DistinctionBadge";
 import StepIndicator from "../../../components/StepIndicator";
@@ -18,6 +19,9 @@ import FormModeToggle from "../../../components/FormModeToggle";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
 import SchoolSelect from "@/components/ui/SchoolSelect";
 import type { GlobalRecruitmentStatus } from "@/lib/types/models";
+import AthleteWizardMobile from "@/components/shared/AthleteWizardMobile";
+
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
 /* ═══════════════════════════════════════════════════════════════
    MODIFIER — Coach Edit View (7-Step Form Wizard)
@@ -197,6 +201,9 @@ function mapStepParam(param: string | null): number {
 
 export default function ModifierPage() {
   const id = useDynamicParam("id");
+  // Mobile-native dispatch (Capacitor) — shared mode-gated wizard.
+  // Web path below untouched.
+  if (IS_CAPACITOR) return <AthleteWizardMobile mode="edit" athleteId={id} />;
   return (
     <Suspense>
       <ReadOnlyIfPending>
@@ -224,6 +231,12 @@ function ModifierContent({ id }: { id: string }) {
   const [openToOffers, setOpenToOffers] = useState<boolean | null>(null);
   const [schoolsList, setSchoolsList] = useState<{ id: string; name: string }[]>([]);
   const [coachTeam, setCoachTeam] = useState<CoachTeamData>({ school: "", city: "", region: "", teams: [] });
+
+  /* ── Consent baseline (Loi 25 guard) ──────────────────────────
+     Stored value at load time. saveAthleteEdit diffs the form's
+     current `parentalConsent` against this baseline and only writes
+     the consent cols when they differ. */
+  const consentBaselineRef = useRef<boolean>(false);
 
   useEffect(() => {
     // Fetch schools for committed school selector + coach's teams
@@ -315,6 +328,10 @@ function ModifierContent({ id }: { id: string }) {
       if (raw.recruitment_status) setRecruitmentStatus(raw.recruitment_status as string);
       if (raw.committed_school_id) setCommittedSchoolId(raw.committed_school_id as string);
       if (raw.open_to_offers != null) setOpenToOffers(raw.open_to_offers as boolean);
+
+      // Consent baseline — diffed against form.parentalConsent at save
+      // time. See saveAthleteEdit (consent guard).
+      consentBaselineRef.current = !!(raw.consentement_parental);
 
       setLoading(false);
     });
@@ -441,224 +458,23 @@ function ModifierContent({ id }: { id: string }) {
   async function saveToSupabase(): Promise<boolean> {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { return false; }
+    if (!user) return false;
 
-    // Auto-calculate cote_globale from trait ratings if in detailed mode
-    let coteGlobale = form.scouting.starRating || null;
-    if (form.scouting.evalMode === "detailed") {
-      const traitValues = Object.values(form.scouting.traitRatings).filter((v) => v > 0);
-      if (traitValues.length > 0) {
-        coteGlobale = parseFloat((traitValues.reduce((a, b) => a + b, 0) / traitValues.length).toFixed(2));
-      }
-    }
-
-    // ── PERSONAL INFO ──
-    const personalData = {
-      first_name: form.identity.firstName,
-      last_name: form.identity.lastName,
-      date_naissance: form.identity.dateOfBirth || null,
-      genre: form.identity.gender || null,
-      annee_diplomation: form.identity.gradYear ? parseInt(form.identity.gradYear) : null,
-      email: form.identity.email || null,
-      photo_url: form.identity.photo || null,
-    };
-
-    // ── ACADEMIC ──
-    const academicData = {
-      moyenne_generale: form.academic.gpa ? parseFloat(form.academic.gpa) : null,
-      matieres_fortes: form.academic.strongSubjects || [],
-      mentions_academiques: form.academic.academicHonors || [],
-      programme_cegep_vise: form.academic.cegepType ? [form.academic.cegepType === "technique" && form.academic.cegepProgramDetail ? form.academic.cegepProgramDetail : form.academic.cegepType === "dec_general" ? "DEC général" : form.academic.cegepType] : [],
-      ouvert_cegep_prive: form.academic.openToPrivate,
-      ouvert_cegep_anglophone: form.academic.openToAnglophone,
-      pret_changer_region: form.academic.openToRelocate,
-      regions_cegep_preferees: form.academic.cegepRegions || [],
-    };
-
-    // ── PHYSICAL ──
-    const physicalData = {
-      taille_pieds: form.physical.heightFeet ? parseInt(form.physical.heightFeet) : null,
-      taille_pouces: form.physical.heightInches ? parseInt(form.physical.heightInches) : null,
-      poids_lbs: form.physical.weightLbs ? parseFloat(form.physical.weightLbs) : null,
-      envergure: form.physical.wingspan || null,
-      taille_mains: form.physical.handSize || null,
-      main_dominante: form.physical.dominantHand || null,
-      pied_dominant: form.physical.dominantFoot || null,
-      test_40_verges: form.physical.fortyYard || null,
-      saut_vertical: form.physical.verticalJump || null,
-      saut_longueur: form.physical.broadJump || null,
-      developpe_couche: form.physical.benchPress || null,
-      navette_agilite: form.physical.shuttleAgility || null,
-      sprint_100m: form.physical.sprint100m || null,
-    };
-
-    // ── SPORT — look up UUIDs from names ──
-    let sportId = null;
-    let positionId = null;
-    if (form.sports.primarySport) {
-      const { data: sportRow } = await supabase.from("sports").select("id").eq("nom", form.sports.primarySport).maybeSingle();
-      sportId = sportRow?.id || null;
-    }
-    if (form.sports.primaryPosition && sportId) {
-      const { data: posRow } = await supabase.from("positions").select("id").eq("abreviation", form.sports.primaryPosition).eq("sport_id", sportId).maybeSingle();
-      if (!posRow) {
-        // Try matching by full name
-        const { data: posRow2 } = await supabase.from("positions").select("id").eq("nom", form.sports.primaryPosition).eq("sport_id", sportId).maybeSingle();
-        positionId = posRow2?.id || null;
-      } else {
-        positionId = posRow.id;
-      }
-    }
-
-    // ── SECONDARY SPORT/POSITION ──
-    let sportSecondaireId = null;
-    let positionSecondaireId = null;
-    if (form.sports.secondarySport && form.sports.secondarySport !== "Aucun") {
-      const { data: secSportRow } = await supabase.from("sports").select("id").eq("nom", form.sports.secondarySport).maybeSingle();
-      sportSecondaireId = secSportRow?.id || null;
-    }
-    // Secondary position = same sport, different position (e.g. OG / LB)
-    if (form.sports.secondaryPosition && sportId) {
-      const { data: secPosRow } = await supabase.from("positions").select("id").eq("abreviation", form.sports.secondaryPosition).eq("sport_id", sportId).maybeSingle();
-      positionSecondaireId = secPosRow?.id || null;
-    }
-
-    const sportData: Record<string, unknown> = {
-      numero_jersey: form.sports.jerseyNumber ? parseInt(form.sports.jerseyNumber) : null,
-      ouvert_entraineur_cegep: form.sports.openToCoaching,
-    };
-    if (sportId) sportData.sport_id = sportId;
-    if (positionId) sportData.position_id = positionId;
-    sportData.sport_secondaire_id = sportSecondaireId;
-    sportData.position_secondaire_id = positionSecondaireId;
-
-    // ── EVALUATION ──
-    const evalData = {
-      cote_globale_entraineur: coteGlobale,
-      notes_coach: form.scouting.coachEndorsement || null,
-    };
-
-    // ── MEDIA ──
-    const mediaData = {
-      video_faits_saillants_url: form.media.highlightVideo || null,
-      hudl_url: form.media.hudlLink || null,
-      youtube_url: form.media.youtubeLink || null,
-      instagram_url: form.media.instagramLink || null,
-      video_match_complet_url: form.media.fullGameVideo || null,
-      video_entrainement_url: form.media.trainingVideo || null,
-    };
-
-    // ── CONSENT ──
-    const consentData = {
-      consentement_parental: form.parentalConsent,
-      consentement_parental_date: form.parentalConsent ? new Date().toISOString() : null,
-    };
-
-    // ── RECRUITMENT OVERRIDE ──
-    const overrideValue = form.submission.recruitingStatus || null;
-    const overrideData: Record<string, unknown> = {
-      statut_recrutement_override: overrideValue,
-      recrutement_override_at: overrideValue ? new Date().toISOString() : null,
-    };
-
-    // ── RECRUITMENT STATUS ──
-    const recruitmentData: Record<string, unknown> = {
-      recruitment_status: recruitmentStatus,
-      committed_school_id: recruitmentStatus === 'RECRUTE' ? committedSchoolId || null : null,
-      open_to_offers: recruitmentStatus === 'RECRUTE' ? openToOffers : null,
-      recruitment_status_changed_by: user.id,
-      recruitment_status_changed_at: new Date().toISOString(),
-    };
-
-    // Merge all into one update
-    const updateData = {
-      ...personalData,
-      ...academicData,
-      ...physicalData,
-      ...sportData,
-      ...evalData,
-      ...mediaData,
-      ...consentData,
-      ...overrideData,
-      ...recruitmentData,
-    };
-
-    const { error } = await supabase.from("athletes").update(updateData).eq("id", id);
-
-    if (error) {
-      console.error("Save failed:", error.message);
-      alert("Erreur lors de la sauvegarde: " + error.message);
+    // Shared save layer — owns the cote auto-average + the consent
+    // guard (see app/coach/athletes/_data/saveAthlete.ts). Before this,
+    // edit duplicated the entire INSERT/UPDATE inline ; the consent
+    // guard was missing.
+    const result = await saveAthleteEdit(supabase, id, form, user.id, {
+      consentBaseline: consentBaselineRef.current,
+      openToOffers,
+      recruitmentStatus,
+      committedSchoolId,
+    });
+    if (result.error) {
+      console.error("Save failed:", result.error.message);
+      alert("Erreur lors de la sauvegarde: " + result.error.message);
       return false;
     }
-
-    // ── UPSERT evaluations table ──
-    const tr = form.scouting.traitRatings;
-
-    // Map UI trait keys → DB columns (keys match directly)
-    const vitesse_explosivite = tr.vitesse_explosivite || null;
-    const force_puissance = tr.force_puissance || null;
-    const endurance_cardio = tr.endurance_cardio || null;
-    const agilite_coordination = tr.agilite_coordination || null;
-    const vision_du_jeu = tr.vision_du_jeu || null;
-    const sens_tactique = tr.sens_tactique || null;
-    const leadership = tr.leadership || null;
-    const discipline = tr.discipline || null;
-    const coachabilite = tr.coachabilite || null;
-    const intelligence_jeu = tr.intelligence_jeu || null;
-    const competitivite = tr.competitivite || null;
-    const esprit_equipe = tr.esprit_equipe || null;
-    const resilience = tr.resilience || null;
-    const attitude_mentalite = tr.attitude_mentalite || null;
-
-    // Distinctions — save full object array (new format)
-    const distinctionsToSave = form.scouting.badges.filter((b) => b && b.badge);
-
-    const evalRecord = {
-      coach_id: user.id,
-      athlete_id: id,
-      cote_globale: coteGlobale,
-      vitesse_explosivite,
-      force_puissance,
-      endurance_cardio,
-      agilite_coordination,
-      vision_du_jeu,
-      sens_tactique,
-      leadership,
-      discipline,
-      coachabilite,
-      intelligence_jeu,
-      competitivite,
-      esprit_equipe,
-      resilience,
-      attitude_mentalite,
-      distinctions: distinctionsToSave,
-      rapport_entraineur: form.scouting.coachEndorsement.trim() || null,
-    };
-    const { error: evalError } = await supabase
-      .from("evaluations")
-      .upsert(evalRecord, { onConflict: "coach_id,athlete_id" });
-
-    if (evalError) {
-      console.error("[saveAthlete] evaluations upsert failed:", evalError);
-      alert("Échec de la sauvegarde de l'évaluation : " + evalError.message);
-      return false;
-    }
-
-    // ── SAVE team assignment ──
-    const selectedTeamId = form.sports.selectedTeamId;
-    if (selectedTeamId) {
-      // Remove any existing assignment, then insert the new one
-      await supabase.from("team_athletes").delete().eq("athlete_id", id);
-      const { error: teamErr } = await supabase.from("team_athletes").insert({
-        team_id: selectedTeamId,
-        athlete_id: id,
-        jersey_number: form.sports.jerseyNumber || null,
-      });
-    } else {
-      // No team selected — remove any existing assignment
-      await supabase.from("team_athletes").delete().eq("athlete_id", id);
-    }
-
     return true;
   }
 

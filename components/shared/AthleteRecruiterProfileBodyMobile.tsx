@@ -47,12 +47,23 @@ import { findOrCreateRecruiterConversation } from "@/lib/utils/findOrCreateRecru
 import { AddToListSheet } from "@/components/shared/AddToListSheet";
 import AthletePhotoFill from "@/components/shared/AthletePhotoFill";
 import { motion } from "framer-motion";
+// Coach-only imports (Step 6 unification — viewer="coach" branch).
+import { loadAthleteRaw, mapToRecruiterView } from "@/app/coach/athletes/_data/loadAthleteFromSupabase";
+import ConsentAlert from "@/components/coach/profile/ConsentAlert";
+import VerifyAlert from "@/components/coach/profile/VerifyAlert";
+import SuggestionsAlert, { type PendingSuggestion } from "@/components/coach/profile/SuggestionsAlert";
+import SuggestionSheet from "@/components/coach/SuggestionSheet";
+import type { CoachTaskSuggestion } from "@/lib/coach/tasks";
 
 export type AthleteProfileViewerMode = "recruiter" | "preview" | "partner";
+/** Surface viewer — drives recruteur-only gates + coach-only additions.
+ *  Default "recruiter" → existing call sites unaffected. */
+export type AthleteProfileViewer = "recruiter" | "coach";
 
 interface Props {
   athleteId: string;
   viewerMode: AthleteProfileViewerMode;
+  viewer?: AthleteProfileViewer;
 }
 
 const sectionLabel = "font-head text-[12px] font-bold tracking-[0.15em] uppercase text-[#9CA3AF] mb-3";
@@ -161,7 +172,7 @@ function positionAbbr(pos: string): string {
     starsRevealed: nombre d'étoiles visibles (0-5). Permet l'animation cascade au mount.
     cardRevealed: contrôle l'animation d'arrivée propre (opacity+scale) — sans glitch latéral.
     photoParallaxY: décalage Y appliqué sur la photo pour effet parallax subtil au scroll. */
-function PlayerCardMobile({ a, isFree, starsRevealed = 5, cardRevealed = true, photoParallaxY = 0 }: { a: AthleteProfileRecruiterView; isFree: boolean; starsRevealed?: number; cardRevealed?: boolean; photoParallaxY?: number }) {
+function PlayerCardMobile({ a, isFree, starsRevealed = 5, cardRevealed = true, photoParallaxY = 0, layoutIdPrefix = "athlete-photo" }: { a: AthleteProfileRecruiterView; isFree: boolean; starsRevealed?: number; cardRevealed?: boolean; photoParallaxY?: number; layoutIdPrefix?: string }) {
   const ratingValue = a.overallRating;
   const posAbbr = positionAbbr(a.primaryPosition);
   const sportKey = SPORT_NAME_MAP[a.primarySport];
@@ -211,7 +222,7 @@ function PlayerCardMobile({ a, isFree, starsRevealed = 5, cardRevealed = true, p
       </div>
 
       <motion.div
-        layoutId={`athlete-photo-${a.id}`}
+        layoutId={`${layoutIdPrefix}-${a.id}`}
         className="nx-v30-card relative overflow-visible"
         style={{ width: 280, borderRadius: 10, transition: 'none' }}
         transition={{ duration: 0.42, ease: [0.16, 1, 0.3, 1] }}
@@ -474,10 +485,15 @@ function useCountUp(targetValue: number, duration = 800, startDelay = 600): numb
    MAIN COMPONENT
 ═══════════════════════════════════════════════════════════════ */
 
-export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMode }: Props) {
+export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMode, viewer = "recruiter" }: Props) {
   // Iter 1 : on ne gère QUE viewerMode "recruiter" en mobile dédié.
   // Pour preview/partner, le PageClient route vers le desktop body.
   if (viewerMode !== "recruiter") return null;
+
+  // Step 6 unification — viewer flag drives recruteur-only gates +
+  // coach-only additions. Recruiter output MUST stay byte-identical.
+  const isRecruiter = viewer === "recruiter";
+  const isCoach = viewer === "coach";
 
   const id = athleteId;
   const { maxFavorites, tier, loading: tierLoading } = useSubscription();
@@ -515,8 +531,66 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
     recommandePct: number;
   } | null>(null);
 
-  /* ── Fetch athlète (copié du desktop) ── */
+  // Step 6 unification — coach reload trigger + pending suggestions state.
+  // Used only when viewer === "coach"; harmless React state otherwise.
+  const [coachReloadVersion, setCoachReloadVersion] = useState(0);
+  const [pendingSuggestions, setPendingSuggestions] = useState<PendingSuggestion[]>([]);
+
+  /* ── Fetch athlète (copié du desktop) ──
+     Step 6 unification : branche coach en haut de useEffect. Si viewer ===
+     "coach", on utilise loadAthleteRaw + mapToRecruiterView (data path coach),
+     plus une query séparée pour pendingSuggestions. La branche recruteur
+     reste IDENTIQUE byte-pour-byte (en-dessous). */
   useEffect(() => {
+    if (!isCoach) return;
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await loadAthleteRaw(id);
+      if (cancelled) return;
+      if (error || !data) {
+        console.error("[ProfileBody coach] load failed:", error?.message);
+        setLoadingAthlete(false);
+        return;
+      }
+      const mapped = mapToRecruiterView(data as Record<string, unknown>);
+      setA(mapped);
+      // Lecture first-class : mapToRecruiterView porte maintenant les 2
+      // champs (fix : ils étaient droppés, badge tombait toujours sur
+      // "OUVERT" même pour des athlètes recrutés).
+      setRecruitmentStatus((mapped.recruitmentStatus as GlobalRecruitmentStatus | undefined) || "OUVERT");
+      setCommittedSchoolName(mapped.committedSchoolName || "");
+      // open_to_offers volontairement NON câblé côté coach (legacy) :
+      // la state `openToOffers` reste à null → le badge n'affiche pas la
+      // sous-ligne "Ouvert/Fermé aux offres" (guard interne du badge :
+      // openToOffers !== null && openToOffers !== undefined). One pill,
+      // recruitment_status seul. Le branche recruteur (plus bas) continue
+      // de la setter depuis raw → l'output recruteur reste identique.
+      // Suggestions en attente pour cet athlète (SuggestionsAlert).
+      const supabase = createClient();
+      const { data: sugs } = await supabase
+        .from("athlete_suggestions")
+        .select("id, champ, valeur_actuelle, valeur_proposee, message, created_at")
+        .eq("athlete_id", id)
+        .eq("status", "EN_ATTENTE")
+        .order("created_at", { ascending: false });
+      if (cancelled) return;
+      setPendingSuggestions(
+        (sugs ?? []).map((s) => ({
+          id: s.id as string,
+          champ: (s.champ as string) ?? "",
+          valeur_actuelle: (s.valeur_actuelle as string) ?? "",
+          valeur_proposee: (s.valeur_proposee as string) ?? "",
+          message: (s.message as string) ?? "",
+          created_at: (s.created_at as string) ?? "",
+        })),
+      );
+      setLoadingAthlete(false);
+    })();
+    return () => { cancelled = true; };
+  }, [id, isCoach, coachReloadVersion]);
+
+  useEffect(() => {
+    if (!isRecruiter) return;
     if (tierLoading) return;
     const supabase = createClient();
     const identityCols = isFreeRecruiter ? "" : "first_name, last_name,";
@@ -802,6 +876,100 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
   const [addToListOpen, setAddToListOpen] = useState(false);
   // Toast unifié Dynamic Island (iter 4.0) — remplace l'ex-flagSuccessToast local
   const toast = useMobileToast();
+
+  // Step 6 unification — coach action sheet / sheet state.
+  const [sheetSuggestion, setSheetSuggestion] = useState<PendingSuggestion | null>(null);
+  const [coachRejectingId, setCoachRejectingId] = useState<string | null>(null);
+  const [coachRejectReason, setCoachRejectReason] = useState("");
+
+  const coachReload = useCallback(() => setCoachReloadVersion((v) => v + 1), []);
+
+  const coachConfirmConsent = useCallback(async () => {
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("athletes")
+      .update({ consentement_parental: true, consentement_parental_date: new Date().toISOString() })
+      .eq("id", id);
+    if (error) {
+      toast.error({ message: "Erreur de confirmation" });
+      return;
+    }
+    triggerHaptic("Medium");
+    toast.success({ message: "Consentement parental confirmé" });
+    coachReload();
+  }, [id, coachReload, toast]);
+
+  const coachVerify = useCallback(async () => {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const nowIso = new Date().toISOString();
+    const { error } = await supabase
+      .from("athletes")
+      .update({
+        verified: true,
+        verification_method: "manuel_coach",
+        verified_at: nowIso,
+        verified_by: user.id,
+        last_profile_validation: nowIso,
+      })
+      .eq("id", id);
+    if (error) {
+      toast.error({ message: "Erreur de vérification" });
+      return;
+    }
+    triggerHaptic("Medium");
+    toast.success({ message: "Athlète vérifié" });
+    coachReload();
+  }, [id, coachReload, toast]);
+
+  const coachApprove = useCallback(async (suggestionId: string) => {
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("athlete_suggestions")
+      .update({ status: "APPROUVEE" })
+      .eq("id", suggestionId);
+    if (error) {
+      toast.error({ message: "Erreur d'approbation" });
+      return;
+    }
+    toast.success({ message: "Suggestion approuvée" });
+    setSheetSuggestion(null);
+    setCoachRejectingId(null);
+    setCoachRejectReason("");
+    coachReload();
+  }, [coachReload, toast]);
+
+  const coachReject = useCallback(async (suggestionId: string, reason: string) => {
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("athlete_suggestions")
+      .update({ status: "REJETEE", raison_rejet: reason || null })
+      .eq("id", suggestionId);
+    if (error) {
+      toast.error({ message: "Erreur de rejet" });
+      return;
+    }
+    toast.success({ message: "Suggestion rejetée" });
+    setSheetSuggestion(null);
+    setCoachRejectingId(null);
+    setCoachRejectReason("");
+    coachReload();
+  }, [coachReload, toast]);
+
+  // Adapter PendingSuggestion → CoachTaskSuggestion pour SuggestionSheet.
+  const sheetCoachTask: CoachTaskSuggestion | null = sheetSuggestion
+    ? {
+        id: sheetSuggestion.id,
+        athleteId: id,
+        athleteName: a ? `${a.firstName} ${a.lastName}`.trim() : "",
+        champ: sheetSuggestion.champ,
+        valeurActuelle: sheetSuggestion.valeur_actuelle || null,
+        valeurProposee: sheetSuggestion.valeur_proposee,
+        message: sheetSuggestion.message || null,
+        createdAt: sheetSuggestion.created_at,
+      }
+    : null;
 
   const handleContactCoach = useCallback(async () => {
     if (!coachId || contactingCoach) return;
@@ -1258,12 +1426,14 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
         style={{ backgroundColor: "#111317" }}
       >
         {/* Iter 6.1c — back vers le tab d'origine (sessionStorage 'lastRecruiterTab').
-            Pipeline → profil → back doit revenir vers Pipeline et pas Recherche. */}
+            Pipeline → profil → back doit revenir vers Pipeline et pas Recherche.
+            Step 6 — coach back vers /coach/athletes (le roster). */}
         <button
           type="button"
           aria-label="Retour"
           onClick={() => {
             triggerHaptic("Light");
+            if (isCoach) { router.push("/coach/athletes"); return; }
             let dest = "/recruteur/recherche";
             try {
               const last = sessionStorage.getItem("lastRecruiterTab");
@@ -1401,9 +1571,31 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
             willChange: "opacity, transform, margin-bottom",
           }}
         >
+        {/* COACH-only — alert stack en haut du scroll (Step 6 unification).
+            Priority order : Consent > Verify > Suggestions. Chaque composant
+            se masque lui-même quand le critère est résolu (consentement_parental,
+            verified, pendingSuggestions.length). */}
+        {isCoach && (
+          <div className="space-y-3 mb-4">
+            <ConsentAlert consentGiven={a.parentalConsent} onConfirm={coachConfirmConsent} />
+            <VerifyAlert isVerified={!!a.isVerified} onVerify={coachVerify} />
+            <SuggestionsAlert
+              pendingSuggestions={pendingSuggestions}
+              onApprove={coachApprove}
+              onReject={coachReject}
+              onTapSuggestion={(s) => {
+                triggerHaptic("Light");
+                setCoachRejectingId(null);
+                setCoachRejectReason("");
+                setSheetSuggestion(s);
+              }}
+            />
+          </div>
+        )}
+
         {/* Player Card */}
         <div className="py-1">
-          <PlayerCardMobile a={a} isFree={isFreeRecruiter} starsRevealed={starsRevealed} cardRevealed={cardRevealed} photoParallaxY={expandedSlideProgress === 0 ? scrollY * 0.15 : 0} />
+          <PlayerCardMobile a={a} isFree={isRecruiter && isFreeRecruiter} starsRevealed={starsRevealed} cardRevealed={cardRevealed} photoParallaxY={expandedSlideProgress === 0 ? scrollY * 0.15 : 0} layoutIdPrefix={isCoach ? "coach-athlete-photo" : "athlete-photo"} />
         </div>
 
         {/* Nom + jersey (fade-up depuis 8px) */}
@@ -1416,7 +1608,8 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
           }}
         >
           <h1 className="font-head text-[34px] font-black uppercase tracking-tight leading-[0.95]">
-            {isFreeRecruiter ? (
+            {/* Step 6 — name blur gate is recruteur-only ; coach voit toujours le nom. */}
+            {isRecruiter && isFreeRecruiter ? (
               <span className="inline-flex items-start gap-2" title="Nom réservé aux recruteurs Pro">
                 <span aria-hidden className="select-none pointer-events-none blur-[6px]">Prénom Nom</span>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="mt-1 shrink-0">
@@ -1448,7 +1641,8 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
           />
         </div>
 
-        {/* Mon statut pipeline (recruteur) */}
+        {/* Mon statut pipeline (recruteur) — RECRUITER-ONLY (Step 6 gate). */}
+        {isRecruiter && (
         <div
           className="mt-4 flex flex-col items-center gap-1.5"
           style={{
@@ -1500,9 +1694,11 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
             <span className="text-[12px] italic text-[#6b7280]">Pas dans le pipeline</span>
           )}
         </div>
+        )}
 
-        {/* KPIs en cubes — gris subtil, cœur rouge seul élément accentué (Fix 2 iter 3.0) */}
-        {(viewCount > 0 || favCount > 0) && (
+        {/* KPIs en cubes — gris subtil, cœur rouge seul élément accentué (Fix 2 iter 3.0).
+            RECRUITER-ONLY (Step 6 gate) — coach n'a pas ces engagement metrics. */}
+        {isRecruiter && (viewCount > 0 || favCount > 0) && (
           <div
             className="mt-6 flex justify-center gap-4"
             style={{
@@ -1547,8 +1743,9 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
           </div>
         )}
 
-        {/* Pipeline status dropdown si Pro + déjà dans pipeline (conservé) */}
-        {canUsePipeline && pipelineStatus !== "none" && (
+        {/* Pipeline status dropdown si Pro + déjà dans pipeline (conservé).
+            RECRUITER-ONLY (Step 6 gate) — coach n'a pas de pipeline recruteur. */}
+        {isRecruiter && canUsePipeline && pipelineStatus !== "none" && (
           <div className="mt-4">
             <StatusChangeDropdown
               currentStatus={pipelineStatus}
@@ -1652,7 +1849,8 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
         {/* ╔══ TAB 1 — RAPPORT ENTRAÎNEUR ══╗ */}
         {activeTab === "rapport" && (
           <>
-            {isFreeRecruiter ? (
+            {/* FreeLock gate : Step 6 — recruteur-only. Coach voit toujours. */}
+            {isRecruiter && isFreeRecruiter ? (
               <FreeLock />
             ) : (
               <>
@@ -1792,7 +1990,8 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
         {/* ╔══ TAB 2 — PROFIL ACADÉMIQUE ══╗ */}
         {activeTab === "academique" && (
           <>
-            {isFreeRecruiter ? (
+            {/* FreeLock gate : Step 6 — recruteur-only. Coach voit toujours. */}
+            {isRecruiter && isFreeRecruiter ? (
               <FreeLock />
             ) : (
               <>
@@ -2175,8 +2374,10 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
           Avant : `position: fixed` à l'intérieur d'un ancêtre transform/will-change
           (AnimatedRoute motion.div) perdait son ancrage viewport pendant la
           transition d'entrée → la barre apparaissait stuck au milieu de l'écran.
-          Portal échappe au containing block de l'ancêtre transform. */}
-      {mounted && typeof document !== "undefined" && createPortal(
+          Portal échappe au containing block de l'ancêtre transform.
+          RECRUITER-ONLY (Step 6 gate) — coach a sa propre barre "Modifier le profil"
+          rendue plus bas. */}
+      {isRecruiter && mounted && typeof document !== "undefined" && createPortal(
         <div
           className="fixed left-0 right-0 z-30 px-3 py-2.5 flex items-center gap-2"
           style={{
@@ -2236,8 +2437,57 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
         document.body,
       )}
 
-      {/* ── Modals ── */}
-      {showComposeIntro && (
+      {/* ══ COACH-only — sticky "Modifier le profil" CTA + SuggestionSheet (Step 6) ══ */}
+      {isCoach && mounted && typeof document !== "undefined" && createPortal(
+        <div
+          className="fixed left-0 right-0 z-30 px-3 py-2.5"
+          style={{
+            bottom: "calc(64px + env(safe-area-inset-bottom))",
+            backgroundColor: "rgba(17,19,23,0.85)",
+            backdropFilter: "blur(20px) saturate(180%)",
+            WebkitBackdropFilter: "blur(20px) saturate(180%)",
+            borderTop: "0.5px solid rgba(255,255,255,0.08)",
+            transform: `translateY(${actionBarVisible && !sheetSuggestion ? 0 : 120}px)`,
+            transition: "transform 280ms cubic-bezier(0.4, 0, 0.2, 1)",
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => {
+              triggerHaptic("Medium");
+              router.push(`/coach/athletes/${id}/modifier`);
+            }}
+            className="w-full flex items-center justify-center gap-2 bg-[#E63946] text-white rounded-2xl px-4 py-3 font-head font-bold text-[13px] uppercase tracking-widest active:bg-[#D42B22] shadow-[0_0_20px_rgba(230,57,70,0.3)]"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 20h9" />
+              <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
+            </svg>
+            Modifier le profil
+          </button>
+        </div>,
+        document.body,
+      )}
+
+      {/* SuggestionSheet (coach only, portaled inside the sheet component). */}
+      {isCoach && (
+        <SuggestionSheet
+          open={!!sheetSuggestion}
+          suggestion={sheetCoachTask}
+          athleteName={a ? `${a.firstName} ${a.lastName}`.trim() : ""}
+          rejecting={!!sheetSuggestion && coachRejectingId === sheetSuggestion.id}
+          rejectReason={coachRejectReason}
+          onClose={() => { setSheetSuggestion(null); setCoachRejectingId(null); setCoachRejectReason(""); }}
+          onStartReject={() => sheetSuggestion && setCoachRejectingId(sheetSuggestion.id)}
+          onCancelReject={() => { setCoachRejectingId(null); setCoachRejectReason(""); }}
+          onChangeReason={setCoachRejectReason}
+          onApprove={() => sheetSuggestion && coachApprove(sheetSuggestion.id)}
+          onReject={() => sheetSuggestion && coachReject(sheetSuggestion.id, coachRejectReason)}
+        />
+      )}
+
+      {/* ── Modals (RECRUITER-ONLY — Step 6 gate) ── */}
+      {isRecruiter && showComposeIntro && (
         <ComposeIntroModal
           recruiter={{
             firstName: "Pierre",
@@ -2260,13 +2510,16 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
         />
       )}
 
-      <CelebrationToast show={showCelebration} onDone={() => setShowCelebration(false)} />
+      {isRecruiter && (
+        <CelebrationToast show={showCelebration} onDone={() => setShowCelebration(false)} />
+      )}
 
       {/* Modal Signaler — Portal pour échapper aux ancêtres transform/will-change
           (Fix 1 iter 3.4). Sans portal, un ancêtre avec transform crée un nouveau
           containing block et `position: fixed` devient relatif à cet ancêtre →
-          le modal était positionné dans la zone du composant, pas du viewport. */}
-      {showFlagModal && typeof document !== "undefined" && createPortal((() => {
+          le modal était positionné dans la zone du composant, pas du viewport.
+          RECRUITER-ONLY (Step 6 gate). */}
+      {isRecruiter && showFlagModal && typeof document !== "undefined" && createPortal((() => {
         let handleStartY = 0;
         return (
         <>
@@ -2391,7 +2644,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
       {/* Action Sheet menu 3-points (Fix 3 iter 3.5) — Portal pour échapper aux
           transforms ancêtres. Pattern iOS : items dans une card + Annuler
           dans une card séparée (avec gap). Swipe-down dismiss + backdrop tap. */}
-      {showActionSheet && typeof document !== "undefined" && createPortal((() => {
+      {isRecruiter && showActionSheet && typeof document !== "undefined" && createPortal((() => {
         let handleStartY = 0;
         const closeSheet = () => { triggerHaptic("Light"); setShowActionSheet(false); };
         const handleShare = async () => {
@@ -2525,22 +2778,28 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
 
       {/* Ex-toast local épuré (iter 3.5) retiré — remplacé par MobileToast Dynamic Island (iter 4.0) */}
 
-      <UpgradeModal
-        open={showUpgradeModal}
-        onClose={() => setShowUpgradeModal(false)}
-        role="recruteur"
-        tierId="rec_pro"
-        lockedFeatureTitle="Le pipeline de recrutement"
-        returnTo={typeof window !== "undefined" ? window.location.pathname : undefined}
-      />
+      {/* RECRUITER-ONLY (Step 6 gate). */}
+      {isRecruiter && (
+        <UpgradeModal
+          open={showUpgradeModal}
+          onClose={() => setShowUpgradeModal(false)}
+          role="recruteur"
+          tierId="rec_pro"
+          lockedFeatureTitle="Le pipeline de recrutement"
+          returnTo={typeof window !== "undefined" ? window.location.pathname : undefined}
+        />
+      )}
 
-      {/* Iter 7.23 Sprint 4 — AddToListSheet rendu en sibling du UpgradeModal. */}
-      <AddToListSheet
-        open={addToListOpen}
-        onClose={() => setAddToListOpen(false)}
-        athleteId={a.id}
-        athleteFullName={`${a.firstName ?? ""} ${a.lastName ?? ""}`.trim() || "Athlète"}
-      />
+      {/* Iter 7.23 Sprint 4 — AddToListSheet rendu en sibling du UpgradeModal.
+          RECRUITER-ONLY (Step 6 gate). */}
+      {isRecruiter && (
+        <AddToListSheet
+          open={addToListOpen}
+          onClose={() => setAddToListOpen(false)}
+          athleteId={a.id}
+          athleteFullName={`${a.firstName ?? ""} ${a.lastName ?? ""}`.trim() || "Athlète"}
+        />
+      )}
     </div>
   );
 }
