@@ -43,6 +43,9 @@ import {
   type EvalLike,
 } from "@/lib/utils/profileCompletion";
 import { isValidationExpired } from "@/lib/utils/profileValidation";
+import { SESSION_KEY_PREFIX } from "@/lib/platform/mobileRoutes";
+
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 import { findOrCreateRecruiterConversation } from "@/lib/utils/findOrCreateRecruiterConversation";
 import { AddToListSheet } from "@/components/shared/AddToListSheet";
 import AthletePhotoFill from "@/components/shared/AthletePhotoFill";
@@ -351,7 +354,16 @@ function HeroMiniAvatar({ a, isFree }: { a: AthleteProfileRecruiterView; isFree:
   );
 }
 
-/** Rangée de badges horizontale avec apparition cascade (pop). */
+/** Rangée de badges adaptative — NO horizontal scroll. Layout par
+ *  count (N = 1..5) :
+ *    1 → un badge centré, taille "lg" pour une présence
+ *    2 → deux centrés, espacés
+ *    3 → trois centrés, distribution régulière
+ *    4 → quatre centrés, distribution serrée pour remplir la ligne
+ *    5 → deux rangées (3 en haut, 2 en bas), chacune centrée
+ *  La hauteur du bloc grandit naturellement pour N=5 (pas de clipping).
+ *  L'animation pop par badge (cascade via badgesRevealed) est préservée.
+ */
 function BadgesRow({
   distinctions,
   mounted,
@@ -363,30 +375,57 @@ function BadgesRow({
 }) {
   if (!distinctions.length) return null;
   const list = distinctions.slice(0, MAX_BADGES);
-  const center = list.length <= 4;
+  const n = list.length;
+
+  const renderBadge = (d: { badge: string; detail?: string }, i: number) => {
+    const revealed = mounted && i < badgesRevealed;
+    return (
+      <div
+        key={`${d.badge}-${i}`}
+        className="flex-shrink-0"
+        style={{
+          opacity: revealed ? 1 : 0,
+          transform: revealed ? "scale(1)" : "scale(0.4)",
+          transformOrigin: "center",
+          transition: "opacity 200ms ease-out, transform 260ms cubic-bezier(0.34, 1.56, 0.64, 1)",
+        }}
+      >
+        <DistinctionBadge
+          badge={d.badge}
+          detail={d.detail}
+          size={n === 1 ? "lg" : "sm"}
+        />
+      </div>
+    );
+  };
+
+  // N = 5 : 3 en haut, 2 en bas. Les deux rangées sont centrées
+  // horizontalement et la rangée du bas s'aligne sous le centre des
+  // 3 du haut pour un équilibre 3+2 visuellement propre.
+  if (n === 5) {
+    const top = list.slice(0, 3);
+    const bottom = list.slice(3, 5);
+    return (
+      <div className="flex flex-col items-center gap-y-3">
+        <div className="flex items-center justify-center gap-x-5">
+          {top.map((d, i) => renderBadge(d, i))}
+        </div>
+        <div className="flex items-center justify-center gap-x-8">
+          {bottom.map((d, i) => renderBadge(d, i + 3))}
+        </div>
+      </div>
+    );
+  }
+
+  // N = 1..4 — une seule rangée centrée, gap ajusté par count.
+  const gapCls =
+    n === 1 ? "" :
+    n === 2 ? "gap-x-10" :
+    n === 3 ? "gap-x-6" :
+    "gap-x-5"; // n === 4
   return (
-    <div
-      className={`flex items-center gap-x-6 gap-y-3 ${center ? "justify-center flex-wrap" : "overflow-x-auto"}`}
-      style={center ? undefined : { scrollSnapType: "x mandatory" }}
-    >
-      {list.map((d, i) => {
-        const revealed = mounted && i < badgesRevealed;
-        return (
-          <div
-            key={`${d.badge}-${i}`}
-            className="flex-shrink-0"
-            style={{
-              opacity: revealed ? 1 : 0,
-              transform: revealed ? "scale(1)" : "scale(0.4)",
-              transformOrigin: "center",
-              transition: "opacity 200ms ease-out, transform 260ms cubic-bezier(0.34, 1.56, 0.64, 1)",
-              scrollSnapAlign: center ? undefined : "center",
-            }}
-          >
-            <DistinctionBadge badge={d.badge} detail={d.detail} size="sm" />
-          </div>
-        );
-      })}
+    <div className={`flex items-center justify-center ${gapCls}`}>
+      {list.map((d, i) => renderBadge(d, i))}
     </div>
   );
 }
@@ -1188,6 +1227,12 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
   };
 
   useEffect(() => {
+    // Recruiter-only — recruiter_favorites RLS scopes to the row owner,
+    // so a coach query returns 0 rows silently (no error) but the
+    // resulting setIsFavorited(false) is moot for coach (heart UI is
+    // already gated behind isRecruiter). Skip to avoid wasted queries
+    // and keep the recruiter-tables call surface coach-free.
+    if (!isRecruiter) return;
     const checkFav = async () => {
       const supabase = createClient();
       const { data: { session } } = await supabase.auth.getSession();
@@ -1196,9 +1241,11 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
       setIsFavorited(!!data);
     };
     checkFav();
-  }, [id]);
+  }, [id, isRecruiter]);
 
   useEffect(() => {
+    // Recruiter-only — same rationale as checkFav above.
+    if (!isRecruiter) return;
     const loadPipeline = async () => {
       const supabase = createClient();
       const { data: { session } } = await supabase.auth.getSession();
@@ -1209,9 +1256,15 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
       setMyPipelineStage(pipelineData?.stage || null);
     };
     loadPipeline();
-  }, [id]);
+  }, [id, isRecruiter]);
 
   useEffect(() => {
+    // Recruiter-only side-effect (RLS : recruiters manage own
+    // recruiter_athlete_views rows). A coach session would get RLS-denied
+    // here, which is what produced "[recordView] failed: {}" after the
+    // viewer unification — the policy redacts the error fields so the
+    // object stringifies to `{}`. Coach must not record a recruiter view.
+    if (!isRecruiter) return;
     const recordView = async () => {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
@@ -1225,7 +1278,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
       if (error) console.error("[recordView] failed:", error);
     };
     recordView();
-  }, [id]);
+  }, [id, isRecruiter]);
 
   useEffect(() => {
     if (!coachId) return;
@@ -2455,7 +2508,17 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
             type="button"
             onClick={() => {
               triggerHaptic("Medium");
-              router.push(`/coach/athletes/${id}/modifier`);
+              // Capacitor static export : matche le pattern stash-puis-push
+              // d'app/page.tsx (errorPath fallback). Sans le stash, le shell
+              // placeholder/modifier reçoit athleteId="placeholder" et la
+              // pre-fill du wizard échoue (loadAthleteRaw rejette le non-UUID
+              // → blank form). Le web push direct l'id réel.
+              if (IS_CAPACITOR) {
+                try { sessionStorage.setItem(`${SESSION_KEY_PREFIX}id`, id); } catch { /* no-op */ }
+                router.push("/coach/athletes/placeholder/modifier/");
+              } else {
+                router.push(`/coach/athletes/${id}/modifier`);
+              }
             }}
             className="w-full flex items-center justify-center gap-2 bg-[#E63946] text-white rounded-2xl px-4 py-3 font-head font-bold text-[13px] uppercase tracking-widest active:bg-[#D42B22] shadow-[0_0_20px_rgba(230,57,70,0.3)]"
           >

@@ -24,177 +24,19 @@ import { useSubscription } from "@/lib/hooks/useSubscription";
 import { useFavorites } from "@/lib/queries/shared/useFavorites";
 import type { TrendingAthlete } from "@/app/recruteur/_data/mockDashboardData";
 import type { ActivityEvent } from "@/lib/types/activityEvents";
-
-async function triggerHaptic(intensity: "Light" | "Medium" = "Light") {
-  try {
-    const { Haptics, ImpactStyle } = await import("@capacitor/haptics");
-    const style = intensity === "Light" ? ImpactStyle.Light : ImpactStyle.Medium;
-    await Haptics.impact({ style });
-  } catch { /* no-op */ }
-}
-
-/* ── Date formatting ─────────────────────────────────────────── */
-
-function frenchDateUppercase(d: Date): string {
-  const days = ["DIMANCHE", "LUNDI", "MARDI", "MERCREDI", "JEUDI", "VENDREDI", "SAMEDI"];
-  const months = [
-    "JANVIER", "FÉVRIER", "MARS", "AVRIL", "MAI", "JUIN",
-    "JUILLET", "AOÛT", "SEPTEMBRE", "OCTOBRE", "NOVEMBRE", "DÉCEMBRE",
-  ];
-  return `${days[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
-}
+import { DashboardGradientLayout } from "@/components/shared/dashboard/DashboardGradientLayout";
+import { DashboardGreeting } from "@/components/shared/dashboard/DashboardGreeting";
+import { DashboardHero } from "@/components/shared/dashboard/DashboardHero";
+import { DashboardActivityFeed } from "@/components/shared/dashboard/DashboardActivityFeed";
+import { SectionDivider } from "@/components/shared/dashboard/SectionDivider";
+import { frenchDateUppercase, triggerHaptic } from "@/components/shared/dashboard/utils";
 
 /* ── DashboardHero (Iter 6.2-redesign — hero card rouge Nexus gradient) ─ */
 
-function DashboardHero({
-  greeting, organizationName, currentDate, newAthletesThisWeek, coachReplies,
-  onTapNewAthletes, onTapMessages,
-}: {
-  greeting: string;
-  organizationName: string;
-  currentDate: Date;
-  newAthletesThisWeek: number;
-  coachReplies: number;
-  onTapNewAthletes: () => void;
-  onTapMessages: () => void;
-}) {
-  // Iter 7.4 Section C — marque X Nexus en fond droite, débordant du coin
-  // top-right (cropé). Couche noire en offset derrière (profondeur, ombre
-  // portée nette), couche blanche devant (contraste max sur rouge). Trio
-  // marque sur le rouge Nexus. Headline + greeting + chip à gauche sur
-  // rouge plein (lisibilité protégée — le X ne mord jamais le texte).
-  const hasNews = newAthletesThisWeek > 0;
-  return (
-    <div className="px-4 pt-5">
-      <div
-        className="relative overflow-hidden w-full rounded-2xl p-5"
-        style={{
-          background: "linear-gradient(135deg, #E63946 0%, #B82834 60%, #7F1B25 100%)",
-          minHeight: 260,
-        }}
-      >
-      {/* Iter 7.14 — Logo arrière passe du ROUGE au BLANC (BP veut profondeur
-          d'ombre portée blanche, plus aucun rouge dans le X) + noir poursuit
-          son glissement sud-est (+5/+5 vs 7.13 = +10/+10 cumulé depuis 7.12).
-           - BLANC (icon-white.svg, 0.70) : 300×300, top 50 / right -60 —
-             position arrière inchangée (relation diagonale BD validée), juste
-             la couleur change rouge→blanc.
-           - NOIR (icon-black.svg, 0.95) : 300×300, top 48 / right -58 (sud-est
-             cumulé depuis 7.12 baseline 38/-48). Offset noir→blanc final =
-             top +2 / right -2.
-          DOM order : blanc first (derrière), noir after (devant). */}
-      <div
-        className="absolute z-0 pointer-events-none"
-        style={{
-          top: 50, right: -60,
-          width: 300, height: 300,
-          opacity: 1,
-        }}
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/brand/icon-white.svg" alt="" className="w-full h-full object-contain" />
-      </div>
-      {/* Front layer : recoloré au token bg page (#111317) pour donner
-          l'illusion que la page transparaît à travers le dégradé rouge.
-          <img src=svg> ne se recolore pas en CSS → on utilise l'asset
-          comme mask-image (stencil) et background-color porte la couleur. */}
-      <div
-        className="absolute z-0 pointer-events-none"
-        style={{
-          top: 48, right: -58,
-          width: 300, height: 300,
-          opacity: 1,
-        }}
-      >
-        <div
-          className="w-full h-full"
-          style={{
-            backgroundColor: "#111317",
-            WebkitMaskImage: "url(/brand/icon-black.svg)",
-            WebkitMaskRepeat: "no-repeat",
-            WebkitMaskPosition: "center",
-            WebkitMaskSize: "contain",
-            maskImage: "url(/brand/icon-black.svg)",
-            maskRepeat: "no-repeat",
-            maskPosition: "center",
-            maskSize: "contain",
-          }}
-        />
-      </div>
-      <div className="relative z-10">
-        {/* Eyebrow : date à gauche + chip CÉGEP à droite (full width — la
-            zone haut-droite est libre, le X est cut bottom-right). */}
-        <div className="flex items-center justify-between gap-2">
-          <p className="text-[11px] uppercase tracking-wider text-white/75 font-semibold truncate">
-            {frenchDateUppercase(currentDate)}
-          </p>
-          {organizationName && (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.16] px-2.5 py-1 flex-shrink-0">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="4" y="2" width="16" height="20" rx="2" />
-                <line x1="8" y1="6" x2="8" y2="6" /><line x1="12" y1="6" x2="12" y2="6" /><line x1="16" y1="6" x2="16" y2="6" />
-                <line x1="8" y1="10" x2="8" y2="10" /><line x1="12" y1="10" x2="12" y2="10" /><line x1="16" y1="10" x2="16" y2="10" />
-                <path d="M10 22V16h4v6" />
-              </svg>
-              <span className="text-[13px] text-white truncate max-w-[180px]">{organizationName}</span>
-            </span>
-          )}
-        </div>
-
-        {/* Iter 7.8d Section B — bloc greeting+headline+badge contraint à
-            gauche (max ~62%) pour que le headline ne morde jamais le X
-            noir massif ancré bottom-right. */}
-        <div className="max-w-[62%]">
-          {/* Greeting secondaire */}
-          <p className="text-[20px] font-medium text-white/85 mt-3">
-            Bonjour{greeting ? `, ${greeting}` : ""}
-          </p>
-
-          {/* Headline dynamique = focal punch */}
-          {hasNews ? (
-            <button
-              type="button"
-              onClick={() => { triggerHaptic("Light"); onTapNewAthletes(); }}
-              className="block w-full text-left active:opacity-80 transition-opacity mt-2"
-            >
-              <h1 className="text-[30px] font-extrabold text-white leading-tight tracking-tight">
-                {newAthletesThisWeek} nouveaux talents cette semaine
-              </h1>
-            </button>
-          ) : (
-            <h1 className="text-[30px] font-extrabold text-white leading-tight tracking-tight mt-2">
-              Explore tes cibles
-            </h1>
-          )}
-        </div>
-
-        {/* Iter 7.5 Section C — badge punchy avec pulse dot, fond blanc 20%,
-            label semibold. Signal "nouveau coach a répondu" lisible au premier
-            coup d'œil, pas noyé dans le rouge. */}
-        {coachReplies > 0 && (
-          <button
-            type="button"
-            onClick={() => { triggerHaptic("Light"); onTapMessages(); }}
-            className="inline-flex items-center gap-2 mt-4 rounded-full bg-white/20 backdrop-blur-sm px-3 py-1.5 active:bg-white/[0.28] transition-colors"
-          >
-            <span className="relative flex w-2 h-2 flex-shrink-0">
-              <span className="absolute inset-0 rounded-full bg-white animate-ping opacity-60" />
-              <span className="relative w-2 h-2 rounded-full bg-white" />
-            </span>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
-              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-              <polyline points="22,6 12,13 2,6" />
-            </svg>
-            <span className="text-[14px] text-white font-semibold">
-              {coachReplies} {coachReplies > 1 ? "réponses coachs" : "réponse coach"}
-            </span>
-          </button>
-        )}
-      </div>
-      </div>
-    </div>
-  );
-}
+/* Local DashboardHero — REMOVED. Replaced by the shared
+   <DashboardHero> from components/shared/dashboard with role-
+   specific headline + 3 inset KpiCards (Pipeline / Favoris+
+   progress-when-capped / Réponses) passed from the render block. */
 
 /* NotificationCard retiré en iter 6.2-redesign-fix Fix 3 — section Notifications
    supprimée car redondante avec les 2 stats du hero. */
@@ -404,105 +246,9 @@ function TrendingAthletesCarousel({
   );
 }
 
-/* ── ActivityFeedList + ActivityFeedItem ─────────────────────── */
-
-// Iter 6.2-fix Fix 8 : verbe extrait dehors pour réutilisabilité.
-function activityVerb(activity: ActivityEvent): string {
-  switch (activity.type) {
-    case "coach_replied":          return "Réponse reçue";
-    case "recruiter_favorited":    return activity.iconColor === "#6B7280" ? "Retiré des favoris" : "Ajouté aux favoris";
-    case "profile_verified":       return "Profil vérifié";
-    case "video_added":            return "Vidéo ajoutée";
-    case "profile_updated_bulk":   return "Profil mis à jour";
-    case "scouting_report_updated":return "Note ajoutée";
-    case "status_engage":          return "Changement de statut";
-    default:                       return "Activité";
-  }
-}
-
-function getInitials(name?: string): string {
-  if (!name) return "—";
-  const parts = name.trim().split(/\s+/);
-  const f = parts[0]?.[0] ?? "";
-  const l = parts.length > 1 ? parts[parts.length - 1]?.[0] ?? "" : "";
-  return (f + l).toUpperCase() || "—";
-}
-
-function ActivityFeedItem({ activity, isLast, onTap }: {
-  activity: ActivityEvent;
-  isLast: boolean;
-  onTap: () => void;
-}) {
-  // Iter 7.3 Section E — déflatter par visuel : ring accent (iconColor) sur
-  // l'avatar selon le type d'événement. Verbe spécifique data-gated : le
-  // log expose un type générique sans destination de stage explicite. Vrai
-  // déflattage nécessite un enrichissement séparé de recruiter_activity_log.
-  const initials = getInitials(activity.athleteName);
-  const accent = activity.iconColor || "#6B7280";
-  return (
-    <button
-      type="button"
-      onClick={() => { triggerHaptic("Light"); onTap(); }}
-      className={`w-full text-left py-4 active:opacity-60 transition-opacity ${isLast ? "" : "border-b border-white/[0.06]"}`}
-    >
-      <div className="flex items-center gap-3">
-        {/* Avatar initiales + ring accent par type d'événement (iconColor) */}
-        <div
-          className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 bg-white/[0.06]"
-          style={{ boxShadow: `inset 0 0 0 1.5px ${accent}` }}
-        >
-          <span className="text-[12px] font-bold text-white/80 tracking-wide">{initials}</span>
-        </div>
-        {/* Texte + délai */}
-        <div className="flex-1 flex items-baseline justify-between gap-3 min-w-0">
-          <div className="flex-1 min-w-0">
-            <p className="text-base font-semibold text-white truncate">
-              {activity.athleteName || "Athlète"}
-            </p>
-            <p className="text-[15px] text-white/55 mt-0.5 truncate">{activityVerb(activity)}</p>
-          </div>
-          <span className="text-sm text-white/40 flex-shrink-0 whitespace-nowrap">
-            {activity.relativeTime}
-          </span>
-        </div>
-      </div>
-    </button>
-  );
-}
-
-function ActivityFeedList({ activities, onItemTap }: {
-  activities: ActivityEvent[];
-  onItemTap: (athleteId: string | undefined) => void;
-}) {
-  const visible = activities.slice(0, 5);
-  return (
-    <div className="px-4">
-      <h2 className="text-[11px] uppercase tracking-[0.18em] text-white/50 font-semibold mb-5">
-        Activité récente
-      </h2>
-      {visible.length === 0 ? (
-        <p className="text-sm text-white/40 italic">Aucune activité récente.</p>
-      ) : (
-        <div>
-          {visible.map((a, idx) => (
-            <ActivityFeedItem
-              key={a.id}
-              activity={a}
-              isLast={idx === visible.length - 1}
-              onTap={() => onItemTap(a.athleteId)}
-            />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* ── SectionDivider + Skeleton + EmptyHeader ────────────────── */
-
-function SectionDivider() {
-  return <div className="mx-4 border-t border-white/[0.06]" />;
-}
+/* activityVerb + getInitials + ActivityFeedItem + ActivityFeedList +
+   SectionDivider — REMOVED (replaced by shared components from
+   components/shared/dashboard/*). */
 
 function DashboardSkeleton() {
   return (
@@ -621,12 +367,34 @@ export function RecruteurDashboardMobile() {
     );
   }
 
+  // Hero headline — derived from the same signal hierarchy the old
+  // local hero used : newAthletesThisWeek > 0 → fallback. Two lines,
+  // second accented red (matches the new design recipe).
+  const hasNews = actionBarData.newAthletesThisWeek > 0;
+  const heroHeadline = hasNews ? (
+    <h2 className="text-[24px] font-extrabold text-white leading-tight tracking-tight">
+      {actionBarData.newAthletesThisWeek} nouveaux talents<br />
+      <span className="text-[#E63946]">cette semaine</span>
+    </h2>
+  ) : (
+    <h2 className="text-[24px] font-extrabold text-white leading-tight tracking-tight">
+      Explore tes<br />
+      <span className="text-[#E63946]">cibles</span>
+    </h2>
+  );
+
+  // Favorites cap → optional progress bar. Source : useSubscription.
+  // -1 means unlimited (AllStar) ; 0 means no cap-tracking (Free, etc.)
+  const subAny = subscription as unknown as { maxFavorites?: number };
+  const maxFavorites = typeof subAny.maxFavorites === "number" ? subAny.maxFavorites : 0;
+  const favCount = favoritesArr.length;
+  const favoritesProgress = maxFavorites > 0
+    ? { current: favCount, total: maxFavorites, color: "#E63946" }
+    : undefined;
+
   return (
-    <div
-      className="min-h-screen bg-[#111317] text-white"
-      style={{ paddingBottom: "calc(64px + env(safe-area-inset-bottom) + 32px)" }}
-    >
-      {/* Pull-to-refresh indicator */}
+    <DashboardGradientLayout>
+      {/* Pull-to-refresh indicator (kept per-file) */}
       {(isPulling || isRefreshing) && (
         <div
           className="fixed left-0 right-0 z-[55] flex justify-center items-center pointer-events-none"
@@ -649,19 +417,64 @@ export function RecruteurDashboardMobile() {
         </div>
       )}
 
-      <DashboardHero
+      {/* Floating greeting on the gradient */}
+      <DashboardGreeting
         greeting={headerName}
-        organizationName={headerSchool}
-        currentDate={currentDate ?? new Date(2026, 5, 2)}
-        newAthletesThisWeek={actionBarData.newAthletesThisWeek}
-        coachReplies={actionBarData.coachReplies}
-        onTapNewAthletes={() => router.push("/recruteur/recherche?nouveau=true")}
-        onTapMessages={() => router.push("/recruteur/messages")}
+        dateLabel={currentDate ? frenchDateUppercase(currentDate) : undefined}
+        chip={
+          headerSchool
+            ? {
+                label: headerSchool,
+                icon: (
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="4" y="2" width="16" height="20" rx="2" />
+                    <path d="M10 22V16h4v6" />
+                  </svg>
+                ),
+              }
+            : undefined
+        }
+      />
+
+      {/* Floating hero card. Insets : Pipeline total / Favoris (+ progress
+          when a tier cap exists) / Réponses coachs. */}
+      <DashboardHero
+        eyebrow="Cette semaine"
+        headline={heroHeadline}
+        pulseBadge={
+          actionBarData.coachReplies > 0
+            ? {
+                label: `${actionBarData.coachReplies} ${actionBarData.coachReplies > 1 ? "réponses coachs" : "réponse coach"}`,
+                onTap: () => router.push("/recruteur/messages"),
+              }
+            : undefined
+        }
+        insets={[
+          {
+            label: "Pipeline",
+            value: totalPipeline,
+            subtitle: "athlètes",
+            onTap: () => router.push("/recruteur/pipeline"),
+          },
+          {
+            label: "Favoris",
+            value: favCount,
+            subtitle: maxFavorites > 0 ? `${favCount}/${maxFavorites}` : "actifs",
+            progress: favoritesProgress,
+            onTap: () => router.push("/recruteur/favoris"),
+          },
+          {
+            label: "Réponses",
+            value: actionBarData.coachReplies,
+            subtitle: "coachs",
+            onTap: () => router.push("/recruteur/messages"),
+          },
+        ]}
       />
 
       <SectionDivider />
 
-      {/* Mon Processus (Iter 6.2-fix — liste Stripe-clean au lieu du strip) */}
+      {/* Mon Processus (recruteur-specific funnel) */}
       <div className="py-6">
         <MonProcessusFunnel
           counts={pipelineCounts}
@@ -684,9 +497,9 @@ export function RecruteurDashboardMobile() {
 
       <SectionDivider />
 
-      {/* Activity feed */}
+      {/* Activity feed (shared) */}
       <div className="py-6">
-        <ActivityFeedList
+        <DashboardActivityFeed
           activities={activityEvents}
           onItemTap={navAthlete}
         />
@@ -710,6 +523,6 @@ export function RecruteurDashboardMobile() {
         :global(.nx-no-scrollbar::-webkit-scrollbar) { display: none; }
         @keyframes nx-rotate-dash { to { transform: rotate(360deg); } }
       `}</style>
-    </div>
+    </DashboardGradientLayout>
   );
 }

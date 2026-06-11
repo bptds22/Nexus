@@ -21,48 +21,12 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { ActivityEvent } from "@/lib/types/activityEvents";
 import { loadCoachTaskCounts } from "@/lib/coach/tasks";
-
-/* ── Helpers (verbatim recruteur dashboard) ──────────────────── */
-
-async function triggerHaptic(intensity: "Light" | "Medium" = "Light") {
-  try {
-    const { Haptics, ImpactStyle } = await import("@capacitor/haptics");
-    const style = intensity === "Light" ? ImpactStyle.Light : ImpactStyle.Medium;
-    await Haptics.impact({ style });
-  } catch { /* no-op */ }
-}
-
-function frenchDateUppercase(d: Date): string {
-  const days = ["DIMANCHE", "LUNDI", "MARDI", "MERCREDI", "JEUDI", "VENDREDI", "SAMEDI"];
-  const months = [
-    "JANVIER", "FÉVRIER", "MARS", "AVRIL", "MAI", "JUIN",
-    "JUILLET", "AOÛT", "SEPTEMBRE", "OCTOBRE", "NOVEMBRE", "DÉCEMBRE",
-  ];
-  return `${days[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
-}
-
-function getInitials(name?: string): string {
-  if (!name) return "—";
-  const parts = name.trim().split(/\s+/);
-  const f = parts[0]?.[0] ?? "";
-  const l = parts.length > 1 ? parts[parts.length - 1]?.[0] ?? "" : "";
-  return (f + l).toUpperCase() || "—";
-}
-
-/* Verbe activité — adapté au mapping coach (la page web actuelle traduit
-   recruiter_activity_log → ActivityEvent.type avec un mapping spécifique
-   coach, on reprend les mêmes types ici). */
-function activityVerb(activity: ActivityEvent): string {
-  switch (activity.type) {
-    case "competitor_favorited":   return activity.iconColor === "#6B7280" ? "Retiré des favoris" : "Ajouté aux favoris";
-    case "status_engage":          return "Mouvement dans un pipeline";
-    case "profile_verified":       return "Profil vérifié";
-    case "video_added":            return "Vidéo ajoutée";
-    case "profile_updated_bulk":   return "Profil consulté";
-    case "scouting_report_updated":return "Profil mis à jour";
-    default:                       return "Activité";
-  }
-}
+import { DashboardGradientLayout } from "@/components/shared/dashboard/DashboardGradientLayout";
+import { DashboardGreeting } from "@/components/shared/dashboard/DashboardGreeting";
+import { DashboardHero } from "@/components/shared/dashboard/DashboardHero";
+import { DashboardActivityFeed } from "@/components/shared/dashboard/DashboardActivityFeed";
+import { SectionDivider } from "@/components/shared/dashboard/SectionDivider";
+import { frenchDateUppercase, triggerHaptic } from "@/components/shared/dashboard/utils";
 
 /* ── Types data (locaux — alignés sur les états de la web page) ─ */
 
@@ -102,148 +66,10 @@ interface DemotionNotif {
   metadata: Record<string, unknown> | null;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   DashboardHero — rouge gradient + X mark BG (parité recruteur)
-═══════════════════════════════════════════════════════════════ */
-
-function DashboardHero({
-  greeting, schoolName, currentDate,
-  unreadMessages, viewsTrend, recruiterViews, pendingSuggestions,
-  onTapMessages, onTapTrend, onTapSuggestions,
-}: {
-  greeting: string;
-  schoolName: string;
-  currentDate: Date;
-  unreadMessages: number;
-  viewsTrend: number;
-  recruiterViews: number;
-  pendingSuggestions: number;
-  onTapMessages: () => void;
-  onTapTrend: () => void;
-  onTapSuggestions: () => void;
-}) {
-  // Headline ranking : unreadMessages > 0 → viewsTrend > 0 → fallback
-  // Wording "recruteurs intéressés" (la source est recruiter_pipeline
-  // stage='CONTACTE' — c'est l'intérêt recruteur, PAS une inbox).
-  const hasInterest = unreadMessages > 0;
-  const hasTrend = viewsTrend > 0 && recruiterViews > 0;
-
-  return (
-    <div className="px-4 pt-5">
-      <div
-        className="relative overflow-hidden w-full rounded-2xl p-5"
-        style={{
-          background: "linear-gradient(135deg, #E63946 0%, #B82834 60%, #7F1B25 100%)",
-          minHeight: 260,
-        }}
-      >
-        {/* Trio marque arrière (parité recruteur — blanc derrière, noir devant) */}
-        <div
-          className="absolute z-0 pointer-events-none"
-          style={{ top: 50, right: -60, width: 300, height: 300, opacity: 1 }}
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/brand/icon-white.svg" alt="" className="w-full h-full object-contain" />
-        </div>
-        {/* Front layer : recoloré au token bg page (#111317) pour donner
-            l'illusion que la page transparaît à travers le dégradé rouge.
-            <img src=svg> ne se recolore pas en CSS → on utilise l'asset
-            comme mask-image (stencil) et background-color porte la couleur. */}
-        <div
-          className="absolute z-0 pointer-events-none"
-          style={{ top: 48, right: -58, width: 300, height: 300, opacity: 1 }}
-        >
-          <div
-            className="w-full h-full"
-            style={{
-              backgroundColor: "#111317",
-              WebkitMaskImage: "url(/brand/icon-black.svg)",
-              WebkitMaskRepeat: "no-repeat",
-              WebkitMaskPosition: "center",
-              WebkitMaskSize: "contain",
-              maskImage: "url(/brand/icon-black.svg)",
-              maskRepeat: "no-repeat",
-              maskPosition: "center",
-              maskSize: "contain",
-            }}
-          />
-        </div>
-
-        <div className="relative z-10">
-          {/* Eyebrow : date + chip école */}
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-[11px] uppercase tracking-wider text-white/75 font-semibold truncate">
-              {frenchDateUppercase(currentDate)}
-            </p>
-            {schoolName && (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.16] px-2.5 py-1 flex-shrink-0">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
-                  <path d="M6 12v5c3 3 9 3 12 0v-5" />
-                </svg>
-                <span className="text-[13px] text-white truncate max-w-[180px]">{schoolName}</span>
-              </span>
-            )}
-          </div>
-
-          {/* Greeting + headline punchy (contraint à gauche pour ne pas mordre le X) */}
-          <div className="max-w-[62%]">
-            <p className="text-[20px] font-medium text-white/85 mt-3">
-              Bonjour{greeting ? `, ${greeting}` : ""}
-            </p>
-
-            {hasInterest ? (
-              <button
-                type="button"
-                onClick={() => { triggerHaptic("Light"); onTapMessages(); }}
-                className="block w-full text-left active:opacity-80 transition-opacity mt-2"
-              >
-                <h1 className="text-[30px] font-extrabold text-white leading-tight tracking-tight">
-                  {unreadMessages} recruteur{unreadMessages > 1 ? "s" : ""} intéressé{unreadMessages > 1 ? "s" : ""}
-                </h1>
-              </button>
-            ) : hasTrend ? (
-              <button
-                type="button"
-                onClick={() => { triggerHaptic("Light"); onTapTrend(); }}
-                className="block w-full text-left active:opacity-80 transition-opacity mt-2"
-              >
-                <h1 className="text-[30px] font-extrabold text-white leading-tight tracking-tight">
-                  +{viewsTrend}% de vues ce mois
-                </h1>
-              </button>
-            ) : (
-              <h1 className="text-[30px] font-extrabold text-white leading-tight tracking-tight mt-2">
-                Suis tes athlètes
-              </h1>
-            )}
-          </div>
-
-          {/* Badge pulse : suggestions en attente */}
-          {pendingSuggestions > 0 && (
-            <button
-              type="button"
-              onClick={() => { triggerHaptic("Light"); onTapSuggestions(); }}
-              className="inline-flex items-center gap-2 mt-4 rounded-full bg-white/20 backdrop-blur-sm px-3 py-1.5 active:bg-white/[0.28] transition-colors"
-            >
-              <span className="relative flex w-2 h-2 flex-shrink-0">
-                <span className="absolute inset-0 rounded-full bg-white animate-ping opacity-60" />
-                <span className="relative w-2 h-2 rounded-full bg-white" />
-              </span>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
-                <path d="M9 11l3 3L22 4" />
-                <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
-              </svg>
-              <span className="text-[14px] text-white font-semibold">
-                {pendingSuggestions} suggestion{pendingSuggestions > 1 ? "s" : ""} à examiner
-              </span>
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
+/* Local DashboardHero — REMOVED. Replaced by the shared
+   <DashboardHero> from components/shared/dashboard, with role-
+   specific headline + 3 inset KpiCards (Roster / Vérifiés+
+   progress / Vues+trend) passed from the render block below. */
 
 /* ═══════════════════════════════════════════════════════════════
    InterimBanner — gris neutre, persistant (source = is_school_admin
@@ -311,82 +137,11 @@ function DemotionNotificationCard({
    KpiTrio — 3 cards bento (Athlètes / Profils vérifiés / Vues)
 ═══════════════════════════════════════════════════════════════ */
 
-function KpiTrio({ data }: { data: KpiData }) {
-  return (
-    <div className="px-4">
-      <h2 className="text-[11px] uppercase tracking-[0.18em] text-white/50 font-semibold mb-3">
-        Santé du programme
-      </h2>
-      <div className="grid grid-cols-2 gap-3">
-        {/* Athlètes roster — full width row 1 */}
-        <div className="col-span-2 bg-[#1A1D24] rounded-2xl border border-white/[0.05] p-[18px]">
-          <div className="flex items-center justify-between">
-            <div className="flex-1 min-w-0">
-              <p className="text-[11px] uppercase tracking-wider text-white/55 font-semibold">
-                Athlètes au roster
-              </p>
-              <p className="text-[32px] font-extrabold text-white leading-none mt-2 tabular-nums">
-                {data.totalAthletes}
-              </p>
-              <p className="text-[13px] text-white/45 mt-1">inscrits cette saison</p>
-            </div>
-            <div className="w-12 h-12 rounded-full bg-[#E63946]/15 flex items-center justify-center flex-shrink-0">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
-                <circle cx="9" cy="7" r="4" />
-                <path d="M23 21v-2a4 4 0 00-3-3.87" />
-                <path d="M16 3.13a4 4 0 010 7.75" />
-              </svg>
-            </div>
-          </div>
-        </div>
-
-        {/* Profils vérifiés (badge blue = verified semantic) */}
-        <div className="bg-[#1A1D24] rounded-2xl border border-white/[0.05] p-[18px]">
-          <p className="text-[11px] uppercase tracking-wider text-white/55 font-semibold">
-            Vérifiés
-          </p>
-          <div className="flex items-baseline gap-1.5 mt-2">
-            <p className="text-[28px] font-extrabold text-white leading-none tabular-nums">
-              {data.completePct}%
-            </p>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="ml-auto">
-              <path d="M12 2L4 7v6c0 5 4 9 8 9s8-4 8-9V7l-8-5z" />
-              <polyline points="9 12 11 14 15 10" />
-            </svg>
-          </div>
-          <p className="text-[13px] text-white/45 mt-1">
-            {data.verifiedCount} / {data.totalAthletes}
-          </p>
-        </div>
-
-        {/* Vues recruteurs + trend chip */}
-        <div className="bg-[#1A1D24] rounded-2xl border border-white/[0.05] p-[18px]">
-          <p className="text-[11px] uppercase tracking-wider text-white/55 font-semibold">
-            Vues ce mois
-          </p>
-          <div className="flex items-baseline justify-between gap-2 mt-2">
-            <p className="text-[28px] font-extrabold text-white leading-none tabular-nums">
-              {data.recruiterViews}
-            </p>
-            {data.viewsTrend !== 0 && (
-              <span
-                className={`text-[12px] font-bold px-1.5 py-0.5 rounded ${
-                  data.viewsTrend > 0
-                    ? "text-[#22C55E] bg-[#22C55E]/10"
-                    : "text-[#E63946] bg-[#E63946]/10"
-                }`}
-              >
-                {data.viewsTrend > 0 ? "+" : ""}{data.viewsTrend}%
-              </span>
-            )}
-          </div>
-          <p className="text-[13px] text-white/45 mt-1">par les recruteurs</p>
-        </div>
-      </div>
-    </div>
-  );
-}
+/* Local KpiTrio — REMOVED. The 3 stats (Roster / Vérifiés / Vues)
+   are now hoisted into the shared <DashboardHero>'s inset row,
+   with the Vérifiés inset showing a true ratio progress bar
+   (verifiedCount / totalAthletes) and the Vues inset carrying the
+   ±% trend chip. KpiTrio had no other consumer. */
 
 /* ═══════════════════════════════════════════════════════════════
    CoachActionBar — 4 banner cards (rouge / amber / coach-only)
@@ -677,75 +432,9 @@ function HotAthletesStrip({ athletes, onAthleteTap }: {
    ActivityFeedItem + ActivityFeedList (verbatim recruteur)
 ═══════════════════════════════════════════════════════════════ */
 
-function ActivityFeedItem({ activity, isLast, onTap }: {
-  activity: ActivityEvent;
-  isLast: boolean;
-  onTap: () => void;
-}) {
-  const initials = getInitials(activity.athleteName);
-  const accent = activity.iconColor || "#6B7280";
-  return (
-    <button
-      type="button"
-      onClick={() => { triggerHaptic("Light"); onTap(); }}
-      className={`w-full text-left py-4 active:opacity-60 transition-opacity ${isLast ? "" : "border-b border-white/[0.06]"}`}
-    >
-      <div className="flex items-center gap-3">
-        <div
-          className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 bg-white/[0.06]"
-          style={{ boxShadow: `inset 0 0 0 1.5px ${accent}` }}
-        >
-          <span className="text-[12px] font-bold text-white/80 tracking-wide">{initials}</span>
-        </div>
-        <div className="flex-1 flex items-baseline justify-between gap-3 min-w-0">
-          <div className="flex-1 min-w-0">
-            <p className="text-base font-semibold text-white truncate">
-              {activity.athleteName || "Athlète"}
-            </p>
-            <p className="text-[15px] text-white/55 mt-0.5 truncate">{activityVerb(activity)}</p>
-          </div>
-          <span className="text-sm text-white/40 flex-shrink-0 whitespace-nowrap">
-            {activity.relativeTime}
-          </span>
-        </div>
-      </div>
-    </button>
-  );
-}
-
-function ActivityFeedList({ activities, onItemTap }: {
-  activities: ActivityEvent[];
-  onItemTap: (athleteId: string | undefined) => void;
-}) {
-  const visible = activities.slice(0, 5);
-  return (
-    <div className="px-4">
-      <h2 className="text-[11px] uppercase tracking-[0.18em] text-white/50 font-semibold mb-5">
-        Activité récente
-      </h2>
-      {visible.length === 0 ? (
-        <p className="text-sm text-white/40 italic">Aucune activité récente.</p>
-      ) : (
-        <div>
-          {visible.map((a, idx) => (
-            <ActivityFeedItem
-              key={a.id}
-              activity={a}
-              isLast={idx === visible.length - 1}
-              onTap={() => onItemTap(a.athleteId)}
-            />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* ── SectionDivider + Skeleton (verbatim recruteur) ─────────── */
-
-function SectionDivider() {
-  return <div className="mx-4 border-t border-white/[0.06]" />;
-}
+/* ActivityFeedItem + ActivityFeedList + SectionDivider — REMOVED
+   (replaced by the shared DashboardActivityFeed + SectionDivider
+   from components/shared/dashboard/*). */
 
 function DashboardSkeleton() {
   return (
@@ -1149,12 +838,31 @@ export function CoachDashboardMobile() {
     );
   }
 
+  // Hero headline — derived from the same signal hierarchy the old
+  // local hero used : unreadMessages > 0 → viewsTrend > 0 → fallback.
+  // Two lines, second accented red (matches the new design recipe).
+  const hasInterest = actionBar.unreadMessages > 0;
+  const hasTrend = kpi.viewsTrend > 0 && kpi.recruiterViews > 0;
+  const heroHeadline = hasInterest ? (
+    <h2 className="text-[24px] font-extrabold text-white leading-tight tracking-tight">
+      {actionBar.unreadMessages} recruteur{actionBar.unreadMessages > 1 ? "s" : ""}<br />
+      <span className="text-[#E63946]">intéressé{actionBar.unreadMessages > 1 ? "s" : ""}</span>
+    </h2>
+  ) : hasTrend ? (
+    <h2 className="text-[24px] font-extrabold text-white leading-tight tracking-tight">
+      +{kpi.viewsTrend}% de vues<br />
+      <span className="text-[#E63946]">ce mois</span>
+    </h2>
+  ) : (
+    <h2 className="text-[24px] font-extrabold text-white leading-tight tracking-tight">
+      Suis tes<br />
+      <span className="text-[#E63946]">athlètes</span>
+    </h2>
+  );
+
   return (
-    <div
-      className="min-h-screen bg-[#111317] text-white"
-      style={{ paddingBottom: "calc(64px + env(safe-area-inset-bottom) + 32px)" }}
-    >
-      {/* Pull-to-refresh indicator */}
+    <DashboardGradientLayout>
+      {/* Pull-to-refresh indicator (kept per-file, simple) */}
       {(isPulling || isRefreshing) && (
         <div
           className="fixed left-0 right-0 z-[55] flex justify-center items-center pointer-events-none"
@@ -1177,24 +885,66 @@ export function CoachDashboardMobile() {
         </div>
       )}
 
-      {/* Zone 1 : Hero */}
-      <DashboardHero
+      {/* Floating greeting on the gradient */}
+      <DashboardGreeting
         greeting={coachName.split(/\s+/)[0] || ""}
-        schoolName={schoolName}
-        currentDate={currentDate ?? new Date()}
-        unreadMessages={actionBar.unreadMessages}
-        viewsTrend={kpi.viewsTrend}
-        recruiterViews={kpi.recruiterViews}
-        pendingSuggestions={actionBar.pendingSuggestions}
-        onTapMessages={() => router.push("/coach/demandes")}
-        onTapTrend={() => router.push("/coach/athletes")}
-        onTapSuggestions={() => router.push("/coach/suggestions")}
+        dateLabel={currentDate ? frenchDateUppercase(currentDate) : undefined}
+        chip={
+          schoolName
+            ? {
+                label: schoolName,
+                icon: (
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+                    <path d="M6 12v5c3 3 9 3 12 0v-5" />
+                  </svg>
+                ),
+              }
+            : undefined
+        }
       />
 
-      {/* Zone 2 : Intérim (si applicable) */}
+      {/* Floating hero card on the gradient — hoists the old KpiTrio
+          stats (Roster / Vérifiés+progress / Vues+trend) into its
+          inset row. KpiTrio is now deleted. */}
+      <DashboardHero
+        eyebrow="Cette semaine"
+        headline={heroHeadline}
+        pulseBadge={
+          actionBar.pendingSuggestions > 0
+            ? {
+                label: `${actionBar.pendingSuggestions} suggestion${actionBar.pendingSuggestions > 1 ? "s" : ""} à examiner`,
+                onTap: () => router.push("/coach/suggestions"),
+              }
+            : undefined
+        }
+        insets={[
+          {
+            label: "Roster",
+            value: kpi.totalAthletes,
+            subtitle: "athlètes",
+            onTap: () => router.push("/coach/athletes"),
+          },
+          {
+            label: "Vérifiés",
+            value: `${kpi.completePct}%`,
+            subtitle: `${kpi.verifiedCount}/${kpi.totalAthletes}`,
+            progress: { current: kpi.verifiedCount, total: Math.max(kpi.totalAthletes, 1), color: "#3B82F6" },
+            onTap: () => router.push("/coach/athletes?filtre=non_verifies"),
+          },
+          {
+            label: "Vues",
+            value: kpi.recruiterViews,
+            trend: kpi.viewsTrend !== 0 ? { value: kpi.viewsTrend, positive: kpi.viewsTrend > 0 } : undefined,
+            onTap: () => router.push("/coach/athletes"),
+          },
+        ]}
+      />
+
+      {/* Intérim banner (if applicable) */}
       {isInterimDirector && <InterimBanner schoolName={interimSchoolName} />}
 
-      {/* Zone 3 : Demotion notifs (si applicable) */}
+      {/* Demotion notifs (if applicable) */}
       {demotionNotifications.map((n) => (
         <DemotionNotificationCard
           key={n.id}
@@ -1205,14 +955,7 @@ export function CoachDashboardMobile() {
 
       <SectionDivider />
 
-      {/* Zone 4 : KPI Trio */}
-      <div className="py-6">
-        <KpiTrio data={kpi} />
-      </div>
-
-      <SectionDivider />
-
-      {/* Zone 5 : ActionBar (après KPIs — alert-system, pas todo) */}
+      {/* ActionBar (alert-system) */}
       <div className="py-6">
         <CoachActionBar
           data={actionBar}
@@ -1226,16 +969,16 @@ export function CoachDashboardMobile() {
 
       <SectionDivider />
 
-      {/* Zone 6 : HotAthletes strip */}
+      {/* HotAthletes strip */}
       <div className="py-6">
         <HotAthletesStrip athletes={hotAthletes} onAthleteTap={navAthlete} />
       </div>
 
       <SectionDivider />
 
-      {/* Zone 7 : Activity feed */}
+      {/* Activity feed (shared) */}
       <div className="py-6">
-        <ActivityFeedList
+        <DashboardActivityFeed
           activities={activities}
           onItemTap={navAthlete}
         />
@@ -1259,6 +1002,6 @@ export function CoachDashboardMobile() {
         :global(.nx-no-scrollbar::-webkit-scrollbar) { display: none; }
         @keyframes nx-rotate-dash { to { transform: rotate(360deg); } }
       `}</style>
-    </div>
+    </DashboardGradientLayout>
   );
 }

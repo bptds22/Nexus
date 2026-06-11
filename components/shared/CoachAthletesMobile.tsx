@@ -1261,6 +1261,25 @@ export function CoachAthletesMobile() {
         count={selectedIds.size}
         submitting={submitting}
       />
+
+      {/* Floating "+" FAB — opens the create wizard at /coach/athletes/create.
+          Visible on BOTH toggle tabs (Roster + À réclamer). Hidden only while
+          the claim selection bar is up (which spans the same z-40 band and
+          would overlap with this button). */}
+      {!(activeTab === "reclamer" && selectedIds.size > 0) && (
+        <button
+          type="button"
+          aria-label="Créer un profil athlète"
+          onClick={() => { triggerHaptic("Medium"); router.push("/coach/athletes/create"); }}
+          className="fixed right-4 z-40 w-14 h-14 rounded-full bg-[#E63946] text-white flex items-center justify-center shadow-[0_4px_16px_rgba(230,57,70,0.4)] active:scale-95 active:bg-[#D42B22] transition-transform"
+          style={{ bottom: "calc(64px + env(safe-area-inset-bottom) + 12px)" }}
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M12 5v14" />
+            <path d="M5 12h14" />
+          </svg>
+        </button>
+      )}
     </div>
   );
 }

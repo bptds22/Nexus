@@ -218,6 +218,11 @@ function ModifierContent({ id }: { id: string }) {
   const stepParam = searchParams.get("step");
 
   const [loading, setLoading] = useState(true);
+  // Friendly load-failure state. Previously every error path silently set
+  // loading=false and left form at emptyForm() — indistinguishable from
+  // /create. "auth" = session expired/missing ; "notfound" = data null /
+  // RLS denial / bad id.
+  const [loadError, setLoadError] = useState<null | "auth" | "notfound">(null);
   const [form, setForm] = useState<AthleteFormData>(emptyForm);
   const [currentStep, setCurrentStep] = useState(mapStepParam(stepParam));
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
@@ -316,6 +321,16 @@ function ModifierContent({ id }: { id: string }) {
     loadAthleteRaw(id).then(({ data, error }) => {
       if (error || !data) {
         console.error("Modifier: failed to load:", error);
+        // Distinguish the auth failure from data-side failures so we can
+        // tell the coach "your session expired" instead of silently
+        // rendering a form that looks empty (= like /create).
+        const msg = typeof error === "string"
+          ? error
+          : (error as { message?: string } | null)?.message || "";
+        const isAuth = msg.toLowerCase().includes("not authenticated")
+          || msg.toLowerCase().includes("jwt")
+          || msg.toLowerCase().includes("401");
+        setLoadError(isAuth ? "auth" : "notfound");
         setLoading(false);
         return;
       }
@@ -1145,6 +1160,64 @@ function ModifierContent({ id }: { id: string }) {
   const stepRenderers: Record<number, () => React.ReactNode> = { 1: renderStep1, 2: renderStep2, 3: renderStep3, 4: renderStep4, 5: renderStep5, 6: renderStep6, 7: renderStep7 };
 
   if (loading) return <div className="px-6 sm:px-10 py-20 text-center text-[#6B7280] text-sm">Chargement du profil...</div>;
+
+  // Friendly error states — render BEFORE the form so the coach sees what
+  // happened (session expired vs athlète introuvable) instead of an empty
+  // wizard that reads as /create.
+  if (loadError === "auth") {
+    return (
+      <div className="px-6 sm:px-10 py-16 max-w-md mx-auto text-center">
+        <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-[#E63946]/15 mb-5">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <rect x="3" y="11" width="18" height="11" rx="2" />
+            <path d="M7 11V7a5 5 0 0110 0v4" />
+          </svg>
+        </div>
+        <h1 className="font-head text-2xl font-black text-white uppercase tracking-tight mb-2">Session expirée</h1>
+        <p className="text-[14px] text-[#9CA3AF] mb-8 leading-relaxed">
+          Reconnecte-toi pour modifier ce profil.
+        </p>
+        <div className="flex items-center justify-center gap-3">
+          <button
+            type="button"
+            onClick={() => { setLoadError(null); setLoading(true); window.location.reload(); }}
+            className="px-5 py-3 rounded-lg border border-[#2a2d36] text-[#e0e0e0] font-head font-bold text-[12px] uppercase tracking-widest hover:border-[#8a8d96] transition-colors"
+          >
+            Réessayer
+          </button>
+          <Link
+            href="/auth"
+            className="px-5 py-3 rounded-lg bg-[#E63946] hover:bg-[#D42B22] text-white font-head font-bold text-[12px] uppercase tracking-widest transition-colors"
+          >
+            Se reconnecter
+          </Link>
+        </div>
+      </div>
+    );
+  }
+  if (loadError === "notfound") {
+    return (
+      <div className="px-6 sm:px-10 py-16 max-w-md mx-auto text-center">
+        <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-[#4a4d56]/20 mb-5">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <circle cx="12" cy="12" r="10" />
+            <path d="M12 8v4" />
+            <path d="M12 16h.01" />
+          </svg>
+        </div>
+        <h1 className="font-head text-2xl font-black text-white uppercase tracking-tight mb-2">Athlète introuvable</h1>
+        <p className="text-[14px] text-[#9CA3AF] mb-8 leading-relaxed">
+          Ce profil n&apos;existe pas ou tu n&apos;as pas les droits pour le modifier.
+        </p>
+        <Link
+          href="/coach/athletes"
+          className="inline-block px-5 py-3 rounded-lg bg-[#E63946] hover:bg-[#D42B22] text-white font-head font-bold text-[12px] uppercase tracking-widest transition-colors"
+        >
+          Retour au roster
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="px-6 sm:px-10 py-8 max-w-5xl mx-auto">
