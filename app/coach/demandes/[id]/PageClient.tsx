@@ -8,6 +8,9 @@ import EntityLink from "@/components/shared/EntityLink";
 import StarRating from "@/components/ui/StarRating";
 import { createClient } from "@/lib/supabase/client";
 import { parseDistinctions, type DistinctionEntry } from "@/lib/config/badges";
+import { CoachDemandesThreadMobile } from "@/components/shared/CoachDemandesThreadMobile";
+
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
 /* ═══════════════════════════════════════════════════════════════
    Thread Detail — Conversation View
@@ -92,7 +95,15 @@ function DaySeparator({ date }: { date: string }) {
    MAIN PAGE
 ═══════════════════════════════════════════════════════════════ */
 
-export default function ThreadDetailPage() {
+export default function Page() {
+  // Phase 2 — mobile early return (same pattern as recruiter's
+  // /recruteur/messages/[id]/PageClient). Coach Free CAN message,
+  // so no FeatureGate here (vs recruiter which gates behind Pro).
+  if (IS_CAPACITOR) return <CoachDemandesThreadMobile />;
+  return <ThreadDetailPage />;
+}
+
+function ThreadDetailPage() {
   const id = useDynamicParam("id");
 
   const [thread, setThread] = useState<ConversationThread | null>(null);

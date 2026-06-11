@@ -320,6 +320,19 @@ export default function MobileTabBar({ role }: MobileTabBarProps) {
     pathname !== "/recruteur/messages";
   if (messagesDrillDown) return null;
 
+  // Phase 2 — mirror du drill-down recruteur pour le coach. La mobile coach
+  // consomme MessagesListShell + MessageThreadShell exactement comme le
+  // recruteur, donc même UX iOS : TabBar visible sur la liste, masquée
+  // pendant le thread / le wizard nouveau message.
+  // /coach/demandes → liste (TabBar visible)
+  // /coach/demandes/[id] → thread (TabBar masquée)
+  // /coach/demandes/nouveau → wizard (TabBar masquée).
+  const coachDemandesDrillDown =
+    role === "coach" &&
+    pathname.startsWith("/coach/demandes/") &&
+    pathname !== "/coach/demandes";
+  if (coachDemandesDrillDown) return null;
+
   // Iter 7.50-a5 — masquer la TabBar pendant le wizard d'onboarding athlète
   // plein écran (canon iOS : pas de nav globale durant un flow de capture
   // critique). Sans ce guard, la TabBar z-40 couvre le CTA "Continuer" z-30

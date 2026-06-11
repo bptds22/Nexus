@@ -1,32 +1,34 @@
 "use client";
 
 /* ═══════════════════════════════════════════════════════════════
-   RecruteurMessagesMobile — Liste de conversations (iter 7.8a)
+   CoachDemandesMobile — Liste de conversations (Phase 2 — coach)
    Feel iOS Messages : large title "Messages", Edit top-left, filtre
-   top-right, search bar sticky, items denses avec athlète en vedette
-   + coach en sous-titre, dot non-lu, swipe-to-archive, mode Edit
-   multi-sélection, filtre bottom sheet (Tous / Non lu / Archivé).
+   top-right, search bar sticky, items denses avec RECRUTEUR en
+   vedette + CÉGEP en sous-titre + "Au sujet de {athlète}", dot
+   non-lu, swipe-to-archive, mode Edit multi-sélection, filtre
+   bottom sheet (Tous / Non lu / Archivé).
 
-   Gating Free : liste floutée + compte de threads net + tease upgrade.
+   Différence vs recruteur :
+   - Pas de gating Free. Coach peut toujours lire/répondre — les
+     coachs sont le canal de distribution (CLAUDE.md : Coach Free =
+     "Profile creation, evaluations, verification, always free" +
+     useSubscription.ts : can_receive_messages: true sur Free).
+   - Row content RECRUTEUR-first (counterparty), pas athlète-first.
+   - Filtres simplifiés (3) plutôt que les 5 du desktop, pour
+     parité visuelle avec le recruteur.
 
-   Référence design : docs/mobile-design-system.md.
-
-   Phase 1 unification : la chrome (header, search, swipe, edit,
-   FilterSheet, lock overlay, EmptyState) vit dans MessagesListShell.
-   Ce fichier ne contient plus que :
-   - les hooks data (useConversations + archive mutation)
-   - le filtre/search local + handlers recruteur
-   - le rendu spécifique recruteur (renderRow athlète-first +
-     lockTease) passé au shell via les props prévues à cet effet.
+   Phase 2 unification : la chrome (header, search, swipe, edit,
+   FilterSheet, EmptyState) vit dans MessagesListShell. Ce fichier
+   ne contient que les hooks data coach + le rendu spécifique
+   (recruteur + CÉGEP + sujet athlète).
 ═══════════════════════════════════════════════════════════════ */
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import AthletePhotoFill from "@/components/shared/AthletePhotoFill";
-import { useConversations, type ThreadData } from "@/lib/queries/recruiter/useConversations";
+import { useCoachConversations, type CoachThreadData } from "@/lib/queries/coach/useCoachConversations";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
-import { useSubscription } from "@/lib/hooks/useSubscription";
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import { useDebouncedValue } from "@/lib/utils/useDebouncedValue";
 import { createClient } from "@/lib/supabase/client";
@@ -36,13 +38,13 @@ import {
 } from "@/components/shared/messaging/MessagesListShell";
 import { triggerHaptic, relativeTime } from "@/components/shared/messaging/utils";
 
-/* ── useArchiveConversation (mutation TanStack inline + optimistic) ── */
+/* ── useArchiveCoachConversation (TanStack + optimistic) ─────── */
 
-function useArchiveConversation() {
+function useArchiveCoachConversation() {
   const queryClient = useQueryClient();
   const { data: currentUser } = useCurrentUser();
   const userId = currentUser?.authUser.id;
-  const queryKey = ["conversations", userId];
+  const queryKey = ["conversations", "coach", userId];
 
   return useMutation({
     mutationFn: async ({ conversationId, newStatus }: { conversationId: string; newStatus: "ACTIVE" | "ARCHIVE" }) => {
@@ -55,8 +57,8 @@ function useArchiveConversation() {
     },
     onMutate: async ({ conversationId, newStatus }) => {
       await queryClient.cancelQueries({ queryKey });
-      const previous = queryClient.getQueryData<ThreadData[]>(queryKey);
-      queryClient.setQueryData<ThreadData[]>(queryKey, (old) => {
+      const previous = queryClient.getQueryData<CoachThreadData[]>(queryKey);
+      queryClient.setQueryData<CoachThreadData[]>(queryKey, (old) => {
         if (!old) return old;
         return old.map((t) => (t.id === conversationId ? { ...t, status: newStatus } : t));
       });
@@ -66,12 +68,13 @@ function useArchiveConversation() {
       if (context?.previous) queryClient.setQueryData(queryKey, context.previous);
     },
     onSettled: () => {
+      // Prefix invalidation — keeps both coach + recruiter caches honest.
       queryClient.invalidateQueries({ queryKey: ["conversations"] });
     },
   });
 }
 
-/* ── Filter keyset (recruiter-specific labels) ──────────────── */
+/* ── Filter keyset (parité recruteur — 3 filtres simples) ──── */
 
 type FilterKey = "tous" | "non_lu" | "archive";
 
@@ -85,13 +88,11 @@ const FILTER_OPTIONS: FilterOption<FilterKey>[] = [
    MAIN
 ═══════════════════════════════════════════════════════════════ */
 
-export function RecruteurMessagesMobile() {
+export function CoachDemandesMobile() {
   const router = useRouter();
   const toast = useMobileToast();
-  const { data: threads = [], isLoading } = useConversations();
-  const { tier, loading: tierLoading } = useSubscription();
-  const isFree = tier === "free";
-  const archiveMut = useArchiveConversation();
+  const { data: threads = [], isLoading } = useCoachConversations();
+  const archiveMut = useArchiveCoachConversation();
 
   // States
   const [search, setSearch] = useState("");
@@ -114,7 +115,8 @@ export function RecruteurMessagesMobile() {
     if (debouncedSearch.trim().length >= 2) {
       const q = debouncedSearch.toLowerCase();
       list = list.filter((t) =>
-        t.coachName.toLowerCase().includes(q) ||
+        t.recruiterName.toLowerCase().includes(q) ||
+        t.recruiterCegep.toLowerCase().includes(q) ||
         t.athleteName.toLowerCase().includes(q) ||
         t.lastMessage.toLowerCase().includes(q)
       );
@@ -123,13 +125,9 @@ export function RecruteurMessagesMobile() {
   }, [threads, filter, debouncedSearch]);
 
   // Handlers
-  const handleTap = (thread: ThreadData) => {
-    if (isFree) {
-      toast.warning({ message: "Messagerie réservée Pro", detail: "Passe à Pro pour répondre aux coachs" });
-      return;
-    }
-    try { sessionStorage.setItem("lastRecruiterTab", "messages"); } catch { /* no-op */ }
-    router.push(`/recruteur/messages/${thread.id}`);
+  const handleTap = (thread: CoachThreadData) => {
+    try { sessionStorage.setItem("lastCoachTab", "demandes"); } catch { /* no-op */ }
+    router.push(`/coach/demandes/${thread.id}`);
   };
 
   const handleToggleSelect = (id: string) => {
@@ -141,11 +139,7 @@ export function RecruteurMessagesMobile() {
     });
   };
 
-  const handleArchiveSwipe = (thread: ThreadData) => {
-    if (isFree) {
-      toast.warning({ message: "Action réservée Pro" });
-      return;
-    }
+  const handleArchiveSwipe = (thread: CoachThreadData) => {
     const newStatus = thread.status === "ARCHIVE" ? "ACTIVE" : "ARCHIVE";
     archiveMut.mutate(
       { conversationId: thread.id, newStatus },
@@ -169,7 +163,7 @@ export function RecruteurMessagesMobile() {
   };
 
   const handleArchiveSelected = () => {
-    if (selected.size === 0 || isFree) return;
+    if (selected.size === 0) return;
     const ids = Array.from(selected);
     Promise.all(
       ids.map((id) => archiveMut.mutateAsync({ conversationId: id, newStatus: "ARCHIVE" }))
@@ -181,83 +175,66 @@ export function RecruteurMessagesMobile() {
     }).catch(() => toast.error({ message: "Erreur d'archivage" }));
   };
 
-  const totalThreads = threads.length;
-  const loading = isLoading || tierLoading;
-
   // Empty kind → copy
   const emptyKind: "all" | "search" | "non_lu" | "archive" =
     debouncedSearch.length >= 2 ? "search" :
     filter === "non_lu" ? "non_lu" :
     filter === "archive" ? "archive" : "all";
   const emptyCopy = {
-    all:     { title: "Aucune conversation",          sub: "Tes échanges avec les coachs apparaîtront ici." },
-    search:  { title: "Aucun résultat",                sub: "Essaie d'autres termes de recherche." },
-    non_lu:  { title: "Tu es à jour",                  sub: "Aucun message non lu." },
-    archive: { title: "Aucune conversation archivée",  sub: "Les conversations archivées apparaîtront ici." },
+    all:     { title: "Aucune demande",                 sub: "Les demandes de recruteurs apparaîtront ici." },
+    search:  { title: "Aucun résultat",                  sub: "Essaie d'autres termes de recherche." },
+    non_lu:  { title: "Tu es à jour",                    sub: "Aucune demande non lue." },
+    archive: { title: "Aucune conversation archivée",    sub: "Les conversations archivées apparaîtront ici." },
   }[emptyKind];
 
-  /* Athlete-first row content (avatar + names + time + last message)
-     — passed to the shared shell via renderRowContent. The shell
-     handles the selection circle, unread dot, swipe-archive motion,
-     and inset separator around this slot. */
-  const renderRow = (t: ThreadData) => {
+  /* Recruiter-first row content. Avatar = recruiter photo/initials.
+     Primary line = recruiter name. Secondary = their CÉGEP. Context
+     = "Au sujet de {athlete}". Time + last message preview.
+     The shell handles selection circle, unread dot, swipe-archive
+     motion, and inset separator around this slot. */
+  const renderRow = (t: CoachThreadData) => {
     const unread = t.unreadCount > 0;
     return (
       <div className="flex items-center gap-3">
         <div className="relative w-[52px] h-[52px] rounded-full overflow-hidden flex-shrink-0 bg-[#2F3440]">
           <AthletePhotoFill
-            photoUrl={null}
-            firstName={t.athleteInitials[0] ?? ""}
-            lastName={t.athleteInitials[1] ?? ""}
+            photoUrl={t.recruiterPhotoUrl}
+            firstName={t.recruiterInitials[0] ?? ""}
+            lastName={t.recruiterInitials[1] ?? ""}
             initialsFontSize={20}
           />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-baseline justify-between gap-2">
             <p className={`text-base truncate ${unread ? "font-bold text-white" : "font-semibold text-white/95"}`}>
-              {t.athleteName}
+              {t.recruiterName}
             </p>
             <span className={`text-[13px] flex-shrink-0 ${unread ? "text-[#3B82F6] font-semibold" : "text-white/40"}`}>
               {relativeTime(t.lastMessageAt)}
             </span>
           </div>
-          <p className="text-[15px] text-white/55 mt-0.5 truncate">
-            Coach {t.coachName}
+          {t.recruiterCegep && (
+            <p className="text-[15px] text-white/55 mt-0.5 truncate">
+              {t.recruiterCegep}
+            </p>
+          )}
+          <p className="text-[13px] text-white/45 mt-0.5 truncate">
+            Au sujet de {t.athleteName}
           </p>
-          <p className="text-[15px] text-white/40 mt-0.5 truncate">
-            {t.lastMessage || "Aucun message"}
-          </p>
+          {t.lastMessage && (
+            <p className="text-[15px] text-white/40 mt-0.5 truncate">
+              {t.lastMessage}
+            </p>
+          )}
         </div>
       </div>
     );
   };
 
-  /* Free-tier tease card mounted as the shell's lockOverlay. */
-  const lockTease = (
-    <div className="rounded-2xl bg-[#111317]/85 backdrop-blur-md border border-white/10 px-5 py-5 max-w-[300px] text-center">
-      <p className="font-head text-[40px] font-black text-white leading-none">
-        {totalThreads}
-      </p>
-      <p className="text-[12px] uppercase tracking-wider text-white/60 font-semibold mt-1">
-        coach{totalThreads !== 1 ? "s" : ""} {totalThreads !== 1 ? "t'attendent" : "t'attend"}
-      </p>
-      <p className="text-[14px] text-white/85 mt-3 leading-snug">
-        Passe à Pro pour lire et répondre.
-      </p>
-      <button
-        type="button"
-        onClick={() => { triggerHaptic("Light"); router.push("/tarifs"); }}
-        className="mt-4 w-full py-2.5 rounded-2xl bg-[#E63946] text-white font-bold text-[14px] active:bg-[#D42B22] transition-colors"
-      >
-        Voir les forfaits
-      </button>
-    </div>
-  );
-
   return (
-    <MessagesListShell<ThreadData>
+    <MessagesListShell<CoachThreadData>
       threads={filtered}
-      isLoading={loading}
+      isLoading={isLoading}
       getId={(t) => t.id}
       getUnread={(t) => t.unreadCount > 0}
       getStatus={(t) => (t.status === "ARCHIVE" ? "ARCHIVE" : "ACTIVE")}
@@ -276,14 +253,7 @@ export function RecruteurMessagesMobile() {
       onTapThread={handleTap}
       onSwipeArchive={handleArchiveSwipe}
       title="Messages"
-      onCreate={() => router.push("/recruteur/messages/nouveau")}
-      createDisabled={isFree}
-      onCreateBlocked={() => toast.info({
-        message: "Abonnement Pro requis",
-        detail: "L'envoi de messages est réservé Pro.",
-      })}
-      isLocked={isFree}
-      lockOverlay={lockTease}
+      onCreate={() => router.push("/coach/demandes/nouveau")}
       emptyTitle={emptyCopy.title}
       emptyDescription={emptyCopy.sub}
     />

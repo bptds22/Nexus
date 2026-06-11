@@ -71,11 +71,20 @@ export function useSendMessage() {
         return old.map((m) => (m.id === context.tempId ? { ...m, status: "error" } : m));
       });
     },
-    onSettled: (_data, _err, vars) => {
-      // Invalidate la liste de conversations (last_message_at + unread)
+    onSettled: () => {
+      // Invalidate la liste de conversations (last_message_at + unread).
+      // Préfixe → catche ["conversations", userId] (recruteur) et
+      // ["conversations", "coach", userId] (coach) en un seul shot.
       queryClient.invalidateQueries({ queryKey: ["conversations"] });
-      // Refetch messages pour assurer la cohérence (au cas où realtime aurait raté)
-      queryClient.invalidateQueries({ queryKey: ["messages", vars.conversationId] });
+      // ── NE PAS invalider ["messages", conversationId] ici. ──
+      // L'optimistic update a déjà écrit le bubble dans le cache et
+      // onSuccess l'a swappé du tempId vers l'UUID DB ; la subscription
+      // postgres_changes (INSERT) côté composant merge le row canonique
+      // si jamais le payload arrivait avant onSuccess. Refetcher ici
+      // déclenchait un re-render avec data potentiellement vide ou
+      // ordonnée différemment qui CLOBBERAIT le bubble optimistic →
+      // le coach voyait sa bulle disparaître (le recruteur avait la même
+      // race mais elle était masquée par la chance de timing).
     },
   });
 }

@@ -35,5 +35,10 @@ export function useMessages(conversationId: string | null) {
     },
     enabled: !!conversationId,
     staleTime: 30 * 1000,
+    // Ceinture+bretelles : garde le data précédent pendant un refetch
+    // pour qu'une éventuelle invalidation tierce ne vide jamais le
+    // tableau côté UI (le bubble optimistic reste visible). TanStack v5
+    // remplace l'ancien keepPreviousData de v4 par cette signature.
+    placeholderData: (prev) => prev,
   });
 }

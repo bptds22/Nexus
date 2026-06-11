@@ -35,85 +35,21 @@ import { getStatusConfig, type RecruitmentStatus } from "@/lib/config/recruitmen
 import { useSubmitCoachReview } from "@/lib/queries/recruiter/useSubmitCoachReview";
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import { useQueryClient } from "@tanstack/react-query";
+import { MessageThreadShell } from "@/components/shared/messaging/MessageThreadShell";
+import { triggerHaptic } from "@/components/shared/messaging/utils";
 
-async function triggerHaptic(intensity: "Light" | "Medium" = "Light") {
-  try {
-    const { Haptics, ImpactStyle } = await import("@capacitor/haptics");
-    const style = intensity === "Light" ? ImpactStyle.Light : ImpactStyle.Medium;
-    await Haptics.impact({ style });
-  } catch { /* no-op */ }
-}
+/* Local helpers retired in favor of the shared messaging package :
+   - triggerHaptic      → @/components/shared/messaging/utils
+   - dayLabel / time    → consumed inside MessageBubble + DaySeparator
+   - MessageBubble      → @/components/shared/messaging/MessageBubble
+   - DaySeparator       → @/components/shared/messaging/DaySeparator
+   - ThreadSkeleton     → owned by MessageThreadShell
+   - day-grouping loop  → owned by MessageThreadShell
 
-/* ── Date helpers ─────────────────────────────────────────────── */
-
-function startOfDay(d: Date): Date {
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
-}
-
-function dayLabel(iso: string): string {
-  const d = new Date(iso);
-  const today = startOfDay(new Date());
-  const that = startOfDay(d);
-  const diffDays = Math.round((today.getTime() - that.getTime()) / 86400000);
-  if (diffDays === 0) return "Aujourd'hui";
-  if (diffDays === 1) return "Hier";
-  if (diffDays < 7) {
-    const days = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
-    return days[d.getDay()];
-  }
-  return d.toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: d.getFullYear() === today.getFullYear() ? undefined : "numeric" });
-}
-
-function timeOfDay(iso: string): string {
-  const d = new Date(iso);
-  return d.toLocaleTimeString("fr-CA", { hour: "2-digit", minute: "2-digit", hour12: false });
-}
-
-/* ── MessageBubble ────────────────────────────────────────────── */
-
-function MessageBubble({ msg, isMe }: { msg: MessageRow; isMe: boolean }) {
-  // Iter 7.8c-UI Section C — couleurs iOS dark mode (volume rouge fatiguait).
-  // Recruteur = bleu iOS #0A84FF, coach = gris iOS dark #262628.
-  // Rouge Nexus gardé partout ailleurs (action/marque), exception thread only.
-  const isSending = msg.status === "sending";
-  const isError = msg.status === "error";
-  return (
-    <div className={`flex flex-col ${isMe ? "items-end" : "items-start"} px-4`}>
-      <div
-        className={`max-w-[78%] rounded-2xl px-4 py-2.5 ${
-          isMe
-            ? `bg-[#0A84FF] rounded-br-md ${isSending ? "opacity-70" : ""} ${isError ? "ring-2 ring-[#EF4444]/60" : ""}`
-            : "bg-[#262628] rounded-bl-md"
-        }`}
-      >
-        <p className="text-[16px] text-white leading-relaxed whitespace-pre-wrap break-words">
-          {msg.content}
-        </p>
-      </div>
-      <div className={`flex items-center gap-1.5 mt-1 ${isMe ? "pr-1" : "pl-1"}`}>
-        <span className="text-[10px] text-white/35">{timeOfDay(msg.created_at)}</span>
-        {isMe && isSending && (
-          <span className="text-[10px] text-white/35 italic">envoi…</span>
-        )}
-        {isMe && isError && (
-          <span className="text-[10px] text-[#EF4444] font-semibold">échec</span>
-        )}
-      </div>
-    </div>
-  );
-}
-
-/* ── DaySeparator ─────────────────────────────────────────────── */
-
-function DaySeparator({ iso }: { iso: string }) {
-  return (
-    <div className="flex items-center justify-center my-4">
-      <span className="text-[11px] uppercase tracking-wider text-white/40 font-semibold px-3 py-1 rounded-full bg-white/[0.04]">
-        {dayLabel(iso)}
-      </span>
-    </div>
-  );
-}
+   What stays here : the recruiter-specific bottom sheets
+   (CoachDetailsSheet, AthleteThreadSheet) + the thread-context
+   queries + the realtime channel subscription. The shell is fed
+   via props ; the sheets mount as its children. */
 
 /* ── CoachDetailsSheet (Section E) ────────────────────────────── */
 
@@ -729,22 +665,9 @@ function AthleteThreadSheet({
   );
 }
 
-/* ── Skeleton bubbles ─────────────────────────────────────────── */
-
-function ThreadSkeleton() {
-  return (
-    <div className="px-4 space-y-4 py-6">
-      {[true, false, false, true, false].map((isMe, i) => (
-        <div key={i} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
-          <div
-            className={`rounded-2xl h-9 nx-pulse-thread`}
-            style={{ width: `${40 + (i % 3) * 15}%` }}
-          />
-        </div>
-      ))}
-    </div>
-  );
-}
+/* ── ThreadSkeleton retired ─────────────────────────────────────
+   Moved inside MessageThreadShell. Same 5-bar layout, same pulse.
+   ═══════════════════════════════════════════════════════════════ */
 
 /* ═══════════════════════════════════════════════════════════════
    MAIN
@@ -763,11 +686,8 @@ export function RecruteurMessagesThreadMobile() {
   const sendMut = useSendMessage();
   const markRead = useMarkConversationRead();
 
-  const [reply, setReply] = useState("");
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [athleteSheetOpen, setAthleteSheetOpen] = useState(false);
-  const endRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   // Mark as read au mount (1 fois)
   const markedRef = useRef(false);
@@ -776,14 +696,6 @@ export function RecruteurMessagesThreadMobile() {
     markedRef.current = true;
     markRead.mutate({ conversationId });
   }, [conversationId, markRead]);
-
-  // Auto-scroll au dernier message au mount + à chaque nouveau message
-  useEffect(() => {
-    if (!messages.length) return;
-    requestAnimationFrame(() => {
-      endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-    });
-  }, [messages.length]);
 
   // Realtime subscription : INSERT messages live
   useEffect(() => {
@@ -815,29 +727,8 @@ export function RecruteurMessagesThreadMobile() {
     };
   }, [conversationId, userId, queryClient, markRead]);
 
-  // Groupage messages par jour (séparateurs)
-  const groupedMessages = useMemo(() => {
-    const groups: { type: "day"; iso: string } | { type: "msg"; msg: MessageRow }[] = [];
-    type Item = { type: "day"; iso: string } | { type: "msg"; msg: MessageRow };
-    const out: Item[] = [];
-    let lastDayKey: string | null = null;
-    for (const m of messages) {
-      const d = new Date(m.created_at);
-      const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-      if (key !== lastDayKey) {
-        out.push({ type: "day", iso: m.created_at });
-        lastDayKey = key;
-      }
-      out.push({ type: "msg", msg: m });
-    }
-    return out;
-  }, [messages]);
-
-  const handleSend = () => {
-    if (!reply.trim() || !conversationId) return;
-    const content = reply;
-    setReply("");
-    triggerHaptic("Light");
+  const handleSendContent = (content: string) => {
+    if (!conversationId) return;
     sendMut.mutate(
       { conversationId, content },
       {
@@ -848,10 +739,7 @@ export function RecruteurMessagesThreadMobile() {
     );
   };
 
-  const handleBack = () => {
-    triggerHaptic("Light");
-    router.push("/recruteur/messages");
-  };
+  const handleBack = () => router.push("/recruteur/messages");
 
   // Iter 7.9 Section 6 — re-tap ferme (toggle iOS).
   const handleCoachDetails = () => {
@@ -864,156 +752,71 @@ export function RecruteurMessagesThreadMobile() {
   };
 
   const loading = ctxLoading || msgsLoading;
-  const isEmpty = !loading && messages.length === 0;
+
+  /* Header centre — bloc spécifique recruteur :
+     - photo coach 36 + "Coach {nom}" + chevron (ouvre CoachDetailsSheet)
+     - sous-titre "À propos de {athlète} ›" (ouvre AthleteThreadSheet) */
+  const headerCenter = (
+    <>
+      <button
+        type="button"
+        onClick={handleCoachDetails}
+        className="flex flex-col items-center gap-0.5 active:opacity-70 transition-opacity min-w-0 max-w-full"
+      >
+        <div className="w-9 h-9 rounded-full overflow-hidden flex-shrink-0 bg-[#2F3440]">
+          <AthletePhoto
+            photoUrl={ctx?.coachPhotoUrl ?? null}
+            firstName={ctx?.coachInitials?.[0] ?? "C"}
+            lastName={ctx?.coachInitials?.[1] ?? ""}
+            size={36}
+          />
+        </div>
+        {/* Iter 7.8f Section 3 — nom coach 16px font-bold (interlocuteur principal). */}
+        <div className="flex items-center gap-1.5 min-w-0 max-w-full">
+          <span className="text-[16px] font-bold text-white truncate">
+            Coach {ctx?.coachName ?? "—"}
+          </span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
+        </div>
+      </button>
+      {/* Iter 7.9 Section 7 — sous-titre 14px white/75 + chevron › discret. */}
+      {ctx?.athleteName && (
+        <button
+          type="button"
+          onClick={handleAthleteDetails}
+          className="inline-flex items-center gap-1 text-[14px] text-white/75 truncate max-w-full active:opacity-70 transition-opacity"
+        >
+          <span className="truncate">À propos de {ctx.athleteName}</span>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
+        </button>
+      )}
+    </>
+  );
 
   return (
-    <div className="min-h-screen bg-[#111317] text-white flex flex-col">
-      {/* Iter 7.8c-UI Section D — Header épuré iOS : back + bloc central
-          (photo coach 36 + nom + chevron, sous-titre "À propos de {athlète}"
-          sans photo athlète). Tout le bloc central tappable → ouvre sheet
-          Détails coach (Section E). Plus de barre athlète séparée. */}
-      <div
-        className="sticky top-0 z-30 bg-[#111317]/95 backdrop-blur-md border-b border-white/[0.06]"
-        style={{ paddingTop: "env(safe-area-inset-top)" }}
-      >
-        <div className="flex items-center px-4 py-2 gap-2 min-h-[64px]">
-          <button
-            type="button"
-            onClick={handleBack}
-            aria-label="Retour"
-            className="w-11 h-11 rounded-full flex items-center justify-center active:bg-white/5 flex-shrink-0"
-          >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
-          </button>
-          {/* Iter 7.8e-UI Section E — header thread désormais deux zones tappables
-              distinctes : photo+nom+chevron (coach) → sheet coach top-down ;
-              sous-titre "À propos de {athlète}" → sheet athlète bottom-up. */}
-          <div className="flex-1 flex flex-col items-center gap-0.5 min-w-0 py-1">
-            <button
-              type="button"
-              onClick={handleCoachDetails}
-              className="flex flex-col items-center gap-0.5 active:opacity-70 transition-opacity min-w-0 max-w-full"
-            >
-              <div className="w-9 h-9 rounded-full overflow-hidden flex-shrink-0 bg-[#2F3440]">
-                <AthletePhoto
-                  photoUrl={ctx?.coachPhotoUrl ?? null}
-                  firstName={ctx?.coachInitials?.[0] ?? "C"}
-                  lastName={ctx?.coachInitials?.[1] ?? ""}
-                  size={36}
-                />
-              </div>
-              {/* Iter 7.8f Section 3 — nom coach bumpé à 16px font-bold (interlocuteur principal, doit être lisible). */}
-              <div className="flex items-center gap-1.5 min-w-0 max-w-full">
-                <span className="text-[16px] font-bold text-white truncate">
-                  Coach {ctx?.coachName ?? "—"}
-                </span>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
-                  <polyline points="9 18 15 12 9 6" />
-                </svg>
-              </div>
-            </button>
-            {/* Iter 7.9 Section 7 — sous-titre lisible + affordance tap : 14px,
-                couleur white/75 (au lieu de /55), chevron › discret à droite. */}
-            {ctx?.athleteName && (
-              <button
-                type="button"
-                onClick={handleAthleteDetails}
-                className="inline-flex items-center gap-1 text-[14px] text-white/75 truncate max-w-full active:opacity-70 transition-opacity"
-              >
-                <span className="truncate">À propos de {ctx.athleteName}</span>
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
-                  <polyline points="9 18 15 12 9 6" />
-                </svg>
-              </button>
-            )}
-          </div>
-          <div className="w-9 h-9 flex-shrink-0" />
-        </div>
-      </div>
-
-      {/* Body : messages */}
-      <div className="flex-1 overflow-y-auto py-4">
-        {loading ? (
-          <ThreadSkeleton />
-        ) : isEmpty ? (
-          <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
-            <div className="w-16 h-16 rounded-full bg-[#1A1D24] flex items-center justify-center mb-4">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4a4d56" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-              </svg>
-            </div>
-            <h3 className="font-head text-[18px] font-black text-white uppercase tracking-tight mb-1">
-              Démarre la conversation
-            </h3>
-            <p className="text-[13px] text-white/55 max-w-sm">
-              Tu n&apos;as pas encore échangé avec {ctx?.coachName ?? "le coach"}. Pose une question pour commencer.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {groupedMessages.map((item, idx) =>
-              item.type === "day" ? (
-                <DaySeparator key={`day-${idx}-${item.iso}`} iso={item.iso} />
-              ) : (
-                <MessageBubble
-                  key={item.msg.id}
-                  msg={item.msg}
-                  isMe={item.msg.sender_id === userId}
-                />
-              )
-            )}
-            <div ref={endRef} />
-          </div>
-        )}
-      </div>
-
-      {/* Composer sticky bottom */}
-      <div
-        className="sticky bottom-0 z-20 bg-[#111317]/95 backdrop-blur-md border-t border-white/[0.06]"
-        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
-      >
-        <div className="px-4 py-2 flex items-end gap-2">
-          <div className="flex-1 bg-white/[0.06] rounded-2xl px-3 py-2 min-h-[40px] flex items-center">
-            <textarea
-              ref={inputRef}
-              value={reply}
-              onChange={(e) => setReply(e.target.value)}
-              placeholder="Message…"
-              rows={1}
-              className="flex-1 bg-transparent text-[16px] text-white placeholder:text-white/40 outline-none resize-none max-h-[120px]"
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSend();
-                }
-              }}
-            />
-          </div>
-          <button
-            type="button"
-            onClick={handleSend}
-            disabled={!reply.trim()}
-            aria-label="Envoyer"
-            className={`w-11 h-11 rounded-full flex items-center justify-center transition-colors flex-shrink-0 ${
-              reply.trim()
-                ? "bg-[#E63946] active:bg-[#D42B22]"
-                : "bg-white/[0.06]"
-            }`}
-          >
-            {/* Iter 7.8e-UI Section D — chevron iOS ↑ (style iMessage) au lieu
-                de l'icône avion. Trait épaissi (3px) pour la lisibilité dans
-                le petit cercle. */}
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={reply.trim() ? "#FFFFFF" : "#4a4d56"} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="12" y1="19" x2="12" y2="5" />
-              <polyline points="5 12 12 5 19 12" />
-            </svg>
-          </button>
-        </div>
-      </div>
-
-      {/* Iter 7.8c-UI Section E — Sheet Détails coach (Bottom Sheet Portal) */}
+    <MessageThreadShell<MessageRow>
+      messages={messages}
+      isLoading={loading}
+      currentUserId={userId}
+      getId={(m) => m.id}
+      getContent={(m) => m.content}
+      getCreatedAt={(m) => m.created_at}
+      getSenderId={(m) => m.sender_id}
+      getStatus={(m) => m.status}
+      meColor="#0A84FF"
+      otherColor="#262628"
+      headerCenter={headerCenter}
+      onBack={handleBack}
+      onSend={handleSendContent}
+      composerPlaceholder="Message…"
+      emptyTitle="Démarre la conversation"
+      emptyDescription={`Tu n'as pas encore échangé avec ${ctx?.coachName ?? "le coach"}. Pose une question pour commencer.`}
+    >
+      {/* Iter 7.8c-UI Section E — Sheet Détails coach */}
       {ctx && (
         <CoachDetailsSheet
           open={detailsOpen}
@@ -1025,8 +828,7 @@ export function RecruteurMessagesThreadMobile() {
           athleteName={ctx.athleteName}
         />
       )}
-
-      {/* Iter 7.8e-UI Section E partie 2 — Sheet athlète bottom-up (allégé). */}
+      {/* Iter 7.8e-UI Section E partie 2 — Sheet athlète bottom-up. */}
       {ctx && (
         <AthleteThreadSheet
           open={athleteSheetOpen}
@@ -1034,11 +836,6 @@ export function RecruteurMessagesThreadMobile() {
           athleteId={ctx.athleteId}
         />
       )}
-
-      <style jsx>{`
-        @keyframes nx-pulse-thread-kf { 0%, 100% { opacity: 0.35; } 50% { opacity: 0.65; } }
-        :global(.nx-pulse-thread) { background: #1A1D24; animation: nx-pulse-thread-kf 1.4s ease-in-out infinite; }
-      `}</style>
-    </div>
+    </MessageThreadShell>
   );
 }
