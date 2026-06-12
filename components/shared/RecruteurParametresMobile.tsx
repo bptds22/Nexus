@@ -1,7 +1,7 @@
 "use client";
 
 /* ═══════════════════════════════════════════════════════════════
-   RecruteurParametresMobile — Paramètres mobile (iter 7.39)
+   RecruteurParametresMobile — Paramètres mobile (iter 7.39).
 
    Pattern Réglages iPhone : rows iOS groupées, sections collapsées,
    toggles rouge. Colonnes DB exactes (DIAG 7.38 §B.2) :
@@ -13,50 +13,35 @@
      show_full_name, consent_*)
 
    Sections :
-   - Notifications (6 toggles app/email — desktop NotificationsSection)
-   - Recrutement (sous-vue — placeholder pour l'instant, BP confirme scope)
-   - Confidentialité (3 toggles + dates consentement + Browser.open vers web)
+   - Notifications (6 toggles app + master email — desktop NotificationsSection)
+   - Confidentialité (3 toggles + dates consentement + openExternal vers web)
    - Abonnement (READONLY honnête — CTAs "Bientôt disponible")
    - Compte (changer mot de passe via sheet)
    - Zone danger (désactiver via RPC + déconnexion réelle)
 
    PAS de Gestion CÉGEP ni Transfert (BP confirme — desktop only).
 
+   Phase 1 unification — la vocabulary iOS Settings (SectionLabel,
+   Group, ToggleRow, NavRow, DangerRow, Toggle, TierCard, tierStatus,
+   PasswordChangeSheet, ConfirmSheet, openExternal, triggerHaptic) a
+   été extraite dans components/shared/settings/. Ce fichier compose
+   les blocs partagés autour des sections SPÉCIFIQUES RECRUTEUR :
+   NOTIF_ROWS, recruteur-targeted copies, recruteur features dans les
+   TierCards. Le rendu reste byte-identical au pré-extraction.
+
    ⚠️ Rules of Hooks : tous les hooks AVANT early return (canon 7.8d/7.25).
 ═══════════════════════════════════════════════════════════════ */
 
-import { useState, useEffect, useMemo, type ReactNode } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { createPortal } from "react-dom";
 import { createClient } from "@/lib/supabase/client";
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import { useSubscription } from "@/lib/hooks/useSubscription";
-
-const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
-
-async function triggerHaptic(intensity: "Light" | "Medium" | "Heavy" = "Light") {
-  try {
-    const { Haptics, ImpactStyle } = await import("@capacitor/haptics");
-    const style =
-      intensity === "Heavy" ? ImpactStyle.Heavy :
-      intensity === "Medium" ? ImpactStyle.Medium :
-      ImpactStyle.Light;
-    await Haptics.impact({ style });
-  } catch { /* no-op */ }
-}
-
-async function openExternal(url: string) {
-  try {
-    if (IS_CAPACITOR) {
-      const { Browser } = await import("@capacitor/browser");
-      await Browser.open({ url });
-    } else {
-      window.open(url, "_blank", "noopener,noreferrer");
-    }
-  } catch {
-    window.open(url, "_blank", "noopener,noreferrer");
-  }
-}
+import {
+  triggerHaptic, openExternal, tierStatus,
+  SectionLabel, Group, ToggleRow, NavRow, DangerRow,
+  TierCard, PasswordChangeSheet, ConfirmSheet,
+} from "@/components/shared/settings";
 
 /* ── Shape des prefs notifications côté DB (DIAG 7.38) ────────── */
 
@@ -511,403 +496,6 @@ export function RecruteurParametresMobile() {
         onConfirm={handleLogout}
         variant="danger"
       />
-      <style jsx global>{`
-        @keyframes nx-modal-fade {
-          0% { opacity: 0; } 100% { opacity: 1; }
-        }
-        @keyframes nx-modal-slideup {
-          0% { transform: translateY(100%); } 100% { transform: translateY(0); }
-        }
-      `}</style>
     </div>
-  );
-}
-
-/* ── Building blocks ─────────────────────────────────────────── */
-
-function SectionLabel({ children }: { children: ReactNode }) {
-  return (
-    <div className="px-4 pt-5 pb-2">
-      <span className="text-[11px] font-bold tracking-[0.18em] uppercase text-[#6b7280]">{children}</span>
-    </div>
-  );
-}
-
-function Group({ children, className }: { children: ReactNode; className?: string }) {
-  return (
-    <div className={`mx-4 rounded-2xl bg-[#1A1D24] border border-white/[0.06] overflow-hidden ${className || ""}`}>
-      {children}
-    </div>
-  );
-}
-
-/* Toggle iOS canon (iter 7.40b) — composant unique réutilisé pour tous
-   les switches Paramètres (Notif APP/EMAIL, marketing, Confidentialité).
-
-   Math (canon brief 7.40b) :
-   - Track 44 × 26, rounded-full
-   - Thumb 22 × 22 (= track height − 4) ; margin 2 px à gauche, 2 px à droite
-   - Translation ON  = 44 − 22 − 2·2 = 18 px (left:2 → left:20)
-   - Translation OFF = 0 px
-   → Le thumb reste TOUJOURS à l'intérieur de la pilule.
-   - OFF #3A3A3C (gris iOS Settings), ON #E63946
-   - Shadow subtle sous le thumb pour relief iOS
-   - Transition 200 ms ease sur transform et background-color
-   - Touch zone = visuel 44 × 26 (canon iOS UISwitch natif = 51 × 31, le
-     touch matche le visuel, pas un wrapper invisible — règle 44 × 44
-     est un guide général, pas appliqué strictement aux switches iOS). */
-
-function Toggle({ checked, onChange, ariaLabel }: { checked: boolean; onChange: (v: boolean) => void; ariaLabel?: string }) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      aria-label={ariaLabel}
-      onClick={() => { triggerHaptic("Light"); onChange(!checked); }}
-      className="relative shrink-0 rounded-full"
-      style={{
-        width: 44,
-        height: 26,
-        background: checked ? "#E63946" : "#3A3A3C",
-        transition: "background-color 200ms ease",
-        touchAction: "manipulation",
-      }}
-    >
-      <span
-        className="block absolute rounded-full bg-white"
-        style={{
-          top: 2,
-          left: 2,
-          width: 22,
-          height: 22,
-          transform: checked ? "translateX(18px)" : "translateX(0)",
-          transition: "transform 200ms ease",
-          boxShadow: "0 1px 2px rgba(0,0,0,0.25)",
-        }}
-        aria-hidden
-      />
-    </button>
-  );
-}
-
-function ToggleRow({
-  label, sublabel, checked, onChange, isFirst,
-}: {
-  label: string; sublabel?: string; checked: boolean; onChange: (v: boolean) => void; isFirst: boolean;
-}) {
-  return (
-    <div
-      className="flex items-center px-4 py-3"
-      style={{ minHeight: 52, borderTop: isFirst ? undefined : "0.5px solid rgba(255,255,255,0.06)" }}
-    >
-      <div className="flex-1 min-w-0 pr-3">
-        <p className="text-[15px] text-white">{label}</p>
-        {sublabel && <p className="text-[11px] text-[#6b7280] mt-0.5">{sublabel}</p>}
-      </div>
-      <Toggle checked={checked} onChange={onChange} />
-    </div>
-  );
-}
-
-function NavRow({
-  label, sublabel, onTap, rightChevron = "chevron", isFirst,
-}: {
-  label: string; sublabel?: string; onTap: () => void;
-  rightChevron?: "chevron" | "external"; isFirst: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onTap}
-      className="w-full flex items-center px-4 text-left active:bg-white/[0.04]"
-      style={{ minHeight: 52, borderTop: isFirst ? undefined : "0.5px solid rgba(255,255,255,0.06)" }}
-    >
-      <div className="flex-1 min-w-0 py-3">
-        <p className="text-[15px] text-white">{label}</p>
-        {sublabel && <p className="text-[11px] text-[#6b7280] mt-0.5">{sublabel}</p>}
-      </div>
-      {rightChevron === "external" ? (
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-2 shrink-0">
-          <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
-          <polyline points="15 3 21 3 21 9" />
-          <line x1="10" y1="14" x2="21" y2="3" />
-        </svg>
-      ) : (
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-2 shrink-0">
-          <polyline points="9 18 15 12 9 6" />
-        </svg>
-      )}
-    </button>
-  );
-}
-
-function DangerRow({ label, onTap, isFirst }: { label: string; onTap: () => void; isFirst: boolean }) {
-  return (
-    <button
-      type="button"
-      onClick={onTap}
-      className="w-full flex items-center justify-center px-4 active:bg-white/[0.04]"
-      style={{ minHeight: 52, borderTop: isFirst ? undefined : "0.5px solid rgba(255,255,255,0.06)" }}
-    >
-      <span className="text-[15px] font-medium text-[#E63946]">{label}</span>
-    </button>
-  );
-}
-
-/* ── Tier rank helper (iter 7.40 §3) ──────────────────────────
-   Renvoie "current" / "upgrade" / "below" pour décider l'UI :
-   - current  = bordure rouge + glow + badge Actuel (vert)
-   - upgrade  = CTA "Bientôt" subtle (tier supérieur, pas encore Stripe)
-   - below    = card en sourdine, AUCUN CTA (l'user a déjà mieux)
-─────────────────────────────────────────────────────────────── */
-
-type TierStatus = "current" | "upgrade" | "below";
-
-function tierStatus(userTier: "free" | "pro" | "all_star", cardTier: "free" | "pro" | "all_star"): TierStatus {
-  const rank: Record<"free" | "pro" | "all_star", number> = { free: 0, pro: 1, all_star: 2 };
-  if (userTier === cardTier) return "current";
-  if (rank[cardTier] > rank[userTier]) return "upgrade";
-  return "below";
-}
-
-function TierCard({
-  name, price, period, features, status, accentDot,
-}: {
-  name: string;
-  price: string;
-  period: string;
-  features: string[];
-  status: TierStatus;
-  accentDot?: string;
-}) {
-  const isCurrent = status === "current";
-  const isBelow = status === "below";
-  const cardClass = isCurrent
-    ? "rounded-2xl border border-[#E63946]/45 bg-[#1A1D24] shadow-[0_0_18px_rgba(230,57,70,0.18)] p-4"
-    : isBelow
-      ? "rounded-2xl border border-white/[0.04] bg-[#1A1D24]/60 p-4"
-      : "rounded-2xl border border-white/[0.06] bg-[#1A1D24] p-4";
-
-  return (
-    <div className={cardClass}>
-      <div className="flex items-baseline justify-between gap-3">
-        <div className="flex items-center gap-2 min-w-0">
-          {accentDot && (
-            <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: accentDot }} aria-hidden />
-          )}
-          <p className={`text-[16px] font-semibold ${isBelow ? "text-[#9CA3AF]" : "text-white"} truncate`}>{name}</p>
-          {isCurrent && (
-            <span className="px-2 py-0.5 rounded-full bg-[#22C55E]/15 text-[#22C55E] text-[9px] font-black uppercase tracking-wider shrink-0">
-              Actuel
-            </span>
-          )}
-        </div>
-        <div className="flex items-baseline gap-1 shrink-0">
-          <span className={`text-[16px] font-bold ${isBelow ? "text-[#6b7280]" : "text-white"}`}>{price}</span>
-          {period && <span className="text-[12px] text-[#6b7280]">{period}</span>}
-        </div>
-      </div>
-      <ul className="mt-3 space-y-1.5">
-        {features.map((f) => (
-          <li key={f} className="flex items-start gap-2">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={isBelow ? "#4a4d56" : "#22C55E"} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 shrink-0">
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
-            <span className={`text-[12.5px] leading-snug ${isBelow ? "text-[#6b7280]" : "text-[#e0e0e0]"}`}>{f}</span>
-          </li>
-        ))}
-      </ul>
-      {status === "upgrade" && (
-        <div className="mt-3 pt-3 border-t border-white/[0.05]">
-          <div className="flex items-center justify-center h-9 rounded-2xl bg-white/[0.04] text-[12px] font-semibold text-[#9CA3AF] italic">
-            Bientôt disponible
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* ── Password change sheet (canon : 5 règles, 2 saisies, supabase.auth.updateUser) ── */
-
-function PasswordChangeSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const toast = useMobileToast();
-  const [mounted, setMounted] = useState(false);
-  const [newPw, setNewPw] = useState("");
-  const [confirmPw, setConfirmPw] = useState("");
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => { setMounted(true); }, []);
-  useEffect(() => { if (!open) { setNewPw(""); setConfirmPw(""); } }, [open]);
-
-  const hasMin = newPw.length >= 8;
-  const hasUpper = /[A-Z]/.test(newPw);
-  const hasLower = /[a-z]/.test(newPw);
-  const hasNum = /[0-9]/.test(newPw);
-  const hasSpecial = /[^A-Za-z0-9]/.test(newPw);
-  const match = newPw === confirmPw && confirmPw.length > 0;
-  const valid = hasMin && hasUpper && hasLower && hasNum && hasSpecial && match;
-
-  async function handleSubmit() {
-    if (!valid || saving) return;
-    triggerHaptic("Medium");
-    setSaving(true);
-    try {
-      const supabase = createClient();
-      const { error } = await supabase.auth.updateUser({ password: newPw });
-      if (error) { toast.error({ message: "Erreur", detail: error.message }); return; }
-      toast.success({ message: "Mot de passe modifié" });
-      onClose();
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  if (!mounted || !open) return null;
-
-  return createPortal(
-    <>
-      <div
-        className="fixed inset-0 z-[70] bg-black/60"
-        style={{ animation: "nx-modal-fade 200ms ease-out forwards" }}
-        onClick={onClose}
-        aria-hidden
-      />
-      <div
-        className="fixed bottom-0 left-0 right-0 z-[70] bg-[#1A1D24] rounded-t-2xl flex flex-col"
-        style={{
-          paddingBottom: "env(safe-area-inset-bottom)",
-          maxHeight: "90vh",
-          animation: "nx-modal-slideup 280ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards",
-        }}
-        role="dialog"
-        aria-modal="true"
-      >
-        <div className="flex justify-center pt-3 pb-2 shrink-0">
-          <div className="w-10 h-1 rounded-full bg-white/20" />
-        </div>
-        <div className="px-5 pb-2 shrink-0">
-          <h3 className="text-[17px] font-semibold text-white text-center mb-4">Changer le mot de passe</h3>
-        </div>
-        <div className="px-5 pb-4 flex-1 overflow-y-auto">
-          <input
-            type="password"
-            autoComplete="new-password"
-            value={newPw}
-            onChange={(e) => setNewPw(e.target.value)}
-            placeholder="Nouveau mot de passe"
-            className="w-full bg-[#13151a] border border-[#2a2d36] rounded-2xl px-4 py-3 text-[16px] text-white placeholder:text-[#4a4d56] focus:outline-none focus:border-[#E63946]/50"
-          />
-          {newPw.length > 0 && (
-            <div className="grid grid-cols-2 gap-1.5 mt-3">
-              <Rule met={hasMin} label="8 caractères min." />
-              <Rule met={hasUpper} label="Une majuscule" />
-              <Rule met={hasLower} label="Une minuscule" />
-              <Rule met={hasNum} label="Un chiffre" />
-              <Rule met={hasSpecial} label="Un caractère spécial" />
-            </div>
-          )}
-          <input
-            type="password"
-            autoComplete="new-password"
-            value={confirmPw}
-            onChange={(e) => setConfirmPw(e.target.value)}
-            placeholder="Confirmer le mot de passe"
-            className="w-full mt-4 bg-[#13151a] border border-[#2a2d36] rounded-2xl px-4 py-3 text-[16px] text-white placeholder:text-[#4a4d56] focus:outline-none focus:border-[#E63946]/50"
-          />
-          {confirmPw.length > 0 && !match && (
-            <p className="text-[12px] text-[#E63946] mt-2">Les mots de passe ne correspondent pas.</p>
-          )}
-        </div>
-        <div className="px-5 pb-3 pt-2 shrink-0">
-          <button
-            type="button"
-            onClick={handleSubmit}
-            disabled={!valid || saving}
-            className={`w-full h-12 rounded-2xl text-[15px] font-semibold transition-colors ${
-              valid && !saving ? "bg-[#E63946] text-white active:bg-[#D42B22]" : "bg-white/[0.06] text-[#6B7280] cursor-not-allowed"
-            }`}
-          >
-            {saving ? "Modification…" : "Modifier le mot de passe"}
-          </button>
-          <button
-            type="button"
-            onClick={onClose}
-            className="w-full h-12 mt-2 text-[#9CA3AF] text-[15px]"
-          >
-            Annuler
-          </button>
-        </div>
-      </div>
-    </>,
-    document.body,
-  );
-}
-
-function Rule({ met, label }: { met: boolean; label: string }) {
-  return (
-    <div className="flex items-center gap-1.5">
-      {met ? (
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12" /></svg>
-      ) : (
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#4a4d56" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10" /></svg>
-      )}
-      <span className={`text-[11px] ${met ? "text-[#22C55E]" : "text-[#6b7280]"}`}>{label}</span>
-    </div>
-  );
-}
-
-/* ── Confirm sheet (slide-up iOS, OK/Annuler) ─────────────────── */
-
-function ConfirmSheet({
-  open, onClose, title, message, confirmLabel, onConfirm, variant = "danger",
-}: {
-  open: boolean; onClose: () => void; title: string; message: string;
-  confirmLabel: string; onConfirm: () => void; variant?: "danger" | "warning";
-}) {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => { setMounted(true); }, []);
-  if (!mounted || !open) return null;
-
-  return createPortal(
-    <>
-      <div
-        className="fixed inset-0 z-[70] bg-black/60"
-        style={{ animation: "nx-modal-fade 200ms ease-out forwards" }}
-        onClick={onClose}
-        aria-hidden
-      />
-      <div
-        className="fixed bottom-0 left-0 right-0 z-[70] px-3 pb-3"
-        style={{
-          paddingBottom: "calc(env(safe-area-inset-bottom) + 12px)",
-          animation: "nx-modal-slideup 280ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards",
-        }}
-      >
-        <div className="bg-[#1A1D24] rounded-2xl overflow-hidden">
-          <div className="px-5 pt-5 pb-4 text-center border-b border-white/[0.06]">
-            <p className="text-[14px] font-semibold text-white">{title}</p>
-            <p className="text-[12px] text-[#9CA3AF] mt-1.5 leading-relaxed">{message}</p>
-          </div>
-          <button
-            type="button"
-            onClick={onConfirm}
-            className="w-full h-12 text-[15px] font-semibold active:bg-white/[0.04]"
-            style={{ color: variant === "danger" ? "#E63946" : "#F59E0B" }}
-          >
-            {confirmLabel}
-          </button>
-        </div>
-        <button
-          type="button"
-          onClick={onClose}
-          className="w-full h-12 mt-2 rounded-2xl bg-[#1A1D24] text-[#E0E0E0] text-[15px] font-semibold active:bg-white/[0.04]"
-        >
-          Annuler
-        </button>
-      </div>
-    </>,
-    document.body,
   );
 }

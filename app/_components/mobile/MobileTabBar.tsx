@@ -333,6 +333,22 @@ export default function MobileTabBar({ role }: MobileTabBarProps) {
     pathname !== "/coach/demandes";
   if (coachDemandesDrillDown) return null;
 
+  // Coach parametres drill-downs (profil edit, école edit, admin école).
+  // Le top-level Paramètres reste accessible via /coach/settings ; les
+  // sous-écrans pleins-écran masquent la tab bar comme le pattern messages.
+  const coachParametresDrillDown =
+    role === "coach" &&
+    pathname.startsWith("/coach/parametres/");
+  if (coachParametresDrillDown) return null;
+
+  // Coach reputation drill-downs (career editor, etc.). Le top-level
+  // /coach/reputation garde la tab bar ; les drill-downs (carriere) la
+  // masquent — même pattern que /coach/parametres/*.
+  const coachReputationDrillDown =
+    role === "coach" &&
+    pathname.startsWith("/coach/reputation/");
+  if (coachReputationDrillDown) return null;
+
   // Iter 7.50-a5 — masquer la TabBar pendant le wizard d'onboarding athlète
   // plein écran (canon iOS : pas de nav globale durant un flow de capture
   // critique). Sans ce guard, la TabBar z-40 couvre le CTA "Continuer" z-30

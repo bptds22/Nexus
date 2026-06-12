@@ -20,6 +20,7 @@ import type {
 import RecruitmentStatusBadgeGlobal from "@/components/ui/RecruitmentStatusBadge";
 import DistinctionBadge from "@/components/shared/DistinctionBadge";
 import { parseDistinctions, MAX_BADGES } from "@/lib/config/badges";
+import { AdaptiveBadgesRow } from "@/components/shared/badges/AdaptiveBadgesRow";
 import { SPORT_NAME_MAP } from "@/lib/config/sportBadges";
 import type {
   RecruitmentStatus,
@@ -373,60 +374,21 @@ function BadgesRow({
   mounted: boolean;
   badgesRevealed: number;
 }) {
-  if (!distinctions.length) return null;
-  const list = distinctions.slice(0, MAX_BADGES);
-  const n = list.length;
-
-  const renderBadge = (d: { badge: string; detail?: string }, i: number) => {
-    const revealed = mounted && i < badgesRevealed;
-    return (
-      <div
-        key={`${d.badge}-${i}`}
-        className="flex-shrink-0"
-        style={{
-          opacity: revealed ? 1 : 0,
-          transform: revealed ? "scale(1)" : "scale(0.4)",
-          transformOrigin: "center",
-          transition: "opacity 200ms ease-out, transform 260ms cubic-bezier(0.34, 1.56, 0.64, 1)",
-        }}
-      >
-        <DistinctionBadge
-          badge={d.badge}
-          detail={d.detail}
-          size={n === 1 ? "lg" : "sm"}
-        />
-      </div>
-    );
-  };
-
-  // N = 5 : 3 en haut, 2 en bas. Les deux rangées sont centrées
-  // horizontalement et la rangée du bas s'aligne sous le centre des
-  // 3 du haut pour un équilibre 3+2 visuellement propre.
-  if (n === 5) {
-    const top = list.slice(0, 3);
-    const bottom = list.slice(3, 5);
-    return (
-      <div className="flex flex-col items-center gap-y-3">
-        <div className="flex items-center justify-center gap-x-5">
-          {top.map((d, i) => renderBadge(d, i))}
-        </div>
-        <div className="flex items-center justify-center gap-x-8">
-          {bottom.map((d, i) => renderBadge(d, i + 3))}
-        </div>
-      </div>
-    );
-  }
-
-  // N = 1..4 — une seule rangée centrée, gap ajusté par count.
-  const gapCls =
-    n === 1 ? "" :
-    n === 2 ? "gap-x-10" :
-    n === 3 ? "gap-x-6" :
-    "gap-x-5"; // n === 4
+  // Layout extracted to components/shared/badges/AdaptiveBadgesRow.
+  // The shared component owns the reveal wrapper + the 1/2/3/4/5
+  // adaptive geometry verbatim ; the athlete-side renderItem
+  // continues to draw DistinctionBadge. Output is byte-identical to
+  // the previous private implementation.
   return (
-    <div className={`flex items-center justify-center ${gapCls}`}>
-      {list.map((d, i) => renderBadge(d, i))}
-    </div>
+    <AdaptiveBadgesRow
+      items={distinctions}
+      mounted={mounted}
+      badgesRevealed={badgesRevealed}
+      maxBadges={MAX_BADGES}
+      renderItem={(d, _i, sizeHint) => (
+        <DistinctionBadge badge={d.badge} detail={d.detail} size={sizeHint} />
+      )}
+    />
   );
 }
 

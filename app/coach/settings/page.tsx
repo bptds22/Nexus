@@ -11,6 +11,9 @@ import type { SettingsSection } from "./_components/SettingsNav";
 import SubscriptionSection from "@/components/subscription/SubscriptionSection";
 import SchoolGate from "@/components/subscription/SchoolGate";
 import { useSubscription } from "@/lib/hooks/useSubscription";
+import { CoachParametresMobile } from "@/components/shared/CoachParametresMobile";
+
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
 /* ═══════════════════════════════════════════════════════════════
    Coach Settings — Paramètres
@@ -417,6 +420,13 @@ function AdminEcoleSection({ isCivilCoach = false }: { isCivilCoach?: boolean })
 ═══════════════════════════════════════════════════════════ */
 
 export default function CoachSettingsPage() {
+  // Phase 2 — mobile early return BEFORE any other hooks/data fetch.
+  // Mobile composer owns its own data layer + composition.
+  if (IS_CAPACITOR) return <CoachParametresMobile />;
+  return <CoachSettingsDesktop />;
+}
+
+function CoachSettingsDesktop() {
   const [section, setSection] = useState<SettingsSection>("profil");
   const [isSchoolAdmin, setIsSchoolAdmin] = useState(false);
   const [isCivilCoach, setIsCivilCoach] = useState(false);

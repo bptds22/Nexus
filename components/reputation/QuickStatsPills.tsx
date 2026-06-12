@@ -7,6 +7,10 @@ interface QuickStatsPillsProps {
   avgResponseTimeHours: number;
   totalPlacements: number;
   profileCompletionRate: number;
+  /** Optional class appended to the flex container — lets callers
+   *  opt into `justify-center` on mobile without affecting the
+   *  desktop's left-aligned default. */
+  className?: string;
 }
 
 /* ── Icons ── */
@@ -40,6 +44,7 @@ export default function QuickStatsPills({
   avgResponseTimeHours,
   totalPlacements,
   profileCompletionRate,
+  className,
 }: QuickStatsPillsProps) {
   const pills = [
     {
@@ -60,7 +65,7 @@ export default function QuickStatsPills({
   ];
 
   return (
-    <div className="flex flex-wrap gap-3">
+    <div className={`flex flex-wrap gap-3${className ? ` ${className}` : ""}`}>
       {pills.map((pill, idx) => (
         <div
           key={idx}

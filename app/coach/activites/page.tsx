@@ -4,9 +4,17 @@ import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import ActivityFeedFull from "@/app/components/activities/ActivityFeedFull";
 import type { Activity, ActivityType } from "@/lib/types/activity";
+import { CoachActivitesMobile } from "@/components/shared/CoachActivitesMobile";
+
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
 /* ═══════════════════════════════════════════════════════════════
    Coach Activités — full-page activity feed wired to Supabase.
+
+   Phase 2 — sur Capacitor, dispatch vers CoachActivitesMobile qui
+   consomme le shell partagé ActivitiesPageShell (extrait du recruteur
+   en Phase 1). Pas de FeatureGate ici : coach activities sont free
+   par canon (CLAUDE.md baseline coach).
 ═══════════════════════════════════════════════════════════════ */
 
 /** Map DB activity type → Activity type */
@@ -66,6 +74,13 @@ function buildCtaLabel(dbType: string): string {
 }
 
 export default function CoachActivitesPage() {
+  // Phase 2 — mobile early return AVANT le rendu desktop. Le mobile
+  // gère son propre data layer (useCoachActivityList) et mark-all-read.
+  if (IS_CAPACITOR) return <CoachActivitesMobile />;
+  return <CoachActivitesDesktop />;
+}
+
+function CoachActivitesDesktop() {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
   const [coachId, setCoachId] = useState<string | null>(null);
