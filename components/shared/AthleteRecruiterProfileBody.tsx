@@ -28,6 +28,7 @@ import VideoEmbed from "@/components/ui/VideoEmbed";
 import { calculateCompletion, type AthleteLike, type EvalLike } from "@/lib/utils/profileCompletion";
 import { isValidationExpired } from "@/lib/utils/profileValidation";
 import AthletePhotoFill from "@/components/shared/AthletePhotoFill";
+import { TeamDetailsBlock, type TeamDetail } from "@/components/shared/athlete/TeamDetailsBlock";
 
 /* ═══════════════════════════════════════════════════════════════
    AthleteRecruiterProfileBody — shared across recruiter, athlete-
@@ -384,6 +385,11 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
     division: string | null;
     coaches: string[];
   } | null>(null);
+  // Generalized list of teams for the bottom-of-Sportif TeamDetailsBlock —
+  // populated for ALL athletes (école + civil) from the team_athletes →
+  // teams join. Replaces the civil-only InfoRows that lived just below
+  // the affiliation summary in the "École / Équipe civile" section.
+  const [teamDetails, setTeamDetails] = useState<TeamDetail[]>([]);
   const [coachRepData, setCoachRepData] = useState<{
     reviewCount: number;
     avgRating: number;
@@ -460,7 +466,8 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
         committed_school:schools!committed_school_id(name),
         team_athletes(
           teams!team_id(
-            id, name, age_group, division,
+            id, name, league, age_group, division, gender, season, is_active,
+            sport_id, sports!sport_id(nom),
             schools!school_id(id, name, type)
           )
         ),
@@ -690,6 +697,41 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
               coaches: coachNames,
             });
           }
+        }
+
+        // Populate teamDetails for the bottom-of-Sportif block. Flat-map
+        // every team_athletes row → its team join → TeamDetail. Civil-aware
+        // via teams.schools.type === 'LIGUE_CIVILE'. Active filter +
+        // sort happen INSIDE TeamDetailsBlock so both bodies share the
+        // ordering logic.
+        {
+          const taRel = d.team_athletes as unknown;
+          const taArr = Array.isArray(taRel) ? taRel : taRel ? [taRel] : [];
+          const mapped: TeamDetail[] = [];
+          for (const taRow of taArr) {
+            const teamRel = (taRow as Record<string, unknown>)?.teams;
+            const team = (Array.isArray(teamRel) ? teamRel[0] : teamRel) as Record<string, unknown> | null;
+            if (!team) continue;
+            const sportRel = team.sports;
+            const sport = (Array.isArray(sportRel) ? sportRel[0] : sportRel) as { nom?: string } | null;
+            const teamSchoolRel = team.schools;
+            const teamSchool = (Array.isArray(teamSchoolRel) ? teamSchoolRel[0] : teamSchoolRel) as { name?: string; type?: string } | null;
+            const teamIsCivil = teamSchool?.type === "LIGUE_CIVILE";
+            mapped.push({
+              id: (team.id as string) ?? "",
+              name: (team.name as string) ?? "",
+              sportName: sport?.nom ?? "",
+              league: (team.league as string | null) ?? null,
+              ageGroup: (team.age_group as string | null) ?? null,
+              division: (team.division as string | null) ?? null,
+              gender: (team.gender as string | null) ?? null,
+              season: (team.season as string | null) ?? null,
+              isActive: (team.is_active as boolean | null) !== false,
+              isCivil: teamIsCivil,
+              clubName: teamIsCivil ? (teamSchool?.name ?? null) : null,
+            });
+          }
+          setTeamDetails(mapped);
         }
 
         setLoadingAthlete(false);
@@ -1279,19 +1321,10 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
                     <InfoRow label="Ville" value={a.city} icon="mapPin" />
                   </>
                 )}
-                {affiliation === "civil_with_team" && civilTeamInfo && (
-                  <>
-                    <InfoRow label="Équipe" value={civilTeamInfo.teamName} icon="flag" />
-                    <InfoRow label="Ligue" value={civilTeamInfo.leagueName} icon="trophy" />
-                    <InfoRow label="Catégorie d'âge" value={civilTeamInfo.ageGroup} icon="layers" />
-                    <InfoRow label="Division" value={civilTeamInfo.division} icon="target" />
-                    <InfoRow
-                      label={civilTeamInfo.coaches.length > 1 ? "Entraîneurs" : "Entraîneur"}
-                      value={civilTeamInfo.coaches.length > 0 ? civilTeamInfo.coaches.join(", ") : null}
-                      icon="user"
-                    />
-                  </>
-                )}
+                {/* Civil-only InfoRows for team detail removed —
+                    moved to the generalized TeamDetailsBlock at the
+                    bottom of "Informations sportives" (école + civil
+                    unified, no duplicate). */}
                 {affiliation === "civil_no_team" && (
                   <p className="text-[13px] text-[#9CA3AF] italic py-2">
                     Athlète en ligue civile, pas encore rattaché à une équipe.
@@ -1356,9 +1389,11 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
                 <InfoRow label="Sport principal" value={a.primarySport} icon="activity" />
                 <InfoRow label="Position" value={a.primaryPosition} icon="target" />
                 <InfoRow label="Numéro" value={a.jerseyNumber ? `#${a.jerseyNumber}` : undefined} icon="hash" />
-                <InfoRow label="Équipe" value={a.teamName} icon="flag" />
-                <InfoRow label="Ligue" value={a.leagueName} icon="trophy" />
-                <InfoRow label="Niveau" value={a.teamLevel} icon="layers" />
+                {/* a.teamName / a.leagueName / a.teamLevel rows were
+                    civil-only via mapToRecruiterView (empty for école).
+                    Replaced by the generalized TeamDetailsBlock below,
+                    which surfaces team detail for BOTH école and civil
+                    from the team_athletes → teams join. */}
                 {a.secondarySport && (
                   <>
                     <div className="border-t border-[#2D3748]/40 my-2" />
@@ -1366,6 +1401,7 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
                     <InfoRow label="Position secondaire" value={a.secondaryPosition} icon="target" />
                   </>
                 )}
+                <TeamDetailsBlock teams={teamDetails} />
               </div>
             </section>
 

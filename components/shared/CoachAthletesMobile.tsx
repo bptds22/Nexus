@@ -82,7 +82,7 @@ const SORT_OPTIONS: PickerOption[] = [
 
 /* ── Types ────────────────────────────────────────────────── */
 
-interface CoachAthlete {
+export interface CoachAthlete {
   id: string;
   firstName: string;
   lastName: string;
@@ -558,9 +558,14 @@ function ConfirmClaimSheet({
   );
 }
 
-/* ── CoachAthleteRowMobile (list view) ────────────────────── */
+/* ── CoachAthleteRowMobile (list view) ─────────────────────────
+   Exported : single source of truth for the compact mobile athlete
+   card. Reused by CoachEquipeDetailMobile's Athlètes section so the
+   row matches /coach/athletes 1:1 (avatar + name + position/school
+   + cote stars + grad year), wrapped in <SwipeableRow> for the
+   swipe-to-remove gesture. */
 
-function CoachAthleteRowMobile({ a, onTap }: { a: CoachAthlete; onTap: () => void }) {
+export function CoachAthleteRowMobile({ a, onTap }: { a: CoachAthlete; onTap: () => void }) {
   const verifiedActive = a.isVerified && !isValidationExpired({ verified: !!a.isVerified, last_profile_validation: a.lastValidation });
   return (
     <button

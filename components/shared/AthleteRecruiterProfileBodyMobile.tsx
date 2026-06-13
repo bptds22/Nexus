@@ -50,6 +50,7 @@ const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 import { findOrCreateRecruiterConversation } from "@/lib/utils/findOrCreateRecruiterConversation";
 import { AddToListSheet } from "@/components/shared/AddToListSheet";
 import AthletePhotoFill from "@/components/shared/AthletePhotoFill";
+import { TeamDetailsBlock, type TeamDetail } from "@/components/shared/athlete/TeamDetailsBlock";
 import { motion } from "framer-motion";
 // Coach-only imports (Step 6 unification — viewer="coach" branch).
 import { loadAthleteRaw, mapToRecruiterView } from "@/app/coach/athletes/_data/loadAthleteFromSupabase";
@@ -522,6 +523,11 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
     division: string | null;
     coaches: string[];
   } | null>(null);
+  // Generalized list of teams for the bottom-of-Sportif TeamDetailsBlock —
+  // populated for ALL athletes (école + civil), derived from
+  // team_athletes → teams join. Replaces the civil-only "Équipe civile"
+  // block that used to live in the Académique tab.
+  const [teamDetails, setTeamDetails] = useState<TeamDetail[]>([]);
   const [coachRepData, setCoachRepData] = useState<{
     reviewCount: number;
     avgRating: number;
@@ -617,7 +623,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
         positions!athletes_position_id_fkey(nom, abreviation),
         schools!school_id(name, region, city, type),
         committed_school:schools!committed_school_id(name),
-        team_athletes(teams!team_id(id, name, age_group, division, schools!school_id(id, name, type))),
+        team_athletes(teams!team_id(id, name, league, age_group, division, gender, season, is_active, sport_id, sports!sport_id(nom), schools!school_id(id, name, type))),
         evaluations(
           vitesse_explosivite, force_puissance, endurance_cardio, agilite_coordination,
           vision_du_jeu, sens_tactique,
@@ -821,6 +827,41 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
               coaches: coachNames,
             });
           }
+        }
+
+        // Populate teamDetails for the bottom-of-Sportif block. Flat-map
+        // every team_athletes row → its team join → TeamDetail. Civil-aware
+        // via teams.schools.type === 'LIGUE_CIVILE'. Active filter +
+        // sort happen INSIDE TeamDetailsBlock (single source of truth for
+        // ordering across both bodies).
+        {
+          const taRel = d.team_athletes as unknown;
+          const taArr = Array.isArray(taRel) ? taRel : taRel ? [taRel] : [];
+          const mapped: TeamDetail[] = [];
+          for (const taRow of taArr) {
+            const teamRel = (taRow as Record<string, unknown>)?.teams;
+            const team = (Array.isArray(teamRel) ? teamRel[0] : teamRel) as Record<string, unknown> | null;
+            if (!team) continue;
+            const sportRel = team.sports;
+            const sport = (Array.isArray(sportRel) ? sportRel[0] : sportRel) as { nom?: string } | null;
+            const teamSchoolRel = team.schools;
+            const teamSchool = (Array.isArray(teamSchoolRel) ? teamSchoolRel[0] : teamSchoolRel) as { name?: string; type?: string } | null;
+            const teamIsCivil = teamSchool?.type === "LIGUE_CIVILE";
+            mapped.push({
+              id: (team.id as string) ?? "",
+              name: (team.name as string) ?? "",
+              sportName: sport?.nom ?? "",
+              league: (team.league as string | null) ?? null,
+              ageGroup: (team.age_group as string | null) ?? null,
+              division: (team.division as string | null) ?? null,
+              gender: (team.gender as string | null) ?? null,
+              season: (team.season as string | null) ?? null,
+              isActive: (team.is_active as boolean | null) !== false,
+              isCivil: teamIsCivil,
+              clubName: teamIsCivil ? (teamSchool?.name ?? null) : null,
+            });
+          }
+          setTeamDetails(mapped);
         }
 
         setLoadingAthlete(false);
@@ -2071,6 +2112,13 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
                 {/* DETAILED — école + matières/mentions/régions */}
                 {isDetailed && (
                   <>
+                    {/* Académique affiliation card — gated to skip
+                        civil_with_team since the team detail moved to
+                        the bottom of the Sportif tab (TeamDetailsBlock,
+                        école + civil generalized). For école athletes
+                        we still show the École identity card here ; for
+                        civil_no_team we show the explanatory line. */}
+                    {affiliation !== "civil_with_team" && (
                     <section className={mobileSection}>
                       <h2 className={sectionLabel}>{affiliation === "school" ? "École" : "Équipe civile"}</h2>
                       {/* Carte unique centrée (Fix 6 iter 2.7) — école/équipe en gros, lieu/détails en sous-titre */}
@@ -2087,33 +2135,13 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
                           )}
                         </div>
                       )}
-                      {affiliation === "civil_with_team" && civilTeamInfo && (
-                        <div className="rounded-2xl py-6 px-4 flex flex-col items-center text-center" style={{ background: "#1A1D24" }}>
-                          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mb-3">
-                            <path d="M4 22h16" /><path d="M7 10v12" /><path d="M17 10v12" /><path d="M7 5v5l-3 0V5l3 0z" /><path d="M17 5v5l3 0V5l-3 0z" /><path d="M7 5h10v5H7z" />
-                          </svg>
-                          <p className="text-[18px] font-bold text-white leading-tight">{civilTeamInfo.teamName}</p>
-                          {civilTeamInfo.leagueName && (
-                            <p className="text-[13px] text-[#9CA3AF] mt-2">{civilTeamInfo.leagueName}</p>
-                          )}
-                          {(civilTeamInfo.ageGroup || civilTeamInfo.division) && (
-                            <p className="text-[12px] text-[#6B7280] mt-1 uppercase tracking-wider font-bold">
-                              {[civilTeamInfo.ageGroup, civilTeamInfo.division].filter(Boolean).join(" · ")}
-                            </p>
-                          )}
-                          {civilTeamInfo.coaches.length > 0 && (
-                            <p className="text-[12px] text-[#9CA3AF] mt-3 italic">
-                              {civilTeamInfo.coaches.length > 1 ? "Entraîneurs" : "Entraîneur"} : {civilTeamInfo.coaches.join(", ")}
-                            </p>
-                          )}
-                        </div>
-                      )}
                       {affiliation === "civil_no_team" && (
                         <div className="rounded-2xl py-6 px-4 text-center" style={{ background: "#1A1D24" }}>
                           <p className="text-[13px] text-[#9CA3AF] italic">Athlète en ligue civile sans équipe rattachée.</p>
                         </div>
                       )}
                     </section>
+                    )}
 
                     {/* Détails académiques — mini-cards cohérentes avec Sportif (Fix 2 iter 2.8).
                         Layout : 1 item plein largeur, 2+ items grid 2 col. */}
@@ -2381,6 +2409,14 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
                 )}
               </section>
             )}
+
+            {/* ── Équipes : small buried list at the bottom of Sportif.
+                Generalized for école + civil (the old civil-only block
+                in Académique was removed in favor of this single block).
+                Derived from team_athletes → teams ; multi-team aware. */}
+            <section className={mobileSection}>
+              <TeamDetailsBlock teams={teamDetails} />
+            </section>
           </>
         )}
       </div>

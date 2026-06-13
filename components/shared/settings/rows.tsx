@@ -57,7 +57,7 @@ export function ToggleRow({
 }
 
 export function NavRow({
-  label, sublabel, onTap, rightChevron = "chevron", isFirst, value,
+  label, sublabel, onTap, rightChevron = "chevron", isFirst, value, rightAccessory,
 }: {
   label: string;
   sublabel?: string;
@@ -68,6 +68,10 @@ export function NavRow({
   isFirst: boolean;
   /** Optional grey value displayed to the right of the chevron. */
   value?: string;
+  /** Optional ReactNode rendered between the label area and the
+   *  chevron — used for status pills (PRO, ADMIN, etc.). When set,
+   *  the simple `value` text is suppressed in favor of this slot. */
+  rightAccessory?: ReactNode;
 }) {
   const tappable = !!onTap && rightChevron !== "none";
   const Wrapper = tappable ? "button" : "div";
@@ -81,9 +85,11 @@ export function NavRow({
         <p className="text-[15px] text-white">{label}</p>
         {sublabel && <p className="text-[11px] text-[#6b7280] mt-0.5">{sublabel}</p>}
       </div>
-      {value && (
+      {rightAccessory ? (
+        <span className="ml-2 shrink-0">{rightAccessory}</span>
+      ) : value ? (
         <span className="text-[14px] text-[#9CA3AF] ml-2 shrink-0 truncate max-w-[40%]">{value}</span>
-      )}
+      ) : null}
       {rightChevron === "external" ? (
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-2 shrink-0">
           <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />

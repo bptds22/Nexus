@@ -62,3 +62,26 @@ export const DIVISION_OPTIONS: VocabOption[] = [
   { value: "Division 4",  label: "Division 4" },
   { value: AUTRE_VALUE,   label: "Autre" },
 ];
+
+/**
+ * Genre — extracted from the inline GENDER_OPTIONS in
+ * CoachOnboardingMobileCivil so every team-create surface (manual
+ * web, mobile teams, both onboardings) renders the same 3 choices.
+ * Values match the civil RPC convention (capitalized French) ; the
+ * league_teams.gender CHECK on the DB uses lowercase masculin/
+ * feminin/mixte and is mapped by callers on insert when applicable.
+ */
+export const GENDER_OPTIONS: VocabOption[] = [
+  { value: "Masculin", label: "Masculin" },
+  { value: "Féminin",  label: "Féminin" },
+  { value: "Mixte",    label: "Mixte" },
+];
+
+/**
+ * Saison — used by the team create form's season select. Adopt the
+ * same lazy-rolling list every other surface uses (current + next).
+ */
+export const SEASON_OPTIONS: VocabOption[] = [
+  { value: "2025-2026", label: "2025-2026" },
+  { value: "2026-2027", label: "2026-2027" },
+];

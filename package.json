@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:web": "cross-env NEXT_DIST_DIR=.next-web next dev -p 3000",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
@@ -11,8 +12,8 @@
     "mobile:sync": "npm run build:mobile && npx cap sync",
     "mobile:android": "npm run mobile:sync && npx cap open android",
     "mobile:run:android": "npm run mobile:sync && npx cap run android",
-    "dev:mobile": "cross-env NEXT_PUBLIC_CAPACITOR_BUILD=true next dev -H 0.0.0.0 -p 3000",
-    "cap:dev": "npx cap run android --live-reload --host 10.0.2.2 --port 3000"
+    "dev:mobile": "cross-env NEXT_PUBLIC_CAPACITOR_BUILD=true NEXT_DIST_DIR=.next-mobile next dev -H 0.0.0.0 -p 3001",
+    "cap:dev": "npx cap run android --live-reload --host 10.0.2.2 --port 3001"
   },
   "dependencies": {
     "@capacitor/android": "^8.3.4",

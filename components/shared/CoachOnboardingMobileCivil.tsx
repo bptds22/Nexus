@@ -41,6 +41,7 @@ import { useMobileToast } from "@/components/mobile/MobileToast";
 import { MobilePicker, type PickerOption } from "@/components/mobile/MobilePicker";
 import { SearchSheet } from "@/components/mobile/SearchSheet";
 import { AGE_OPTIONS, DIVISION_OPTIONS, AUTRE_VALUE } from "@/lib/config/civilVocab";
+import { TeamCreateFormBlock, type TeamFormValues } from "@/components/shared/teams/TeamCreateFormBlock";
 
 /* ── Constantes ──────────────────────────────────────────────── */
 
@@ -1142,87 +1143,37 @@ function Slide2ClubTeam(p: Slide2Props) {
             </>
           ) : (
             <div className="space-y-3 bg-[#1A1D24] border border-white/[0.06] rounded-2xl p-4">
-              <div>
-                <label htmlFor="new-team-name" className={labelCls}>Nom de l&apos;équipe <span className="text-[#E63946]">*</span></label>
-                <input
-                  id="new-team-name"
-                  type="text"
-                  value={p.newTeamName}
-                  onChange={(e) => p.setNewTeamName(e.target.value)}
-                  placeholder="Ex: Phénix M18"
-                  className={inputCls}
-                />
-              </div>
-              <div>
-                <label className={labelCls}>Catégorie d&apos;âge <span className="text-[#E63946]">*</span></label>
-                <button
-                  type="button"
-                  onClick={p.onOpenAge}
-                  className="w-full flex items-center justify-between bg-[#111317] border border-white/[0.10] rounded-2xl px-4 py-3 active:bg-white/[0.04] transition-colors text-left min-h-[52px]"
-                >
-                  <span className={`text-[16px] truncate ${p.newTeamAgeGroup ? "text-white" : "text-white/40"}`}>
-                    {p.newTeamAgeGroup || "Sélectionner…"}
-                  </span>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2.4" strokeLinecap="round" className="flex-shrink-0 ml-2">
-                    <polyline points="9 18 15 12 9 6" />
-                  </svg>
-                </button>
-                {p.newTeamAgeGroup === AUTRE_VALUE && (
-                  <input
-                    type="text"
-                    placeholder="Précise la catégorie d'âge"
-                    value={p.newTeamAgeOther}
-                    onChange={(e) => p.setNewTeamAgeOther(e.target.value)}
-                    className={`${inputCls} mt-2`}
-                  />
-                )}
-              </div>
-              <div>
-                <label className={labelCls}>Division <span className="text-[#E63946]">*</span></label>
-                <button
-                  type="button"
-                  onClick={p.onOpenDivision}
-                  className="w-full flex items-center justify-between bg-[#111317] border border-white/[0.10] rounded-2xl px-4 py-3 active:bg-white/[0.04] transition-colors text-left min-h-[52px]"
-                >
-                  <span className={`text-[16px] truncate ${p.newTeamDivision ? "text-white" : "text-white/40"}`}>
-                    {p.newTeamDivision || "Sélectionner…"}
-                  </span>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2.4" strokeLinecap="round" className="flex-shrink-0 ml-2">
-                    <polyline points="9 18 15 12 9 6" />
-                  </svg>
-                </button>
-                {p.newTeamDivision === AUTRE_VALUE && (
-                  <input
-                    type="text"
-                    placeholder="Précise la division"
-                    value={p.newTeamDivisionOther}
-                    onChange={(e) => p.setNewTeamDivisionOther(e.target.value)}
-                    className={`${inputCls} mt-2`}
-                  />
-                )}
-              </div>
-              <div>
-                <span className={labelCls}>Genre <span className="text-[#E63946]">*</span></span>
-                <div className="flex gap-2">
-                  {GENDER_OPTIONS.map((opt) => {
-                    const selected = p.newTeamGender === opt.value;
-                    return (
-                      <button
-                        key={opt.value}
-                        type="button"
-                        onClick={() => { triggerHaptic("Light"); p.setNewTeamGender(opt.value); }}
-                        className={`flex-1 h-11 rounded-2xl text-[12px] font-bold uppercase tracking-wider transition-all ${
-                          selected
-                            ? "bg-[rgba(230,57,70,0.12)] border border-[#E63946] text-white"
-                            : "bg-[#111317] border border-white/10 text-[#9CA3AF] active:bg-white/[0.04]"
-                        }`}
-                      >
-                        {opt.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+              {/* Run 2 : inline form remplacée par le bloc partagé
+                  TeamCreateFormBlock — sport/league/season cachés (le
+                  sport est défini globalement au slide 1, la ligue
+                  dérive du club choisi, la saison reste au défaut RPC).
+                  Le bloc gère son propre état + ses MobilePickers ; on
+                  bridge vers les 6 setters existants du parent via
+                  onChange pour que la validation (canProceedSlide2) et
+                  l'envoi RPC (handleFinish) restent inchangés. */}
+              <TeamCreateFormBlock
+                sports={[]}
+                variant="mobile"
+                hideSport
+                hideLeague
+                hideSeason
+                initialValues={{
+                  name: p.newTeamName,
+                  ageGroup: p.newTeamAgeGroup,
+                  ageOther: p.newTeamAgeOther,
+                  division: p.newTeamDivision,
+                  divisionOther: p.newTeamDivisionOther,
+                  gender: p.newTeamGender,
+                }}
+                onChange={(v: TeamFormValues) => {
+                  p.setNewTeamName(v.name);
+                  p.setNewTeamAgeGroup(v.ageGroup);
+                  p.setNewTeamAgeOther(v.ageOther);
+                  p.setNewTeamDivision(v.division);
+                  p.setNewTeamDivisionOther(v.divisionOther);
+                  p.setNewTeamGender(v.gender as Gender | "");
+                }}
+              />
               {p.clubMode === "pick" && (
                 <button
                   type="button"

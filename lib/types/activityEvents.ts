@@ -6,6 +6,7 @@ export type ActivityEventType =
   | "favorites_spike"
   | "video_added"
   | "profile_verified"
+  | "profile_viewed"
   | "badge_added"
   | "scouting_report_updated"
   | "physical_updated"

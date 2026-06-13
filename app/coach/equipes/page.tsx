@@ -1,9 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { getCurrentSeason } from "@/lib/utils/season";
+import { TeamPickerSheet, type TeamPickerItem } from "@/components/shared/teams/TeamPickerSheet";
+import {
+  TeamCreateFormBlock, type TeamFormValues, resolveTeamFinalValues,
+} from "@/components/shared/teams/TeamCreateFormBlock";
+import { createTeam, joinTeam } from "@/lib/queries/coach/createTeam";
+import CoachEquipesMobile from "@/components/shared/CoachEquipesMobile";
+
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
 /* ═══════════════════════════════════════════════════════════════
    Mes Équipes — Team management for coaches
@@ -34,21 +42,28 @@ const ROLE_COLORS: Record<string, string> = {
 };
 
 export default function EquipesPage() {
+  // Capacitor → composant mobile-native (Run 3 — Mes Équipes mobile).
+  // Web (non-Capacitor) garde son layout existant inchangé.
+  if (IS_CAPACITOR) return <CoachEquipesMobile />;
+  return <EquipesPageDesktop />;
+}
+
+function EquipesPageDesktop() {
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showCreate, setShowCreate] = useState(false);
   const [sports, setSports] = useState<{ id: string; nom: string }[]>([]);
   const [schoolId, setSchoolId] = useState<string>("");
+  const [currentUserId, setCurrentUserId] = useState<string>("");
   const [rosterCount, setRosterCount] = useState(0);
 
-  // Create form
-  const [newName, setNewName] = useState("");
-  const [newSportId, setNewSportId] = useState("");
-  const [newAgeGroup, setNewAgeGroup] = useState("");
-  const [newDivision, setNewDivision] = useState("");
-  const [newLeague, setNewLeague] = useState("RSEQ");
-  const [newSeason, setNewSeason] = useState(getCurrentSeason());
+  // Unified flow : Picker FIRST (see existing teams to dedup), then
+  // Create form only when the coach confirms no match.
+  const [showPicker, setShowPicker] = useState(false);
+  const [showCreate, setShowCreate] = useState(false);
+  const [formValues, setFormValues] = useState<TeamFormValues | null>(null);
+  const [formValid, setFormValid] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
 
   useEffect(() => {
     loadTeams();
@@ -59,6 +74,7 @@ export default function EquipesPage() {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setLoading(false); return; }
+    setCurrentUserId(user.id);
 
     // Post-Phase 6.2.e : unified path. Coaches école et civil sont
     // dans team_coaches → teams. La page lit le user's school_id pour
@@ -150,30 +166,50 @@ export default function EquipesPage() {
     setLoading(false);
   }
 
-  async function handleCreate() {
-    if (!newName.trim() || !newSportId || !schoolId) return;
+  /* Unified create using the shared layer. Mirrors createCoachConversation :
+     returns { teamId, error } ; on success refreshes the list. */
+  const handleCreate = useCallback(async () => {
+    if (!formValues || !formValid || saving || !schoolId || !currentUserId) return;
     setSaving(true);
+    setCreateError(null);
     const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setSaving(false); return; }
-
-    const { data: team, error } = await supabase
-      .from("teams")
-      .insert({ school_id: schoolId, sport_id: newSportId, name: newName.trim(), age_group: newAgeGroup.trim() || null, division: newDivision.trim() || null, league: newLeague.trim() || null, season: newSeason })
-      .select("id")
-      .single();
-
-    if (error || !team) { console.error("Create team error:", error); setSaving(false); return; }
-
-    // Auto-assign current coach as head_coach
-    await supabase.from("team_coaches").insert({ team_id: team.id, coach_id: user.id, role: "head_coach" });
-
-    // Reset form & reload
-    setNewName(""); setNewSportId(""); setNewAgeGroup(""); setNewDivision(""); setNewLeague("RSEQ"); setNewSeason(getCurrentSeason());
+    const { finalAge, finalDivision } = resolveTeamFinalValues(formValues);
+    const { teamId, error } = await createTeam(supabase, {
+      coachUserId: currentUserId,
+      schoolId,
+      sportId: formValues.sportId,
+      name: formValues.name,
+      ageGroup: finalAge,
+      division: finalDivision,
+      gender: formValues.gender,
+      league: formValues.league,
+      season: formValues.season,
+    });
+    if (error || !teamId) {
+      setCreateError((error as { message?: string } | undefined)?.message || "Création échouée.");
+      setSaving(false);
+      return;
+    }
     setShowCreate(false);
+    setFormValues(null);
+    setFormValid(false);
     setSaving(false);
     loadTeams();
-  }
+  }, [formValues, formValid, saving, schoolId, currentUserId]);
+
+  /* Coach picks an EXISTING team from the picker → join as assistant
+     (mirror civil RPC join branch) ; refresh list. */
+  const handlePickExisting = useCallback(async (team: TeamPickerItem) => {
+    if (!currentUserId) return;
+    const supabase = createClient();
+    const { error } = await joinTeam(supabase, { coachUserId: currentUserId, teamId: team.id });
+    if (error) {
+      setCreateError((error as { message?: string }).message || "Impossible de rejoindre cette équipe.");
+      return;
+    }
+    setShowPicker(false);
+    loadTeams();
+  }, [currentUserId]);
 
   if (loading) {
     return (
@@ -198,10 +234,11 @@ export default function EquipesPage() {
           <h1 className="font-head text-2xl font-black text-white uppercase tracking-tight">Mes équipes</h1>
           <p className="text-[14px] text-[#9CA3AF] mt-1">Gère tes équipes, divisions et athlètes</p>
         </div>
-        <button type="button" onClick={() => setShowCreate(true)}
-          className="flex items-center gap-2 bg-[#E63946] hover:bg-[#D42B22] text-white px-5 py-2.5 rounded-lg font-head font-bold text-[12px] uppercase tracking-wider transition-colors">
+        <button type="button" onClick={() => setShowPicker(true)}
+          disabled={!schoolId}
+          className="flex items-center gap-2 bg-[#E63946] hover:bg-[#D42B22] text-white px-5 py-2.5 rounded-lg font-head font-bold text-[12px] uppercase tracking-wider transition-colors disabled:opacity-50">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
-          Créer une équipe
+          Ajouter une équipe
         </button>
       </div>
 
@@ -271,50 +308,53 @@ export default function EquipesPage() {
         </div>
       )}
 
-      {/* Create Team Modal */}
+      {/* Picker FIRST — surface existing teams to prevent duplicates.
+          Coach can join an existing team (head_coach inserts as
+          'assistant') OR open the structured Create form. */}
+      <TeamPickerSheet
+        open={showPicker}
+        onClose={() => setShowPicker(false)}
+        schoolId={schoolId || null}
+        season={getCurrentSeason()}
+        onPicked={(team) => { handlePickExisting(team); }}
+        onCreateNew={() => { setShowPicker(false); setShowCreate(true); }}
+        title="Ajouter une équipe"
+      />
+
+      {/* Create Team Modal — structured form (shared with mobile +
+          onboarding). Free-text fields replaced with structured
+          selects (age/division/gender/season). Ligue stays text. */}
       {showCreate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowCreate(false)} />
-          <div className="relative bg-[#1A1D24] border border-[#2D3748] rounded-xl p-6 w-full max-w-md mx-4 shadow-2xl">
+          <div className="relative bg-[#1A1D24] border border-[#2D3748] rounded-xl p-6 w-full max-w-md mx-4 shadow-2xl max-h-[90vh] overflow-y-auto">
             <h3 className="font-head text-lg font-black text-white uppercase tracking-tight mb-5">Créer une équipe</h3>
 
-            <div className="space-y-4">
-              <div>
-                <label className={labelCls}>Nom de l&apos;équipe *</label>
-                <input type="text" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Ex: Football Juvénile" className={inputCls} />
-              </div>
-              <div>
-                <label className={labelCls}>Sport *</label>
-                <select value={newSportId} onChange={(e) => setNewSportId(e.target.value)} className={inputCls}>
-                  <option value="">Sélectionner un sport</option>
-                  {sports.map((s) => <option key={s.id} value={s.id}>{s.nom}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className={labelCls}>Catégorie d&apos;âge</label>
-                <input type="text" value={newAgeGroup} onChange={(e) => setNewAgeGroup(e.target.value)} placeholder="Ex: Juvénile, Cadet, Benjamin, Midget" className={inputCls} />
-              </div>
-              <div>
-                <label className={labelCls}>Division</label>
-                <input type="text" value={newDivision} onChange={(e) => setNewDivision(e.target.value)} placeholder="Ex: D1, D2, AA, AAA" className={inputCls} />
-              </div>
-              <div>
-                <label className={labelCls}>Ligue</label>
-                <input type="text" value={newLeague} onChange={(e) => setNewLeague(e.target.value)} placeholder="Ex: RSEQ Capitale-Nationale" className={inputCls} />
-              </div>
-              <div>
-                <label className={labelCls}>Saison</label>
-                <select value={newSeason} onChange={(e) => setNewSeason(e.target.value)} className={inputCls}>
-                  <option value="2025-2026">2025-2026</option>
-                  <option value="2026-2027">2026-2027</option>
-                </select>
-              </div>
-            </div>
+            <TeamCreateFormBlock
+              sports={sports}
+              variant="desktop"
+              initialValues={{ season: getCurrentSeason(), league: "RSEQ" }}
+              onChange={(values, isValid) => { setFormValues(values); setFormValid(isValid); }}
+            />
+
+            {createError && (
+              <p className="mt-3 text-[13px] text-[#EF4444] font-semibold">{createError}</p>
+            )}
 
             <div className="flex items-center justify-end gap-3 mt-6">
-              <button type="button" onClick={() => setShowCreate(false)} className="px-4 py-2 text-[13px] font-bold text-[#9CA3AF] hover:text-white transition-colors">Annuler</button>
-              <button type="button" onClick={handleCreate} disabled={saving || !newName.trim() || !newSportId}
-                className="px-5 py-2 bg-[#E63946] hover:bg-[#D42B22] disabled:opacity-50 text-white text-[13px] font-bold rounded-lg transition-colors">
+              <button
+                type="button"
+                onClick={() => { setShowCreate(false); setCreateError(null); }}
+                className="px-4 py-2 text-[13px] font-bold text-[#9CA3AF] hover:text-white transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={handleCreate}
+                disabled={saving || !formValid}
+                className="px-5 py-2 bg-[#E63946] hover:bg-[#D42B22] disabled:opacity-50 text-white text-[13px] font-bold rounded-lg transition-colors"
+              >
                 {saving ? "Création..." : "Créer l'équipe"}
               </button>
             </div>

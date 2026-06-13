@@ -349,6 +349,15 @@ export default function MobileTabBar({ role }: MobileTabBarProps) {
     pathname.startsWith("/coach/reputation/");
   if (coachReputationDrillDown) return null;
 
+  // Run 3 — Mes Équipes drill-down (detail d'une équipe + sous-routes).
+  // Le top-level /coach/equipes garde la tab bar (page liste pleine
+  // largeur) ; /coach/equipes/[teamId] et sous-écrans (modifier, etc.)
+  // la masquent pour donner le canon iOS "détail plein écran".
+  const coachEquipesDrillDown =
+    role === "coach" &&
+    pathname.startsWith("/coach/equipes/");
+  if (coachEquipesDrillDown) return null;
+
   // Iter 7.50-a5 — masquer la TabBar pendant le wizard d'onboarding athlète
   // plein écran (canon iOS : pas de nav globale durant un flow de capture
   // critique). Sans ce guard, la TabBar z-40 couvre le CTA "Continuer" z-30

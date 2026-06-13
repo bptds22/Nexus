@@ -10,6 +10,11 @@ import { relativeTimeFr } from "@/lib/utils/relativeTime";
 import { orgLabelPossessive, isCivilType, type SchoolType } from "@/lib/utils/orgLabel";
 import { getCurrentSeason } from "@/lib/utils/season";
 import CoachAthleteRow from "@/components/coach/CoachAthleteRow";
+import AthletePhoto from "@/components/shared/AthletePhoto";
+import { AGE_OPTIONS, DIVISION_OPTIONS, SEASON_OPTIONS } from "@/lib/config/civilVocab";
+import CoachEquipeDetailMobile from "@/components/shared/CoachEquipeDetailMobile";
+
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 /* ═══════════════════════════════════════════════════════════════
    Team Detail — Manage coaches + athletes for a single team.
 
@@ -32,6 +37,9 @@ interface TeamAthlete {
   id: string;          // team_athletes junction row id
   athleteId: string;
   name: string;
+  /** athletes.photo_url — canonical photo. Empty string = AthletePhoto
+   *  falls back to initials. Mirrors /coach/athletes desktop roster. */
+  photoUrl: string;
   position: string;
   verified: boolean;
   region: string;
@@ -55,7 +63,16 @@ interface PendingInvitationRow {
   createdAt: string;
 }
 
-interface AvailableAthlete { id: string; name: string; position: string }
+interface AvailableAthlete {
+  id: string;
+  /** First/last split so AthletePhoto can produce the initials fallback
+   *  when photo_url is empty. Mirrors mobile TeamAddAthleteSheet shape. */
+  firstName: string;
+  lastName: string;
+  name: string;
+  photoUrl: string;
+  position: string;
+}
 interface AvailableCoach { id: string; name: string }
 
 // Team header shape. `schoolType` discriminates UI behavior — civil
@@ -101,6 +118,13 @@ const labelCls = "block text-[11px] font-bold tracking-[0.2em] uppercase text-[#
 const sectionTitle = "text-[11px] font-bold tracking-[0.15em] uppercase text-[#9CA3AF] mb-4";
 
 export default function TeamDetailPage() {
+  // Capacitor → composant mobile-native (Run 3). Web (non-Capacitor)
+  // garde son layout existant inchangé.
+  if (IS_CAPACITOR) return <CoachEquipeDetailMobile />;
+  return <TeamDetailPageDesktop />;
+}
+
+function TeamDetailPageDesktop() {
   const teamId = useDynamicParam("teamId");
   const router = useRouter();
 
@@ -262,7 +286,7 @@ export default function TeamDetailPage() {
       .select(`
         id, athlete_id,
         athletes!athlete_id(
-          id, first_name, last_name, verified,
+          id, first_name, last_name, photo_url, verified,
           position_id, positions!position_id(abreviation),
           statut_recrutement_override, open_to_offers,
           committed_school_id, committed_school:schools!committed_school_id(name),
@@ -301,6 +325,7 @@ export default function TeamDetailPage() {
           id: a.id as string,
           athleteId: (ath?.id as string) || (a.athlete_id as string),
           name: `${firstName} ${lastName}`.trim(),
+          photoUrl: (ath?.photo_url as string | null) || "",
           position: pos?.abreviation || "",
           verified: ath?.verified === true,
           region,
@@ -373,16 +398,21 @@ export default function TeamDetailPage() {
     // invitation flow (5.5d-vi) — this modal isn't surfaced for them.
     const { data } = await supabase
       .from("athletes")
-      .select("id, first_name, last_name, positions!position_id(abreviation)")
+      .select("id, first_name, last_name, photo_url, positions!position_id(abreviation)")
       .eq("school_id", team.schoolId)
       .not("id", "in", `(${existingIds.join(",") || "00000000-0000-0000-0000-000000000000"})`);
     if (data) {
       setAvailableAthletes(data.map((a: Record<string, unknown>) => {
         const posRel = a.positions as { abreviation?: string } | { abreviation?: string }[] | null;
         const pos = Array.isArray(posRel) ? posRel[0] : posRel;
+        const firstName = (a.first_name as string) || "";
+        const lastName = (a.last_name as string) || "";
         return {
           id: a.id as string,
-          name: `${(a.first_name as string) || ""} ${(a.last_name as string) || ""}`.trim(),
+          firstName,
+          lastName,
+          name: `${firstName} ${lastName}`.trim(),
+          photoUrl: (a.photo_url as string | null) || "",
           position: pos?.abreviation || "",
         };
       }));
@@ -621,6 +651,7 @@ export default function TeamDetailPage() {
                 athleteId={a.athleteId}
                 firstName={a.name.split(" ")[0] || ""}
                 lastName={a.name.split(" ").slice(1).join(" ") || ""}
+                photoUrl={a.photoUrl}
                 isVerified={a.verified}
                 school={isCivil ? "Ligue civile" : a.school}
                 position={a.position}
@@ -717,10 +748,38 @@ export default function TeamDetailPage() {
         <h2 className={sectionTitle}>Informations de l&apos;équipe</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
           <div><label className={labelCls}>Nom</label><input type="text" value={editName} onChange={(e) => setEditName(e.target.value)} className={inputCls} title="Nom" /></div>
-          <div><label className={labelCls}>Catégorie d&apos;âge</label><input type="text" value={editAgeGroup} onChange={(e) => setEditAgeGroup(e.target.value)} placeholder="Ex: Juvénile, Cadet, Benjamin" className={inputCls} title="Catégorie d'âge" /></div>
-          <div><label className={labelCls}>Division</label><input type="text" value={editDivision} onChange={(e) => setEditDivision(e.target.value)} placeholder="Ex: D1, D2, AA" className={inputCls} title="Division" /></div>
+          {/* Run 3 : age + division + season migrés vers selects
+              structurés (AGE_OPTIONS / DIVISION_OPTIONS / SEASON_OPTIONS
+              de civilVocab) pour éliminer la divergence "D1" / "d1" /
+              "Division 1" + parité avec la création web/mobile. Ligue
+              reste texte libre par décision verrouillée. */}
+          <div>
+            <label className={labelCls}>Catégorie d&apos;âge</label>
+            <select value={editAgeGroup} onChange={(e) => setEditAgeGroup(e.target.value)} className={inputCls} title="Catégorie d'âge">
+              <option value="">—</option>
+              {AGE_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className={labelCls}>Division</label>
+            <select value={editDivision} onChange={(e) => setEditDivision(e.target.value)} className={inputCls} title="Division">
+              <option value="">—</option>
+              {DIVISION_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </div>
           <div><label className={labelCls}>Ligue</label><input type="text" value={editLeague} onChange={(e) => setEditLeague(e.target.value)} className={inputCls} title="Ligue" placeholder="Ex: RSEQ" /></div>
-          <div><label className={labelCls}>Saison</label><select value={editSeason} onChange={(e) => setEditSeason(e.target.value)} className={inputCls} title="Saison"><option value="2025-2026">2025-2026</option><option value="2026-2027">2026-2027</option></select></div>
+          <div>
+            <label className={labelCls}>Saison</label>
+            <select value={editSeason} onChange={(e) => setEditSeason(e.target.value)} className={inputCls} title="Saison">
+              {SEASON_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </div>
         </div>
         <div className="flex items-center justify-between">
           <button type="button" onClick={deactivateTeam} className="text-[12px] font-bold text-[#EF4444] hover:text-[#f87171] transition-colors">
@@ -743,8 +802,16 @@ export default function TeamDetailPage() {
               ) : filteredAthletes.map((a) => (
                 <button key={a.id} type="button" onClick={() => addAthlete(a.id)}
                   className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/[0.04] text-left transition-colors">
-                  <div className="w-8 h-8 rounded-full bg-[#2D3748] flex items-center justify-center">
-                    <span className="text-[10px] font-bold text-[#9CA3AF]">{a.name.split(" ").map((n) => n[0]).join("")}</span>
+                  {/* Canonical photo (athletes.photo_url) + initials fallback
+                      — mirrors the /coach/athletes roster and the mobile
+                      TeamAddAthleteSheet. */}
+                  <div className="w-8 h-8 rounded-full overflow-hidden shrink-0">
+                    <AthletePhoto
+                      photoUrl={a.photoUrl}
+                      firstName={a.firstName}
+                      lastName={a.lastName}
+                      size={32}
+                    />
                   </div>
                   <span className="text-[14px] text-white">{a.name}</span>
                   {a.position && <span className="text-[11px] text-[#6b7280]">{a.position}</span>}

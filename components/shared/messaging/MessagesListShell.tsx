@@ -32,15 +32,14 @@ import {
   useEffect, useMemo, useRef, useState, type ReactNode,
 } from "react";
 import {
-  motion, AnimatePresence, useMotionValue, useTransform,
+  motion, AnimatePresence,
 } from "framer-motion";
 import { EmptyState as SharedEmptyState } from "@/components/mobile/EmptyState";
 import { FilterSheet, type FilterOption } from "./FilterSheet";
+import { SwipeableRow } from "@/components/shared/SwipeableRow";
 
 export type { FilterOption } from "./FilterSheet";
 import { triggerHaptic } from "./utils";
-
-const SWIPE_THRESHOLD = 100;
 
 /* ═══ Generic per-row swipe component ═══════════════════════════ */
 
@@ -59,79 +58,62 @@ function ThreadRowSwipe<T>({
   onCommitArchive: () => void;
   renderContent: (t: T) => ReactNode;
 }) {
-  const x = useMotionValue(0);
-  const archiveOpacity = useTransform(x, [-SWIPE_THRESHOLD, -40, 0], [1, 0.4, 0]);
-
   return (
-    <div className="relative">
-      {/* Swipe-reveal archive action (gray, non-destructive) */}
-      <motion.div
-        style={{ opacity: archiveOpacity }}
-        className="absolute inset-0 flex items-center justify-end pr-5 pointer-events-none bg-[#6B7280]/20"
-      >
-        <div className="flex flex-col items-center text-[#9CA3AF]">
+    <SwipeableRow
+      disabled={isEdit}
+      onCommit={onCommitArchive}
+      action={{
+        label: isArchived ? "Réactiver" : "Archiver",
+        // Foreground (icon + label) = #9CA3AF, bg = #6B7280/20 — same
+        // tokens as the original ThreadRowSwipe (pre-extraction).
+        color: "#9CA3AF",
+        bgColor: "#6B7280",
+        icon: (
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="21 8 21 21 3 21 3 8" />
             <rect x="1" y="3" width="22" height="5" />
             <line x1="10" y1="12" x2="14" y2="12" />
           </svg>
-          <span className="text-[10px] uppercase tracking-wider font-bold mt-1">
-            {isArchived ? "Réactiver" : "Archiver"}
-          </span>
-        </div>
-      </motion.div>
-
-      <motion.div
-        drag={isEdit ? false : "x"}
-        dragConstraints={{ left: 0, right: 0 }}
-        dragElastic={0.4}
-        dragMomentum={false}
-        style={{ x }}
-        onDragEnd={(_, info) => {
-          if (info.offset.x < -SWIPE_THRESHOLD) {
-            onCommitArchive();
-          }
-        }}
-        className="relative bg-[#111317] z-[1]"
+        ),
+      }}
+    >
+      <button
+        type="button"
+        onClick={isEdit ? onToggleSelect : onTap}
+        className="w-full flex items-center gap-3 pl-4 pr-4 py-3 active:bg-white/[0.03] transition-colors text-left"
       >
-        <button
-          type="button"
-          onClick={isEdit ? onToggleSelect : onTap}
-          className="w-full flex items-center gap-3 pl-4 pr-4 py-3 active:bg-white/[0.03] transition-colors text-left"
-        >
-          {/* Edit-mode selection circle */}
-          {isEdit && (
-            <div
-              className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${selected ? "bg-[#E63946] border-[#E63946]" : "border-white/40"}`}
-            >
-              {selected && (
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
-              )}
-            </div>
-          )}
-
-          {/* Unread dot (iOS-style left rail) */}
-          {!isEdit && (
-            <div className="w-3 flex justify-center flex-shrink-0">
-              {unread && <span className="w-2.5 h-2.5 rounded-full bg-[#3B82F6]" />}
-            </div>
-          )}
-
-          {/* Role-specific row content (avatar + names + time + last
-              message). Provided by the parent via renderRowContent. */}
-          <div className="flex-1 min-w-0">
-            {renderContent(thread)}
+        {/* Edit-mode selection circle */}
+        {isEdit && (
+          <div
+            className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${selected ? "bg-[#E63946] border-[#E63946]" : "border-white/40"}`}
+          >
+            {selected && (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            )}
           </div>
-        </button>
-
-        {/* iOS-style inset separator starting after the avatar (88px) */}
-        {!isLast && (
-          <div className="absolute left-[88px] right-0 bottom-0 h-px bg-white/[0.06]" />
         )}
-      </motion.div>
-    </div>
+
+        {/* Unread dot (iOS-style left rail) */}
+        {!isEdit && (
+          <div className="w-3 flex justify-center flex-shrink-0">
+            {unread && <span className="w-2.5 h-2.5 rounded-full bg-[#3B82F6]" />}
+          </div>
+        )}
+
+        {/* Role-specific row content (avatar + names + time + last
+            message). Provided by the parent via renderRowContent. */}
+        <div className="flex-1 min-w-0">
+          {renderContent(thread)}
+        </div>
+      </button>
+
+      {/* iOS-style inset separator starting after the avatar (88px) */}
+      {!isLast && (
+        <div className="absolute left-[88px] right-0 bottom-0 h-px bg-white/[0.06]" />
+      )}
+    </SwipeableRow>
   );
 }
 

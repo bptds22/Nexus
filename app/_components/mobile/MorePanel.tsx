@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import SidebarUpgradeCard from "@/components/subscription/SidebarUpgradeCard";
+import { useMobileToast } from "@/components/mobile/MobileToast";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 const PUBLIC_BASE = "https://nexussports.ca";
@@ -73,6 +74,9 @@ const Icons = {
   recruteurs: <svg {...I_PROPS}><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" /></svg>,
   users: <svg {...I_PROPS}><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" /></svg>,
   stats: <svg {...I_PROPS}><path d="M18 20V10M12 20V4M6 20v-6" /></svg>,
+  layers: <svg {...I_PROPS}><polygon points="12 2 2 7 12 12 22 7 12 2" /><polyline points="2 17 12 22 22 17" /><polyline points="2 12 12 17 22 12" /></svg>,
+  shield: <svg {...I_PROPS}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>,
+  trendingUp: <svg {...I_PROPS}><path d="M3 17l6-6 4 4 8-8" /><polyline points="14 7 21 7 21 14" /></svg>,
   barChart: <svg {...I_PROPS}><path d="M18 20V10M12 20V4M6 20v-6" /></svg>,
   trophy: <svg {...I_PROPS}><path d="M6 9H4a2 2 0 01-2-2V5a2 2 0 012-2h2" /><path d="M18 9h2a2 2 0 002-2V5a2 2 0 00-2-2h-2" /><path d="M6 3h12v6a6 6 0 01-12 0V3z" /><path d="M12 15v3M8 21h8" /></svg>,
   reassign: <svg {...I_PROPS}><path d="M18 8l4 4-4 4" /><path d="M2 12h20" /><path d="M6 16l-4-4 4-4" /></svg>,
@@ -95,10 +99,57 @@ interface PanelItem {
   /** iter 7.39 — si true, tap → Capacitor Browser.open vers le web public.
    *  Sert pour les pages CÉGEP/Transfert non portées en mobile. */
   external?: boolean;
+  /** Indicateur visuel pur : montre l'icône "ouvre le web" à droite,
+   *  indépendamment du flag `external` ci-dessus (qui contrôle le
+   *  tap-trigger). Utilisé par Gestion École : la ligne a un custom
+   *  onClick (smart-tap qui peut openExternal OU router.push selon
+   *  l'accès), mais on veut que le coach voie l'icône external
+   *  uniquement quand le tap actuel ouvrira effectivement le web. */
+  opensWeb?: boolean;
   /** iter 7.39 — gérer un click custom (déconnexion). Prioritaire sur href. */
   onClick?: () => void;
   /** iter 7.39 — couleur rouge pour Déconnexion */
   destructive?: boolean;
+  /** Second ligne grise sous le label — utilisée par la section
+   *  Gestion d'École (description courte sous chaque section). */
+  sublabel?: string;
+  /** Slot à droite du label, AVANT l'icône chevron/external/lock.
+   *  Utilisé pour les pills PRO/ADMIN de la section Gestion École.
+   *  Quand fourni, remplace l'icône external automatique (le pill
+   *  porte déjà l'info "tu ne peux pas accéder à ça"). */
+  rightAccessory?: ReactNode;
+}
+
+/* ── Gestion École pills (gold PRO / blue ADMIN) ────────────── */
+
+function ProPill() {
+  return (
+    <span
+      className="inline-flex items-center h-5 px-2 rounded-full text-[9px] font-black uppercase tracking-[0.12em] shrink-0"
+      style={{
+        color: "#F59E0B",
+        backgroundColor: "rgba(245,158,11,0.12)",
+        border: "1px solid rgba(245,158,11,0.35)",
+      }}
+    >
+      Pro
+    </span>
+  );
+}
+
+function AdminPill() {
+  return (
+    <span
+      className="inline-flex items-center h-5 px-2 rounded-full text-[9px] font-black uppercase tracking-[0.12em] shrink-0"
+      style={{
+        color: "#3B82F6",
+        backgroundColor: "rgba(59,130,246,0.12)",
+        border: "1px solid rgba(59,130,246,0.35)",
+      }}
+    >
+      Admin
+    </span>
+  );
 }
 
 interface PanelSection {
@@ -129,6 +180,7 @@ export default function MorePanel({
 }: MorePanelProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const toast = useMobileToast();
 
   // Coach uniquement : on lit `users.context` pour savoir si l'utilisateur
   // est en contexte civil. Conditionne l'affichage de la section "Gestion
@@ -221,16 +273,105 @@ export default function MorePanel({
           ],
         },
       ];
-      // Gestion d'école : uniquement coach école admin (PAS civil).
-      // Pages NON portées en mobile → external Browser.open vers le web public.
-      if (!isCivil && isSchoolAdmin) {
-        out.push({
-          title: "Gestion École",
-          items: [
-            { key: "ecole-web", label: "Gestion d'école", href: `${PUBLIC_BASE}/coach/ecole`, icon: Icons.school, external: true },
-          ],
-        });
-      }
+      // Gestion d'École : les 6 sections sont rendues INLINE dans le
+      // Plus panel (plus d'écran intermédiaire). Visible à TOUS les
+      // coachs (école + civil — labels école pour tous, accepté beta).
+      // Chaque ligne porte sa propre logique d'accès :
+      //   1-5 : Pro OR is_school_admin → openExternal web ; sinon
+      //         pill PRO + tap = router.push /coach/settings (upsell).
+      //   6   : is_school_admin → openExternal web ; sinon pill ADMIN
+      //         + toast "Réservé aux administrateurs".
+      // Mirror exact de SchoolGate.tsx (canSee('can_see_mon_ecole') OR
+      // is_school_admin). Le teaser GestionEcoleMobile + le dispatch au
+      // /coach/ecole sont laissés en place (potentiellement utiles
+      // pour la future view recruteur→coach).
+      const hasProOrAdmin = tier !== "free" || isSchoolAdmin;
+      const tapProSection = (webPath: string) => () => {
+        if (hasProOrAdmin) {
+          openExternal(`${PUBLIC_BASE}${webPath}`);
+        } else {
+          router.push("/coach/settings");
+        }
+      };
+      const tapAdminSection = (webPath: string) => () => {
+        if (isSchoolAdmin) {
+          openExternal(`${PUBLIC_BASE}${webPath}`);
+        } else {
+          // Civil-aware copy : the section + the admin role label
+          // switch when the coach is on a ligue civile (matches
+          // Paramètres' "Admin ligue" / "Modifier la ligue" canon).
+          toast.info({
+            message: "Réservé aux administrateurs",
+            detail: isCivil
+              ? "Cette section est gérée par les administrateurs de la ligue."
+              : "Cette section est gérée par les directeurs de l'école.",
+          });
+        }
+      };
+      out.push({
+        title: "Gestion École",
+        items: [
+          // Sublabels intentionally dropped — the label + the
+          // PRO/ADMIN pill + the external-link icon already convey
+          // meaning. Keeping the rows at the standard ~52px
+          // MorePanel height ensures the whole sheet fits on a
+          // standard-size phone without scrolling.
+          {
+            key: "ecole-mon",
+            label: "Mon école",
+            href: `${PUBLIC_BASE}/coach/ecole`,
+            icon: Icons.school,
+            onClick: tapProSection("/coach/ecole"),
+            rightAccessory: hasProOrAdmin ? undefined : <ProPill />,
+            opensWeb: hasProOrAdmin,
+          },
+          {
+            key: "ecole-coachs",
+            label: "Mes coachs",
+            href: `${PUBLIC_BASE}/coach/ecole/coachs`,
+            icon: Icons.users,
+            onClick: tapProSection("/coach/ecole/coachs"),
+            rightAccessory: hasProOrAdmin ? undefined : <ProPill />,
+            opensWeb: hasProOrAdmin,
+          },
+          {
+            key: "ecole-stats",
+            label: "Stats école",
+            href: `${PUBLIC_BASE}/coach/ecole/stats`,
+            icon: Icons.stats,
+            onClick: tapProSection("/coach/ecole/stats"),
+            rightAccessory: hasProOrAdmin ? undefined : <ProPill />,
+            opensWeb: hasProOrAdmin,
+          },
+          {
+            key: "ecole-analytics",
+            label: "Analytique",
+            href: `${PUBLIC_BASE}/coach/ecole/analytics`,
+            icon: Icons.trendingUp,
+            onClick: tapProSection("/coach/ecole/analytics"),
+            rightAccessory: hasProOrAdmin ? undefined : <ProPill />,
+            opensWeb: hasProOrAdmin,
+          },
+          {
+            key: "ecole-placements",
+            label: "Placements",
+            href: `${PUBLIC_BASE}/coach/ecole/placements`,
+            icon: Icons.trophy,
+            onClick: tapProSection("/coach/ecole/placements"),
+            rightAccessory: hasProOrAdmin ? undefined : <ProPill />,
+            opensWeb: hasProOrAdmin,
+          },
+          {
+            key: "ecole-admin",
+            label: "Administration",
+            href: `${PUBLIC_BASE}/coach/settings#admin_ecole`,
+            icon: Icons.shield,
+            onClick: tapAdminSection("/coach/settings#admin_ecole"),
+            rightAccessory: isSchoolAdmin ? undefined : <AdminPill />,
+            opensWeb: isSchoolAdmin,
+          },
+        ],
+      });
       out.push({
         title: "Compte",
         items: [
@@ -285,6 +426,20 @@ export default function MorePanel({
 
     const baseClass = `flex items-center gap-3 px-5 py-3.5 transition-colors ${labelColor} ${activeBg}`;
 
+    // Label area : single line by default ; stacked label + sublabel
+    // when sublabel is present (Gestion École rows). Sublabel inherits
+    // the existing grey treatment used in shared/settings rows.
+    const labelArea = (
+      <span className="flex-1 min-w-0">
+        <span className="block text-[14px] font-bold truncate">{item.label}</span>
+        {item.sublabel && (
+          <span className="block text-[11px] text-[#6b7280] mt-0.5 leading-snug">
+            {item.sublabel}
+          </span>
+        )}
+      </span>
+    );
+
     // Iter 7.39 — onClick custom (déconnexion) ou external (Browser.open).
     if (item.onClick || item.external) {
       return (
@@ -307,9 +462,10 @@ export default function MorePanel({
           title={locked ? lockTitle : undefined}
         >
           <span className={iconColor}>{item.icon}</span>
-          <span className="flex-1 text-[14px] font-bold">{item.label}</span>
+          {labelArea}
+          {item.rightAccessory}
           {locked && <LockIcon />}
-          {!locked && item.external && (
+          {!locked && !item.rightAccessory && (item.external || item.opensWeb) && (
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" aria-label="Ouvre dans le navigateur">
               <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
               <polyline points="15 3 21 3 21 9" />
@@ -341,7 +497,8 @@ export default function MorePanel({
         title={locked ? lockTitle : undefined}
       >
         <span className={iconColor}>{item.icon}</span>
-        <span className="flex-1 text-[14px] font-bold">{item.label}</span>
+        {labelArea}
+        {item.rightAccessory}
         {locked && <LockIcon />}
         {!locked && item.badge !== undefined && item.badge > 0 && (
           <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-[#E63946] text-white text-[10px] font-black">
@@ -362,14 +519,20 @@ export default function MorePanel({
       />
 
       {/* Bottom sheet — iter 7.36 : 280ms cubic-bezier(0.34,1.56,0.64,1)
-          overshoot iOS (canon mobile-design-system §5, ligne 110). */}
+          overshoot iOS (canon mobile-design-system §5, ligne 110).
+          Structure flex column : handle bar fixe en haut, sections
+          scrollables au-dessous. Le max-height utilise 100dvh (dynamic
+          viewport height) avec fallback vh pour les WebViews qui ne
+          supportent pas encore dvh — ça assure que le sheet ne déborde
+          jamais sous la barre URL / safe-area. */}
       <div
         className={`
           fixed bottom-0 inset-x-0 z-50 bg-[#1A1D24] border-t border-[#2D3748]
-          rounded-t-2xl max-h-[85vh] overflow-y-auto
+          rounded-t-2xl flex flex-col
           ${open ? "translate-y-0" : "translate-y-full"}
         `}
         style={{
+          maxHeight: "min(85vh, calc(100dvh - env(safe-area-inset-top, 0px)))",
           paddingBottom: "env(safe-area-inset-bottom)",
           transition: "transform 280ms cubic-bezier(0.34, 1.56, 0.64, 1)",
         }}
@@ -377,13 +540,16 @@ export default function MorePanel({
         aria-modal="true"
         aria-label="Menu Plus"
       >
-        {/* Handle bar */}
-        <div className="flex justify-center pt-3 pb-2">
+        {/* Handle bar — fixe en haut, hors zone de scroll. */}
+        <div className="flex justify-center pt-3 pb-2 shrink-0">
           <div className="w-10 h-1 rounded-full bg-[#4a4d56]" />
         </div>
 
-        {/* Sections */}
-        <div className="pb-4">
+        {/* Sections — zone scrollable. flex-1 + overflow-y-auto pour
+            que le contenu prenne toute la hauteur disponible et que les
+            entrées du bas (Paramètres / Déconnexion) restent
+            atteignables même quand Gestion École liste ses 6 rows. */}
+        <div className="flex-1 overflow-y-auto overscroll-contain pb-4">
           {sections.map((section, sIdx) => (
             <div key={sIdx}>
               {section.title && (

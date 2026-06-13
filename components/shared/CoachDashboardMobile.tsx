@@ -26,7 +26,7 @@ import { DashboardGreeting } from "@/components/shared/dashboard/DashboardGreeti
 import { DashboardHero } from "@/components/shared/dashboard/DashboardHero";
 import { DashboardActivityFeed } from "@/components/shared/dashboard/DashboardActivityFeed";
 import { SectionDivider } from "@/components/shared/dashboard/SectionDivider";
-import { frenchDateUppercase, triggerHaptic } from "@/components/shared/dashboard/utils";
+import { frenchDateUppercase, getInitials, triggerHaptic } from "@/components/shared/dashboard/utils";
 
 /* ── Types data (locaux — alignés sur les états de la web page) ─ */
 

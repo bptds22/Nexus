@@ -30,6 +30,7 @@ export function activityVerb(activity: ActivityEvent): string {
     case "coach_replied":          return "Réponse reçue";
     case "recruiter_favorited":    return activity.iconColor === "#6B7280" ? "Retiré des favoris" : "Ajouté aux favoris";
     case "profile_verified":       return "Profil vérifié";
+    case "profile_viewed":         return "A consulté ton profil";
     case "video_added":            return "Vidéo ajoutée";
     case "profile_updated_bulk":   return "Profil mis à jour";
     case "scouting_report_updated":return "Note ajoutée";

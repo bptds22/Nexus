@@ -27,6 +27,12 @@ const nextConfig: NextConfig = {
   env: {
     NEXT_PUBLIC_CAPACITOR_BUILD: isCapacitorRuntime ? "true" : "false",
   },
+  // Allow each dev script to use its own build dir so dev:web (port 3000)
+  // and dev:mobile (port 3001) can run simultaneously without fighting
+  // over .next/dev/lock. Defaults to ".next" when unset — i.e. the plain
+  // `dev` / `build` scripts behave exactly like before. Overridden to
+  // "out" below when isCapacitorBuild (static export pipeline).
+  distDir: process.env.NEXT_DIST_DIR || ".next",
   images: {
     remotePatterns: [
       {
