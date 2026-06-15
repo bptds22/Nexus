@@ -72,18 +72,31 @@ interface SportIds {
   positionSecondaireId: string | null;
 }
 
-/** COTE AUTO-AVERAGE — fix #1. In detailed mode, cote_globale is the
- *  mean of non-zero trait ratings (rounded to 2 decimals). In simple
- *  mode it's the manual starRating. */
+/** COTE AUTO-AVERAGE — DETAILED ALWAYS WINS.
+ *
+ *  Rule (mirrors apply_approved_suggestion's "Impossible d'appliquer
+ *  une cote globale plate : l'évaluation détaillée est active" guard
+ *  at baseline.sql :165-167 — that guard fires on the athlete-suggest
+ *  path ; this is its coach-edit-side twin) :
+ *
+ *    - If ANY of the 14 trait columns is non-zero → cote_globale is
+ *      the mean of the non-zero traits (rounded to 2 decimals).
+ *      This holds REGARDLESS of evalMode — even a simple-mode save
+ *      cannot write a flat cote that contradicts detailed trait data
+ *      present in state.
+ *    - If NO traits are set → cote_globale is the manual starRating
+ *      (or null).
+ *
+ *  The persisted cote_globale can therefore never disagree with the
+ *  trait columns. To change the cote when traits exist, the coach
+ *  must edit the traits ; to abandon detailed evaluation entirely,
+ *  the coach clears the traits in detailed mode (existing path). */
 function computeCoteGlobale(form: AthleteFormData): number | null {
-  let cote: number | null = form.scouting.starRating || null;
-  if (form.scouting.evalMode === "detailed") {
-    const rated = Object.values(form.scouting.traitRatings).filter((v) => v > 0);
-    if (rated.length > 0) {
-      cote = parseFloat((rated.reduce((a, b) => a + b, 0) / rated.length).toFixed(2));
-    }
+  const rated = Object.values(form.scouting.traitRatings).filter((v) => v > 0);
+  if (rated.length > 0) {
+    return parseFloat((rated.reduce((a, b) => a + b, 0) / rated.length).toFixed(2));
   }
-  return cote;
+  return form.scouting.starRating || null;
 }
 
 async function resolveSportIds(supabase: SupabaseClient, form: AthleteFormData): Promise<SportIds> {

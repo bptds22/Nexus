@@ -260,7 +260,30 @@ export function buildFormFromRaw(raw: Record<string, unknown>): Record<string, u
       openToCoaching: !!(raw.ouvert_entraineur_cegep),
     },
     scouting: {
-      evalMode: "simple",
+      /* Mirror the apply_approved_suggestion trigger's "detailed wins"
+         rule at load time. If any of the 14 trait columns is non-zero,
+         this athlete has detailed evaluation data already — open the
+         wizard in detailed mode so the coach sees the traits + the
+         auto-averaged cote rather than only the simple StarRow (which
+         in the old "always simple at load" default hid the detailed
+         data and made it easy to silently overwrite via a flat cote).
+         No-traits athletes still open in simple mode unchanged. */
+      evalMode: eval0 && (
+        ((eval0.vitesse_explosivite as number) || 0) > 0 ||
+        ((eval0.force_puissance as number) || 0) > 0 ||
+        ((eval0.endurance_cardio as number) || 0) > 0 ||
+        ((eval0.agilite_coordination as number) || 0) > 0 ||
+        ((eval0.vision_du_jeu as number) || 0) > 0 ||
+        ((eval0.sens_tactique as number) || 0) > 0 ||
+        ((eval0.leadership as number) || 0) > 0 ||
+        ((eval0.discipline as number) || 0) > 0 ||
+        ((eval0.coachabilite as number) || 0) > 0 ||
+        ((eval0.intelligence_jeu as number) || 0) > 0 ||
+        ((eval0.competitivite as number) || 0) > 0 ||
+        ((eval0.esprit_equipe as number) || 0) > 0 ||
+        ((eval0.resilience as number) || 0) > 0 ||
+        ((eval0.attitude_mentalite as number) || 0) > 0
+      ) ? "detailed" : "simple",
       starRating: (eval0?.cote_globale as number) || (raw.cote_globale_entraineur as number) || 0,
       traitRatings: eval0 ? {
         // Keys match DB columns directly

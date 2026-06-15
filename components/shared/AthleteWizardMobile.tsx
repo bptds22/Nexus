@@ -58,6 +58,19 @@ import { SESSION_KEY_PREFIX } from "@/lib/platform/mobileRoutes";
 import PartnerVisibilityConsentCard from "@/components/shared/PartnerVisibilityConsentCard";
 import DistinctionBadge from "@/components/shared/DistinctionBadge";
 import {
+  Card,
+  InlineEditRow,
+  PickerRow,
+  DateRow,
+  ReadOnlyRow,
+  ToggleRow,
+  ChipsBlock,
+  TagInputRow,
+  MediaUrlRow,
+  DetailedTag,
+} from "@/components/shared/wizard/rows";
+import { labelCls, valueCls } from "@/components/shared/wizard/tokens";
+import {
   BADGE_CONFIG, BADGE_ORDER, MAX_BADGES, MAX_DETAIL_LENGTH,
   getSportStats,
   type DistinctionEntry,
@@ -150,8 +163,8 @@ const RECRUITING_OVERRIDE_OPTIONS: PickerOption[] = [
 ];
 
 /* ── Tokens ─────────────────────────────────────────────────── */
-const labelCls = "text-[14px] text-white/55";
-const valueCls = "text-[15px] text-white font-semibold";
+// labelCls + valueCls moved to components/shared/wizard/tokens (Sprint A).
+// Imported above ; still consumed by DualPickerRow below.
 
 /* ── Types ───────────────────────────────────────────────────── */
 
@@ -1430,7 +1443,7 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
             value={d.gpa}
             onSave={(v) => updateAcademic("gpa", v)}
             placeholder="85"
-            type="number" />
+            type="number" numericMode="decimal" />
           <PickerRow label="Programme CÉGEP visé"
             value={d.cegepType === "dec_general" ? "DEC général" : d.cegepType === "technique" ? "Programme technique" : ""}
             onTap={() => setOpenCegepTypePicker(true)} />
@@ -1525,10 +1538,10 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
         <Card>
           <InlineEditRow label="Envergure" value={d.wingspan}
             onSave={(v) => updatePhysical("wingspan", v)}
-            placeholder={`6'4"`} detailed />
+            placeholder={`6'4"`} detailed numericMode="numeric" />
           <InlineEditRow label="Taille des mains" value={d.handSize}
             onSave={(v) => updatePhysical("handSize", v)}
-            placeholder={`9.5"`} detailed />
+            placeholder={`9.5"`} detailed numericMode="decimal" />
           <PickerRow label="Pied dominant" value={d.dominantFoot}
             onTap={() => setOpenDominantFootPicker(true)} detailed />
         </Card>
@@ -1536,22 +1549,22 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
         <Card>
           <InlineEditRow label="40 verges" value={d.fortyYard}
             onSave={(v) => updatePhysical("fortyYard", v)}
-            placeholder="4.72s" detailed />
+            placeholder="4.72s" detailed numericMode="decimal" />
           <InlineEditRow label="Saut vertical" value={d.verticalJump}
             onSave={(v) => updatePhysical("verticalJump", v)}
-            placeholder={`32"`} detailed />
+            placeholder={`32"`} detailed numericMode="decimal" />
           <InlineEditRow label="Saut en longueur" value={d.broadJump}
             onSave={(v) => updatePhysical("broadJump", v)}
-            placeholder={`9'2"`} detailed />
+            placeholder={`9'2"`} detailed numericMode="decimal" />
           <InlineEditRow label="Développé couché" value={d.benchPress}
             onSave={(v) => updatePhysical("benchPress", v)}
-            placeholder="225 × 8" detailed />
+            placeholder="225 × 8" detailed numericMode="decimal" />
           <InlineEditRow label="Navette agilité" value={d.shuttleAgility}
             onSave={(v) => updatePhysical("shuttleAgility", v)}
-            placeholder="4.31s" detailed />
+            placeholder="4.31s" detailed numericMode="decimal" />
           <InlineEditRow label="Sprint 100m" value={d.sprint100m}
             onSave={(v) => updatePhysical("sprint100m", v)}
-            placeholder="10.9s" detailed />
+            placeholder="10.9s" detailed numericMode="decimal" />
         </Card>
       </div>
     );
@@ -1596,7 +1609,7 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
           )}
           <InlineEditRow label="Numéro" value={s.jerseyNumber}
             onSave={(v) => updateSports("jerseyNumber", v.replace(/\D/g, ""))}
-            placeholder="#" type="number" required />
+            placeholder="#" type="number" numericMode="numeric" required />
           <PickerRow label="Équipe" value={teamLabel}
             onTap={() => coach.teams.length > 0 ? setOpenTeamPicker(true) : null}
             placeholder={coach.teams.length === 0 ? "Aucune équipe — crée-en une" : "Sélectionner"} required />
@@ -1637,6 +1650,14 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
     const atMax = sc.badges.length >= MAX_BADGES;
     const ratedTraits = Object.values(sc.traitRatings).filter((v) => v > 0);
     const autoAvg = ratedTraits.length > 0 ? ratedTraits.reduce((a, b) => a + b, 0) / ratedTraits.length : 0;
+    /* Mirrors apply_approved_suggestion's "Impossible d'appliquer une
+       cote globale plate : l'évaluation détaillée est active" guard at
+       the UI level. When detailed trait data exists, the simple-mode
+       cote is rendered READ-ONLY at the auto-average ; the coach can't
+       hand-edit it. To change the cote, they must enter detailed mode
+       and adjust the traits — same rule the DB trigger enforces on the
+       athlete-suggestion path. */
+    const hasDetailedTraits = ratedTraits.length > 0;
 
     return (
       <div className="space-y-5">
@@ -1658,7 +1679,47 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
           ))}
         </div>
 
-        {!isDet && (
+        {!isDet && hasDetailedTraits && (
+          /* Detailed-data-exists branch : the cote is the auto-average
+             of the 14 trait columns and CANNOT be hand-edited from
+             simple mode (UI-level mirror of apply_approved_suggestion's
+             "Cote globale" guard). The coach modifies the cote by
+             entering detailed mode and adjusting the traits. */
+          <Card>
+            <div className="px-4 py-4">
+              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/45">
+                Cote globale (moy. auto)
+              </p>
+              <div className="mt-2 flex items-center gap-3">
+                <p className="text-[28px] font-head font-black text-[#F59E0B] leading-none">
+                  {autoAvg > 0 ? autoAvg.toFixed(1) : "—"}
+                  <span className="text-[12px] text-white/45 font-normal ml-1">/ 5</span>
+                </p>
+                <StarRow value={Math.round(autoAvg)} onChange={() => { /* read-only */ }} size={20} />
+              </div>
+              <p className="text-[12px] text-white/55 mt-3">
+                Évaluation détaillée active — la cote est calculée à partir des critères. Pour la
+                modifier, passe en mode <strong className="text-white/85">Détaillé</strong> et ajuste
+                les critères.
+              </p>
+              <button
+                type="button"
+                onClick={() => updateScouting("evalMode", "detailed")}
+                className="mt-3 inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-[#E63946]/15 border border-[#E63946]/30 text-[#E63946] text-[12px] font-bold uppercase tracking-[0.12em] active:bg-[#E63946]/25"
+              >
+                Modifier les critères
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              </button>
+            </div>
+          </Card>
+        )}
+
+        {!isDet && !hasDetailedTraits && (
+          /* No traits yet — keep the editable manual StarRow exactly as
+             before. Coach sets a flat cote in simple mode without any
+             detailed data to clash with. */
           <Card>
             <div className="px-4 py-4">
               <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/45">
@@ -1854,21 +1915,8 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
    ROW PRIMITIVES + STAR + SUMMARY SHEET
 ═══════════════════════════════════════════════════════════════ */
 
-function Card({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="bg-[#1A1D24] rounded-[14px] border border-white/[0.06] overflow-hidden">
-      {children}
-    </div>
-  );
-}
-
-function DetailedTag() {
-  return (
-    <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-[0.12em] text-[#9CA3AF] bg-white/[0.08]">
-      Détaillé
-    </span>
-  );
-}
+// Card + DetailedTag moved to components/shared/wizard/rows (Sprint A).
+// Imported at the top of this file ; behavior unchanged.
 
 function RequiredDot() {
   return <span className="text-[#E63946] ml-0.5">*</span>;
@@ -1896,118 +1944,8 @@ function AdvancedDivider() {
 /* PermissionSeedFooter removed — coach edits everything directly ;
    the green/yellow/red permission language is athlete-side only. */
 
-function InlineEditRow({
-  label, value, onSave, placeholder, type = "text", detailed,
-}: {
-  label: string;
-  value: string;
-  onSave: (v: string) => void;
-  placeholder?: string;
-  type?: "text" | "email" | "tel" | "url" | "number";
-  /** Kept in signature for backwards-compat; per-field asterisk removed — section carries it. */
-  required?: boolean;
-  detailed?: boolean;
-}) {
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(value);
-
-  useEffect(() => { if (!editing) setDraft(value); }, [value, editing]);
-
-  const showAdd = !value;
-  const commit = () => { onSave(draft); setEditing(false); };
-
-  return (
-    <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-white/[0.06] last:border-0">
-      <div className="flex items-center gap-2 min-w-0 shrink-0">
-        <span className={labelCls}>{label}</span>
-        {detailed && <DetailedTag />}
-      </div>
-      {editing ? (
-        <input type={type} value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          onBlur={commit}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") { e.preventDefault(); commit(); }
-            if (e.key === "Escape") { setDraft(value); setEditing(false); }
-          }}
-          inputMode={type === "number" ? "numeric" : type === "tel" ? "tel" : type === "email" ? "email" : type === "url" ? "url" : undefined}
-          autoFocus
-          aria-label={label}
-          placeholder={placeholder}
-          className="bg-transparent text-[15px] text-white font-semibold text-right outline-none flex-1 min-w-0"
-        />
-      ) : (
-        <button type="button" onClick={() => setEditing(true)}
-          className={`${valueCls} ${showAdd ? "text-white/30 font-normal" : ""} text-right active:opacity-70 truncate min-w-0 flex-1`}>
-          {value || (placeholder ? placeholder : "Ajouter")}
-        </button>
-      )}
-    </div>
-  );
-}
-
-function PickerRow({
-  label, value, onTap, placeholder, detailed, inline,
-}: {
-  label: string;
-  value: string;
-  onTap: () => void;
-  placeholder?: string;
-  /** Kept in signature for backwards-compat; per-field asterisk is gone — section header carries it. */
-  required?: boolean;
-  detailed?: boolean;
-  inline?: boolean;
-}) {
-  return (
-    <button type="button" onClick={onTap}
-      className={`w-full flex items-center justify-between gap-3 px-4 py-3 ${inline ? "rounded-2xl bg-[#111317]" : "border-b border-white/[0.06] last:border-0"} active:bg-white/[0.02]`}>
-      {label && (
-        <div className="flex items-center gap-2 min-w-0 flex-1">
-          <span className={labelCls}>{label}</span>
-          {detailed && <DetailedTag />}
-        </div>
-      )}
-      <div className="flex items-center min-w-0">
-        <span className={`${valueCls} ${value ? "" : "text-white/30 font-normal"} truncate`}>
-          {value || placeholder || "Sélectionner"}
-        </span>
-      </div>
-    </button>
-  );
-}
-
-function DateRow({
-  label, value, onChange,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  /** Kept in signature for backwards-compat; per-field asterisk removed. */
-  required?: boolean;
-}) {
-  /* Native date picker is opened by tapping the row. We keep the input
-     visible but fully transparent and overlaid on the right, so the
-     row looks identical to its siblings (no browser-styled box,
-     no inconsistent chevron). The visible "value" text is what
-     actually reads. */
-  return (
-    <label className="flex items-center justify-between gap-3 px-4 py-3 border-b border-white/[0.06] last:border-0 cursor-pointer active:bg-white/[0.02]">
-      <span className={labelCls}>{label}</span>
-      <div className="relative flex items-center min-w-0">
-        <span className={`${valueCls} ${value ? "" : "text-white/30 font-normal"} truncate`}>
-          {value || "Sélectionner"}
-        </span>
-        {/* Invisible native input takes the tap → opens the OS date picker. */}
-        <input type="date"
-          value={value}
-          aria-label={label}
-          onChange={(e) => onChange(e.target.value)}
-          className="absolute inset-0 opacity-0 cursor-pointer"
-        />
-      </div>
-    </label>
-  );
-}
+// InlineEditRow + PickerRow + DateRow moved to
+// components/shared/wizard/rows (Sprint A). Imported at the top.
 
 function DualPickerRow({
   label, ftValue, inValue, onTapFt, onTapIn,
@@ -2033,131 +1971,8 @@ function DualPickerRow({
   );
 }
 
-function ReadOnlyRow({
-  label, value, detailed,
-}: {
-  label: string;
-  value: string;
-  detailed?: boolean;
-  /** Kept in signature for backwards-compat; per-field asterisk removed. */
-  required?: boolean;
-}) {
-  return (
-    <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-white/[0.06] last:border-0">
-      <div className="flex items-center gap-2 min-w-0 flex-1">
-        <span className={labelCls}>{label}</span>
-        {detailed && <DetailedTag />}
-      </div>
-      <span className={`${valueCls} text-white/70`}>{value || "—"}</span>
-    </div>
-  );
-}
-
-function ToggleRow({
-  label, checked, onToggle, detailed,
-}: {
-  label: string;
-  checked: boolean;
-  onToggle: () => void;
-  detailed?: boolean;
-}) {
-  /* iOS-style switch :
-     track 48×28 (rounded-full), thumb 24×24 white circle,
-     2px inset top/left when off → 2px inset top/right when on
-     (travel = 48 − 24 − 2 − 2 = 20px). Track #E63946 on, white/12 off. */
-  return (
-    <button
-      type="button"
-      onClick={onToggle}
-      aria-label={`${label} — ${checked ? "activé" : "désactivé"}`}
-      className="w-full flex items-center justify-between gap-3 px-4 py-3 border-b border-white/[0.06] last:border-0 active:bg-white/[0.02]"
-    >
-      <div className="flex items-center gap-2 min-w-0 flex-1 text-left">
-        <span className={labelCls}>{label}</span>
-        {detailed && <DetailedTag />}
-      </div>
-      <span
-        className={`relative inline-flex items-center w-12 h-7 rounded-full transition-colors shrink-0 ${
-          checked ? "bg-[#E63946]" : "bg-white/[0.12]"
-        }`}
-        aria-hidden
-      >
-        <span
-          className="absolute top-1/2 w-6 h-6 rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,0.25)] transition-transform"
-          style={{
-            left: 2,
-            transform: checked ? "translate(20px, -50%)" : "translate(0, -50%)",
-          }}
-        />
-      </span>
-    </button>
-  );
-}
-
-function ChipsBlock({
-  label, children, detailed,
-}: {
-  label: string;
-  children: React.ReactNode;
-  detailed?: boolean;
-}) {
-  return (
-    <div className="px-4 py-3 border-b border-white/[0.06] last:border-0">
-      <div className="flex items-center gap-2 mb-2">
-        <span className={labelCls}>{label}</span>
-        {detailed && <DetailedTag />}
-      </div>
-      <div className="flex flex-wrap gap-2">{children}</div>
-    </div>
-  );
-}
-
-function TagInputRow({
-  label, values, onChange, placeholder, detailed,
-}: {
-  label: string;
-  values: string[];
-  onChange: (next: string[]) => void;
-  placeholder?: string;
-  detailed?: boolean;
-}) {
-  const [draft, setDraft] = useState("");
-  const add = () => {
-    const v = draft.trim();
-    if (!v) return;
-    if (!values.includes(v)) onChange([...values, v]);
-    setDraft("");
-  };
-  return (
-    <div className="px-4 py-3 border-b border-white/[0.06] last:border-0">
-      <div className="flex items-center gap-2 mb-2">
-        <span className={labelCls}>{label}</span>
-        {detailed && <DetailedTag />}
-      </div>
-      <div className="flex flex-wrap gap-2 mb-2">
-        {values.map((v) => (
-          <span key={v}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] font-bold bg-[#E63946]/15 text-[#E63946] border border-[#E63946]/30">
-            {v}
-            <button type="button" onClick={() => onChange(values.filter((x) => x !== v))}
-              aria-label="Retirer" className="opacity-70 active:opacity-100">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
-                <path d="M6 6l12 12" /><path d="M6 18l12-12" />
-              </svg>
-            </button>
-          </span>
-        ))}
-      </div>
-      <input type="text" value={draft}
-        onChange={(e) => setDraft(e.target.value)}
-        onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); add(); } }}
-        onBlur={add}
-        aria-label={label}
-        placeholder={placeholder}
-        className="w-full bg-transparent text-[15px] text-white outline-none border-0" />
-    </div>
-  );
-}
+// ReadOnlyRow + ToggleRow + ChipsBlock + TagInputRow moved to
+// components/shared/wizard/rows (Sprint A). Imported at the top.
 
 /* ═══════════════════════════════════════════════════════════════
    Unit toggle + height/weight display helpers
@@ -2363,51 +2178,8 @@ function DistinctionDetailSheet({
   );
 }
 
-function MediaUrlRow({
-  label, value, onSave, placeholder, detailed,
-}: {
-  label: string;
-  value: string;
-  onSave: (v: string) => void;
-  placeholder?: string;
-  detailed?: boolean;
-}) {
-  /* Two-line layout : label LEFT-TOP, URL truncated BELOW. Tap to edit
-     inline (consistent with text-field pattern). Fixes mobile overflow
-     where a 50+ char URL couldn't fit a single-line right-aligned slot. */
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(value);
-  useEffect(() => { if (!editing) setDraft(value); }, [value, editing]);
-  const commit = () => { onSave(draft); setEditing(false); };
-
-  return (
-    <div className="px-4 py-3 border-b border-white/[0.06] last:border-0">
-      <div className="flex items-center gap-2 mb-1">
-        <span className={labelCls}>{label}</span>
-        {detailed && <DetailedTag />}
-      </div>
-      {editing ? (
-        <input type="url" inputMode="url" autoFocus
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          onBlur={commit}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") { e.preventDefault(); commit(); }
-            if (e.key === "Escape") { setDraft(value); setEditing(false); }
-          }}
-          aria-label={label}
-          placeholder={placeholder}
-          className="w-full bg-transparent text-[14px] text-white font-semibold outline-none"
-        />
-      ) : (
-        <button type="button" onClick={() => setEditing(true)}
-          className={`block w-full text-left text-[14px] font-semibold truncate active:opacity-70 ${value ? "text-white" : "text-white/30 font-normal"}`}>
-          {value || (placeholder || "Ajouter un lien")}
-        </button>
-      )}
-    </div>
-  );
-}
+// MediaUrlRow moved to components/shared/wizard/rows (Sprint A).
+// Imported at the top.
 
 function StarRow({
   value, onChange, size = 26, allowHalf = false,

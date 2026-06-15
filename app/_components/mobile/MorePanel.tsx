@@ -514,7 +514,7 @@ export default function MorePanel({
       {/* Backdrop */}
       <div
         onClick={onClose}
-        className={`fixed inset-0 z-50 bg-black/60 backdrop-blur-sm transition-opacity ${open ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+        className={`fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm transition-opacity ${open ? "opacity-100" : "opacity-0 pointer-events-none"}`}
         aria-hidden
       />
 
@@ -527,7 +527,7 @@ export default function MorePanel({
           jamais sous la barre URL / safe-area. */}
       <div
         className={`
-          fixed bottom-0 inset-x-0 z-50 bg-[#1A1D24] border-t border-[#2D3748]
+          fixed bottom-0 inset-x-0 z-[70] bg-[#1A1D24] border-t border-[#2D3748]
           rounded-t-2xl flex flex-col
           ${open ? "translate-y-0" : "translate-y-full"}
         `}
