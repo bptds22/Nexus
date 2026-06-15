@@ -12,6 +12,9 @@ import StarRating from "@/components/ui/StarRating";
 import NxIcon from "@/components/ui/NxIcon";
 import { BADGE_CONFIG, BADGE_ORDER, MAX_BADGES, MAX_DETAIL_LENGTH, parseDistinctions, type DistinctionEntry } from "@/lib/config/badges";
 import DistinctionBadge from "@/components/shared/DistinctionBadge";
+import AthleteEditWizardMobile from "@/components/shared/AthleteEditWizardMobile";
+
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
 /* ═══════════════════════════════════════════════════════════════
    Athlete Profile — Co-creation page
@@ -909,6 +912,16 @@ function AcademicEditForm({ raw, inputCls, lblCls, onSave, onCancel, saving }: E
 }
 
 export default function AthleteProfilPage() {
+  // Sprint B-1 : Capacitor → mobile-native co-creation wizard. Two
+  // sections fully wired this sprint (Médias DIRECT, Physique
+  // SUGGEST) ; Identité/Académique/Sport/Évaluation arrive in B-2
+  // and B-3. Web (non-Capacitor) keeps its existing responsive
+  // layout below — byte-identical to before the dispatch.
+  if (IS_CAPACITOR) return <AthleteEditWizardMobile />;
+  return <AthleteProfilPageDesktop />;
+}
+
+function AthleteProfilPageDesktop() {
   const [loading, setLoading] = useState(true);
   const [a, setA] = useState<AnyProfile>({});
   const [athleteId, setAthleteId] = useState<string | null>(null);
