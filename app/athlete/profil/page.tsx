@@ -405,6 +405,51 @@ function LockedField({ label, value, recruiterView, children }: {
   );
 }
 
+/* ── DirectDisplayField — read-mode wrapper for fields editable via
+      a section-level "Modifier" button (Identité Prénom/Nom/Genre/DOB/
+      Téléphone). Mirrors LockedField's shape but shows the GREEN
+      pencil glyph + a tooltip that points the athlete to the section
+      "Modifier" affordance (instead of LockedField's "ton coach"
+      tooltip). Read-only display ; actual editing happens in the
+      section's PersonalEditForm → saveSection path. */
+function DirectDisplayField({ label, value, recruiterView }: {
+  label: string; value?: string | number | null; recruiterView: boolean;
+}) {
+  const [hovered, setHovered] = useState(false);
+
+  if (recruiterView) {
+    if (!value) return null;
+    return (
+      <div className="flex items-center justify-between py-2.5 border-b border-[#2D3748]/40 last:border-b-0">
+        <span className="text-[13px] text-[#9CA3AF]">{label}</span>
+        <span className="text-[14px] font-bold text-white text-right">{value}</span>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="relative py-2.5 border-b border-[#2D3748]/40 last:border-b-0"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      <div className="flex items-center justify-between">
+        <span className="text-[13px] text-[#9CA3AF] flex items-center gap-1.5">
+          {label}
+          <span className={`transition-opacity duration-200 ${hovered ? "opacity-100" : "opacity-0"}`}><PencilIcon color={GREEN} size={12} /></span>
+        </span>
+        <span className="text-[14px] font-bold text-white text-right">{value || <span className="text-[#4a4d56]">Non renseigné</span>}</span>
+      </div>
+      <div
+        className="absolute right-0 bottom-full mb-1 z-20 bg-[#111317] border border-[#2D3748] rounded-lg px-3 py-2 shadow-xl max-w-[240px] pointer-events-none"
+        style={{ opacity: hovered ? 1 : 0, transition: "opacity 0.2s ease-in-out" }}
+      >
+        <p className="text-[11px] text-white font-bold">Modifie via le bouton « Modifier » en haut de la section</p>
+      </div>
+    </div>
+  );
+}
+
 /* ── Shared suggestion UI primitives ──────────────────────── */
 
 const SECTION_LABEL_CLS = "text-[11px] font-bold uppercase tracking-[0.2em] text-[#6b7280]";
@@ -785,16 +830,20 @@ type AnyProfile = Record<string, any>;
 type EditFormProps = { raw: any; inputCls: string; lblCls: string; onSave: (u: Record<string, unknown>) => void; onCancel: () => void; saving: boolean };
 
 function PersonalEditForm({ raw, inputCls, lblCls, onSave, onCancel, saving }: EditFormProps) {
-  const [genre, setGenre] = useState(raw?.genre || "");
-  const [dob, setDob] = useState(raw?.date_naissance || "");
-  const [tel, setTel] = useState(raw?.telephone || "");
+  const [firstName, setFirstName] = useState((raw?.first_name as string) || "");
+  const [lastName, setLastName] = useState((raw?.last_name as string) || "");
+  const [genre, setGenre] = useState((raw?.genre as string) || "");
+  const [dob, setDob] = useState((raw?.date_naissance as string) || "");
+  const [tel, setTel] = useState((raw?.telephone as string) || "");
   return (
     <div className="space-y-3">
+      <div><label className={lblCls}>Prénom</label><input type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Ex: Toa" className={inputCls} /></div>
+      <div><label className={lblCls}>Nom</label><input type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Ex: Smith" className={inputCls} /></div>
       <div><label className={lblCls}>Genre</label><select title="Genre" value={genre} onChange={(e) => setGenre(e.target.value)} className={inputCls}><option value="">—</option><option value="M">Masculin</option><option value="F">Féminin</option><option value="X">Autre</option></select></div>
       <div><label className={lblCls}>Date de naissance</label><DatePicker value={dob} onChange={setDob} placeholder="Sélectionner une date" /></div>
       <div><label className={lblCls}>Téléphone</label><input type="tel" value={tel} onChange={(e) => setTel(e.target.value)} placeholder="514-000-0000" className={inputCls} /></div>
       <div className="flex items-center gap-3 mt-3">
-        <button type="button" onClick={() => onSave({ genre: genre || null, date_naissance: dob || null, telephone: tel || null })} disabled={saving} className="px-5 py-2 bg-[#E63946] hover:bg-[#D42B22] text-white text-[11px] font-bold uppercase tracking-wider rounded-lg transition-colors disabled:opacity-50">{saving ? "..." : "Enregistrer"}</button>
+        <button type="button" onClick={() => onSave({ first_name: firstName.trim() || null, last_name: lastName.trim() || null, genre: genre || null, date_naissance: dob || null, telephone: tel || null })} disabled={saving} className="px-5 py-2 bg-[#E63946] hover:bg-[#D42B22] text-white text-[11px] font-bold uppercase tracking-wider rounded-lg transition-colors disabled:opacity-50">{saving ? "..." : "Enregistrer"}</button>
         <button type="button" onClick={onCancel} className="text-[12px] text-[#6b7280] hover:text-white transition-colors">Annuler</button>
       </div>
     </div>
@@ -1521,13 +1570,22 @@ function AthleteProfilPageDesktop() {
               <PersonalEditForm raw={a._raw} inputCls={inputCls} lblCls={lblCls} onSave={(u) => saveSection(u)} onCancel={() => setEditSection(null)} saving={editSaving} />
             ) : (
               <>
+                {/* DIRECT (green pencil) — editable via the section
+                    "Modifier" button → PersonalEditForm → saveSection. */}
+                <DirectDisplayField label="Prénom" value={a.firstName} recruiterView={recruiterView} />
+                <DirectDisplayField label="Nom" value={a.lastName} recruiterView={recruiterView} />
+                <DirectDisplayField label="Date de naissance" value={a._raw?.date_naissance as string | null | undefined} recruiterView={recruiterView} />
+                <DirectDisplayField label="Genre" value={a.gender === "M" ? "Masculin" : a.gender === "F" ? "Féminin" : a.gender === "X" ? "Autre" : null} recruiterView={recruiterView} />
+                <DirectDisplayField label="Téléphone" value={a.telephone} recruiterView={recruiterView} />
+                {/* LOCKED (red lock) — structural / coach-managed.
+                    Âge stays locked (computed from date_naissance) ;
+                    Ville / Région derive from schools FK ; affiliation
+                    and Graduation are coach-managed. */}
                 <LockedField label="Âge" value={a.age ? `${a.age} ans` : null} recruiterView={recruiterView} />
-                <LockedField label="Genre" value={a.gender === "M" ? "Masculin" : a.gender === "F" ? "Féminin" : a.gender === "X" ? "Autre" : null} recruiterView={recruiterView} />
                 <LockedField label="Ville" value={a.city} recruiterView={recruiterView} />
                 <LockedField label="Région" value={a.region} recruiterView={recruiterView} />
                 <LockedField label={a.isCivil ? "Équipe civile" : "École"} value={a.isCivil ? (a.teamName || a.leagueName || "—") : (a.schoolName || "—")} recruiterView={recruiterView} />
                 <LockedField label="Graduation" value={a.graduationYear ? String(a.graduationYear) : null} recruiterView={recruiterView} />
-                <LockedField label="Téléphone" value={a.telephone} recruiterView={recruiterView} />
               </>
             )}
           </div>
@@ -1605,8 +1663,12 @@ function AthleteProfilPageDesktop() {
               <AcademicEditForm raw={a._raw} inputCls={inputCls} lblCls={lblCls} onSave={(u) => saveSection(u)} onCancel={() => setEditSection(null)} saving={editSaving} />
             ) : (
               <>
-                <LockedField label="Moyenne générale" value={a.gpa ? `${a.gpa}%` : null} recruiterView={recruiterView} />
-                <LockedField label="Programme visé" value={a.targetCegepProgram?.join(", ")} recruiterView={recruiterView} />
+                {/* DIRECT (green pencil) — editable via the section
+                    "Modifier" button → AcademicEditForm → saveSection.
+                    Matches the rest of this section (Matières, Préférences,
+                    Régions) which already advertise green pencils inline. */}
+                <DirectDisplayField label="Moyenne générale" value={a.gpa ? `${a.gpa}%` : null} recruiterView={recruiterView} />
+                <DirectDisplayField label="Programme visé" value={a.targetCegepProgram?.join(", ")} recruiterView={recruiterView} />
 
             {/* Strong subjects — EDITABLE (green) */}
             {a.strongSubjects.length > 0 && (

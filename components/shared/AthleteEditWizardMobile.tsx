@@ -37,13 +37,23 @@
 ═══════════════════════════════════════════════════════════════ */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import type { AthleteSuggestion } from "@/lib/types/models";
-import { Card, InlineEditRow, PickerRow, ReadOnlyRow } from "@/components/shared/wizard/rows";
+import type { AthleteSuggestion, AthleteTraitRatings } from "@/lib/types/models";
+import { Card, InlineEditRow, PickerRow, ReadOnlyRow, DateRow, ToggleRow, ChipsBlock } from "@/components/shared/wizard/rows";
+import { StarRow } from "@/components/shared/wizard/stars";
 import { MobilePicker, type PickerOption } from "@/components/mobile/MobilePicker";
 import { WizardPills } from "@/components/shared/wizard/WizardPills";
 import { GREEN, YELLOW, RED, PencilIcon, LockIcon } from "@/components/shared/wizard/modeIcons";
+import {
+  SUBJECTS, HONORS, CEGEP_REGIONS, PROGRAMME_TYPE_OPTIONS,
+  programmeCegepArray, programmeCegepDecode,
+} from "@/lib/config/academicOptions";
+import {
+  BADGE_CONFIG, BADGE_ORDER, MAX_BADGES, MAX_DETAIL_LENGTH,
+  parseDistinctions, type DistinctionEntry,
+} from "@/lib/config/badges";
 
 /* ═══════════════════════════════════════════════════════════════
    Loaded athlete shape — narrowed to the fields B-1 actually reads.
@@ -55,6 +65,38 @@ interface LoadedAthlete {
   /** Resolved coach FK ; used for athlete_suggestions.coach_id. */
   coachId: string | null;
   firstName: string;
+  /* ── Identité — 5 DIRECT (first/last name, DOB, genre, telephone) +
+        5 LOCKED (age computed / city + region from schools FK / school
+        or team affiliation / graduation year). Display values mirror
+        page.tsx :1511-1517 + the converted-to-direct subset. ── */
+  lastName: string;                     // athletes.last_name (DIRECT — B-2.5 conversion)
+  dateNaissance: string;                // athletes.date_naissance "YYYY-MM-DD" (DIRECT)
+  age: number;                          // computed from date_naissance (page.tsx :982-988) — LOCKED
+  gender: string;                       // athletes.genre — DIRECT (M / F / X)
+  city: string;                         // schools.city via join — LOCKED (derived)
+  region: string;                       // schools.region via join — LOCKED (derived)
+  graduationYear: string;               // athletes.annee_diplomation — LOCKED (coach-managed)
+  telephone: string;                    // athletes.telephone — DIRECT
+  /* ── Académique (LOCKED) — display values mirrored from page.tsx :1595-1657 ── */
+  gpa: string;                          // athletes.moyenne_generale
+  programmeCegepVise: string[];         // athletes.programme_cegep_vise JSONB
+  strongSubjects: string[];             // athletes.matieres_fortes JSONB
+  academicHonors: string[];             // athletes.mentions_academiques JSONB
+  openToPrivate: boolean;               // athletes.ouvert_cegep_prive
+  openToAnglophone: boolean;            // athletes.ouvert_cegep_anglophone
+  openToRelocate: boolean;              // athletes.pret_changer_region
+  preferredRegions: string[];           // athletes.regions_cegep_preferees JSONB
+  /* ── Sport (SUGGEST) — current values + ids for picker scoping ── */
+  primarySport: string;                 // sports.nom via join (primary)
+  primaryPosition: string;              // positions.nom via join (primary)
+  secondarySport: string;               // separate FK lookup (page.tsx :953-955)
+  secondaryPosition: string;            // separate FK lookup (page.tsx :957-959)
+  jerseyNumber: string;                 // athletes.numero_jersey
+  /** FK ids needed to SCOPE the position pickers at row-render time.
+   *  Primary position picker → scoped by sportId. Secondary position
+   *  picker → scoped by sportSecondaireId (fallback sportId). */
+  sportId: string | null;
+  sportSecondaireId: string | null;
   /* ── Physique (SUGGEST) — current values ── */
   heightDisplay: string;
   weightDisplay: string;
@@ -73,7 +115,30 @@ interface LoadedAthlete {
   hudlUrl: string;
   youtubeUrl: string;
   instagramUrl: string;
-  /* ── Civil/école derivation (deferred render to B-2 Identité) ── */
+  /* ── Évaluation (SUGGEST + LOCKED rapport) — mirrors web
+        page.tsx :1053-1068 + :1115-1119 verbatim. The 14 trait keys
+        match AthleteTraitRatings (the desktop's type) so the
+        detailed-wins predicate evaluates identically.
+
+        traitRatings stays `undefined` when no evaluations row exists
+        for the athlete — desktop encodes this with `evalRel ? {...} :
+        undefined`, and the isDetailedMode predicate (`!!traitRatings
+        && some > 0`) collapses cleanly to "simple mode".
+
+        coachReport is LOCKED (no champ in trigger CASE — never
+        suggestable). coachName comes from the users!coach_id join
+        so the rapport quote can be attributed. ── */
+  traitRatings: AthleteTraitRatings | undefined;
+  overallRating: number;            // evaluations.cote_globale (|| 0)
+  coachReport: string;              // evaluations.rapport_entraineur (LOCKED)
+  coachName: string;                // "first_name last_name" via users!athletes_coach_id_fkey
+  /** Current coach-set distinctions (SUGGEST champ "Distinctions" —
+   *  athlete proposes a new array, coach approves, trigger writes
+   *  it back as JSONB). Parsed via parseDistinctions so legacy
+   *  string-array rows + the canonical {badge, detail?} shape both
+   *  rehydrate to the same DistinctionEntry[] view. */
+  coachDistinctions: DistinctionEntry[];
+  /* ── Civil/école derivation (Identité affiliation row) ── */
   isCivil: boolean;
   schoolName: string;
   teamName: string | undefined;
@@ -83,9 +148,28 @@ interface LoadedAthlete {
   raw: Record<string, unknown>;
 }
 
-const STEP_LABELS = ["Identité", "Académique", "Physique", "Sport", "Médias"] as const;
-const STEP_MODES = ["LOCKED", "LOCKED", "SUGGEST", "SUGGEST", "DIRECT"] as const;
-const STEP_ACCENTS: (string | undefined)[] = [RED, RED, YELLOW, YELLOW, GREEN];
+/* ── Sport / position option shapes loaded from the DB (new in B-2). ── */
+interface SportOption { id: string; nom: string }
+interface PositionOption { id: string; nom: string; abreviation: string | null; sport_id: string | null }
+
+const STEP_LABELS = ["Identité", "Académique", "Physique", "Sport", "Médias", "Évaluation"] as const;
+/* Identité is MIXED (5 DIRECT + 5 LOCKED — green chip for dominant
+   editable mode, per-row indicators show actual state). Académique
+   was flipped to fully DIRECT in B-2.5 — every field is athlete-
+   editable, no coach approval gate. Physique and Sport stay SUGGEST
+   (coach approves), Médias stays DIRECT.
+
+   Évaluation (B-3a) is SUGGEST-dominant : athletes suggest cote +
+   trait ratings + (B-3b) distinctions, all requiring coach approval
+   via athlete_suggestions. The Rapport entraîneur sub-block is
+   LOCKED (display-only, no champ), but the section chip stays YELLOW
+   because suggest is the dominant action and the rapport is a small
+   header block. The detailed-wins rule (see EvaluationStep below)
+   ALSO gates whether "Cote globale" can be suggested at all — this
+   is a UI-level mirror of the apply_approved_suggestion trigger's
+   v_is_detailed guard. */
+const STEP_MODES = ["MIXED", "DIRECT", "SUGGEST", "SUGGEST", "DIRECT", "SUGGEST"] as const;
+const STEP_ACCENTS: (string | undefined)[] = [GREEN, GREEN, YELLOW, YELLOW, GREEN, YELLOW];
 
 const STATUS_MAP: Record<string, "pending" | "approved" | "rejected"> = {
   EN_ATTENTE: "pending",
@@ -103,6 +187,48 @@ const FOOT_OPTIONS: PickerOption[] = [
   { value: "Gauche", label: "Gauche" },
   { value: "Les deux", label: "Les deux" },
 ];
+// Identité Genre — canon mirror of page.tsx :793 (PersonalEditForm).
+// Stored values are "M" / "F" / "X" ; UI labels are the full French
+// words. Empty value = unset, picker shows placeholder.
+const GENDER_OPTIONS: PickerOption[] = [
+  { value: "M", label: "Masculin" },
+  { value: "F", label: "Féminin" },
+  { value: "X", label: "Autre" },
+];
+
+/* ── TRAIT_CHAMPS — verbatim mirror of page.tsx :521-540.
+      Each entry's `label` is the EXACT champ string the trigger's
+      apply_approved_suggestion CASE matches against (migration
+      20260616000000_apply_suggestion_new_traits.sql). A single
+      character drift here (e.g. a half-space, missing accent) falls
+      through to ELSE → RAISE EXCEPTION → suggestion stuck in
+      EN_ATTENTE. The 14 keys mirror AthleteTraitRatings so trait
+      values read from the loaded `traitRatings` map.
+
+      Order : 8 character traits then 6 tactical traits, mirroring
+      web. The two groups also drive the EvaluationStep's two-Card
+      grouping (Caractère / Tactique). */
+const TRAIT_CHAMPS: { key: keyof AthleteTraitRatings; label: string }[] = [
+  // Character (8 original)
+  { key: "leadership",      label: "Leadership" },
+  { key: "discipline",      label: "Discipline" },
+  { key: "coachability",    label: "Coachabilité" },
+  { key: "gameIQ",          label: "Intelligence de jeu" },
+  { key: "competitiveness", label: "Compétitivité" },
+  { key: "teamwork",        label: "Esprit d'équipe" },
+  { key: "resilience",      label: "Résilience" },
+  { key: "attitude",        label: "Attitude / Mentalité" },
+  // Tactical / athletic (6 newer trait columns, added 20260616).
+  { key: "speed",           label: "Vitesse / Explosivité" },
+  { key: "power",           label: "Force / Puissance" },
+  { key: "endurance",       label: "Endurance cardio" },
+  { key: "agility",         label: "Agilité / Coordination" },
+  { key: "gameVision",      label: "Vision du jeu" },
+  { key: "tactics",         label: "Sens tactique" },
+];
+
+const CHARACTER_TRAITS = TRAIT_CHAMPS.slice(0, 8);
+const TACTICAL_TRAITS  = TRAIT_CHAMPS.slice(8);
 
 /* ═══════════════════════════════════════════════════════════════
    SuggestExpand — inline-expanding suggest form (NO overlay).
@@ -123,13 +249,18 @@ interface SuggestExpandProps {
   inputType: "text" | "picker";
   pickerOptions?: PickerOption[];
   numericMode?: "numeric" | "decimal";
+  /** Per-field placeholder shown in the text-input branch. When omitted,
+   *  the input renders WITHOUT a placeholder (no fallback hint) — earlier
+   *  versions had a hardcoded "Ex: 6'2&quot;" leak from Taille into every
+   *  text SUGGEST field including Numéro. */
+  placeholder?: string;
   submitting: boolean;
   onSubmit: (proposed: string, message: string) => Promise<void>;
   onCancel: () => void;
 }
 
 function SuggestExpand({
-  champ, currentValue, initialProposed, inputType, pickerOptions, numericMode,
+  champ, currentValue, initialProposed, inputType, pickerOptions, numericMode, placeholder,
   submitting, onSubmit, onCancel,
 }: SuggestExpandProps) {
   const [proposed, setProposed] = useState(initialProposed);
@@ -161,7 +292,7 @@ function SuggestExpand({
           pattern={numericMode === "numeric" ? "[0-9]*" : undefined}
           aria-label={champ}
           className="w-full bg-[#111317] border border-white/[0.10] rounded-2xl px-4 py-3 text-[15px] text-white placeholder:text-white/40 outline-none focus:border-[#EAB308]/40"
-          placeholder="Ex: 6'2&quot;"
+          placeholder={placeholder}
         />
       ) : (
         <>
@@ -237,13 +368,16 @@ interface SuggestRowProps {
   inputType: "text" | "picker";
   pickerOptions?: PickerOption[];
   numericMode?: "numeric" | "decimal";
+  /** Per-field placeholder for the text-input branch. Threaded to
+   *  SuggestExpand. Omit to render no placeholder. */
+  placeholder?: string;
   submitting: boolean;
   onSubmit: (champ: string, proposed: string, message: string, currentValue: string) => Promise<void>;
   isLast?: boolean;
 }
 
 function SuggestRow({
-  label, value, champ, pending, inputType, pickerOptions, numericMode,
+  label, value, champ, pending, inputType, pickerOptions, numericMode, placeholder,
   submitting, onSubmit, isLast,
 }: SuggestRowProps) {
   const [expanded, setExpanded] = useState(false);
@@ -299,6 +433,7 @@ function SuggestRow({
           inputType={inputType}
           pickerOptions={pickerOptions}
           numericMode={numericMode}
+          placeholder={placeholder}
           submitting={submitting}
           onSubmit={async (proposed, message) => {
             await onSubmit(champ, proposed, message, value);
@@ -352,13 +487,20 @@ export default function AthleteEditWizardMobile() {
 
   const [a, setA] = useState<LoadedAthlete | null>(null);
   const [suggestions, setSuggestions] = useState<AthleteSuggestion[]>([]);
+  const [sportsOptions, setSportsOptions] = useState<SportOption[]>([]);
+  const [positionsOptions, setPositionsOptions] = useState<PositionOption[]>([]);
   const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
+  /* `mounted` gates createPortal — same SSR/hydration safety guard the
+     coach "Modifier le profil" sticky bar uses at
+     AthleteRecruiterProfileBodyMobile.tsx :2538. Without it, createPortal
+     would run during SSR / first render before document.body is reliably
+     available, hydration mismatches show up in dev. */
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
 
-  // Show Médias by default (step 4) — Sprint B-1's most useful real
-  // content. User can navigate back to Physique via the pill chrome.
-  // (Other steps render a placeholder this sprint.)
-  useEffect(() => { setStep(4); }, []);
+  // B-2 : all 5 steps now have real content. Default landing step is
+  // Identité (step 0) — the natural top of the wizard.
 
   /* ── LOAD — verbatim from page.tsx :932-1094 ─────────────────────
         Same main athletes select with joins, same 2 secondary FK
@@ -383,8 +525,23 @@ export default function AthleteEditWizardMobile() {
       .maybeSingle();
     if (!raw) return;
 
+    // ── Secondary sport / position NAME lookups (verbatim from
+    //    page.tsx :953-959). Kept as separate queries to match the
+    //    desktop's exact load pattern (Bug #8 — no joining away).
+    let secondarySportName = "";
+    let secondaryPositionName = "";
+    if (raw.sport_secondaire_id) {
+      const { data: ss } = await supabase
+        .from("sports").select("nom").eq("id", raw.sport_secondaire_id).maybeSingle();
+      secondarySportName = (ss?.nom as string) || "";
+    }
+    if (raw.position_secondaire_id) {
+      const { data: sp } = await supabase
+        .from("positions").select("nom").eq("id", raw.position_secondaire_id).maybeSingle();
+      secondaryPositionName = (sp?.nom as string) || "";
+    }
+
     // Civil / école derivation (verbatim from page.tsx :971-974).
-    // Used in B-2 Identité ; derived now so the state shape is ready.
     const schoolRel = Array.isArray(raw.schools) ? raw.schools[0] : raw.schools;
     const taRel = Array.isArray(raw.team_athletes) ? raw.team_athletes[0] : raw.team_athletes;
     const teamRelRaw = (taRel as { teams?: unknown } | null)?.teams;
@@ -395,15 +552,94 @@ export default function AthleteEditWizardMobile() {
     const teamName = isCivil ? teamRel?.name : undefined;
     const leagueName = isCivil && !teamRel?.name ? "Ligue Civile" : undefined;
 
+    const sportRel = Array.isArray(raw.sports) ? raw.sports[0] : raw.sports;
+    const posRel = Array.isArray(raw.positions) ? raw.positions[0] : raw.positions;
+    const primarySport = (sportRel as { nom?: string } | null)?.nom || "";
+    const primaryPosition = (posRel as { nom?: string; abreviation?: string } | null)?.nom
+      || (posRel as { nom?: string; abreviation?: string } | null)?.abreviation
+      || "";
+
     const heightDisplay = raw.taille_pieds
       ? `${raw.taille_pieds}'${raw.taille_pouces || 0}"`
       : "";
     const weightDisplay = raw.poids_lbs ? `${raw.poids_lbs} lbs` : "";
 
+    // ── Age computation (verbatim from page.tsx :982-988). ──
+    let age = 0;
+    if (raw.date_naissance) {
+      const bd = new Date(raw.date_naissance as string);
+      const now = new Date();
+      age = now.getFullYear() - bd.getFullYear();
+      if (now.getMonth() < bd.getMonth() || (now.getMonth() === bd.getMonth() && now.getDate() < bd.getDate())) age--;
+    }
+
+    // ── Evaluation derivation (Sprint B-3a, mirrors page.tsx
+    //    :1053-1068 + :1115-1119). evalRel may be undefined when no
+    //    coach has evaluated this athlete yet — traitRatings stays
+    //    `undefined` then, and isDetailedMode collapses cleanly to
+    //    simple mode (where a flat Cote globale is suggestable).
+    //    coachRel comes from the users!athletes_coach_id_fkey join
+    //    so the rapport quote can be attributed.
+    const evalRel = (Array.isArray(raw.evaluations) ? raw.evaluations[0] : raw.evaluations) as Record<string, unknown> | null | undefined;
+    const coachRel = (Array.isArray(raw.users) ? raw.users[0] : raw.users) as { first_name?: string; last_name?: string } | null | undefined;
+    const traitRatings: AthleteTraitRatings | undefined = evalRel ? {
+      speed:           (evalRel.vitesse_explosivite  as number) || 0,
+      power:           (evalRel.force_puissance      as number) || 0,
+      endurance:       (evalRel.endurance_cardio     as number) || 0,
+      agility:         (evalRel.agilite_coordination as number) || 0,
+      gameVision:      (evalRel.vision_du_jeu        as number) || 0,
+      tactics:         (evalRel.sens_tactique        as number) || 0,
+      leadership:      (evalRel.leadership           as number) || 0,
+      discipline:      (evalRel.discipline           as number) || 0,
+      coachability:    (evalRel.coachabilite         as number) || 0,
+      gameIQ:          (evalRel.intelligence_jeu     as number) || 0,
+      competitiveness: (evalRel.competitivite        as number) || 0,
+      teamwork:        (evalRel.esprit_equipe        as number) || 0,
+      resilience:      (evalRel.resilience           as number) || 0,
+      attitude:        (evalRel.attitude_mentalite   as number) || 0,
+    } : undefined;
+    const overallRating = (evalRel?.cote_globale as number) || 0;
+    const coachReport = (evalRel?.rapport_entraineur as string) || "";
+    const coachName = coachRel
+      ? `${coachRel.first_name || ""} ${coachRel.last_name || ""}`.trim()
+      : "";
+    /* coachDistinctions — parsed via the canonical badges.ts helper so
+       this mobile editor, the web profile, and the recruiter view all
+       share one parser (legacy string-array vs canonical {badge,detail?}
+       are normalized identically). Sprint B-3b. */
+    const coachDistinctions = parseDistinctions(evalRel?.distinctions);
+
     setA({
       id: raw.id as string,
       coachId: (raw.coach_id as string) || null,
       firstName: (raw.first_name as string) || "",
+      // Identité — 5 DIRECT + 5 LOCKED (mixed mode after B-2.5 conversion)
+      lastName: (raw.last_name as string) || "",
+      dateNaissance: (raw.date_naissance as string) || "",
+      age,
+      gender: (raw.genre as string) || "",
+      city: (schoolRel as { city?: string } | null)?.city || "",
+      region: (schoolRel as { region?: string } | null)?.region || "",
+      graduationYear: raw.annee_diplomation ? String(raw.annee_diplomation) : "",
+      telephone: (raw.telephone as string) || "",
+      // Académique (LOCKED)
+      gpa: raw.moyenne_generale != null ? String(raw.moyenne_generale) : "",
+      programmeCegepVise: Array.isArray(raw.programme_cegep_vise) ? raw.programme_cegep_vise as string[] : [],
+      strongSubjects: Array.isArray(raw.matieres_fortes) ? raw.matieres_fortes as string[] : [],
+      academicHonors: Array.isArray(raw.mentions_academiques) ? raw.mentions_academiques as string[] : [],
+      openToPrivate: !!raw.ouvert_cegep_prive,
+      openToAnglophone: !!raw.ouvert_cegep_anglophone,
+      openToRelocate: !!raw.pret_changer_region,
+      preferredRegions: Array.isArray(raw.regions_cegep_preferees) ? raw.regions_cegep_preferees as string[] : [],
+      // Sport (SUGGEST)
+      primarySport,
+      primaryPosition,
+      secondarySport: secondarySportName,
+      secondaryPosition: secondaryPositionName,
+      jerseyNumber: raw.numero_jersey != null ? String(raw.numero_jersey) : "",
+      sportId: (raw.sport_id as string) || null,
+      sportSecondaireId: (raw.sport_secondaire_id as string) || null,
+      // Physique (SUGGEST)
       heightDisplay,
       weightDisplay,
       wingspan: (raw.envergure as string) || "",
@@ -415,17 +651,37 @@ export default function AthleteEditWizardMobile() {
       benchPress: (raw.developpe_couche as string) || "",
       shuttleAgility: (raw.navette_agilite as string) || "",
       sprint100m: (raw.sprint_100m as string) || "",
+      // Médias (DIRECT)
       highlightVideoUrl: (raw.video_faits_saillants_url as string) || "",
       fullGameUrl: (raw.video_match_complet_url as string) || "",
       hudlUrl: (raw.hudl_url as string) || "",
       youtubeUrl: (raw.youtube_url as string) || "",
       instagramUrl: (raw.instagram_url as string) || "",
+      // Évaluation (SUGGEST traits + cote + LOCKED rapport + SUGGEST distinctions)
+      traitRatings,
+      overallRating,
+      coachReport,
+      coachName,
+      coachDistinctions,
+      // Civil/école
       isCivil,
       schoolName,
       teamName,
       leagueName,
       raw: raw as Record<string, unknown>,
     });
+
+    // ── Sport / position option lists (NEW in B-2). Loaded once at
+    //    mount ; the Sport step's pickers consume the static list and
+    //    the position picker is scoped client-side by the athlete's
+    //    current sport_id / sport_secondaire_id at row-render time.
+    //    These are reference data — safe to fetch in full. ──
+    const [{ data: sportsList }, { data: positionsList }] = await Promise.all([
+      supabase.from("sports").select("id, nom").order("nom"),
+      supabase.from("positions").select("id, nom, abreviation, sport_id").order("nom"),
+    ]);
+    setSportsOptions((sportsList as SportOption[]) || []);
+    setPositionsOptions((positionsList as PositionOption[]) || []);
 
     // Pending suggestions — verbatim from page.tsx :1077-1094.
     const { data: sugs } = await supabase
@@ -453,13 +709,32 @@ export default function AthleteEditWizardMobile() {
   const pendingSugs = useMemo(() => suggestions.filter((s) => s.status === "pending"), [suggestions]);
   const getPending = useCallback((champ: string) => pendingSugs.find((s) => s.field === champ), [pendingSugs]);
 
-  /* ── DIRECT save (Médias) — verbatim from page.tsx :1224-1236.
-        UPDATE athletes set col=value where id=athleteId. Same dbMap
-        keys → columns. */
-  const saveDirect = useCallback(async (column: string, value: string) => {
+  /* ── DIRECT save — mirrors page.tsx :1224-1236 (Médias saveField)
+        widened to cover the Académique JSONB + bool columns introduced
+        in B-2.5. UPDATE athletes set col=value where id=athleteId.
+
+        Empty-value handling, by type :
+          - string   : "" → null  (matches the existing Médias/Identité
+                       contract — empty URL/text rows clear the column).
+          - string[] : "" → []    (matches the web's AcademicEditForm at
+                       page.tsx :950 — empty arrays write as [], NEVER
+                       null, so the recruiter read of a JSONB column is
+                       always an iterable array).
+          - boolean  : pass through verbatim.
+
+        Supabase-js serializes JS arrays → JSONB transparently — no
+        JSON.stringify (that would double-encode and break the
+        recruiter-side .filter / .map). */
+  const saveDirect = useCallback(async (
+    column: string,
+    value: string | string[] | boolean,
+  ) => {
     if (!a) return;
     const supabase = createClient();
-    await supabase.from("athletes").update({ [column]: value || null }).eq("id", a.id);
+    let payload: string | string[] | boolean | null;
+    if (typeof value === "string") payload = value || null;
+    else payload = value;                                  // array or bool — pass through
+    await supabase.from("athletes").update({ [column]: payload }).eq("id", a.id);
     await load();
   }, [a, load]);
 
@@ -512,7 +787,8 @@ export default function AthleteEditWizardMobile() {
   }
 
   return (
-    <div className="min-h-screen bg-[#111317]" style={{ overflowY: "auto", height: "100dvh" }}>
+    <>
+    <div className="min-h-screen bg-[#111317]" style={{ overflowY: "auto", overflowX: "hidden", height: "100dvh" }}>
       <WizardPills
         labels={[...STEP_LABELS]}
         active={step}
@@ -523,67 +799,722 @@ export default function AthleteEditWizardMobile() {
         onBack={() => router.back()}
       />
 
-      <div className="px-4 pt-4 pb-32 space-y-5">
-        {/* ── Step 0 : Identité (LOCKED, deferred to B-2) ── */}
-        {step === 0 && (
-          <DeferredStepPlaceholder
-            heading="Identité"
-            mode="LOCKED"
-            description="Section verrouillée — ton coach gère ces informations. Affichage complet en Sprint B-2."
-          />
-        )}
+      {/* pb-48 (192px) clears the bottom chrome stack : MobileTabBar
+          (~64px + safe-area-inset-bottom) + sticky "Vu pour le
+          recruteur" CTA (~76px) + a small visual buffer. The previous
+          pb-32 (128px) would let the last content row hide behind the
+          new CTA. The editor root is its own scroll container
+          (height:100dvh + overflowY:auto), so this padding is the
+          only buffer between the last row and the CTA's top edge. */}
+      <div className="px-4 pt-4 pb-48 space-y-5">
+        {/* ── Step 0 : Identité (MIXED — 5 DIRECT + 5 LOCKED) ── */}
+        {step === 0 && <IdentiteStep a={a} onDirect={saveDirect} />}
 
-        {/* ── Step 1 : Académique (deferred to B-2) ── */}
-        {step === 1 && (
-          <DeferredStepPlaceholder
-            heading="Académique"
-            mode="LOCKED"
-            description="Profil académique en lecture seule sur le web. Affichage complet en Sprint B-2."
-          />
-        )}
+        {/* ── Step 1 : Académique (DIRECT — B-2.5 conversion) ── */}
+        {step === 1 && <AcademiqueStep a={a} onDirect={saveDirect} />}
 
         {/* ── Step 2 : Physique (SUGGEST) ── */}
         {step === 2 && <PhysiqueStep a={a} getPending={getPending} submitting={submitting} onSubmit={submitSuggestion} />}
 
-        {/* ── Step 3 : Sport (deferred to B-2) ── */}
+        {/* ── Step 3 : Sport (SUGGEST — B-2 wired) ── */}
         {step === 3 && (
-          <DeferredStepPlaceholder
-            heading="Sport"
-            mode="SUGGEST"
-            description="Sport principal, position, numéro — Sprint B-2."
+          <SportStep
+            a={a}
+            sportsOptions={sportsOptions}
+            positionsOptions={positionsOptions}
+            getPending={getPending}
+            submitting={submitting}
+            onSubmit={submitSuggestion}
           />
         )}
 
         {/* ── Step 4 : Médias (DIRECT) ── */}
         {step === 4 && <MediasStep a={a} onDirect={saveDirect} />}
+
+        {/* ── Step 5 : Évaluation (SUGGEST cote + traits + LOCKED rapport) ── */}
+        {step === 5 && (
+          <EvaluationStep
+            a={a}
+            getPending={getPending}
+            submitting={submitting}
+            onSubmit={submitSuggestion}
+          />
+        )}
       </div>
+    </div>
+
+    {/* ══ Sticky "Vu pour le recruteur" bottom CTA (Sprint C, Edit 2) ══
+        Copies the coach "Modifier le profil" sticky-bar pattern verbatim
+        from AthleteRecruiterProfileBodyMobile.tsx :2537-2577. createPortal
+        to document.body escapes the AnimatedRoute motion.div's
+        `willChange: transform` containing block, so position:fixed anchors
+        to the viewport (not the motion.div). z-30 sits below the
+        MobileTabBar (z-40), but the `bottom: calc(64px + safe-area)`
+        offset places the CTA geometrically ABOVE the tab bar — both stay
+        visible, no overlap. ALWAYS visible (no hide-on-scroll : the editor
+        has no window-bound scroll listener, and adding one to drive a
+        translateY would force re-renders of the entire wizard on every
+        frame — out of scope and unnecessary for a single-action CTA).
+
+        triggerHaptic is intentionally NOT imported here — the haptic util
+        lives in AthleteRecruiterProfileBodyMobile.tsx as a local helper
+        and threading it through (or wiring @capacitor/haptics directly)
+        is out of scope for "move the button to the bottom". The CTA still
+        delivers the OS-native tap feedback through the active: state. */}
+    {mounted && typeof document !== "undefined" && createPortal(
+      <div
+        className="fixed left-0 right-0 z-30 px-3 py-2.5"
+        style={{
+          bottom: "calc(64px + env(safe-area-inset-bottom))",
+          backgroundColor: "rgba(17,19,23,0.85)",
+          backdropFilter: "blur(20px) saturate(180%)",
+          WebkitBackdropFilter: "blur(20px) saturate(180%)",
+          borderTop: "0.5px solid rgba(255,255,255,0.08)",
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => router.push("/athlete/profil/apercu")}
+          className="w-full flex items-center justify-center gap-2 bg-[#E63946] text-white rounded-2xl px-4 py-3 font-head font-bold text-[13px] uppercase tracking-widest active:bg-[#D42B22] shadow-[0_0_20px_rgba(230,57,70,0.3)]"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+            <circle cx="12" cy="12" r="3" />
+          </svg>
+          Vu pour le recruteur
+        </button>
+      </div>,
+      document.body,
+    )}
+    </>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   IDENTITÉ step — MIXED : 5 DIRECT + 5 LOCKED.
+
+   Mirrors web page.tsx :1511-1533 post-conversion :
+     - DIRECT (green pencil) : Prénom (first_name), Nom (last_name),
+       Date de naissance (date_naissance), Genre (genre via picker),
+       Téléphone (telephone). Each writes immediately via saveDirect
+       to the matching athletes column.
+     - LOCKED (red lock) : Âge (recomputed from date_naissance on
+       reload, no column of its own), Ville (schools.city via FK
+       join), Région (schools.region), affiliation row École /
+       Équipe civile (civil/école label swap mirrors page.tsx :1515),
+       Graduation (annee_diplomation — coach-managed).
+
+   Genre stored as "M"/"F"/"X" ; display labels via GENDER_OPTIONS
+   mapping. DOB stored + displayed as "YYYY-MM-DD" (web DatePicker
+   + mobile DateRow share this format).
+═══════════════════════════════════════════════════════════════ */
+function IdentiteStep({
+  a, onDirect,
+}: {
+  a: LoadedAthlete;
+  onDirect: (column: string, value: string | string[] | boolean) => Promise<void>;
+}) {
+  const affiliationLabel = a.isCivil ? "Équipe civile" : "École";
+  const affiliationValue = a.isCivil
+    ? (a.teamName || a.leagueName || "—")
+    : (a.schoolName || "—");
+  const genderDisplay = GENDER_OPTIONS.find((o) => o.value === a.gender)?.label || "";
+  const [genderPickerOpen, setGenderPickerOpen] = useState(false);
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2 px-1">
+        <p className="text-[10px] font-bold tracking-[0.2em] uppercase" style={{ color: GREEN }}>
+          Identité · Mixte
+        </p>
+        <PencilIcon color={GREEN} size={12} />
+      </div>
+      <p className="text-[12px] text-white/55 px-1">
+        Certains champs sont modifiables directement ; d&apos;autres sont gérés par ton coach.
+      </p>
+
+      {/* DIRECT rows — modifiable, green pencil indicator. */}
+      <Card>
+        <DirectIndicatorRow>
+          <InlineEditRow
+            label="Prénom"
+            value={a.firstName}
+            type="text"
+            onSave={(v) => { void onDirect("first_name", v); }}
+            placeholder="Ex: Toa"
+          />
+        </DirectIndicatorRow>
+        <DirectIndicatorRow>
+          <InlineEditRow
+            label="Nom"
+            value={a.lastName}
+            type="text"
+            onSave={(v) => { void onDirect("last_name", v); }}
+            placeholder="Ex: Smith"
+          />
+        </DirectIndicatorRow>
+        <DirectIndicatorRow>
+          <DateRow
+            label="Date de naissance"
+            value={a.dateNaissance}
+            onChange={(v) => { void onDirect("date_naissance", v); }}
+          />
+        </DirectIndicatorRow>
+        <DirectIndicatorRow>
+          <PickerRow
+            label="Genre"
+            value={genderDisplay}
+            onTap={() => setGenderPickerOpen(true)}
+          />
+          <MobilePicker
+            open={genderPickerOpen}
+            onClose={() => setGenderPickerOpen(false)}
+            title="Genre"
+            options={GENDER_OPTIONS}
+            value={a.gender || null}
+            onChange={(v) => {
+              if (typeof v === "string") void onDirect("genre", v);
+            }}
+          />
+        </DirectIndicatorRow>
+        <DirectIndicatorRow>
+          <InlineEditRow
+            label="Téléphone"
+            value={a.telephone}
+            type="tel"
+            onSave={(v) => { void onDirect("telephone", v); }}
+            placeholder="514-000-0000"
+          />
+        </DirectIndicatorRow>
+      </Card>
+
+      {/* LOCKED rows — display-only, red lock indicator. Âge stays
+          locked because it's derived from date_naissance (no column
+          of its own — recomputed at load post-DOB edit). Ville /
+          Région derive from the schools FK join. Affiliation +
+          Graduation are coach-managed. */}
+      <Card>
+        <LockedIndicatorRow>
+          <ReadOnlyRow label="Âge" value={a.age > 0 ? `${a.age} ans` : ""} />
+        </LockedIndicatorRow>
+        <LockedIndicatorRow>
+          <ReadOnlyRow label="Ville" value={a.city} />
+        </LockedIndicatorRow>
+        <LockedIndicatorRow>
+          <ReadOnlyRow label="Région" value={a.region} />
+        </LockedIndicatorRow>
+        <LockedIndicatorRow>
+          <ReadOnlyRow label={affiliationLabel} value={affiliationValue} />
+        </LockedIndicatorRow>
+        <LockedIndicatorRow>
+          <ReadOnlyRow label="Graduation" value={a.graduationYear} />
+        </LockedIndicatorRow>
+      </Card>
+    </div>
+  );
+}
+
+/* Tiny visual wrappers : prepend the mode indicator next to a wrapped
+   shared row. The shared row primitives don't know about per-row
+   mode glyphs ; this composition adds the green pencil / red lock
+   in a positioned-absolute layer to the LEFT without touching the
+   shared kit's signature. */
+function DirectIndicatorRow({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="relative">
+      <span className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 flex items-center justify-center pointer-events-none z-[1]">
+        <PencilIcon color={GREEN} size={12} />
+      </span>
+      <div className="pl-6">{children}</div>
+    </div>
+  );
+}
+
+function LockedIndicatorRow({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="relative">
+      <span className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 flex items-center justify-center pointer-events-none z-[1]">
+        <LockIcon size={12} />
+      </span>
+      <div className="pl-6">{children}</div>
     </div>
   );
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   DeferredStepPlaceholder — small visual stub for steps B-1 doesn't
-   wire yet. Renders the mode indicator + a "à venir" copy so the
-   wizard feels coherent end-to-end.
+   ACADÉMIQUE step — fully DIRECT (B-2.5 conversion).
+
+   Athletes own this section entirely : moyenne, programme visé,
+   matières fortes, mentions, 3 préférence booleans, régions préférées.
+   No suggestions, no coach gate — every field writes immediately to
+   athletes.<column> via saveDirect.
+
+   Option lists are the shared canonical lists from
+   @/lib/config/academicOptions (single source of truth, shared with
+   the athlete onboarding step-2 pill grids). The JSONB arrays are
+   written as raw JS arrays (supabase-js → JSONB) ; empty selections
+   write as [] not null, matching the web's AcademicEditForm
+   (page.tsx :949-955).
+
+   DECISION : Régions préférées is ALWAYS shown (no conditional on
+   pret_changer_region). The web edit form hides it until "open to
+   relocate" is true ; the mobile flow surfaces it always so the
+   athlete can express preferred regions without the coupling
+   ergonomic, and so a tap on a region doesn't require flipping the
+   préf-relocate toggle first.
 ═══════════════════════════════════════════════════════════════ */
-function DeferredStepPlaceholder({
-  heading, mode, description,
+function AcademiqueStep({
+  a, onDirect,
 }: {
-  heading: string;
-  mode: "DIRECT" | "SUGGEST" | "LOCKED";
-  description: string;
+  a: LoadedAthlete;
+  onDirect: (column: string, value: string | string[] | boolean) => Promise<void>;
 }) {
-  const color = mode === "DIRECT" ? GREEN : mode === "SUGGEST" ? YELLOW : RED;
+  /* Decode the stored programme_cegep_vise array (e.g. ["DEC général"]
+     or ["Technique — Soins infirmiers"]) back into the (type, detail)
+     pair the picker + input need for seeding. */
+  const { type: progType, detail: progDetail } = programmeCegepDecode(a.programmeCegepVise);
+  const [progPickerOpen, setProgPickerOpen] = useState(false);
+  const progTypeLabel = PROGRAMME_TYPE_OPTIONS.find((o) => o.value === progType)?.label || "";
+
+  /* Pill toggle helper : add value when absent, remove when present.
+     The JSONB array column is updated atomically via saveDirect — no
+     local state ; the load() that fires inside saveDirect reseeds
+     the membership for the next render. */
+  const toggleArrayValue = (column: string, current: string[], v: string) => {
+    const next = current.includes(v) ? current.filter((x) => x !== v) : [...current, v];
+    void onDirect(column, next);
+  };
+
   return (
-    <div>
-      <p className="text-[10px] font-bold tracking-[0.2em] uppercase mb-2 px-1" style={{ color }}>
-        {heading} · {mode}
+    <div className="space-y-4">
+      <div className="flex items-center gap-2 px-1">
+        <p className="text-[10px] font-bold tracking-[0.2em] uppercase" style={{ color: GREEN }}>
+          Académique · Direct
+        </p>
+        <PencilIcon color={GREEN} size={12} />
+      </div>
+      <p className="text-[12px] text-white/55 px-1">
+        Tu peux modifier ces informations directement — pas besoin de l&apos;approbation de ton coach.
+      </p>
+
+      {/* Moyenne + Programme visé (+ optional technique detail). */}
+      <Card>
+        <InlineEditRow
+          label="Moyenne générale"
+          value={a.gpa}
+          type="text"
+          numericMode="decimal"
+          placeholder="Ex: 82"
+          onSave={(v) => {
+            /* Match web AcademicEditForm: parseFloat(gpa) or null.
+               Stored numeric ; we write the parsed number's string
+               form so the saveDirect string branch lands a parsed
+               value in the column. Empty → null (string branch). */
+            const trimmed = v.trim();
+            if (!trimmed) { void onDirect("moyenne_generale", ""); return; }
+            const parsed = parseFloat(trimmed);
+            void onDirect("moyenne_generale", Number.isFinite(parsed) ? String(parsed) : "");
+          }}
+        />
+        <PickerRow
+          label="Programme visé"
+          value={progTypeLabel}
+          onTap={() => setProgPickerOpen(true)}
+        />
+        <MobilePicker
+          open={progPickerOpen}
+          onClose={() => setProgPickerOpen(false)}
+          title="Programme visé"
+          options={PROGRAMME_TYPE_OPTIONS as unknown as PickerOption[]}
+          value={progType || null}
+          onChange={(v) => {
+            if (typeof v !== "string") return;
+            /* Picking DEC général collapses any technique detail ;
+               picking Programme technique keeps an existing detail
+               so the user can type-then-pick in either order. */
+            void onDirect("programme_cegep_vise", programmeCegepArray(v, progDetail));
+          }}
+        />
+        {progType === "technique" && (
+          <InlineEditRow
+            label="Précise le programme"
+            value={progDetail}
+            type="text"
+            placeholder="Ex: Soins infirmiers"
+            onSave={(v) => {
+              void onDirect("programme_cegep_vise", programmeCegepArray("technique", v));
+            }}
+          />
+        )}
+      </Card>
+
+      {/* Matières fortes + Mentions académiques — fixed-list pills
+          + custom free-text badges (CustomChipsField handles both,
+          plus the inline "Ajouter" affordance). Custom values are
+          plain strings appended to the same JSONB array — no schema
+          change.  Régions préférées (below) stays fixed-list only :
+          the Québec regions set is closed by product decision, so no
+          custom-add field there. */}
+      <Card>
+        <CustomChipsField
+          label="Matières fortes"
+          column="matieres_fortes"
+          fixedOptions={SUBJECTS}
+          values={a.strongSubjects}
+          onWrite={(col, next) => { void onDirect(col, next); }}
+          placeholder="Ajouter une matière..."
+        />
+        <CustomChipsField
+          label="Mentions académiques"
+          column="mentions_academiques"
+          fixedOptions={HONORS}
+          values={a.academicHonors}
+          onWrite={(col, next) => { void onDirect(col, next); }}
+          placeholder="Ajouter une mention..."
+        />
+      </Card>
+
+      {/* Préférences CÉGEP — 3 ToggleRow, each writes its boolean
+          column directly. */}
+      <Card>
+        <ToggleRow
+          label="Ouvert au CÉGEP privé"
+          checked={a.openToPrivate}
+          onToggle={() => { void onDirect("ouvert_cegep_prive", !a.openToPrivate); }}
+        />
+        <ToggleRow
+          label="Ouvert au CÉGEP anglophone"
+          checked={a.openToAnglophone}
+          onToggle={() => { void onDirect("ouvert_cegep_anglophone", !a.openToAnglophone); }}
+        />
+        <ToggleRow
+          label="Prêt à changer de région"
+          checked={a.openToRelocate}
+          onToggle={() => { void onDirect("pret_changer_region", !a.openToRelocate); }}
+        />
+      </Card>
+
+      {/* Régions préférées — ALWAYS shown (decision : decoupled from
+          pret_changer_region on mobile ; web couples them, mobile
+          does not). */}
+      <Card>
+        <ChipsBlock label="Régions préférées">
+          {CEGEP_REGIONS.map((r) => (
+            <ChipToggle
+              key={r}
+              label={r}
+              active={a.preferredRegions.includes(r)}
+              onToggle={() => toggleArrayValue("regions_cegep_preferees", a.preferredRegions, r)}
+            />
+          ))}
+        </ChipsBlock>
+      </Card>
+    </div>
+  );
+}
+
+/* ChipToggle — single multi-select pill rendered inside a ChipsBlock.
+   Active = red fill (canon recruitment-active style), inactive =
+   muted neutral. Tap fires the parent's toggle handler. */
+function ChipToggle({
+  label, active, onToggle,
+}: {
+  label: string;
+  active: boolean;
+  onToggle: () => void;
+}) {
+  // aria-pressed intentionally omitted — the jsx-a11y/aria-proptypes
+  // rule rejects any JSX expression value (even one that resolves to
+  // "true"/"false"), and the alternative (two button JSX branches)
+  // adds clutter without a real a11y win. Active state is conveyed
+  // by the red fill style ; sighted + keyboard users can still tell.
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      className={`inline-flex items-center px-2.5 py-1 rounded-full text-[12px] font-bold border transition-colors ${
+        active
+          ? "bg-[#E63946]/15 text-[#E63946] border-[#E63946]/30"
+          : "bg-white/[0.04] text-white/70 border-white/[0.08] active:bg-white/[0.08]"
+      }`}
+    >
+      {label}
+    </button>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   CustomChipsField — fixed-list pills + free-text custom badges +
+   inline "Ajouter" affordance, all writing the same JSONB array.
+
+   Used for matieres_fortes + mentions_academiques. NOT used for
+   regions_cegep_preferees — regions are a closed set by product
+   decision (8 fixed Québec regions ; no custom-add).
+
+   Behavior :
+     - Fixed pills : toggle in/out of the array. Case-insensitive
+       active detection so a custom-typed "mathematiques" still lights
+       up the canonical "Mathématiques" pill on next reload.
+     - Custom pills : every array value NOT present in fixedOptions
+       (case-insensitive) renders as a selected, removable badge with
+       an × button. WITHOUT this rendering, custom values would save
+       to the DB but vanish from the UI.
+     - Add field : trimmed, case-insensitive dedupe against BOTH the
+       fixed list (canonicalize to the fixed-list spelling) AND the
+       current values. Length cap : 60 chars. Enter / button tap
+       commits ; empty input → ignored.
+═══════════════════════════════════════════════════════════════ */
+function CustomChipsField({
+  label, column, fixedOptions, values, onWrite, placeholder,
+}: {
+  label: string;
+  column: string;
+  fixedOptions: readonly string[];
+  values: string[];
+  onWrite: (column: string, next: string[]) => void;
+  placeholder: string;
+}) {
+  const MAX_LEN = 60;
+  const [draft, setDraft] = useState("");
+
+  const fixedLowerSet = useMemo(
+    () => new Set(fixedOptions.map((o) => o.toLowerCase())),
+    [fixedOptions],
+  );
+  const valuesLowerSet = useMemo(
+    () => new Set(values.map((v) => v.toLowerCase())),
+    [values],
+  );
+  /* Custom values = anything in the stored array NOT matching a
+     fixed-list option (case-insensitive). Pre-existing custom values
+     written via the web's comma-split form land here on first render. */
+  const customValues = useMemo(
+    () => values.filter((v) => !fixedLowerSet.has(v.toLowerCase())),
+    [values, fixedLowerSet],
+  );
+
+  const toggleFixed = (option: string) => {
+    const optionLower = option.toLowerCase();
+    const isActive = valuesLowerSet.has(optionLower);
+    const next = isActive
+      ? values.filter((v) => v.toLowerCase() !== optionLower)
+      : [...values, option];
+    onWrite(column, next);
+  };
+
+  const removeCustom = (value: string) => {
+    onWrite(column, values.filter((v) => v !== value));
+  };
+
+  const addCustom = () => {
+    const trimmed = draft.trim();
+    if (!trimmed || trimmed.length > MAX_LEN) return;
+    const lower = trimmed.toLowerCase();
+
+    /* Case-insensitive match against the fixed list → canonicalize
+       to the official spelling instead of adding a custom dupe. */
+    const fixedMatch = fixedOptions.find((o) => o.toLowerCase() === lower);
+    if (fixedMatch) {
+      if (!valuesLowerSet.has(lower)) onWrite(column, [...values, fixedMatch]);
+      setDraft("");
+      return;
+    }
+    /* Custom branch : skip if a value with the same case-insensitive
+       form is already in the array (no duplicate badges). */
+    if (valuesLowerSet.has(lower)) { setDraft(""); return; }
+    onWrite(column, [...values, trimmed]);
+    setDraft("");
+  };
+
+  return (
+    <div className="px-4 py-3 border-b border-white/[0.06] last:border-0">
+      <div className="flex items-center gap-2 mb-2">
+        <span className="text-[14px] text-white/55">{label}</span>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {fixedOptions.map((option) => (
+          <ChipToggle
+            key={option}
+            label={option}
+            active={valuesLowerSet.has(option.toLowerCase())}
+            onToggle={() => toggleFixed(option)}
+          />
+        ))}
+        {customValues.map((value) => (
+          <CustomChip
+            key={value}
+            label={value}
+            onRemove={() => removeCustom(value)}
+          />
+        ))}
+      </div>
+      <div className="mt-3 flex items-center gap-2">
+        <input
+          type="text"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value.slice(0, MAX_LEN))}
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCustom(); } }}
+          placeholder={placeholder}
+          maxLength={MAX_LEN}
+          aria-label={`Ajouter — ${label}`}
+          className="flex-1 min-w-0 bg-[#111317] border border-white/[0.10] rounded-xl px-3 py-2 text-[14px] text-white placeholder:text-white/40 outline-none focus:border-white/[0.20]"
+        />
+        <button
+          type="button"
+          onClick={addCustom}
+          disabled={!draft.trim()}
+          className="shrink-0 px-3 py-2 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-colors bg-[#E63946] text-white active:bg-[#D42B22] disabled:opacity-40 disabled:bg-white/[0.06] disabled:text-white/40"
+        >
+          Ajouter
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* CustomChip — single custom badge with × remove button. Styled like
+   an active ChipToggle (red fill) + a trailing close button. */
+function CustomChip({ label, onRemove }: { label: string; onRemove: () => void }) {
+  return (
+    <span className="inline-flex items-center gap-1 pl-2.5 pr-1 py-1 rounded-full text-[12px] font-bold border bg-[#E63946]/15 text-[#E63946] border-[#E63946]/30">
+      <span className="truncate max-w-[160px]">{label}</span>
+      <button
+        type="button"
+        onClick={onRemove}
+        aria-label={`Retirer ${label}`}
+        className="w-5 h-5 inline-flex items-center justify-center rounded-full active:bg-[#E63946]/25"
+      >
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="6" y1="6" x2="18" y2="18" />
+          <line x1="6" y1="18" x2="18" y2="6" />
+        </svg>
+      </button>
+    </span>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SPORT step — 5 SUGGEST rows.
+
+   Champ strings BYTE-FOR-BYTE match the web fieldMap at page.tsx
+   :1245-1252 AND the apply_approved_suggestion trigger's name→id
+   resolution branches (Sport principal, Position, Sport secondaire,
+   Position secondaire, Numéro). For choice fields the picker options
+   are exact sport / position NAMES from the loaded reference lists —
+   the trigger looks up the name in `sports.nom` / `positions.nom` and
+   RAISES on no-match, so free-text entry is not surfaced. Position
+   pickers are SCOPED client-side : primary by athletes.sport_id,
+   secondary by athletes.sport_secondaire_id (fallback sport_id when
+   no secondary sport is set — mirrors page.tsx).
+═══════════════════════════════════════════════════════════════ */
+function SportStep({
+  a, sportsOptions, positionsOptions, getPending, submitting, onSubmit,
+}: {
+  a: LoadedAthlete;
+  sportsOptions: SportOption[];
+  positionsOptions: PositionOption[];
+  getPending: (champ: string) => AthleteSuggestion | undefined;
+  submitting: boolean;
+  onSubmit: (champ: string, proposed: string, message: string, currentValue: string) => Promise<void>;
+}) {
+  /* The picker `value` field is the same string the trigger receives
+     (the sport / position NAME), so we map each option to {value=nom,
+     label=nom}. The trigger does the name→id lookup at approval time
+     (page.tsx fieldMap maps "Sport principal" → sport_id ; the trigger
+     resolves via `sports WHERE lower(nom) = lower(proposed)` etc.). */
+  const sportPickerOptions: PickerOption[] = useMemo(
+    () => sportsOptions.map((s) => ({ value: s.nom, label: s.nom })),
+    [sportsOptions],
+  );
+
+  // Primary position picker : scoped to the athlete's CURRENT primary
+  // sport (athletes.sport_id). Secondary position picker : scoped to
+  // sport_secondaire_id ; falls back to primary sport_id when the
+  // secondary sport isn't set yet. Mirrors page.tsx's StructuredInput
+  // scoping for these champs.
+  /* Position picker label : show "ABREV — Nom" when an abbreviation
+     exists (e.g. "QB — Quart-arrière"), else fall back to the full
+     name. The picker's `value` STAYS p.nom verbatim — the trigger
+     resolves Position champs by name (sport-scoped at apply time),
+     so changing the value would break apply_approved_suggestion's
+     lookup. Only the visible label changes. */
+  const primaryPositionOptions: PickerOption[] = useMemo(
+    () => positionsOptions
+      .filter((p) => p.sport_id === a.sportId)
+      .map((p) => ({ value: p.nom, label: p.abreviation ? `${p.abreviation} — ${p.nom}` : p.nom })),
+    [positionsOptions, a.sportId],
+  );
+  const secondaryPositionScopeId = a.sportSecondaireId ?? a.sportId;
+  const secondaryPositionOptions: PickerOption[] = useMemo(
+    () => positionsOptions
+      .filter((p) => p.sport_id === secondaryPositionScopeId)
+      .map((p) => ({ value: p.nom, label: p.abreviation ? `${p.abreviation} — ${p.nom}` : p.nom })),
+    [positionsOptions, secondaryPositionScopeId],
+  );
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2 px-1">
+        <p className="text-[10px] font-bold tracking-[0.2em] uppercase" style={{ color: YELLOW }}>
+          Sport · Suggest
+        </p>
+        <PencilIcon color={YELLOW} size={12} />
+      </div>
+      <p className="text-[12px] text-white/55 px-1">
+        Tes propositions sont envoyées à ton coach pour approbation.
       </p>
       <Card>
-        <div className="px-4 py-5 flex items-start gap-3">
-          {mode === "LOCKED" ? <LockIcon size={16} /> : <PencilIcon color={color} size={16} />}
-          <p className="text-[13px] text-white/70 leading-relaxed">{description}</p>
-        </div>
+        <SuggestRow
+          label="Sport principal"
+          value={a.primarySport}
+          champ="Sport principal"
+          pending={getPending("Sport principal")}
+          inputType="picker"
+          pickerOptions={sportPickerOptions}
+          submitting={submitting}
+          onSubmit={onSubmit}
+        />
+        <SuggestRow
+          label="Position principale"
+          value={a.primaryPosition}
+          champ="Position"
+          pending={getPending("Position")}
+          inputType="picker"
+          pickerOptions={primaryPositionOptions}
+          submitting={submitting}
+          onSubmit={onSubmit}
+        />
+        <SuggestRow
+          label="Sport secondaire"
+          value={a.secondarySport}
+          champ="Sport secondaire"
+          pending={getPending("Sport secondaire")}
+          inputType="picker"
+          pickerOptions={sportPickerOptions}
+          submitting={submitting}
+          onSubmit={onSubmit}
+        />
+        <SuggestRow
+          label="Position sport secondaire"
+          value={a.secondaryPosition}
+          champ="Position secondaire"
+          pending={getPending("Position secondaire")}
+          inputType="picker"
+          pickerOptions={secondaryPositionOptions}
+          submitting={submitting}
+          onSubmit={onSubmit}
+        />
+        <SuggestRow
+          label="Numéro"
+          value={a.jerseyNumber}
+          champ="Numéro"
+          pending={getPending("Numéro")}
+          inputType="text"
+          numericMode="numeric"
+          placeholder="Ex: 24"
+          submitting={submitting}
+          onSubmit={onSubmit}
+          isLast
+        />
       </Card>
     </div>
   );
@@ -615,9 +1546,9 @@ function PhysiqueStep({
           Tes propositions sont envoyées à ton coach pour approbation.
         </p>
         <Card>
-          <SuggestRow label="Taille"          value={a.heightDisplay}   champ="Taille"          pending={getPending("Taille")}          inputType="text" numericMode="numeric" submitting={submitting} onSubmit={onSubmit} />
-          <SuggestRow label="Poids"           value={a.weightDisplay}   champ="Poids"           pending={getPending("Poids")}           inputType="text" numericMode="decimal" submitting={submitting} onSubmit={onSubmit} />
-          <SuggestRow label="Envergure"       value={a.wingspan}        champ="Envergure"       pending={getPending("Envergure")}       inputType="text" numericMode="numeric" submitting={submitting} onSubmit={onSubmit} />
+          <SuggestRow label="Taille"          value={a.heightDisplay}   champ="Taille"          pending={getPending("Taille")}          inputType="text" numericMode="numeric" placeholder="Ex: 6'4&quot;"   submitting={submitting} onSubmit={onSubmit} />
+          <SuggestRow label="Poids"           value={a.weightDisplay}   champ="Poids"           pending={getPending("Poids")}           inputType="text" numericMode="decimal" placeholder="Ex: 185 lbs"    submitting={submitting} onSubmit={onSubmit} />
+          <SuggestRow label="Envergure"       value={a.wingspan}        champ="Envergure"       pending={getPending("Envergure")}       inputType="text" numericMode="numeric" placeholder="Ex: 78&quot;"    submitting={submitting} onSubmit={onSubmit} />
           <SuggestRow label="Main dominante"  value={a.dominantHand}    champ="Main dominante"  pending={getPending("Main dominante")}  inputType="picker" pickerOptions={HAND_OPTIONS} submitting={submitting} onSubmit={onSubmit} />
           <SuggestRow label="Pied dominant"   value={a.dominantFoot}    champ="Pied dominant"   pending={getPending("Pied dominant")}   inputType="picker" pickerOptions={FOOT_OPTIONS} submitting={submitting} onSubmit={onSubmit} isLast />
         </Card>
@@ -628,12 +1559,12 @@ function PhysiqueStep({
           Tests athlétiques
         </p>
         <Card>
-          <SuggestRow label="40 verges"        value={a.fortyYard}      champ="40 yards"         pending={getPending("40 yards")}         inputType="text" numericMode="decimal" submitting={submitting} onSubmit={onSubmit} />
-          <SuggestRow label="Saut vertical"    value={a.verticalJump}   champ="Saut vertical"    pending={getPending("Saut vertical")}    inputType="text" numericMode="decimal" submitting={submitting} onSubmit={onSubmit} />
-          <SuggestRow label="Saut en longueur" value={a.broadJump}      champ="Saut longueur"    pending={getPending("Saut longueur")}    inputType="text" numericMode="decimal" submitting={submitting} onSubmit={onSubmit} />
-          <SuggestRow label="Développé couché" value={a.benchPress}     champ="Développé couché" pending={getPending("Développé couché")} inputType="text" numericMode="decimal" submitting={submitting} onSubmit={onSubmit} />
-          <SuggestRow label="Navette"          value={a.shuttleAgility} champ="Navette"          pending={getPending("Navette")}          inputType="text" numericMode="decimal" submitting={submitting} onSubmit={onSubmit} />
-          <SuggestRow label="Sprint 100m"      value={a.sprint100m}     champ="Sprint 100m"      pending={getPending("Sprint 100m")}      inputType="text" numericMode="decimal" submitting={submitting} onSubmit={onSubmit} isLast />
+          <SuggestRow label="40 verges"        value={a.fortyYard}      champ="40 yards"         pending={getPending("40 yards")}         inputType="text" numericMode="decimal" placeholder="Ex: 4.72s"     submitting={submitting} onSubmit={onSubmit} />
+          <SuggestRow label="Saut vertical"    value={a.verticalJump}   champ="Saut vertical"    pending={getPending("Saut vertical")}    inputType="text" numericMode="decimal" placeholder="Ex: 32&quot;"   submitting={submitting} onSubmit={onSubmit} />
+          <SuggestRow label="Saut en longueur" value={a.broadJump}      champ="Saut longueur"    pending={getPending("Saut longueur")}    inputType="text" numericMode="decimal" placeholder="Ex: 9'2&quot;"  submitting={submitting} onSubmit={onSubmit} />
+          <SuggestRow label="Développé couché" value={a.benchPress}     champ="Développé couché" pending={getPending("Développé couché")} inputType="text" numericMode="decimal" placeholder="Ex: 225 × 8"   submitting={submitting} onSubmit={onSubmit} />
+          <SuggestRow label="Navette"          value={a.shuttleAgility} champ="Navette"          pending={getPending("Navette")}          inputType="text" numericMode="decimal" placeholder="Ex: 4.31s"     submitting={submitting} onSubmit={onSubmit} />
+          <SuggestRow label="Sprint 100m"      value={a.sprint100m}     champ="Sprint 100m"      pending={getPending("Sprint 100m")}      inputType="text" numericMode="decimal" placeholder="Ex: 10.9s"     submitting={submitting} onSubmit={onSubmit} isLast />
         </Card>
       </div>
     </>
@@ -694,6 +1625,612 @@ function MediasStep({
           onSave={(v) => onDirect("instagram_url", v)}
         />
       </Card>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ÉVALUATION step — SUGGEST cote + 14 traits, LOCKED rapport.
+   Sprint B-3a (Distinctions is B-3b).
+
+   This is the trigger-critical surface : the champ strings + the
+   detailed-wins rule are wired to apply_approved_suggestion. Mirrors
+   web EvaluationSuggest (page.tsx :544-691) verbatim.
+
+   Layout :
+     - Rapport entraîneur (LOCKED red lock chip, italicized quote
+       attributed to the coach). NO champ — never suggestable.
+     - Cote globale row — TWO mutually-exclusive variants by
+       isDetailedMode :
+         · SIMPLE (no traits) : star-suggest row, half-stars,
+           champ="Cote globale", valeur_proposee = draft.toFixed(1).
+         · DETAILED (any trait > 0) : READ-ONLY auto-average display.
+           NO suggest button. UI mirrors trigger's v_is_detailed
+           guard — the athlete cannot emit a "Cote globale"
+           suggestion when detailed traits exist.
+     - Trait grid (Caractère + Tactique Cards) — only rendered when
+       isDetailedMode is true. Each trait is a whole-star suggest
+       row with champ = the trait's exact French label.
+
+   isDetailedMode mirrors page.tsx :550 verbatim :
+     !!traitRatings && TRAIT_CHAMPS.some((t) => (traitRatings[t.key] || 0) > 0)
+═══════════════════════════════════════════════════════════════ */
+function EvaluationStep({
+  a, getPending, submitting, onSubmit,
+}: {
+  a: LoadedAthlete;
+  getPending: (champ: string) => AthleteSuggestion | undefined;
+  submitting: boolean;
+  onSubmit: (champ: string, proposed: string, message: string, currentValue: string) => Promise<void>;
+}) {
+  const tr = a.traitRatings;
+  const isDetailedMode = !!tr && TRAIT_CHAMPS.some((t) => (tr[t.key] || 0) > 0);
+
+  /* traitAvg — auto-average of non-zero traits (verbatim from
+     page.tsx :562-567). When isDetailedMode is false, falls back
+     to the flat overallRating from the loaded cote_globale. */
+  const traitAvg = isDetailedMode && tr
+    ? (() => {
+        const vals = TRAIT_CHAMPS.map((t) => (tr[t.key] || 0)).filter((v) => v > 0);
+        return vals.length ? vals.reduce((acc, v) => acc + v, 0) / vals.length : 0;
+      })()
+    : a.overallRating;
+
+  const getCurrent = (key: keyof AthleteTraitRatings) => (tr ? tr[key] || 0 : 0);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2 px-1">
+        <p className="text-[10px] font-bold tracking-[0.2em] uppercase" style={{ color: YELLOW }}>
+          Évaluation · Suggest
+        </p>
+        <PencilIcon color={YELLOW} size={12} />
+      </div>
+      <p className="text-[12px] text-white/55 px-1">
+        Tes propositions sont envoyées à ton coach pour approbation.
+      </p>
+
+      {/* ── Rapport entraîneur — LOCKED (display-only).
+            No champ in apply_approved_suggestion : the athlete cannot
+            propose changes to this. Rendered only when the coach has
+            actually written one. Heading carries a red LockIcon for
+            consistency with the rest of the LOCKED indicator canon
+            (Identité locked rows, Médias none). */}
+      {a.coachReport && (
+        <div>
+          <div className="flex items-center gap-2 mb-2 px-1">
+            <p className="text-[11px] font-bold tracking-[0.18em] uppercase text-white/45">
+              Rapport entraîneur
+            </p>
+            <LockIcon size={12} />
+          </div>
+          <Card>
+            <div className="px-4 py-4 bg-[#0E1015]">
+              {a.coachName && (
+                <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-white/45 mb-2">
+                  Coach {a.coachName}
+                </p>
+              )}
+              <p className="text-[14px] text-white/75 leading-relaxed italic">
+                &ldquo;{a.coachReport}&rdquo;
+              </p>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* ── Cote globale ─────────────────────────────────────────
+            SIMPLE branch (no traits) : suggestable via StarSuggestRow,
+            half-stars enabled, champ="Cote globale".
+            DETAILED branch (any trait > 0) : READ-ONLY auto-average.
+            No suggest button. This is the UI mirror of the trigger's
+            v_is_detailed guard at migration L109-114 — the athlete
+            cannot emit a "Cote globale" suggestion when any trait is
+            set, so a flat-cote proposal can never roll back at apply
+            time. */}
+      <div>
+        <p className="text-[11px] font-bold tracking-[0.18em] uppercase text-white/45 mb-2 px-1">
+          Cote globale
+        </p>
+        {!isDetailedMode ? (
+          <Card>
+            <StarSuggestRow
+              label={a.overallRating > 0 ? `${a.overallRating.toFixed(1)}/5` : "—"}
+              currentValue={a.overallRating}
+              champ="Cote globale"
+              allowHalf
+              starSize={28}
+              pending={getPending("Cote globale")}
+              submitting={submitting}
+              onSubmit={async (proposed) => {
+                /* Cote stringify : toFixed(1) → e.g. "4.5". Matches
+                   trigger ::numeric cast (migration L115). */
+                await onSubmit("Cote globale", proposed.toFixed(1), "", String(a.overallRating || ""));
+              }}
+              isLast
+            />
+          </Card>
+        ) : (
+          <Card>
+            <div className="px-4 py-4 flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-[14px] text-white/55">Cote calculée</p>
+                <p className="text-[11px] text-white/40 mt-0.5">
+                  Moyenne automatique de tes critères ci-dessous.
+                </p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <StarRow value={Math.round(traitAvg)} onChange={() => { /* read-only */ }} size={20} />
+                <span className="text-[14px] font-bold text-white w-12 text-right">
+                  {traitAvg > 0 ? `${traitAvg.toFixed(1)}/5` : "—"}
+                </span>
+              </div>
+            </div>
+          </Card>
+        )}
+      </div>
+
+      {/* ── Trait grid — only when detailed mode is on. Two Cards :
+            Caractère (8 character traits), Tactique (6 tactical).
+            Each row is a StarSuggestRow with whole-star input
+            (allowHalf=false) and champ = the trait's exact French
+            label. valeur_proposee = String(int) "1"-"5", matching
+            the trigger ::int cast for those 14 columns. */}
+      {isDetailedMode && (
+        <>
+          <div>
+            <p className="text-[11px] font-bold tracking-[0.18em] uppercase text-white/45 mb-2 px-1">
+              Caractère
+            </p>
+            <Card>
+              {CHARACTER_TRAITS.map((t, i) => {
+                const current = getCurrent(t.key);
+                return (
+                  <StarSuggestRow
+                    key={t.key}
+                    label={t.label}
+                    currentValue={current}
+                    champ={t.label}
+                    allowHalf={false}
+                    starSize={20}
+                    pending={getPending(t.label)}
+                    submitting={submitting}
+                    onSubmit={async (proposed) => {
+                      /* Submit guard mirrors page.tsx :587 :
+                         only emit if proposed > 0 && proposed !== current.
+                         StarSuggestRow's submit path enforces > 0 ;
+                         the equality check happens here. */
+                      if (proposed === current) return;
+                      await onSubmit(t.label, String(proposed), "", String(current || ""));
+                    }}
+                    isLast={i === CHARACTER_TRAITS.length - 1}
+                  />
+                );
+              })}
+            </Card>
+          </div>
+          <div>
+            <p className="text-[11px] font-bold tracking-[0.18em] uppercase text-white/45 mb-2 px-1">
+              Tactique
+            </p>
+            <Card>
+              {TACTICAL_TRAITS.map((t, i) => {
+                const current = getCurrent(t.key);
+                return (
+                  <StarSuggestRow
+                    key={t.key}
+                    label={t.label}
+                    currentValue={current}
+                    champ={t.label}
+                    allowHalf={false}
+                    starSize={20}
+                    pending={getPending(t.label)}
+                    submitting={submitting}
+                    onSubmit={async (proposed) => {
+                      if (proposed === current) return;
+                      await onSubmit(t.label, String(proposed), "", String(current || ""));
+                    }}
+                    isLast={i === TACTICAL_TRAITS.length - 1}
+                  />
+                );
+              })}
+            </Card>
+          </div>
+        </>
+      )}
+
+      {/* ── Distinctions (SUGGEST) ──────────────────────────────
+            Single-row, single-suggestion : the whole entries array is
+            JSON-stringified into one athlete_suggestions row with champ
+            "Distinctions" + valeur_proposee = JSON.stringify(entries).
+            Trigger casts ::jsonb on apply (migration L190-193) and the
+            recruiter/coach read goes through parseDistinctions, so the
+            stringify→jsonb→parse round-trip is symmetric. */}
+      <div>
+        <p className="text-[11px] font-bold tracking-[0.18em] uppercase text-white/45 mb-2 px-1">
+          Distinctions
+        </p>
+        <Card>
+          <DistinctionsSuggestRow
+            currentDistinctions={a.coachDistinctions}
+            pending={getPending("Distinctions")}
+            submitting={submitting}
+            onSubmit={async (entries) => {
+              /* champ + payload format are trigger-critical. champ MUST
+                 be exactly "Distinctions" (single trigger CASE branch
+                 at migration L190). NEVER emit "Distinction
+                 personnalisée" — that's a SEPARATE branch (L195-196)
+                 used by a different admin flow ; emitting it from the
+                 athlete profile would INSERT into custom_distinctions
+                 instead of updating evaluations.distinctions, which is
+                 not what we want here. The custom badge's display title
+                 lives inside the entries array as { badge:"custom",
+                 detail:"<title>" } and ships through the regular
+                 Distinctions branch. */
+              const valueActuelle = JSON.stringify(a.coachDistinctions);
+              await onSubmit("Distinctions", JSON.stringify(entries), "", valueActuelle);
+            }}
+          />
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   StarSuggestRow — parallel to SuggestRow but with a StarRow input
+   body (no text/picker overlap with SuggestExpand). Owns its own
+   expand state + yellow indicator + pending pill + Soumettre /
+   Annuler shell.
+
+   Submit guard : refuses to commit if `proposed <= 0`. Per-row
+   semantic guards (e.g. "trait must differ from current") are
+   delegated to the caller's onSubmit. The trigger doesn't care
+   about identical values — they update the column to the same int —
+   but emitting them clutters the coach's approval inbox, so the
+   trait call sites in EvaluationStep skip when proposed === current.
+
+   `allowHalf` is forwarded to StarRow ; the row is half-star for
+   Cote globale and whole-star for individual traits.
+═══════════════════════════════════════════════════════════════ */
+function StarSuggestRow({
+  label, currentValue, champ, allowHalf, starSize, pending, submitting, onSubmit, isLast,
+}: {
+  label: string;
+  /** Currently-stored value in evaluations (0 = unset). Displayed
+   *  in the collapsed read state + struck-through in the expand
+   *  state for the "Actuel" context. */
+  currentValue: number;
+  /** Exact French champ string ; trigger-critical. Mirrored
+   *  byte-for-byte from TRAIT_CHAMPS labels OR the literal
+   *  "Cote globale" for the flat-cote row. */
+  champ: string;
+  allowHalf: boolean;
+  starSize: number;
+  pending: AthleteSuggestion | undefined;
+  submitting: boolean;
+  /** Called with the validated `proposed` number (always > 0). The
+   *  caller does the stringify (String(int) for traits, toFixed(1)
+   *  for cote) inside its own onSubmit closure. */
+  onSubmit: (proposed: number) => Promise<void>;
+  isLast?: boolean;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const [draft, setDraft] = useState(0);
+
+  const hasPending = !!pending;
+
+  /* Collapsed surface — yellow pencil indicator + current value
+     stars + pending pill (mirrors SuggestRow's read state). The
+     pending pill appears when an EN_ATTENTE suggestion exists for
+     this champ. */
+  if (!expanded) {
+    return (
+      <div className={`w-full ${isLast ? "" : "border-b border-white/[0.06]"}`}>
+        <button
+          type="button"
+          onClick={() => { setDraft(currentValue); setExpanded(true); }}
+          className="w-full flex items-center justify-between gap-3 px-4 py-3 active:bg-white/[0.02]"
+        >
+          <span className="flex items-center gap-2 min-w-0 flex-1 text-left">
+            <PencilIcon color={YELLOW} size={12} />
+            <span className="text-[14px] text-white/70 truncate">{label}</span>
+          </span>
+          <span className="flex items-center gap-2 shrink-0">
+            <StarRow value={currentValue} onChange={() => { /* read-only */ }} size={starSize > 24 ? 18 : 16} />
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
+          </span>
+        </button>
+        {hasPending && (
+          <div className="px-4 pb-3 -mt-1">
+            <span className="inline-block text-[11px] font-bold text-[#EAB308] bg-[#EAB308]/10 border border-[#EAB308]/25 rounded-full px-2 py-0.5">
+              ⏳ En attente : {pending?.proposed_value}/5
+            </span>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  /* Expanded surface — current/proposed stars + Soumettre / Annuler.
+     Submit guard : refuse draft <= 0. */
+  const canSubmit = draft > 0 && !submitting;
+  return (
+    <div className={`w-full ${isLast ? "" : "border-b border-white/[0.06]"} px-4 py-3 bg-[#0E1015]`}>
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-[14px] text-white font-semibold">{champ}</span>
+        <button
+          type="button"
+          onClick={() => setExpanded(false)}
+          className="text-[12px] text-white/45 active:text-white/70"
+        >
+          Annuler
+        </button>
+      </div>
+      {currentValue > 0 && (
+        <div className="mb-2 flex items-center gap-2">
+          <span className="text-[11px] uppercase tracking-[0.14em] text-white/40">Actuel</span>
+          <StarRow value={currentValue} onChange={() => { /* read-only */ }} size={16} />
+          <span className="text-[12px] text-white/55">{allowHalf ? currentValue.toFixed(1) : currentValue}/5</span>
+        </div>
+      )}
+      <div className="flex items-center gap-3">
+        <StarRow value={draft} onChange={setDraft} size={starSize} allowHalf={allowHalf} />
+        <span className="text-[13px] font-bold text-white w-12 text-right">
+          {draft > 0 ? `${allowHalf ? draft.toFixed(1) : draft}/5` : "—"}
+        </span>
+      </div>
+      <div className="mt-3 flex items-center justify-end gap-3">
+        <button
+          type="button"
+          onClick={async () => {
+            if (!canSubmit) return;
+            await onSubmit(draft);
+            setExpanded(false);
+          }}
+          disabled={!canSubmit}
+          className="px-3 py-2 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-colors bg-[#EAB308] text-[#111317] active:bg-[#D4A20A] disabled:opacity-40 disabled:bg-white/[0.06] disabled:text-white/40"
+        >
+          {submitting ? "..." : "Soumettre"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   DistinctionsSuggestRow — Sprint B-3b.
+
+   The ONLY structured-payload suggestion in the system : a JSONB
+   array of {badge, detail?} entries that ships as ONE suggestion row
+   (champ="Distinctions", valeur_proposee=JSON.stringify(entries)) ;
+   the trigger casts ::jsonb and the recruiter/coach read goes through
+   parseDistinctions. Symmetric round-trip.
+
+   Mirrors web DistinctionsSuggest (app/athlete/profil/page.tsx :695-
+   800) :
+     - 7 badges from BADGE_ORDER as a toggle list (custom label is
+       shown as "Personnalisée" — same display substitution as web
+       page.tsx :772).
+     - MAX_BADGES = 5 cap (enforced both on toggle AND visually : once
+       5 are selected, unselected entries dim + disable).
+     - 3 hasDetail badges (team_leader / league_leader / custom)
+       reveal an inline detail input capped at MAX_DETAIL_LENGTH = 30.
+       Placeholders : custom → "Titre", others → "Ex: Points, Buts,
+       Passes..." — verbatim mirror of web :780.
+     - On submit, entries with empty detail strings have their detail
+       key OMITTED (not detail:"") — same as web :716-718's
+       `detail: detail || undefined` idiom which JSON.stringify drops
+       from the serialized object.
+
+   INPUT SURFACE : inline-expand (no bottom sheet). The 7-badge list +
+   per-badge detail inputs fit comfortably inline at ~10 rows worst-
+   case, well below typical step height. Keeping it inline preserves
+   the no-popup canon of the rest of the athlete editor — every
+   suggest row in this wizard is inline-expand (text, picker, stars,
+   now distinctions). A bottom sheet would be the ONLY exception and
+   would have to ship + own its own animation/close semantics. Inline
+   stays simpler and consistent.
+
+   Submission shape is byte-identical to the web payload so the
+   apply_approved_suggestion trigger's `::jsonb` cast and the canonical
+   parseDistinctions read are both symmetric round-trips.
+═══════════════════════════════════════════════════════════════ */
+function DistinctionsSuggestRow({
+  currentDistinctions, pending, submitting, onSubmit,
+}: {
+  currentDistinctions: DistinctionEntry[];
+  pending: AthleteSuggestion | undefined;
+  submitting: boolean;
+  onSubmit: (entries: DistinctionEntry[]) => Promise<void>;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  /* Draft is seeded from currentDistinctions on expand (mirrors web
+     `startEditing` at page.tsx :727-730) so the athlete edits the
+     existing set rather than starting blank. */
+  const [draft, setDraft] = useState<DistinctionEntry[]>(currentDistinctions);
+  const hasPending = !!pending;
+
+  const atMax = draft.length >= MAX_BADGES;
+
+  /* Toggle a badge into/out of draft. Respects MAX_BADGES — once at
+     cap, adding is a no-op (mirrors web :707-714). Toggling OFF a
+     selected badge drops it AND any detail. */
+  const toggle = (badgeKey: string) => {
+    setDraft((prev) => {
+      const idx = prev.findIndex((e) => e.badge === badgeKey);
+      if (idx >= 0) return prev.filter((_, i) => i !== idx);
+      if (prev.length >= MAX_BADGES) return prev;
+      return [...prev, { badge: badgeKey }];
+    });
+  };
+
+  /* Update a hasDetail badge's detail text. Empty / whitespace-only
+     detail is preserved as "" in local state ; the submit handler
+     strips empties to `undefined` (key absent in payload) — matches
+     web `detail: detail || undefined` at page.tsx :717. */
+  const updateDetail = (badgeKey: string, detail: string) => {
+    setDraft((prev) => prev.map((e) =>
+      e.badge === badgeKey
+        ? { ...e, detail: detail.slice(0, MAX_DETAIL_LENGTH) }
+        : e,
+    ));
+  };
+
+  const submit = async () => {
+    /* Normalize entries for the wire payload : drop empty detail keys
+       so JSON.stringify omits them (matches web exactly — empty detail
+       must NOT serialize as `"detail":""`). Preserve insertion order
+       (athlete's tap order = badge ordering in the recruiter view). */
+    const wire: DistinctionEntry[] = draft.map((e) => {
+      const d = (e.detail || "").trim();
+      return d ? { badge: e.badge, detail: d } : { badge: e.badge };
+    });
+    await onSubmit(wire);
+    setExpanded(false);
+  };
+
+  /* ─── Collapsed surface ──────────────────────────────────────
+        Yellow pencil indicator + "Distinctions" + small chip summary
+        of currently-coach-set badges + pending pill. Same visual
+        canon as the StarSuggestRow read-state. */
+  if (!expanded) {
+    return (
+      <div className="w-full">
+        <button
+          type="button"
+          onClick={() => { setDraft(currentDistinctions); setExpanded(true); }}
+          className="w-full flex items-start justify-between gap-3 px-4 py-3 active:bg-white/[0.02]"
+        >
+          <span className="flex items-center gap-2 min-w-0 flex-1 text-left">
+            <PencilIcon color={YELLOW} size={12} />
+            <span className="text-[14px] text-white/70 truncate">Distinctions</span>
+          </span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mt-1 shrink-0">
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
+        </button>
+        {/* Current badges as small muted chips. Empty state shows an
+            em-dash via the read-only branch ; in expand mode the user
+            sees the same chip list reflected in the toggle states. */}
+        {currentDistinctions.length > 0 ? (
+          <div className="px-4 pb-3 flex flex-wrap gap-1.5">
+            {currentDistinctions.map((e, i) => {
+              const cfg = BADGE_CONFIG[e.badge];
+              if (!cfg) return null;
+              const label = e.badge === "custom"
+                ? (e.detail || "Personnalisée")
+                : (e.detail ? `${cfg.label} — ${e.detail}` : cfg.label);
+              return (
+                <span
+                  key={`${e.badge}-${i}`}
+                  className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-white/[0.06] border border-white/[0.08] text-white/75"
+                >
+                  {label}
+                </span>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="px-4 pb-3">
+            <span className="text-[12px] text-white/35">—</span>
+          </div>
+        )}
+        {hasPending && (
+          <div className="px-4 pb-3 -mt-1">
+            <span className="inline-block text-[11px] font-bold text-[#EAB308] bg-[#EAB308]/10 border border-[#EAB308]/25 rounded-full px-2 py-0.5">
+              ⏳ En attente
+            </span>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  /* ─── Expanded surface ───────────────────────────────────────
+        7-badge toggle list + per-badge detail inputs (hasDetail
+        only) + Annuler/Soumettre. Cap counter (n/MAX_BADGES) sits
+        above the action row. */
+  return (
+    <div className="w-full px-4 py-3 bg-[#0E1015]">
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-[14px] text-white font-semibold">Distinctions</span>
+        <button
+          type="button"
+          onClick={() => setExpanded(false)}
+          className="text-[12px] text-white/45 active:text-white/70"
+        >
+          Annuler
+        </button>
+      </div>
+
+      <div className="space-y-1.5">
+        {BADGE_ORDER.map((key) => {
+          const cfg = BADGE_CONFIG[key];
+          const entry = draft.find((e) => e.badge === key);
+          const isSelected = !!entry;
+          const isDisabled = !isSelected && atMax;
+          const displayLabel = key === "custom" ? "Personnalisée" : cfg.label;
+          return (
+            <div
+              key={key}
+              className={`border rounded-lg transition-colors ${
+                isSelected ? "border-[#EAB308]/40 bg-[#EAB308]/[0.06]" : "border-white/[0.08]"
+              } ${isDisabled ? "opacity-40" : ""}`}
+            >
+              <button
+                type="button"
+                onClick={() => { if (!isDisabled) toggle(key); }}
+                disabled={isDisabled}
+                className="w-full flex items-center gap-3 px-3 py-2.5 text-left"
+              >
+                <span
+                  className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
+                    isSelected ? "bg-[#EAB308] border-[#EAB308]" : "border-white/[0.20]"
+                  }`}
+                >
+                  {isSelected && (
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#111317" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M20 6L9 17l-5-5" />
+                    </svg>
+                  )}
+                </span>
+                <span className={`text-[13px] font-bold ${isSelected ? "text-white" : "text-white/55"}`}>
+                  {displayLabel}
+                </span>
+              </button>
+              {isSelected && cfg.hasDetail && (
+                <div className="px-3 pb-3 pl-10">
+                  <input
+                    type="text"
+                    value={entry?.detail || ""}
+                    onChange={(e) => updateDetail(key, e.target.value)}
+                    maxLength={MAX_DETAIL_LENGTH}
+                    placeholder={key === "custom" ? "Titre" : "Ex: Points, Buts, Passes..."}
+                    aria-label={`Détail — ${displayLabel}`}
+                    className="w-full bg-[#111317] border border-white/[0.10] rounded-lg px-2.5 py-1.5 text-[13px] text-white placeholder:text-white/35 outline-none focus:border-[#EAB308]/40"
+                  />
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      <p className="text-[11px] text-white/45 mt-3">{draft.length} / {MAX_BADGES}</p>
+
+      <div className="mt-3 flex items-center justify-end gap-3 pb-2">
+        <button
+          type="button"
+          onClick={submit}
+          disabled={submitting}
+          className="px-3 py-2 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-colors bg-[#EAB308] text-[#111317] active:bg-[#D4A20A] disabled:opacity-40 disabled:bg-white/[0.06] disabled:text-white/40"
+        >
+          {submitting ? "..." : "Soumettre"}
+        </button>
+      </div>
     </div>
   );
 }

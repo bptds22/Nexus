@@ -62,8 +62,18 @@ import type { CoachTaskSuggestion } from "@/lib/coach/tasks";
 
 export type AthleteProfileViewerMode = "recruiter" | "preview" | "partner";
 /** Surface viewer — drives recruteur-only gates + coach-only additions.
- *  Default "recruiter" → existing call sites unaffected. */
-export type AthleteProfileViewer = "recruiter" | "coach";
+ *  Default "recruiter" → existing call sites unaffected.
+ *
+ *  "self-preview" (Sprint C) = the athlete viewing their OWN profile via
+ *  the athlete portal's Aperçu route. Reuses the RECRUITER-perspective
+ *  data load (canonical "this is what a recruiter sees") but suppresses
+ *  every recruiter-side action (favorites/contact/pipeline/lists) and
+ *  every recruiter-scoped fetch (favorites/pipeline/recruiter_athlete_views).
+ *  isRecruiter stays FALSE for self-preview so the existing
+ *  `if (!isRecruiter) return;` early-returns in those useEffects continue
+ *  to auto-suppress — the only gate widened is the recruiter-perspective
+ *  athletes SELECT (so the canonical full-fat load still runs). */
+export type AthleteProfileViewer = "recruiter" | "coach" | "self-preview";
 
 interface Props {
   athleteId: string;
@@ -494,8 +504,24 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
 
   // Step 6 unification — viewer flag drives recruteur-only gates +
   // coach-only additions. Recruiter output MUST stay byte-identical.
+  //
+  // Sprint C : isSelfPreview is the athlete viewing their OWN profile via
+  // /athlete/profil/apercu. Critical invariants :
+  //   - isRecruiter stays FALSE → the 3 recruiter-scoped useEffects
+  //     (favorites, pipeline, recruiter_athlete_views) auto-suppress
+  //     via their existing `if (!isRecruiter) return;` early-returns.
+  //     NEVER touch a recruiter-scoped table from an athlete session.
+  //   - isCoach stays FALSE → coach alert stack + "Modifier le profil"
+  //     CTA + SuggestionSheet do not render.
+  //   - The recruiter-perspective athletes SELECT (line 600 useEffect)
+  //     IS the canonical "how a recruiter sees this athlete" load — its
+  //     gate is widened below to admit isSelfPreview. RLS-clean because
+  //     the "athletes can read own profile" policy (USING user_id =
+  //     auth.uid()) covers the own-row read independently of the
+  //     recruiter-only verified/active policies.
   const isRecruiter = viewer === "recruiter";
   const isCoach = viewer === "coach";
+  const isSelfPreview = viewer === "self-preview";
 
   const id = athleteId;
   const { maxFavorites, tier, loading: tierLoading } = useSubscription();
@@ -504,7 +530,14 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
   // Iter 7.23 Sprint 4 — gating PRO pour custom_lists (cohérent avec FeatureGate
   // feature="custom_lists" requiredTier="pro" du desktop).
   const canCustomLists = tier === "pro" || tier === "all_star";
-  const isFreeRecruiter = tier === "free";
+  // Sprint C : self-preview is the fully-revealed "Pro recruiter" perspective —
+  // force isFreeRecruiter false so identityCols include first_name/last_name in
+  // the load, and so the standalone isFreeRecruiter-gated blurs (name 1668,
+  // photo 2050, coach comments 1909, PlayerCardMobile isFree prop 1654)
+  // collapse cleanly. The athlete's own subscription tier (typically "free"
+  // for athletes) would otherwise trigger free-tier blurs that lie about how
+  // a recruiter sees them.
+  const isFreeRecruiter = tier === "free" && !isSelfPreview;
   const { count: myFavCount, setCount: setMyFavCount } = useFavoritesCount();
   const [a, setA] = useState<AthleteProfileRecruiterView>(mockAthleteProfileFull);
   const [loadingAthlete, setLoadingAthlete] = useState(true);
@@ -597,7 +630,14 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
   }, [id, isCoach, coachReloadVersion]);
 
   useEffect(() => {
-    if (!isRecruiter) return;
+    // Sprint C : self-preview shares this canonical recruiter-perspective
+    // load. The athletes SELECT runs under the "athletes can read own
+    // profile" RLS policy when the caller is the athlete themselves
+    // (USING user_id = auth.uid()), so no recruiter-role privilege is
+    // required — the same SELECT + joins resolves cleanly. isFreeRecruiter
+    // is forced false above for self-preview, so identityCols always
+    // include first_name/last_name in this branch.
+    if (!isRecruiter && !isSelfPreview) return;
     if (tierLoading) return;
     const supabase = createClient();
     const identityCols = isFreeRecruiter ? "" : "first_name, last_name,";
@@ -866,7 +906,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
 
         setLoadingAthlete(false);
       });
-  }, [id, isFreeRecruiter, tierLoading]);
+  }, [id, isFreeRecruiter, tierLoading, isRecruiter, isSelfPreview]);
 
   const [mode, setMode] = useState<"simple" | "detailed">("simple");
   const effectiveMode: "simple" | "detailed" = mode;
@@ -1489,6 +1529,12 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
           aria-label="Retour"
           onClick={() => {
             triggerHaptic("Light");
+            // Sprint C : self-preview back → athlete profile editor.
+            // CRITICAL : do NOT fall through to the recruiter dest list
+            // below — pushing into /recruteur/* from an athlete session
+            // is exactly the "athlete becomes recruiter" trap the
+            // self-preview flow was built to avoid.
+            if (isSelfPreview) { router.push("/athlete/profil"); return; }
             if (isCoach) { router.push("/coach/athletes"); return; }
             let dest = "/recruteur/recherche";
             try {

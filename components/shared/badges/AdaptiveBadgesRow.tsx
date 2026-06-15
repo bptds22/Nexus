@@ -1,12 +1,20 @@
 "use client";
 
 /* ═══════════════════════════════════════════════════════════════
-   AdaptiveBadgesRow — the 1/2/3/4/5 (3+2 on n=5) badges layout
-   extracted from AthleteRecruiterProfileBodyMobile.tsx:367-431.
+   AdaptiveBadgesRow — the 1/2/3/4/5 (2+2 on n=4, 3+2 on n=5) badges
+   layout extracted from AthleteRecruiterProfileBodyMobile.tsx:367-431.
 
    Layout :
    - n = 1       → single centered badge
-   - n = 2/3/4   → single centered row, gap adapts (10/6/5)
+   - n = 2/3     → single centered row, gap adapts (10/6)
+   - n = 4       → 2 on top + 2 on bottom, both rows centered
+                   (Sprint C fix : a 4-in-a-row layout at 88px badges
+                    + 20px gaps totals 412px, which overflows typical
+                    mobile content widths of 343-379px and visibly
+                    clipped the 4th label. Mirroring the n=5 two-row
+                    pattern keeps badge size + labels intact and
+                    matches the existing aesthetic for any badge count
+                    that needs more than 3 across.)
    - n = 5       → 3 on top + 2 on bottom, both rows centered
 
    Optional staggered reveal :
@@ -95,12 +103,33 @@ export function AdaptiveBadgesRow<T>({
     );
   }
 
-  // N = 1..4 — une seule rangée centrée, gap ajusté par count.
+  // N = 4 : 2 en haut, 2 en bas — same two-row pattern as n=5. A
+  // single 4-badge row at 88px badges + gap-x-5 (20px) totals 412px,
+  // which overflowed typical mobile content widths (343-379px) and
+  // visibly clipped the 4th label ("PROGRESSION MARQUÉE"). The 2+2
+  // layout fits any mobile width (2×88 + 1×32 = 208px), preserves
+  // badge size + labels, and aesthetically mirrors n=5's two-row
+  // shape.
+  if (n === 4) {
+    const top = list.slice(0, 2);
+    const bottom = list.slice(2, 4);
+    return (
+      <div className="flex flex-col items-center gap-y-3">
+        <div className="flex items-center justify-center gap-x-8">
+          {top.map((d, i) => renderWrapped(d, i))}
+        </div>
+        <div className="flex items-center justify-center gap-x-8">
+          {bottom.map((d, i) => renderWrapped(d, i + 2))}
+        </div>
+      </div>
+    );
+  }
+
+  // N = 1..3 — une seule rangée centrée, gap ajusté par count.
   const gapCls =
     n === 1 ? "" :
     n === 2 ? "gap-x-10" :
-    n === 3 ? "gap-x-6" :
-    "gap-x-5"; // n === 4
+    "gap-x-6"; // n === 3
   return (
     <div className={`flex items-center justify-center ${gapCls}`}>
       {list.map((d, i) => renderWrapped(d, i))}

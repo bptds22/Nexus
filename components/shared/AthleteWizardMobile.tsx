@@ -70,6 +70,7 @@ import {
   DetailedTag,
 } from "@/components/shared/wizard/rows";
 import { labelCls, valueCls } from "@/components/shared/wizard/tokens";
+import { StarRow } from "@/components/shared/wizard/stars";
 import {
   BADGE_CONFIG, BADGE_ORDER, MAX_BADGES, MAX_DETAIL_LENGTH,
   getSportStats,
@@ -2181,73 +2182,8 @@ function DistinctionDetailSheet({
 // MediaUrlRow moved to components/shared/wizard/rows (Sprint A).
 // Imported at the top.
 
-function StarRow({
-  value, onChange, size = 26, allowHalf = false,
-}: {
-  value: number;
-  onChange: (n: number) => void;
-  size?: number;
-  /** If true, tapping the LEFT half of a star sets the .5 value
-   *  (e.g. tapping the left half of the 4th star sets 3.5). */
-  allowHalf?: boolean;
-}) {
-  return (
-    <div className="flex items-center gap-1">
-      {Array.from({ length: 5 }, (_, i) => {
-        const starIndex = i + 1;
-        const filled = value >= starIndex;
-        const half = !filled && value >= starIndex - 0.5;
-        const clipId = `nx-halfstar-${i}-${size}`;
-        return (
-          <button
-            key={i}
-            type="button"
-            onClick={(e) => {
-              if (allowHalf) {
-                const rect = e.currentTarget.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const next = x < rect.width / 2 ? starIndex - 0.5 : starIndex;
-                onChange(value === next ? 0 : next);
-              } else {
-                onChange(value === starIndex ? 0 : starIndex);
-              }
-            }}
-            className="active:scale-90 transition-transform relative"
-            style={{ width: size, height: size }}
-            aria-label={`${starIndex} étoile${starIndex > 1 ? "s" : ""}`}
-          >
-            {/* Empty background */}
-            <svg className="absolute inset-0" width={size} height={size} viewBox="0 0 24 24"
-              fill="#374151" stroke="none">
-              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-            </svg>
-            {filled && (
-              <svg className="absolute inset-0" width={size} height={size} viewBox="0 0 24 24"
-                fill="#F59E0B" stroke="none">
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-              </svg>
-            )}
-            {half && (
-              <svg className="absolute inset-0" width={size} height={size} viewBox="0 0 24 24"
-                fill="none" stroke="none">
-                <defs>
-                  <clipPath id={clipId}>
-                    <rect x="0" y="0" width="12" height="24" />
-                  </clipPath>
-                </defs>
-                <polygon
-                  points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
-                  fill="#F59E0B"
-                  clipPath={`url(#${clipId})`}
-                />
-              </svg>
-            )}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
+// StarRow moved to components/shared/wizard/stars (Sprint B-3a).
+// Imported at the top alongside the row-kit primitives.
 
 /* ═══ Summary sheet ═══════════════════════════════════════════ */
 

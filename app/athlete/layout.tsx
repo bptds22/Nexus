@@ -11,6 +11,7 @@ import PreMaintenanceBanner from "@/components/auth/PreMaintenanceBanner";
 import DevTierSwitcher from "@/components/dev/DevTierSwitcher";
 import WrongRoutePage from "./_components/WrongRoutePage";
 import MobileTabBar from "@/app/_components/mobile/MobileTabBar";
+import { AnimatedRoute } from "../recruteur/_components/AnimatedRoute";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 /* ─────────────────────────────────────────────────────────────────
@@ -355,9 +356,9 @@ export default function AthleteLayout({ children }: { children: React.ReactNode 
         )}
         <main
           className="relative z-10 flex-1"
-          style={IS_CAPACITOR ? { paddingBottom: "calc(64px + env(safe-area-inset-bottom))" } : undefined}
+          style={IS_CAPACITOR ? { paddingBottom: "calc(64px + env(safe-area-inset-bottom))", overflowX: "hidden" } : undefined}
         >
-          {children}
+          <AnimatedRoute>{children}</AnimatedRoute>
         </main>
       </div>
       <DevTierSwitcher />

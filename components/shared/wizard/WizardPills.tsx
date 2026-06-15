@@ -90,7 +90,7 @@ export function WizardPills({
           )}
         </div>
       </div>
-      <div className="overflow-x-auto px-4 pt-1 pb-3 nx-no-scrollbar">
+      <div className="w-full min-w-0 overflow-x-auto px-4 pt-1 pb-3 nx-no-scrollbar">
         <div className="flex items-center gap-2">
           {labels.map((label, i) => {
             const isCurrent = i === active;
