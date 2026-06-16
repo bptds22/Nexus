@@ -175,8 +175,16 @@ export function useAthleteVisibilityPro(): AthleteVisibilityPro {
 
       const athleteId = athlete.id;
 
+      /* Migration 20260616090000 closed the athlete_view_details RLS bypass :
+         direct SELECT * on the view is now permission-denied for the PII
+         columns (recruiter_name, cegep_name). The SECURITY DEFINER RPC
+         get_my_athlete_view_details enforces ownership + user_has_pro at
+         the DB layer ; returns ZERO rows for free users + anon + cross-
+         athlete queries. The FeatureGate UI lock is now belt-and-braces
+         on top of a real data-layer paywall. Column shape is identical
+         to the view ; the mapping below is unchanged. */
       const [detailsRes, favsRes] = await Promise.all([
-        supabase.from("athlete_view_details").select("*").eq("athlete_id", athleteId),
+        supabase.rpc("get_my_athlete_view_details"),
         supabase.from("recruiter_favorites").select("recruiter_id").eq("athlete_id", athleteId),
       ]);
 

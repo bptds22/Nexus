@@ -65,7 +65,7 @@ export default function VisibilitePage() {
   const hasViews = stats.viewsThisMonth > 0 || stats.viewsLastMonth > 0 || weeklyViews.length > 0;
 
   return (
-    <div className="px-6 sm:px-10 py-8 max-w-[1200px] mx-auto space-y-6">
+    <div className="px-6 sm:px-10 py-8 max-w-[1200px] mx-auto space-y-6 nx-mobile-pb-tabbar">
 
       {/* Header */}
       <div>
@@ -199,6 +199,14 @@ export default function VisibilitePage() {
         </div>
         <p className="text-[11px] text-[#6b7280] mt-4">Continue à améliorer ton profil pour maximiser ta visibilité!</p>
       </div>
+
+      {/* Trailing spacer — gives the last section the same ~32px breathing
+          above the MobileTabBar that `py-8` gives at the top of the page.
+          `nx-mobile-pb-tabbar` clears the tab bar geometrically (64px +
+          safe-area) ; this spacer adds the symmetric top-style buffer
+          above the final card. Same canon as the recruiter/coach mobile
+          companions' final `<div className="h-8" />`. */}
+      <div className="h-8" />
     </div>
   );
 }
