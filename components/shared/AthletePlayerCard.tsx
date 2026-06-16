@@ -80,6 +80,7 @@ export default function AthletePlayerCard({
   a,
   format = "compact",
   clipOverflow = false,
+  animate = false,
 }: {
   a: AthleteProfileRecruiterView;
   format?: CardFormat;
@@ -91,6 +92,28 @@ export default function AthletePlayerCard({
    * tilt, NEXUS sidebar).
    */
   clipOverflow?: boolean;
+  /**
+   * Wow-A : when true, wrap the v30 card core in `.nx-wow-idle` (5.2s
+   * idle bounce — keyframe translateY 0→-4px + scale 1→1.005) plus an
+   * absolutely-positioned sheen sweep overlay (110deg gradient band
+   * animated with `nx-wow-sheen` 4500ms ease-in-out infinite).
+   *
+   * Transforms compose because each lives on its OWN element :
+   *   parent scale wrapper (e.g. carousel's scale 0.85)
+   *     × .nx-wow-idle keyframe transform (translateY + scale 1.005)
+   *     × inner scale wrapper (dims.scale for non-compact formats)
+   *     × .nx-v30-card transform: rotate(-2deg)  (editorial tilt)
+   *     × .nx-v30-ticket transform: rotate(3.5deg) (ticket tilt)
+   *
+   * Defaults to false so all 9 existing call sites are backward-
+   * compatible. Export sites (the 4 sites with clipOverflow={true} +
+   * .nx-capture-clean ancestor) MUST omit animate — a mid-sweep
+   * frame would corrupt the html-to-image PNG. Belt-and-braces : the
+   * sheen overlay div literally doesn't mount when animate=false, AND
+   * the `.nx-capture-clean .nx-wow-idle { animation: none !important }`
+   * rule in globals.css neutralizes any wow that slips through.
+   */
+  animate?: boolean;
 }) {
   const dims = FORMAT_CONFIG[format];
   const ratingValue = a.overallRating;
@@ -119,6 +142,14 @@ export default function AthletePlayerCard({
           transformOrigin: "top left",
         }}
       >
+        {(() => {
+          /* Wow-A : the v30 core is built once into a `core` const, then
+             conditionally wrapped in `.nx-wow-idle` (the keyframe idle
+             bounce) + a sibling sheen-sweep overlay when animate=true.
+             When animate=false the const is rendered bare — no wow
+             wrappers in the DOM at all, so export captures get a clean
+             still frame. */
+          const core = (
     <div className="nx-v30-wrap relative" style={{ width: 300, paddingTop: 6, paddingBottom: 10 }}>
       <div className="nx-v30-badge absolute z-30" style={{ top: 10, right: -12 }} title={badgeActive ? "Profil vérifié" : a.isVerified ? "Badge désactivé — confirmation requise" : "Profil non vérifié"}>
         <div className="rounded-full" style={{ border: "3px solid #111317" }}>
@@ -206,6 +237,45 @@ export default function AthletePlayerCard({
         </div>
       </div>
       </div>
+          );
+          /* Wow-A : when animate, wrap core in `.nx-wow-idle` (carries the
+             bounce — keyframe translateY 0→-4px + scale 1→1.005, on its
+             OWN element so it doesn't collide with v30-card's -2deg
+             rotation or with the parent's scale) + a sibling sheen
+             overlay (mirrors AthleteOnboardingWowMobile :428-435 pattern :
+             nx-wow-sheen keyframe is NOT a class, applied inline ; the
+             outer wrap clips the sweeping gradient via overflow:hidden ;
+             pointerEvents:none so the sheen never eats taps). When animate
+             is false, the wow markup never mounts → export-safe. */
+          if (!animate) return core;
+          return (
+            <div className="nx-wow-idle" style={{ position: "relative", width: 300 }}>
+              {core}
+              <div
+                aria-hidden
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  overflow: "hidden",
+                  pointerEvents: "none",
+                  borderRadius: 10,
+                }}
+              >
+                <div
+                  style={{
+                    position: "absolute",
+                    top: -20,
+                    bottom: -20,
+                    width: 80,
+                    background:
+                      "linear-gradient(110deg, transparent 30%, rgba(255,255,255,0.32) 50%, transparent 70%)",
+                    animation: "nx-wow-sheen 4500ms ease-in-out infinite",
+                  }}
+                />
+              </div>
+            </div>
+          );
+        })()}
     </div>
     </div>
   );

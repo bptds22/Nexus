@@ -861,47 +861,14 @@ export default function MonParcoursMobile() {
                             height: 460,
                           }}
                         >
-                          {/* .nx-wow-idle wrapper — its OWN element so the
-                              keyframe transform (translateY + scale 1.005) doesn't
-                              clobber the parent scale. Composes multiplicatively. */}
-                          <div
-                            className="nx-wow-idle"
-                            style={{ position: "relative", width: 300, height: 460 }}
-                          >
-                            <AthletePlayerCard a={cardAthlete} format="compact" />
-                            {/* Sheen sweep overlay — mirrors
-                                AthleteOnboardingWowMobile.tsx :428-435. Confined
-                                to the 300×460 card body area via inset:0 +
-                                overflow:hidden so the moving gradient is clipped
-                                to the card silhouette. Gentle 4500ms infinite for
-                                continuous polish (vs the onboarding's per-star
-                                720ms one-shot). pointer-events:none so the sheen
-                                doesn't eat taps on the long-press-suppression
-                                wrapper or the button below. */}
-                            <div
-                              aria-hidden
-                              style={{
-                                position: "absolute",
-                                inset: 0,
-                                overflow: "hidden",
-                                pointerEvents: "none",
-                                borderRadius: 10,
-                              }}
-                            >
-                              <div
-                                style={{
-                                  position: "absolute",
-                                  top: -20,
-                                  bottom: -20,
-                                  width: 80,
-                                  background:
-                                    "linear-gradient(110deg, transparent 30%, rgba(255,255,255,0.32) 50%, transparent 70%)",
-                                  animation:
-                                    "nx-wow-sheen 4500ms ease-in-out infinite",
-                                }}
-                              />
-                            </div>
-                          </div>
+                          {/* Wow-A consolidation : the external .nx-wow-idle
+                              wrapper + sheen overlay shipped earlier this
+                              session collapsed into AthletePlayerCard's new
+                              `animate` prop. The prop applies the same
+                              .nx-wow-idle + 4500ms sheen sweep internally —
+                              one place to maintain, single mechanism across
+                              all visible call sites. */}
+                          <AthletePlayerCard a={cardAthlete} format="compact" animate />
                         </div>
                       </div>
                     </div>

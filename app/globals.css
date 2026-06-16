@@ -567,6 +567,16 @@ body.light-mode .nx-social-icon {
   transition: none !important;
 }
 
+/* Wow-A export safety — belt-and-braces. The primary guard is the
+   `animate` prop on AthletePlayerCard (defaults false ; export sites
+   omit it so the wow markup never mounts). This rule kills any
+   .nx-wow-idle bounce that slips into a capture-clean tree even if a
+   caller mistakenly passes animate=true on an export node — keeps the
+   html-to-image PNG axis-aligned and still-frame regardless. */
+.nx-capture-clean .nx-wow-idle {
+  animation: none !important;
+}
+
 /* ── Auth page ──────────────────────────────────────────────── */
 
 .nx-auth-card {

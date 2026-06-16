@@ -605,7 +605,7 @@ function MonParcoursPageDesktop() {
             {/* Card + download */}
             <div className="flex flex-col items-center gap-5 shrink-0">
               {cardAthlete ? (
-                <AthletePlayerCard a={cardAthlete} />
+                <AthletePlayerCard a={cardAthlete} animate />
               ) : (
                 <div className="w-[300px] h-[460px] rounded-xl bg-[#13151a] border border-[#2D3748] flex items-center justify-center">
                   <div className="w-7 h-7 border-2 border-[#E63946] border-t-transparent rounded-full animate-spin" />
