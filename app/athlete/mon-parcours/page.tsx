@@ -9,6 +9,22 @@ import type { AthleteProfileRecruiterView } from "@/lib/types/models";
 import { BADGE_ORDER, parseDistinctions } from "@/lib/config/badges";
 import DistinctionBadge from "@/components/shared/DistinctionBadge";
 import { toPng } from "html-to-image";
+import MonParcoursMobile from "@/components/shared/MonParcoursMobile";
+
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
+
+/* ═══════════════════════════════════════════════════════════════
+   /athlete/mon-parcours — dispatch.
+
+   In Capacitor builds, render the mobile-native MonParcoursMobile
+   shell. Otherwise fall through to the existing desktop body
+   (renamed below to MonParcoursPageDesktop). Desktop body is
+   UNCHANGED — pure additive wrapper.
+═══════════════════════════════════════════════════════════════ */
+export default function MonParcoursPage() {
+  if (IS_CAPACITOR) return <MonParcoursMobile />;
+  return <MonParcoursPageDesktop />;
+}
 
 /* ═══════════════════════════════════════════════════════════════
    /athlete/mon-parcours — "L'été où tout se joue"
@@ -76,7 +92,7 @@ function locationLine(city: string | null, region: string | null): string {
   return [city, region].filter(Boolean).join(" · ");
 }
 
-export default function MonParcoursPage() {
+function MonParcoursPageDesktop() {
   const [firstName, setFirstName] = useState("");
   const [profileCompletion, setProfileCompletion] = useState(0);
   const [cardAthlete, setCardAthlete] = useState<AthleteProfileRecruiterView | null>(null);

@@ -24,7 +24,7 @@ import { isValidationExpired } from "@/lib/utils/profileValidation";
    without dragging in the rest of the profile view.
 ═══════════════════════════════════════════════════════════════ */
 
-type CardFormat = "compact" | "publication" | "story";
+type CardFormat = "compact" | "publication" | "story" | "banniere";
 
 const FORMAT_CONFIG: Record<CardFormat, {
   width: number;
@@ -48,6 +48,22 @@ const FORMAT_CONFIG: Record<CardFormat, {
   // topOffset 285 pushes the card down so the ticket sits mid-
   // frame, leaving room above for partners to overlay text.
   story:       { width: 1080, height: 1920, scale: 3.6,  topOffset: 285, leftOffset: 0  },
+  // Bannière: 1920×1080 (LinkedIn / Facebook / X cover, 16:9 wide).
+  //
+  // ⚠ DESIGN-PASS REQUIRED. The natural card is portrait (300 wide ×
+  // ~440 tall = 0.68:1 width:height) ; a 16:9 banner is landscape
+  // (1.78:1). Scaling the portrait card uniformly to fit the 1080 height
+  // (scale = 1080/440 = ~2.45) renders the card 300×2.45 = ~735 wide,
+  // centred in the 1920-wide frame with ~592px of dark dead-space on
+  // each side (leftOffset = (1920 − 735) / 2 = ~592). Mechanically the
+  // export works — toPng captures the outer wrapper's bounding box and
+  // outputs a 1920×1080 PNG with the portrait card floating in the
+  // middle — but the result is NOT design-finished. A proper banner
+  // wants a wide-layout variant (e.g. photo on the left, stats stack
+  // on the right, NEXUS wordmark, color blocks filling the side
+  // panels). Registering the entry here lets the mobile carousel
+  // include it ; the visual upgrade is a follow-up design pass.
+  banniere:    { width: 1920, height: 1080, scale: 2.45, topOffset: 0,   leftOffset: 592 },
 };
 
 const SPORT_DISPLAY: Record<string, string> = Object.fromEntries(
