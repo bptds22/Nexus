@@ -29,6 +29,8 @@
    pending before the production launch.
 ═══════════════════════════════════════════════════════════════ */
 
+import { PARTNER_MEDIA_COPY } from "@/lib/legal/partnerMediaCopy";
+
 interface PartnerVisibilityConsentCardProps {
   checked: boolean;
   onChange: (next: boolean) => void;
@@ -50,16 +52,15 @@ interface Copy {
 
 const COPY: Record<"athlete" | "coach", Copy> = {
   athlete: {
-    intro:
-      "Nexus collabore avec des partenaires approuvés — journalistes sportifs, pages de contenu sportif, podcasts, camps de sport spécialisés, et autres organisations qui apportent de la valeur aux athlètes québécois. Ces partenaires peuvent télécharger ta carte officielle Nexus pour la publier dans leurs articles, publications sur les réseaux sociaux, blogs ou autres contenus.",
-    whatAppears: "ton nom, ton école, ta cote, ta position et ta photo.",
-    bullets: [
-      "Ta carte peut apparaître dans des publications de partenaires approuvés",
-      "Aucun partenaire ne peut te contacter directement",
-      "Les partenaires sont vérifiés par l’équipe Nexus et s’engagent par contrat à un usage éditorial responsable",
-    ],
-    responsibilityBullet:
-      "Une fois la carte téléchargée par un partenaire, celui-ci devient responsable de l’usage qu’il en fait dans ses publications, conformément à la Loi 25",
+    /* Explainer fields (intro / whatAppears / bullets / responsibilityBullet)
+       are sourced from lib/legal/partnerMediaCopy.ts so the onboarding card
+       + the AthleteParametresMobile "En savoir plus" disclosure stay
+       byte-identical. checkboxLabel + helper are flow-specific (consent
+       phrasing + onboarding nudge) and stay inline. */
+    intro: PARTNER_MEDIA_COPY.intro,
+    whatAppears: PARTNER_MEDIA_COPY.whatAppears,
+    bullets: [...PARTNER_MEDIA_COPY.bullets],
+    responsibilityBullet: PARTNER_MEDIA_COPY.responsibilityBullet,
     checkboxLabel:
       "Mes parents autorisent l’utilisation de ma carte Nexus par les partenaires Nexus.",
     helper:

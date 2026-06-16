@@ -635,11 +635,11 @@ export const dictionaries: Record<Lang, Dictionary> = {
         lede: "Sur Nexus, la cote globale d'un athlète va de 1 à 5 étoiles. Mais une étoile, ça veut dire quoi exactement? On a défini une échelle claire pour que tous les coachs parlent la même langue.",
         closing: "Une étoile sur Nexus = la même étoile partout. Un 5 étoiles donné par un coach de Sherbrooke veut dire la même chose qu'un 5 étoiles donné par un coach de Gatineau. C'est ça, la langue commune.",
         definitions: [
-          "Prospect D1. Peut démarrer comme partant dans une équipe de Division 1 dès son entrée au CÉGEP.",
-          "Pourrait éventuellement être partant en D1. Partant certain en D2 dès la première saison.",
-          "Partant en D3. Pourrait atteindre le niveau D2 avec beaucoup de progression.",
-          "Pourrait devenir partant en D3 éventuellement, mais nécessite du travail et de la progression.",
-          "Ouvert à continuer au CÉGEP, mais aura besoin de progression significative avant de pouvoir être partant même en D3.",
+          "Prospect D1, prêt à partir dès le CÉGEP.",
+          "Potentiel D2, et le D1 à portée.",
+          "Partant en D3, potentiel D2 avec de la progression.",
+          "Le D3 est à ta portée avec du travail.",
+          "Un point de départ — la progression est devant toi.",
         ],
       },
       philosophy: {

@@ -865,7 +865,7 @@ export default function AthleteEditWizardMobile() {
       <div
         className="fixed left-0 right-0 z-30 px-3 py-2.5"
         style={{
-          bottom: "calc(64px + env(safe-area-inset-bottom))",
+          bottom: "calc(80px + env(safe-area-inset-bottom))",
           backgroundColor: "rgba(17,19,23,0.85)",
           backdropFilter: "blur(20px) saturate(180%)",
           WebkitBackdropFilter: "blur(20px) saturate(180%)",

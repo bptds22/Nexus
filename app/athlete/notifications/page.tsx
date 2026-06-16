@@ -29,17 +29,17 @@ const DOT_COLOR: Record<NotifType, string> = {
   SUGGESTION_REJECTED: "#E63946",
   COACH_REPORT_UPDATED: "#3B82F6",
   COACH_VERIFIED: "#3B82F6",
-  COACH_MODIFIED_PROFILE: "#F97316",
+  COACH_MODIFIED_PROFILE: "#EAB308",
   COACH_DISTINCTION_ADDED: "#F59E0B",
   COACH_EVALUATION_UPDATED: "#22C55E",
   PROFILE_MILESTONE: "#F59E0B",
-  PROFILE_TIP: "#F97316",
+  PROFILE_TIP: "#EAB308",
 };
 
 const TYPE_ICON: Record<NotifType, React.ReactNode> = {
   PROFILE_VIEWED: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>,
   ADDED_TO_FAVORITES: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" /></svg>,
-  SUGGESTION_APPROVED: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M20 6L9 17l-5-5" /></svg>,
+  SUGGESTION_APPROVED: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M7 10v12" /><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z" /></svg>,
   SUGGESTION_REJECTED: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6L6 18" /><path d="M6 6l12 12" /></svg>,
   COACH_REPORT_UPDATED: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" /></svg>,
   COACH_VERIFIED: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><path d="M9 12l2 2 4-4" /></svg>,
@@ -158,21 +158,30 @@ export default function NotificationsPage() {
       {athleteId && <PendingInvitations athleteId={athleteId} showToast={showToast} />}
 
       {/* Filter tabs */}
-      <div className="flex items-center gap-2 overflow-x-auto">
-        {FILTERS.map((f) => (
-          <button key={f.key} type="button" onClick={() => setFilter(f.key)}
-            className={`px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider whitespace-nowrap transition-colors ${
-              filter === f.key ? "bg-[#E63946]/15 text-[#E63946] border border-[#E63946]/30" : "text-[#6b7280] border border-transparent hover:text-[#9CA3AF]"
-            }`}>
-            {f.label}
-            {f.count !== undefined && f.count > 0 && (
-              <span className="ml-1.5 inline-flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full text-[9px] font-black"
-                style={f.color ? { backgroundColor: f.color, color: "#fff" } : { backgroundColor: "#2D3748", color: "#9CA3AF" }}>
-                {f.count}
-              </span>
-            )}
-          </button>
-        ))}
+      <div className="w-full min-w-0 flex items-center gap-2.5 py-1 overflow-x-auto nx-no-scrollbar">
+        {FILTERS.map((f) => {
+          const active = filter === f.key;
+          return (
+            <button key={f.key} type="button" onClick={() => setFilter(f.key)}
+              className={`px-4 py-2.5 rounded-xl text-[13px] font-bold uppercase tracking-[0.04em] whitespace-nowrap transition-colors ${
+                active ? "bg-[#E63946] text-white border border-[#E63946]" : "text-[#9CA3AF] border border-transparent hover:text-white"
+              }`}>
+              {f.label}
+              {f.count !== undefined && f.count > 0 && (
+                <span className="ml-1.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-black"
+                  style={
+                    active
+                      ? { backgroundColor: "rgba(255,255,255,0.25)", color: "#fff" }
+                      : f.color
+                        ? { backgroundColor: f.color, color: "#fff" }
+                        : { backgroundColor: "#2D3748", color: "#9CA3AF" }
+                  }>
+                  {f.count}
+                </span>
+              )}
+            </button>
+          );
+        })}
       </div>
 
       {/* Notification list */}

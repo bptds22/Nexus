@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -184,6 +185,17 @@ export default function MobileTabBar({ role }: MobileTabBarProps) {
 
   const [moreOpen, setMoreOpen] = useState(false);
   const [upgradeModal, setUpgradeModal] = useState<{ tierId: string; lockedFeatureTitle: string } | null>(null);
+
+  // Stacking-context fix — portal the tab bar to document.body so its z-40
+  // escapes the `.hero-playbook` `isolation: isolate` trap created by the
+  // athlete/coach/recruiter layout roots. Without this, the local z-40 is
+  // sealed inside `.hero-playbook` (auto/0 at body root), so any other
+  // body-level portal (editor sticky CTAs, sheets) at z-30+ paints over it.
+  // `mounted` is the SSR-safe gate : first render returns null, then after
+  // useEffect fires the portal renders client-side only, avoiding hydration
+  // mismatches.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
 
   // Iter 7.42 — Signal global "nx-more-panel" écouté par SaveBarPortal et tout
   // composant body-level qui doit céder la place au panel Plus (sans Context).
@@ -386,6 +398,12 @@ export default function MobileTabBar({ role }: MobileTabBarProps) {
     role === "recruteur" && pathname === "/onboarding";
   if (recruiterOnboarding) return null;
 
+  // SSR-safe portal mount gate — comes AFTER every existing pathname guard
+  // so the guards still run on first render (avoiding unnecessary work) and
+  // the `mounted` check fires last, right before we try to access
+  // `document.body`.
+  if (!mounted) return null;
+
   const tabs = TABS_BY_ROLE[role];
 
   function isActive(tab: TabConfig): boolean {
@@ -416,7 +434,7 @@ export default function MobileTabBar({ role }: MobileTabBarProps) {
   })();
   const slotWidthPct = 100 / totalSlots;
 
-  return (
+  return createPortal(
     <>
       <nav
         className="fixed bottom-0 inset-x-0 z-40 bg-[#1A1D24] flex"
@@ -521,6 +539,7 @@ export default function MobileTabBar({ role }: MobileTabBarProps) {
           lockedFeatureTitle={upgradeModal.lockedFeatureTitle}
         />
       )}
-    </>
+    </>,
+    document.body,
   );
 }
