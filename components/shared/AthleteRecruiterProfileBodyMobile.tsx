@@ -195,6 +195,13 @@ function PlayerCardMobile({ a, isFree, starsRevealed = 5, cardRevealed = true, p
   const badgeActive = a.isVerified && !isValidationExpired({ verified: !!a.isVerified, last_profile_validation: a.lastValidation ?? null });
 
   return (
+    /* Wow wrapper — .nx-wow-idle bounce + sheen sweep on the canon
+       recruiter/coach/self-preview mobile view. Wraps the v30 core
+       (the .nx-v30-wrap below) as a SEPARATE element so the idle
+       keyframe transform composes with the v30's static cardRevealed
+       scale/translate without colliding. The sheen overlay is a
+       sibling of .nx-v30-wrap inside the wow wrapper. */
+    <div className="nx-wow-idle mx-auto" style={{ position: "relative", width: 280 }}>
     <div
       className="nx-v30-wrap relative mx-auto"
       style={{
@@ -329,6 +336,33 @@ function PlayerCardMobile({ a, isFree, starsRevealed = 5, cardRevealed = true, p
           </div>
         </div>
       </motion.div>
+    </div>
+      {/* Sheen sweep overlay — same canon as AthletePlayerCard's animate
+          prop. Confined to the 280-wide card body ; gradient sweep on
+          nx-wow-sheen 4500ms infinite. pointer-events:none so taps reach
+          the favorite-heart + status pills underneath. */}
+      <div
+        aria-hidden
+        style={{
+          position: "absolute",
+          inset: 0,
+          overflow: "hidden",
+          pointerEvents: "none",
+          borderRadius: 10,
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            top: -20,
+            bottom: -20,
+            width: 80,
+            background:
+              "linear-gradient(110deg, transparent 30%, rgba(255,255,255,0.32) 50%, transparent 70%)",
+            animation: "nx-wow-sheen 4500ms ease-in-out infinite",
+          }}
+        />
+      </div>
     </div>
   );
 }

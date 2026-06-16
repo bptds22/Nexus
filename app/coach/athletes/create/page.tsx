@@ -20,7 +20,10 @@ import {
   type AthleteEmailSuggestion,
 } from "@/lib/coach/athleteEmailAutocomplete";
 import AthleteWizardMobile from "@/components/shared/AthleteWizardMobile";
-import { saveAthleteCreate } from "../_data/saveAthlete";
+import { saveAthleteCreate, computeCoteGlobale } from "../_data/saveAthlete";
+import { coteChanged } from "@/lib/utils/cote";
+import { ConfirmSheet } from "@/components/shared/settings";
+import CoteChangeConfirmContent from "@/components/shared/CoteChangeConfirmContent";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -275,6 +278,17 @@ export default function CreateAthletePage() {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [otherPendingCount, setOtherPendingCount] = useState<number>(0);
   const [isSubmittingInvitation, setIsSubmittingInvitation] = useState(false);
+
+  /* Cote-A : confirmation gate. originalCote is null (new athlete, no
+     prior eval) ; first-time rating IS high-impact, so create gates
+     whenever newCote != null. coteConfirmedRef bypasses the gate on
+     the modal's onConfirm so the save proceeds. */
+  const [coteConfirmOpen, setCoteConfirmOpen] = useState(false);
+  const [pendingCote, setPendingCote] = useState<{ newCote: number | null; originalCote: number | null }>({
+    newCote: null,
+    originalCote: null,
+  });
+  const coteConfirmedRef = useRef(false);
 
   const handleEmailChange = useCallback((newEmail: string) => {
     setForm((prev) => ({
@@ -624,6 +638,23 @@ export default function CreateAthletePage() {
 
   async function handleSubmit() {
     if (!validateStep(7)) { setShowErrors(true); return; }
+
+    /* Cote-A intercept : originalCote is always null for a fresh create ;
+       any non-null newCote represents a first-time rating (high-impact),
+       so we gate. If the coach didn't rate at all (no traits, no star),
+       newCote stays null → coteChanged(null, null) === false → no popup. */
+    /* Cast through unknown — same local AthleteFormData vs canonical
+       wizardFormShape AthleteFormData drift as the saveAthleteCreate
+       call below (existing baseline error). Both shapes carry
+       scouting.{traitRatings,starRating} which is all
+       computeCoteGlobale reads. */
+    const newCote = computeCoteGlobale(form as unknown as Parameters<typeof computeCoteGlobale>[0]);
+    if (!coteConfirmedRef.current && coteChanged(newCote, null)) {
+      setPendingCote({ newCote, originalCote: null });
+      setCoteConfirmOpen(true);
+      return;
+    }
+    coteConfirmedRef.current = false;
 
     const supabase = createClient();
     const { data: { user: authUser } } = await supabase.auth.getUser();
@@ -1824,6 +1855,24 @@ export default function CreateAthletePage() {
         </div>
       </div>
     </div>
+
+    {/* Cote-A : cote-change confirmation modal. Shared ConfirmSheet.
+        For create, onConfirm sets coteConfirmedRef + retriggers
+        handleSubmit so the save proceeds. */}
+    <ConfirmSheet
+      open={coteConfirmOpen}
+      onClose={() => setCoteConfirmOpen(false)}
+      title="Tu es sur le point de changer la cote"
+      message="Confirmes-tu que c'est exact selon l'échelle Nexus ?"
+      confirmLabel="Oui, continuer"
+      variant="warning"
+      onConfirm={() => {
+        coteConfirmedRef.current = true;
+        setCoteConfirmOpen(false);
+        handleSubmit();
+      }}
+      extra={<CoteChangeConfirmContent newCote={pendingCote.newCote} originalCote={pendingCote.originalCote} />}
+    />
     </ReadOnlyIfPending>
   );
 }

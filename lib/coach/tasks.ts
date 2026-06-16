@@ -39,6 +39,12 @@ export interface CoachTaskAthlete {
   graduationYear: number;
   /** sport.nom (fallback empty). */
   sport: string;
+  /** Cote-B : the coach's OWN current evaluation cote (from the
+   *  evaluations(coach_id, cote_globale) embed). Null when this
+   *  coach hasn't yet evaluated the athlete. Surfaced so the
+   *  CoachATraiterMobile EvalQuickSheet can show the cote-change
+   *  confirmation modal with the correct originalCote. */
+  coteGlobale: number | null;
 }
 
 export interface CoachTaskSuggestion {
@@ -114,7 +120,10 @@ function pickFirst<T>(value: T | T[] | null | undefined): T | null {
   return value;
 }
 
-function toTaskAthlete(row: AthleteRow): CoachTaskAthlete {
+function toTaskAthlete(
+  row: AthleteRow,
+  myEval: { cote_globale: number | null } | null,
+): CoachTaskAthlete {
   const sport = pickFirst(row.sports);
   const position = pickFirst(row.positions);
   return {
@@ -125,6 +134,7 @@ function toTaskAthlete(row: AthleteRow): CoachTaskAthlete {
     position: position?.abreviation ?? "",
     graduationYear: row.annee_diplomation ?? 0,
     sport: sport?.nom ?? "",
+    coteGlobale: myEval?.cote_globale ?? null,
   };
 }
 
@@ -235,7 +245,7 @@ export async function loadCoachTasks(
     // is coach-scoped, not "any coach who happens to share an athlete".
     const myEval = evals.find((e) => e.coach_id === coachUserId) ?? null;
 
-    const task = toTaskAthlete(row);
+    const task = toTaskAthlete(row, myEval);
 
     // Treat null verified as unverified — matches the established
     // MobileTabBar / dashboard reading (filter by truthy `verified`,

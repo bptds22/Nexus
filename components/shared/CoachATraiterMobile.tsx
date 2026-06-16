@@ -39,6 +39,9 @@ import {
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import SuggestionSheet from "@/components/coach/SuggestionSheet";
 import AthletePhoto from "@/components/shared/AthletePhoto";
+import { coteChanged } from "@/lib/utils/cote";
+import { ConfirmSheet } from "@/components/shared/settings";
+import CoteChangeConfirmContent from "@/components/shared/CoteChangeConfirmContent";
 
 /* ── Types ────────────────────────────────────────────────────── */
 
@@ -92,6 +95,7 @@ function slimAthleteFromName(athleteId: string, athleteName: string): CoachTaskA
     position: "",
     graduationYear: 0,
     sport: "",
+    coteGlobale: null,
   };
 }
 
@@ -394,7 +398,7 @@ function AthleteAccordionCard({
   expanded: boolean;
   onToggle: () => void;
   onVerify: (athleteId: string) => void;
-  onEvaluate: (athleteId: string, athleteName: string) => void;
+  onEvaluate: (athleteId: string, athleteName: string, originalCote?: number | null) => void;
   /** Tap d'une summary line → ouvre la SuggestionSheet pour cette suggestion. */
   onOpenSuggestion: (suggestion: CoachTaskSuggestion, athleteName: string) => void;
 }) {
@@ -445,7 +449,7 @@ function AthleteAccordionCard({
               {entry.missingEval && (
                 <EvalActionRow
                   athleteId={entry.athlete.id}
-                  onEvaluate={() => onEvaluate(entry.athlete.id, `${entry.athlete.firstName} ${entry.athlete.lastName}`.trim())}
+                  onEvaluate={() => onEvaluate(entry.athlete.id, `${entry.athlete.firstName} ${entry.athlete.lastName}`.trim(), entry.athlete.coteGlobale)}
                 />
               )}
               {entry.suggestions.length > 0 && (
@@ -484,7 +488,7 @@ function FlatListItem({
 }: {
   entry: FlatEntry;
   onVerify: (athleteId: string) => void;
-  onEvaluate: (athleteId: string, athleteName: string) => void;
+  onEvaluate: (athleteId: string, athleteName: string, originalCote?: number | null) => void;
   onOpenSuggestion: (suggestion: CoachTaskSuggestion, athleteName: string) => void;
 }) {
   return (
@@ -494,7 +498,7 @@ function FlatListItem({
       {entry.kind === "missingEval" && (
         <EvalActionRow
           athleteId={entry.athlete.id}
-          onEvaluate={() => onEvaluate(entry.athlete.id, `${entry.athlete.firstName} ${entry.athlete.lastName}`.trim())}
+          onEvaluate={() => onEvaluate(entry.athlete.id, `${entry.athlete.firstName} ${entry.athlete.lastName}`.trim(), entry.athlete.coteGlobale)}
         />
       )}
       {entry.kind === "suggestion" && (
@@ -512,11 +516,15 @@ function FlatListItem({
 /* ── EvalSheet — bottom-sheet quick-eval (star + rapport) ─────── */
 
 function EvalSheet({
-  open, athleteId, athleteName, onClose, onSave,
+  open, athleteId, athleteName, originalCote, onClose, onSave,
 }: {
   open: boolean;
   athleteId: string | null;
   athleteName: string;
+  /** Cote-B : the athlete's current cote at sheet-open time. Used to
+   *  detect a cote change before firing onSave. Null when this coach
+   *  hasn't evaluated the athlete yet. */
+  originalCote: number | null;
   onClose: () => void;
   onSave: (athleteId: string, star: number, report: string) => Promise<void>;
 }) {
@@ -524,14 +532,44 @@ function EvalSheet({
   const [report, setReport] = useState("");
   const [saving, setSaving] = useState(false);
   const [mounted, setMounted] = useState(false);
+  /* Cote-B : confirmation gate. coteConfirmOpen drives the shared
+     ConfirmSheet ; coteConfirmedRef bypasses the gate on the second
+     submit (the one fired by the modal's onConfirm) so the upsert
+     proceeds. All hooks BEFORE the early return below (canon 7.8d). */
+  const [coteConfirmOpen, setCoteConfirmOpen] = useState(false);
+  const coteConfirmedRef = useRef(false);
 
   useEffect(() => { setMounted(true); }, []);
   useEffect(() => {
-    if (open) { setStar(0); setReport(""); setSaving(false); }
+    if (open) { setStar(0); setReport(""); setSaving(false); coteConfirmedRef.current = false; }
   }, [open, athleteId]);
 
   if (!mounted || !open || !athleteId) return null;
   const canSave = (star > 0 || report.trim().length > 0) && !saving;
+
+  /* The new cote is the integer-star picker value (1-5) or null when
+     star === 0 (clearing/unset). Cote-B reuses the SAME coteChanged
+     helper as Cote-A (lib/utils/cote.ts) — for integers the epsilon
+     is irrelevant, strict inequality flows through naturally. */
+  const newCote: number | null = star > 0 ? star : null;
+  const willChangeCote = coteChanged(newCote, originalCote);
+
+  async function doSave() {
+    if (!canSave || !athleteId) return;
+    setSaving(true);
+    await onSave(athleteId, star, report);
+    setSaving(false);
+  }
+
+  function handleSubmit() {
+    if (!canSave) return;
+    if (!coteConfirmedRef.current && willChangeCote) {
+      setCoteConfirmOpen(true);
+      return;
+    }
+    coteConfirmedRef.current = false;
+    void doSave();
+  }
 
   return createPortal(
     <>
@@ -613,12 +651,7 @@ function EvalSheet({
             <button
               type="button"
               disabled={!canSave}
-              onClick={async () => {
-                if (!canSave) return;
-                setSaving(true);
-                await onSave(athleteId, star, report);
-                setSaving(false);
-              }}
+              onClick={handleSubmit}
               className="flex-1 h-12 rounded-2xl bg-[#E63946] text-white text-[14px] font-bold active:bg-[#D42B22] disabled:opacity-40"
             >
               {saving ? "…" : "Enregistrer"}
@@ -630,6 +663,25 @@ function EvalSheet({
           @keyframes nx-at-sheet-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
         `}</style>
       </div>
+
+      {/* Cote-B : cote-change confirmation. Same shared ConfirmSheet +
+          CoteChangeConfirmContent used by the 3 Cote-A wizard surfaces.
+          onConfirm sets coteConfirmedRef + retriggers handleSubmit so
+          the upsert proceeds. */}
+      <ConfirmSheet
+        open={coteConfirmOpen}
+        onClose={() => setCoteConfirmOpen(false)}
+        title="Tu es sur le point de changer la cote"
+        message="Confirmes-tu que c'est exact selon l'échelle Nexus ?"
+        confirmLabel="Oui, continuer"
+        variant="warning"
+        onConfirm={() => {
+          coteConfirmedRef.current = true;
+          setCoteConfirmOpen(false);
+          handleSubmit();
+        }}
+        extra={<CoteChangeConfirmContent newCote={newCote} originalCote={originalCote} />}
+      />
     </>,
     document.body,
   );
@@ -692,6 +744,12 @@ export function CoachATraiterMobile() {
   // Eval sheet
   const [evalSheetAthleteId, setEvalSheetAthleteId] = useState<string | null>(null);
   const [evalSheetAthleteName, setEvalSheetAthleteName] = useState<string>("");
+  /* Cote-B : the athlete's current cote at the moment the sheet opens.
+     Passed into EvalSheet so its submit handler can detect a change
+     against it via the shared coteChanged() helper before firing the
+     upsert. Sourced from CoachTaskAthlete.coteGlobale (loadCoachTasks
+     now surfaces this from evaluations(coach_id, cote_globale)). */
+  const [evalSheetOriginalCote, setEvalSheetOriginalCote] = useState<number | null>(null);
 
   // Suggestion sheet (one suggestion at a time — full detail + approve/reject)
   const [suggestionSheet, setSuggestionSheet] = useState<{ suggestion: CoachTaskSuggestion; athleteName: string } | null>(null);
@@ -949,10 +1007,11 @@ export function CoachATraiterMobile() {
     reload();
   }, [coachUserId, reload, toast]);
 
-  const onOpenEvalSheet = useCallback((athleteId: string, athleteName: string) => {
+  const onOpenEvalSheet = useCallback((athleteId: string, athleteName: string, originalCote: number | null = null) => {
     triggerHaptic("Light");
     setEvalSheetAthleteId(athleteId);
     setEvalSheetAthleteName(athleteName);
+    setEvalSheetOriginalCote(originalCote);
   }, []);
 
   /* ── Computed counts (drive the 3 filter cards) ── */
@@ -1125,6 +1184,7 @@ export function CoachATraiterMobile() {
         open={!!evalSheetAthleteId}
         athleteId={evalSheetAthleteId}
         athleteName={evalSheetAthleteName}
+        originalCote={evalSheetOriginalCote}
         onClose={() => setEvalSheetAthleteId(null)}
         onSave={onQuickEvalSave}
       />

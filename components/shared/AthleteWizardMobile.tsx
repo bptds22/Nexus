@@ -90,7 +90,11 @@ import {
 import {
   saveAthleteCreate,
   saveAthleteEdit,
+  computeCoteGlobale,
 } from "@/app/coach/athletes/_data/saveAthlete";
+import { coteChanged } from "@/lib/utils/cote";
+import { ConfirmSheet } from "@/components/shared/settings";
+import CoteChangeConfirmContent from "@/components/shared/CoteChangeConfirmContent";
 
 /* ── Haptics helper (matches onboarding shells) ─────────────── */
 async function triggerHaptic(intensity: "Light" | "Medium" = "Light") {
@@ -224,6 +228,17 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
   /* ── Diff baseline (edit). Captured from the DB-built form so
      the save-summary popup can show "only what changed". */
   const baselineFormRef = useRef<AthleteFormData>(emptyAthleteForm());
+
+  /* Cote-A : confirmation gate. coteConfirmOpen drives the modal ;
+     coteConfirmedRef bypasses the gate on the SECOND handleFinish
+     call (the one fired by the modal's onConfirm) so the save
+     proceeds without re-prompting. */
+  const [coteConfirmOpen, setCoteConfirmOpen] = useState(false);
+  const [pendingCote, setPendingCote] = useState<{ newCote: number | null; originalCote: number | null }>({
+    newCote: null,
+    originalCote: null,
+  });
+  const coteConfirmedRef = useRef(false);
 
   /* ── Summary popup (replaces Step 7) ─────────────────────── */
   const [showSummarySheet, setShowSummarySheet] = useState(false);
@@ -730,6 +745,28 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
       toast.warning({ message: "Champs requis manquants" });
       return;
     }
+    /* Cote-A intercept : gate on ANY cote change (incl. null↔value).
+       For CREATE, originalCote is always null (new athlete, no prior
+       eval) — first-time rating is high-impact, so create gates too.
+       For EDIT, originalCote comes from the baseline form captured at
+       hydration time (computeCoteGlobale on baselineFormRef.current).
+       coteConfirmedRef is set true by the modal's onConfirm, so the
+       second handleFinish call bypasses the gate. */
+    const newCote = computeCoteGlobale(form);
+    const originalCote = isCreate ? null : computeCoteGlobale(baselineFormRef.current);
+    if (!coteConfirmedRef.current && coteChanged(newCote, originalCote)) {
+      setPendingCote({ newCote, originalCote });
+      /* Close the summary sheet BEFORE opening the cote-confirm so only
+         one modal shows at a time. Without this both portal to the same
+         document.body and stack — the screenshot bug. The summary sheet
+         doesn't need to re-open : on cancel the user is back in the
+         wizard ; they can tap "Enregistrer" again to re-surface it. */
+      setShowSummarySheet(false);
+      setCoteConfirmOpen(true);
+      return;
+    }
+    coteConfirmedRef.current = false; // reset for next save
+
     setSaving(true);
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -1194,6 +1231,26 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
         onJumpToSlide={(i) => { setShowSummarySheet(false); setDirection(i > slide ? 1 : -1); setSlide(i); }}
         onToggleConsent={() => setForm((prev) => ({ ...prev, parentalConsent: !prev.parentalConsent }))}
         onTogglePartner={(next) => setForm((prev) => ({ ...prev, partnerVisibilityConsent: next }))}
+      />
+
+      {/* Cote-A : cote-change confirmation. Reuses the shared ConfirmSheet
+          with CoteChangeConfirmContent in the `extra` slot — same modal
+          shape used by Paramètres destructive confirms. onConfirm sets
+          coteConfirmedRef so the next handleFinish call bypasses the gate
+          and proceeds with the save. */}
+      <ConfirmSheet
+        open={coteConfirmOpen}
+        onClose={() => setCoteConfirmOpen(false)}
+        title="Tu es sur le point de changer la cote"
+        message="Confirmes-tu que c'est exact selon l'échelle Nexus ?"
+        confirmLabel="Oui, continuer"
+        variant="warning"
+        onConfirm={() => {
+          coteConfirmedRef.current = true;
+          setCoteConfirmOpen(false);
+          handleFinish();
+        }}
+        extra={<CoteChangeConfirmContent newCote={pendingCote.newCote} originalCote={pendingCote.originalCote} />}
       />
     </div>
   );

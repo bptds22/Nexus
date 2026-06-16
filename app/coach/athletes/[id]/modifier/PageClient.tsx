@@ -6,7 +6,10 @@ import { useDynamicParam } from "@/lib/platform/useDynamicParam";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { loadAthleteRaw, buildFormFromRaw } from "../../_data/loadAthleteFromSupabase";
-import { saveAthleteEdit } from "../../_data/saveAthlete";
+import { saveAthleteEdit, computeCoteGlobale } from "../../_data/saveAthlete";
+import { coteChanged } from "@/lib/utils/cote";
+import { ConfirmSheet } from "@/components/shared/settings";
+import CoteChangeConfirmContent from "@/components/shared/CoteChangeConfirmContent";
 import { BADGE_CONFIG, BADGE_ORDER, MAX_BADGES, MAX_DETAIL_LENGTH, getSportStats, type DistinctionEntry } from "@/lib/config/badges";
 import DistinctionBadge from "@/components/shared/DistinctionBadge";
 import StepIndicator from "../../../components/StepIndicator";
@@ -243,6 +246,18 @@ function ModifierContent({ id }: { id: string }) {
      the consent cols when they differ. */
   const consentBaselineRef = useRef<boolean>(false);
 
+  /* ── Cote-A : confirmation gate. originalCoteRef captures the
+     loaded cote at hydration so the save handler can diff against
+     it ; coteConfirmedRef bypasses the gate after the modal's
+     onConfirm so the second saveToSupabase call commits. */
+  const originalCoteRef = useRef<number | null>(null);
+  const coteConfirmedRef = useRef(false);
+  const [coteConfirmOpen, setCoteConfirmOpen] = useState(false);
+  const [pendingCote, setPendingCote] = useState<{ newCote: number | null; originalCote: number | null }>({
+    newCote: null,
+    originalCote: null,
+  });
+
   useEffect(() => {
     // Fetch schools for committed school selector + coach's teams
     const supabase = createClient();
@@ -347,6 +362,19 @@ function ModifierContent({ id }: { id: string }) {
       // Consent baseline — diffed against form.parentalConsent at save
       // time. See saveAthleteEdit (consent guard).
       consentBaselineRef.current = !!(raw.consentement_parental);
+
+      // Cote-A : capture the loaded cote so the save handler can detect
+      // a change against it. Same computeCoteGlobale formula used by
+      // saveAthleteEdit — guarantees the originalCote we diff against
+      // is the EXACT value saveAthleteEdit would have written, not a
+      // separate read from evaluations.cote_globale.
+      /* Local AthleteFormData has structural drift from saveAthlete.ts's
+         canonical wizardFormShape AthleteFormData (the same baseline TS
+         error that exists on the saveAthleteEdit call below). Cast
+         through Parameters<typeof computeCoteGlobale> — both shapes
+         contain scouting.{traitRatings,starRating} which is all
+         computeCoteGlobale reads. */
+      originalCoteRef.current = computeCoteGlobale(formFromDB as unknown as Parameters<typeof computeCoteGlobale>[0]);
 
       setLoading(false);
     });
@@ -471,6 +499,21 @@ function ModifierContent({ id }: { id: string }) {
   }
 
   async function saveToSupabase(): Promise<boolean> {
+    /* Cote-A intercept : gate on ANY cote change (incl. null↔value).
+       originalCoteRef was captured at form-hydration via the SAME
+       computeCoteGlobale formula saveAthleteEdit uses, so we're
+       diffing against the precise value the persisted row holds.
+       coteConfirmedRef is set true by the modal's onConfirm, so the
+       second saveToSupabase call bypasses the gate and proceeds. */
+    const newCote = computeCoteGlobale(form as unknown as Parameters<typeof computeCoteGlobale>[0]);
+    const originalCote = originalCoteRef.current;
+    if (!coteConfirmedRef.current && coteChanged(newCote, originalCote)) {
+      setPendingCote({ newCote, originalCote });
+      setCoteConfirmOpen(true);
+      return false;
+    }
+    coteConfirmedRef.current = false; // reset for next save
+
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return false;
@@ -1280,6 +1323,29 @@ function ModifierContent({ id }: { id: string }) {
           )}
         </div>
       </div>
+
+      {/* Cote-A : cote-change confirmation modal. Shared ConfirmSheet
+          (portal-to-body, works on both web and Capacitor) with
+          CoteChangeConfirmContent in the `extra` slot. onConfirm sets
+          coteConfirmedRef + retriggers saveToSupabase. */}
+      <ConfirmSheet
+        open={coteConfirmOpen}
+        onClose={() => setCoteConfirmOpen(false)}
+        title="Tu es sur le point de changer la cote"
+        message="Confirmes-tu que c'est exact selon l'échelle Nexus ?"
+        confirmLabel="Oui, continuer"
+        variant="warning"
+        onConfirm={async () => {
+          coteConfirmedRef.current = true;
+          setCoteConfirmOpen(false);
+          const ok = await saveToSupabase();
+          if (ok) {
+            setCompletedSteps((prev) => new Set([...prev, 7]));
+            setSaved(true);
+          }
+        }}
+        extra={<CoteChangeConfirmContent newCote={pendingCote.newCote} originalCote={pendingCote.originalCote} />}
+      />
     </div>
   );
 }

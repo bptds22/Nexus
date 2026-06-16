@@ -91,7 +91,7 @@ interface SportIds {
  *  trait columns. To change the cote when traits exist, the coach
  *  must edit the traits ; to abandon detailed evaluation entirely,
  *  the coach clears the traits in detailed mode (existing path). */
-function computeCoteGlobale(form: AthleteFormData): number | null {
+export function computeCoteGlobale(form: AthleteFormData): number | null {
   const rated = Object.values(form.scouting.traitRatings).filter((v) => v > 0);
   if (rated.length > 0) {
     return parseFloat((rated.reduce((a, b) => a + b, 0) / rated.length).toFixed(2));
