@@ -16,6 +16,7 @@ import DangerSection from "./_components/DangerSection";
 import ConfirmModal from "./_components/ConfirmModal";
 import SaveToast from "./_components/SaveToast";
 import InvitationLinkModal from "@/components/ui/InvitationLinkModal";
+import SubscriptionManager from "@/components/subscription/SubscriptionManager";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -385,189 +386,6 @@ function AdminCegepSection() {
   );
 }
 
-/* ── Recruiter Pricing Section ────────────────────────────── */
-
-function RecruiterPricingSection() {
-  const [annual, setAnnual] = useState(false);
-  const currentTier = "free"; // TODO: read from subscriptions table
-
-  const tiers = [
-    {
-      id: "free",
-      name: "Gratuit",
-      monthly: 0,
-      yearly: 0,
-      border: "border-[#2D3748]",
-      glow: "",
-      badge: null,
-      ctaBg: "",
-      ctaText: "",
-      features: [
-        { label: "Recherche par sport, région, année, école, position", included: true },
-        { label: "Étoiles, cote globale, badge vérifié", included: true },
-        { label: "École, sport, promotion, moyenne", included: true },
-        { label: "Taille / poids", included: true },
-        { label: "Évaluations simplifiées (3 groupes)", included: true },
-        { label: "10 résultats par recherche", included: true },
-        { label: "10 favoris max", included: true },
-        { label: "Filtres avancés", included: false },
-        { label: "Identité de l'athlète (nom, photo, jersey)", included: false },
-        { label: "Messagerie coach", included: false },
-        { label: "Pipeline de recrutement", included: false },
-      ],
-    },
-    {
-      id: "pro",
-      name: "Pro",
-      monthly: 19.99,
-      yearly: 159,
-      border: "border-[#F59E0B]",
-      glow: "shadow-[0_0_20px_rgba(245,158,11,0.1)]",
-      badge: { label: "POPULAIRE", color: "bg-[#F59E0B] text-black" },
-      ctaBg: "bg-[#F59E0B] hover:bg-[#D97706] text-black",
-      ctaText: "Passer à Pro",
-      features: [
-        { label: "Tout du plan Gratuit +", included: true, header: true },
-        { label: "Filtres avancés (taille, poids, cote globale)", included: true },
-        { label: "Résultats de recherche illimités", included: true },
-        { label: "Nom, photo, numéro de jersey révélés", included: true },
-        { label: "Vidéos faits saillants + parcours académique", included: true },
-        { label: "Coordonnées du coach (email, tel)", included: true },
-        { label: "Messagerie coach (10/mois) + templates", included: true },
-        { label: "Favoris illimités", included: true },
-        { label: "Pipeline de recrutement (50 athlètes)", included: true },
-        { label: "Coach reviews — lire et rédiger", included: true },
-      ],
-    },
-    {
-      id: "allstar",
-      name: "All Star",
-      monthly: 29.99,
-      yearly: 239,
-      border: "border-[#E63946]",
-      glow: "shadow-[0_0_20px_rgba(230,57,70,0.1)]",
-      badge: { label: "COMPLET", color: "bg-[#E63946] text-white" },
-      ctaBg: "bg-[#E63946] hover:bg-[#D42B22] text-white",
-      ctaText: "Passer à All Star",
-      features: [
-        { label: "Tout du plan Pro +", included: true, header: true },
-        { label: "Évaluations détaillées (11 critères)", included: true },
-        { label: "Statut de recrutement global", included: true },
-        { label: "Voir qui a consulté l'athlète", included: true },
-        { label: "Messagerie illimitée", included: true },
-        { label: "Pipeline illimité + analytics (conversion, temps)", included: true },
-        { label: "Listes de prospects custom", included: true },
-        { label: "Signaux de compétition", included: true },
-        { label: "Gestion CÉGEP", included: true },
-      ],
-    },
-  ];
-
-  return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="font-head text-xl font-black text-white uppercase tracking-tight">Abonnement</h2>
-        <p className="text-[14px] text-[#6b7280] mt-1">Gère ton plan et ta facturation</p>
-      </div>
-
-      {/* Current plan bar */}
-      <div className="bg-[#22C55E]/10 border border-[#22C55E]/30 rounded-xl px-5 py-3">
-        <div className="flex items-center gap-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-[#22C55E]" />
-          <span className="text-[14px] font-bold text-white">Tu es actuellement sur le plan <span className="uppercase">{currentTier === "free" ? "Gratuit" : currentTier === "pro" ? "Pro" : "All Star"}</span></span>
-        </div>
-        {currentTier === "free" && <p className="text-[13px] text-[#9CA3AF] mt-1 ml-[18px]">Passe à Pro pour débloquer tout le potentiel de Nexus</p>}
-      </div>
-
-      {/* Annual/Monthly toggle */}
-      <div className="flex justify-center">
-        <div className="flex items-center gap-1 bg-[#13151a] rounded-xl p-1.5">
-          <button type="button" onClick={() => setAnnual(false)} className={`px-5 py-2.5 rounded-lg text-[12px] font-bold uppercase tracking-[0.12em] transition-all ${!annual ? "bg-[#E63946] text-white shadow-[0_0_10px_rgba(230,57,70,0.25)]" : "text-[#6b7280] hover:text-white"}`}>Mensuel</button>
-          <button type="button" onClick={() => setAnnual(true)} className={`px-5 py-2.5 rounded-lg text-[12px] font-bold uppercase tracking-[0.12em] transition-all ${annual ? "bg-[#E63946] text-white shadow-[0_0_10px_rgba(230,57,70,0.25)]" : "text-[#6b7280] hover:text-white"}`}>
-            Annuel <span className="text-[10px] font-normal ml-1 opacity-80">(économise 34%)</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Pricing cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        {tiers.map(tier => {
-          const isCurrent = currentTier === tier.id;
-          const price = annual ? tier.yearly : tier.monthly;
-          const period = annual ? "/an" : "/mois";
-
-          return (
-            <div key={tier.id} className={`bg-[#1A1D24] rounded-xl border ${tier.border} ${tier.glow} p-6 flex flex-col relative`}>
-              {/* Badge */}
-              {tier.badge && (
-                <span className={`absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest ${tier.badge.color}`}>
-                  {tier.badge.label}
-                </span>
-              )}
-
-              {/* Tier name */}
-              <h3 className="font-head text-[18px] font-black text-white uppercase tracking-tight mt-1">
-                {tier.id !== "free" && <span className="text-[#F59E0B] mr-1">{tier.id === "pro" ? "★" : "★★"}</span>}
-                {tier.name}
-              </h3>
-
-              {/* Price */}
-              <div className="mt-3">
-                <div className="flex items-baseline gap-1">
-                  <span className="text-[32px] font-black text-white leading-none">{price === 0 ? "0" : `${price}`}$</span>
-                  {price > 0 && <span className="text-[14px] text-[#6b7280]">{period}</span>}
-                </div>
-                {price > 0 && annual && (
-                  <p className="text-[12px] text-[#22C55E] mt-1 font-bold">Économise 2 mois</p>
-                )}
-                {price > 0 && !annual && tier.yearly > 0 && (
-                  <p className="text-[11px] text-[#6b7280] mt-1">ou {tier.yearly}$/an</p>
-                )}
-              </div>
-
-              {/* Divider */}
-              <div className="h-px bg-[#2D3748] my-4" />
-
-              {/* Features */}
-              <div className="space-y-2.5 flex-1">
-                {tier.features.map((f, i) => (
-                  <div key={i} className="flex items-start gap-2">
-                    {(f as { header?: boolean }).header ? (
-                      <span className="text-[12px] font-bold text-[#F59E0B] uppercase tracking-wider">{f.label}</span>
-                    ) : f.included ? (
-                      <>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2.5" strokeLinecap="round" className="shrink-0 mt-0.5"><path d="M20 6L9 17l-5-5" /></svg>
-                        <span className="text-[13px] text-[#e0e0e0]">{f.label}</span>
-                      </>
-                    ) : (
-                      <>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4a4d56" strokeWidth="2" strokeLinecap="round" className="shrink-0 mt-0.5"><path d="M18 6L6 18" /><path d="M6 6l12 12" /></svg>
-                        <span className="text-[13px] text-[#4a4d56] line-through">{f.label}</span>
-                      </>
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              {/* CTA */}
-              <div className="mt-5">
-                {isCurrent ? (
-                  <button type="button" disabled className="w-full py-2.5 rounded-lg text-[13px] font-bold bg-[#2D3748] text-[#6b7280] cursor-not-allowed">Plan actuel</button>
-                ) : (
-                  <button type="button" className={`w-full py-2.5 rounded-lg text-[13px] font-bold transition-all flex items-center justify-center gap-2 ${tier.ctaBg}`}>
-                    {tier.ctaText}
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M5 12h14" /><path d="M12 5l7 7-7 7" /></svg>
-                  </button>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
 /* ── Demo access toggle ───────────────────────────────────────
    DEV-only demo toggle that writes the canonical tier/admin state
    to Supabase (subscriptions + users tables). Replaces the prior
@@ -927,7 +745,7 @@ function RecruiterSettingsDesktop() {
                 onSave={handleSave}
               />
             )}
-            {section === "abonnement" && <RecruiterPricingSection />}
+            {section === "abonnement" && <SubscriptionManager role="RECRUTEUR" />}
             {section === "admin_cegep" && <AdminCegepSection />}
             {section === "notifications" && (
               <NotificationsSection

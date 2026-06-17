@@ -28,6 +28,11 @@ export interface Tier {
   ctaLabel: string;
   ctaClass: string;
   ctaHref: string;
+  /** When true, the tier is displayed as a visible card but is NOT
+   *  purchasable yet ("Bientôt disponible"). The component must hide the
+   *  price and disable checkout. The Stripe price ids stay in
+   *  lib/stripe/prices.ts so it can go live later without a data change. */
+  comingSoon?: boolean;
 }
 
 /* ── RECRUITER ──────────────────────────────────────────────── */
@@ -192,9 +197,10 @@ export const COACH_TIERS: Tier[] = [
       { kind: "item", label: "Statistiques d'école complètes", included: true },
       { kind: "item", label: "Outils d'invitation pour les entraîneurs", included: true },
     ],
-    ctaLabel: "Choisir All Star",
+    ctaLabel: "Bientôt disponible",
     ctaClass: "bg-[#E63946] text-white hover:bg-[#D42B22]",
     ctaHref: "/inscription?role=COACH",
+    comingSoon: true,
   },
 ];
 
@@ -267,9 +273,9 @@ export const ATHLETE_TIERS: Tier[] = [
    percentage per persona (the component API) rounded to the tier
    average. 0 hides the caption (no paid tiers exist). ── */
 export const PERSONA_SAVINGS: Record<Persona, number> = {
-  recruteur: 34, // Pro 33.7%, All Star 33.6%
-  coach: 34,     // Pro 34.9%, All Star 34.1%
-  athlete: 33,   // Pro 33.1%
+  recruteur: 34, // Pro 19.99/159 → 33.7%, All Star 29.99/239 → 33.6%
+  coach: 34,     // Pro 9.99/79 → 34.1% (All Star "Bientôt disponible", not counted)
+  athlete: 34,   // Pro 6.99/55 → 34.4%
 };
 
 export function getTiersForPersona(persona: Persona): Tier[] {

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import SubscriptionSection from "@/components/subscription/SubscriptionSection";
+import SubscriptionManager from "@/components/subscription/SubscriptionManager";
 import CoachPicker from "@/components/coach/CoachPicker";
 import CivilCoachPicker from "@/components/coach/CivilCoachPicker";
 import { createClient } from "@/lib/supabase/client";
@@ -363,7 +363,7 @@ function ParametresPageDesktop() {
           )}
 
           {/* ── ABONNEMENT ───────────────────────────────────── */}
-          {section === "abonnement" && <SubscriptionSection portal="athlete" />}
+          {section === "abonnement" && <SubscriptionManager role="ATHLETE" />}
 
           {/* ── NOTIFICATIONS ─────────────────────────────────── */}
           {section === "notifications" && (
