@@ -6,6 +6,7 @@ import { GrainOverlay } from "@/components/editorial";
 import { LanguageProvider } from "@/lib/i18n/LanguageContext";
 import { MobileToastProvider } from "@/components/mobile/MobileToast";
 import { QueryProvider } from "./_providers/QueryProvider";
+import { SubscriptionProvider } from "@/lib/context/SubscriptionProvider";
 import { SplashGate } from "@/components/mobile/auth/SplashGate";
 
 const ORGANIZATION_JSONLD = {
@@ -178,12 +179,14 @@ export default function RootLayout({
         <GrainOverlay />
         <LanguageProvider>
           <QueryProvider>
-            <MobileToastProvider>
-              {/* Iter 7.47 — SplashGate joue l'anim X→logo UNE FOIS par
-                  cold start Capacitor. Desktop : passthrough immédiat
-                  (IS_CAPACITOR=false → children direct, jamais d'anim). */}
-              <SplashGate>{children}</SplashGate>
-            </MobileToastProvider>
+            <SubscriptionProvider>
+              <MobileToastProvider>
+                {/* Iter 7.47 — SplashGate joue l'anim X→logo UNE FOIS par
+                    cold start Capacitor. Desktop : passthrough immédiat
+                    (IS_CAPACITOR=false → children direct, jamais d'anim). */}
+                <SplashGate>{children}</SplashGate>
+              </MobileToastProvider>
+            </SubscriptionProvider>
           </QueryProvider>
         </LanguageProvider>
       </body>
