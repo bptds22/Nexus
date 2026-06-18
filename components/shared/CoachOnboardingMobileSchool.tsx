@@ -37,6 +37,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import { MobilePicker, type PickerOption } from "@/components/mobile/MobilePicker";
 import { SearchSheet } from "@/components/mobile/SearchSheet";
+import { formatTeamLabel } from "@/lib/teams/teamLabel";
 
 /* ── Constantes ──────────────────────────────────────────────── */
 
@@ -60,6 +61,7 @@ type ScolaireTeamRow = {
   division: string | null;
   age_group: string | null;
   gender: string | null;
+  sport: string | null;
 };
 
 /* ── Helpers ─────────────────────────────────────────────────── */
@@ -83,18 +85,17 @@ function normalize(s: string): string {
   return stripAccents(s).toLowerCase().trim();
 }
 
-/** Libellé compact d'une équipe scolaire (age_group · division · gender).
- *  Fallback name si tous attributs vides. Identique au helper athlète. */
+/** Libellé d'une équipe scolaire : "Sport · Catégorie · Division · Genre"
+ *  (sport en premier — le picker montre désormais tous les sports). Délègue
+ *  au helper partagé pour rester aligné avec le web. */
 function scolaireTeamLabel(t: {
   name: string;
   division: string | null;
   age_group: string | null;
   gender: string | null;
+  sport: string | null;
 }): string {
-  const parts = [t.age_group, t.division, t.gender]
-    .map((v) => (v ?? "").trim())
-    .filter((v) => v.length > 0);
-  return parts.length > 0 ? parts.join(" · ") : t.name;
+  return formatTeamLabel(t.sport, t.age_group, t.division, t.gender, t.name);
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -263,7 +264,7 @@ export function CoachOnboardingMobileSchool() {
   // RLS additive Secondary teams readable for onboarding (20260607150000) →
   // ✅ visible pour un coach mid-onboarding (school_id pas encore set).
   useEffect(() => {
-    if (!selectedSchoolId || !sport) {
+    if (!selectedSchoolId) {
       setScolaireTeams([]);
       setScolaireTeamsLoaded(false);
       return;
@@ -273,18 +274,12 @@ export function CoachOnboardingMobileSchool() {
     setScolaireTeamsLoaded(false);
     (async () => {
       const supabase = createClient();
-      const { data: sportRow } = await supabase
-        .from("sports").select("id").eq("nom", sport).maybeSingle();
-      if (cancelled) return;
-      if (!sportRow?.id) {
-        setScolaireTeams([]); setScolaireTeamsLoaded(true); setScolaireTeamsLoading(false);
-        return;
-      }
+      // ALL teams of the school, every sport (anti-doublon visibility) —
+      // no sport_id filter. Sport name joined for the label + grouping.
       const { data: rows } = await supabase
         .from("teams")
-        .select("id, name, division, age_group, gender")
+        .select("id, name, division, age_group, gender, sports!sport_id(nom)")
         .eq("school_id", selectedSchoolId)
-        .eq("sport_id", sportRow.id)
         .eq("is_active", true)
         .order("name");
       if (cancelled) return;
@@ -294,7 +289,17 @@ export function CoachOnboardingMobileSchool() {
         division: (r.division as string) ?? null,
         age_group: (r.age_group as string) ?? null,
         gender: (r.gender as string) ?? null,
+        sport: ((r.sports as { nom?: string } | null)?.nom) ?? null,
       }));
+      // Sort: the coach's declared sport first (so it stands out), then
+      // other sports alphabetically, then team name — same sport contiguous.
+      mapped.sort((a, b) => {
+        const aMine = a.sport === sport ? 0 : 1;
+        const bMine = b.sport === sport ? 0 : 1;
+        if (aMine !== bMine) return aMine - bMine;
+        const s = (a.sport ?? "").localeCompare(b.sport ?? "");
+        return s !== 0 ? s : a.name.localeCompare(b.name);
+      });
       setScolaireTeams(mapped);
       setScolaireTeamsLoaded(true);
       setScolaireTeamsLoading(false);
@@ -353,6 +358,7 @@ export function CoachOnboardingMobileSchool() {
     if (!q) return scolaireTeams;
     return scolaireTeams.filter((t) =>
       normalize(t.name).includes(q) ||
+      (t.sport ? normalize(t.sport).includes(q) : false) ||
       (t.division ? normalize(t.division).includes(q) : false) ||
       (t.age_group ? normalize(t.age_group).includes(q) : false)
     );
@@ -721,7 +727,7 @@ export function CoachOnboardingMobileSchool() {
         }}
         emptyContent={
           <p className="text-center text-[14px] text-white/55 py-12 px-4">
-            Aucune équipe trouvée pour {selectedSchoolName} en {sport || "ce sport"}.
+            Aucune équipe trouvée pour {selectedSchoolName}.
           </p>
         }
         renderItem={(t, onTap) => (

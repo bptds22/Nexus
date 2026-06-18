@@ -2295,14 +2295,11 @@ function SchoolCoachTeamStep({ user, save }: { user: NexusUser; save: (u: Partia
         </div>
       )}
 
-      {/* Read-only sport scope header — mirrors the civil umbrella's
-          "Club : X" line and the recruiter step's "Sport : X". A school
-          coach has ONE declared sport (canProceed gates step 0 on
-          sport_principal for role==="coach"), and joining a team in
-          another sport would mismatch the coach's profile. Display
-          only — NOT a picker. sportName is guaranteed non-empty here
-          because the guard at line ~1777 already redirected to an
-          error screen if it couldn't resolve. */}
+      {/* Read-only header. The picker now shows ALL of the school's teams
+          (every sport) for anti-doublon visibility — the coach's declared
+          sport just sorts first (prioritySport). Display only, NOT a filter.
+          sportName is guaranteed non-empty here (the guard at line ~1777
+          already redirected to an error screen if it couldn't resolve). */}
       <div className="bg-[#111317]/60 border border-white/[0.06] rounded-lg p-3 text-[12px] text-[#9CA3AF]">
         Ton sport : <span className="text-white font-bold">{sportName}</span>
       </div>
@@ -2310,7 +2307,8 @@ function SchoolCoachTeamStep({ user, save }: { user: NexusUser; save: (u: Partia
       <UmbrellaStep
         schoolId={schoolId}
         schoolName={schoolNameFromLocal}
-        sportId={sportId}
+        sportId=""
+        prioritySport={sportName}
         onSelect={handlePick}
         scopeLabel="École"
         showBack={false}
@@ -3760,6 +3758,7 @@ function UmbrellaStep({
   showBack = true,
   cardCtaText = "C'est mon équipe →",
   selectedTeamId,
+  prioritySport,
 }: {
   schoolId: string;
   schoolName: string;
@@ -3787,6 +3786,10 @@ function UmbrellaStep({
   // Used by the recruiter Programme step (selection stays visible
   // without dismissing the grid). Coach flows leave this undefined.
   selectedTeamId?: string | null;
+  // Optional — when set, teams of this sport sort FIRST (the coach's
+  // declared sport stands out) while every sport stays visible. Other
+  // flows omit it → plain alphabetical-by-sport grouping.
+  prioritySport?: string;
 }) {
   const [teams, setTeams] = useState<TeamSearchRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -3805,7 +3808,7 @@ function UmbrellaStep({
       // regardless of sport. Coach flows always pass a real sport_id.
       let query = supabase
         .from("teams")
-        .select("id, name, age_group, gender, division, league, school_id, team_coaches(coach_id)")
+        .select("id, name, age_group, gender, division, league, school_id, sports!sport_id(nom), team_coaches(coach_id)")
         .eq("school_id", schoolId);
       if (sportId) {
         query = query.eq("sport_id", sportId);
@@ -3826,9 +3829,11 @@ function UmbrellaStep({
       for (const r of (data ?? []) as Array<{
         id: string; name: string; age_group: string | null; gender: string | null;
         division: string | null; league: string | null; school_id: string;
+        sports: { nom: string } | null;
         team_coaches: { coach_id: string }[] | null;
       }>) {
-        const key = `${r.name}${r.age_group ?? ""}${r.division ?? ""}${r.gender ?? ""}`;
+        const sportName = r.sports?.nom ?? null;
+        const key = `${sportName ?? ""}${r.name}${r.age_group ?? ""}${r.division ?? ""}${r.gender ?? ""}`;
         if (seen.has(key)) continue;
         seen.add(key);
         deduped.push({
@@ -3841,13 +3846,23 @@ function UmbrellaStep({
           school_id: r.school_id,
           school_name: schoolName,
           coach_count: r.team_coaches?.length ?? 0,
+          sport: sportName,
         });
       }
+      // Group by sport (same-sport contiguous), with the coach's declared
+      // sport (prioritySport) first when provided, then alphabetical, then name.
+      deduped.sort((a, b) => {
+        const aMine = prioritySport && a.sport === prioritySport ? 0 : 1;
+        const bMine = prioritySport && b.sport === prioritySport ? 0 : 1;
+        if (aMine !== bMine) return aMine - bMine;
+        const s = (a.sport ?? "").localeCompare(b.sport ?? "");
+        return s !== 0 ? s : a.name.localeCompare(b.name);
+      });
       setTeams(deduped);
       setLoading(false);
     })();
     return () => { cancelled = true; };
-  }, [schoolId, sportId, schoolName]);
+  }, [schoolId, sportId, schoolName, prioritySport]);
 
   return (
     <div className="space-y-3">
@@ -3884,6 +3899,11 @@ function UmbrellaStep({
               >
                 <p className="font-bold text-white text-sm truncate">{team.name}</p>
                 <div className="flex items-center gap-1.5 flex-wrap mt-2">
+                  {team.sport && (
+                    <span className="shrink-0 px-2 py-0.5 rounded-full bg-[#E63946]/15 text-[10px] font-bold text-[#E63946] uppercase border border-[#E63946]/30">
+                      {team.sport}
+                    </span>
+                  )}
                   {team.division && (
                     <span className="shrink-0 px-2 py-0.5 rounded-full bg-white/5 text-[10px] font-bold text-white/70 uppercase border border-white/10">
                       {team.division}
