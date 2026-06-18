@@ -30,6 +30,7 @@ import { getAthleteTracking } from "@/app/recruteur/_data/mockPipelineData";
 import StatusChangeDropdown from "@/app/recruteur/_components/StatusChangeDropdown";
 import ComposeIntroModal from "@/app/recruteur/_components/ComposeIntroModal";
 import { useSubscription } from "@/lib/hooks/useSubscription";
+import { selectBestEvaluation } from "@/lib/evaluations/selectEvaluation";
 import { useFavoritesCount } from "@/lib/hooks/useFavoritesCount";
 import CelebrationToast from "@/app/recruteur/_components/CelebrationToast";
 import UpgradeModal from "@/components/ui/UpgradeModal";
@@ -703,7 +704,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
           vision_du_jeu, sens_tactique,
           leadership, discipline, coachabilite, intelligence_jeu,
           competitivite, esprit_equipe, resilience, attitude_mentalite,
-          cote_globale, rapport_entraineur, distinctions
+          cote_globale, rapport_entraineur, distinctions, updated_at
         ),
         users!athletes_coach_id_fkey(first_name, last_name)
       ` as unknown as "*")
@@ -715,7 +716,9 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
         const d = data as Record<string, unknown>;
         setAthleteUserId((d.user_id as string | null) ?? null);
         const evals = d.evaluations as Record<string, unknown>[] | null;
-        const eval0 = evals?.[0];
+        // Pick by rule (détaillée > simple, then most recent updated_at) —
+        // NOT evaluations[0] (unordered, often a non-owning coach's row).
+        const eval0 = selectBestEvaluation(evals);
 
         const recruitmentStatusRaw = (d.recruitment_status as string) || "OUVERT";
         const committedSchoolRel = d.committed_school as { name: string } | null;
