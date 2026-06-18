@@ -38,6 +38,7 @@ import { useMobileToast } from "@/components/mobile/MobileToast";
 import { MobilePicker, type PickerOption } from "@/components/mobile/MobilePicker";
 import { SearchSheet } from "@/components/mobile/SearchSheet";
 import { formatTeamLabel } from "@/lib/teams/teamLabel";
+import TeamCreateForm, { type TeamFormData } from "@/components/onboarding/TeamCreateForm";
 
 /* ── Constantes ──────────────────────────────────────────────── */
 
@@ -152,6 +153,12 @@ export function CoachOnboardingMobileSchool() {
   const [openSport, setOpenSport] = useState(false);
   const [schoolSheetOpen, setSchoolSheetOpen] = useState(false);
   const [teamSheetOpen, setTeamSheetOpen] = useState(false);
+  // Création d'équipe : overlay TeamCreateForm + données en attente. La
+  // création est différée au finish (RPC branche create), pas faite ici.
+  const [createTeamOpen, setCreateTeamOpen] = useState(false);
+  const [pendingCreateTeam, setPendingCreateTeam] = useState<{
+    name: string; age_group: string; division: string; gender: string;
+  } | null>(null);
 
   // Data sources sheets
   const [schoolSearch, setSchoolSearch] = useState("");
@@ -471,10 +478,17 @@ export function CoachOnboardingMobileSchool() {
         p_bio:              bio.trim() || null,
         p_experience_years: expYears,
         p_photo_url:        photo || null,
-        p_team_id:          selectedTeamId,
+        // Create et link mutuellement exclusifs : si une équipe est en
+        // attente de création, p_team_id = null et on passe les params create
+        // (la RPC crée l'équipe sous l'école + head_coach). Sinon, lien normal.
+        p_team_id:          pendingCreateTeam ? null : selectedTeamId,
         p_director_choice:  rpcChoice,
         p_rprp_accepted:    !!rprpAttested,
         p_invite_email:     rpcChoice === "invite" ? inviteEmail.trim() : null,
+        p_team_name:        pendingCreateTeam?.name ?? null,
+        p_team_age_group:   pendingCreateTeam?.age_group ?? null,
+        p_team_gender:      pendingCreateTeam?.gender ?? null,
+        p_team_division:    pendingCreateTeam?.division ?? null,
       });
 
       if (error) {
@@ -491,6 +505,8 @@ export function CoachOnboardingMobileSchool() {
           userMessage = "Ce flux est réservé aux coachs scolaires.";
         } else if (msg.includes("INVALID_DIRECTOR_CHOICE")) {
           userMessage = "Choix de directeur invalide.";
+        } else if (msg.includes("INVALID_SPORT")) {
+          userMessage = "Sport non reconnu — reviens à l'étape Profil et resélectionne ton sport.";
         }
         toast.error({ message: userMessage, detail: error.message });
         setSaving(false);
@@ -740,19 +756,64 @@ export function CoachOnboardingMobileSchool() {
           </button>
         )}
         footer={
-          <button
-            type="button"
-            onClick={() => {
-              setSelectedTeamId(null);
-              setSelectedTeamName("");
-              setTeamSheetOpen(false);
-            }}
-            className="w-full h-11 rounded-2xl border border-white/[0.10] text-[14px] font-semibold text-white/70 active:bg-white/[0.04]"
-          >
-            Continuer sans équipe
-          </button>
+          <div className="space-y-2">
+            {/* Créer une équipe — ouvre le form de création (overlay). */}
+            <button
+              type="button"
+              onClick={() => { setTeamSheetOpen(false); setCreateTeamOpen(true); }}
+              className="w-full h-11 rounded-2xl bg-[#E63946] text-white text-[14px] font-semibold active:bg-[#D42B22]"
+            >
+              Créer une équipe
+            </button>
+            {/* Continuer sans équipe — INCHANGÉ (décision PO séparée). */}
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedTeamId(null);
+                setSelectedTeamName("");
+                setTeamSheetOpen(false);
+              }}
+              className="w-full h-11 rounded-2xl border border-white/[0.10] text-[14px] font-semibold text-white/70 active:bg-white/[0.04]"
+            >
+              Continuer sans équipe
+            </button>
+          </div>
         }
       />
+
+      {/* Overlay création d'équipe — réutilise TeamCreateForm (verrouillé sur
+          l'école). À la soumission, on diffère au finish (RPC branche create)
+          via pendingCreateTeam ; pas d'écriture DB ici. */}
+      {createTeamOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-[#111317] overflow-y-auto"
+          style={{ paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)" }}
+        >
+          <div className="px-4 py-6 max-w-md mx-auto">
+            <TeamCreateForm
+              sportId=""
+              sportName={sport}
+              lockedSchoolId={selectedSchoolId ?? undefined}
+              lockedSchoolName={selectedSchoolName}
+              lockedLabel="École"
+              onCancel={() => setCreateTeamOpen(false)}
+              onSubmit={(data: TeamFormData) => {
+                setPendingCreateTeam({
+                  name: data.team_name,
+                  age_group: data.age_group,
+                  division: data.division,
+                  gender: data.gender,
+                });
+                setSelectedTeamId(null);
+                setSelectedTeamName(
+                  formatTeamLabel(sport, data.age_group, data.division, data.gender, data.team_name),
+                );
+                setCreateTeamOpen(false);
+              }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -2178,6 +2178,7 @@ function SchoolCoachTeamStep({ user, save }: { user: NexusUser; save: (u: Partia
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [joinedTeam, setJoinedTeam] = useState<TeamSearchRow | null>(null);
+  const [mode, setMode] = useState<"umbrella" | "create">("umbrella");
 
   // Resolve sport_principal (name) → sport_id (uuid). Mirrors the
   // resolution in LeagueCoachLeagueStep — same query, same fallback.
@@ -2250,6 +2251,82 @@ function SchoolCoachTeamStep({ user, save }: { user: NexusUser; save: (u: Partia
     }
   }
 
+  // Create a brand-new team under the coach's OWN school. Mirrors the civil
+  // handleCreateTeam (client-side inserts, RLS "Coaches create teams" gated on
+  // users.school_id) — the only differences: school_id = the real école
+  // (already set at the École step, no find-or-create), and we keep the
+  // SECONDAIRE institution (no civil override). Creator = head_coach. The
+  // form's league_input/league_id_if_existing are ignored here.
+  async function handleCreateTeamSchool(formData: TeamFormData) {
+    if (!sportId) { setError("Sport non résolu. Reviens à l'étape Profil."); return; }
+    setSubmitting(true);
+    setError(null);
+    try {
+      const supabase = createClient();
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser) { setError("Session expirée. Reconnecte-toi pour continuer."); return; }
+
+      // Idempotent — école coaches already have users.school_id; this guards
+      // legacy in-flight sessions so the teams INSERT passes RLS.
+      await supabase.from("users").update({ school_id: schoolId }).eq("id", authUser.id);
+
+      const { data: newTeam, error: tErr } = await supabase
+        .from("teams")
+        .insert({
+          school_id: schoolId,          // LA VRAIE école (pas un club civil)
+          name: formData.team_name,
+          age_group: formData.age_group,
+          division: formData.division,
+          gender: formData.gender,
+          season: formData.season,
+          sport_id: sportId,
+        })
+        .select()
+        .single();
+      if (tErr || !newTeam) {
+        console.error("[SchoolCoachTeamStep] create team failed:", tErr);
+        setError("Impossible de créer l'équipe. Réessaie.");
+        return;
+      }
+
+      const { error: tcErr } = await supabase.from("team_coaches").insert({
+        coach_id: authUser.id,
+        team_id: newTeam.id,
+        role: "head_coach",
+      });
+      if (tcErr) console.error("[SchoolCoachTeamStep] team_coaches insert failed:", tcErr);
+
+      persistTeamLocally({
+        teamId: newTeam.id,
+        teamName: formData.team_name,
+        ageGroup: formData.age_group,
+        gender: formData.gender,
+        category: formData.division,
+        season: formData.season,
+        schoolId,
+        schoolName: schoolNameFromLocal,
+      });
+      save({});
+      setJoinedTeam({
+        id: newTeam.id,
+        name: formData.team_name,
+        age_group: formData.age_group,
+        gender: formData.gender,
+        division: formData.division,
+        league: null,
+        school_id: schoolId,
+        school_name: schoolNameFromLocal,
+        coach_count: 1,
+      });
+      setMode("umbrella");
+    } catch (err) {
+      console.error("[SchoolCoachTeamStep] create exception:", err);
+      setError(err instanceof Error ? err.message : "Une erreur est survenue. Réessaie.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   if (resolving) {
     return (
       <div className="space-y-5">
@@ -2304,16 +2381,31 @@ function SchoolCoachTeamStep({ user, save }: { user: NexusUser; save: (u: Partia
         Ton sport : <span className="text-white font-bold">{sportName}</span>
       </div>
 
-      <UmbrellaStep
-        schoolId={schoolId}
-        schoolName={schoolNameFromLocal}
-        sportId=""
-        prioritySport={sportName}
-        onSelect={handlePick}
-        scopeLabel="École"
-        showBack={false}
-        emptyMessage="Aucune équipe trouvée pour cette école. Contacte-nous pour ajouter ton équipe."
-      />
+      {mode === "umbrella" && (
+        <UmbrellaStep
+          schoolId={schoolId}
+          schoolName={schoolNameFromLocal}
+          sportId=""
+          prioritySport={sportName}
+          onSelect={handlePick}
+          onCreate={() => { setError(null); setMode("create"); }}
+          scopeLabel="École"
+          showBack={false}
+          emptyMessage="Aucune équipe trouvée pour cette école. Crée la tienne ci-dessous."
+        />
+      )}
+
+      {mode === "create" && (
+        <TeamCreateForm
+          sportId={sportId}
+          sportName={sportName}
+          onSubmit={handleCreateTeamSchool}
+          onCancel={() => { setError(null); setMode("umbrella"); }}
+          lockedSchoolId={schoolId}
+          lockedSchoolName={schoolNameFromLocal}
+          lockedLabel="École"
+        />
+      )}
 
       {joinedTeam && (
         <div className="bg-[#22C55E]/10 border border-[#22C55E]/30 rounded-lg p-3 flex items-center gap-2">

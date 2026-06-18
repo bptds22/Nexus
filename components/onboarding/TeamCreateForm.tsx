@@ -75,6 +75,9 @@ export interface TeamCreateFormProps {
    */
   lockedSchoolId?: string;
   lockedSchoolName?: string;
+  /** Label for the locked parent box. Civil → "Club" (default); the school
+   *  coach flow passes "École" since the parent is a real school. */
+  lockedLabel?: string;
 }
 
 interface LeagueOption {
@@ -102,6 +105,7 @@ export default function TeamCreateForm({
   className = "",
   lockedSchoolId,
   lockedSchoolName,
+  lockedLabel = "Club",
 }: TeamCreateFormProps) {
   // Locked-by-name : the upstream club pick passes a name (always)
   // and an id (only when picking an EXISTING LIGUE_CIVILE row). New
@@ -355,12 +359,12 @@ export default function TeamCreateForm({
 
       {isLocked ? (
         <div>
-          <span className={labelCls}>Club</span>
+          <span className={labelCls}>{lockedLabel}</span>
           <div className="h-11 px-4 flex items-center bg-[#111317]/60 border border-white/[0.06] rounded-lg text-sm text-white">
             {lockedSchoolName}
           </div>
           <p className="text-[10px] text-[#6B7280] mt-1">
-            Club verrouillé depuis l&apos;étape précédente — la nouvelle équipe y sera rattachée.
+            Verrouillé depuis l&apos;étape précédente — la nouvelle équipe y sera rattachée.
           </p>
         </div>
       ) : (
