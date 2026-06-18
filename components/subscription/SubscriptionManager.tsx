@@ -240,22 +240,30 @@ export default function SubscriptionManager({
           <div className="space-y-2 mb-4">
             <Row label="Plan" value={tierLabel()} />
             <Row label="Cycle" value={billing === "annual" ? "Annuel" : "Mensuel"} />
-            <Row label="Renouvellement" value={fmtDate(periodEnd)} />
+            {/* Renouvellement only when the plan is NOT ending — otherwise it
+                contradicts the "se termine le" line below (same date). */}
+            {!cancelAtPeriodEnd && (
+              <Row label="Renouvellement" value={fmtDate(periodEnd)} />
+            )}
           </div>
-          {cancelAtPeriodEnd ? (
-            <p className="text-[13px] text-[#E63946]">
+          {/* Cancellation notice shows IN ADDITION to the portal button (not
+              instead of it) — a canceled user still needs the portal to
+              reactivate / update card / see invoices. */}
+          {cancelAtPeriodEnd && (
+            <p className="text-[13px] text-[#E63946] mb-3">
               Ton abonnement se termine le {fmtDate(periodEnd)}.
             </p>
-          ) : (
-            <button
-              type="button"
-              onClick={handlePortal}
-              disabled={portalBusy}
-              className={`h-10 px-5 rounded-lg border border-white/15 text-white font-bold text-[12px] uppercase tracking-wider hover:bg-white/5 transition-colors ${portalBusy ? "opacity-60 cursor-wait" : ""}`}
-            >
-              {portalBusy ? "Ouverture..." : "Gérer mon abonnement"}
-            </button>
           )}
+          {/* Portal button: always available while paid. The portal route
+              resolves stripe_customer_id server-side. */}
+          <button
+            type="button"
+            onClick={handlePortal}
+            disabled={portalBusy}
+            className={`h-10 px-5 rounded-lg border border-white/15 text-white font-bold text-[12px] uppercase tracking-wider hover:bg-white/5 transition-colors ${portalBusy ? "opacity-60 cursor-wait" : ""}`}
+          >
+            {portalBusy ? "Ouverture..." : "Gérer mon abonnement"}
+          </button>
           <p className="text-[11px] text-[#4a4d56] mt-3">
             Annulation, mode de paiement et factures sont gérés dans le portail sécurisé Stripe.
           </p>
