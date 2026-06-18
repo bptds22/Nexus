@@ -6,6 +6,7 @@ import MarketingNav from "@/components/marketing/MarketingNav";
 import PlaybookBackground from "../components/PlaybookBackground";
 import Footer from "@/components/marketing/Footer";
 
+import { notFound } from "next/navigation";
 /* ─────────────────────────────────────────────────────────────────
    Nexus — Communications marketing
    Same visual language as /confidentialite.
@@ -133,6 +134,8 @@ const SECTIONS = [
 ];
 
 export default function CommunicationsMarketingPage() {
+  // Mobile build (Capacitor): page exclue.
+  if (process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true") notFound();
   const [activeSection, setActiveSection] = useState(SECTIONS[0].id);
   const sectionRefs = useRef<Map<string, IntersectionObserverEntry>>(new Map());
 

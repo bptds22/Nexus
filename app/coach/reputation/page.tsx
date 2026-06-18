@@ -14,6 +14,9 @@ import ReviewFeed from "@/components/reputation/ReviewFeed";
 import CareerToggle from "@/components/reputation/CareerToggle";
 import type { CoachReview } from "@/lib/types/models";
 import type { CoachBadge } from "@/lib/types/models";
+import { MaReputationMobile } from "@/components/shared/MaReputationMobile";
+
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
 /* ═══════════════════════════════════════════════════════════════
    Coach Reputation — /coach/reputation
@@ -29,6 +32,14 @@ const QC_REGIONS = [
 ];
 
 export default function CoachReputationPage() {
+  // Mobile early return — composes the existing reputation widgets
+  // around the new CoachHeroBlock + the shared AdaptiveBadgesRow.
+  // Same data layer (useCoachReputationStats) ; same widgets.
+  if (IS_CAPACITOR) return <MaReputationMobile />;
+  return <CoachReputationDesktop />;
+}
+
+function CoachReputationDesktop() {
   const [loading, setLoading] = useState(true);
   const [reviews, setReviews] = useState<CoachReview[]>([]);
   const [overallScore, setOverallScore] = useState(0);

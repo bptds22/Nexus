@@ -10,6 +10,7 @@ import PlaybookBackground from "@/app/components/PlaybookBackground";
 import MarketingNav from "@/components/marketing/MarketingNav";
 import { useTranslation } from "@/lib/i18n/useTranslation";
 
+import { notFound } from "next/navigation";
 // Icon keys + image-related metadata stay in code; only the text content
 // flows from the dictionary. Icons are referenced by string name into
 // the NxIcon component, so the dictionary stays purely textual.
@@ -17,6 +18,8 @@ const PROBLEM_ICONS = ["eyeOff", "monitor", "gradCap"] as const;
 const SOLUTION_ICONS = ["trophy", "search", "allstar", "shield"] as const;
 
 export default function PourLesEtudiantAthletePage() {
+  // Mobile build (Capacitor): page exclue.
+  if (process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true") notFound();
   const { t } = useTranslation();
   const T = t.athleteLanding;
 

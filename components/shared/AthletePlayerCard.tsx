@@ -24,7 +24,7 @@ import { isValidationExpired } from "@/lib/utils/profileValidation";
    without dragging in the rest of the profile view.
 ═══════════════════════════════════════════════════════════════ */
 
-type CardFormat = "compact" | "publication" | "story";
+type CardFormat = "compact" | "publication" | "story" | "banniere";
 
 const FORMAT_CONFIG: Record<CardFormat, {
   width: number;
@@ -48,6 +48,22 @@ const FORMAT_CONFIG: Record<CardFormat, {
   // topOffset 285 pushes the card down so the ticket sits mid-
   // frame, leaving room above for partners to overlay text.
   story:       { width: 1080, height: 1920, scale: 3.6,  topOffset: 285, leftOffset: 0  },
+  // Bannière: 1920×1080 (LinkedIn / Facebook / X cover, 16:9 wide).
+  //
+  // ⚠ DESIGN-PASS REQUIRED. The natural card is portrait (300 wide ×
+  // ~440 tall = 0.68:1 width:height) ; a 16:9 banner is landscape
+  // (1.78:1). Scaling the portrait card uniformly to fit the 1080 height
+  // (scale = 1080/440 = ~2.45) renders the card 300×2.45 = ~735 wide,
+  // centred in the 1920-wide frame with ~592px of dark dead-space on
+  // each side (leftOffset = (1920 − 735) / 2 = ~592). Mechanically the
+  // export works — toPng captures the outer wrapper's bounding box and
+  // outputs a 1920×1080 PNG with the portrait card floating in the
+  // middle — but the result is NOT design-finished. A proper banner
+  // wants a wide-layout variant (e.g. photo on the left, stats stack
+  // on the right, NEXUS wordmark, color blocks filling the side
+  // panels). Registering the entry here lets the mobile carousel
+  // include it ; the visual upgrade is a follow-up design pass.
+  banniere:    { width: 1920, height: 1080, scale: 2.45, topOffset: 0,   leftOffset: 592 },
 };
 
 const SPORT_DISPLAY: Record<string, string> = Object.fromEntries(
@@ -64,6 +80,7 @@ export default function AthletePlayerCard({
   a,
   format = "compact",
   clipOverflow = false,
+  animate = false,
 }: {
   a: AthleteProfileRecruiterView;
   format?: CardFormat;
@@ -75,6 +92,28 @@ export default function AthletePlayerCard({
    * tilt, NEXUS sidebar).
    */
   clipOverflow?: boolean;
+  /**
+   * Wow-A : when true, wrap the v30 card core in `.nx-wow-idle` (5.2s
+   * idle bounce — keyframe translateY 0→-4px + scale 1→1.005) plus an
+   * absolutely-positioned sheen sweep overlay (110deg gradient band
+   * animated with `nx-wow-sheen` 4500ms ease-in-out infinite).
+   *
+   * Transforms compose because each lives on its OWN element :
+   *   parent scale wrapper (e.g. carousel's scale 0.85)
+   *     × .nx-wow-idle keyframe transform (translateY + scale 1.005)
+   *     × inner scale wrapper (dims.scale for non-compact formats)
+   *     × .nx-v30-card transform: rotate(-2deg)  (editorial tilt)
+   *     × .nx-v30-ticket transform: rotate(3.5deg) (ticket tilt)
+   *
+   * Defaults to false so all 9 existing call sites are backward-
+   * compatible. Export sites (the 4 sites with clipOverflow={true} +
+   * .nx-capture-clean ancestor) MUST omit animate — a mid-sweep
+   * frame would corrupt the html-to-image PNG. Belt-and-braces : the
+   * sheen overlay div literally doesn't mount when animate=false, AND
+   * the `.nx-capture-clean .nx-wow-idle { animation: none !important }`
+   * rule in globals.css neutralizes any wow that slips through.
+   */
+  animate?: boolean;
 }) {
   const dims = FORMAT_CONFIG[format];
   const ratingValue = a.overallRating;
@@ -103,6 +142,14 @@ export default function AthletePlayerCard({
           transformOrigin: "top left",
         }}
       >
+        {(() => {
+          /* Wow-A : the v30 core is built once into a `core` const, then
+             conditionally wrapped in `.nx-wow-idle` (the keyframe idle
+             bounce) + a sibling sheen-sweep overlay when animate=true.
+             When animate=false the const is rendered bare — no wow
+             wrappers in the DOM at all, so export captures get a clean
+             still frame. */
+          const core = (
     <div className="nx-v30-wrap relative" style={{ width: 300, paddingTop: 6, paddingBottom: 10 }}>
       <div className="nx-v30-badge absolute z-30" style={{ top: 10, right: -12 }} title={badgeActive ? "Profil vérifié" : a.isVerified ? "Badge désactivé — confirmation requise" : "Profil non vérifié"}>
         <div className="rounded-full" style={{ border: "3px solid #111317" }}>
@@ -160,7 +207,11 @@ export default function AthletePlayerCard({
               ].map((r) => (
                 <div key={r.lbl}>
                   <div style={{ fontFamily: "var(--font-outfit), sans-serif", fontSize: 7, fontWeight: 800, letterSpacing: "0.22em", textTransform: "uppercase", color: "rgba(255,255,255,0.38)", marginBottom: 1 }}>{r.lbl}</div>
-                  <div style={{ fontFamily: "var(--font-outfit), sans-serif", fontSize: 16, fontWeight: 900, color: "#fff", letterSpacing: "0.06em", lineHeight: 1 }}>{r.val}</div>
+                  {/* Sprint WOW-finitions §C — fontSize 16 → 15 pour que les
+                      noms de sports longs ("Basketball", "Volleyball") tiennent
+                      dans la colonne ticket. Impact app-wide (composant partagé)
+                      bénéfique — pas de troncature, sports courts toujours nets. */}
+                  <div style={{ fontFamily: "var(--font-outfit), sans-serif", fontSize: 15, fontWeight: 900, color: "#fff", letterSpacing: "0.06em", lineHeight: 1 }}>{r.val}</div>
                 </div>
               ))}
             </div>
@@ -186,6 +237,45 @@ export default function AthletePlayerCard({
         </div>
       </div>
       </div>
+          );
+          /* Wow-A : when animate, wrap core in `.nx-wow-idle` (carries the
+             bounce — keyframe translateY 0→-4px + scale 1→1.005, on its
+             OWN element so it doesn't collide with v30-card's -2deg
+             rotation or with the parent's scale) + a sibling sheen
+             overlay (mirrors AthleteOnboardingWowMobile :428-435 pattern :
+             nx-wow-sheen keyframe is NOT a class, applied inline ; the
+             outer wrap clips the sweeping gradient via overflow:hidden ;
+             pointerEvents:none so the sheen never eats taps). When animate
+             is false, the wow markup never mounts → export-safe. */
+          if (!animate) return core;
+          return (
+            <div className="nx-wow-idle" style={{ position: "relative", width: 300 }}>
+              {core}
+              <div
+                aria-hidden
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  overflow: "hidden",
+                  pointerEvents: "none",
+                  borderRadius: 10,
+                }}
+              >
+                <div
+                  style={{
+                    position: "absolute",
+                    top: -20,
+                    bottom: -20,
+                    width: 80,
+                    background:
+                      "linear-gradient(110deg, transparent 30%, rgba(255,255,255,0.32) 50%, transparent 70%)",
+                    animation: "nx-wow-sheen 4500ms ease-in-out infinite",
+                  }}
+                />
+              </div>
+            </div>
+          );
+        })()}
     </div>
     </div>
   );

@@ -20,6 +20,9 @@ import {
   AreaChart,
   Area,
 } from "recharts";
+import { GestionEcoleMobile } from "@/components/shared/GestionEcoleMobile";
+
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
 /* ─── Helpers ──────────────────────────────────────────────── */
 
@@ -53,7 +56,12 @@ function DarkTooltip({
 ═══════════════════════════════════════════════════════════ */
 
 export default function SchoolDashboardPage() {
-  const { tier, canSee } = useSubscription();
+  // Mobile : render the teaser surface listing all 6 school-management
+  // sections (Mon école, Mes coachs, Stats école, Analytique,
+  // Placements, Administration) with Pro/Admin pills + smart tap to
+  // openExternal (when the coach has access) or upsell route to
+  // /coach/settings (when they don't). Desktop body untouched.
+  if (IS_CAPACITOR) return <GestionEcoleMobile />;
   return <SchoolGate><SchoolDashboardContent /></SchoolGate>;
 }
 

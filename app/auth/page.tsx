@@ -4,12 +4,20 @@ import { useState, useRef, useCallback, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { openLegalDocument } from "@/lib/legal";
 import PlaybookBackground from "../components/PlaybookBackground";
 import MarketingNav from "@/components/marketing/MarketingNav";
 import Footer from "@/components/marketing/Footer";
 import ErrorToast, { type ErrorToastData } from "@/components/ui/ErrorToast";
 import { translateAuthError } from "@/lib/utils/translateAuthError";
 import { useTranslation } from "@/lib/i18n/useTranslation";
+import { AuthMobileDispatcher } from "@/components/mobile/auth/AuthMobileDispatcher";
+import {
+  persistInitialConsents,
+  buildConsentMetadata,
+} from "@/lib/legal/persistInitialConsents";
+
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
 /* ─────────────────────────────────────────────────────────────────
    Nexus — Auth Page (Login / Sign Up)
@@ -37,9 +45,17 @@ function Toast({ message, onClose }: { message: string; onClose: () => void }) {
 export default function AuthPage() {
   return (
     <Suspense>
-      <AuthContent />
+      <AuthRouter />
     </Suspense>
   );
+}
+
+/* Iter 7.46 — dispatcher Capacitor (Welcome / Login mobile / session
+   passthrough). Desktop reste rigoureusement inchangé via le fallback
+   <AuthContent />. */
+function AuthRouter() {
+  if (!IS_CAPACITOR) return <AuthContent />;
+  return <AuthMobileDispatcher desktopFallback={<AuthContent />} />;
 }
 
 function AuthContent() {
@@ -139,6 +155,15 @@ function AuthContent() {
 
     const { signUp } = await import("@/lib/supabase/auth.actions");
 
+    // Iter 7.53 (dette Loi 25) — consents transmis via extraMetadata pour
+    // traçabilité auth.users.raw_user_meta_data (preuve légale, garantie
+    // même si l'UPDATE app-side ci-dessous échoue). DIAG 7.45 §B.3.
+    const consentMeta = buildConsentMetadata({
+      policy: consentPolicy,
+      data: consentData,
+      marketing: consentMarketing,
+    });
+
     // selectedContext is guaranteed non-empty here because
     // signupValid (checked above) requires it. The cast narrows
     // the union from "" | "scolaire" | "ligue_civile" → the two
@@ -149,7 +174,11 @@ function AuthContent() {
       "ATHLETE",
       firstName,
       lastName,
-      { sport: selectedSport, ...(invitationToken ? { invitation_token: invitationToken } : {}) },
+      {
+        sport: selectedSport,
+        ...(invitationToken ? { invitation_token: invitationToken } : {}),
+        ...consentMeta,
+      },
       selectedContext as "scolaire" | "ligue_civile",
     );
 
@@ -157,6 +186,21 @@ function AuthContent() {
       setErrorToast({ message: translateAuthError(error.message), showUpgrade: false });
       setLoading(false);
       return;
+    }
+
+    // Iter 7.53 — UPDATE app-side best-effort de users.privacy_preferences.
+    // COALESCE anti-écrasement intégré (helper). Si l'UPDATE rate (RLS
+    // session-less edge case), la trace reste dans raw_user_meta_data.
+    if (data?.user?.id) {
+      const persistResult = await persistInitialConsents(data.user.id, {
+        policy: consentPolicy,
+        data: consentData,
+        marketing: consentMarketing,
+      });
+      if (!persistResult.ok) {
+        // Non-bloquant : log uniquement, l'utilisateur poursuit.
+        console.warn("[signup consents] persist failed:", persistResult.error);
+      }
     }
 
     setLoading(false);
@@ -461,14 +505,14 @@ function AuthContent() {
                             <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 mt-0.5 transition-colors ${consentPolicy ? "bg-[#E63946] border-[#E63946]" : submitted && !consentPolicy ? "border-[#EF4444]" : "border-[#6B7280] group-hover:border-white/30"}`}>
                               {consentPolicy && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"><path d="M20 6L9 17l-5-5" /></svg>}
                             </div>
-                            <span className="text-[10px] text-[#6B7280] leading-snug">{T.signup.form.consent.policy.before}<a href="/confidentialite" target="_blank" rel="noopener noreferrer" className="text-[#E63946] hover:underline" onClick={(e) => e.stopPropagation()}>{T.signup.form.consent.policy.privacy}</a>{T.signup.form.consent.policy.and}<a href="/conditions" target="_blank" rel="noopener noreferrer" className="text-[#E63946] hover:underline" onClick={(e) => e.stopPropagation()}>{T.signup.form.consent.policy.terms}</a>{T.signup.form.consent.policy.after} <span className="text-[#EF4444]">*</span></span>
+                            <span className="text-[10px] text-[#6B7280] leading-snug">{T.signup.form.consent.policy.before}<button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); openLegalDocument("confidentialite"); }} className="text-[#E63946] hover:underline">{T.signup.form.consent.policy.privacy}</button>{T.signup.form.consent.policy.and}<button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); openLegalDocument("conditions"); }} className="text-[#E63946] hover:underline">{T.signup.form.consent.policy.terms}</button>{T.signup.form.consent.policy.after} <span className="text-[#EF4444]">*</span></span>
                           </label>
                           <label className={`flex items-start gap-2 cursor-pointer group ${submitted && !consentData ? "animate-shake" : ""}`}>
                             <input type="checkbox" checked={consentData} onChange={(e) => setConsentData(e.target.checked)} className="sr-only" />
                             <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 mt-0.5 transition-colors ${consentData ? "bg-[#E63946] border-[#E63946]" : submitted && !consentData ? "border-[#EF4444]" : "border-[#6B7280] group-hover:border-white/30"}`}>
                               {consentData && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"><path d="M20 6L9 17l-5-5" /></svg>}
                             </div>
-                            <span className="text-[10px] text-[#6B7280] leading-snug">{T.signup.form.consent.data.before}<a href="/collecte-donnees" target="_blank" rel="noopener noreferrer" className="text-[#E63946] hover:underline" onClick={(e) => e.stopPropagation()}>{T.signup.form.consent.data.link}</a>{T.signup.form.consent.data.after} <span className="text-[#EF4444]">*</span></span>
+                            <span className="text-[10px] text-[#6B7280] leading-snug">{T.signup.form.consent.data.before}<button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); openLegalDocument("collecteDonnees"); }} className="text-[#E63946] hover:underline">{T.signup.form.consent.data.link}</button>{T.signup.form.consent.data.after} <span className="text-[#EF4444]">*</span></span>
                           </label>
                           <label className="flex items-start gap-2 cursor-pointer group">
                             <input type="checkbox" checked={consentMarketing} onChange={(e) => setConsentMarketing(e.target.checked)} className="sr-only" />

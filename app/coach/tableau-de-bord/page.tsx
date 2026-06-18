@@ -6,9 +6,13 @@ import ActionBar from "./_components/ActionBar";
 import KpiCards from "./_components/KpiCards";
 import HotAthletes from "./_components/HotAthletes";
 import ActivityFeed from "./_components/ActivityFeed";
+import { CoachDashboardMobile } from "@/components/shared/CoachDashboardMobile";
+import { loadCoachTaskCounts } from "@/lib/coach/tasks";
 
 import type { ActionBarData, KpiData, HotAthlete } from "./_data/mockDashboardData";
 import type { ActivityEvent } from "@/lib/types/activityEvents";
+
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
 /* ─────────────────────────────────────────────────────────────────
    Nexus — Coach Tableau de Bord
@@ -26,9 +30,13 @@ function frenchDate(): string {
 }
 
 export default function TableauDeBordPage() {
+  // Iter coach-dashboard-mobile : Capacitor → composant mobile-native.
+  // Web (non-Capacitor) garde son layout existant intact.
+  if (IS_CAPACITOR) return <CoachDashboardMobile />;
+
   const [coachName, setCoachName] = useState("");
   const [schoolName, setSchoolName] = useState("");
-  const [actionBar, setActionBar] = useState<ActionBarData>({ unreadMessages: 0, incompleteProfiles: 0, newAthletes: 0, pendingSuggestions: 0 });
+  const [actionBar, setActionBar] = useState<ActionBarData>({ unreadMessages: 0, incompleteProfiles: 0, newAthletes: 0, pendingSuggestions: 0, missingEvals: 0 });
   const [kpi, setKpi] = useState<KpiData>({ totalAthletes: 0, completeProfiles: 0, totalProfiles: 0, completePct: 0, recruiterViews: 0, viewsTrend: 0, activeConversations: 0 });
   const [hotAthletes, setHotAthletes] = useState<HotAthlete[]>([]);
   const [activities, setActivities] = useState<ActivityEvent[]>([]);
@@ -49,13 +57,17 @@ export default function TableauDeBordPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setLoading(false); return; }
 
-      // Load coach profile + school name
+      // Load coach profile + school name + interim status fields.
+      // Interim source of truth = users.is_school_admin + profile_data.admin_type
+      // ('interim'). school_coaches.role est toujours 'COACH' dans le workflow
+      // admin_claims (RPRP attesté + modération) — ne plus s'y fier ici.
       const { data: profile } = await supabase
         .from("users")
-        .select("first_name, last_name, school_id, schools!school_id(name)")
+        .select("first_name, last_name, school_id, is_school_admin, profile_data, schools!school_id(name)")
         .eq("id", user.id)
         .single();
 
+      let resolvedSchoolName = "";
       if (profile) {
         const firstName = (profile.first_name as string) || "";
         const lastName = (profile.last_name as string) || "";
@@ -64,7 +76,14 @@ export default function TableauDeBordPage() {
         const schoolRaw = profile.schools;
         const school = Array.isArray(schoolRaw) ? schoolRaw[0] : schoolRaw;
         const schoolObj = school as { name?: string } | null;
-        setSchoolName(schoolObj?.name || "");
+        resolvedSchoolName = schoolObj?.name || "";
+        setSchoolName(resolvedSchoolName);
+
+        const adminType = (profile.profile_data as { admin_type?: string } | null)?.admin_type;
+        if (profile.is_school_admin === true && adminType === "interim") {
+          setIsInterimDirector(true);
+          setInterimSchoolName(resolvedSchoolName);
+        }
       }
 
       const coachSchoolId = (profile?.school_id as string) || null;
@@ -76,21 +95,6 @@ export default function TableauDeBordPage() {
       if (!coachSchoolId) {
         setLoading(false);
         return;
-      }
-
-      // Check if coach is currently DIRECTEUR_INTERIM at any school
-      const { data: interimRows } = await supabase
-        .from("school_coaches")
-        .select("school_id, schools!school_id(name)")
-        .eq("coach_id", user.id)
-        .eq("role", "DIRECTEUR_INTERIM");
-
-      if (interimRows && interimRows.length > 0) {
-        setIsInterimDirector(true);
-        const firstSchool = Array.isArray(interimRows[0].schools)
-          ? interimRows[0].schools[0]
-          : interimRows[0].schools;
-        setInterimSchoolName((firstSchool as { name?: string } | null)?.name || "");
       }
 
       // Load unread INTERIM_DEMOTED notifications
@@ -134,10 +138,13 @@ export default function TableauDeBordPage() {
         unreadMessages = count || 0;
       }
 
-      // Banner 2: non-verified profiles
-      const unverifiedCount = totalAthletes - verifiedCount;
+      // Banner 2 + 3b + 4: tâches "à traiter" via le helper partagé.
+      // ÉTAPE 3c — convergence sur lib/coach/tasks.loadCoachTaskCounts pour que
+      // le tab badge, le dashboard et la page /coach/a-traiter soient tous
+      // alimentés par UNE SEULE source. Adds 'missingEvals' (ÉTAPE 3b nouveau).
+      const taskCounts = await loadCoachTaskCounts(supabase, user.id);
 
-      // Banner 3: new athletes added (unread)
+      // Banner 3: new athletes added (unread) — séparé, pas une "tâche"
       const { count: newAthletesCount } = await supabase
         .from("activities")
         .select("id", { count: "exact", head: true })
@@ -145,22 +152,12 @@ export default function TableauDeBordPage() {
         .eq("type", "ATHLETE_ADDED")
         .eq("read", false);
 
-      // Banner 4: pending athlete suggestions
-      let pendingSuggestions = 0;
-      if (coachAthleteIds.length > 0) {
-        const { count: sugCount } = await supabase
-          .from("athlete_suggestions")
-          .select("id", { count: "exact", head: true })
-          .in("athlete_id", coachAthleteIds)
-          .eq("status", "EN_ATTENTE");
-        pendingSuggestions = sugCount || 0;
-      }
-
       setActionBar({
         unreadMessages,
-        incompleteProfiles: unverifiedCount,
+        incompleteProfiles: taskCounts.unverified,
+        missingEvals: taskCounts.missingEval,
+        pendingSuggestions: taskCounts.pendingSuggestions,
         newAthletes: newAthletesCount || 0,
-        pendingSuggestions,
       });
 
       // ── KPI 3: Recruiter views (this month vs last month) ──

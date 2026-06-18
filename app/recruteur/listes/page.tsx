@@ -1,7 +1,10 @@
 "use client";
 
 import FeatureGate from "@/components/subscription/FeatureGate";
+import { RecruteurListesMobile } from "@/components/shared/RecruteurListesMobile";
 import React, { useState, useMemo, useCallback, useEffect } from "react";
+
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import type { RecruitmentStatus } from "@/lib/config/recruitmentStatuses";
@@ -926,6 +929,9 @@ function EmptyState({ onCreate }: { onCreate: () => void }) {
 ═══════════════════════════════════════════════════════════════ */
 
 export default function Page() {
+  // Iter 7.15 Sprint 1 — dispatch IS_CAPACITOR vers la version mobile.
+  // Le composant mobile gère lui-même le FeatureGate PRO.
+  if (IS_CAPACITOR) return <RecruteurListesMobile />;
   return (
     <FeatureGate feature="custom_lists" requiredTier="pro">
       <ListesPageContent />

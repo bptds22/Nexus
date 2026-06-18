@@ -1,11 +1,14 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import PlaybookBackground from "./components/PlaybookBackground";
 import PartnerCarousel from "./components/PartnerCarousel";
 import MarketingNav from "@/components/marketing/MarketingNav";
 import Footer from "@/components/marketing/Footer";
 import { useTranslation } from "@/lib/i18n/useTranslation";
+import { matchDynamicRoute, SESSION_KEY_PREFIX } from "@/lib/platform/mobileRoutes";
 
 /* ─────────────────────────────────────────────────────────────────
    Nexus — Homepage (rewrite)
@@ -15,7 +18,112 @@ import { useTranslation } from "@/lib/i18n/useTranslation";
 const label = "text-[10px] font-bold tracking-[0.25em] uppercase";
 
 export default function Home() {
+  const router = useRouter();
+  const isCapacitor = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
+
+  // State initialisé à une valeur STABLE (identique serveur/client au 1er
+  // render) pour éviter tout mismatch d'hydratation (React #418).
+  // false au départ → le 1er render client === le HTML statique = homepage.
+  // useEffect bascule ensuite à true si on est en fallback mobile.
+  const [mobileRedirecting, setMobileRedirecting] = useState(false);
+
+  // Sur le build mobile (Capacitor), trois cas :
+  // 1. L'utilisateur est vraiment sur "/" → rediriger vers /auth
+  // 2. URL est une route [id] non-pré-générée (ex: /recruteur/athletes/<uuid>) :
+  //    Capacitor a servi index.html via errorPath. Le router Next.js ne peut
+  //    PAS résoudre cette URL côté client (pas de RSC payload) → boucle infinie.
+  //    Solution : stocker le vrai uuid dans sessionStorage, rediriger via
+  //    window.location.replace vers le shell placeholder pré-généré. Le
+  //    PageClient lit le vrai id via useDynamicParam (qui lit sessionStorage).
+  // 3. URL inconnue (pas une route [id] mappée) → /auth par sécurité.
+  //
+  // TOUTE la détection se fait post-mount (useEffect) — aucune lecture de
+  // window pendant le render, sinon on déclenche un mismatch d'hydratation
+  // (React #418) qui casse l'app.
+  useEffect(() => {
+    if (!isCapacitor) return;
+    if (typeof window === "undefined") return;
+
+    const path = window.location.pathname;
+    const isRoot = path === "/" || path === "" || path === "/index.html";
+
+    if (isRoot) {
+      setMobileRedirecting(true);
+      router.replace("/auth");
+      return;
+    }
+
+    const matched = matchDynamicRoute(path);
+    if (matched) {
+      setMobileRedirecting(true);
+      sessionStorage.setItem(
+        `${SESSION_KEY_PREFIX}${matched.paramKey}`,
+        matched.realId,
+      );
+      // Client-router navigation (pas window.location.replace). Le shell
+      // placeholder est une route STATIQUE pré-générée → le client router
+      // sait la rendre sans hard reload, donc sans repasser par errorPath
+      // → index.html → boucle de Home.
+      router.replace(matched.placeholderPath);
+      return;
+    }
+
+    // Filet de sécurité : le pathname EST déjà un shell placeholder.
+    // Cela arrive si un hard reload (ou un errorPath inattendu) a servi
+    // index.html avec un path placeholder. On laisse le client router
+    // rendre la route placeholder (le PageClient lira le uuid via
+    // sessionStorage déjà stashé).
+    if (path.includes("/placeholder")) {
+      setMobileRedirecting(true);
+      router.replace(path);
+      return;
+    }
+
+    setMobileRedirecting(true);
+    router.replace("/auth");
+  }, [isCapacitor, router]);
+
   const { t } = useTranslation();
+
+  // Iter 7.47b BUG 3 — En Capacitor, render NULL. Évite le flash de la
+  // landing marketing visible ~50-200ms avant que le useEffect ne fire
+  // le router.replace("/auth"). La SplashGate au RootLayout couvre
+  // l'écran pendant ce temps (overlay zIndex 9999).
+  // ⚠️ Hooks ci-dessus (useRouter, useState, useEffect, useTranslation)
+  // restent en HAUT, AVANT cette early return → canon 7.8d intact.
+  if (isCapacitor) return null;
+
+  // Affichage piloté UNIQUEMENT par le state (pas de lecture de window
+  // pendant le render). Au 1er render serveur ET client, mobileRedirecting
+  // est false → on rend la homepage. Hydratation cohérente → pas de #418.
+  // Le useEffect bascule ensuite à true → re-render → spinner pendant que
+  // la redirection vers placeholder s'exécute.
+  if (mobileRedirecting) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          background: "#111317",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <div
+          style={{
+            width: 32,
+            height: 32,
+            border: "3px solid rgba(230,57,70,0.25)",
+            borderTopColor: "#E63946",
+            borderRadius: "50%",
+            animation: "nx-spin 0.7s linear infinite",
+          }}
+        />
+        <style>{`@keyframes nx-spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
+
   return (
     <div className="hero-playbook bg-[#111317] min-h-screen">
       <PlaybookBackground />

@@ -8,7 +8,7 @@ import type { ActionBarData } from "../_data/mockDashboardData";
 ───────────────────────────────────────────────────────────────── */
 
 export default function ActionBar({ data }: { data: ActionBarData }) {
-  const hasAnything = data.unreadMessages > 0 || data.incompleteProfiles > 0 || data.newAthletes > 0 || data.pendingSuggestions > 0;
+  const hasAnything = data.unreadMessages > 0 || data.incompleteProfiles > 0 || data.newAthletes > 0 || data.pendingSuggestions > 0 || data.missingEvals > 0;
 
   if (!hasAnything) return null;
 
@@ -18,10 +18,10 @@ export default function ActionBar({ data }: { data: ActionBarData }) {
       {data.unreadMessages > 0 && (
         <Link
           href="/coach/demandes"
-          className="group flex items-center gap-4 rounded-xl px-6 py-5 transition-all border-l-4 bg-[#E63946]/[0.08] border-l-[#E63946] hover:bg-[#E63946]/[0.14]"
+          className="group flex items-center gap-4 rounded-xl px-6 py-5 transition-all border-l-4 bg-[#22C55E]/[0.08] border-l-[#22C55E] hover:bg-[#22C55E]/[0.14]"
         >
-          <div className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 bg-[#E63946]/20">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <div className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 bg-[#22C55E]/20">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
               <polyline points="22,6 12,13 2,6" />
             </svg>
@@ -33,7 +33,7 @@ export default function ActionBar({ data }: { data: ActionBarData }) {
             <p className="text-[13px] text-[#9CA3AF] mt-0.5">Cliquez pour consulter les messages</p>
           </div>
           <div className="flex items-center gap-3 shrink-0">
-            <span className="inline-flex items-center justify-center min-w-[28px] h-7 px-2 rounded-full bg-[#E63946] text-white text-[13px] font-black">
+            <span className="inline-flex items-center justify-center min-w-[28px] h-7 px-2 rounded-full bg-[#22C55E] text-white text-[13px] font-black">
               {data.unreadMessages}
             </span>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round"
@@ -64,6 +64,35 @@ export default function ActionBar({ data }: { data: ActionBarData }) {
           <div className="flex items-center gap-3 shrink-0">
             <span className="inline-flex items-center justify-center min-w-[28px] h-7 px-2 rounded-full bg-[#3B82F6] text-white text-[13px] font-black">
               {data.incompleteProfiles}
+            </span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round"
+              className="opacity-0 group-hover:opacity-100 transition-opacity">
+              <path d="M5 12h14" /><path d="M12 5l7 7-7 7" />
+            </svg>
+          </div>
+        </Link>
+      )}
+
+      {/* ── Missing evaluations ────────────────────────────────── */}
+      {data.missingEvals > 0 && (
+        <Link
+          href="/coach/a-traiter"
+          className="group flex items-center gap-4 rounded-xl px-6 py-5 transition-all border-l-4 bg-[#F59E0B]/[0.06] border-l-[#F59E0B] hover:bg-[#F59E0B]/[0.10]"
+        >
+          <div className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 bg-[#F59E0B]/20">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="#F59E0B" stroke="none">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+            </svg>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[15px] font-bold text-white">
+              {data.missingEvals} évaluation{data.missingEvals > 1 ? "s" : ""} manquante{data.missingEvals > 1 ? "s" : ""}
+            </p>
+            <p className="text-[13px] text-[#9CA3AF] mt-0.5">Donne une cote globale ou un rapport à ces athlètes</p>
+          </div>
+          <div className="flex items-center gap-3 shrink-0">
+            <span className="inline-flex items-center justify-center min-w-[28px] h-7 px-2 rounded-full bg-[#F59E0B] text-[#111317] text-[13px] font-black">
+              {data.missingEvals}
             </span>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round"
               className="opacity-0 group-hover:opacity-100 transition-opacity">

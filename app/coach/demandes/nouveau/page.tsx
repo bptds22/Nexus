@@ -5,10 +5,31 @@ import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import type { RecruiterProfile } from "../_data/mockThreadsData";
 import { createClient } from "@/lib/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
+import { createCoachConversation } from "@/lib/queries/messaging/createCoachConversation";
+import { CoachDemandesNouveauMobile } from "@/components/shared/CoachDemandesNouveauMobile";
+
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
 /* ═══════════════════════════════════════════════════════════════
    Nouveau Message — Compose Page (Coach)
    Select an athlete, then a recruiter, write a message.
+
+   Phase B : send path repointed at lib/queries/messaging/
+   createCoachConversation (shared with the mobile composer). The
+   old inline INSERT had three bugs : status "envoye" violated the
+   conversations_status_check, convError was destructured but never
+   read, and a success toast fired unconditionally — so a RLS deny
+   reported success and showed an empty list. Coach RLS INSERT was
+   also missing in DB ; covered by the companion migration
+   20260614100000_coach_conversations_insert.sql.
+
+   Recruiter picker : ANY recruiter from the directory, not just
+   recruiters with whom the coach already has a conversation
+   (the legacy query left brand-new coaches with an empty combobox).
+
+   Recruiter is notified automatically via the existing log_coach_reply
+   trigger that fires on the first message INSERT — no app code.
 ═══════════════════════════════════════════════════════════════ */
 
 interface RosterAthlete {
@@ -19,6 +40,11 @@ interface RosterAthlete {
   gradYear: number;
   profilePercent: number;
   isVerified: boolean;
+}
+
+interface CegepOption {
+  id: string;
+  name: string;
 }
 
 /* ── Athlete Combobox ────────────────────────────────────────── */
@@ -135,6 +161,109 @@ function AthleteCombobox({
                   <circle cx="12" cy="12" r="10" />
                   <path d="M9 12l2 2 4-4" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
                 </svg>
+              </button>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── CÉGEP Combobox ──────────────────────────────────────────── */
+
+function CegepCombobox({
+  selected,
+  onSelect,
+  onClear,
+  cegeps,
+}: {
+  selected: CegepOption | null;
+  onSelect: (c: CegepOption) => void;
+  onClear: () => void;
+  cegeps: CegepOption[];
+}) {
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  const results = useMemo(() => {
+    if (query.trim().length < 1) return cegeps;
+    const q = query.toLowerCase();
+    return cegeps.filter((c) => c.name.toLowerCase().includes(q));
+  }, [query, cegeps]);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  if (selected) {
+    return (
+      <div className="flex items-center gap-3 bg-[#13151a] border border-[#2D3748] rounded-lg px-4 py-3">
+        <div className="w-9 h-9 rounded-lg bg-[#E63946]/15 border border-[#E63946]/30 flex items-center justify-center shrink-0">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4" />
+          </svg>
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-[14px] font-bold text-white truncate">{selected.name}</p>
+        </div>
+        <button
+          type="button"
+          onClick={onClear}
+          className="w-7 h-7 rounded-full bg-[#2D3748] hover:bg-[#374151] flex items-center justify-center transition-colors shrink-0"
+          aria-label="Retirer"
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2.5" strokeLinecap="round">
+            <path d="M18 6L6 18" /><path d="M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div ref={wrapperRef} className="relative">
+      <div className="relative">
+        <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#6b7280]" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+          <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
+        </svg>
+        <input
+          type="text"
+          placeholder="Rechercher un CÉGEP..."
+          value={query}
+          onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
+          onFocus={() => setOpen(true)}
+          className="w-full bg-[#13151a] border border-[#2a2d36] rounded-lg pl-10 pr-4 py-3 text-[14px] text-[#e0e0e0] placeholder:text-[#6b7280] focus:border-[#E63946] outline-none transition-colors"
+        />
+      </div>
+
+      {open && (
+        <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-[#1A1D24] border border-[#2D3748] rounded-lg shadow-xl max-h-[280px] overflow-y-auto">
+          {results.length === 0 ? (
+            <div className="px-4 py-6 text-center text-[14px] text-[#6b7280]">
+              Aucun CÉGEP avec un recruteur inscrit
+            </div>
+          ) : (
+            results.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => { onSelect(c); setQuery(""); setOpen(false); }}
+                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#252D3A] transition-colors text-left"
+              >
+                <div className="w-8 h-8 rounded-lg bg-[#E63946]/15 border border-[#E63946]/30 flex items-center justify-center shrink-0">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4" />
+                  </svg>
+                </div>
+                <p className="text-[14px] font-semibold text-white truncate flex-1">{c.name}</p>
               </button>
             ))
           )}
@@ -283,6 +412,10 @@ function SuccessToast({ visible }: { visible: boolean }) {
 /* ── Main Page ─────────────────────────────────────────────── */
 
 export default function CoachNouveauMessagePage() {
+  // Phase C — mobile early return. Native composer reuses the same
+  // shared createCoachConversation under the hood (single source of
+  // truth for the create logic).
+  if (IS_CAPACITOR) return <CoachDemandesNouveauMobile />;
   return (
     <Suspense fallback={<div className="px-6 sm:px-10 py-8 max-w-[1280px] mx-auto text-[#6b7280]">Chargement...</div>}>
       <CoachNouveauMessageContent />
@@ -293,18 +426,23 @@ export default function CoachNouveauMessagePage() {
 function CoachNouveauMessageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const [selectedAthlete, setSelectedAthlete] = useState<RosterAthlete | null>(null);
+  const [selectedCegep, setSelectedCegep] = useState<CegepOption | null>(null);
   const [selectedRecruiter, setSelectedRecruiter] = useState<RecruiterProfile | null>(null);
   const [messageBody, setMessageBody] = useState("");
   const [showToast, setShowToast] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadingRecruiters, setLoadingRecruiters] = useState(false);
 
   // Loaded data
   const [coachProfile, setCoachProfile] = useState<{ firstName: string; lastName: string; school: string }>({ firstName: "", lastName: "", school: "" });
   const [availableAthletes, setAvailableAthletes] = useState<RosterAthlete[]>([]);
-  const [knownRecruiters, setKnownRecruiters] = useState<RecruiterProfile[]>([]);
+  const [cegeps, setCegeps] = useState<CegepOption[]>([]);
+  const [recruitersAtCegep, setRecruitersAtCegep] = useState<RecruiterProfile[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   // Load data from Supabase
@@ -352,36 +490,29 @@ function CoachNouveauMessageContent() {
           setAvailableAthletes(mapped);
         }
 
-        // Known recruiters from existing conversations
-        const { data: convs, error: convError } = await supabase
-          .from("conversations")
-          .select("users!recruiter_id(id, first_name, last_name, email, school_id, schools!school_id(name))")
-          .eq("coach_id", user.id);
+        // CÉGEPs that HAVE at least one registered recruiter — keeps the
+        // picker free of dead-ends. PII-minimal : fetches only school_id
+        // (+ the joined school name), no first_name/last_name/email here.
+        // Recruiters at the chosen CÉGEP are fetched lazily once a CÉGEP
+        // is picked (see the dedicated useEffect on selectedCegep).
+        const { data: recForCegep } = await supabase
+          .from("users")
+          .select("school_id, schools!school_id(id, name)")
+          .eq("role", "RECRUTEUR")
+          .not("school_id", "is", null);
 
-        if (convs) {
+        if (recForCegep) {
           const seen = new Set<string>();
-          const recruiters: RecruiterProfile[] = [];
-          for (const c of convs) {
-            const rec = (c as any).users;
-            if (rec && !seen.has(rec.id)) {
-              seen.add(rec.id);
-              const school = rec.schools;
-              recruiters.push({
-                id: rec.id,
-                firstName: rec.first_name || "",
-                lastName: rec.last_name || "",
-                title: "",
-                cegep: school?.name || "",
-                cegepTeamName: "",
-                division: "Div. 1" as const,
-                sport: "",
-                region: "",
-                email: rec.email || "",
-                phone: "",
-              });
-            }
+          const list: CegepOption[] = [];
+          for (const row of recForCegep as any[]) {
+            const sid = row.school_id as string | null;
+            if (!sid || seen.has(sid)) continue;
+            seen.add(sid);
+            const school = Array.isArray(row.schools) ? row.schools[0] : row.schools;
+            list.push({ id: sid, name: (school?.name as string) || "" });
           }
-          setKnownRecruiters(recruiters);
+          list.sort((a, b) => a.name.localeCompare(b.name));
+          setCegeps(list);
         }
       } catch (err) {
         console.error("[Nouveau] Error loading data:", err);
@@ -406,7 +537,9 @@ Coach ${coachProfile.firstName} ${coachProfile.lastName}
 ${coachProfile.school}`;
   }
 
-  // Pre-select from query params ?athlete=xxx&recruiter=yyy
+  // Pre-select athlete from ?athlete=xxx (recruiter pre-select is dropped
+  // — under the CÉGEP-first flow the coach picks the school before the
+  // recruiter, so a bare ?recruiter= would race the CÉGEP fetch).
   useEffect(() => {
     if (loading || availableAthletes.length === 0) return;
     const athleteId = searchParams.get("athlete");
@@ -414,13 +547,49 @@ ${coachProfile.school}`;
       const found = availableAthletes.find((a) => a.id === athleteId);
       if (found) setSelectedAthlete(found);
     }
-    const recruiterId = searchParams.get("recruiter");
-    if (recruiterId) {
-      const found = knownRecruiters.find((r) => r.id === recruiterId);
-      if (found) setSelectedRecruiter(found);
-    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, availableAthletes, knownRecruiters]);
+  }, [loading, availableAthletes]);
+
+  // Lazy-load recruiters for the chosen CÉGEP. Refetches whenever the
+  // coach swaps the CÉGEP. Clears the in-flight selection if any.
+  useEffect(() => {
+    if (!selectedCegep) {
+      setRecruitersAtCegep([]);
+      return;
+    }
+    let cancelled = false;
+    setLoadingRecruiters(true);
+    (async () => {
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("users")
+        .select("id, first_name, last_name, schools!school_id(name)")
+        .eq("role", "RECRUTEUR")
+        .eq("school_id", selectedCegep.id)
+        .order("last_name", { ascending: true });
+      if (cancelled) return;
+      const mapped: RecruiterProfile[] = (data || []).map((r: any) => {
+        const school = r.schools;
+        const schoolName = Array.isArray(school) ? (school[0]?.name ?? "") : (school?.name ?? "");
+        return {
+          id: r.id,
+          firstName: r.first_name || "",
+          lastName: r.last_name || "",
+          title: "",
+          cegep: schoolName || selectedCegep.name,
+          cegepTeamName: "",
+          division: "Div. 1" as const,
+          sport: "",
+          region: "",
+          email: "",
+          phone: "",
+        };
+      });
+      setRecruitersAtCegep(mapped);
+      setLoadingRecruiters(false);
+    })();
+    return () => { cancelled = true; };
+  }, [selectedCegep]);
 
   // Auto-generate template when both are selected
   useEffect(() => {
@@ -439,6 +608,18 @@ ${coachProfile.school}`;
     setMessageBody("");
   }, []);
 
+  const handleSelectCegep = useCallback((c: CegepOption) => {
+    setSelectedCegep(c);
+    setSelectedRecruiter(null);
+    setMessageBody("");
+  }, []);
+
+  const handleClearCegep = useCallback(() => {
+    setSelectedCegep(null);
+    setSelectedRecruiter(null);
+    setMessageBody("");
+  }, []);
+
   const handleSelectRecruiter = useCallback((r: RecruiterProfile) => {
     setSelectedRecruiter(r);
   }, []);
@@ -451,46 +632,42 @@ ${coachProfile.school}`;
   const handleSend = useCallback(async () => {
     if (!selectedAthlete || !selectedRecruiter || !messageBody.trim() || sending || !currentUserId) return;
     setSending(true);
+    setSendError(null);
 
-    try {
-      const supabase = createClient();
+    const supabase = createClient();
+    const { conversationId, error } = await createCoachConversation(supabase, {
+      coachUserId: currentUserId,
+      recruiterId: selectedRecruiter.id,
+      athleteId: selectedAthlete.id,
+      message: messageBody,
+    });
 
-      // Create conversation
-      const { data: conv, error: convError } = await supabase
-        .from("conversations")
-        .insert({
-          recruiter_id: selectedRecruiter.id,
-          coach_id: currentUserId,
-          athlete_id: selectedAthlete.id,
-          status: "envoye",
-          last_message_at: new Date().toISOString(),
-        })
-        .select()
-        .single();
-
-      if (conv) {
-        // Create message
-        const { data: msg, error: msgError } = await supabase
-          .from("messages")
-          .insert({
-            conversation_id: conv.id,
-            sender_id: currentUserId,
-            content: messageBody.trim(),
-          })
-          .select()
-          .single();
-
-      }
-
-      setShowToast(true);
-      setTimeout(() => {
-        router.push("/coach/demandes");
-      }, 1500);
-    } catch (err) {
-      console.error("[Nouveau] Error sending message:", err);
+    if (error || !conversationId) {
+      // Real error : do NOT fire success toast, do NOT navigate. Surface
+      // the error inline so the coach can fix the input or retry.
+      const code = (error as { code?: string } | undefined)?.code;
+      const isRlsDeny =
+        code === "42501" ||
+        /permission denied|row-level security|policy/i.test((error as { message?: string } | undefined)?.message ?? "");
+      setSendError(
+        isRlsDeny
+          ? "Tu n'as pas la permission d'écrire à ce recruteur au sujet de cet athlète."
+          : ((error as { message?: string } | undefined)?.message || "Envoi impossible. Réessaie."),
+      );
       setSending(false);
+      return;
     }
-  }, [selectedAthlete, selectedRecruiter, messageBody, sending, currentUserId, router]);
+
+    // Refresh the coach's thread list cache (CoachDemandesMobile reads
+    // ["conversations","coach",userId] which the "conversations" prefix
+    // invalidation catches).
+    queryClient.invalidateQueries({ queryKey: ["conversations"] });
+
+    setShowToast(true);
+    setTimeout(() => {
+      router.push(`/coach/demandes/${conversationId}`);
+    }, 800);
+  }, [selectedAthlete, selectedRecruiter, messageBody, sending, currentUserId, router, queryClient]);
 
   const canSend = selectedAthlete && selectedRecruiter && messageBody.trim().length > 10 && !sending;
 
@@ -540,17 +717,43 @@ ${coachProfile.school}`;
               />
             </div>
 
-            {/* Recruiter selector */}
+            {/* CÉGEP selector — only CÉGEPs that already have at least one
+                registered recruiter are listed (no dead-ends). */}
             <div>
               <label className="block text-[12px] font-bold tracking-[0.25em] uppercase text-[#9CA3AF] mb-2">
-                Destinataire (Recruteur)
+                CÉGEP destinataire
               </label>
-              <RecruiterCombobox
-                selected={selectedRecruiter}
-                onSelect={handleSelectRecruiter}
-                onClear={handleClearRecruiter}
-                knownRecruiters={knownRecruiters}
+              <CegepCombobox
+                selected={selectedCegep}
+                onSelect={handleSelectCegep}
+                onClear={handleClearCegep}
+                cegeps={cegeps}
               />
+            </div>
+
+            {/* Recruiter selector — scoped to the chosen CÉGEP. Disabled
+                placeholder until a CÉGEP is picked. */}
+            <div>
+              <label className="block text-[12px] font-bold tracking-[0.25em] uppercase text-[#9CA3AF] mb-2">
+                Recruteur au {selectedCegep ? selectedCegep.name : "CÉGEP"}
+              </label>
+              {!selectedCegep ? (
+                <div className="bg-[#13151a] border border-dashed border-[#2D3748] rounded-lg px-4 py-3 text-[14px] text-[#6b7280]">
+                  Choisis d&apos;abord un CÉGEP pour voir ses recruteurs.
+                </div>
+              ) : loadingRecruiters ? (
+                <div className="bg-[#13151a] border border-[#2D3748] rounded-lg px-4 py-3 text-[14px] text-[#6b7280] flex items-center gap-2">
+                  <span className="w-3 h-3 border-2 border-[#E63946] border-t-transparent rounded-full animate-spin" />
+                  Chargement des recruteurs…
+                </div>
+              ) : (
+                <RecruiterCombobox
+                  selected={selectedRecruiter}
+                  onSelect={handleSelectRecruiter}
+                  onClear={handleClearRecruiter}
+                  knownRecruiters={recruitersAtCegep}
+                />
+              )}
             </div>
 
             {/* Message body */}
@@ -566,6 +769,12 @@ ${coachProfile.school}`;
                 className="w-full bg-[#13151a] border border-[#2a2d36] rounded-lg px-4 py-3 text-[14px] text-[#e0e0e0] placeholder:text-[#4a4d56] focus:border-[#E63946] outline-none transition-colors resize-none leading-relaxed"
               />
             </div>
+
+            {sendError && (
+              <div className="rounded-lg border border-[#EF4444]/40 bg-[#EF4444]/10 px-4 py-3 text-[13px] text-[#FCA5A5]">
+                {sendError}
+              </div>
+            )}
 
             {/* Send button */}
             <div className="flex items-center gap-3">

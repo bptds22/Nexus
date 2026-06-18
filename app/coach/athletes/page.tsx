@@ -9,12 +9,15 @@ import ReclamerSection from "./_components/ReclamerSection";
 import NxIcon from "@/components/ui/NxIcon";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
 import type { GlobalRecruitmentStatus } from "@/lib/types/models";
-import { BADGE_CONFIG, parseDistinctions } from "@/lib/config/badges";
+import { parseDistinctions } from "@/lib/config/badges";
 import { calculateCompletion, type AthleteLike, type EvalLike } from "@/lib/utils/profileCompletion";
 import { isValidationExpired } from "@/lib/utils/profileValidation";
 import { getCurrentSeason } from "@/lib/utils/season";
 import AthletePhotoFill from "@/components/shared/AthletePhotoFill";
 import CoachAthleteRow from "@/components/coach/CoachAthleteRow";
+import { CoachAthletesMobile } from "@/components/shared/CoachAthletesMobile";
+
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
 /* ═══════════════════════════════════════════════════════════════
    Mes Athlètes — Card/list layout matching recruiter search
@@ -116,21 +119,6 @@ function CoachAthleteCard({ a }: { a: RosterAthlete }) {
           <p className="text-[13px] text-[#9CA3AF] mt-0.5">{a.heightWeight}</p>
         )}
 
-        {/* Badges */}
-        {a.badges && a.badges.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mt-1.5">
-            {a.badges.map((b, i) => {
-              const cfg = BADGE_CONFIG[b.badge];
-              const label = b.badge === "custom" ? (b.detail || "Distinction") : cfg?.label || b.badge;
-              return (
-                <span key={`${b.badge}-${i}`} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#E63946]/15 border border-[#E63946]/30 text-[10px] font-bold text-[#E63946]">
-                  {label}{b.badge !== "custom" && b.detail ? ` — ${b.detail}` : ""}
-                </span>
-              );
-            })}
-          </div>
-        )}
-
         {/* Footer — school · year left, actions right */}
         <div className="flex items-center justify-between pt-3 mt-auto border-t border-[#2D3748]/60">
           <span className="text-[12px] text-[#6b7280] truncate">{a.school} <span className="text-[#4a4d56]">·</span> {a.gradYear}</span>
@@ -167,6 +155,10 @@ export default function MesAthletesPage() {
 }
 
 function MesAthletesContent() {
+  // Iter coach-athletes-mobile : Capacitor → composant mobile-native
+  // (Roster + À réclamer). Web (non-Capacitor) garde son layout existant.
+  if (IS_CAPACITOR) return <CoachAthletesMobile />;
+
   const searchParams = useSearchParams();
   const urlFilter = searchParams.get("filtre");
 
@@ -1031,17 +1023,14 @@ function MesAthletesContent() {
               gradYear={a.gradYear}
               stars={a.stars}
             >
-              <div className="flex gap-1.5 flex-1 min-w-0 overflow-hidden">
-                {a.badges?.map((b, i) => {
-                  const cfg = BADGE_CONFIG[b.badge];
-                  const label = b.badge === "custom" ? (b.detail || "Distinction") : cfg?.label || b.badge;
-                  return (
-                    <span key={`${b.badge}-${i}`} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#E63946]/15 border border-[#E63946]/30 text-[10px] font-bold text-[#E63946] whitespace-nowrap">
-                      {label}{b.badge !== "custom" && b.detail ? ` — ${b.detail}` : ""}
-                    </span>
-                  );
-                })}
-              </div>
+              {/* Spacer — keeps the trailing actions right-aligned in the
+                  CoachAthleteRow row layout. The badges block that used to
+                  live here was removed to match the recruiter card visual
+                  (recruiter side filters distinctions through BADGE_MAP
+                  which drops custom free-text, so its cards render lean ;
+                  coach's parseDistinctions kept everything → wall of pills
+                  → inconsistent height + diverging look from recruiter). */}
+              <div className="flex-1 min-w-0" />
               <div className="flex items-center gap-3 shrink-0">
                 <div className="w-[30px] shrink-0">
                   {a.favorites > 0 ? (

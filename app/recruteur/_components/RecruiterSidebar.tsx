@@ -213,9 +213,14 @@ export default function RecruiterSidebar({ mobileOpen, onClose }: RecruiterSideb
 
   const [upgradeModal, setUpgradeModal] = useState<{ tierId: string; lockedFeatureTitle: string } | null>(null);
 
-  const handleLogout = () => {
-    localStorage.removeItem("nexus_user");
-    router.push("/");
+  // Iter 7.39 — vrai signOut Supabase (avant : mock localStorage seul, la
+  // session auth restait valide → trou de sécurité). Aligné sur le pattern
+  // déjà utilisé par CoachSidebar et /athlete/parametres.
+  const handleLogout = async () => {
+    const supabase = createClient();
+    try { localStorage.removeItem("nexus_user"); } catch { /* no-op */ }
+    await supabase.auth.signOut();
+    router.push("/auth");
   };
 
   function handleLockedClick(e: React.MouseEvent, requiredTier: "pro" | "all_star", featureLabel: string) {

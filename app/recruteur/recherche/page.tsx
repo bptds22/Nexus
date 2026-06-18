@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import type { SearchAthlete } from "../_data/mockSearchAthletes";
 import NxIcon from "@/components/ui/NxIcon";
@@ -11,6 +12,17 @@ import type { GlobalRecruitmentStatus } from "@/lib/types/models";
 import { isValidationExpired } from "@/lib/utils/profileValidation";
 import AthletePhoto from "@/components/shared/AthletePhoto";
 import AthletePhotoFill from "@/components/shared/AthletePhotoFill";
+import { useAthleteSearch } from "@/lib/queries/recruiter/useAthleteSearch";
+import { usePositionsBySport } from "@/lib/queries/recruiter/usePositionsBySport";
+import { useDebouncedValue } from "@/lib/utils/useDebouncedValue";
+import { useFavorites } from "@/lib/queries/shared/useFavorites";
+import { useFavoriteCounts } from "@/lib/queries/shared/useFavoriteCounts";
+import { useRegions } from "@/lib/queries/shared/useRegions";
+import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
+import { HeartButton } from "@/components/mobile/HeartButton";
+import { RecruteurRechercheMobile } from "@/components/shared/RecruteurRechercheMobile";
+
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
 type ExtendedAthlete = SearchAthlete & { academicBadges: string[]; stars: number; recruitmentStatus: string | null; heightWeight: string; gpa: number; committedSchoolName: string | null; openToOffers: boolean | null; jersey: string; sportName: string; ouvertDemenager: boolean; ouvertPrive: boolean; ouvertAnglophone: boolean; createdAt: string; lastValidation?: string | null; noTeam: boolean; context: string | null };
 import { useSubscription } from "@/lib/hooks/useSubscription";
@@ -82,17 +94,18 @@ function AthleteSearchCard({ a, onToggleFav, favDisabled, favDisabledReason, isF
               </svg>
             );
           })()}
-          <button
-            type="button"
-            title={favDisabled ? favDisabledReason : "Favori"}
-            disabled={favDisabled}
-            onClick={(e) => { e.preventDefault(); if (!favDisabled) onToggleFav(a.id); }}
-            className={`w-7 h-7 rounded-full flex items-center justify-center ${favDisabled ? "cursor-not-allowed opacity-40" : ""}`}
+          {/* HeartButton premium (iter 5.4) */}
+          <div
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+            title={favDisabled ? favDisabledReason : undefined}
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill={a.isFavorited ? "#E63946" : "none"} stroke={a.isFavorited ? "#E63946" : "#6B7280"} strokeWidth="2" strokeLinecap="round">
-              <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
-            </svg>
-          </button>
+            <HeartButton
+              isFavorited={a.isFavorited}
+              onToggle={() => onToggleFav(a.id)}
+              size="sm"
+              disabled={favDisabled}
+            />
+          </div>
         </div>
 
         {/* Top right — star rating always visible */}
@@ -288,17 +301,20 @@ function AthleteSearchRow({ a, onToggleFav, favDisabled, favDisabledReason, isFr
       </div>
 
       {/* Fav toggle */}
-      <button
-        type="button"
-        title={favDisabled ? favDisabledReason : "Favori"}
-        disabled={favDisabled}
-        onClick={(e) => { e.preventDefault(); if (!favDisabled) onToggleFav(a.id); }}
-        className={`w-8 h-8 rounded-full bg-[#13151a] border border-[#2D3748] flex items-center justify-center transition-colors shrink-0 ${favDisabled ? "cursor-not-allowed opacity-40" : "hover:bg-[#2D3748]"}`}
+      {/* HeartButton premium (iter 5.4) */}
+      <div
+        className="shrink-0 bg-[#13151a] border border-[#2D3748] rounded-full flex items-center justify-center"
+        style={{ width: 32, height: 32 }}
+        title={favDisabled ? favDisabledReason : undefined}
+        onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
       >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill={a.isFavorited ? "#E63946" : "none"} stroke={a.isFavorited ? "#E63946" : "#6b7280"} strokeWidth="2" strokeLinecap="round">
-          <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
-        </svg>
-      </button>
+        <HeartButton
+          isFavorited={a.isFavorited}
+          onToggle={() => onToggleFav(a.id)}
+          size="sm"
+          disabled={favDisabled}
+        />
+      </div>
 
       {/* View link */}
       <Link href={`/recruteur/athletes/${a.id}`} className="text-[13px] font-bold text-[#E63946] hover:text-[#D42B22] transition-colors flex items-center gap-1 shrink-0">
@@ -320,6 +336,8 @@ export default function RecherchePage() {
 }
 
 function RechercheContent() {
+  if (IS_CAPACITOR) return <RecruteurRechercheMobile />;
+
   const searchParams = useSearchParams();
   const { maxSearchResults, maxFavorites, tier, loading: tierLoading } = useSubscription();
   const isFreeRecruiter = tier === "free";
@@ -343,289 +361,55 @@ function RechercheContent() {
   const [sortBy, setSortBy] = useState("rating_desc");
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [favorites, setFavorites] = useState<Set<string>>(new Set());
-  const [athletes, setAthletes] = useState<ExtendedAthlete[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [favCounts, setFavCounts] = useState<Record<string, number>>({});
-  const [regions, setRegions] = useState<string[]>([]);
-  const [dynamicPositions, setDynamicPositions] = useState<{ abbr: string; label: string }[]>([]);
-  const [sportId, setSportId] = useState<string | null>(null);
+  // Migration TanStack (iter 5.3b) — états fetch-related délégués aux hooks.
+  // Cache TanStack → navigation tab→Recherche instantanée avec mêmes filtres.
+  const queryClient = useQueryClient();
+  const { data: currentUser } = useCurrentUser();
+  const { data: favoritesArr = [] } = useFavorites();
+  const { data: favCounts = {} } = useFavoriteCounts();
+  const { data: regions = [] } = useRegions();
+  // favorites en Set pour préserver l'API utilisée par les useMemo/cartes
+  const favorites = useMemo(() => new Set(favoritesArr), [favoritesArr]);
+  // Debounce du search text uniquement (iter 5.3b). Autres filtres = instantané.
+  const debouncedSearch = useDebouncedValue(search, 250);
+  // Positions dynamiques selon le sport sélectionné
+  const { data: posData } = usePositionsBySport(sport || null);
+  const sportId = posData?.sportId ?? null;
+  const dynamicPositions = posData?.positions ?? [];
 
-  // One-time init: favorites (mine + totals) + regions dropdown.
-  // These are independent of search filters, so they never re-fire.
-  useEffect(() => {
-    const init = async () => {
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
-      const userId = session?.user?.id;
+  // Ex useEffect "init one-shot" (favorites + favCounts + regions) retiré en iter 5.3b
+  // — la donnée vit dans useFavorites / useFavoriteCounts / useRegions.
 
-      const [myFavsRes, favCountRes, regionRowsRes] = await Promise.all([
-        userId
-          ? supabase.from("recruiter_favorites").select("athlete_id").eq("recruiter_id", userId)
-          : Promise.resolve({ data: [] as { athlete_id: string }[] }),
-        supabase.from("recruiter_favorites").select("athlete_id"),
-        supabase.from("schools").select("region"),
-      ]);
-
-      const favSet = new Set<string>();
-      ((myFavsRes.data as { athlete_id: string }[]) || []).forEach((f) => favSet.add(f.athlete_id));
-      setFavorites(favSet);
-
-      const counts: Record<string, number> = {};
-      ((favCountRes.data as { athlete_id: string }[]) || []).forEach((f) => {
-        counts[f.athlete_id] = (counts[f.athlete_id] || 0) + 1;
-      });
-      setFavCounts(counts);
-
-      const uniqueRegions = Array.from(
-        new Set(((regionRowsRes.data as { region: string }[]) || []).map((r) => r.region).filter(Boolean))
-      ).sort();
-      setRegions(uniqueRegions);
-    };
-    init();
-  }, []);
-
-  // Main athlete query — re-runs whenever any server-side filter or sort changes.
-  // The free-tier `.limit(maxSearchResults)` is applied AFTER filters/sort, so the
-  // 10 rows that reach a Free user's browser are the top-N matches for their
-  // query (not a blind top-10 of the entire table).
-  //
-  // Client-side filters (position, region, badges, academicBadges, hideFavorites)
-  // run against this returned page only. For Free users, that means those filters
-  // can further narrow the 10 rows but cannot reach additional matches beyond the
-  // cap — which is the intended revenue gate.
-  useEffect(() => {
-    if (tierLoading) return;
-    if (sport && !sportId) return; // wait for sport_id lookup
-    const loadData = async () => {
-      setLoading(true);
-      const supabase = createClient();
-
-      // Free recruiters don't receive athlete names — stripped server-side
-      // (not CSS-only) so devtools can't reveal them. Pro/All-Star/admin
-      // get the real name columns.
-      const identityCols = isFreeRecruiter ? "" : "first_name, last_name,";
-
-      let query = supabase
-        .from("athletes")
-        .select(`
-          id, ${identityCols} photo_url, verified, last_profile_validation,
-          annee_diplomation, numero_jersey, video_faits_saillants_url, school_id,
-          cote_globale_entraineur,
-          taille_pieds,
-          taille_pouces,
-          poids_lbs,
-          mentions_academiques,
-          moyenne_generale,
-          statut_recrutement_override,
-          recruitment_status, committed_school_id, open_to_offers,
-          pret_changer_region, ouvert_cegep_prive, ouvert_cegep_anglophone, created_at,
-          sports!sport_id(nom),
-          positions!position_id(nom, abreviation),
-          schools!school_id(name, region, type),
-          committed_school:schools!committed_school_id(name),
-          context,
-          evaluations(distinctions)
-        ` as unknown as "*")
-        .eq("status", "ACTIF");
-
-      // Server-side filters
-      if (!isFreeRecruiter && search.trim().length >= 3) {
-        const q = search.trim().replace(/[%,]/g, "");
-        query = query.or(`first_name.ilike.%${q}%,last_name.ilike.%${q}%`);
-      }
-      if (sportId) query = query.eq("sport_id", sportId);
-      if (promotion) query = query.eq("annee_diplomation", parseInt(promotion));
-      if (verifiedOnly) query = query.eq("verified", true);
-      if (withVideoOnly) query = query.not("video_faits_saillants_url", "is", null);
-      // Post-Phase 6.1 unified model : civil athletes are anchored to a
-      // LIGUE_CIVILE school, école/CÉGEP athletes to SECONDAIRE/CEGEP.
-      // 6.2.f-hotfix : .eq("schools.type", X) on an embed column is
-      // silently ignored by Supabase JS v2 — the type discriminator runs
-      // client-side post-map (see below) where each row already has its
-      // orgType derived from schoolRel.type.
-      // 6.3-followup : orphans (school_id NULL) are "libres" athletes and
-      // must show regardless of the active type filter — so we no longer
-      // exclude them server-side ; the client-side filter keeps them in.
-      if (minGpa) query = query.gte("moyenne_generale", parseFloat(minGpa));
-      if (minRating) query = query.gte("cote_globale_entraineur", parseFloat(minRating));
-      if (filterOuvertDemenager) query = query.eq("pret_changer_region", true);
-      if (filterOuvertPrive) query = query.eq("ouvert_cegep_prive", true);
-      if (filterOuvertAnglophone) query = query.eq("ouvert_cegep_anglophone", true);
-      if (filterNewOnly) {
-        const tenDaysAgo = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
-        query = query.gte("created_at", tenDaysAgo);
-      }
-
-      // Server-side sort. favorites_desc can't be ordered at the DB level
-      // without a view; fall back to rating_desc and let the client reorder
-      // within the returned page.
-      switch (sortBy) {
-        case "rating_desc":
-        case "favorites_desc":
-          query = query.order("cote_globale_entraineur", { ascending: false, nullsFirst: false });
-          break;
-        case "rating_asc":
-          query = query.order("cote_globale_entraineur", { ascending: true, nullsFirst: false });
-          break;
-        case "grad_asc":
-          query = query.order("annee_diplomation", { ascending: true });
-          break;
-        case "grad_desc":
-          query = query.order("annee_diplomation", { ascending: false });
-          break;
-        case "name_asc":
-          query = query.order("last_name", { ascending: true });
-          break;
-      }
-
-      // Tier cap — applied AFTER filters/sort. -1 = unlimited.
-      if (maxSearchResults !== -1) {
-        query = query.limit(maxSearchResults);
-      }
-
-      const { data: athleteData, error } = await query;
-
-      if (athleteData) {
-        const badgeMap: Record<string, { label: string; icon: string }> = {
-          captain: { label: "Capitaine", icon: "shield" },
-          allstar: { label: "Équipe d'étoiles", icon: "star" },
-          team_leader: { label: "Leader", icon: "award" },
-        };
-
-        const mapped: ExtendedAthlete[] = athleteData.map((a: Record<string, unknown>) => {
-          const sportRel = Array.isArray(a.sports) ? a.sports[0] : a.sports;
-          const posRel = Array.isArray(a.positions) ? a.positions[0] : a.positions;
-          const schoolRel = Array.isArray(a.schools) ? a.schools[0] : a.schools;
-          const committedSchoolRel = Array.isArray(a.committed_school) ? a.committed_school[0] : a.committed_school;
-          const evalRel = Array.isArray(a.evaluations) ? a.evaluations[0] : a.evaluations;
-          const distinctions: string[] = ((evalRel as Record<string, unknown> | null)?.distinctions as string[]) || [];
-          return {
-            id: a.id as string,
-            firstName: (a.first_name as string) || "",
-            lastName: (a.last_name as string) || "",
-            photo: (a.photo_url as string) || "",
-            sport: ((sportRel as Record<string, string> | null)?.nom || "").toLowerCase().replace(/ /g, "_") as any,
-            position: (posRel as Record<string, string> | null)?.abreviation || "",
-            school: (schoolRel as Record<string, string> | null)?.name || "",
-            region: (schoolRel as Record<string, string> | null)?.region || "",
-            graduationYear: (a.annee_diplomation as number) || 0,
-            niveau: "Sec. 5" as const,
-            heightDisplay: "",
-            weightDisplay: "",
-            isVerified: a.verified as boolean,
-            lastValidation: (a.last_profile_validation as string) || null,
-            isFavorited: favorites.has(a.id as string),
-            hasVideo: !!a.video_faits_saillants_url,
-            badges: distinctions
-              .filter((d) => d != null && badgeMap[d])
-              .map((d) => ({ badgeId: d, label: badgeMap[d].label, icon: badgeMap[d].icon })),
-            favorites: favCounts[a.id as string] || 0,
-            views: 0,
-            stars: (a.cote_globale_entraineur as number) || 0,
-            heightWeight: (() => {
-              const ft = a.taille_pieds as number | null;
-              const inches = a.taille_pouces as number | null;
-              const lbs = a.poids_lbs as number | null;
-              const parts: string[] = [];
-              if (ft) parts.push(`${ft}'${inches || 0}"`);
-              if (lbs) parts.push(`${lbs} lbs`);
-              return parts.join(" · ");
-            })(),
-            gpa: (a.moyenne_generale as number) || 0,
-            academicBadges: (a.mentions_academiques as string[]) || [],
-            jersey: a?.numero_jersey != null && a.numero_jersey !== "" ? String(a.numero_jersey) : "",
-            sportName: (sportRel as Record<string, string> | null)?.nom || "",
-            recruitmentStatus: (a?.recruitment_status as string) || "OUVERT",
-            committedSchoolName: (committedSchoolRel as Record<string, string> | null)?.name || null,
-            openToOffers: (a?.open_to_offers as boolean | null) ?? null,
-            commitmentStatus: "aucun",
-            // Post-Phase 6.1 : orgType derives from the schools.type
-            // discriminator on the embed (LIGUE_CIVILE vs SECONDAIRE/CEGEP).
-            // 6.3-followup-3 : orphans (school_id NULL) get undefined orgType
-            // — they are classified by users.context in the type filter's
-            // Branche 2, not by a civil fallback here (which mis-bucketed
-            // scolaire orphans under "Ligue civile").
-            orgType: (!a.school_id
-              ? undefined
-              : (schoolRel as Record<string, string> | null)?.type === "LIGUE_CIVILE"
-                ? "ligue_civile"
-                : "scolaire") as "scolaire" | "ligue_civile" | undefined,
-            ouvertDemenager: a.pret_changer_region === true,
-            ouvertPrive: a.ouvert_cegep_prive === true,
-            ouvertAnglophone: a.ouvert_cegep_anglophone === true,
-            createdAt: (a.created_at as string) || "",
-            // "Ligue Civile" badge fires when athlete has no school anchor
-            // (orphan civil athlete). league_team_id is gone in 6.1 — civil
-            // athletes with a team are anchored via school_id to a
-            // LIGUE_CIVILE school.
-            noTeam: !a.school_id,
-            // 6.3-followup-4 : context denormalized onto athletes (users
-            // table is RLS-blocked for recruiter -> athlete user rows, so
-            // the old users!user_id(context) embed silently returned null).
-            // Drives orphan classification — 'ligue_civile' explicit,
-            // NULL/'scolaire' default to scolaire.
-            context: (a.context as string | null) ?? null,
-          };
-        });
-
-        // 6.2.f-hotfix : type filter applied client-side (the equivalent
-        // server-side .eq on schools.type embed was silently ignored).
-        // 6.3-followup-2 : anchored athletes match on schools.type-derived
-        // orgType ; orphans (noTeam) match on their users.context d'origine
-        // ('ligue_civile' explicit, else scolaire). Pattern positif sur
-        // 'ligue_civile' car NULL = scolaire/legacy default.
-        const finalAthletes = orgType
-          ? mapped.filter((a) =>
-              a.orgType === orgType ||
-              (a.noTeam && (a.context === "ligue_civile" ? "ligue_civile" : "scolaire") === orgType)
-            )
-          : mapped;
-
-        setAthletes(finalAthletes);
-      }
-
-      setLoading(false);
-    };
-    loadData();
-  }, [
-    tierLoading, maxSearchResults, isFreeRecruiter,
-    search, sport, sportId, promotion, verifiedOnly, withVideoOnly,
-    orgType, minGpa, minRating,
-    filterOuvertDemenager, filterOuvertPrive, filterOuvertAnglophone, filterNewOnly,
+  // Migration TanStack (iter 5.3b) — la main athlete query vit dans
+  // useAthleteSearch avec keepPreviousData : pendant un refetch sur changement
+  // de filtre, l'ancienne grille reste affichée (UX Instagram-like).
+  // orgType + favorites composition appliqués dans le useMemo `filtered`
+  // ci-dessous pour stabilité du cache (un changement de favori ne refetch pas).
+  const { data: athletes = [], isLoading: athletesLoading, isFetching: athletesFetching } = useAthleteSearch({
+    search: debouncedSearch,
+    sport,
+    promotion,
+    verifiedOnly,
+    withVideoOnly,
+    minRating,
+    filterOuvertDemenager,
+    filterOuvertPrive,
+    filterOuvertAnglophone,
+    filterNewOnly,
+    minGpa,
     sortBy,
-    favorites, favCounts,
-  ]);
+    sportId,
+    isFreeRecruiter,
+    maxSearchResults,
+  });
+  const loading = tierLoading || athletesLoading;
 
-  // Load positions dynamically when sport changes
-  useEffect(() => {
-    if (!sport) { setSportId(null); setDynamicPositions([]); setPosition(""); return; }
+  // Reset position quand le sport change (legacy behavior)
+  useEffect(() => { if (!sport) setPosition(""); }, [sport]);
 
-    const loadPositions = async () => {
-      const supabase = createClient();
-      const { data: sportRow } = await supabase
-        .from("sports")
-        .select("id")
-        .ilike("nom", sport.replace(/_/g, " "))
-        .single();
-      if (!sportRow) { setSportId(null); return; }
-      setSportId(sportRow.id as string);
-
-      const { data: posRows } = await supabase
-        .from("positions")
-        .select("nom, abreviation")
-        .eq("sport_id", sportRow.id)
-        .order("nom");
-
-      if (posRows) {
-        setDynamicPositions(posRows.map((p: { nom: string; abreviation: string }) => ({
-          abbr: p.abreviation,
-          label: p.nom,
-        })));
-      }
-    };
-    loadPositions();
-  }, [sport]);
+  // Ex mega-useEffect (main athlete query, 200+ lignes) retiré en iter 5.3b.
+  // Ex useEffect load positions (lignes 586-613) retiré, remplacé par usePositionsBySport.
+  // Bloc legacy supprimé ↓
 
   // Client-side residual filters. Server-side filters (search, sport, promotion,
   // verified, video, orgType, GPA, minRating, ouvert_*, filterNewOnly) have
@@ -637,6 +421,14 @@ function RechercheContent() {
   // revenue trade-off — upgrade to Pro to filter across the full athlete set.
   const filtered = useMemo(() => {
     let list = [...athletes];
+    // orgType client-side (déplacé du legacy useEffect en iter 5.3b pour stabiliser
+    // le cache : un changement d'orgType ne refetch pas, juste filtre)
+    if (orgType) {
+      list = list.filter((a) =>
+        a.orgType === orgType ||
+        (a.noTeam && (a.context === "ligue_civile" ? "ligue_civile" : "scolaire") === orgType)
+      );
+    }
     if (position) list = list.filter((a) => a.position === position);
     if (region) list = list.filter((a) => a.region === region);
     if (withSportBadge) list = list.filter((a) => a.badges.length > 0);
@@ -650,7 +442,7 @@ function RechercheContent() {
     }
 
     return list.map((a) => ({ ...a, isFavorited: favorites.has(a.id), favorites: favCounts[a.id] || 0 }));
-  }, [athletes, position, region, withSportBadge, withAcademicBadge, hideFavorites, sortBy, favorites, favCounts]);
+  }, [athletes, orgType, position, region, withSportBadge, withAcademicBadge, hideFavorites, sortBy, favorites, favCounts]);
 
   const toggleFav = async (id: string) => {
     const supabase = createClient();
@@ -669,15 +461,15 @@ function RechercheContent() {
     if (existing) {
       // Already favorited → DELETE (unfavorite)
       await supabase.from("recruiter_favorites").delete().eq("id", existing.id);
-      setFavorites((prev) => { const next = new Set(prev); next.delete(id); return next; });
-      setFavCounts((prev) => ({ ...prev, [id]: Math.max(0, (prev[id] || 0) - 1) }));
     } else {
       // Not favorited → INSERT (favorite only; pipeline entries are created
       // by explicit user action on the Kanban page, not as a side-effect here)
       await supabase.from("recruiter_favorites").insert({ recruiter_id: userId, athlete_id: id });
-      setFavorites((prev) => { const next = new Set(prev); next.add(id); return next; });
-      setFavCounts((prev) => ({ ...prev, [id]: (prev[id] || 0) + 1 }));
     }
+    // Invalidations TanStack — favorites/counts/dashboard se rafraîchissent (iter 5.3b)
+    queryClient.invalidateQueries({ queryKey: ["favorites"] });
+    queryClient.invalidateQueries({ queryKey: ["favoriteCounts"] });
+    queryClient.invalidateQueries({ queryKey: ["dashboard", "kpi"] });
   };
 
   const hasFilters = sport || position || region || promotion || verifiedOnly || withVideoOnly || orgType || minRating || withSportBadge || withAcademicBadge || minGpa || hideFavorites || filterOuvertDemenager || filterOuvertPrive || filterOuvertAnglophone || filterNewOnly || sortBy !== "rating_desc";

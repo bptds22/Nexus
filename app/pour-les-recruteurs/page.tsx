@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import {
   Play,
   Search,
@@ -143,6 +144,8 @@ function FaqItem({
 ══════════════════════════════════════════════════════════════ */
 
 export default function PourLesRecruteursPage() {
+  // Mobile build (Capacitor): page exclue.
+  if (process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true") notFound();
   const { t } = useTranslation();
   const T = t.recruiterLanding;
   const [openFaq, setOpenFaq] = useState<number | null>(0);

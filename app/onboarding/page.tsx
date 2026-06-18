@@ -10,9 +10,17 @@ import TeamCreateForm, { type TeamFormData } from "@/components/onboarding/TeamC
 import { findOrCreateSchool } from "@/lib/onboarding/findOrCreateSchool";
 import { getCurrentSeason } from "@/lib/utils/season";
 import { genderLabel } from "@/lib/config/gender";
+import { CoachOnboardingMobileSchool } from "@/components/shared/CoachOnboardingMobileSchool";
+import { CoachOnboardingMobileCivil } from "@/components/shared/CoachOnboardingMobileCivil";
+import { RecruiterOnboardingMobile } from "@/components/shared/RecruiterOnboardingMobile";
 
 // Canonical Nexus support inbox for user-driven contact (school-not-found, etc.).
 const NEXUS_CONTACT_EMAIL = "support@nexussports.ca";
+
+// Iter coach-3 — dispatch IS_CAPACITOR (mobile natif) plus bas dans
+// OnboardingPage, après le load de `user` (les hooks doivent rester en
+// amont du return conditionnel — Rules of Hooks).
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
 /* ─────────────────────────────────────────────────────────────────
    Nexus — Onboarding Wizard
@@ -371,7 +379,7 @@ export default function OnboardingPage() {
     // merged, coach principal, confirmation) since the team selection
     // is already embedded in the LeagueCoachLeagueStep.
     coach: 4, // see isCivilCoachLabel branch below — school gets +1
-    recruiter: 5,       // profil, cégep, programme, directeur, critères
+    recruiter: 4,       // profil, cégep, programme, directeur (sprint recruteur-finish-web-rpc — critères retiré, géré post-onboarding via /recruteur/parametres)
     coordinator_league: 3,
   };
   const isCivilCoachFlow = user?.role === "coach" && user?.context === "ligue_civile";
@@ -453,13 +461,43 @@ export default function OnboardingPage() {
     // profile.team_id directly; advancing without a pick is fine.
     // Recruiter step 2 (RecruiterProgramStep) is likewise ungated —
     // primary_team is optional; finish() only writes it when set.
-    // DirectorChoiceStep (step 2 civil / step 3 school) was previously
-    // hard-gated on rprp_consent for owner/interim. Loi 25 designation
-    // is now non-blocking: the director can proceed without accepting
-    // RPRP, and the decline surfaces in the admin tab
-    // (profile_data.rprp_declined_at) + dashboard alert. The inline
-    // notice rendered inside DirectorChoiceStep tells the user what
-    // declining means; finish() records the decision either way.
+    //
+    // Coach école step 3 (DirectorChoiceStep type="school") — sprint
+    // coach-responsable-3 : RPRP est désormais GATE DUR (parité
+    // mobile + decision Loi 25). Si l'utilisateur a choisi devenir
+    // responsable (owner / interim, sans invite), rprp_consent === true
+    // est obligatoire pour continuer. Civil (context==='ligue_civile')
+    // et recruteur CÉGEP ne sont pas touchés ici.
+    if (step === 3 && user?.role === "coach") {
+      const raw = typeof window !== "undefined" ? localStorage.getItem("nexus_user") : null;
+      const localUser = raw ? (JSON.parse(raw) as Record<string, unknown>) : {};
+      if (localUser.context !== "ligue_civile") {
+        const adminType = localUser.school_admin_type;
+        const isActualClaim = (adminType === "owner" || adminType === "interim") && !localUser.pending_director_invite;
+        if (isActualClaim && localUser.rprp_consent !== true) return false;
+      }
+    }
+    // Sprint recruteur-finish-web-rpc : recruteur step 3 = DirectorChoiceStep
+    // type="cegep". Gate RPRP dur pour owner/interim (parité école + civil).
+    if (step === 3 && user?.role === "recruiter") {
+      const raw = typeof window !== "undefined" ? localStorage.getItem("nexus_user") : null;
+      const localUser = raw ? (JSON.parse(raw) as Record<string, unknown>) : {};
+      const adminType = localUser.cegep_admin_type;
+      const isActualClaim = (adminType === "owner" || adminType === "interim") && !localUser.pending_director_invite;
+      if (isActualClaim && localUser.rprp_consent !== true) return false;
+    }
+    // Sprint cards-restructure-web : civil coach step 2 = DirectorChoiceStep
+    // type="league". Gate RPRP dur pour owner/interim (parité école step 3
+    // + parité mobile civil).
+    if (step === 2 && user?.role === "coach") {
+      const raw = typeof window !== "undefined" ? localStorage.getItem("nexus_user") : null;
+      const localUser = raw ? (JSON.parse(raw) as Record<string, unknown>) : {};
+      if (localUser.context === "ligue_civile") {
+        const adminType = localUser.school_admin_type;
+        const isActualClaim = (adminType === "owner" || adminType === "interim") && !localUser.pending_director_invite;
+        if (isActualClaim && localUser.rprp_consent !== true) return false;
+      }
+    }
     return true;
   }
 
@@ -567,6 +605,255 @@ export default function OnboardingPage() {
       const raw = localStorage.getItem("nexus_user");
       const localUser = raw ? JSON.parse(raw) : {};
 
+      // ═══════════════════════════════════════════════════════════════
+      // Sprint coach-responsable-3 — Coach école (context !==
+      // 'ligue_civile') passe par la RPC atomique
+      // finish_coach_school_onboarding (migration 20260610110000).
+      //
+      // Sprint cards-restructure-web — Coach civil (context ===
+      // 'ligue_civile') passe par finish_coach_civil_onboarding (migration
+      // 20260612000000). Le club + l'équipe ont déjà été créés/joints au
+      // step 1 par LeagueCoachLeagueStep ; on passe leurs IDs à la RPC
+      // qui UPSERT idempotemment school_coaches (role='COACH') + insère
+      // admin_claims si owner/interim. claim_civil_league_admin() n'est
+      // plus appelée (à dropper au sprint civil-2b-rpc-drop).
+      //
+      // Recruteur CÉGEP retombe dans le legacy path ci-dessous.
+      // ═══════════════════════════════════════════════════════════════
+      const isSchoolCoach = user?.role === "coach" && localUser.context !== "ligue_civile";
+      const isCivilCoach  = user?.role === "coach" && localUser.context === "ligue_civile";
+      const isRecruiter   = user?.role === "recruiter";
+
+      if (isRecruiter) {
+        // Sprint recruteur-finish-web-rpc — câblage atomique sur la RPC
+        // finish_recruiter_onboarding (migration 20260613000000). Remplace
+        // les writes legacy (users update + admin_claims CÉGEP). PAS de
+        // recruiter_preferences (retiré de l'onboarding — géré post-
+        // onboarding via /recruteur/parametres).
+        const instName = (localUser.institution as { name?: string } | undefined)?.name;
+        if (!instName) {
+          setNavError("CÉGEP introuvable — réessaye.");
+          return;
+        }
+        const { data: cegepRow } = await supabase
+          .from("schools")
+          .select("id")
+          .eq("name", instName)
+          .maybeSingle();
+        if (!cegepRow) {
+          setNavError("CÉGEP introuvable — réessaye.");
+          return;
+        }
+
+        const recruiterChoice: "owner" | "interim" | "invite" | "coach_only" = (() => {
+          if (localUser.pending_director_invite) return "invite";
+          if (localUser.cegep_admin_type === "interim") return "interim";
+          if (localUser.cegep_admin_type === "owner")   return "owner";
+          return "coach_only";
+        })();
+
+        const recExpRaw = localUser.profile?.experience_years;
+        const recExpParsed = typeof recExpRaw === "number"
+          ? recExpRaw
+          : typeof recExpRaw === "string" && recExpRaw.trim() !== ""
+            ? parseInt(recExpRaw, 10)
+            : null;
+        const recExpYears = Number.isFinite(recExpParsed) ? (recExpParsed as number) : null;
+
+        const recPrimaryTeamId = (localUser.primary_team as { id?: string } | undefined)?.id ?? null;
+
+        const { error: recErr } = await supabase.rpc("finish_recruiter_onboarding", {
+          p_cegep_id:         cegepRow.id as string,
+          p_primary_team_id:  recPrimaryTeamId,
+          p_sport:            localUser.profile?.sport_principal || null,
+          p_first_name:       localUser.firstName || user?.firstName || null,
+          p_last_name:        localUser.lastName  || user?.lastName  || null,
+          p_phone:            localUser.profile?.phone || null,
+          p_bio:              localUser.profile?.bio || null,
+          p_experience_years: recExpYears,
+          p_photo_url:        localUser.profile?.photo_url || null,
+          p_director_choice:  recruiterChoice,
+          p_rprp_accepted:    localUser.rprp_consent === true,
+          p_invite_email:     recruiterChoice === "invite"
+            ? ((localUser.pending_director_invite as { email?: string } | null)?.email || null)
+            : null,
+        });
+
+        if (recErr) {
+          console.error("[Onboarding] finish_recruiter_onboarding:", recErr);
+          const msg = recErr.message || "";
+          let userMessage = "Erreur lors de la finalisation — réessaye.";
+          if (msg.includes("SCHOOL_REQUIRES_RESPONSABLE")) {
+            userMessage = "Ce CÉGEP n'a pas encore de responsable. Choisis « C'est moi » ou « Je serai intérimaire ».";
+          } else if (msg.includes("RPRP_REQUIRED")) {
+            userMessage = "L'attestation RPRP est obligatoire pour devenir responsable.";
+          } else if (msg.includes("INVALID_CEGEP")) {
+            userMessage = "CÉGEP invalide — réessaye.";
+          } else if (msg.includes("INVALID_DIRECTOR_CHOICE")) {
+            userMessage = "Choix de responsable invalide.";
+          } else if (msg.includes("NOT_AUTHENTICATED")) {
+            userMessage = "Session expirée — reconnecte-toi.";
+          } else if (msg.includes("WRONG_ROLE_OR_CONTEXT")) {
+            userMessage = "Ce flux est réservé aux recruteurs CÉGEP.";
+          }
+          setNavError(userMessage);
+          return;
+        }
+        // RPC OK — short-circuit le legacy path (users update + admin_claims
+        // CÉGEP + recruiter_preferences). Fall-through au setShowSuccess +
+        // redirect en bas de finish().
+      } else if (isCivilCoach) {
+        // Club + équipe déjà persistés par LeagueCoachLeagueStep :
+        //   localUser.institution.id = schools.id (LIGUE_CIVILE)
+        //   localUser.profile.team_id = teams.id
+        const civilClubId = (localUser.institution as { id?: string } | undefined)?.id;
+        const civilTeamId = localUser.profile?.team_id as string | undefined;
+        if (!civilClubId) {
+          setNavError("Club introuvable — réessaye.");
+          return;
+        }
+
+        // director_choice dérivé du localStorage (même mapping que l'école
+        // RPC) : pending_invite → invite ; admin_type=interim → interim ;
+        // admin_type=owner sans invite → owner ; sinon coach_only.
+        const civilChoice: "owner" | "interim" | "invite" | "coach_only" = (() => {
+          if (localUser.pending_director_invite) return "invite";
+          if (localUser.school_admin_type === "interim") return "interim";
+          if (localUser.school_admin_type === "owner")   return "owner";
+          return "coach_only";
+        })();
+
+        const civilExpRaw = localUser.profile?.experience_years;
+        const civilExpParsed = typeof civilExpRaw === "number"
+          ? civilExpRaw
+          : typeof civilExpRaw === "string" && civilExpRaw.trim() !== ""
+            ? parseInt(civilExpRaw, 10)
+            : null;
+        const civilExpYears = Number.isFinite(civilExpParsed) ? (civilExpParsed as number) : null;
+
+        const { error: civilErr } = await supabase.rpc("finish_coach_civil_onboarding", {
+          // Club existant (déjà persisté au step 1)
+          p_club_id:          civilClubId,
+          p_club_name:        null,
+          p_club_city:        null,
+          p_club_region:      null,
+          // Profil
+          p_sport:            localUser.profile?.sport_principal || null,
+          p_first_name:       localUser.firstName || user?.firstName || null,
+          p_last_name:        localUser.lastName  || user?.lastName  || null,
+          p_phone:            localUser.profile?.phone || null,
+          p_bio:              localUser.profile?.bio || null,
+          p_experience_years: civilExpYears,
+          p_photo_url:        localUser.profile?.photo_url || null,
+          // Équipe existante (déjà persistée au step 1)
+          p_team_id:          civilTeamId || null,
+          p_team_name:        null,
+          p_team_age_group:   null,
+          p_team_gender:      null,
+          p_team_division:    null,
+          // Responsable
+          p_director_choice:  civilChoice,
+          p_rprp_accepted:    localUser.rprp_consent === true,
+          p_invite_email:     civilChoice === "invite"
+            ? ((localUser.pending_director_invite as { email?: string } | null)?.email || null)
+            : null,
+        });
+
+        if (civilErr) {
+          console.error("[Onboarding] finish_coach_civil_onboarding:", civilErr);
+          const msg = civilErr.message || "";
+          let userMessage = "Erreur lors de la finalisation — réessaye.";
+          if (msg.includes("SCHOOL_REQUIRES_RESPONSABLE")) {
+            userMessage = "Ce club n'a pas encore de responsable. Choisis « C'est moi » ou « Je serai intérimaire ».";
+          } else if (msg.includes("RPRP_REQUIRED")) {
+            userMessage = "L'attestation RPRP est obligatoire pour devenir responsable.";
+          } else if (msg.includes("INVALID_CLUB")) {
+            userMessage = "Données du club invalides — vérifie le nom.";
+          } else if (msg.includes("INVALID_DIRECTOR_CHOICE")) {
+            userMessage = "Choix de responsable invalide.";
+          } else if (msg.includes("NOT_AUTHENTICATED")) {
+            userMessage = "Session expirée — reconnecte-toi.";
+          } else if (msg.includes("WRONG_ROLE_OR_CONTEXT")) {
+            userMessage = "Ce flux est réservé aux coachs de ligue civile.";
+          }
+          setNavError(userMessage);
+          return;
+        }
+        // RPC OK — short-circuit le legacy path (claim_civil_league_admin
+        // + school_coaches upsert + recruteur). Fall-through au
+        // setShowSuccess + redirect.
+      } else if (isSchoolCoach) {
+        const instName = (localUser.institution as { name?: string } | undefined)?.name;
+        if (!instName) {
+          setNavError("École introuvable — réessaye.");
+          return;
+        }
+        const { data: schoolRow } = await supabase
+          .from("schools")
+          .select("id")
+          .eq("name", instName)
+          .maybeSingle();
+        if (!schoolRow) {
+          setNavError("École introuvable — réessaye.");
+          return;
+        }
+
+        const directorChoice: "owner" | "interim" | "invite" | "coach_only" = (() => {
+          if (localUser.pending_director_invite) return "invite";
+          if (localUser.school_admin_type === "interim") return "interim";
+          if (localUser.school_admin_type === "owner") return "owner";
+          return "coach_only";
+        })();
+
+        const expRaw = localUser.profile?.experience_years;
+        const expYearsParsed = typeof expRaw === "number"
+          ? expRaw
+          : typeof expRaw === "string" && expRaw.trim() !== ""
+            ? parseInt(expRaw, 10)
+            : null;
+        const expYears = Number.isFinite(expYearsParsed) ? (expYearsParsed as number) : null;
+
+        const { error: rpcErr } = await supabase.rpc("finish_coach_school_onboarding", {
+          p_school_id:        schoolRow.id as string,
+          p_region:           (localUser.institution as { region?: string } | undefined)?.region || null,
+          p_sport:            localUser.profile?.sport_principal || null,
+          p_first_name:       localUser.firstName || user?.firstName || null,
+          p_last_name:        localUser.lastName  || user?.lastName  || null,
+          p_phone:            localUser.profile?.phone || null,
+          p_bio:              localUser.profile?.bio || null,
+          p_experience_years: expYears,
+          p_photo_url:        localUser.profile?.photo_url || null,
+          p_team_id:          localUser.profile?.team_id || null,
+          p_director_choice:  directorChoice,
+          p_rprp_accepted:    localUser.rprp_consent === true,
+          p_invite_email:     directorChoice === "invite"
+            ? ((localUser.pending_director_invite as { email?: string } | null)?.email || null)
+            : null,
+        });
+
+        if (rpcErr) {
+          console.error("[Onboarding] finish_coach_school_onboarding:", rpcErr);
+          const msg = rpcErr.message || "";
+          let userMessage = "Erreur lors de la finalisation — réessaye.";
+          if (msg.includes("SCHOOL_REQUIRES_RESPONSABLE")) {
+            userMessage = "Cette école n'a pas encore de responsable. Choisis « C'est moi » ou « Je serai intérimaire ».";
+          } else if (msg.includes("RPRP_REQUIRED")) {
+            userMessage = "L'attestation RPRP est obligatoire pour devenir responsable.";
+          } else if (msg.includes("NOT_AUTHENTICATED")) {
+            userMessage = "Session expirée — reconnecte-toi.";
+          } else if (msg.includes("WRONG_ROLE_OR_CONTEXT")) {
+            userMessage = "Ce flux est réservé aux coachs scolaires.";
+          } else if (msg.includes("INVALID_DIRECTOR_CHOICE")) {
+            userMessage = "Choix de directeur invalide.";
+          }
+          setNavError(userMessage);
+          return;
+        }
+        // RPC OK — short-circuit les writes legacy (users / school_coaches /
+        // team_coaches / admin_claims / civil RPC / recruiter). On tombe
+        // directement sur setShowSuccess + redirect en bas de finish().
+      } else {
+
       // Persist DirectorChoiceStep choices made at step 2.
       //
       // Pre-5.4d, the wizard wrote is_school_admin / school_admin_type /
@@ -646,16 +933,14 @@ export default function OnboardingPage() {
         })
         .eq("id", authUser.id);
 
-      // Civil-league coach admin grant. is_school_admin is pinned in the
-      // users update own RLS policy — it can no longer be self-written
-      // client-side. claim_civil_league_admin() validates stored
-      // role='COACH' + context='ligue_civile' server-side and sets the
-      // flag with row_security=off. School/CÉGEP claims still defer to
-      // the admin_claims review (isAdminClaim branch below).
-      if (localUser.is_school_admin === true && !isAdminClaim) {
-        const { error: rpcErr } = await supabase.rpc("claim_civil_league_admin");
-        if (rpcErr) console.error("[onboarding] civil admin claim failed", rpcErr);
-      }
+      // Sprint civil-rpc-drop : ancien appel à claim_civil_league_admin()
+      // retiré. La fonction est DROPPED (migration 20260612200000) et le
+      // chemin civil est désormais géré par finish_coach_civil_onboarding
+      // (cf. branche isCivilCoach plus haut). Ce legacy else ne fire plus
+      // que pour le recruteur, dont les chemins ne déclenchaient jamais
+      // ce gate (`is_school_admin && !isAdminClaim` faux pour tous les
+      // chemins recruteur : self/interim/invite posent toujours
+      // cegep_admin_type → isRecruiterCegepClaim → isAdminClaim=true).
 
       // Save school to users table — institution.name guaranteed
       // present by the validateInstitution() guard at top of finish().
@@ -766,6 +1051,7 @@ export default function OnboardingPage() {
             moyenne_min: sc.min_gpa || 50,
           });
       }
+      } // close else (legacy path)
     }
 
     setShowSuccess(true);
@@ -779,6 +1065,25 @@ export default function OnboardingPage() {
   };
 
   if (!user) return null;
+
+  // Iter coach-3 / civil-2c-mobile — dispatch natif coach (mobile Capacitor).
+  // Inséré APRÈS `if (!user) return null;` pour garantir que les 15+ hooks
+  // au-dessus de OnboardingPage sont toujours appelés (Rules of Hooks).
+  // Sur web (IS_CAPACITOR=false) le wizard web reste inchangé.
+  //   - École  (context !== 'ligue_civile') → CoachOnboardingMobileSchool
+  //   - Civil  (context === 'ligue_civile') → CoachOnboardingMobileCivil
+  // Recruteur reste sur le wizard web (sprint recruteur natif futur).
+  if (IS_CAPACITOR && user.role === "coach" && user.context === "ligue_civile") {
+    return <CoachOnboardingMobileCivil />;
+  }
+  if (IS_CAPACITOR && user.role === "coach" && user.context !== "ligue_civile") {
+    return <CoachOnboardingMobileSchool />;
+  }
+  // Iter recruteur-onboarding-mobile — dispatch natif recruteur (5 slides,
+  // RPC finish_recruiter_onboarding).
+  if (IS_CAPACITOR && user.role === "recruiter") {
+    return <RecruiterOnboardingMobile />;
+  }
 
   if (showSuccess) {
     return (
@@ -975,7 +1280,10 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
     ? (user.institution as Record<string, string>)?.name || "ton organisation"
     : "ton organisation";
 
-  const [choice, setChoice] = useState<"self" | "invite" | "interim" | "coach_only" | "recruteur_only" | "">("");
+  // Sprint cards-restructure-web : ajout du value 'coach' pour school+league
+  // (remplace les cartes invite + coach_only par une seule carte avec email
+  // invite optionnel). cegep garde le pattern existant.
+  const [choice, setChoice] = useState<"self" | "invite" | "interim" | "coach_only" | "recruteur_only" | "coach" | "">("");
   const [selfEmail, setSelfEmail] = useState(user.email || "");
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteFirstName, setInviteFirstName] = useState("");
@@ -988,21 +1296,18 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
   const [rprpConsent, setRprpConsent] = useState<boolean>(!!user.rprp_consent);
 
   // Item 11: query the selected school's existing admin state so the
-  // wizard can hide options that are already taken. Only applies to
-  // school context — league + cegep paths keep their current 2-option
-  // UI (out of scope for the admin_claims workflow).
+  // wizard can hide options that are already taken. CÉGEP path keeps
+  // this admin-state pre-check (hasPermanent/hasInterim hide cards).
   //
-  // Rules: hide "self"/"invite" if a permanent Directeur exists;
-  // hide "interim" if any admin (permanent or interim) already exists.
-  // "coach_only" is always available.
+  // School path — sprint coach-responsable-3 : a basculé sur la RPC
+  // school_has_responsable (admin_claims PENDING + APPROVED, plus
+  // seulement APPROVED via is_school_admin). Cf. hasResponsable state
+  // ci-dessous. League path : pas de pre-check.
   const [schoolAdminState, setSchoolAdminState] = useState<{ hasPermanent: boolean; hasInterim: boolean; loading: boolean }>({ hasPermanent: false, hasInterim: false, loading: true });
 
-  // Runs for BOTH school + CÉGEP now (was school-only). Same query
-  // shape — admins are detected via is_school_admin=true + admin_type
-  // in profile_data, regardless of whether the institution is a
-  // SECONDAIRE or a CEGEP schools row. Skips for league (separate flow).
+  // CÉGEP uniquement (school est sur hasResponsable, league skip).
   useEffect(() => {
-    if ((!isSchool && !isCegep) || !user.institution) {
+    if (!isCegep || !user.institution) {
       setSchoolAdminState({ hasPermanent: false, hasInterim: false, loading: false });
       return;
     }
@@ -1038,18 +1343,92 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
       setSchoolAdminState({ hasPermanent, hasInterim, loading: false });
     })();
     return () => { cancelled = true; };
-  }, [isSchool, isCegep, user.institution]);
+  }, [isCegep, user.institution]);
 
-  const showSelf = (!isSchool && !isCegep) || !schoolAdminState.hasPermanent;
-  // Item 11-Recruteur: cegep flow drops the standalone "Inviter quelqu'un"
-  // card — the invite-the-director CTA moves inside the "Recruteur
-  // seulement" expanded sub-form (non-blocking, optional).
-  const showInvite = (!isSchool && !isCegep) || (isSchool && !schoolAdminState.hasPermanent);
-  // Interim now available for both school AND CÉGEP. Same gate :
-  // only when no permanent + no sitting interim already exists.
-  const showInterim = (isSchool || isCegep) && !schoolAdminState.hasPermanent && !schoolAdminState.hasInterim;
-  const showCoachOnly = isSchool;
-  const showRecruteurOnly = isCegep;
+  // Sprint coach-responsable-3 / cards-restructure-web — gate cartes
+  // école+league basé sur school_has_responsable (RPC 2a). Couvre PENDING
+  // + APPROVED. null = inconnu (loading/échec), true = oui, false = orphan.
+  // Sprint recruteur-finish-web-rpc : cegep rejoint le pattern 3 cartes.
+  const isSchoolOrLeague = isSchool || isLeague;
+  const isCardsContext = isSchool || isLeague || isCegep;
+  const [hasResponsable, setHasResponsable] = useState<boolean | null>(null);
+  const [responsableLoading, setResponsableLoading] = useState(false);
+  useEffect(() => {
+    if (!isCardsContext || !user.institution) {
+      setHasResponsable(null);
+      setResponsableLoading(false);
+      return;
+    }
+    const inst = user.institution as Record<string, unknown>;
+    const instName = inst?.name as string | undefined;
+    const instId   = inst?.id as string | undefined;
+    if (!instName && !instId) {
+      setHasResponsable(null);
+      setResponsableLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setResponsableLoading(true);
+    (async () => {
+      const supabase = createClient();
+      // Civil : LeagueCoachLeagueStep stash déjà institution.id.
+      // École : seulement institution.name → lookup schools by name.
+      let schoolId: string | null = instId || null;
+      if (!schoolId && instName) {
+        const { data: school } = await supabase.from("schools").select("id").eq("name", instName).maybeSingle();
+        if (cancelled) return;
+        schoolId = (school?.id as string) || null;
+      }
+      if (!schoolId) {
+        setHasResponsable(null);
+        setResponsableLoading(false);
+        return;
+      }
+      const { data, error } = await supabase.rpc("school_has_responsable", { p_school_id: schoolId });
+      if (cancelled) return;
+      if (error) {
+        console.error("[DirectorChoiceStep] school_has_responsable:", error);
+        setHasResponsable(null);
+      } else {
+        setHasResponsable(data === true);
+      }
+      setResponsableLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, [isCardsContext, user.institution]);
+
+  // mustBeResponsable : Coach autorisé UNIQUEMENT si hasResponsable===true
+  // confirmé. Couvre loading (null), échec RPC (null), orphan (false), club
+  // créé (false). Reset choice si mustBeResponsable bascule et 'coach' était
+  // sélectionné. Parité mobile civil-cards-restructure + school-cards-restructure
+  // + recruteur-onboarding-mobile (cegep depuis recruteur-finish-web-rpc).
+  const mustBeResponsable = isCardsContext && hasResponsable !== true;
+  useEffect(() => {
+    if (mustBeResponsable && (choice === "coach" || choice === "invite" || choice === "coach_only")) {
+      setChoice("");
+      setInviteEmail("");
+      setRprpConsent(false);
+    }
+  }, [mustBeResponsable, choice]);
+
+  // Show* : structure 3 cartes pour school+league+cegep (self/interim/coach).
+  // Le cegep a rejoint le pattern depuis recruteur-finish-web-rpc (3e carte
+  // libellée "Recruteur seulement" — voir render). recruteur_only retiré
+  // (carte legacy remplacée par showCoach).
+  const showSelf = true;     // Toujours visible (les 3 contextes)
+  const showInvite = false;  // Retiré (carte legacy, remplacée par invite optionnel sous coach)
+  const showInterim = true;  // Toujours visible (les 3 contextes — civil-parity-rpc accepte interim)
+  const showCoachOnly = false; // Retiré (carte legacy)
+  const showRecruteurOnly = false; // Retiré (remplacée par showCoach avec label "Recruteur seulement" pour cegep)
+  const showCoach = isCardsContext; // 3e carte unifiée — label change selon contexte (Entraîneur / Coach / Recruteur)
+
+  const disableCoach = mustBeResponsable;
+
+  // Anciennes cartes "invite" + "coach_only" retirées de school+league
+  // (showInvite=false, showCoachOnly=false). Markup conservé pour ne pas
+  // toucher cegep ; ces deux constants restent à false pour le markup mort.
+  const disableInvite = false;
+  const disableCoachOnly = false;
 
   const inputCls = "w-full bg-[#111317] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white placeholder:text-[#6B7280] focus:border-[#E63946] outline-none transition-colors";
   const labelCls = "block text-[10px] font-bold tracking-[0.25em] uppercase text-[#6B7280] mb-1.5";
@@ -1085,6 +1464,30 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
         pending_director_invite: null,
         rprp_consent: false,
       });
+    } else if (choice === "coach") {
+      // Sprint cards-restructure-web + recruteur-finish-web-rpc : 3e carte
+      // unifiée school+league+cegep. Optionnellement avec un email invite
+      // (rempli + valide → stash pending_director_invite ; sinon équivalent
+      // coach_only). Le finish() dérive director_choice via la présence
+      // d'invite vs coach_only — même mapping que l'école RPC.
+      const EMAIL_RE_LOCAL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      const inviteOk = !!inviteEmail && EMAIL_RE_LOCAL.test(inviteEmail.trim());
+      save({
+        [adminKey]: false,
+        [coachKey]: true,
+        [typeKey]: null,
+        pending_director_invite: inviteOk
+          ? {
+              email: inviteEmail.trim(),
+              firstName: inviteFirstName,
+              lastName: inviteLastName,
+              message: inviteMessage,
+              sent_at: new Date().toISOString(),
+              type: isCegep ? "cegep" : isLeague ? "league" : "school",
+            }
+          : null,
+        rprp_consent: false,
+      });
     } else if (choice === "recruteur_only") {
       // Item 11-Recruteur: explicit "Recruteur seulement" — no admin
       // claim filed. The optional invite sub-form below can populate
@@ -1112,22 +1515,35 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
         </p>
       </div>
 
-      {/* Loading state — block UI until we know which options to show.
-          Fires for both school and CÉGEP now that the pre-check runs
-          for both. */}
-      {(isSchool || isCegep) && schoolAdminState.loading ? (
+      {/* Loading state — CÉGEP uniquement (school+league : la carte Coach
+          est juste disabled pendant le chargement de school_has_responsable,
+          pas de blocking spinner). */}
+      {(isCegep && schoolAdminState.loading) ? (
         <div className="flex items-center justify-center py-8">
           <div className="w-6 h-6 border-2 border-[#E63946] border-t-transparent rounded-full animate-spin" />
         </div>
       ) : (
       <>
-      {/* Status hint when admin slot is already filled. */}
-      {(isSchool || isCegep) && schoolAdminState.hasPermanent && (
-        <div className="bg-[#1A1D24]/60 border border-white/[0.06] rounded-lg px-4 py-3 text-[12px] text-[#9CA3AF]">
-          Un directeur sportif est déjà en place pour {orgName}. Tu peux rejoindre l&apos;équipe comme {isCegep ? "recruteur" : "entraîneur"}.
+      {/* Sprint cards-restructure-web — Loi 25 : bannière contextuelle si
+          mustBeResponsable (école/club orphan, ou en cours de vérification). */}
+      {mustBeResponsable && (
+        <div className="bg-[#DAB65A]/[0.08] border border-[#DAB65A]/30 rounded-lg px-4 py-3 text-[13px] text-white/85 leading-relaxed">
+          {responsableLoading ? (
+            <>Vérification en cours… si {isCegep ? "ce CÉGEP" : isLeague ? "ce club" : "cette école"} n&apos;a pas encore de responsable sur Nexus, tu devras attester l&apos;être pour rejoindre la plateforme (Loi 25).</>
+          ) : (
+            <>{isCegep ? "Ce CÉGEP" : isLeague ? "Ce club" : "Cette école"} n&apos;a pas encore de responsable sur Nexus. Pour qu&apos;{isCegep ? "un CÉGEP" : isLeague ? "un club" : "une école"} rejoigne la plateforme, un {isCegep ? "recruteur" : "coach"} doit attester être responsable du programme (Loi 25). Si c&apos;est toi, choisis «&nbsp;C&apos;est moi&nbsp;» ou «&nbsp;Je serai intérimaire&nbsp;». Sinon, demande à la personne responsable de s&apos;inscrire en premier.</>
+          )}
         </div>
       )}
-      {(isSchool || isCegep) && !schoolAdminState.hasPermanent && schoolAdminState.hasInterim && (
+
+      {/* Status hint when admin slot is already filled — CÉGEP only
+          (école est gérée par la bannière orpheline + admin_claims). */}
+      {isCegep && schoolAdminState.hasPermanent && (
+        <div className="bg-[#1A1D24]/60 border border-white/[0.06] rounded-lg px-4 py-3 text-[12px] text-[#9CA3AF]">
+          Un directeur sportif est déjà en place pour {orgName}. Tu peux rejoindre l&apos;équipe comme recruteur.
+        </div>
+      )}
+      {isCegep && !schoolAdminState.hasPermanent && schoolAdminState.hasInterim && (
         <div className="bg-[#1A1D24]/60 border border-white/[0.06] rounded-lg px-4 py-3 text-[12px] text-[#9CA3AF]">
           Un directeur intérimaire est en place. Si tu deviens directeur permanent, il sera rétrogradé automatiquement.
         </div>
@@ -1138,7 +1554,7 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
         2: "sm:grid-cols-2",
         3: "sm:grid-cols-3",
         4: "sm:grid-cols-4",
-      } as Record<number, string>)[[showSelf, showInvite, showInterim, showCoachOnly, showRecruteurOnly].filter(Boolean).length || 1]}`}>
+      } as Record<number, string>)[[showSelf, showInvite, showInterim, showCoachOnly, showRecruteurOnly, showCoach].filter(Boolean).length || 1]}`}>
         {/* Card 1: C'EST MOI */}
         {showSelf && (
         <button
@@ -1164,20 +1580,25 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
         {showInvite && (
         <button
           type="button"
-          onClick={() => setChoice("invite")}
+          disabled={disableInvite}
+          onClick={() => { if (disableInvite) return; setChoice("invite"); }}
           className={`flex flex-col items-center gap-3 p-5 rounded-xl border transition-all text-center ${
-            choice === "invite"
-              ? "border-[#E63946] bg-[rgba(230,57,70,0.08)]"
-              : "border-white/10 hover:border-white/20"
+            disableInvite
+              ? "border-white/[0.04] bg-[#1A1D24]/40 opacity-40 cursor-not-allowed"
+              : choice === "invite"
+                ? "border-[#E63946] bg-[rgba(230,57,70,0.08)]"
+                : "border-white/10 hover:border-white/20"
           }`}
         >
-          <div className={`w-12 h-12 rounded-full flex items-center justify-center ${choice === "invite" ? "bg-[#E63946]/15" : "bg-[#1A1D24]"}`}>
+          <div className={`w-12 h-12 rounded-full flex items-center justify-center ${choice === "invite" && !disableInvite ? "bg-[#E63946]/15" : "bg-[#1A1D24]"}`}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="8.5" cy="7" r="4" /><line x1="20" y1="8" x2="20" y2="14" /><line x1="23" y1="11" x2="17" y2="11" />
             </svg>
           </div>
           <span className="font-head font-black text-[13px] uppercase tracking-[0.1em] text-white">Inviter quelqu&apos;un</span>
-          <span className="text-[11px] text-[#6B7280] leading-snug">J&apos;enverrai une invitation au {roleLabel}</span>
+          <span className="text-[11px] text-[#6B7280] leading-snug">
+            {disableInvite ? "Indisponible — école sans responsable." : <>J&apos;enverrai une invitation au {roleLabel}</>}
+          </span>
         </button>
         )}
 
@@ -1211,21 +1632,26 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
         {showCoachOnly && (
           <button
             type="button"
-            onClick={() => setChoice("coach_only")}
+            disabled={disableCoachOnly}
+            onClick={() => { if (disableCoachOnly) return; setChoice("coach_only"); }}
             className={`flex flex-col items-center gap-3 p-5 rounded-xl border transition-all text-center ${
-              choice === "coach_only"
-                ? "border-[#E63946] bg-[rgba(230,57,70,0.08)]"
-                : "border-white/10 hover:border-white/20"
+              disableCoachOnly
+                ? "border-white/[0.04] bg-[#1A1D24]/40 opacity-40 cursor-not-allowed"
+                : choice === "coach_only"
+                  ? "border-[#E63946] bg-[rgba(230,57,70,0.08)]"
+                  : "border-white/10 hover:border-white/20"
             }`}
           >
-            <div className={`w-12 h-12 rounded-full flex items-center justify-center ${choice === "coach_only" ? "bg-[#3B82F6]/20" : "bg-[#1A1D24]"}`}>
+            <div className={`w-12 h-12 rounded-full flex items-center justify-center ${choice === "coach_only" && !disableCoachOnly ? "bg-[#3B82F6]/20" : "bg-[#1A1D24]"}`}>
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
                 <circle cx="12" cy="7" r="4" />
               </svg>
             </div>
             <span className="font-head font-black text-[13px] uppercase tracking-[0.1em] text-white">Entraîneur seulement</span>
-            <span className="text-[11px] text-[#6B7280] leading-snug">Pas de responsabilité administrative pour l&apos;instant — je m&apos;occupe juste de mes athlètes</span>
+            <span className="text-[11px] text-[#6B7280] leading-snug">
+              {disableCoachOnly ? "Indisponible — école sans responsable." : "Pas de responsabilité administrative pour l'instant — je m'occupe juste de mes athlètes"}
+            </span>
           </button>
         )}
 
@@ -1248,6 +1674,38 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
             </div>
             <span className="font-head font-black text-[13px] uppercase tracking-[0.1em] text-white">Recruteur seulement</span>
             <span className="text-[11px] text-[#6B7280] leading-snug">Pas de responsabilité administrative pour l&apos;instant — je m&apos;occupe juste de mon recrutement</span>
+          </button>
+        )}
+
+        {/* Card 6 (NEW): COACH — school+league. Remplace ENTRAÎNEUR SEULEMENT
+            + INVITER (invite devient un champ optionnel sous cette carte). */}
+        {showCoach && (
+          <button
+            type="button"
+            disabled={disableCoach}
+            onClick={() => { if (disableCoach) return; setChoice("coach"); }}
+            className={`flex flex-col items-center gap-3 p-5 rounded-xl border transition-all text-center ${
+              disableCoach
+                ? "border-white/[0.04] bg-[#1A1D24]/40 opacity-40 cursor-not-allowed"
+                : choice === "coach"
+                  ? "border-[#E63946] bg-[rgba(230,57,70,0.08)]"
+                  : "border-white/10 hover:border-white/20"
+            }`}
+          >
+            <div className={`w-12 h-12 rounded-full flex items-center justify-center ${choice === "coach" && !disableCoach ? "bg-[#3B82F6]/20" : "bg-[#1A1D24]"}`}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
+            </div>
+            <span className="font-head font-black text-[13px] uppercase tracking-[0.1em] text-white">
+              {isCegep ? "Recruteur seulement" : isLeague ? "Coach" : "Entraîneur seulement"}
+            </span>
+            <span className="text-[11px] text-[#6B7280] leading-snug">
+              {disableCoach
+                ? (responsableLoading ? `Vérification du responsable…` : `Indisponible — ${isCegep ? "CÉGEP" : isLeague ? "club" : "école"} sans responsable.`)
+                : <>Je suis {isCegep ? "recruteur" : isLeague ? "coach" : "entraîneur"} — un autre est ou sera {roleLabel}.</>}
+            </span>
           </button>
         )}
       </div>
@@ -1299,8 +1757,34 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
         </div>
       )}
 
-      {/* INTÉRIMAIRE expanded — renders for both school and CÉGEP */}
-      {choice === "interim" && (type === "school" || type === "cegep") && (
+      {/* COACH expanded (school+league+cegep) — invite email optionnel.
+          Pour cegep, on parle de "responsable de programme" via roleLabel
+          (déjà adapté en haut du composant). */}
+      {choice === "coach" && isCardsContext && (
+        <div className="animate-fade-slide-down space-y-3 bg-[#111317]/60 rounded-xl p-5 border border-white/5">
+          <p className="text-[12px] text-[#9CA3AF] leading-relaxed">
+            Tu seras {isCegep ? "recruteur" : isLeague ? "coach" : "entraîneur"} sur Nexus. Tu peux optionnellement inviter le {roleLabel} par courriel — on lui enverra un lien pour qu&apos;il revendique le rôle.
+          </p>
+          <div>
+            <label className={labelCls}>Courriel du {roleLabel} (optionnel)</label>
+            <input
+              type="email"
+              placeholder={isCegep ? "responsable@cegep.qc.ca" : isLeague ? "responsable@club.qc.ca" : `${roleLabel}@ecole.qc.ca`}
+              value={inviteEmail}
+              onChange={(e) => setInviteEmail(e.target.value)}
+              className={inputCls}
+            />
+            <p className="text-[10px] text-[#6B7280] mt-1">
+              {inviteEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(inviteEmail.trim())
+                ? "Courriel invalide."
+                : "Laisse vide si tu ne sais pas qui contacter."}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* INTÉRIMAIRE expanded — école, CÉGEP, et league (civil-parity-rpc). */}
+      {choice === "interim" && (type === "school" || type === "cegep" || type === "league") && (
         <div className="animate-fade-slide-down space-y-4 bg-[#111317]/60 rounded-xl p-5 border border-white/5">
           <div className="flex items-start gap-3">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5">
@@ -2193,8 +2677,10 @@ function RecruiterStep({ step, user, save }: { step: number; user: NexusUser; sa
   // pick lives in localStorage as `primary_team` until finish() writes
   // it to users.primary_team_id.
   if (step === 2) return <RecruiterProgramStep user={user} save={save} />;
-  if (step === 3) return <DirectorChoiceStep user={user} save={save} type="cegep" />;
-  return <RecruiterCriteria user={user} save={save} />;
+  // Sprint recruteur-finish-web-rpc — step 3 = DirectorChoiceStep cegep
+  // (3 cartes pattern unifié) ; le step Critères a été retiré. Le composant
+  // RecruiterCriteria reste pour /recruteur/parametres (post-onboarding).
+  return <DirectorChoiceStep user={user} save={save} type="cegep" />;
 }
 
 /* ── Recruiter profile ── */
@@ -3064,13 +3550,15 @@ function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Part
         return;
       }
 
-      // 3. INSERT school_coaches (institution level, role=DIRECTEUR
-      //    for the creator — they own the civil league row) and
-      //    team_coaches (team level, role=head_coach).
+      // 3. INSERT school_coaches (institution level, role='COACH').
+      //    Sprint cards-restructure-web : plus jamais DIRECTEUR direct ici
+      //    (l'auto-promotion est fermée — le claim DIRECTEUR/INTERIM passe
+      //    par admin_claims modéré via la RPC finish_coach_civil_onboarding
+      //    appelée au finish()). L'UPSERT à finish() est idempotent.
       const { error: scError } = await supabase.from("school_coaches").insert({
         coach_id: authUser.id,
         school_id: schoolId,
-        role: "DIRECTEUR",
+        role: "COACH",
       });
       if (scError && scError.code !== "23505") {
         // Non-critical for proceeding; the team exists and the

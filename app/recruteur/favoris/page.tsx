@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useMemo, useCallback, useEffect, Suspense } from "react";
+import { useState, useMemo, useCallback, Suspense } from "react";
 import Link from "next/link";
+import { useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
 import type { GlobalRecruitmentStatus } from "@/lib/types/models";
@@ -10,6 +11,11 @@ import { useSubscription } from "@/lib/hooks/useSubscription";
 import { isValidationExpired } from "@/lib/utils/profileValidation";
 import AthletePhoto from "@/components/shared/AthletePhoto";
 import AthletePhotoFill from "@/components/shared/AthletePhotoFill";
+import { useFavoriteAthletes } from "@/lib/queries/recruiter/useFavoriteAthletes";
+import { HeartButton } from "@/components/mobile/HeartButton";
+import { RecruteurFavorisMobile } from "@/components/shared/RecruteurFavorisMobile";
+
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
 /* ═══════════════════════════════════════════════════════════════
    Mes Favoris — Grid/List view with filters
@@ -150,9 +156,8 @@ function FavoriGridCard({ a, onUnfavorite }: { a: FavoriAthlete; onUnfavorite: (
         <div className="flex items-center justify-between pt-3 mt-auto border-t border-[#2D3748]/60">
           <span className="text-[12px] text-[#6b7280]">{a.region}</span>
           <div className="flex items-center gap-3">
-            <button type="button" onClick={() => onUnfavorite(a.id)} className="text-[#E63946] hover:text-[#6b7280] transition-colors" title="Retirer des favoris">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" /></svg>
-            </button>
+            {/* HeartButton premium (iter 5.4) */}
+            <HeartButton isFavorited={true} onToggle={() => onUnfavorite(a.id)} size="sm" />
             <Link href={`/recruteur/athletes/${a.id}`} className="text-[13px] font-semibold text-[#9CA3AF] hover:text-white transition-colors flex items-center gap-1">
               Voir <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M5 12h14" /><path d="M12 5l7 7-7 7" /></svg>
             </Link>
@@ -241,10 +246,10 @@ function FavoriListRow({ a, onUnfavorite }: { a: FavoriAthlete; onUnfavorite: (i
       {/* Spacer */}
       <div className="flex-1" />
 
-      {/* Unfavorite + view */}
-      <button type="button" onClick={() => onUnfavorite(a.id)} className="text-[#E63946] hover:text-[#6b7280] transition-colors shrink-0" title="Retirer des favoris">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" /></svg>
-      </button>
+      {/* HeartButton premium (iter 5.4) */}
+      <div className="shrink-0">
+        <HeartButton isFavorited={true} onToggle={() => onUnfavorite(a.id)} size="sm" />
+      </div>
       <Link href={`/recruteur/athletes/${a.id}`} className="text-[13px] font-bold text-[#E63946] hover:text-[#D42B22] transition-colors flex items-center gap-1 shrink-0">
         Voir <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M5 12h14" /><path d="M12 5l7 7-7 7" /></svg>
       </Link>
@@ -257,6 +262,8 @@ function FavoriListRow({ a, onUnfavorite }: { a: FavoriAthlete; onUnfavorite: (i
 ═══════════════════════════════════════════════════════════════ */
 
 export default function FavorisPage() {
+  // Iter 7.9 Section 8 — dispatch IS_CAPACITOR vers la version mobile dédiée.
+  if (IS_CAPACITOR) return <RecruteurFavorisMobile />;
   return (
     <Suspense fallback={<div className="px-6 sm:px-10 py-8 max-w-[1280px] mx-auto text-[#6b7280]">Chargement...</div>}>
       <FavorisContent />
@@ -266,8 +273,9 @@ export default function FavorisPage() {
 
 function FavorisContent() {
   const { maxFavorites } = useSubscription();
-  const [athletes, setAthletes] = useState<FavoriAthlete[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Migration TanStack (iter 5.3a) — fetch + transformation déléguées
+  const { athletes, isLoading: loading } = useFavoriteAthletes();
+  const queryClient = useQueryClient();
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [search, setSearch] = useState("");
   const [sport, setSport] = useState("");
@@ -279,123 +287,7 @@ function FavorisContent() {
   const [withSportBadge, setWithSportBadge] = useState(false);
   const [withAcademicBadge, setWithAcademicBadge] = useState(false);
 
-  useEffect(() => {
-    loadFavorites();
-  }, []);
-
-  async function loadFavorites() {
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setLoading(false); return; }
-
-    const { data: favData } = await supabase
-      .from("recruiter_favorites")
-      .select(`
-        id, athlete_id, created_at,
-        athletes!athlete_id(
-          id, first_name, last_name, photo_url, verified, last_profile_validation,
-          video_faits_saillants_url, annee_diplomation,
-          cote_globale_entraineur, numero_jersey, taille_pieds, taille_pouces, poids_lbs,
-          recruitment_status, committed_school_id, open_to_offers, school_id,
-          sports!sport_id(nom),
-          positions!position_id(nom, abreviation),
-          schools!school_id(name, region),
-          committed_school:schools!committed_school_id(name),
-          evaluations(cote_globale, distinctions)
-        )
-      `)
-      .eq("recruiter_id", user.id);
-
-    if (!favData || favData.length === 0) {
-      setAthletes([]);
-      setLoading(false);
-      return;
-    }
-
-    const athleteIds = favData.map((f: Record<string, unknown>) => {
-      const aRaw = f.athletes;
-      const a = (Array.isArray(aRaw) ? aRaw[0] : aRaw) as Record<string, unknown> | null;
-      return (a?.id as string) || (f.athlete_id as string);
-    });
-
-    // Fav counts
-    const { data: favCountData } = await supabase
-      .from("recruiter_favorites")
-      .select("athlete_id")
-      .in("athlete_id", athleteIds);
-    const favCountMap = new Map<string, number>();
-    if (favCountData) {
-      for (const fc of favCountData) favCountMap.set(fc.athlete_id, (favCountMap.get(fc.athlete_id) || 0) + 1);
-    }
-
-    const badgeMap: Record<string, { label: string; icon: string }> = {
-      captain: { label: "Capitaine", icon: "shield" },
-      allstar: { label: "Équipe d'étoiles", icon: "star" },
-      team_leader: { label: "Leader", icon: "award" },
-    };
-
-    const now = Date.now();
-    const mapped: FavoriAthlete[] = favData.map((f: Record<string, unknown>) => {
-      const aRaw = f.athletes;
-      const a = (Array.isArray(aRaw) ? aRaw[0] : aRaw) as Record<string, unknown> | null;
-      const sportRel = a?.sports;
-      const sportObj = (Array.isArray(sportRel) ? sportRel[0] : sportRel) as { nom?: string } | null;
-      const posRel = a?.positions;
-      const pos = (Array.isArray(posRel) ? posRel[0] : posRel) as { abreviation?: string } | null;
-      const schoolRel = a?.schools;
-      const school = (Array.isArray(schoolRel) ? schoolRel[0] : schoolRel) as { name?: string; region?: string } | null;
-      const committedSchoolRel = a?.committed_school;
-      const committedSchool = (Array.isArray(committedSchoolRel) ? committedSchoolRel[0] : committedSchoolRel) as { name?: string } | null;
-      const evalRel = a?.evaluations;
-      const eval0 = (Array.isArray(evalRel) ? evalRel[0] : evalRel) as Record<string, unknown> | null;
-      const distinctions: string[] = (eval0?.distinctions as string[]) || [];
-
-      const athleteId = (a?.id as string) || (f.athlete_id as string);
-      const ft = a?.taille_pieds as number | null;
-      const inches = a?.taille_pouces as number | null;
-      const lbs = a?.poids_lbs as number | null;
-      const hwParts: string[] = [];
-      if (ft) hwParts.push(`${ft}'${inches || 0}"`);
-      if (lbs) hwParts.push(`${lbs} lbs`);
-
-      const daysIdle = Math.floor((now - new Date(f.created_at as string).getTime()) / 86400000);
-
-      return {
-        id: athleteId,
-        firstName: (a?.first_name as string) || "Athlète",
-        lastName: (a?.last_name as string) || "",
-        photo: (a?.photo_url as string) || "",
-        position: pos?.abreviation || "",
-        sport: (sportObj?.nom || "").toLowerCase().replace(/ /g, "_"),
-        sportName: sportObj?.nom || "",
-        school: school?.name || "",
-        region: school?.region || "",
-        graduationYear: (a?.annee_diplomation as number) || 0,
-        stars: (eval0?.cote_globale as number) ?? (a?.cote_globale_entraineur as number) ?? 0,
-        isVerified: !!(a?.verified),
-        lastValidation: (a?.last_profile_validation as string) || null,
-        hasVideo: !!(a?.video_faits_saillants_url),
-        heightWeight: hwParts.join(" · "),
-        favoritedAt: (f.created_at as string) || "",
-        pipelineStage: null,
-        pipelineMovedAt: null,
-        daysIdle,
-        favCount: favCountMap.get(athleteId) || 1,
-        jersey: a?.numero_jersey != null && a.numero_jersey !== "" ? String(a.numero_jersey) : "",
-        recruitmentStatus: (a?.recruitment_status as string) || "OUVERT",
-        committedSchoolName: committedSchool?.name || "",
-        openToOffers: (a?.open_to_offers as boolean | null) ?? null,
-        badges: distinctions
-          .filter((d) => d != null && badgeMap[d])
-          .map((d) => ({ badgeId: d, label: badgeMap[d].label, icon: badgeMap[d].icon })),
-        noTeam: !a?.school_id,
-      };
-    });
-
-    setAthletes(mapped);
-    setLoading(false);
-  }
-
+  // Mutation : retirer un favori + invalider les caches concernés (iter 5.3a)
   const handleUnfavorite = useCallback(async (athleteId: string) => {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -409,8 +301,11 @@ function FavorisContent() {
     if (existing) {
       await supabase.from("recruiter_favorites").delete().eq("id", existing.id);
     }
-    setAthletes(prev => prev.filter(a => a.id !== athleteId));
-  }, []);
+    // Invalidations TanStack : la liste des favoris + counts globaux + KPI dashboard
+    queryClient.invalidateQueries({ queryKey: ["favorites"] });
+    queryClient.invalidateQueries({ queryKey: ["favoriteCounts"] });
+    queryClient.invalidateQueries({ queryKey: ["dashboard", "kpi"] });
+  }, [queryClient]);
 
   // Derived filter options
   const sports = useMemo(() => {

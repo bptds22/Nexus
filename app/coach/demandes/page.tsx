@@ -8,6 +8,9 @@ import { STATUS_CONFIG, mapDbStatus, type ConversationThread, type ThreadStatus 
 import EntityLink from "@/components/shared/EntityLink";
 import AthletePhoto from "@/components/shared/AthletePhoto";
 import { createClient } from "@/lib/supabase/client";
+import { CoachDemandesMobile } from "@/components/shared/CoachDemandesMobile";
+
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
 /* ═══════════════════════════════════════════════════════════════
    Gérer les Demandes — Thread List
@@ -151,6 +154,12 @@ function ThreadCard({ thread: t }: { thread: ConversationThread }) {
 ═══════════════════════════════════════════════════════════════ */
 
 export default function DemandesPage() {
+  // Phase 2 — mobile early return AVANT le rendu desktop. Comme côté
+  // recruteur (cf. /recruteur/messages/page.tsx), la mobile possède
+  // son propre flux iOS (MessagesListShell + recruteur-first row).
+  // Pas de FeatureGate ici : coach Free CAN messaging (CLAUDE.md +
+  // useSubscription.ts can_receive_messages: true sur Free).
+  if (IS_CAPACITOR) return <CoachDemandesMobile />;
   return (
     <Suspense>
       <DemandesContent />

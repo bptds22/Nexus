@@ -4,6 +4,9 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { isValidationExpired } from "@/lib/utils/profileValidation";
+import AthleteDashboardMobile from "@/components/shared/AthleteDashboardMobile";
+
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
 /* ═══════════════════════════════════════════════════════════════
    Athlete Dashboard — personal, encouraging tone ("tu" everywhere)
@@ -56,6 +59,15 @@ const ACTIVITY_DOT: Record<ActivityItem["type"], string> = {
 };
 
 export default function AthleteDashboardPage() {
+  // Capacitor → mobile-native dashboard (Phase 1 re-skin onto shared
+  // coach/recruiter design primitives). Web (non-Capacitor) keeps its
+  // existing responsive layout below — proven reference, byte-for-byte
+  // unchanged.
+  if (IS_CAPACITOR) return <AthleteDashboardMobile />;
+  return <AthleteDashboardPageDesktop />;
+}
+
+function AthleteDashboardPageDesktop() {
   const [firstName, setFirstName] = useState<string>("");
   const [verified, setVerified] = useState<boolean>(false);
   const [profileCompletion, setProfileCompletion] = useState<number>(0);

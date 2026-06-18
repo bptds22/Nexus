@@ -208,7 +208,7 @@ export default function AthleteProfileView({
       {/* HERO */}
       <section className="flex flex-col lg:flex-row gap-8 lg:gap-12 items-stretch">
         <div className="shrink-0 flex justify-center lg:justify-start">
-          <PlayerCard a={a} />
+          <PlayerCard a={a} animate />
         </div>
         <div className="flex-1 min-w-0 lg:pt-2 space-y-5">
           <h1 className="font-head text-[36px] sm:text-[46px] font-black text-white uppercase tracking-tight leading-[0.92]">

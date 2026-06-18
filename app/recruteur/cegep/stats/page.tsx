@@ -451,8 +451,8 @@ function CegepStatsPage() {
         <KpiCard
           label="Contacts initiés"
           value={contactsCount}
-          iconBgColor="rgba(59,130,246,0.15)"
-          icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" /></svg>}
+          iconBgColor="rgba(34,197,94,0.15)"
+          icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" /></svg>}
         />
         <KpiCard
           label="Visites planifiées"

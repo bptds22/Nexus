@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import {
   Building2,
   ShieldCheck,
@@ -49,6 +50,8 @@ function isValidPersona(v: string | null): v is Persona {
 ══════════════════════════════════════════════════════════════ */
 
 export default function TarifsPage() {
+  // Mobile build (Capacitor): page exclue.
+  if (process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true") notFound();
   const { t } = useTranslation();
   const T = t.pricing;
   const [persona, setPersona] = useState<Persona>("recruteur");
@@ -73,6 +76,40 @@ export default function TarifsPage() {
 
   const tiers = getTiersForPersona(persona);
   const savingsPct = PERSONA_SAVINGS[persona];
+
+  const handleCheckout = async (tierId: string, cycle: Billing) => {
+    // Map tier ID → checkout tier value
+    const tierMap: Record<string, string> = {
+      rec_pro: "pro",
+      rec_allstar: "all_star",
+      "coach-pro": "pro",
+      coach_allstar: "all_star",
+      ath_pro: "pro",
+    };
+    const checkoutTier = tierMap[tierId];
+    if (!checkoutTier) return;
+
+    const res = await fetch("/api/stripe/checkout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tier: checkoutTier, cycle }),
+    });
+
+    if (res.status === 401) {
+      window.location.href = "/auth";
+      return;
+    }
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      console.error("[tarifs] checkout error:", err);
+      alert(err.error || "Erreur lors de la création du paiement. Réessayez.");
+      return;
+    }
+
+    const { url } = await res.json();
+    if (url) window.location.href = url;
+  };
 
   return (
     <div className="hero-playbook bg-[#111317] min-h-screen">
@@ -161,7 +198,7 @@ export default function TarifsPage() {
           ) : (
             /* 3 tiers (Recruteur, Coach) — Pro centered, Free left, All Star right */
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-stretch">
-              <PricingCard tier={tiers[1]} billing={billing} orderCls="order-1 md:order-2" cardLabels={T.card} />
+              <PricingCard tier={tiers[1]} billing={billing} orderCls="order-1 md:order-2" cardLabels={T.card} onCheckout={tiers[1].monthly > 0 ? handleCheckout : undefined} />
               <PricingCard tier={tiers[0]} billing={billing} orderCls="order-2 md:order-1" cardLabels={T.card} />
               <PricingCard tier={tiers[2]} billing={billing} orderCls="order-3 md:order-3" cardLabels={T.card} />
             </div>
@@ -243,12 +280,15 @@ function PricingCard({
   billing,
   orderCls,
   cardLabels,
+  onCheckout,
 }: {
   tier: Tier;
   billing: Billing;
   orderCls: string;
   cardLabels: Dictionary["pricing"]["card"];
+  onCheckout?: (tier: string, cycle: Billing) => Promise<void>;
 }) {
+  const [loading, setLoading] = useState(false);
   const isFree = tier.monthly === 0;
   const showAnnual = billing === "annual" && tier.annual > 0;
   // Big price always follows the billing toggle so the user sees the actual
@@ -335,12 +375,30 @@ function PricingCard({
         })}
       </ul>
 
-      <Link
-        href={tier.ctaHref}
-        className={`mt-6 inline-flex items-center justify-center w-full h-11 rounded-lg text-[12px] font-bold uppercase tracking-wider transition-colors ${tier.ctaClass}`}
-      >
-        {tier.ctaLabel}
-      </Link>
+      {onCheckout ? (
+        <button
+          type="button"
+          disabled={loading}
+          onClick={async () => {
+            setLoading(true);
+            try {
+              await onCheckout(tier.id, billing);
+            } finally {
+              setLoading(false);
+            }
+          }}
+          className={`mt-6 inline-flex items-center justify-center w-full h-11 rounded-lg text-[12px] font-bold uppercase tracking-wider transition-colors disabled:opacity-50 ${tier.ctaClass}`}
+        >
+          {loading ? "Redirection..." : tier.ctaLabel}
+        </button>
+      ) : (
+        <Link
+          href={tier.ctaHref}
+          className={`mt-6 inline-flex items-center justify-center w-full h-11 rounded-lg text-[12px] font-bold uppercase tracking-wider transition-colors ${tier.ctaClass}`}
+        >
+          {tier.ctaLabel}
+        </Link>
+      )}
     </div>
   );
 }

@@ -12,6 +12,10 @@ import SchoolSelect from "@/components/ui/SchoolSelect";
 import CoachPicker from "@/components/coach/CoachPicker";
 import PartnerVisibilityConsentCard from "@/components/shared/PartnerVisibilityConsentCard";
 import ClaimProfileModal, { type OrphanProfile } from "@/components/auth/ClaimProfileModal";
+import { AthleteOnboardingMobile } from "@/components/shared/AthleteOnboardingMobile";
+import { SUBJECTS, HONORS, CEGEP_REGIONS, programmeCegepArray } from "@/lib/config/academicOptions";
+
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
 const SPORTS = [
   "Football", "Basketball", "Soccer", "Hockey", "Volleyball",
@@ -34,15 +38,10 @@ const STEPS = [
   { number: 4, name: "Sport & Médias" },
 ];
 
-const CEGEP_REGIONS = [
-  "Montréal", "Québec", "Laurentides", "Lanaudière",
-  "Montérégie", "Outaouais", "Estrie", "Sherbrooke",
-];
-
-const SUBJECTS = [
-  "Éducation physique", "Mathématiques", "Sciences", "Français",
-  "Anglais", "Histoire", "Arts", "Informatique",
-];
+// CEGEP_REGIONS, SUBJECTS, HONORS are imported from @/lib/config/academicOptions
+// so the athlete-onboarding pill grids stay in sync with the athlete-profile
+// editor's chip blocks (one source for the option labels stored as JSONB
+// values in athletes.{matieres_fortes,mentions_academiques,regions_cegep_preferees}).
 
 const cardCls = "bg-[#1A1D24] rounded-xl border border-[#2D3748] p-6 sm:p-8";
 const inputCls = "w-full h-11 px-4 bg-[#111317] border border-[#2D3748] rounded-lg text-[14px] text-white placeholder:text-[#4a4d56] focus:border-[#E63946] outline-none transition-colors";
@@ -417,6 +416,15 @@ function SchoolTeamPicker({
 }
 
 export default function AthleteOnboardingPage() {
+  // Iter 7.50-a — Capacitor (mobile natif) route vers le nouveau flow
+  // minimal "Construis ta carte" (3 écrans). Le desktop ci-dessous reste
+  // byte-identique : aucune ligne supprimée/modifiée.
+  if (IS_CAPACITOR) return <AthleteOnboardingMobile />;
+
+  return <AthleteOnboardingDesktop />;
+}
+
+function AthleteOnboardingDesktop() {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
@@ -810,12 +818,7 @@ export default function AthleteOnboardingPage() {
         ...payload,
         moyenne_generale: gpa ? parseFloat(gpa) : null,
         matieres_fortes: strongSubjects, mentions_academiques: academicHonors,
-        programme_cegep_vise: (() => {
-          if (cegepType === "dec_general") return ["DEC général"];
-          if (cegepType === "technique" && cegepProgramDetail) return ["Technique — " + cegepProgramDetail];
-          if (cegepType === "technique") return ["Programme technique"];
-          return [];
-        })(),
+        programme_cegep_vise: programmeCegepArray(cegepType, cegepProgramDetail),
         ouvert_cegep_prive: openToPrivate, ouvert_cegep_anglophone: openToAnglophone,
         pret_changer_region: openToRelocate, regions_cegep_preferees: cegepRegions,
       };
@@ -905,12 +908,7 @@ export default function AthleteOnboardingPage() {
       moyenne_generale: gpa ? parseFloat(gpa) : null,
       matieres_fortes: strongSubjects,
       mentions_academiques: academicHonors,
-      programme_cegep_vise: (() => {
-        if (cegepType === "dec_general") return ["DEC général"];
-        if (cegepType === "technique" && cegepProgramDetail) return ["Technique — " + cegepProgramDetail];
-        if (cegepType === "technique") return ["Programme technique"];
-        return [];
-      })(),
+      programme_cegep_vise: programmeCegepArray(cegepType, cegepProgramDetail),
       ouvert_cegep_prive: openToPrivate,
       ouvert_cegep_anglophone: openToAnglophone,
       pret_changer_region: openToRelocate,
@@ -1245,7 +1243,7 @@ export default function AthleteOnboardingPage() {
 
             <div className={sectionTitle}><div className="w-0.5 h-4 bg-[#E63946] rounded-full" />Mentions académiques</div>
             <div className="flex flex-wrap gap-2 mb-5">
-              {["Tableau d'honneur", "Bourse sportive", "Étudiant-athlète de l'année", "Mention du directeur"].map((h) => (
+              {HONORS.map((h) => (
                 <button key={h} type="button" onClick={() => toggleInArray(academicHonors, h, setAcademicHonors)} className={pillCls(academicHonors.includes(h))}>{h}</button>
               ))}
             </div>

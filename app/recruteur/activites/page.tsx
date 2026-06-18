@@ -3,8 +3,11 @@
 import FeatureGate from "@/components/subscription/FeatureGate";
 import { useState, useEffect } from "react";
 import ActivityFeedFull from "@/app/components/activities/ActivityFeedFull";
+import { RecruteurActivitesMobile } from "@/components/shared/RecruteurActivitesMobile";
 import type { Activity, ActivityType } from "@/lib/types/activity";
 import { createClient } from "@/lib/supabase/client";
+
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
 /* ═══════════════════════════════════════════════════════════════
    Recruiter Activités — wired to recruiter_activity_log
@@ -46,6 +49,9 @@ const ACTION_LABELS: Record<string, { ctaLabel: string; ctaBase: string }> = {
 };
 
 export default function Page() {
+  // Iter 7.30b — dispatch vers le feed mobile dédié. Le composant mobile gère
+  // son propre FeatureGate (cohérent avec les autres dispatches).
+  if (IS_CAPACITOR) return <RecruteurActivitesMobile />;
   return (
     <FeatureGate feature="activity_feed" requiredTier="pro">
       <RecruteurActivitesPageContent />

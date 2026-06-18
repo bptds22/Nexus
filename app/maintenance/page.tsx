@@ -2,7 +2,6 @@ import { createClient } from "@/lib/supabase/server";
 import NexusLogo from "@/components/ui/NexusLogo";
 import PlaybookBackground from "@/app/components/PlaybookBackground";
 
-export const dynamic = "force-dynamic";
 export const metadata = { title: "Maintenance — Nexus" };
 
 /* ─────────────────────────────────────────────────────────────────

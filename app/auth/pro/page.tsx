@@ -1,12 +1,16 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import NexusLogo from "@/components/ui/NexusLogo";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import PlaybookBackground from "@/app/components/PlaybookBackground";
 import ErrorToast, { type ErrorToastData } from "@/components/ui/ErrorToast";
 import { translateAuthError } from "@/lib/utils/translateAuthError";
+import {
+  persistInitialConsents,
+  buildConsentMetadata,
+} from "@/lib/legal/persistInitialConsents";
 
 /* ─────────────────────────────────────────────────────────────────
    Nexus — Pro Signup (Coach / Recruiter / Coordinator)
@@ -72,8 +76,29 @@ function ProSignupContent() {
   const invitationToken = searchParams.get("invitation_token") ?? "";
   const lockedEmail = invitationToken ? searchParams.get("email") ?? "" : "";
   const [selectedRole, setSelectedRole] = useState<ProRole | "">("");
+
+  // Iter 7.50-a-bis-2a — pré-sélection role via query param (additif).
+  // Lecture au mount : si ?role=scolaire|collegial|ligue_civile, on
+  // pré-coche la carte correspondante. Permet au role-picker du
+  // SignupMobile de router vers /auth/pro?role=X et de faire arriver
+  // l'utilisateur directement sur le form au lieu de re-cliquer une
+  // carte. Param absent ou invalide → ignoré (comportement actuel).
+  useEffect(() => {
+    const r = searchParams.get("role");
+    if (r === "scolaire" || r === "collegial" || r === "ligue_civile") {
+      setSelectedRole(r);
+    }
+    // searchParams ne change pas après mount sur cette page (pas de
+    // navigation interne qui le modifie) ; lecture one-shot.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  // Iter coach-dob-migration — date de naissance capturée aussi sur le
+  // web (parité avec SignupMobile). Stash dans raw_user_meta_data via
+  // signUp() extraMetadata ; le trigger handle_new_auth_user (étendu)
+  // l'écrit dans users.date_naissance via cast safe ISO YYYY-MM-DD.
+  const [birthdate, setBirthdate] = useState("");
   const [email, setEmail] = useState(lockedEmail);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -88,7 +113,7 @@ function ProSignupContent() {
 
   const pwdMeetsMin = password.length >= 8;
   const pwdMismatch = confirmPassword.length > 0 && password !== confirmPassword;
-  const signupValid = firstName && lastName && email && pwdMeetsMin && !pwdMismatch && selectedRole && consentPolicy && consentData;
+  const signupValid = firstName && lastName && email && pwdMeetsMin && !pwdMismatch && selectedRole && birthdate && consentPolicy && consentData;
 
   const fieldErr = (filled: boolean) => submitted && !filled ? "border-[#EF4444]" : "";
 
@@ -110,6 +135,15 @@ function ProSignupContent() {
     const { signUp } = await import('@/lib/supabase/auth.actions');
     const role = ROLE_MAP[selectedRole as ProRole];
 
+    // Iter 7.53 (dette Loi 25) — consents transmis via extraMetadata pour
+    // traçabilité raw_user_meta_data (preuve légale, garantie même si
+    // l'UPDATE app-side ci-dessous échoue). DIAG 7.45 §B.3.
+    const consentMeta = buildConsentMetadata({
+      policy: consentPolicy,
+      data: consentData,
+      marketing: consentMarketing,
+    });
+
     // selectedRole carries the scolaire/collegial/ligue_civile
     // discriminator that the wizard reads via users.context to
     // branch the coach onboarding flow into the civil-league variant
@@ -117,19 +151,40 @@ function ProSignupContent() {
     // wizard now switches on context directly). Without this
     // pass-through, the "Ligue ou club sportif" choice silently
     // collapses to école and the league branch is unreachable.
-    const { error } = await signUp(
+    const { data, error } = await signUp(
       email,
       password,
       role,
       firstName,
       lastName,
-      invitationToken ? { invitation_token: invitationToken } : undefined,
+      {
+        ...(invitationToken ? { invitation_token: invitationToken } : {}),
+        ...consentMeta,
+        // Iter coach-dob-migration — date_naissance stashée dans
+        // raw_user_meta_data. Trigger handle_new_auth_user (étendu)
+        // écrit la colonne users.date_naissance via cast safe ISO.
+        ...(birthdate ? { date_naissance: birthdate } : {}),
+      },
       selectedRole as ProRole,
     );
 
     if (error) {
       setErrorToast({ message: translateAuthError(error.message), showUpgrade: false });
       return;
+    }
+
+    // Iter 7.53 — UPDATE app-side best-effort de users.privacy_preferences.
+    // COALESCE anti-écrasement (helper). Non-bloquant : trace garantie
+    // dans raw_user_meta_data via extraMetadata même si l'UPDATE rate.
+    if (data?.user?.id) {
+      const persistResult = await persistInitialConsents(data.user.id, {
+        policy: consentPolicy,
+        data: consentData,
+        marketing: consentMarketing,
+      });
+      if (!persistResult.ok) {
+        console.warn("[signup consents pro] persist failed:", persistResult.error);
+      }
     }
 
     router.push('/onboarding');
@@ -229,6 +284,22 @@ function ProSignupContent() {
                       <EyeToggle show={showConfirmPwd} onClick={() => setShowConfirmPwd(!showConfirmPwd)} />
                     </div>
                     {pwdMismatch && <p className="text-xs mt-1.5 text-[#EF4444]">Les mots de passe ne correspondent pas</p>}
+                  </div>
+
+                  {/* Iter coach-dob-migration — date de naissance (parité
+                      mobile). Required. Stashée dans raw_user_meta_data
+                      via signUp() → persistée par le trigger dans
+                      users.date_naissance (cast safe ISO YYYY-MM-DD). */}
+                  <div>
+                    <label htmlFor="pro-signup-birthdate" className={`${label} text-[#9CA3AF] mb-1.5 block`}>Date de naissance <span className="text-[#EF4444]">*</span></label>
+                    <input
+                      id="pro-signup-birthdate"
+                      type="date"
+                      title="Date de naissance"
+                      value={birthdate}
+                      onChange={(e) => setBirthdate(e.target.value)}
+                      className={`${inputClass} ${fieldErr(!!birthdate)}`}
+                    />
                   </div>
 
                   {/* Consent checkboxes */}

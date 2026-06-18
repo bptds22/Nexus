@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useSubscription, type SubscriptionTier } from "@/lib/hooks/useSubscription";
 
@@ -11,7 +11,15 @@ import { useSubscription, type SubscriptionTier } from "@/lib/hooks/useSubscript
    switch the current user's subscriptions.tier to free/pro/all_star.
    Writes via upsert on subscriptions(user_id) and refreshes the
    hook state so gated UI reacts immediately.
+
+   Iter 7.61b — masquable pour confort de test visuel mobile. Un "×"
+   replie la toolbar et persiste l'état en sessionStorage (clé
+   nx-devbar-hidden). Quand masquée, un petit "DEV" flottant apparaît
+   en remplacement et restaure la toolbar au tap. Recharger la page
+   réinitialise (sessionStorage = vie d'un onglet).
 ═══════════════════════════════════════════════════════════════ */
+
+const HIDDEN_STORAGE_KEY = "nx-devbar-hidden";
 
 const ALL_TIERS: { value: SubscriptionTier; label: string; bg: string; fg: string }[] = [
   { value: "free",     label: "Free",     bg: "bg-white/10",          fg: "text-white" },
@@ -33,10 +41,47 @@ function tiersForRole(role: string): typeof ALL_TIERS {
 export default function DevTierSwitcher() {
   const { tier, role, subscription, refresh, loading } = useSubscription();
   const [busy, setBusy] = useState(false);
+  // hidden state — hydraté côté client uniquement (SSR-safe).
+  const [hidden, setHidden] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    setHidden(window.sessionStorage.getItem(HIDDEN_STORAGE_KEY) === "1");
+  }, []);
+
+  function hide() {
+    setHidden(true);
+    if (typeof window !== "undefined") {
+      window.sessionStorage.setItem(HIDDEN_STORAGE_KEY, "1");
+    }
+  }
+
+  function show() {
+    setHidden(false);
+    if (typeof window !== "undefined") {
+      window.sessionStorage.removeItem(HIDDEN_STORAGE_KEY);
+    }
+  }
 
   if (process.env.NODE_ENV !== "development") return null;
   if (loading) return null;
   if (!subscription) return null;
+
+  // Masquée → petit dot flottant "DEV" pour restaurer.
+  if (hidden) {
+    return (
+      <div className="fixed bottom-4 right-4 z-[100] pointer-events-none">
+        <button
+          type="button"
+          onClick={show}
+          className="pointer-events-auto bg-[#1A1D24]/85 backdrop-blur-sm border border-white/10 rounded-full w-9 h-9 flex items-center justify-center text-[10px] font-bold text-white/60 uppercase tracking-wider hover:text-white"
+          aria-label="Afficher le DevTierSwitcher"
+        >
+          Dev
+        </button>
+      </div>
+    );
+  }
 
   async function setTier(next: SubscriptionTier) {
     if (busy || !subscription) return;
@@ -84,6 +129,18 @@ export default function DevTierSwitcher() {
             </button>
           );
         })}
+        {/* Iter 7.61b — bouton "×" pour masquer (session). Restauration
+            via le petit dot "DEV" qui apparaît à sa place. */}
+        <button
+          type="button"
+          onClick={hide}
+          aria-label="Masquer le DevTierSwitcher"
+          className="ml-1 w-5 h-5 rounded-full flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-colors"
+        >
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
+            <path d="M18 6L6 18" /><path d="M6 6l12 12" />
+          </svg>
+        </button>
       </div>
     </div>
   );

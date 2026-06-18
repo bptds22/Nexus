@@ -260,7 +260,30 @@ export function buildFormFromRaw(raw: Record<string, unknown>): Record<string, u
       openToCoaching: !!(raw.ouvert_entraineur_cegep),
     },
     scouting: {
-      evalMode: "simple",
+      /* Mirror the apply_approved_suggestion trigger's "detailed wins"
+         rule at load time. If any of the 14 trait columns is non-zero,
+         this athlete has detailed evaluation data already — open the
+         wizard in detailed mode so the coach sees the traits + the
+         auto-averaged cote rather than only the simple StarRow (which
+         in the old "always simple at load" default hid the detailed
+         data and made it easy to silently overwrite via a flat cote).
+         No-traits athletes still open in simple mode unchanged. */
+      evalMode: eval0 && (
+        ((eval0.vitesse_explosivite as number) || 0) > 0 ||
+        ((eval0.force_puissance as number) || 0) > 0 ||
+        ((eval0.endurance_cardio as number) || 0) > 0 ||
+        ((eval0.agilite_coordination as number) || 0) > 0 ||
+        ((eval0.vision_du_jeu as number) || 0) > 0 ||
+        ((eval0.sens_tactique as number) || 0) > 0 ||
+        ((eval0.leadership as number) || 0) > 0 ||
+        ((eval0.discipline as number) || 0) > 0 ||
+        ((eval0.coachabilite as number) || 0) > 0 ||
+        ((eval0.intelligence_jeu as number) || 0) > 0 ||
+        ((eval0.competitivite as number) || 0) > 0 ||
+        ((eval0.esprit_equipe as number) || 0) > 0 ||
+        ((eval0.resilience as number) || 0) > 0 ||
+        ((eval0.attitude_mentalite as number) || 0) > 0
+      ) ? "detailed" : "simple",
       starRating: (eval0?.cote_globale as number) || (raw.cote_globale_entraineur as number) || 0,
       traitRatings: eval0 ? {
         // Keys match DB columns directly
@@ -371,8 +394,13 @@ export function mapToRecruiterView(raw: Record<string, unknown>): AthleteProfile
       const team = (Array.isArray(teamRel) ? teamRel[0] : teamRel) as { name?: string } | null;
       return team?.name ? undefined : "Ligue Civile";
     })(),
-    city: "",
-    region: "",
+    // Iter 7.50-b3 — la jointure schools (ATHLETE_SELECT) charge city +
+    // region, mais le mapper les laissait à "" depuis toujours. Bug
+    // latent : la carte recruteur (et le ticket bottom V30) affichait
+    // vide pour tous les athlètes scolaires. Fix sans changement de
+    // contrat (le type reste `string`, on tire juste la vraie valeur).
+    city: schoolObj?.city || "",
+    region: schoolObj?.region || "",
     graduationYear: (raw.annee_diplomation as number) || 0,
     dateOfBirth: (raw.date_naissance as string) || "",
     primarySport: sportObj?.nom || "",
@@ -438,7 +466,22 @@ export function mapToRecruiterView(raw: Record<string, unknown>): AthleteProfile
     profileCompleteness: calculateCompletion(raw as AthleteLike, (eval0 as EvalLike) || null, null).percentage,
     favoriteCount: 0,
     viewsThisMonth: 0,
+    // isOpenToOffers : hardcoded true. Champ REQUIS sur le type
+    // AthleteProfileRecruiterView (héritage), aucun composant ne le lit
+    // en JSX. Stub conservé pour compatibilité de type — ne pas le câbler
+    // à la pill du coach (la sous-ligne "Ouvert/Fermé aux offres" est
+    // legacy côté coach mobile et n'est PAS surfacée).
     isOpenToOffers: true,
+    // Athlete recruitment status fields — fix : étaient droppés, badge
+    // tombait toujours sur "OUVERT" côté coach mobile même pour des
+    // athlètes recrutés. open_to_offers volontairement NON porté ici
+    // (one pill = recruitment_status seul ; voir commentaire isOpenToOffers).
+    recruitmentStatus: (raw.recruitment_status as string) || "OUVERT",
+    committedSchoolName: (() => {
+      const cs = raw.committed_school;
+      const csObj = Array.isArray(cs) ? cs[0] : cs;
+      return (csObj as { name?: string } | null)?.name || "";
+    })(),
   };
 
   return view;

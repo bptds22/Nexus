@@ -1,23 +1,22 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import SubscriptionSection from "@/components/subscription/SubscriptionSection";
-import AthletePlayerCard from "@/components/shared/AthletePlayerCard";
+import SubscriptionManager from "@/components/subscription/SubscriptionManager";
 import CoachPicker from "@/components/coach/CoachPicker";
 import CivilCoachPicker from "@/components/coach/CivilCoachPicker";
 import { createClient } from "@/lib/supabase/client";
-import { loadAthleteRaw, mapToRecruiterView } from "@/app/coach/athletes/_data/loadAthleteFromSupabase";
-import type { AthleteProfileRecruiterView } from "@/lib/types/models";
 import { isMinor } from "@/lib/utils/age";
-import { toPng } from "html-to-image";
+import { AthleteParametresMobile } from "@/components/shared/AthleteParametresMobile";
+
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
 /* ═══════════════════════════════════════════════════════════════
    Paramètres — Athlete settings
    Sub-nav pattern matching admin/coach/recruiter settings pages
 ═══════════════════════════════════════════════════════════════ */
 
-type SectionKey = "compte" | "abonnement" | "carte" | "notifications" | "confidentialite";
+type SectionKey = "compte" | "abonnement" | "notifications" | "confidentialite";
 
 const SECTIONS: { key: SectionKey; label: string; icon: React.ReactNode }[] = [
   {
@@ -27,10 +26,6 @@ const SECTIONS: { key: SectionKey; label: string; icon: React.ReactNode }[] = [
   {
     key: "abonnement", label: "Abonnement",
     icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>,
-  },
-  {
-    key: "carte", label: "Carte de joueur",
-    icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M7 7h4v4H7z" /><path d="M14 7h3M14 11h3M7 15h10M7 19h10" /></svg>,
   },
   {
     key: "notifications", label: "Notifications",
@@ -56,6 +51,11 @@ const NOTIF_PREFS = [
 ];
 
 export default function ParametresPage() {
+  if (IS_CAPACITOR) return <AthleteParametresMobile />;
+  return <ParametresPageDesktop />;
+}
+
+function ParametresPageDesktop() {
   const router = useRouter();
   const [section, setSection] = useState<SectionKey>("compte");
   const [toast, setToast] = useState<string | null>(null);
@@ -93,13 +93,6 @@ export default function ParametresPage() {
   const [showRemoveCoachConfirm, setShowRemoveCoachConfirm] = useState(false);
   const [pickerSelection, setPickerSelection] = useState<string | null>(null);
   const [savingCoach, setSavingCoach] = useState(false);
-
-  // Social card export
-  const [cardAthlete, setCardAthlete] = useState<AthleteProfileRecruiterView | null>(null);
-  const [cardLoading, setCardLoading] = useState(false);
-  const [cardError, setCardError] = useState<string | null>(null);
-  const [downloading, setDownloading] = useState(false);
-  const captureRef = useRef<HTMLDivElement | null>(null);
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
 
@@ -188,67 +181,6 @@ export default function ParametresPage() {
   useEffect(() => {
     loadProfile();
   }, [loadProfile]);
-
-  useEffect(() => {
-    if (section !== "carte" || cardAthlete || cardLoading) return;
-    (async () => {
-      setCardLoading(true);
-      setCardError(null);
-      try {
-        const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) { setCardError("Session expirée"); return; }
-        const { data: row } = await supabase
-          .from("athletes")
-          .select("id")
-          .eq("user_id", user.id)
-          .maybeSingle();
-        if (!row?.id) { setCardError("Profil athlète introuvable"); return; }
-        const result = await loadAthleteRaw(row.id as string);
-        if (!result?.data) { setCardError("Impossible de charger le profil"); return; }
-        setCardAthlete(mapToRecruiterView(result.data as Record<string, unknown>));
-      } catch (e) {
-        console.error("[carte] load failed:", e);
-        setCardError("Erreur de chargement");
-      } finally {
-        setCardLoading(false);
-      }
-    })();
-  }, [section, cardAthlete, cardLoading]);
-
-  async function downloadCard() {
-    if (!captureRef.current || !cardAthlete) return;
-    setDownloading(true);
-    try {
-      // Wait for fonts so the captured PNG has the right typography.
-      if (typeof document !== "undefined" && document.fonts) {
-        await document.fonts.ready;
-      }
-      const dataUrl = await toPng(captureRef.current, {
-        // AthletePlayerCard format="publication" renders at exactly
-        // 1080×1350 (IG portrait); pixelRatio 1 produces the PNG
-        // at that target resolution natively.
-        pixelRatio: 1,
-        cacheBust: true,
-        backgroundColor: undefined, // transparent
-        style: {
-          animation: "none",
-          transition: "none",
-        },
-      });
-      const link = document.createElement("a");
-      const safe = `${cardAthlete.firstName}-${cardAthlete.lastName}`.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-      link.download = `nexus-carte-${safe}.png`;
-      link.href = dataUrl;
-      link.click();
-      showToast("Carte téléchargée");
-    } catch (e) {
-      console.error("[carte] export failed:", e);
-      showToast("Échec du téléchargement");
-    } finally {
-      setDownloading(false);
-    }
-  }
 
   return (
     <div className="px-6 sm:px-10 py-8 max-w-[1100px] mx-auto">
@@ -431,7 +363,7 @@ export default function ParametresPage() {
           )}
 
           {/* ── ABONNEMENT ───────────────────────────────────── */}
-          {section === "abonnement" && <SubscriptionSection portal="athlete" />}
+          {section === "abonnement" && <SubscriptionManager role="ATHLETE" />}
 
           {/* ── NOTIFICATIONS ─────────────────────────────────── */}
           {section === "notifications" && (
@@ -448,86 +380,6 @@ export default function ParametresPage() {
                   </div>
                 ))}
               </div>
-            </div>
-          )}
-
-          {/* ── CARTE ─────────────────────────────────────────── */}
-          {section === "carte" && (
-            <div className="space-y-6">
-              <div>
-                <h2 className="font-head text-lg font-black text-white uppercase tracking-tight mb-1">Ma carte de joueur</h2>
-                <p className="text-[13px] text-[#9CA3AF]">
-                  Télécharge ta carte Nexus au format PNG (fond transparent) pour la partager sur Instagram, TikTok ou Facebook.
-                </p>
-              </div>
-
-              {cardLoading && <p className="text-[13px] text-[#9CA3AF]">Chargement de ta carte...</p>}
-              {cardError && <p className="text-[13px] text-[#E63946]">{cardError}</p>}
-
-              {cardAthlete && (() => {
-                const missing: string[] = [];
-                if (!cardAthlete.photoUrl) missing.push("photo");
-                if (!cardAthlete.primaryPosition) missing.push("position");
-                if (!cardAthlete.jerseyNumber) missing.push("numéro");
-                if (profile?.context === "ligue_civile") {
-                  if (!profile.leagueTeamName) missing.push("équipe");
-                } else if (!cardAthlete.schoolName) {
-                  missing.push("école");
-                }
-                if (!cardAthlete.graduationYear) missing.push("promotion");
-                return (
-                  <>
-                    {/* On-screen preview — same rotation as the exported PNG */}
-                    <div className="bg-[#13151a] border border-white/5 rounded-xl p-8 flex justify-center">
-                      <div style={{ width: 400, height: 500, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <div style={{ transform: "rotate(-3deg)", transformOrigin: "center center" }}>
-                          <AthletePlayerCard a={cardAthlete} />
-                        </div>
-                      </div>
-                    </div>
-
-                    {missing.length > 0 && (
-                      <div className="flex items-start gap-3 bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3">
-                        <svg className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                        <p className="text-[13px] text-amber-300">
-                          Profil incomplet : {missing.join(", ")} manquant{missing.length > 1 ? "s" : ""}. Complète ton profil pour une carte optimale.
-                        </p>
-                      </div>
-                    )}
-
-                    <div className="flex items-center gap-3">
-                      <button
-                        type="button"
-                        onClick={downloadCard}
-                        disabled={downloading}
-                        className="px-5 py-2.5 bg-[#E63946] hover:bg-[#D42B22] text-white text-[13px] font-bold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {downloading ? "Génération..." : "Télécharger (PNG)"}
-                      </button>
-                      <span className="text-[12px] text-[#6b7280]">Fond transparent · haute résolution</span>
-                    </div>
-
-                    {/* Off-screen full-size render for html-to-image capture.
-                        AthletePlayerCard format="publication" is intrinsically
-                        1080×1350. The .nx-capture-clean class disables the
-                        editorial tilt transforms (.nx-v30-card / .nx-v30-ticket)
-                        on descendants so the resulting PNG is axis-aligned
-                        with no clipped ticket. The on-screen card preview
-                        above keeps its tilt — it's purely visual flair. */}
-                    <div
-                      aria-hidden="true"
-                      className="nx-capture-clean"
-                      style={{ position: "fixed", left: -99999, top: 0, pointerEvents: "none", zIndex: -1 }}
-                    >
-                      <div ref={captureRef}>
-                        <AthletePlayerCard a={cardAthlete} format="publication" clipOverflow={true} />
-                      </div>
-                    </div>
-                  </>
-                );
-              })()}
             </div>
           )}
 

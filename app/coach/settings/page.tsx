@@ -8,156 +8,16 @@ import SchoolSection from "./_components/SchoolSection";
 import NotificationsSection from "./_components/NotificationsSection";
 import AccountSection from "./_components/AccountSection";
 import type { SettingsSection } from "./_components/SettingsNav";
-import SubscriptionSection from "@/components/subscription/SubscriptionSection";
+import SubscriptionManager from "@/components/subscription/SubscriptionManager";
 import SchoolGate from "@/components/subscription/SchoolGate";
-import { useSubscription } from "@/lib/hooks/useSubscription";
+import { CoachParametresMobile } from "@/components/shared/CoachParametresMobile";
+
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
 /* ═══════════════════════════════════════════════════════════════
    Coach Settings — Paramètres
    Left nav + content panel, 6 sections.
 ═══════════════════════════════════════════════════════════════ */
-
-/* ── Coach Pricing Section ────────────────────────────────── */
-
-function CoachPricingSection({ isCivilCoach = false }: { isCivilCoach?: boolean }) {
-  const [annual, setAnnual] = useState(false);
-  // Coach has only 2 tiers: free / pro.
-  // Any legacy DB value that reads as "all_star" is collapsed to "pro".
-  const { tier: hookTier } = useSubscription();
-  const currentTier: "free" | "pro" = hookTier === "free" ? "free" : "pro";
-
-  const tiers = [
-    {
-      id: "free",
-      name: "Gratuit",
-      monthly: 0,
-      yearly: 0,
-      border: "border-[#2D3748]",
-      glow: "",
-      badge: null,
-      ctaBg: "",
-      ctaText: "",
-      features: [
-        { label: "Profil coach de base", included: true },
-        { label: "Création d'athlètes", included: true },
-        { label: "Évaluations de base", included: true },
-        { label: "Vérification d'athlètes", included: true },
-        { label: isCivilCoach ? "Ma Ligue" : "Mon École", included: false },
-        { label: isCivilCoach ? "Stats Ligue" : "Stats École", included: false },
-        { label: "Placements & suivi", included: false },
-        { label: "Ma Réputation", included: false },
-        { label: "Analytics avancés", included: false },
-      ],
-    },
-    {
-      id: "pro",
-      name: "Pro",
-      monthly: 4.99,
-      yearly: 39,
-      border: "border-[#F59E0B]",
-      glow: "shadow-[0_0_20px_rgba(245,158,11,0.1)]",
-      badge: { label: "POPULAIRE", color: "bg-[#F59E0B] text-black" },
-      ctaBg: "bg-[#F59E0B] hover:bg-[#D97706] text-black",
-      ctaText: "Passer à Pro",
-      features: [
-        { label: "Tout du plan Gratuit +", included: true, header: true },
-        { label: isCivilCoach ? "Ma Ligue complète" : "Mon École complète", included: true },
-        { label: isCivilCoach ? "Stats Ligue & rapports" : "Stats École & rapports", included: true },
-        { label: "Placements & suivi", included: true },
-        { label: "Ma Réputation", included: true },
-        { label: "Analytics de profils", included: true },
-        { label: "Alertes recruteurs", included: true },
-        { label: "Évaluations détaillées", included: true },
-      ],
-    },
-  ];
-
-  return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="font-head text-xl font-black text-white uppercase tracking-tight">Abonnement</h2>
-        <p className="text-[14px] text-[#6b7280] mt-1">Gère ton plan et ta facturation</p>
-      </div>
-
-      <div className="bg-[#22C55E]/10 border border-[#22C55E]/30 rounded-xl px-5 py-3">
-        <div className="flex items-center gap-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-[#22C55E]" />
-          <span className="text-[14px] font-bold text-white">Tu es actuellement sur le plan <span className="uppercase">{currentTier === "free" ? "Gratuit" : "Pro"}</span></span>
-        </div>
-        {currentTier === "free" && <p className="text-[13px] text-[#9CA3AF] mt-1 ml-[18px]">Passe à Pro pour maximiser la visibilité de tes athlètes</p>}
-      </div>
-
-      <div className="flex justify-center">
-        <div className="flex items-center gap-1 bg-[#13151a] rounded-xl p-1.5">
-          <button type="button" onClick={() => setAnnual(false)} className={`px-5 py-2.5 rounded-lg text-[12px] font-bold uppercase tracking-[0.12em] transition-all ${!annual ? "bg-[#E63946] text-white shadow-[0_0_10px_rgba(230,57,70,0.25)]" : "text-[#6b7280] hover:text-white"}`}>Mensuel</button>
-          <button type="button" onClick={() => setAnnual(true)} className={`px-5 py-2.5 rounded-lg text-[12px] font-bold uppercase tracking-[0.12em] transition-all ${annual ? "bg-[#E63946] text-white shadow-[0_0_10px_rgba(230,57,70,0.25)]" : "text-[#6b7280] hover:text-white"}`}>
-            Annuel <span className="text-[10px] font-normal ml-1 opacity-80">(économise 34%)</span>
-          </button>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-[680px] mx-auto">
-        {tiers.map(tier => {
-          const isCurrent = currentTier === tier.id;
-          const price = annual ? tier.yearly : tier.monthly;
-          const period = annual ? "/an" : "/mois";
-
-          return (
-            <div key={tier.id} className={`bg-[#1A1D24] rounded-xl border ${tier.border} ${tier.glow} p-6 flex flex-col relative`}>
-              {tier.badge && (
-                <span className={`absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest ${tier.badge.color}`}>
-                  {tier.badge.label}
-                </span>
-              )}
-              <h3 className="font-head text-[18px] font-black text-white uppercase tracking-tight mt-1">
-                {tier.id !== "free" && <span className="text-[#F59E0B] mr-1">{tier.id === "pro" ? "★" : "★★"}</span>}
-                {tier.name}
-              </h3>
-              <div className="mt-3">
-                <div className="flex items-baseline gap-1">
-                  <span className="text-[32px] font-black text-white leading-none">{price === 0 ? "0" : `${price}`}$</span>
-                  {price > 0 && <span className="text-[14px] text-[#6b7280]">{period}</span>}
-                </div>
-                {price > 0 && annual && <p className="text-[12px] text-[#22C55E] mt-1 font-bold">Économise 58%</p>}
-                {price > 0 && !annual && tier.yearly > 0 && <p className="text-[11px] text-[#6b7280] mt-1">ou {tier.yearly}$/an</p>}
-              </div>
-              <div className="h-px bg-[#2D3748] my-4" />
-              <div className="space-y-2.5 flex-1">
-                {tier.features.map((f, i) => (
-                  <div key={i} className="flex items-start gap-2">
-                    {(f as { header?: boolean }).header ? (
-                      <span className="text-[12px] font-bold text-[#F59E0B] uppercase tracking-wider">{f.label}</span>
-                    ) : f.included ? (
-                      <>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2.5" strokeLinecap="round" className="shrink-0 mt-0.5"><path d="M20 6L9 17l-5-5" /></svg>
-                        <span className="text-[13px] text-[#e0e0e0]">{f.label}</span>
-                      </>
-                    ) : (
-                      <>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4a4d56" strokeWidth="2" strokeLinecap="round" className="shrink-0 mt-0.5"><path d="M18 6L6 18" /><path d="M6 6l12 12" /></svg>
-                        <span className="text-[13px] text-[#4a4d56] line-through">{f.label}</span>
-                      </>
-                    )}
-                  </div>
-                ))}
-              </div>
-              <div className="mt-5">
-                {isCurrent ? (
-                  <button type="button" disabled className="w-full py-2.5 rounded-lg text-[13px] font-bold bg-[#2D3748] text-[#6b7280] cursor-not-allowed">Plan actuel</button>
-                ) : (
-                  <button type="button" className={`w-full py-2.5 rounded-lg text-[13px] font-bold transition-all flex items-center justify-center gap-2 ${tier.ctaBg}`}>
-                    {tier.ctaText}
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M5 12h14" /><path d="M12 5l7 7-7 7" /></svg>
-                  </button>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
 
 /* ── Admin École section ──────────────────────────────────── */
 
@@ -417,6 +277,13 @@ function AdminEcoleSection({ isCivilCoach = false }: { isCivilCoach?: boolean })
 ═══════════════════════════════════════════════════════════ */
 
 export default function CoachSettingsPage() {
+  // Phase 2 — mobile early return BEFORE any other hooks/data fetch.
+  // Mobile composer owns its own data layer + composition.
+  if (IS_CAPACITOR) return <CoachParametresMobile />;
+  return <CoachSettingsDesktop />;
+}
+
+function CoachSettingsDesktop() {
   const [section, setSection] = useState<SettingsSection>("profil");
   const [isSchoolAdmin, setIsSchoolAdmin] = useState(false);
   const [isCivilCoach, setIsCivilCoach] = useState(false);
@@ -464,7 +331,7 @@ export default function CoachSettingsPage() {
           <div className="bg-[#111317]/60 backdrop-blur-sm rounded-xl border border-[#1e2128] p-6 sm:p-8">
             {section === "profil" && <ProfileSection />}
             {section === "ecole" && <SchoolSection isCivilCoach={isCivilCoach} />}
-            {section === "abonnement" && <CoachPricingSection isCivilCoach={isCivilCoach} />}
+            {section === "abonnement" && <SubscriptionManager role="COACH" isCivilCoach={isCivilCoach} />}
             {section === "admin_ecole" && <AdminEcoleSection isCivilCoach={isCivilCoach} />}
             {section === "notifications" && <NotificationsSection />}
             {section === "compte" && <AccountSection />}

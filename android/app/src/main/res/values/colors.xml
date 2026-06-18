@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Iter 7.55 — Couleur de fond du splash window Android 12+ (Theme.SplashScreen).
+         Match exact avec le fond de SplashAnimMobile React → handoff invisible. -->
+    <color name="splash_background">#111317</color>
+</resources>

@@ -7,6 +7,7 @@ import DistinctionBadge from "@/components/shared/DistinctionBadge";
 import Footer from "@/components/marketing/Footer";
 import { useTranslation } from "@/lib/i18n/useTranslation";
 
+import { notFound } from "next/navigation";
 /* ═══════════════════════════════════════════════════════════════
    Comment ça marche — Manifesto + credibility page
    Public marketing, no auth, no Supabase, static content.
@@ -78,6 +79,8 @@ const REPUTATION_BADGE_VISUALS = [
 ══════════════════════════════════════════════════════════════ */
 
 export default function CommentCaMarche() {
+  // Mobile build (Capacitor): page exclue.
+  if (process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true") notFound();
   const { t } = useTranslation();
   const T = t.howItWorks;
 
