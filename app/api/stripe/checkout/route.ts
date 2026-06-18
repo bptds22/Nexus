@@ -25,14 +25,11 @@ const ROLE_MAP: Record<string, StripePlanRole> = {
   ATHLETE: "ATHLETE",
 };
 
-// Where to send the user back after checkout (success OR cancel) — the
-// settings page they started from. Derived SERVER-SIDE from the role
-// (never trust a client-supplied redirect). Mirrors /api/stripe/portal.
-const ROLE_RETURN_PATH: Record<string, string> = {
-  RECRUTEUR: "/recruteur/parametres",
-  COACH: "/coach/settings",
-  ATHLETE: "/athlete/parametres",
-};
+// Post-checkout return target: a single, autonomous thank-you page for
+// all roles. It renders inside the Stripe in-app browser/popup; the user
+// reads it and closes the window to return to the app. (Replaces the old
+// role-derived settings return — no per-role path needed anymore.)
+const CHECKOUT_RETURN_PATH = "/abonnement/succes";
 
 // ── CORS ───────────────────────────────────────────────────
 // The Capacitor WebView calls this route cross-origin from these
@@ -174,10 +171,10 @@ export async function POST(req: Request) {
 
     // ── 6. Create Checkout session ───────────────────────────
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-    // Return the user to the settings page they started from. Tier is
-    // written by the webhook (not here), and the success page reads tier
-    // from the DB via refresh() — so no {CHECKOUT_SESSION_ID} is needed.
-    const returnUrl = `${appUrl}${ROLE_RETURN_PATH[role] ?? "/"}`;
+    // Return to the standalone thank-you page (same for every role). Tier
+    // is written by the webhook (not here); the app re-reads it on return
+    // via the SubscriptionProvider refresh — so no {CHECKOUT_SESSION_ID}.
+    const returnUrl = `${appUrl}${CHECKOUT_RETURN_PATH}`;
 
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
