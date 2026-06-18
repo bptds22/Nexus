@@ -284,6 +284,9 @@ export default function SubscriptionManager({
             currentTierKey={currentTierKey}
             checkoutBusyTier={checkoutBusyTier}
             onCheckout={handleCheckout}
+            isPaid={isPaid}
+            onManage={handlePortal}
+            portalBusy={portalBusy}
           />
         ))}
       </div>
@@ -347,6 +350,7 @@ function BillingCycleToggle({
 
 function TierCard({
   tier, cycle, isCivilCoach, currentTierKey, checkoutBusyTier, onCheckout,
+  isPaid, onManage, portalBusy,
 }: {
   tier: Tier;
   cycle: "monthly" | "annual";
@@ -354,6 +358,12 @@ function TierCard({
   currentTierKey: TierKey;
   checkoutBusyTier: string | null;
   onCheckout: (displayTierId: string) => void;
+  /** Already on a paid plan → other tiers route to the portal (clean swap
+   *  with proration) instead of a fresh checkout (which would STACK a 2nd
+   *  Stripe subscription / double-bill). */
+  isPaid: boolean;
+  onManage: () => void;
+  portalBusy: boolean;
 }) {
   const key = tierKeyOf(tier.id);
   const isCurrent = key === currentTierKey;
@@ -428,6 +438,17 @@ function TierCard({
         ) : isFree ? (
           <button type="button" disabled className="w-full py-2.5 rounded-lg text-[13px] font-bold bg-[#2D3748] text-[#6b7280] cursor-not-allowed">
             Gratuit
+          </button>
+        ) : isPaid ? (
+          // Already paying → a different paid tier is a PLAN CHANGE, handled
+          // by the Stripe portal (swap + proration), never a new checkout.
+          <button
+            type="button"
+            onClick={onManage}
+            disabled={portalBusy}
+            className={`w-full py-2.5 rounded-lg text-[13px] font-bold transition-all flex items-center justify-center gap-2 ${tier.ctaClass} ${portalBusy ? "opacity-60 cursor-wait" : ""}`}
+          >
+            {portalBusy ? "Ouverture..." : "Changer de plan"}
           </button>
         ) : (
           <button

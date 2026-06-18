@@ -267,6 +267,16 @@ export function RecruteurParametresMobile() {
   // tier refreshes on return via the browserFinished/appStateChange effect.
   async function handleUpgrade(targetTier: "pro" | "all_star", cycle: "monthly" | "annual") {
     if (upgradingTier) return;
+    // Already on a paid plan → NEVER stack a second checkout (double-bill).
+    // Plan changes go through Stripe; the mobile portal isn't wired yet, so
+    // point the user to the web instead of starting a fresh checkout.
+    if (tier !== "free") {
+      toast.info({
+        message: "Gère ton abonnement sur le web",
+        detail: "Le changement de plan se fait depuis le site web pour éviter une double facturation.",
+      });
+      return;
+    }
     setUpgradingTier(targetTier);
     try {
       await startMobileCheckout(targetTier, cycle);
@@ -487,7 +497,7 @@ export function RecruteurParametresMobile() {
           status={tierStatus(tier, "pro")}
           accentDot="#F59E0B"
           onUpgrade={() => handleUpgrade("pro", "monthly")}
-          upgradeLabel={upgradingTier === "pro" ? "Redirection…" : "Passer à Pro"}
+          upgradeLabel={tier !== "free" ? "Changer de plan" : upgradingTier === "pro" ? "Redirection…" : "Passer à Pro"}
         />
         <TierCard
           name="All Star"
@@ -501,9 +511,26 @@ export function RecruteurParametresMobile() {
           status={tierStatus(tier, "all_star")}
           accentDot="#E63946"
           onUpgrade={() => handleUpgrade("all_star", "monthly")}
-          upgradeLabel={upgradingTier === "all_star" ? "Redirection…" : "Passer à All Star"}
+          upgradeLabel={tier !== "free" ? "Changer de plan" : upgradingTier === "all_star" ? "Redirection…" : "Passer à All Star"}
         />
       </div>
+
+      {/* Gérer mon abonnement — porte de sortie web pour les abonnés payants.
+          Le portail Stripe n'est pas câblé en mobile (route portal sans
+          Bearer/CORS) ; openExternal ouvre la page abonnement web dans le
+          navigateur natif, où le portail fonctionne. Free : pas ce bouton —
+          les TierCards d'achat restent actives. */}
+      {tier !== "free" && (
+        <Group className="mt-3">
+          <NavRow
+            label="Gérer mon abonnement"
+            sublabel="Annulation, changement de plan et factures sur le web."
+            isFirst
+            rightChevron="external"
+            onTap={() => { triggerHaptic("Light"); openExternal("https://nexussports.ca/recruteur/parametres"); }}
+          />
+        </Group>
+      )}
 
       {/* COMPTE */}
       <SectionLabel>Compte</SectionLabel>
