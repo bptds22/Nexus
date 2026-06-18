@@ -4,6 +4,8 @@
    haptic + open-external + tier-status semantics.
 ═══════════════════════════════════════════════════════════════ */
 
+import { createClient } from "@/lib/supabase/client";
+
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
 export async function triggerHaptic(intensity: "Light" | "Medium" | "Heavy" = "Light") {
@@ -44,6 +46,49 @@ export function getApiBase(): string {
     return (process.env.NEXT_PUBLIC_APP_URL ?? "").replace(/\/$/, "");
   }
   return "";
+}
+
+/* ── Mobile Stripe checkout ────────────────────────────────────
+   Mobile-side checkout: grab the current access_token, POST to the
+   checkout route at an ABSOLUTE url with a Bearer header (the static
+   export has no cookie/server origin), then open the returned Stripe
+   url in the native in-app browser. Every failure throws (detectable),
+   never silent — this is a payment path.
+
+   NOTE: not wired to any TierCard yet — pure helper. Refresh-on-return
+   is handled by the caller (next unit), not here. */
+export async function startMobileCheckout(tier: string, cycle: string): Promise<void> {
+  // 1. Current session from the mobile (localStorage-backed) client singleton.
+  const supabase = createClient();
+  const { data: { session } } = await supabase.auth.getSession();
+  const accessToken = session?.access_token;
+  if (!accessToken) throw new Error("Session absente");
+
+  // 2. Absolute API base. On mobile it MUST resolve — fail loudly rather
+  //    than silently hit a relative (server-less) url on a payment route.
+  const base = getApiBase();
+  if (IS_CAPACITOR && !base) {
+    throw new Error("NEXT_PUBLIC_APP_URL manquant dans le build mobile");
+  }
+
+  // 3. Checkout request carrying the Bearer token.
+  const res = await fetch(`${base}/api/stripe/checkout`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({ tier, cycle }),
+  });
+  if (!res.ok) {
+    throw new Error(`Échec de la création du checkout (HTTP ${res.status})`);
+  }
+  const { url } = await res.json();
+  if (!url) throw new Error("URL de checkout absente dans la réponse");
+
+  // 4. Open Stripe checkout in the native browser.
+  const { Browser } = await import("@capacitor/browser");
+  await Browser.open({ url });
 }
 
 /* ── Tier ranking — drives TierCard's current/upgrade/below state ── */

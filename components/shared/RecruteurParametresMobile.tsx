@@ -15,7 +15,7 @@
    Sections :
    - Notifications (6 toggles app + master email — desktop NotificationsSection)
    - Confidentialité (3 toggles + dates consentement + openExternal vers web)
-   - Abonnement (READONLY honnête — CTAs "Bientôt disponible")
+   - Abonnement (Pro/All Star lancent le checkout Stripe via in-app browser)
    - Compte (changer mot de passe via sheet)
    - Zone danger (désactiver via RPC + déconnexion réelle)
 
@@ -42,6 +42,9 @@ import {
   SectionLabel, Group, ToggleRow, NavRow, DangerRow,
   TierCard, PasswordChangeSheet, ConfirmSheet,
 } from "@/components/shared/settings";
+// startMobileCheckout lives in the same shared settings module but isn't
+// re-exported by the barrel (yet), so import it from the file directly.
+import { startMobileCheckout } from "@/components/shared/settings/utils";
 
 /* ── Shape des prefs notifications côté DB (DIAG 7.38) ────────── */
 
@@ -75,7 +78,7 @@ interface PrivacyPrefs {
 export function RecruteurParametresMobile() {
   const router = useRouter();
   const toast = useMobileToast();
-  const { tier } = useSubscription();
+  const { tier, refresh } = useSubscription();
 
   // Hooks AVANT toute condition (canon 7.8d).
   const [notifs, setNotifs] = useState<NotifPrefs>({});
@@ -98,6 +101,8 @@ export function RecruteurParametresMobile() {
   const [passwordSheetOpen, setPasswordSheetOpen] = useState(false);
   const [deactivateSheetOpen, setDeactivateSheetOpen] = useState(false);
   const [logoutSheetOpen, setLogoutSheetOpen] = useState(false);
+  // Which tier is mid-checkout — drives the CTA label + blocks double-tap.
+  const [upgradingTier, setUpgradingTier] = useState<string | null>(null);
 
   // Load notification + privacy preferences
   useEffect(() => {
@@ -157,6 +162,33 @@ export function RecruteurParametresMobile() {
     })();
     return () => { cancelled = true; };
   }, []);
+
+  // Refresh the displayed tier when the user comes back from the Stripe
+  // in-app browser — the webhook may have updated the subscription row,
+  // so we re-run the EXISTING useSubscription fetch (refresh) rather than
+  // a parallel query. browserFinished fires when the in-app browser closes;
+  // appStateChange (isActive) covers the user swiping back to the app.
+  // Both plugins absent on web → caught → no-op. Listeners removed on unmount.
+  useEffect(() => {
+    let browserListener: { remove: () => void } | null = null;
+    let appListener: { remove: () => void } | null = null;
+    (async () => {
+      try {
+        const { Browser } = await import("@capacitor/browser");
+        browserListener = await Browser.addListener("browserFinished", () => { refresh(); });
+      } catch { /* no-op (web) */ }
+      try {
+        const { App } = await import("@capacitor/app");
+        appListener = await App.addListener("appStateChange", ({ isActive }) => {
+          if (isActive) refresh();
+        });
+      } catch { /* no-op (web) */ }
+    })();
+    return () => {
+      browserListener?.remove();
+      appListener?.remove();
+    };
+  }, [refresh]);
 
   // Iter 7.41 §2 — dirty inclut le master courriel.
   const notifsDirty = useMemo(
@@ -226,6 +258,25 @@ export function RecruteurParametresMobile() {
       toast.success({ message: "Confidentialité mise à jour" });
     } finally {
       setSavingPrivacy(false);
+    }
+  }
+
+  // Mobile checkout: launch Stripe via the in-app browser. Loading state
+  // (upgradingTier) blocks a double-tap; any throw surfaces via the toast
+  // already used elsewhere in this screen (never swallowed). The displayed
+  // tier refreshes on return via the browserFinished/appStateChange effect.
+  async function handleUpgrade(targetTier: "pro" | "all_star", cycle: "monthly" | "annual") {
+    if (upgradingTier) return;
+    setUpgradingTier(targetTier);
+    try {
+      await startMobileCheckout(targetTier, cycle);
+    } catch (e) {
+      toast.error({
+        message: "Paiement indisponible",
+        detail: e instanceof Error ? e.message : "Erreur inconnue",
+      });
+    } finally {
+      setUpgradingTier(null);
     }
   }
 
@@ -406,10 +457,11 @@ export function RecruteurParametresMobile() {
         {consentDates.marketing && <p>Consentement marketing : {consentDates.marketing}</p>}
       </div>
 
-      {/* ABONNEMENT — iter 7.40 §3 : cards premium, "Bientôt" UNIQUEMENT
-          sur les tiers SUPÉRIEURS au tier courant. Tier actuel = bordure
-          rouge + glow + badge "Actuel" vert. Tiers inférieurs = compacts
-          en sourdine (aucun CTA — l'utilisateur a déjà mieux). */}
+      {/* ABONNEMENT — iter 7.40 §3 : cards premium. Tiers SUPÉRIEURS au
+          tier courant = CTA rouge actif (Pro/All Star) qui lance le
+          checkout Stripe via in-app browser. Tier actuel = bordure rouge +
+          glow + badge "Actuel" vert. Tiers inférieurs = compacts en
+          sourdine (aucun CTA — l'utilisateur a déjà mieux). */}
       <SectionLabel>Abonnement</SectionLabel>
       <div className="px-4 space-y-2">
         <TierCard
@@ -434,6 +486,8 @@ export function RecruteurParametresMobile() {
           ]}
           status={tierStatus(tier, "pro")}
           accentDot="#F59E0B"
+          onUpgrade={() => handleUpgrade("pro", "monthly")}
+          upgradeLabel={upgradingTier === "pro" ? "Redirection…" : "Passer à Pro"}
         />
         <TierCard
           name="All Star"
@@ -446,6 +500,8 @@ export function RecruteurParametresMobile() {
           ]}
           status={tierStatus(tier, "all_star")}
           accentDot="#E63946"
+          onUpgrade={() => handleUpgrade("all_star", "monthly")}
+          upgradeLabel={upgradingTier === "all_star" ? "Redirection…" : "Passer à All Star"}
         />
       </div>
 
