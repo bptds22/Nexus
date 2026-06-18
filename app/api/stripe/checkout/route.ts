@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { createClient as createSbClient, type SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { getStripe } from "@/lib/stripe/server";
@@ -33,13 +34,65 @@ const ROLE_RETURN_PATH: Record<string, string> = {
   ATHLETE: "/athlete/parametres",
 };
 
+// ── CORS ───────────────────────────────────────────────────
+// The Capacitor WebView calls this route cross-origin from these
+// fixed origins. Strict allowlist (NO wildcard) — wildcard is
+// incompatible with credentialed/auth-header requests and needlessly
+// permissive on a payment route. Same-origin web sends no cross
+// `Origin`, so it never matches and behaves exactly as before.
+const ALLOWED_ORIGINS = ["https://localhost", "capacitor://localhost"];
+
+function corsHeaders(req: Request): Record<string, string> {
+  const origin = req.headers.get("origin");
+  if (origin && ALLOWED_ORIGINS.includes(origin)) {
+    return {
+      "Access-Control-Allow-Origin": origin,
+      "Access-Control-Allow-Methods": "POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    };
+  }
+  return {};
+}
+
+// Preflight: browsers send OPTIONS before a cross-origin POST that
+// carries Authorization / Content-Type. 204 + CORS headers if allowed.
+export async function OPTIONS(req: Request) {
+  return new NextResponse(null, { status: 204, headers: corsHeaders(req) });
+}
+
 export async function POST(req: Request) {
+  // Computed once; reflected on every response below. Empty {} for
+  // same-origin/unknown origins → no CORS headers posted (unchanged).
+  const cors = corsHeaders(req);
   try {
-    // ── 1. Auth ──────────────────────────────────────────────
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    // ── 1. Auth (dual: mobile Bearer OR web cookies) ─────────
+    // Mobile (Capacitor static export) has no server-readable cookie,
+    // so it sends the Supabase access_token as `Authorization: Bearer`.
+    // Web keeps the EXACT cookie-based path unchanged. The resolved
+    // `supabase` client carries the user's RLS context downstream in
+    // both branches.
+    let supabase: SupabaseClient;
+    let user;
+    const authHeader = req.headers.get("authorization");
+    if (authHeader?.startsWith("Bearer ")) {
+      // ── Mobile: validate the token with a lightweight anon client.
+      //    NEVER use the service role for token validation.
+      const token = authHeader.slice("Bearer ".length).trim();
+      supabase = createSbClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        { global: { headers: { Authorization: `Bearer ${token}` } } },
+      );
+      const { data } = await supabase.auth.getUser(token);
+      user = data.user;
+    } else {
+      // ── Web: unchanged cookie-based session.
+      supabase = await createClient();
+      const { data } = await supabase.auth.getUser();
+      user = data.user;
+    }
     if (!user) {
-      return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
+      return NextResponse.json({ error: "Non authentifié" }, { status: 401, headers: cors });
     }
 
     // ── 2. Get user role from DB (never trust client) ────────
@@ -51,12 +104,12 @@ export async function POST(req: Request) {
 
     if (userErr || !userRow) {
       console.error("[stripe/checkout] user lookup:", userErr);
-      return NextResponse.json({ error: "Utilisateur introuvable" }, { status: 400 });
+      return NextResponse.json({ error: "Utilisateur introuvable" }, { status: 400, headers: cors });
     }
 
     const role = ROLE_MAP[userRow.role as string];
     if (!role) {
-      return NextResponse.json({ error: "Rôle non éligible à un abonnement" }, { status: 400 });
+      return NextResponse.json({ error: "Rôle non éligible à un abonnement" }, { status: 400, headers: cors });
     }
 
     // ── 3. Parse + validate body ─────────────────────────────
@@ -64,19 +117,19 @@ export async function POST(req: Request) {
     try {
       body = await req.json();
     } catch {
-      return NextResponse.json({ error: "Corps de requête invalide" }, { status: 400 });
+      return NextResponse.json({ error: "Corps de requête invalide" }, { status: 400, headers: cors });
     }
 
     const tier = body.tier as StripePlanTier;
     const cycle = body.cycle as StripePlanCycle;
 
     if (!VALID_TIERS.includes(tier) || !VALID_CYCLES.includes(cycle)) {
-      return NextResponse.json({ error: "tier ou cycle invalide" }, { status: 400 });
+      return NextResponse.json({ error: "tier ou cycle invalide" }, { status: 400, headers: cors });
     }
 
     // Athlete only has pro — no all_star product
     if (role === "ATHLETE" && tier === "all_star") {
-      return NextResponse.json({ error: "Plan non disponible pour les athlètes" }, { status: 400 });
+      return NextResponse.json({ error: "Plan non disponible pour les athlètes" }, { status: 400, headers: cors });
     }
 
     // ── 4. Resolve Stripe price ID ───────────────────────────
@@ -114,7 +167,7 @@ export async function POST(req: Request) {
         console.error("[stripe/checkout] upsert_stripe_customer:", upsertErr);
         return NextResponse.json(
           { error: "Erreur lors de la création du profil de paiement" },
-          { status: 500 },
+          { status: 500, headers: cors },
         );
       }
     }
@@ -152,12 +205,12 @@ export async function POST(req: Request) {
       locale: "fr-CA",
     });
 
-    return NextResponse.json({ url: session.url });
+    return NextResponse.json({ url: session.url }, { headers: cors });
   } catch (err) {
     console.error("[stripe/checkout] error:", err);
     return NextResponse.json(
       { error: "Erreur lors de la création de la session de paiement" },
-      { status: 500 },
+      { status: 500, headers: cors },
     );
   }
 }
