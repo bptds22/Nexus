@@ -362,7 +362,10 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
   // partner (own gating). Drives the name strip + content locks.
   const isFreeRecruiter = viewerMode === "recruiter" && tier === "free";
   const { count: myFavCount, setCount: setMyFavCount } = useFavoritesCount();
-  const [a, setA] = useState<AthleteProfileRecruiterView>(mockAthleteProfileFull);
+  // #52 — init à null (plus de mock comme valeur initiale) : aucun faux
+  // athlète n'est rendu avant l'arrivée des vraies données. Le gate
+  // loadingAthlete plus bas court-circuite le rendu tant que a est null.
+  const [a, setA] = useState<AthleteProfileRecruiterView | null>(null);
   const [loadingAthlete, setLoadingAthlete] = useState(true);
   const [recruitmentStatus, setRecruitmentStatus] = useState<GlobalRecruitmentStatus>("OUVERT");
   const [committedSchoolName, setCommittedSchoolName] = useState("");
@@ -881,7 +884,10 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
     loadCounts();
   }, [id, isFavorited]);
 
-  useEffect(() => { setA(prev => ({ ...prev, favoriteCount: favCount })); }, [favCount]);
+  // #52 — ne pas matérialiser un objet partiel quand a est encore null
+  // (sinon le gate !a serait contourné et le type cassé). On ne fusionne
+  // le compteur que sur un a déjà chargé.
+  useEffect(() => { setA(prev => (prev ? { ...prev, favoriteCount: favCount } : prev)); }, [favCount]);
 
   const [showFlagModal, setShowFlagModal] = useState(false);
   const [flagReason, setFlagReason] = useState("");
@@ -946,6 +952,19 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
     } finally {
       setFlagSubmitting(false);
     }
+  }
+
+  // #52 — gate anti-flash : tant que le fetch charge (loadingAthlete) ou que
+  // a est null (aucune vraie donnée encore), on rend un fallback spinner —
+  // jamais le mock. Placé APRÈS tous les hooks et AVANT le premier accès
+  // a.xxx (traitEntries ci-dessous) → narrowing TS de a à non-null + pas de
+  // crash sur null.
+  if (loadingAthlete || !a) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#111317]">
+        <div className="w-8 h-8 rounded-full border-2 border-[#2D3748] border-t-[#E63946] animate-spin" role="status" aria-label="Chargement du profil" />
+      </div>
+    );
   }
 
   // Trait average — only average non-zero (rated) traits

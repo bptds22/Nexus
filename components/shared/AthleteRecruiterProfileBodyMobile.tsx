@@ -574,7 +574,9 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
   // a recruiter sees them.
   const isFreeRecruiter = tier === "free" && !isSelfPreview;
   const { count: myFavCount, setCount: setMyFavCount } = useFavoritesCount();
-  const [a, setA] = useState<AthleteProfileRecruiterView>(mockAthleteProfileFull);
+  // #52 — init à null (plus de mock initial) : aucun faux athlète rendu avant
+  // les vraies données. Le gate loadingAthlete plus bas court-circuite le rendu.
+  const [a, setA] = useState<AthleteProfileRecruiterView | null>(null);
   const [loadingAthlete, setLoadingAthlete] = useState(true);
   const [recruitmentStatus, setRecruitmentStatus] = useState<GlobalRecruitmentStatus>("OUVERT");
   const [committedSchoolName, setCommittedSchoolName] = useState("");
@@ -618,6 +620,9 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
      reste IDENTIQUE byte-pour-byte (en-dessous). */
   useEffect(() => {
     if (!isCoach) return;
+    // #52 — id placeholder (Capacitor static export, premier render avant
+    // résolution du vrai id) : ne pas fetcher un faux id, rester en loading.
+    if (id === "placeholder") return;
     let cancelled = false;
     (async () => {
       const { data, error } = await loadAthleteRaw(id);
@@ -674,6 +679,8 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
     // include first_name/last_name in this branch.
     if (!isRecruiter && !isSelfPreview) return;
     if (tierLoading) return;
+    // #52 — id placeholder (Capacitor) : pas de fetch faux id, rester en loading.
+    if (id === "placeholder") return;
     const supabase = createClient();
     const identityCols = isFreeRecruiter ? "" : "first_name, last_name,";
     supabase
@@ -1402,7 +1409,9 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
     loadCounts();
   }, [id, isFavorited]);
 
-  useEffect(() => { setA(prev => ({ ...prev, favoriteCount: favCount })); }, [favCount]);
+  // #52 — ne pas matérialiser un objet partiel quand a est null (sinon le
+  // gate !a serait contourné). Fusion du compteur seulement sur a chargé.
+  useEffect(() => { setA(prev => (prev ? { ...prev, favoriteCount: favCount } : prev)); }, [favCount]);
 
   // Pull-to-refresh (Fix 1 iter 3.2) — passive partout, jamais preventDefault.
   // Early-exit si modal Signaler ouvert (sinon document.touchstart vole les
@@ -1511,6 +1520,18 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
     } finally {
       setFlagSubmitting(false);
     }
+  }
+
+  // #52 — gate anti-flash (parité web) : tant que le fetch charge
+  // (loadingAthlete), que a est null, ou que l'id est encore le placeholder
+  // Capacitor → fallback spinner, jamais le mock. APRÈS tous les hooks, AVANT
+  // le premier accès a.xxx → narrowing non-null + pas de crash.
+  if (loadingAthlete || !a || id === "placeholder") {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#111317" }}>
+        <div className="w-8 h-8 rounded-full border-2 border-[#2D3748] border-t-[#E63946] animate-spin" role="status" aria-label="Chargement du profil" />
+      </div>
+    );
   }
 
   const traitEntries = a.traitRatings ? Object.entries(a.traitRatings) as [keyof AthleteTraitRatings, number][] : [];
