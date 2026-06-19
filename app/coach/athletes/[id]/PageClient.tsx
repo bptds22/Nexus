@@ -10,6 +10,7 @@ import { SPORT_NAME_MAP } from "@/lib/config/sportBadges";
 import NxIcon from "@/components/ui/NxIcon";
 import StarRating from "@/components/ui/StarRating";
 import { createClient } from "@/lib/supabase/client";
+import InvitationLinkModal from "@/components/ui/InvitationLinkModal";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
 import DistinctionBadge from "@/components/shared/DistinctionBadge";
 import { parseDistinctions, type DistinctionEntry } from "@/lib/config/badges";
@@ -418,11 +419,41 @@ export default function CoachAthleteProfilePage() {
     showToast("Consentement parental confirmé");
   }
 
+  // #48 — génère (ou réutilise) le token de claim pour cet orphelin via la
+  // RPC create_athlete_invitation (gardes coach-propriétaire + orphelin côté
+  // DB), construit le lien /claim?token=… et l'affiche dans InvitationLinkModal.
+  // Re-cliquer redonne le même lien (la RPC réutilise le PENDING valide).
+  async function handleGenerateInviteLink() {
+    setGeneratingLink(true);
+    try {
+      const supabase = createClient();
+      const { data, error } = await supabase.rpc("create_athlete_invitation", { p_athlete_id: id });
+      if (error || !data) {
+        const msg = error?.message || "";
+        let userMsg = "Impossible de générer le lien. Réessaie.";
+        if (msg.includes("NOT_OWNER")) userMsg = "Tu n'es pas le coach propriétaire de cet athlète.";
+        else if (msg.includes("ALREADY_CLAIMED")) userMsg = "Cet athlète a déjà un compte — aucun lien nécessaire.";
+        else if (msg.includes("NOT_AUTHENTICATED")) userMsg = "Session expirée — reconnecte-toi.";
+        else if (msg.includes("ATHLETE_NOT_FOUND")) userMsg = "Athlète introuvable.";
+        console.error("[create_athlete_invitation]", error);
+        showToast(userMsg);
+        return;
+      }
+      const token = data as string;
+      const base = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
+      setClaimLink(`${base}/claim?token=${token}`);
+    } finally {
+      setGeneratingLink(false);
+    }
+  }
+
   const [mode, setMode] = useState<"simple" | "detailed">("simple");
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [athleteHasAccount, setAthleteHasAccount] = useState(false);
   const [athleteEmail, setAthleteEmail] = useState<string | null>(null);
-  const [claimLinkCopied, setClaimLinkCopied] = useState(false);
+  // #48 — lien de claim token-based (RPC create_athlete_invitation → /claim?token=).
+  const [claimLink, setClaimLink] = useState<string | null>(null);
+  const [generatingLink, setGeneratingLink] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
   const [toast, setToast] = useState<string | null>(null);
   const searchParams = useSearchParams();
@@ -568,32 +599,23 @@ export default function CoachAthleteProfilePage() {
           </div>
           <button
             type="button"
-            onClick={() => {
-              if (!athleteEmail) return;
-              const link = `${window.location.origin}/auth?email=${encodeURIComponent(athleteEmail)}`;
-              navigator.clipboard.writeText(link).then(() => {
-                setClaimLinkCopied(true);
-                setTimeout(() => setClaimLinkCopied(false), 2500);
-              }).catch((err) => {
-                console.error("[Claim link copy] clipboard error:", err);
-                showToast("Erreur copie. Copie l'URL manuellement.");
-              });
-            }}
-            className="shrink-0 inline-flex items-center gap-2 h-10 px-4 rounded-lg bg-[#F59E0B] hover:bg-[#D97706] text-black font-bold text-[12px] uppercase tracking-wider transition-colors whitespace-nowrap"
+            onClick={handleGenerateInviteLink}
+            disabled={generatingLink}
+            className="shrink-0 inline-flex items-center gap-2 h-10 px-4 rounded-lg bg-[#F59E0B] hover:bg-[#D97706] disabled:opacity-60 text-black font-bold text-[12px] uppercase tracking-wider transition-colors whitespace-nowrap"
           >
-            {claimLinkCopied ? (
-              <>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
-                Lien copié
-              </>
-            ) : (
-              <>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
-                Copier le lien
-              </>
-            )}
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg>
+            {generatingLink ? "Génération…" : "Générer le lien d'invitation"}
           </button>
         </div>
+      )}
+
+      {/* #48 — lien de claim token-based, copiable (réutilise InvitationLinkModal). */}
+      {claimLink && (
+        <InvitationLinkModal
+          link={claimLink}
+          onClose={() => setClaimLink(null)}
+          description="Envoie ce lien à l'athlète. Il pourra créer son compte et compléter son profil."
+        />
       )}
 
       {/* Recruiter view banner */}
