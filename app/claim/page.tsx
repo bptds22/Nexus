@@ -48,6 +48,26 @@ const inputLockedCls =
 const labelCls =
   "block text-[11px] font-bold tracking-[0.2em] uppercase text-[#6b7280] mb-1.5";
 
+/* ── Shell — défini AU NIVEAU MODULE (référence STABLE). Auparavant déclaré
+   dans le render de ClaimContent : recréé à chaque frappe → React démontait/
+   remontait tout le formulaire → l'input password perdait le focus après 1
+   caractère. Ne dépend que de `children` + des imports module. */
+function Shell({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="hero-playbook bg-[#111317] min-h-screen flex flex-col relative">
+      <PlaybookBackground />
+      <div className="relative z-10 pt-8 pb-2 flex justify-center">
+        <NexusLogo variant="white" height={36} priority />
+      </div>
+      <div className="relative z-10 flex-1 flex items-start justify-center px-4 py-8">
+        <div className="w-full max-w-[480px] bg-[#1A1D24] border border-white/5 rounded-xl p-6 sm:p-8">
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function ClaimPage() {
   return (
     <Suspense>
@@ -159,21 +179,6 @@ function ClaimContent() {
       setSubmitting(false);
     }
   }
-
-  /* ── Shell ──────────────────────────────────────────────────── */
-  const Shell = ({ children }: { children: React.ReactNode }) => (
-    <div className="hero-playbook bg-[#111317] min-h-screen flex flex-col relative">
-      <PlaybookBackground />
-      <div className="relative z-10 pt-8 pb-2 flex justify-center">
-        <NexusLogo variant="white" height={36} priority />
-      </div>
-      <div className="relative z-10 flex-1 flex items-start justify-center px-4 py-8">
-        <div className="w-full max-w-[480px] bg-[#1A1D24] border border-white/5 rounded-xl p-6 sm:p-8">
-          {children}
-        </div>
-      </div>
-    </div>
-  );
 
   // ── Loading ─────────────────────────────────────────────────
   if (state.kind === "loading") {
