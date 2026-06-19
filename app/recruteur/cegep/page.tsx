@@ -253,7 +253,7 @@ function CegepDashboardContent() {
           iconBgColor="rgba(230,57,70,0.15)"
           icon={
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M6 9l6 6 6-6" /><path d="M12 3v12" /><path d="M5 21h14" /><circle cx="12" cy="3" r="2" />
+              <path d="M6 9H4a2 2 0 01-2-2V5a2 2 0 012-2h2" /><path d="M18 9h2a2 2 0 002-2V5a2 2 0 00-2-2h-2" /><path d="M6 3h12v6a6 6 0 01-12 0V3z" /><path d="M12 15v3M8 21h8" />
             </svg>
           }
         />

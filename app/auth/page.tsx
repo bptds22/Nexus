@@ -122,6 +122,10 @@ function AuthContent() {
   const [loading, setLoading] = useState(false);
 
   const pwdMeetsMin = password.length >= 8;
+  // #45 — indicateur 3 états : vide = neutre (gris), non vide & <8 = erreur
+  // (rouge), >=8 = valide (vert). N'affecte pas signupValid (politique 8 min
+  // inchangée), juste la couleur/le marqueur du hint.
+  const pwdTooShort = password.length > 0 && !pwdMeetsMin;
   const pwdMismatch = confirmPassword.length > 0 && password !== confirmPassword;
   const baseValid = firstName && lastName && email && pwdMeetsMin && !pwdMismatch;
   const signupValid = baseValid && selectedContext && consentPolicy && consentData;
@@ -442,7 +446,11 @@ function AuthContent() {
                             <input type={showPwd ? "text" : "password"} placeholder={T.signup.form.placeholders.password} value={password} onChange={(e) => setPassword(e.target.value)} className={`${inputClass} pr-10 ${fieldErr(pwdMeetsMin)}`} />
                             <EyeToggle show={showPwd} onClick={() => setShowPwd(!showPwd)} />
                           </div>
-                          <p className={`text-xs mt-1.5 transition-colors ${pwdMeetsMin ? "text-[#22C55E]" : "text-[#6B7280]"}`}>{pwdMeetsMin ? "✓" : "•"} {T.signup.form.passwordHint}</p>
+                          <p
+                            aria-live="polite"
+                            {...(pwdTooShort ? { role: "alert" } : {})}
+                            className={`text-xs mt-1.5 transition-colors ${pwdMeetsMin ? "text-[#22C55E]" : pwdTooShort ? "text-[#E63946]" : "text-[#6B7280]"}`}
+                          >{pwdMeetsMin ? "✓" : pwdTooShort ? "✕" : "•"} {T.signup.form.passwordHint}</p>
                         </div>
                         <div>
                           <label className={`${label} text-[#9CA3AF] mb-1.5 block`}>{T.signup.form.labels.confirm} <span className="text-[#EF4444]">*</span></label>
