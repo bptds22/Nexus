@@ -100,7 +100,6 @@ function AuthContent() {
   const [showConfirmPwd, setShowConfirmPwd] = useState(false);
   const [shakeFields, setShakeFields] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const [selectedSport, setSelectedSport] = useState("");
   // Context discriminator (scolaire | ligue_civile) — wired to
   // users.context via signUp's 7th arg, mirroring the /auth/pro
   // flow shipped in 5.1. The athlete onboarding wizard reads this
@@ -125,7 +124,7 @@ function AuthContent() {
   const pwdMeetsMin = password.length >= 8;
   const pwdMismatch = confirmPassword.length > 0 && password !== confirmPassword;
   const baseValid = firstName && lastName && email && pwdMeetsMin && !pwdMismatch;
-  const signupValid = baseValid && selectedContext && selectedSport && consentPolicy && consentData;
+  const signupValid = baseValid && selectedContext && consentPolicy && consentData;
 
   /* Replay fade animation on mode switch */
   const switchMode = useCallback(
@@ -175,7 +174,7 @@ function AuthContent() {
       firstName,
       lastName,
       {
-        sport: selectedSport,
+        // sport retiré du signup (Groupe 2-A) — saisi à l'onboarding.
         ...(invitationToken ? { invitation_token: invitationToken } : {}),
         ...consentMeta,
       },
@@ -482,21 +481,9 @@ function AuthContent() {
                           </div>
                         </div>
 
-                        {/* Sport pills */}
-                        <div>
-                          <label className={`${label} text-[#9CA3AF] mb-2 block`}>{T.signup.form.labels.sport} <span className="text-[#EF4444]">*</span></label>
-                          <div className="grid grid-cols-4 gap-2">
-                            {["Football", "Hockey", "Basketball", "Soccer", "Volleyball", "Natation", "Athlétisme", "Rugby"].map((sport) => (
-                              <button key={sport} type="button" onClick={() => setSelectedSport(sport)}
-                                className={`py-2 rounded-lg text-[11px] font-bold transition-all ${
-                                  selectedSport === sport
-                                    ? "bg-[#E63946] text-white"
-                                    : "bg-[#111317] border border-white/10 text-[#9CA3AF] hover:border-white/20 hover:text-white"
-                                }`}
-                              >{sport}</button>
-                            ))}
-                          </div>
-                        </div>
+                        {/* Sport picker retiré du signup (Groupe 2-A) : le sport
+                            est saisi et stocké à l'onboarding (athletes.sport_id).
+                            Le trigger handle_new_auth_user ignore déjà metadata.sport. */}
 
                         {/* Consent checkboxes */}
                         <div className="space-y-2 mt-1">

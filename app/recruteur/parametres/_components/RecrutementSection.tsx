@@ -30,7 +30,7 @@ export default function RecrutementSection({ form, original, onUpdate, onSave }:
   const dirty = JSON.stringify(form.targetRegions) !== JSON.stringify(original.targetRegions) ||
     JSON.stringify(form.targetGradYears) !== JSON.stringify(original.targetGradYears) ||
     JSON.stringify(form.targetPositions) !== JSON.stringify(original.targetPositions) ||
-    form.minMoyenne !== original.minMoyenne || form.minCoteGlobale !== original.minCoteGlobale ||
+    form.minCoteGlobale !== original.minCoteGlobale ||
     form.alertNewProfiles !== original.alertNewProfiles;
 
   function getAvailablePositions(): { abbr: string; label: string }[] {
@@ -174,13 +174,9 @@ export default function RecrutementSection({ form, original, onUpdate, onSave }:
           )}
         </div>
 
-        {/* Moyenne générale min */}
-        <RangeSliderInput
-          value={form.minMoyenne}
-          onChange={(v) => onUpdate("minMoyenne", v)}
-          min={60} max={100} step={1}
-          label="Moyenne générale minimum"
-        />
+        {/* Slider "moyenne recherchée" retiré (Groupe 2-B) : préférence non lue
+            par la recherche (qui filtre sur athletes.moyenne_generale déclarée).
+            La clé min_gpa est conservée en base (Option A, réversible). */}
 
         {/* Cote globale min */}
         <RangeSliderInput
