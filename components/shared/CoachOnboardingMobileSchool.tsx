@@ -770,12 +770,17 @@ export function CoachOnboardingMobileSchool() {
               <p className="text-[16px] font-semibold text-white">+ Créer mon équipe</p>
               <p className="text-[13px] text-white/55">Mon équipe n&apos;est pas listée</p>
             </button>
-            {/* Continuer sans équipe — INCHANGÉ (décision PO séparée). */}
+            {/* Continuer sans équipe — clear TOUT état d'équipe en attente :
+                la sélection à rejoindre (selectedTeamId/Name) ET une création
+                différée (pendingCreateTeam). Sinon le finish partirait quand
+                même avec la branche create (p_team_name) ou le lien. "Sans
+                équipe" = finish avec p_team_id NULL et aucune branche create. */}
             <button
               type="button"
               onClick={() => {
                 setSelectedTeamId(null);
                 setSelectedTeamName("");
+                setPendingCreateTeam(null);
                 setTeamSheetOpen(false);
               }}
               className="w-full h-11 rounded-2xl border border-white/[0.10] text-[14px] font-semibold text-white/70 active:bg-white/[0.04]"

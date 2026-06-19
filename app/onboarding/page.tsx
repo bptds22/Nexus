@@ -2225,35 +2225,30 @@ function SchoolCoachTeamStep({ user, save }: { user: NexusUser; save: (u: Partia
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function handlePick(team: TeamSearchRow) {
-    setSubmitting(true);
+  function handlePick(team: TeamSearchRow) {
+    // Fix #2 (Option A) : SÉLECTION locale uniquement — AUCUNE écriture
+    // team_coaches au clic. Le rattachement (role 'assistant') se fait UNE
+    // SEULE FOIS au finish, via finish_coach_school_onboarding (p_team_id =
+    // profile.team_id = l'équipe sélectionnée ci-dessous, branche LINK
+    // ON CONFLICT DO NOTHING). Cliquer une autre carte remplace simplement
+    // la sélection (profile.team_id écrasé par persistTeamLocally) ; rien
+    // n'est écrit en base tant que l'onboarding n'est pas finalisé. Élimine
+    // l'accumulation de rattachements assistant fantômes (ancien appel
+    // joinExistingTeam au clic retiré).
     setError(null);
-    try {
-      const result = await joinExistingTeam(team);
-      if (!result.ok) {
-        setError(result.error);
-        return;
-      }
-      // School flow keeps the SECONDAIRE institution write from
-      // SchoolStep — no institution override needed. We still bump
-      // localUserVersion via save({}) so anything reading profile.team
-      // re-renders.
-      persistTeamLocally({
-        teamId: team.id,
-        teamName: team.name,
-        ageGroup: team.age_group,
-        gender: team.gender,
-        category: team.division,
-        season: getCurrentSeason(),
-        schoolId: team.school_id,
-        schoolName: team.school_name,
-      });
-      save({});
-      setJoinedKind("joined");
-      setJoinedTeam(team);
-    } finally {
-      setSubmitting(false);
-    }
+    persistTeamLocally({
+      teamId: team.id,
+      teamName: team.name,
+      ageGroup: team.age_group,
+      gender: team.gender,
+      category: team.division,
+      season: getCurrentSeason(),
+      schoolId: team.school_id,
+      schoolName: team.school_name,
+    });
+    save({});
+    setJoinedKind("joined");
+    setJoinedTeam(team);
   }
 
   // Create a brand-new team under the coach's OWN school. Mirrors the civil
