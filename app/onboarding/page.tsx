@@ -1976,6 +1976,26 @@ function persistTeamLocally(args: PersistTeamLocallyArgs) {
   localStorage.setItem("nexus_user", JSON.stringify(updated));
 }
 
+// Inverse of persistTeamLocally : clears profile.team + profile.team_id
+// (deselect / misclick). Leaves institution + school_id intact — a civil
+// coach stays tied to their club even without a specific team. Both finishes
+// read p_team_id from profile.team_id, so nulling it here makes the finish
+// send p_team_id = null (no team link).
+function clearTeamLocally() {
+  const rawNow = typeof window !== "undefined" ? localStorage.getItem("nexus_user") : null;
+  if (!rawNow) return;
+  const current = JSON.parse(rawNow) as NexusUser;
+  const updated = {
+    ...current,
+    profile: {
+      ...(current.profile || {}),
+      team: null,
+      team_id: null,
+    },
+  };
+  localStorage.setItem("nexus_user", JSON.stringify(updated));
+}
+
 // Module-level join helper. Performs ONLY the two INSERTs (school_coaches
 // role=COACH, team_coaches role=assistant) with 23505 tolerated on both.
 // State (submitting / error / selectedTeam) and localStorage persistence
@@ -2249,6 +2269,15 @@ function SchoolCoachTeamStep({ user, save }: { user: NexusUser; save: (u: Partia
     // l'accumulation de rattachements assistant fantômes (ancien appel
     // joinExistingTeam au clic retiré).
     setError(null);
+    // Toggle : re-cliquer l'équipe DÉJÀ sélectionnée la DÉSÉLECTIONNE (misclick)
+    // → profile.team_id vidé → finish enverra p_team_id = null. La bannière de
+    // confirmation et le ✓ de la carte disparaissent (joinedTeam = null).
+    if (joinedTeam?.id === team.id) {
+      clearTeamLocally();
+      save({});
+      setJoinedTeam(null);
+      return;
+    }
     persistTeamLocally({
       teamId: team.id,
       teamName: team.name,
@@ -3543,40 +3572,46 @@ function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Part
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Thin civil-flow wrapper around the module-level joinExistingTeam +
-  // persistTeamLocally helpers. The INSERT pair (school_coaches role=COACH
-  // + team_coaches role=assistant, 23505 tolerated) is identical to the
-  // pre-lift behavior. Only the local component state (submitting/error/
-  // selected) and the civil-specific institution promotion (LIGUE_CIVILE
-  // pseudo-school) stay here.
-  async function handleJoinExistingTeam(team: TeamSearchRow) {
-    setSubmitting(true);
+  // Fix #2-civil (Option A) : SÉLECTION locale uniquement — AUCUNE écriture
+  // au clic (ancien appel joinExistingTeam retiré). Le rattachement
+  // (team_coaches role='assistant') + le school_coaches UPSERT + users.school_id
+  // se font UNE SEULE FOIS au finish via finish_coach_civil_onboarding
+  // (p_team_id = profile.team_id persisté ci-dessous, branche LINK
+  // ON CONFLICT DO NOTHING ; p_club_id = institution.id promu ci-dessous).
+  // Cliquer une autre équipe remplace simplement la sélection ; rien n'est
+  // écrit tant que l'onboarding n'est pas finalisé. Élimine l'accumulation de
+  // rattachements assistant fantômes. (Réplique le fix web école — commit
+  // 0f25334.) On CONSERVE save(institution) + persistTeamLocally : ce sont eux
+  // qui alimentent civilClubId/civilTeamId que le finish reçoit en p_club_id/
+  // p_team_id.
+  function handleJoinExistingTeam(team: TeamSearchRow) {
     setError(null);
-    try {
-      const result = await joinExistingTeam(team);
-      if (!result.ok) {
-        setError(result.error);
-        return;
-      }
-      // Phase 6.2: institution is now a LIGUE_CIVILE schools row.
-      // Promoted via save() so the wizard's localUserVersion ticks.
-      save({
-        institution: { id: team.school_id, name: team.school_name, type: "ligue_civile" },
-      });
-      persistTeamLocally({
-        teamId: team.id,
-        teamName: team.name,
-        ageGroup: team.age_group,
-        gender: team.gender,
-        category: team.division,
-        season: getCurrentSeason(),
-        schoolId: team.school_id,
-        schoolName: team.school_name,
-      });
-      setSelectedTeam(team);
-    } finally {
-      setSubmitting(false);
+    // Toggle : re-cliquer l'équipe DÉJÀ sélectionnée la DÉSÉLECTIONNE (misclick).
+    // Retour à "aucune équipe" → profile.team_id vidé → finish enverra
+    // p_team_id = null. L'institution (club LIGUE_CIVILE) reste : le coach
+    // demeure rattaché au club, simplement sans équipe précise.
+    if (selectedTeam?.id === team.id) {
+      clearTeamLocally();
+      save({});
+      setSelectedTeam(null);
+      return;
     }
+    // Phase 6.2: institution is now a LIGUE_CIVILE schools row.
+    // Promoted via save() so the wizard's localUserVersion ticks.
+    save({
+      institution: { id: team.school_id, name: team.school_name, type: "ligue_civile" },
+    });
+    persistTeamLocally({
+      teamId: team.id,
+      teamName: team.name,
+      ageGroup: team.age_group,
+      gender: team.gender,
+      category: team.division,
+      season: getCurrentSeason(),
+      schoolId: team.school_id,
+      schoolName: team.school_name,
+    });
+    setSelectedTeam(team);
   }
 
   async function handleCreateTeam(formData: TeamFormData) {
@@ -3797,6 +3832,7 @@ function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Part
           schoolId={lockedSchoolId}
           schoolName={lockedSchoolName}
           sportId={workingSportId || sportId}
+          selectedTeamId={selectedTeam?.id ?? null}
           onSelect={handleJoinExistingTeam}
           onCreate={() => {
             setError(null);
