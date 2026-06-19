@@ -7,6 +7,7 @@ import { LanguageProvider } from "@/lib/i18n/LanguageContext";
 import { MobileToastProvider } from "@/components/mobile/MobileToast";
 import { QueryProvider } from "./_providers/QueryProvider";
 import { SubscriptionProvider } from "@/lib/context/SubscriptionProvider";
+import { PushRegistrar } from "@/components/push/PushRegistrar";
 import { SplashGate } from "@/components/mobile/auth/SplashGate";
 
 const ORGANIZATION_JSONLD = {
@@ -180,6 +181,9 @@ export default function RootLayout({
         <LanguageProvider>
           <QueryProvider>
             <SubscriptionProvider>
+              {/* Phase 2B push — déclencheur d'enregistrement natif post-auth
+                  (no-op sur web). Timing provisoire pour le test. */}
+              <PushRegistrar />
               <MobileToastProvider>
                 {/* Iter 7.47 — SplashGate joue l'anim X→logo UNE FOIS par
                     cold start Capacitor. Desktop : passthrough immédiat
