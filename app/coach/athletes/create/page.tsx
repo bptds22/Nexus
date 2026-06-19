@@ -21,6 +21,8 @@ import {
 } from "@/lib/coach/athleteEmailAutocomplete";
 import AthleteWizardMobile from "@/components/shared/AthleteWizardMobile";
 import { saveAthleteCreate, computeCoteGlobale } from "../_data/saveAthlete";
+import InvitationLinkModal from "@/components/ui/InvitationLinkModal";
+import { createAthleteInvitationLink } from "@/lib/queries/coach/createAthleteInvitation";
 import { coteChanged } from "@/lib/utils/cote";
 import { ConfirmSheet } from "@/components/shared/settings";
 import CoteChangeConfirmContent from "@/components/shared/CoteChangeConfirmContent";
@@ -256,6 +258,12 @@ export default function CreateAthletePage() {
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
   const [showErrors, setShowErrors] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  // #48 — id de l'athlète créé (pour générer son lien de claim depuis l'écran
+  // de confirmation) + état du lien token-based.
+  const [createdAthleteId, setCreatedAthleteId] = useState<string | null>(null);
+  const [claimLink, setClaimLink] = useState<string | null>(null);
+  const [generatingLink, setGeneratingLink] = useState(false);
+  const [linkError, setLinkError] = useState<string | null>(null);
 
   const router = useRouter();
 
@@ -685,11 +693,28 @@ export default function CreateAthletePage() {
     }
 
     setCompletedSteps((prev) => new Set([...prev, 7]));
+    setCreatedAthleteId((result as { id?: string }).id ?? null);
     setSubmitted(true);
   }
 
   function handleDraft() {
     setSubmitted(true);
+  }
+
+  // #48 — génère le lien de claim de l'athlète qu'on vient de créer (même RPC
+  // + même modale que la fiche athlète, via le helper partagé).
+  async function handleGenerateInviteLink() {
+    if (!createdAthleteId) return;
+    setGeneratingLink(true);
+    setLinkError(null);
+    try {
+      const supabase = createClient();
+      const { link, error } = await createAthleteInvitationLink(supabase, createdAthleteId);
+      if (error || !link) { setLinkError(error ?? "Impossible de générer le lien."); return; }
+      setClaimLink(link);
+    } finally {
+      setGeneratingLink(false);
+    }
   }
 
   /* ══════════════════════════════════════════════════════════════
@@ -1612,10 +1637,33 @@ export default function CreateAthletePage() {
         <p className="text-[14px] text-[#8a8d96] mb-8 leading-relaxed">
           Le profil de <strong className="text-white">{form.identity.firstName} {form.identity.lastName}</strong> a été soumis avec succès. Il sera révisé par l&apos;administration avant d&apos;être visible aux recruteurs.
         </p>
-        <button type="button" onClick={() => { setSubmitted(false); setForm(INITIAL_FORM); setCurrentStep(1); setCompletedSteps(new Set()); }}
+
+        {/* #48 — lien de claim pour l'athlète qu'on vient de créer (orphelin).
+            Même RPC + même InvitationLinkModal que la fiche athlète. */}
+        {createdAthleteId && (
+          <div className="mb-6">
+            <button type="button" onClick={handleGenerateInviteLink} disabled={generatingLink}
+              className="inline-flex items-center gap-2 bg-[#F59E0B] hover:bg-[#D97706] disabled:opacity-60 text-black font-head font-bold text-[12px] uppercase tracking-widest rounded-lg px-6 py-3 transition-colors">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg>
+              {generatingLink ? "Génération…" : "Générer le lien d'invitation"}
+            </button>
+            {linkError && <p className="text-[12px] text-[#EF4444] mt-2">{linkError}</p>}
+            <p className="text-[12px] text-[#6b7280] mt-2">Optionnel — pour que l&apos;athlète crée son compte et complète son profil.</p>
+          </div>
+        )}
+
+        <button type="button" onClick={() => { setSubmitted(false); setForm(INITIAL_FORM); setCurrentStep(1); setCompletedSteps(new Set()); setCreatedAthleteId(null); setClaimLink(null); setLinkError(null); }}
           className="bg-[#E63946] hover:bg-[#D42B22] text-white font-head font-bold text-[12px] uppercase tracking-widest rounded-lg px-6 py-3 transition-colors">
           Créer un autre profil
         </button>
+
+        {claimLink && (
+          <InvitationLinkModal
+            link={claimLink}
+            onClose={() => setClaimLink(null)}
+            description="Envoie ce lien à l'athlète. Il pourra créer son compte et compléter son profil."
+          />
+        )}
       </div>
     );
   }

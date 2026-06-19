@@ -11,6 +11,7 @@ import NxIcon from "@/components/ui/NxIcon";
 import StarRating from "@/components/ui/StarRating";
 import { createClient } from "@/lib/supabase/client";
 import InvitationLinkModal from "@/components/ui/InvitationLinkModal";
+import { createAthleteInvitationLink } from "@/lib/queries/coach/createAthleteInvitation";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
 import DistinctionBadge from "@/components/shared/DistinctionBadge";
 import { parseDistinctions, type DistinctionEntry } from "@/lib/config/badges";
@@ -426,35 +427,20 @@ export default function CoachAthleteProfilePage() {
   async function handleGenerateInviteLink() {
     setGeneratingLink(true);
     try {
-      const supabase = createClient();
-      const { data, error } = await supabase.rpc("create_athlete_invitation", { p_athlete_id: id });
-      if (error || !data) {
-        const msg = error?.message || "";
-        let userMsg = "Impossible de générer le lien. Réessaie.";
-        if (msg.includes("NOT_OWNER")) userMsg = "Tu n'es pas le coach propriétaire de cet athlète.";
-        else if (msg.includes("ALREADY_CLAIMED")) userMsg = "Cet athlète a déjà un compte — aucun lien nécessaire.";
-        else if (msg.includes("NOT_AUTHENTICATED")) userMsg = "Session expirée — reconnecte-toi.";
-        else if (msg.includes("ATHLETE_NOT_FOUND")) userMsg = "Athlète introuvable.";
-        console.error("[create_athlete_invitation]", error);
-        showToast(userMsg);
-        return;
-      }
-      const token = data as string;
-      const base = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
-      setClaimLink(`${base}/claim?token=${token}`);
+      const { link, error } = await createAthleteInvitationLink(createClient(), id);
+      if (error || !link) { showToast(error ?? "Impossible de générer le lien."); return; }
+      setClaimLink(link);
     } finally {
       setGeneratingLink(false);
     }
   }
 
   const [mode, setMode] = useState<"simple" | "detailed">("simple");
-  const [showInviteModal, setShowInviteModal] = useState(false);
   const [athleteHasAccount, setAthleteHasAccount] = useState(false);
   const [athleteEmail, setAthleteEmail] = useState<string | null>(null);
   // #48 — lien de claim token-based (RPC create_athlete_invitation → /claim?token=).
   const [claimLink, setClaimLink] = useState<string | null>(null);
   const [generatingLink, setGeneratingLink] = useState(false);
-  const [inviteEmail, setInviteEmail] = useState("");
   const [toast, setToast] = useState<string | null>(null);
   const searchParams = useSearchParams();
   const isPreview = searchParams.get("preview") === "true";
@@ -537,18 +523,9 @@ export default function CoachAthleteProfilePage() {
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex-1" />
 
-            {/* Invite */}
-            {!athleteHasAccount && (
-              <button type="button" onClick={() => consentGiven ? setShowInviteModal(true) : null}
-                disabled={!consentGiven}
-                title={!consentGiven ? "Confirme le consentement parental d'abord" : undefined}
-                className={`flex items-center gap-2 px-4 py-2 border rounded-lg text-[11px] font-bold uppercase tracking-wider transition-colors ${
-                  consentGiven ? "border-[#E63946] text-[#E63946] hover:bg-[#E63946]/10" : "border-[#2D3748] text-[#4a4d56] cursor-not-allowed"
-                }`}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="8.5" cy="7" r="4" /><line x1="20" y1="8" x2="20" y2="14" /><line x1="23" y1="11" x2="17" y2="11" /></svg>
-                Inviter l&apos;athlète
-              </button>
-            )}
+            {/* Invitation : le bouton "Générer le lien" vit dans la bannière
+                "Compte non réclamé" ci-dessous (chemin token-based #48).
+                L'ancien bouton e-mail best-effort a été retiré. */}
 
             {/* Edit */}
             <Link href={`/coach/athletes/${id}/modifier`} className="flex items-center gap-2 px-4 py-2 border border-[#E63946] text-[#E63946] rounded-lg text-[11px] font-bold uppercase tracking-wider hover:bg-[#E63946]/10 transition-colors">
@@ -1048,25 +1025,6 @@ export default function CoachAthleteProfilePage() {
               </div>
             </section>
           )}
-        </div>
-      )}
-
-      {/* ── Invite Modal ──────────────────────────────────────── */}
-      {showInviteModal && (
-        <div className="fixed inset-0 z-[90] flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowInviteModal(false)} />
-          <div className="relative bg-[#1A1D24] border border-[#2D3748] rounded-xl p-6 max-w-sm w-full mx-4 shadow-2xl">
-            <h3 className="font-head text-[16px] font-black text-white uppercase tracking-tight">Inviter {a.firstName} {a.lastName}</h3>
-            <p className="text-[13px] text-[#9CA3AF] mt-2">L&apos;athlète pourra voir son profil et proposer des modifications.</p>
-            <div className="mt-4">
-              <label className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#6b7280] block mb-1.5">Courriel de l&apos;athlète</label>
-              <input type="email" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} placeholder="athlete@ecole.qc.ca" className="w-full bg-[#13151a] border border-[#2a2d36] rounded-lg px-4 py-2.5 text-[13px] text-[#e0e0e0] placeholder:text-[#4a4d56] focus:border-[#E63946] outline-none" />
-            </div>
-            <div className="flex items-center justify-end gap-3 mt-5">
-              <button type="button" onClick={() => setShowInviteModal(false)} className="px-4 py-2 text-[13px] font-bold text-[#9CA3AF] hover:text-white transition-colors">Annuler</button>
-              <button type="button" onClick={() => { setShowInviteModal(false); setInviteEmail(""); showToast("Invitation envoyée (POC)"); }} className="px-5 py-2 bg-[#E63946] hover:bg-[#D42B22] text-white text-[13px] font-bold rounded-lg transition-colors">Envoyer</button>
-            </div>
-          </div>
         </div>
       )}
 
