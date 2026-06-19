@@ -177,7 +177,7 @@ export default function TransfertSection({ currentSchoolId, currentSchoolName, s
       {success && (
         <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-[#22C55E]/10 border border-[#22C55E]/20">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5" /></svg>
-          <span className="text-[13px] font-bold text-[#22C55E]">Votre demande de transfert a été envoyée au directeur sportif de votre CÉGEP actuel.</span>
+          <span className="text-[13px] font-bold text-[#22C55E]">Votre demande de transfert a été envoyée au responsable de sports de votre CÉGEP actuel.</span>
         </div>
       )}
 
@@ -353,7 +353,7 @@ export default function TransfertSection({ currentSchoolId, currentSchoolName, s
                 <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
               </svg>
               <p className="text-[11px] text-[#4a4d56] leading-relaxed">
-                Cette demande sera envoyée au directeur sportif de votre CÉGEP actuel pour approbation.
+                Cette demande sera envoyée au responsable de sports de votre CÉGEP actuel pour approbation.
               </p>
             </div>
           </div>

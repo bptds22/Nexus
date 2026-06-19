@@ -504,7 +504,7 @@ export function CoachOnboardingMobileSchool() {
         } else if (msg.includes("WRONG_ROLE_OR_CONTEXT")) {
           userMessage = "Ce flux est réservé aux coachs scolaires.";
         } else if (msg.includes("INVALID_DIRECTOR_CHOICE")) {
-          userMessage = "Choix de directeur invalide.";
+          userMessage = "Choix de responsable invalide.";
         } else if (msg.includes("INVALID_SPORT")) {
           userMessage = "Sport non reconnu — reviens à l'étape Profil et resélectionne ton sport.";
         }
@@ -1134,9 +1134,9 @@ type DirectorCard = {
 };
 
 const DIRECTOR_CARDS: DirectorCard[] = [
-  { value: "owner",   title: "C'est moi",            desc: "Je suis le directeur sportif de l'école.",          iconStroke: "#DAB65A", iconBgActive: "bg-[#DAB65A]/15" },
+  { value: "owner",   title: "C'est moi",            desc: "Je suis le responsable de sports de l'école.",          iconStroke: "#DAB65A", iconBgActive: "bg-[#DAB65A]/15" },
   { value: "interim", title: "Je serai intérimaire", desc: "Je remplis ce rôle temporairement.",                iconStroke: "#9CA3AF", iconBgActive: "bg-[#6B7280]/20" },
-  { value: "coach",   title: "Entraîneur seulement", desc: "Je suis coach — un autre est ou sera directeur sportif.", iconStroke: "#3B82F6", iconBgActive: "bg-[#3B82F6]/20" },
+  { value: "coach",   title: "Entraîneur seulement", desc: "Je suis coach — un autre est ou sera responsable de sports.", iconStroke: "#3B82F6", iconBgActive: "bg-[#3B82F6]/20" },
 ];
 
 function DirectorIcon({ kind, color }: { kind: Exclude<DirectorChoice, null>; color: string }) {
@@ -1181,7 +1181,7 @@ function Slide3Director(p: Slide3Props) {
     <div className="px-6 pt-4 space-y-1">
       <StepHeading
         title="Quel est ton rôle ?"
-        subtitle="Ton rôle au sein de l'école. Tu peux inviter le directeur sportif si quelqu'un d'autre l'est."
+        subtitle="Ton rôle au sein de l'école. Tu peux inviter le responsable de sports si quelqu'un d'autre l'est."
       />
 
       {/* Bannière contextuelle Loi 25 (école sans responsable, ou en cours
@@ -1253,7 +1253,7 @@ function Slide3Director(p: Slide3Props) {
           <SectionTitle>Attestation RPRP</SectionTitle>
           <div className="bg-[#1A1D24] border border-white/[0.06] rounded-2xl px-4 py-3 space-y-2">
             <p className="text-[13px] text-white/80 leading-relaxed">
-              En tant que directeur sportif, tu deviens le Responsable de la Protection des Renseignements Personnels (RPRP) pour ton école sur Nexus. Tu acceptes la responsabilité associée (Loi 25).
+              En tant que responsable de sports, tu deviens le Responsable de la Protection des Renseignements Personnels (RPRP) pour ton école sur Nexus. Tu acceptes la responsabilité associée (Loi 25).
             </p>
             <label className="flex items-start gap-3 cursor-pointer min-h-[44px] py-1.5">
               <input
@@ -1284,10 +1284,10 @@ function Slide3Director(p: Slide3Props) {
           pour pré-onboarder le directeur sportif. Vide → coach_only. */}
       {p.choice === "coach" && (
         <div className="mt-5">
-          <SectionTitle>Inviter le directeur (optionnel)</SectionTitle>
+          <SectionTitle>Inviter le responsable de sports (optionnel)</SectionTitle>
           <div>
             <label htmlFor="coach-invite-email" className={labelCls}>
-              Courriel du directeur sportif
+              Courriel du responsable de sports
             </label>
             <input
               id="coach-invite-email"
@@ -1298,13 +1298,13 @@ function Slide3Director(p: Slide3Props) {
               spellCheck={false}
               value={p.inviteEmail}
               onChange={(e) => p.setInviteEmail(e.target.value)}
-              placeholder="directeur@ecole.qc.ca"
+              placeholder="responsable@ecole.qc.ca"
               className={inputCls}
             />
             <p className="text-[12px] text-white/40 italic mt-1 px-1">
               {p.inviteEmailFilled && !p.inviteEmailValid
                 ? "Courriel invalide."
-                : "Optionnel — on lui enverra un courriel pour revendiquer le rôle de directeur sportif. Laisse vide si tu ne sais pas."}
+                : "Optionnel — on lui enverra un courriel pour revendiquer le rôle de responsable de sports. Laisse vide si tu ne sais pas."}
             </p>
           </div>
         </div>
@@ -1330,8 +1330,8 @@ function Slide4Confirmation(p: Slide4Props) {
   // responsable. "Entraîneur" reste "Entraîneur" même avec une invitation.
   const directorLabel = (() => {
     switch (p.directorChoice) {
-      case "owner":   return "Directeur sportif";
-      case "interim": return "Directeur sportif intérimaire";
+      case "owner":   return "Responsable de sports";
+      case "interim": return "Responsable de sports intérimaire";
       case "coach":   return "Entraîneur";
       default:        return "—";
     }

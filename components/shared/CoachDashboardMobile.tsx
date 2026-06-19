@@ -85,10 +85,10 @@ function InterimBanner({ schoolName }: { schoolName: string }) {
       </svg>
       <div className="flex-1 min-w-0">
         <p className="text-[14px] font-bold text-white">
-          Tu es directeur sportif intérimaire{schoolName ? ` de ${schoolName}` : ""}
+          Tu es responsable de sports intérimaire{schoolName ? ` de ${schoolName}` : ""}
         </p>
         <p className="text-[13px] text-white/55 mt-0.5 leading-relaxed">
-          Tu as les pleins pouvoirs administratifs jusqu&apos;à l&apos;arrivée d&apos;un directeur permanent.
+          Tu as les pleins pouvoirs administratifs jusqu&apos;à l&apos;arrivée d&apos;un responsable de sports permanent.
         </p>
       </div>
     </div>

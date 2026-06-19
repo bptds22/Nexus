@@ -403,10 +403,10 @@ export default function TableauDeBordPage() {
           </svg>
           <div className="flex-1">
             <p className="text-[14px] font-bold text-[#c8c8cc]">
-              Tu es directeur sportif intérimaire{interimSchoolName ? ` de ${interimSchoolName}` : ""}
+              Tu es responsable de sports intérimaire{interimSchoolName ? ` de ${interimSchoolName}` : ""}
             </p>
             <p className="text-[13px] text-[#9CA3AF] mt-0.5 leading-relaxed">
-              Tu as les pleins pouvoirs administratifs jusqu&apos;à l&apos;arrivée d&apos;un directeur permanent. Si un directeur officiel s&apos;inscrit et choisit «&nbsp;C&apos;est moi&nbsp;», ton rôle sera automatiquement ramené à entraîneur.
+              Tu as les pleins pouvoirs administratifs jusqu&apos;à l&apos;arrivée d&apos;un responsable de sports permanent. Si un responsable de sports officiel s&apos;inscrit et choisit «&nbsp;C&apos;est moi&nbsp;», ton rôle sera automatiquement ramené à entraîneur.
             </p>
           </div>
         </div>

@@ -724,7 +724,7 @@ export function AthleteParametresMobile() {
         open={revokeConsentSheetOpen}
         onClose={() => setRevokeConsentSheetOpen(false)}
         title="Retirer le consentement ?"
-        message="Ton profil sera immédiatement désactivé et invisible pour les recruteurs. Ton coach et le directeur sportif seront notifiés."
+        message="Ton profil sera immédiatement désactivé et invisible pour les recruteurs. Ton coach et le responsable de sports seront notifiés."
         confirmLabel="Retirer le consentement"
         onConfirm={handleRevokeConsent}
         variant="danger"

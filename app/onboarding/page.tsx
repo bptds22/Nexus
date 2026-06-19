@@ -844,7 +844,7 @@ export default function OnboardingPage() {
           } else if (msg.includes("WRONG_ROLE_OR_CONTEXT")) {
             userMessage = "Ce flux est réservé aux coachs scolaires.";
           } else if (msg.includes("INVALID_DIRECTOR_CHOICE")) {
-            userMessage = "Choix de directeur invalide.";
+            userMessage = "Choix de responsable invalide.";
           }
           setNavError(userMessage);
           return;
@@ -1274,8 +1274,8 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
   // the separate `coordinator_league` role onboarded via
   // LeagueCoordinatorStep). Keep `isLeague` as the discriminator —
   // any future cegep/league admin variants stay co-located here.
-  const roleLabel = isLeague ? "coach principal" : "directeur sportif";
-  const RoleLabel = isLeague ? "Coach principal" : "Directeur sportif";
+  const roleLabel = isLeague ? "coach principal" : "responsable de sports";
+  const RoleLabel = isLeague ? "Coach principal" : "Responsable de sports";
   const orgName = user.institution
     ? (user.institution as Record<string, string>)?.name || "ton organisation"
     : "ton organisation";

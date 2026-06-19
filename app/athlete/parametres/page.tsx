@@ -556,7 +556,7 @@ function ParametresPageDesktop() {
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowRevokeModal(false)} />
           <div className="relative bg-[#1A1D24] border border-[#2D3748] rounded-xl p-6 max-w-sm w-full mx-4 shadow-2xl">
             <h3 className="font-head text-[16px] font-black text-white uppercase tracking-tight">Retirer le consentement?</h3>
-            <p className="text-[13px] text-[#9CA3AF] mt-2 leading-relaxed">Ton profil sera immédiatement désactivé et invisible pour les recruteurs. Ton coach et le directeur sportif seront notifiés.</p>
+            <p className="text-[13px] text-[#9CA3AF] mt-2 leading-relaxed">Ton profil sera immédiatement désactivé et invisible pour les recruteurs. Ton coach et le responsable de sports seront notifiés.</p>
             <p className="text-[11px] text-[#6b7280] mt-2">Cette action peut être annulée en contactant ton coach.</p>
             <div className="flex items-center justify-end gap-3 mt-5">
               <button type="button" onClick={() => setShowRevokeModal(false)} className="px-4 py-2 text-[13px] font-bold text-[#9CA3AF] hover:text-white transition-colors">Annuler</button>
