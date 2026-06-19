@@ -535,7 +535,7 @@ function AthleteOnboardingDesktop() {
       // signed up before 5.3a shipped.
       const { data: contextRow } = await supabase
         .from("users")
-        .select("context")
+        .select("context, onboarding_complete")
         .eq("id", user.id)
         .single();
       const ctxRaw = contextRow?.context;
@@ -556,13 +556,15 @@ function AthleteOnboardingDesktop() {
 
       if (existing) {
         setExistingAthleteId(existing.id);
-        // If profile is complete, skip to dashboard. Civil-context
-        // athletes anchor on a LIGUE_CIVILE schools row (existing.school_id
-        // is non-null when a team was picked); they can also have
-        // school_id NULL if they used "Continuer sans équipe".
-        const profileComplete = existing.first_name && existing.last_name && existing.sport_id
-          && (ctx === "ligue_civile" || existing.school_id);
-        if (profileComplete) {
+        // Skip onboarding ONLY when users.onboarding_complete is set — the SAME
+        // criterion as the athlete layout guard. Previously this redirected on
+        // the PRESENCE of athletes fields (first_name/last_name/sport_id/
+        // school_id), which a coach-seeded CLAIMED account already has → it
+        // jumped to the dashboard before handleSubmit could set the flag, so the
+        // layout (flag still false) bounced back → infinite loop. Now a claimed
+        // (or unfinished) account stays on the PRE-FILLED onboarding and
+        // completes it, which sets the flag — no more loop.
+        if (contextRow?.onboarding_complete === true) {
           router.replace("/athlete/dashboard");
           return;
         }
