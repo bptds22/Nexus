@@ -258,7 +258,7 @@ function CegepDashboardContent() {
           }
         />
         <KpiCard
-          label="Athlètes dans le pipeline"
+          label="Athlètes dans le processus"
           value={pipelineCount}
           valueColor="#E63946"
           iconBgColor="rgba(230,57,70,0.15)"
@@ -324,7 +324,7 @@ function CegepDashboardContent() {
             </BarChart>
           </ResponsiveContainer>
         ) : (
-          <p className="text-[13px] text-[#4a4d56] italic py-8 text-center">Aucun athlète dans le pipeline</p>
+          <p className="text-[13px] text-[#4a4d56] italic py-8 text-center">Aucun athlète dans le processus</p>
         )}
       </div>
 
@@ -339,7 +339,7 @@ function CegepDashboardContent() {
                 <XAxis dataKey="short" tick={{ fill: "#9CA3AF", fontSize: 11 }} axisLine={false} tickLine={false} interval={0} />
                 <YAxis tick={{ fill: "#6B7280", fontSize: 11 }} axisLine={false} tickLine={false} />
                 <Tooltip content={<DarkTooltip />} cursor={{ fill: "rgba(255,255,255,0.04)" }} labelFormatter={(_, payload) => payload?.[0]?.payload?.name ?? ""} />
-                <Bar dataKey="messages" name="Pipeline" fill="#E63946" radius={[4, 4, 0, 0]} barSize={28} />
+                <Bar dataKey="messages" name="Processus" fill="#E63946" radius={[4, 4, 0, 0]} barSize={28} />
               </BarChart>
             </ResponsiveContainer>
           ) : (

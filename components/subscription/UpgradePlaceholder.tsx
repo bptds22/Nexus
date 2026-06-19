@@ -26,7 +26,7 @@ const FEATURE_DESCRIPTIONS: Record<string, string> = {
   video_upload: "Upload des vidéos directement sur Nexus au lieu de liens externes.",
   who_viewed: "Découvre quels CÉGEPs et recruteurs consultent ton profil.",
   bulk_message: "Envoie des messages à plusieurs coachs en un clic.",
-  unlimited_pipeline: "Suis un nombre illimité d'athlètes dans ton pipeline.",
+  unlimited_pipeline: "Suis un nombre illimité d'athlètes dans ton processus.",
   unlimited_favorites: "Ajoute autant d'athlètes que tu veux à tes favoris.",
   unlimited_profiles: "Crée un nombre illimité de profils athlètes.",
   school_management: "Supervise tes coachs, suis les placements et gère ton école.",

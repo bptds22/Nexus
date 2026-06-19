@@ -94,7 +94,7 @@ function generateVerb(item: ActivityListItem): string {
         return `${a} : ${stage(item.beforeStage)} → ${stage(item.newStage)}`;
       }
       if (item.newStage) return `${a} → ${stage(item.newStage)}`;
-      return `Pipeline de ${a} mis à jour`;
+      return `Processus de ${a} mis à jour`;
     }
     case "PROFILE_VIEWED": return `${a} a été consulté`;
     case "NEW_ATHLETE": return `Nouvel athlète : ${a}`;

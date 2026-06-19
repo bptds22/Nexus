@@ -57,7 +57,7 @@ interface EntryDef {
 const ENTRIES: EntryDef[] = [
   { key: "mon_ecole",  label: "Mon école",                 sublabel: "Vue d'ensemble : roster, complétion, vues recruteurs", webPath: "/coach/ecole",            gate: "pro" },
   { key: "coachs",     label: "Mes coachs",                sublabel: "Les coachs de ton école",                              webPath: "/coach/ecole/coachs",     gate: "pro" },
-  { key: "stats",      label: "Stats école",               sublabel: "Statistiques par sport, pipeline, CÉGEPs intéressés",  webPath: "/coach/ecole/stats",      gate: "pro" },
+  { key: "stats",      label: "Stats école",               sublabel: "Statistiques par sport, processus, CÉGEPs intéressés",  webPath: "/coach/ecole/stats",      gate: "pro" },
   { key: "analytique", label: "Analytique",                sublabel: "Vues, performance par athlète, entonnoir de recrutement", webPath: "/coach/ecole/analytics", gate: "pro" },
   { key: "placements", label: "Placements",                sublabel: "Athlètes recrutés cette saison",                       webPath: "/coach/ecole/placements", gate: "pro" },
   { key: "admin",      label: "Administration de l'école", sublabel: "Gère les directeurs et les accès",                     webPath: "/coach/settings#admin_ecole", gate: "admin" },

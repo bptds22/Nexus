@@ -357,7 +357,7 @@ export function RecruteurParametresMobile() {
             <span className="text-[14px] font-semibold text-white uppercase tracking-wider">{tierLabel}</span>
           </div>
           {tier === "free" && (
-            <p className="text-[12px] text-[#6b7280] mt-2">Passe à Pro pour débloquer la pipeline, la messagerie et plus.</p>
+            <p className="text-[12px] text-[#6b7280] mt-2">Passe à Pro pour débloquer le processus, la messagerie et plus.</p>
           )}
         </div>
       </div>
@@ -490,7 +490,7 @@ export function RecruteurParametresMobile() {
           price="19,99 $"
           period="/mois"
           features={[
-            "Pipeline complet + messagerie",
+            "Processus complet + messagerie",
             "Filtres avancés (taille, poids, cote)",
             "Coordonnées du coach révélées",
           ]}
@@ -504,7 +504,7 @@ export function RecruteurParametresMobile() {
           price="29,99 $"
           period="/mois"
           features={[
-            "Pipeline illimité + analytics",
+            "Processus illimité + analytics",
             "Voir qui a consulté un athlète",
             "Listes de prospects personnalisées",
           ]}

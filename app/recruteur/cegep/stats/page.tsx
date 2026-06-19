@@ -684,7 +684,7 @@ function CegepStatsPage() {
               </div>
             );
           }) : (
-            <p className="text-[13px] text-[#4a4d56] italic py-4 text-center">Aucun athlète dans le pipeline</p>
+            <p className="text-[13px] text-[#4a4d56] italic py-4 text-center">Aucun athlète dans le processus</p>
           )}
         </div>
       </div>

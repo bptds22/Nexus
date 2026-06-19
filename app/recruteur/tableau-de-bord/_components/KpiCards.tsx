@@ -90,7 +90,7 @@ export default function KpiCards({ data, pipelineCounts }: { data: RecruiterKpiD
         {/* Total + retired */}
         <div className="flex items-center justify-between mt-4 pt-3 border-t border-[#2D3748]/50">
           <span className="text-[12px] text-[#6b7280]">
-            <span className="font-bold text-white">{totalActive}</span> athlète{totalActive !== 1 ? "s" : ""} actif{totalActive !== 1 ? "s" : ""} dans ton pipeline
+            <span className="font-bold text-white">{totalActive}</span> athlète{totalActive !== 1 ? "s" : ""} actif{totalActive !== 1 ? "s" : ""} dans ton processus
             <span className="text-[10px] text-[#6B7280] ml-2">· 50 max en gratuit</span>
           </span>
           {counts.retire > 0 && (

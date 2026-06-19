@@ -1799,7 +1799,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0110 0v4" />
               </svg>
-              Passer à Pro pour le pipeline
+              Passer à Pro pour le processus
             </button>
           ) : myPipelineStage ? (() => {
             const upper = myPipelineStage.toUpperCase();
@@ -1830,7 +1830,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
               </span>
             );
           })() : (
-            <span className="text-[12px] italic text-[#6b7280]">Pas dans le pipeline</span>
+            <span className="text-[12px] italic text-[#6b7280]">Pas dans le processus</span>
           )}
         </div>
         )}
@@ -2929,7 +2929,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
           onClose={() => setShowUpgradeModal(false)}
           role="recruteur"
           tierId="rec_pro"
-          lockedFeatureTitle="Le pipeline de recrutement"
+          lockedFeatureTitle="Le processus de recrutement"
           returnTo={typeof window !== "undefined" ? window.location.pathname : undefined}
         />
       )}

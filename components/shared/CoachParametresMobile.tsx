@@ -62,7 +62,7 @@ const NOTIF_ROWS: {
   { key: "athleteFavorited",   appKey: "app_athlete_favorited",    emailKey: "email_athlete_favorited",
     label: "Athlète ajouté en favori",     sublabel: "Un recruteur a ajouté un de tes athlètes en favori" },
   { key: "pipelineMovement",   appKey: "app_pipeline_movement",    emailKey: "email_pipeline_movement",
-    label: "Mouvement dans un pipeline",   sublabel: "Un athlète a changé d'étape côté recruteur" },
+    label: "Mouvement dans un processus",   sublabel: "Un athlète a changé d'étape côté recruteur" },
   { key: "profileIncomplete",  appKey: "app_profile_incomplete",   emailKey: "email_profile_incomplete",
     label: "Profil athlète incomplet",     sublabel: "Un athlète a un profil sous 60 %" },
   { key: "newMessage",         appKey: "app_new_message",          emailKey: "email_new_message",

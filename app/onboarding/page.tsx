@@ -1540,12 +1540,12 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
           (école est gérée par la bannière orpheline + admin_claims). */}
       {isCegep && schoolAdminState.hasPermanent && (
         <div className="bg-[#1A1D24]/60 border border-white/[0.06] rounded-lg px-4 py-3 text-[12px] text-[#9CA3AF]">
-          Un directeur sportif est déjà en place pour {orgName}. Tu peux rejoindre l&apos;équipe comme recruteur.
+          Un responsable de sports est déjà en place pour {orgName}. Tu peux rejoindre l&apos;équipe comme recruteur.
         </div>
       )}
       {isCegep && !schoolAdminState.hasPermanent && schoolAdminState.hasInterim && (
         <div className="bg-[#1A1D24]/60 border border-white/[0.06] rounded-lg px-4 py-3 text-[12px] text-[#9CA3AF]">
-          Un directeur intérimaire est en place. Si tu deviens directeur permanent, il sera rétrogradé automatiquement.
+          Un responsable de sports intérimaire est en place. Si tu deviens responsable de sports permanent, il sera rétrogradé automatiquement.
         </div>
       )}
 
@@ -1622,8 +1622,8 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
             <span className="font-head font-black text-[13px] uppercase tracking-[0.1em] text-white">Je serai intérimaire</span>
             <span className="text-[11px] text-[#6B7280] leading-snug">
               {isCegep
-                ? "Aucun directeur sportif n'est en place au CÉGEP — je vais assumer ce rôle temporairement"
-                : "Aucun directeur sportif n'est en place pour l'instant — je vais assumer ce rôle temporairement"}
+                ? "Aucun responsable de sports n'est en place au CÉGEP — je vais assumer ce rôle temporairement"
+                : "Aucun responsable de sports n'est en place pour l'instant — je vais assumer ce rôle temporairement"}
             </span>
           </button>
         )}
@@ -1716,7 +1716,7 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
       {choice === "self" && (
         <div className="animate-fade-slide-down space-y-4 bg-[#111317]/60 rounded-xl p-5 border border-white/5">
           <p className="text-[12px] text-[#9CA3AF] leading-relaxed">
-            Tu seras {isCegep ? "Recruteur" : "Entraîneur"} ET {RoleLabel} de {orgName}. Tu pourras gérer les autres {isCegep ? "recruteurs" : isLeague ? "entraîneurs" : "coachs"}, voir les stats {isCegep ? "globales de recrutement" : "de recrutement"}, et superviser {isCegep ? "le pipeline de tout le CÉGEP" : "les profils athlètes"}.
+            Tu seras {isCegep ? "Recruteur" : "Entraîneur"} ET {RoleLabel} de {orgName}. Tu pourras gérer les autres {isCegep ? "recruteurs" : isLeague ? "entraîneurs" : "coachs"}, voir les stats {isCegep ? "globales de recrutement" : "de recrutement"}, et superviser {isCegep ? "le processus de tout le CÉGEP" : "les profils athlètes"}.
           </p>
           <RprpConsentCheckbox checked={rprpConsent} onChange={(v) => { setRprpConsent(v); save({ rprp_consent: v }); }} />
           {!rprpConsent && <RprpDeclineNotice />}
@@ -1794,12 +1794,12 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
             </svg>
             <div>
               <p className="text-[12px] text-[#c8c8cc] leading-relaxed font-bold">
-                Tu seras Directeur intérimaire jusqu&apos;à l&apos;arrivée d&apos;un directeur permanent.
+                Tu seras responsable de sports intérimaire jusqu&apos;à l&apos;arrivée d&apos;un responsable de sports permanent.
               </p>
               <p className="text-[11px] text-[#9CA3AF] leading-relaxed mt-2">
                 {isCegep
-                  ? <>Tu auras les pleins pouvoirs administratifs (gérer les autres recruteurs du CÉGEP, voir les stats globales de recrutement, superviser le pipeline). Si un directeur officiel s&apos;inscrit plus tard et choisit «&nbsp;C&apos;est moi&nbsp;», ton rôle sera automatiquement ramené à recruteur et tu seras notifié.</>
-                  : <>Tu auras les pleins pouvoirs administratifs (gérer les autres entraîneurs, voir les stats de l&apos;école, approuver les profils). Si un directeur officiel s&apos;inscrit plus tard et choisit «&nbsp;C&apos;est moi&nbsp;», ton rôle sera automatiquement ramené à entraîneur et tu seras notifié.</>}
+                  ? <>Tu auras les pleins pouvoirs administratifs (gérer les autres recruteurs du CÉGEP, voir les stats globales de recrutement, superviser le processus). Si un responsable de sports officiel s&apos;inscrit plus tard et choisit «&nbsp;C&apos;est moi&nbsp;», ton rôle sera automatiquement ramené à recruteur et tu seras notifié.</>
+                  : <>Tu auras les pleins pouvoirs administratifs (gérer les autres entraîneurs, voir les stats de l&apos;école, approuver les profils). Si un responsable de sports officiel s&apos;inscrit plus tard et choisit «&nbsp;C&apos;est moi&nbsp;», ton rôle sera automatiquement ramené à entraîneur et tu seras notifié.</>}
               </p>
             </div>
           </div>
@@ -1812,7 +1812,7 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
       {choice === "recruteur_only" && isCegep && (
         <div className="animate-fade-slide-down space-y-4 bg-[#111317]/60 rounded-xl p-5 border border-white/5">
           <p className="text-[12px] text-[#9CA3AF] leading-relaxed">
-            Tu auras accès au recrutement sur Nexus sans rôle administratif. Tu pourras chercher des athlètes, créer ton pipeline, et contacter les coachs.
+            Tu auras accès au recrutement sur Nexus sans rôle administratif. Tu pourras chercher des athlètes, créer ton processus, et contacter les coachs.
           </p>
 
           {/* Optional director invite sub-CTA */}
@@ -1822,14 +1822,14 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
                 <path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="8.5" cy="7" r="4" /><line x1="20" y1="8" x2="20" y2="14" /><line x1="23" y1="11" x2="17" y2="11" />
               </svg>
               <div>
-                <p className="text-[12px] text-white font-bold">Tu veux inviter ton directeur sportif ?</p>
+                <p className="text-[12px] text-white font-bold">Tu veux inviter ton responsable de sports ?</p>
                 <p className="text-[11px] text-[#6B7280] mt-0.5 leading-snug">Optionnel — on enverra une invite dès que les comptes seront approuvés.</p>
               </div>
             </div>
             <div className="space-y-3">
               <div>
-                <label className={labelCls}>Courriel du directeur</label>
-                <input type="email" placeholder="directeur@cegep.qc.ca" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} className={inputCls} />
+                <label className={labelCls}>Courriel du responsable de sports</label>
+                <input type="email" placeholder="responsable@cegep.qc.ca" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} className={inputCls} />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
