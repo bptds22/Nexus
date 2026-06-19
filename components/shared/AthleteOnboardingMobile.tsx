@@ -279,7 +279,7 @@ export function AthleteOnboardingMobile() {
 
       // Context athlète
       const { data: contextRow } = await supabase
-        .from("users").select("context").eq("id", user.id).single();
+        .from("users").select("context, onboarding_complete").eq("id", user.id).single();
       const ctxRaw = contextRow?.context;
       const ctx: "scolaire" | "ligue_civile" =
         ctxRaw === "ligue_civile" ? "ligue_civile" : "scolaire";
@@ -300,10 +300,16 @@ export function AthleteOnboardingMobile() {
       if (existing) {
         setExistingAthleteId(existing.id as string);
 
-        // Profil complet ? bypass direct dashboard
-        const profileComplete = existing.first_name && existing.last_name && existing.sport_id
-          && (ctx === "ligue_civile" || existing.school_id);
-        if (profileComplete) {
+        // Bypass dashboard UNIQUEMENT si onboarding_complete === true — même
+        // critère que le layout (app/athlete/layout.tsx). Avant : on redirigeait
+        // sur la PRÉSENCE des champs athletes (first_name/last_name/sport_id/
+        // school_id), qu'un compte CLAIMÉ (seedé par le coach) a déjà → saut au
+        // dashboard avant handleSubmit (qui pose le flag, ~l.856), donc le flag
+        // jamais posé → le layout (flag false) renvoyait à l'onboarding → boucle.
+        // Désormais un compte claimé/non terminé reste sur l'onboarding
+        // PRÉ-REMPLI et le complète, ce qui pose le flag. (Réplique le fix web —
+        // commit 2dbc7fc.)
+        if (contextRow?.onboarding_complete === true) {
           router.replace("/athlete/dashboard");
           return;
         }
