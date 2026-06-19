@@ -379,7 +379,7 @@ export default function OnboardingPage() {
     // merged, coach principal, confirmation) since the team selection
     // is already embedded in the LeagueCoachLeagueStep.
     coach: 4, // see isCivilCoachLabel branch below — school gets +1
-    recruiter: 4,       // profil, cégep, programme, directeur (sprint recruteur-finish-web-rpc — critères retiré, géré post-onboarding via /recruteur/parametres)
+    recruiter: 5,       // profil, cégep, programme, responsable (DirectorChoiceStep), confirmation (récap + finish). L'ancienne 5e puce fantôme "Critères" est devenue une vraie étape de confirmation.
     coordinator_league: 3,
   };
   const isCivilCoachFlow = user?.role === "coach" && user?.context === "ligue_civile";
@@ -1110,7 +1110,7 @@ export default function OnboardingPage() {
     : ["Profil", "École", "Équipe", "Directeur", "Confirmation"];
   const stepLabelsMap: Record<string, string[]> = {
     coach: coachLabels,
-    recruiter: ["Profil", "CÉGEP", "Programme", "Directeur", "Critères"],
+    recruiter: ["Profil", "CÉGEP", "Programme", "Directeur", "Confirmation"],
     coordinator_league: ["Profil", "Ligue", "Invitations"],
   };
   const stepLabels = stepLabelsMap[user.role] || ["1", "2", "3"];
@@ -2608,6 +2608,71 @@ function CoachConfirmation({ user }: { user: NexusUser }) {
   );
 }
 
+// Récap final de l'onboarding recruteur (step 4) — calqué sur
+// CoachConfirmation : mêmes ConfirmationSection / ConfirmationRow, même lecture
+// localStorage FRAÎCHE (le Programme et le DirectorChoiceStep écrivent via
+// save() sans setUser()). Purement AFFICHAGE — ne re-saisit rien. finish() est
+// déclenché par le bouton "Terminer" du footer (step === totalSteps-1).
+function RecruiterConfirmation({ user }: { user: NexusUser }) {
+  const raw = typeof window !== "undefined" ? localStorage.getItem("nexus_user") : null;
+  const localUser = raw ? (JSON.parse(raw) as NexusUser) : user;
+  const p = (localUser.profile || {}) as Record<string, unknown>;
+  const inst = (localUser.institution || {}) as Record<string, unknown>;
+  const primaryTeam = (localUser.primary_team || null) as NexusUser["primary_team"];
+
+  const profilRows: ConfirmationRow[] = [
+    { label: "Nom", value: `${user.firstName} ${user.lastName}` },
+    { label: "Courriel", value: user.email },
+    p.sport_principal ? { label: "Sport principal recruté", value: p.sport_principal as string } : null,
+    p.experience_years ? { label: "Expérience", value: `${p.experience_years as number} ans` } : null,
+    p.phone ? { label: "Téléphone", value: p.phone as string } : null,
+  ].filter(Boolean) as ConfirmationRow[];
+
+  const villeValue = cityRegion(inst.city as string, inst.region as string);
+  const affiliationRows: ConfirmationRow[] = [
+    inst.name ? { label: "CÉGEP", value: inst.name as string } : null,
+    villeValue ? { label: "Ville", value: villeValue } : null,
+    primaryTeam?.name ? { label: "Programme", value: primaryTeam.name } : null,
+  ].filter(Boolean) as ConfirmationRow[];
+
+  // Rôle — vocabulaire #46 ("responsable de sports"), JAMAIS "directeur".
+  // Résolution alignée sur le mapping recruiterChoice du finish()
+  // (invite > interim > owner > coach_only).
+  const invite = localUser.pending_director_invite as Record<string, unknown> | null;
+  const adminType = localUser.cegep_admin_type;
+  let roleValue: string;
+  if (invite?.email) roleValue = `Invitation envoyée à ${invite.email as string}`;
+  else if (adminType === "owner") roleValue = "Responsable de sports";
+  else if (adminType === "interim") roleValue = "Responsable de sports intérimaire";
+  else roleValue = "Recruteur seulement";
+  const roleRows: ConfirmationRow[] = [{ label: "Rôle", value: roleValue }];
+
+  return (
+    <div className="space-y-5">
+      <div>
+        <h2 className="font-head text-xl font-black text-white uppercase">Confirme ton profil</h2>
+        <p className="text-sm text-[#9CA3AF] mt-1">Vérifie que tout est correct avant de continuer.</p>
+      </div>
+
+      <ConfirmationSection title="Profil" rows={profilRows} />
+      <ConfirmationSection title="Affiliation" rows={affiliationRows} />
+      <ConfirmationSection title="Rôle" rows={roleRows} />
+
+      {typeof p.bio === "string" && p.bio && (
+        <div className="bg-[#111317] border border-white/10 rounded-xl px-5 py-4">
+          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#6B7280] block mb-2">Bio</span>
+          <p className="text-sm text-[#9CA3AF] leading-relaxed italic">&ldquo;{p.bio}&rdquo;</p>
+        </div>
+      )}
+
+      <div className="flex items-center gap-3 p-4 rounded-lg bg-[#22C55E]/10 border border-[#22C55E]/20">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+        <p className="text-xs text-[#22C55E] font-bold">Tout est bon? Clique sur Terminer pour accéder à ton tableau de bord.</p>
+      </div>
+    </div>
+  );
+}
+
 /* ── Director profile (shared — used by league coordinator onboarding) ── */
 function DirectorProfile({ user, save, subtitle }: { user: NexusUser; save: (u: Partial<NexusUser>) => void; subtitle: string }) {
   const p = (user.profile || {}) as Record<string, unknown>;
@@ -2812,10 +2877,16 @@ function RecruiterStep({ step, user, save }: { step: number; user: NexusUser; sa
   // pick lives in localStorage as `primary_team` until finish() writes
   // it to users.primary_team_id.
   if (step === 2) return <RecruiterProgramStep user={user} save={save} />;
-  // Sprint recruteur-finish-web-rpc — step 3 = DirectorChoiceStep cegep
-  // (3 cartes pattern unifié) ; le step Critères a été retiré. Le composant
-  // RecruiterCriteria reste pour /recruteur/parametres (post-onboarding).
-  return <DirectorChoiceStep user={user} save={save} type="cegep" />;
+  // Step 3 = DirectorChoiceStep cegep (choix responsable owner/interim/
+  // recruteur-seulement + attestation RPRP). N'est plus la dernière étape :
+  // le footer y affiche "Suivant →" (totalSteps=5) et la logique
+  // responsable/RPRP reste inchangée ici.
+  if (step === 3) return <DirectorChoiceStep user={user} save={save} type="cegep" />;
+  // Step 4 = Confirmation (récap). C'est ici que le footer affiche "Terminer
+  // et accéder à Nexus" → finish() (appel unique de finish_recruiter_onboarding,
+  // mêmes paramètres qu'avant — seul le QUAND change : step 4 au lieu de 3).
+  // Le composant RecruiterCriteria reste pour /recruteur/parametres (post-onboarding).
+  return <RecruiterConfirmation user={user} />;
 }
 
 /* ── Recruiter profile ── */
