@@ -606,9 +606,11 @@ export function CoachOnboardingMobileSchool() {
             onOpenSchool={() => setSchoolSheetOpen(true)}
             selectedTeamName={selectedTeamName}
             onOpenTeam={() => setTeamSheetOpen(true)}
+            onCreateTeam={() => setCreateTeamOpen(true)}
             schoolPicked={!!selectedSchoolId}
             scolaireTeamsLoaded={scolaireTeamsLoaded}
             scolaireTeamsCount={scolaireTeams.length}
+            teamKind={pendingCreateTeam ? "created" : selectedTeamId ? "joined" : null}
           />
         )}
         {slide === 2 && (
@@ -757,13 +759,16 @@ export function CoachOnboardingMobileSchool() {
         )}
         footer={
           <div className="space-y-2">
-            {/* Créer une équipe — ouvre le form de création (overlay). */}
+            {/* Créer mon équipe — carte au format des cartes d'équipe du
+                sheet (parité web : option de création présentée comme une
+                carte, bordure rouge pointillée pour signaler l'ajout). */}
             <button
               type="button"
               onClick={() => { setTeamSheetOpen(false); setCreateTeamOpen(true); }}
-              className="w-full h-11 rounded-2xl bg-[#E63946] text-white text-[14px] font-semibold active:bg-[#D42B22]"
+              className="w-full text-left p-3 bg-[#1A1D24] border border-dashed border-[#E63946]/40 rounded-2xl active:bg-[#22262e] transition-colors"
             >
-              Créer une équipe
+              <p className="text-[16px] font-semibold text-white">+ Créer mon équipe</p>
+              <p className="text-[13px] text-white/55">Mon équipe n&apos;est pas listée</p>
             </button>
             {/* Continuer sans équipe — INCHANGÉ (décision PO séparée). */}
             <button
@@ -998,9 +1003,15 @@ interface Slide2Props {
   onOpenSchool: () => void;
   selectedTeamName: string;
   onOpenTeam: () => void;
+  // Ouvre l'overlay de création (même que le footer du sheet) — utilisé
+  // par le cas 0 équipe où le sheet n'est jamais ouvert.
+  onCreateTeam: () => void;
   schoolPicked: boolean;
   scolaireTeamsLoaded: boolean;
   scolaireTeamsCount: number;
+  // "created" (pendingCreateTeam) vs "joined" (équipe existante) vs null —
+  // pilote la copie de confirmation. Pure présentation.
+  teamKind: "joined" | "created" | null;
 }
 
 function Slide2SchoolTeam(p: Slide2Props) {
@@ -1034,10 +1045,29 @@ function Slide2SchoolTeam(p: Slide2Props) {
               Chargement des équipes…
             </p>
           ) : p.scolaireTeamsCount === 0 ? (
-            <div className="bg-[#1A1D24] border border-white/[0.06] rounded-2xl px-4 py-4">
-              <p className="text-[15px] text-white/90 leading-relaxed">
-                Aucune équipe enregistrée pour {p.sport} à cette école. Tu pourras en créer plus tard depuis ton tableau de bord.
+            <div className="space-y-2">
+              <p className="text-[13px] text-white/55 px-1 leading-relaxed">
+                Aucune équipe enregistrée pour {p.sport} à cette école. Crée la tienne ci-dessous.
               </p>
+              {p.selectedTeamName ? (
+                <div className="flex items-start gap-2 bg-[#22C55E]/10 border border-[#22C55E]/30 rounded-2xl px-3 py-2.5">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2" strokeLinecap="round" className="shrink-0 mt-0.5"><path d="M20 6L9 17l-5-5"/></svg>
+                  <p className="text-[13px] text-[#22C55E] font-semibold">
+                    {p.teamKind === "created" ? "Tu as créé" : "Tu as rejoint"} {p.selectedTeamName}. Tu peux continuer.
+                  </p>
+                </div>
+              ) : (
+                /* Carte "Créer" — même format que celle du footer du sheet ;
+                   ouvre le MÊME overlay (pendingCreateTeam), pas de form dupliqué. */
+                <button
+                  type="button"
+                  onClick={p.onCreateTeam}
+                  className="w-full text-left p-3 bg-[#1A1D24] border border-dashed border-[#E63946]/40 rounded-2xl active:bg-[#22262e] transition-colors"
+                >
+                  <p className="text-[16px] font-semibold text-white">+ Créer mon équipe</p>
+                  <p className="text-[13px] text-white/55">Aucune équipe listée — crée la tienne.</p>
+                </button>
+              )}
             </div>
           ) : (
             <>
@@ -1047,9 +1077,18 @@ function Slide2SchoolTeam(p: Slide2Props) {
                 placeholder="Sélectionner mon équipe…"
                 onTap={p.onOpenTeam}
               />
-              <p className="text-[12px] text-white/40 italic px-1 mt-1">
-                Non bloquant — tu peux continuer sans équipe.
-              </p>
+              {p.selectedTeamName ? (
+                <div className="mt-2 flex items-start gap-2 bg-[#22C55E]/10 border border-[#22C55E]/30 rounded-2xl px-3 py-2.5">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2" strokeLinecap="round" className="shrink-0 mt-0.5"><path d="M20 6L9 17l-5-5"/></svg>
+                  <p className="text-[13px] text-[#22C55E] font-semibold">
+                    {p.teamKind === "created" ? "Tu as créé" : "Tu as rejoint"} {p.selectedTeamName}. Tu peux continuer.
+                  </p>
+                </div>
+              ) : (
+                <p className="text-[12px] text-white/40 italic px-1 mt-1">
+                  Non bloquant — tu peux continuer sans équipe.
+                </p>
+              )}
             </>
           )}
         </>

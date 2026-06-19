@@ -2178,6 +2178,10 @@ function SchoolCoachTeamStep({ user, save }: { user: NexusUser; save: (u: Partia
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [joinedTeam, setJoinedTeam] = useState<TeamSearchRow | null>(null);
+  // Distinguishes the confirmation copy : "Tu as rejoint X" (join) vs
+  // "Tu as créé X" (create). Pure presentation — both paths persist the
+  // same way. Resume defaults to "joined" (prior-session pick).
+  const [joinedKind, setJoinedKind] = useState<"joined" | "created">("joined");
   const [mode, setMode] = useState<"umbrella" | "create">("umbrella");
 
   // Resolve sport_principal (name) → sport_id (uuid). Mirrors the
@@ -2245,6 +2249,7 @@ function SchoolCoachTeamStep({ user, save }: { user: NexusUser; save: (u: Partia
         schoolName: team.school_name,
       });
       save({});
+      setJoinedKind("joined");
       setJoinedTeam(team);
     } finally {
       setSubmitting(false);
@@ -2307,6 +2312,7 @@ function SchoolCoachTeamStep({ user, save }: { user: NexusUser; save: (u: Partia
         schoolName: schoolNameFromLocal,
       });
       save({});
+      setJoinedKind("created");
       setJoinedTeam({
         id: newTeam.id,
         name: formData.team_name,
@@ -2362,7 +2368,7 @@ function SchoolCoachTeamStep({ user, save }: { user: NexusUser; save: (u: Partia
       <div>
         <h2 className="font-head text-xl font-black text-white uppercase">Choisis ton équipe</h2>
         <p className="text-sm text-[#9CA3AF] mt-1">
-          Si elle est déjà sur Nexus, sélectionne-la. Sinon, tu pourras la créer plus tard avec l&apos;aide de notre équipe.
+          Si elle est déjà sur Nexus, sélectionne-la. Sinon, crée-la ci-dessous.
         </p>
       </div>
 
@@ -2391,6 +2397,8 @@ function SchoolCoachTeamStep({ user, save }: { user: NexusUser; save: (u: Partia
           onCreate={() => { setError(null); setMode("create"); }}
           scopeLabel="École"
           showBack={false}
+          createAsCard
+          selectedTeamId={joinedTeam?.id ?? null}
           emptyMessage="Aucune équipe trouvée pour cette école. Crée la tienne ci-dessous."
         />
       )}
@@ -2411,7 +2419,7 @@ function SchoolCoachTeamStep({ user, save }: { user: NexusUser; save: (u: Partia
         <div className="bg-[#22C55E]/10 border border-[#22C55E]/30 rounded-lg p-3 flex items-center gap-2">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
           <p className="text-[12px] text-[#22C55E] font-bold">
-            Tu as rejoint {joinedTeam.name}. Tu peux continuer.
+            {joinedKind === "created" ? "Tu as créé" : "Tu as rejoint"} {joinedTeam.name}. Tu peux continuer.
           </p>
         </div>
       )}
@@ -3851,6 +3859,7 @@ function UmbrellaStep({
   cardCtaText = "C'est mon équipe →",
   selectedTeamId,
   prioritySport,
+  createAsCard = false,
 }: {
   schoolId: string;
   schoolName: string;
@@ -3882,6 +3891,11 @@ function UmbrellaStep({
   // declared sport stands out) while every sport stays visible. Other
   // flows omit it → plain alphabetical-by-sport grouping.
   prioritySport?: string;
+  // When true, the create affordance is rendered as a CARD inside the
+  // team grid (same format as existing-team cards) instead of the
+  // separate footer row. The école onboarding step uses this for visual
+  // parity; civil/recruiter flows leave it false → unchanged footer row.
+  createAsCard?: boolean;
 }) {
   const [teams, setTeams] = useState<TeamSearchRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -3973,7 +3987,7 @@ function UmbrellaStep({
         </div>
       )}
 
-      {!loading && teams.length > 0 && (
+      {!loading && (teams.length > 0 || (createAsCard && onCreate)) && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
           {teams.map((team) => {
             const genderText = team.gender ? genderLabel(team.gender) : null;
@@ -4021,6 +4035,16 @@ function UmbrellaStep({
               </button>
             );
           })}
+          {createAsCard && onCreate && (
+            <button
+              type="button"
+              onClick={onCreate}
+              className="text-left bg-[#111317] border border-dashed border-[#E63946]/40 rounded-lg p-4 transition-colors hover:border-[#E63946] flex flex-col justify-center"
+            >
+              <p className="font-bold text-white text-sm">+ Créer mon équipe</p>
+              <p className="text-[11px] text-[#6B7280] mt-1">Mon équipe n&apos;est pas listée</p>
+            </button>
+          )}
         </div>
       )}
 
@@ -4030,7 +4054,7 @@ function UmbrellaStep({
         </div>
       )}
 
-      {onCreate && (
+      {!createAsCard && onCreate && (
         <div className="bg-[#111317] border border-white/5 rounded-lg p-4 flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
             <p className="text-[12px] text-white font-bold">Mon équipe n&apos;est pas dans la liste</p>
