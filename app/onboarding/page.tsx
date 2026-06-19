@@ -1850,14 +1850,22 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
 }
 
 function CoachProfile({ profile, save }: { profile: Record<string, unknown>; save: (u: Partial<NexusUser>) => void }) {
-  const [bio, setBio] = useState((profile.bio as string) || "");
-  const [sport, setSport] = useState((profile.sport_principal as string) || "");
-  const [experience, setExperience] = useState((profile.experience_years as number) || 0);
-  const [phone, setPhone] = useState((profile.phone as string) || "");
-  const [photoUrl, setPhotoUrl] = useState((profile.photo_url as string) || "");
+  // Fix #17 : seed depuis le localStorage FRAIS (nexus_user.profile), pas le
+  // prop user.profile — figé à {} car save() n'appelle pas setUser(). Même
+  // pattern que SchoolCoachTeamStep (~L2165). Sinon "Précédent" (remount via
+  // key={role-step}) ré-initialise les champs à vide alors que la saisie est
+  // bien dans localStorage. Sert aussi de base au spread du save (préserve
+  // les autres clés profile écrites par les steps suivants : team_id, etc.).
+  const raw = typeof window !== "undefined" ? localStorage.getItem("nexus_user") : null;
+  const freshProfile = (raw ? ((JSON.parse(raw) as NexusUser).profile as Record<string, unknown>) : null) || profile;
+  const [bio, setBio] = useState((freshProfile.bio as string) || "");
+  const [sport, setSport] = useState((freshProfile.sport_principal as string) || "");
+  const [experience, setExperience] = useState((freshProfile.experience_years as number) || 0);
+  const [phone, setPhone] = useState((freshProfile.phone as string) || "");
+  const [photoUrl, setPhotoUrl] = useState((freshProfile.photo_url as string) || "");
 
   useEffect(() => {
-    save({ profile: { ...profile, bio, sport_principal: sport, experience_years: experience, phone, photo_url: photoUrl } });
+    save({ profile: { ...freshProfile, bio, sport_principal: sport, experience_years: experience, phone, photo_url: photoUrl } });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bio, sport, experience, phone, photoUrl]);
 
@@ -2061,13 +2069,18 @@ type SchoolRow = { id: string; name: string; city: string; region: string; confe
 function SchoolStep({ user, save }: { user: NexusUser; save: (u: Partial<NexusUser>) => void }) {
   const [schools, setSchools] = useState<SchoolRow[]>([]);
   const [schoolsLoading, setSchoolsLoading] = useState(true);
+  // Fix #17 : lire l'institution depuis le localStorage FRAIS, pas le prop
+  // user.institution (figé à null — save() ne fait pas setUser()). Même
+  // pattern que SchoolCoachTeamStep. Sinon "Précédent" perd l'école choisie.
+  const rawUser = typeof window !== "undefined" ? localStorage.getItem("nexus_user") : null;
+  const freshInstitution = (rawUser ? (JSON.parse(rawUser) as NexusUser).institution : null) || user.institution;
   const [selected, setSelected] = useState<SchoolRow | null>(
-    user.institution
+    freshInstitution
       ? {
-          id: ((user.institution as Record<string, unknown>).id as string) || "",
-          name: (user.institution as Record<string, string>).name,
-          city: (user.institution as Record<string, string>).city || "",
-          region: (user.institution as Record<string, string>).region || "",
+          id: ((freshInstitution as Record<string, unknown>).id as string) || "",
+          name: (freshInstitution as Record<string, string>).name,
+          city: (freshInstitution as Record<string, string>).city || "",
+          region: (freshInstitution as Record<string, string>).region || "",
           conference: "",
           sports: [],
         }
@@ -2778,7 +2791,11 @@ function RecruiterStep({ step, user, save }: { step: number; user: NexusUser; sa
 
 /* ── Recruiter profile ── */
 function RecruiterProfile({ user, save }: { user: NexusUser; save: (u: Partial<NexusUser>) => void }) {
-  const p = (user.profile || {}) as Record<string, unknown>;
+  // Fix #17 : seed depuis le localStorage FRAIS, pas le prop user.profile
+  // (figé à {} — save() ne fait pas setUser()). Même pattern que les steps
+  // école/cégep. Évite le vidage des champs au "Précédent".
+  const raw = typeof window !== "undefined" ? localStorage.getItem("nexus_user") : null;
+  const p = ((raw ? ((JSON.parse(raw) as NexusUser).profile as Record<string, unknown>) : null) || user.profile || {}) as Record<string, unknown>;
   const [bio, setBio] = useState((p.bio as string) || "");
   const [sport, setSport] = useState((p.sport_principal as string) || "");
   const [experience, setExperience] = useState((p.experience_years as number) || 0);
