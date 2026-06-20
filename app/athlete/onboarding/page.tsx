@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import NexusLogo from "@/components/ui/NexusLogo";
 import { createClient } from "@/lib/supabase/client";
 import { genderLabel } from "@/lib/config/gender";
@@ -426,6 +427,7 @@ export default function AthleteOnboardingPage() {
 
 function AthleteOnboardingDesktop() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -982,6 +984,10 @@ function AthleteOnboardingDesktop() {
     }
 
     await supabase.from("users").update({ onboarding_complete: true }).eq("id", userId);
+    // Le profil caché (useCurrentUser, staleTime: Infinity) doit voir false→true
+    // dans CETTE session pour que PushRegistrar demande la permission push.
+    // Await AVANT la nav : on lance le refetch avant de quitter l'onboarding.
+    await queryClient.invalidateQueries({ queryKey: ["currentUser"] });
     setSaving(false);
     router.replace("/athlete/dashboard");
     } catch (err) {

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import NexusLogo from "@/components/ui/NexusLogo";
 import { createClient } from "@/lib/supabase/client";
 import PlaybookBackground from "../components/PlaybookBackground";
@@ -280,6 +281,7 @@ function PillToggle({ options, selected, onToggle }: { options: string[]; select
 ═══════════════════════════════════════════════════════════════ */
 export default function OnboardingPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [user, setUser] = useState<NexusUser | null>(null);
   const [step, setStep] = useState(0);
   const [slideDir, setSlideDir] = useState<"right" | "left">("right");
@@ -1054,6 +1056,11 @@ export default function OnboardingPage() {
       } // close else (legacy path)
     }
 
+    // Le profil caché (useCurrentUser, staleTime: Infinity) doit voir false→true
+    // dans CETTE session pour que PushRegistrar demande la permission push.
+    // Await AVANT la nav (le router.push est différé de 1500ms, mais on lance le
+    // refetch maintenant pour qu'il soit prêt quand le dashboard se monte).
+    await queryClient.invalidateQueries({ queryKey: ["currentUser"] });
     setShowSuccess(true);
     const dashMap: Record<string, string> = {
       coach: "/coach/tableau-de-bord",
