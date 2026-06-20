@@ -1098,7 +1098,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
     : null;
 
   const handleContactCoach = useCallback(async () => {
-    if (!coachId || contactingCoach) return;
+    if (!coachId || !a || contactingCoach) return;
     triggerHaptic("Medium");
     setContactingCoach(true);
     const result = await findOrCreateRecruiterConversation({ coachId, athleteId: a.id });
@@ -1112,7 +1112,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
     } else {
       toast.error({ message: "Échec", detail: result.error || "Impossible d'ouvrir la conversation." });
     }
-  }, [coachId, contactingCoach, a.id, router, toast]);
+  }, [coachId, contactingCoach, a?.id, router, toast]);
 
   // Rapport coach expandable (Fix 3 iter 2.8) — clamp à 3 lignes par défaut
   // si la citation dépasse 150 caractères. Bouton "Lire la suite / Réduire".
@@ -1214,7 +1214,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
 
   // Photo preload (Fix 2) — déclenche photoReady quand l'image est en cache navigateur
   useEffect(() => {
-    if (!a.photoUrl) { setPhotoReady(true); return; }
+    if (!a?.photoUrl) { setPhotoReady(true); return; }
     setPhotoReady(false);
     const img = new window.Image();
     img.onload = () => setPhotoReady(true);
@@ -1223,14 +1223,14 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
     // safety timeout 2s
     const t = window.setTimeout(() => setPhotoReady(true), 2000);
     return () => { window.clearTimeout(t); img.onload = null; img.onerror = null; };
-  }, [a.photoUrl]);
+  }, [a?.photoUrl]);
 
   // Mount cascade (Fix 2) — attend photoReady, puis cascade : card → étoiles → nom → badges → essentials
   useEffect(() => {
     if (loadingAthlete) return;
     if (!photoReady) return;
     setMounted(true);
-    const distinctionsCount = Math.min(a.distinctions?.length ?? 0, MAX_BADGES);
+    const distinctionsCount = Math.min(a?.distinctions?.length ?? 0, MAX_BADGES);
     const timers: number[] = [];
     // T+16 ms — card reveal (laisse le rendu initial se faire)
     timers.push(window.setTimeout(() => setCardRevealed(true), 16));
@@ -1247,7 +1247,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
     // T+1000 ms — essentials
     timers.push(window.setTimeout(() => setEssentialsRevealed(true), 1000));
     return () => { timers.forEach((t) => window.clearTimeout(t)); };
-  }, [loadingAthlete, photoReady, a.distinctions?.length]);
+  }, [loadingAthlete, photoReady, a?.distinctions?.length]);
 
   // Fade-in du contenu de tab à chaque switch + haptic (Fix 7 iter 3.1)
   const handleTabChange = (k: TabKey) => {
