@@ -283,7 +283,9 @@ J'ai consulté le profil de ${a.firstName} ${a.lastName}${a.position ? ` (${a.po
   }, [selected, messageBody, canSend, sending, router, toast]);
 
   return (
-    <div className="min-h-screen bg-[#111317] text-white flex flex-col">
+    // min-h-[100dvh] (pas min-h-screen/100vh) : suit le frame sous Keyboard
+    // Native → le composer sticky ne flotte plus au milieu. Scroll via <main>.
+    <div className="min-h-[100dvh] bg-[#111317] text-white flex flex-col">
       {/* Header drill-down sticky */}
       <div
         className="sticky top-0 z-30 bg-[#111317]/95 backdrop-blur-md border-b border-white/[0.06]"

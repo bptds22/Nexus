@@ -144,7 +144,11 @@ export function MessageThreadShell<M>({
   const isEmpty = !isLoading && messages.length === 0;
 
   return (
-    <div className="min-h-screen bg-[#111317] text-white flex flex-col">
+    // h-full = épouse le <main> app-shell (100dvh) et rétrécit avec le frame
+    // sous KeyboardResize.Native (contrairement à min-h-screen/100vh qui
+    // laissait le composer sticky flotter au milieu). Un seul scroll : la
+    // liste de messages (flex-1 min-h-0 overflow-y-auto), composer collé en bas.
+    <div className="h-full bg-[#111317] text-white flex flex-col">
       {/* Sticky header */}
       <div
         className="sticky top-0 z-30 bg-[#111317]/95 backdrop-blur-md border-b border-white/[0.06]"
@@ -168,8 +172,9 @@ export function MessageThreadShell<M>({
         </div>
       </div>
 
-      {/* Body : messages */}
-      <div className="flex-1 overflow-y-auto py-4">
+      {/* Body : messages — UNIQUE conteneur scroll (min-h-0 indispensable pour
+          qu'un flex item scrolle au lieu de pousser le composer hors écran). */}
+      <div className="flex-1 min-h-0 overflow-y-auto py-4">
         {isLoading ? (
           <ThreadSkeleton />
         ) : isEmpty ? (
