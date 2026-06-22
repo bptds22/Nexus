@@ -332,7 +332,7 @@ export default function MobileTabBar({ role }: MobileTabBarProps) {
   // /recruteur/messages/nouveau → wizard (TabBar masquée aussi, même pattern).
   const messagesDrillDown =
     role === "recruteur" &&
-    pathname.startsWith("/recruteur/messages/") &&
+    normalizedPath.startsWith("/recruteur/messages/") &&
     normalizedPath !== "/recruteur/messages";
   if (messagesDrillDown) return null;
 
@@ -345,7 +345,7 @@ export default function MobileTabBar({ role }: MobileTabBarProps) {
   // /coach/demandes/nouveau → wizard (TabBar masquée).
   const coachDemandesDrillDown =
     role === "coach" &&
-    pathname.startsWith("/coach/demandes/") &&
+    normalizedPath.startsWith("/coach/demandes/") &&
     normalizedPath !== "/coach/demandes";
   if (coachDemandesDrillDown) return null;
 
@@ -354,7 +354,7 @@ export default function MobileTabBar({ role }: MobileTabBarProps) {
   // sous-écrans pleins-écran masquent la tab bar comme le pattern messages.
   const coachParametresDrillDown =
     role === "coach" &&
-    pathname.startsWith("/coach/parametres/");
+    normalizedPath.startsWith("/coach/parametres/");
   if (coachParametresDrillDown) return null;
 
   // Coach reputation drill-downs (career editor, etc.). Le top-level
@@ -362,7 +362,7 @@ export default function MobileTabBar({ role }: MobileTabBarProps) {
   // masquent — même pattern que /coach/parametres/*.
   const coachReputationDrillDown =
     role === "coach" &&
-    pathname.startsWith("/coach/reputation/");
+    normalizedPath.startsWith("/coach/reputation/");
   if (coachReputationDrillDown) return null;
 
   // Run 3 — Mes Équipes drill-down (detail d'une équipe + sous-routes).
@@ -371,7 +371,7 @@ export default function MobileTabBar({ role }: MobileTabBarProps) {
   // la masquent pour donner le canon iOS "détail plein écran".
   const coachEquipesDrillDown =
     role === "coach" &&
-    pathname.startsWith("/coach/equipes/");
+    normalizedPath.startsWith("/coach/equipes/");
   if (coachEquipesDrillDown) return null;
 
   // Iter 7.50-a5 — masquer la TabBar pendant le wizard d'onboarding athlète
