@@ -90,7 +90,7 @@ async function triggerHaptic(intensity: "Light" | "Medium" = "Light") {
 
 function PipelineHeader({ totalCount, onMenuTap }: { totalCount: number; onMenuTap: () => void }) {
   return (
-    <div className="px-4 pt-5 pb-3 bg-[#111317]">
+    <div className="px-4 pb-3 bg-[#111317]" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1.25rem)" }}>
       <div className="flex items-start justify-between">
         <div className="flex-1 min-w-0">
           <h1 className="font-head text-[24px] font-black text-white uppercase tracking-tight">Mon processus</h1>

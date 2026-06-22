@@ -225,8 +225,9 @@ function MobileSearchBar({
 }) {
   return (
     <div
-      className="sticky top-0 z-30 px-4 py-3"
+      className="sticky top-0 z-30 px-4 pb-3"
       style={{
+        paddingTop: "calc(env(safe-area-inset-top, 0px) + 0.75rem)",
         backgroundColor: scrolled ? "rgba(17,19,23,0.85)" : "#111317",
         backdropFilter: scrolled ? "blur(20px) saturate(180%)" : "none",
         WebkitBackdropFilter: scrolled ? "blur(20px) saturate(180%)" : "none",

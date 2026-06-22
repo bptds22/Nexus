@@ -658,7 +658,10 @@ export default function MonParcoursMobile() {
       style={{ paddingBottom: "calc(72px + env(safe-area-inset-bottom))" }}
     >
       {/* ── Header ───────────────────────────────────────────── */}
-      <div className="px-5 pt-6 pb-2">
+      <div
+        className="px-5 pb-2"
+        style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1.5rem)" }}
+      >
         <div className="inline-flex items-center gap-2 mb-3">
           <span className="w-6 h-px bg-[#E63946]" />
           <span className="text-[10px] font-bold tracking-[0.22em] uppercase text-[#E63946]">

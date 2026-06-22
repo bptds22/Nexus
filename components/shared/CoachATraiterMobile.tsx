@@ -1057,7 +1057,7 @@ export function CoachATraiterMobile() {
       )}
 
       {/* Header */}
-      <div className="px-4 pt-5 pb-3">
+      <div className="px-4 pb-3" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1.25rem)" }}>
         <h1 className="font-head text-[24px] font-black text-white uppercase tracking-tight leading-tight">
           À traiter
         </h1>
