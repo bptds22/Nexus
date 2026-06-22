@@ -381,7 +381,7 @@ export default function AthleteLayout({ children }: { children: React.ReactNode 
                   overflowY: "auto",
                   overscrollBehavior: "contain",
                   WebkitOverflowScrolling: "touch",
-                  paddingBottom: "calc(64px + env(safe-area-inset-bottom))",
+                  paddingBottom: "calc(env(safe-area-inset-bottom) + 88px)",
                   overflowX: "hidden",
                 }
               : undefined
