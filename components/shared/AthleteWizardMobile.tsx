@@ -50,6 +50,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { createPortal } from "react-dom";
 import { createClient } from "@/lib/supabase/client";
 import { MobilePicker, type PickerOption } from "@/components/mobile/MobilePicker";
+import { GRAD_YEAR_OPTIONS } from "@/lib/config/gradYears";
 import { MobileWheelPicker } from "@/components/mobile/MobileWheelPicker";
 import { SearchSheet } from "@/components/mobile/SearchSheet";
 import { useMobileToast } from "@/components/mobile/MobileToast";
@@ -975,7 +976,7 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
         onChange={(v) => updateIdentity("gender", v ? String(v) : "")} />
       <MobilePicker open={openPromoPicker} onClose={() => setOpenPromoPicker(false)}
         title="Promotion"
-        options={[2025, 2026, 2027, 2028, 2029].map((y) => ({ value: String(y), label: String(y) }))}
+        options={GRAD_YEAR_OPTIONS}
         value={form.identity.gradYear || null}
         onChange={(v) => updateIdentity("gradYear", v ? String(v) : "")} />
       {/* Old flat MobilePickers for height ft/in removed — height is now

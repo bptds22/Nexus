@@ -8,6 +8,7 @@ import DatePicker from "../../components/DatePicker";
 import SportPositionSelect from "../../components/SportPositionSelect";
 import NxSelect from "../../components/NxSelect";
 import { BADGE_CONFIG, BADGE_ORDER, MAX_BADGES, MAX_DETAIL_LENGTH, getSportStats, type DistinctionEntry } from "@/lib/config/badges";
+import { GRAD_YEAR_OPTIONS } from "@/lib/config/gradYears";
 import DistinctionBadge from "@/components/shared/DistinctionBadge";
 import FormModeToggle from "../../components/FormModeToggle";
 import NxIcon from "@/components/ui/NxIcon";
@@ -793,7 +794,7 @@ export default function CreateAthletePage() {
           <div>
             <label className={labelCls}>Promotion{req}</label>
             <NxSelect value={d.gradYear} onChange={(v) => updateIdentity("gradYear", v)} hasError={isFieldEmpty(d.gradYear)}
-              options={[2025, 2026, 2027, 2028, 2029].map((y) => ({ value: String(y), label: String(y) }))} />
+              options={GRAD_YEAR_OPTIONS} />
           </div>
           <div className="sm:col-span-2">
             <label className={labelCls}>
