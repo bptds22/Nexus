@@ -36,6 +36,7 @@ import { useMobileToast } from "@/components/mobile/MobileToast";
 import { useSubscription } from "@/lib/hooks/useSubscription";
 import { isMinor } from "@/lib/utils/age";
 import { PARTNER_MEDIA_COPY } from "@/lib/legal/partnerMediaCopy";
+import { Skeleton } from "@/components/ui/Skeleton";
 import {
   triggerHaptic, tierStatus,
   SectionLabel, Group, ToggleRow, NavRow, DangerRow,
@@ -384,7 +385,23 @@ export function AthleteParametresMobile() {
   if (loading) {
     return (
       <div className="min-h-screen w-full overflow-x-hidden bg-[#111317] text-white nx-mobile-pb-tabbar">
-        <div className="px-4 pt-10 pb-3 text-[#6b7280] text-[14px]">Chargement…</div>
+        {/* Sticky header shell (matches loaded layout) */}
+        <div className="sticky top-0 z-30 bg-[#111317]" style={{ paddingTop: "env(safe-area-inset-top)" }}>
+          <div className="h-11 flex items-center px-4">
+            <Skeleton className="w-24 h-5 rounded-full mx-auto" />
+          </div>
+        </div>
+        {/* Subscription bandeau placeholder */}
+        <div className="px-4 pt-6 pb-2">
+          <Skeleton className="w-full h-16 rounded-2xl" />
+        </div>
+        {/* Section groups (label + card) ×4 */}
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="px-4 pt-5">
+            <Skeleton className="w-28 h-3 rounded-full mb-3" />
+            <Skeleton className="w-full h-14 rounded-2xl" />
+          </div>
+        ))}
       </div>
     );
   }

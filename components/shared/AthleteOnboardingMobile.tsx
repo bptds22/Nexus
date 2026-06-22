@@ -44,6 +44,7 @@ import { GRAD_YEAR_OPTIONS } from "@/lib/config/gradYears";
 import { SearchSheet } from "@/components/mobile/SearchSheet";
 import ClaimProfileModal, { type OrphanProfile } from "@/components/auth/ClaimProfileModal";
 import AthleteOnboardingWowMobile from "@/components/shared/AthleteOnboardingWowMobile";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { loadAthleteRaw, mapToRecruiterView } from "@/app/coach/athletes/_data/loadAthleteFromSupabase";
 import type { AthleteProfileRecruiterView } from "@/lib/types/models";
 
@@ -960,8 +961,48 @@ export function AthleteOnboardingMobile() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#111317] text-white flex items-center justify-center">
-        <p className="text-[14px] text-[#6b7280]">Chargement…</p>
+      <div className="min-h-screen bg-[#111317] text-white flex flex-col">
+        {/* Header sticky : back + label étape + dots (squelette) */}
+        <div
+          className="sticky top-0 z-30 bg-[#111317]/95 backdrop-blur-md border-b border-white/[0.06]"
+          style={{ paddingTop: "env(safe-area-inset-top)" }}
+        >
+          <div className="flex items-center px-4 py-2 gap-2 min-h-[64px]">
+            <Skeleton className="w-11 h-11 rounded-full flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <Skeleton className="h-3 w-24 rounded-full" />
+            </div>
+            <div className="flex items-center gap-1 flex-shrink-0">
+              <Skeleton className="w-2 h-2 rounded-full" />
+              <Skeleton className="w-2 h-2 rounded-full" />
+            </div>
+          </div>
+        </div>
+
+        {/* Contenu — scrollable (squelette de champs) */}
+        <div
+          className="flex-1 overflow-y-auto px-4 pt-6"
+          style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 96px)" }}
+        >
+          <Skeleton className="h-7 w-3/4 rounded-lg" />
+          <Skeleton className="mt-2 h-4 w-1/2 rounded-full" />
+          <div className="mt-8 space-y-6">
+            {[0, 1, 2].map((i) => (
+              <div key={i}>
+                <Skeleton className="h-3 w-28 rounded-full" />
+                <Skeleton className="mt-2 h-12 w-full rounded-xl" />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* CTA fixe en bas (squelette) */}
+        <div
+          className="fixed bottom-0 inset-x-0 z-30 bg-[#111317]/95 backdrop-blur-md border-t border-white/[0.06] px-4 pt-3"
+          style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 12px)" }}
+        >
+          <Skeleton className="h-12 w-full rounded-xl" />
+        </div>
       </div>
     );
   }

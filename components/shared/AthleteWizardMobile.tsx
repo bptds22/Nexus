@@ -95,6 +95,7 @@ import {
 } from "@/app/coach/athletes/_data/saveAthlete";
 import { coteChanged } from "@/lib/utils/cote";
 import { ConfirmSheet } from "@/components/shared/settings";
+import { Skeleton } from "@/components/ui/Skeleton";
 import CoteChangeConfirmContent from "@/components/shared/CoteChangeConfirmContent";
 
 /* ── Haptics helper (matches onboarding shells) ─────────────── */
@@ -845,8 +846,43 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#111317] text-white flex items-center justify-center">
-        <p className="text-[14px] text-[#6b7280]">Chargement…</p>
+      <div className="min-h-screen bg-[#111317] text-white flex flex-col">
+        {/* Sticky header skeleton — mirrors back button + eyebrow/title + chip row */}
+        <div
+          className="sticky top-0 z-30 bg-[#111317]/95 backdrop-blur-md border-b border-white/[0.06]"
+          style={{ paddingTop: "env(safe-area-inset-top)" }}
+        >
+          <div className="flex items-center px-4 pt-2 gap-2 min-h-[56px]">
+            <Skeleton width={44} height={44} rounded={999} />
+            <div className="flex-1 min-w-0">
+              <Skeleton className="h-3 w-16 rounded-full mb-2" />
+              <Skeleton className="h-4 w-44 rounded-full" />
+            </div>
+          </div>
+          <div className="overflow-x-auto px-4 pt-1 pb-3 nx-no-scrollbar">
+            <div className="flex items-center gap-2">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <Skeleton key={i} className="h-9 w-24 rounded-full flex-shrink-0" />
+              ))}
+            </div>
+          </div>
+        </div>
+        {/* Step content skeleton — mirrors px-4 py-5 field rows */}
+        <div className="flex-1 px-4 py-5 space-y-5">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="rounded-2xl bg-[#1A1D24] border border-white/5 p-4 space-y-4">
+              <Skeleton className="h-3 w-24 rounded-full" />
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-4 w-28 rounded-full" />
+                <Skeleton className="h-4 w-20 rounded-full" />
+              </div>
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-4 w-32 rounded-full" />
+                <Skeleton className="h-4 w-16 rounded-full" />
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }

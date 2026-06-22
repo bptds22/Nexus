@@ -17,6 +17,7 @@
 
 import { useRouter } from "next/navigation";
 import CareerToggle from "@/components/reputation/CareerToggle";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { useCoachReputationStats } from "@/lib/queries/coach/useCoachReputationStats";
 import { triggerHaptic } from "@/components/shared/settings";
 
@@ -59,7 +60,33 @@ export function CareerEditMobile() {
       </div>
 
       {isLoading && !data ? (
-        <div className="px-4 pt-10 pb-3 text-[#6b7280] text-[14px]">Chargement…</div>
+        <div className="px-4 pt-4">
+          {/* Toggle row */}
+          <div className="flex items-center justify-between rounded-2xl bg-[#1A1D24] p-4">
+            <div className="flex-1 pr-4">
+              <Skeleton className="h-4 w-40 rounded-full" />
+              <Skeleton className="mt-2 h-3 w-56 rounded-full" />
+            </div>
+            <Skeleton className="h-7 w-12 rounded-full" />
+          </div>
+          {/* Sports tag picker */}
+          <Skeleton className="mt-6 h-3 w-24 rounded-full" />
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Skeleton className="h-9 w-24 rounded-full" />
+            <Skeleton className="h-9 w-20 rounded-full" />
+            <Skeleton className="h-9 w-28 rounded-full" />
+          </div>
+          {/* Regions tag picker */}
+          <Skeleton className="mt-6 h-3 w-32 rounded-full" />
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Skeleton className="h-9 w-28 rounded-full" />
+            <Skeleton className="h-9 w-24 rounded-full" />
+            <Skeleton className="h-9 w-32 rounded-full" />
+          </div>
+          {/* Bio textarea */}
+          <Skeleton className="mt-6 h-3 w-20 rounded-full" />
+          <Skeleton className="mt-3 h-28 w-full rounded-2xl" />
+        </div>
       ) : (
         <div className="px-4 pt-4">
           <CareerToggle

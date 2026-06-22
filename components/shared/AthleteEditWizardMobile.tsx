@@ -45,6 +45,7 @@ import { Card, InlineEditRow, PickerRow, ReadOnlyRow, DateRow, ToggleRow, ChipsB
 import { StarRow } from "@/components/shared/wizard/stars";
 import { MobilePicker, type PickerOption } from "@/components/mobile/MobilePicker";
 import { WizardPills } from "@/components/shared/wizard/WizardPills";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { GREEN, YELLOW, RED, PencilIcon, LockIcon } from "@/components/shared/wizard/modeIcons";
 import {
   SUBJECTS, HONORS, CEGEP_REGIONS, PROGRAMME_TYPE_OPTIONS,
@@ -780,8 +781,38 @@ export default function AthleteEditWizardMobile() {
 
   if (!a) {
     return (
-      <div className="min-h-screen bg-[#111317] flex items-center justify-center">
-        <p className="text-[13px] text-[#9CA3AF]">Chargement…</p>
+      <div className="min-h-screen bg-[#111317]" style={{ overflowY: "auto", overflowX: "hidden", height: "100dvh" }}>
+        {/* Header skeleton — mirrors WizardPills (eyebrow + title + pill row) */}
+        <div className="px-4 pt-4 pb-3 border-b border-white/[0.06]" style={{ paddingTop: "calc(env(safe-area-inset-top) + 16px)" }}>
+          <div className="flex items-center gap-2 mb-3">
+            <Skeleton width={44} height={44} rounded={999} />
+            <div className="flex-1">
+              <Skeleton className="h-3 w-12 rounded-full mb-2" />
+              <Skeleton className="h-4 w-40 rounded-full" />
+            </div>
+          </div>
+          <div className="flex gap-2">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Skeleton key={i} className="h-8 w-20 rounded-full flex-shrink-0" />
+            ))}
+          </div>
+        </div>
+        {/* Step body skeleton — mirrors px-4 pt-4 pb-48 space-y-5 field rows */}
+        <div className="px-4 pt-4 pb-48 space-y-5">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="rounded-2xl bg-[#1A1D24] border border-white/5 p-4 space-y-4">
+              <Skeleton className="h-3 w-24 rounded-full" />
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-4 w-28 rounded-full" />
+                <Skeleton className="h-4 w-20 rounded-full" />
+              </div>
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-4 w-32 rounded-full" />
+                <Skeleton className="h-4 w-16 rounded-full" />
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }

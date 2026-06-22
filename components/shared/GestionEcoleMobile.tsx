@@ -41,6 +41,7 @@ import {
   SectionLabel, Group, NavRow,
   openExternal, triggerHaptic,
 } from "@/components/shared/settings";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 const WEB_BASE = "https://nexussports.ca";
 
@@ -143,7 +144,26 @@ export function GestionEcoleMobile() {
   if (loading) {
     return (
       <div className="min-h-screen w-full overflow-x-hidden bg-[#111317] text-white nx-mobile-pb-tabbar">
-        <div className="px-4 pt-10 pb-3 text-[#6b7280] text-[14px]">Chargement…</div>
+        {/* Sticky header shell */}
+        <div className="sticky top-0 z-30 bg-[#111317]" style={{ paddingTop: "env(safe-area-inset-top)" }}>
+          <div className="h-11 flex items-center px-4">
+            <Skeleton className="w-32 h-5 rounded-full mx-auto" />
+          </div>
+        </div>
+        {/* Intro bandeau */}
+        <div className="px-4 pt-6 pb-2">
+          <Skeleton className="w-full h-20 rounded-2xl" />
+        </div>
+        {/* "Vue d'ensemble" group — 5 Pro-gated rows */}
+        <div className="px-4 pt-5">
+          <Skeleton className="w-32 h-3 rounded-full mb-3" />
+          <Skeleton className="w-full h-[280px] rounded-2xl" />
+        </div>
+        {/* "Administration" group — 1 row */}
+        <div className="px-4 pt-5">
+          <Skeleton className="w-32 h-3 rounded-full mb-3" />
+          <Skeleton className="w-full h-14 rounded-2xl" />
+        </div>
       </div>
     );
   }
