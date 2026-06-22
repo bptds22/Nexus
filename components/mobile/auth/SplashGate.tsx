@@ -19,7 +19,7 @@
    ⚠️ Hooks AVANT toute condition (canon).
 ═══════════════════════════════════════════════════════════════ */
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { SplashAnimMobile } from "./SplashAnimMobile";
 
@@ -28,18 +28,44 @@ const FADE_OUT_MS = 200;
 const AUTH_READY_FALLBACK_MS = 2500;
 const MIN_SPLASH_MS = 2000;
 
-let played = false;
+// Persistance du flag "splash déjà joué" en sessionStorage (au lieu d'une
+// variable module). En Capacitor la nav interne est MPA : chaque navigation
+// recharge le document → le module JS est ré-évalué → une variable module
+// repasserait à false et rejouerait le splash à CHAQUE nav. sessionStorage
+// survit au reboot DANS la session → le splash ne joue qu'au VRAI cold start
+// (clé absente), jamais sur une nav interne. (sessionStorage, pas
+// localStorage → reset au prochain lancement réel de l'app.)
+const PLAYED_KEY = "nx-splash-played";
+function readPlayed(): boolean {
+  if (typeof window === "undefined") return false;
+  try { return window.sessionStorage.getItem(PLAYED_KEY) === "1"; } catch { return false; }
+}
+function markPlayed(): void {
+  try { window.sessionStorage.setItem(PLAYED_KEY, "1"); } catch { /* no-op */ }
+}
+
+// useLayoutEffect côté client (masque le splash AVANT le 1er paint sur un
+// reboot interne) ; useEffect au prerender (évite le warning SSR).
+const useIsoLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 export function SplashGate({ children }: { children: ReactNode }) {
   // Hooks AVANT toute condition (canon).
-  const [done, setDone] = useState<boolean>(played);
+  // Init à false = identique au prerender → pas de mismatch d'hydratation.
+  // Le layout effect ci-dessous masque AVANT paint si déjà joué (reboot interne).
+  const [done, setDone] = useState<boolean>(false);
   const [animDone, setAnimDone] = useState<boolean>(false);
   const [authReady, setAuthReady] = useState<boolean>(false);
   const mountTimeRef = useRef<number>(Date.now());
 
+  // Reboot d'une nav interne (sessionStorage déjà posé) → on saute le splash
+  // immédiatement, avant le 1er paint : aucune animation ne rejoue.
+  useIsoLayoutEffect(() => {
+    if (IS_CAPACITOR && readPlayed()) setDone(true);
+  }, []);
+
   // Listener nx-auth-ready + fallback timeout (iter 7.47b BUG 2).
   useEffect(() => {
-    if (!IS_CAPACITOR || played) return;
+    if (!IS_CAPACITOR || readPlayed()) return;
     const onReady = () => setAuthReady(true);
     window.addEventListener("nx-auth-ready", onReady);
     const timer = window.setTimeout(() => setAuthReady(true), AUTH_READY_FALLBACK_MS);
@@ -54,13 +80,13 @@ export function SplashGate({ children }: { children: ReactNode }) {
     if (!animDone || !authReady || done) return;
     const elapsed = Date.now() - mountTimeRef.current;
     if (elapsed >= MIN_SPLASH_MS) {
-      played = true;
+      markPlayed();
       setDone(true);
       return;
     }
     const remaining = MIN_SPLASH_MS - elapsed;
     const t = window.setTimeout(() => {
-      played = true;
+      markPlayed();
       setDone(true);
     }, remaining);
     return () => window.clearTimeout(t);
@@ -75,6 +101,7 @@ export function SplashGate({ children }: { children: ReactNode }) {
         {!done && (
           <motion.div
             key="splash-overlay"
+            className="nx-splash-overlay"
             initial={false}
             exit={{ opacity: 0 }}
             transition={{ duration: FADE_OUT_MS / 1000, ease: "easeOut" }}

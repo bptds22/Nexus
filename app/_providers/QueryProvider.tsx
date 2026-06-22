@@ -1,6 +1,8 @@
 "use client";
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient } from "@tanstack/react-query";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
+import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { useState, type ReactNode } from "react";
 
@@ -40,12 +42,27 @@ export function QueryProvider({ children }: { children: ReactNode }) {
       }),
   );
 
+  // Persistance du cache en sessionStorage : au reboot WebView (nav MPA en
+  // Capacitor), le cache est réhydraté → pas de re-fetch ni de spinner sur les
+  // pages déjà visitées dans la session. storage undefined au prerender → le
+  // persister est un no-op (aucun accès window côté serveur). sessionStorage
+  // (pas localStorage) → repart propre au prochain vrai lancement de l'app.
+  const [persister] = useState(() =>
+    createSyncStoragePersister({
+      storage: typeof window !== "undefined" ? window.sessionStorage : undefined,
+      key: "nx-rq-cache",
+    }),
+  );
+
   return (
-    <QueryClientProvider client={queryClient}>
+    <PersistQueryClientProvider
+      client={queryClient}
+      persistOptions={{ persister, maxAge: 30 * 60 * 1000 }}
+    >
       {children}
       {process.env.NODE_ENV !== "production" && (
         <ReactQueryDevtools initialIsOpen={false} buttonPosition="bottom-left" />
       )}
-    </QueryClientProvider>
+    </PersistQueryClientProvider>
   );
 }
