@@ -29,9 +29,15 @@ const config: CapacitorConfig = {
       splashImmersive: true,
     },
     StatusBar: {
+      // overlay → la WebView s'étend sous la status bar / Dynamic Island
+      // (le dégradé rouge du dashboard bleed jusqu'en haut). La config
+      // seule est honorée de façon inconstante selon la version → fiabilisé
+      // au runtime par StatusBarBootstrap (setOverlaysWebView + Android
+      // transparent). backgroundColor est ignoré quand overlay=true ; côté
+      // Android le runtime force #00000000 pour laisser le rouge transparaître.
       style: 'DARK',
       backgroundColor: '#111317',
-      overlaysWebView: false,
+      overlaysWebView: true,
     },
     PushNotifications: {
       presentationOptions: ['badge', 'sound', 'alert'],

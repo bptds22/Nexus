@@ -8,6 +8,7 @@ import { MobileToastProvider } from "@/components/mobile/MobileToast";
 import { QueryProvider } from "./_providers/QueryProvider";
 import { SubscriptionProvider } from "@/lib/context/SubscriptionProvider";
 import { PushRegistrar } from "@/components/push/PushRegistrar";
+import { StatusBarBootstrap } from "@/components/mobile/StatusBarBootstrap";
 import { SplashGate } from "@/components/mobile/auth/SplashGate";
 
 const ORGANIZATION_JSONLD = {
@@ -183,6 +184,9 @@ export default function RootLayout({
             <SubscriptionProvider>
               {/* Phase 2B push — déclencheur d'enregistrement natif post-auth
                   (no-op sur web). Timing provisoire pour le test. */}
+              {/* Status bar overlay (WebView sous l'island) — runtime,
+                  native-only, no-op web. Fiabilise overlaysWebView. */}
+              <StatusBarBootstrap />
               <PushRegistrar />
               <MobileToastProvider>
                 {/* Iter 7.47 — SplashGate joue l'anim X→logo UNE FOIS par
