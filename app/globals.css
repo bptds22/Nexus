@@ -120,6 +120,21 @@ html.is-capacitor body {
   overscroll-behavior: none;
 }
 
+/* Capacitor : masque les scrollbars (résidu web) sur TOUS les conteneurs
+   scroll — le <main> app-shell ET les overflow-y-auto internes. Scopé
+   .is-capacitor → le web garde ses scrollbars natives. Le scroll reste
+   fonctionnel ; seule la barre visuelle est masquée. */
+html.is-capacitor,
+html.is-capacitor * {
+  scrollbar-width: none;        /* Firefox */
+  -ms-overflow-style: none;     /* legacy Edge/IE */
+}
+html.is-capacitor ::-webkit-scrollbar {
+  display: none;                /* WebKit (iOS / Android WebView) */
+  width: 0;
+  height: 0;
+}
+
 body {
   color: var(--foreground);
   font-family: var(--font-outfit), 'Outfit', sans-serif;
