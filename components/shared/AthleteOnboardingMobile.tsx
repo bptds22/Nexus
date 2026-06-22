@@ -40,6 +40,7 @@ import { createClient } from "@/lib/supabase/client";
 import { calculateProfileCompletion } from "@/lib/utils/calculateProfileCompletion";
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import { MobilePicker, type PickerOption } from "@/components/mobile/MobilePicker";
+import { GRAD_YEAR_OPTIONS } from "@/lib/config/gradYears";
 import { SearchSheet } from "@/components/mobile/SearchSheet";
 import ClaimProfileModal, { type OrphanProfile } from "@/components/auth/ClaimProfileModal";
 import AthleteOnboardingWowMobile from "@/components/shared/AthleteOnboardingWowMobile";
@@ -132,13 +133,9 @@ function normalize(s: string): string {
   return stripAccents(s).toLowerCase().trim();
 }
 
-const YEAR_OPTIONS: PickerOption[] = [
-  { value: "2026", label: "2026" },
-  { value: "2027", label: "2027" },
-  { value: "2028", label: "2028" },
-  { value: "2029", label: "2029" },
-  { value: "2030", label: "2030" },
-];
+// Graduation years — rolling window (current year → +10) from
+// lib/config/gradYears, shared with the web onboarding + athlete wizard.
+const YEAR_OPTIONS: PickerOption[] = GRAD_YEAR_OPTIONS;
 
 const REGION_OPTIONS: PickerOption[] = CEGEP_REGIONS.map((r) => ({ value: r, label: r }));
 
@@ -231,6 +228,7 @@ export function AthleteOnboardingMobile() {
   // Saving
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [initError, setInitError] = useState(false);
 
   // Iter 7.50-b3 — phase "wow" post-submit. Une seule fois (moment de
   // création), pas au resume. Quand wowAthlete est set, le rendu bascule
@@ -255,7 +253,17 @@ export function AthleteOnboardingMobile() {
     let cancelled = false;
     (async () => {
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
+      try {
+      // Garde de session aligné sur getSession() (lecture LOCALE du storage)
+      // au lieu de getUser() (validation RÉSEAU). Juste après le signup,
+      // getUser() race à null le temps que la session se propage → on
+      // renvoyait vers /auth, où AuthMobileDispatcher → postLoginDispatch
+      // lit getSession() (local), VOIT la session, et renvoie l'athlète
+      // incomplet vers /athlete/onboarding → ping-pong infini. getSession()
+      // supprime l'asymétrie. La porte de sortie /auth reste pour un vrai
+      // cas non-authentifié (session bien null).
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
       if (!user) { router.push("/auth"); return; }
       if (cancelled) return;
 
@@ -268,19 +276,35 @@ export function AthleteOnboardingMobile() {
       if (meta.last_name) setLastName(meta.last_name as string);
       if (meta.sport) setPrimarySport(meta.sport as string);
 
-      // Fallback users table si metadata vide
+      // Lecture unique de public.users, avec retry. Juste après le signup
+      // le cookie JWT n'est pas encore propagé → RLS peut renvoyer 0 ligne
+      // pendant ~1s (la MÊME course que app/athlete/layout.tsx:276-282).
+      // .maybeSingle() renvoie null au lieu de throw PGRST116, et on
+      // réessaie quelques fois — au lieu d'avorter et de figer le spinner.
+      let userRow: {
+        first_name: string | null;
+        last_name: string | null;
+        context: string | null;
+        onboarding_complete: boolean | null;
+      } | null = null;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const { data } = await supabase
+          .from("users")
+          .select("first_name, last_name, context, onboarding_complete")
+          .eq("id", user.id)
+          .maybeSingle();
+        if (data) { userRow = data; break; }
+        if (attempt < 2) await new Promise((r) => setTimeout(r, 500));
+      }
+
+      // Fallback nom depuis users seulement si metadata vide
       if (!meta.first_name) {
-        const { data: userRow } = await supabase
-          .from("users").select("first_name, last_name")
-          .eq("id", user.id).single();
         if (userRow?.first_name) setFirstName(userRow.first_name);
         if (userRow?.last_name) setLastName(userRow.last_name);
       }
 
       // Context athlète
-      const { data: contextRow } = await supabase
-        .from("users").select("context, onboarding_complete").eq("id", user.id).single();
-      const ctxRaw = contextRow?.context;
+      const ctxRaw = userRow?.context;
       const ctx: "scolaire" | "ligue_civile" =
         ctxRaw === "ligue_civile" ? "ligue_civile" : "scolaire";
       if (cancelled) return;
@@ -309,7 +333,7 @@ export function AthleteOnboardingMobile() {
         // Désormais un compte claimé/non terminé reste sur l'onboarding
         // PRÉ-REMPLI et le complète, ce qui pose le flag. (Réplique le fix web —
         // commit 2dbc7fc.)
-        if (contextRow?.onboarding_complete === true) {
+        if (userRow?.onboarding_complete === true) {
           router.replace("/athlete/dashboard");
           return;
         }
@@ -397,7 +421,16 @@ export function AthleteOnboardingMobile() {
         }
       }
 
-      if (!cancelled) setLoading(false);
+      } catch (err) {
+        // Échec inattendu (réseau, auth) — état récupérable plutôt que
+        // hang. La course 0-ligne du JWT est déjà gérée ci-dessus via
+        // .maybeSingle() + retry, donc elle n'atterrit PAS ici.
+        console.error("[OnboardingMobile] init failed:", err);
+        if (!cancelled) setInitError(true);
+      } finally {
+        // TOUJOURS libérer le spinner, quoi qu'il arrive au-dessus.
+        if (!cancelled) setLoading(false);
+      }
     })();
     return () => { cancelled = true; };
   }, [router]);
@@ -905,6 +938,22 @@ export function AthleteOnboardingMobile() {
   }, [step]);
 
   /* ── Render ──────────────────────────────────────────────── */
+
+  if (initError) {
+    return (
+      <div className="min-h-screen bg-[#111317] text-white flex flex-col items-center justify-center gap-4 px-6 text-center">
+        <p className="text-[14px] text-white max-w-sm">
+          Une erreur est survenue au chargement de ton profil.
+        </p>
+        <button
+          onClick={() => window.location.reload()}
+          className="px-5 h-11 bg-[#E63946] text-white font-bold uppercase tracking-widest text-[13px] rounded"
+        >
+          Réessayer
+        </button>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

@@ -6,6 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import NexusLogo from "@/components/ui/NexusLogo";
 import { createClient } from "@/lib/supabase/client";
 import { genderLabel } from "@/lib/config/gender";
+import { GRAD_YEAR_OPTIONS, DEFAULT_GRAD_YEAR } from "@/lib/config/gradYears";
 import { calculateProfileCompletion } from "@/lib/utils/calculateProfileCompletion";
 import SportPositionSelect from "@/app/coach/components/SportPositionSelect";
 import DatePicker from "@/app/coach/components/DatePicker";
@@ -431,6 +432,7 @@ function AthleteOnboardingDesktop() {
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [initError, setInitError] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [existingAthleteId, setExistingAthleteId] = useState<string | null>(null);
 
@@ -448,7 +450,7 @@ function AthleteOnboardingDesktop() {
   const [lastName, setLastName] = useState("");
   const [gender, setGender] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState("");
-  const [gradYear, setGradYear] = useState("2026");
+  const [gradYear, setGradYear] = useState(DEFAULT_GRAD_YEAR);
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   // School (used when userContext === 'scolaire')
@@ -513,6 +515,7 @@ function AthleteOnboardingDesktop() {
   useEffect(() => {
     async function init() {
       const supabase = createClient();
+      try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.push("/auth"); return; }
       setUserId(user.id);
@@ -524,23 +527,39 @@ function AthleteOnboardingDesktop() {
       if (meta.last_name) setLastName(meta.last_name as string);
       if (meta.sport) setPrimarySport(meta.sport as string);
 
-      // Fallback: try users table if metadata is empty
+      // Single retried read of public.users. Right after signup the JWT
+      // cookie hasn't fully propagated, so RLS can return 0 rows for ~1s
+      // (the SAME race documented in app/athlete/layout.tsx:276-282).
+      // .maybeSingle() returns null instead of throwing PGRST116, and we
+      // retry a few times so the wizard pre-fills once the row is visible
+      // — rather than aborting init() and hanging the spinner forever.
+      let userRow: {
+        first_name: string | null;
+        last_name: string | null;
+        context: string | null;
+        onboarding_complete: boolean | null;
+      } | null = null;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const { data } = await supabase
+          .from("users")
+          .select("first_name, last_name, context, onboarding_complete")
+          .eq("id", user.id)
+          .maybeSingle();
+        if (data) { userRow = data; break; }
+        if (attempt < 2) await new Promise((r) => setTimeout(r, 500));
+      }
+
+      // Fallback: fill name from the users row only if metadata was empty.
       if (!meta.first_name) {
-        const { data: userRow } = await supabase.from("users").select("first_name, last_name").eq("id", user.id).single();
         if (userRow?.first_name) setFirstName(userRow.first_name);
         if (userRow?.last_name) setLastName(userRow.last_name);
       }
 
-      // Read users.context for the civil/school discriminator. Wired
-      // at signup in 5.3a (commit 5dc7456). Defaults to 'scolaire'
-      // when null — preserves existing behavior for any user who
-      // signed up before 5.3a shipped.
-      const { data: contextRow } = await supabase
-        .from("users")
-        .select("context, onboarding_complete")
-        .eq("id", user.id)
-        .single();
-      const ctxRaw = contextRow?.context;
+      // users.context is the civil/school discriminator. Wired at signup
+      // in 5.3a (commit 5dc7456). Defaults to 'scolaire' when null —
+      // preserves existing behavior for pre-5.3a users (and the race
+      // window above, where the row may not be visible yet).
+      const ctxRaw = userRow?.context;
       const ctx: "scolaire" | "ligue_civile" =
         ctxRaw === "ligue_civile" ? "ligue_civile" : "scolaire";
       setUserContext(ctx);
@@ -566,7 +585,7 @@ function AthleteOnboardingDesktop() {
         // layout (flag still false) bounced back → infinite loop. Now a claimed
         // (or unfinished) account stays on the PRE-FILLED onboarding and
         // completes it, which sets the flag — no more loop.
-        if (contextRow?.onboarding_complete === true) {
+        if (userRow?.onboarding_complete === true) {
           router.replace("/athlete/dashboard");
           return;
         }
@@ -676,7 +695,17 @@ function AthleteOnboardingDesktop() {
         }
       }
 
-      setLoading(false);
+      } catch (err) {
+        // Unexpected failure (network, auth) — surface a recoverable
+        // error rather than hanging. The JWT-propagation 0-rows race is
+        // already handled above via .maybeSingle() + retry, so it does
+        // NOT land here.
+        console.error("[Onboarding] init failed:", err);
+        setInitError(true);
+      } finally {
+        // ALWAYS clear the spinner, no matter what threw above.
+        setLoading(false);
+      }
     }
     init();
   }, [router]);
@@ -1005,6 +1034,23 @@ function AthleteOnboardingDesktop() {
       active ? "bg-[#E63946]/15 text-[#E63946] border border-[#E63946]/30" : "bg-[#13151a] text-[#6b7280] border border-[#2D3748] hover:text-white hover:border-[#4a4d56]"
     }`;
 
+  if (initError) {
+    return (
+      <div className="hero-playbook nx-no-glow bg-[#111317] min-h-screen flex flex-col items-center justify-center gap-4 px-6 text-center">
+        <PlaybookBackground />
+        <p className="relative z-10 text-white font-semibold max-w-sm">
+          Une erreur est survenue au chargement de ton profil.
+        </p>
+        <button
+          onClick={() => window.location.reload()}
+          className="relative z-10 px-5 h-11 bg-[#E63946] text-white font-head font-bold uppercase tracking-widest text-sm rounded"
+        >
+          Réessayer
+        </button>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="hero-playbook nx-no-glow bg-[#111317] min-h-screen flex items-center justify-center">
@@ -1103,7 +1149,7 @@ function AthleteOnboardingDesktop() {
             </div>
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div><label className={labelCls}>Année de graduation <span className="text-[#EF4444]">*</span></label>
-                <select title="Graduation" value={gradYear} onChange={(e) => setGradYear(e.target.value)} className={inputCls}><option value="2026">2026</option><option value="2027">2027</option><option value="2028">2028</option><option value="2029">2029</option></select>
+                <select title="Graduation" value={gradYear} onChange={(e) => setGradYear(e.target.value)} className={inputCls}>{GRAD_YEAR_OPTIONS.map((o) => (<option key={o.value} value={o.value}>{o.label}</option>))}</select>
               </div>
               <div><label className={labelCls}>Courriel</label><input type="email" title="Courriel" placeholder="courriel@exemple.com" value={email} onChange={(e) => setEmail(e.target.value)} className={`${inputCls} text-[#6b7280]`} readOnly /></div>
             </div>
