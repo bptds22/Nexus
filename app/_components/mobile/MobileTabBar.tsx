@@ -180,6 +180,10 @@ interface MobileTabBarProps {
 
 export default function MobileTabBar({ role }: MobileTabBarProps) {
   const pathname = usePathname();
+  // trailingSlash:true → le pathname runtime a un slash final. Normalisé pour
+  // les comparaisons EXACTES ci-dessous (les .startsWith restent sur pathname,
+  // safe). Sans ça, les guards onboarding/messages se trompent d'écran.
+  const normalizedPath = pathname.replace(/\/+$/, "") || "/";
   const router = useRouter();
   const { tier, isSchoolAdmin } = useSubscription();
 
@@ -329,7 +333,7 @@ export default function MobileTabBar({ role }: MobileTabBarProps) {
   const messagesDrillDown =
     role === "recruteur" &&
     pathname.startsWith("/recruteur/messages/") &&
-    pathname !== "/recruteur/messages";
+    normalizedPath !== "/recruteur/messages";
   if (messagesDrillDown) return null;
 
   // Phase 2 — mirror du drill-down recruteur pour le coach. La mobile coach
@@ -342,7 +346,7 @@ export default function MobileTabBar({ role }: MobileTabBarProps) {
   const coachDemandesDrillDown =
     role === "coach" &&
     pathname.startsWith("/coach/demandes/") &&
-    pathname !== "/coach/demandes";
+    normalizedPath !== "/coach/demandes";
   if (coachDemandesDrillDown) return null;
 
   // Coach parametres drill-downs (profil edit, école edit, admin école).
@@ -379,7 +383,7 @@ export default function MobileTabBar({ role }: MobileTabBarProps) {
   // la TabBar puisque le layout shell le bounce vers /athlete/onboarding
   // dès qu'il tente d'aller ailleurs. Même pattern que messagesDrillDown.
   const athleteOnboarding =
-    role === "athlete" && pathname === "/athlete/onboarding";
+    role === "athlete" && normalizedPath === "/athlete/onboarding";
   if (athleteOnboarding) return null;
 
   // Iter coach-3 — même guard pour le coach pendant son onboarding.
@@ -387,7 +391,7 @@ export default function MobileTabBar({ role }: MobileTabBarProps) {
   // coach école via dispatch IS_CAPACITOR). Couvre automatiquement le
   // sprint coach-4 (civil) et le sprint recruteur mobile à venir.
   const coachOnboarding =
-    role === "coach" && pathname === "/onboarding";
+    role === "coach" && normalizedPath === "/onboarding";
   if (coachOnboarding) return null;
 
   // Iter recruteur-onboarding-mobile — même guard pour le recruteur en
@@ -395,7 +399,7 @@ export default function MobileTabBar({ role }: MobileTabBarProps) {
   // dispatch IS_CAPACITOR. Note : TabBar utilise 'recruteur' (FR) en
   // interne alors que user.role est 'recruiter' (EN) côté front.
   const recruiterOnboarding =
-    role === "recruteur" && pathname === "/onboarding";
+    role === "recruteur" && normalizedPath === "/onboarding";
   if (recruiterOnboarding) return null;
 
   // SSR-safe portal mount gate — comes AFTER every existing pathname guard
