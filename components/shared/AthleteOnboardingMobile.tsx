@@ -150,6 +150,9 @@ export function AthleteOnboardingMobile() {
 
   // Step machine 1|2 (consents + parent capturés au signup — iter 2b)
   const [step, setStep] = useState<1 | 2>(1);
+  // Masque le CTA fixed bottom-0 quand un input est focus (clavier monté),
+  // pour qu'il ne recouvre pas le champ saisi — même idiome que SignupMobile.
+  const [inputFocused, setInputFocused] = useState(false);
 
   // Auth + context
   const [userId, setUserId] = useState<string | null>(null);
@@ -1038,6 +1041,11 @@ export function AthleteOnboardingMobile() {
       <div
         className="flex-1 overflow-y-auto"
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 96px)" }}
+        onFocus={(e) => {
+          const t = e.target as HTMLElement;
+          if (t.tagName === "INPUT" || t.tagName === "TEXTAREA") setInputFocused(true);
+        }}
+        onBlur={() => setInputFocused(false)}
       >
         {step === 1 && (
           <Step1Content
@@ -1091,8 +1099,14 @@ export function AthleteOnboardingMobile() {
 
       {/* Sticky bottom CTA */}
       <div
-        className="fixed bottom-0 inset-x-0 z-30 bg-[#111317]/95 backdrop-blur-md border-t border-white/[0.06] px-4 pt-3"
-        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 12px)" }}
+        className="fixed bottom-0 inset-x-0 z-30 bg-[#111317]/95 backdrop-blur-md border-t border-white/[0.06] px-4 pt-3 transition-opacity"
+        style={{
+          paddingBottom: "calc(env(safe-area-inset-bottom) + 12px)",
+          opacity: inputFocused ? 0 : 1,
+          visibility: inputFocused ? "hidden" : "visible",
+          pointerEvents: inputFocused ? "none" : "auto",
+        }}
+        aria-hidden={inputFocused}
       >
         {step < 2 ? (
           <button

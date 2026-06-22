@@ -71,7 +71,19 @@ export default function CoachLayout({
           className="relative z-10 flex-1"
           style={
             IS_CAPACITOR
-              ? { paddingBottom: "calc(64px + env(safe-area-inset-bottom))", overflowX: "hidden" }
+              ? {
+                  // App-shell : <main> = unique conteneur scroll borné (body
+                  // verrouillé via globals .is-capacitor). flex:none pour que
+                  // height:100dvh prime sur flex-1. Pas de padding-top : les
+                  // headers sticky portent déjà env(safe-area-inset-top).
+                  height: "100dvh",
+                  flex: "none",
+                  overflowY: "auto",
+                  overscrollBehavior: "contain",
+                  WebkitOverflowScrolling: "touch",
+                  paddingBottom: "calc(64px + env(safe-area-inset-bottom))",
+                  overflowX: "hidden",
+                }
               : undefined
           }
         >

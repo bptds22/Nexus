@@ -79,7 +79,19 @@ function RecruteurLayoutInner({ children }: { children: React.ReactNode }) {
           className="relative z-10 flex-1"
           style={
             IS_CAPACITOR
-              ? { paddingBottom: "calc(64px + env(safe-area-inset-bottom))", position: "relative", overflowX: "hidden" }
+              ? {
+                  // App-shell : conteneur scroll borné unique (body verrouillé
+                  // via globals .is-capacitor). flex:none pour que height:100dvh
+                  // prime sur flex-1. Pas de padding-top (headers sticky safe-area).
+                  height: "100dvh",
+                  flex: "none",
+                  overflowY: "auto",
+                  overscrollBehavior: "contain",
+                  WebkitOverflowScrolling: "touch",
+                  paddingBottom: "calc(64px + env(safe-area-inset-bottom))",
+                  position: "relative",
+                  overflowX: "hidden",
+                }
               : undefined
           }
         >

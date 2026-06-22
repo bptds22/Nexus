@@ -370,7 +370,22 @@ export default function AthleteLayout({ children }: { children: React.ReactNode 
         )}
         <main
           className="relative z-10 flex-1"
-          style={IS_CAPACITOR ? { paddingBottom: "calc(64px + env(safe-area-inset-bottom))", overflowX: "hidden" } : undefined}
+          style={
+            IS_CAPACITOR
+              ? {
+                  // App-shell : conteneur scroll borné unique (body verrouillé
+                  // via globals .is-capacitor). flex:none pour que height:100dvh
+                  // prime sur flex-1. Pas de padding-top (headers sticky safe-area).
+                  height: "100dvh",
+                  flex: "none",
+                  overflowY: "auto",
+                  overscrollBehavior: "contain",
+                  WebkitOverflowScrolling: "touch",
+                  paddingBottom: "calc(64px + env(safe-area-inset-bottom))",
+                  overflowX: "hidden",
+                }
+              : undefined
+          }
         >
           <AnimatedRoute>{children}</AnimatedRoute>
         </main>

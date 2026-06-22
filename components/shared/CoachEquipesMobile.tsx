@@ -279,7 +279,7 @@ export default function CoachEquipesMobile() {
                 // the sticky "Créer l'équipe" action bar is never hidden.
                 // Mirrors the wizard's ENREGISTRER pattern.
                 bottom: "calc(64px + env(safe-area-inset-bottom))",
-                maxHeight: "min(82vh, calc(100dvh - env(safe-area-inset-top, 0px) - 64px))",
+                maxHeight: "min(82dvh, calc(100dvh - env(safe-area-inset-top, 0px) - 64px))",
                 transform: `translateY(${dragOffset}px)`,
                 transition: dragOffset === 0 ? "transform 280ms cubic-bezier(0.34, 1.56, 0.64, 1)" : "none",
               }}

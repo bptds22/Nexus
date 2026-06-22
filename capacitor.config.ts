@@ -12,7 +12,9 @@ const config: CapacitorConfig = {
   ios: {
     contentInset: 'always',
     backgroundColor: '#111317',
-    scrollEnabled: true,
+    // App-shell : la WKWebView ne scrolle/bounce plus ; le scroll vit dans
+    // le <main> borné (height:100dvh, overflow-y:auto) de chaque layout.
+    scrollEnabled: false,
   },
   plugins: {
     SplashScreen: {
@@ -43,7 +45,7 @@ const config: CapacitorConfig = {
       presentationOptions: ['badge', 'sound', 'alert'],
     },
     Keyboard: {
-      resize: KeyboardResize.Body,
+      resize: KeyboardResize.Native,
     },
   },
   server: {

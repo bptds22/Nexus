@@ -105,6 +105,21 @@ html, body {
   min-height: 100vh;
 }
 
+/* App-shell scroll lock — Capacitor ONLY. The .is-capacitor class is set on
+   <html> exclusively in the native build (via IS_CAPACITOR in RootLayout) ;
+   the web keeps its normal document scroll (this rule never matches there).
+   The body never scrolls/bounces — the single bounded scroll container is
+   each portal's <main> (height:100dvh; overflow-y:auto). */
+html.is-capacitor,
+html.is-capacitor body {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  position: fixed;
+  inset: 0;
+  overscroll-behavior: none;
+}
+
 body {
   color: var(--foreground);
   font-family: var(--font-outfit), 'Outfit', sans-serif;

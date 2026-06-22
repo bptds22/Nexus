@@ -156,14 +156,30 @@ export const metadata: Metadata = {
   },
 };
 
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr" data-theme="dark">
+    // .is-capacitor → app-shell scroll lock (globals.css). Native build only ;
+    // web renders without the class and keeps normal document scroll.
+    <html lang="fr" data-theme="dark" className={IS_CAPACITOR ? "is-capacitor" : undefined}>
       <body className={`${outfit.variable} ${barlowCondensed.variable} antialiased`}>
+        {/* Zéro-flash splash : AVANT tout paint, si le splash a déjà joué cette
+            session (sessionStorage), on injecte une règle qui masque l'overlay
+            prérendu → aucun flash du splash statique sur un reboot de nav MPA.
+            No-op sur web (clé jamais posée) et au vrai cold start (clé absente). */}
+        <Script
+          id="nx-splash-skip"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{
+            __html:
+              "try{if(sessionStorage.getItem('nx-splash-played')==='1'){var s=document.createElement('style');s.textContent='.nx-splash-overlay{display:none!important}';(document.head||document.documentElement).appendChild(s);}}catch(e){}",
+          }}
+        />
         {/* JSON-LD Organization — données structurées pour Google Knowledge Graph */}
         <Script
           id="nx-jsonld-organization"
