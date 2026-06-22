@@ -28,7 +28,7 @@
    externes).
 ═══════════════════════════════════════════════════════════════ */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { AthleteProfileRecruiterView } from "@/lib/types/models";
 import AthletePlayerCard from "@/components/shared/AthletePlayerCard";
 import DistinctionBadge from "@/components/shared/DistinctionBadge";
@@ -92,18 +92,42 @@ async function triggerHaptic(intensity: "Light" | "Medium" | "Success" = "Light"
 function useGyroTilt(maxDeg = 6) {
   const [tilt, setTilt] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [hasGyro, setHasGyro] = useState(false);
+  // Dernier tilt commité + dernier timestamp traité, gardés en ref pour ne
+  // PAS re-render à chaque event deviceorientation (~60 Hz). Sans ça,
+  // setTilt({x,y}) crée un objet neuf à chaque event → re-render storm
+  // permanent tant que le WOW est affiché.
+  const lastTiltRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const lastTsRef = useRef(0);
+  const hasGyroRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
+    const THRESHOLD_DEG = 0.5; // ignore le bruit capteur sous 0.5°
+    const THROTTLE_MS = 40;    // ~25 Hz — amplement fluide pour un tilt 3D
 
     const handler = (e: DeviceOrientationEvent) => {
       if (cancelled) return;
+
+      // 1) Throttle : au plus un traitement toutes les THROTTLE_MS.
+      const now = e.timeStamp || 0;
+      if (now - lastTsRef.current < THROTTLE_MS) return;
+      lastTsRef.current = now;
+
       const beta = e.beta ?? 0;   // -180..180 (front-back)
       const gamma = e.gamma ?? 0; // -90..90 (left-right)
       const x = Math.max(-maxDeg, Math.min(maxDeg, gamma / 4));
       const y = Math.max(-maxDeg, Math.min(maxDeg, -beta / 4));
+
+      // Active le mode gyro UNE seule fois (ref → un unique setState).
+      if (!hasGyroRef.current) { hasGyroRef.current = true; setHasGyro(true); }
+
+      // 2) Seuil : on ne setTilt (= re-render) QUE si le tilt a bougé
+      // au-delà du bruit. Sinon on garde la référence précédente → zéro
+      // re-render. C'est ce qui tue le storm tout en gardant le tilt fluide.
+      const last = lastTiltRef.current;
+      if (Math.abs(x - last.x) < THRESHOLD_DEG && Math.abs(y - last.y) < THRESHOLD_DEG) return;
+      lastTiltRef.current = { x, y };
       setTilt({ x, y });
-      setHasGyro(true); // idempotent — premier event passe le flag
     };
 
     try {
