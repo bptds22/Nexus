@@ -42,6 +42,7 @@ import { useMobileToast } from "@/components/mobile/MobileToast";
 import { MobilePicker, type PickerOption } from "@/components/mobile/MobilePicker";
 import { GRAD_YEAR_OPTIONS } from "@/lib/config/gradYears";
 import { SearchSheet } from "@/components/mobile/SearchSheet";
+import AthletePhotoHero from "@/components/shared/AthletePhotoHero";
 import ClaimProfileModal, { type OrphanProfile } from "@/components/auth/ClaimProfileModal";
 import AthleteOnboardingWowMobile from "@/components/shared/AthleteOnboardingWowMobile";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -706,8 +707,7 @@ export function AthleteOnboardingMobile() {
 
   /* ── Photo upload (web file input, Capacitor Camera en sprint ultérieur) ── */
 
-  const handlePhotoChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const handlePhotoChange = useCallback(async (file: File | null) => {
     if (!file || !userId) return;
     setPhotoUploading(true);
     const supabase = createClient();
@@ -1132,6 +1132,7 @@ export function AthleteOnboardingMobile() {
             onOpenRegion={() => setOpenRegion(true)}
             photo={photo} photoUploading={photoUploading}
             onPhotoChange={handlePhotoChange}
+            onPhotoRemove={() => setPhoto(null)}
             showRegion={userContext === "ligue_civile"}
             showPosition={positionOptions.length > 0}
           />
@@ -1617,7 +1618,8 @@ interface Step2Props {
   onOpenRegion: () => void;
   photo: string | null;
   photoUploading: boolean;
-  onPhotoChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onPhotoChange: (file: File | null) => void;
+  onPhotoRemove: () => void;
   showRegion: boolean;
   showPosition: boolean;
 }
@@ -1630,36 +1632,15 @@ function Step2Content(p: Step2Props) {
         subtitle="Une photo, une promotion, ton numéro. Le minimum pour la générer — tu pourras compléter le reste plus tard."
       />
       <SectionTitle>Ta photo</SectionTitle>
-      <div className="bg-[#1A1D24] border border-white/[0.06] rounded-2xl p-4 flex items-center gap-4">
-        <div className="relative w-20 h-20 rounded-full overflow-hidden flex-shrink-0 bg-[#2F3440] border border-white/[0.06]">
-          {p.photo ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={p.photo} alt="Photo" className="absolute inset-0 w-full h-full object-cover" />
-          ) : (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                <circle cx="12" cy="7" r="4" />
-              </svg>
-            </div>
-          )}
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-[14px] text-white/80">
-            {p.photo ? "Photo téléchargée" : "Aucune photo (optionnel)"}
-          </p>
-          <label className="inline-flex items-center mt-2 h-11 px-4 rounded-2xl bg-white/[0.06] active:bg-white/[0.10] text-[14px] font-semibold text-white cursor-pointer min-w-[44px]">
-            <input
-              type="file"
-              accept="image/*"
-              onChange={p.onPhotoChange}
-              className="sr-only"
-              disabled={p.photoUploading}
-            />
-            {p.photoUploading ? "Téléchargement…" : (p.photo ? "Changer" : "Choisir une photo")}
-          </label>
-        </div>
-      </div>
+      {/* Même composant/format que le wizard coach (grand cadre + fade +
+          « Tape pour changer » / RETIRER). La logique d'upload reste celle
+          de l'onboarding (handlePhotoChange → bucket avatars). */}
+      <AthletePhotoHero
+        photoUrl={p.photo ?? ""}
+        uploading={p.photoUploading}
+        onChange={p.onPhotoChange}
+        onRemove={p.onPhotoRemove}
+      />
 
       <SectionTitle>Ta promotion</SectionTitle>
       <PickerRow

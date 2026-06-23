@@ -1038,6 +1038,9 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
         verified_at: nowIso,
         verified_by: user.id,
         last_profile_validation: nowIso,
+        // Re-pose symétrique : on efface le flag « modifié depuis vérif »
+        // pour que l'athlète sorte de la file « À traiter » (cf. lib/coach/tasks).
+        modified_since_verification: false,
       })
       .eq("id", id);
     if (error) {
@@ -1576,8 +1579,8 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
           PlayerCard). Maintenant : opaque dès le repos, le bloc TopBar+tabs
           forme une zone solide continue, contenu disparaît net dessous. */}
       <div
-        className="sticky top-0 z-40 h-11 flex items-center px-4"
-        style={{ backgroundColor: "#111317" }}
+        className="sticky top-0 z-40 min-h-11 flex items-center px-4"
+        style={{ backgroundColor: "#111317", paddingTop: "env(safe-area-inset-top)" }}
       >
         {/* Iter 6.1c — back vers le tab d'origine (sessionStorage 'lastRecruiterTab').
             Pipeline → profil → back doit revenir vers Pipeline et pas Recherche.
@@ -1738,7 +1741,11 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
         {isCoach && (
           <div className="space-y-3 mb-4">
             <ConsentAlert consentGiven={a.parentalConsent} onConfirm={coachConfirmConsent} />
-            <VerifyAlert isVerified={!!a.isVerified} onVerify={coachVerify} />
+            <VerifyAlert
+              isVerified={!!a.isVerified}
+              needsReverify={!!a.modifiedSinceVerification}
+              onVerify={coachVerify}
+            />
             <SuggestionsAlert
               pendingSuggestions={pendingSuggestions}
               onApprove={coachApprove}
@@ -1935,7 +1942,8 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
         className="bg-[#111317] border-b border-white/[0.04] overflow-hidden"
         style={{
           position: collapsedActive ? "sticky" : "absolute",
-          top: collapsedActive ? 44 : -80,
+          // top suit le header (sticky top:0) qui fait désormais safe-area + 44px.
+          top: collapsedActive ? "calc(env(safe-area-inset-top) + 44px)" : -80,
           left: 0,
           right: 0,
           height: 80,
@@ -1976,7 +1984,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
           plus sous le bloc sticky. */}
       <div
         className="sticky z-30 bg-[#111317]"
-        style={{ top: isCollapsedActive ? 124 : 44 }}
+        style={{ top: isCollapsedActive ? "calc(env(safe-area-inset-top) + 124px)" : "calc(env(safe-area-inset-top) + 44px)" }}
       >
         <TabBar activeTab={activeTab} onChange={handleTabChange} />
         {/* Toggle Simplifié/Détaillé centré. Iter 7.8c-UI Section B —

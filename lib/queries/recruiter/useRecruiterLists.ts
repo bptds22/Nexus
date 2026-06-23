@@ -81,7 +81,7 @@ export function useRecruiterLists() {
           id, name, description, color, created_at, updated_at,
           recruiter_list_members(
             athlete_id,
-            athletes(sports(nom))
+            athletes(sports!sport_id(nom))
           )
         `)
         .eq("recruiter_id", userId)

@@ -49,6 +49,8 @@ import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { createPortal } from "react-dom";
 import { createClient } from "@/lib/supabase/client";
+import { uploadAvatar } from "@/lib/storage/uploadAvatar";
+import AthletePhotoHero from "@/components/shared/AthletePhotoHero";
 import { MobilePicker, type PickerOption } from "@/components/mobile/MobilePicker";
 import { GRAD_YEAR_OPTIONS } from "@/lib/config/gradYears";
 import { MobileWheelPicker } from "@/components/mobile/MobileWheelPicker";
@@ -531,24 +533,56 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
     const local = URL.createObjectURL(file);
     setForm((prev) => ({ ...prev, identity: { ...prev.identity, photo: local } }));
     try {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { setPhotoUploading(false); return; }
-      const ext = file.name.split(".").pop() || "jpg";
-      const path = `${user.id}/${Date.now()}.${ext}`;
-      const { error: upErr } = await supabase.storage.from("avatars").upload(path, file, { upsert: true });
-      if (upErr) {
-        console.error("Photo upload error:", upErr);
-        toast.error({ message: "Échec du téléversement de la photo" });
-        setPhotoUploading(false);
-        return;
-      }
-      const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
-      setForm((prev) => ({ ...prev, identity: { ...prev.identity, photo: urlData.publicUrl } }));
+      // Mécanisme partagé avec l'éditeur athlète (lib/storage/uploadAvatar) :
+      // upload sous le dossier de l'utilisateur courant + getPublicUrl.
+      const publicUrl = await uploadAvatar(file);
+      setForm((prev) => ({ ...prev, identity: { ...prev.identity, photo: publicUrl } }));
+    } catch (err) {
+      console.error("Photo upload error:", err);
+      toast.error({ message: "Échec du téléversement de la photo" });
     } finally {
       setPhotoUploading(false);
     }
   }, [toast]);
+
+  /* ── Forcer la vérification (coach override) ──────────────────
+     Re-pose manuelle symétrique du retrait : verified=true + méthode
+     manuelle + verified_at/by, efface modified_since_verification, ET
+     réinitialise le compteur mensuel en posant last_profile_validation
+     = now (c'est la colonne lue par isValidationDue/Expired). Erreur
+     rendue visible (toast), pas de faux succès. */
+  const [forcingVerify, setForcingVerify] = useState(false);
+  const coachForceVerify = useCallback(async () => {
+    if (!athleteId) return;
+    setForcingVerify(true);
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { toast.error({ message: "Non authentifié" }); return; }
+      const nowIso = new Date().toISOString();
+      const { error } = await supabase
+        .from("athletes")
+        .update({
+          verified: true,
+          verified_at: nowIso,
+          verified_by: user.id,
+          verification_method: "manuel_coach",
+          modified_since_verification: false,
+          last_profile_validation: nowIso,   // réinitialise le délai de 30 jours
+        })
+        .eq("id", athleteId);
+      if (error) {
+        toast.error({ message: "Erreur lors de la vérification", detail: error.message });
+        return;
+      }
+      triggerHaptic("Medium");
+      toast.success({ message: "Athlète vérifié — délai réinitialisé" });
+      // Reflète l'état localement → l'encart se masque immédiatement.
+      setValidationState({ verified: true, last_profile_validation: nowIso });
+    } finally {
+      setForcingVerify(false);
+    }
+  }, [athleteId, toast]);
 
   /* ── Updaters ─────────────────────────────────────────────── */
   const updateIdentity = useCallback((field: string, value: string) => {
@@ -1328,10 +1362,19 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
                   Profil non confirmé — le badge vérifié est désactivé
                 </p>
                 <p className="text-[12px] text-white/55 mt-1 leading-snug">
-                  L&apos;athlète doit confirmer ses informations pour réactiver son badge.
+                  L&apos;athlète peut confirmer ses informations, ou tu peux forcer la vérification
+                  maintenant (réinitialise le délai de 30 jours).
                 </p>
               </div>
             </div>
+            <button
+              type="button"
+              onClick={() => { triggerHaptic("Medium"); void coachForceVerify(); }}
+              disabled={forcingVerify}
+              className="mt-3 w-full px-4 py-2.5 rounded-lg bg-[#3B82F6] active:bg-[#2563EB] text-white font-bold text-[12px] uppercase tracking-[0.1em] disabled:opacity-50 transition-colors"
+            >
+              {forcingVerify ? "Vérification…" : "Forcer la vérification"}
+            </button>
           </div>
         )}
         {due && !expired && (
@@ -1345,64 +1388,30 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
               <div>
                 <p className="text-[13px] font-bold text-[#F59E0B]">Confirmation mensuelle requise</p>
                 <p className="text-[12px] text-white/55 mt-1 leading-snug">
-                  Confirme que tes informations sont toujours à jour avant le {formatDeadlineFr()}.
+                  Confirme avant le {formatDeadlineFr()}, ou force la vérification maintenant
+                  (réinitialise le délai de 30 jours).
                 </p>
               </div>
             </div>
+            <button
+              type="button"
+              onClick={() => { triggerHaptic("Medium"); void coachForceVerify(); }}
+              disabled={forcingVerify}
+              className="mt-3 w-full px-4 py-2.5 rounded-lg bg-[#3B82F6] active:bg-[#2563EB] text-white font-bold text-[12px] uppercase tracking-[0.1em] disabled:opacity-50 transition-colors"
+            >
+              {forcingVerify ? "Vérification…" : "Forcer la vérification"}
+            </button>
           </div>
         )}
 
-        {/* Photo hero — card-with-fade (mirrors the recruiter Mon processus
-            / athlete card treatment : photo fills the card, a soft gradient
-            fades to the card color at the bottom so the prompt text reads
-            cleanly over it ; works for both filled and empty states. */}
-        <div className="relative w-full aspect-[16/10] rounded-2xl overflow-hidden bg-[#1A1D24] border border-white/[0.06]">
-          {d.photo ? (
-            <>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={d.photo} alt="" className="absolute inset-0 w-full h-full object-cover" />
-            </>
-          ) : (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#4a4d56" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-                <circle cx="12" cy="13" r="4" />
-              </svg>
-            </div>
-          )}
-          {/* Fade overlay — opaque card color at the bottom, transparent at
-              ~70% up. Same recipe as components/shared/RecruteurDashboardMobile
-              athlete cards. */}
-          <div
-            className="absolute inset-x-0 bottom-0 h-3/5 pointer-events-none"
-            style={{ background: "linear-gradient(to top, #1A1D24 0%, rgba(26,29,36,0.92) 30%, rgba(26,29,36,0.55) 55%, transparent 80%)" }}
-          />
-          {/* Bottom prompt + actions */}
-          <div className="absolute inset-x-0 bottom-0 px-4 pb-3 pt-6 flex items-end justify-between gap-3">
-            <p className="text-[13px] text-white font-semibold leading-tight">
-              {photoUploading
-                ? "Téléversement…"
-                : d.photo
-                  ? "Tape pour changer"
-                  : "Ajouter une photo · Tape pour choisir"}
-            </p>
-            {d.photo && (
-              <button type="button"
-                onClick={(e) => { e.preventDefault(); e.stopPropagation(); updateIdentity("photo", ""); }}
-                className="px-2.5 py-1 rounded-full bg-black/40 backdrop-blur-sm text-[10px] font-bold uppercase tracking-wider text-[#E63946] border border-[#E63946]/30 active:bg-[#E63946]/15">
-                Retirer
-              </button>
-            )}
-          </div>
-          {/* Tap layer — clicking anywhere on the card opens the file
-              picker. Sits above the gradient + below the Retirer button. */}
-          <label className="absolute inset-0 cursor-pointer">
-            <input type="file" accept="image/*" className="sr-only"
-              title="Téléverser une photo"
-              aria-label="Téléverser une photo"
-              onChange={(e) => handlePhotoChange(e.target.files?.[0] ?? null)} />
-          </label>
-        </div>
+        {/* Photo hero — composant partagé avec l'éditeur athlète
+            (components/shared/AthletePhotoHero). */}
+        <AthletePhotoHero
+          photoUrl={d.photo}
+          uploading={photoUploading}
+          onChange={handlePhotoChange}
+          onRemove={() => updateIdentity("photo", "")}
+        />
 
         {/* Essentials */}
         <Card>

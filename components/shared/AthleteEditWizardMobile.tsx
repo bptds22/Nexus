@@ -40,6 +40,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { uploadAvatar } from "@/lib/storage/uploadAvatar";
+import AthletePhotoHero from "@/components/shared/AthletePhotoHero";
 import type { AthleteSuggestion, AthleteTraitRatings } from "@/lib/types/models";
 import { Card, InlineEditRow, PickerRow, ReadOnlyRow, DateRow, ToggleRow, ChipsBlock } from "@/components/shared/wizard/rows";
 import { StarRow } from "@/components/shared/wizard/stars";
@@ -65,6 +67,7 @@ interface LoadedAthlete {
   id: string;
   /** Resolved coach FK ; used for athlete_suggestions.coach_id. */
   coachId: string | null;
+  photoUrl: string;                     // athletes.photo_url — DIRECT (athlete owns own photo)
   firstName: string;
   /* ── Identité — 5 DIRECT (first/last name, DOB, genre, telephone) +
         5 LOCKED (age computed / city + region from schools FK / school
@@ -492,6 +495,10 @@ export default function AthleteEditWizardMobile() {
   const [positionsOptions, setPositionsOptions] = useState<PositionOption[]>([]);
   const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
+  /* Photo upload (DIRECT, athlete owns own photo). photoError surfaces a
+     failed upload visibly — pas de faux succès silencieux. */
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const [photoError, setPhotoError] = useState<string | null>(null);
   /* `mounted` gates createPortal — same SSR/hydration safety guard the
      coach "Modifier le profil" sticky bar uses at
      AthleteRecruiterProfileBodyMobile.tsx :2538. Without it, createPortal
@@ -613,6 +620,7 @@ export default function AthleteEditWizardMobile() {
     setA({
       id: raw.id as string,
       coachId: (raw.coach_id as string) || null,
+      photoUrl: (raw.photo_url as string) || "",
       firstName: (raw.first_name as string) || "",
       // Identité — 5 DIRECT + 5 LOCKED (mixed mode after B-2.5 conversion)
       lastName: (raw.last_name as string) || "",
@@ -739,6 +747,32 @@ export default function AthleteEditWizardMobile() {
     await load();
   }, [a, load]);
 
+  /* ── Photo (DIRECT) — réutilise le MÊME mécanisme que le coach via le
+        helper partagé uploadAvatar : upload sous le dossier de l'athlète
+        connecté (auth.uid()), getPublicUrl, puis écriture photo_url par
+        le chemin DIRECT (saveDirect → UPDATE athletes + reload). L'erreur
+        d'upload est rendue visible (photoError) — jamais avalée. */
+  const handlePhotoChange = useCallback(async (file: File | null) => {
+    if (!file || !a) return;
+    setPhotoError(null);
+    setPhotoUploading(true);
+    try {
+      const publicUrl = await uploadAvatar(file);
+      await saveDirect("photo_url", publicUrl);
+    } catch (err) {
+      console.error("[AthleteEdit] photo upload error:", err);
+      setPhotoError("Échec du téléversement de la photo. Réessaie.");
+    } finally {
+      setPhotoUploading(false);
+    }
+  }, [a, saveDirect]);
+
+  const handlePhotoRemove = useCallback(async () => {
+    if (!a) return;
+    setPhotoError(null);
+    await saveDirect("photo_url", "");   // "" → null (efface la colonne)
+  }, [a, saveDirect]);
+
   /* ── SUGGEST submit — verbatim from page.tsx :1263-1272.
         One INSERT per field with the exact French champ string. */
   const submitSuggestion = useCallback(async (
@@ -839,7 +873,16 @@ export default function AthleteEditWizardMobile() {
           only buffer between the last row and the CTA's top edge. */}
       <div className="px-4 pt-4 pb-48 space-y-5">
         {/* ── Step 0 : Identité (MIXED — 5 DIRECT + 5 LOCKED) ── */}
-        {step === 0 && <IdentiteStep a={a} onDirect={saveDirect} />}
+        {step === 0 && (
+          <IdentiteStep
+            a={a}
+            onDirect={saveDirect}
+            onPhotoChange={handlePhotoChange}
+            onPhotoRemove={handlePhotoRemove}
+            photoUploading={photoUploading}
+            photoError={photoError}
+          />
+        )}
 
         {/* ── Step 1 : Académique (DIRECT — B-2.5 conversion) ── */}
         {step === 1 && <AcademiqueStep a={a} onDirect={saveDirect} />}
@@ -940,10 +983,14 @@ export default function AthleteEditWizardMobile() {
    + mobile DateRow share this format).
 ═══════════════════════════════════════════════════════════════ */
 function IdentiteStep({
-  a, onDirect,
+  a, onDirect, onPhotoChange, onPhotoRemove, photoUploading, photoError,
 }: {
   a: LoadedAthlete;
   onDirect: (column: string, value: string | string[] | boolean) => Promise<void>;
+  onPhotoChange: (file: File | null) => void;
+  onPhotoRemove: () => void;
+  photoUploading: boolean;
+  photoError: string | null;
 }) {
   const affiliationLabel = a.isCivil ? "Équipe civile" : "École";
   const affiliationValue = a.isCivil
@@ -962,6 +1009,16 @@ function IdentiteStep({
       <p className="text-[12px] text-white/55 px-1">
         Certains champs sont modifiables directement ; d&apos;autres sont gérés par ton coach.
       </p>
+
+      {/* Photo de profil — DIRECT. Même composant que le wizard coach
+          (components/shared/AthletePhotoHero). */}
+      <AthletePhotoHero
+        photoUrl={a.photoUrl}
+        uploading={photoUploading}
+        error={photoError}
+        onChange={onPhotoChange}
+        onRemove={onPhotoRemove}
+      />
 
       {/* DIRECT rows — modifiable, green pencil indicator. */}
       <Card>
