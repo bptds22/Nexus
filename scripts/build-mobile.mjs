@@ -93,7 +93,14 @@ async function runBuild() {
   return new Promise((resolve) => {
     const isWin = process.platform === 'win32';
     const cmd = isWin ? 'cross-env.cmd' : 'cross-env';
-    const args = ['CAPACITOR_BUILD=true', 'next', 'build'];
+    // Le build mobile DOIT inliner le domaine déployé (pas le localhost:3000
+    // de .env.local) : NEXT_PUBLIC_APP_URL est bakée dans le bundle et sert de
+    // base aux fetch Stripe mobile (getApiBase) — sinon checkout/portail
+    // partent vers le localhost du téléphone (injoignable). Le dev web normal
+    // (next dev / next build hors ce script) garde .env.local/localhost.
+    // Surchargeable via l'env (CI/staging) ; défaut = prod.
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://nexussports.ca';
+    const args = ['CAPACITOR_BUILD=true', `NEXT_PUBLIC_APP_URL=${appUrl}`, 'next', 'build'];
     const child = spawn(cmd, args, {
       cwd: ROOT,
       stdio: 'inherit',
