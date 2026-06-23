@@ -189,6 +189,9 @@ export default function MonParcoursMobile() {
         value setA() exposes elsewhere but kept as a local
         narrowing for the section. */
   const [athleteId, setAthleteId] = useState<string | null>(null);
+  // Photo en dataURL pour la capture (inline → aucun fetch réseau/cross-origin
+  // pendant toPng, qui sortait la photo blanche sous capacitor://).
+  const [capturePhotoUrl, setCapturePhotoUrl] = useState<string | null>(null);
   const [targets, setTargets] = useState<TargetRow[]>([]);
   const [cegeps, setCegeps] = useState<Cegep[]>([]);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -455,12 +458,43 @@ export default function MonParcoursMobile() {
       if (typeof document !== "undefined" && document.fonts) {
         await document.fonts.ready;
       }
-      const dataUrl = await toPng(captureCompactRef.current, {
+      // Photo → dataURL locale pour la capture : on charge l'image
+      // (crossOrigin, cache-bust pour une réponse CORS propre), on la
+      // DOWNSCALE (max 1080px + JPEG 0.9 — une photo 24 Mpx donnait un dataURL
+      // de 32 Mo que html-to-image ignorait), puis on la passe au nœud capturé.
+      if (cardAthlete.photoUrl && !cardAthlete.photoUrl.startsWith("data:")) {
+        try {
+          const img = new Image();
+          img.crossOrigin = "anonymous";
+          const sep = cardAthlete.photoUrl.includes("?") ? "&" : "?";
+          img.src = `${cardAthlete.photoUrl}${sep}nxcors=${Date.now()}`;
+          await img.decode();
+          const maxW = 1080;
+          const sc = img.naturalWidth > maxW ? maxW / img.naturalWidth : 1;
+          const cw = Math.max(1, Math.round(img.naturalWidth * sc));
+          const ch = Math.max(1, Math.round(img.naturalHeight * sc));
+          const canvas = document.createElement("canvas");
+          canvas.width = cw;
+          canvas.height = ch;
+          const ctx = canvas.getContext("2d");
+          if (ctx && canvas.width > 0) {
+            ctx.drawImage(img, 0, 0, cw, ch);
+            setCapturePhotoUrl(canvas.toDataURL("image/jpeg", 0.9));
+            await new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())));
+          }
+        } catch { /* photo absente / canvas tainté → fallback URL distante */ }
+      }
+      // Safari/WKWebView : le 1er rendu html-to-image RATE souvent les images
+      // embarquées (foreignObject) → photo blanche, alors que le web (Chrome)
+      // les rend du 1er coup. Workaround connu : appeler toPng 2× (le 1er
+      // "réchauffe"/charge les images, le 2e les rend) et garder le 2e.
+      const toPngOpts = {
         pixelRatio: 1,
-        cacheBust: true,
         backgroundColor: undefined,
         style: { animation: "none", transition: "none" },
-      });
+      };
+      await toPng(captureCompactRef.current, toPngOpts);   // warm-up Safari
+      const dataUrl = await toPng(captureCompactRef.current, toPngOpts);
       const slug = `${cardAthlete.firstName}-${cardAthlete.lastName}`
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, "-");
@@ -500,6 +534,7 @@ export default function MonParcoursMobile() {
       console.error("[mon-parcours mobile] card export failed:", e);
       showToast("error", "Export impossible. Réessaie dans un instant.");
     } finally {
+      setCapturePhotoUrl(null);   // retire l'override dataURL (revient à l'URL distante à l'écran)
       setDownloading(false);
     }
   }, [cardAthlete, downloading, showToast]);
@@ -1422,7 +1457,11 @@ export default function MonParcoursMobile() {
           style={{ position: "fixed", left: -99999, top: 0, pointerEvents: "none", zIndex: -1 }}
         >
           <div ref={captureCompactRef}>
-            <AthletePlayerCard a={cardAthlete} format="publication" clipOverflow={true} />
+            <AthletePlayerCard
+              a={capturePhotoUrl ? { ...cardAthlete, photoUrl: capturePhotoUrl } : cardAthlete}
+              format="publication"
+              clipOverflow={true}
+            />
           </div>
         </div>
       )}
