@@ -1,7 +1,8 @@
 "use client";
 
 import { Suspense, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, usePathname } from "next/navigation";
+import { isTabBarHidden, normalizeTabPath } from "@/app/_components/mobile/tabBarVisibility";
 import RecruiterSidebar from "./_components/RecruiterSidebar";
 import PlaybookBackground from "../components/PlaybookBackground";
 import DeactivationGuard from "@/components/auth/DeactivationGuard";
@@ -31,6 +32,11 @@ function RecruteurLayoutInner({ children }: { children: React.ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const searchParams = useSearchParams();
   const isPreview = searchParams?.get("preview") === "true";
+  // Routes sans tab bar (thread/drill-down) → pas de réservation 88px : le
+  // shell h-full du thread épouse la frame réelle, composer collé au bas
+  // (suit le clavier). MÊME source de vérité que MobileTabBar.
+  const pathname = usePathname();
+  const chromeless = isTabBarHidden("recruteur", normalizeTabPath(pathname));
 
   return (
     <div className="hero-playbook nx-no-glow bg-[#111317] min-h-screen flex">
@@ -88,7 +94,9 @@ function RecruteurLayoutInner({ children }: { children: React.ReactNode }) {
                   overflowY: "auto",
                   overscrollBehavior: "contain",
                   WebkitOverflowScrolling: "touch",
-                  paddingBottom: "calc(env(safe-area-inset-bottom) + 88px)",
+                  // Tab bar visible → réserve 88px. Masquée (thread/drill-down)
+                  // → 0 : le composer du thread porte déjà son env(safe-area).
+                  paddingBottom: chromeless ? 0 : "calc(env(safe-area-inset-bottom) + 88px)",
                   position: "relative",
                   overflowX: "hidden",
                 }

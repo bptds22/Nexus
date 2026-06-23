@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { isTabBarHidden, isThreadRoute } from "./tabBarVisibility";
 import { createClient } from "@/lib/supabase/client";
 import { useSubscription } from "@/lib/hooks/useSubscription";
 import UpgradeModal from "@/components/ui/UpgradeModal";
@@ -189,6 +190,21 @@ export default function MobileTabBar({ role }: MobileTabBarProps) {
 
   const [moreOpen, setMoreOpen] = useState(false);
   const [upgradeModal, setUpgradeModal] = useState<{ tierId: string; lockedFeatureTitle: string } | null>(null);
+  // État clavier — sur une route thread, la tab bar est visible clavier fermé
+  // et masquée clavier ouvert (le composer colle alors au clavier).
+  const [kbdOpen, setKbdOpen] = useState(false);
+  useEffect(() => {
+    let show: { remove: () => void } | null = null;
+    let hide: { remove: () => void } | null = null;
+    (async () => {
+      try {
+        const { Keyboard } = await import("@capacitor/keyboard");
+        show = await Keyboard.addListener("keyboardWillShow", () => setKbdOpen(true));
+        hide = await Keyboard.addListener("keyboardWillHide", () => setKbdOpen(false));
+      } catch { /* web — no-op */ }
+    })();
+    return () => { show?.remove(); hide?.remove(); };
+  }, []);
 
   // Stacking-context fix — portal the tab bar to document.body so its z-40
   // escapes the `.hero-playbook` `isolation: isolate` trap created by the
@@ -324,83 +340,16 @@ export default function MobileTabBar({ role }: MobileTabBarProps) {
 
   if (!IS_CAPACITOR) return null;
 
-  // Iter 7.60 — masquer la TabBar sur les drill-down conversation (canon iOS
-  // Messages : la TabBar disparaît pendant qu'on lit une conversation pour
-  // laisser le composer respirer + éviter qu'elle cache la dernière bulle).
-  // /recruteur/messages → liste (TabBar visible)
-  // /recruteur/messages/[id] → thread (TabBar masquée)
-  // /recruteur/messages/nouveau → wizard (TabBar masquée aussi, même pattern).
-  const messagesDrillDown =
-    role === "recruteur" &&
-    normalizedPath.startsWith("/recruteur/messages/") &&
-    normalizedPath !== "/recruteur/messages";
-  if (messagesDrillDown) return null;
-
-  // Phase 2 — mirror du drill-down recruteur pour le coach. La mobile coach
-  // consomme MessagesListShell + MessageThreadShell exactement comme le
-  // recruteur, donc même UX iOS : TabBar visible sur la liste, masquée
-  // pendant le thread / le wizard nouveau message.
-  // /coach/demandes → liste (TabBar visible)
-  // /coach/demandes/[id] → thread (TabBar masquée)
-  // /coach/demandes/nouveau → wizard (TabBar masquée).
-  const coachDemandesDrillDown =
-    role === "coach" &&
-    normalizedPath.startsWith("/coach/demandes/") &&
-    normalizedPath !== "/coach/demandes";
-  if (coachDemandesDrillDown) return null;
-
-  // Coach parametres drill-downs (profil edit, école edit, admin école).
-  // Le top-level Paramètres reste accessible via /coach/settings ; les
-  // sous-écrans pleins-écran masquent la tab bar comme le pattern messages.
-  const coachParametresDrillDown =
-    role === "coach" &&
-    normalizedPath.startsWith("/coach/parametres/");
-  if (coachParametresDrillDown) return null;
-
-  // Coach reputation drill-downs (career editor, etc.). Le top-level
-  // /coach/reputation garde la tab bar ; les drill-downs (carriere) la
-  // masquent — même pattern que /coach/parametres/*.
-  const coachReputationDrillDown =
-    role === "coach" &&
-    normalizedPath.startsWith("/coach/reputation/");
-  if (coachReputationDrillDown) return null;
-
-  // Run 3 — Mes Équipes drill-down (detail d'une équipe + sous-routes).
-  // Le top-level /coach/equipes garde la tab bar (page liste pleine
-  // largeur) ; /coach/equipes/[teamId] et sous-écrans (modifier, etc.)
-  // la masquent pour donner le canon iOS "détail plein écran".
-  const coachEquipesDrillDown =
-    role === "coach" &&
-    normalizedPath.startsWith("/coach/equipes/");
-  if (coachEquipesDrillDown) return null;
-
-  // Iter 7.50-a5 — masquer la TabBar pendant le wizard d'onboarding athlète
-  // plein écran (canon iOS : pas de nav globale durant un flow de capture
-  // critique). Sans ce guard, la TabBar z-40 couvre le CTA "Continuer" z-30
-  // de AthleteOnboardingMobile → l'utilisateur tap un onglet au lieu du CTA
-  // → rebond vers dashboard → re-mount onboarding → boucle (DIAG 7.50-a4).
-  // L'athlète en onboarding (onboarding_complete=false) n'a aucun usage de
-  // la TabBar puisque le layout shell le bounce vers /athlete/onboarding
-  // dès qu'il tente d'aller ailleurs. Même pattern que messagesDrillDown.
-  const athleteOnboarding =
-    role === "athlete" && normalizedPath === "/athlete/onboarding";
-  if (athleteOnboarding) return null;
-
-  // Iter coach-3 — même guard pour le coach pendant son onboarding.
-  // Route /onboarding (le wizard coach/recruteur web — branche mobile
-  // coach école via dispatch IS_CAPACITOR). Couvre automatiquement le
-  // sprint coach-4 (civil) et le sprint recruteur mobile à venir.
-  const coachOnboarding =
-    role === "coach" && normalizedPath === "/onboarding";
-  if (coachOnboarding) return null;
-
-  // Iter recruteur-onboarding-mobile — même guard pour le recruteur en
-  // onboarding. /onboarding route → wizard recruteur web ou natif via
-  // dispatch IS_CAPACITOR. Note : TabBar utilise 'recruteur' (FR) en
-  // interne alors que user.role est 'recruiter' (EN) côté front.
-  const recruiterOnboarding =
-    role === "recruteur" && normalizedPath === "/onboarding";
-  if (recruiterOnboarding) return null;
+  // Thread de conversation : tab bar VISIBLE clavier fermé, MASQUÉE clavier
+  // ouvert (le composer colle alors au clavier). Les AUTRES drill-downs
+  // (wizard nouveau, paramètres/réputation/équipes, onboarding) restent
+  // masqués en permanence via isTabBarHidden. Source unique : tabBarVisibility.
+  if (isThreadRoute(role, normalizedPath)) {
+    if (kbdOpen) return null;            // clavier ouvert → masquée
+    // sinon : visible (on tombe dans le rendu normal)
+  } else if (isTabBarHidden(role, normalizedPath)) {
+    return null;
+  }
 
   // SSR-safe portal mount gate — comes AFTER every existing pathname guard
   // so the guards still run on first render (avoiding unnecessary work) and

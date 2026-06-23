@@ -45,7 +45,12 @@ const config: CapacitorConfig = {
       presentationOptions: ['badge', 'sound', 'alert'],
     },
     Keyboard: {
-      resize: KeyboardResize.Native,
+      // Option B : KeyboardResize.Native ne redimensionne PAS la WKWebView sur
+      // iOS 26.5 (bug connu, aggravé par scrollEnabled:false). On passe en None
+      // (aucun resize auto) et on gère le clavier manuellement via les events
+      // keyboardWillShow/Hide → CSS var --kbd-h → padding-bottom du shell
+      // (MessageThreadShell). Fiable et indépendant du resize natif cassé.
+      resize: KeyboardResize.None,
     },
   },
   server: {

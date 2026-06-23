@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { usePathname } from "next/navigation";
+import { isTabBarHidden, normalizeTabPath } from "@/app/_components/mobile/tabBarVisibility";
 import CoachSidebar from "./components/CoachSidebar";
 import PlaybookBackground from "../components/PlaybookBackground";
 import DeactivationGuard from "@/components/auth/DeactivationGuard";
@@ -24,6 +26,12 @@ export default function CoachLayout({
   children: React.ReactNode;
 }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  // Routes sans tab bar (thread/drill-down) → pas de réservation 88px : le
+  // shell h-full doit épouser la frame réelle pour que le composer sticky se
+  // colle au bas (et suive le clavier sous KeyboardResize.Native). MÊME source
+  // de vérité que MobileTabBar (isTabBarHidden).
+  const pathname = usePathname();
+  const chromeless = isTabBarHidden("coach", normalizeTabPath(pathname));
 
   return (
     <div className="hero-playbook nx-no-glow bg-[#111317] min-h-screen flex">
@@ -81,7 +89,9 @@ export default function CoachLayout({
                   overflowY: "auto",
                   overscrollBehavior: "contain",
                   WebkitOverflowScrolling: "touch",
-                  paddingBottom: "calc(env(safe-area-inset-bottom) + 88px)",
+                  // Tab bar visible → réserve 88px. Masquée (thread/drill-down)
+                  // → 0 : le composer du thread porte déjà son env(safe-area).
+                  paddingBottom: chromeless ? 0 : "calc(env(safe-area-inset-bottom) + 88px)",
                   overflowX: "hidden",
                 }
               : undefined
