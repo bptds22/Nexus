@@ -44,7 +44,7 @@ import {
 } from "@/components/shared/settings";
 // startMobileCheckout lives in the same shared settings module but isn't
 // re-exported by the barrel (yet), so import it from the file directly.
-import { startMobileCheckout } from "@/components/shared/settings/utils";
+import { startMobileCheckout, startMobilePortal, fmtSubDate, subStatusLabel } from "@/components/shared/settings/utils";
 
 /* ── Shape des prefs notifications côté DB (DIAG 7.38) ────────── */
 
@@ -78,7 +78,7 @@ interface PrivacyPrefs {
 export function RecruteurParametresMobile() {
   const router = useRouter();
   const toast = useMobileToast();
-  const { tier, refresh } = useSubscription();
+  const { tier, refresh, isStripeManaged, periodEnd, billing, status, cancelAtPeriodEnd } = useSubscription();
 
   // Hooks AVANT toute condition (canon 7.8d).
   const [notifs, setNotifs] = useState<NotifPrefs>({});
@@ -103,6 +103,7 @@ export function RecruteurParametresMobile() {
   const [logoutSheetOpen, setLogoutSheetOpen] = useState(false);
   // Which tier is mid-checkout — drives the CTA label + blocks double-tap.
   const [upgradingTier, setUpgradingTier] = useState<string | null>(null);
+  const [portalBusy, setPortalBusy] = useState(false);
 
   // Load notification + privacy preferences
   useEffect(() => {
@@ -190,6 +191,12 @@ export function RecruteurParametresMobile() {
     };
   }, [refresh]);
 
+  // Lot 0 — re-pull du tier au montage de la page paramètres. Le Provider
+  // peut avoir fetché un tier périmé au lancement (un payant/all_star
+  // s'afficherait "Gratuit" → jamais de bouton "Gérer"). refresh est stable
+  // (useCallback sur userId) ; l'appel est idempotent.
+  useEffect(() => { refresh(); }, [refresh]);
+
   // Iter 7.41 §2 — dirty inclut le master courriel.
   const notifsDirty = useMemo(
     () => JSON.stringify(notifs) !== JSON.stringify(origNotifs) || masterEmail !== origMasterEmail,
@@ -261,6 +268,25 @@ export function RecruteurParametresMobile() {
     }
   }
 
+  // Mobile portal: open the Stripe billing portal in the in-app browser.
+  // Tier refresh on return is handled by the browserFinished/appStateChange
+  // effect (same as checkout). Errors surface via toast — never swallowed.
+  async function handlePortal() {
+    if (portalBusy) return;
+    triggerHaptic("Light");
+    setPortalBusy(true);
+    try {
+      await startMobilePortal();
+    } catch (e) {
+      toast.error({
+        message: "Portail indisponible",
+        detail: e instanceof Error ? e.message : "Erreur inconnue",
+      });
+    } finally {
+      setPortalBusy(false);
+    }
+  }
+
   // Mobile checkout: launch Stripe via the in-app browser. Loading state
   // (upgradingTier) blocks a double-tap; any throw surfaces via the toast
   // already used elsewhere in this screen (never swallowed). The displayed
@@ -271,9 +297,13 @@ export function RecruteurParametresMobile() {
     // Plan changes go through Stripe; the mobile portal isn't wired yet, so
     // point the user to the web instead of starting a fresh checkout.
     if (tier !== "free") {
+      // Déjà payant : jamais de 2e checkout. Vrai abo Stripe → portail
+      // (changement de plan + proration côté Stripe). Accès offert
+      // (admin_grant) → message dédié, pas de portail.
+      if (isStripeManaged) { void handlePortal(); return; }
       toast.info({
-        message: "Gère ton abonnement sur le web",
-        detail: "Le changement de plan se fait depuis le site web pour éviter une double facturation.",
+        message: "Accès accordé par Nexus",
+        detail: "Ton plan t'a été offert — aucune facturation à gérer.",
       });
       return;
     }
@@ -358,6 +388,47 @@ export function RecruteurParametresMobile() {
           </div>
           {tier === "free" && (
             <p className="text-[12px] text-[#6b7280] mt-2">Passe à Pro pour débloquer le processus, la messagerie et plus.</p>
+          )}
+          {/* Payant + vrai abo Stripe → résumé (statut/cycle/renouvellement)
+              + portail (in-app browser). */}
+          {tier !== "free" && isStripeManaged && (
+            <div className="mt-3 space-y-2">
+              <div className="space-y-1">
+                <div className="flex justify-between text-[12px]">
+                  <span className="text-[#9CA3AF]">Statut</span>
+                  <span className="text-white font-semibold">{subStatusLabel(status)}</span>
+                </div>
+                <div className="flex justify-between text-[12px]">
+                  <span className="text-[#9CA3AF]">Cycle</span>
+                  <span className="text-white font-semibold">{billing === "annual" ? "Annuel" : "Mensuel"}</span>
+                </div>
+                {cancelAtPeriodEnd ? (
+                  <p className="text-[12px] text-[#E63946]">Ton abonnement se termine le {fmtSubDate(periodEnd)}.</p>
+                ) : (
+                  <div className="flex justify-between text-[12px]">
+                    <span className="text-[#9CA3AF]">Renouvellement</span>
+                    <span className="text-white font-semibold">{fmtSubDate(periodEnd)}</span>
+                  </div>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={handlePortal}
+                disabled={portalBusy}
+                className="w-full h-11 rounded-xl border border-white/15 text-white font-bold text-[12px] uppercase tracking-wider active:bg-white/5 disabled:opacity-60"
+              >
+                {portalBusy ? "Ouverture…" : "Gérer mon abonnement"}
+              </button>
+            </div>
+          )}
+          {/* Payant SANS abo Stripe (accès offert) → pas de portail. */}
+          {tier !== "free" && !isStripeManaged && (
+            <div className="mt-3">
+              <p className="text-[13px] font-bold text-white">Accès accordé par l&apos;équipe Nexus</p>
+              <p className="text-[12px] text-[#6b7280] mt-1">
+                Ton plan t&apos;a été offert par Nexus — aucune facturation à gérer.
+              </p>
+            </div>
           )}
         </div>
       </div>
@@ -514,23 +585,6 @@ export function RecruteurParametresMobile() {
           upgradeLabel={tier !== "free" ? "Changer de plan" : upgradingTier === "all_star" ? "Redirection…" : "Passer à All Star"}
         />
       </div>
-
-      {/* Gérer mon abonnement — porte de sortie web pour les abonnés payants.
-          Le portail Stripe n'est pas câblé en mobile (route portal sans
-          Bearer/CORS) ; openExternal ouvre la page abonnement web dans le
-          navigateur natif, où le portail fonctionne. Free : pas ce bouton —
-          les TierCards d'achat restent actives. */}
-      {tier !== "free" && (
-        <Group className="mt-3">
-          <NavRow
-            label="Gérer mon abonnement"
-            sublabel="Annulation, changement de plan et factures sur le web."
-            isFirst
-            rightChevron="external"
-            onTap={() => { triggerHaptic("Light"); openExternal("https://nexussports.ca/recruteur/parametres"); }}
-          />
-        </Group>
-      )}
 
       {/* COMPTE */}
       <SectionLabel>Compte</SectionLabel>

@@ -42,6 +42,7 @@ import {
   SectionLabel, Group, ToggleRow, NavRow, DangerRow,
   TierCard, PasswordChangeSheet, ConfirmSheet,
 } from "@/components/shared/settings";
+import { startMobilePortal, fmtSubDate, subStatusLabel } from "@/components/shared/settings/utils";
 
 /* ── Athlete notification rows — additive keys on users.notification_preferences JSONB.
    Same shape as coach + recruiter NOTIF_ROWS : app_X drives in-app, email_X is mirrored
@@ -84,7 +85,7 @@ interface AthleteProfile {
 export function AthleteParametresMobile() {
   const router = useRouter();
   const toast = useMobileToast();
-  const { tier } = useSubscription();
+  const { tier, isStripeManaged, refresh, periodEnd, billing, status, cancelAtPeriodEnd } = useSubscription();
 
   // Athlete only has Free / Pro per business rules ; any legacy
   // "all_star" DB value collapses to Pro for display.
@@ -103,6 +104,35 @@ export function AthleteParametresMobile() {
   const [masterEmail, setMasterEmail] = useState(false);
   const [origMasterEmail, setOrigMasterEmail] = useState(false);
   const [savingNotifs, setSavingNotifs] = useState(false);
+  const [portalBusy, setPortalBusy] = useState(false);
+
+  /* ── Portail Stripe mobile (Lot 2 — handler partagé startMobilePortal :
+        Bearer + Browser.open). Erreur visible, jamais avalée. ── */
+  async function handlePortal() {
+    if (portalBusy) return;
+    triggerHaptic("Light");
+    setPortalBusy(true);
+    try {
+      await startMobilePortal();
+    } catch (e) {
+      toast.error({ message: "Portail indisponible", detail: e instanceof Error ? e.message : "Erreur inconnue" });
+    } finally {
+      setPortalBusy(false);
+    }
+  }
+
+  /* Refresh le tier au montage + au retour de l'in-app browser (parité
+     coach/recruteur). Plugins absents sur web → no-op. */
+  useEffect(() => { refresh(); }, [refresh]);
+  useEffect(() => {
+    let bl: { remove: () => void } | null = null;
+    let al: { remove: () => void } | null = null;
+    (async () => {
+      try { const { Browser } = await import("@capacitor/browser"); bl = await Browser.addListener("browserFinished", () => { refresh(); }); } catch { /* web */ }
+      try { const { App } = await import("@capacitor/app"); al = await App.addListener("appStateChange", ({ isActive }) => { if (isActive) refresh(); }); } catch { /* web */ }
+    })();
+    return () => { bl?.remove(); al?.remove(); };
+  }, [refresh]);
 
   /* B2 — Confidentialité partner-opt-in saving flag (gates the toggle while in flight). */
   const [savingPartnerOptIn, setSavingPartnerOptIn] = useState(false);
@@ -427,22 +457,6 @@ export function AthleteParametresMobile() {
         </div>
       </div>
 
-      {/* Subscription bandeau — mirrors recruiter L289-302 */}
-      <div className="px-4 pt-6 pb-2">
-        <div className="rounded-2xl bg-[#1A1D24] border border-white/[0.06] p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-[#22C55E]" />
-              <span className="text-[13px] text-[#9CA3AF]">Plan actuel</span>
-            </div>
-            <span className="text-[14px] font-semibold text-white uppercase tracking-wider">{tierLabel}</span>
-          </div>
-          {displayTier === "free" && (
-            <p className="text-[12px] text-[#6b7280] mt-2">Passe à Pro pour voir qui consulte ton profil.</p>
-          )}
-        </div>
-      </div>
-
       {/* PROFIL — drill-down to existing /athlete/profil (no /edit) */}
       <SectionLabel>Profil</SectionLabel>
       <Group>
@@ -657,8 +671,62 @@ export function AthleteParametresMobile() {
         );
       })()}
 
-      {/* ABONNEMENT — 2 TierCards, athlete pricing (Free / Pro) */}
+      {/* ABONNEMENT — Plan actuel + portail/notice + TierCards */}
       <SectionLabel>Abonnement</SectionLabel>
+      {/* Plan actuel (déplacé ici, sous le label Abonnement) */}
+      <div className="px-4 pt-1 pb-2">
+        <div className="rounded-2xl bg-[#1A1D24] border border-white/[0.06] p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-[#22C55E]" />
+              <span className="text-[13px] text-[#9CA3AF]">Plan actuel</span>
+            </div>
+            <span className="text-[14px] font-semibold text-white uppercase tracking-wider">{tierLabel}</span>
+          </div>
+          {displayTier === "free" && (
+            <p className="text-[12px] text-[#6b7280] mt-2">Passe à Pro pour voir qui consulte ton profil.</p>
+          )}
+          {/* Payant + vrai abo Stripe → résumé + portail (in-app browser). */}
+          {tier !== "free" && isStripeManaged && (
+            <div className="mt-3 space-y-2">
+              <div className="space-y-1">
+                <div className="flex justify-between text-[12px]">
+                  <span className="text-[#9CA3AF]">Statut</span>
+                  <span className="text-white font-semibold">{subStatusLabel(status)}</span>
+                </div>
+                <div className="flex justify-between text-[12px]">
+                  <span className="text-[#9CA3AF]">Cycle</span>
+                  <span className="text-white font-semibold">{billing === "annual" ? "Annuel" : "Mensuel"}</span>
+                </div>
+                {cancelAtPeriodEnd ? (
+                  <p className="text-[12px] text-[#E63946]">Ton abonnement se termine le {fmtSubDate(periodEnd)}.</p>
+                ) : (
+                  <div className="flex justify-between text-[12px]">
+                    <span className="text-[#9CA3AF]">Renouvellement</span>
+                    <span className="text-white font-semibold">{fmtSubDate(periodEnd)}</span>
+                  </div>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={handlePortal}
+                disabled={portalBusy}
+                className="w-full h-11 rounded-xl border border-white/15 text-white font-bold text-[12px] uppercase tracking-wider active:bg-white/5 disabled:opacity-60"
+              >
+                {portalBusy ? "Ouverture…" : "Gérer mon abonnement"}
+              </button>
+            </div>
+          )}
+          {tier !== "free" && !isStripeManaged && (
+            <div className="mt-3">
+              <p className="text-[13px] font-bold text-white">Accès accordé par l&apos;équipe Nexus</p>
+              <p className="text-[12px] text-[#6b7280] mt-1">
+                Ton plan t&apos;a été offert par Nexus — aucune facturation à gérer.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
       <div className="px-4 space-y-2">
         <TierCard
           name="Gratuit"

@@ -91,6 +91,62 @@ export async function startMobileCheckout(tier: string, cycle: string): Promise<
   await Browser.open({ url });
 }
 
+/* ── Mobile Stripe billing portal ──────────────────────────────
+   Comme startMobileCheckout mais pour le PORTAIL : Bearer token →
+   POST /api/stripe/portal → ouvre l'URL du portail Stripe dans l'in-app
+   browser. Le route portal accepte désormais le Bearer (dual-auth, mirror
+   checkout). Throw sur chaque échec (jamais silencieux — c'est un chemin
+   facturation). Le refresh du tier au retour est géré par l'appelant
+   (browserFinished/appStateChange, déjà en place pour le checkout). */
+export async function startMobilePortal(): Promise<void> {
+  const supabase = createClient();
+  const { data: { session } } = await supabase.auth.getSession();
+  const accessToken = session?.access_token;
+  if (!accessToken) throw new Error("Session absente");
+
+  const base = getApiBase();
+  if (IS_CAPACITOR && !base) {
+    throw new Error("NEXT_PUBLIC_APP_URL manquant dans le build mobile");
+  }
+
+  const res = await fetch(`${base}/api/stripe/portal`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${accessToken}`,
+    },
+  });
+  if (!res.ok) {
+    throw new Error(`Échec de l'ouverture du portail (HTTP ${res.status})`);
+  }
+  const { url } = await res.json();
+  if (!url) throw new Error("URL du portail absente dans la réponse");
+
+  const { Browser } = await import("@capacitor/browser");
+  await Browser.open({ url });
+}
+
+/* ── Résumé abonnement (formatage partagé mobile) ──────────────── */
+
+/** Date "fr-CA" longue (ex: "3 mars 2026"). null → "—". */
+export function fmtSubDate(iso: string | null | undefined): string {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime())
+    ? "—"
+    : d.toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" });
+}
+
+/** Libellé FR du statut d'abonnement. */
+export function subStatusLabel(status: string): string {
+  switch (status) {
+    case "trialing": return "Essai";
+    case "past_due": return "Paiement en retard";
+    case "canceled": return "Annulé";
+    default: return "Actif";
+  }
+}
+
 /* ── Tier ranking — drives TierCard's current/upgrade/below state ── */
 
 export type TierKey = "free" | "pro" | "all_star";

@@ -46,6 +46,10 @@ interface Subscription {
   trialEndsAt: string | null;
   trialDaysRemaining: number | null;
   cancelAtPeriodEnd: boolean;
+  /** True UNIQUEMENT pour un vrai abo géré par Stripe : customer + subscription
+   *  ids présents ET tier_source ≠ 'admin_grant'. Pilote l'affichage du bloc
+   *  portail/dates (un admin_grant n'a pas de portail ni de dates → 400). */
+  isStripeManaged: boolean;
 }
 
 /* ── Feature flag tables ──────────────────────────────────── */
@@ -279,6 +283,7 @@ interface SubscriptionContextValue {
   periodEnd: string | null;
   trialDaysRemaining: number | null;
   cancelAtPeriodEnd: boolean;
+  isStripeManaged: boolean;
   loading: boolean;
   features: FeatureSet;
   canSee: (feature: string) => boolean;
@@ -324,7 +329,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       supabase.from("users").select("role, is_school_admin").eq("id", userId).maybeSingle(),
       supabase
         .from("subscriptions")
-        .select("tier, status, billing_cycle, current_period_end, trial_ends_at, cancel_at_period_end")
+        .select("tier, status, billing_cycle, current_period_end, trial_ends_at, cancel_at_period_end, tier_source, stripe_customer_id, stripe_subscription_id")
         .eq("user_id", userId)
         .maybeSingle(),
     ]);
@@ -343,6 +348,11 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     const periodEnd = (subRes.data?.current_period_end as string | undefined) || null;
     const trialEndsAt = (subRes.data?.trial_ends_at as string | undefined) || null;
     const cancelAtPeriodEnd = Boolean(subRes.data?.cancel_at_period_end);
+    const tierSource = (subRes.data?.tier_source as string | undefined) || null;
+    const stripeCustomerId = (subRes.data?.stripe_customer_id as string | undefined) || null;
+    const stripeSubscriptionId = (subRes.data?.stripe_subscription_id as string | undefined) || null;
+    // Vrai abo Stripe = les deux ids présents ET pas un octroi admin/comp.
+    const isStripeManaged = !!stripeCustomerId && !!stripeSubscriptionId && tierSource !== "admin_grant";
 
     const trialDaysRemaining = trialEndsAt
       ? Math.max(0, Math.ceil((new Date(trialEndsAt).getTime() - Date.now()) / 86_400_000))
@@ -359,6 +369,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       trialEndsAt,
       trialDaysRemaining,
       cancelAtPeriodEnd,
+      isStripeManaged,
     };
     setSubscription(next);
     setSubLoading(false);
@@ -429,6 +440,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
   const periodEnd: string | null = subscription?.periodEnd ?? null;
   const trialDaysRemaining: number | null = subscription?.trialDaysRemaining ?? null;
   const cancelAtPeriodEnd: boolean = Boolean(subscription?.cancelAtPeriodEnd);
+  const isStripeManaged: boolean = Boolean(subscription?.isStripeManaged);
 
   // Recruiter search-result cap. -1 = unlimited. Non-recruiters don't
   // search athletes, so expose -1 to avoid accidentally capping them.
@@ -449,6 +461,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     periodEnd,
     trialDaysRemaining,
     cancelAtPeriodEnd,
+    isStripeManaged,
     loading,
     features,
     canSee,

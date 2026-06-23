@@ -47,6 +47,7 @@ import {
   SectionLabel, Group, ToggleRow, NavRow, DangerRow,
   TierCard, PasswordChangeSheet, ConfirmSheet,
 } from "@/components/shared/settings";
+import { startMobilePortal, fmtSubDate, subStatusLabel } from "@/components/shared/settings/utils";
 
 /* ── Coach notification rows (DB JSONB — desktop NotificationsSection) ── */
 
@@ -95,7 +96,7 @@ interface SchoolInfo {
 export function CoachParametresMobile() {
   const router = useRouter();
   const toast = useMobileToast();
-  const { tier } = useSubscription();
+  const { tier, isStripeManaged, refresh, periodEnd, billing, status, cancelAtPeriodEnd } = useSubscription();
 
   // Coach only has Free/Pro per business rules ; an "all_star" DB
   // value collapses to Pro for display.
@@ -116,12 +117,53 @@ export function CoachParametresMobile() {
 
   const [loading, setLoading] = useState(true);
   const [savingNotifs, setSavingNotifs] = useState(false);
+  const [portalBusy, setPortalBusy] = useState(false);
 
   const [passwordSheetOpen, setPasswordSheetOpen] = useState(false);
   const [deleteSheetOpen, setDeleteSheetOpen] = useState(false);
   const [logoutSheetOpen, setLogoutSheetOpen] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [deleteReason, setDeleteReason] = useState("");
+
+  /* ── Portail Stripe mobile : fetch /api/stripe/portal (Bearer) +
+        in-app browser. Erreur visible (toast). ── */
+  async function handlePortal() {
+    if (portalBusy) return;
+    triggerHaptic("Light");
+    setPortalBusy(true);
+    try {
+      await startMobilePortal();
+    } catch (e) {
+      toast.error({
+        message: "Portail indisponible",
+        detail: e instanceof Error ? e.message : "Erreur inconnue",
+      });
+    } finally {
+      setPortalBusy(false);
+    }
+  }
+
+  /* Refresh le tier au retour de l'in-app browser (portail). Plugins
+     absents sur web → no-op. Parité avec RecruteurParametresMobile. */
+  useEffect(() => {
+    let bl: { remove: () => void } | null = null;
+    let al: { remove: () => void } | null = null;
+    (async () => {
+      try {
+        const { Browser } = await import("@capacitor/browser");
+        bl = await Browser.addListener("browserFinished", () => { refresh(); });
+      } catch { /* web */ }
+      try {
+        const { App } = await import("@capacitor/app");
+        al = await App.addListener("appStateChange", ({ isActive }) => { if (isActive) refresh(); });
+      } catch { /* web */ }
+    })();
+    return () => { bl?.remove(); al?.remove(); };
+  }, [refresh]);
+
+  // Lot 0 — re-pull du tier au montage (le Provider peut être périmé au
+  // lancement → un payant s'afficherait "Gratuit" → jamais de bouton "Gérer").
+  useEffect(() => { refresh(); }, [refresh]);
 
   /* ── Load user prefs + school context ─────────────────────── */
   useEffect(() => {
@@ -322,6 +364,47 @@ export function CoachParametresMobile() {
           </div>
           {displayTier === "free" && (
             <p className="text-[12px] text-[#6b7280] mt-2">Passe à Pro pour {ecoleLabel.toLowerCase()}, {ecoleStatsLabel.toLowerCase()} et plus.</p>
+          )}
+          {/* Payant + vrai abo Stripe → résumé (statut/cycle/renouvellement)
+              + portail (in-app browser). */}
+          {tier !== "free" && isStripeManaged && (
+            <div className="mt-3 space-y-2">
+              <div className="space-y-1">
+                <div className="flex justify-between text-[12px]">
+                  <span className="text-[#9CA3AF]">Statut</span>
+                  <span className="text-white font-semibold">{subStatusLabel(status)}</span>
+                </div>
+                <div className="flex justify-between text-[12px]">
+                  <span className="text-[#9CA3AF]">Cycle</span>
+                  <span className="text-white font-semibold">{billing === "annual" ? "Annuel" : "Mensuel"}</span>
+                </div>
+                {cancelAtPeriodEnd ? (
+                  <p className="text-[12px] text-[#E63946]">Ton abonnement se termine le {fmtSubDate(periodEnd)}.</p>
+                ) : (
+                  <div className="flex justify-between text-[12px]">
+                    <span className="text-[#9CA3AF]">Renouvellement</span>
+                    <span className="text-white font-semibold">{fmtSubDate(periodEnd)}</span>
+                  </div>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={handlePortal}
+                disabled={portalBusy}
+                className="w-full h-11 rounded-xl border border-white/15 text-white font-bold text-[12px] uppercase tracking-wider active:bg-white/5 disabled:opacity-60"
+              >
+                {portalBusy ? "Ouverture…" : "Gérer mon abonnement"}
+              </button>
+            </div>
+          )}
+          {/* Payant SANS abo Stripe (accès offert) → pas de portail. */}
+          {tier !== "free" && !isStripeManaged && (
+            <div className="mt-3">
+              <p className="text-[13px] font-bold text-white">Accès accordé par l&apos;équipe Nexus</p>
+              <p className="text-[12px] text-[#6b7280] mt-1">
+                Ton plan t&apos;a été offert par Nexus — aucune facturation à gérer.
+              </p>
+            </div>
           )}
         </div>
       </div>

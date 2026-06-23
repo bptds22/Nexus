@@ -91,7 +91,7 @@ export default function SubscriptionManager({
   className = "",
 }: SubscriptionManagerProps) {
   const {
-    tier, billing, periodEnd, cancelAtPeriodEnd,
+    tier, billing, periodEnd, cancelAtPeriodEnd, isStripeManaged,
     tierLabel, refresh, loading,
   } = useSubscription();
 
@@ -202,6 +202,11 @@ export default function SubscriptionManager({
         same plan banner + pricing cards as everyone else, reflecting
         their real tier. ──────────────────────────────────────────── */
   const isPaid = currentTierKey !== "free";
+  // Bloc portail/dates UNIQUEMENT pour un vrai abo Stripe. Un accès offert
+  // (admin_grant, pas de stripe_customer/subscription) n'a ni portail ni
+  // dates → on affiche un état dédié à la place (évite le portail qui 400 +
+  // le faux "Mensuel / —").
+  const isManaged = isPaid && isStripeManaged;
 
   return (
     <div className={`space-y-6 ${className}`}>
@@ -234,8 +239,9 @@ export default function SubscriptionManager({
         )}
       </div>
 
-      {/* 2. Manage block — paid, non-admin only */}
-      {isPaid && (
+      {/* 2. Manage block — uniquement pour un vrai abo Stripe (admin grants
+          n'ont ni portail ni dates → 400 / faux "Mensuel/—"). */}
+      {isManaged && (
         <div className="bg-[#1A1D24] rounded-xl border border-white/5 p-5">
           <div className="space-y-2 mb-4">
             <Row label="Plan" value={tierLabel()} />
@@ -270,6 +276,18 @@ export default function SubscriptionManager({
         </div>
       )}
 
+      {/* 2b. Accès offert par Nexus (admin_grant / aucun abo Stripe) — pas de
+          portail, pas de dates. */}
+      {isPaid && !isStripeManaged && (
+        <div className="bg-[#1A1D24] rounded-xl border border-white/5 p-5">
+          <p className="text-[14px] font-bold text-white">Accès accordé par l&apos;équipe Nexus</p>
+          <p className="text-[13px] text-[#9CA3AF] mt-1">
+            Ton plan <span className="uppercase">{tierLabel()}</span> t&apos;a été offert par Nexus —
+            aucun paiement ni gestion de facturation n&apos;est requis.
+          </p>
+        </div>
+      )}
+
       {/* 3. Billing cycle toggle */}
       <BillingCycleToggle cycle={cycle} onChange={setCycle} savingsPct={savingsPct} />
 
@@ -284,7 +302,7 @@ export default function SubscriptionManager({
             currentTierKey={currentTierKey}
             checkoutBusyTier={checkoutBusyTier}
             onCheckout={handleCheckout}
-            isPaid={isPaid}
+            isPaid={isManaged}
             onManage={handlePortal}
             portalBusy={portalBusy}
           />
