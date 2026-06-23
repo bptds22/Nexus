@@ -2544,7 +2544,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
         <div
           className="fixed left-0 right-0 z-30 px-3 py-2.5 flex items-center gap-2"
           style={{
-            bottom: "calc(64px + env(safe-area-inset-bottom))",
+            bottom: "calc(env(safe-area-inset-bottom) + 88px + 12px)",
             backgroundColor: "rgba(17,19,23,0.85)",
             backdropFilter: "blur(20px) saturate(180%)",
             WebkitBackdropFilter: "blur(20px) saturate(180%)",
@@ -2558,7 +2558,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
               type="button"
               onClick={handleContactCoach}
               disabled={contactingCoach || !coachId}
-              className={`flex-1 flex items-center justify-center gap-2 bg-[#E63946] text-white rounded-2xl px-4 py-3 font-head font-bold text-[13px] uppercase tracking-widest active:bg-[#D42B22] shadow-[0_0_20px_rgba(230,57,70,0.3)] ${
+              className={`flex-1 flex items-center justify-center gap-2 bg-[#E63946] text-white rounded-2xl px-4 py-4 font-head font-bold text-[13px] uppercase tracking-widest active:bg-[#D42B22] shadow-[0_0_20px_rgba(230,57,70,0.3)] ${
                 contactingCoach || !coachId ? "opacity-70" : ""
               }`}
             >
@@ -2605,7 +2605,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
         <div
           className="fixed left-0 right-0 z-30 px-3 py-2.5"
           style={{
-            bottom: "calc(64px + env(safe-area-inset-bottom))",
+            bottom: "calc(env(safe-area-inset-bottom) + 88px + 12px)",
             backgroundColor: "rgba(17,19,23,0.85)",
             backdropFilter: "blur(20px) saturate(180%)",
             WebkitBackdropFilter: "blur(20px) saturate(180%)",
@@ -2630,7 +2630,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
                 router.push(`/coach/athletes/${id}/modifier`);
               }
             }}
-            className="w-full flex items-center justify-center gap-2 bg-[#E63946] text-white rounded-2xl px-4 py-3 font-head font-bold text-[13px] uppercase tracking-widest active:bg-[#D42B22] shadow-[0_0_20px_rgba(230,57,70,0.3)]"
+            className="w-full flex items-center justify-center gap-2 bg-[#E63946] text-white rounded-2xl px-4 py-4 font-head font-bold text-[13px] uppercase tracking-widest active:bg-[#D42B22] shadow-[0_0_20px_rgba(230,57,70,0.3)]"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 20h9" />

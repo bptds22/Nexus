@@ -1016,7 +1016,7 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
         <div
           className="fixed inset-x-0 z-[50] bg-[#111317]/95 backdrop-blur-md border-t border-white/[0.06] px-4 py-3"
           style={{
-            bottom: "calc(64px + env(safe-area-inset-bottom))",
+            bottom: "calc(env(safe-area-inset-bottom) + 88px + 12px)",
           }}
         >
           <button type="button"
