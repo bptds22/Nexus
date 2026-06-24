@@ -29,7 +29,13 @@
    Haptic Light au tap (cohérent autres CTA).
 ═══════════════════════════════════════════════════════════════ */
 
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Capacitor } from "@capacitor/core";
 import { useMobileToast } from "@/components/mobile/MobileToast";
+import { createClient } from "@/lib/supabase/client";
+import { postLoginDispatch } from "@/lib/auth/postLoginDispatch";
+import { signInWithGoogle, signInWithApple } from "@/lib/auth/social";
 
 async function triggerHaptic() {
   try {
@@ -80,13 +86,42 @@ interface SocialButtonsMobileProps {
 
 export function SocialButtonsMobile({ topMargin = 20 }: SocialButtonsMobileProps) {
   const toast = useMobileToast();
+  const router = useRouter();
+  const [busy, setBusy] = useState<"google" | "apple" | null>(null);
 
-  function handleSocialTap() {
+  async function handleProvider(provider: "google" | "apple") {
+    if (busy) return; // anti double-tap
     triggerHaptic();
-    toast.info({
-      message: "Bientôt disponible",
-      detail: "Connexion sociale — disponible en Phase 2",
-    });
+    setBusy(provider);
+    try {
+      if (Capacitor.isNativePlatform()) {
+        // Device : flow NATIF (l'utilisateur reste dans l'app).
+        const res = provider === "google" ? await signInWithGoogle() : await signInWithApple();
+        if (!res.success) {
+          toast.error({ message: "Connexion impossible", detail: res.error || "Réessaie." });
+          return;
+        }
+        if (res.session?.user) {
+          await postLoginDispatch(createClient(), res.session.user, router);
+        }
+      } else {
+        // Web : flow OAuth standard (redirect navigateur géré par Supabase).
+        const supabase = createClient();
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider,
+          options: { redirectTo: `${window.location.origin}/auth/callback` },
+        });
+        if (error) toast.error({ message: "Connexion impossible", detail: error.message });
+        // succès web → le navigateur redirige vers le provider puis le callback.
+      }
+    } catch (e) {
+      toast.error({
+        message: "Connexion impossible",
+        detail: e instanceof Error ? e.message : "Erreur inattendue",
+      });
+    } finally {
+      setBusy(null);
+    }
   }
 
   return (
@@ -104,28 +139,32 @@ export function SocialButtonsMobile({ topMargin = 20 }: SocialButtonsMobileProps
           dans un conteneur 24×24 pour aligner l'axe vertical du texte. */}
       <button
         type="button"
-        onClick={handleSocialTap}
-        className="w-full h-14 mt-4 rounded-2xl bg-[#1A1D24] border border-white/[0.10] text-white font-semibold flex items-center justify-center gap-3 active:scale-[0.97] active:bg-[#22262e] transition-all"
+        onClick={() => handleProvider("google")}
+        disabled={busy !== null}
+        className="w-full h-14 mt-4 rounded-2xl bg-[#1A1D24] border border-white/[0.10] text-white font-semibold flex items-center justify-center gap-3 active:scale-[0.97] active:bg-[#22262e] transition-all disabled:opacity-60"
         style={{ fontSize: 15 }}
       >
         <span className="inline-flex items-center justify-center w-6 h-6" aria-hidden>
           <GoogleLogo />
         </span>
-        Continuer avec Google
+        {busy === "google" ? "Connexion…" : "Continuer avec Google"}
       </button>
 
       {/* Apple — même radius + conteneur 24×24. Apple à 22×22 (+10%)
           pour égaliser le poids OPTIQUE vs Google 20×20. */}
+      {/* Apple — conforme HIG (fond NOIR #000 + logo Apple blanc officiel,
+          h-14 ≥ 44pt). Ne PAS repeindre en rouge Nexus (exigence App Review 4.8). */}
       <button
         type="button"
-        onClick={handleSocialTap}
-        className="w-full h-14 mt-3 rounded-2xl bg-[#1A1D24] border border-white/[0.10] text-white font-semibold flex items-center justify-center gap-3 active:scale-[0.97] active:bg-[#22262e] transition-all"
+        onClick={() => handleProvider("apple")}
+        disabled={busy !== null}
+        className="w-full h-14 mt-3 rounded-2xl bg-black border border-white/[0.18] text-white font-semibold flex items-center justify-center gap-3 active:scale-[0.97] active:bg-[#111] transition-all disabled:opacity-60"
         style={{ fontSize: 15 }}
       >
         <span className="inline-flex items-center justify-center w-6 h-6" aria-hidden>
           <AppleLogo />
         </span>
-        Continuer avec Apple
+        {busy === "apple" ? "Connexion…" : "Continuer avec Apple"}
       </button>
     </>
   );

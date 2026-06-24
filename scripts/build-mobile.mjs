@@ -100,7 +100,13 @@ async function runBuild() {
     // (next dev / next build hors ce script) garde .env.local/localhost.
     // Surchargeable via l'env (CI/staging) ; défaut = prod.
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://nexussports.ca';
-    const args = ['CAPACITOR_BUILD=true', `NEXT_PUBLIC_APP_URL=${appUrl}`, 'next', 'build'];
+    // Client IDs Google (login social natif) : passés SEULEMENT s'ils sont
+    // présents dans l'env shell/CI. Sinon `next build` les lit de .env.local
+    // (ne PAS les forcer à vide via cross-env, ce qui écraserait .env.local).
+    const extraEnv = [];
+    if (process.env.NEXT_PUBLIC_GOOGLE_WEB_CLIENT_ID) extraEnv.push(`NEXT_PUBLIC_GOOGLE_WEB_CLIENT_ID=${process.env.NEXT_PUBLIC_GOOGLE_WEB_CLIENT_ID}`);
+    if (process.env.NEXT_PUBLIC_GOOGLE_IOS_CLIENT_ID) extraEnv.push(`NEXT_PUBLIC_GOOGLE_IOS_CLIENT_ID=${process.env.NEXT_PUBLIC_GOOGLE_IOS_CLIENT_ID}`);
+    const args = ['CAPACITOR_BUILD=true', `NEXT_PUBLIC_APP_URL=${appUrl}`, ...extraEnv, 'next', 'build'];
     const child = spawn(cmd, args, {
       cwd: ROOT,
       stdio: 'inherit',

@@ -10,6 +10,7 @@ import { SubscriptionProvider } from "@/lib/context/SubscriptionProvider";
 import { PushRegistrar } from "@/components/push/PushRegistrar";
 import { StatusBarBootstrap } from "@/components/mobile/StatusBarBootstrap";
 import { SplashGate } from "@/components/mobile/auth/SplashGate";
+import { SocialLoginInit } from "@/components/auth/SocialLoginInit";
 
 const ORGANIZATION_JSONLD = {
   "@context": "https://schema.org",
@@ -205,6 +206,8 @@ export default function RootLayout({
               <StatusBarBootstrap />
               <PushRegistrar />
               <MobileToastProvider>
+                {/* Init unique du plugin social login (idempotent, native-only). */}
+                <SocialLoginInit />
                 {/* Iter 7.47 — SplashGate joue l'anim X→logo UNE FOIS par
                     cold start Capacitor. Desktop : passthrough immédiat
                     (IS_CAPACITOR=false → children direct, jamais d'anim). */}
