@@ -46,6 +46,10 @@ import type { AthleteSuggestion, AthleteTraitRatings } from "@/lib/types/models"
 import { Card, InlineEditRow, PickerRow, ReadOnlyRow, DateRow, ToggleRow, ChipsBlock } from "@/components/shared/wizard/rows";
 import { StarRow } from "@/components/shared/wizard/stars";
 import { MobilePicker, type PickerOption } from "@/components/mobile/MobilePicker";
+import {
+  HeightWheel, WeightWheel, formatHeightDisplay, formatWeightDisplay,
+  UNIT_MODE_STORAGE_KEY, type UnitMode,
+} from "@/components/shared/wizard/HeightWeightWheel";
 import { WizardPills } from "@/components/shared/wizard/WizardPills";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { GREEN, YELLOW, RED, PencilIcon, LockIcon } from "@/components/shared/wizard/modeIcons";
@@ -250,7 +254,12 @@ interface SuggestExpandProps {
   champ: string;                    // exact French label written into athlete_suggestions.champ
   currentValue: string;             // displayed struck-through above the input
   initialProposed: string;
-  inputType: "text" | "picker";
+  inputType: "text" | "picker" | "wheel";
+  /** For inputType="wheel" : which shared wheel to mount. The committed
+   *  proposed value is ALWAYS the canonical imperial string the
+   *  apply_approved_suggestion trigger parses — "6'4\"" (height) or
+   *  "185 lbs" (weight) — regardless of the unit toggle. */
+  wheelKind?: "height" | "weight";
   pickerOptions?: PickerOption[];
   numericMode?: "numeric" | "decimal";
   /** Per-field placeholder shown in the text-input branch. When omitted,
@@ -263,13 +272,48 @@ interface SuggestExpandProps {
   onCancel: () => void;
 }
 
+/** Seed the wheel from the struck-through current value so it opens at
+ *  the athlete's existing measurement. "6'4\"" → {ft:"6",in:"4"} ;
+ *  "185 lbs" → {lbs:"185"}. Empty when there's nothing to parse. */
+function parseHeightSeed(v: string): { ft: string; inches: string } {
+  const m = v.match(/(\d+)\s*'\s*(\d+)?/);
+  if (!m) return { ft: "", inches: "" };
+  return { ft: m[1] || "", inches: m[2] || "0" };
+}
+function parseWeightSeed(v: string): string {
+  const m = v.match(/[\d.]+/);
+  return m ? m[0] : "";
+}
+
 function SuggestExpand({
-  champ, currentValue, initialProposed, inputType, pickerOptions, numericMode, placeholder,
+  champ, currentValue, initialProposed, inputType, wheelKind, pickerOptions, numericMode, placeholder,
   submitting, onSubmit, onCancel,
 }: SuggestExpandProps) {
   const [proposed, setProposed] = useState(initialProposed);
   const [message, setMessage] = useState("");
   const [pickerOpen, setPickerOpen] = useState(false);
+
+  /* ── Wheel state (inputType="wheel"). unitMode persists via the same
+        key the coach wizard uses. Lazy init from localStorage is safe
+        here : SuggestExpand only mounts on tap (client-only, post-
+        hydration), so there's no SSR mismatch. The imperial values
+        below drive the wheel position + the canonical proposed string. ── */
+  const [unitMode, setUnitMode] = useState<UnitMode>(() => {
+    if (typeof window === "undefined") return "imperial";
+    try {
+      const v = localStorage.getItem(UNIT_MODE_STORAGE_KEY);
+      return v === "metric" || v === "imperial" ? v : "imperial";
+    } catch { return "imperial"; }
+  });
+  const setUnit = (m: UnitMode) => {
+    setUnitMode(m);
+    try { localStorage.setItem(UNIT_MODE_STORAGE_KEY, m); } catch { /* no-op */ }
+  };
+  const heightSeed = parseHeightSeed(currentValue);
+  const [hFeet, setHFeet] = useState(heightSeed.ft);
+  const [hInches, setHInches] = useState(heightSeed.inches);
+  const [wLbs, setWLbs] = useState(parseWeightSeed(currentValue));
+  const [wheelOpen, setWheelOpen] = useState(false);
 
   const trimmed = proposed.trim();
   const canSubmit = trimmed.length > 0 && trimmed !== currentValue.trim();
@@ -298,6 +342,54 @@ function SuggestExpand({
           className="w-full bg-[#111317] border border-white/[0.10] rounded-2xl px-4 py-3 text-[15px] text-white placeholder:text-white/40 outline-none focus:border-[#EAB308]/40"
           placeholder={placeholder}
         />
+      ) : inputType === "wheel" ? (
+        <>
+          <button
+            type="button"
+            onClick={() => setWheelOpen(true)}
+            className="w-full flex items-center justify-between bg-[#111317] border border-white/[0.10] rounded-2xl px-4 py-3 active:bg-white/[0.04] text-left"
+          >
+            <span className={`text-[15px] ${proposed ? "text-white" : "text-white/40"}`}>
+              {proposed
+                ? (wheelKind === "height"
+                    ? formatHeightDisplay(hFeet, hInches, unitMode)
+                    : formatWeightDisplay(wLbs, unitMode))
+                : "Sélectionner…"}
+            </span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2.4" strokeLinecap="round">
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
+          </button>
+          {wheelKind === "height" ? (
+            <HeightWheel
+              open={wheelOpen}
+              onClose={() => setWheelOpen(false)}
+              feet={hFeet}
+              inches={hInches}
+              unitMode={unitMode}
+              onUnitChange={setUnit}
+              onCommit={(ft, inch) => {
+                setHFeet(ft);
+                setHInches(inch);
+                // Canonical imperial string the trigger parses : FT'IN".
+                setProposed(ft || inch ? `${ft || "0"}'${inch || "0"}"` : "");
+              }}
+            />
+          ) : (
+            <WeightWheel
+              open={wheelOpen}
+              onClose={() => setWheelOpen(false)}
+              lbs={wLbs}
+              unitMode={unitMode}
+              onUnitChange={setUnit}
+              onCommit={(lbs) => {
+                setWLbs(lbs);
+                // Canonical imperial string the trigger parses : "N lbs".
+                setProposed(lbs ? `${lbs} lbs` : "");
+              }}
+            />
+          )}
+        </>
       ) : (
         <>
           <button
@@ -369,7 +461,8 @@ interface SuggestRowProps {
   value: string;
   champ: string;
   pending: AthleteSuggestion | undefined;
-  inputType: "text" | "picker";
+  inputType: "text" | "picker" | "wheel";
+  wheelKind?: "height" | "weight";
   pickerOptions?: PickerOption[];
   numericMode?: "numeric" | "decimal";
   /** Per-field placeholder for the text-input branch. Threaded to
@@ -381,7 +474,7 @@ interface SuggestRowProps {
 }
 
 function SuggestRow({
-  label, value, champ, pending, inputType, pickerOptions, numericMode, placeholder,
+  label, value, champ, pending, inputType, wheelKind, pickerOptions, numericMode, placeholder,
   submitting, onSubmit, isLast,
 }: SuggestRowProps) {
   const [expanded, setExpanded] = useState(false);
@@ -435,6 +528,7 @@ function SuggestRow({
           currentValue={value}
           initialProposed=""
           inputType={inputType}
+          wheelKind={wheelKind}
           pickerOptions={pickerOptions}
           numericMode={numericMode}
           placeholder={placeholder}
@@ -1634,8 +1728,8 @@ function PhysiqueStep({
           Tes propositions sont envoyées à ton coach pour approbation.
         </p>
         <Card>
-          <SuggestRow label="Taille"          value={a.heightDisplay}   champ="Taille"          pending={getPending("Taille")}          inputType="text" numericMode="numeric" placeholder="Ex: 6'4&quot;"   submitting={submitting} onSubmit={onSubmit} />
-          <SuggestRow label="Poids"           value={a.weightDisplay}   champ="Poids"           pending={getPending("Poids")}           inputType="text" numericMode="decimal" placeholder="Ex: 185 lbs"    submitting={submitting} onSubmit={onSubmit} />
+          <SuggestRow label="Taille"          value={a.heightDisplay}   champ="Taille"          pending={getPending("Taille")}          inputType="wheel" wheelKind="height" submitting={submitting} onSubmit={onSubmit} />
+          <SuggestRow label="Poids"           value={a.weightDisplay}   champ="Poids"           pending={getPending("Poids")}           inputType="wheel" wheelKind="weight" submitting={submitting} onSubmit={onSubmit} />
           <SuggestRow label="Envergure"       value={a.wingspan}        champ="Envergure"       pending={getPending("Envergure")}       inputType="text" placeholder="Ex: 78&quot;"    submitting={submitting} onSubmit={onSubmit} />
           <SuggestRow label="Main dominante"  value={a.dominantHand}    champ="Main dominante"  pending={getPending("Main dominante")}  inputType="picker" pickerOptions={HAND_OPTIONS} submitting={submitting} onSubmit={onSubmit} />
           <SuggestRow label="Pied dominant"   value={a.dominantFoot}    champ="Pied dominant"   pending={getPending("Pied dominant")}   inputType="picker" pickerOptions={FOOT_OPTIONS} submitting={submitting} onSubmit={onSubmit} isLast />

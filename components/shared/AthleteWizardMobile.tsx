@@ -53,7 +53,7 @@ import { uploadAvatar } from "@/lib/storage/uploadAvatar";
 import AthletePhotoHero from "@/components/shared/AthletePhotoHero";
 import { MobilePicker, type PickerOption } from "@/components/mobile/MobilePicker";
 import { GRAD_YEAR_OPTIONS } from "@/lib/config/gradYears";
-import { MobileWheelPicker } from "@/components/mobile/MobileWheelPicker";
+import { HeightWheel, WeightWheel, formatHeightDisplay, formatWeightDisplay } from "@/components/shared/wizard/HeightWeightWheel";
 import { SearchSheet } from "@/components/mobile/SearchSheet";
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import { isValidationDue, isValidationExpired, formatDeadlineFr } from "@/lib/utils/profileValidation";
@@ -1144,130 +1144,30 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
         )} />
 
       {/* ═══ Wheel pickers — Taille + Poids ═══════════════════════
-          Imperial mode : 3-col / 1-col wheel that writes back to
-          taille_pieds + taille_pouces + poids_lbs (storage stays
-          imperial). Metric mode : 1-col cm / kg wheel, with onCommit
-          converting back to imperial. saveAthlete.ts UNCHANGED. */}
-      <MobileWheelPicker
+          Shared HeightWheel / WeightWheel (extracted to
+          components/shared/wizard/HeightWeightWheel). Storage stays
+          imperial : onCommit always emits feet/inches and lbs, which
+          we write straight to form state. saveAthlete.ts UNCHANGED. */}
+      <HeightWheel
         open={openHeightWheel}
         onClose={() => setOpenHeightWheel(false)}
-        title="Taille"
-        headerExtra={
-          <UnitToggle
-            mode={unitMode}
-            onChange={setUnitMode}
-            options={[{ value: "imperial", label: "pi/po" }, { value: "metric", label: "cm" }]}
-          />
-        }
-        columns={
-          unitMode === "imperial"
-            ? [
-                {
-                  key: "ft",
-                  label: "Pieds",
-                  options: [4, 5, 6, 7].map((v) => ({ value: String(v), label: `${v}'` })),
-                  value: form.physical.heightFeet || "5",
-                },
-                {
-                  key: "in",
-                  label: "Pouces",
-                  options: Array.from({ length: 12 }, (_, i) => ({ value: String(i), label: `${i}"` })),
-                  value: form.physical.heightInches || "10",
-                },
-              ]
-            : [
-                {
-                  key: "cm",
-                  label: "Centimètres",
-                  options: Array.from({ length: 106 }, (_, i) => ({
-                    value: String(120 + i),
-                    label: `${120 + i} cm`,
-                  })),
-                  value: (() => {
-                    const ft = parseInt(form.physical.heightFeet || "0");
-                    const inches = parseInt(form.physical.heightInches || "0");
-                    if (!ft && !inches) return "175";
-                    return String(Math.round((ft * 12 + inches) * 2.54));
-                  })(),
-                },
-              ]
-        }
-        onCommit={(values) => {
-          if (unitMode === "imperial") {
-            const [ft, inches] = values as [string, string];
-            updatePhysical("heightFeet", ft || "");
-            updatePhysical("heightInches", inches || "");
-          } else {
-            // cm → ft + in
-            const cm = parseInt(String(values[0] ?? "0"));
-            if (!cm) {
-              updatePhysical("heightFeet", "");
-              updatePhysical("heightInches", "");
-              return;
-            }
-            const totalIn = Math.round(cm / 2.54);
-            const ft = Math.floor(totalIn / 12);
-            const inches = totalIn % 12;
-            updatePhysical("heightFeet", String(ft));
-            updatePhysical("heightInches", String(inches));
-          }
+        feet={form.physical.heightFeet}
+        inches={form.physical.heightInches}
+        unitMode={unitMode}
+        onUnitChange={setUnitMode}
+        onCommit={(ft, inches) => {
+          updatePhysical("heightFeet", ft);
+          updatePhysical("heightInches", inches);
         }}
       />
 
-      <MobileWheelPicker
+      <WeightWheel
         open={openWeightWheel}
         onClose={() => setOpenWeightWheel(false)}
-        title="Poids"
-        headerExtra={
-          <UnitToggle
-            mode={unitMode}
-            onChange={setUnitMode}
-            options={[{ value: "imperial", label: "lbs" }, { value: "metric", label: "kg" }]}
-          />
-        }
-        columns={
-          unitMode === "imperial"
-            ? [
-                {
-                  key: "lbs",
-                  label: "Livres",
-                  options: Array.from({ length: 271 }, (_, i) => ({
-                    value: String(80 + i),
-                    label: `${80 + i} lbs`,
-                  })),
-                  value: (() => {
-                    const v = parseFloat(form.physical.weightLbs || "0");
-                    return v > 0 ? String(Math.round(v)) : "180";
-                  })(),
-                },
-              ]
-            : [
-                {
-                  key: "kg",
-                  label: "Kilogrammes",
-                  options: Array.from({ length: 141 }, (_, i) => ({
-                    value: String(40 + i),
-                    label: `${40 + i} kg`,
-                  })),
-                  value: (() => {
-                    const lbs = parseFloat(form.physical.weightLbs || "0");
-                    if (!lbs) return "82";
-                    return String(Math.round(lbs / 2.20462));
-                  })(),
-                },
-              ]
-        }
-        onCommit={(values) => {
-          if (unitMode === "imperial") {
-            const lbs = String(values[0] ?? "");
-            updatePhysical("weightLbs", lbs);
-          } else {
-            const kg = parseFloat(String(values[0] ?? "0"));
-            if (!kg) { updatePhysical("weightLbs", ""); return; }
-            const lbs = Math.round(kg * 2.20462 * 10) / 10;
-            updatePhysical("weightLbs", String(lbs));
-          }
-        }}
+        lbs={form.physical.weightLbs}
+        unitMode={unitMode}
+        onUnitChange={setUnitMode}
+        onCommit={(lbs) => updatePhysical("weightLbs", lbs)}
       />
 
       {/* ═══ Distinction detail popup (replaces under-grid blocks) ═══ */}
@@ -2083,54 +1983,8 @@ function DualPickerRow({
    Unit toggle + height/weight display helpers
 ═══════════════════════════════════════════════════════════════ */
 
-function UnitToggle<T extends string>({
-  mode, onChange, options,
-}: {
-  mode: T;
-  onChange: (next: T) => void;
-  options: { value: T; label: string }[];
-}) {
-  return (
-    <div className="flex items-center gap-1 bg-[#13151a] rounded-2xl p-1 w-fit mx-auto">
-      {options.map((opt) => (
-        <button
-          key={opt.value}
-          type="button"
-          onClick={() => onChange(opt.value)}
-          className={`px-4 py-1.5 rounded-xl text-[11px] font-bold uppercase tracking-[0.12em] transition-colors ${
-            mode === opt.value ? "bg-[#E63946] text-white" : "text-white/55"
-          }`}
-        >
-          {opt.label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function formatHeightDisplay(ft: string, inches: string, unitMode: "imperial" | "metric"): string {
-  const ftN = parseInt(ft || "0");
-  const inN = parseInt(inches || "0");
-  if (!ft && !inches) return "";
-  if (unitMode === "imperial") {
-    if (ft && inches) return `${ftN}'${inN}"`;
-    if (ft) return `${ftN}'`;
-    return `${inN}"`;
-  }
-  // metric — display only ; storage stays in pi/po
-  const cm = Math.round((ftN * 12 + inN) * 2.54);
-  return cm > 0 ? `${cm} cm` : "";
-}
-
-function formatWeightDisplay(lbs: string, unitMode: "imperial" | "metric"): string {
-  const lbsN = parseFloat(lbs || "0");
-  if (!lbsN) return "";
-  if (unitMode === "imperial") {
-    return `${Number.isInteger(lbsN) ? lbsN.toFixed(0) : lbsN.toFixed(1)} lbs`;
-  }
-  const kg = Math.round(lbsN / 2.20462);
-  return `${kg} kg`;
-}
+/* UnitToggle / formatHeightDisplay / formatWeightDisplay now live in
+   components/shared/wizard/HeightWeightWheel (imported above). */
 
 /* ═══════════════════════════════════════════════════════════════
    Distinction detail popup — bottom sheet replacing the old
