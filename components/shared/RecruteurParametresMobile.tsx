@@ -45,6 +45,7 @@ import {
 // startMobileCheckout lives in the same shared settings module but isn't
 // re-exported by the barrel (yet), so import it from the file directly.
 import { startMobileCheckout, startMobilePortal, fmtSubDate, subStatusLabel } from "@/components/shared/settings/utils";
+import { hapticTap } from "@/lib/haptics";
 
 /* ── Shape des prefs notifications côté DB (DIAG 7.38) ────────── */
 
@@ -293,6 +294,8 @@ export function RecruteurParametresMobile() {
   // tier refreshes on return via the browserFinished/appStateChange effect.
   async function handleUpgrade(targetTier: "pro" | "all_star", cycle: "monthly" | "annual") {
     if (upgradingTier) return;
+    hapticTap(); // CTA checkout primaire — feedback tactile au tap
+
     // Already on a paid plan → NEVER stack a second checkout (double-bill).
     // Plan changes go through Stripe; the mobile portal isn't wired yet, so
     // point the user to the web instead of starting a fresh checkout.

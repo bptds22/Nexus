@@ -42,6 +42,7 @@ import AthletePhoto from "@/components/shared/AthletePhoto";
 import { coteChanged } from "@/lib/utils/cote";
 import { ConfirmSheet } from "@/components/shared/settings";
 import CoteChangeConfirmContent from "@/components/shared/CoteChangeConfirmContent";
+import { hapticSuccess } from "@/lib/haptics";
 
 /* ── Types ────────────────────────────────────────────────────── */
 
@@ -930,6 +931,7 @@ export function CoachATraiterMobile() {
       toast.error({ message: "Erreur de vérification" });
       return;
     }
+    hapticSuccess(); // moment significatif, après confirmation DB
     toast.success({ message: "Athlète vérifié" });
     reload();
   }, [coachUserId, reload, toast]);

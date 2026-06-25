@@ -31,6 +31,7 @@ import {
   type ParentPII,
 } from "@/lib/legal/persistInitialConsents";
 import { postLoginDispatch } from "@/lib/auth/postLoginDispatch";
+import { hapticSuccess } from "@/lib/haptics";
 
 type Role = "ATHLETE" | "COACH" | "RECRUTEUR";
 type Ctx = "scolaire" | "ligue_civile" | "collegial";
@@ -207,6 +208,9 @@ export default function ConsentementsPage() {
         setSubmitting(false);
         return;
       }
+
+      // Succès confirmé (RPC + persist OK) → feedback haptique avant le redirect.
+      hapticSuccess();
 
       // 5. redirect par rôle (source unique)
       await postLoginDispatch(supabase, user, router);
