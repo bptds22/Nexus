@@ -4,6 +4,7 @@ import { useState, useRef, useCallback, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { postLoginDispatch } from "@/lib/auth/postLoginDispatch";
 import { openLegalDocument } from "@/lib/legal";
 import PlaybookBackground from "../components/PlaybookBackground";
 import MarketingNav from "@/components/marketing/MarketingNav";
@@ -234,48 +235,12 @@ function AuthContent() {
       return;
     }
 
-    // Check if onboarding is complete
-    const { data: profile } = await supabase
-      .from("users")
-      .select("role, onboarding_complete, status")
-      .eq("id", data.user.id)
-      .single();
-
-    // Block deactivated accounts (SUPER_ADMIN exempt)
-    if (profile?.status === "DESACTIVE" && profile?.role !== "SUPER_ADMIN") {
-      await supabase.auth.signOut();
-      router.replace("/compte-desactive");
-      setLoading(false);
-      return;
-    }
-
-    // Use profile from DB, fallback to auth metadata
-    const role = profile?.role || (data.user.user_metadata?.role as string);
-    const onboardingComplete = profile?.onboarding_complete;
-
-    // If we couldn't load profile at all, use metadata role to route
-
-    // Only redirect to onboarding if profile explicitly exists with onboarding_complete = false
-    if (profile && !onboardingComplete) {
-      router.push("/onboarding");
-      setLoading(false);
-      return;
-    }
-
-    // Route to correct portal
-    if (role === "COACH") {
-      router.push("/coach");
-    } else if (role === "RECRUTEUR") {
-      router.push("/recruteur");
-    } else if (role === "ATHLETE") {
-      router.push("/athlete");
-    } else if (role === "ADMIN") {
-      router.push("/admin");
-    } else if (role === "PARTNER") {
-      router.push("/partenaire");
-    } else {
-      router.push("/onboarding");
-    }
+    // Dispatch post-login = source UNIQUE de vérité (postLoginDispatch) :
+    // query users + blocage DESACTIVE + redirect par rôle, AVEC la branche
+    // ATHLETE incomplet → /athlete/onboarding. Avant, ce handler dupliquait
+    // la logique mais sans cette branche → un athlète incomplet partait sur
+    // /onboarding (wizard coach/recruteur) et tombait sur le défaut coach.
+    await postLoginDispatch(supabase, data.user, router);
 
     setLoading(false);
   };
