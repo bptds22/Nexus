@@ -234,14 +234,21 @@ export default function ConsentementsPage() {
   }
 
   return (
-    <div
-      className="min-h-screen bg-[#111317] text-white"
-      style={{
-        paddingTop: "env(safe-area-inset-top)",
-        paddingBottom: "calc(env(safe-area-inset-bottom) + 24px)",
-      }}
-    >
-      <div className="max-w-md mx-auto px-6 pt-6">
+    // App-shell LOCAL : /consentements est sous le root layout (pas de <main>
+    // scrollable des portails). Sous ios.scrollEnabled:false la WebView ne
+    // scrolle pas → on recrée le conteneur scroll interne (height:100dvh +
+    // overflow-y:auto), même pattern que le shell mobile. Le CTA est pinné
+    // hors-scroll (flex column) pour rester toujours atteignable.
+    <div className="bg-[#111317] text-white flex flex-col overflow-x-hidden" style={{ height: "100dvh" }}>
+      <div
+        className="flex-1 overflow-y-auto overflow-x-hidden"
+        style={{
+          overscrollBehavior: "contain",
+          WebkitOverflowScrolling: "touch",
+          paddingTop: "env(safe-area-inset-top)",
+        }}
+      >
+      <div className="max-w-md mx-auto px-6 pt-6 pb-6">
         <h1 className="font-head font-black uppercase tracking-tight text-white" style={{ fontSize: 26, lineHeight: 0.95 }}>
           Quelques infos.
         </h1>
@@ -352,18 +359,29 @@ export default function ConsentementsPage() {
           </Checkbox>
         </div>
 
-        {error && (
-          <p className="text-[13px] text-[#EF4444] mt-4 text-center">{error}</p>
-        )}
+      </div>
+      </div>
 
-        <button
-          type="button"
-          onClick={handleSubmit}
-          disabled={!canSubmit || submitting}
-          className="w-full mt-6 h-14 rounded-2xl bg-[#E63946] text-white font-head font-black text-[14px] uppercase tracking-widest active:scale-[0.97] active:bg-[#D42B22] transition-all disabled:opacity-40 disabled:active:scale-100"
-        >
-          {submitting ? "Enregistrement…" : "Continuer"}
-        </button>
+      {/* Footer CTA — pinné au bas RÉEL de l'écran (pas de tab bar sur cet
+          écran), HORS du conteneur scroll → toujours atteignable. padding-bottom
+          = home indicator iOS (env(safe-area-inset-bottom)), pas d'offset tab-bar. */}
+      <div
+        className="bg-[#111317]/95 backdrop-blur-md border-t border-white/[0.06]"
+        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 12px)" }}
+      >
+        <div className="max-w-md mx-auto px-6 pt-3">
+          {error && (
+            <p className="text-[13px] text-[#EF4444] mb-3 text-center">{error}</p>
+          )}
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={!canSubmit || submitting}
+            className="w-full h-14 rounded-2xl bg-[#E63946] text-white font-head font-black text-[14px] uppercase tracking-widest active:scale-[0.97] active:bg-[#D42B22] transition-all disabled:opacity-40 disabled:active:scale-100"
+          >
+            {submitting ? "Enregistrement…" : "Continuer"}
+          </button>
+        </div>
       </div>
     </div>
   );

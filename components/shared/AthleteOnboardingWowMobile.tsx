@@ -374,7 +374,12 @@ export default function AthleteOnboardingWowMobile({ athlete, onComplete }: Prop
       <div
         className="absolute inset-x-0 flex flex-col items-center"
         style={{
-          top: 80,
+          // Regression undo : depuis le portal vers document.body (fixed inset-0
+          // relatif au vrai écran), top:80 mesurait depuis le bord physique →
+          // carte trop haute sous le Dynamic Island. On ré-inclut le top-inset
+          // pour retrouver "80px sous le haut utilisable" (pré-portal). La pill
+          // (top:60vh) se re-centre alors d'elle-même — non touchée.
+          top: "calc(env(safe-area-inset-top) + 80px)",
           perspective: 1000,
           opacity: showAnticipation ? 0 : 1,
           transform: `translateY(${cardTranslateY}px) scale(${cardScale})`,

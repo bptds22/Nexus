@@ -541,7 +541,7 @@ export function CoachOnboardingMobileSchool() {
 
   return (
     <div
-      className="min-h-screen bg-[#111317] text-white flex flex-col"
+      className="h-[100dvh] overflow-x-hidden bg-[#111317] text-white flex flex-col"
       style={{
         opacity: mounted ? 1 : 0,
         transition: "opacity 400ms ease-out",
@@ -584,8 +584,8 @@ export function CoachOnboardingMobileSchool() {
 
       {/* Contenu — scrollable */}
       <div
-        className="flex-1 overflow-y-auto"
-        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 96px)" }}
+        className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden"
+        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 96px)", overscrollBehavior: "contain" }}
       >
         {slide === 0 && (
           <Slide1Profile

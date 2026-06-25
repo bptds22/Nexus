@@ -10,7 +10,12 @@ const config: CapacitorConfig = {
     backgroundColor: '#111317',
   },
   ios: {
-    contentInset: 'always',
+    // 'never' (pas 'always') : la WKWebView ne s'inset PAS nativement → modèle
+    // edge-to-edge (pendant bas de overlaysWebView en haut). env(safe-area-inset-*)
+    // reporte alors les vraies valeurs et nos paddings CSS réservent le home
+    // indicator. 'always' insétait le bas nativement → app coupée en bas + boutons
+    // fixed tronqués (env bottom amputé).
+    contentInset: 'never',
     backgroundColor: '#111317',
     // App-shell : la WKWebView ne scrolle/bounce plus ; le scroll vit dans
     // le <main> borné (height:100dvh, overflow-y:auto) de chaque layout.
