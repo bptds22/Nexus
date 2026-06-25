@@ -2003,7 +2003,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
         key={tabFadeKey}
         className="px-4 pt-5 space-y-6"
         style={{
-          paddingBottom: "calc(72px + 64px + env(safe-area-inset-bottom) + 16px)",
+          paddingBottom: "calc(80px + 72px + 24px + env(safe-area-inset-bottom))",
           animation: "nx-tab-fade 200ms ease-out",
         }}
       >
@@ -2544,7 +2544,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
         <div
           className="fixed left-0 right-0 z-30 px-3 py-2.5 flex items-center gap-2"
           style={{
-            bottom: "calc(env(safe-area-inset-bottom) + 88px + 12px)",
+            bottom: "calc(env(safe-area-inset-bottom) + 80px)",
             backgroundColor: "rgba(17,19,23,0.85)",
             backdropFilter: "blur(20px) saturate(180%)",
             WebkitBackdropFilter: "blur(20px) saturate(180%)",
@@ -2605,7 +2605,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
         <div
           className="fixed left-0 right-0 z-30 px-3 py-2.5"
           style={{
-            bottom: "calc(env(safe-area-inset-bottom) + 88px + 12px)",
+            bottom: "calc(env(safe-area-inset-bottom) + 80px)",
             backgroundColor: "rgba(17,19,23,0.85)",
             backdropFilter: "blur(20px) saturate(180%)",
             WebkitBackdropFilter: "blur(20px) saturate(180%)",
