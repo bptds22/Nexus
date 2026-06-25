@@ -39,6 +39,12 @@ const HIDE_PATTERNS = [
   'app/confidentialite/page.tsx',
   'app/conditions/page.tsx',
   'app/collecte-donnees/page.tsx',
+  // Route handler GET dynamique (OAuth web callback) : incompatible avec
+  // output:export (cookies + searchParams → "force-static non configuré").
+  // Inutile sur device (login social NATIF, pas de callback web). Les autres
+  // route.ts sous app/api/* sont des POST → ignorés par l'export, pas besoin
+  // de les masquer.
+  'app/auth/callback/route.ts',
 ];
 
 function findAllToHide() {
