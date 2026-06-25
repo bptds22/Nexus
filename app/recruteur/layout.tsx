@@ -1,11 +1,12 @@
 "use client";
 
-import { Suspense, useState } from "react";
-import { useSearchParams, usePathname } from "next/navigation";
+import { Suspense, useState, useEffect } from "react";
+import { useSearchParams, usePathname, useRouter } from "next/navigation";
 import { isTabBarHidden, normalizeTabPath } from "@/app/_components/mobile/tabBarVisibility";
 import RecruiterSidebar from "./_components/RecruiterSidebar";
 import PlaybookBackground from "../components/PlaybookBackground";
 import DeactivationGuard from "@/components/auth/DeactivationGuard";
+import { createClient } from "@/lib/supabase/client";
 import PreMaintenanceBanner from "@/components/auth/PreMaintenanceBanner";
 import PendingAdminClaimBanner from "@/components/auth/PendingAdminClaimBanner";
 import DevTierSwitcher from "@/components/dev/DevTierSwitcher";
@@ -13,6 +14,15 @@ import MobileTabBar from "@/app/_components/mobile/MobileTabBar";
 import { AnimatedRoute } from "./_components/AnimatedRoute";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
+
+// Redirect sur mauvais rôle → portail réel de l'utilisateur (Option A, silencieux).
+// WrongRoutePage est hardcodé "athlètes seulement", donc non réutilisable ici.
+const DASHBOARD_BY_ROLE: Record<string, string> = {
+  COACH: "/coach/tableau-de-bord",
+  RECRUTEUR: "/recruteur/tableau-de-bord",
+  ATHLETE: "/athlete/dashboard",
+  ADMIN: "/admin/dashboard",
+};
 
 /* ─────────────────────────────────────────────────────────────────
    Nexus — Recruiter Shell Layout
@@ -30,6 +40,8 @@ export default function RecruteurLayout({ children }: { children: React.ReactNod
 
 function RecruteurLayoutInner({ children }: { children: React.ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const router = useRouter();
+  const [access, setAccess] = useState<"loading" | "ok">("loading");
   const searchParams = useSearchParams();
   const isPreview = searchParams?.get("preview") === "true";
   // Routes sans tab bar (thread/drill-down) → pas de réservation 88px : le
@@ -37,6 +49,65 @@ function RecruteurLayoutInner({ children }: { children: React.ReactNode }) {
   // (suit le clavier). MÊME source de vérité que MobileTabBar.
   const pathname = usePathname();
   const chromeless = isTabBarHidden("recruteur", normalizeTabPath(pathname));
+
+  /* Guard d'accès — parité avec app/athlete/layout.tsx. Le rôle est lu en DB
+     (users.role), PAS dans le JWT : un compte social peut avoir un JWT en retard
+     sur la base (rôle corrigé par une future RPC). Fail-open sur lecture qui
+     rate. DeactivationGuard reste indépendant. */
+  useEffect(() => {
+    async function checkAccess() {
+      try {
+        // Aperçu athlète authentifié de sa propre carte (iframe /athlete/profil
+        // → /recruteur/athletes/[id]?preview=true) : ce n'est PAS un accès
+        // recruteur — on by-passe le guard, sinon l'athlète se fait éjecter.
+        if (isPreview) { setAccess("ok"); return; }
+
+        const supabase = createClient();
+        // trailingSlash:true → normaliser le pathname avant toute comparaison.
+        const normalizedPath = pathname.replace(/\/+$/, "") || "/";
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) { router.replace("/auth"); return; }
+
+        const { data, error } = await supabase
+          .from("users")
+          .select("role, onboarding_complete")
+          .eq("id", session.user.id)
+          .maybeSingle();
+
+        // Lecture qui rate / ligne absente (race post-signup, RLS) → fail-open :
+        // on dévoile l'app (la page re-vérifie), JAMAIS de bounce /auth ici.
+        if (error || !data) { setAccess("ok"); return; }
+
+        // Mauvais rôle → portail réel de l'user (silencieux) ; inconnu → /auth.
+        if (data.role !== "RECRUTEUR") {
+          router.replace(DASHBOARD_BY_ROLE[data.role ?? ""] ?? "/auth");
+          return;
+        }
+
+        // Onboarding non terminé → wizard partagé /onboarding.
+        if (data.onboarding_complete !== true && normalizedPath !== "/onboarding") {
+          router.replace("/onboarding");
+          return;
+        }
+
+        setAccess("ok");
+      } catch (err) {
+        // Filet : une lecture qui rejette ne fige pas le layout en "loading".
+        console.error("[RecruteurLayout] checkAccess failed:", err);
+        setAccess("ok");
+      }
+    }
+    checkAccess();
+  }, [router, pathname, isPreview]);
+
+  if (access === "loading") {
+    return (
+      <div className="hero-playbook nx-no-glow bg-[#111317] min-h-screen flex items-center justify-center">
+        <PlaybookBackground />
+        <div className="w-8 h-8 border-2 border-[#E63946] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="hero-playbook nx-no-glow bg-[#111317] min-h-screen flex">
