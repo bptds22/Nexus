@@ -74,6 +74,7 @@ import {
 } from "@/components/shared/wizard/rows";
 import { labelCls, valueCls } from "@/components/shared/wizard/tokens";
 import { StarRow } from "@/components/shared/wizard/stars";
+import { useKeyboardHeight } from "@/lib/hooks/useKeyboardHeight";
 import {
   BADGE_CONFIG, BADGE_ORDER, MAX_BADGES, MAX_DETAIL_LENGTH,
   getSportStats,
@@ -1642,10 +1643,10 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
         <Card>
           <InlineEditRow label="Envergure" value={d.wingspan}
             onSave={(v) => updatePhysical("wingspan", v)}
-            placeholder={`6'4"`} detailed numericMode="numeric" />
+            placeholder={`6'4"`} detailed />
           <InlineEditRow label="Taille des mains" value={d.handSize}
             onSave={(v) => updatePhysical("handSize", v)}
-            placeholder={`9.5"`} detailed numericMode="decimal" />
+            placeholder={`9.5"`} detailed />
           <PickerRow label="Pied dominant" value={d.dominantFoot}
             onTap={() => setOpenDominantFootPicker(true)} detailed />
         </Card>
@@ -1653,22 +1654,22 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
         <Card>
           <InlineEditRow label="40 verges" value={d.fortyYard}
             onSave={(v) => updatePhysical("fortyYard", v)}
-            placeholder="4.72s" detailed numericMode="decimal" />
+            placeholder="4.72s" detailed />
           <InlineEditRow label="Saut vertical" value={d.verticalJump}
             onSave={(v) => updatePhysical("verticalJump", v)}
-            placeholder={`32"`} detailed numericMode="decimal" />
+            placeholder={`32"`} detailed />
           <InlineEditRow label="Saut en longueur" value={d.broadJump}
             onSave={(v) => updatePhysical("broadJump", v)}
-            placeholder={`9'2"`} detailed numericMode="decimal" />
+            placeholder={`9'2"`} detailed />
           <InlineEditRow label="Développé couché" value={d.benchPress}
             onSave={(v) => updatePhysical("benchPress", v)}
-            placeholder="225 × 8" detailed numericMode="decimal" />
+            placeholder="225 × 8" detailed />
           <InlineEditRow label="Navette agilité" value={d.shuttleAgility}
             onSave={(v) => updatePhysical("shuttleAgility", v)}
-            placeholder="4.31s" detailed numericMode="decimal" />
+            placeholder="4.31s" detailed />
           <InlineEditRow label="Sprint 100m" value={d.sprint100m}
             onSave={(v) => updatePhysical("sprint100m", v)}
-            placeholder="10.9s" detailed numericMode="decimal" />
+            placeholder="10.9s" detailed />
         </Card>
       </div>
     );
@@ -2160,6 +2161,10 @@ function DistinctionDetailSheet({
 }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
+  // Hauteur clavier (même source que le composer messages) → la sheet
+  // remonte au-dessus du clavier au lieu de se faire recouvrir. Hook appelé
+  // avant tout return conditionnel (règle des hooks).
+  const kbdH = useKeyboardHeight();
 
   if (!mounted || !badgeKey || !entry) return null;
   if (typeof document === "undefined") return null;
@@ -2184,7 +2189,11 @@ function DistinctionDetailSheet({
       <div
         className="fixed inset-x-0 bottom-0 z-[70] bg-[#1A1D24] rounded-t-2xl flex flex-col"
         style={{
-          paddingBottom: "env(safe-area-inset-bottom)",
+          // Clavier OUVERT : padder le bas de la sheet de sa hauteur exacte →
+          // l'input, le compteur et le footer "Retirer" remontent au-dessus du
+          // clavier (même mécanisme que le composer messages). FERMÉ : safe-area.
+          paddingBottom: kbdH > 0 ? `${kbdH}px` : "env(safe-area-inset-bottom)",
+          transition: "padding-bottom 200ms ease-out",
           maxHeight: "85vh",
           animation: "nx-modal-slideup 280ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards",
         }}
@@ -2245,7 +2254,6 @@ function DistinctionDetailSheet({
             maxLength={MAX_DETAIL_LENGTH}
             aria-label={badgeKey === "custom" ? "Titre" : "Détail"}
             placeholder={badgeKey === "custom" ? "Ex: Meilleur passeur RSEQ" : "Ex: Points"}
-            autoFocus
             className="w-full bg-[#13151a] border border-white/[0.06] rounded-2xl px-4 py-3 text-[15px] text-white placeholder:text-white/30 focus:border-[#E63946]/40 outline-none"
           />
           <p className="text-right text-[11px] text-white/45 mt-1 tabular-nums">

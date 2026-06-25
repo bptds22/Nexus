@@ -6,7 +6,7 @@
 
 import { createClient } from "@/lib/supabase/client";
 
-const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
+export const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
 export async function triggerHaptic(intensity: "Light" | "Medium" | "Heavy" = "Light") {
   try {

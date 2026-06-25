@@ -30,6 +30,7 @@ import {
 import { MessageBubble } from "./MessageBubble";
 import { DaySeparator } from "./DaySeparator";
 import { triggerHaptic } from "./utils";
+import { useKeyboardHeight } from "@/lib/hooks/useKeyboardHeight";
 
 function ThreadSkeleton() {
   return (
@@ -104,20 +105,10 @@ export function MessageThreadShell<M>({
         natif iOS étant cassé sur iOS 26 (innerH/visualViewport ne bougent
         pas), on lit `keyboardHeight` via keyboardWillShow/Hide et on padde le
         bas du shell de cette hauteur → le composer (dernier enfant du flex
-        column) remonte au-dessus du clavier. Web → no-op (plugin absent). ── */
-  const [kbdH, setKbdH] = useState(0);
-  useEffect(() => {
-    let show: { remove: () => void } | null = null;
-    let hide: { remove: () => void } | null = null;
-    (async () => {
-      try {
-        const { Keyboard } = await import("@capacitor/keyboard");
-        show = await Keyboard.addListener("keyboardWillShow", (info) => setKbdH(info.keyboardHeight));
-        hide = await Keyboard.addListener("keyboardWillHide", () => setKbdH(0));
-      } catch { /* web — no-op */ }
-    })();
-    return () => { show?.remove(); hide?.remove(); };
-  }, []);
+        column) remonte au-dessus du clavier. Web → no-op (plugin absent).
+        Logique factorisée dans useKeyboardHeight (source de vérité unique,
+        partagée avec DistinctionDetailSheet). ── */
+  const kbdH = useKeyboardHeight();
 
   /* Auto-scroll to the latest message on mount + on each new message
      count change. RAF defer so layout settles first. */
