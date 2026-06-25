@@ -18,11 +18,13 @@
 
 import type { SupabaseClient, User } from "@supabase/supabase-js";
 import type { useRouter } from "next/navigation";
+import { needsConsent } from "@/lib/auth/needsConsent";
 
 type Router = ReturnType<typeof useRouter>;
 
 export type DispatchOutcome =
   | { kind: "deactivated" }
+  | { kind: "consent" }
   | { kind: "onboarding" }
   | { kind: "portal"; role: string }
   | { kind: "fallback" }
@@ -43,7 +45,7 @@ export async function postLoginDispatch(
   // 1) Query du profil
   const { data: profile } = await supabase
     .from("users")
-    .select("role, onboarding_complete, status")
+    .select("role, onboarding_complete, status, privacy_preferences")
     .eq("id", user.id)
     .single();
 
@@ -58,6 +60,15 @@ export async function postLoginDispatch(
   // a lagué — improbable mais déjà géré côté desktop).
   const role = (profile?.role as string) || (user.user_metadata?.role as string);
   const onboardingComplete = profile?.onboarding_complete;
+
+  // 2.5) Consentements Loi 25 manquants (signup social) → interstitiel, AVANT
+  //       tout dispatch onboarding/portail. JAMAIS pour un compte déjà onboardé
+  //       (le `!onboardingComplete` protège les comptes legacy sans consent).
+  if (profile && !onboardingComplete
+      && needsConsent(profile.privacy_preferences, user.user_metadata)) {
+    router.push("/consentements");
+    return { kind: "consent" };
+  }
 
   // 3) Si profil existe explicitement et onboarding pas fini → onboarding
   //    par rôle (couvre aussi le cas profil chargé sans

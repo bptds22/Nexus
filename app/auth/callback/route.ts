@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { needsConsent } from "@/lib/auth/needsConsent";
 
 /* ═══════════════════════════════════════════════════════════════
    GET /auth/callback — callback OAuth WEB (Google/Apple).
@@ -25,8 +26,24 @@ export async function GET(request: Request) {
 
   if (code) {
     const supabase = await createClient();
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
+      // Gate consentements (BLOC 3B) — login OAuth web. Le route handler est
+      // serveur → on ne peut pas appeler postLoginDispatch (router client) ;
+      // on réplique UNIQUEMENT le check consent côté serveur. Fail-open : si
+      // la query échoue / profil absent, on ne gate pas (redirect normal).
+      const authUser = data?.user;
+      if (authUser) {
+        const { data: profile } = await supabase
+          .from("users")
+          .select("onboarding_complete, privacy_preferences")
+          .eq("id", authUser.id)
+          .maybeSingle();
+        if (profile && profile.onboarding_complete !== true
+            && needsConsent(profile.privacy_preferences, authUser.user_metadata)) {
+          return NextResponse.redirect(`${origin}/consentements`);
+        }
+      }
       return NextResponse.redirect(`${origin}${next}`);
     }
     console.error("[auth/callback] exchangeCodeForSession error:", error.message);

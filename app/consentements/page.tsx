@@ -197,8 +197,16 @@ export default function ConsentementsPage() {
       // 3. refreshSession — le JWT prend le nouveau role (guard athlète lit le JWT)
       await supabase.auth.refreshSession();
 
-      // 4. privacy_preferences (best-effort)
-      await persistInitialConsents(user.id, flags);
+      // 4. privacy_preferences — INVARIANT ANTI-BOUCLE : si l'écriture échoue,
+      // le consent reste absent en base → le gate (postLoginDispatch / onboarding)
+      // re-pousserait /consentements → boucle. On bloque le dispatch et on
+      // demande de réessayer plutôt que de risquer le ping-pong.
+      const persisted = await persistInitialConsents(user.id, flags);
+      if (!persisted.ok) {
+        setError("Échec d'enregistrement, réessaie.");
+        setSubmitting(false);
+        return;
+      }
 
       // 5. redirect par rôle (source unique)
       await postLoginDispatch(supabase, user, router);

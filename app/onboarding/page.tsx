@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import NexusLogo from "@/components/ui/NexusLogo";
 import { createClient } from "@/lib/supabase/client";
+import { needsConsent } from "@/lib/auth/needsConsent";
 import PlaybookBackground from "../components/PlaybookBackground";
 import TeamSearchOrCreate, { type TeamSearchRow } from "@/components/onboarding/TeamSearchOrCreate";
 import TeamCreateForm, { type TeamFormData } from "@/components/onboarding/TeamCreateForm";
@@ -314,6 +315,14 @@ export default function OnboardingPage() {
         else if (profile.role === "RECRUTEUR") router.replace("/recruteur/tableau-de-bord");
         else if (profile.role === "PARTNER") router.replace("/partenaire");
         else router.replace("/");
+        return;
+      }
+
+      // Gate consentements (BLOC 3B) : consent Loi 25 manquant + onboarding
+      // incomplet → interstitiel. needsConsent gère le double signal
+      // (privacy_preferences OU user_metadata) anti-boucle.
+      if (needsConsent(profile.privacy_preferences, authUser.user_metadata)) {
+        router.replace("/consentements");
         return;
       }
 

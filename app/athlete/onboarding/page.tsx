@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import NexusLogo from "@/components/ui/NexusLogo";
 import { createClient } from "@/lib/supabase/client";
+import { needsConsent } from "@/lib/auth/needsConsent";
 import { genderLabel } from "@/lib/config/gender";
 import { GRAD_YEAR_OPTIONS, DEFAULT_GRAD_YEAR } from "@/lib/config/gradYears";
 import { calculateProfileCompletion } from "@/lib/utils/calculateProfileCompletion";
@@ -538,15 +539,27 @@ function AthleteOnboardingDesktop() {
         last_name: string | null;
         context: string | null;
         onboarding_complete: boolean | null;
+        privacy_preferences: Record<string, unknown> | null;
       } | null = null;
       for (let attempt = 0; attempt < 3; attempt++) {
         const { data } = await supabase
           .from("users")
-          .select("first_name, last_name, context, onboarding_complete")
+          .select("first_name, last_name, context, onboarding_complete, privacy_preferences")
           .eq("id", user.id)
           .maybeSingle();
         if (data) { userRow = data; break; }
         if (attempt < 2) await new Promise((r) => setTimeout(r, 500));
+      }
+
+      // Gate consentements (BLOC 3B) : consent Loi 25 manquant + onboarding
+      // incomplet → interstitiel. Placé AVANT le build (couvre le nouvel
+      // athlète social sans ligne athletes). needsConsent gère le double
+      // signal (privacy_preferences OU user_metadata) anti-boucle. Fail-open :
+      // si userRow est null (race RLS), on ne gate pas (l'app se dévoile).
+      if (userRow && userRow.onboarding_complete !== true
+          && needsConsent(userRow.privacy_preferences, user.user_metadata)) {
+        router.replace("/consentements");
+        return;
       }
 
       // Fallback: fill name from the users row only if metadata was empty.
