@@ -29,6 +29,7 @@
 ═══════════════════════════════════════════════════════════════ */
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { AthleteProfileRecruiterView } from "@/lib/types/models";
 import AthletePlayerCard from "@/components/shared/AthletePlayerCard";
 import DistinctionBadge from "@/components/shared/DistinctionBadge";
@@ -162,6 +163,13 @@ export default function AthleteOnboardingWowMobile({ athlete, onComplete }: Prop
   const [showBadges, setShowBadges] = useState(false);
   const [activeStage, setActiveStage] = useState(0); // 0..6
   const [exiting, setExiting] = useState(false);
+  // Portal vers document.body : ce WOW est un overlay `fixed inset-0`. Rendu
+  // inline il était piégé par le containing block de <AnimatedRoute>
+  // (willChange:"transform,opacity" établit un containing block → le `fixed`
+  // devient relatif au wrapper animé, pas au viewport → layout déréglé). Même
+  // fix que le FAB roster (commit f32b768 : portal to body). mounted = SSR-safe.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
 
   const { tilt, hasGyro } = useGyroTilt(6);
 
@@ -274,7 +282,9 @@ export default function AthleteOnboardingWowMobile({ athlete, onComplete }: Prop
     color: i % 2 === 0 ? "#F59E0B" : "#E63946",
   })), []);
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <div
       className="fixed inset-0 z-50 bg-[#060A14] text-white overflow-hidden"
       style={{
@@ -567,7 +577,8 @@ export default function AthleteOnboardingWowMobile({ athlete, onComplete }: Prop
         }}
         aria-hidden
       />
-    </div>
+    </div>,
+    document.body,
   );
 }
 
