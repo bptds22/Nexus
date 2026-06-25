@@ -5,7 +5,6 @@ import { createClient } from "@/lib/supabase/client";
 import AthletePlayerCard from "@/components/shared/AthletePlayerCard";
 import { loadAthleteRaw, mapToRecruiterView } from "@/app/coach/athletes/_data/loadAthleteFromSupabase";
 import type { AthleteProfileRecruiterView } from "@/lib/types/models";
-import { toPng } from "html-to-image";
 import { SearchSheet } from "@/components/mobile/SearchSheet";
 import { useSubscription } from "@/lib/hooks/useSubscription";
 import { useAthleteVisibilityPro, type CegepDetail } from "@/hooks/useAthleteVisibility";
@@ -493,6 +492,8 @@ export default function MonParcoursMobile() {
         backgroundColor: undefined,
         style: { animation: "none", transition: "none" },
       };
+      // Lazy : html-to-image n'est chargé qu'au tap export (hors bundle initial).
+      const { toPng } = await import("html-to-image");
       await toPng(captureCompactRef.current, toPngOpts);   // warm-up Safari
       const dataUrl = await toPng(captureCompactRef.current, toPngOpts);
       const slug = `${cardAthlete.firstName}-${cardAthlete.lastName}`

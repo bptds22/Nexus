@@ -528,8 +528,9 @@ export function CoachDashboardMobile() {
     const supabase = createClient();
 
     async function load() {
+      try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { setLoading(false); return; }
+      if (!user) return;
 
       // Profil coach + intérim source (is_school_admin + admin_type)
       const { data: profile } = await supabase
@@ -558,7 +559,7 @@ export function CoachDashboardMobile() {
       }
 
       const coachSchoolId = (profile?.school_id as string) || null;
-      if (!coachSchoolId) { setLoading(false); return; }
+      if (!coachSchoolId) return;
 
       // Demotion notifications
       const { data: demotions } = await supabase
@@ -795,8 +796,9 @@ export function CoachDashboardMobile() {
 
         setActivities(mapped);
       }
-
-      setLoading(false);
+      } finally {
+        setLoading(false);
+      }
     }
 
     load();
