@@ -1,8 +1,22 @@
 import { Capacitor } from '@capacitor/core';
-import { PushNotifications } from '@capacitor/push-notifications';
+import { FirebaseMessaging } from '@capacitor-firebase/messaging';
 import { createClient } from '@/lib/supabase/client';
 
 let currentToken: string | null = null;
+
+// Enregistre le token FCM via le MÊME RPC (register_device_token) — serveur
+// inchangé. iOS comme Android renvoient désormais un token FCM (le pont
+// APNs→FCM est géré nativement par @capacitor-firebase/messaging).
+async function persistToken(token: string, platform: 'ios' | 'android') {
+  currentToken = token;
+  const supabase = createClient();
+  const { error } = await supabase.rpc('register_device_token', {
+    p_token: token,
+    p_platform: platform,
+  });
+  if (error) console.error('[push] register_device_token', error);
+  else console.log('[push] token FCM enregistré');
+}
 
 export async function registerPush(): Promise<void> {
   if (!Capacitor.isNativePlatform()) return;            // web : no-op
@@ -10,34 +24,38 @@ export async function registerPush(): Promise<void> {
   if (platform !== 'ios' && platform !== 'android') return;
 
   // évite l'accumulation de listeners (ré-appel / hot reload)
-  await PushNotifications.removeAllListeners();
+  await FirebaseMessaging.removeAllListeners();
 
-  PushNotifications.addListener('registration', async (token) => {
-    currentToken = token.value;
-    const supabase = createClient();
-    const { error } = await supabase.rpc('register_device_token', {
-      p_token: token.value,
-      p_platform: platform,
-    });
-    if (error) console.error('[push] register_device_token', error);
-    else console.log('[push] token enregistré');
+  // rotation de token FCM → ré-enregistre
+  await FirebaseMessaging.addListener('tokenReceived', (event) => {
+    if (event?.token) void persistToken(event.token, platform);
   });
 
-  PushNotifications.addListener('registrationError', (err) =>
-    console.error('[push] registrationError', err),
-  );
-
   // premier plan + tap : log seulement (deep-link = Phase 6)
-  PushNotifications.addListener('pushNotificationReceived', (n) =>
-    console.log('[push] reçu (foreground)', n),
+  await FirebaseMessaging.addListener('notificationReceived', (event) =>
+    console.log('[push] reçu (foreground)', event),
   );
-  PushNotifications.addListener('pushNotificationActionPerformed', (a) =>
-    console.log('[push] action', a),
+  await FirebaseMessaging.addListener('notificationActionPerformed', (event) =>
+    console.log('[push] action', event),
   );
 
-  const perm = await PushNotifications.requestPermissions();
-  if (perm.receive === 'granted') await PushNotifications.register();
-  else console.log('[push] permission non accordée:', perm.receive);
+  // permission : check, puis request si encore à l'état 'prompt*'
+  let perm = await FirebaseMessaging.checkPermissions();
+  if (perm.receive === 'prompt' || perm.receive === 'prompt-with-rationale') {
+    perm = await FirebaseMessaging.requestPermissions();
+  }
+  if (perm.receive !== 'granted') {
+    console.log('[push] permission non accordée:', perm.receive);
+    return;
+  }
+
+  // token FCM explicite (iOS : déclenche l'enregistrement APNs en interne)
+  try {
+    const { token } = await FirebaseMessaging.getToken();
+    if (token) await persistToken(token, platform);
+  } catch (err) {
+    console.error('[push] getToken', err);
+  }
 }
 
 // nettoyage au logout (à brancher plus tard)
@@ -46,4 +64,5 @@ export async function clearPushToken(): Promise<void> {
   const supabase = createClient();
   await supabase.from('device_tokens').delete().eq('token', currentToken);
   currentToken = null;
+  try { await FirebaseMessaging.deleteToken(); } catch { /* no-op */ }
 }

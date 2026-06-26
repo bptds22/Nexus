@@ -33,6 +33,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import { MobilePicker, type PickerOption } from "@/components/mobile/MobilePicker";
@@ -108,6 +109,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export function CoachOnboardingMobileSchool() {
   // Hooks AVANT toute condition (canon Rules of Hooks).
   const router = useRouter();
+  const queryClient = useQueryClient();
   const toast = useMobileToast();
 
   // 4 slides (0..3). Le step machine reste 0|1|2|3 (le coach école
@@ -513,6 +515,9 @@ export function CoachOnboardingMobileSchool() {
         return;
       }
 
+      // Re-fetch currentUser → PushRegistrar voit onboarding_complete=true (posé par
+      // la RPC finish_coach_school_onboarding) dans la MÊME session → registerPush().
+      await queryClient.invalidateQueries({ queryKey: ["currentUser"] });
       triggerHaptic("Medium");
       router.replace("/coach/tableau-de-bord");
     } catch (err) {
@@ -524,7 +529,7 @@ export function CoachOnboardingMobileSchool() {
     canSubmit, userId, firstName, lastName, phone, photo, bio, sport, experienceYears,
     selectedSchoolId, selectedSchoolRegion, selectedTeamId,
     directorChoice, rprpAttested, inviteEmail,
-    router, toast,
+    router, toast, queryClient,
   ]);
 
   /* ── Render ──────────────────────────────────────────────── */

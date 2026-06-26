@@ -46,7 +46,9 @@ const config: CapacitorConfig = {
       backgroundColor: '#111317',
       overlaysWebView: true,
     },
-    PushNotifications: {
+    FirebaseMessaging: {
+      // Présentation foreground iOS (lue par @capacitor-firebase/messaging,
+      // remplace l'ancien bloc PushNotifications de @capacitor/push-notifications).
       presentationOptions: ['badge', 'sound', 'alert'],
     },
     Keyboard: {
@@ -56,6 +58,20 @@ const config: CapacitorConfig = {
       // keyboardWillShow/Hide → CSS var --kbd-h → padding-bottom du shell
       // (MessageThreadShell). Fiable et indépendant du resize natif cassé.
       resize: KeyboardResize.None,
+    },
+  },
+  experimental: {
+    ios: {
+      spm: {
+        // Évite une collision d'identité de package SwiftPM avec
+        // @capacitor-firebase/messaging (recommandé par le plugin ;
+        // nécessite Capacitor CLI ≥ 8.4.0 — on a 8.4.1). Re-`cap sync` après ajout.
+        packageOptions: {
+          '@capacitor-firebase/messaging': {
+            symlink: true,
+          },
+        },
+      },
     },
   },
   server: {

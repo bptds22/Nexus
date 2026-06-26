@@ -36,6 +36,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { calculateProfileCompletion } from "@/lib/utils/calculateProfileCompletion";
 import { useMobileToast } from "@/components/mobile/MobileToast";
@@ -148,6 +149,7 @@ const REGION_OPTIONS: PickerOption[] = CEGEP_REGIONS.map((r) => ({ value: r, lab
 export function AthleteOnboardingMobile() {
   // Hooks AVANT toute condition (canon Rules of Hooks).
   const router = useRouter();
+  const queryClient = useQueryClient();
   const toast = useMobileToast();
 
   // Step machine 1|2 (consents + parent capturés au signup — iter 2b)
@@ -897,6 +899,10 @@ export function AthleteOnboardingMobile() {
     // Flip onboarding_complete BEFORE le WOW pour que toute navigation
     // back-button au milieu de l'animation aboutisse à un état cohérent.
     await supabase.from("users").update({ onboarding_complete: true }).eq("id", userId);
+    // Force le re-fetch de currentUser → PushRegistrar voit onboarding_complete=true
+    // dans la MÊME session et déclenche registerPush() (sinon : seulement au prochain
+    // cold start). Miroir de app/athlete/onboarding/page.tsx:1032.
+    await queryClient.invalidateQueries({ queryKey: ["currentUser"] });
     triggerHaptic("Medium");
 
     // Iter 7.50-b3 — au lieu de redirect immédiat, on bascule en phase
@@ -926,7 +932,7 @@ export function AthleteOnboardingMobile() {
     canSubmit, userId, saving, primarySport, primaryPosition, primaryPositionId,
     userContext, selectedTeamSchoolId, selectedSchoolId, selectedCoachId,
     firstName, lastName, photo, email, phone, gradYear, jerseyNumber,
-    existingAthleteId, selectedTeamId, router, toast,
+    existingAthleteId, selectedTeamId, router, toast, queryClient,
   ]);
 
   /* ── Handlers nav ────────────────────────────────────────── */

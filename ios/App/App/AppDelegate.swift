@@ -46,4 +46,20 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         return ApplicationDelegateProxy.shared.application(application, continue: userActivity, restorationHandler: restorationHandler)
     }
 
+    // MARK: - Push (APNs → @capacitor-firebase/messaging)
+    // Le plugin auto-initialise Firebase (FirebaseApp.configure() dans son init).
+    // Il faut en revanche forwarder le token APNs / les notifications au bridge
+    // Capacitor pour que le plugin échange l'APNs token contre un token FCM.
+    func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+        NotificationCenter.default.post(name: .capacitorDidRegisterForRemoteNotifications, object: deviceToken)
+    }
+
+    func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
+        NotificationCenter.default.post(name: .capacitorDidFailToRegisterForRemoteNotifications, object: error)
+    }
+
+    func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable: Any], fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
+        NotificationCenter.default.post(name: Notification.Name("didReceiveRemoteNotification"), object: completionHandler, userInfo: userInfo)
+    }
+
 }

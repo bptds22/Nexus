@@ -36,6 +36,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import { MobilePicker, type PickerOption } from "@/components/mobile/MobilePicker";
@@ -111,6 +112,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function CoachOnboardingMobileCivil() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const toast = useMobileToast();
 
   const [slide, setSlide] = useState<0 | 1 | 2 | 3>(0);
@@ -539,6 +541,9 @@ export function CoachOnboardingMobileCivil() {
         return;
       }
 
+      // Re-fetch currentUser → PushRegistrar voit onboarding_complete=true (posé par
+      // la RPC finish_coach_civil_onboarding) dans la MÊME session → registerPush().
+      await queryClient.invalidateQueries({ queryKey: ["currentUser"] });
       triggerHaptic("Medium");
       router.replace("/coach/tableau-de-bord");
     } catch (err) {
@@ -552,7 +557,7 @@ export function CoachOnboardingMobileCivil() {
     teamMode, selectedTeamId, newTeamName, newTeamAgeGroup, newTeamAgeOther,
     newTeamDivision, newTeamDivisionOther, newTeamGender,
     directorChoice, rprpAttested, inviteEmail,
-    router, toast,
+    router, toast, queryClient,
   ]);
 
   /* ── Render ──────────────────────────────────────────────── */
