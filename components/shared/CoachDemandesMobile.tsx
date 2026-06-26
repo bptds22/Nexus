@@ -76,12 +76,13 @@ function useArchiveCoachConversation() {
 
 /* ── Filter keyset (parité recruteur — 3 filtres simples) ──── */
 
-type FilterKey = "tous" | "non_lu" | "archive";
+type FilterKey = "tous" | "non_lu" | "sans_reponse" | "archive";
 
 const FILTER_OPTIONS: FilterOption<FilterKey>[] = [
-  { value: "tous",    label: "Tous" },
-  { value: "non_lu",  label: "Non lu" },
-  { value: "archive", label: "Archivé" },
+  { value: "tous",         label: "Tous" },
+  { value: "non_lu",       label: "Non lu" },
+  { value: "sans_reponse", label: "Sans réponse" },
+  { value: "archive",      label: "Archivé" },
 ];
 
 /* ═══════════════════════════════════════════════════════════════
@@ -93,6 +94,8 @@ export function CoachDemandesMobile() {
   const toast = useMobileToast();
   const { data: threads = [], isLoading } = useCoachConversations();
   const archiveMut = useArchiveCoachConversation();
+  const { data: currentUser } = useCurrentUser();
+  const userId = currentUser?.authUser.id;
 
   // States
   const [search, setSearch] = useState("");
@@ -109,6 +112,9 @@ export function CoachDemandesMobile() {
   const filtered = useMemo(() => {
     let list = [...threads];
     if (filter === "non_lu") list = list.filter((t) => t.unreadCount > 0 && t.status !== "ARCHIVE");
+    // "Sans réponse" : le dernier message vient du coach courant → on attend
+    // la réponse du recruteur (def. (a)). Exclut les archivés.
+    else if (filter === "sans_reponse") list = list.filter((t) => t.lastSenderId != null && t.lastSenderId === userId && t.status !== "ARCHIVE");
     else if (filter === "archive") list = list.filter((t) => t.status === "ARCHIVE");
     else list = list.filter((t) => t.status !== "ARCHIVE");
 
@@ -122,7 +128,7 @@ export function CoachDemandesMobile() {
       );
     }
     return list;
-  }, [threads, filter, debouncedSearch]);
+  }, [threads, filter, debouncedSearch, userId]);
 
   // Handlers
   const handleTap = (thread: CoachThreadData) => {

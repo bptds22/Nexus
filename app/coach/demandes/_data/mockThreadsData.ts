@@ -48,6 +48,9 @@ export interface ConversationThread {
   status: ThreadStatus;
   lastMessagePreview: string;
   lastMessageTime: string;
+  /** sender_id du DERNIER message du fil (null si aucun). Filtre "Sans réponse"
+      coach desktop : lastSenderId === coach courant → en attente. */
+  lastSenderId: string | null;
   unread: boolean;
 }
 
