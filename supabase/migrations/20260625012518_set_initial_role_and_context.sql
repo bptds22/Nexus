@@ -1,23 +1,15 @@
 -- ════════════════════════════════════════════════════════════════════
 -- set_initial_role_and_context — RPC one-shot (BLOC 2)
 --
--- Pose le `role` + `context` INITIAUX d'un compte social. Un signup social
--- (Google/Apple) naît `role='ATHLETE', context=NULL` via handle_new_auth_user
--- (COALESCE metadata->>'role', 'ATHLETE'). Cette RPC permet à l'utilisateur de
--- corriger ce défaut UNE SEULE FOIS, avant l'onboarding.
+-- RÉCONCILIATION : ce fichier reproduit l'enregistrement RÉEL appliqué sur
+-- le cloud (schema_migrations version 20260625012518). Le cloud a reçu la
+-- fonction via MCP/Studio en deux temps (CREATE+GRANT ici, REVOKE anon dans
+-- 20260625012739) ; le fichier local combiné 20260625010000 a été retiré au
+-- profit de ces deux fichiers, pour aligner l'historique local sur le distant.
 --
--- Les colonnes role/context sont VERROUILLÉES côté self-service par la policy
--- "users update own" (WITH CHECK user_privileged_cols_unchanged(...)). Un UPDATE
--- direct par l'utilisateur échoue donc en 42501. On copie le pattern éprouvé de
--- is_recruiter() : SECURITY DEFINER + SET row_security = off + search_path pinné,
--- ce qui (1) écrit les colonnes pinnées sans passer par la RLS, et (2) évite la
--- récursion historique (lecture de public.users hors policies).
---
--- Garde-fous : NOT_AUTHENTICATED, NO_PROFILE, ALREADY_ONBOARDED,
--- ROLE_ALREADY_SET (défaut social = ATHLETE ; tout autre rôle = déjà décidé),
--- CONTEXT_ALREADY_SET (durcissement one-shot). Écriture STRICTE role+context —
--- is_platform_admin / status / is_school_admin / onboarding_complete intouchés.
--- ADMIN/PARTNER ne peuvent JAMAIS être auto-attribués.
+-- Pose le `role` + `context` INITIAUX d'un compte social (corrige le défaut
+-- ATHLETE/NULL une seule fois, avant l'onboarding). SECURITY DEFINER +
+-- row_security=off + search_path pinné (pattern is_recruiter()).
 -- ════════════════════════════════════════════════════════════════════
 
 CREATE OR REPLACE FUNCTION public.set_initial_role_and_context(
@@ -49,7 +41,7 @@ BEGIN
   IF p_context NOT IN ('scolaire','collegial','ligue_civile') THEN
     RAISE EXCEPTION 'INVALID_CONTEXT';
   END IF;
-  -- Cohérence role ↔ context (athlète relâché : scolaire OU ligue_civile)
+  -- Cohérence role <-> context (athlète relâché : scolaire OU ligue_civile)
   IF NOT (
        (p_role = 'ATHLETE'   AND p_context IN ('scolaire','ligue_civile'))
     OR (p_role = 'COACH'     AND p_context IN ('scolaire','ligue_civile'))
@@ -58,7 +50,7 @@ BEGIN
     RAISE EXCEPTION 'INCOHERENT_ROLE_CONTEXT';
   END IF;
 
-  -- 3. État courant (lecture en row_security=off → pas de récursion sur users)
+  -- 3. Etat courant (lecture en row_security=off -> pas de recursion sur users)
   SELECT role, onboarding_complete, context
     INTO v_role, v_ob, v_ctx
   FROM public.users
@@ -70,16 +62,16 @@ BEGIN
 
   -- 4. Gardes one-shot
   IF v_ob IS TRUE THEN
-    RAISE EXCEPTION 'ALREADY_ONBOARDED';        -- onboarding terminé → figé
+    RAISE EXCEPTION 'ALREADY_ONBOARDED';
   END IF;
   IF v_role <> 'ATHLETE'::public.user_role THEN
-    RAISE EXCEPTION 'ROLE_ALREADY_SET';         -- rôle déjà décidé (non-défaut)
+    RAISE EXCEPTION 'ROLE_ALREADY_SET';
   END IF;
   IF v_ctx IS NOT NULL THEN
-    RAISE EXCEPTION 'CONTEXT_ALREADY_SET';      -- déjà exécuté (durcissement)
+    RAISE EXCEPTION 'CONTEXT_ALREADY_SET';
   END IF;
 
-  -- 5. Écriture STRICTE : role + context UNIQUEMENT.
+  -- 5. Ecriture STRICTE : role + context UNIQUEMENT.
   UPDATE public.users
   SET role    = p_role::public.user_role,
       context = p_context
@@ -90,9 +82,4 @@ END;
 $function$;
 
 REVOKE ALL     ON FUNCTION public.set_initial_role_and_context(text, text) FROM PUBLIC;
--- Supabase accorde EXECUTE à anon/authenticated/service_role par DEFAULT
--- PRIVILEGES (grant explicite, non couvert par REVOKE FROM PUBLIC). On retire
--- anon explicitement : RPC réservée aux comptes authentifiés. Autosuffisant —
--- un replay from scratch obtient le bon état sans anon.
-REVOKE EXECUTE ON FUNCTION public.set_initial_role_and_context(text, text) FROM anon;
 GRANT  EXECUTE ON FUNCTION public.set_initial_role_and_context(text, text) TO authenticated;
