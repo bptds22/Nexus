@@ -42,6 +42,7 @@ import {
   SectionLabel, Group, ToggleRow, NavRow, DangerRow,
   TierCard, PasswordChangeSheet, ConfirmSheet,
 } from "@/components/shared/settings";
+import { deleteMyAccount } from "@/lib/auth/deleteAccount";
 // startMobileCheckout lives in the same shared settings module but isn't
 // re-exported by the barrel (yet), so import it from the file directly.
 import { startMobileCheckout, startMobilePortal, fmtSubDate, subStatusLabel } from "@/components/shared/settings/utils";
@@ -101,6 +102,7 @@ export function RecruteurParametresMobile() {
   const [savingPrivacy, setSavingPrivacy] = useState(false);
   const [passwordSheetOpen, setPasswordSheetOpen] = useState(false);
   const [deactivateSheetOpen, setDeactivateSheetOpen] = useState(false);
+  const [deleteSheetOpen, setDeleteSheetOpen] = useState(false);
   const [logoutSheetOpen, setLogoutSheetOpen] = useState(false);
   // Which tier is mid-checkout — drives the CTA label + blocks double-tap.
   const [upgradingTier, setUpgradingTier] = useState<string | null>(null);
@@ -323,6 +325,7 @@ export function RecruteurParametresMobile() {
     }
   }
 
+  // Désactivation RÉVERSIBLE (conservation des données) — inchangée.
   async function handleDeactivate() {
     triggerHaptic("Heavy");
     const supabase = createClient();
@@ -332,6 +335,15 @@ export function RecruteurParametresMobile() {
     await supabase.auth.signOut();
     setDeactivateSheetOpen(false);
     router.push("/auth");
+  }
+
+  // Suppression DÉFINITIVE — RPC delete_my_account via le helper partagé.
+  async function handleDelete() {
+    triggerHaptic("Heavy");
+    setDeleteSheetOpen(false);
+    await deleteMyAccount({
+      onError: (detail) => toast.error({ message: "Échec de la suppression", detail }),
+    });
   }
 
   async function handleLogout() {
@@ -608,6 +620,11 @@ export function RecruteurParametresMobile() {
           onTap={() => { triggerHaptic("Light"); setDeactivateSheetOpen(true); }}
         />
         <DangerRow
+          label="Supprimer mon compte"
+          isFirst={false}
+          onTap={() => { triggerHaptic("Light"); setDeleteSheetOpen(true); }}
+        />
+        <DangerRow
           label="Déconnexion"
           isFirst={false}
           onTap={() => { triggerHaptic("Light"); setLogoutSheetOpen(true); }}
@@ -625,6 +642,15 @@ export function RecruteurParametresMobile() {
         message="Votre profil deviendra invisible, alertes stoppées. Vos données seront conservées. Vous pourrez réactiver en contactant le support."
         confirmLabel="Désactiver"
         onConfirm={handleDeactivate}
+        variant="danger"
+      />
+      <ConfirmSheet
+        open={deleteSheetOpen}
+        onClose={() => setDeleteSheetOpen(false)}
+        title="Supprimer mon compte ?"
+        message="Ton compte et tes données personnelles seront supprimés immédiatement et définitivement. Cette action est irréversible."
+        confirmLabel="Supprimer"
+        onConfirm={handleDelete}
         variant="danger"
       />
       <ConfirmSheet

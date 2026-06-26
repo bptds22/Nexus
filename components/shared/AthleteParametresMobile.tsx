@@ -43,6 +43,7 @@ import {
   TierCard, PasswordChangeSheet, ConfirmSheet,
 } from "@/components/shared/settings";
 import { startMobilePortal, fmtSubDate, subStatusLabel } from "@/components/shared/settings/utils";
+import { deleteMyAccount } from "@/lib/auth/deleteAccount";
 
 /* ── Athlete notification rows — additive keys on users.notification_preferences JSONB.
    Same shape as coach + recruiter NOTIF_ROWS : app_X drives in-app, email_X is mirrored
@@ -378,20 +379,16 @@ export function AthleteParametresMobile() {
     router.push("/auth");
   }
 
-  /* ── RPC handlers (reuse desktop's deactivate_my_account RPC) ── */
+  /* ── Suppression DÉFINITIVE — RPC delete_my_account via le helper
+        partagé (signOut + redirection gérés dedans). À NE PAS confondre
+        avec handleRevokeConsent (retrait de consentement, réversible). ── */
 
   async function handleDelete() {
     triggerHaptic("Heavy");
-    const supabase = createClient();
-    const { error } = await supabase.rpc("deactivate_my_account", { p_revoke_consent: false });
-    if (error) {
-      toast.error({ message: "Échec de la suppression", detail: error.message });
-      return;
-    }
-    try { localStorage.removeItem("nexus_user"); } catch { /* no-op */ }
-    await supabase.auth.signOut();
     setDeleteSheetOpen(false);
-    router.push("/auth");
+    await deleteMyAccount({
+      onError: (detail) => toast.error({ message: "Échec de la suppression", detail }),
+    });
   }
 
   async function handleLogout() {
@@ -819,7 +816,7 @@ export function AthleteParametresMobile() {
         open={deleteSheetOpen}
         onClose={() => setDeleteSheetOpen(false)}
         title="Supprimer mon compte ?"
-        message="Ton profil sera désactivé immédiatement. La suppression définitive sera effectuée après 30 jours selon la Loi 25."
+        message="Ton compte et tes données personnelles seront supprimés immédiatement et définitivement. Cette action est irréversible."
         confirmLabel="Supprimer"
         onConfirm={handleDelete}
         variant="danger"

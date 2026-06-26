@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import type { RecruiterSettings } from "@/lib/types/models";
 import { createClient } from "@/lib/supabase/client";
 import { useSubscription } from "@/lib/hooks/useSubscription";
+import { deleteMyAccount } from "@/lib/auth/deleteAccount";
 import { RecruteurParametresMobile } from "@/components/shared/RecruteurParametresMobile";
 import RecruiterSettingsNav, { type SectionKey } from "./_components/RecruiterSettingsNav";
 import CompteSection from "./_components/CompteSection";
@@ -818,9 +819,16 @@ function RecruiterSettingsDesktop() {
       <ConfirmModal
         open={deleteModal}
         onClose={() => setDeleteModal(false)}
-        onConfirm={() => {/* mock */}}
+        onConfirm={() => {
+          // Suppression DÉFINITIVE via la RPC delete_my_account (helper partagé :
+          // signOut + redirection dedans). Le "deactivate" ci-dessus reste un
+          // mock distinct (désactivation réversible — hors de ce chantier).
+          void deleteMyAccount({
+            onError: (m) => { window.alert("Échec de la suppression : " + m); },
+          });
+        }}
         title="Suppression définitive"
-        message="Cette action est irréversible. Toutes vos données seront effacées après un délai de grâce de 30 jours."
+        message="Votre compte et vos données personnelles seront supprimés immédiatement et définitivement. Cette action est irréversible."
         confirmLabel="Supprimer mon compte"
         variant="danger"
         requireTyped="SUPPRIMER"

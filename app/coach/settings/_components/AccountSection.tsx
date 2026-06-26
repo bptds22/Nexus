@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { deleteMyAccount } from "@/lib/auth/deleteAccount";
 
 /* ─────────────────────────────────────────────────────────────────
    AccountSection — Account info, password, 2FA, danger zone
@@ -26,7 +26,6 @@ function formatDateTime(iso: string): string {
 }
 
 export default function AccountSection() {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [createdAt, setCreatedAt] = useState("");
   const [lastLogin, setLastLogin] = useState("");
@@ -93,26 +92,14 @@ export default function AccountSection() {
     }
     setDeleting(true);
     setDeleteError(null);
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setDeleting(false); setDeleteError("Non authentifié"); return; }
-
-    const { error: insertErr } = await supabase
-      .from("deletion_requests")
-      .insert({
-        user_id: user.id,
-        reason: deleteReason || null,
-        status: "pending",
-      });
-
-    if (insertErr) {
-      setDeleting(false);
-      setDeleteError("Erreur lors de la demande de suppression.");
-      return;
-    }
-
-    await supabase.auth.signOut();
-    router.push("/");
+    // Suppression DÉFINITIVE via la RPC delete_my_account (helper partagé :
+    // signOut + redirection dedans). Remplace l'ancien INSERT direct dans
+    // deletion_requests (status 'pending' minuscule → violait le CHECK, et
+    // ne supprimait rien réellement).
+    await deleteMyAccount({
+      redirectTo: "/",
+      onError: (m) => { setDeleting(false); setDeleteError("Erreur lors de la suppression : " + m); },
+    });
   }
 
   if (loading) {
