@@ -11,6 +11,7 @@ import { PushRegistrar } from "@/components/push/PushRegistrar";
 import { StatusBarBootstrap } from "@/components/mobile/StatusBarBootstrap";
 import { SplashGate } from "@/components/mobile/auth/SplashGate";
 import { SocialLoginInit } from "@/components/auth/SocialLoginInit";
+import { AuthSync } from "@/components/auth/AuthSync";
 
 const ORGANIZATION_JSONLD = {
   "@context": "https://schema.org",
@@ -204,6 +205,10 @@ export default function RootLayout({
               {/* Status bar overlay (WebView sous l'island) — runtime,
                   native-only, no-op web. Fiabilise overlaysWebView. */}
               <StatusBarBootstrap />
+              {/* Listener auth racine (additif) : ré-invalide ["currentUser"]
+                  dès que la session redevient dispo (boot/resume) → recovery
+                  sans cold restart. Single-instance, dans QueryProvider. */}
+              <AuthSync />
               <PushRegistrar />
               <MobileToastProvider>
                 {/* Init unique du plugin social login (idempotent, native-only). */}
