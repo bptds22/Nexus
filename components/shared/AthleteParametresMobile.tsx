@@ -817,7 +817,7 @@ export function AthleteParametresMobile() {
         onClose={() => setDeleteSheetOpen(false)}
         title="Supprimer mon compte ?"
         message="Ton compte et tes données personnelles seront supprimés immédiatement et définitivement. Cette action est irréversible."
-        confirmLabel="Supprimer"
+        confirmLabel="Supprimer définitivement"
         onConfirm={handleDelete}
         variant="danger"
       />

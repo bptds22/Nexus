@@ -14,6 +14,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { useKeyboardHeight } from "@/lib/hooks/useKeyboardHeight";
 
 export function ConfirmSheet({
   open, onClose, title, message, confirmLabel, onConfirm, variant = "danger",
@@ -33,6 +34,12 @@ export function ConfirmSheet({
 }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
+  // Clavier (KeyboardResize.None : la WKWebView ne se redimensionne pas → la
+  // sheet bottom-0 serait recouverte). On remonte la carte au-dessus du clavier
+  // via paddingBottom, même idiome que le composer messages (MessageThreadShell).
+  // Hook AVANT tout return conditionnel (Rules of Hooks). kbdH=0 sur web/sans
+  // clavier → comportement inchangé.
+  const kbdH = useKeyboardHeight();
   if (!mounted || !open) return null;
 
   const actionColor = variant === "danger" ? "#E63946" : "#F59E0B";
@@ -49,7 +56,9 @@ export function ConfirmSheet({
       <div
         className="fixed bottom-0 left-0 right-0 z-[70] px-3 pb-3"
         style={{
-          paddingBottom: "calc(env(safe-area-inset-bottom) + 12px)",
+          paddingBottom: kbdH > 0
+            ? `${kbdH + 12}px`
+            : "calc(env(safe-area-inset-bottom) + 12px)",
           animation: "nx-modal-slideup 280ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards",
         }}
       >

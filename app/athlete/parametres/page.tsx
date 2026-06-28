@@ -573,11 +573,11 @@ function ParametresPageDesktop() {
         <div className="fixed inset-0 z-[90] flex items-center justify-center">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowDeleteModal(false)} />
           <div className="relative bg-[#1A1D24] border border-[#2D3748] rounded-xl p-6 max-w-sm w-full mx-4 shadow-2xl">
-            <h3 className="font-head text-[16px] font-black text-white uppercase tracking-tight">Supprimer ton compte?</h3>
+            <h3 className="font-head text-[16px] font-black text-white uppercase tracking-tight">Supprimer mon compte ?</h3>
             <p className="text-[13px] text-[#9CA3AF] mt-2 leading-relaxed">Ton compte et tes données personnelles seront supprimés immédiatement et définitivement. Cette action est irréversible.</p>
             <div className="flex items-center justify-end gap-3 mt-5">
               <button type="button" onClick={() => setShowDeleteModal(false)} className="px-4 py-2 text-[13px] font-bold text-[#9CA3AF] hover:text-white transition-colors">Annuler</button>
-              <button type="button" disabled={actionPending} onClick={deleteAccount} className="px-5 py-2 bg-[#E63946] hover:bg-[#D42B22] text-white text-[13px] font-bold rounded-lg transition-colors disabled:opacity-50">{actionPending ? "..." : "Confirmer la suppression"}</button>
+              <button type="button" disabled={actionPending} onClick={deleteAccount} className="px-5 py-2 bg-[#E63946] hover:bg-[#D42B22] text-white text-[13px] font-bold rounded-lg transition-colors disabled:opacity-50">{actionPending ? "..." : "Supprimer définitivement"}</button>
             </div>
           </div>
         </div>

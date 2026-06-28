@@ -648,8 +648,8 @@ export function RecruteurParametresMobile() {
         open={deleteSheetOpen}
         onClose={() => setDeleteSheetOpen(false)}
         title="Supprimer mon compte ?"
-        message="Ton compte et tes données personnelles seront supprimés immédiatement et définitivement. Cette action est irréversible."
-        confirmLabel="Supprimer"
+        message="Votre compte et vos données personnelles seront supprimés immédiatement et définitivement. Cette action est irréversible."
+        confirmLabel="Supprimer définitivement"
         onConfirm={handleDelete}
         variant="danger"
       />

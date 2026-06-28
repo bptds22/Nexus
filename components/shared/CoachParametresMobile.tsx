@@ -123,8 +123,6 @@ export function CoachParametresMobile() {
   const [passwordSheetOpen, setPasswordSheetOpen] = useState(false);
   const [deleteSheetOpen, setDeleteSheetOpen] = useState(false);
   const [logoutSheetOpen, setLogoutSheetOpen] = useState(false);
-  const [deleteConfirmText, setDeleteConfirmText] = useState("");
-  const [deleteReason, setDeleteReason] = useState("");
 
   /* ── Portail Stripe mobile : fetch /api/stripe/portal (Bearer) +
         in-app browser. Erreur visible (toast). ── */
@@ -296,7 +294,6 @@ export function CoachParametresMobile() {
   }
 
   async function handleDelete() {
-    if (deleteConfirmText !== "SUPPRIMER") return;
     triggerHaptic("Heavy");
     setDeleteSheetOpen(false);
     // Suppression DÉFINITIVE via la RPC delete_my_account (helper partagé :
@@ -580,8 +577,6 @@ export function CoachParametresMobile() {
           isFirst
           onTap={() => {
             triggerHaptic("Light");
-            setDeleteConfirmText("");
-            setDeleteReason("");
             setDeleteSheetOpen(true);
           }}
         />
@@ -601,31 +596,10 @@ export function CoachParametresMobile() {
         open={deleteSheetOpen}
         onClose={() => setDeleteSheetOpen(false)}
         title="Supprimer mon compte ?"
-        message="Ton compte et tes données personnelles seront supprimés immédiatement et définitivement. Cette action est irréversible. Tape SUPPRIMER pour confirmer."
-        confirmLabel={deleteConfirmText === "SUPPRIMER" ? "Supprimer définitivement" : "Tape SUPPRIMER"}
+        message="Ton compte et tes données personnelles seront supprimés immédiatement et définitivement. Cette action est irréversible."
+        confirmLabel="Supprimer définitivement"
         onConfirm={handleDelete}
         variant="danger"
-        confirmDisabled={deleteConfirmText !== "SUPPRIMER"}
-        extra={
-          <div className="space-y-3">
-            <input
-              type="text"
-              autoCapitalize="characters"
-              autoCorrect="off"
-              value={deleteConfirmText}
-              onChange={(e) => setDeleteConfirmText(e.target.value.toUpperCase())}
-              placeholder="SUPPRIMER"
-              className="w-full bg-[#13151a] border border-[#2a2d36] rounded-2xl px-4 py-3 text-[16px] text-white placeholder:text-[#4a4d56] focus:outline-none focus:border-[#E63946]/50 tracking-widest text-center font-bold"
-            />
-            <textarea
-              value={deleteReason}
-              onChange={(e) => setDeleteReason(e.target.value)}
-              placeholder="Optionnel : Pourquoi pars-tu ?"
-              rows={2}
-              className="w-full bg-[#13151a] border border-[#2a2d36] rounded-2xl px-4 py-2.5 text-[14px] text-white placeholder:text-[#4a4d56] focus:outline-none focus:border-[#E63946]/50 resize-none"
-            />
-          </div>
-        }
       />
 
       <ConfirmSheet

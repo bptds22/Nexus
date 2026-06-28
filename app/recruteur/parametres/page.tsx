@@ -827,11 +827,10 @@ function RecruiterSettingsDesktop() {
             onError: (m) => { window.alert("Échec de la suppression : " + m); },
           });
         }}
-        title="Suppression définitive"
+        title="Supprimer mon compte ?"
         message="Votre compte et vos données personnelles seront supprimés immédiatement et définitivement. Cette action est irréversible."
-        confirmLabel="Supprimer mon compte"
+        confirmLabel="Supprimer définitivement"
         variant="danger"
-        requireTyped="SUPPRIMER"
       />
 
       {/* ── Toasts ─────────────────────────────────────────────── */}

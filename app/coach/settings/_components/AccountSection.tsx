@@ -40,8 +40,6 @@ export default function AccountSection() {
   const [twoFactor, setTwoFactor] = useState(false);
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [deleteInput, setDeleteInput] = useState("");
-  const [deleteReason, setDeleteReason] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
@@ -86,10 +84,6 @@ export default function AccountSection() {
   }
 
   async function handleDeleteAccount() {
-    if (deleteInput !== "SUPPRIMER") {
-      setDeleteError("Tape SUPPRIMER pour confirmer.");
-      return;
-    }
     setDeleting(true);
     setDeleteError(null);
     // Suppression DÉFINITIVE via la RPC delete_my_account (helper partagé :
@@ -242,30 +236,10 @@ export default function AccountSection() {
 
         {showDeleteConfirm && (
           <div className="bg-red-950/30 border border-red-900/50 rounded-lg p-4 space-y-3">
+            <p className="text-[14px] font-bold text-white">Supprimer mon compte ?</p>
             <p className="text-[14px] text-[#e0e0e0]">
-              Es-tu sûr de vouloir supprimer ton compte? Tape <span className="font-black text-[#E63946]">SUPPRIMER</span> pour confirmer.
+              Ton compte et tes données personnelles seront supprimés immédiatement et définitivement. Cette action est irréversible.
             </p>
-            <div>
-              <p className={label}>Raison (optionnel)</p>
-              <input
-                type="text"
-                title="Raison de suppression"
-                placeholder="Pourquoi souhaites-tu supprimer ton compte?"
-                value={deleteReason}
-                onChange={(e) => setDeleteReason(e.target.value)}
-                className={input}
-              />
-            </div>
-            <div>
-              <input
-                type="text"
-                title="Confirmation de suppression"
-                placeholder="Tape SUPPRIMER"
-                value={deleteInput}
-                onChange={(e) => { setDeleteInput(e.target.value); setDeleteError(null); }}
-                className={input}
-              />
-            </div>
             {deleteError && (
               <p className="text-[13px] font-semibold text-[#EF4444]">{deleteError}</p>
             )}
@@ -276,11 +250,11 @@ export default function AccountSection() {
                 disabled={deleting}
                 className="bg-[#E63946] hover:bg-[#D42B22] text-white text-[12px] font-bold px-5 py-2 rounded-lg transition-colors disabled:opacity-50"
               >
-                {deleting ? "Suppression..." : "Oui, supprimer"}
+                {deleting ? "Suppression..." : "Supprimer définitivement"}
               </button>
               <button
                 type="button"
-                onClick={() => { setShowDeleteConfirm(false); setDeleteInput(""); setDeleteError(null); }}
+                onClick={() => { setShowDeleteConfirm(false); setDeleteError(null); }}
                 className="text-[12px] font-bold text-[#9CA3AF] hover:text-white transition-colors"
               >
                 Annuler

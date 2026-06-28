@@ -31,8 +31,34 @@ export async function deleteMyAccount(opts?: {
   onError?: (message: string) => void;
 }): Promise<boolean> {
   const supabase = createClient();
+
+  // ─── INSTRUMENTATION TEMPORAIRE (à RETIRER après diagnostic) ───────────
+  // But : voir sur device si la session est déjà morte AVANT l'appel RPC
+  // (→ auth.uid() NULL côté serveur) ou si c'est la RPC qui rejette.
+  try {
+    const { data: sess } = await supabase.auth.getSession();
+    const { data: usr, error: usrErr } = await supabase.auth.getUser();
+    console.error("[delete][diag] AVANT rpc", {
+      hasSession: !!sess?.session,
+      accessTokenPresent: !!sess?.session?.access_token,
+      sessionUserId: sess?.session?.user?.id ?? null,
+      getUserId: usr?.user?.id ?? null,
+      getUserError: usrErr?.message ?? null,
+    });
+  } catch (e) {
+    console.error("[delete][diag] getSession/getUser a jeté", e);
+  }
+  // ──────────────────────────────────────────────────────────────────────
+
   const { error } = await supabase.rpc("delete_my_account");
   if (error) {
+    // INSTRUMENTATION TEMPORAIRE — erreur RPC complète (code/message/details/hint).
+    console.error("[delete][diag] rpc delete_my_account ÉCHEC", {
+      message: error.message,
+      code: (error as { code?: string }).code,
+      details: (error as { details?: string }).details,
+      hint: (error as { hint?: string }).hint,
+    });
     opts?.onError?.(error.message);
     return false;
   }
