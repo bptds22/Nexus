@@ -82,7 +82,7 @@ import {
 } from "@/lib/config/badges";
 import { POSITIONS } from "@/lib/sports-data";
 import {
-  autocompleteOrphanAthletesByEmail,
+  autocompleteCivilUnclaimedByEmail,
   type AthleteEmailAutocompleteResult,
   type AthleteEmailSuggestion,
 } from "@/lib/coach/athleteEmailAutocomplete";
@@ -467,7 +467,7 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
     emailAutocompleteTimerRef.current = setTimeout(async () => {
       try {
         const supabase = createClient();
-        const result = await autocompleteOrphanAthletesByEmail(supabase, newEmail);
+        const result = await autocompleteCivilUnclaimedByEmail(supabase, newEmail);
         setEmailAutocomplete(result);
         setShowSuggestions(result.status === "ok" && result.suggestions.length > 0);
       } catch (err) {

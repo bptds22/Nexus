@@ -16,7 +16,7 @@ import { createClient } from "@/lib/supabase/client";
 import PartnerVisibilityConsentCard from "@/components/shared/PartnerVisibilityConsentCard";
 import ReadOnlyIfPending from "@/components/auth/ReadOnlyIfPending";
 import {
-  autocompleteOrphanAthletesByEmail,
+  autocompleteCivilUnclaimedByEmail,
   type AthleteEmailAutocompleteResult,
   type AthleteEmailSuggestion,
 } from "@/lib/coach/athleteEmailAutocomplete";
@@ -323,7 +323,7 @@ export default function CreateAthletePage() {
     emailAutocompleteTimerRef.current = setTimeout(async () => {
       try {
         const supabase = createClient();
-        const result = await autocompleteOrphanAthletesByEmail(supabase, newEmail);
+        const result = await autocompleteCivilUnclaimedByEmail(supabase, newEmail);
         setEmailAutocomplete(result);
         setShowSuggestions(result.status === "ok" && result.suggestions.length > 0);
       } catch (err) {
