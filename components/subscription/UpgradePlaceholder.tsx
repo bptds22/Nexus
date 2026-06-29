@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
+
 /* ═══════════════════════════════════════════════════════════════
    UpgradePlaceholder — replacement UI shown when a gate is locked.
 
@@ -60,12 +62,14 @@ export default function UpgradePlaceholder({ tier, featureName }: UpgradePlaceho
       <p className="text-[13px] text-[#9CA3AF] leading-relaxed max-w-sm mb-5">
         {description}
       </p>
-      <Link
-        href="/tarifs"
-        className="inline-flex items-center justify-center h-11 px-6 rounded-lg bg-[#E63946] hover:bg-[#D42B22] text-white font-head font-bold text-[12px] uppercase tracking-wider transition-colors"
-      >
-        Voir les forfaits →
-      </Link>
+      {!IS_CAPACITOR && (
+        <Link
+          href="/tarifs"
+          className="inline-flex items-center justify-center h-11 px-6 rounded-lg bg-[#E63946] hover:bg-[#D42B22] text-white font-head font-bold text-[12px] uppercase tracking-wider transition-colors"
+        >
+          Voir les forfaits →
+        </Link>
+      )}
     </div>
   );
 }

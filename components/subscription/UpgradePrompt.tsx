@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSubscription } from "@/lib/hooks/useSubscription";
 
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
+
 /* ═══════════════════════════════════════════════════════════════
    UpgradePrompt — Subtle, dismissible upgrade card.
    Shows only for users whose effective tier is "free"
@@ -41,6 +43,9 @@ export default function UpgradePrompt({
   if (dismissed) return null;
   if (isSchoolAdmin) return null;
   if (tier !== "free") return null;
+  // iOS (3.1.1) : carte d'upsell entièrement masquée — c'est un nudge d'achat,
+  // pas une description de fonctionnalité.
+  if (IS_CAPACITOR) return null;
 
   const dismiss = () => {
     setDismissed(true);
