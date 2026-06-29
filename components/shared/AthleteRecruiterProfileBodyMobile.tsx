@@ -1292,7 +1292,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
 
   const favAtCap = maxFavorites !== -1 && myFavCount >= maxFavorites;
   const favButtonDisabled = favAtCap && !isFavorited;
-  const favDisabledTitle = `Limite de ${maxFavorites} favoris atteinte. Passez à Pro pour plus.`;
+  const favDisabledTitle = `Limite de ${maxFavorites} favoris atteinte — favoris illimités réservés aux membres Pro.`;
 
   const toggleFav = async () => {
     if (favButtonDisabled) return;

@@ -766,7 +766,7 @@ function PipelineDetailSheet({
 
   const handleStageChange = async (newStage: string) => {
     if (isFreeDemoMode) {
-      toast.warning({ message: "Passe à Pro pour changer le stage" });
+      toast.warning({ message: "Changer le stage est réservé aux membres Pro" });
       return;
     }
     if (!card) return;
@@ -782,7 +782,7 @@ function PipelineDetailSheet({
 
   const handleTogglePriority = async () => {
     if (isFreeDemoMode) {
-      toast.warning({ message: "Passe à Pro pour marquer prioritaire" });
+      toast.warning({ message: "Marquer prioritaire est réservé aux membres Pro" });
       return;
     }
     if (!card) return;
@@ -800,7 +800,7 @@ function PipelineDetailSheet({
   const handleAddNote = async () => {
     if (!noteText.trim() || !card) return;
     if (isFreeDemoMode) {
-      toast.warning({ message: "Passe à Pro pour ajouter des notes" });
+      toast.warning({ message: "Les notes sont réservées aux membres Pro" });
       setNoteText("");
       return;
     }
@@ -819,7 +819,7 @@ function PipelineDetailSheet({
   const handleRemove = async () => {
     if (!card) return;
     if (isFreeDemoMode) {
-      toast.warning({ message: "Passe à Pro pour gérer ton processus" });
+      toast.warning({ message: "La gestion du processus est réservée aux membres Pro" });
       return;
     }
     if (!confirmRemove) { setConfirmRemove(true); return; }
@@ -1171,7 +1171,7 @@ function EmptyState({ isFreeDemo }: { isFreeDemo: boolean }) {
       image="/empty/nexus-empty-effectif.png"
       title={isFreeDemo ? "Processus réservé Pro" : "Processus vide"}
       description={isFreeDemo
-        ? "Passe à Pro pour gérer ton processus de recrutement et suivre tes athlètes."
+        ? "La gestion du processus et le suivi des athlètes sont réservés aux membres Pro."
         : "Ajoute un athlète en favori depuis Recherche pour commencer à le suivre dans ton processus."}
       /* optical offset for left-weighted PNG — remove if asset re-exported balanced */
       imageOffsetX={14}
@@ -1356,7 +1356,7 @@ export function RecruteurPipelineMobile() {
   // Fix 6+7+8 — Swipe Tinder commit avec optimistic update + Toast Undo 5s
   const handleSwipeCommit = (card: PipelineKanbanCard, direction: "left" | "right") => {
     if (isFreeDemoMode) {
-      toast.warning({ message: "Passe à Pro pour gérer ton processus" });
+      toast.warning({ message: "La gestion du processus est réservée aux membres Pro" });
       return;
     }
     const fromStage = STAGES[activeStageIndex];
@@ -1428,7 +1428,7 @@ export function RecruteurPipelineMobile() {
             <circle cx="12" cy="12" r="10" /><path d="M12 8v4M12 16h.01" />
           </svg>
           <p className="text-[12px] text-[#9CA3AF] flex-1">
-            Mode démo — <span className="text-[#F59E0B] font-bold">Passe à Pro</span> pour sauvegarder.
+            Mode démo — sauvegarde réservée aux membres <span className="text-[#F59E0B] font-bold">Pro</span>.
           </p>
         </div>
       )}

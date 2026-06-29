@@ -43,6 +43,8 @@ import { TeamAddAthleteSheet } from "@/components/shared/teams/TeamAddAthleteShe
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import { relativeTimeFr } from "@/lib/utils/relativeTime";
 
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
+
 const ROLE_LABEL: Record<string, string> = {
   head_coach: "Chef",
   assistant: "Assistant",
@@ -404,8 +406,16 @@ export default function CoachEquipeDetailMobile() {
                 label="Modifier les informations"
                 sublabel="Disponible sur l'écran de bureau"
                 isFirst={false}
-                rightChevron="external"
-                onTap={() => { triggerHaptic("Light"); openExternal(`https://nexussports.ca/coach/equipes/${teamId}`); }}
+                rightChevron={IS_CAPACITOR ? "none" : "external"}
+                onTap={() => {
+                  triggerHaptic("Light");
+                  if (IS_CAPACITOR) {
+                    // iOS (3.1.1) : pas d'ouverture du web (tunnel d'achat joignable).
+                    toast.info({ message: "Disponible sur la version web", detail: "La modification se fait sur nexussports.ca." });
+                  } else {
+                    openExternal(`https://nexussports.ca/coach/equipes/${teamId}`);
+                  }
+                }}
               />
             )}
           </Group>

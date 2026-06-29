@@ -684,7 +684,7 @@ export function AthleteParametresMobile() {
             <span className="text-[14px] font-semibold text-white uppercase tracking-wider">{tierLabel}</span>
           </div>
           {displayTier === "free" && (
-            <p className="text-[12px] text-[#6b7280] mt-2">Passe à Pro pour voir qui consulte ton profil.</p>
+            <p className="text-[12px] text-[#6b7280] mt-2">Voir qui consulte ton profil — réservé aux membres Pro.</p>
           )}
           {/* Payant + vrai abo Stripe → résumé + portail (in-app browser). */}
           {tier !== "free" && isStripeManaged && (

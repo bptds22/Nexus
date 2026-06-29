@@ -288,14 +288,23 @@ export default function MorePanel({
       const hasProOrAdmin = tier !== "free" || isSchoolAdmin;
       const tapProSection = (webPath: string) => () => {
         if (hasProOrAdmin) {
-          openExternal(`${PUBLIC_BASE}${webPath}`);
+          if (IS_CAPACITOR) {
+            // iOS (3.1.1) : pas d'ouverture du web (le tunnel d'achat Stripe y est joignable).
+            toast.info({ message: "Disponible sur la version web", detail: "Cette section se gère sur nexussports.ca." });
+          } else {
+            openExternal(`${PUBLIC_BASE}${webPath}`);
+          }
         } else {
           router.push("/coach/settings");
         }
       };
       const tapAdminSection = (webPath: string) => () => {
         if (isSchoolAdmin) {
-          openExternal(`${PUBLIC_BASE}${webPath}`);
+          if (IS_CAPACITOR) {
+            toast.info({ message: "Disponible sur la version web", detail: "Cette section se gère sur nexussports.ca." });
+          } else {
+            openExternal(`${PUBLIC_BASE}${webPath}`);
+          }
         } else {
           // Civil-aware copy : the section + the admin role label
           // switch when the coach is on a ligue civile (matches
@@ -451,6 +460,11 @@ export default function MorePanel({
               onLockedClick(item.requiredTier === "all_star" ? "rec_allstar" : "rec_pro", item.label);
               return;
             }
+            if (item.external && IS_CAPACITOR) {
+              // iOS (3.1.1) : ne pas ouvrir le web (tunnel d'achat joignable).
+              toast.info({ message: "Disponible sur la version web", detail: "Cette section se gère sur nexussports.ca." });
+              return;
+            }
             onClose();
             if (item.external) {
               await openExternal(item.href);
@@ -465,7 +479,7 @@ export default function MorePanel({
           {labelArea}
           {item.rightAccessory}
           {locked && <LockIcon />}
-          {!locked && !item.rightAccessory && (item.external || item.opensWeb) && (
+          {!locked && !item.rightAccessory && (item.external || item.opensWeb) && !IS_CAPACITOR && (
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" aria-label="Ouvre dans le navigateur">
               <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
               <polyline points="15 3 21 3 21 9" />

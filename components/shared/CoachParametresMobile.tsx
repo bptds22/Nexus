@@ -49,6 +49,7 @@ import {
 } from "@/components/shared/settings";
 import { deleteMyAccount } from "@/lib/auth/deleteAccount";
 import { startMobilePortal, fmtSubDate, subStatusLabel } from "@/components/shared/settings/utils";
+import { openLegalDocument } from "@/lib/legal";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -362,7 +363,7 @@ export function CoachParametresMobile() {
             <span className="text-[14px] font-semibold text-white uppercase tracking-wider">{tierLabel}</span>
           </div>
           {displayTier === "free" && (
-            <p className="text-[12px] text-[#6b7280] mt-2">Passe à Pro pour {ecoleLabel.toLowerCase()}, {ecoleStatsLabel.toLowerCase()} et plus.</p>
+            <p className="text-[12px] text-[#6b7280] mt-2">Réservé aux membres Pro : {ecoleLabel.toLowerCase()}, {ecoleStatsLabel.toLowerCase()} et plus.</p>
           )}
           {/* Payant + vrai abo Stripe → résumé (statut/cycle/renouvellement)
               + portail (in-app browser). */}
@@ -445,8 +446,14 @@ export function CoachParametresMobile() {
                 label={isCivilCoach ? "Modifier la ligue" : "Modifier l'école"}
                 sublabel="Disponible sur l'écran de bureau"
                 isFirst
-                rightChevron="external"
-                onTap={() => openExternal("https://nexussports.ca/coach/settings")}
+                rightChevron={IS_CAPACITOR ? "none" : "external"}
+                onTap={() => {
+                  if (IS_CAPACITOR) {
+                    toast.info({ message: "Disponible sur la version web", detail: "Cette section se gère sur nexussports.ca." });
+                    return;
+                  }
+                  openExternal("https://nexussports.ca/coach/settings");
+                }}
               />
             </Group>
           )}
@@ -466,8 +473,14 @@ export function CoachParametresMobile() {
               label={isCivilCoach ? "Administration de la ligue" : "Administration de l'école"}
               sublabel="Gestion des directeurs (écran de bureau)"
               isFirst
-              rightChevron="external"
-              onTap={() => openExternal("https://nexussports.ca/coach/settings")}
+              rightChevron={IS_CAPACITOR ? "none" : "external"}
+              onTap={() => {
+                if (IS_CAPACITOR) {
+                  toast.info({ message: "Disponible sur la version web", detail: "Cette section se gère sur nexussports.ca." });
+                  return;
+                }
+                openExternal("https://nexussports.ca/coach/settings");
+              }}
             />
           </Group>
         </>
@@ -554,13 +567,22 @@ export function CoachParametresMobile() {
           label="Politique de confidentialité"
           isFirst
           rightChevron="external"
-          onTap={() => openExternal("https://nexussports.ca/confidentialite")}
+          onTap={() => {
+            if (IS_CAPACITOR) { openLegalDocument("confidentialite"); return; }
+            openExternal("https://nexussports.ca/confidentialite");
+          }}
         />
         <NavRow
           label="Exporter mes données (Loi 25)"
           isFirst={false}
-          rightChevron="external"
-          onTap={() => openExternal("https://nexussports.ca/coach/settings?section=confidentialite")}
+          rightChevron={IS_CAPACITOR ? "none" : "external"}
+          onTap={() => {
+            if (IS_CAPACITOR) {
+              toast.info({ message: "Disponible sur la version web", detail: "L'export de tes données se fait sur nexussports.ca." });
+              return;
+            }
+            openExternal("https://nexussports.ca/coach/settings?section=confidentialite");
+          }}
         />
       </Group>
       <div className="px-6 pt-3 text-[11px] text-[#6b7280] leading-5">

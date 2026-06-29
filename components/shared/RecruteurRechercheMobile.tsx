@@ -1187,7 +1187,7 @@ export function RecruteurRechercheMobile() {
     const isFav = favorites.has(id);
     const atCap = maxFavorites !== -1 && favorites.size >= maxFavorites;
     if (!isFav && atCap) {
-      toast.warning({ message: "Limite de favoris atteinte", detail: "Passe à Pro pour favoriser plus d'athlètes" });
+      toast.warning({ message: "Limite de favoris atteinte", detail: "Favoris supplémentaires réservés aux membres Pro" });
       return;
     }
     const { data: existing } = await supabase

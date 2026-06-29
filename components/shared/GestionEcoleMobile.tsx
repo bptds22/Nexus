@@ -45,6 +45,8 @@ import { Skeleton } from "@/components/ui/Skeleton";
 
 const WEB_BASE = "https://nexussports.ca";
 
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
+
 interface EntryDef {
   key: "mon_ecole" | "coachs" | "stats" | "analytique" | "placements" | "admin";
   label: string;
@@ -126,6 +128,10 @@ export function GestionEcoleMobile() {
         });
         return;
       }
+      if (IS_CAPACITOR) {
+        toast.info({ message: "Disponible sur la version web", detail: "Cette section se gère sur nexussports.ca." });
+        return;
+      }
       openExternal(`${WEB_BASE}${e.webPath}`);
       return;
     }
@@ -136,6 +142,10 @@ export function GestionEcoleMobile() {
       // for the upsell. Sending them to the web URL would just give
       // them the SchoolGate UpgradePlaceholder again.
       router.push("/coach/settings");
+      return;
+    }
+    if (IS_CAPACITOR) {
+      toast.info({ message: "Disponible sur la version web", detail: "Cette section se gère sur nexussports.ca." });
       return;
     }
     openExternal(`${WEB_BASE}${e.webPath}`);
@@ -194,7 +204,7 @@ export function GestionEcoleMobile() {
         <div className="rounded-2xl bg-[#1A1D24] border border-white/[0.06] p-4">
           <p className="text-[13px] text-[#9CA3AF] leading-relaxed">
             {hasProOrAdmin
-              ? "Toutes tes fonctionnalités de gestion d'école. Tape une section pour l'ouvrir sur le bureau."
+              ? "Tes fonctionnalités de gestion d'école se gèrent sur la version web de Nexus."
               : "Découvre la gestion d'école. Les sections marquées Pro débloquent l'analyse, les stats et le placement."}
           </p>
         </div>
@@ -211,7 +221,7 @@ export function GestionEcoleMobile() {
               isFirst={idx === 0}
               label={e.label}
               sublabel={e.sublabel}
-              rightChevron={hasProOrAdmin ? "external" : "chevron"}
+              rightChevron={hasProOrAdmin ? "none" : "chevron"}
               rightAccessory={showPill ? <ProPill /> : undefined}
               onTap={() => handleTap(e)}
             />
@@ -230,7 +240,7 @@ export function GestionEcoleMobile() {
               isFirst
               label={e.label}
               sublabel={e.sublabel}
-              rightChevron={isSchoolAdmin ? "external" : "chevron"}
+              rightChevron={isSchoolAdmin ? "none" : "chevron"}
               rightAccessory={showPill ? <AdminPill /> : undefined}
               onTap={() => handleTap(e)}
             />

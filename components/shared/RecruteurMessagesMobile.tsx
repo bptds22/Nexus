@@ -133,7 +133,7 @@ export function RecruteurMessagesMobile() {
   // Handlers
   const handleTap = (thread: ThreadData) => {
     if (isFree) {
-      toast.warning({ message: "Messagerie réservée Pro", detail: "Passe à Pro pour répondre aux coachs" });
+      toast.warning({ message: "Messagerie réservée Pro", detail: "Répondre aux coachs est réservé aux membres Pro" });
       return;
     }
     try { sessionStorage.setItem("lastRecruiterTab", "messages"); } catch { /* no-op */ }

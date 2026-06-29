@@ -46,6 +46,7 @@ import { deleteMyAccount } from "@/lib/auth/deleteAccount";
 // startMobileCheckout lives in the same shared settings module but isn't
 // re-exported by the barrel (yet), so import it from the file directly.
 import { startMobileCheckout, startMobilePortal, fmtSubDate, subStatusLabel } from "@/components/shared/settings/utils";
+import { openLegalDocument } from "@/lib/legal";
 import { hapticTap } from "@/lib/haptics";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
@@ -548,13 +549,22 @@ export function RecruteurParametresMobile() {
           label="Politique de confidentialité"
           isFirst
           rightChevron="external"
-          onTap={() => openExternal("https://nexussports.ca/confidentialite")}
+          onTap={() => {
+            if (IS_CAPACITOR) { openLegalDocument("confidentialite"); return; }
+            openExternal("https://nexussports.ca/confidentialite");
+          }}
         />
         <NavRow
           label="Exporter mes données (Loi 25)"
           isFirst={false}
-          rightChevron="external"
-          onTap={() => openExternal("https://nexussports.ca/recruteur/parametres?section=confidentialite")}
+          rightChevron={IS_CAPACITOR ? "none" : "external"}
+          onTap={() => {
+            if (IS_CAPACITOR) {
+              toast.info({ message: "Disponible sur la version web", detail: "L'export de tes données se fait sur nexussports.ca." });
+              return;
+            }
+            openExternal("https://nexussports.ca/recruteur/parametres?section=confidentialite");
+          }}
         />
       </Group>
       {/* Dates consentement read-only */}
