@@ -36,6 +36,8 @@ import {
 } from "@/components/shared/messaging/MessagesListShell";
 import { triggerHaptic, relativeTime } from "@/components/shared/messaging/utils";
 
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
+
 /* ── useArchiveConversation (mutation TanStack inline + optimistic) ── */
 
 function useArchiveConversation() {
@@ -248,15 +250,19 @@ export function RecruteurMessagesMobile() {
         coach{totalThreads !== 1 ? "s" : ""} {totalThreads !== 1 ? "t'attendent" : "t'attend"}
       </p>
       <p className="text-[14px] text-white/85 mt-3 leading-snug">
-        Passe à Pro pour lire et répondre.
+        {IS_CAPACITOR
+          ? "Lecture et réponse réservées aux membres Pro."
+          : "Passe à Pro pour lire et répondre."}
       </p>
-      <button
-        type="button"
-        onClick={() => { triggerHaptic("Light"); router.push("/tarifs"); }}
-        className="mt-4 w-full py-2.5 rounded-2xl bg-[#E63946] text-white font-bold text-[14px] active:bg-[#D42B22] transition-colors"
-      >
-        Voir les forfaits
-      </button>
+      {!IS_CAPACITOR && (
+        <button
+          type="button"
+          onClick={() => { triggerHaptic("Light"); router.push("/tarifs"); }}
+          className="mt-4 w-full py-2.5 rounded-2xl bg-[#E63946] text-white font-bold text-[14px] active:bg-[#D42B22] transition-colors"
+        >
+          Voir les forfaits
+        </button>
+      )}
     </div>
   );
 

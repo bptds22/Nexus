@@ -375,7 +375,7 @@ function FreeLock() {
         <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
         <path d="M7 11V7a5 5 0 0110 0v4" />
       </svg>
-      <p className="text-[14px] text-[#9CA3AF] font-semibold mb-1">Passe à Pro pour voir</p>
+      <p className="text-[14px] text-[#9CA3AF] font-semibold mb-1">Réservé aux recruteurs Pro</p>
       <p className="text-[13px] text-[#6B7280] max-w-xs">Cette section est réservée aux recruteurs Pro.</p>
     </div>
   );
@@ -1819,16 +1819,26 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
         >
           <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#6b7280]">Mon statut</span>
           {tier === "free" ? (
-            <button
-              type="button"
-              onClick={() => setShowUpgradeModal(true)}
-              className="inline-flex items-center gap-2 bg-[#E63946]/10 border border-[#E63946]/30 rounded-full px-4 py-2 text-[13px] font-bold uppercase tracking-wider text-[#E63946] active:bg-[#E63946]/20"
-            >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0110 0v4" />
-              </svg>
-              Passer à Pro pour le processus
-            </button>
+            IS_CAPACITOR ? (
+              // iOS (3.1.1) : pas de CTA d'achat. Pill descriptif non-cliquable.
+              <span className="inline-flex items-center gap-2 bg-white/[0.04] border border-white/[0.1] rounded-full px-4 py-2 text-[13px] font-bold uppercase tracking-wider text-[#9CA3AF]">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0110 0v4" />
+                </svg>
+                Suivi de processus — Pro
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowUpgradeModal(true)}
+                className="inline-flex items-center gap-2 bg-[#E63946]/10 border border-[#E63946]/30 rounded-full px-4 py-2 text-[13px] font-bold uppercase tracking-wider text-[#E63946] active:bg-[#E63946]/20"
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0110 0v4" />
+                </svg>
+                Passer à Pro pour le processus
+              </button>
+            )
           ) : myPipelineStage ? (() => {
             const upper = myPipelineStage.toUpperCase();
             const dotCfg = PIPELINE_DOT_MAP[upper]; // undefined si statut non répertorié → pas de dot

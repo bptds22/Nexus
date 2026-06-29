@@ -48,6 +48,8 @@ import { deleteMyAccount } from "@/lib/auth/deleteAccount";
 import { startMobileCheckout, startMobilePortal, fmtSubDate, subStatusLabel } from "@/components/shared/settings/utils";
 import { hapticTap } from "@/lib/haptics";
 
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
+
 /* ── Shape des prefs notifications côté DB (DIAG 7.38) ────────── */
 
 const NOTIF_ROWS: { key: string; appKey: string; emailKey: string; label: string; sublabel: string }[] = [
@@ -276,6 +278,7 @@ export function RecruteurParametresMobile() {
   // effect (same as checkout). Errors surface via toast — never swallowed.
   async function handlePortal() {
     if (portalBusy) return;
+    if (IS_CAPACITOR) return; // iOS (3.1.1) : pas de portail de paiement in-app.
     triggerHaptic("Light");
     setPortalBusy(true);
     try {
@@ -296,6 +299,7 @@ export function RecruteurParametresMobile() {
   // tier refreshes on return via the browserFinished/appStateChange effect.
   async function handleUpgrade(targetTier: "pro" | "all_star", cycle: "monthly" | "annual") {
     if (upgradingTier) return;
+    if (IS_CAPACITOR) return; // iOS (3.1.1) : aucun checkout in-app, défense en profondeur.
     hapticTap(); // CTA checkout primaire — feedback tactile au tap
 
     // Already on a paid plan → NEVER stack a second checkout (double-bill).
@@ -426,14 +430,22 @@ export function RecruteurParametresMobile() {
                   </div>
                 )}
               </div>
-              <button
-                type="button"
-                onClick={handlePortal}
-                disabled={portalBusy}
-                className="w-full h-11 rounded-xl border border-white/15 text-white font-bold text-[12px] uppercase tracking-wider active:bg-white/5 disabled:opacity-60"
-              >
-                {portalBusy ? "Ouverture…" : "Gérer mon abonnement"}
-              </button>
+              {IS_CAPACITOR ? (
+                // iOS (3.1.1) : pas de gestion de paiement in-app.
+                // Texte descriptif PUR — aucun lien ni bouton cliquable.
+                <p className="text-[12px] text-[#9CA3AF] leading-snug">
+                  Pour gérer ou modifier ton abonnement, rends-toi sur la version web de Nexus.
+                </p>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handlePortal}
+                  disabled={portalBusy}
+                  className="w-full h-11 rounded-xl border border-white/15 text-white font-bold text-[12px] uppercase tracking-wider active:bg-white/5 disabled:opacity-60"
+                >
+                  {portalBusy ? "Ouverture…" : "Gérer mon abonnement"}
+                </button>
+              )}
             </div>
           )}
           {/* Payant SANS abo Stripe (accès offert) → pas de portail. */}
