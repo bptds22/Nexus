@@ -45,6 +45,8 @@ import {
 import { startMobilePortal, fmtSubDate, subStatusLabel } from "@/components/shared/settings/utils";
 import { deleteMyAccount } from "@/lib/auth/deleteAccount";
 
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
+
 /* ── Athlete notification rows — additive keys on users.notification_preferences JSONB.
    Same shape as coach + recruiter NOTIF_ROWS : app_X drives in-app, email_X is mirrored
    through the master "Recevoir aussi par courriel" toggle. The 7 athlete keys live in
@@ -111,6 +113,7 @@ export function AthleteParametresMobile() {
         Bearer + Browser.open). Erreur visible, jamais avalée. ── */
   async function handlePortal() {
     if (portalBusy) return;
+    if (IS_CAPACITOR) return; // iOS (3.1.1) : pas de portail de paiement in-app.
     triggerHaptic("Light");
     setPortalBusy(true);
     try {
@@ -704,14 +707,22 @@ export function AthleteParametresMobile() {
                   </div>
                 )}
               </div>
-              <button
-                type="button"
-                onClick={handlePortal}
-                disabled={portalBusy}
-                className="w-full h-11 rounded-xl border border-white/15 text-white font-bold text-[12px] uppercase tracking-wider active:bg-white/5 disabled:opacity-60"
-              >
-                {portalBusy ? "Ouverture…" : "Gérer mon abonnement"}
-              </button>
+              {IS_CAPACITOR ? (
+                // iOS (3.1.1) : pas de gestion de paiement in-app.
+                // Texte descriptif PUR — aucun lien ni bouton cliquable.
+                <p className="text-[12px] text-[#9CA3AF] leading-snug">
+                  Pour gérer ou modifier ton abonnement, rends-toi sur la version web de Nexus.
+                </p>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handlePortal}
+                  disabled={portalBusy}
+                  className="w-full h-11 rounded-xl border border-white/15 text-white font-bold text-[12px] uppercase tracking-wider active:bg-white/5 disabled:opacity-60"
+                >
+                  {portalBusy ? "Ouverture…" : "Gérer mon abonnement"}
+                </button>
+              )}
             </div>
           )}
           {tier !== "free" && !isStripeManaged && (

@@ -50,6 +50,8 @@ import {
 import { deleteMyAccount } from "@/lib/auth/deleteAccount";
 import { startMobilePortal, fmtSubDate, subStatusLabel } from "@/components/shared/settings/utils";
 
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
+
 /* ── Coach notification rows (DB JSONB — desktop NotificationsSection) ── */
 
 const NOTIF_ROWS: {
@@ -128,6 +130,7 @@ export function CoachParametresMobile() {
         in-app browser. Erreur visible (toast). ── */
   async function handlePortal() {
     if (portalBusy) return;
+    if (IS_CAPACITOR) return; // iOS (3.1.1) : pas de portail de paiement in-app.
     triggerHaptic("Light");
     setPortalBusy(true);
     try {
@@ -383,14 +386,22 @@ export function CoachParametresMobile() {
                   </div>
                 )}
               </div>
-              <button
-                type="button"
-                onClick={handlePortal}
-                disabled={portalBusy}
-                className="w-full h-11 rounded-xl border border-white/15 text-white font-bold text-[12px] uppercase tracking-wider active:bg-white/5 disabled:opacity-60"
-              >
-                {portalBusy ? "Ouverture…" : "Gérer mon abonnement"}
-              </button>
+              {IS_CAPACITOR ? (
+                // iOS (3.1.1) : pas de gestion de paiement in-app.
+                // Texte descriptif PUR — aucun lien ni bouton cliquable.
+                <p className="text-[12px] text-[#9CA3AF] leading-snug">
+                  Pour gérer ou modifier ton abonnement, rends-toi sur la version web de Nexus.
+                </p>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handlePortal}
+                  disabled={portalBusy}
+                  className="w-full h-11 rounded-xl border border-white/15 text-white font-bold text-[12px] uppercase tracking-wider active:bg-white/5 disabled:opacity-60"
+                >
+                  {portalBusy ? "Ouverture…" : "Gérer mon abonnement"}
+                </button>
+              )}
             </div>
           )}
           {/* Payant SANS abo Stripe (accès offert) → pas de portail. */}
