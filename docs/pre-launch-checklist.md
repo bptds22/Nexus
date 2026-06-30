@@ -89,7 +89,6 @@ Confirmations :
 - [x] **Descriptions cote globale** — récupérées du canon réel
   (échelle D1→D3 : `lib/i18n/dictionaries.ts` `stars.definitions` +
   `lib/config/parcoursCoteCopy.ts`). PAS des placeholders.
-- [ ] **Chiffre CÉGEPs à valider** — la page affiche « 70 CÉGEPs »
-  (hero + stat bar). DB réelle = 69 CÉGEPs (75 avec `has_collegial`).
-  Confirmer 70 (arrondi) vs 69 avec BP — corriger dans `athleteLanding`
-  (FR + EN) si besoin.
+- [x] **Chiffre CÉGEPs — validé : 70 (arrondi)** par BP (juin 2026).
+  La page affiche « 70 CÉGEPs » (hero + stat bar) ; DB réelle = 69
+  (75 avec `has_collegial`). Choix marketing assumé, pas de correction.
