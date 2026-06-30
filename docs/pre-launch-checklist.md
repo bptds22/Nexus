@@ -72,18 +72,18 @@ together in a focused launch prep session.
 
 ## Refonte page athlète v2 (`/pour-les-etudiant-athlete`)
 
-Page reconstruite en 13 sections (juin 2026). Bloquée sur 3 assets
-fournis par BP — placeholders propres câblés en attendant :
+Page reconstruite en 13 sections (juin 2026). Les 3 assets BP sont
+maintenant livrés et câblés (juin 2026) :
 
-- [ ] **Image carte hero** — `public/nexus-card-flag-football-male.png`
-  (extension à confirmer : .png ou .webp). Câblée dans `page.tsx`
-  (`HERO_CARD_SRC`) via `<PlayerCard3D>` ; fallback CSS s'affiche si
-  l'asset manque. L'image doit déjà contenir son propre badge vérifié.
-- [ ] **Vidéo effet WOW** — mp4 muet/loop/playsinline pour le cadre
-  téléphone de la section « Ta Carte ». Câblée via `WOW_VIDEO_SRC`
-  (poster temporaire `preview-athlete-player-card.png`).
-- [ ] **Vidéo YouTube** — id à insérer dans `YT_VIDEO_ID` (section
-  Mobile, `<YouTubeFacade>`, façade click-to-load).
+- [x] **Image carte hero** — `public/nexus-card-flag-football-male.png`
+  (1215×1818, ratio 2/3) livrée. Câblée dans `page.tsx` (`HERO_CARD_SRC`)
+  via `<PlayerCard3D>` (tilt 3D souris + gyro). Contient déjà son badge
+  vérifié et ses étoiles — aucun chrome CSS par-dessus.
+- [x] **Vidéo effet WOW** — `public/nexus-wow.mp4` (~29 Mo) livrée et
+  jouée dans le cadre téléphone de « Ta Carte » (autoplay/muted/loop/
+  playsinline, object-cover). NB : binaire lourd → envisager Git LFS.
+- [x] **Vidéo YouTube** — id `MDwFfag2FSc` câblé dans `<YouTubeFacade>`
+  (façade click-to-load → `youtube.com/embed/MDwFfag2FSc`).
 
 Confirmations :
 - [x] **Descriptions cote globale** — récupérées du canon réel
