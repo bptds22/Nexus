@@ -398,7 +398,6 @@ export interface Dictionary {
     monParcours: {
       eyebrow: string;
       title: string;
-      ringLabel: string;
       ringSublabel: string;
       items: { title: string; description: string }[];
     };
@@ -1151,8 +1150,7 @@ export const dictionaries: Record<Lang, Dictionary> = {
       monParcours: {
         eyebrow: "MON PARCOURS",
         title: "TON GUIDE JUSQU'À LA SIGNATURE",
-        ringLabel: "70%",
-        ringSublabel: "de ton parcours",
+        ringSublabel: "PRÊT À PRÉSENTER",
         items: [
           { title: "Ta checklist en 12 étapes", description: "De ton premier profil à ta lettre d'intention — chaque étape est claire, cochée au fur et à mesure." },
           { title: "Mes Cibles", description: "Choisis les CÉGEPs où tu veux jouer et suis ton intérêt mutuel en un coup d'œil." },
@@ -2008,8 +2006,7 @@ export const dictionaries: Record<Lang, Dictionary> = {
       monParcours: {
         eyebrow: "MY JOURNEY", // TODO-EN
         title: "YOUR GUIDE ALL THE WAY TO SIGNING", // TODO-EN
-        ringLabel: "70%", // TODO-EN
-        ringSublabel: "of your journey", // TODO-EN
+        ringSublabel: "READY TO SHOWCASE", // TODO-EN
         items: [
           { title: "Your 12-step checklist", description: "From your first profile to your letter of intent — every step is clear, checked off as you go." }, // TODO-EN
           { title: "My Targets", description: "Pick the CÉGEPs where you want to play and track mutual interest at a glance." }, // TODO-EN

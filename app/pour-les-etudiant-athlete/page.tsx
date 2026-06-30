@@ -37,11 +37,10 @@ import { useTranslation } from "@/lib/i18n/useTranslation";
 import { useCountUp } from "@/lib/hooks/useCountUp";
 import { createClient } from "@/lib/supabase/client";
 
-/* ── BP-provided assets (placeholders, wired & ready) ─────────── */
-const HERO_CARD_SRC = "/nexus-card-flag-football-male.png"; // ext. à confirmer (.png/.webp)
-const WOW_VIDEO_SRC = ""; // mp4 muet/loop/playsinline — à fournir
-const WOW_VIDEO_POSTER = "/preview-athlete-player-card.png"; // poster temporaire
-const YT_VIDEO_ID = ""; // id YouTube — à insérer
+/* ── BP-provided assets (live) ────────────────────────────────── */
+const HERO_CARD_SRC = "/nexus-card-flag-football-male.png"; // carte hero (1215×1818, 2/3)
+const WOW_VIDEO_SRC = "/nexus-wow.mp4"; // effet WOW — muet/loop/playsinline
+const YT_VIDEO_ID = "MDwFfag2FSc"; // section Mobile — youtube.com/watch?v=MDwFfag2FSc
 
 /* Sports — mirror of the `sports` table (16 rows, excl. "Autre"). Seeds
    first paint + serves as fallback; the live list is fetched from the
@@ -189,13 +188,13 @@ export default function PourLesEtudiantAthletePage() {
             <PhoneFrame>
               {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
               <video
-                className="h-full w-full object-cover"
+                className="absolute inset-0 h-full w-full object-cover"
+                src={WOW_VIDEO_SRC}
                 autoPlay
                 muted
                 loop
                 playsInline
-                poster={WOW_VIDEO_POSTER}
-                {...(WOW_VIDEO_SRC ? { src: WOW_VIDEO_SRC } : {})}
+                preload="metadata"
               />
             </PhoneFrame>
           </FadeIn>
@@ -206,7 +205,7 @@ export default function PourLesEtudiantAthletePage() {
       <Section eyebrow={T.monParcours.eyebrow} title={T.monParcours.title}>
         <div className="grid items-center gap-12 lg:grid-cols-[auto,1fr]">
           <FadeIn className="mx-auto">
-            <ProgressRing pct={70} label={T.monParcours.ringLabel} sublabel={T.monParcours.ringSublabel} />
+            <ProgressRing pct={100} size={200} sublabel={T.monParcours.ringSublabel} />
           </FadeIn>
           <div className="grid gap-4">
             {T.monParcours.items.map((it, i) => (

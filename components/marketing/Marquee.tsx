@@ -28,7 +28,7 @@ function Pill({ label }: { label: string }) {
   );
 }
 
-export default function Marquee({ items, durationSec = 32, className = "" }: MarqueeProps) {
+export default function Marquee({ items, durationSec = 64, className = "" }: MarqueeProps) {
   const reduced = useReducedMotion();
 
   if (reduced) {

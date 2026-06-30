@@ -2,14 +2,14 @@
 
 /**
  * ProgressRing — an animated SVG progress ring (rendered, never a
- * screenshot). The stroke draws from 0 → `pct` the first time it
- * scrolls into view via stroke-dashoffset.
+ * screenshot). When it scrolls into view the ring fills 0 → `pct` and
+ * the centre number counts 0 → `pct` in lockstep (~2s, ease-out cubic).
  *
- * Respects prefers-reduced-motion: the ring renders at its final value
- * with no transition.
+ * Respects prefers-reduced-motion: renders the final value immediately,
+ * no transition, no count.
  */
 
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useInView } from "framer-motion";
 import { useReducedMotion } from "@/lib/hooks/useReducedMotion";
 
@@ -18,25 +18,50 @@ interface ProgressRingProps {
   pct: number;
   size?: number;
   stroke?: number;
-  /** Big centred value (e.g. "70%"). */
-  label?: string;
+  /** Suffix appended to the centre number (default "%"). */
+  suffix?: string;
   /** Small line under the value. */
   sublabel?: string;
+  /** Count-up / fill duration in ms. */
+  durationMs?: number;
   className?: string;
 }
+
+const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
 
 export default function ProgressRing({
   pct,
   size = 180,
   stroke = 12,
-  label,
+  suffix = "%",
   sublabel,
+  durationMs = 2000,
   className = "",
 }: ProgressRingProps) {
   const reduced = useReducedMotion();
   const ref = useRef<HTMLDivElement | null>(null);
   const inView = useInView(ref, { once: true, margin: "0px 0px -15% 0px" });
   const active = reduced || inView;
+
+  const [count, setCount] = useState(reduced ? pct : 0);
+
+  useEffect(() => {
+    if (!active) return;
+    if (reduced) {
+      setCount(pct);
+      return;
+    }
+    let raf = 0;
+    let start = 0;
+    const tick = (ts: number) => {
+      if (!start) start = ts;
+      const p = Math.min(1, (ts - start) / durationMs);
+      setCount(Math.round(easeOutCubic(p) * pct));
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [active, reduced, pct, durationMs]);
 
   const r = (size - stroke) / 2;
   const circumference = 2 * Math.PI * r;
@@ -56,19 +81,22 @@ export default function ProgressRing({
           strokeLinecap="round"
           strokeDasharray={circumference}
           strokeDashoffset={offset}
-          style={{ transition: reduced ? "none" : "stroke-dashoffset 1.4s cubic-bezier(0.22,1,0.36,1)" }}
+          style={{
+            transition: reduced ? "none" : `stroke-dashoffset ${durationMs}ms cubic-bezier(0.22,1,0.36,1)`,
+          }}
         />
       </svg>
-      {(label || sublabel) && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-          {label && <span className="nx-display text-3xl font-black text-white">{label}</span>}
-          {sublabel && (
-            <span className="mt-1 text-[11px] font-bold uppercase tracking-[0.18em] text-[#9CA3AF]">
-              {sublabel}
-            </span>
-          )}
-        </div>
-      )}
+      <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+        <span className="nx-display text-4xl font-black text-white">
+          {count}
+          {suffix}
+        </span>
+        {sublabel && (
+          <span className="mt-1 px-3 text-[11px] font-bold uppercase tracking-[0.18em] text-[#9CA3AF]">
+            {sublabel}
+          </span>
+        )}
+      </div>
     </div>
   );
 }
