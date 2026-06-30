@@ -25,16 +25,17 @@ import MarketingNav from "@/components/marketing/MarketingNav";
 import Footer from "@/components/marketing/Footer";
 import FadeIn from "@/components/marketing/FadeIn";
 import PlayerCard3D from "@/components/marketing/PlayerCard3D";
-import PhoneFrame from "@/components/marketing/PhoneFrame";
 import YouTubeFacade from "@/components/marketing/YouTubeFacade";
 import StarTiers from "@/components/marketing/StarTiers";
 import ProgressRing from "@/components/marketing/ProgressRing";
 import Marquee from "@/components/marketing/Marquee";
 import LiveTicker from "@/components/marketing/LiveTicker";
 import NxIcon from "@/components/ui/NxIcon";
+import { motion } from "framer-motion";
 
 import { useTranslation } from "@/lib/i18n/useTranslation";
 import { useCountUp } from "@/lib/hooks/useCountUp";
+import { useReducedMotion } from "@/lib/hooks/useReducedMotion";
 import { createClient } from "@/lib/supabase/client";
 
 /* ── BP-provided assets (live) ────────────────────────────────── */
@@ -178,17 +179,32 @@ export default function PourLesEtudiantAthletePage() {
         </div>
       </Section>
 
-      {/* ── 5 · TA CARTE (WOW video in phone) ────────────────── */}
+      {/* ── 5 · TA CARTE (WOW video, 9:16 frame, no crop) ────── */}
       <Section eyebrow={T.taCarte.eyebrow} title={T.taCarte.title}>
-        <div className="grid items-center gap-12 lg:grid-cols-2">
+        <div className="grid items-center gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:gap-8">
           <FadeIn>
-            <p className="max-w-[480px] text-[16px] leading-relaxed text-[#9CA3AF]">{T.taCarte.body}</p>
+            <p className="max-w-[460px] text-[16px] leading-relaxed text-[#9CA3AF]">{T.taCarte.body}</p>
+            <div className="mt-6 flex flex-wrap gap-2.5">
+              {T.taCarte.chips.map((c, i) => (
+                <FloatingChip key={c} delay={i * 0.3}>
+                  {c}
+                </FloatingChip>
+              ))}
+            </div>
           </FadeIn>
-          <FadeIn delay={0.15}>
-            <PhoneFrame>
+          <FadeIn delay={0.15} className="relative mx-auto w-full max-w-[300px]">
+            <div
+              aria-hidden
+              className="absolute -inset-8 -z-10 rounded-[48px]"
+              style={{
+                background: "radial-gradient(closest-side, rgba(230,57,70,0.22), transparent 75%)",
+                filter: "blur(10px)",
+              }}
+            />
+            <div className="relative overflow-hidden rounded-[1.8rem] border border-white/10 bg-black shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)]">
               {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
               <video
-                className="absolute inset-0 h-full w-full object-cover"
+                className="block aspect-[9/16] h-full w-full object-contain"
                 src={WOW_VIDEO_SRC}
                 autoPlay
                 muted
@@ -196,7 +212,7 @@ export default function PourLesEtudiantAthletePage() {
                 playsInline
                 preload="metadata"
               />
-            </PhoneFrame>
+            </div>
           </FadeIn>
         </div>
       </Section>
@@ -236,16 +252,38 @@ export default function PourLesEtudiantAthletePage() {
         </FadeIn>
       </Section>
 
-      {/* ── 8 · MOBILE (YouTube facade) ──────────────────────── */}
+      {/* ── 8 · MOBILE (YouTube 16:9, clean card) ────────────── */}
       <Section eyebrow={T.mobile.eyebrow} title={T.mobile.title} center>
         <FadeIn>
-          <p className="mx-auto mb-8 max-w-[560px] text-center text-[16px] leading-relaxed text-[#9CA3AF]">
+          <p className="mx-auto mb-6 max-w-[560px] text-center text-[16px] leading-relaxed text-[#9CA3AF]">
             {T.mobile.body}
           </p>
         </FadeIn>
-        <FadeIn delay={0.1} className="mx-auto max-w-3xl">
-          <YouTubeFacade videoId={YT_VIDEO_ID} title={T.mobile.title} placeholderLabel={T.mobile.videoPlaceholder} />
+        <FadeIn delay={0.1} className="relative mx-auto max-w-3xl">
+          <div
+            aria-hidden
+            className="absolute -inset-6 -z-10 rounded-[32px]"
+            style={{
+              background: "radial-gradient(closest-side, rgba(230,57,70,0.18), transparent 75%)",
+              filter: "blur(10px)",
+            }}
+          />
+          <div className="overflow-hidden rounded-xl border border-white/10 bg-[#1A1D24] shadow-[0_20px_60px_-25px_rgba(0,0,0,0.7)]">
+            <div className="h-[3px] w-full bg-wl-red" />
+            <YouTubeFacade
+              videoId={YT_VIDEO_ID}
+              title={T.mobile.title}
+              placeholderLabel={T.mobile.videoPlaceholder}
+            />
+          </div>
         </FadeIn>
+        <div className="mx-auto mt-6 flex max-w-2xl flex-wrap justify-center gap-2.5">
+          {T.mobile.chips.map((c, i) => (
+            <FloatingChip key={c} delay={i * 0.25}>
+              {c}
+            </FloatingChip>
+          ))}
+        </div>
       </Section>
 
       {/* ── 9 · COACH (cote globale / star tiers) ────────────── */}
@@ -421,6 +459,32 @@ function IconBubble({ name }: { name: string }) {
     <div className="flex h-12 w-12 items-center justify-center rounded-full bg-wl-red/10">
       <NxIcon name={name} size={22} className="text-wl-red" />
     </div>
+  );
+}
+
+/* Floating feature pill — gentle idle float; static on reduced motion. */
+function FloatingChip({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
+  const reduced = useReducedMotion();
+  const cls =
+    "inline-flex items-center gap-2 rounded-full border border-white/10 bg-[#1A1D24] px-3.5 py-2 text-[12px] font-semibold text-[#D1D5DB]";
+  const dot = <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-wl-red" aria-hidden />;
+  if (reduced) {
+    return (
+      <span className={cls}>
+        {dot}
+        {children}
+      </span>
+    );
+  }
+  return (
+    <motion.span
+      className={cls}
+      animate={{ y: [0, -5, 0] }}
+      transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay }}
+    >
+      {dot}
+      {children}
+    </motion.span>
   );
 }
 

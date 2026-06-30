@@ -394,6 +394,7 @@ export interface Dictionary {
       eyebrow: string;
       title: string;
       body: string;
+      chips: string[];
     };
     monParcours: {
       eyebrow: string;
@@ -413,6 +414,7 @@ export interface Dictionary {
       title: string;
       body: string;
       videoPlaceholder: string;
+      chips: string[];
     };
     coach: {
       eyebrow: string;
@@ -1146,6 +1148,7 @@ export const dictionaries: Record<Lang, Dictionary> = {
         eyebrow: "TA CARTE",
         title: "UNE CARTE QUE TU VAS VOULOIR PARTAGER",
         body: "Ton profil Nexus, c'est pas un CV plate. C'est une carte d'athlète vivante — photo, position, stats, cote, badge vérifié — que tu montres avec fierté. Quand un recruteur la voit, il voit un vrai prospect.",
+        chips: ["Photo + position + cote", "Badge vérifié par le coach", "Prête pour ta story"],
       },
       monParcours: {
         eyebrow: "MON PARCOURS",
@@ -1174,6 +1177,7 @@ export const dictionaries: Record<Lang, Dictionary> = {
         title: "NEXUS VIT SUR TON TÉLÉPHONE",
         body: "Profil, notifications, cibles, messages — tout dans ta poche. Quand un recruteur s'intéresse à toi, tu le sais tout de suite.",
         videoPlaceholder: "Vidéo à venir",
+        chips: ["Notifications push", "Stats après le match", "Mes Cibles", "Messages"],
       },
       coach: {
         eyebrow: "L'ÉVALUATION",
@@ -2002,6 +2006,7 @@ export const dictionaries: Record<Lang, Dictionary> = {
         eyebrow: "YOUR CARD", // TODO-EN
         title: "A CARD YOU'LL WANT TO SHARE", // TODO-EN
         body: "Your Nexus profile isn't a boring résumé. It's a living athlete card — photo, position, stats, rating, verified badge — that you show with pride. When a recruiter sees it, they see a real prospect.", // TODO-EN
+        chips: ["Photo + position + rating", "Coach-verified badge", "Ready for your story"], // TODO-EN
       },
       monParcours: {
         eyebrow: "MY JOURNEY", // TODO-EN
@@ -2030,6 +2035,7 @@ export const dictionaries: Record<Lang, Dictionary> = {
         title: "NEXUS LIVES ON YOUR PHONE", // TODO-EN
         body: "Profile, notifications, targets, messages — all in your pocket. When a recruiter takes interest in you, you know right away.", // TODO-EN
         videoPlaceholder: "Video coming soon", // TODO-EN
+        chips: ["Push notifications", "Post-game stats", "My Targets", "Messages"], // TODO-EN
       },
       coach: {
         eyebrow: "THE EVALUATION", // TODO-EN
