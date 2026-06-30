@@ -366,28 +366,86 @@ export interface Dictionary {
   };
   athleteLanding: {
     hero: {
-      eyebrow: string;
+      livePill: string;
       title: string;
       subtitle: string;
       ctaPrimary: string;
       ctaSecondary: string;
+      microCopy: string;
+    };
+    playerCard: {
+      alt: string;
+      fallbackName: string;
+      fallbackPosition: string;
+      fallbackSchool: string;
+      fallbackStatus: string;
+      verified: string;
+    };
+    sports: { eyebrow: string };
+    stats: {
+      items: { label: string }[];
     };
     problem: {
+      eyebrow: string;
       title: string;
       items: { title: string; description: string }[];
     };
-    solution: {
+    taCarte: {
+      eyebrow: string;
+      title: string;
+      body: string;
+    };
+    monParcours: {
+      eyebrow: string;
+      title: string;
+      ringLabel: string;
+      ringSublabel: string;
+      items: { title: string; description: string }[];
+    };
+    visibility: {
+      eyebrow: string;
+      title: string;
+      body: string;
+      viewsLabel: string;
+      tickerMessages: string[];
+    };
+    mobile: {
+      eyebrow: string;
+      title: string;
+      body: string;
+      videoPlaceholder: string;
+    };
+    coach: {
+      eyebrow: string;
+      title: string;
+      body: string;
+      badgeLine: string;
+      verified: string;
+    };
+    starTiers: {
+      title: string;
+      items: { label: string; description: string }[];
+    };
+    partners: {
+      eyebrow: string;
+      title: string;
+      body: string;
+      soon: string;
+      items: { title: string; description: string }[];
+    };
+    parents: {
+      eyebrow: string;
       title: string;
       items: { title: string; description: string }[];
     };
-    steps: {
-      items: { number: string; title: string; description: string }[];
-    };
-    features: {
+    roadmap: {
+      eyebrow: string;
       title: string;
+      note: string;
       items: { title: string; description: string }[];
     };
-    cta: {
+    finalCta: {
+      eyebrow: string;
       title: string;
       button: string;
       subtext: string;
@@ -1051,51 +1109,131 @@ export const dictionaries: Record<Lang, Dictionary> = {
     },
     athleteLanding: {
       hero: {
-        eyebrow: "POUR LES ÉTUDIANTS-ATHLÈTES",
-        title: "FAIS-TOI REPÉRER PAR LES CÉGEPS",
-        subtitle: "Ton coach crée ton profil sur Nexus. Les recruteurs CÉGEP de tout le Québec peuvent te découvrir, voir tes stats, ta vidéo et ton parcours académique.",
-        ctaPrimary: "SOIS LE NEX →",
-        ctaSecondary: "COMMENT ÇA MARCHE",
+        livePill: "NEXUS EST EN LIGNE",
+        title: "DEVIENS IMPOSSIBLE À IGNORER",
+        subtitle: "Ton profil, tes stats, ta vidéo — vus par les recruteurs des 70 CÉGEPs du RSEQ, partout au Québec.",
+        ctaPrimary: "Crée ton profil — gratuit",
+        ctaSecondary: "Comment ça marche",
+        microCopy: "2 minutes. Gratuit. Pas de carte de crédit — jamais. Ton coach valide après.",
+      },
+      playerCard: {
+        alt: "Carte d'athlète Nexus — flag football",
+        fallbackName: "Ton nom ici",
+        fallbackPosition: "Ta position",
+        fallbackSchool: "Ton école",
+        fallbackStatus: "OUVERT AU RECRUTEMENT",
+        verified: "VÉRIFIÉ",
+      },
+      sports: {
+        eyebrow: "TOUS LES SPORTS DU RSEQ",
+      },
+      stats: {
+        items: [
+          { label: "CÉGEPs du RSEQ accessibles" },
+          { label: "écoles répertoriées au Québec" },
+          { label: "gratuit pour les athlètes" },
+        ],
       },
       problem: {
+        eyebrow: "LE VRAI PROBLÈME",
         title: "T'ES PRÊT. MAIS QUI LE SAIT ?",
         items: [
-          { title: "Invisible", description: "T'es peut-être le meilleur QB de ta ligue, mais les CÉGEPs hors de ta région ne le savent pas." },
-          { title: "Pas de vitrine", description: "Ton highlight reel est sur TikTok entre des vidéos de chats. Aucun endroit professionnel pour te présenter." },
-          { title: "Le sport ET l'école", description: "Les recruteurs veulent voir tes stats ET ta moyenne générale. Aucun outil ne combine les deux." },
+          { title: "Personne te voit", description: "T'es peut-être le meilleur de ta ligue, mais les recruteurs hors de ta région n'ont aucune idée que tu existes." },
+          { title: "Ta vidéo se perd", description: "Ton highlight reel dort sur TikTok entre deux vidéos de chats. Aucun endroit sérieux pour te présenter." },
+          { title: "Le sport ET l'école", description: "Les recruteurs veulent tes stats ET ta moyenne. Aucun outil ne réunit les deux au même endroit." },
         ],
       },
-      solution: {
-        title: "TON PROFIL. TA CHANCE.",
+      taCarte: {
+        eyebrow: "TA CARTE",
+        title: "UNE CARTE QUE TU VAS VOULOIR PARTAGER",
+        body: "Ton profil Nexus, c'est pas un CV plate. C'est une carte d'athlète vivante — photo, position, stats, cote, badge vérifié — que tu montres avec fierté. Quand un recruteur la voit, il voit un vrai prospect.",
+      },
+      monParcours: {
+        eyebrow: "MON PARCOURS",
+        title: "TON GUIDE JUSQU'À LA SIGNATURE",
+        ringLabel: "70%",
+        ringSublabel: "de ton parcours",
         items: [
-          { title: "Profil étudiant-athlète complet", description: "Stats, position, highlight vidéo, parcours académique, moyenne générale — tout sur une page." },
-          { title: "Vu par 54 CÉGEPs", description: "Les recruteurs de tous les CÉGEPs RSEQ peuvent te découvrir et contacter ton coach." },
-          { title: "Évaluation de ton coach", description: "Ton coach te note sur 11 critères reconnus. C'est ta lettre de recommandation intégrée." },
-          { title: "Badge vérifié", description: "Un profil complet = un badge bleu qui te démarque des profils incomplets." },
+          { title: "Ta checklist en 12 étapes", description: "De ton premier profil à ta lettre d'intention — chaque étape est claire, cochée au fur et à mesure." },
+          { title: "Mes Cibles", description: "Choisis les CÉGEPs où tu veux jouer et suis ton intérêt mutuel en un coup d'œil." },
+          { title: "Ta timeline", description: "Été, camps, saison de Sec. 5, signature — tu sais toujours quoi faire et quand." },
         ],
       },
-      steps: {
+      visibility: {
+        eyebrow: "TA VISIBILITÉ",
+        title: "TU SAIS QUI TE REGARDE",
+        body: "Chaque fois qu'un recruteur consulte ton profil, c'est compté. Avec Pro, tu vois qui, d'où, et combien de fois il revient.",
+        viewsLabel: "vues sur ton profil ce mois-ci",
+        tickerMessages: [
+          "Un recruteur vient de consulter un profil comme le tien.",
+          "Ton highlight a été regardé 3 fois cette semaine.",
+          "Un CÉGEP a ajouté un athlète de ta région à ses cibles.",
+          "Ton coach a reçu une demande de contact.",
+        ],
+      },
+      mobile: {
+        eyebrow: "L'APPLI",
+        title: "NEXUS VIT SUR TON TÉLÉPHONE",
+        body: "Profil, notifications, cibles, messages — tout dans ta poche. Quand un recruteur s'intéresse à toi, tu le sais tout de suite.",
+        videoPlaceholder: "Vidéo à venir",
+      },
+      coach: {
+        eyebrow: "L'ÉVALUATION",
+        title: "TON COACH A TON BACK",
+        body: "Ton coach t'évalue sur 11 critères reconnus — leadership, intelligence de jeu, compétitivité, et plus. Ça donne ta cote globale, de 1 à 5 étoiles.",
+        badgeLine: "Le badge, c'est ton coach qui te le donne. Pas un algorithme.",
+        verified: "VÉRIFIÉ",
+      },
+      starTiers: {
+        title: "CE QUE VEUT DIRE CHAQUE ÉTOILE",
+        // Niveaux + descriptions tirés du canon réel de la cote globale :
+        // labels = échelle D1→D3 de dictionaries stars.definitions /
+        // parcoursCoteCopy ; descriptions = définitions canon (l.637).
         items: [
-          { number: "01", title: "Inscris-toi en quelques minutes", description: "Crée ton profil tout de suite — pas besoin d'attendre. Stats, position, vidéo, parcours : tu remplis ce que tu peux et tu peaufines plus tard." },
-          { number: "02", title: "Ton coach te vérifie (recommandé)", description: "Demande-lui d'ajouter son évaluation et de valider tes stats. Le badge bleu fait monter ton profil dans les recherches des recruteurs." },
-          { number: "03", title: "Les recruteurs te trouvent", description: "Ton profil apparaît dans les recherches des recruteurs CÉGEP. Ils peuvent te contacter (ou contacter ton coach) s'ils sont intéressés." },
+          { label: "PROSPECT D1", description: "Prêt à partir dès ton entrée au CÉGEP." },
+          { label: "POTENTIEL D2", description: "Solide partant, et le D1 à portée." },
+          { label: "PARTANT D3", description: "Potentiel D2 avec de la progression." },
+          { label: "VERS LE D3", description: "À ta portée avec du travail." },
+          { label: "POINT DE DÉPART", description: "La progression est devant toi." },
         ],
       },
-      features: {
-        title: "TON AVANTAGE COMPÉTITIF",
+      partners: {
+        eyebrow: "LES AVANTAGES",
+        title: "DES PERKS RÉSERVÉS AUX ATHLÈTES",
+        body: "Être sur Nexus, ça vient avec des avantages concrets sur l'équipement, les vêtements et la nutrition — négociés pour les athlètes de la plateforme.",
+        soon: "Les partenaires officiels seront annoncés bientôt.",
         items: [
-          { title: "Vidéo highlights", description: "Ton meilleur highlight reel, intégré directement dans ton profil. Les recruteurs le voient en premier." },
-          { title: "Stats complètes", description: "Toutes tes stats de saison — triées, formatées, comparables. Pas de PDF flou." },
-          { title: "Moyenne générale visible", description: "Les recruteurs voient ta moyenne générale. Ça ouvre les portes des programmes contingentés." },
-          { title: "Évaluation 11 critères", description: "Force, vitesse, QI sportif, leadership — ton coach te note sur une grille que tous les recruteurs comprennent." },
-          { title: "Notifications à ton coach", description: "Quand un recruteur consulte ton profil, ton coach le sait. Plus de silence radio." },
-          { title: "Multi-sport", description: "Tu joues football ET basketball ? Ton profil supporte plusieurs sports." },
+          { title: "Équipement", description: "Des rabais sur le stock dont t'as besoin pour performer." },
+          { title: "Vêtements", description: "Du linge d'athlète à prix d'ami." },
+          { title: "Nutrition", description: "De quoi bien manger et bien récupérer." },
         ],
       },
-      cta: {
+      parents: {
+        eyebrow: "POUR TES PARENTS",
+        title: "CE QUE TES PARENTS DOIVENT SAVOIR",
+        items: [
+          { title: "100% gratuit pour ton ado", description: "Créer et garder un profil ne coûte rien. Aucune carte de crédit demandée." },
+          { title: "Données hébergées au Québec", description: "Tes renseignements restent au Québec, conformément à la Loi 25." },
+          { title: "Consentement parental requis", description: "Pour les mineurs, le consentement d'un parent est requis avant que le profil soit actif (Loi 25)." },
+          { title: "Le coach dans la boucle", description: "C'est le coach qui valide le profil et l'évaluation — pas un inconnu sur internet." },
+        ],
+      },
+      roadmap: {
+        eyebrow: "CE QUI S'EN VIENT",
+        title: "CE QUI S'EN VIENT POUR TOI",
+        note: "Pas de dates promises — juste la direction.",
+        items: [
+          { title: "Tableau d'engagements public", description: "Qui a signé où, en temps réel, par sport et par année." },
+          { title: "Calendrier de showcases", description: "Camps, combines et portes ouvertes — tous les événements au même endroit." },
+          { title: "Pages CÉGEP détaillées", description: "Chaque CÉGEP avec ses sports, ses programmes et ses contacts." },
+          { title: "Guide personnalisé", description: "Une timeline de recrutement adaptée à ta situation et ton sport." },
+        ],
+      },
+      finalCta: {
+        eyebrow: "PRÊT ?",
         title: "TON FUTUR CÉGEP TE CHERCHE PEUT-ÊTRE EN CE MOMENT",
-        button: "SOIS LE NEX →",
-        subtext: "Demande à ton entraîneur de te créer un profil Nexus.",
+        button: "Crée ton profil — gratuit",
+        subtext: "Inscris-toi maintenant. Ton coach validera ton profil après.",
       },
     },
     pricing: {
@@ -1828,53 +1966,128 @@ export const dictionaries: Record<Lang, Dictionary> = {
     },
     athleteLanding: {
       hero: {
-        eyebrow: "FOR STUDENT-ATHLETES",
-        title: "GET NOTICED BY CÉGEPS", // TODO-EN
-        subtitle: "Your coach creates your profile on Nexus. CÉGEP recruiters from across Québec can discover you, see your stats, your video, and your academic record.",
-        // Intentional brand pun on 'Nexus' — do NOT autocorrect to 'next'
-        ctaPrimary: "BE THE NEX →",
-        ctaSecondary: "HOW IT WORKS",
+        livePill: "NEXUS IS LIVE", // TODO-EN
+        title: "BECOME IMPOSSIBLE TO IGNORE", // TODO-EN
+        subtitle: "Your profile, your stats, your video — seen by recruiters from all 70 RSEQ CÉGEPs, across Québec.", // TODO-EN
+        ctaPrimary: "Create your profile — free", // TODO-EN
+        ctaSecondary: "How it works", // TODO-EN
+        microCopy: "2 minutes. Free. No credit card — ever. Your coach validates after.", // TODO-EN
+      },
+      playerCard: {
+        alt: "Nexus athlete card — flag football", // TODO-EN
+        fallbackName: "Your name here", // TODO-EN
+        fallbackPosition: "Your position", // TODO-EN
+        fallbackSchool: "Your school", // TODO-EN
+        fallbackStatus: "OPEN TO RECRUITMENT", // TODO-EN
+        verified: "VERIFIED", // TODO-EN
+      },
+      sports: {
+        eyebrow: "EVERY RSEQ SPORT", // TODO-EN
+      },
+      stats: {
+        items: [
+          { label: "RSEQ CÉGEPs within reach" }, // TODO-EN
+          { label: "schools listed across Québec" }, // TODO-EN
+          { label: "free for athletes" }, // TODO-EN
+        ],
       },
       problem: {
+        eyebrow: "THE REAL PROBLEM", // TODO-EN
         title: "YOU'RE READY. BUT WHO KNOWS?", // TODO-EN
         items: [
-          { title: "Invisible", description: "You might be the best QB in your league, but CÉGEPs outside your region have no idea." },
-          { title: "No showcase", description: "Your highlight reel is on TikTok between cat videos. No professional place to introduce yourself." },
-          { title: "Sports AND school", description: "Recruiters want to see your stats AND your GPA. No tool combines both." },
+          { title: "Nobody sees you", description: "You might be the best in your league, but recruiters outside your region have no idea you exist." }, // TODO-EN
+          { title: "Your video gets lost", description: "Your highlight reel sits on TikTok between cat videos. No serious place to introduce yourself." }, // TODO-EN
+          { title: "Sports AND school", description: "Recruiters want your stats AND your GPA. No tool brings both together in one place." }, // TODO-EN
         ],
       },
-      solution: {
-        title: "YOUR PROFILE. YOUR SHOT.", // TODO-EN
+      taCarte: {
+        eyebrow: "YOUR CARD", // TODO-EN
+        title: "A CARD YOU'LL WANT TO SHARE", // TODO-EN
+        body: "Your Nexus profile isn't a boring résumé. It's a living athlete card — photo, position, stats, rating, verified badge — that you show with pride. When a recruiter sees it, they see a real prospect.", // TODO-EN
+      },
+      monParcours: {
+        eyebrow: "MY JOURNEY", // TODO-EN
+        title: "YOUR GUIDE ALL THE WAY TO SIGNING", // TODO-EN
+        ringLabel: "70%", // TODO-EN
+        ringSublabel: "of your journey", // TODO-EN
         items: [
-          { title: "Complete student-athlete profile", description: "Stats, position, highlight video, academic record, GPA — everything on one page." },
-          { title: "Seen by 54 CÉGEPs", description: "Recruiters from every RSEQ CÉGEP can discover you and contact your coach." },
-          { title: "Your coach's evaluation", description: "Your coach rates you on 11 recognized criteria. It's your built-in letter of recommendation." },
-          { title: "Verified badge", description: "A complete profile = a blue badge that sets you apart from incomplete profiles." },
+          { title: "Your 12-step checklist", description: "From your first profile to your letter of intent — every step is clear, checked off as you go." }, // TODO-EN
+          { title: "My Targets", description: "Pick the CÉGEPs where you want to play and track mutual interest at a glance." }, // TODO-EN
+          { title: "Your timeline", description: "Summer, camps, Sec. 5 season, signing — you always know what to do and when." }, // TODO-EN
         ],
       },
-      steps: {
+      visibility: {
+        eyebrow: "YOUR VISIBILITY", // TODO-EN
+        title: "YOU KNOW WHO'S WATCHING", // TODO-EN
+        body: "Every time a recruiter views your profile, it's counted. With Pro, you see who, from where, and how often they come back.", // TODO-EN
+        viewsLabel: "views on your profile this month", // TODO-EN
+        tickerMessages: [
+          "A recruiter just viewed a profile like yours.", // TODO-EN
+          "Your highlight was watched 3 times this week.", // TODO-EN
+          "A CÉGEP added an athlete from your region to its targets.", // TODO-EN
+          "Your coach received a contact request.", // TODO-EN
+        ],
+      },
+      mobile: {
+        eyebrow: "THE APP", // TODO-EN
+        title: "NEXUS LIVES ON YOUR PHONE", // TODO-EN
+        body: "Profile, notifications, targets, messages — all in your pocket. When a recruiter takes interest in you, you know right away.", // TODO-EN
+        videoPlaceholder: "Video coming soon", // TODO-EN
+      },
+      coach: {
+        eyebrow: "THE EVALUATION", // TODO-EN
+        title: "YOUR COACH HAS YOUR BACK", // TODO-EN — keep "back"; FR keeps the franglais "back" intentionally
+        body: "Your coach evaluates you on 11 recognized criteria — leadership, game IQ, competitiveness, and more. That gives your overall rating, from 1 to 5 stars.", // TODO-EN
+        badgeLine: "The badge comes from your coach. Not an algorithm.", // TODO-EN
+        verified: "VERIFIED", // TODO-EN
+      },
+      starTiers: {
+        title: "WHAT EACH STAR MEANS", // TODO-EN
         items: [
-          { number: "01", title: "Sign up in a few minutes", description: "Create your profile right away — no need to wait. Stats, position, video, journey: fill what you can and refine later." },
-          { number: "02", title: "Your coach verifies you (recommended)", description: "Ask them to add their evaluation and validate your stats. The blue badge lifts your profile in recruiter searches." },
-          { number: "03", title: "Recruiters find you", description: "Your profile shows up in CÉGEP recruiter searches. They can contact you (or your coach) if interested." },
+          { label: "D1 PROSPECT", description: "Ready to start the moment you reach CÉGEP." }, // TODO-EN
+          { label: "D2 POTENTIAL", description: "Solid starter, with D1 within reach." }, // TODO-EN
+          { label: "D3 STARTER", description: "D2 potential with some development." }, // TODO-EN
+          { label: "TOWARD D3", description: "Within your reach with some work." }, // TODO-EN
+          { label: "STARTING POINT", description: "The progress is ahead of you." }, // TODO-EN
         ],
       },
-      features: {
-        title: "YOUR COMPETITIVE EDGE", // TODO-EN
+      partners: {
+        eyebrow: "THE PERKS", // TODO-EN
+        title: "PERKS FOR ATHLETES ONLY", // TODO-EN
+        body: "Being on Nexus comes with real perks on equipment, apparel, and nutrition — negotiated for the platform's athletes.", // TODO-EN
+        soon: "Official partners will be announced soon.", // TODO-EN
         items: [
-          { title: "Video highlights", description: "Your best highlight reel, embedded directly in your profile. Recruiters see it first." },
-          { title: "Full stats", description: "All your season stats — sorted, formatted, comparable. No blurry PDF." },
-          { title: "GPA visible", description: "Recruiters see your GPA. It opens doors to limited-enrollment programs." },
-          { title: "11-criteria evaluation", description: "Strength, speed, sport IQ, leadership — your coach rates you on a grid every recruiter understands." },
-          { title: "Notifications to your coach", description: "When a recruiter views your profile, your coach knows. No more radio silence." },
-          { title: "Multi-sport", description: "Play football AND basketball? Your profile supports multiple sports." },
+          { title: "Equipment", description: "Discounts on the gear you need to perform." }, // TODO-EN
+          { title: "Apparel", description: "Athlete clothing at insider prices." }, // TODO-EN
+          { title: "Nutrition", description: "Fuel to eat well and recover well." }, // TODO-EN
         ],
       },
-      cta: {
+      parents: {
+        eyebrow: "FOR YOUR PARENTS", // TODO-EN
+        title: "WHAT YOUR PARENTS SHOULD KNOW", // TODO-EN
+        items: [
+          { title: "100% free for your teen", description: "Creating and keeping a profile costs nothing. No credit card required." }, // TODO-EN
+          { title: "Data hosted in Québec", description: "Your information stays in Québec, in line with Law 25." }, // TODO-EN
+          { title: "Parental consent required", description: "For minors, a parent's consent is required before the profile becomes active (Law 25)." }, // TODO-EN
+          { title: "The coach in the loop", description: "The coach validates the profile and the evaluation — not a stranger online." }, // TODO-EN
+        ],
+      },
+      roadmap: {
+        eyebrow: "WHAT'S COMING", // TODO-EN
+        title: "WHAT'S COMING FOR YOU", // TODO-EN
+        note: "No promised dates — just the direction.", // TODO-EN
+        items: [
+          { title: "Public commitments board", description: "Who signed where, in real time, by sport and by year." }, // TODO-EN
+          { title: "Showcase calendar", description: "Camps, combines and open houses — every event in one place." }, // TODO-EN
+          { title: "Detailed CÉGEP pages", description: "Every CÉGEP with its sports, programs and contacts." }, // TODO-EN
+          { title: "Personalized guide", description: "A recruitment timeline tailored to your situation and your sport." }, // TODO-EN
+        ],
+      },
+      finalCta: {
+        eyebrow: "READY?", // TODO-EN
         title: "YOUR FUTURE CÉGEP MIGHT BE LOOKING FOR YOU RIGHT NOW", // TODO-EN
-        // Intentional brand pun on 'Nexus' — do NOT autocorrect to 'next'
-        button: "BE THE NEX →",
-        subtext: "Ask your coach to create a Nexus profile for you.",
+        button: "Create your profile — free", // TODO-EN
+        subtext: "Sign up now. Your coach will validate your profile after.", // TODO-EN
       },
     },
     pricing: {
