@@ -586,9 +586,10 @@ function TaCartePhone({ T }: { T: ReturnType<typeof useTranslation>["t"]["athlet
           boxShadow: "0 40px 90px -25px rgba(0,0,0,0.8), 0 0 60px -18px rgba(230,57,70,0.4)",
         }}
       >
-        {/* screen — iPhone 6.9" ratio (1320/2868) so the WOW recording
-            fills via cover with no vertical cut; aspect drives the height */}
-        <div className="relative aspect-[1320/2868] overflow-hidden rounded-[1.8rem] bg-black">
+        {/* screen ratio = the WOW file's exact display dims (1080×1920,
+            read from the MP4 tkhd) so object-cover fills it with zero crop
+            and zero black gap; aspect-ratio drives the height (no fixed h). */}
+        <div className="relative aspect-[1080/1920] overflow-hidden rounded-[1.8rem] bg-black">
           {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
           <video
             className="absolute inset-0 h-full w-full object-cover"
@@ -607,9 +608,8 @@ function TaCartePhone({ T }: { T: ReturnType<typeof useTranslation>["t"]["athlet
             <span className="h-[3px] flex-1 rounded-full bg-white/30" />
             <span className="h-[3px] flex-1 rounded-full bg-white/30" />
           </div>
-          {/* avatar + handle */}
-          <div className="absolute left-3 top-7 flex items-center gap-2">
-            <span className="h-8 w-8 rounded-full bg-gradient-to-br from-wl-red to-[#7a1f26] ring-2 ring-white/80" />
+          {/* handle (no avatar dot) */}
+          <div className="absolute left-3 top-7">
             <span className="text-[12px] font-semibold text-white drop-shadow">{T.taCarte.storyHandle}</span>
           </div>
           {/* bottom legibility gradient */}
@@ -625,18 +625,18 @@ function TaCartePhone({ T }: { T: ReturnType<typeof useTranslation>["t"]["athlet
         </div>
       </div>
 
-      {/* floating story-reaction bubbles — desktop only, static */}
-      <div className="absolute -left-5 top-20 hidden items-center gap-1.5 rounded-full border border-white/10 bg-[#1A1D24] px-3 py-1.5 shadow-lg min-[900px]:flex">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="#E63946" aria-hidden>
+      {/* floating story-reaction bubbles — big, static, desktop only */}
+      <div className="absolute -left-8 top-16 hidden items-center gap-2.5 rounded-full border border-white/10 bg-[#1A1D24] px-[22px] py-[14px] shadow-2xl min-[900px]:flex">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="#E63946" aria-hidden>
           <path d="M12 21s-7-4.35-9.5-8.5C1 9.5 2.7 5.5 6.5 5.5c2 0 3.3 1.2 4 2.3.7-1.1 2-2.3 4-2.3 3.8 0 5.5 4 4 7C19 16.65 12 21 12 21z" />
         </svg>
-        <span className="text-[11px] font-bold text-white">24</span>
+        <span className="text-[20px] font-black text-white">24</span>
       </div>
-      <div className="absolute -right-4 bottom-28 hidden items-center gap-1.5 rounded-full border border-white/10 bg-[#1A1D24] px-3 py-1.5 shadow-lg min-[900px]:flex">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#D1D5DB" strokeWidth="2" aria-hidden>
+      <div className="absolute -right-6 bottom-24 hidden items-center gap-2.5 rounded-full border border-white/10 bg-[#1A1D24] px-[22px] py-[14px] shadow-2xl min-[900px]:flex">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#D1D5DB" strokeWidth="2" aria-hidden>
           <path d="M21 11.5a8.5 8.5 0 0 1-12.5 7.5L3 21l2-5.5A8.5 8.5 0 1 1 21 11.5z" />
         </svg>
-        <span className="text-[11px] font-bold text-white">8</span>
+        <span className="text-[20px] font-black text-white">8</span>
       </div>
     </div>
   );
