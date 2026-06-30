@@ -392,9 +392,16 @@ export interface Dictionary {
     };
     taCarte: {
       eyebrow: string;
-      title: string;
+      titlePre: string;
+      titleAccent: string;
+      titlePost: string;
       body: string;
-      chips: string[];
+      benefits: { title: string; description: string }[];
+      cta: string;
+      labelRating: string;
+      labelVerified: string;
+      storyHandle: string;
+      storyMessage: string;
     };
     monParcours: {
       eyebrow: string;
@@ -1146,9 +1153,20 @@ export const dictionaries: Record<Lang, Dictionary> = {
       },
       taCarte: {
         eyebrow: "TA CARTE",
-        title: "UNE CARTE QUE TU VAS VOULOIR PARTAGER",
-        body: "Ton profil Nexus, c'est pas un CV plate. C'est une carte d'athlète vivante — photo, position, stats, cote, badge vérifié — que tu montres avec fierté. Quand un recruteur la voit, il voit un vrai prospect.",
-        chips: ["Photo + position + cote", "Badge vérifié par le coach", "Prête pour ta story"],
+        titlePre: "Une carte que tu vas ",
+        titleAccent: "VOULOIR",
+        titlePost: " partager",
+        body: "Ton profil Nexus, c'est pas un CV plate. C'est une carte d'athlète vivante que tu montres avec fierté — et quand un recruteur la voit, il voit un vrai prospect.",
+        benefits: [
+          { title: "Photo, position, cote", description: "Tout ton profil sportif sur une seule carte." },
+          { title: "Badge vérifié par le coach", description: "La preuve que ton profil est légit." },
+          { title: "Prête pour ta story", description: "Exporte, partage, fais circuler ton nom." },
+        ],
+        cta: "Crée ta carte — gratuit",
+        labelRating: "Cote globale",
+        labelVerified: "Vérifié",
+        storyHandle: "toi · ta story",
+        storyMessage: "Envoyer un message",
       },
       monParcours: {
         eyebrow: "MON PARCOURS",
@@ -2004,9 +2022,20 @@ export const dictionaries: Record<Lang, Dictionary> = {
       },
       taCarte: {
         eyebrow: "YOUR CARD", // TODO-EN
-        title: "A CARD YOU'LL WANT TO SHARE", // TODO-EN
-        body: "Your Nexus profile isn't a boring résumé. It's a living athlete card — photo, position, stats, rating, verified badge — that you show with pride. When a recruiter sees it, they see a real prospect.", // TODO-EN
-        chips: ["Photo + position + rating", "Coach-verified badge", "Ready for your story"], // TODO-EN
+        titlePre: "A card you'll ", // TODO-EN
+        titleAccent: "WANT", // TODO-EN
+        titlePost: " to share", // TODO-EN
+        body: "Your Nexus profile isn't a boring résumé. It's a living athlete card you show with pride — and when a recruiter sees it, they see a real prospect.", // TODO-EN
+        benefits: [
+          { title: "Photo, position, rating", description: "Your whole athletic profile on one card." }, // TODO-EN
+          { title: "Coach-verified badge", description: "Proof your profile is legit." }, // TODO-EN
+          { title: "Ready for your story", description: "Export, share, get your name around." }, // TODO-EN
+        ],
+        cta: "Create your card — free", // TODO-EN
+        labelRating: "Overall rating", // TODO-EN
+        labelVerified: "Verified", // TODO-EN
+        storyHandle: "you · your story", // TODO-EN
+        storyMessage: "Send a message", // TODO-EN
       },
       monParcours: {
         eyebrow: "MY JOURNEY", // TODO-EN

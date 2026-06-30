@@ -71,9 +71,11 @@ export default function PlayerCard3D({
   const scale = useTransform(springHover, [0, 1], [1, 1.04]);
 
   // Drop shadow follows the tilt (offsets opposite to the rotation).
-  const shadowX = useTransform(springY, [-MAX_DEG, MAX_DEG], [30, -30]);
-  const shadowY = useTransform(springX, [-MAX_DEG, MAX_DEG], [-30, 30]);
-  const boxShadow = useMotionTemplate`${shadowX}px ${shadowY}px 80px -20px rgba(0,0,0,0.65)`;
+  // filter:drop-shadow (not box-shadow) so it hugs the card's silhouette
+  // on the transparent PNG — no rectangular "glass panel" behind it.
+  const shadowX = useTransform(springY, [-MAX_DEG, MAX_DEG], [24, -24]);
+  const shadowY = useTransform(springX, [-MAX_DEG, MAX_DEG], [-24, 24]);
+  const filter = useMotionTemplate`drop-shadow(${shadowX}px ${shadowY}px 32px rgba(0,0,0,0.6))`;
 
   // Mobile/touch only: feed gyro into the same springs.
   useEffect(() => {
@@ -108,21 +110,14 @@ export default function PlayerCard3D({
       onMouseMove={onMove}
       onMouseLeave={onLeave}
     >
-      {/* Soft red halo behind the card */}
-      <div
-        aria-hidden
-        className="absolute -inset-6 -z-10 rounded-[40px]"
-        style={{
-          background: "radial-gradient(closest-side, rgba(230,57,70,0.28), transparent 75%)",
-          filter: "blur(6px)",
-        }}
-      />
+      {/* No panel / halo / blur — just the card image floating with its
+          own drop shadow, tilting in 3D. */}
       <motion.div
-        className={`relative w-full ${aspectClass} overflow-hidden rounded-2xl ring-1 ring-white/10 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.6)]`}
+        className="relative w-full will-change-transform"
         style={
           reduced
-            ? undefined
-            : { rotateX: springX, rotateY: springY, scale, boxShadow, transformStyle: "preserve-3d" }
+            ? { filter: "drop-shadow(0 24px 40px rgba(0,0,0,0.55))" }
+            : { rotateX: springX, rotateY: springY, scale, filter, transformStyle: "preserve-3d" }
         }
       >
         {!imgFailed ? (
@@ -131,10 +126,12 @@ export default function PlayerCard3D({
             src={src}
             alt={alt}
             onError={() => setImgFailed(true)}
-            className="absolute inset-0 h-full w-full object-cover"
+            className="block h-auto w-full"
           />
         ) : (
-          fallback ?? <DefaultFallback alt={alt} />
+          <div className={`relative w-full ${aspectClass} overflow-hidden rounded-2xl`}>
+            {fallback ?? <DefaultFallback alt={alt} />}
+          </div>
         )}
       </motion.div>
     </div>

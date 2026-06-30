@@ -55,6 +55,7 @@ const SPORTS_SEED = [
 
 /* Icon keys per section (kept in code; only text flows from the dict). */
 const PROBLEM_ICONS = ["eyeOff", "film", "gradCap"] as const;
+const TACARTE_ICONS = ["activity", "shield", "phone"] as const; // photo/cote · vérifié · story
 const PARCOURS_ICONS = ["layers", "target", "calendar"] as const;
 const PARTNER_ICONS = ["dumbbell", "shield", "activity"] as const;
 const PARENTS_ICONS = ["wallet", "mapPin", "shield", "user"] as const;
@@ -179,43 +180,66 @@ export default function PourLesEtudiantAthletePage() {
         </div>
       </Section>
 
-      {/* ── 5 · TA CARTE (WOW video, 9:16 frame, no crop) ────── */}
-      <Section eyebrow={T.taCarte.eyebrow} title={T.taCarte.title}>
-        <div className="grid items-center gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:gap-8">
-          <FadeIn>
-            <p className="max-w-[460px] text-[16px] leading-relaxed text-[#9CA3AF]">{T.taCarte.body}</p>
-            <div className="mt-6 flex flex-wrap gap-2.5">
-              {T.taCarte.chips.map((c, i) => (
-                <FloatingChip key={c} delay={i * 0.3}>
-                  {c}
-                </FloatingChip>
-              ))}
+      {/* ── 5 · TA CARTE (redesign — story phone) ────────────── */}
+      <section className="py-20">
+        <div className="mx-auto max-w-6xl px-6">
+          <div className="grid items-center gap-10 min-[900px]:grid-cols-[1fr_420px] min-[900px]:gap-16">
+            {/* LEFT — copy + static benefits + CTA */}
+            <div>
+              <FadeIn>
+                <p className="mb-4 text-[14px] font-head font-bold uppercase tracking-[0.2em] text-wl-red">
+                  {T.taCarte.eyebrow}
+                </p>
+              </FadeIn>
+              <FadeIn delay={0.1}>
+                <h2 className="nx-display mb-5 text-3xl font-black uppercase tracking-tight text-white sm:text-4xl">
+                  {T.taCarte.titlePre}
+                  <span className="text-wl-red">{T.taCarte.titleAccent}</span>
+                  {T.taCarte.titlePost}
+                </h2>
+              </FadeIn>
+              <FadeIn delay={0.15}>
+                <p className="mb-8 max-w-[460px] text-[16px] leading-relaxed text-[#9CA3AF]">{T.taCarte.body}</p>
+              </FadeIn>
+              <div className="mb-8 grid gap-3">
+                {T.taCarte.benefits.map((b, i) => (
+                  <FadeIn key={b.title} delay={0.2 + i * 0.08}>
+                    <div className="group flex items-start gap-4 rounded-xl border border-[#2D3748] bg-[#1A1D24] p-4 transition-all hover:translate-x-1 hover:border-wl-red/50">
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-wl-red/15">
+                        <NxIcon name={TACARTE_ICONS[i]} size={18} className="text-wl-red" />
+                      </span>
+                      <div>
+                        <p className="nx-display text-[15px] font-bold text-white">{b.title}</p>
+                        <p className="text-[13px] leading-snug text-[#9CA3AF]">{b.description}</p>
+                      </div>
+                    </div>
+                  </FadeIn>
+                ))}
+              </div>
+              <FadeIn delay={0.45}>
+                <Link
+                  href={REGISTER_HREF}
+                  className="inline-flex items-center bg-wl-red px-8 py-4 font-head text-[14px] font-bold uppercase tracking-[0.1em] text-white transition-colors hover:bg-[#FF5C58]"
+                  style={{ clipPath: "polygon(0 0, 100% 0, 94% 100%, 0 100%)" }}
+                >
+                  {T.taCarte.cta}
+                  <span className="ml-2">&rarr;</span>
+                </Link>
+              </FadeIn>
             </div>
-          </FadeIn>
-          <FadeIn delay={0.15} className="relative mx-auto w-full max-w-[300px]">
-            <div
-              aria-hidden
-              className="absolute -inset-8 -z-10 rounded-[48px]"
-              style={{
-                background: "radial-gradient(closest-side, rgba(230,57,70,0.22), transparent 75%)",
-                filter: "blur(10px)",
-              }}
-            />
-            <div className="relative overflow-hidden rounded-[1.8rem] border border-white/10 bg-black shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)]">
-              {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-              <video
-                className="block aspect-[9/16] h-full w-full object-contain"
-                src={WOW_VIDEO_SRC}
-                autoPlay
-                muted
-                loop
-                playsInline
-                preload="metadata"
+
+            {/* RIGHT — tilted story phone with red halo */}
+            <FadeIn delay={0.2} className="relative mx-auto w-full max-w-[330px]">
+              <div
+                aria-hidden
+                className="absolute -inset-10 -z-10 rounded-[60px]"
+                style={{ background: "radial-gradient(closest-side, rgba(230,57,70,0.18), transparent 72%)" }}
               />
-            </div>
-          </FadeIn>
+              <TaCartePhone T={T} />
+            </FadeIn>
+          </div>
         </div>
-      </Section>
+      </section>
 
       {/* ── 6 · MON PARCOURS (progress ring) ─────────────────── */}
       <Section eyebrow={T.monParcours.eyebrow} title={T.monParcours.title}>
@@ -536,6 +560,85 @@ function ViewsCounter({ label }: { label: string }) {
 
 /* CSS fallback card shown if the BP hero image is absent. Carries its
    own chrome: verified blue badge (wl-info), gold stars, OUVERT status. */
+/* Ta Carte — tilted "story" phone: WOW video filling the screen with
+   Instagram-style story chrome overlaid, plus two static floating labels
+   (desktop only). Fixed 3D pose; no tilt on touch/reduced-motion. */
+function TaCartePhone({ T }: { T: ReturnType<typeof useTranslation>["t"]["athleteLanding"] }) {
+  const reduced = useReducedMotion();
+  const [wide, setWide] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const mq = window.matchMedia("(min-width: 900px)");
+    setWide(mq.matches);
+    const on = (e: MediaQueryListEvent) => setWide(e.matches);
+    mq.addEventListener?.("change", on);
+    return () => mq.removeEventListener?.("change", on);
+  }, []);
+  const tilt = wide && !reduced;
+
+  return (
+    <div className="relative" style={{ perspective: 1400 }}>
+      <div
+        className="relative rounded-[2.2rem] border-[6px] border-[#1A1D24] bg-black"
+        style={{
+          transform: tilt ? "rotateY(-12deg) rotateX(4deg)" : "none",
+          transformStyle: "preserve-3d",
+          boxShadow: "0 40px 90px -25px rgba(0,0,0,0.8), 0 0 60px -18px rgba(230,57,70,0.4)",
+        }}
+      >
+        {/* screen — 9:16, video fills via cover, story chrome on top */}
+        <div className="relative aspect-[9/16] overflow-hidden rounded-[1.8rem] bg-black">
+          {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+          <video
+            className="absolute inset-0 h-full w-full object-cover"
+            src={WOW_VIDEO_SRC}
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="metadata"
+          />
+          {/* top legibility gradient */}
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/70 to-transparent" />
+          {/* story progress bars */}
+          <div className="absolute inset-x-3 top-3 flex gap-1">
+            <span className="h-[3px] flex-1 rounded-full bg-white/90" />
+            <span className="h-[3px] flex-1 rounded-full bg-white/30" />
+            <span className="h-[3px] flex-1 rounded-full bg-white/30" />
+          </div>
+          {/* avatar + handle */}
+          <div className="absolute left-3 top-7 flex items-center gap-2">
+            <span className="h-8 w-8 rounded-full bg-gradient-to-br from-wl-red to-[#7a1f26] ring-2 ring-white/80" />
+            <span className="text-[12px] font-semibold text-white drop-shadow">{T.taCarte.storyHandle}</span>
+          </div>
+          {/* bottom legibility gradient */}
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/70 to-transparent" />
+          {/* message bar */}
+          <div className="absolute inset-x-3 bottom-3 flex items-center gap-2 text-white">
+            <span className="flex-1 rounded-full border border-white/40 px-3 py-1.5 text-[11px] text-white/80">
+              {T.taCarte.storyMessage}
+            </span>
+            <span aria-hidden className="text-[15px]">♡</span>
+            <span aria-hidden className="text-[15px]">➤</span>
+          </div>
+        </div>
+      </div>
+
+      {/* floating labels — desktop only */}
+      <div className="absolute -left-5 top-20 hidden items-center gap-1.5 rounded-full border border-white/10 bg-[#1A1D24] px-3 py-1.5 shadow-lg min-[900px]:flex">
+        <span className="text-[12px] text-[#F59E0B]">★★★★★</span>
+        <span className="text-[11px] font-semibold text-white">{T.taCarte.labelRating}</span>
+      </div>
+      <div className="absolute -right-4 bottom-28 hidden items-center gap-1.5 rounded-full border border-wl-info/30 bg-wl-info/10 px-3 py-1.5 text-wl-info shadow-lg min-[900px]:flex">
+        <span className="text-[11px] font-bold uppercase tracking-wider">{T.taCarte.labelVerified}</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+          <path d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+        </svg>
+      </div>
+    </div>
+  );
+}
+
 function HeroCardFallback({ T }: { T: ReturnType<typeof useTranslation>["t"]["athleteLanding"] }) {
   return (
     <div className="absolute inset-0 flex flex-col bg-gradient-to-b from-[#22262E] to-[#111317]">
