@@ -586,8 +586,9 @@ function TaCartePhone({ T }: { T: ReturnType<typeof useTranslation>["t"]["athlet
           boxShadow: "0 40px 90px -25px rgba(0,0,0,0.8), 0 0 60px -18px rgba(230,57,70,0.4)",
         }}
       >
-        {/* screen — 9:16, video fills via cover, story chrome on top */}
-        <div className="relative aspect-[9/16] overflow-hidden rounded-[1.8rem] bg-black">
+        {/* screen — iPhone 6.9" ratio (1320/2868) so the WOW recording
+            fills via cover with no vertical cut; aspect drives the height */}
+        <div className="relative aspect-[1320/2868] overflow-hidden rounded-[1.8rem] bg-black">
           {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
           <video
             className="absolute inset-0 h-full w-full object-cover"
@@ -624,16 +625,18 @@ function TaCartePhone({ T }: { T: ReturnType<typeof useTranslation>["t"]["athlet
         </div>
       </div>
 
-      {/* floating labels — desktop only */}
+      {/* floating story-reaction bubbles — desktop only, static */}
       <div className="absolute -left-5 top-20 hidden items-center gap-1.5 rounded-full border border-white/10 bg-[#1A1D24] px-3 py-1.5 shadow-lg min-[900px]:flex">
-        <span className="text-[12px] text-[#F59E0B]">★★★★★</span>
-        <span className="text-[11px] font-semibold text-white">{T.taCarte.labelRating}</span>
-      </div>
-      <div className="absolute -right-4 bottom-28 hidden items-center gap-1.5 rounded-full border border-wl-info/30 bg-wl-info/10 px-3 py-1.5 text-wl-info shadow-lg min-[900px]:flex">
-        <span className="text-[11px] font-bold uppercase tracking-wider">{T.taCarte.labelVerified}</span>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-          <path d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="#E63946" aria-hidden>
+          <path d="M12 21s-7-4.35-9.5-8.5C1 9.5 2.7 5.5 6.5 5.5c2 0 3.3 1.2 4 2.3.7-1.1 2-2.3 4-2.3 3.8 0 5.5 4 4 7C19 16.65 12 21 12 21z" />
         </svg>
+        <span className="text-[11px] font-bold text-white">24</span>
+      </div>
+      <div className="absolute -right-4 bottom-28 hidden items-center gap-1.5 rounded-full border border-white/10 bg-[#1A1D24] px-3 py-1.5 shadow-lg min-[900px]:flex">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#D1D5DB" strokeWidth="2" aria-hidden>
+          <path d="M21 11.5a8.5 8.5 0 0 1-12.5 7.5L3 21l2-5.5A8.5 8.5 0 1 1 21 11.5z" />
+        </svg>
+        <span className="text-[11px] font-bold text-white">8</span>
       </div>
     </div>
   );

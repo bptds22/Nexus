@@ -398,8 +398,6 @@ export interface Dictionary {
       body: string;
       benefits: { title: string; description: string }[];
       cta: string;
-      labelRating: string;
-      labelVerified: string;
       storyHandle: string;
       storyMessage: string;
     };
@@ -1163,8 +1161,6 @@ export const dictionaries: Record<Lang, Dictionary> = {
           { title: "Prête pour ta story", description: "Exporte, partage, fais circuler ton nom." },
         ],
         cta: "Crée ta carte — gratuit",
-        labelRating: "Cote globale",
-        labelVerified: "Vérifié",
         storyHandle: "toi · ta story",
         storyMessage: "Envoyer un message",
       },
@@ -2032,8 +2028,6 @@ export const dictionaries: Record<Lang, Dictionary> = {
           { title: "Ready for your story", description: "Export, share, get your name around." }, // TODO-EN
         ],
         cta: "Create your card — free", // TODO-EN
-        labelRating: "Overall rating", // TODO-EN
-        labelVerified: "Verified", // TODO-EN
         storyHandle: "you · your story", // TODO-EN
         storyMessage: "Send a message", // TODO-EN
       },
