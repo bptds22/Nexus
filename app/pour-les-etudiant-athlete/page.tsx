@@ -586,10 +586,10 @@ function TaCartePhone({ T }: { T: ReturnType<typeof useTranslation>["t"]["athlet
           boxShadow: "0 40px 90px -25px rgba(0,0,0,0.8), 0 0 60px -18px rgba(230,57,70,0.4)",
         }}
       >
-        {/* screen ratio = the WOW file's exact display dims (1080×1920,
+        {/* screen ratio = the WOW file's exact display dims (1290×2796,
             read from the MP4 tkhd) so object-cover fills it with zero crop
             and zero black gap; aspect-ratio drives the height (no fixed h). */}
-        <div className="relative aspect-[1080/1920] overflow-hidden rounded-[1.8rem] bg-black">
+        <div className="relative aspect-[1290/2796] overflow-hidden rounded-[1.8rem] bg-black">
           {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
           <video
             className="absolute inset-0 h-full w-full object-cover"
