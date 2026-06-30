@@ -69,3 +69,27 @@ together in a focused launch prep session.
 - [ ] **Multi-coach school stress test** — once a school
   has multiple coaches, verify the team filter / view
   toggle (P2 in bug doc) is needed
+
+## Refonte page athlète v2 (`/pour-les-etudiant-athlete`)
+
+Page reconstruite en 13 sections (juin 2026). Bloquée sur 3 assets
+fournis par BP — placeholders propres câblés en attendant :
+
+- [ ] **Image carte hero** — `public/nexus-card-flag-football-male.png`
+  (extension à confirmer : .png ou .webp). Câblée dans `page.tsx`
+  (`HERO_CARD_SRC`) via `<PlayerCard3D>` ; fallback CSS s'affiche si
+  l'asset manque. L'image doit déjà contenir son propre badge vérifié.
+- [ ] **Vidéo effet WOW** — mp4 muet/loop/playsinline pour le cadre
+  téléphone de la section « Ta Carte ». Câblée via `WOW_VIDEO_SRC`
+  (poster temporaire `preview-athlete-player-card.png`).
+- [ ] **Vidéo YouTube** — id à insérer dans `YT_VIDEO_ID` (section
+  Mobile, `<YouTubeFacade>`, façade click-to-load).
+
+Confirmations :
+- [x] **Descriptions cote globale** — récupérées du canon réel
+  (échelle D1→D3 : `lib/i18n/dictionaries.ts` `stars.definitions` +
+  `lib/config/parcoursCoteCopy.ts`). PAS des placeholders.
+- [ ] **Chiffre CÉGEPs à valider** — la page affiche « 70 CÉGEPs »
+  (hero + stat bar). DB réelle = 69 CÉGEPs (75 avec `has_collegial`).
+  Confirmer 70 (arrondi) vs 69 avec BP — corriger dans `athleteLanding`
+  (FR + EN) si besoin.
