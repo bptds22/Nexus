@@ -940,3 +940,25 @@ export interface PartnerCardDownload {
   format: CardDownloadFormat;
   downloaded_at: string;
 }
+
+/* ══════════════════════════════════════════════════════════════
+   SCHOOL PROGRAM IDENTITY — data contract for <ProgramWall>
+   Presentational hero "hype wall" for a school/CÉGEP program.
+   Source of truth everything else binds to. Nullable fields fall
+   back gracefully (see ProgramWall): logoUrl → initial crest,
+   slogan/established → motif tiles.
+══════════════════════════════════════════════════════════════ */
+
+export interface SchoolProgramIdentity {
+  id: string;
+  schoolName: string;
+  mascot: string;
+  city: string;
+  initial: string;
+  slogan: string | null; // nullable — many schools won't have one
+  established: string | null; // nullable — founding year, if known
+  league: "RSEQ" | "USPORTS";
+  colorPrimary: string; // hex "#RRGGBB", validated on ingest
+  colorSecondary: string; // hex "#RRGGBB", validated on ingest
+  logoUrl: string | null; // nullable — falls back to initial crest
+}

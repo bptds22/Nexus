@@ -2,9 +2,11 @@
 //
 // Throwaway dev route to eyeball <ProgramWall>. Loads the four collage fonts via
 // a <link> here (NOT in the global layout), so the rest of the app stays on
-// Outfit. Renders two contrasting schools to sanity-check theming + ink flip.
+// Outfit. Renders all 6 seed schools (real palettes, stress-tested) stacked,
+// each labeled with its school name.
 
 import ProgramWall from "@/components/program-wall/ProgramWall";
+import { schoolPrograms } from "@/lib/mock/schoolPrograms";
 
 export const metadata = {
   title: "ProgramWall — dev test",
@@ -28,60 +30,25 @@ export default function WallTestPage() {
       />
 
       <main style={{ background: "#0b0d12", minHeight: "100vh" }}>
-        <section style={{ padding: "24px 0" }}>
-          <h1
-            style={{
-              color: "#9aa4b2",
-              font: "600 13px/1.4 system-ui, sans-serif",
-              letterSpacing: "0.14em",
-              textTransform: "uppercase",
-              padding: "0 24px 12px",
-            }}
-          >
-            1 — RSEQ · navy / gold
-          </h1>
-          {/* full-bleed */}
-          <div style={{ padding: "0 16px" }}>
-            <ProgramWall
-              schoolName="Cégep de la Rive-Nord"
-              mascot="LYNX"
-              city="REPENTIGNY"
-              initial="R"
-              slogan="Ici, tu fais partie de quelque chose"
-              established="2004"
-              league="RSEQ"
-              colorPrimary="#12233F"
-              colorSecondary="#E3B341"
-            />
-          </div>
-        </section>
-
-        <section style={{ padding: "24px 0 48px" }}>
-          <h1
-            style={{
-              color: "#9aa4b2",
-              font: "600 13px/1.4 system-ui, sans-serif",
-              letterSpacing: "0.14em",
-              textTransform: "uppercase",
-              padding: "0 24px 12px",
-            }}
-          >
-            2 — U SPORTS · maroon / cream (ink flip)
-          </h1>
-          <div style={{ padding: "0 16px" }}>
-            <ProgramWall
-              schoolName="Condors College"
-              mascot="CONDORS"
-              city="MONTRÉAL"
-              initial="C"
-              slogan="Rise above the rest"
-              established="1969"
-              league="USPORTS"
-              colorPrimary="#7A1420"
-              colorSecondary="#E9E4D4"
-            />
-          </div>
-        </section>
+        {schoolPrograms.map((school, i) => (
+          <section key={school.id} style={{ padding: "24px 0" }}>
+            <h1
+              style={{
+                color: "#9aa4b2",
+                font: "600 13px/1.4 system-ui, sans-serif",
+                letterSpacing: "0.14em",
+                textTransform: "uppercase",
+                padding: "0 24px 12px",
+              }}
+            >
+              {i + 1} — {school.schoolName} · {school.mascot}
+            </h1>
+            <div style={{ padding: "0 16px" }}>
+              <ProgramWall school={school} />
+            </div>
+          </section>
+        ))}
+        <div style={{ height: 32 }} />
       </main>
     </>
   );

@@ -10,19 +10,11 @@
 // patterns never leak into the rest of the app.
 
 import * as React from "react";
+import type { SchoolProgramIdentity } from "@/lib/types/models";
 import { deriveTheme } from "./theme";
 
 export interface ProgramWallProps {
-  schoolName: string; // "Cégep de la Rive-Nord"
-  mascot: string; // "LYNX"
-  city: string; // "REPENTIGNY"
-  initial: string; // "R"
-  slogan: string; // "Ici, tu fais partie de quelque chose"
-  established: string; // "2004"
-  league: "RSEQ" | "USPORTS";
-  colorPrimary: string; // hex "#12233F"
-  colorSecondary: string; // hex "#E3B341"
-  logoUrl?: string; // optional; if absent, show initial in a crest tile
+  school: SchoolProgramIdentity;
 }
 
 /* ------------------------------------------------------------------ icons -- */
@@ -146,7 +138,7 @@ function Tile({
 
 /* -------------------------------------------------------------------- wall -- */
 
-export default function ProgramWall(props: ProgramWallProps) {
+export default function ProgramWall({ school }: ProgramWallProps) {
   const {
     schoolName,
     mascot,
@@ -158,7 +150,7 @@ export default function ProgramWall(props: ProgramWallProps) {
     colorPrimary,
     colorSecondary,
     logoUrl,
-  } = props;
+  } = school;
 
   const theme = deriveTheme(colorPrimary, colorSecondary);
   const isU = league === "USPORTS";
@@ -246,12 +238,17 @@ export default function ProgramWall(props: ProgramWallProps) {
         {/* halftone */}
         <Tile c={2} r={2} className="pw-halftone" />
 
-        {/* slogan in marker script, tilted */}
-        <Tile c={4} r={2} className="pw-fill-cream pw-rot-b">
-          <span className="pw-marker pw-fs-md" style={{ color: "var(--c1)" }}>
-            {slogan}
-          </span>
-        </Tile>
+        {/* slogan in marker script, tilted — collapses to a motif when null so
+            the wall never shows an empty box */}
+        {slogan ? (
+          <Tile c={4} r={2} className="pw-fill-cream pw-rot-b">
+            <span className="pw-marker pw-fs-md" style={{ color: "var(--c1)" }}>
+              {slogan}
+            </span>
+          </Tile>
+        ) : (
+          <Tile c={4} r={2} className="pw-halftone pw-rot-b" />
+        )}
 
         {/* nation icon motif */}
         <Tile c={1} r={2} className="pw-fill-c1 pw-icon">
@@ -303,15 +300,19 @@ export default function ProgramWall(props: ProgramWallProps) {
           <Football className="pw-svg" />
         </Tile>
 
-        {/* EST. established */}
-        <Tile c={2} r={1} className="pw-fill-cream">
-          <span
-            className="pw-barlow pw-caps pw-fs-sm"
-            style={{ color: "var(--c1)" }}
-          >
-            EST. {established}
-          </span>
-        </Tile>
+        {/* EST. established — swaps to a pattern tile when null */}
+        {established ? (
+          <Tile c={2} r={1} className="pw-fill-cream">
+            <span
+              className="pw-barlow pw-caps pw-fs-sm"
+              style={{ color: "var(--c1)" }}
+            >
+              EST. {established}
+            </span>
+          </Tile>
+        ) : (
+          <Tile c={2} r={1} className="pw-stripes" />
+        )}
 
         {/* bolt icon */}
         <Tile c={1} r={1} className="pw-fill-c1 pw-icon">
