@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Spartiates emblem placeholder">
+  <!-- Neutral stand-in emblem. Replace with the real logo file at this path. -->
+  <defs>
+    <linearGradient id="sp-ring" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F2A900"/>
+      <stop offset="1" stop-color="#C98A00"/>
+    </linearGradient>
+  </defs>
+  <path d="M100 8 L182 40 V104 C182 150 146 180 100 194 C54 180 18 150 18 104 V40 Z"
+        fill="#3A1B54" stroke="url(#sp-ring)" stroke-width="9" stroke-linejoin="round"/>
+  <path d="M100 24 L168 50 V104 C168 142 138 168 100 180 C62 168 32 142 32 104 V50 Z"
+        fill="none" stroke="#F2A900" stroke-width="3" opacity="0.5"/>
+  <text x="100" y="132" text-anchor="middle" font-family="Anton, Impact, sans-serif"
+        font-size="104" fill="#F2A900" letter-spacing="2">V</text>
+  <text x="100" y="162" text-anchor="middle" font-family="Bebas Neue, Arial Narrow, sans-serif"
+        font-size="20" fill="#F2A900" letter-spacing="4">SPARTIATES</text>
+</svg>
