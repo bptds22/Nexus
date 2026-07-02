@@ -19,6 +19,15 @@ export interface ProgramWallTheme {
   cream: string;
   /** readable ink for text sitting on secondary-filled tiles */
   ink: string;
+  /* Surface-aware accent floor. Each is `c2` when the secondary is bright/
+     contrasty enough on that surface, otherwise substituted (cream on dark
+     surfaces, dark ink on light ones) so c2-accents never go illegible. */
+  /** accent color for c2-accents sitting on c1Deep (crest badge) */
+  c2OnDeep: string;
+  /** accent color for c2-accents sitting on c1Mid (fill-deep tiles, rail) */
+  c2OnMid: string;
+  /** accent color for c2-accents sitting on c1 (fill-c1 tiles) */
+  c2OnC1: string;
 }
 
 interface Rgb {
@@ -79,6 +88,57 @@ function luminance({ r, g, b }: Rgb): number {
   return (0.299 * r + 0.587 * g + 0.114 * b) / 255;
 }
 
+/* ---- WCAG-ish contrast, for the surface-aware accent floor ---- */
+
+const CONTRAST_MIN = 3.0; // WCAG AA large-text ratio
+const DARK_SECONDARY = 0.35; // secondaries below this always floor on dark surfaces
+
+/** sRGB channel → linear light (WCAG). */
+function srgbToLinear(c: number): number {
+  const x = c / 255;
+  return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4);
+}
+
+/** WCAG relative luminance (linearized). */
+function wcagLuminance({ r, g, b }: Rgb): number {
+  return (
+    0.2126 * srgbToLinear(r) +
+    0.7152 * srgbToLinear(g) +
+    0.0722 * srgbToLinear(b)
+  );
+}
+
+/** WCAG contrast ratio between two colors (1..21). */
+function contrastRatio(a: Rgb, b: Rgb): number {
+  const la = wcagLuminance(a);
+  const lb = wcagLuminance(b);
+  const hi = Math.max(la, lb);
+  const lo = Math.min(la, lb);
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+const CREAM_RGB = parseHex(CREAM);
+const INK_RGB = parseHex(DARK_INK);
+
+/**
+ * Resolve the accent color for a `--c2` accent sitting on `surface`.
+ * Keeps the secondary when it is bright enough AND contrasty enough on that
+ * surface; otherwise substitutes whichever neutral (cream or dark ink) reads
+ * best against the surface. Bright secondaries (gold, orange…) always keep c2,
+ * so those walls are untouched.
+ */
+function pickAccentOn(surface: Rgb, secondary: Rgb, secondaryHex: string): string {
+  const c2IsFine =
+    luminance(secondary) >= DARK_SECONDARY &&
+    contrastRatio(secondary, surface) >= CONTRAST_MIN;
+  if (c2IsFine) return secondaryHex;
+  // c2 illegible here → pick the neutral that contrasts most with the surface:
+  // cream wins on dark surfaces, dark ink wins on light ones.
+  return contrastRatio(CREAM_RGB, surface) >= contrastRatio(INK_RGB, surface)
+    ? CREAM
+    : DARK_INK;
+}
+
 export function deriveTheme(
   primary: string,
   secondary: string,
@@ -86,13 +146,19 @@ export function deriveTheme(
   const p = parseHex(primary);
   const s = parseHex(secondary);
 
+  const deep = darken(p, 0.5);
+  const mid = darken(p, 0.3);
+
   return {
     c1: primary,
     c2: secondary,
-    c1Deep: toHex(darken(p, 0.5)),
-    c1Mid: toHex(darken(p, 0.3)),
+    c1Deep: toHex(deep),
+    c1Mid: toHex(mid),
     c1Glow: toHex(lighten(p, 0.42)),
     cream: CREAM,
     ink: luminance(s) > 0.6 ? DARK_INK : CREAM,
+    c2OnDeep: pickAccentOn(deep, s, secondary),
+    c2OnMid: pickAccentOn(mid, s, secondary),
+    c2OnC1: pickAccentOn(p, s, secondary),
   };
 }

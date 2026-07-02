@@ -25,7 +25,7 @@ type IconProps = { className?: string };
 function FleurDeLys({ className }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
-      <g fill="none" stroke="var(--c2)" strokeWidth="1.4" strokeLinejoin="round">
+      <g fill="none" stroke="var(--c2-accent)" strokeWidth="1.4" strokeLinejoin="round">
         <path d="M12 2c-1.6 2.2-1.6 4.4 0 6.6 1.6-2.2 1.6-4.4 0-6.6z" />
         <path d="M12 8.6c-2.8.4-4.6 2.4-4.6 5 0 1.7.9 3 2.1 3.8-1.7.2-2.7 1.2-2.7 2.9h10.4c0-1.7-1-2.7-2.7-2.9 1.2-.8 2.1-2.1 2.1-3.8 0-2.6-1.8-4.6-4.6-5z" />
         <path d="M8.5 20.3h7" />
@@ -39,7 +39,7 @@ function MapleLeaf({ className }: IconProps) {
     <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
       <path
         fill="none"
-        stroke="var(--c2)"
+        stroke="var(--c2-accent)"
         strokeWidth="1.4"
         strokeLinejoin="round"
         d="M12 2l1.5 3.6 3-1.3-.7 3.6 3.4-.4-2 2.7 3.3 1.4-3 1.8 1.4 2.3-3.9-.5.3 2.6L12 20l-2.6-1.9.3-2.6-3.9.5L7.2 13l-3-1.8 3.3-1.4-2-2.7 3.4.4-.7-3.6 3 1.3z"
@@ -51,7 +51,7 @@ function MapleLeaf({ className }: IconProps) {
 function Basketball({ className }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
-      <g fill="none" stroke="var(--c2)" strokeWidth="1.4">
+      <g fill="none" stroke="var(--c2-accent)" strokeWidth="1.4">
         <circle cx="12" cy="12" r="9" />
         <path d="M3 12h18M12 3v18M5.6 5.6c3 3 3 9.8 0 12.8M18.4 5.6c-3 3-3 9.8 0 12.8" />
       </g>
@@ -62,7 +62,7 @@ function Basketball({ className }: IconProps) {
 function Football({ className }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
-      <g fill="none" stroke="var(--c2)" strokeWidth="1.4">
+      <g fill="none" stroke="var(--c2-accent)" strokeWidth="1.4">
         <ellipse cx="12" cy="12" rx="9" ry="5.5" />
         <path d="M12 9v6M10.3 10.5h3.4M10.3 12h3.4M10.3 13.5h3.4" />
       </g>
@@ -75,7 +75,7 @@ function Bolt({ className }: IconProps) {
     <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
       <path
         fill="none"
-        stroke="var(--c2)"
+        stroke="var(--c2-accent)"
         strokeWidth="1.4"
         strokeLinejoin="round"
         d="M13 2 4 14h6l-1 8 9-12h-6z"
@@ -89,7 +89,7 @@ function Shield({ className }: IconProps) {
     <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
       <path
         fill="none"
-        stroke="var(--c2)"
+        stroke="var(--c2-accent)"
         strokeWidth="1.4"
         strokeLinejoin="round"
         d="M12 3l7 3v5c0 5-3 8.2-7 10-4-1.8-7-5-7-10V6z"
@@ -102,7 +102,7 @@ function Star({ className }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
       <path
-        fill="var(--c2)"
+        fill="var(--c2-accent)"
         d="M12 3l2.5 5.6 6.1.6-4.6 4 1.4 6-5.4-3.1L6.6 19.2l1.4-6-4.6-4 6.1-.6z"
       />
     </svg>
@@ -169,6 +169,9 @@ export default function ProgramWall({ school }: ProgramWallProps) {
     "--c1-glow": theme.c1Glow,
     "--cream": theme.cream,
     "--ink": theme.ink,
+    "--c2-on-deep": theme.c2OnDeep,
+    "--c2-on-mid": theme.c2OnMid,
+    "--c2-on-c1": theme.c2OnC1,
   } as React.CSSProperties;
 
   return (
@@ -205,7 +208,7 @@ export default function ProgramWall({ school }: ProgramWallProps) {
 
         {/* division */}
         <Tile c={2} r={2} className="pw-fill-c1">
-          <span className="pw-anton pw-fs-lg" style={{ color: "var(--c2)" }}>
+          <span className="pw-anton pw-fs-lg" style={{ color: "var(--c2-accent)" }}>
             D1
           </span>
         </Tile>
@@ -230,7 +233,7 @@ export default function ProgramWall({ school }: ProgramWallProps) {
 
         {/* #1 */}
         <Tile c={1} r={1} className="pw-fill-c1">
-          <span className="pw-anton pw-fs-md" style={{ color: "var(--c2)" }}>
+          <span className="pw-anton pw-fs-md" style={{ color: "var(--c2-accent)" }}>
             #1
           </span>
         </Tile>
@@ -270,7 +273,7 @@ export default function ProgramWall({ school }: ProgramWallProps) {
 
         {/* trophy / bol d'or */}
         <Tile c={3} r={1} className="pw-fill-c1">
-          <span className="pw-bebas pw-fs-md" style={{ color: "var(--c2)" }}>
+          <span className="pw-bebas pw-fs-md" style={{ color: "var(--c2-accent)" }}>
             {trophy}
           </span>
         </Tile>
@@ -354,6 +357,8 @@ export default function ProgramWall({ school }: ProgramWallProps) {
 const PW_CSS = `
 .pw-root {
   --row: 76px;
+  /* default accent; each fill class overrides with its surface-aware value */
+  --c2-accent: var(--c2);
   position: relative;
   width: 100%;
   background: var(--c1-deep);
@@ -383,10 +388,11 @@ const PW_CSS = `
   box-shadow: 0 2px 0 rgba(0,0,0,0.28);
 }
 
-/* ---- fills ---- */
-.pw-fill-c1    { background: var(--c1); color: var(--c2); }
+/* ---- fills ---- (each dark fill exposes a surface-aware --c2-accent, which
+   text / outlines / icon strokes inside the tile inherit) */
+.pw-fill-c1    { background: var(--c1); --c2-accent: var(--c2-on-c1); color: var(--c2-accent); }
 .pw-fill-c2    { background: var(--c2); color: var(--ink); }
-.pw-fill-deep  { background: var(--c1-mid); color: var(--c2); }
+.pw-fill-deep  { background: var(--c1-mid); --c2-accent: var(--c2-on-mid); color: var(--c2-accent); }
 .pw-fill-cream { background: var(--cream); color: var(--c1); }
 
 /* ---- hero crest ---- */
@@ -408,14 +414,16 @@ const PW_CSS = `
   align-items: center;
   justify-content: center;
   gap: 6px;
-  border: 6px solid var(--c2);
+  /* crest sits on the c1Deep spotlight → floor accent to c2-on-deep */
+  --c2-accent: var(--c2-on-deep);
+  border: 6px solid var(--c2-accent);
   border-radius: 16px;
   background: var(--c1-deep);
   /* subtle inner border + faint highlight ring */
   box-shadow:
     inset 0 0 0 3px var(--c1),
     inset 0 0 0 7px rgba(255,255,255,0.06);
-  color: var(--c2);
+  color: var(--c2-accent);
 }
 .pw-badge-initial {
   font-family: 'Anton', system-ui, sans-serif;
@@ -447,7 +455,7 @@ const PW_CSS = `
 .pw-fs-rail { font-size: clamp(18px, 3.6cqw, 44px); }
 
 .pw-vertical { writing-mode: vertical-rl; text-orientation: upright; letter-spacing: 0.02em; line-height: 1; }
-.pw-outline  { color: transparent; -webkit-text-stroke: 2px var(--c2); }
+.pw-outline  { color: transparent; -webkit-text-stroke: 2px var(--c2-accent); }
 
 /* ---- rotations / collage energy ---- */
 .pw-rot-a { transform: rotate(-3.5deg) scale(1.02); z-index: 2; }
