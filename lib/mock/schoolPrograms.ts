@@ -1,112 +1,68 @@
 // lib/mock/schoolPrograms.ts
 //
-// Seed data for <ProgramWall> — 6 real Quebec CÉGEP programs (real team names),
-// with palettes deliberately chosen to STRESS the theming, not just easy ones.
-// Colors are approximations of each program's identity, tuned to probe the
-// derivation + ink-flip across the full range.
+// The 3 schools from docs/reference/wall-compare-3schools.html — Grasset
+// (rouge/noir · vrai logo), Vulkins (orange/violet · monogramme V), Nomades
+// (vert néon/bleu · monogramme M). Display-only fixture for /wall-test.
 //
-// Stress cases baked in:
-//   • Limoilou Titans   — DARK secondary (near-black) → c2-as-text-on-dark risk
-//   • Montmorency       — MUDDY: primary & secondary share hue (both teal)
-//   • Sainte-Foy        — LIGHT-ON-LIGHT: light primary + cream secondary
-//   • Vieux-Montréal    — the one with a real logo file (logoUrl set)
-//   • Rive-Nord         — the validated v2 navy/gold baseline
-//   • Trois-Rivières    — strong-contrast control (deep indigo / orange)
-//
-// Nullable coverage: several have null slogan / established / logoUrl so the
-// graceful-fallback paths are exercised by real rows.
+// ⚠ Vulkins & Nomades hex are NOT verified official brand colors — placeholders
+// from the reference palette test; replace with the real values before any
+// production use.
 
-import type { SchoolProgramIdentity } from "@/lib/types/models";
+import type { SchoolProgramIdentity } from "@/components/program-wall/slots";
 
 export const schoolPrograms: SchoolProgramIdentity[] = [
-  // 1 — baseline (validated in v2). Full data.
   {
-    id: "rive-nord",
-    schoolName: "Cégep de la Rive-Nord",
-    mascot: "LYNX",
-    city: "REPENTIGNY",
-    initial: "R",
-    slogan: "Ici, tu fais partie de quelque chose",
-    established: "2004",
+    id: "andre-grasset",
+    schoolName: "Collège André-Grasset",
+    mascot: "Phénix",
+    colorPrimary: "#A6192E", // Grasset red
+    colorDarker: "#191414",
+    colorNeutral: "#F1EBDD",
+    logoUrl: "/logos/cag.png",
+    city: "Montréal",
+    regionTag: "AHUNTSIC · QC",
+    areaCode: "514",
+    initials: "AG",
+    slogan: "Phénix un jour,\nPhénix toujours",
+    nickname: "LE NID",
     league: "RSEQ",
-    colorPrimary: "#12233F", // navy
-    colorSecondary: "#E3B341", // gold
-    logoUrl: null,
+    province: "QC",
+    division: "D1",
   },
-
-  // 2 — HARD: dark secondary (near-black). Also all-nullable-optionals stripped
-  //     to prove a minimal row still looks full.
   {
-    id: "limoilou",
-    schoolName: "Cégep Limoilou",
-    mascot: "TITANS",
-    city: "QUÉBEC",
-    initial: "L",
-    slogan: null,
-    established: null,
+    id: "victoriaville",
+    schoolName: "Cégep de Victoriaville",
+    mascot: "Vulkins",
+    colorPrimary: "#E8721C", // ⚠ non vérifié — orange
+    colorDarker: "#241335", // ⚠ non vérifié — violet
+    colorNeutral: "#F1EBDD",
+    logoUrl: null, // → monogramme V
+    city: "Victoriaville",
+    regionTag: "BOIS-FRANCS · QC",
+    areaCode: "819",
+    initials: "V",
+    slogan: "L'éruption\ncommence ici",
+    nickname: "LE VOLCAN",
     league: "RSEQ",
-    colorPrimary: "#C8102E", // red
-    colorSecondary: "#141414", // near-black  ← dark-secondary stress
-    logoUrl: null,
+    province: "QC",
+    division: "D1",
   },
-
-  // 3 — HARD: muddy — primary & secondary within the same (teal) hue.
   {
     id: "montmorency",
     schoolName: "Collège Montmorency",
-    mascot: "NOMADES",
-    city: "LAVAL",
-    initial: "M",
-    slogan: "Toujours en mouvement",
-    established: null, // → pattern tile
+    mascot: "Nomades",
+    colorPrimary: "#79B117", // ⚠ non vérifié — vert néon
+    colorDarker: "#0E1E33", // ⚠ non vérifié — bleu
+    colorNeutral: "#F1EBDD",
+    logoUrl: null, // → monogramme M
+    city: "Laval",
+    regionTag: "LAVAL-DES-RAPIDES",
+    areaCode: "450",
+    initials: "M",
+    slogan: "Partout,\nchez nous",
+    nickname: "LA TRIBU",
     league: "RSEQ",
-    colorPrimary: "#0E7C7B", // teal
-    colorSecondary: "#14514F", // dark teal ← low separation from primary
-    logoUrl: null,
-  },
-
-  // 4 — HARD: light-on-light + minimal data (no slogan, no established, no logo).
-  {
-    id: "sainte-foy",
-    schoolName: "Cégep de Sainte-Foy",
-    mascot: "DYNAMIQUES",
-    city: "QUÉBEC",
-    initial: "S",
-    slogan: null,
-    established: null,
-    league: "RSEQ",
-    colorPrimary: "#7FB3D5", // light blue
-    colorSecondary: "#EDE6D6", // cream ← light-on-light stress
-    logoUrl: null,
-  },
-
-  // 5 — the one WITH a real logo file (drop/replace at public/logos/).
-  {
-    id: "vieux-montreal",
-    schoolName: "Cégep du Vieux Montréal",
-    mascot: "SPARTIATES",
-    city: "MONTRÉAL",
-    initial: "V",
-    slogan: "La force du collectif",
-    established: "1968",
-    league: "RSEQ",
-    colorPrimary: "#5B2B82", // purple
-    colorSecondary: "#F2A900", // gold
-    logoUrl: "/logos/spartiates.svg",
-  },
-
-  // 6 — strong-contrast control (should be the "easy" premium look).
-  {
-    id: "trois-rivieres",
-    schoolName: "Cégep de Trois-Rivières",
-    mascot: "DIABLOS",
-    city: "TROIS-RIVIÈRES",
-    initial: "T",
-    slogan: "On joue avec le feu",
-    established: "1968",
-    league: "RSEQ",
-    colorPrimary: "#1B1B3A", // deep indigo
-    colorSecondary: "#FF6B35", // orange
-    logoUrl: null,
+    province: "QC",
+    division: "D1",
   },
 ];
