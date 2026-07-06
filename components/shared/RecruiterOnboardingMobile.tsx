@@ -81,7 +81,7 @@ function stripAccents(s: string): string {
   return s.normalize("NFD").replace(/[̀-ͯ]/g, "");
 }
 function normalize(s: string): string {
-  return stripAccents(s).toLowerCase().trim();
+  return stripAccents(s).replace(/[-\s]+/g, " ").toLowerCase().trim();
 }
 
 function programLabel(t: { name: string; division: string | null; age_group: string | null; gender: string | null }): string {

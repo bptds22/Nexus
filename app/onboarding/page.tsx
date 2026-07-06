@@ -2778,8 +2778,9 @@ function RecruiterCegepStep({ user, save }: { user: NexusUser; save: (u: Partial
       });
   }, []);
 
+  const norm = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[-\s]+/g, " ").toLowerCase().trim();
   const filtered = cegeps.filter((c) =>
-    c.name.toLowerCase().includes(search.toLowerCase()) || c.city.toLowerCase().includes(search.toLowerCase())
+    norm(c.name).includes(norm(search)) || norm(c.city).includes(norm(search))
   );
 
   const selectCegep = (c: { id: string; name: string; city: string; region: string }) => {
