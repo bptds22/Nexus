@@ -217,7 +217,8 @@ function SearchableDropdown<T extends { name: string }>({
 }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
-  const filtered = items.filter((i) => i.name.toLowerCase().includes(query.toLowerCase())).slice(0, 15);
+  const norm = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[-\s]+/g, " ").toLowerCase().trim();
+  const filtered = items.filter((i) => norm(i.name).includes(norm(query))).slice(0, 15);
 
   return (
     <div className="relative">
