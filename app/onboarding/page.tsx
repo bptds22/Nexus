@@ -2764,7 +2764,7 @@ function RecruiterCegepStep({ user, save }: { user: NexusUser; save: (u: Partial
     supabase
       .from("schools")
       .select("id, name, city, region")
-      .eq("has_collegial", true)
+      .eq("type", "CEGEP")
       .order("name")
       .then(({ data, error }) => {
         if (data) {

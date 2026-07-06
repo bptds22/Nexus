@@ -243,7 +243,7 @@ export function RecruiterOnboardingMobile() {
       const { data } = await supabase
         .from("schools")
         .select("id, name, city, region")
-        .eq("has_collegial", true)
+        .eq("type", "CEGEP")
         .order("name");
       setCegeps((data as CegepRow[]) || []);
       setCegepsLoading(false);
