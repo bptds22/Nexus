@@ -52,6 +52,155 @@ const labelCls = "text-[11px] font-bold uppercase tracking-[0.2em] text-[#6b7280
 const sectionTitle = "text-[12px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mb-4 flex items-center gap-2";
 
 /* ─────────────────────────────────────────────────────────────────
+   ClubPicker — civil-context CLUB tier (parity with mobile
+   AthleteOnboardingMobile.tsx clubs picker).
+
+   Civil athletes first pick their CLUB (a schools row with
+   type='LIGUE_CIVILE'), then optionally a team within it. The club
+   is the anchor written to athletes.school_id at submit — so an
+   athlete whose club has no Nexus team is still anchored to the club
+   (the case the old team-only aggregate could not express).
+
+   Query is sport-AGNOSTIC (mobile parity): all 266 LIGUE_CIVILE
+   schools, filtered client-side by name/city. Sport only scopes the
+   TEAM tier (CivilTeamPicker), not the club.
+
+   Opt-out via "Continuer sans club" → school_id stays NULL (a
+   legitimate skip; the athlete can associate later).
+───────────────────────────────────────────────────────────────── */
+type CivilClubRow = {
+  id: string;
+  name: string;
+  city: string | null;
+  region: string | null;
+};
+
+function ClubPicker({
+  selectedClubId,
+  onSelect,
+  onContinueWithoutClub,
+}: {
+  selectedClubId: string | null;
+  onSelect: (club: CivilClubRow) => void;
+  onContinueWithoutClub: () => void;
+}) {
+  const [clubs, setClubs] = useState<CivilClubRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [skipped, setSkipped] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadClubs() {
+      setLoading(true);
+      const supabase = createClient();
+      // Mobile parity (AthleteOnboardingMobile clubs loader): every
+      // LIGUE_CIVILE school, no sport filter. Client-side search below.
+      const { data } = await supabase
+        .from("schools")
+        .select("id, name, city, region")
+        .eq("type", "LIGUE_CIVILE")
+        .order("name");
+      if (!cancelled) {
+        setClubs((data as CivilClubRow[]) ?? []);
+        setLoading(false);
+      }
+    }
+    loadClubs();
+    return () => { cancelled = true; };
+  }, []);
+
+  const q = search.trim().toLowerCase();
+  const visible = (q.length > 0
+    ? clubs.filter((c) =>
+        c.name.toLowerCase().includes(q)
+        || (c.city ? c.city.toLowerCase().includes(q) : false),
+      )
+    : clubs
+  ).slice(0, 50);
+
+  if (skipped) {
+    return (
+      <p className="text-[13px] text-[#9CA3AF] italic">
+        Tu pourras associer ton club plus tard depuis ton profil.
+      </p>
+    );
+  }
+
+  if (loading) {
+    return <p className="text-[13px] text-[#6b7280]">Chargement des clubs...</p>;
+  }
+
+  if (clubs.length === 0) {
+    return (
+      <div className="bg-[#13151a] border border-[#2D3748] rounded-lg px-4 py-5">
+        <p className="text-[13px] text-[#9CA3AF] mb-1">Aucun club civil trouvé.</p>
+        <p className="text-[12px] text-[#6b7280] mb-4">Continue — tu pourras t&apos;associer plus tard.</p>
+        <button
+          type="button"
+          onClick={() => { setSkipped(true); onContinueWithoutClub(); }}
+          className="h-10 px-5 rounded-lg border border-[#E63946]/40 text-[12px] font-bold text-[#E63946] hover:bg-[#E63946]/10 transition-colors"
+        >
+          Continuer sans club →
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <input
+        type="text"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        placeholder="Rechercher ton club..."
+        className={inputCls}
+      />
+      <div className="space-y-2 max-h-[280px] overflow-y-auto">
+        {visible.map((c) => {
+          const isSelected = selectedClubId === c.id;
+          const meta = [c.city, c.region].filter(Boolean).join(" · ");
+          return (
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => onSelect(c)}
+              className={`w-full text-left rounded-lg px-4 py-3 transition-colors border ${
+                isSelected
+                  ? "bg-[#E63946]/10 border-[#E63946]"
+                  : "bg-[#13151a] border-[#2D3748] hover:border-[#4a4d56]"
+              }`}
+            >
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-[14px] font-bold text-white truncate">{c.name}</p>
+                  {meta && <p className="text-[11px] text-[#6b7280] truncate">{meta}</p>}
+                </div>
+                {isSelected && (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2.5" strokeLinecap="round" className="shrink-0">
+                    <path d="M20 6L9 17l-5-5" />
+                  </svg>
+                )}
+              </div>
+            </button>
+          );
+        })}
+        {visible.length === 0 && (
+          <p className="text-[12px] text-[#6b7280] px-1 py-2">Aucun club ne correspond à « {search} ».</p>
+        )}
+      </div>
+      <button
+        type="button"
+        onClick={() => { setSkipped(true); onContinueWithoutClub(); }}
+        className="text-[12px] text-[#6b7280] hover:text-[#E63946] transition-colors underline"
+      >
+        Mon club n&apos;est pas listé — continuer sans club
+      </button>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────
    CivilTeamPicker — civil-context replacement for the school block.
 
    Phase 6.2: ported to the unified model. Civil leagues now live in
@@ -471,6 +620,11 @@ function AthleteOnboardingDesktop() {
   // team_athletes junction. Legacy athletes.league_team_id is left
   // NULL on writes; the column itself is dropped in Phase 6.3.
   const [userContext, setUserContext] = useState<"scolaire" | "ligue_civile" | null>(null);
+  // Civil CLUB tier (parity with mobile selectedClubId/Name). The club
+  // is the anchor written to athletes.school_id at submit (Étape 3);
+  // the team below is optional and scoped to this club.
+  const [selectedClubId, setSelectedClubId] = useState<string | null>(null);
+  const [selectedClubName, setSelectedClubName] = useState("");
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
   const [selectedTeamName, setSelectedTeamName] = useState("");
   const [selectedTeamSchoolId, setSelectedTeamSchoolId] = useState<string | null>(null);
@@ -1173,6 +1327,38 @@ function AthleteOnboardingDesktop() {
                 consent + partner-visibility blocks below. */}
             {userContext === "ligue_civile" ? (
               <>
+                {/* CLUB tier — the civil anchor (athletes.school_id).
+                    Sport-agnostic; always selectable. Picking a club
+                    resets any previously chosen team (parity mobile). */}
+                <div className={sectionTitle}>
+                  <div className="w-0.5 h-4 bg-[#E63946] rounded-full" />
+                  Mon club
+                  <span className="text-[10px] text-[#4a4d56] font-normal normal-case tracking-normal ml-2">(optionnel)</span>
+                </div>
+                <div className="mb-3">
+                  <ClubPicker
+                    selectedClubId={selectedClubId}
+                    onSelect={(c) => {
+                      setSelectedClubId(c.id);
+                      setSelectedClubName(c.name);
+                      // Club changed → drop stale team selection.
+                      setSelectedTeamId(null);
+                      setSelectedTeamName("");
+                      setSelectedTeamSchoolId(null);
+                    }}
+                    onContinueWithoutClub={() => {
+                      setSelectedClubId(null);
+                      setSelectedClubName("");
+                      setSelectedTeamId(null);
+                      setSelectedTeamName("");
+                      setSelectedTeamSchoolId(null);
+                    }}
+                  />
+                </div>
+                {selectedClubName && (
+                  <p className="text-[12px] text-[#22C55E] font-bold mb-6">✓ {selectedClubName}</p>
+                )}
+
                 <div className={sectionTitle}>
                   <div className="w-0.5 h-4 bg-[#E63946] rounded-full" />
                   Mon équipe
