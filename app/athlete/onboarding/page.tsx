@@ -627,7 +627,6 @@ function AthleteOnboardingDesktop() {
   const [selectedClubName, setSelectedClubName] = useState("");
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
   const [selectedTeamName, setSelectedTeamName] = useState("");
-  const [selectedTeamSchoolId, setSelectedTeamSchoolId] = useState<string | null>(null);
 
   // Step 2 — Academic
   const [gpa, setGpa] = useState("");
@@ -773,6 +772,14 @@ function AthleteOnboardingDesktop() {
           setSelectedSchoolId(existing.school_id);
           if (schoolRel?.name) setSelectedSchoolName(schoolRel.name);
         }
+        // Civil-context CLUB prefill: the anchor school_id points to a
+        // LIGUE_CIVILE row = the club. Restore selectedClubId/Name so a
+        // resumed re-submit re-writes the SAME club (never wipes it to
+        // NULL). Replaces the old selectedTeamSchoolId path.
+        if (existing.school_id && schoolType === "LIGUE_CIVILE") {
+          setSelectedClubId(existing.school_id);
+          if (schoolRel?.name) setSelectedClubName(schoolRel.name);
+        }
         if (existing.coach_id) setSelectedCoachId(existing.coach_id as string);
         // Civil-context team prefill: read from team_athletes junction.
         const teamAthleteRel = Array.isArray(existing.team_athletes)
@@ -784,10 +791,9 @@ function AthleteOnboardingDesktop() {
               : ((teamAthleteRel as Record<string, unknown>).teams as Record<string, unknown> | null))
           : null;
         if (teamRel && typeof teamRel === "object") {
-          const teamObj = teamRel as { id?: string; name?: string; school_id?: string };
+          const teamObj = teamRel as { id?: string; name?: string };
           if (teamObj.id) setSelectedTeamId(teamObj.id);
           if (teamObj.name) setSelectedTeamName(teamObj.name);
-          if (teamObj.school_id) setSelectedTeamSchoolId(teamObj.school_id);
         }
         if (existing.parent_first_name) setParentFirstName(existing.parent_first_name);
         if (existing.parent_last_name) setParentLastName(existing.parent_last_name);
@@ -980,17 +986,18 @@ function AthleteOnboardingDesktop() {
     let payload: Record<string, unknown> = { user_id: userId };
 
     if (step === 1) {
-      // Phase 6.2 unified model: civil athletes anchor on
-      // athletes.school_id (the LIGUE_CIVILE schools row id resolved
-      // from the picked team) — `league_team_id` is no longer
-      // written. Team membership is captured via the team_athletes
-      // junction at submit time (handleSubmit), not at step-save
-      // time, to avoid orphan junction rows if the athlete drops
-      // out mid-flow. The chk_school_or_league constraint is still
-      // satisfied: we set school_id (possibly to the LIGUE_CIVILE
-      // school) and leave league_team_id NULL.
+      // Civil athletes anchor on athletes.school_id = the CHOSEN CLUB
+      // (a LIGUE_CIVILE schools row), parity with mobile
+      // AthleteOnboardingMobile. Previously derived from the picked
+      // team (selectedTeamSchoolId) — which stayed NULL when the club
+      // had no Nexus team, orphaning the athlete. Now the club alone
+      // anchors. Team membership is captured via the team_athletes
+      // junction at submit time (handleSubmit), not at step-save time,
+      // to avoid orphan junction rows if the athlete drops out
+      // mid-flow. chk_school_or_league is satisfied: we set school_id
+      // (the club, or NULL if skipped) and leave league_team_id NULL.
       const isCivil = userContext === "ligue_civile";
-      const civilAnchorSchoolId = isCivil ? selectedTeamSchoolId : null;
+      const civilAnchorSchoolId = isCivil ? selectedClubId : null;
       payload = {
         ...payload,
         first_name: firstName.trim(), last_name: lastName.trim(),
@@ -1084,13 +1091,14 @@ function AthleteOnboardingDesktop() {
       positionId = posData?.id || null;
     }
 
-    // Phase 6.2: civil athletes anchor on athletes.school_id (the
-    // LIGUE_CIVILE schools row id from the picked team). Team
-    // membership is recorded in the team_athletes junction after
-    // the athlete row is INSERT/UPDATE'd below. Legacy
-    // league_team_id is always NULL on writes.
+    // Civil athletes anchor on athletes.school_id = the CHOSEN CLUB
+    // (a LIGUE_CIVILE schools row), parity with mobile. Team
+    // membership is recorded in the team_athletes junction after the
+    // athlete row is INSERT/UPDATE'd below (only if a team was picked).
+    // league_team_id is always NULL on writes. school_id may be NULL
+    // when the athlete skipped the club (legitimate "sans club").
     const isCivil = userContext === "ligue_civile";
-    const civilAnchorSchoolId = isCivil ? selectedTeamSchoolId : null;
+    const civilAnchorSchoolId = isCivil ? selectedClubId : null;
 
     const athleteRecord = {
       user_id: userId,
@@ -1344,14 +1352,12 @@ function AthleteOnboardingDesktop() {
                       // Club changed → drop stale team selection.
                       setSelectedTeamId(null);
                       setSelectedTeamName("");
-                      setSelectedTeamSchoolId(null);
                     }}
                     onContinueWithoutClub={() => {
                       setSelectedClubId(null);
                       setSelectedClubName("");
                       setSelectedTeamId(null);
                       setSelectedTeamName("");
-                      setSelectedTeamSchoolId(null);
                     }}
                   />
                 </div>
@@ -1381,12 +1387,10 @@ function AthleteOnboardingDesktop() {
                           onSelect={(t) => {
                             setSelectedTeamId(t.id);
                             setSelectedTeamName(t.name);
-                            setSelectedTeamSchoolId(t.school_id);
                           }}
                           onContinueWithoutTeam={() => {
                             setSelectedTeamId(null);
                             setSelectedTeamName("");
-                            setSelectedTeamSchoolId(null);
                           }}
                         />
                       ) : (
