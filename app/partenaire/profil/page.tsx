@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { uploadImage } from "@/lib/upload/uploadImage";
 
 /* ═══════════════════════════════════════════════════════════════
    /partenaire/profil — partner self-edit form.
@@ -158,16 +159,12 @@ export default function PartnerProfilePage() {
         showToast("error", "Session expirée. Reconnecte-toi.");
         return;
       }
-      const ext = (file.name.split(".").pop() || "png").toLowerCase();
-      const path = `${user.id}/partner-logo-${Date.now()}.${ext}`;
-      const { error: upErr } = await supabase.storage.from("avatars").upload(path, file, { upsert: true });
-      if (upErr) {
-        console.error("[partner logo upload]", upErr);
-        showToast("error", "Erreur lors du téléversement du logo.");
+      const res = await uploadImage(file, { pathBase: `${user.id}/partner-logo-${Date.now()}`, preserveTransparency: true });
+      if (!res.ok) {
+        showToast("error", `Erreur logo : ${res.message}`);
         return;
       }
-      const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
-      const publicUrl = urlData.publicUrl;
+      const publicUrl = res.publicUrl;
       const { data, error } = await supabase
         .from("media_partners")
         .update({ logo_url: publicUrl })

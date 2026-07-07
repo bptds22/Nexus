@@ -5,8 +5,10 @@
  */
 export function translateAuthError(message: string): string {
   const lowered = message.toLowerCase();
+  // Anti-énumération (item #36) : ne JAMAIS confirmer qu'un email existe déjà.
+  // Message neutre — même sortie qu'un signup légitime en attente de confirmation.
   if (lowered.includes("user already registered") || lowered.includes("already exists")) {
-    return "Cet email est déjà utilisé. Connecte-toi ou utilise un autre email.";
+    return "Vérifie ton email pour compléter ton inscription.";
   }
   if (lowered.includes("password") && lowered.includes("6 characters")) {
     return "Le mot de passe doit contenir au moins 6 caractères.";

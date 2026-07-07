@@ -6,6 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import NexusLogo from "@/components/ui/NexusLogo";
 import { createClient } from "@/lib/supabase/client";
 import { needsConsent } from "@/lib/auth/needsConsent";
+import { uploadImage } from "@/lib/upload/uploadImage";
 import PlaybookBackground from "../components/PlaybookBackground";
 import TeamSearchOrCreate, { type TeamSearchRow } from "@/components/onboarding/TeamSearchOrCreate";
 import TeamCreateForm, { type TeamFormData } from "@/components/onboarding/TeamCreateForm";
@@ -114,25 +115,17 @@ function PhotoUpload({ photoUrl, onUploaded, sublabel = "Optionnel — visible p
     if (!f) return;
     setError("");
 
-    // Validate
-    if (f.size > 5 * 1024 * 1024) { setError("Fichier trop volumineux (max 5 Mo)"); return; }
-    if (!["image/jpeg", "image/png"].includes(f.type)) { setError("Format accepté : JPG ou PNG"); return; }
-
     setUploading(true);
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setUploading(false); return; }
 
-    const ext = f.name.split(".").pop() || "jpg";
-    const path = `onboarding/${user.id}_${Date.now()}.${ext}`;
-    const { error: upErr } = await supabase.storage.from("avatars").upload(path, f, { upsert: true });
-    if (upErr) { console.error("[Photo upload]", upErr); setError("Erreur lors du téléversement"); setUploading(false); return; }
+    const res = await uploadImage(f, { pathBase: `onboarding/${user.id}_${Date.now()}` });
+    if (!res.ok) { setError(res.message); setUploading(false); return; }
 
-    const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
-    onUploaded(urlData.publicUrl);
-
+    onUploaded(res.publicUrl);
     // Also save to users table
-    await supabase.from("users").update({ photo_url: urlData.publicUrl }).eq("id", user.id);
+    await supabase.from("users").update({ photo_url: res.publicUrl }).eq("id", user.id);
     setUploading(false);
   }
 
@@ -219,7 +212,8 @@ function SearchableDropdown<T extends { name: string }>({
 }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
-  const filtered = items.filter((i) => i.name.toLowerCase().includes(query.toLowerCase())).slice(0, 15);
+  const norm = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[-\s]+/g, " ").toLowerCase().trim();
+  const filtered = items.filter((i) => norm(i.name).includes(norm(query))).slice(0, 15);
 
   return (
     <div className="relative">
@@ -2989,7 +2983,7 @@ function RecruiterCegepStep({ user, save }: { user: NexusUser; save: (u: Partial
     supabase
       .from("schools")
       .select("id, name, city, region")
-      .eq("has_collegial", true)
+      .eq("type", "CEGEP")
       .order("name")
       .then(({ data, error }) => {
         if (data) {
@@ -3003,8 +2997,9 @@ function RecruiterCegepStep({ user, save }: { user: NexusUser; save: (u: Partial
       });
   }, []);
 
+  const norm = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[-\s]+/g, " ").toLowerCase().trim();
   const filtered = cegeps.filter((c) =>
-    c.name.toLowerCase().includes(search.toLowerCase()) || c.city.toLowerCase().includes(search.toLowerCase())
+    norm(c.name).includes(norm(search)) || norm(c.city).includes(norm(search))
   );
 
   const selectCegep = (c: { id: string; name: string; city: string; region: string }) => {

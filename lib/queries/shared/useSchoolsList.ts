@@ -18,12 +18,21 @@ export function useSchoolsList() {
     queryKey: ["schools-list"],
     queryFn: async () => {
       const supabase = createClient();
-      const { data, error } = await supabase
-        .from("schools")
-        .select("id, name")
-        .order("name");
-      if (error) throw error;
-      return (data ?? []) as SchoolListItem[];
+      // Paginate past PostgREST's 1000-row cap (patron 4da34dd) → liste complète.
+      const PAGE = 1000;
+      const all: SchoolListItem[] = [];
+      for (let from = 0; ; from += PAGE) {
+        const { data, error } = await supabase
+          .from("schools")
+          .select("id, name")
+          .order("name")
+          .range(from, from + PAGE - 1);
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        all.push(...(data as SchoolListItem[]));
+        if (data.length < PAGE) break;
+      }
+      return all;
     },
     staleTime: Infinity,
     gcTime: Infinity,

@@ -38,6 +38,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
+import { uploadImage } from "@/lib/upload/uploadImage";
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import { MobilePicker, type PickerOption } from "@/components/mobile/MobilePicker";
 import { SearchSheet } from "@/components/mobile/SearchSheet";
@@ -82,7 +83,7 @@ function stripAccents(s: string): string {
   return s.normalize("NFD").replace(/[̀-ͯ]/g, "");
 }
 function normalize(s: string): string {
-  return stripAccents(s).toLowerCase().trim();
+  return stripAccents(s).replace(/[-\s]+/g, " ").toLowerCase().trim();
 }
 
 function programLabel(t: { name: string; division: string | null; age_group: string | null; gender: string | null }): string {
@@ -245,7 +246,7 @@ export function RecruiterOnboardingMobile() {
       const { data } = await supabase
         .from("schools")
         .select("id, name, city, region")
-        .eq("has_collegial", true)
+        .eq("type", "CEGEP")
         .order("name");
       setCegeps((data as CegepRow[]) || []);
       setCegepsLoading(false);
@@ -354,19 +355,13 @@ export function RecruiterOnboardingMobile() {
     const file = e.target.files?.[0];
     if (!file || !userId) return;
     setPhotoUploading(true);
-    const supabase = createClient();
-    const ext = file.name.split(".").pop() || "jpg";
-    const filePath = `${userId}/${Date.now()}.${ext}`;
-    const { error: upErr } = await supabase.storage
-      .from("avatars")
-      .upload(filePath, file, { upsert: true });
-    if (upErr) {
-      toast.error({ message: "Échec de l'upload", detail: upErr.message });
+    const res = await uploadImage(file, { pathBase: `${userId}/${Date.now()}` });
+    if (!res.ok) {
+      toast.error({ message: "Échec de l'upload", detail: res.message });
       setPhotoUploading(false);
       return;
     }
-    const { data: pub } = supabase.storage.from("avatars").getPublicUrl(filePath);
-    setPhoto(pub.publicUrl);
+    setPhoto(res.publicUrl);
     setPhotoUploading(false);
     triggerHaptic("Light");
   }, [userId, toast]);
