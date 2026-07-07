@@ -39,19 +39,6 @@ type Ctx = "scolaire" | "ligue_civile" | "collegial";
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const RELATIONS = ["Père", "Mère", "Tuteur légal", "Autre"];
 
-/** RAISE EXCEPTION de la RPC → message FR lisible. */
-function rpcErrorToFr(msg: string): string {
-  if (msg.includes("INVALID_ROLE")) return "Rôle invalide.";
-  if (msg.includes("INVALID_CONTEXT")) return "Contexte invalide.";
-  if (msg.includes("INCOHERENT_ROLE_CONTEXT")) return "Le contexte ne correspond pas au rôle choisi.";
-  if (msg.includes("ROLE_ALREADY_SET")) return "Ton rôle a déjà été défini — impossible de le changer.";
-  if (msg.includes("CONTEXT_ALREADY_SET")) return "Tes informations ont déjà été enregistrées.";
-  if (msg.includes("ALREADY_ONBOARDED")) return "Ton inscription est déjà complétée.";
-  if (msg.includes("NOT_AUTHENTICATED")) return "Session expirée — reconnecte-toi.";
-  if (msg.includes("NO_PROFILE")) return "Profil introuvable.";
-  return msg || "Une erreur est survenue.";
-}
-
 /* ── Styles charte ───────────────────────────────────────────── */
 const card = "bg-[#1A1D24] border border-white/[0.06] rounded-2xl";
 const labelCls = "block text-[12px] font-bold tracking-wider uppercase text-[#6b7280] mb-1";
@@ -86,19 +73,6 @@ function Checkbox({ checked, onChange, children }: { checked: boolean; onChange:
   );
 }
 
-function RoleCard({ active, onClick, title, sub }: { active: boolean; onClick: () => void; title: string; sub: string }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`${card} w-full text-left px-4 py-3 transition-colors ${active ? "border-[#E63946] bg-[#E63946]/10" : "active:bg-[#22262e]"}`}
-    >
-      <div className="font-head font-black uppercase tracking-tight text-white text-[15px]">{title}</div>
-      <div className="text-[12px] text-white/50 mt-0.5">{sub}</div>
-    </button>
-  );
-}
-
 export default function ConsentementsPage() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
@@ -125,50 +99,52 @@ export default function ConsentementsPage() {
 
   useEffect(() => {
     (async () => {
-      const { data: { user: u } } = await createClient().auth.getUser();
+      const supabase = createClient();
+      const { data: { user: u } } = await supabase.auth.getUser();
       setUser(u);
+      // Approche C — role/context sont DÉJÀ assignés en amont (callback OAuth
+      // via service_role, ou signUp email/pw). On les LIT depuis le profil au
+      // lieu de les redemander → pas de role picker, pas de RPC
+      // set_initial_role_and_context (qui lèverait ROLE_ALREADY_SET).
+      if (u) {
+        const { data: profile } = await supabase
+          .from("users")
+          .select("role, context")
+          .eq("id", u.id)
+          .maybeSingle();
+        if (profile?.role) setRole(profile.role as Role);
+        if (profile?.context) setContext(profile.context as Ctx);
+      }
       setAuthLoading(false);
     })();
   }, []);
-
-  // Recruteur → context collegial auto ; coach/athlète → choix manuel.
-  useEffect(() => {
-    if (role === "RECRUTEUR") setContext("collegial");
-    else setContext((c) => (c === "collegial" ? null : c));
-  }, [role]);
 
   const isMinor = birthdate.length > 0 && !isAdult(birthdate);
   const parentEmailValid = EMAIL_RE.test(parentEmail.trim());
 
   const canSubmit = useMemo(() => {
-    if (!role || !context || !birthdate) return false;
+    // Approche C — role/context déjà en DB : le gate ne porte que sur DOB +
+    // consentements (+ parental si mineur).
+    if (!birthdate) return false;
     if (!consentPolicy || !consentData) return false;
     if (isMinor) {
       if (!parentFirstName.trim() || !parentLastName.trim() || !parentEmailValid) return false;
       if (!consentProfile || !consentVisibility) return false;
     }
     return true;
-  }, [role, context, birthdate, consentPolicy, consentData, isMinor, parentFirstName, parentLastName, parentEmailValid, consentProfile, consentVisibility]);
+  }, [birthdate, consentPolicy, consentData, isMinor, parentFirstName, parentLastName, parentEmailValid, consentProfile, consentVisibility]);
 
   const handleSubmit = useCallback(async () => {
-    if (!canSubmit || submitting || !user || !role || !context) return;
+    if (!canSubmit || submitting || !user || !role) return;
     setSubmitting(true);
     setError(null);
     const supabase = createClient();
 
     try {
-      // 1. RPC role+context (revalide côté serveur)
-      const { error: rpcErr } = await supabase.rpc("set_initial_role_and_context", {
-        p_role: role,
-        p_context: context,
-      });
-      if (rpcErr) {
-        setError(rpcErrorToFr(rpcErr.message));
-        setSubmitting(false);
-        return;
-      }
-
-      // 2. metadata (consents + parent PII si mineur + date_naissance + role/context)
+      // Approche C — PAS de RPC set_initial_role_and_context : role/context sont
+      // déjà en DB (callback OAuth / signUp). On capte consentements + DOB
+      // (+ parental si mineur), puis dispatch. Redemander le rôle lèverait
+      // ROLE_ALREADY_SET.
       const flags: InitialConsentFlags = {
         policy: consentPolicy,
         data: consentData,
@@ -190,8 +166,10 @@ export default function ConsentementsPage() {
         data: {
           ...buildConsentMetadata(flags, parent),
           date_naissance: birthdate,
+          // Sync rôle (+ context si présent) dans le JWT — le guard athlète lit
+          // user_metadata.role. Valeurs issues du profil (déjà assignées).
           role,
-          context,
+          ...(context ? { context } : {}),
         },
       });
 
@@ -257,32 +235,10 @@ export default function ConsentementsPage() {
           Quelques infos.
         </h1>
         <p className="text-[14px] text-[#9CA3AF] mt-2 leading-snug">
-          On confirme ton profil et tes consentements avant de continuer.
+          On confirme tes consentements avant de continuer.
         </p>
 
-        {/* 1. Rôle */}
-        <SectionTitle>Je suis</SectionTitle>
-        <div className="space-y-2">
-          <RoleCard active={role === "ATHLETE"} onClick={() => setRole("ATHLETE")} title="Athlète" sub="Je crée mon profil pour être recruté" />
-          <RoleCard active={role === "COACH"} onClick={() => setRole("COACH")} title="Entraîneur" sub="Je gère et j'évalue mes athlètes" />
-          <RoleCard active={role === "RECRUTEUR"} onClick={() => setRole("RECRUTEUR")} title="Recruteur CÉGEP" sub="Je recrute des athlètes" />
-        </div>
-
-        {/* 2. Context conditionnel */}
-        {(role === "ATHLETE" || role === "COACH") && (
-          <>
-            <SectionTitle>Mon milieu</SectionTitle>
-            <div className="grid grid-cols-2 gap-2">
-              <RoleCard active={context === "scolaire"} onClick={() => setContext("scolaire")} title="École" sub="Réseau scolaire (RSEQ)" />
-              <RoleCard active={context === "ligue_civile"} onClick={() => setContext("ligue_civile")} title="Ligue / club" sub="Ligue civile" />
-            </div>
-          </>
-        )}
-        {role === "RECRUTEUR" && (
-          <p className="text-[12px] text-white/40 mt-3">Contexte : collégial (CÉGEP).</p>
-        )}
-
-        {/* 3. Date de naissance */}
+        {/* Date de naissance */}
         <SectionTitle>Date de naissance</SectionTitle>
         <input
           type="date"
