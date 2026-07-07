@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createSbClient } from "@supabase/supabase-js";
-import { needsConsent } from "@/lib/auth/needsConsent";
+import {
+  computeDispatchDestination,
+  type DispatchProfile,
+} from "@/lib/auth/computeDispatchDestination";
 
 /* ═══════════════════════════════════════════════════════════════
    GET /auth/callback — callback OAuth WEB (Google/Apple).
@@ -33,7 +36,6 @@ type ValidRole = (typeof VALID_ROLES)[number];
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/";
 
   if (code) {
     const supabase = await createClient();
@@ -41,23 +43,39 @@ export async function GET(request: Request) {
     if (!error) {
       const authUser = data?.user;
       if (authUser) {
-        // Lecture unique du profil (réutilisée override + gate consent).
+        // Lecture unique du profil (override + dispatch). `status` requis pour
+        // le cas DESACTIVE de computeDispatchDestination.
         const { data: profile } = await supabase
           .from("users")
-          .select("role, context, onboarding_complete, privacy_preferences")
+          .select("role, context, onboarding_complete, status, privacy_preferences")
           .eq("id", authUser.id)
           .maybeSingle();
 
         // ── Override role/context post-OAuth (item 3, service_role + gardes) ──
-        await maybeApplySignupRole(authUser, profile, searchParams);
+        //    Retourne ce qui a été réellement appliqué (ou null).
+        const applied = await maybeApplySignupRole(authUser, profile, searchParams);
 
-        // ── Gate consentements (BLOC 3B) — inchangé. Fail-open. ──
-        if (profile && profile.onboarding_complete !== true
-            && needsConsent(profile.privacy_preferences, authUser.user_metadata)) {
-          return NextResponse.redirect(`${origin}/consentements`);
-        }
+        // ── Dispatch server-side (item 3.5) — même décision que postLoginDispatch
+        //    via la util pure. Remplace l'ancien redirect "/" (qui ignorait rôle
+        //    + onboarding). Le profil effectif prend le rôle POST-override. Le
+        //    gate consentements (/consentements) est porté par la util. ──
+        const effectiveProfile: DispatchProfile | null = profile
+          ? {
+              role: applied?.role ?? profile.role,
+              onboarding_complete: profile.onboarding_complete,
+              status: profile.status,
+              privacy_preferences: profile.privacy_preferences,
+            }
+          : null;
+        const dest = computeDispatchDestination(
+          effectiveProfile,
+          authUser.user_metadata as Record<string, unknown> | undefined,
+        );
+        // Compte désactivé : signOut server-side AVANT le redirect (canonique).
+        if (dest.reason === "deactivated") await supabase.auth.signOut();
+        return NextResponse.redirect(`${origin}${dest.path}`);
       }
-      return NextResponse.redirect(`${origin}${next}`);
+      return NextResponse.redirect(`${origin}/`);
     }
     console.error("[auth/callback] exchangeCodeForSession error:", error.message);
   }
@@ -67,25 +85,27 @@ export async function GET(request: Request) {
 
 /**
  * Applique role/context (?role&context) au user, sous gardes strictes.
- * NE FAIT RIEN si une garde échoue (retour silencieux, flow OAuth continue).
+ * Retourne le { role, context } RÉELLEMENT appliqué, ou null si une garde
+ * échoue / no-op (le flow OAuth continue quoi qu'il arrive). Le caller merge
+ * le retour dans le profil pour dispatcher sur le rôle post-override.
  */
 async function maybeApplySignupRole(
   authUser: { id: string; identities?: { provider: string }[] },
   profile: { role: string | null; onboarding_complete: boolean | null } | null,
   searchParams: URLSearchParams,
-): Promise<void> {
+): Promise<{ role: ValidRole; context: string | null } | null> {
   // Garde 2 — OAuth signup uniquement : skip si l'identité est email/password
   // (ce user a déjà le bon role via l'arg de signUp, aucun override à faire).
   const providers = (authUser.identities ?? []).map((i) => i.provider);
-  if (providers.length > 0 && providers.every((p) => p === "email")) return;
+  if (providers.length > 0 && providers.every((p) => p === "email")) return null;
 
   // Garde 3 — onboarding déjà complété = user existant (login OAuth de retour) :
   // ne jamais toucher le role (anti-escalade via URL forgée).
-  if (profile?.onboarding_complete === true) return;
+  if (profile?.onboarding_complete === true) return null;
 
   // Garde 4 — role param whitelisté (rejette ADMIN/PARTNER/valeurs arbitraires).
   const roleParam = searchParams.get("role");
-  if (!roleParam || !VALID_ROLES.includes(roleParam as ValidRole)) return;
+  if (!roleParam || !VALID_ROLES.includes(roleParam as ValidRole)) return null;
   const role = roleParam as ValidRole;
 
   // Garde 5 — context validé + cohérent avec le role :
@@ -102,14 +122,14 @@ async function maybeApplySignupRole(
   }
 
   // No-op si déjà à jour (role identique et pas de context à poser).
-  if (profile?.role === role && !context) return;
+  if (profile?.role === role && !context) return null;
 
   // service_role (bypass RLS) — même pattern que app/api/admin/partners/create.
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!supabaseUrl || !serviceKey) {
     console.error("[auth/callback] Missing service-role env vars — role override skipped");
-    return;
+    return null;
   }
   const sbAdmin = createSbClient(supabaseUrl, serviceKey, {
     auth: { autoRefreshToken: false, persistSession: false },
@@ -121,8 +141,9 @@ async function maybeApplySignupRole(
   const { error } = await sbAdmin.from("users").update(patch).eq("id", authUser.id);
   if (error) {
     console.error("[auth/callback] role override failed:", error.message);
-    return;
+    return null;
   }
   // Audit trail (trace des overrides post-OAuth — debugging).
   console.log(`[auth/callback] role override: user=${authUser.id} role=${role}${context ? ` context=${context}` : ""}`);
+  return { role, context };
 }
