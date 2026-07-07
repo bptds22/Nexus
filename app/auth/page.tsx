@@ -85,10 +85,24 @@ function AuthContent() {
     }
   }, [searchParams]);
 
+  /* ── Signup state — flow unifié 4 écrans (hook usePartialSignup, item 2) ── */
+  // Invitation flow (?invitation_token=…) : l'email est épinglé et verrouillé
+  // (l'éditer orphelinerait le token). Le hook seed l'email depuis lockedEmail.
+  const invitationToken = searchParams.get("invitation_token") ?? "";
+  const emailLockedByInvitation = !!invitationToken && !!searchParams.get("email");
+  const [showPwd, setShowPwd] = useState(false);
+  const [showConfirmPwd, setShowConfirmPwd] = useState(false);
+  const [shakeFields, setShakeFields] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  // La state machine du signup (role picker → compte → identité → parental)
+  // + validation + buildSignupArgs() vit dans le hook. users.context athlète
+  // (école/civil) est capté à l'écran 2 (D1) → athlète civil non régressé.
+  const sf = usePartialSignup({ lockedEmail: searchParams.get("email") ?? "" });
+
   /* ── Sync état signup ↔ URL (?screen&role) + bouton retour navigateur ──
-     Avancée d'écran → pushState (nouvelle entrée d'historique) ; recul ou
-     même écran → replaceState. Le retour navigateur (popstate) restaure
-     l'écran cible depuis l'état d'historique. Sans effet sur le tab login. */
+     Déclaré APRÈS `sf` (TDZ). Avancée d'écran → pushState ; recul/même écran →
+     replaceState. Le retour navigateur (popstate) restaure l'écran cible depuis
+     l'état d'historique. Sans effet sur le tab login. */
   const prevSignupScreen = useRef(0);
   useEffect(() => {
     if (mode !== "signup" || typeof window === "undefined") return;
@@ -114,20 +128,6 @@ function AuthContent() {
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
   }, [mode, sf]);
-
-  /* ── Signup state — flow unifié 4 écrans (hook usePartialSignup, item 2) ── */
-  // Invitation flow (?invitation_token=…) : l'email est épinglé et verrouillé
-  // (l'éditer orphelinerait le token). Le hook seed l'email depuis lockedEmail.
-  const invitationToken = searchParams.get("invitation_token") ?? "";
-  const emailLockedByInvitation = !!invitationToken && !!searchParams.get("email");
-  const [showPwd, setShowPwd] = useState(false);
-  const [showConfirmPwd, setShowConfirmPwd] = useState(false);
-  const [shakeFields, setShakeFields] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-  // La state machine du signup (role picker → compte → identité → parental)
-  // + validation + buildSignupArgs() vit dans le hook. users.context athlète
-  // (école/civil) est capté à l'écran 2 (D1) → athlète civil non régressé.
-  const sf = usePartialSignup({ lockedEmail: searchParams.get("email") ?? "" });
 
   /* ── Login state ── */
   const [loginEmail, setLoginEmail] = useState("");
