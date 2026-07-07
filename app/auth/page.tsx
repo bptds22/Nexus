@@ -13,7 +13,7 @@ import { translateAuthError } from "@/lib/utils/translateAuthError";
 import { useTranslation } from "@/lib/i18n/useTranslation";
 import { AuthMobileDispatcher } from "@/components/mobile/auth/AuthMobileDispatcher";
 import { persistInitialConsents } from "@/lib/legal/persistInitialConsents";
-import { usePartialSignup } from "@/components/auth/signup/usePartialSignup";
+import { usePartialSignup, resolveRoleContext } from "@/components/auth/signup/usePartialSignup";
 import { RolePicker } from "@/components/auth/signup/RolePicker";
 import { ConsentBlock } from "@/components/auth/signup/ConsentBlock";
 import { ParentalBlock } from "@/components/auth/signup/ParentalBlock";
@@ -237,13 +237,16 @@ function AuthContent() {
   };
 
   /* Web : flow OAuth standard (redirect navigateur → provider → /auth/callback).
-     Device utilise le flow natif (SocialButtonsMobile). */
-  const handleOAuth = async (provider: "google" | "apple") => {
+     role (connu depuis le role picker écran 0) transmis via redirectTo →
+     override au callback (item 3). Absent pour le login (aucun override). */
+  const handleOAuth = async (provider: "google" | "apple", role?: string, context?: string | null) => {
     const supabase = createClient();
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider,
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
-    });
+    const params = new URLSearchParams();
+    if (role) params.set("role", role);
+    if (context) params.set("context", context);
+    const qs = params.toString();
+    const redirectTo = `${window.location.origin}/auth/callback${qs ? `?${qs}` : ""}`;
+    const { error } = await supabase.auth.signInWithOAuth({ provider, options: { redirectTo } });
     if (error) setToast("Connexion impossible. Réessaie.");
   };
 
@@ -338,7 +341,15 @@ function AuthContent() {
                         <span className="text-[12px] text-[#6B7280]">{T.signup.form.headingSub}</span>
                       </div>
 
-                      <SocialButtonsAuth onOAuth={handleOAuth} googleLabel={T.google} />
+                      <SocialButtonsAuth
+                        onOAuth={(p) => {
+                          // role + context depuis le picker (écran 0). Athlète : context
+                          // = undefined (choisi à l'écran 2, non transmis à l'OAuth).
+                          const rc = sf.pickedRole ? resolveRoleContext(sf.pickedRole) : null;
+                          handleOAuth(p, rc?.role, rc?.context);
+                        }}
+                        googleLabel={T.google}
+                      />
 
                       <div className="flex items-center gap-4 my-4">
                         <div className="flex-1 h-px bg-white/5" />
