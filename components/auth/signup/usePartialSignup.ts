@@ -60,6 +60,9 @@ export function usePartialSignup(opts?: { lockedEmail?: string; initialRole?: Si
   const [birthdate, setBirthdate] = useState("");
   // Ligue civile : nom de la ligue/club, capté conditionnellement à l'écran 2.
   const [ligueName, setLigueName] = useState("");
+  // Athlète : context école/civil (D1) — users.context requis pour brancher
+  // l'onboarding athlète (school path vs civil). Capté conditionnellement écran 2.
+  const [athleteContext, setAthleteContext] = useState<"school" | "civil" | null>(null);
 
   const [consentPolicy, setConsentPolicy] = useState(false);
   const [consentData, setConsentData] = useState(false);
@@ -91,7 +94,8 @@ export function usePartialSignup(opts?: { lockedEmail?: string; initialRole?: Si
     birthdate.length > 0 &&
     consentPolicy &&
     consentData &&
-    (!isCivil || ligueName.trim().length > 0);
+    (!isCivil || ligueName.trim().length > 0) &&
+    (!isAthlete || athleteContext !== null);
   // Un athlète mineur passe par l'écran parental (3).
   const needsParentalScreen = isAthlete && birthdate.length > 0 && !userIsAdult;
   // Submit final.
@@ -125,6 +129,10 @@ export function usePartialSignup(opts?: { lockedEmail?: string; initialRole?: Si
   /** Args prêts pour signUp() — aucun write DB ici. */
   const buildSignupArgs = useCallback((): SignupArgs => {
     const rc = pickedRole ? resolveRoleContext(pickedRole) : { role: "ATHLETE" as const };
+    // Athlète : context depuis le chooser écran 2 (D1). Autres rôles : context du picker.
+    const context = isAthlete
+      ? (athleteContext === "school" ? "scolaire" : athleteContext === "civil" ? "ligue_civile" : undefined)
+      : rc.context;
     const consents = needsParentalScreen
       ? {
           policy: consentPolicy, data: consentData, marketing: consentMarketing,
@@ -147,7 +155,7 @@ export function usePartialSignup(opts?: { lockedEmail?: string; initialRole?: Si
       : buildConsentMetadata({ policy: consentPolicy, data: consentData, marketing: consentMarketing });
     return {
       role: rc.role,
-      context: rc.context,
+      context,
       firstName: firstName.trim(),
       lastName: lastName.trim(),
       metadata: {
@@ -158,7 +166,8 @@ export function usePartialSignup(opts?: { lockedEmail?: string; initialRole?: Si
       consents,
     };
   }, [
-    pickedRole, needsParentalScreen, isCivil, ligueName, firstName, lastName, birthdate,
+    pickedRole, needsParentalScreen, isAthlete, athleteContext, isCivil, ligueName,
+    firstName, lastName, birthdate,
     consentPolicy, consentData, consentMarketing,
     consentProfile, consentVisibility, consentPartnerVisibility,
     parentFirstName, parentLastName, parentEmail, parentRelationship,
@@ -175,7 +184,7 @@ export function usePartialSignup(opts?: { lockedEmail?: string; initialRole?: Si
     email, setEmail, password, setPassword, confirmPassword, setConfirmPassword,
     // champs identité
     firstName, setFirstName, lastName, setLastName, birthdate, setBirthdate,
-    ligueName, setLigueName,
+    ligueName, setLigueName, athleteContext, setAthleteContext,
     // consents génériques
     consentPolicy, setConsentPolicy, consentData, setConsentData,
     consentMarketing, setConsentMarketing,
