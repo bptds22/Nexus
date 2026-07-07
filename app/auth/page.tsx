@@ -164,6 +164,12 @@ function AuthContent() {
     }
     setLoading(true);
 
+    // signOut préventif : évite qu'une session antérieure (stale) pilote la
+    // navigation post-signup → mauvais rôle → mauvais onboarding / WrongRoutePage.
+    // Cas notable : « Confirm email » ON → signUp n'ouvre pas de session, donc
+    // sans ce signOut la session précédente reste active.
+    await createClient().auth.signOut();
+
     const { signUp } = await import("@/lib/supabase/auth.actions");
     const args = sf.buildSignupArgs();
 
