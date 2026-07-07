@@ -665,6 +665,10 @@ function AthleteOnboardingDesktop() {
   const [consentVisibility, setConsentVisibility] = useState(false);
   const [consentComms, setConsentComms] = useState(false);
   const [consentPartnerVisibility, setConsentPartnerVisibility] = useState(false);
+  // Minor gate — set at init from hasParentalConsent (signup captured
+  // parental consent = minor). Drives whether the parent/consent section
+  // shows AND whether it is required (canProceed/submit). Adults: false.
+  const [isMinor, setIsMinor] = useState(false);
 
   useEffect(() => {
     async function init() {
@@ -691,6 +695,7 @@ function AthleteOnboardingDesktop() {
       // none of these keys → nothing pre-fills (unchanged). Fields stay
       // editable. No telephone_parent (never captured at signup).
       const hasParentalConsent = !!(meta.consent_parental_profile && meta.consent_parental_visibility);
+      setIsMinor(hasParentalConsent);
       if (hasParentalConsent) {
         if (meta.parent_first_name) setParentFirstName(meta.parent_first_name as string);
         if (meta.parent_last_name) setParentLastName(meta.parent_last_name as string);
@@ -846,7 +851,11 @@ function AthleteOnboardingDesktop() {
         // legitimately be NULL ("Continuer sans équipe"), so we
         // don't require it. For scolaire context, school_id must
         // be a SECONDAIRE row.
-        const step1Complete = existing.first_name && existing.consentement_parental
+        // Parental consent only gates step-1 completion for minors. Uses
+        // the local hasParentalConsent const (the isMinor state isn't
+        // committed yet in this same init run). Adults skip the consent gate.
+        const step1Complete = existing.first_name
+          && (hasParentalConsent ? existing.consentement_parental : true)
           && (ctx === "ligue_civile" || existing.school_id);
         if (step1Complete) {
           if (existing.taille_pieds || existing.poids_lbs) setStep(4);
@@ -986,9 +995,14 @@ function AthleteOnboardingDesktop() {
         // the team tier is reachable without a Step-4 detour) but permits
         // NULL club/team ("Continuer sans club/équipe"). Scolaire keeps
         // its sport requirement at Step 4 (unchanged).
-        const baseValid = !!(firstName.trim() && lastName.trim() && gradYear
-          && parentFirstName.trim() && parentLastName.trim() && parentEmail.trim()
-          && consentProfile && consentVisibility);
+        // Parent fields + parental consents are required ONLY for minors
+        // (isMinor = signup captured parental consent). Adults have no
+        // parent section shown → must not be blocked by hidden fields.
+        const parentValid = isMinor
+          ? !!(parentFirstName.trim() && parentLastName.trim() && parentEmail.trim()
+              && consentProfile && consentVisibility)
+          : true;
+        const baseValid = !!(firstName.trim() && lastName.trim() && gradYear) && parentValid;
         if (userContext === "ligue_civile") return baseValid && !!primarySport;
         return baseValid && !!selectedSchoolId;
       }
@@ -1082,7 +1096,9 @@ function AthleteOnboardingDesktop() {
 
   async function handleSubmit() {
     if (!userId || !primarySport) return;
-    if (!consentProfile || !consentVisibility) return;
+    // Parental consent only blocks submit for minors (adults have no
+    // parental consent and no parent section shown).
+    if (isMinor && (!consentProfile || !consentVisibility)) return;
     setSaving(true);
 
     try {
@@ -1493,6 +1509,12 @@ function AthleteOnboardingDesktop() {
               </>
             )}
 
+            {/* Parent / Guardian + Parental Consent — MINORS ONLY.
+                Gated on isMinor (signup captured parental consent). Adults
+                have no parental metadata → section hidden and NOT required
+                by canProceed/submit. Minors see it pre-filled (sous-étape A). */}
+            {isMinor && (
+            <>
             {/* Parent / Guardian */}
             <div className={sectionTitle}><div className="w-0.5 h-4 bg-[#E63946] rounded-full" />Parent / Tuteur</div>
             <div className="grid grid-cols-2 gap-4 mb-4">
@@ -1541,6 +1563,8 @@ function AthleteOnboardingDesktop() {
             </div>
 
             <PartnerVisibilityConsentCard checked={consentPartnerVisibility} onChange={setConsentPartnerVisibility} />
+            </>
+            )}
           </div>
         )}
 
