@@ -58,8 +58,6 @@ export function usePartialSignup(opts?: { lockedEmail?: string; initialRole?: Si
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [birthdate, setBirthdate] = useState("");
-  // Ligue civile : nom de la ligue/club, capté conditionnellement à l'écran 2.
-  const [ligueName, setLigueName] = useState("");
   // Athlète : context école/civil (D1) — users.context requis pour brancher
   // l'onboarding athlète (school path vs civil). Capté conditionnellement écran 2.
   const [athleteContext, setAthleteContext] = useState<"school" | "civil" | null>(null);
@@ -81,12 +79,11 @@ export function usePartialSignup(opts?: { lockedEmail?: string; initialRole?: Si
   const pwdMatches = confirmPassword.length > 0 && confirmPassword === password;
   const userIsAdult = isAdult(birthdate);
   const isAthlete = pickedRole === "athlete";
-  const isCivil = pickedRole === "coach_civil";
   const parentEmailValid = EMAIL_RE.test(parentEmail.trim());
 
   // Écran 1 (compte) : email + pw + confirm.
   const canProceedScreen1 = emailValid && pwdValid && pwdMatches;
-  // Écran 2 (identité) : prénom + nom + DOB + consents génériques (+ ligue si civil).
+  // Écran 2 (identité) : prénom + nom + DOB + consents génériques (+ context si athlète).
   const canProceedScreen2 =
     canProceedScreen1 &&
     firstName.trim().length > 0 &&
@@ -94,7 +91,6 @@ export function usePartialSignup(opts?: { lockedEmail?: string; initialRole?: Si
     birthdate.length > 0 &&
     consentPolicy &&
     consentData &&
-    (!isCivil || ligueName.trim().length > 0) &&
     (!isAthlete || athleteContext !== null);
   // Un athlète mineur passe par l'écran parental (3).
   const needsParentalScreen = isAthlete && birthdate.length > 0 && !userIsAdult;
@@ -161,12 +157,11 @@ export function usePartialSignup(opts?: { lockedEmail?: string; initialRole?: Si
       metadata: {
         ...consentMeta,
         ...(birthdate ? { date_naissance: birthdate } : {}),
-        ...(isCivil && ligueName.trim() ? { ligue_name: ligueName.trim() } : {}),
       },
       consents,
     };
   }, [
-    pickedRole, needsParentalScreen, isAthlete, athleteContext, isCivil, ligueName,
+    pickedRole, needsParentalScreen, isAthlete, athleteContext,
     firstName, lastName, birthdate,
     consentPolicy, consentData, consentMarketing,
     consentProfile, consentVisibility, consentPartnerVisibility,
@@ -177,14 +172,14 @@ export function usePartialSignup(opts?: { lockedEmail?: string; initialRole?: Si
     // état machine
     screen, setScreen, pickedRole, pickRole, next, back,
     // dérivés
-    isAthlete, isCivil, userIsAdult, needsParentalScreen,
+    isAthlete, userIsAdult, needsParentalScreen,
     emailValid, pwdValid, pwdMatches, parentEmailValid,
     canProceedScreen1, canProceedScreen2, canSubmit,
     // champs compte
     email, setEmail, password, setPassword, confirmPassword, setConfirmPassword,
     // champs identité
     firstName, setFirstName, lastName, setLastName, birthdate, setBirthdate,
-    ligueName, setLigueName, athleteContext, setAthleteContext,
+    athleteContext, setAthleteContext,
     // consents génériques
     consentPolicy, setConsentPolicy, consentData, setConsentData,
     consentMarketing, setConsentMarketing,

@@ -173,7 +173,7 @@ function AuthContent() {
     const { signUp } = await import("@/lib/supabase/auth.actions");
     const args = sf.buildSignupArgs();
 
-    // role/context/metadata (consents + DOB + ligue_name) viennent du hook.
+    // role/context/metadata (consents + DOB) viennent du hook.
     // invitation_token préservé (consommé par le trigger via metadata).
     const { data, error } = await signUp(
       sf.email,
@@ -431,14 +431,6 @@ function AuthContent() {
                               <span className="block text-[10px] font-normal opacity-70 mt-0.5">{T.signup.form.context.civile.sub}</span>
                             </button>
                           </div>
-                        </div>
-                      )}
-
-                      {/* Coach ligue civile : nom de la ligue/club (stashé metadata.ligue_name). */}
-                      {sf.isCivil && (
-                        <div>
-                          <label className={`${label} text-[#9CA3AF] mb-1.5 block`}>Nom de la ligue ou du club <span className="text-[#EF4444]">*</span></label>
-                          <input type="text" placeholder="Ex. Ligue de football civile de Québec" value={sf.ligueName} onChange={(e) => sf.setLigueName(e.target.value)} className={inputClass} />
                         </div>
                       )}
 
