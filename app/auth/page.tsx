@@ -451,7 +451,7 @@ function AuthContent() {
                       ) : (
                         <button type="button" onClick={handleSignupSubmit} disabled={loading}
                           className={`h-14 w-full rounded-xl font-head font-black text-[14px] uppercase tracking-widest mt-2 transition-all ${loading ? "bg-[#E63946]/50 text-white/50 cursor-wait" : "bg-[#E63946] text-white hover:bg-[#D42B22] cursor-pointer"}`}>
-                          {loading ? "Création…" : T.signup.form.submit}
+                          {loading ? "Création…" : "Créer mon compte"}
                         </button>
                       )}
                     </div>
@@ -474,7 +474,7 @@ function AuthContent() {
                       />
                       <button type="button" onClick={handleSignupSubmit} disabled={loading}
                         className={`h-14 w-full rounded-xl font-head font-black text-[14px] uppercase tracking-widest mt-2 transition-all ${loading ? "bg-[#E63946]/50 text-white/50 cursor-wait" : "bg-[#E63946] text-white hover:bg-[#D42B22] cursor-pointer"}`}>
-                        {loading ? "Création…" : T.signup.form.submit}
+                        {loading ? "Création…" : "Créer mon compte"}
                       </button>
                     </div>
                   )}
