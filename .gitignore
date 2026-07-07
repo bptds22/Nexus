@@ -91,3 +91,8 @@ teams_*.sql
 tmp_*.sql
 tmp_*.sh
 backups/
+
+# Android signing (never commit — see docs/security-*.md)
+android/keystore.properties
+*.jks
+android/app/*.jks

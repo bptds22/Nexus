@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import SchoolSelect from "@/components/ui/SchoolSelect";
+import { uploadImage } from "@/lib/upload/uploadImage";
 import { useRecruiterProfile } from "@/lib/queries/recruiter/useRecruiterProfile";
 import { useSchoolsList } from "@/lib/queries/shared/useSchoolsList";
 import { RecruteurProfilMobile } from "@/components/shared/RecruteurProfilMobile";
@@ -102,22 +103,16 @@ function RecruiterProfilDesktop() {
   async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!file.type.startsWith("image/")) return;
-    if (file.size > 2 * 1024 * 1024) return;
 
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    const fileExt = file.name.split(".").pop();
-    const filePath = `${user.id}/avatar.${fileExt}`;
+    const res = await uploadImage(file, { pathBase: `${user.id}/avatar` });
+    if (!res.ok) { setToast(res.message); setTimeout(() => setToast(null), 3000); return; }
 
-    const { error: uploadError } = await supabase.storage.from("avatars").upload(filePath, file, { upsert: true });
-    if (uploadError) { console.error("[Photo upload error]", uploadError); return; }
-
-    const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(filePath);
-    await supabase.from("users").update({ photo_url: urlData.publicUrl }).eq("id", user.id);
-    setAvatarUrl(urlData.publicUrl);
+    await supabase.from("users").update({ photo_url: res.publicUrl }).eq("id", user.id);
+    setAvatarUrl(res.publicUrl);
     invalidateProfileCaches();
   }
 

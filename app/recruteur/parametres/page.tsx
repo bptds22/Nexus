@@ -15,6 +15,7 @@ import TransfertSection from "./_components/TransfertSection";
 import DangerSection from "./_components/DangerSection";
 import ConfirmModal from "./_components/ConfirmModal";
 import SaveToast from "./_components/SaveToast";
+import { uploadImage } from "@/lib/upload/uploadImage";
 import InvitationLinkModal from "@/components/ui/InvitationLinkModal";
 import SubscriptionManager from "@/components/subscription/SubscriptionManager";
 
@@ -717,13 +718,10 @@ function RecruiterSettingsDesktop() {
                   const supabase = createClient();
                   const { data: { user } } = await supabase.auth.getUser();
                   if (!user) return;
-                  const fileExt = file.name.split(".").pop();
-                  const filePath = `${user.id}/avatar.${fileExt}`;
-                  const { error: uploadError } = await supabase.storage.from("avatars").upload(filePath, file, { upsert: true });
-                  if (uploadError) { console.error("[Photo upload error]", uploadError); return; }
-                  const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(filePath);
-                  await supabase.from("users").update({ photo_url: urlData.publicUrl }).eq("id", user.id);
-                  updateField("avatarUrl", urlData.publicUrl);
+                  const res = await uploadImage(file, { pathBase: `${user.id}/avatar` });
+                  if (!res.ok) { showToast(res.message); return; }
+                  await supabase.from("users").update({ photo_url: res.publicUrl }).eq("id", user.id);
+                  updateField("avatarUrl", res.publicUrl);
                 }}
               />
             )}
