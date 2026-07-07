@@ -681,6 +681,27 @@ function AthleteOnboardingDesktop() {
       if (meta.last_name) setLastName(meta.last_name as string);
       if (meta.sport) setPrimarySport(meta.sport as string);
 
+      // Minor pre-fill (parity mobile parentSlice) — if the signup captured
+      // parental consent (i.e. the athlete is a minor: the parental screen
+      // is only shown to minors at signup), pre-fill the parent fields and
+      // pre-check the consents from raw_user_meta_data so the athlete doesn't
+      // re-type what they already gave. Placed BEFORE the existing-athletes
+      // prefill below → on a resume the DB row wins (preserves any edits);
+      // on a fresh signup only this metadata pre-fill applies. Adults have
+      // none of these keys → nothing pre-fills (unchanged). Fields stay
+      // editable. No telephone_parent (never captured at signup).
+      const hasParentalConsent = !!(meta.consent_parental_profile && meta.consent_parental_visibility);
+      if (hasParentalConsent) {
+        if (meta.parent_first_name) setParentFirstName(meta.parent_first_name as string);
+        if (meta.parent_last_name) setParentLastName(meta.parent_last_name as string);
+        if (meta.parent_email) setParentEmail(meta.parent_email as string);
+        if (meta.parent_relationship) setParentRelationship(meta.parent_relationship as string);
+        setConsentProfile(true);
+        setConsentVisibility(true);
+        if (meta.consent_marketing) setConsentComms(true);
+        if (meta.consent_parental_partner_visibility) setConsentPartnerVisibility(true);
+      }
+
       // Single retried read of public.users. Right after signup the JWT
       // cookie hasn't fully propagated, so RLS can return 0 rows for ~1s
       // (the SAME race documented in app/athlete/layout.tsx:276-282).
