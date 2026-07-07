@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import NexusLogo from "@/components/ui/NexusLogo";
 import { createClient } from "@/lib/supabase/client";
+import { uploadImage } from "@/lib/upload/uploadImage";
 import PlaybookBackground from "../components/PlaybookBackground";
 import TeamSearchOrCreate, { type TeamSearchRow } from "@/components/onboarding/TeamSearchOrCreate";
 import TeamCreateForm, { type TeamFormData } from "@/components/onboarding/TeamCreateForm";
@@ -112,25 +113,17 @@ function PhotoUpload({ photoUrl, onUploaded, sublabel = "Optionnel — visible p
     if (!f) return;
     setError("");
 
-    // Validate
-    if (f.size > 5 * 1024 * 1024) { setError("Fichier trop volumineux (max 5 Mo)"); return; }
-    if (!["image/jpeg", "image/png"].includes(f.type)) { setError("Format accepté : JPG ou PNG"); return; }
-
     setUploading(true);
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setUploading(false); return; }
 
-    const ext = f.name.split(".").pop() || "jpg";
-    const path = `onboarding/${user.id}_${Date.now()}.${ext}`;
-    const { error: upErr } = await supabase.storage.from("avatars").upload(path, f, { upsert: true });
-    if (upErr) { console.error("[Photo upload]", upErr); setError("Erreur lors du téléversement"); setUploading(false); return; }
+    const res = await uploadImage(f, { pathBase: `onboarding/${user.id}_${Date.now()}` });
+    if (!res.ok) { setError(res.message); setUploading(false); return; }
 
-    const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
-    onUploaded(urlData.publicUrl);
-
+    onUploaded(res.publicUrl);
     // Also save to users table
-    await supabase.from("users").update({ photo_url: urlData.publicUrl }).eq("id", user.id);
+    await supabase.from("users").update({ photo_url: res.publicUrl }).eq("id", user.id);
     setUploading(false);
   }
 

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { genderLabel } from "@/lib/config/gender";
+import { uploadImage } from "@/lib/upload/uploadImage";
 
 /* ═══════════════════════════════════════════════════════════════
    Admin School Detail — inline-editable header, stats bar, 4 tabs.
@@ -114,6 +115,7 @@ export default function AdminSchoolDetailPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
   const [tab, setTab] = useState<Tab>("coachs");
   // Loi 25 logo gate — true only when ≥1 confirmed staff user is linked.
   const [logoAllowed, setLogoAllowed] = useState(false);
@@ -490,6 +492,29 @@ export default function AdminSchoolDetailPage() {
     return () => { cancelled = true; };
   }, [supabase, id]);
 
+  // Upload logo établissement (net-neuf). Bucket avatars, préfixe
+  // logos/schools/ (RLS admin-write existante). preserveTransparency → PNG.
+  // logo_url n'étant PAS dans le patch de handleSave, on persiste tout de
+  // suite via le même pattern from("schools").update. Le gate d'affichage
+  // Loi 25 (logoAllowed) n'est PAS touché — on ajoute juste la capacité.
+  async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingLogo(true);
+    const res = await uploadImage(file, {
+      bucket: "avatars",
+      pathBase: `logos/schools/${id}`,
+      preserveTransparency: true,
+    });
+    if (!res.ok) { notify(`Erreur logo : ${res.message}`); setUploadingLogo(false); return; }
+    const supabase = createClient();
+    const { error } = await supabase.from("schools").update({ logo_url: res.publicUrl }).eq("id", id);
+    if (error) { notify(`Erreur sauvegarde : ${error.message}`); setUploadingLogo(false); return; }
+    setS("logo_url", res.publicUrl);
+    notify("Logo mis à jour");
+    setUploadingLogo(false);
+  }
+
   async function handleSave() {
     if (!school) return;
     setSaving(true);
@@ -756,6 +781,10 @@ export default function AdminSchoolDetailPage() {
               <span className="text-[#F59E0B]">Logo masqué — aucun utilisateur confirmé rattaché. L&apos;affichage reste bloqué tant qu&apos;aucun consentement réel n&apos;existe (Loi 25, droits d&apos;image).</span>
             )}
           </div>
+          <label className="shrink-0 ml-auto cursor-pointer px-3 py-2 rounded-lg border border-[#2D3748] text-[12px] font-bold text-[#E0E0E0] hover:border-[#E63946]/40 transition-colors whitespace-nowrap">
+            <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} disabled={uploadingLogo} title="Importer un logo" />
+            {uploadingLogo ? "Import…" : "Importer un logo"}
+          </label>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
