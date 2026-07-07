@@ -1,24 +1,23 @@
 /* ═══════════════════════════════════════════════════════════════
-   postLoginDispatch — iter 7.46
+   postLoginDispatch — iter 7.46 (refactor item 3.5)
 
    Logique partagée post-authentication : query du profil, vérif
-   DESACTIVE, dispatch par rôle. Extraite de handleLogin desktop
-   (app/auth/page.tsx:191-235) pour être réutilisée par LoginMobile
-   sans duplication. Comportement EXACTEMENT identique → desktop
-   intact, mobile cohérent.
+   DESACTIVE, dispatch par rôle. Extraite de handleLogin desktop pour
+   être réutilisée par LoginMobile sans duplication.
 
-   Séquence (canon DIAG 7.45 §A.3) :
-     1. Query users.role, onboarding_complete, status
-     2. status === DESACTIVE et role !== SUPER_ADMIN → signOut +
-        /compte-desactive (AVANT tout dispatch — sécurité)
-     3. !onboarding_complete → /onboarding
-     4. Dispatch par rôle (COACH/RECRUTEUR/ATHLETE/ADMIN/PARTNER)
-     5. Fallback inconnu → /onboarding
+   Item 3.5 — la DÉCISION de routing est désormais dans la util pure
+   computeDispatchDestination (partagée avec le callback OAuth server-side).
+   Ici on garde UNIQUEMENT les side-effects : query profil, signOut du
+   compte désactivé, et le router.push/replace. Comportement observable
+   strictement identique.
 ═══════════════════════════════════════════════════════════════ */
 
 import type { SupabaseClient, User } from "@supabase/supabase-js";
 import type { useRouter } from "next/navigation";
-import { needsConsent } from "@/lib/auth/needsConsent";
+import {
+  computeDispatchDestination,
+  type DispatchProfile,
+} from "@/lib/auth/computeDispatchDestination";
 
 type Router = ReturnType<typeof useRouter>;
 
@@ -42,71 +41,34 @@ export async function postLoginDispatch(
   user: User,
   router: Router,
 ): Promise<DispatchOutcome> {
-  // 1) Query du profil
+  // 1) Query du profil.
   const { data: profile } = await supabase
     .from("users")
     .select("role, onboarding_complete, status, privacy_preferences")
     .eq("id", user.id)
     .single();
 
-  // 2) Compte désactivé (SUPER_ADMIN exempt — peut toujours intervenir)
-  if (profile?.status === "DESACTIVE" && profile?.role !== "SUPER_ADMIN") {
+  // 2) Décision de routing (pure, source unique).
+  const dest = computeDispatchDestination(
+    (profile as DispatchProfile) ?? null,
+    user.user_metadata as Record<string, unknown> | undefined,
+  );
+
+  // 3) Compte désactivé : signOut AVANT le redirect (canonique). router.replace.
+  if (dest.reason === "deactivated") {
     await supabase.auth.signOut();
-    router.replace("/compte-desactive");
+    router.replace(dest.path);
     return { kind: "deactivated" };
   }
 
-  // Rôle : profil DB en priorité, fallback metadata auth (utile si le trigger
-  // a lagué — improbable mais déjà géré côté desktop).
-  const role = (profile?.role as string) || (user.user_metadata?.role as string);
-  const onboardingComplete = profile?.onboarding_complete;
-
-  // 2.5) Consentements Loi 25 manquants (signup social) → interstitiel, AVANT
-  //       tout dispatch onboarding/portail. JAMAIS pour un compte déjà onboardé
-  //       (le `!onboardingComplete` protège les comptes legacy sans consent).
-  if (profile && !onboardingComplete
-      && needsConsent(profile.privacy_preferences, user.user_metadata)) {
-    router.push("/consentements");
-    return { kind: "consent" };
-  }
-
-  // 3) Si profil existe explicitement et onboarding pas fini → onboarding
-  //    par rôle (couvre aussi le cas profil chargé sans
-  //    onboarding_complete posé).
-  //    Iter 7.50-a-bis — fix DIAG 7.50-a3 §6 : avant ce sprint, ATHLETE
-  //    avec onboarding_complete=false était routé sur /onboarding (le
-  //    wizard COACH/RECRUTEUR 3619 LOC) qui n'a pas de branche athlète
-  //    et tombait sur le fallback "coach" → cassé. Maintenant routé
-  //    explicitement vers /athlete/onboarding pour atteindre
-  //    AthleteOnboardingMobile (en Capacitor) ou la wizard desktop
-  //    /athlete/onboarding. COACH / RECRUTEUR / ADMIN / PARTNER restent
-  //    sur /onboarding — comportement actuel préservé.
-  if (profile && !onboardingComplete) {
-    if (role === "ATHLETE") router.push("/athlete/onboarding");
-    else router.push("/onboarding");
-    return { kind: "onboarding" };
-  }
-
-  // 4) Dispatch par rôle (canon desktop /auth/page.tsx:220-232)
-  switch (role) {
-    case "COACH":
-      router.push("/coach");
-      return { kind: "portal", role };
-    case "RECRUTEUR":
-      router.push("/recruteur");
-      return { kind: "portal", role };
-    case "ATHLETE":
-      router.push("/athlete");
-      return { kind: "portal", role };
-    case "ADMIN":
-      router.push("/admin");
-      return { kind: "portal", role };
-    case "PARTNER":
-      router.push("/partenaire");
-      return { kind: "portal", role };
-    default:
-      // 5) Inconnu / pas de profil ni metadata → /onboarding fallback
-      router.push("/onboarding");
-      return profile ? { kind: "fallback" } : { kind: "no-profile" };
+  // 4) Tous les autres cas : router.push vers la destination calculée.
+  router.push(dest.path);
+  switch (dest.reason) {
+    case "consent": return { kind: "consent" };
+    case "onboarding": return { kind: "onboarding" };
+    case "portal": return { kind: "portal", role: dest.role ?? "" };
+    case "no-profile": return { kind: "no-profile" };
+    case "fallback":
+    default: return { kind: "fallback" };
   }
 }
