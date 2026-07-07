@@ -961,11 +961,14 @@ function AthleteOnboardingDesktop() {
         // Identity + parental consent are required for both contexts
         // (Loi 25 minor consent applies regardless of school vs civil).
         // School context additionally requires selectedSchoolId; civil
-        // context permits NULL league_team_id ("Continuer sans équipe").
+        // context requires primarySport (chosen at Step 1 for civil, so
+        // the team tier is reachable without a Step-4 detour) but permits
+        // NULL club/team ("Continuer sans club/équipe"). Scolaire keeps
+        // its sport requirement at Step 4 (unchanged).
         const baseValid = !!(firstName.trim() && lastName.trim() && gradYear
           && parentFirstName.trim() && parentLastName.trim() && parentEmail.trim()
           && consentProfile && consentVisibility);
-        if (userContext === "ligue_civile") return baseValid;
+        if (userContext === "ligue_civile") return baseValid && !!primarySport;
         return baseValid && !!selectedSchoolId;
       }
       case 2: return true;
@@ -1335,6 +1338,30 @@ function AthleteOnboardingDesktop() {
                 consent + partner-visibility blocks below. */}
             {userContext === "ligue_civile" ? (
               <>
+                {/* SPORT — chosen FIRST for civil (parity mobile Step 1),
+                    so the team tier below can filter by sport with no
+                    Step-4 detour. Same primarySport state as Step 4 (which
+                    is hidden for civil = single source). Optional: the club
+                    alone still anchors school_id if no sport is picked. */}
+                <div className={sectionTitle}>
+                  <div className="w-0.5 h-4 bg-[#E63946] rounded-full" />
+                  Mon sport
+                </div>
+                <div className="grid grid-cols-4 gap-2 mb-6">
+                  {SPORTS.map((s) => (
+                    <button key={s} type="button" onClick={() => {
+                      setPrimarySport(s); setPrimaryPosition("");
+                      // Sport drives the team query → drop any team from
+                      // another sport (better than mobile, which leaves it
+                      // stale). The club anchor (school_id) is unaffected.
+                      setSelectedTeamId(null); setSelectedTeamName("");
+                    }}
+                      className={`py-2 rounded-lg text-[11px] font-bold transition-all ${primarySport === s ? "bg-[#E63946] text-white" : "bg-[#111317] border border-[#2D3748] text-[#9CA3AF] hover:border-[#4a4d56] hover:text-white"}`}>
+                      {s}
+                    </button>
+                  ))}
+                </div>
+
                 {/* CLUB tier — the civil anchor (athletes.school_id).
                     Sport-agnostic; always selectable. Picking a club
                     resets any previously chosen team (parity mobile). */}
@@ -1578,17 +1605,23 @@ function AthleteOnboardingDesktop() {
             <p className="text-[14px] text-[#6b7280] mb-6">Ton sport principal et tes liens vidéo</p>
 
             <div className="space-y-4">
-              <div>
-                <label className={labelCls}>Sport principal <span className="text-[#EF4444]">*</span></label>
-                <div className="grid grid-cols-4 gap-2">
-                  {SPORTS.map((s) => (
-                    <button key={s} type="button" onClick={() => { setPrimarySport(s); setPrimaryPosition(""); }}
-                      className={`py-2 rounded-lg text-[11px] font-bold transition-all ${primarySport === s ? "bg-[#E63946] text-white" : "bg-[#111317] border border-[#2D3748] text-[#9CA3AF] hover:border-[#4a4d56] hover:text-white"}`}>
-                      {s}
-                    </button>
-                  ))}
+              {/* Sport grid — hidden for civil, which picks the sport at
+                  Step 1 where it is REQUIRED (canProceed step 1). No dead-end
+                  possible (civil can't advance without a sport), so a plain
+                  hide suffices — no safety net. Scolaire keeps it here. */}
+              {userContext !== "ligue_civile" && (
+                <div>
+                  <label className={labelCls}>Sport principal <span className="text-[#EF4444]">*</span></label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {SPORTS.map((s) => (
+                      <button key={s} type="button" onClick={() => { setPrimarySport(s); setPrimaryPosition(""); }}
+                        className={`py-2 rounded-lg text-[11px] font-bold transition-all ${primarySport === s ? "bg-[#E63946] text-white" : "bg-[#111317] border border-[#2D3748] text-[#9CA3AF] hover:border-[#4a4d56] hover:text-white"}`}>
+                        {s}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
               {primarySport && (
                 <SportPositionSelect
                   sport={primarySport}
