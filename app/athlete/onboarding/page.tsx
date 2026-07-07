@@ -201,19 +201,17 @@ function ClubPicker({
 }
 
 /* ─────────────────────────────────────────────────────────────────
-   CivilTeamPicker — civil-context replacement for the school block.
+   CivilTeamPicker — civil-context TEAM tier (second tier, after
+   ClubPicker).
 
-   Phase 6.2: ported to the unified model. Civil leagues now live in
-   `schools` (type='LIGUE_CIVILE') and civil teams live in `teams`
-   anchored on those schools. The picker aggregates every team
-   across civil-league schools for the athlete's sport.
+   Étape 2: scoped to the club chosen in ClubPicker. Loads
+   `teams WHERE school_id=clubId AND sport_id AND is_active` (parity
+   mobile) — no longer a global aggregate across all LIGUE_CIVILE
+   schools. Rendered only once a club is picked and the sport is known.
 
    The athlete picks one or opts out via "Continuer sans équipe" —
-   no athlete-side team creation (teams are created by coaches).
-
-   School (league) name is displayed as a subtitle to disambiguate
-   when two coaches name their teams identically across different
-   civil-league organizations.
+   no athlete-side team creation (teams are created by coaches). The
+   team is optional: the club alone anchors athletes.school_id.
 ───────────────────────────────────────────────────────────────── */
 type CivilTeamRow = {
   id: string;
@@ -225,11 +223,15 @@ type CivilTeamRow = {
 };
 
 function CivilTeamPicker({
+  clubId,
+  clubName,
   sportName,
   selectedTeamId,
   onSelect,
   onContinueWithoutTeam,
 }: {
+  clubId: string;
+  clubName: string;
   sportName: string;
   selectedTeamId: string | null;
   onSelect: (team: CivilTeamRow) => void;
@@ -259,37 +261,35 @@ function CivilTeamPicker({
         return;
       }
 
-      // Aggregate ALL civil teams for this sport across every
-      // LIGUE_CIVILE school. Phase 6.2: teams now live in `teams`
-      // anchored on `schools`; the sport_id filter is server-side.
+      // Étape 2: scope teams to the CHOSEN club (parity mobile civil
+      // team loader): teams WHERE school_id=clubId AND sport_id AND
+      // is_active. No more global aggregate across all 266 clubs.
+      // school_id is guaranteed = clubId (a LIGUE_CIVILE school), so
+      // the previous client-side type filter is no longer needed.
       const { data: rows } = await supabase
         .from("teams")
-        .select("id, name, age_group, division, school_id, schools!school_id(name, type)")
+        .select("id, name, age_group, division")
+        .eq("school_id", clubId)
         .eq("sport_id", sportRow.id)
+        .eq("is_active", true)
         .order("name");
       if (!rows) { if (!cancelled) { setTeams([]); setLoading(false); } return; }
 
-      const filtered: CivilTeamRow[] = [];
-      for (const raw of rows as Record<string, unknown>[]) {
-        const schoolRel = Array.isArray(raw.schools) ? raw.schools[0] : raw.schools;
-        const s = schoolRel as { name?: string; type?: string } | null;
-        if (s?.type !== "LIGUE_CIVILE") continue;
-        filtered.push({
-          id: raw.id as string,
-          name: raw.name as string,
-          age_group: (raw.age_group as string) ?? null,
-          division: (raw.division as string) ?? null,
-          school_id: raw.school_id as string,
-          school_name: s.name ?? "",
-        });
-      }
+      const mapped: CivilTeamRow[] = (rows as Record<string, unknown>[]).map((raw) => ({
+        id: raw.id as string,
+        name: raw.name as string,
+        age_group: (raw.age_group as string) ?? null,
+        division: (raw.division as string) ?? null,
+        school_id: clubId,
+        school_name: clubName,
+      }));
 
-      if (!cancelled) { setTeams(filtered); setLoading(false); }
+      if (!cancelled) { setTeams(mapped); setLoading(false); }
     }
-    if (sportName) loadTeams();
+    if (clubId && sportName) loadTeams();
     else { setTeams([]); setLoading(false); }
     return () => { cancelled = true; };
-  }, [sportName]);
+  }, [clubId, clubName, sportName]);
 
   const visible = search.trim().length > 0
     ? teams.filter((t) =>
@@ -313,8 +313,8 @@ function CivilTeamPicker({
   if (teams.length === 0) {
     return (
       <div className="bg-[#13151a] border border-[#2D3748] rounded-lg px-4 py-5">
-        <p className="text-[13px] text-[#9CA3AF] mb-1">Aucune équipe civile trouvée pour {sportName || "ton sport"}.</p>
-        <p className="text-[12px] text-[#6b7280] mb-4">Si ton équipe n&apos;apparaît pas, continue — tu pourras l&apos;associer plus tard.</p>
+        <p className="text-[13px] text-[#9CA3AF] mb-1">Aucune équipe pour {sportName || "ton sport"} dans {clubName || "ce club"}.</p>
+        <p className="text-[12px] text-[#6b7280] mb-4">Tu peux rester rattaché au club seul — continue.</p>
         <button
           type="button"
           onClick={() => { setSkipped(true); onContinueWithoutTeam(); }}
@@ -1359,27 +1359,46 @@ function AthleteOnboardingDesktop() {
                   <p className="text-[12px] text-[#22C55E] font-bold mb-6">✓ {selectedClubName}</p>
                 )}
 
-                <div className={sectionTitle}>
-                  <div className="w-0.5 h-4 bg-[#E63946] rounded-full" />
-                  Mon équipe
-                  <span className="text-[10px] text-[#4a4d56] font-normal normal-case tracking-normal ml-2">(optionnel)</span>
-                </div>
-                <div className="mb-3">
-                  <CivilTeamPicker
-                    sportName={primarySport}
-                    selectedTeamId={selectedTeamId}
-                    onSelect={(t) => {
-                      setSelectedTeamId(t.id);
-                      setSelectedTeamName(t.name);
-                      setSelectedTeamSchoolId(t.school_id);
-                    }}
-                    onContinueWithoutTeam={() => {
-                      setSelectedTeamId(null);
-                      setSelectedTeamName("");
-                      setSelectedTeamSchoolId(null);
-                    }}
-                  />
-                </div>
+                {/* TEAM tier — scoped to the chosen club + sport.
+                    Gated: only shown once a club is picked; if the sport
+                    isn't set yet (it's chosen at step 4), we surface a
+                    hint instead of an empty picker. Club alone is a valid
+                    anchor, so this whole tier stays optional. */}
+                {selectedClubId && (
+                  <>
+                    <div className={sectionTitle}>
+                      <div className="w-0.5 h-4 bg-[#E63946] rounded-full" />
+                      Mon équipe
+                      <span className="text-[10px] text-[#4a4d56] font-normal normal-case tracking-normal ml-2">(optionnel)</span>
+                    </div>
+                    <div className="mb-3">
+                      {primarySport ? (
+                        <CivilTeamPicker
+                          clubId={selectedClubId}
+                          clubName={selectedClubName}
+                          sportName={primarySport}
+                          selectedTeamId={selectedTeamId}
+                          onSelect={(t) => {
+                            setSelectedTeamId(t.id);
+                            setSelectedTeamName(t.name);
+                            setSelectedTeamSchoolId(t.school_id);
+                          }}
+                          onContinueWithoutTeam={() => {
+                            setSelectedTeamId(null);
+                            setSelectedTeamName("");
+                            setSelectedTeamSchoolId(null);
+                          }}
+                        />
+                      ) : (
+                        <div className="bg-[#13151a] border border-[#2D3748] rounded-lg px-4 py-4">
+                          <p className="text-[13px] text-[#9CA3AF]">
+                            Choisis ton sport (étape suivante) pour voir les équipes de {selectedClubName}. Ton club seul suffit pour l&apos;instant.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
                 {selectedTeamName && (
                   <p className="text-[12px] text-[#22C55E] font-bold mb-6">✓ {selectedTeamName}</p>
                 )}
