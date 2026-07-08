@@ -412,7 +412,14 @@ function AuthContent() {
 
                       <div>
                         <label className={`${label} text-[#9CA3AF] mb-1.5 block`}>Date de naissance <span className="text-[#EF4444]">*</span></label>
+                        {/* Loi 25 — DOB à choix libre (pas de bornes) ; le
+                            blocage <14 se fait au CTA via le hook
+                            (isUnderMinAge coupe canProceedScreen2/canSubmit)
+                            + le message conditionnel ci-dessous. */}
                         <input type="date" value={sf.birthdate} onChange={(e) => sf.setBirthdate(e.target.value)} className={inputClass} />
+                        {sf.isUnderMinAge && (
+                          <p className="text-xs mt-1.5 text-[#EF4444]">L&apos;inscription est réservée aux 14 ans et plus.</p>
+                        )}
                       </div>
 
                       {/* Athlète (D1) : context école/civil requis → users.context. */}
@@ -522,7 +529,7 @@ function AuthContent() {
                       </div>
                     </div>
                     <div className="flex justify-end -mt-1">
-                      <button type="button" onClick={() => setToast(T.toasts.forgotPhase2)} className={`${label} text-[#9CA3AF] hover:text-[#E63946] transition-colors`}>{T.login.forgot}</button>
+                      <button type="button" onClick={() => router.push("/mot-de-passe-oublie")} className={`${label} text-[#9CA3AF] hover:text-[#E63946] transition-colors`}>{T.login.forgot}</button>
                     </div>
                     <button type="submit" disabled={loading} className={`h-12 w-full rounded-lg font-head font-black text-sm uppercase tracking-widest mt-2 transition-all ${loading ? "bg-[#E63946]/50 text-white/50 cursor-wait" : "bg-[#E63946] text-white hover:bg-[#D42B22] hover:shadow-[0_8px_28px_rgba(230,57,70,0.38)] hover:-translate-y-0.5 cursor-pointer"}`}>
                       {loading ? T.login.loading : T.login.submit}

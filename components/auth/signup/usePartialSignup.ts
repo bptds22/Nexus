@@ -15,7 +15,7 @@
 ═══════════════════════════════════════════════════════════════ */
 
 import { useState, useCallback } from "react";
-import { isAdult } from "@/lib/legal/ageGate";
+import { isAdult, isUnder14 } from "@/lib/legal/ageGate";
 import { buildConsentMetadata } from "@/lib/legal/persistInitialConsents";
 
 export type SignupRole = "athlete" | "coach_school" | "coach_civil" | "recruiter";
@@ -78,6 +78,9 @@ export function usePartialSignup(opts?: { lockedEmail?: string; initialRole?: Si
   const pwdValid = password.length >= 8;
   const pwdMatches = confirmPassword.length > 0 && confirmPassword === password;
   const userIsAdult = isAdult(birthdate);
+  // Loi 25 — hard-block self-signup sous 14 ans (s'ajoute SOUS le seuil 18 ;
+  // les 14-17 gardent le bloc parent+consent via needsParentalScreen).
+  const isUnderMinAge = isUnder14(birthdate);
   const isAthlete = pickedRole === "athlete";
   const parentEmailValid = EMAIL_RE.test(parentEmail.trim());
 
@@ -89,6 +92,7 @@ export function usePartialSignup(opts?: { lockedEmail?: string; initialRole?: Si
     firstName.trim().length > 0 &&
     lastName.trim().length > 0 &&
     birthdate.length > 0 &&
+    !isUnderMinAge &&
     consentPolicy &&
     consentData &&
     (!isAthlete || athleteContext !== null);
@@ -172,7 +176,7 @@ export function usePartialSignup(opts?: { lockedEmail?: string; initialRole?: Si
     // état machine
     screen, setScreen, pickedRole, pickRole, next, back,
     // dérivés
-    isAthlete, userIsAdult, needsParentalScreen,
+    isAthlete, userIsAdult, isUnderMinAge, needsParentalScreen,
     emailValid, pwdValid, pwdMatches, parentEmailValid,
     canProceedScreen1, canProceedScreen2, canSubmit,
     // champs compte
