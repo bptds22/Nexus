@@ -2,6 +2,7 @@
 
 import { useState, useRef } from "react";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
 import MarketingNav from "@/components/marketing/MarketingNav";
 import PlaybookBackground from "../components/PlaybookBackground";
 import Footer from "@/components/marketing/Footer";
@@ -14,23 +15,49 @@ import Footer from "@/components/marketing/Footer";
 
 const label = "text-[10px] font-bold tracking-[0.25em] uppercase";
 
+/* Recovery links land the user on /auth/reinitialiser; Supabase's
+   detectSessionInUrl (PKCE ?code=) establishes the recovery session there. */
+const RESET_REDIRECT_TO = "https://nexussports.ca/auth/reinitialiser";
+
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const fadeRef = useRef<HTMLDivElement>(null);
 
-  /* Placeholder handler — ready for Supabase integration */
-  const handleSubmit = (e: React.FormEvent) => {
+  /* Fire the Supabase recovery email. Anti-enumeration: we surface the
+     same success state whether or not the address has an account — only a
+     genuine transport failure flips the error state. */
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim()) return;
-    // TODO: integrate with Supabase Auth resetPasswordForEmail
+    if (!email.trim() || loading) return;
+    setError("");
+    setLoading(true);
+
+    const supabase = createClient();
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(
+      email.trim(),
+      { redirectTo: RESET_REDIRECT_TO },
+    );
+
+    setLoading(false);
+    if (resetError) {
+      setError("Impossible d'envoyer le courriel pour le moment. Vérifie ta connexion et réessaie.");
+      return;
+    }
     setSubmitted(true);
   };
 
-  /* Resend handler */
-  const handleResend = () => {
-    // TODO: integrate with Supabase Auth resetPasswordForEmail
+  /* Resend handler — re-fires the recovery email and replays the fade. */
+  const handleResend = async () => {
+    if (loading) return;
+    const supabase = createClient();
+    setLoading(true);
+    await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo: RESET_REDIRECT_TO });
+    setLoading(false);
+
     const el = fadeRef.current;
     if (el) {
       el.classList.remove("nx-auth-fade");
@@ -87,12 +114,23 @@ export default function ForgotPasswordPage() {
                     />
                   </div>
 
+                  {/* Error message */}
+                  {error && (
+                    <div className="flex items-center gap-2.5 bg-[#E63946]/[0.08] border border-[#E63946]/25 rounded px-4 py-2.5">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                        <circle cx="12" cy="12" r="10" /><path d="M12 8v4" /><path d="M12 16h.01" />
+                      </svg>
+                      <p className="font-sans text-sm text-[#E63946]">{error}</p>
+                    </div>
+                  )}
+
                   {/* Submit CTA */}
                   <button
                     type="submit"
-                    className="nx-ghost-btn h-12 w-full border font-head font-black text-sm uppercase tracking-widest mt-2"
+                    disabled={loading}
+                    className={`nx-ghost-btn h-12 w-full border font-head font-black text-sm uppercase tracking-widest mt-2 ${loading ? "opacity-60 cursor-wait" : ""}`}
                   >
-                    Envoyer le lien de réinitialisation
+                    {loading ? "Envoi en cours…" : "Envoyer le lien de réinitialisation"}
                   </button>
                 </form>
               ) : (
@@ -120,9 +158,10 @@ export default function ForgotPasswordPage() {
                   <button
                     type="button"
                     onClick={handleResend}
-                    className="nx-ghost-btn h-11 px-8 border font-head font-black text-xs uppercase tracking-widest"
+                    disabled={loading}
+                    className={`nx-ghost-btn h-11 px-8 border font-head font-black text-xs uppercase tracking-widest ${loading ? "opacity-60 cursor-wait" : ""}`}
                   >
-                    Renvoyer le courriel
+                    {loading ? "Envoi en cours…" : "Renvoyer le courriel"}
                   </button>
                 </div>
               )}
