@@ -412,7 +412,14 @@ function AuthContent() {
 
                       <div>
                         <label className={`${label} text-[#9CA3AF] mb-1.5 block`}>Date de naissance <span className="text-[#EF4444]">*</span></label>
+                        {/* Loi 25 — DOB à choix libre (pas de bornes) ; le
+                            blocage <14 se fait au CTA via le hook
+                            (isUnderMinAge coupe canProceedScreen2/canSubmit)
+                            + le message conditionnel ci-dessous. */}
                         <input type="date" value={sf.birthdate} onChange={(e) => sf.setBirthdate(e.target.value)} className={inputClass} />
+                        {sf.isUnderMinAge && (
+                          <p className="text-xs mt-1.5 text-[#EF4444]">L&apos;inscription est réservée aux 14 ans et plus.</p>
+                        )}
                       </div>
 
                       {/* Athlète (D1) : context école/civil requis → users.context. */}

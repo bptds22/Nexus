@@ -58,7 +58,7 @@ import {
   buildConsentMetadata,
   persistInitialConsents,
 } from "@/lib/legal/persistInitialConsents";
-import { isAdult } from "@/lib/legal/ageGate";
+import { isAdult, isUnder14 } from "@/lib/legal/ageGate";
 import { LegalSheetMobile, type LegalDocKey } from "@/components/legal/LegalSheetMobile";
 import PartnerVisibilityConsentCard from "@/components/shared/PartnerVisibilityConsentCard";
 
@@ -169,11 +169,16 @@ export function SignupMobile({ onShowWelcome, onShowLogin }: SignupMobileProps) 
   // Iter signup-reorg — Step 2 (Toi) : prénom + nom + email (revalidé)
   // + date de naissance + 2 consents génériques required (policy/data).
   // Marketing reste optionnel hors gate.
+  // Loi 25 — hard-block self-signup sous 14 ans. S'ajoute SOUS le seuil 18 :
+  // les 14-17 gardent l'écran parent (userIsAdult=false), seuls les <14 sont
+  // refusés. Réévalué à chaque render (rebranche si la date change).
+  const birthdateUnder14 = isUnder14(birthdate);
   const canProceedStep2 = canProceedStep1
     && firstName.trim().length > 0
     && lastName.trim().length > 0
     && emailValid
     && birthdate.length > 0
+    && !birthdateUnder14
     && consentPolicy && consentData;
   // Iter age-gate §B — utilisateur majeur (18+) calculé depuis birthdate.
   // Réévalué à chaque render : si l'utilisateur revient à l'écran 2 et
@@ -251,6 +256,9 @@ export function SignupMobile({ onShowWelcome, onShowLogin }: SignupMobileProps) 
 
   const handleSubmit = useCallback(async () => {
     if (!canSubmit) return;
+    // Loi 25 — jamais de compte auth pour un <14 (garde défensive en plus
+    // du blocage du CTA via canProceedStep2/birthdateUnder14).
+    if (isUnder14(birthdate)) return;
     triggerHaptic("Light");
     setSaving(true);
 
@@ -1056,7 +1064,10 @@ function Step2You(p: Step2YouProps) {
 
         {/* Iter signup-reorg — date de naissance (input type=date natif).
             Stockée au format ISO "YYYY-MM-DD" → écrite dans
-            athletes.date_naissance au submit onboarding. */}
+            athletes.date_naissance au submit onboarding.
+            Iter age-gate — DOB à choix libre (pas de min/max) ; le blocage
+            <14 se fait au CTA via birthdateUnder14 (canProceedStep2) +
+            handleSubmit + le message conditionnel ci-dessous. */}
         <div className={fieldCls}>
           <label htmlFor="signup-birthdate" className={labelCls}>Date de naissance</label>
           <input
@@ -1068,10 +1079,12 @@ function Step2You(p: Step2YouProps) {
             onBlur={() => p.setInputFocused(false)}
             className={inputCls}
             style={{ fontSize: 17 }}
-            // Pas de min/max — l'utilisateur peut être < 14 (mineur,
-            // parents requis) ou 18+ (adulte). Le gating "18+ = pas de
-            // parents" sera câblé au sprint suivant.
           />
+          {p.birthdate && isUnder14(p.birthdate) && (
+            <p className="text-[12px] text-[#EF4444] mt-1 px-1">
+              L&apos;inscription est réservée aux 14 ans et plus.
+            </p>
+          )}
         </div>
       </div>
 
