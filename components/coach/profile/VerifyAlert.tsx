@@ -23,20 +23,31 @@
 import { AnimatePresence, motion } from "framer-motion";
 
 export interface VerifyAlertProps {
-  /** athletes.verified — when true, renders null. */
+  /** athletes.verified — when true (and not needsReverify), renders null. */
   isVerified: boolean;
+  /** athletes.modified_since_verification — true quand l'athlète est
+   *  vérifié MAIS modifié depuis. Dans ce cas l'alerte s'affiche quand même
+   *  (sinon le coach n'aurait aucune action sur un profil vérifié-modifié)
+   *  avec une copie « à reconfirmer » + bouton « Re-vérifier ». Optionnel :
+   *  les appelants qui ne le passent pas gardent le comportement d'avant
+   *  (alerte uniquement si non vérifié). */
+  needsReverify?: boolean;
   /** Coach action. Web wires this to setShowVerifyModal(true) (web's
-   *  existing confirm-modal flow). Mobile wires it to a direct 5-col
-   *  update on the athletes row. Both call the same prop name. */
+   *  existing confirm-modal flow). Mobile wires it to a direct update on
+   *  the athletes row. Both call the same prop name. */
   onVerify: () => void;
 }
 
 /* Exit animation : fade + height collapse ~240ms ease-out quand
    isVerified bascule à true (cf. ConsentAlert pour le pattern). */
-export default function VerifyAlert({ isVerified, onVerify }: VerifyAlertProps) {
+export default function VerifyAlert({ isVerified, needsReverify = false, onVerify }: VerifyAlertProps) {
+  // L'alerte s'affiche si NON vérifié OU si vérifié-mais-modifié.
+  const show = !isVerified || needsReverify;
+  // Distingue les deux cas pour la copie + le libellé du bouton.
+  const reverify = isVerified && needsReverify;
   return (
     <AnimatePresence initial={false}>
-      {!isVerified && (
+      {show && (
         <motion.div
           key="verify-alert"
           initial={{ opacity: 0, height: 0, scale: 0.97 }}
@@ -57,9 +68,13 @@ export default function VerifyAlert({ isVerified, onVerify }: VerifyAlertProps) 
           </svg>
         </div>
         <div className="min-w-0">
-          <p className="text-[13px] font-bold text-white">Profil non vérifié</p>
+          <p className="text-[13px] font-bold text-white">
+            {reverify ? "Profil modifié depuis la vérification" : "Profil non vérifié"}
+          </p>
           <p className="text-[12px] text-[#9CA3AF] mt-0.5 leading-snug">
-            Ce profil n&apos;est pas visible par les recruteurs tant qu&apos;il n&apos;est pas vérifié.
+            {reverify
+              ? "Le profil a changé depuis la dernière vérification — reconfirme-le pour réactiver le badge."
+              : "Ce profil n'est pas visible par les recruteurs tant qu'il n'est pas vérifié."}
           </p>
         </div>
       </div>
@@ -68,7 +83,7 @@ export default function VerifyAlert({ isVerified, onVerify }: VerifyAlertProps) 
         onClick={onVerify}
         className="shrink-0 px-5 py-2.5 rounded-lg bg-[#3B82F6] text-white font-bold text-[12px] uppercase tracking-[0.1em] hover:bg-[#2563EB] active:bg-[#2563EB] transition-colors cursor-pointer"
       >
-        Vérifier maintenant
+        {reverify ? "Re-vérifier" : "Vérifier maintenant"}
       </button>
     </div>
         </motion.div>

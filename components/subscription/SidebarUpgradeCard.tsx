@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSubscription } from "@/lib/hooks/useSubscription";
 
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
+
 /* ═══════════════════════════════════════════════════════════════
    SidebarUpgradeCard — Smart subscription block for all sidebars.
    Shows: upgrade nudge (free/pro) + plan status indicator.
@@ -77,8 +79,8 @@ export default function SidebarUpgradeCard() {
 
   return (
     <div className="px-3 mb-1">
-      {/* ── Upgrade nudge card ── */}
-      {showUpgrade && !dismissed && (
+      {/* ── Upgrade nudge card ── (masquée sur iOS — 3.1.1) */}
+      {!IS_CAPACITOR && showUpgrade && !dismissed && (
         <div className="relative group/upgrade mb-2">
           <Link
             href="/tarifs"

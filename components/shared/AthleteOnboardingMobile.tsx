@@ -36,13 +36,17 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { calculateProfileCompletion } from "@/lib/utils/calculateProfileCompletion";
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import { MobilePicker, type PickerOption } from "@/components/mobile/MobilePicker";
+import { GRAD_YEAR_OPTIONS } from "@/lib/config/gradYears";
 import { SearchSheet } from "@/components/mobile/SearchSheet";
+import AthletePhotoHero from "@/components/shared/AthletePhotoHero";
 import ClaimProfileModal, { type OrphanProfile } from "@/components/auth/ClaimProfileModal";
 import AthleteOnboardingWowMobile from "@/components/shared/AthleteOnboardingWowMobile";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { loadAthleteRaw, mapToRecruiterView } from "@/app/coach/athletes/_data/loadAthleteFromSupabase";
 import type { AthleteProfileRecruiterView } from "@/lib/types/models";
 
@@ -71,6 +75,7 @@ type CivilTeamRow = {
   school_id: string;
   school_name: string;
 };
+type CivilClubRow = { id: string; name: string; city: string | null; region: string | null };
 type ScolaireTeamRow = {
   id: string;
   name: string;
@@ -132,13 +137,9 @@ function normalize(s: string): string {
   return stripAccents(s).toLowerCase().trim();
 }
 
-const YEAR_OPTIONS: PickerOption[] = [
-  { value: "2026", label: "2026" },
-  { value: "2027", label: "2027" },
-  { value: "2028", label: "2028" },
-  { value: "2029", label: "2029" },
-  { value: "2030", label: "2030" },
-];
+// Graduation years — rolling window (current year → +10) from
+// lib/config/gradYears, shared with the web onboarding + athlete wizard.
+const YEAR_OPTIONS: PickerOption[] = GRAD_YEAR_OPTIONS;
 
 const REGION_OPTIONS: PickerOption[] = CEGEP_REGIONS.map((r) => ({ value: r, label: r }));
 
@@ -149,10 +150,14 @@ const REGION_OPTIONS: PickerOption[] = CEGEP_REGIONS.map((r) => ({ value: r, lab
 export function AthleteOnboardingMobile() {
   // Hooks AVANT toute condition (canon Rules of Hooks).
   const router = useRouter();
+  const queryClient = useQueryClient();
   const toast = useMobileToast();
 
   // Step machine 1|2 (consents + parent capturés au signup — iter 2b)
-  const [step, setStep] = useState<1 | 2>(1);
+  const [step, setStep] = useState<0 | 1 | 2>(1);
+  // Masque le CTA fixed bottom-0 quand un input est focus (clavier monté),
+  // pour qu'il ne recouvre pas le champ saisi — même idiome que SignupMobile.
+  const [inputFocused, setInputFocused] = useState(false);
 
   // Auth + context
   const [userId, setUserId] = useState<string | null>(null);
@@ -185,7 +190,6 @@ export function AthleteOnboardingMobile() {
   const [userClearedCoach, setUserClearedCoach] = useState(false);
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
   const [selectedTeamName, setSelectedTeamName] = useState<string>("");
-  const [selectedTeamSchoolId, setSelectedTeamSchoolId] = useState<string | null>(null);
 
   // Carte (écran 3)
   const [primaryPosition, setPrimaryPosition] = useState<string>(""); // abreviation
@@ -214,6 +218,14 @@ export function AthleteOnboardingMobile() {
   const [civilTeams, setCivilTeams] = useState<CivilTeamRow[]>([]);
   const [civilTeamsLoading, setCivilTeamsLoading] = useState(false);
 
+  // Civil : niveau CLUB (avant l'équipe), pick-only — parité coach civil.
+  const [selectedClubId, setSelectedClubId] = useState<string | null>(null);
+  const [selectedClubName, setSelectedClubName] = useState<string>("");
+  const [clubSheetOpen, setClubSheetOpen] = useState(false);
+  const [clubSearch, setClubSearch] = useState("");
+  const [civilClubs, setCivilClubs] = useState<CivilClubRow[]>([]);
+  const [civilClubsLoading, setCivilClubsLoading] = useState(false);
+
   // Iter team-2 — équipes scolaires (school+sport) + coachs attachés
   // à l'équipe choisie. Triplet d'état pour distinguer les 3 cas
   // A (équipe+coach) / B (équipe sans coach) / C (aucune équipe).
@@ -231,6 +243,7 @@ export function AthleteOnboardingMobile() {
   // Saving
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [initError, setInitError] = useState(false);
 
   // Iter 7.50-b3 — phase "wow" post-submit. Une seule fois (moment de
   // création), pas au resume. Quand wowAthlete est set, le rendu bascule
@@ -255,7 +268,17 @@ export function AthleteOnboardingMobile() {
     let cancelled = false;
     (async () => {
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
+      try {
+      // Garde de session aligné sur getSession() (lecture LOCALE du storage)
+      // au lieu de getUser() (validation RÉSEAU). Juste après le signup,
+      // getUser() race à null le temps que la session se propage → on
+      // renvoyait vers /auth, où AuthMobileDispatcher → postLoginDispatch
+      // lit getSession() (local), VOIT la session, et renvoie l'athlète
+      // incomplet vers /athlete/onboarding → ping-pong infini. getSession()
+      // supprime l'asymétrie. La porte de sortie /auth reste pour un vrai
+      // cas non-authentifié (session bien null).
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
       if (!user) { router.push("/auth"); return; }
       if (cancelled) return;
 
@@ -268,23 +291,47 @@ export function AthleteOnboardingMobile() {
       if (meta.last_name) setLastName(meta.last_name as string);
       if (meta.sport) setPrimarySport(meta.sport as string);
 
-      // Fallback users table si metadata vide
+      // Lecture unique de public.users, avec retry. Juste après le signup
+      // le cookie JWT n'est pas encore propagé → RLS peut renvoyer 0 ligne
+      // pendant ~1s (la MÊME course que app/athlete/layout.tsx:276-282).
+      // .maybeSingle() renvoie null au lieu de throw PGRST116, et on
+      // réessaie quelques fois — au lieu d'avorter et de figer le spinner.
+      let userRow: {
+        first_name: string | null;
+        last_name: string | null;
+        context: string | null;
+        onboarding_complete: boolean | null;
+      } | null = null;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const { data } = await supabase
+          .from("users")
+          .select("first_name, last_name, context, onboarding_complete")
+          .eq("id", user.id)
+          .maybeSingle();
+        if (data) { userRow = data; break; }
+        if (attempt < 2) await new Promise((r) => setTimeout(r, 500));
+      }
+
+      // Fallback nom depuis users seulement si metadata vide
       if (!meta.first_name) {
-        const { data: userRow } = await supabase
-          .from("users").select("first_name, last_name")
-          .eq("id", user.id).single();
         if (userRow?.first_name) setFirstName(userRow.first_name);
         if (userRow?.last_name) setLastName(userRow.last_name);
       }
 
       // Context athlète
-      const { data: contextRow } = await supabase
-        .from("users").select("context").eq("id", user.id).single();
-      const ctxRaw = contextRow?.context;
+      const ctxRaw = userRow?.context;
       const ctx: "scolaire" | "ligue_civile" =
         ctxRaw === "ligue_civile" ? "ligue_civile" : "scolaire";
       if (cancelled) return;
       setUserContext(ctx);
+
+      // Step-0 (choix de contexte) : affiché tant que users.context n'est pas
+      // posé. Le signup athlète omet le context → NULL pour un compte frais →
+      // on montre le sélecteur École / Ligue civile AVANT le wizard. Si le
+      // context est déjà posé (compte claimé / resume post-submit), on saute
+      // le Step-0 et la logique resume ci-dessous décide step 1 vs 2.
+      const contextChosen = ctxRaw === "scolaire" || ctxRaw === "ligue_civile";
+      if (!contextChosen) setStep(0);
 
       // Resume : athletes row + team_athletes junction.
       // Iter team-3 — on tire aussi division/age_group/gender pour
@@ -300,10 +347,16 @@ export function AthleteOnboardingMobile() {
       if (existing) {
         setExistingAthleteId(existing.id as string);
 
-        // Profil complet ? bypass direct dashboard
-        const profileComplete = existing.first_name && existing.last_name && existing.sport_id
-          && (ctx === "ligue_civile" || existing.school_id);
-        if (profileComplete) {
+        // Bypass dashboard UNIQUEMENT si onboarding_complete === true — même
+        // critère que le layout (app/athlete/layout.tsx). Avant : on redirigeait
+        // sur la PRÉSENCE des champs athletes (first_name/last_name/sport_id/
+        // school_id), qu'un compte CLAIMÉ (seedé par le coach) a déjà → saut au
+        // dashboard avant handleSubmit (qui pose le flag, ~l.856), donc le flag
+        // jamais posé → le layout (flag false) renvoyait à l'onboarding → boucle.
+        // Désormais un compte claimé/non terminé reste sur l'onboarding
+        // PRÉ-REMPLI et le complète, ce qui pose le flag. (Réplique le fix web —
+        // commit 2dbc7fc.)
+        if (userRow?.onboarding_complete === true) {
           router.replace("/athlete/dashboard");
           return;
         }
@@ -341,7 +394,6 @@ export function AthleteOnboardingMobile() {
               gender: teamRel.gender ?? null,
             }));
           }
-          if (teamRel.school_id) setSelectedTeamSchoolId(teamRel.school_id);
         }
 
         const sportRel = flatten(existing.sports as { nom?: string } | { nom?: string }[] | null);
@@ -359,8 +411,12 @@ export function AthleteOnboardingMobile() {
         const step1OK = !!(existing.sport_id
           && (ctx === "ligue_civile" ? (teamRel?.id || existing.school_id) : existing.school_id));
 
-        if (step1OK) setStep(2);
-        else setStep(1);
+        // Resume seulement si le contexte est posé ; sinon on reste au
+        // Step-0 (défini plus haut) pour faire choisir scolaire/civil.
+        if (contextChosen) {
+          if (step1OK) setStep(2);
+          else setStep(1);
+        }
       } else if (user.email) {
         // Phase 2 orphan claim — même requête que desktop
         const { data: orphan } = await supabase
@@ -391,7 +447,16 @@ export function AthleteOnboardingMobile() {
         }
       }
 
-      if (!cancelled) setLoading(false);
+      } catch (err) {
+        // Échec inattendu (réseau, auth) — état récupérable plutôt que
+        // hang. La course 0-ligne du JWT est déjà gérée ci-dessus via
+        // .maybeSingle() + retry, donc elle n'atterrit PAS ici.
+        console.error("[OnboardingMobile] init failed:", err);
+        if (!cancelled) setInitError(true);
+      } finally {
+        // TOUJOURS libérer le spinner, quoi qu'il arrive au-dessus.
+        if (!cancelled) setLoading(false);
+      }
     })();
     return () => { cancelled = true; };
   }, [router]);
@@ -587,44 +652,67 @@ export function AthleteOnboardingMobile() {
     setUserClearedCoach(false);
   }, [selectedTeamId]);
 
-  // Équipe civile (par sport sélectionné)
+  // Clubs civils (one-shot quand sheet ouvert) — parité coach civil.
   useEffect(() => {
-    if (!teamSheetOpen || !primarySport) return;
+    if (!clubSheetOpen || civilClubs.length > 0) return;
+    setCivilClubsLoading(true);
+    (async () => {
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("schools")
+        .select("id, name, city, region")
+        .eq("type", "LIGUE_CIVILE")
+        .order("name");
+      setCivilClubs((data as CivilClubRow[]) || []);
+      setCivilClubsLoading(false);
+    })();
+  }, [clubSheetOpen, civilClubs.length]);
+
+  const visibleCivilClubs = useMemo(() => {
+    const q = normalize(clubSearch);
+    if (!q) return civilClubs.slice(0, 50);
+    return civilClubs.filter((c) =>
+      normalize(c.name).includes(q) || (c.city ? normalize(c.city).includes(q) : false)
+    ).slice(0, 50);
+  }, [civilClubs, clubSearch]);
+
+  // Équipe civile : équipes du CLUB choisi + sport (parité coach civil).
+  useEffect(() => {
+    if (!teamSheetOpen || !selectedClubId || !primarySport) return;
+    let cancelled = false;
     setCivilTeamsLoading(true);
     (async () => {
       const supabase = createClient();
       const { data: sportRow } = await supabase
         .from("sports").select("id").eq("nom", primarySport).maybeSingle();
+      if (cancelled) return;
       if (!sportRow?.id) { setCivilTeams([]); setCivilTeamsLoading(false); return; }
       const { data: rows } = await supabase
         .from("teams")
-        .select("id, name, age_group, division, school_id, schools!school_id(name, type)")
+        .select("id, name, age_group, division")
+        .eq("school_id", selectedClubId)
         .eq("sport_id", sportRow.id)
+        .eq("is_active", true)
         .order("name");
-      const filtered: CivilTeamRow[] = [];
-      for (const raw of (rows as Record<string, unknown>[]) || []) {
-        const sch = flatten(raw.schools as { name?: string; type?: string } | { name?: string; type?: string }[] | null);
-        if (sch?.type !== "LIGUE_CIVILE") continue;
-        filtered.push({
-          id: raw.id as string,
-          name: raw.name as string,
-          age_group: (raw.age_group as string) ?? null,
-          division: (raw.division as string) ?? null,
-          school_id: raw.school_id as string,
-          school_name: sch.name ?? "",
-        });
-      }
-      setCivilTeams(filtered);
+      if (cancelled) return;
+      const mapped: CivilTeamRow[] = ((rows as Record<string, unknown>[]) || []).map((r) => ({
+        id: r.id as string,
+        name: r.name as string,
+        age_group: (r.age_group as string) ?? null,
+        division: (r.division as string) ?? null,
+        school_id: selectedClubId,
+        school_name: selectedClubName,
+      }));
+      setCivilTeams(mapped);
       setCivilTeamsLoading(false);
     })();
-  }, [teamSheetOpen, primarySport]);
+    return () => { cancelled = true; };
+  }, [teamSheetOpen, selectedClubId, selectedClubName, primarySport]);
 
   const visibleCivilTeams = useMemo(() => {
     const q = normalize(teamSearch);
     if (!q) return civilTeams;
-    return civilTeams.filter((t) =>
-      normalize(t.name).includes(q) || normalize(t.school_name).includes(q)
-    );
+    return civilTeams.filter((t) => normalize(t.name).includes(q));
   }, [civilTeams, teamSearch]);
 
   /* ── Positions (dépend du sport, depuis sports.id → positions) ── */
@@ -663,8 +751,7 @@ export function AthleteOnboardingMobile() {
 
   /* ── Photo upload (web file input, Capacitor Camera en sprint ultérieur) ── */
 
-  const handlePhotoChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const handlePhotoChange = useCallback(async (file: File | null) => {
     if (!file || !userId) return;
     setPhotoUploading(true);
     const supabase = createClient();
@@ -728,7 +815,10 @@ export function AthleteOnboardingMobile() {
     }
 
     const isCivil = userContext === "ligue_civile";
-    const civilAnchorSchoolId = isCivil ? selectedTeamSchoolId : null;
+    // Anchor civil = la row du CLUB choisi (schools type='LIGUE_CIVILE').
+    // Club seul = rattachement au club sans équipe ; aucun club = civil_no_team
+    // complet. team_athletes n'est inséré que si une équipe est choisie (plus bas).
+    const civilAnchorSchoolId = isCivil ? selectedClubId : null;
 
     // Parent / consent slice : on n'écrit QUE si la preuve metadata est là.
     // Fallback (edge case : compte créé hors signup mobile) → on n'ajoute
@@ -851,9 +941,31 @@ export function AthleteOnboardingMobile() {
     // ré-écriture ici → la case marketing a été cochée/refusée UNE fois
     // au signup, c'est cette date qui fait foi.
 
+    // Persiste le contexte choisi au Step-0 (scolaire | ligue_civile). RPC
+    // one-shot : context encore NULL ici + pas encore onboardé → réussit.
+    // Non bloquant (la visibilité recruteur dépend de status='ACTIF', pas de
+    // users.context) ; CONTEXT_ALREADY_SET / ALREADY_ONBOARDED → on garde
+    // l'existant et on continue.
+    {
+      const { error: ctxErr } = await supabase.rpc("set_initial_role_and_context", {
+        p_role: "ATHLETE",
+        p_context: userContext,
+      });
+      if (ctxErr) {
+        const m = ctxErr.message || "";
+        if (!m.includes("CONTEXT_ALREADY_SET") && !m.includes("ALREADY_ONBOARDED")) {
+          console.error("[OnboardingMobile] set_initial_role_and_context:", ctxErr);
+        }
+      }
+    }
+
     // Flip onboarding_complete BEFORE le WOW pour que toute navigation
     // back-button au milieu de l'animation aboutisse à un état cohérent.
     await supabase.from("users").update({ onboarding_complete: true }).eq("id", userId);
+    // Force le re-fetch de currentUser → PushRegistrar voit onboarding_complete=true
+    // dans la MÊME session et déclenche registerPush() (sinon : seulement au prochain
+    // cold start). Miroir de app/athlete/onboarding/page.tsx:1032.
+    await queryClient.invalidateQueries({ queryKey: ["currentUser"] });
     triggerHaptic("Medium");
 
     // Iter 7.50-b3 — au lieu de redirect immédiat, on bascule en phase
@@ -881,9 +993,9 @@ export function AthleteOnboardingMobile() {
     router.replace("/athlete/dashboard");
   }, [
     canSubmit, userId, saving, primarySport, primaryPosition, primaryPositionId,
-    userContext, selectedTeamSchoolId, selectedSchoolId, selectedCoachId,
+    userContext, selectedClubId, selectedSchoolId, selectedCoachId,
     firstName, lastName, photo, email, phone, gradYear, jerseyNumber,
-    existingAthleteId, selectedTeamId, router, toast,
+    existingAthleteId, selectedTeamId, router, toast, queryClient,
   ]);
 
   /* ── Handlers nav ────────────────────────────────────────── */
@@ -895,15 +1007,71 @@ export function AthleteOnboardingMobile() {
 
   const handleBack = useCallback(() => {
     triggerHaptic("Light");
-    if (step > 1) setStep((s) => (s - 1) as 1 | 2);
+    if (step > 0) setStep((s) => (s - 1) as 0 | 1 | 2);
   }, [step]);
 
   /* ── Render ──────────────────────────────────────────────── */
 
+  if (initError) {
+    return (
+      <div className="min-h-screen bg-[#111317] text-white flex flex-col items-center justify-center gap-4 px-6 text-center">
+        <p className="text-[14px] text-white max-w-sm">
+          Une erreur est survenue au chargement de ton profil.
+        </p>
+        <button
+          onClick={() => window.location.reload()}
+          className="px-5 h-11 bg-[#E63946] text-white font-bold uppercase tracking-widest text-[13px] rounded"
+        >
+          Réessayer
+        </button>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#111317] text-white flex items-center justify-center">
-        <p className="text-[14px] text-[#6b7280]">Chargement…</p>
+      <div className="min-h-screen bg-[#111317] text-white flex flex-col">
+        {/* Header sticky : back + label étape + dots (squelette) */}
+        <div
+          className="sticky top-0 z-30 bg-[#111317]/95 backdrop-blur-md border-b border-white/[0.06]"
+          style={{ paddingTop: "env(safe-area-inset-top)" }}
+        >
+          <div className="flex items-center px-4 py-2 gap-2 min-h-[64px]">
+            <Skeleton className="w-11 h-11 rounded-full flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <Skeleton className="h-3 w-24 rounded-full" />
+            </div>
+            <div className="flex items-center gap-1 flex-shrink-0">
+              <Skeleton className="w-2 h-2 rounded-full" />
+              <Skeleton className="w-2 h-2 rounded-full" />
+            </div>
+          </div>
+        </div>
+
+        {/* Contenu — scrollable (squelette de champs) */}
+        <div
+          className="flex-1 overflow-y-auto px-4 pt-6"
+          style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 96px)" }}
+        >
+          <Skeleton className="h-7 w-3/4 rounded-lg" />
+          <Skeleton className="mt-2 h-4 w-1/2 rounded-full" />
+          <div className="mt-8 space-y-6">
+            {[0, 1, 2].map((i) => (
+              <div key={i}>
+                <Skeleton className="h-3 w-28 rounded-full" />
+                <Skeleton className="mt-2 h-12 w-full rounded-xl" />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* CTA fixe en bas (squelette) */}
+        <div
+          className="fixed bottom-0 inset-x-0 z-30 bg-[#111317]/95 backdrop-blur-md border-t border-white/[0.06] px-4 pt-3"
+          style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 12px)" }}
+        >
+          <Skeleton className="h-12 w-full rounded-xl" />
+        </div>
       </div>
     );
   }
@@ -921,7 +1089,7 @@ export function AthleteOnboardingMobile() {
 
   return (
     <div
-      className="min-h-screen bg-[#111317] text-white flex flex-col"
+      className="h-[100dvh] overflow-x-hidden bg-[#111317] text-white flex flex-col"
       style={{
         // Iter signup-polish-2 §D — fade-in 0→1 sur 400ms. Couplé au voile
         // sortant de SignupMobile (#111317 opacity 1 quand on arrive ici)
@@ -949,7 +1117,7 @@ export function AthleteOnboardingMobile() {
           <button
             type="button"
             onClick={handleBack}
-            disabled={step === 1}
+            disabled={step === 0}
             aria-label="Retour"
             className="w-11 h-11 rounded-full flex items-center justify-center active:bg-white/5 flex-shrink-0 disabled:opacity-30"
           >
@@ -957,33 +1125,54 @@ export function AthleteOnboardingMobile() {
               <polyline points="15 18 9 12 15 6" />
             </svg>
           </button>
-          <div className="flex-1 min-w-0">
-            {/* Iter signup-polish-1 — le titre passe en H1 inline dans le
-                contenu (style aligné sur signup Step3Parent). Header sticky
-                garde back + label "Étape X" + dots pour la navigation. */}
-            <p className="text-[11px] uppercase tracking-[0.18em] font-bold text-white/40">
-              Étape {step} sur 2
-            </p>
-          </div>
-          {/* Progress dots */}
-          <div className="flex items-center gap-1 flex-shrink-0">
-            {[1, 2].map((s) => (
-              <div
-                key={s}
-                className={`w-2 h-2 rounded-full transition-colors ${
-                  s <= step ? "bg-[#E63946]" : "bg-white/15"
-                }`}
-              />
-            ))}
-          </div>
+          {/* Step-0 (choix de contexte) = écran d'intro HORS compteur : pas de
+              "Étape X sur 2" ni pastille, pour ne jamais afficher "Étape 0". */}
+          {step >= 1 && (
+            <>
+              <div className="flex-1 min-w-0">
+                {/* Iter signup-polish-1 — le titre passe en H1 inline dans le
+                    contenu (style aligné sur signup Step3Parent). Header sticky
+                    garde back + label "Étape X" + dots pour la navigation. */}
+                <p className="text-[11px] uppercase tracking-[0.18em] font-bold text-white/40">
+                  Étape {step} sur 2
+                </p>
+              </div>
+              {/* Progress dots */}
+              <div className="flex items-center gap-1 flex-shrink-0">
+                {[1, 2].map((s) => (
+                  <div
+                    key={s}
+                    className={`w-2 h-2 rounded-full transition-colors ${
+                      s <= step ? "bg-[#E63946]" : "bg-white/15"
+                    }`}
+                  />
+                ))}
+              </div>
+            </>
+          )}
         </div>
       </div>
 
       {/* Contenu — scrollable */}
       <div
-        className="flex-1 overflow-y-auto"
-        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 96px)" }}
+        className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden"
+        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 96px)", overscrollBehavior: "contain" }}
+        onFocus={(e) => {
+          const t = e.target as HTMLElement;
+          if (t.tagName === "INPUT" || t.tagName === "TEXTAREA") setInputFocused(true);
+        }}
+        onBlur={() => setInputFocused(false)}
       >
+        {step === 0 && (
+          <ContextPicker
+            onPick={(c) => {
+              triggerHaptic("Light");
+              setUserContext(c);
+              setStep(1);
+            }}
+          />
+        )}
+
         {step === 1 && (
           <Step1Content
             userContext={userContext}
@@ -1011,7 +1200,10 @@ export function AthleteOnboardingMobile() {
               // l'auto-select ne re-pose pas un head_coach derrière.
               setUserClearedCoach(true);
             }}
-            // Civil (existant)
+            // Civil (club → équipe)
+            selectedClubNameCivil={userContext === "ligue_civile" ? selectedClubName : ""}
+            onOpenClub={() => setClubSheetOpen(true)}
+            clubSelectedCivil={!!selectedClubId}
             selectedTeamNameCivil={userContext === "ligue_civile" ? selectedTeamName : ""}
             onOpenTeam={() => setTeamSheetOpen(true)}
           />
@@ -1028,16 +1220,24 @@ export function AthleteOnboardingMobile() {
             onOpenRegion={() => setOpenRegion(true)}
             photo={photo} photoUploading={photoUploading}
             onPhotoChange={handlePhotoChange}
+            onPhotoRemove={() => setPhoto(null)}
             showRegion={userContext === "ligue_civile"}
             showPosition={positionOptions.length > 0}
           />
         )}
       </div>
 
-      {/* Sticky bottom CTA */}
+      {/* Sticky bottom CTA — masqué au Step-0 (le choix se fait via les cartes) */}
+      {step >= 1 && (
       <div
-        className="fixed bottom-0 inset-x-0 z-30 bg-[#111317]/95 backdrop-blur-md border-t border-white/[0.06] px-4 pt-3"
-        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 12px)" }}
+        className="fixed bottom-0 inset-x-0 z-30 bg-[#111317]/95 backdrop-blur-md border-t border-white/[0.06] px-4 pt-3 transition-opacity"
+        style={{
+          paddingBottom: "calc(env(safe-area-inset-bottom) + 12px)",
+          opacity: inputFocused ? 0 : 1,
+          visibility: inputFocused ? "hidden" : "visible",
+          pointerEvents: inputFocused ? "none" : "auto",
+        }}
+        aria-hidden={inputFocused}
       >
         {step < 2 ? (
           <button
@@ -1074,6 +1274,7 @@ export function AthleteOnboardingMobile() {
           </button>
         )}
       </div>
+      )}
 
       {/* MobilePickers (year, position, region) */}
       <MobilePicker
@@ -1186,6 +1387,61 @@ export function AthleteOnboardingMobile() {
         }
       />
 
+      <SearchSheet<CivilClubRow>
+        open={clubSheetOpen}
+        onClose={() => setClubSheetOpen(false)}
+        title="Mon club civil"
+        searchPlaceholder="Rechercher mon club…"
+        searchValue={clubSearch}
+        onSearchChange={setClubSearch}
+        items={visibleCivilClubs}
+        loading={civilClubsLoading}
+        keyOf={(c) => c.id}
+        onSelect={(c) => {
+          setSelectedClubId(c.id);
+          setSelectedClubName(c.name);
+          // Le club change → on réinitialise l'équipe (pick-only, pas de stale).
+          setSelectedTeamId(null);
+          setSelectedTeamName("");
+          setCivilTeams([]);
+        }}
+        emptyContent={
+          <p className="text-center text-[14px] text-white/55 py-12 px-4">
+            Aucun club civil trouvé. Tu pourras t&apos;associer plus tard.
+          </p>
+        }
+        renderItem={(c, onTap) => (
+          <button
+            type="button"
+            onClick={onTap}
+            className="w-full text-left p-3 bg-[#1A1D24] rounded-2xl active:bg-[#22262e] transition-colors"
+          >
+            <p className="text-[16px] font-semibold text-white truncate">{c.name}</p>
+            {(c.city || c.region) && (
+              <p className="text-[13px] text-white/55 truncate">
+                {[c.city, c.region].filter(Boolean).join(" · ")}
+              </p>
+            )}
+          </button>
+        )}
+        footer={
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedClubId(null);
+              setSelectedClubName("");
+              setSelectedTeamId(null);
+              setSelectedTeamName("");
+              setCivilTeams([]);
+              setClubSheetOpen(false);
+            }}
+            className="w-full h-11 rounded-2xl border border-white/[0.10] text-[14px] font-semibold text-white/70 active:bg-white/[0.04]"
+          >
+            Continuer sans club
+          </button>
+        }
+      />
+
       <SearchSheet<CivilTeamRow>
         open={teamSheetOpen}
         onClose={() => setTeamSheetOpen(false)}
@@ -1199,11 +1455,10 @@ export function AthleteOnboardingMobile() {
         onSelect={(t) => {
           setSelectedTeamId(t.id);
           setSelectedTeamName(t.name);
-          setSelectedTeamSchoolId(t.school_id);
         }}
         emptyContent={
           <p className="text-center text-[14px] text-white/55 py-12 px-4">
-            Aucune équipe civile trouvée pour {primarySport || "ton sport"}. Tu pourras l&apos;associer plus tard.
+            Aucune équipe pour {primarySport || "ton sport"} dans ce club. Tu peux rester rattaché au club seul.
           </p>
         }
         renderItem={(t, onTap) => {
@@ -1215,9 +1470,7 @@ export function AthleteOnboardingMobile() {
               className="w-full text-left p-3 bg-[#1A1D24] rounded-2xl active:bg-[#22262e] transition-colors"
             >
               <p className="text-[16px] font-semibold text-white truncate">{t.name}</p>
-              <p className="text-[13px] text-white/55 truncate">
-                {t.school_name}{meta ? ` — ${meta}` : ""}
-              </p>
+              {meta && <p className="text-[13px] text-white/55 truncate">{meta}</p>}
             </button>
           );
         }}
@@ -1227,7 +1480,6 @@ export function AthleteOnboardingMobile() {
             onClick={() => {
               setSelectedTeamId(null);
               setSelectedTeamName("");
-              setSelectedTeamSchoolId(null);
               setTeamSheetOpen(false);
             }}
             className="w-full h-11 rounded-2xl border border-white/[0.10] text-[14px] font-semibold text-white/70 active:bg-white/[0.04]"
@@ -1331,7 +1583,10 @@ interface Step1Props {
   selectedCoachId: string | null;
   onSelectCoach: (coach: TeamCoachRow) => void;
   onClearCoach: () => void;
-  // Civil (inchangé)
+  // Civil (club → équipe, pick-only)
+  selectedClubNameCivil: string;
+  onOpenClub: () => void;
+  clubSelectedCivil: boolean;
   selectedTeamNameCivil: string;
   onOpenTeam: () => void;
 }
@@ -1479,16 +1734,31 @@ function Step1Content(p: Step1Props) {
         </>
       ) : (
         <>
-          <SectionTitle>Mon équipe civile</SectionTitle>
+          <SectionTitle>Mon club civil</SectionTitle>
           <PickerRow
-            label="Équipe"
-            value={p.selectedTeamNameCivil}
-            placeholder={p.primarySport ? "Sélectionner mon équipe…" : "Choisis d'abord ton sport"}
-            onTap={() => { if (p.primarySport) p.onOpenTeam(); }}
+            label="Club"
+            value={p.selectedClubNameCivil}
+            placeholder={p.primarySport ? "Sélectionner mon club…" : "Choisis d'abord ton sport"}
+            onTap={() => { if (p.primarySport) p.onOpenClub(); }}
           />
-          <p className="text-[12px] text-white/40 italic px-1 mt-1">
-            Pas obligatoire — tu pourras l&apos;associer plus tard.
-          </p>
+          {p.clubSelectedCivil ? (
+            <>
+              <SectionTitle>Mon équipe</SectionTitle>
+              <PickerRow
+                label="Équipe"
+                value={p.selectedTeamNameCivil}
+                placeholder="Sélectionner mon équipe…"
+                onTap={p.onOpenTeam}
+              />
+              <p className="text-[12px] text-white/40 italic px-1 mt-1">
+                Pas obligatoire — tu peux rester rattaché au club seul.
+              </p>
+            </>
+          ) : (
+            <p className="text-[12px] text-white/40 italic px-1 mt-1">
+              Pas obligatoire — tu pourras t&apos;associer plus tard.
+            </p>
+          )}
         </>
       )}
     </div>
@@ -1507,9 +1777,46 @@ interface Step2Props {
   onOpenRegion: () => void;
   photo: string | null;
   photoUploading: boolean;
-  onPhotoChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onPhotoChange: (file: File | null) => void;
+  onPhotoRemove: () => void;
   showRegion: boolean;
   showPosition: boolean;
+}
+
+/* ── ÉCRAN 0 — Choix du contexte (École vs Ligue civile) ──────────
+   Pilote la branche existante (scolaire = école/équipe/coach ; civil =
+   équipe civile + région). Le choix vit en état LOCAL pendant la session
+   et n'est persisté (users.context) qu'au submit via la RPC one-shot
+   set_initial_role_and_context. ───────────────────────────────────── */
+function ContextPicker({ onPick }: { onPick: (c: "scolaire" | "ligue_civile") => void }) {
+  return (
+    <div className="px-6 pt-4 space-y-3">
+      <StepHeading
+        title="Où joues-tu ?"
+        subtitle="Choisis ton parcours — ça détermine comment tu relies ton équipe."
+      />
+      <button
+        type="button"
+        onClick={() => onPick("scolaire")}
+        className="w-full text-left p-4 bg-[#1A1D24] rounded-2xl border border-white/[0.06] active:bg-[#22262e] active:scale-[0.99] transition-all"
+      >
+        <p className="text-[16px] font-bold text-white">École / Cégep</p>
+        <p className="text-[13px] text-white/55 mt-0.5">
+          Je joue pour mon école secondaire ou mon cégep.
+        </p>
+      </button>
+      <button
+        type="button"
+        onClick={() => onPick("ligue_civile")}
+        className="w-full text-left p-4 bg-[#1A1D24] rounded-2xl border border-white/[0.06] active:bg-[#22262e] active:scale-[0.99] transition-all"
+      >
+        <p className="text-[16px] font-bold text-white">Ligue civile / Club</p>
+        <p className="text-[13px] text-white/55 mt-0.5">
+          Je joue pour un club ou une ligue civile (hors école).
+        </p>
+      </button>
+    </div>
+  );
 }
 
 function Step2Content(p: Step2Props) {
@@ -1520,36 +1827,15 @@ function Step2Content(p: Step2Props) {
         subtitle="Une photo, une promotion, ton numéro. Le minimum pour la générer — tu pourras compléter le reste plus tard."
       />
       <SectionTitle>Ta photo</SectionTitle>
-      <div className="bg-[#1A1D24] border border-white/[0.06] rounded-2xl p-4 flex items-center gap-4">
-        <div className="relative w-20 h-20 rounded-full overflow-hidden flex-shrink-0 bg-[#2F3440] border border-white/[0.06]">
-          {p.photo ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={p.photo} alt="Photo" className="absolute inset-0 w-full h-full object-cover" />
-          ) : (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                <circle cx="12" cy="7" r="4" />
-              </svg>
-            </div>
-          )}
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-[14px] text-white/80">
-            {p.photo ? "Photo téléchargée" : "Aucune photo (optionnel)"}
-          </p>
-          <label className="inline-flex items-center mt-2 h-11 px-4 rounded-2xl bg-white/[0.06] active:bg-white/[0.10] text-[14px] font-semibold text-white cursor-pointer min-w-[44px]">
-            <input
-              type="file"
-              accept="image/*"
-              onChange={p.onPhotoChange}
-              className="sr-only"
-              disabled={p.photoUploading}
-            />
-            {p.photoUploading ? "Téléchargement…" : (p.photo ? "Changer" : "Choisir une photo")}
-          </label>
-        </div>
-      </div>
+      {/* Même composant/format que le wizard coach (grand cadre + fade +
+          « Tape pour changer » / RETIRER). La logique d'upload reste celle
+          de l'onboarding (handlePhotoChange → bucket avatars). */}
+      <AthletePhotoHero
+        photoUrl={p.photo ?? ""}
+        uploading={p.photoUploading}
+        onChange={p.onPhotoChange}
+        onRemove={p.onPhotoRemove}
+      />
 
       <SectionTitle>Ta promotion</SectionTitle>
       <PickerRow

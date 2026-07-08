@@ -32,6 +32,9 @@ export interface CoachThreadData {
   /** Last message preview + meta. */
   lastMessage: string;
   lastMessageAt: string;
+  /** sender_id du DERNIER message du fil (null si aucun message). Sert au
+      filtre "Sans réponse" : lastSenderId === coach courant → en attente. */
+  lastSenderId: string | null;
   unreadCount: number;
   status: string;
 }
@@ -68,15 +71,21 @@ export function useCoachConversations() {
       // Last message per conversation (preview line).
       const convIds = data.map((c: Record<string, unknown>) => c.id as string);
       const lastMsgMap = new Map<string, string>();
+      const lastSenderMap = new Map<string, string>();
       if (convIds.length > 0) {
         const { data: msgData } = await supabase
           .from("messages")
-          .select("conversation_id, content, created_at")
+          .select("conversation_id, content, created_at, sender_id")
           .in("conversation_id", convIds)
           .order("created_at", { ascending: false });
         if (msgData) {
-          for (const m of msgData as { conversation_id: string; content: string }[]) {
-            if (!lastMsgMap.has(m.conversation_id)) lastMsgMap.set(m.conversation_id, m.content);
+          // Premier vu par conversation = le plus récent (ordre desc) → on
+          // capture son contenu ET son expéditeur en même temps.
+          for (const m of msgData as { conversation_id: string; content: string; sender_id: string }[]) {
+            if (!lastMsgMap.has(m.conversation_id)) {
+              lastMsgMap.set(m.conversation_id, m.content);
+              lastSenderMap.set(m.conversation_id, m.sender_id);
+            }
           }
         }
       }
@@ -109,6 +118,7 @@ export function useCoachConversations() {
           athletePosition: pos?.abreviation || "",
           lastMessage: lastMsgMap.get(c.id as string) || "",
           lastMessageAt: (c.last_message_at as string) || (c.created_at as string) || "",
+          lastSenderId: lastSenderMap.get(c.id as string) ?? null,
           unreadCount: (c.unread_count as number) || 0,
           status: (c.status as string) || "ACTIVE",
         };

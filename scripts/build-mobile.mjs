@@ -39,6 +39,12 @@ const HIDE_PATTERNS = [
   'app/confidentialite/page.tsx',
   'app/conditions/page.tsx',
   'app/collecte-donnees/page.tsx',
+  // Route handler GET dynamique (OAuth web callback) : incompatible avec
+  // output:export (cookies + searchParams → "force-static non configuré").
+  // Inutile sur device (login social NATIF, pas de callback web). Les autres
+  // route.ts sous app/api/* sont des POST → ignorés par l'export, pas besoin
+  // de les masquer.
+  'app/auth/callback/route.ts',
 ];
 
 function findAllToHide() {
@@ -93,7 +99,28 @@ async function runBuild() {
   return new Promise((resolve) => {
     const isWin = process.platform === 'win32';
     const cmd = isWin ? 'cross-env.cmd' : 'cross-env';
-    const args = ['CAPACITOR_BUILD=true', 'next', 'build'];
+    // Le build mobile DOIT inliner le domaine déployé (pas le localhost:3000
+    // de .env.local) : NEXT_PUBLIC_APP_URL est bakée dans le bundle et sert de
+    // base aux fetch Stripe mobile (getApiBase) — sinon checkout/portail
+    // partent vers le localhost du téléphone (injoignable). Le dev web normal
+    // (next dev / next build hors ce script) garde .env.local/localhost.
+    // Surchargeable via l'env (CI/staging) ; défaut = prod.
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://nexussports.ca';
+    // Client IDs Google (login social natif) : bakés dans le bundle mobile.
+    // Les client IDs OAuth sont PUBLICS (exposés côté client) → un fallback
+    // hardcodé est OK et rend le build mobile indépendant de .env.local (vide).
+    // Priorité gardée à l'env shell/CI s'il est défini (override staging/test).
+    const googleWebClientId = process.env.NEXT_PUBLIC_GOOGLE_WEB_CLIENT_ID
+      || '1041412568525-qh01d95vmrpoq26g7du0hld7qnbmd15j.apps.googleusercontent.com';
+    const googleIosClientId = process.env.NEXT_PUBLIC_GOOGLE_IOS_CLIENT_ID
+      || '1041412568525-dtrprae2620qffucjtrh70tn829b2gsa.apps.googleusercontent.com';
+    const args = [
+      'CAPACITOR_BUILD=true',
+      `NEXT_PUBLIC_APP_URL=${appUrl}`,
+      `NEXT_PUBLIC_GOOGLE_WEB_CLIENT_ID=${googleWebClientId}`,
+      `NEXT_PUBLIC_GOOGLE_IOS_CLIENT_ID=${googleIosClientId}`,
+      'next', 'build',
+    ];
     const child = spawn(cmd, args, {
       cwd: ROOT,
       stdio: 'inherit',

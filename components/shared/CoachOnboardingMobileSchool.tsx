@@ -33,11 +33,14 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { uploadImage } from "@/lib/upload/uploadImage";
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import { MobilePicker, type PickerOption } from "@/components/mobile/MobilePicker";
 import { SearchSheet } from "@/components/mobile/SearchSheet";
+import { formatTeamLabel } from "@/lib/teams/teamLabel";
+import TeamCreateForm, { type TeamFormData } from "@/components/onboarding/TeamCreateForm";
 
 /* ── Constantes ──────────────────────────────────────────────── */
 
@@ -61,6 +64,7 @@ type ScolaireTeamRow = {
   division: string | null;
   age_group: string | null;
   gender: string | null;
+  sport: string | null;
 };
 
 /* ── Helpers ─────────────────────────────────────────────────── */
@@ -84,18 +88,17 @@ function normalize(s: string): string {
   return stripAccents(s).toLowerCase().trim();
 }
 
-/** Libellé compact d'une équipe scolaire (age_group · division · gender).
- *  Fallback name si tous attributs vides. Identique au helper athlète. */
+/** Libellé d'une équipe scolaire : "Sport · Catégorie · Division · Genre"
+ *  (sport en premier — le picker montre désormais tous les sports). Délègue
+ *  au helper partagé pour rester aligné avec le web. */
 function scolaireTeamLabel(t: {
   name: string;
   division: string | null;
   age_group: string | null;
   gender: string | null;
+  sport: string | null;
 }): string {
-  const parts = [t.age_group, t.division, t.gender]
-    .map((v) => (v ?? "").trim())
-    .filter((v) => v.length > 0);
-  return parts.length > 0 ? parts.join(" · ") : t.name;
+  return formatTeamLabel(t.sport, t.age_group, t.division, t.gender, t.name);
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -107,6 +110,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export function CoachOnboardingMobileSchool() {
   // Hooks AVANT toute condition (canon Rules of Hooks).
   const router = useRouter();
+  const queryClient = useQueryClient();
   const toast = useMobileToast();
 
   // 4 slides (0..3). Le step machine reste 0|1|2|3 (le coach école
@@ -152,6 +156,12 @@ export function CoachOnboardingMobileSchool() {
   const [openSport, setOpenSport] = useState(false);
   const [schoolSheetOpen, setSchoolSheetOpen] = useState(false);
   const [teamSheetOpen, setTeamSheetOpen] = useState(false);
+  // Création d'équipe : overlay TeamCreateForm + données en attente. La
+  // création est différée au finish (RPC branche create), pas faite ici.
+  const [createTeamOpen, setCreateTeamOpen] = useState(false);
+  const [pendingCreateTeam, setPendingCreateTeam] = useState<{
+    name: string; age_group: string; division: string; gender: string;
+  } | null>(null);
 
   // Data sources sheets
   const [schoolSearch, setSchoolSearch] = useState("");
@@ -264,7 +274,7 @@ export function CoachOnboardingMobileSchool() {
   // RLS additive Secondary teams readable for onboarding (20260607150000) →
   // ✅ visible pour un coach mid-onboarding (school_id pas encore set).
   useEffect(() => {
-    if (!selectedSchoolId || !sport) {
+    if (!selectedSchoolId) {
       setScolaireTeams([]);
       setScolaireTeamsLoaded(false);
       return;
@@ -274,18 +284,12 @@ export function CoachOnboardingMobileSchool() {
     setScolaireTeamsLoaded(false);
     (async () => {
       const supabase = createClient();
-      const { data: sportRow } = await supabase
-        .from("sports").select("id").eq("nom", sport).maybeSingle();
-      if (cancelled) return;
-      if (!sportRow?.id) {
-        setScolaireTeams([]); setScolaireTeamsLoaded(true); setScolaireTeamsLoading(false);
-        return;
-      }
+      // ALL teams of the school, every sport (anti-doublon visibility) —
+      // no sport_id filter. Sport name joined for the label + grouping.
       const { data: rows } = await supabase
         .from("teams")
-        .select("id, name, division, age_group, gender")
+        .select("id, name, division, age_group, gender, sports!sport_id(nom)")
         .eq("school_id", selectedSchoolId)
-        .eq("sport_id", sportRow.id)
         .eq("is_active", true)
         .order("name");
       if (cancelled) return;
@@ -295,7 +299,17 @@ export function CoachOnboardingMobileSchool() {
         division: (r.division as string) ?? null,
         age_group: (r.age_group as string) ?? null,
         gender: (r.gender as string) ?? null,
+        sport: ((r.sports as { nom?: string } | null)?.nom) ?? null,
       }));
+      // Sort: the coach's declared sport first (so it stands out), then
+      // other sports alphabetically, then team name — same sport contiguous.
+      mapped.sort((a, b) => {
+        const aMine = a.sport === sport ? 0 : 1;
+        const bMine = b.sport === sport ? 0 : 1;
+        if (aMine !== bMine) return aMine - bMine;
+        const s = (a.sport ?? "").localeCompare(b.sport ?? "");
+        return s !== 0 ? s : a.name.localeCompare(b.name);
+      });
       setScolaireTeams(mapped);
       setScolaireTeamsLoaded(true);
       setScolaireTeamsLoading(false);
@@ -354,6 +368,7 @@ export function CoachOnboardingMobileSchool() {
     if (!q) return scolaireTeams;
     return scolaireTeams.filter((t) =>
       normalize(t.name).includes(q) ||
+      (t.sport ? normalize(t.sport).includes(q) : false) ||
       (t.division ? normalize(t.division).includes(q) : false) ||
       (t.age_group ? normalize(t.age_group).includes(q) : false)
     );
@@ -460,10 +475,17 @@ export function CoachOnboardingMobileSchool() {
         p_bio:              bio.trim() || null,
         p_experience_years: expYears,
         p_photo_url:        photo || null,
-        p_team_id:          selectedTeamId,
+        // Create et link mutuellement exclusifs : si une équipe est en
+        // attente de création, p_team_id = null et on passe les params create
+        // (la RPC crée l'équipe sous l'école + head_coach). Sinon, lien normal.
+        p_team_id:          pendingCreateTeam ? null : selectedTeamId,
         p_director_choice:  rpcChoice,
         p_rprp_accepted:    !!rprpAttested,
         p_invite_email:     rpcChoice === "invite" ? inviteEmail.trim() : null,
+        p_team_name:        pendingCreateTeam?.name ?? null,
+        p_team_age_group:   pendingCreateTeam?.age_group ?? null,
+        p_team_gender:      pendingCreateTeam?.gender ?? null,
+        p_team_division:    pendingCreateTeam?.division ?? null,
       });
 
       if (error) {
@@ -479,13 +501,18 @@ export function CoachOnboardingMobileSchool() {
         } else if (msg.includes("WRONG_ROLE_OR_CONTEXT")) {
           userMessage = "Ce flux est réservé aux coachs scolaires.";
         } else if (msg.includes("INVALID_DIRECTOR_CHOICE")) {
-          userMessage = "Choix de directeur invalide.";
+          userMessage = "Choix de responsable invalide.";
+        } else if (msg.includes("INVALID_SPORT")) {
+          userMessage = "Sport non reconnu — reviens à l'étape Profil et resélectionne ton sport.";
         }
         toast.error({ message: userMessage, detail: error.message });
         setSaving(false);
         return;
       }
 
+      // Re-fetch currentUser → PushRegistrar voit onboarding_complete=true (posé par
+      // la RPC finish_coach_school_onboarding) dans la MÊME session → registerPush().
+      await queryClient.invalidateQueries({ queryKey: ["currentUser"] });
       triggerHaptic("Medium");
       router.replace("/coach/tableau-de-bord");
     } catch (err) {
@@ -497,7 +524,7 @@ export function CoachOnboardingMobileSchool() {
     canSubmit, userId, firstName, lastName, phone, photo, bio, sport, experienceYears,
     selectedSchoolId, selectedSchoolRegion, selectedTeamId,
     directorChoice, rprpAttested, inviteEmail,
-    router, toast,
+    router, toast, queryClient,
   ]);
 
   /* ── Render ──────────────────────────────────────────────── */
@@ -514,7 +541,7 @@ export function CoachOnboardingMobileSchool() {
 
   return (
     <div
-      className="min-h-screen bg-[#111317] text-white flex flex-col"
+      className="h-[100dvh] overflow-x-hidden bg-[#111317] text-white flex flex-col"
       style={{
         opacity: mounted ? 1 : 0,
         transition: "opacity 400ms ease-out",
@@ -557,8 +584,8 @@ export function CoachOnboardingMobileSchool() {
 
       {/* Contenu — scrollable */}
       <div
-        className="flex-1 overflow-y-auto"
-        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 96px)" }}
+        className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden"
+        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 96px)", overscrollBehavior: "contain" }}
       >
         {slide === 0 && (
           <Slide1Profile
@@ -579,9 +606,11 @@ export function CoachOnboardingMobileSchool() {
             onOpenSchool={() => setSchoolSheetOpen(true)}
             selectedTeamName={selectedTeamName}
             onOpenTeam={() => setTeamSheetOpen(true)}
+            onCreateTeam={() => setCreateTeamOpen(true)}
             schoolPicked={!!selectedSchoolId}
             scolaireTeamsLoaded={scolaireTeamsLoaded}
             scolaireTeamsCount={scolaireTeams.length}
+            teamKind={pendingCreateTeam ? "created" : selectedTeamId ? "joined" : null}
           />
         )}
         {slide === 2 && (
@@ -716,7 +745,7 @@ export function CoachOnboardingMobileSchool() {
         }}
         emptyContent={
           <p className="text-center text-[14px] text-white/55 py-12 px-4">
-            Aucune équipe trouvée pour {selectedSchoolName} en {sport || "ce sport"}.
+            Aucune équipe trouvée pour {selectedSchoolName}.
           </p>
         }
         renderItem={(t, onTap) => (
@@ -729,19 +758,72 @@ export function CoachOnboardingMobileSchool() {
           </button>
         )}
         footer={
-          <button
-            type="button"
-            onClick={() => {
-              setSelectedTeamId(null);
-              setSelectedTeamName("");
-              setTeamSheetOpen(false);
-            }}
-            className="w-full h-11 rounded-2xl border border-white/[0.10] text-[14px] font-semibold text-white/70 active:bg-white/[0.04]"
-          >
-            Continuer sans équipe
-          </button>
+          <div className="space-y-2">
+            {/* Créer mon équipe — carte au format des cartes d'équipe du
+                sheet (parité web : option de création présentée comme une
+                carte, bordure rouge pointillée pour signaler l'ajout). */}
+            <button
+              type="button"
+              onClick={() => { setTeamSheetOpen(false); setCreateTeamOpen(true); }}
+              className="w-full text-left p-3 bg-[#1A1D24] border border-dashed border-[#E63946]/40 rounded-2xl active:bg-[#22262e] transition-colors"
+            >
+              <p className="text-[16px] font-semibold text-white">+ Créer mon équipe</p>
+              <p className="text-[13px] text-white/55">Mon équipe n&apos;est pas listée</p>
+            </button>
+            {/* Continuer sans équipe — clear TOUT état d'équipe en attente :
+                la sélection à rejoindre (selectedTeamId/Name) ET une création
+                différée (pendingCreateTeam). Sinon le finish partirait quand
+                même avec la branche create (p_team_name) ou le lien. "Sans
+                équipe" = finish avec p_team_id NULL et aucune branche create. */}
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedTeamId(null);
+                setSelectedTeamName("");
+                setPendingCreateTeam(null);
+                setTeamSheetOpen(false);
+              }}
+              className="w-full h-11 rounded-2xl border border-white/[0.10] text-[14px] font-semibold text-white/70 active:bg-white/[0.04]"
+            >
+              Continuer sans équipe
+            </button>
+          </div>
         }
       />
+
+      {/* Overlay création d'équipe — réutilise TeamCreateForm (verrouillé sur
+          l'école). À la soumission, on diffère au finish (RPC branche create)
+          via pendingCreateTeam ; pas d'écriture DB ici. */}
+      {createTeamOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-[#111317] overflow-y-auto"
+          style={{ paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)" }}
+        >
+          <div className="px-4 py-6 max-w-md mx-auto">
+            <TeamCreateForm
+              sportId=""
+              sportName={sport}
+              lockedSchoolId={selectedSchoolId ?? undefined}
+              lockedSchoolName={selectedSchoolName}
+              lockedLabel="École"
+              onCancel={() => setCreateTeamOpen(false)}
+              onSubmit={(data: TeamFormData) => {
+                setPendingCreateTeam({
+                  name: data.team_name,
+                  age_group: data.age_group,
+                  division: data.division,
+                  gender: data.gender,
+                });
+                setSelectedTeamId(null);
+                setSelectedTeamName(
+                  formatTeamLabel(sport, data.age_group, data.division, data.gender, data.team_name),
+                );
+                setCreateTeamOpen(false);
+              }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -926,9 +1008,15 @@ interface Slide2Props {
   onOpenSchool: () => void;
   selectedTeamName: string;
   onOpenTeam: () => void;
+  // Ouvre l'overlay de création (même que le footer du sheet) — utilisé
+  // par le cas 0 équipe où le sheet n'est jamais ouvert.
+  onCreateTeam: () => void;
   schoolPicked: boolean;
   scolaireTeamsLoaded: boolean;
   scolaireTeamsCount: number;
+  // "created" (pendingCreateTeam) vs "joined" (équipe existante) vs null —
+  // pilote la copie de confirmation. Pure présentation.
+  teamKind: "joined" | "created" | null;
 }
 
 function Slide2SchoolTeam(p: Slide2Props) {
@@ -962,10 +1050,29 @@ function Slide2SchoolTeam(p: Slide2Props) {
               Chargement des équipes…
             </p>
           ) : p.scolaireTeamsCount === 0 ? (
-            <div className="bg-[#1A1D24] border border-white/[0.06] rounded-2xl px-4 py-4">
-              <p className="text-[15px] text-white/90 leading-relaxed">
-                Aucune équipe enregistrée pour {p.sport} à cette école. Tu pourras en créer plus tard depuis ton tableau de bord.
+            <div className="space-y-2">
+              <p className="text-[13px] text-white/55 px-1 leading-relaxed">
+                Aucune équipe enregistrée pour {p.sport} à cette école. Crée la tienne ci-dessous.
               </p>
+              {p.selectedTeamName ? (
+                <div className="flex items-start gap-2 bg-[#22C55E]/10 border border-[#22C55E]/30 rounded-2xl px-3 py-2.5">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2" strokeLinecap="round" className="shrink-0 mt-0.5"><path d="M20 6L9 17l-5-5"/></svg>
+                  <p className="text-[13px] text-[#22C55E] font-semibold">
+                    {p.teamKind === "created" ? "Tu as créé" : "Tu as rejoint"} {p.selectedTeamName}. Tu peux continuer.
+                  </p>
+                </div>
+              ) : (
+                /* Carte "Créer" — même format que celle du footer du sheet ;
+                   ouvre le MÊME overlay (pendingCreateTeam), pas de form dupliqué. */
+                <button
+                  type="button"
+                  onClick={p.onCreateTeam}
+                  className="w-full text-left p-3 bg-[#1A1D24] border border-dashed border-[#E63946]/40 rounded-2xl active:bg-[#22262e] transition-colors"
+                >
+                  <p className="text-[16px] font-semibold text-white">+ Créer mon équipe</p>
+                  <p className="text-[13px] text-white/55">Aucune équipe listée — crée la tienne.</p>
+                </button>
+              )}
             </div>
           ) : (
             <>
@@ -975,9 +1082,18 @@ function Slide2SchoolTeam(p: Slide2Props) {
                 placeholder="Sélectionner mon équipe…"
                 onTap={p.onOpenTeam}
               />
-              <p className="text-[12px] text-white/40 italic px-1 mt-1">
-                Non bloquant — tu peux continuer sans équipe.
-              </p>
+              {p.selectedTeamName ? (
+                <div className="mt-2 flex items-start gap-2 bg-[#22C55E]/10 border border-[#22C55E]/30 rounded-2xl px-3 py-2.5">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2" strokeLinecap="round" className="shrink-0 mt-0.5"><path d="M20 6L9 17l-5-5"/></svg>
+                  <p className="text-[13px] text-[#22C55E] font-semibold">
+                    {p.teamKind === "created" ? "Tu as créé" : "Tu as rejoint"} {p.selectedTeamName}. Tu peux continuer.
+                  </p>
+                </div>
+              ) : (
+                <p className="text-[12px] text-white/40 italic px-1 mt-1">
+                  Non bloquant — tu peux continuer sans équipe.
+                </p>
+              )}
             </>
           )}
         </>
@@ -1018,9 +1134,9 @@ type DirectorCard = {
 };
 
 const DIRECTOR_CARDS: DirectorCard[] = [
-  { value: "owner",   title: "C'est moi",            desc: "Je suis le directeur sportif de l'école.",          iconStroke: "#DAB65A", iconBgActive: "bg-[#DAB65A]/15" },
+  { value: "owner",   title: "C'est moi",            desc: "Je suis le responsable de sports de l'école.",          iconStroke: "#DAB65A", iconBgActive: "bg-[#DAB65A]/15" },
   { value: "interim", title: "Je serai intérimaire", desc: "Je remplis ce rôle temporairement.",                iconStroke: "#9CA3AF", iconBgActive: "bg-[#6B7280]/20" },
-  { value: "coach",   title: "Entraîneur seulement", desc: "Je suis coach — un autre est ou sera directeur sportif.", iconStroke: "#3B82F6", iconBgActive: "bg-[#3B82F6]/20" },
+  { value: "coach",   title: "Entraîneur seulement", desc: "Je suis coach — un autre est ou sera responsable de sports.", iconStroke: "#3B82F6", iconBgActive: "bg-[#3B82F6]/20" },
 ];
 
 function DirectorIcon({ kind, color }: { kind: Exclude<DirectorChoice, null>; color: string }) {
@@ -1065,7 +1181,7 @@ function Slide3Director(p: Slide3Props) {
     <div className="px-6 pt-4 space-y-1">
       <StepHeading
         title="Quel est ton rôle ?"
-        subtitle="Ton rôle au sein de l'école. Tu peux inviter le directeur sportif si quelqu'un d'autre l'est."
+        subtitle="Ton rôle au sein de l'école. Tu peux inviter le responsable de sports si quelqu'un d'autre l'est."
       />
 
       {/* Bannière contextuelle Loi 25 (école sans responsable, ou en cours
@@ -1137,7 +1253,7 @@ function Slide3Director(p: Slide3Props) {
           <SectionTitle>Attestation RPRP</SectionTitle>
           <div className="bg-[#1A1D24] border border-white/[0.06] rounded-2xl px-4 py-3 space-y-2">
             <p className="text-[13px] text-white/80 leading-relaxed">
-              En tant que directeur sportif, tu deviens le Responsable de la Protection des Renseignements Personnels (RPRP) pour ton école sur Nexus. Tu acceptes la responsabilité associée (Loi 25).
+              En tant que responsable de sports, tu deviens le Responsable de la Protection des Renseignements Personnels (RPRP) pour ton école sur Nexus. Tu acceptes la responsabilité associée (Loi 25).
             </p>
             <label className="flex items-start gap-3 cursor-pointer min-h-[44px] py-1.5">
               <input
@@ -1168,10 +1284,10 @@ function Slide3Director(p: Slide3Props) {
           pour pré-onboarder le directeur sportif. Vide → coach_only. */}
       {p.choice === "coach" && (
         <div className="mt-5">
-          <SectionTitle>Inviter le directeur (optionnel)</SectionTitle>
+          <SectionTitle>Inviter le responsable de sports (optionnel)</SectionTitle>
           <div>
             <label htmlFor="coach-invite-email" className={labelCls}>
-              Courriel du directeur sportif
+              Courriel du responsable de sports
             </label>
             <input
               id="coach-invite-email"
@@ -1182,13 +1298,13 @@ function Slide3Director(p: Slide3Props) {
               spellCheck={false}
               value={p.inviteEmail}
               onChange={(e) => p.setInviteEmail(e.target.value)}
-              placeholder="directeur@ecole.qc.ca"
+              placeholder="responsable@ecole.qc.ca"
               className={inputCls}
             />
             <p className="text-[12px] text-white/40 italic mt-1 px-1">
               {p.inviteEmailFilled && !p.inviteEmailValid
                 ? "Courriel invalide."
-                : "Optionnel — on lui enverra un courriel pour revendiquer le rôle de directeur sportif. Laisse vide si tu ne sais pas."}
+                : "Optionnel — on lui enverra un courriel pour revendiquer le rôle de responsable de sports. Laisse vide si tu ne sais pas."}
             </p>
           </div>
         </div>
@@ -1214,8 +1330,8 @@ function Slide4Confirmation(p: Slide4Props) {
   // responsable. "Entraîneur" reste "Entraîneur" même avec une invitation.
   const directorLabel = (() => {
     switch (p.directorChoice) {
-      case "owner":   return "Directeur sportif";
-      case "interim": return "Directeur sportif intérimaire";
+      case "owner":   return "Responsable de sports";
+      case "interim": return "Responsable de sports intérimaire";
       case "coach":   return "Entraîneur";
       default:        return "—";
     }

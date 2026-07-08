@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useRef, useCallback, Suspense } from "rea
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { parseDistinctions } from "@/lib/config/badges";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
 import ErrorToast from "@/components/ui/ErrorToast";
 import FeatureGate from "@/components/subscription/FeatureGate";
@@ -245,11 +246,9 @@ function NouveauMessageContent() {
           const committedSchoolRel = a.committed_school;
           const committedSchoolObj = (Array.isArray(committedSchoolRel) ? committedSchoolRel[0] : committedSchoolRel) as { name?: string } | null;
           const evalRel = a.evaluations;
-          const eval0 = (Array.isArray(evalRel) ? evalRel[0] : evalRel) as { distinctions?: unknown[] } | null;
-          const rawDistinctions: unknown[] = Array.isArray(eval0?.distinctions) ? eval0!.distinctions as unknown[] : [];
-          const distinctions: string[] = rawDistinctions
-            .map((d) => (typeof d === "string" ? d : (d && typeof d === "object" ? ((d as { code?: string; id?: string }).code || (d as { code?: string; id?: string }).id || "") : "")))
-            .filter((d): d is string => typeof d === "string" && d !== "");
+          const eval0 = (Array.isArray(evalRel) ? evalRel[0] : evalRel) as { distinctions?: unknown } | null;
+          // #56 — via parseDistinctions (gère objet {badge,detail} + legacy).
+          const distinctions: string[] = parseDistinctions(eval0?.distinctions).map((d) => d.badge);
           const rawProg: unknown = a.programme_cegep_vise;
           const programmes: string[] = Array.isArray(rawProg)
             ? (rawProg as unknown[]).filter((p): p is string => typeof p === "string" && p !== "")
@@ -324,11 +323,9 @@ function NouveauMessageContent() {
               const directCommittedSchoolRel = (directAthlete as Record<string, unknown>)?.committed_school;
               const directCommittedSchoolObj = (Array.isArray(directCommittedSchoolRel) ? directCommittedSchoolRel[0] : directCommittedSchoolRel) as { name?: string } | null;
               const directEvalRel = (directAthlete as Record<string, unknown>)?.evaluations;
-              const directEval0 = (Array.isArray(directEvalRel) ? directEvalRel[0] : directEvalRel) as { distinctions?: unknown[] } | null;
-              const directRawDistinctions: unknown[] = Array.isArray(directEval0?.distinctions) ? directEval0!.distinctions as unknown[] : [];
-              const directDistinctions: string[] = directRawDistinctions
-                .map((d) => (typeof d === "string" ? d : (d && typeof d === "object" ? ((d as { code?: string; id?: string }).code || (d as { code?: string; id?: string }).id || "") : "")))
-                .filter((d): d is string => typeof d === "string" && d !== "");
+              const directEval0 = (Array.isArray(directEvalRel) ? directEvalRel[0] : directEvalRel) as { distinctions?: unknown } | null;
+              // #56 — via parseDistinctions (gère objet {badge,detail} + legacy).
+              const directDistinctions: string[] = parseDistinctions(directEval0?.distinctions).map((d) => d.badge);
               const directRawProg: unknown = (directAthlete as Record<string, unknown>)?.programme_cegep_vise;
               const directProgrammes: string[] = Array.isArray(directRawProg)
                 ? (directRawProg as unknown[]).filter((p): p is string => typeof p === "string" && p !== "")

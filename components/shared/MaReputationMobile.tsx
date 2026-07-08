@@ -39,6 +39,7 @@ import { AdaptiveBadgesRow } from "@/components/shared/badges/AdaptiveBadgesRow"
 import { Group, NavRow, triggerHaptic } from "@/components/shared/settings";
 import { BADGE_COLORS } from "@/lib/types/models";
 import { useCoachReputationStats } from "@/lib/queries/coach/useCoachReputationStats";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 interface Props {
   /** When omitted, viewers their own reputation (auth.uid()). When
@@ -257,7 +258,41 @@ export function MaReputationMobile({ coachId, backHref }: Props) {
   if (isLoading && !data) {
     return (
       <div className="min-h-screen w-full overflow-x-hidden bg-[#111317] text-white nx-mobile-pb-tabbar">
-        <div className="px-4 pt-10 pb-3 text-[#6b7280] text-[14px]">Chargement…</div>
+        {/* Sticky header shell */}
+        <div className="sticky top-0 z-30 bg-[#111317]" style={{ paddingTop: "env(safe-area-inset-top)" }}>
+          <div className="h-11 flex items-center px-4">
+            <Skeleton className="w-32 h-5 rounded-full mx-auto" />
+          </div>
+        </div>
+        {/* Identity hero — avatar + name lines */}
+        <div className="px-4 pt-4 flex flex-col items-center gap-3">
+          <Skeleton className="w-20 h-20 rounded-full" />
+          <Skeleton className="w-40 h-5 rounded-full" />
+          <Skeleton className="w-28 h-3 rounded-full" />
+        </div>
+        {/* Score card */}
+        <div className="px-4 pt-2">
+          <Skeleton className="w-full h-28 rounded-2xl" />
+        </div>
+        {/* Badges row */}
+        <div className="px-4 pt-5">
+          <Skeleton className="w-24 h-3 rounded-full mx-auto mb-3" />
+          <div className="flex items-center justify-center gap-3">
+            {[0, 1, 2, 3].map((i) => (
+              <Skeleton key={i} className="w-16 h-16 rounded-2xl" />
+            ))}
+          </div>
+        </div>
+        {/* Quick stats pills */}
+        <div className="px-4 pt-5 flex items-center justify-center gap-2">
+          {[0, 1, 2].map((i) => (
+            <Skeleton key={i} className="w-24 h-8 rounded-full" />
+          ))}
+        </div>
+        {/* Criteria breakdown */}
+        <div className="px-4 pt-5">
+          <Skeleton className="w-full h-40 rounded-2xl" />
+        </div>
       </div>
     );
   }

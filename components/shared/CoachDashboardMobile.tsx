@@ -85,10 +85,10 @@ function InterimBanner({ schoolName }: { schoolName: string }) {
       </svg>
       <div className="flex-1 min-w-0">
         <p className="text-[14px] font-bold text-white">
-          Tu es directeur sportif intérimaire{schoolName ? ` de ${schoolName}` : ""}
+          Tu es responsable de sports intérimaire{schoolName ? ` de ${schoolName}` : ""}
         </p>
         <p className="text-[13px] text-white/55 mt-0.5 leading-relaxed">
-          Tu as les pleins pouvoirs administratifs jusqu&apos;à l&apos;arrivée d&apos;un directeur permanent.
+          Tu as les pleins pouvoirs administratifs jusqu&apos;à l&apos;arrivée d&apos;un responsable de sports permanent.
         </p>
       </div>
     </div>
@@ -528,8 +528,9 @@ export function CoachDashboardMobile() {
     const supabase = createClient();
 
     async function load() {
+      try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { setLoading(false); return; }
+      if (!user) return;
 
       // Profil coach + intérim source (is_school_admin + admin_type)
       const { data: profile } = await supabase
@@ -558,7 +559,7 @@ export function CoachDashboardMobile() {
       }
 
       const coachSchoolId = (profile?.school_id as string) || null;
-      if (!coachSchoolId) { setLoading(false); return; }
+      if (!coachSchoolId) return;
 
       // Demotion notifications
       const { data: demotions } = await supabase
@@ -795,8 +796,9 @@ export function CoachDashboardMobile() {
 
         setActivities(mapped);
       }
-
-      setLoading(false);
+      } finally {
+        setLoading(false);
+      }
     }
 
     load();

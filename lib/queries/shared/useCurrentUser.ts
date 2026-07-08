@@ -20,6 +20,9 @@ export interface CurrentUserProfile {
   school_id: string | null;
   division: string | null;
   sport: string | null;
+  /** users.onboarding_complete — nullable (DEFAULT false). Lu par PushRegistrar
+      pour ne demander la permission push qu'une fois l'onboarding terminé. */
+  onboarding_complete: boolean | null;
 }
 
 export interface CurrentUserData {
@@ -38,7 +41,7 @@ export function useCurrentUser() {
 
       const { data: profile, error: profileError } = await supabase
         .from("users")
-        .select("id, first_name, last_name, school_id, division, sport")
+        .select("id, first_name, last_name, school_id, division, sport, onboarding_complete")
         .eq("id", user.id)
         .single();
       if (profileError) throw profileError;

@@ -27,7 +27,14 @@ export interface DashboardGreetingProps {
 
 export function DashboardGreeting({ greeting, dateLabel, chip, verifiedBadge = false }: DashboardGreetingProps) {
   return (
-    <div className="px-4 pt-6 pb-3 flex items-start justify-between gap-3">
+    <div
+      className="px-4 pb-3 flex items-start justify-between gap-3"
+      // pt-6 (1.5rem) conservé + env(safe-area-inset-top) : avec l'overlay
+      // status bar actif, dégage la Dynamic Island ; vaut ~0 sans overlay
+      // (web / Android sans inset) → aucun effet de bord. Dégradé inchangé,
+      // il reste collé au top derrière l'island.
+      style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1.5rem)" }}
+    >
       <div className="flex-1 min-w-0">
         {dateLabel && (
           <p className="text-[11px] uppercase tracking-[0.18em] text-white/65 font-semibold mb-1 truncate">

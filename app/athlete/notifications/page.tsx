@@ -133,7 +133,7 @@ export default function NotificationsPage() {
 
   if (loading) {
     return (
-      <div className="px-6 sm:px-10 py-8 max-w-[900px] mx-auto">
+      <div className="px-6 sm:px-10 pb-8 max-w-[900px] mx-auto nx-safe-top">
         <div className="animate-pulse space-y-4">
           <div className="h-8 bg-[#1A1D24] rounded w-48" />
           <div className="h-10 bg-[#1A1D24] rounded w-full" />
@@ -144,10 +144,12 @@ export default function NotificationsPage() {
   }
 
   return (
-    <div className="px-6 sm:px-10 py-8 max-w-[900px] mx-auto space-y-5">
+    <div className="px-6 sm:px-10 pb-8 max-w-[900px] mx-auto space-y-5">
 
-      {/* Header */}
-      <div className="flex items-center justify-between">
+      {/* Header — nx-safe-top : padding haut = env(safe-area-inset-top) + 0.75rem
+          (canon globals.css). Conteneur passé en pb-8 pour ne pas empiler ce
+          padding sur l'ancien py-8 top. */}
+      <div className="flex items-center justify-between nx-safe-top">
         <h1 className="font-head text-2xl font-black text-white uppercase tracking-tight">Notifications</h1>
         {unreadCount > 0 && (
           <button type="button" onClick={markAllRead} className="text-[12px] font-bold text-[#6b7280] hover:text-white transition-colors">Tout marquer comme lu</button>

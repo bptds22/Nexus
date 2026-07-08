@@ -8,6 +8,7 @@ import { STATUS_CONFIG, mapDbStatus, type ConversationThread, type ThreadStatus 
 import EntityLink from "@/components/shared/EntityLink";
 import AthletePhoto from "@/components/shared/AthletePhoto";
 import { createClient } from "@/lib/supabase/client";
+import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import { CoachDemandesMobile } from "@/components/shared/CoachDemandesMobile";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
@@ -36,20 +37,20 @@ function relativeTime(isoStr: string): string {
   return d.toLocaleDateString("fr-CA", opts);
 }
 
-type FilterPreset = "tous" | "nouveau" | "reponse_recue" | "envoye" | "archive";
+type FilterPreset = "tous" | "nouveau" | "reponse_recue" | "sans_reponse" | "archive";
 
 const PILLS: { key: FilterPreset; label: string }[] = [
   { key: "tous", label: "Tous" },
   { key: "nouveau", label: "Nouveau" },
   { key: "reponse_recue", label: "Réponse reçue" },
-  { key: "envoye", label: "Envoyé" },
+  { key: "sans_reponse", label: "Sans réponse" },
   { key: "archive", label: "Archivé" },
 ];
 
 function mapUrlFilter(p: string | null): FilterPreset {
   if (p === "nouveau") return "nouveau";
   if (p === "reponse_recue") return "reponse_recue";
-  if (p === "envoye") return "envoye";
+  if (p === "sans_reponse") return "sans_reponse";
   if (p === "archive") return "archive";
   return "tous";
 }
@@ -170,6 +171,8 @@ export default function DemandesPage() {
 function DemandesContent() {
   const searchParams = useSearchParams();
   const urlFilter = searchParams.get("filtre");
+  const { data: currentUser } = useCurrentUser();
+  const userId = currentUser?.authUser.id;
 
   const [search, setSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState<FilterPreset>(mapUrlFilter(urlFilter));
@@ -205,7 +208,7 @@ function DemandesContent() {
           .order("created_at", { ascending: false });
 
         // Build maps: latest message + who replied per conversation
-        const latestMsgMap: Record<string, { content: string; created_at: string }> = {};
+        const latestMsgMap: Record<string, { content: string; created_at: string; sender_id: string }> = {};
         const coachRepliedMap: Record<string, boolean> = {};
         const recruiterRepliedMap: Record<string, boolean> = {};
         if (latestMessages) {
@@ -284,6 +287,7 @@ function DemandesContent() {
             status: mapDbStatus(c.status, coachRepliedMap[c.id], recruiterRepliedMap[c.id]),
             lastMessagePreview: latestMsg?.content ? latestMsg.content.slice(0, 80) + (latestMsg.content.length > 80 ? "..." : "") : "",
             lastMessageTime: latestMsg?.created_at || c.last_message_at || c.created_at,
+            lastSenderId: latestMsg?.sender_id ?? null,
             unread: (c.unread_count ?? 0) > 0,
           };
         });
@@ -322,8 +326,11 @@ function DemandesContent() {
       case "reponse_recue":
         list = list.filter((t) => t.status === "reponse_recue");
         break;
-      case "envoye":
-        list = list.filter((t) => t.status === "envoye" || t.status === "repondu");
+      // "Sans réponse" : le dernier message vient du coach courant → on attend
+      // la réponse du recruteur (def. (a)). Remplace l'ancien "Envoyé" (basé sur
+      // mapDbStatus, qui ne renvoie jamais "envoye"). mapDbStatus/badges intacts.
+      case "sans_reponse":
+        list = list.filter((t) => t.lastSenderId != null && t.lastSenderId === userId && t.status !== "archive");
         break;
       case "archive":
         list = list.filter((t) => t.status === "archive");
@@ -341,7 +348,7 @@ function DemandesContent() {
     });
 
     return list;
-  }, [search, activeFilter, threads]);
+  }, [search, activeFilter, threads, userId]);
 
   return (
     <div className="px-6 sm:px-10 py-8 max-w-[1280px] mx-auto space-y-6">

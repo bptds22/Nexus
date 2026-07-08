@@ -3,6 +3,7 @@ import type { AthleteProfile } from "./mockAthleteProfiles";
 import type { AthleteProfileRecruiterView } from "@/lib/types/models";
 import { parseDistinctions } from "@/lib/config/badges";
 import { calculateCompletion, type AthleteLike, type EvalLike } from "@/lib/utils/profileCompletion";
+import { selectBestEvaluation, isDetailed } from "@/lib/evaluations/selectEvaluation";
 
 /* ═══════════════════════════════════════════════════════════════
    Shared Supabase loader for coach athlete pages.
@@ -21,6 +22,7 @@ const ATHLETE_SELECT = `
   verified,
   profile_completion,
   last_profile_validation,
+  modified_since_verification,
   verification_method,
   verified_at,
   verified_by,
@@ -81,7 +83,7 @@ const ATHLETE_SELECT = `
     vision_du_jeu, sens_tactique,
     leadership, discipline, coachabilite, intelligence_jeu,
     competitivite, esprit_equipe, resilience, attitude_mentalite,
-    rapport_entraineur, distinctions
+    rapport_entraineur, distinctions, updated_at
   ),
   users!coach_id(first_name, last_name)
 `;
@@ -122,7 +124,7 @@ export function mapToAthleteProfile(raw: Record<string, unknown>): AthleteProfil
   const posObj = posRel as { nom?: string; abreviation?: string } | null;
   const schoolObj = schoolRel as { name?: string; city?: string; region?: string; type?: string } | null;
   const evals = Array.isArray(raw.evaluations) ? raw.evaluations : [];
-  const eval0 = evals[0] as Record<string, unknown> | undefined;
+  const eval0 = (selectBestEvaluation(evals) ?? undefined) as Record<string, unknown> | undefined;
 
   const heightFt = (raw.taille_pieds as number) || 0;
   const heightIn = (raw.taille_pouces as number) || 0;
@@ -175,7 +177,7 @@ export function buildFormFromRaw(raw: Record<string, unknown>): Record<string, u
   const posObj = posRel as { nom?: string; abreviation?: string } | null;
   const schoolObj = schoolRel as { name?: string; city?: string; region?: string; type?: string } | null;
   const evals = Array.isArray(raw.evaluations) ? raw.evaluations : [];
-  const eval0 = evals[0] as Record<string, unknown> | undefined;
+  const eval0 = (selectBestEvaluation(evals) ?? undefined) as Record<string, unknown> | undefined;
 
 
   const heightFt = raw.taille_pieds != null ? String(raw.taille_pieds) : "";
@@ -268,22 +270,10 @@ export function buildFormFromRaw(raw: Record<string, unknown>): Record<string, u
          in the old "always simple at load" default hid the detailed
          data and made it easy to silently overwrite via a flat cote).
          No-traits athletes still open in simple mode unchanged. */
-      evalMode: eval0 && (
-        ((eval0.vitesse_explosivite as number) || 0) > 0 ||
-        ((eval0.force_puissance as number) || 0) > 0 ||
-        ((eval0.endurance_cardio as number) || 0) > 0 ||
-        ((eval0.agilite_coordination as number) || 0) > 0 ||
-        ((eval0.vision_du_jeu as number) || 0) > 0 ||
-        ((eval0.sens_tactique as number) || 0) > 0 ||
-        ((eval0.leadership as number) || 0) > 0 ||
-        ((eval0.discipline as number) || 0) > 0 ||
-        ((eval0.coachabilite as number) || 0) > 0 ||
-        ((eval0.intelligence_jeu as number) || 0) > 0 ||
-        ((eval0.competitivite as number) || 0) > 0 ||
-        ((eval0.esprit_equipe as number) || 0) > 0 ||
-        ((eval0.resilience as number) || 0) > 0 ||
-        ((eval0.attitude_mentalite as number) || 0) > 0
-      ) ? "detailed" : "simple",
+      // Type deduced on the SELECTED evaluation (selectBestEvaluation),
+      // via the shared isDetailed() — same 14-field definition as the
+      // selection rule, so the displayed mode matches the shown evaluation.
+      evalMode: isDetailed(eval0) ? "detailed" : "simple",
       starRating: (eval0?.cote_globale as number) || (raw.cote_globale_entraineur as number) || 0,
       traitRatings: eval0 ? {
         // Keys match DB columns directly
@@ -333,7 +323,7 @@ export function mapToRecruiterView(raw: Record<string, unknown>): AthleteProfile
   const posObj = posRel as { nom?: string; abreviation?: string } | null;
   const schoolObj = schoolRel as { name?: string; city?: string; region?: string; type?: string } | null;
   const evals = Array.isArray(raw.evaluations) ? raw.evaluations : [];
-  const eval0 = evals[0] as Record<string, unknown> | undefined;
+  const eval0 = (selectBestEvaluation(evals) ?? undefined) as Record<string, unknown> | undefined;
   const coach = raw.users as { first_name?: string; last_name?: string } | null;
 
   const heightFt = (raw.taille_pieds as number) || 0;
@@ -463,6 +453,7 @@ export function mapToRecruiterView(raw: Record<string, unknown>): AthleteProfile
     isVerified: !!(raw.verified),
     parentalConsent: !!(raw.consentement_parental),
     lastValidation: (raw.last_profile_validation as string) || null,
+    modifiedSinceVerification: !!(raw.modified_since_verification),
     profileCompleteness: calculateCompletion(raw as AthleteLike, (eval0 as EvalLike) || null, null).percentage,
     favoriteCount: 0,
     viewsThisMonth: 0,

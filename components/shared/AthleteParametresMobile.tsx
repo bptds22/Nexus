@@ -36,11 +36,16 @@ import { useMobileToast } from "@/components/mobile/MobileToast";
 import { useSubscription } from "@/lib/hooks/useSubscription";
 import { isMinor } from "@/lib/utils/age";
 import { PARTNER_MEDIA_COPY } from "@/lib/legal/partnerMediaCopy";
+import { Skeleton } from "@/components/ui/Skeleton";
 import {
   triggerHaptic, tierStatus,
   SectionLabel, Group, ToggleRow, NavRow, DangerRow,
   TierCard, PasswordChangeSheet, ConfirmSheet,
 } from "@/components/shared/settings";
+import { startMobilePortal, fmtSubDate, subStatusLabel } from "@/components/shared/settings/utils";
+import { deleteMyAccount } from "@/lib/auth/deleteAccount";
+
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
 /* ── Athlete notification rows — additive keys on users.notification_preferences JSONB.
    Same shape as coach + recruiter NOTIF_ROWS : app_X drives in-app, email_X is mirrored
@@ -83,7 +88,7 @@ interface AthleteProfile {
 export function AthleteParametresMobile() {
   const router = useRouter();
   const toast = useMobileToast();
-  const { tier } = useSubscription();
+  const { tier, isStripeManaged, refresh, periodEnd, billing, status, cancelAtPeriodEnd } = useSubscription();
 
   // Athlete only has Free / Pro per business rules ; any legacy
   // "all_star" DB value collapses to Pro for display.
@@ -102,6 +107,36 @@ export function AthleteParametresMobile() {
   const [masterEmail, setMasterEmail] = useState(false);
   const [origMasterEmail, setOrigMasterEmail] = useState(false);
   const [savingNotifs, setSavingNotifs] = useState(false);
+  const [portalBusy, setPortalBusy] = useState(false);
+
+  /* ── Portail Stripe mobile (Lot 2 — handler partagé startMobilePortal :
+        Bearer + Browser.open). Erreur visible, jamais avalée. ── */
+  async function handlePortal() {
+    if (portalBusy) return;
+    if (IS_CAPACITOR) return; // iOS (3.1.1) : pas de portail de paiement in-app.
+    triggerHaptic("Light");
+    setPortalBusy(true);
+    try {
+      await startMobilePortal();
+    } catch (e) {
+      toast.error({ message: "Portail indisponible", detail: e instanceof Error ? e.message : "Erreur inconnue" });
+    } finally {
+      setPortalBusy(false);
+    }
+  }
+
+  /* Refresh le tier au montage + au retour de l'in-app browser (parité
+     coach/recruteur). Plugins absents sur web → no-op. */
+  useEffect(() => { refresh(); }, [refresh]);
+  useEffect(() => {
+    let bl: { remove: () => void } | null = null;
+    let al: { remove: () => void } | null = null;
+    (async () => {
+      try { const { Browser } = await import("@capacitor/browser"); bl = await Browser.addListener("browserFinished", () => { refresh(); }); } catch { /* web */ }
+      try { const { App } = await import("@capacitor/app"); al = await App.addListener("appStateChange", ({ isActive }) => { if (isActive) refresh(); }); } catch { /* web */ }
+    })();
+    return () => { bl?.remove(); al?.remove(); };
+  }, [refresh]);
 
   /* B2 — Confidentialité partner-opt-in saving flag (gates the toggle while in flight). */
   const [savingPartnerOptIn, setSavingPartnerOptIn] = useState(false);
@@ -347,20 +382,16 @@ export function AthleteParametresMobile() {
     router.push("/auth");
   }
 
-  /* ── RPC handlers (reuse desktop's deactivate_my_account RPC) ── */
+  /* ── Suppression DÉFINITIVE — RPC delete_my_account via le helper
+        partagé (signOut + redirection gérés dedans). À NE PAS confondre
+        avec handleRevokeConsent (retrait de consentement, réversible). ── */
 
   async function handleDelete() {
     triggerHaptic("Heavy");
-    const supabase = createClient();
-    const { error } = await supabase.rpc("deactivate_my_account", { p_revoke_consent: false });
-    if (error) {
-      toast.error({ message: "Échec de la suppression", detail: error.message });
-      return;
-    }
-    try { localStorage.removeItem("nexus_user"); } catch { /* no-op */ }
-    await supabase.auth.signOut();
     setDeleteSheetOpen(false);
-    router.push("/auth");
+    await deleteMyAccount({
+      onError: (detail) => toast.error({ message: "Échec de la suppression", detail }),
+    });
   }
 
   async function handleLogout() {
@@ -384,7 +415,23 @@ export function AthleteParametresMobile() {
   if (loading) {
     return (
       <div className="min-h-screen w-full overflow-x-hidden bg-[#111317] text-white nx-mobile-pb-tabbar">
-        <div className="px-4 pt-10 pb-3 text-[#6b7280] text-[14px]">Chargement…</div>
+        {/* Sticky header shell (matches loaded layout) */}
+        <div className="sticky top-0 z-30 bg-[#111317]" style={{ paddingTop: "env(safe-area-inset-top)" }}>
+          <div className="h-11 flex items-center px-4">
+            <Skeleton className="w-24 h-5 rounded-full mx-auto" />
+          </div>
+        </div>
+        {/* Subscription bandeau placeholder */}
+        <div className="px-4 pt-6 pb-2">
+          <Skeleton className="w-full h-16 rounded-2xl" />
+        </div>
+        {/* Section groups (label + card) ×4 */}
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="px-4 pt-5">
+            <Skeleton className="w-28 h-3 rounded-full mb-3" />
+            <Skeleton className="w-full h-14 rounded-2xl" />
+          </div>
+        ))}
       </div>
     );
   }
@@ -407,22 +454,6 @@ export function AthleteParametresMobile() {
           <h1 className="flex-1 text-center font-head text-[17px] font-black text-white uppercase tracking-tight pr-9">
             Paramètres
           </h1>
-        </div>
-      </div>
-
-      {/* Subscription bandeau — mirrors recruiter L289-302 */}
-      <div className="px-4 pt-6 pb-2">
-        <div className="rounded-2xl bg-[#1A1D24] border border-white/[0.06] p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-[#22C55E]" />
-              <span className="text-[13px] text-[#9CA3AF]">Plan actuel</span>
-            </div>
-            <span className="text-[14px] font-semibold text-white uppercase tracking-wider">{tierLabel}</span>
-          </div>
-          {displayTier === "free" && (
-            <p className="text-[12px] text-[#6b7280] mt-2">Passe à Pro pour voir qui consulte ton profil.</p>
-          )}
         </div>
       </div>
 
@@ -640,8 +671,70 @@ export function AthleteParametresMobile() {
         );
       })()}
 
-      {/* ABONNEMENT — 2 TierCards, athlete pricing (Free / Pro) */}
+      {/* ABONNEMENT — Plan actuel + portail/notice + TierCards */}
       <SectionLabel>Abonnement</SectionLabel>
+      {/* Plan actuel (déplacé ici, sous le label Abonnement) */}
+      <div className="px-4 pt-1 pb-2">
+        <div className="rounded-2xl bg-[#1A1D24] border border-white/[0.06] p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-[#22C55E]" />
+              <span className="text-[13px] text-[#9CA3AF]">Plan actuel</span>
+            </div>
+            <span className="text-[14px] font-semibold text-white uppercase tracking-wider">{tierLabel}</span>
+          </div>
+          {displayTier === "free" && (
+            <p className="text-[12px] text-[#6b7280] mt-2">Voir qui consulte ton profil — réservé aux membres Pro.</p>
+          )}
+          {/* Payant + vrai abo Stripe → résumé + portail (in-app browser). */}
+          {tier !== "free" && isStripeManaged && (
+            <div className="mt-3 space-y-2">
+              <div className="space-y-1">
+                <div className="flex justify-between text-[12px]">
+                  <span className="text-[#9CA3AF]">Statut</span>
+                  <span className="text-white font-semibold">{subStatusLabel(status)}</span>
+                </div>
+                <div className="flex justify-between text-[12px]">
+                  <span className="text-[#9CA3AF]">Cycle</span>
+                  <span className="text-white font-semibold">{billing === "annual" ? "Annuel" : "Mensuel"}</span>
+                </div>
+                {cancelAtPeriodEnd ? (
+                  <p className="text-[12px] text-[#E63946]">Ton abonnement se termine le {fmtSubDate(periodEnd)}.</p>
+                ) : (
+                  <div className="flex justify-between text-[12px]">
+                    <span className="text-[#9CA3AF]">Renouvellement</span>
+                    <span className="text-white font-semibold">{fmtSubDate(periodEnd)}</span>
+                  </div>
+                )}
+              </div>
+              {IS_CAPACITOR ? (
+                // iOS (3.1.1) : pas de gestion de paiement in-app.
+                // Texte descriptif PUR — aucun lien ni bouton cliquable.
+                <p className="text-[12px] text-[#9CA3AF] leading-snug">
+                  Pour gérer ou modifier ton abonnement, rends-toi sur la version web de Nexus.
+                </p>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handlePortal}
+                  disabled={portalBusy}
+                  className="w-full h-11 rounded-xl border border-white/15 text-white font-bold text-[12px] uppercase tracking-wider active:bg-white/5 disabled:opacity-60"
+                >
+                  {portalBusy ? "Ouverture…" : "Gérer mon abonnement"}
+                </button>
+              )}
+            </div>
+          )}
+          {tier !== "free" && !isStripeManaged && (
+            <div className="mt-3">
+              <p className="text-[13px] font-bold text-white">Accès accordé par l&apos;équipe Nexus</p>
+              <p className="text-[12px] text-[#6b7280] mt-1">
+                Ton plan t&apos;a été offert par Nexus — aucune facturation à gérer.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
       <div className="px-4 space-y-2">
         <TierCard
           name="Gratuit"
@@ -724,7 +817,7 @@ export function AthleteParametresMobile() {
         open={revokeConsentSheetOpen}
         onClose={() => setRevokeConsentSheetOpen(false)}
         title="Retirer le consentement ?"
-        message="Ton profil sera immédiatement désactivé et invisible pour les recruteurs. Ton coach et le directeur sportif seront notifiés."
+        message="Ton profil sera immédiatement désactivé et invisible pour les recruteurs. Ton coach et le responsable de sports seront notifiés."
         confirmLabel="Retirer le consentement"
         onConfirm={handleRevokeConsent}
         variant="danger"
@@ -734,8 +827,8 @@ export function AthleteParametresMobile() {
         open={deleteSheetOpen}
         onClose={() => setDeleteSheetOpen(false)}
         title="Supprimer mon compte ?"
-        message="Ton profil sera désactivé immédiatement. La suppression définitive sera effectuée après 30 jours selon la Loi 25."
-        confirmLabel="Supprimer"
+        message="Ton compte et tes données personnelles seront supprimés immédiatement et définitivement. Cette action est irréversible."
+        confirmLabel="Supprimer définitivement"
         onConfirm={handleDelete}
         variant="danger"
       />

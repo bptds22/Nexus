@@ -321,7 +321,7 @@ function RecruiterDetailPage() {
         {[
           { val: k.favorites, label: "Favoris actifs", trend: `+${k.favoritesTrend} ce mois`, trendColor: k.favoritesTrend > 0 ? "#22C55E" : "#E63946" },
           { val: k.messages30d, label: "Messages envoyés", trend: `${k.messagesTrend > 0 ? "+" : ""}${k.messagesTrend} vs mois dernier`, trendColor: k.messagesTrend > 0 ? "#22C55E" : "#E63946" },
-          { val: k.pipelineActive, label: "Pipeline actif", trend: `${k.pipelineCommitment} en commitment`, trendColor: "#6B7280" },
+          { val: k.pipelineActive, label: "Processus actif", trend: `${k.pipelineCommitment} en commitment`, trendColor: "#6B7280" },
           { val: k.recrues, label: "Recrues confirmées", trend: `Saison ${getCurrentSeason()}`, trendColor: "#6B7280", valColor: "#E63946" },
           { val: `${k.conversionRate}%`, label: "Taux de conversion", trend: "Identifié → Lettre", trendColor: "#6B7280" },
         ].map((c, i) => (
@@ -337,7 +337,7 @@ function RecruiterDetailPage() {
       {/* ── Section 1: Pipeline Breakdown ───────────────────── */}
       <div className="bg-[#1A1D24] rounded-xl border border-[#1e2128] p-5 sm:p-6 space-y-5">
         <h2 className="text-[12px] font-bold tracking-[0.2em] uppercase text-[#6B7280]">
-          Pipeline de recrutement — {profile.firstName} {profile.lastName}
+          Processus de recrutement — {profile.firstName} {profile.lastName}
         </h2>
 
         {/* Funnel bar */}
@@ -370,7 +370,7 @@ function RecruiterDetailPage() {
 
           </>
         ) : (
-          <p className="text-[13px] text-[#6B7280]">Aucun athlète dans le pipeline actuellement.</p>
+          <p className="text-[13px] text-[#6B7280]">Aucun athlète dans le processus actuellement.</p>
         )}
       </div>
 

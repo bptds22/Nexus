@@ -105,6 +105,36 @@ html, body {
   min-height: 100vh;
 }
 
+/* App-shell scroll lock — Capacitor ONLY. The .is-capacitor class is set on
+   <html> exclusively in the native build (via IS_CAPACITOR in RootLayout) ;
+   the web keeps its normal document scroll (this rule never matches there).
+   The body never scrolls/bounces — the single bounded scroll container is
+   each portal's <main> (height:100dvh; overflow-y:auto). */
+html.is-capacitor,
+html.is-capacitor body {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  position: fixed;
+  inset: 0;
+  overscroll-behavior: none;
+}
+
+/* Capacitor : masque les scrollbars (résidu web) sur TOUS les conteneurs
+   scroll — le <main> app-shell ET les overflow-y-auto internes. Scopé
+   .is-capacitor → le web garde ses scrollbars natives. Le scroll reste
+   fonctionnel ; seule la barre visuelle est masquée. */
+html.is-capacitor,
+html.is-capacitor * {
+  scrollbar-width: none;        /* Firefox */
+  -ms-overflow-style: none;     /* legacy Edge/IE */
+}
+html.is-capacitor ::-webkit-scrollbar {
+  display: none;                /* WebKit (iOS / Android WebView) */
+  width: 0;
+  height: 0;
+}
+
 body {
   color: var(--foreground);
   font-family: var(--font-outfit), 'Outfit', sans-serif;
@@ -565,6 +595,13 @@ body.light-mode .nx-social-icon {
 .nx-capture-clean .nx-v30-badge {
   transform: none !important;
   transition: none !important;
+  /* Ombres retirées À LA CAPTURE uniquement : html-to-image rend les
+     box-shadow / drop-shadow qui débordent du nœud sur le fond "transparent"
+     → halo gris/blanc asymétrique (la grosse ombre 0 20px 60px de la carte +
+     l'ombre du ticket qui déborde à droite). On les neutralise ici pour un
+     PNG sur transparence pure ; l'écran garde ses ombres (règles de base). */
+  box-shadow: none !important;
+  filter: none !important;
 }
 
 /* Wow-A export safety — belt-and-braces. The primary guard is the
@@ -575,6 +612,15 @@ body.light-mode .nx-social-icon {
    html-to-image PNG axis-aligned and still-frame regardless. */
 .nx-capture-clean .nx-wow-idle {
   animation: none !important;
+}
+
+/* Header top safe-area — padding-top = encoche/Dynamic Island + 0.75rem.
+   Pattern PARTAGÉ pour tout header sticky/fixed collé au top mobile, afin de
+   ne plus dupliquer la valeur en dur et de fermer l'angle mort récurrent
+   « header collé sous la status bar / l'island ». Appliquer cette classe à
+   tout nouveau header top. */
+.nx-safe-top {
+  padding-top: calc(env(safe-area-inset-top, 0px) + 0.75rem);
 }
 
 /* ── Auth page ──────────────────────────────────────────────── */

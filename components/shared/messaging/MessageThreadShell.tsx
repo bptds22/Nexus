@@ -30,6 +30,7 @@ import {
 import { MessageBubble } from "./MessageBubble";
 import { DaySeparator } from "./DaySeparator";
 import { triggerHaptic } from "./utils";
+import { useKeyboardHeight } from "@/lib/hooks/useKeyboardHeight";
 
 function ThreadSkeleton() {
   return (
@@ -100,6 +101,15 @@ export function MessageThreadShell<M>({
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
+  /* ── Clavier (Option B — events natifs, KeyboardResize.None). Le resize
+        natif iOS étant cassé sur iOS 26 (innerH/visualViewport ne bougent
+        pas), on lit `keyboardHeight` via keyboardWillShow/Hide et on padde le
+        bas du shell de cette hauteur → le composer (dernier enfant du flex
+        column) remonte au-dessus du clavier. Web → no-op (plugin absent).
+        Logique factorisée dans useKeyboardHeight (source de vérité unique,
+        partagée avec DistinctionDetailSheet). ── */
+  const kbdH = useKeyboardHeight();
+
   /* Auto-scroll to the latest message on mount + on each new message
      count change. RAF defer so layout settles first. */
   useEffect(() => {
@@ -144,7 +154,21 @@ export function MessageThreadShell<M>({
   const isEmpty = !isLoading && messages.length === 0;
 
   return (
-    <div className="min-h-screen bg-[#111317] text-white flex flex-col">
+    // h-full = épouse le <main> app-shell (100dvh) et rétrécit avec le frame
+    // sous KeyboardResize.Native (contrairement à min-h-screen/100vh qui
+    // laissait le composer sticky flotter au milieu). Un seul scroll : la
+    // liste de messages (flex-1 min-h-0 overflow-y-auto), composer collé en bas.
+    <div
+      className="h-full bg-[#111317] text-white flex flex-col"
+      style={{
+        // Clavier OUVERT : composer pile au-dessus du clavier (bottom = --kbd-h
+        // exact, aucun padding additionnel → zéro gap, façon iMessage).
+        // Clavier FERMÉ : la tab bar flottante est visible (cf. MobileTabBar) →
+        // on réserve sa hauteur (safe + 88px) pour que le composer s'asseye
+        // au-dessus d'elle.
+        paddingBottom: kbdH > 0 ? `${kbdH}px` : "calc(env(safe-area-inset-bottom) + 88px)",
+      }}
+    >
       {/* Sticky header */}
       <div
         className="sticky top-0 z-30 bg-[#111317]/95 backdrop-blur-md border-b border-white/[0.06]"
@@ -168,8 +192,9 @@ export function MessageThreadShell<M>({
         </div>
       </div>
 
-      {/* Body : messages */}
-      <div className="flex-1 overflow-y-auto py-4">
+      {/* Body : messages — UNIQUE conteneur scroll (min-h-0 indispensable pour
+          qu'un flex item scrolle au lieu de pousser le composer hors écran). */}
+      <div className="flex-1 min-h-0 overflow-y-auto py-4">
         {isLoading ? (
           <ThreadSkeleton />
         ) : isEmpty ? (
@@ -208,10 +233,11 @@ export function MessageThreadShell<M>({
         )}
       </div>
 
-      {/* Sticky composer */}
+      {/* Sticky composer — l'offset bas (clavier OU espace tab bar) est géré
+          par le padding-bottom du shell ci-dessus ; pas de padding ici, sinon
+          ça recrée un gap au-dessus du clavier. */}
       <div
         className="sticky bottom-0 z-20 bg-[#111317]/95 backdrop-blur-md border-t border-white/[0.06]"
-        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
         <div className="px-4 py-2 flex items-end gap-2">
           <div className="flex-1 bg-white/[0.06] rounded-2xl px-3 py-2 min-h-[40px] flex items-center">

@@ -205,7 +205,7 @@ export default function ConfidentialiteSection({ form, original, onUpdateVisibil
               <span className="text-[18px] mt-0.5">🗑️</span>
               <div>
                 <p className="text-[13px] font-bold text-white">Droit à l&apos;effacement</p>
-                <p className="text-[11px] text-[#6b7280] mt-0.5 max-w-sm">Supprimer définitivement votre compte et toutes vos données. Délai de grâce: 30 jours.</p>
+                <p className="text-[11px] text-[#6b7280] mt-0.5 max-w-sm">Supprimer définitivement votre compte et toutes vos données — immédiat et irréversible.</p>
               </div>
             </div>
             <button type="button" onClick={() => onSectionChange?.("danger")} className="px-4 py-2 border border-[#EF4444] text-[#EF4444] text-[12px] font-bold rounded-lg hover:bg-[#EF4444]/10 transition-colors uppercase tracking-wider">Zone danger</button>

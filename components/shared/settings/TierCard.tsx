@@ -12,7 +12,7 @@
    Recruiter renders 3 (Free/Pro/All Star) ; coach renders 2 (Free/Pro).
 ═══════════════════════════════════════════════════════════════ */
 
-import { triggerHaptic, type TierStatus } from "./utils";
+import { triggerHaptic, IS_CAPACITOR, type TierStatus } from "./utils";
 
 export function TierCard({
   name, price, period, features, status, accentDot,
@@ -71,7 +71,14 @@ export function TierCard({
       </ul>
       {status === "upgrade" && (
         <div className="mt-3 pt-3 border-t border-white/[0.05]">
-          {onUpgrade ? (
+          {IS_CAPACITOR ? (
+            /* iOS/natif (Apple IAP 3.1.1) : pas de CTA d'achat in-app. Texte
+               informatif PUR — pas de onClick, pas de lien cliquable. La
+               gestion d'un abo existant reste via le portail (hors TierCard). */
+            <div className="flex items-center justify-center h-9 rounded-2xl bg-white/[0.04] text-[12px] font-semibold text-[#9CA3AF] text-center px-3">
+              Gère ton abonnement sur nexussports.ca
+            </div>
+          ) : onUpgrade ? (
             <button
               type="button"
               onClick={() => { triggerHaptic("Light"); onUpgrade(); }}

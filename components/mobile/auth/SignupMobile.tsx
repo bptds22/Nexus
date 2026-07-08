@@ -58,6 +58,7 @@ import {
   buildConsentMetadata,
   persistInitialConsents,
 } from "@/lib/legal/persistInitialConsents";
+import { isAdult } from "@/lib/legal/ageGate";
 import { LegalSheetMobile, type LegalDocKey } from "@/components/legal/LegalSheetMobile";
 import PartnerVisibilityConsentCard from "@/components/shared/PartnerVisibilityConsentCard";
 
@@ -80,23 +81,7 @@ const RELATION_OPTIONS: PickerOption[] = [
 ];
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-/** Iter age-gate §A — calcule si l'utilisateur est majeur (Québec : 18 ans).
- *  Compare année + mois + jour (pas juste l'année). Retourne false si la
- *  string est vide, mal formée, ou la date future. ISO "YYYY-MM-DD". */
-function isAdult(birthdate: string, today: Date = new Date()): boolean {
-  if (!birthdate) return false;
-  const [yStr, mStr, dStr] = birthdate.split("-");
-  const y = parseInt(yStr, 10);
-  const m = parseInt(mStr, 10);
-  const d = parseInt(dStr, 10);
-  if (!y || !m || !d) return false;
-  let age = today.getFullYear() - y;
-  // Anniversaire pas encore atteint cette année → retirer 1 an.
-  const monthDiff = today.getMonth() + 1 - m;
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < d)) age -= 1;
-  return age >= 18;
-}
+// isAdult extrait dans lib/legal/ageGate (partagé avec /consentements).
 
 interface SignupMobileProps {
   /** Retour vers Welcome. */

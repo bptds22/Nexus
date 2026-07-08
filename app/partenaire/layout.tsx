@@ -28,7 +28,9 @@ export default function PartenaireLayout({ children }: { children: React.ReactNo
   // /partenaire/bienvenue is a dedicated welcome screen — no
   // sidebar chrome. Same role guard applies (only PARTNER), but
   // the layout renders centered children only.
-  const isWelcomeFlow = pathname === "/partenaire/bienvenue";
+  // trailingSlash:true → pathname runtime a un slash final ; normaliser avant
+  // la comparaison exacte sinon l'écran bienvenue n'est jamais reconnu.
+  const isWelcomeFlow = (pathname.replace(/\/+$/, "") || "/") === "/partenaire/bienvenue";
 
   useEffect(() => {
     async function check() {

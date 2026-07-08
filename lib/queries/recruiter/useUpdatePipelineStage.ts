@@ -17,6 +17,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import type { PipelineData } from "@/lib/queries/recruiter/usePipelineCards";
+import { hapticSelect } from "@/lib/haptics";
 
 export function useUpdatePipelineStage() {
   const queryClient = useQueryClient();
@@ -70,6 +71,11 @@ export function useUpdatePipelineStage() {
       if (context?.previous) {
         queryClient.setQueryData(queryKey, context.previous);
       }
+    },
+    // Feedback haptique APRÈS confirmation serveur (le visuel reste instantané
+    // via l'optimistic update de onMutate). Couvre les 3 call-sites en un point.
+    onSuccess: () => {
+      hapticSelect();
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["pipeline"] });

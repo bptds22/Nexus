@@ -225,7 +225,7 @@ function MobileSearchBar({
 }) {
   return (
     <div
-      className="sticky top-0 z-30 px-4 py-3"
+      className="sticky top-0 z-30 px-4 pb-3 nx-safe-top"
       style={{
         backgroundColor: scrolled ? "rgba(17,19,23,0.85)" : "#111317",
         backdropFilter: scrolled ? "blur(20px) saturate(180%)" : "none",
@@ -647,6 +647,11 @@ function SkeletonGrid() {
 export function CoachAthletesMobile() {
   const router = useRouter();
   const toast = useMobileToast();
+
+  // SSR/hydration gate pour le createPortal du FAB (document.body absent au
+  // prerender de l'export statique — sinon ReferenceError au build).
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
 
   // Data state
   const [athletes, setAthletes] = useState<CoachAthlete[]>([]);
@@ -1269,21 +1274,26 @@ export function CoachAthletesMobile() {
 
       {/* Floating "+" FAB — opens the create wizard at /coach/athletes/create.
           Visible on BOTH toggle tabs (Roster + À réclamer). Hidden only while
-          the claim selection bar is up (which spans the same z-40 band and
-          would overlap with this button). */}
-      {!(activeTab === "reclamer" && selectedIds.size > 0) && (
+          the claim selection bar is up.
+          ⚠️ Porté dans document.body via createPortal : sinon `position:fixed`
+          est piégé par le `transform` de AnimatedRoute (containing block) →
+          le FAB s'ancrait sur la hauteur de contenu et chevauchait les cartes.
+          z-50 = AU-DESSUS de la bubble (z-40). bottom calé au-dessus de la
+          bubble flottante (~64px + offset 10 → 88px) + 16px de gap. */}
+      {!(activeTab === "reclamer" && selectedIds.size > 0) && mounted && typeof document !== "undefined" && createPortal(
         <button
           type="button"
           aria-label="Créer un profil athlète"
           onClick={() => { triggerHaptic("Medium"); router.push("/coach/athletes/create"); }}
-          className="fixed right-4 z-40 w-14 h-14 rounded-full bg-[#E63946] text-white flex items-center justify-center shadow-[0_4px_16px_rgba(230,57,70,0.4)] active:scale-95 active:bg-[#D42B22] transition-transform"
-          style={{ bottom: "calc(64px + env(safe-area-inset-bottom) + 12px)" }}
+          className="fixed right-4 z-50 w-14 h-14 rounded-full bg-[#E63946] text-white flex items-center justify-center shadow-[0_4px_16px_rgba(230,57,70,0.4)] active:scale-95 active:bg-[#D42B22] transition-transform"
+          style={{ bottom: "calc(env(safe-area-inset-bottom) + 88px + 16px)" }}
         >
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
             <path d="M12 5v14" />
             <path d="M5 12h14" />
           </svg>
-        </button>
+        </button>,
+        document.body,
       )}
     </div>
   );

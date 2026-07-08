@@ -36,6 +36,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { uploadImage } from "@/lib/upload/uploadImage";
 import { useMobileToast } from "@/components/mobile/MobileToast";
@@ -112,6 +113,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function CoachOnboardingMobileCivil() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const toast = useMobileToast();
 
   const [slide, setSlide] = useState<0 | 1 | 2 | 3>(0);
@@ -534,6 +536,9 @@ export function CoachOnboardingMobileCivil() {
         return;
       }
 
+      // Re-fetch currentUser → PushRegistrar voit onboarding_complete=true (posé par
+      // la RPC finish_coach_civil_onboarding) dans la MÊME session → registerPush().
+      await queryClient.invalidateQueries({ queryKey: ["currentUser"] });
       triggerHaptic("Medium");
       router.replace("/coach/tableau-de-bord");
     } catch (err) {
@@ -547,7 +552,7 @@ export function CoachOnboardingMobileCivil() {
     teamMode, selectedTeamId, newTeamName, newTeamAgeGroup, newTeamAgeOther,
     newTeamDivision, newTeamDivisionOther, newTeamGender,
     directorChoice, rprpAttested, inviteEmail,
-    router, toast,
+    router, toast, queryClient,
   ]);
 
   /* ── Render ──────────────────────────────────────────────── */
@@ -564,7 +569,7 @@ export function CoachOnboardingMobileCivil() {
 
   return (
     <div
-      className="min-h-screen bg-[#111317] text-white flex flex-col"
+      className="h-[100dvh] overflow-x-hidden bg-[#111317] text-white flex flex-col"
       style={{ opacity: mounted ? 1 : 0, transition: "opacity 400ms ease-out" }}
     >
       {/* Header sticky */}
@@ -602,8 +607,8 @@ export function CoachOnboardingMobileCivil() {
 
       {/* Contenu */}
       <div
-        className="flex-1 overflow-y-auto"
-        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 96px)" }}
+        className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden"
+        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 96px)", overscrollBehavior: "contain" }}
       >
         {slide === 0 && (
           <Slide1Profile

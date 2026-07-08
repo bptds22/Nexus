@@ -6,7 +6,12 @@ import { GrainOverlay } from "@/components/editorial";
 import { LanguageProvider } from "@/lib/i18n/LanguageContext";
 import { MobileToastProvider } from "@/components/mobile/MobileToast";
 import { QueryProvider } from "./_providers/QueryProvider";
+import { SubscriptionProvider } from "@/lib/context/SubscriptionProvider";
+import { PushRegistrar } from "@/components/push/PushRegistrar";
+import { StatusBarBootstrap } from "@/components/mobile/StatusBarBootstrap";
 import { SplashGate } from "@/components/mobile/auth/SplashGate";
+import { SocialLoginInit } from "@/components/auth/SocialLoginInit";
+import { AuthSync } from "@/components/auth/AuthSync";
 
 const ORGANIZATION_JSONLD = {
   "@context": "https://schema.org",
@@ -153,14 +158,30 @@ export const metadata: Metadata = {
   },
 };
 
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr" data-theme="dark">
+    // .is-capacitor → app-shell scroll lock (globals.css). Native build only ;
+    // web renders without the class and keeps normal document scroll.
+    <html lang="fr" data-theme="dark" className={IS_CAPACITOR ? "is-capacitor" : undefined}>
       <body className={`${outfit.variable} ${barlowCondensed.variable} antialiased`}>
+        {/* Zéro-flash splash : AVANT tout paint, si le splash a déjà joué cette
+            session (sessionStorage), on injecte une règle qui masque l'overlay
+            prérendu → aucun flash du splash statique sur un reboot de nav MPA.
+            No-op sur web (clé jamais posée) et au vrai cold start (clé absente). */}
+        <Script
+          id="nx-splash-skip"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{
+            __html:
+              "try{if(sessionStorage.getItem('nx-splash-played')==='1'){var s=document.createElement('style');s.textContent='.nx-splash-overlay{display:none!important}';(document.head||document.documentElement).appendChild(s);}}catch(e){}",
+          }}
+        />
         {/* JSON-LD Organization — données structurées pour Google Knowledge Graph */}
         <Script
           id="nx-jsonld-organization"
@@ -178,12 +199,26 @@ export default function RootLayout({
         <GrainOverlay />
         <LanguageProvider>
           <QueryProvider>
-            <MobileToastProvider>
-              {/* Iter 7.47 — SplashGate joue l'anim X→logo UNE FOIS par
-                  cold start Capacitor. Desktop : passthrough immédiat
-                  (IS_CAPACITOR=false → children direct, jamais d'anim). */}
-              <SplashGate>{children}</SplashGate>
-            </MobileToastProvider>
+            <SubscriptionProvider>
+              {/* Phase 2B push — déclencheur d'enregistrement natif post-auth
+                  (no-op sur web). Timing provisoire pour le test. */}
+              {/* Status bar overlay (WebView sous l'island) — runtime,
+                  native-only, no-op web. Fiabilise overlaysWebView. */}
+              <StatusBarBootstrap />
+              {/* Listener auth racine (additif) : ré-invalide ["currentUser"]
+                  dès que la session redevient dispo (boot/resume) → recovery
+                  sans cold restart. Single-instance, dans QueryProvider. */}
+              <AuthSync />
+              <PushRegistrar />
+              <MobileToastProvider>
+                {/* Init unique du plugin social login (idempotent, native-only). */}
+                <SocialLoginInit />
+                {/* Iter 7.47 — SplashGate joue l'anim X→logo UNE FOIS par
+                    cold start Capacitor. Desktop : passthrough immédiat
+                    (IS_CAPACITOR=false → children direct, jamais d'anim). */}
+                <SplashGate>{children}</SplashGate>
+              </MobileToastProvider>
+            </SubscriptionProvider>
           </QueryProvider>
         </LanguageProvider>
       </body>

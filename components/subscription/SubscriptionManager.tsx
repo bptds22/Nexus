@@ -91,7 +91,7 @@ export default function SubscriptionManager({
   className = "",
 }: SubscriptionManagerProps) {
   const {
-    tier, billing, periodEnd, cancelAtPeriodEnd,
+    tier, billing, periodEnd, cancelAtPeriodEnd, isStripeManaged,
     tierLabel, refresh, loading,
   } = useSubscription();
 
@@ -202,6 +202,11 @@ export default function SubscriptionManager({
         same plan banner + pricing cards as everyone else, reflecting
         their real tier. ──────────────────────────────────────────── */
   const isPaid = currentTierKey !== "free";
+  // Bloc portail/dates UNIQUEMENT pour un vrai abo Stripe. Un accès offert
+  // (admin_grant, pas de stripe_customer/subscription) n'a ni portail ni
+  // dates → on affiche un état dédié à la place (évite le portail qui 400 +
+  // le faux "Mensuel / —").
+  const isManaged = isPaid && isStripeManaged;
 
   return (
     <div className={`space-y-6 ${className}`}>
@@ -234,30 +239,51 @@ export default function SubscriptionManager({
         )}
       </div>
 
-      {/* 2. Manage block — paid, non-admin only */}
-      {isPaid && (
+      {/* 2. Manage block — uniquement pour un vrai abo Stripe (admin grants
+          n'ont ni portail ni dates → 400 / faux "Mensuel/—"). */}
+      {isManaged && (
         <div className="bg-[#1A1D24] rounded-xl border border-white/5 p-5">
           <div className="space-y-2 mb-4">
             <Row label="Plan" value={tierLabel()} />
             <Row label="Cycle" value={billing === "annual" ? "Annuel" : "Mensuel"} />
-            <Row label="Renouvellement" value={fmtDate(periodEnd)} />
+            {/* Renouvellement only when the plan is NOT ending — otherwise it
+                contradicts the "se termine le" line below (same date). */}
+            {!cancelAtPeriodEnd && (
+              <Row label="Renouvellement" value={fmtDate(periodEnd)} />
+            )}
           </div>
-          {cancelAtPeriodEnd ? (
-            <p className="text-[13px] text-[#E63946]">
+          {/* Cancellation notice shows IN ADDITION to the portal button (not
+              instead of it) — a canceled user still needs the portal to
+              reactivate / update card / see invoices. */}
+          {cancelAtPeriodEnd && (
+            <p className="text-[13px] text-[#E63946] mb-3">
               Ton abonnement se termine le {fmtDate(periodEnd)}.
             </p>
-          ) : (
-            <button
-              type="button"
-              onClick={handlePortal}
-              disabled={portalBusy}
-              className={`h-10 px-5 rounded-lg border border-white/15 text-white font-bold text-[12px] uppercase tracking-wider hover:bg-white/5 transition-colors ${portalBusy ? "opacity-60 cursor-wait" : ""}`}
-            >
-              {portalBusy ? "Ouverture..." : "Gérer mon abonnement"}
-            </button>
           )}
+          {/* Portal button: always available while paid. The portal route
+              resolves stripe_customer_id server-side. */}
+          <button
+            type="button"
+            onClick={handlePortal}
+            disabled={portalBusy}
+            className={`h-10 px-5 rounded-lg border border-white/15 text-white font-bold text-[12px] uppercase tracking-wider hover:bg-white/5 transition-colors ${portalBusy ? "opacity-60 cursor-wait" : ""}`}
+          >
+            {portalBusy ? "Ouverture..." : "Gérer mon abonnement"}
+          </button>
           <p className="text-[11px] text-[#4a4d56] mt-3">
             Annulation, mode de paiement et factures sont gérés dans le portail sécurisé Stripe.
+          </p>
+        </div>
+      )}
+
+      {/* 2b. Accès offert par Nexus (admin_grant / aucun abo Stripe) — pas de
+          portail, pas de dates. */}
+      {isPaid && !isStripeManaged && (
+        <div className="bg-[#1A1D24] rounded-xl border border-white/5 p-5">
+          <p className="text-[14px] font-bold text-white">Accès accordé par l&apos;équipe Nexus</p>
+          <p className="text-[13px] text-[#9CA3AF] mt-1">
+            Ton plan <span className="uppercase">{tierLabel()}</span> t&apos;a été offert par Nexus —
+            aucun paiement ni gestion de facturation n&apos;est requis.
           </p>
         </div>
       )}
@@ -276,6 +302,9 @@ export default function SubscriptionManager({
             currentTierKey={currentTierKey}
             checkoutBusyTier={checkoutBusyTier}
             onCheckout={handleCheckout}
+            isPaid={isManaged}
+            onManage={handlePortal}
+            portalBusy={portalBusy}
           />
         ))}
       </div>
@@ -339,6 +368,7 @@ function BillingCycleToggle({
 
 function TierCard({
   tier, cycle, isCivilCoach, currentTierKey, checkoutBusyTier, onCheckout,
+  isPaid, onManage, portalBusy,
 }: {
   tier: Tier;
   cycle: "monthly" | "annual";
@@ -346,6 +376,12 @@ function TierCard({
   currentTierKey: TierKey;
   checkoutBusyTier: string | null;
   onCheckout: (displayTierId: string) => void;
+  /** Already on a paid plan → other tiers route to the portal (clean swap
+   *  with proration) instead of a fresh checkout (which would STACK a 2nd
+   *  Stripe subscription / double-bill). */
+  isPaid: boolean;
+  onManage: () => void;
+  portalBusy: boolean;
 }) {
   const key = tierKeyOf(tier.id);
   const isCurrent = key === currentTierKey;
@@ -420,6 +456,17 @@ function TierCard({
         ) : isFree ? (
           <button type="button" disabled className="w-full py-2.5 rounded-lg text-[13px] font-bold bg-[#2D3748] text-[#6b7280] cursor-not-allowed">
             Gratuit
+          </button>
+        ) : isPaid ? (
+          // Already paying → a different paid tier is a PLAN CHANGE, handled
+          // by the Stripe portal (swap + proration), never a new checkout.
+          <button
+            type="button"
+            onClick={onManage}
+            disabled={portalBusy}
+            className={`w-full py-2.5 rounded-lg text-[13px] font-bold transition-all flex items-center justify-center gap-2 ${tier.ctaClass} ${portalBusy ? "opacity-60 cursor-wait" : ""}`}
+          >
+            {portalBusy ? "Ouverture..." : "Changer de plan"}
           </button>
         ) : (
           <button

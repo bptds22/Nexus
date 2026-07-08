@@ -451,7 +451,7 @@ export function RecruteurDashboardMobile() {
         }
         insets={[
           {
-            label: "Pipeline",
+            label: "Processus",
             value: totalPipeline,
             subtitle: "athlètes",
             onTap: () => router.push("/recruteur/pipeline"),

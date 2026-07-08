@@ -512,7 +512,7 @@ function KanbanColumn({
   const HeaderIcon = isExit ? TrashIcon : ArrowIcon;
   const tooltip = colDef.isAuto
     ? colDef.id === "contacte" ? "Statut automatique, mais accepte un retour depuis En discussion" : "Statut automatique — favori"
-    : isExit ? "Retirer du pipeline" : "Glisser un athlète ici";
+    : isExit ? "Retirer du processus" : "Glisser un athlète ici";
 
   return (
     <div className={`flex flex-col min-w-[300px] max-w-[340px] ${isExit ? "opacity-60 ml-4" : ""}`}>
@@ -746,7 +746,7 @@ function SlideOver({
             {card.status !== "retire" && (
               <button type="button" onClick={() => handleStatusClick("retire")} className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-transparent border border-[#EF4444]/30 rounded-lg text-[13px] font-bold text-[#EF4444] hover:bg-[#EF4444]/10 transition-colors">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><path d="M15 9l-6 6" /><path d="M9 9l6 6" /></svg>
-                Retirer du pipeline
+                Retirer du processus
               </button>
             )}
           </div>
@@ -814,7 +814,7 @@ function PipelinePageContent() {
   }, []);
 
   const teaseUpgrade = useCallback(() => {
-    showToast("Passe à Pro pour sauvegarder ton pipeline");
+    showToast("Passe à Pro pour sauvegarder ton processus");
   }, [showToast]);
 
   // Iter 6.1b — hook DELETE pour le statut "retire" qui violait
@@ -834,7 +834,7 @@ function PipelinePageContent() {
       try {
         await removeFromPipeline.mutateAsync({ cardId });
         setSelectedCard(null);
-        showToast("Athlète retiré du pipeline");
+        showToast("Athlète retiré du processus");
       } catch {
         showToast("Erreur lors du retrait");
       }
@@ -954,7 +954,7 @@ function PipelinePageContent() {
             <path d="M12 8v4M12 16h.01" />
           </svg>
           <p className="text-[13px] text-[#9CA3AF] flex-1">
-            Tu visualises ton pipeline.{" "}
+            Tu visualises ton processus.{" "}
             <Link href="/tarifs" className="text-[#F59E0B] font-bold hover:underline">
               Passe à Pro
             </Link>{" "}
