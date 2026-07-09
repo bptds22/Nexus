@@ -320,7 +320,9 @@ export function AthleteOnboardingMobile() {
 
       // Context athlète
       const ctxRaw = userRow?.context;
-      const ctx: "scolaire" | "ligue_civile" =
+      // Cascade : users.context explicite d'abord ; sinon dérivé du type de
+      // l'école de l'orphelin plus bas (schools.type). Défaut scolaire.
+      let ctx: "scolaire" | "ligue_civile" =
         ctxRaw === "ligue_civile" ? "ligue_civile" : "scolaire";
       if (cancelled) return;
       setUserContext(ctx);
@@ -330,7 +332,7 @@ export function AthleteOnboardingMobile() {
       // on montre le sélecteur École / Ligue civile AVANT le wizard. Si le
       // context est déjà posé (compte claimé / resume post-submit), on saute
       // le Step-0 et la logique resume ci-dessous décide step 1 vs 2.
-      const contextChosen = ctxRaw === "scolaire" || ctxRaw === "ligue_civile";
+      let contextChosen = ctxRaw === "scolaire" || ctxRaw === "ligue_civile";
       if (!contextChosen) setStep(0);
 
       // Resume : athletes row + team_athletes junction.
@@ -370,6 +372,17 @@ export function AthleteOnboardingMobile() {
 
         const schoolRel = flatten(existing.schools as { name?: string; type?: string } | { name?: string; type?: string }[] | null);
         const schoolType = schoolRel?.type;
+        // Fallback contexte (routage) : orphelin coach-créé (users.context null)
+        // → dériver du type de son école. school_id présent = contexte "posé"
+        // (skip le Step-0 picker) ; LIGUE_CIVILE → civil, sinon scolaire.
+        // La reprise d'étape (:416) tourne alors et écrase le setStep(0).
+        if (!contextChosen && existing.school_id) {
+          contextChosen = true;
+          if (schoolType === "LIGUE_CIVILE") {
+            ctx = "ligue_civile";
+            setUserContext("ligue_civile");
+          }
+        }
         if (existing.school_id && schoolType !== "LIGUE_CIVILE") {
           setSelectedSchoolId(existing.school_id as string);
           if (schoolRel?.name) setSelectedSchoolName(schoolRel.name);
