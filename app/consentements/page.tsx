@@ -82,6 +82,10 @@ export default function ConsentementsPage() {
   const [role, setRole] = useState<Role | null>(null);
   const [context, setContext] = useState<Ctx | null>(null);
   const [birthdate, setBirthdate] = useState("");
+  // DOB verrouillée = lue depuis la row de l'orphelin lié (athletes.date_naissance),
+  // source de vérité. La décision du bloc parental (isMinor) en dérive — JAMAIS
+  // d'une saisie ni d'une metadata polluable (Loi 25).
+  const [dobLocked, setDobLocked] = useState(false);
 
   const [parentFirstName, setParentFirstName] = useState("");
   const [parentLastName, setParentLastName] = useState("");
@@ -114,6 +118,20 @@ export default function ConsentementsPage() {
           .maybeSingle();
         if (profile?.role) setRole(profile.role as Role);
         if (profile?.context) setContext(profile.context as Ctx);
+
+        // Source de vérité DOB : la row de l'orphelin lié (par email au signup).
+        // Si présente → prefill + verrou ; la décision parentale (isMinor) en
+        // dérive, jamais d'une saisie. Absente (self-signup) → comportement
+        // actuel (saisissable).
+        const { data: ath } = await supabase
+          .from("athletes")
+          .select("date_naissance")
+          .eq("user_id", u.id)
+          .maybeSingle();
+        if (ath?.date_naissance) {
+          setBirthdate(ath.date_naissance as string);
+          setDobLocked(true);
+        }
       }
       setAuthLoading(false);
     })();
@@ -244,7 +262,9 @@ export default function ConsentementsPage() {
           type="date"
           value={birthdate}
           onChange={(e) => setBirthdate(e.target.value)}
-          className={inputCls}
+          readOnly={dobLocked}
+          aria-readonly={dobLocked}
+          className={`${inputCls}${dobLocked ? " opacity-60 cursor-not-allowed" : ""}`}
         />
         {isMinor && (
           <p className="text-[12px] text-[#F59E0B] mt-2 px-1">

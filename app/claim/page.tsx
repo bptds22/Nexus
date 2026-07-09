@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { signUp } from "@/lib/supabase/auth.actions";
+import { isUnder14 } from "@/lib/legal/ageGate";
 import { translateAuthError } from "@/lib/utils/translateAuthError";
 import NexusLogo from "@/components/ui/NexusLogo";
 import PlaybookBackground from "@/app/components/PlaybookBackground";
@@ -28,6 +29,7 @@ interface ClaimRow {
   email: string;
   first_name: string | null;
   last_name: string | null;
+  date_naissance: string | null;
   status: string;
   expires_at: string;
   is_valid: boolean;
@@ -115,6 +117,9 @@ function ClaimContent() {
         setState({ kind: "invalid" });
         return;
       }
+      // DOB de l'orphelin = source de vérité : pré-remplie (et verrouillée au
+      // rendu si présente). Propagée à la metadata au submit (date_naissance).
+      if (row.date_naissance) setBirthDate(row.date_naissance);
       setState({ kind: "valid", row });
     })();
     return () => { cancelled = true; };
@@ -137,6 +142,7 @@ function ClaimContent() {
 
   const canSubmit =
     age !== null && age >= 0 &&
+    !isUnder14(birthDate) &&            // gate <14 (cas orphelin SANS DOB saisie)
     acceptTerms &&
     password.length >= 8 &&
     password === confirm &&
@@ -239,7 +245,9 @@ function ClaimContent() {
             value={birthDate}
             onChange={(e) => setBirthDate(e.target.value)}
             max={new Date().toISOString().slice(0, 10)}
-            className={inputCls}
+            readOnly={!!row.date_naissance}
+            aria-readonly={!!row.date_naissance}
+            className={row.date_naissance ? inputLockedCls : inputCls}
           />
           {age !== null && age >= 0 && (
             <p className="text-[11px] text-[#6b7280] mt-1">{age} ans</p>
