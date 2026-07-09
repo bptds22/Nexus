@@ -777,7 +777,10 @@ function AthleteOnboardingDesktop() {
       // preserves existing behavior for pre-5.3a users (and the race
       // window above, where the row may not be visible yet).
       const ctxRaw = userRow?.context;
-      const ctx: "scolaire" | "ligue_civile" =
+      // Cascade de routage : users.context explicite d'abord ; sinon (orphelin
+      // coach-créé, context null) on dérive du type de l'école de l'orphelin
+      // plus bas (schools.type). Défaut scolaire si aucun signal.
+      let ctx: "scolaire" | "ligue_civile" =
         ctxRaw === "ligue_civile" ? "ligue_civile" : "scolaire";
       setUserContext(ctx);
 
@@ -788,7 +791,7 @@ function AthleteOnboardingDesktop() {
       // Phase 6.3 and the unified read is via schools + team_athletes.
       const { data: existing } = await supabase
         .from("athletes")
-        .select("*, schools!school_id(name, type), sports!sport_id(nom), team_athletes(team_id, teams!team_id(id, name, school_id))")
+        .select("*, schools!school_id(name, type), sports!sport_id(nom), positions!position_id(abreviation), team_athletes(team_id, teams!team_id(id, name, school_id))")
         .eq("user_id", user.id)
         .maybeSingle();
 
@@ -819,6 +822,14 @@ function AthleteOnboardingDesktop() {
         if (existing.annee_diplomation) setGradYear(String(existing.annee_diplomation));
         const schoolRel = Array.isArray(existing.schools) ? existing.schools[0] : existing.schools;
         const schoolType = (schoolRel as { type?: string } | null)?.type;
+        // Fallback civil (routage) : orphelin coach-créé SANS users.context posé
+        // → dériver le contexte du type de son école (school_id → schools.type).
+        // type=LIGUE_CIVILE → civil ; sinon défaut scolaire inchangé. users.context
+        // explicite (ctxRaw = 'scolaire'/'ligue_civile') garde TOUJOURS la priorité.
+        if (ctxRaw !== "ligue_civile" && ctxRaw !== "scolaire" && schoolType === "LIGUE_CIVILE") {
+          ctx = "ligue_civile";
+          setUserContext("ligue_civile");
+        }
         if (existing.school_id && schoolType !== "LIGUE_CIVILE") {
           setSelectedSchoolId(existing.school_id);
           if (schoolRel?.name) setSelectedSchoolName(schoolRel.name);
@@ -867,6 +878,10 @@ function AthleteOnboardingDesktop() {
         if (existing.numero_jersey) setJerseyNumber(existing.numero_jersey);
         const sportRel = Array.isArray(existing.sports) ? existing.sports[0] : existing.sports;
         if (sportRel?.nom) setPrimarySport(sportRel.nom);
+        // Correctif : seed position (le coach l'a saisie au create). Sans ça,
+        // l'UPDATE d'onboarding l'écrase à null. L'athlète peut toujours changer.
+        const posRel = Array.isArray(existing.positions) ? existing.positions[0] : existing.positions;
+        if ((posRel as { abreviation?: string } | null)?.abreviation) setPrimaryPosition((posRel as { abreviation?: string }).abreviation as string);
         if (existing.video_faits_saillants_url) setHighlightVideo(existing.video_faits_saillants_url);
         if (existing.hudl_url) setHudlLink(existing.hudl_url);
         if (existing.youtube_url) setYoutubeLink(existing.youtube_url);

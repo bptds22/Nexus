@@ -16,7 +16,7 @@ import { createClient } from "@/lib/supabase/client";
 import PartnerVisibilityConsentCard from "@/components/shared/PartnerVisibilityConsentCard";
 import ReadOnlyIfPending from "@/components/auth/ReadOnlyIfPending";
 import {
-  autocompleteCivilUnclaimedByEmail,
+  autocompleteInvitableByEmail,
   type AthleteEmailAutocompleteResult,
   type AthleteEmailSuggestion,
 } from "@/lib/coach/athleteEmailAutocomplete";
@@ -25,6 +25,7 @@ import { saveAthleteCreate, computeCoteGlobale } from "../_data/saveAthlete";
 import { isUnder14 } from "@/lib/legal/ageGate";
 import InvitationLinkModal from "@/components/ui/InvitationLinkModal";
 import { createAthleteInvitationLink } from "@/lib/queries/coach/createAthleteInvitation";
+import { inviteAthleteToTeam } from "@/lib/queries/coach/teamInvite";
 import { coteChanged } from "@/lib/utils/cote";
 import { ConfirmSheet } from "@/components/shared/settings";
 import CoteChangeConfirmContent from "@/components/shared/CoteChangeConfirmContent";
@@ -266,6 +267,8 @@ export default function CreateAthletePage() {
   const [claimLink, setClaimLink] = useState<string | null>(null);
   const [generatingLink, setGeneratingLink] = useState(false);
   const [linkError, setLinkError] = useState<string | null>(null);
+  const [emailInviting, setEmailInviting] = useState(false);
+  const [emailInviteResult, setEmailInviteResult] = useState<{ ok: boolean; msg: string } | null>(null);
 
   const router = useRouter();
 
@@ -324,7 +327,7 @@ export default function CreateAthletePage() {
     emailAutocompleteTimerRef.current = setTimeout(async () => {
       try {
         const supabase = createClient();
-        const result = await autocompleteCivilUnclaimedByEmail(supabase, newEmail);
+        const result = await autocompleteInvitableByEmail(supabase, newEmail);
         setEmailAutocomplete(result);
         setShowSuggestions(result.status === "ok" && result.suggestions.length > 0);
       } catch (err) {
@@ -386,8 +389,11 @@ export default function CreateAthletePage() {
   // (apply_team_invitation_acceptance) se déclenchera côté athlete
   // lors de son ACCEPTED — pas ici.
   const handleSendInvitation = useCallback(async () => {
-    if (!linkedToExisting || !invitationTeamId) {
-      console.error("[Invitation] Missing data", { linkedToExisting, invitationTeamId });
+    if (!linkedToExisting) return;
+    // Athlète AVEC compte → team_invitations in-app (équipe requise).
+    // Orphelin SANS compte → email de claim (pas d'équipe).
+    if (linkedToExisting.hasAccount && !invitationTeamId) {
+      console.error("[Invitation] Missing team", { linkedToExisting, invitationTeamId });
       return;
     }
 
@@ -395,24 +401,32 @@ export default function CreateAthletePage() {
 
     try {
       const supabase = createClient();
-      const { data: authData } = await supabase.auth.getUser();
-      if (!authData.user) throw new Error("Not authenticated");
 
-      const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+      // ── Orphelin sans compte → email via createAthleteInvitationLink (RPC +
+      //    trigger). Mêmes gardes que le CTA (owner, <14, claimed). ──────────
+      if (!linkedToExisting.hasAccount) {
+        const { error } = await createAthleteInvitationLink(
+          supabase,
+          linkedToExisting.athleteId,
+          linkedToExisting.email,
+        );
+        if (error) {
+          alert(`Erreur lors de l'envoi : ${error}`);
+          setIsSubmittingInvitation(false);
+          return;
+        }
+        setShowConfirmModal(false);
+        alert(`Invitation envoyée à ${linkedToExisting.email}`);
+        router.push("/coach/athletes");
+        return;
+      }
 
-      const { error } = await supabase
-        .from("team_invitations")
-        .insert({
-          team_id: invitationTeamId,
-          athlete_id: linkedToExisting.athleteId,
-          invited_by_coach_id: authData.user.id,
-          status: "PENDING",
-          expires_at: expiresAt,
-        });
-
-      if (error) {
-        console.error("[Invitation] INSERT error:", error);
-        alert(`Erreur lors de l'envoi : ${error.message}`);
+      // ── Athlète avec compte → team_invitations in-app (helper partagé avec
+      //    le CTA roster — un seul mécanisme). ────────────────────────────────
+      const res = await inviteAthleteToTeam(supabase, linkedToExisting.athleteId, invitationTeamId!);
+      if (res.error) {
+        console.error("[Invitation] team invite error:", res.error);
+        alert(res.error);
         setIsSubmittingInvitation(false);
         return;
       }
@@ -722,6 +736,23 @@ export default function CreateAthletePage() {
       setClaimLink(link);
     } finally {
       setGeneratingLink(false);
+    }
+  }
+
+  // Action PRIMAIRE de l'écran de succès : envoie l'email de claim directement
+  // (même helper que le CTA roster). Le gate <14 est mappé côté helper en
+  // message neutre sans PII (ATHLETE_UNDER_14 → « ne peut pas être invité »).
+  async function handleSendInviteEmail() {
+    if (!createdAthleteId || !form.identity.email) return;
+    setEmailInviting(true);
+    setEmailInviteResult(null);
+    try {
+      const supabase = createClient();
+      const { error } = await createAthleteInvitationLink(supabase, createdAthleteId, form.identity.email);
+      if (error) { setEmailInviteResult({ ok: false, msg: error }); return; }
+      setEmailInviteResult({ ok: true, msg: `Invitation envoyée à ${form.identity.email}.` });
+    } finally {
+      setEmailInviting(false);
     }
   }
 
@@ -1652,14 +1683,33 @@ export default function CreateAthletePage() {
         {/* #48 — lien de claim pour l'athlète qu'on vient de créer (orphelin).
             Même RPC + même InvitationLinkModal que la fiche athlète. */}
         {createdAthleteId && (
-          <div className="mb-6">
-            <button type="button" onClick={handleGenerateInviteLink} disabled={generatingLink}
-              className="inline-flex items-center gap-2 bg-[#F59E0B] hover:bg-[#D97706] disabled:opacity-60 text-black font-head font-bold text-[12px] uppercase tracking-widest rounded-lg px-6 py-3 transition-colors">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg>
-              {generatingLink ? "Génération…" : "Générer le lien d'invitation"}
-            </button>
-            {linkError && <p className="text-[12px] text-[#EF4444] mt-2">{linkError}</p>}
-            <p className="text-[12px] text-[#6b7280] mt-2">Optionnel — pour que l&apos;athlète crée son compte et complète son profil.</p>
+          <div className="mb-6 space-y-3">
+            {/* PRIMAIRE — envoyer l'invitation par courriel (action par défaut). */}
+            <div>
+              <button type="button" onClick={handleSendInviteEmail}
+                disabled={emailInviting || !form.identity.email}
+                className="inline-flex items-center gap-2 bg-[#F59E0B] hover:bg-[#D97706] disabled:opacity-50 disabled:cursor-not-allowed text-black font-head font-bold text-[12px] uppercase tracking-widest rounded-lg px-6 py-3 transition-colors">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2" /><path d="M22 6l-10 7L2 6" /></svg>
+                {emailInviting ? "Envoi…" : (form.identity.email ? `Envoyer à ${form.identity.email}` : "Envoyer l'invitation par courriel")}
+              </button>
+              {!form.identity.email && (
+                <p className="text-[12px] text-[#6b7280] mt-2">Ajoute un courriel à l&apos;athlète pour envoyer l&apos;invitation directement.</p>
+              )}
+              {emailInviteResult && (
+                <p className={`text-[13px] font-semibold mt-2 ${emailInviteResult.ok ? "text-[#22C55E]" : "text-[#EF4444]"}`}>
+                  {emailInviteResult.ok ? "✓ " : ""}{emailInviteResult.msg}
+                </p>
+              )}
+            </div>
+
+            {/* SECONDAIRE — lien à partager manuellement (SMS, en personne). */}
+            <div>
+              <button type="button" onClick={handleGenerateInviteLink} disabled={generatingLink}
+                className="text-[12px] font-semibold text-[#9CA3AF] hover:text-white underline underline-offset-2 disabled:opacity-60 transition-colors">
+                {generatingLink ? "Génération…" : "Ou générer un lien à partager (SMS, en personne)"}
+              </button>
+              {linkError && <p className="text-[12px] text-[#EF4444] mt-1">{linkError}</p>}
+            </div>
           </div>
         )}
 
@@ -1709,7 +1759,9 @@ export default function CreateAthletePage() {
           <h1 className="font-head text-3xl sm:text-4xl font-black text-white uppercase tracking-tight">
             Inviter {linkedToExisting.firstName} {linkedToExisting.lastName}
           </h1>
-          <p className="text-[15px] text-[#6b7280] mt-2">Compte Nexus existant détecté</p>
+          <p className="text-[15px] text-[#6b7280] mt-2">
+            {linkedToExisting.hasAccount ? "Compte Nexus existant détecté" : "Profil déjà créé — invitation par courriel"}
+          </p>
         </div>
 
         <div className="rounded-2xl bg-[#1A1D24] border border-[#E63946]/30 p-6 space-y-4">
@@ -1723,7 +1775,9 @@ export default function CreateAthletePage() {
             </div>
             <div className="flex-1">
               <h3 className="text-lg font-bold text-white">
-                {linkedToExisting.firstName} {linkedToExisting.lastName} existe déjà sur Nexus
+                {linkedToExisting.hasAccount
+                  ? `${linkedToExisting.firstName} ${linkedToExisting.lastName} existe déjà sur Nexus`
+                  : `${linkedToExisting.firstName} ${linkedToExisting.lastName} — profil déjà créé`}
               </h3>
               <p className="text-sm text-[#9CA3AF] mt-0.5">{linkedToExisting.email}</p>
             </div>
@@ -1732,14 +1786,14 @@ export default function CreateAthletePage() {
           {/* Message principal */}
           <div className="bg-[#111317] rounded-lg p-4">
             <p className="text-sm text-[#c0c4cc]">
-              Tu dois attendre que cet athlète accepte ton invitation avant de pouvoir
-              voir son profil et l&apos;évaluer. Une fois qu&apos;il accepte, il sera ajouté
-              à ton équipe automatiquement.
+              {linkedToExisting.hasAccount
+                ? "Tu dois attendre que cet athlète accepte ton invitation avant de pouvoir voir son profil et l'évaluer. Une fois qu'il accepte, il sera ajouté à ton équipe automatiquement."
+                : "Cet athlète a déjà un profil chez toi mais n'a pas encore réclamé son compte. En l'invitant, il recevra un courriel avec un lien pour créer son compte et récupérer son profil."}
             </p>
           </div>
 
-          {/* Team selector si 2+ teams */}
-          {coachTeam.teams.length > 1 && (
+          {/* Team selector si 2+ teams (uniquement athlète avec compte → équipe) */}
+          {linkedToExisting.hasAccount && coachTeam.teams.length > 1 && (
             <div>
               <label className="block text-xs font-bold tracking-[0.2em] uppercase text-[#6b7280] mb-2">
                 Inviter sur quelle équipe ?
@@ -1761,7 +1815,7 @@ export default function CreateAthletePage() {
           )}
 
           {/* Team auto-selected (1 team) */}
-          {coachTeam.teams.length === 1 && invitationTeamId && (
+          {linkedToExisting.hasAccount && coachTeam.teams.length === 1 && invitationTeamId && (
             <div className="text-sm text-[#9CA3AF]">
               Équipe : <span className="text-white font-semibold">{coachTeam.teams[0].name}</span>
             </div>
@@ -1790,14 +1844,14 @@ export default function CreateAthletePage() {
             <button
               type="button"
               onClick={() => setShowConfirmModal(true)}
-              disabled={!invitationTeamId}
+              disabled={linkedToExisting.hasAccount && !invitationTeamId}
               className={`px-6 py-2.5 rounded-lg font-head font-bold text-[14px] uppercase tracking-widest transition-colors ${
-                invitationTeamId
+                !linkedToExisting.hasAccount || invitationTeamId
                   ? "bg-[#E63946] hover:bg-[#D42B22] text-white"
                   : "bg-[#2a2d36] text-[#6b7280] cursor-not-allowed"
               }`}
             >
-              Envoyer l&apos;invitation
+              {linkedToExisting.hasAccount ? "Envoyer l’invitation" : "Envoyer par courriel"}
             </button>
           </div>
         </div>
@@ -1824,7 +1878,9 @@ export default function CreateAthletePage() {
               </p>
 
               <p className="text-xs text-[#9CA3AF] mb-6">
-                Il recevra une notification et pourra accepter ou décliner.
+                {linkedToExisting.hasAccount
+                  ? "Il recevra une notification et pourra accepter ou décliner."
+                  : "Il recevra un courriel avec un lien pour créer son compte et récupérer son profil."}
               </p>
 
               <div className="flex justify-end gap-3">

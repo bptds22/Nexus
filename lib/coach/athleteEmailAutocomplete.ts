@@ -31,6 +31,9 @@ export interface AthleteEmailSuggestion {
   firstName: string;
   lastName: string;
   sportName: string | null;
+  /** true = athlète AVEC compte (→ team_invitations in-app) ; false = orphelin
+   *  sans compte, invitable par email (→ createAthleteInvitationLink). */
+  hasAccount: boolean;
 }
 
 export interface AthleteEmailAutocompleteResult {
@@ -99,9 +102,150 @@ export async function autocompleteCivilUnclaimedByEmail(
     firstName: r.first_name ?? "",
     lastName: r.last_name ?? "",
     sportName: r.sport_name ?? null,
+    hasAccount: true, // athlète AVEC compte (JOIN user_id) → team_invitations
   }));
 
   return { status: "ok", suggestions };
+}
+
+/** Forme d'une row de lookup_my_orphans_by_email (pas de user_id : orphelins). */
+interface MyOrphanRow {
+  athlete_id: string;
+  email: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  sport_name: string | null;
+}
+
+/**
+ * Cherche les orphelins DU coach appelant (coach_id=auth.uid(), user_id NULL)
+ * par email partial → population invitable par email (create_athlete_invitation).
+ * Complémentaire (disjoint) de autocompleteCivilUnclaimedByEmail.
+ */
+export async function autocompleteMyOrphansByEmail(
+  supabase: SupabaseClient,
+  partial: string,
+): Promise<AthleteEmailAutocompleteResult> {
+  const trimmed = partial.trim().toLowerCase();
+  if (trimmed.length < MIN_QUERY_LENGTH) {
+    return { status: "too_short", suggestions: [] };
+  }
+
+  const { data, error } = await supabase.rpc("lookup_my_orphans_by_email", {
+    p_prefix: trimmed,
+  });
+  if (error) {
+    console.error("[athleteEmailAutocomplete] my-orphans RPC error:", error);
+    return { status: "error", suggestions: [] };
+  }
+
+  const rows = (data as MyOrphanRow[] | null) ?? [];
+  if (rows.length === 0) {
+    return { status: "no_results", suggestions: [] };
+  }
+
+  const suggestions: AthleteEmailSuggestion[] = rows.map((r) => ({
+    userId: "", // orphelin : pas de compte
+    athleteId: r.athlete_id,
+    email: r.email ?? "",
+    firstName: r.first_name ?? "",
+    lastName: r.last_name ?? "",
+    sportName: r.sport_name ?? null,
+    hasAccount: false, // → createAthleteInvitationLink (email)
+  }));
+  return { status: "ok", suggestions };
+}
+
+/**
+ * Union pour le WIZARD : MES orphelins (→ email) + civils-unclaimed AVEC compte
+ * (→ team_invitations in-app). Chaque suggestion porte hasAccount pour router.
+ * Le CTA roster, lui, n'utilise QUE autocompleteMyOrphansByEmail.
+ */
+export async function autocompleteInvitableByEmail(
+  supabase: SupabaseClient,
+  partial: string,
+): Promise<AthleteEmailAutocompleteResult> {
+  const trimmed = partial.trim().toLowerCase();
+  if (trimmed.length < MIN_QUERY_LENGTH) {
+    return { status: "too_short", suggestions: [] };
+  }
+
+  const [orphans, accounts] = await Promise.all([
+    autocompleteMyOrphansByEmail(supabase, trimmed),
+    autocompleteCivilUnclaimedByEmail(supabase, trimmed),
+  ]);
+
+  if (orphans.status === "error" && accounts.status === "error") {
+    return { status: "error", suggestions: [] };
+  }
+  const merged = [...orphans.suggestions, ...accounts.suggestions];
+  if (merged.length === 0) {
+    return { status: "no_results", suggestions: [] };
+  }
+  return { status: "ok", suggestions: merged };
+}
+
+/** Forme d'une row de lookup_invitable_athletes_by_email (3 états). */
+interface InvitableRow {
+  athlete_id: string | null;
+  email: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  sport_name: string | null;
+  has_account: boolean | null;
+  exists_not_invitable: boolean | null;
+}
+
+export interface InvitableLookupResult {
+  status: AutocompleteStatus;
+  /** Athlètes invitables (has_account renseigné : false=orphelin, true=compte). */
+  suggestions: AthleteEmailSuggestion[];
+  /** true si un match existe mais est NON-invitable (rattaché / sans coach ni
+   *  compte) — flag SEUL côté DB, zéro PII (Loi 25). */
+  existsNotInvitable: boolean;
+}
+
+/**
+ * Lookup unifié du CTA "Inviter par courriel" (RPC lookup_invitable_athletes_by_email).
+ * Retourne les invitables (orphelins sans compte → email de claim ; comptes sans
+ * coach → team invite) + un flag existsNotInvitable (sans PII) pour les rattachés.
+ */
+export async function lookupInvitableByEmail(
+  supabase: SupabaseClient,
+  partial: string,
+): Promise<InvitableLookupResult> {
+  const trimmed = partial.trim().toLowerCase();
+  if (trimmed.length < MIN_QUERY_LENGTH) {
+    return { status: "too_short", suggestions: [], existsNotInvitable: false };
+  }
+
+  const { data, error } = await supabase.rpc("lookup_invitable_athletes_by_email", {
+    p_prefix: trimmed,
+  });
+  if (error) {
+    console.error("[athleteEmailAutocomplete] invitable RPC error:", error);
+    return { status: "error", suggestions: [], existsNotInvitable: false };
+  }
+
+  const rows = (data as InvitableRow[] | null) ?? [];
+  const suggestions: AthleteEmailSuggestion[] = rows
+    .filter((r) => !r.exists_not_invitable && r.athlete_id)
+    .map((r) => ({
+      userId: "",
+      athleteId: r.athlete_id as string,
+      email: r.email ?? "",
+      firstName: r.first_name ?? "",
+      lastName: r.last_name ?? "",
+      sportName: r.sport_name ?? null,
+      hasAccount: !!r.has_account,
+    }));
+  const existsNotInvitable = rows.some((r) => r.exists_not_invitable === true);
+
+  return {
+    status: suggestions.length > 0 ? "ok" : "no_results",
+    suggestions,
+    existsNotInvitable,
+  };
 }
 
 /**

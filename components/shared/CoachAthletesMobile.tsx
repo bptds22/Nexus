@@ -32,6 +32,12 @@ import { useMobileToast } from "@/components/mobile/MobileToast";
 import AthletePhoto from "@/components/shared/AthletePhoto";
 import { isValidationExpired } from "@/lib/utils/profileValidation";
 import { parseDistinctions } from "@/lib/config/badges";
+import {
+  lookupInvitableByEmail,
+  type AthleteEmailSuggestion,
+} from "@/lib/coach/athleteEmailAutocomplete";
+import { createAthleteInvitationLink } from "@/lib/queries/coach/createAthleteInvitation";
+import { loadCoachTeams, inviteAthleteToTeam, type CoachTeamOption } from "@/lib/queries/coach/teamInvite";
 
 /* ── Constants ────────────────────────────────────────────── */
 
@@ -640,6 +646,208 @@ function SkeletonGrid() {
   );
 }
 
+/* ── FabActionSheet — choix Ajouter / Inviter par courriel ──── */
+function FabActionSheet({
+  open, onClose, onAdd, onInvite,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onAdd: () => void;
+  onInvite: () => void;
+}) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+  if (!mounted || !open) return null;
+  return createPortal(
+    <>
+      <div
+        className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm"
+        onClick={onClose}
+        style={{ animation: "nx-modal-fade 200ms ease-out forwards" }}
+      />
+      <div
+        className="fixed bottom-0 left-0 right-0 z-[70] bg-[#1A1D24] rounded-t-2xl shadow-2xl"
+        style={{ paddingBottom: "env(safe-area-inset-bottom)", animation: "nx-modal-slideup 280ms cubic-bezier(0.34,1.56,0.64,1) forwards" }}
+        role="dialog"
+        aria-modal="true"
+      >
+        <div className="flex justify-center pt-3 pb-2"><div className="w-10 h-1 rounded-full bg-white/20" /></div>
+        <div className="px-6 pb-6 space-y-3">
+          <button
+            type="button"
+            onClick={() => { triggerHaptic("Medium"); onAdd(); }}
+            className="w-full h-14 rounded-2xl bg-[#E63946] text-white text-[14px] font-bold active:bg-[#D42B22] flex items-center justify-center gap-2"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
+            Ajouter un athlète
+          </button>
+          <button
+            type="button"
+            onClick={() => { triggerHaptic("Light"); onInvite(); }}
+            className="w-full h-14 rounded-2xl border border-[#2D3748] text-white text-[14px] font-bold active:bg-white/5 flex items-center justify-center gap-2"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="2" y="4" width="20" height="16" rx="2" /><path d="M22 6l-10 7L2 6" /></svg>
+            Inviter par courriel
+          </button>
+        </div>
+      </div>
+    </>,
+    document.body,
+  );
+}
+
+/* ── InviteByEmailSheet — email → lookup orphelin exact → invite ─ */
+const INVITE_EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function InviteByEmailSheet({
+  open, onClose, onInvited,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onInvited: (message: string) => void;
+}) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+  const [email, setEmail] = useState("");
+  const [looking, setLooking] = useState(false);
+  const [match, setMatch] = useState<AthleteEmailSuggestion | null>(null);
+  const [notInvitable, setNotInvitable] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [errMsg, setErrMsg] = useState<string | null>(null);
+  const [teams, setTeams] = useState<CoachTeamOption[]>([]);
+  const [teamId, setTeamId] = useState<string | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (!open) {
+      setEmail(""); setMatch(null); setNotInvitable(false); setErrMsg(null);
+      setSubmitting(false); setLooking(false); setTeamId(null);
+      return;
+    }
+    (async () => {
+      const t = await loadCoachTeams(createClient());
+      setTeams(t);
+      if (t.length === 1) setTeamId(t[0].id);
+    })();
+  }, [open]);
+
+  useEffect(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    setMatch(null); setNotInvitable(false); setErrMsg(null);
+    const e = email.trim().toLowerCase();
+    if (!INVITE_EMAIL_RE.test(e)) { setLooking(false); return; }
+    setLooking(true);
+    timerRef.current = setTimeout(async () => {
+      try {
+        const res = await lookupInvitableByEmail(createClient(), e);
+        const exact = res.suggestions.find((s) => s.email.toLowerCase() === e) ?? null;
+        setMatch(exact); setNotInvitable(!exact && res.existsNotInvitable);
+      } catch { setNotInvitable(false); }
+      finally { setLooking(false); }
+    }, 300);
+    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+  }, [email]);
+
+  const handleInvite = useCallback(async () => {
+    if (!match || submitting) return;
+    setSubmitting(true); setErrMsg(null);
+    const supabase = createClient();
+    if (match.hasAccount) {
+      // Compte existant → invitation d'équipe in-app (team_invitations).
+      if (!teamId) { setErrMsg("Choisis une équipe."); setSubmitting(false); return; }
+      const res = await inviteAthleteToTeam(supabase, match.athleteId, teamId);
+      setSubmitting(false);
+      if (res.error) { setErrMsg(res.error); return; }
+      onInvited(`Invitation d'équipe envoyée à ${match.firstName} ${match.lastName}.`);
+    } else {
+      // Orphelin sans compte → email de claim (email CANONIQUE, anti-typo).
+      const res = await createAthleteInvitationLink(supabase, match.athleteId, match.email);
+      setSubmitting(false);
+      if (res.error) { setErrMsg(res.error); return; }
+      onInvited(`Invitation envoyée à ${match.email}.`);
+    }
+  }, [match, submitting, teamId, onInvited]);
+
+  if (!mounted || !open) return null;
+  return createPortal(
+    <>
+      <div
+        className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm"
+        onClick={() => { if (!submitting) onClose(); }}
+        style={{ animation: "nx-modal-fade 200ms ease-out forwards" }}
+      />
+      <div
+        className="fixed bottom-0 left-0 right-0 z-[70] bg-[#1A1D24] rounded-t-2xl shadow-2xl"
+        style={{ paddingBottom: "env(safe-area-inset-bottom)", animation: "nx-modal-slideup 280ms cubic-bezier(0.34,1.56,0.64,1) forwards" }}
+        role="dialog"
+        aria-modal="true"
+      >
+        <div className="flex justify-center pt-3 pb-2"><div className="w-10 h-1 rounded-full bg-white/20" /></div>
+        <div className="px-6 pb-6">
+          <h3 className="font-head text-[16px] font-black text-white uppercase tracking-tight">Inviter par courriel</h3>
+          <p className="text-[13px] text-[#9CA3AF] mt-1 mb-4">Le courriel d&apos;un athlète à inviter.</p>
+          <input
+            type="email" inputMode="email" autoCapitalize="off" autoCorrect="off" spellCheck={false}
+            value={email} onChange={(e) => setEmail(e.target.value)} placeholder="athlete@exemple.ca"
+            className="w-full bg-[#111317] border border-white/10 rounded-xl px-4 py-3 text-[16px] text-white placeholder:text-white/35 outline-none focus:border-[#E63946]/50"
+          />
+          <div className="mt-4 min-h-[60px]">
+            {looking && <p className="text-[13px] text-[#9CA3AF]">Recherche…</p>}
+
+            {/* État 1 : invitable → carte + invite (route has_account) */}
+            {!looking && match && (
+              <div className="bg-[#111317] border border-[#2D3748] rounded-xl p-4 space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-[15px] font-bold text-white truncate">{match.firstName} {match.lastName}</p>
+                    <p className="text-[13px] text-[#9CA3AF] truncate">{match.sportName || "—"} · {match.email}</p>
+                  </div>
+                  <button
+                    type="button" onClick={handleInvite}
+                    disabled={submitting || (match.hasAccount && !teamId && teams.length !== 1)}
+                    className="shrink-0 h-11 px-4 rounded-2xl bg-[#E63946] text-white text-[13px] font-bold active:bg-[#D42B22] disabled:opacity-40"
+                  >
+                    {submitting ? "…" : "Inviter"}
+                  </button>
+                </div>
+                {match.hasAccount && teams.length > 1 && (
+                  <select value={teamId ?? ""} onChange={(e) => setTeamId(e.target.value || null)}
+                    className="w-full bg-[#111317] border border-white/10 rounded-xl px-4 py-3 text-[16px] text-white outline-none focus:border-[#E63946]/50" title="Équipe">
+                    <option value="">Choisis une équipe</option>
+                    {teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                  </select>
+                )}
+                {match.hasAccount && teams.length === 1 && (
+                  <p className="text-[13px] text-[#9CA3AF]">Équipe : <span className="text-white font-semibold">{teams[0].name}</span></p>
+                )}
+                {match.hasAccount && teams.length === 0 && (
+                  <p className="text-[13px] text-[#F59E0B]">Aucune équipe — crées-en une dans « Mes équipes ».</p>
+                )}
+                {match.hasAccount && (
+                  <p className="text-[12px] text-[#6b7280]">Compte existant → invitation d&apos;équipe (in-app).</p>
+                )}
+              </div>
+            )}
+
+            {/* État 2 : existe mais NON-invitable (zéro PII) */}
+            {!looking && !match && notInvitable && (
+              <p className="text-[13px] text-[#9CA3AF]">Cet athlète est déjà rattaché à une équipe et ne peut pas être invité ici.</p>
+            )}
+
+            {/* État 3 : inexistant */}
+            {!looking && !match && !notInvitable && INVITE_EMAIL_RE.test(email.trim().toLowerCase()) && (
+              <p className="text-[13px] text-[#9CA3AF]">Aucun athlète à ce courriel. Crée-le d&apos;abord, puis invite-le.</p>
+            )}
+
+            {errMsg && <p className="text-[13px] text-[#EF4444] font-semibold mt-2">{errMsg}</p>}
+          </div>
+        </div>
+      </div>
+    </>,
+    document.body,
+  );
+}
+
 /* ═══════════════════════════════════════════════════════════════
    MAIN
 ═══════════════════════════════════════════════════════════════ */
@@ -647,6 +855,8 @@ function SkeletonGrid() {
 export function CoachAthletesMobile() {
   const router = useRouter();
   const toast = useMobileToast();
+  const [fabMenuOpen, setFabMenuOpen] = useState(false);
+  const [inviteOpen, setInviteOpen] = useState(false);
 
   // SSR/hydration gate pour le createPortal du FAB (document.body absent au
   // prerender de l'export statique — sinon ReferenceError au build).
@@ -1283,8 +1493,8 @@ export function CoachAthletesMobile() {
       {!(activeTab === "reclamer" && selectedIds.size > 0) && mounted && typeof document !== "undefined" && createPortal(
         <button
           type="button"
-          aria-label="Créer un profil athlète"
-          onClick={() => { triggerHaptic("Medium"); router.push("/coach/athletes/create"); }}
+          aria-label="Ajouter ou inviter un athlète"
+          onClick={() => { triggerHaptic("Medium"); setFabMenuOpen(true); }}
           className="fixed right-4 z-50 w-14 h-14 rounded-full bg-[#E63946] text-white flex items-center justify-center shadow-[0_4px_16px_rgba(230,57,70,0.4)] active:scale-95 active:bg-[#D42B22] transition-transform"
           style={{ bottom: "calc(env(safe-area-inset-bottom) + 88px + 16px)" }}
         >
@@ -1295,6 +1505,18 @@ export function CoachAthletesMobile() {
         </button>,
         document.body,
       )}
+
+      <FabActionSheet
+        open={fabMenuOpen}
+        onClose={() => setFabMenuOpen(false)}
+        onAdd={() => { setFabMenuOpen(false); router.push("/coach/athletes/create"); }}
+        onInvite={() => { setFabMenuOpen(false); setInviteOpen(true); }}
+      />
+      <InviteByEmailSheet
+        open={inviteOpen}
+        onClose={() => setInviteOpen(false)}
+        onInvited={(message) => { setInviteOpen(false); toast.success({ message }); }}
+      />
     </div>
   );
 }
