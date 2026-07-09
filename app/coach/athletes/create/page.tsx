@@ -25,6 +25,7 @@ import { saveAthleteCreate, computeCoteGlobale } from "../_data/saveAthlete";
 import { isUnder14 } from "@/lib/legal/ageGate";
 import InvitationLinkModal from "@/components/ui/InvitationLinkModal";
 import { createAthleteInvitationLink } from "@/lib/queries/coach/createAthleteInvitation";
+import { inviteAthleteToTeam } from "@/lib/queries/coach/teamInvite";
 import { coteChanged } from "@/lib/utils/cote";
 import { ConfirmSheet } from "@/components/shared/settings";
 import CoteChangeConfirmContent from "@/components/shared/CoteChangeConfirmContent";
@@ -266,6 +267,8 @@ export default function CreateAthletePage() {
   const [claimLink, setClaimLink] = useState<string | null>(null);
   const [generatingLink, setGeneratingLink] = useState(false);
   const [linkError, setLinkError] = useState<string | null>(null);
+  const [emailInviting, setEmailInviting] = useState(false);
+  const [emailInviteResult, setEmailInviteResult] = useState<{ ok: boolean; msg: string } | null>(null);
 
   const router = useRouter();
 
@@ -418,25 +421,12 @@ export default function CreateAthletePage() {
         return;
       }
 
-      // ── Athlète avec compte → team_invitations in-app (inchangé). ─────────
-      const { data: authData } = await supabase.auth.getUser();
-      if (!authData.user) throw new Error("Not authenticated");
-
-      const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-
-      const { error } = await supabase
-        .from("team_invitations")
-        .insert({
-          team_id: invitationTeamId,
-          athlete_id: linkedToExisting.athleteId,
-          invited_by_coach_id: authData.user.id,
-          status: "PENDING",
-          expires_at: expiresAt,
-        });
-
-      if (error) {
-        console.error("[Invitation] INSERT error:", error);
-        alert(`Erreur lors de l'envoi : ${error.message}`);
+      // ── Athlète avec compte → team_invitations in-app (helper partagé avec
+      //    le CTA roster — un seul mécanisme). ────────────────────────────────
+      const res = await inviteAthleteToTeam(supabase, linkedToExisting.athleteId, invitationTeamId!);
+      if (res.error) {
+        console.error("[Invitation] team invite error:", res.error);
+        alert(res.error);
         setIsSubmittingInvitation(false);
         return;
       }
@@ -746,6 +736,23 @@ export default function CreateAthletePage() {
       setClaimLink(link);
     } finally {
       setGeneratingLink(false);
+    }
+  }
+
+  // Action PRIMAIRE de l'écran de succès : envoie l'email de claim directement
+  // (même helper que le CTA roster). Le gate <14 est mappé côté helper en
+  // message neutre sans PII (ATHLETE_UNDER_14 → « ne peut pas être invité »).
+  async function handleSendInviteEmail() {
+    if (!createdAthleteId || !form.identity.email) return;
+    setEmailInviting(true);
+    setEmailInviteResult(null);
+    try {
+      const supabase = createClient();
+      const { error } = await createAthleteInvitationLink(supabase, createdAthleteId, form.identity.email);
+      if (error) { setEmailInviteResult({ ok: false, msg: error }); return; }
+      setEmailInviteResult({ ok: true, msg: `Invitation envoyée à ${form.identity.email}.` });
+    } finally {
+      setEmailInviting(false);
     }
   }
 
@@ -1676,14 +1683,33 @@ export default function CreateAthletePage() {
         {/* #48 — lien de claim pour l'athlète qu'on vient de créer (orphelin).
             Même RPC + même InvitationLinkModal que la fiche athlète. */}
         {createdAthleteId && (
-          <div className="mb-6">
-            <button type="button" onClick={handleGenerateInviteLink} disabled={generatingLink}
-              className="inline-flex items-center gap-2 bg-[#F59E0B] hover:bg-[#D97706] disabled:opacity-60 text-black font-head font-bold text-[12px] uppercase tracking-widest rounded-lg px-6 py-3 transition-colors">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg>
-              {generatingLink ? "Génération…" : "Générer le lien d'invitation"}
-            </button>
-            {linkError && <p className="text-[12px] text-[#EF4444] mt-2">{linkError}</p>}
-            <p className="text-[12px] text-[#6b7280] mt-2">Optionnel — pour que l&apos;athlète crée son compte et complète son profil.</p>
+          <div className="mb-6 space-y-3">
+            {/* PRIMAIRE — envoyer l'invitation par courriel (action par défaut). */}
+            <div>
+              <button type="button" onClick={handleSendInviteEmail}
+                disabled={emailInviting || !form.identity.email}
+                className="inline-flex items-center gap-2 bg-[#F59E0B] hover:bg-[#D97706] disabled:opacity-50 disabled:cursor-not-allowed text-black font-head font-bold text-[12px] uppercase tracking-widest rounded-lg px-6 py-3 transition-colors">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2" /><path d="M22 6l-10 7L2 6" /></svg>
+                {emailInviting ? "Envoi…" : (form.identity.email ? `Envoyer à ${form.identity.email}` : "Envoyer l'invitation par courriel")}
+              </button>
+              {!form.identity.email && (
+                <p className="text-[12px] text-[#6b7280] mt-2">Ajoute un courriel à l&apos;athlète pour envoyer l&apos;invitation directement.</p>
+              )}
+              {emailInviteResult && (
+                <p className={`text-[13px] font-semibold mt-2 ${emailInviteResult.ok ? "text-[#22C55E]" : "text-[#EF4444]"}`}>
+                  {emailInviteResult.ok ? "✓ " : ""}{emailInviteResult.msg}
+                </p>
+              )}
+            </div>
+
+            {/* SECONDAIRE — lien à partager manuellement (SMS, en personne). */}
+            <div>
+              <button type="button" onClick={handleGenerateInviteLink} disabled={generatingLink}
+                className="text-[12px] font-semibold text-[#9CA3AF] hover:text-white underline underline-offset-2 disabled:opacity-60 transition-colors">
+                {generatingLink ? "Génération…" : "Ou générer un lien à partager (SMS, en personne)"}
+              </button>
+              {linkError && <p className="text-[12px] text-[#EF4444] mt-1">{linkError}</p>}
+            </div>
           </div>
         )}
 

@@ -33,10 +33,11 @@ import AthletePhoto from "@/components/shared/AthletePhoto";
 import { isValidationExpired } from "@/lib/utils/profileValidation";
 import { parseDistinctions } from "@/lib/config/badges";
 import {
-  autocompleteMyOrphansByEmail,
+  lookupInvitableByEmail,
   type AthleteEmailSuggestion,
 } from "@/lib/coach/athleteEmailAutocomplete";
 import { createAthleteInvitationLink } from "@/lib/queries/coach/createAthleteInvitation";
+import { loadCoachTeams, inviteAthleteToTeam, type CoachTeamOption } from "@/lib/queries/coach/teamInvite";
 
 /* ── Constants ────────────────────────────────────────────── */
 
@@ -703,35 +704,45 @@ function InviteByEmailSheet({
 }: {
   open: boolean;
   onClose: () => void;
-  onInvited: (email: string) => void;
+  onInvited: (message: string) => void;
 }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
   const [email, setEmail] = useState("");
   const [looking, setLooking] = useState(false);
   const [match, setMatch] = useState<AthleteEmailSuggestion | null>(null);
-  const [noMatch, setNoMatch] = useState(false);
+  const [notInvitable, setNotInvitable] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errMsg, setErrMsg] = useState<string | null>(null);
+  const [teams, setTeams] = useState<CoachTeamOption[]>([]);
+  const [teamId, setTeamId] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (!open) { setEmail(""); setMatch(null); setNoMatch(false); setErrMsg(null); setSubmitting(false); setLooking(false); }
+    if (!open) {
+      setEmail(""); setMatch(null); setNotInvitable(false); setErrMsg(null);
+      setSubmitting(false); setLooking(false); setTeamId(null);
+      return;
+    }
+    (async () => {
+      const t = await loadCoachTeams(createClient());
+      setTeams(t);
+      if (t.length === 1) setTeamId(t[0].id);
+    })();
   }, [open]);
 
   useEffect(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
-    setMatch(null); setNoMatch(false); setErrMsg(null);
+    setMatch(null); setNotInvitable(false); setErrMsg(null);
     const e = email.trim().toLowerCase();
     if (!INVITE_EMAIL_RE.test(e)) { setLooking(false); return; }
     setLooking(true);
     timerRef.current = setTimeout(async () => {
       try {
-        const supabase = createClient();
-        const res = await autocompleteMyOrphansByEmail(supabase, e);
+        const res = await lookupInvitableByEmail(createClient(), e);
         const exact = res.suggestions.find((s) => s.email.toLowerCase() === e) ?? null;
-        setMatch(exact); setNoMatch(!exact);
-      } catch { setNoMatch(true); }
+        setMatch(exact); setNotInvitable(!exact && res.existsNotInvitable);
+      } catch { setNotInvitable(false); }
       finally { setLooking(false); }
     }, 300);
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
@@ -741,12 +752,21 @@ function InviteByEmailSheet({
     if (!match || submitting) return;
     setSubmitting(true); setErrMsg(null);
     const supabase = createClient();
-    // Email CANONIQUE de l'orphelin (pas la saisie brute) — garde-fou typo.
-    const res = await createAthleteInvitationLink(supabase, match.athleteId, match.email);
-    setSubmitting(false);
-    if (res.error) { setErrMsg(res.error); return; }
-    onInvited(match.email);
-  }, [match, submitting, onInvited]);
+    if (match.hasAccount) {
+      // Compte existant → invitation d'équipe in-app (team_invitations).
+      if (!teamId) { setErrMsg("Choisis une équipe."); setSubmitting(false); return; }
+      const res = await inviteAthleteToTeam(supabase, match.athleteId, teamId);
+      setSubmitting(false);
+      if (res.error) { setErrMsg(res.error); return; }
+      onInvited(`Invitation d'équipe envoyée à ${match.firstName} ${match.lastName}.`);
+    } else {
+      // Orphelin sans compte → email de claim (email CANONIQUE, anti-typo).
+      const res = await createAthleteInvitationLink(supabase, match.athleteId, match.email);
+      setSubmitting(false);
+      if (res.error) { setErrMsg(res.error); return; }
+      onInvited(`Invitation envoyée à ${match.email}.`);
+    }
+  }, [match, submitting, teamId, onInvited]);
 
   if (!mounted || !open) return null;
   return createPortal(
@@ -765,7 +785,7 @@ function InviteByEmailSheet({
         <div className="flex justify-center pt-3 pb-2"><div className="w-10 h-1 rounded-full bg-white/20" /></div>
         <div className="px-6 pb-6">
           <h3 className="font-head text-[16px] font-black text-white uppercase tracking-tight">Inviter par courriel</h3>
-          <p className="text-[13px] text-[#9CA3AF] mt-1 mb-4">Le courriel d&apos;un athlète que tu as déjà créé.</p>
+          <p className="text-[13px] text-[#9CA3AF] mt-1 mb-4">Le courriel d&apos;un athlète à inviter.</p>
           <input
             type="email" inputMode="email" autoCapitalize="off" autoCorrect="off" spellCheck={false}
             value={email} onChange={(e) => setEmail(e.target.value)} placeholder="athlete@exemple.ca"
@@ -773,23 +793,52 @@ function InviteByEmailSheet({
           />
           <div className="mt-4 min-h-[60px]">
             {looking && <p className="text-[13px] text-[#9CA3AF]">Recherche…</p>}
+
+            {/* État 1 : invitable → carte + invite (route has_account) */}
             {!looking && match && (
-              <div className="bg-[#111317] border border-[#2D3748] rounded-xl p-4 flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-[15px] font-bold text-white truncate">{match.firstName} {match.lastName}</p>
-                  <p className="text-[13px] text-[#9CA3AF] truncate">{match.sportName || "—"} · {match.email}</p>
+              <div className="bg-[#111317] border border-[#2D3748] rounded-xl p-4 space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-[15px] font-bold text-white truncate">{match.firstName} {match.lastName}</p>
+                    <p className="text-[13px] text-[#9CA3AF] truncate">{match.sportName || "—"} · {match.email}</p>
+                  </div>
+                  <button
+                    type="button" onClick={handleInvite}
+                    disabled={submitting || (match.hasAccount && !teamId && teams.length !== 1)}
+                    className="shrink-0 h-11 px-4 rounded-2xl bg-[#E63946] text-white text-[13px] font-bold active:bg-[#D42B22] disabled:opacity-40"
+                  >
+                    {submitting ? "…" : "Inviter"}
+                  </button>
                 </div>
-                <button
-                  type="button" onClick={handleInvite} disabled={submitting}
-                  className="shrink-0 h-11 px-4 rounded-2xl bg-[#E63946] text-white text-[13px] font-bold active:bg-[#D42B22] disabled:opacity-40"
-                >
-                  {submitting ? "…" : "Inviter"}
-                </button>
+                {match.hasAccount && teams.length > 1 && (
+                  <select value={teamId ?? ""} onChange={(e) => setTeamId(e.target.value || null)}
+                    className="w-full bg-[#111317] border border-white/10 rounded-xl px-4 py-3 text-[16px] text-white outline-none focus:border-[#E63946]/50" title="Équipe">
+                    <option value="">Choisis une équipe</option>
+                    {teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                  </select>
+                )}
+                {match.hasAccount && teams.length === 1 && (
+                  <p className="text-[13px] text-[#9CA3AF]">Équipe : <span className="text-white font-semibold">{teams[0].name}</span></p>
+                )}
+                {match.hasAccount && teams.length === 0 && (
+                  <p className="text-[13px] text-[#F59E0B]">Aucune équipe — crées-en une dans « Mes équipes ».</p>
+                )}
+                {match.hasAccount && (
+                  <p className="text-[12px] text-[#6b7280]">Compte existant → invitation d&apos;équipe (in-app).</p>
+                )}
               </div>
             )}
-            {!looking && noMatch && (
+
+            {/* État 2 : existe mais NON-invitable (zéro PII) */}
+            {!looking && !match && notInvitable && (
+              <p className="text-[13px] text-[#9CA3AF]">Cet athlète est déjà rattaché à une équipe et ne peut pas être invité ici.</p>
+            )}
+
+            {/* État 3 : inexistant */}
+            {!looking && !match && !notInvitable && INVITE_EMAIL_RE.test(email.trim().toLowerCase()) && (
               <p className="text-[13px] text-[#9CA3AF]">Aucun athlète à ce courriel. Crée-le d&apos;abord, puis invite-le.</p>
             )}
+
             {errMsg && <p className="text-[13px] text-[#EF4444] font-semibold mt-2">{errMsg}</p>}
           </div>
         </div>
@@ -1466,7 +1515,7 @@ export function CoachAthletesMobile() {
       <InviteByEmailSheet
         open={inviteOpen}
         onClose={() => setInviteOpen(false)}
-        onInvited={(email) => { setInviteOpen(false); toast.success({ message: `Invitation envoyée à ${email}.` }); }}
+        onInvited={(message) => { setInviteOpen(false); toast.success({ message }); }}
       />
     </div>
   );

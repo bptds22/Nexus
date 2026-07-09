@@ -185,6 +185,69 @@ export async function autocompleteInvitableByEmail(
   return { status: "ok", suggestions: merged };
 }
 
+/** Forme d'une row de lookup_invitable_athletes_by_email (3 états). */
+interface InvitableRow {
+  athlete_id: string | null;
+  email: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  sport_name: string | null;
+  has_account: boolean | null;
+  exists_not_invitable: boolean | null;
+}
+
+export interface InvitableLookupResult {
+  status: AutocompleteStatus;
+  /** Athlètes invitables (has_account renseigné : false=orphelin, true=compte). */
+  suggestions: AthleteEmailSuggestion[];
+  /** true si un match existe mais est NON-invitable (rattaché / sans coach ni
+   *  compte) — flag SEUL côté DB, zéro PII (Loi 25). */
+  existsNotInvitable: boolean;
+}
+
+/**
+ * Lookup unifié du CTA "Inviter par courriel" (RPC lookup_invitable_athletes_by_email).
+ * Retourne les invitables (orphelins sans compte → email de claim ; comptes sans
+ * coach → team invite) + un flag existsNotInvitable (sans PII) pour les rattachés.
+ */
+export async function lookupInvitableByEmail(
+  supabase: SupabaseClient,
+  partial: string,
+): Promise<InvitableLookupResult> {
+  const trimmed = partial.trim().toLowerCase();
+  if (trimmed.length < MIN_QUERY_LENGTH) {
+    return { status: "too_short", suggestions: [], existsNotInvitable: false };
+  }
+
+  const { data, error } = await supabase.rpc("lookup_invitable_athletes_by_email", {
+    p_prefix: trimmed,
+  });
+  if (error) {
+    console.error("[athleteEmailAutocomplete] invitable RPC error:", error);
+    return { status: "error", suggestions: [], existsNotInvitable: false };
+  }
+
+  const rows = (data as InvitableRow[] | null) ?? [];
+  const suggestions: AthleteEmailSuggestion[] = rows
+    .filter((r) => !r.exists_not_invitable && r.athlete_id)
+    .map((r) => ({
+      userId: "",
+      athleteId: r.athlete_id as string,
+      email: r.email ?? "",
+      firstName: r.first_name ?? "",
+      lastName: r.last_name ?? "",
+      sportName: r.sport_name ?? null,
+      hasAccount: !!r.has_account,
+    }));
+  const existsNotInvitable = rows.some((r) => r.exists_not_invitable === true);
+
+  return {
+    status: suggestions.length > 0 ? "ok" : "no_results",
+    suggestions,
+    existsNotInvitable,
+  };
+}
+
 /**
  * Reset le rate limit (utile en testing ou si l'user change de session).
  */
