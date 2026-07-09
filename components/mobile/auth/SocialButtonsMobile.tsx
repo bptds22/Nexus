@@ -94,8 +94,10 @@ export function SocialButtonsMobile({ topMargin = 20 }: SocialButtonsMobileProps
     triggerHaptic();
     setBusy(provider);
     try {
-      if (Capacitor.isNativePlatform()) {
-        // Device : flow NATIF (l'utilisateur reste dans l'app).
+      const nativePlatform = Capacitor.getPlatform();
+
+      if (nativePlatform === "ios") {
+        // iOS : flow NATIF (SDK Capgo — l'utilisateur reste dans l'app). Inchangé.
         const res = provider === "google" ? await signInWithGoogle() : await signInWithApple();
         if (!res.success) {
           toast.error({ message: "Connexion impossible", detail: res.error || "Réessaie." });
@@ -104,8 +106,30 @@ export function SocialButtonsMobile({ topMargin = 20 }: SocialButtonsMobileProps
         if (res.session?.user) {
           await postLoginDispatch(createClient(), res.session.user, router);
         }
+      } else if (nativePlatform === "android") {
+        // Android : le SDK natif Apple/Google n'est pas câblé (pas de Services ID
+        // ni de client OAuth Android). On passe par le flow web OAuth (providers
+        // gérés par Supabase) + Custom Tab ; le retour arrive via le deep-link
+        // ca.nexussports.app://auth/callback → OAuthDeepLinkHandler complète la
+        // session + dispatche. Ici on ouvre juste l'onglet et on rend la main.
+        const supabase = createClient();
+        const { data, error } = await supabase.auth.signInWithOAuth({
+          provider,
+          options: {
+            redirectTo: "ca.nexussports.app://auth/callback",
+            skipBrowserRedirect: true,
+          },
+        });
+        if (error) {
+          toast.error({ message: "Connexion impossible", detail: error.message });
+          return;
+        }
+        if (data?.url) {
+          const { Browser } = await import("@capacitor/browser");
+          await Browser.open({ url: data.url });
+        }
       } else {
-        // Web : flow OAuth standard (redirect navigateur géré par Supabase).
+        // Web : flow OAuth standard (redirect navigateur géré par Supabase). Inchangé.
         const supabase = createClient();
         const { error } = await supabase.auth.signInWithOAuth({
           provider,
