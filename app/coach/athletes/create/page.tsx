@@ -22,6 +22,7 @@ import {
 } from "@/lib/coach/athleteEmailAutocomplete";
 import AthleteWizardMobile from "@/components/shared/AthleteWizardMobile";
 import { saveAthleteCreate, computeCoteGlobale } from "../_data/saveAthlete";
+import { isUnder14 } from "@/lib/legal/ageGate";
 import InvitationLinkModal from "@/components/ui/InvitationLinkModal";
 import { createAthleteInvitationLink } from "@/lib/queries/coach/createAthleteInvitation";
 import { coteChanged } from "@/lib/utils/cote";
@@ -596,8 +597,9 @@ export default function CreateAthletePage() {
     switch (step) {
       case 1: {
         const d = form.identity;
-        // Simplified: prénom, nom, DOB, promotion
-        const base = !!(d.firstName && d.lastName && d.dateOfBirth && d.gradYear);
+        // Simplified: prénom, nom, DOB, promotion. Hard-block <14 (Loi 25),
+        // même gate que le self-signup — un coach ne peut pas créer un <14.
+        const base = !!(d.firstName && d.lastName && d.dateOfBirth && d.gradYear) && !isUnder14(d.dateOfBirth);
         if (d.identityMode === "detailed") return base && !!(d.gender && d.school && d.city && d.region);
         return base;
       }
@@ -647,6 +649,11 @@ export default function CreateAthletePage() {
 
   async function handleSubmit() {
     if (!validateStep(7)) { setShowErrors(true); return; }
+
+    // Hard-stop <14 (Loi 25) — ferme le contournement par saut d'étape
+    // (goToStep ne valide rien). Garantit qu'aucune row <14 n'atteint
+    // saveAthleteCreate, quel que soit le chemin de navigation.
+    if (isUnder14(form.identity.dateOfBirth)) { setCurrentStep(1); setShowErrors(true); return; }
 
     /* Cote-A intercept : originalCote is always null for a fresh create ;
        any non-null newCote represents a first-time rating (high-impact),
@@ -789,7 +796,10 @@ export default function CreateAthletePage() {
           </div>
           <div>
             <label className={labelCls}>Date de naissance{req}</label>
-            <DatePicker value={d.dateOfBirth} onChange={(date) => updateIdentity("dateOfBirth", date)} placeholder="Sélectionner une date" hasError={isFieldEmpty(d.dateOfBirth)} />
+            <DatePicker value={d.dateOfBirth} onChange={(date) => updateIdentity("dateOfBirth", date)} placeholder="Sélectionner une date" hasError={isFieldEmpty(d.dateOfBirth) || isUnder14(d.dateOfBirth)} />
+            {d.dateOfBirth && isUnder14(d.dateOfBirth) && (
+              <p className="text-[12px] text-[#EF4444] mt-1">L&apos;inscription est réservée aux 14 ans et plus.</p>
+            )}
           </div>
           <div>
             <label className={labelCls}>Promotion{req}</label>

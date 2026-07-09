@@ -97,6 +97,7 @@ import {
   computeCoteGlobale,
 } from "@/app/coach/athletes/_data/saveAthlete";
 import { coteChanged } from "@/lib/utils/cote";
+import { isUnder14 } from "@/lib/legal/ageGate";
 import { ConfirmSheet } from "@/components/shared/settings";
 import { Skeleton } from "@/components/ui/Skeleton";
 import CoteChangeConfirmContent from "@/components/shared/CoteChangeConfirmContent";
@@ -639,7 +640,10 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
       case 1: {
         const d = form.identity;
         const base = !!(d.firstName && d.lastName && d.dateOfBirth && d.gradYear && d.gender && d.school);
-        return isCreate ? base && !!d.city && !!d.region : base;
+        // Hard-block <14 (Loi 25) — CREATE only. L'edit (composant unifié) n'est
+        // JAMAIS bloqué (un athlète existant peut garder sa DOB).
+        if (isCreate) return base && !!d.city && !!d.region && !isUnder14(d.dateOfBirth);
+        return base;
       }
       case 4: {
         const s = form.sports;
@@ -809,6 +813,15 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       toast.error({ message: "Session expirée — reconnecte-toi" });
+      setSaving(false);
+      return;
+    }
+
+    // Hard-stop <14 (Loi 25), CREATE only — ferme le contournement par saut de
+    // slide (canProceed ne gate que l'avance). Garantit qu'aucune row <14
+    // n'atteint saveAthleteCreate. L'edit n'est JAMAIS bloqué.
+    if (isCreate && isUnder14(form.identity.dateOfBirth)) {
+      toast.error({ message: "L'inscription est réservée aux 14 ans et plus." });
       setSaving(false);
       return;
     }
@@ -1320,8 +1333,18 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
             onSave={(v) => updateIdentity("firstName", v)} required />
           <InlineEditRow label="Nom" value={d.lastName}
             onSave={(v) => updateIdentity("lastName", v)} required />
-          <DateRow label="Date de naissance" value={d.dateOfBirth}
-            onChange={(v) => updateIdentity("dateOfBirth", v)} required />
+          {/* DOB lecture seule à l'edit (ReadOnlyRow) : aucun <14 ne peut
+              légitimement exister (gate à la création). En create la DOB reste
+              saisissable (DateRow) + son gate <14. */}
+          {isEdit ? (
+            <ReadOnlyRow label="Date de naissance" value={d.dateOfBirth} />
+          ) : (
+            <DateRow label="Date de naissance" value={d.dateOfBirth}
+              onChange={(v) => updateIdentity("dateOfBirth", v)} required />
+          )}
+          {isCreate && d.dateOfBirth && isUnder14(d.dateOfBirth) && (
+            <p className="text-[12px] text-[#EF4444] px-4 pb-2">L&apos;inscription est réservée aux 14 ans et plus.</p>
+          )}
           <PickerRow label="Promotion"
             value={d.gradYear}
             onTap={() => setOpenPromoPicker(true)} required />
