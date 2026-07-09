@@ -16,6 +16,7 @@ import { getCurrentSeason } from "@/lib/utils/season";
 import AthletePhotoFill from "@/components/shared/AthletePhotoFill";
 import CoachAthleteRow from "@/components/coach/CoachAthleteRow";
 import { CoachAthletesMobile } from "@/components/shared/CoachAthletesMobile";
+import InviteByEmailModal from "./_components/InviteByEmailModal";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -183,6 +184,7 @@ function MesAthletesContent() {
   const [filterOuvertAnglophone, setFilterOuvertAnglophone] = useState(false);
   const [filterNewOnly, setFilterNewOnly] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [inviteOpen, setInviteOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"roster" | "reclamer" | "traiter">("roster");
   const [unverifiedAthletes, setUnverifiedAthletes] = useState<{ id: string; firstName: string; lastName: string; sport: string; position: string; gradYear: number; createdAt: string }[]>([]);
   const [pendingSuggestions, setPendingSuggestions] = useState<{ id: string; athleteName: string; champ: string; valeurActuelle: string; valeurProposee: string; message: string; createdAt: string }[]>([]);
@@ -585,6 +587,7 @@ function MesAthletesContent() {
   // Empty roster
   if (!loading && realAthletes.length === 0) {
     return (
+      <>
       <div className="px-6 sm:px-10 py-8 max-w-[1280px] mx-auto">
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <div className="w-20 h-20 rounded-full bg-[#1A1D24] border border-[#2D3748] flex items-center justify-center mb-6">
@@ -596,18 +599,31 @@ function MesAthletesContent() {
           <p className="text-[14px] text-[#9CA3AF] max-w-md leading-relaxed mb-6">
             Votre roster est vide. Commencez par ajouter votre premier athlète.
           </p>
-          <Link
-            href="/coach/athletes/create"
-            className="flex items-center gap-2 bg-[#E63946] text-white rounded-lg px-5 py-3 font-head font-bold text-[13px] uppercase tracking-widest
-              transition-all duration-150 hover:bg-[#D42B22] hover:-translate-y-0.5 hover:shadow-[0_0_16px_rgba(230,57,70,0.35)] active:scale-95"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-              <path d="M12 5v14" /><path d="M5 12h14" />
-            </svg>
-            Ajouter un athlète
-          </Link>
+          <div className="flex flex-col sm:flex-row items-center gap-3">
+            <Link
+              href="/coach/athletes/create"
+              className="flex items-center gap-2 bg-[#E63946] text-white rounded-lg px-5 py-3 font-head font-bold text-[13px] uppercase tracking-widest
+                transition-all duration-150 hover:bg-[#D42B22] hover:-translate-y-0.5 hover:shadow-[0_0_16px_rgba(230,57,70,0.35)] active:scale-95"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <path d="M12 5v14" /><path d="M5 12h14" />
+              </svg>
+              Ajouter un athlète
+            </Link>
+            <button
+              type="button"
+              onClick={() => setInviteOpen(true)}
+              className="flex items-center gap-2 border border-[#2D3748] text-white rounded-lg px-5 py-3 font-head font-bold text-[13px] uppercase tracking-widest
+                transition-all duration-150 hover:border-[#E63946] hover:text-[#E63946] active:scale-95"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="2" y="4" width="20" height="16" rx="2" /><path d="M22 6l-10 7L2 6" /></svg>
+              Inviter par courriel
+            </button>
+          </div>
         </div>
       </div>
+      <InviteByEmailModal open={inviteOpen} onClose={() => setInviteOpen(false)} />
+      </>
     );
   }
 
@@ -649,6 +665,16 @@ function MesAthletesContent() {
               </svg>
             </button>
           </div>
+
+          <button
+            type="button"
+            onClick={() => setInviteOpen(true)}
+            className="flex items-center gap-2 border border-[#2D3748] text-white rounded-lg px-5 py-3 font-head font-bold text-[13px] uppercase tracking-widest
+              transition-all duration-150 hover:border-[#E63946] hover:text-[#E63946] active:scale-95"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="2" y="4" width="20" height="16" rx="2" /><path d="M22 6l-10 7L2 6" /></svg>
+            Inviter par courriel
+          </button>
 
           <Link
             href="/coach/athletes/create"
@@ -1051,6 +1077,7 @@ function MesAthletesContent() {
       )}
 
       </>}
+      <InviteByEmailModal open={inviteOpen} onClose={() => setInviteOpen(false)} />
     </div>
   );
 }

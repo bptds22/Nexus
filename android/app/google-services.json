@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1041412568525",
+    "project_id": "nexus-9efd2",
+    "storage_bucket": "nexus-9efd2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1041412568525:android:8d9f98ef87e0a8dd9d4084",
+        "android_client_info": {
+          "package_name": "ca.nexussports.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCR4golOK0cu4fEnLtQtXV02b9XeTMGkWw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

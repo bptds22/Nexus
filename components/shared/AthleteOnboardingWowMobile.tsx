@@ -28,7 +28,8 @@
    externes).
 ═══════════════════════════════════════════════════════════════ */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { AthleteProfileRecruiterView } from "@/lib/types/models";
 import AthletePlayerCard from "@/components/shared/AthletePlayerCard";
 import DistinctionBadge from "@/components/shared/DistinctionBadge";
@@ -92,18 +93,42 @@ async function triggerHaptic(intensity: "Light" | "Medium" | "Success" = "Light"
 function useGyroTilt(maxDeg = 6) {
   const [tilt, setTilt] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [hasGyro, setHasGyro] = useState(false);
+  // Dernier tilt commité + dernier timestamp traité, gardés en ref pour ne
+  // PAS re-render à chaque event deviceorientation (~60 Hz). Sans ça,
+  // setTilt({x,y}) crée un objet neuf à chaque event → re-render storm
+  // permanent tant que le WOW est affiché.
+  const lastTiltRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const lastTsRef = useRef(0);
+  const hasGyroRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
+    const THRESHOLD_DEG = 0.5; // ignore le bruit capteur sous 0.5°
+    const THROTTLE_MS = 40;    // ~25 Hz — amplement fluide pour un tilt 3D
 
     const handler = (e: DeviceOrientationEvent) => {
       if (cancelled) return;
+
+      // 1) Throttle : au plus un traitement toutes les THROTTLE_MS.
+      const now = e.timeStamp || 0;
+      if (now - lastTsRef.current < THROTTLE_MS) return;
+      lastTsRef.current = now;
+
       const beta = e.beta ?? 0;   // -180..180 (front-back)
       const gamma = e.gamma ?? 0; // -90..90 (left-right)
       const x = Math.max(-maxDeg, Math.min(maxDeg, gamma / 4));
       const y = Math.max(-maxDeg, Math.min(maxDeg, -beta / 4));
+
+      // Active le mode gyro UNE seule fois (ref → un unique setState).
+      if (!hasGyroRef.current) { hasGyroRef.current = true; setHasGyro(true); }
+
+      // 2) Seuil : on ne setTilt (= re-render) QUE si le tilt a bougé
+      // au-delà du bruit. Sinon on garde la référence précédente → zéro
+      // re-render. C'est ce qui tue le storm tout en gardant le tilt fluide.
+      const last = lastTiltRef.current;
+      if (Math.abs(x - last.x) < THRESHOLD_DEG && Math.abs(y - last.y) < THRESHOLD_DEG) return;
+      lastTiltRef.current = { x, y };
       setTilt({ x, y });
-      setHasGyro(true); // idempotent — premier event passe le flag
     };
 
     try {
@@ -138,6 +163,13 @@ export default function AthleteOnboardingWowMobile({ athlete, onComplete }: Prop
   const [showBadges, setShowBadges] = useState(false);
   const [activeStage, setActiveStage] = useState(0); // 0..6
   const [exiting, setExiting] = useState(false);
+  // Portal vers document.body : ce WOW est un overlay `fixed inset-0`. Rendu
+  // inline il était piégé par le containing block de <AnimatedRoute>
+  // (willChange:"transform,opacity" établit un containing block → le `fixed`
+  // devient relatif au wrapper animé, pas au viewport → layout déréglé). Même
+  // fix que le FAB roster (commit f32b768 : portal to body). mounted = SSR-safe.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
 
   const { tilt, hasGyro } = useGyroTilt(6);
 
@@ -250,7 +282,9 @@ export default function AthleteOnboardingWowMobile({ athlete, onComplete }: Prop
     color: i % 2 === 0 ? "#F59E0B" : "#E63946",
   })), []);
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <div
       className="fixed inset-0 z-50 bg-[#060A14] text-white overflow-hidden"
       style={{
@@ -340,7 +374,12 @@ export default function AthleteOnboardingWowMobile({ athlete, onComplete }: Prop
       <div
         className="absolute inset-x-0 flex flex-col items-center"
         style={{
-          top: 80,
+          // Regression undo : depuis le portal vers document.body (fixed inset-0
+          // relatif au vrai écran), top:80 mesurait depuis le bord physique →
+          // carte trop haute sous le Dynamic Island. On ré-inclut le top-inset
+          // pour retrouver "80px sous le haut utilisable" (pré-portal). La pill
+          // (top:60vh) se re-centre alors d'elle-même — non touchée.
+          top: "calc(env(safe-area-inset-top) + 80px)",
           perspective: 1000,
           opacity: showAnticipation ? 0 : 1,
           transform: `translateY(${cardTranslateY}px) scale(${cardScale})`,
@@ -543,7 +582,8 @@ export default function AthleteOnboardingWowMobile({ athlete, onComplete }: Prop
         }}
         aria-hidden
       />
-    </div>
+    </div>,
+    document.body,
   );
 }
 

@@ -7,6 +7,7 @@ import CoachPicker from "@/components/coach/CoachPicker";
 import CivilCoachPicker from "@/components/coach/CivilCoachPicker";
 import { createClient } from "@/lib/supabase/client";
 import { isMinor } from "@/lib/utils/age";
+import { deleteMyAccount } from "@/lib/auth/deleteAccount";
 import { AthleteParametresMobile } from "@/components/shared/AthleteParametresMobile";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
@@ -112,13 +113,14 @@ function ParametresPageDesktop() {
     router.replace("/compte-desactive");
   }
 
-  async function deactivateAccount() {
+  // Suppression DÉFINITIVE — RPC delete_my_account via le helper partagé
+  // (signOut + redirection dedans). Distincte de revokeConsent (retrait de
+  // consentement, réversible) ci-dessus.
+  async function deleteAccount() {
     setActionPending(true);
-    const supabase = createClient();
-    const { error } = await supabase.rpc("deactivate_my_account", { p_revoke_consent: false });
-    if (error) { setActionPending(false); showToast("Erreur : " + error.message); return; }
-    await supabase.auth.signOut();
-    router.replace("/compte-desactive");
+    await deleteMyAccount({
+      onError: (m) => { setActionPending(false); showToast("Erreur : " + m); },
+    });
   }
 
   const loadProfile = useCallback(async () => {
@@ -537,11 +539,11 @@ function ParametresPageDesktop() {
                 <div className="bg-[#13151a] border border-[#E63946]/20 rounded-lg p-5">
                   <h3 className="font-head text-[14px] font-black text-[#E63946] uppercase tracking-tight mb-2">Supprimer mon compte</h3>
                   <p className="text-[12px] text-[#9CA3AF] leading-relaxed mb-3">
-                    Cette action enverra une demande de suppression à ton coach et à l&apos;administrateur. Ton profil sera désactivé immédiatement et supprimé après 30 jours.
+                    Ton compte et tes données personnelles seront supprimés immédiatement et définitivement. Cette action est irréversible.
                   </p>
                   <button type="button" onClick={() => setShowDeleteModal(true)}
                     className="px-4 py-2 bg-[#E63946] hover:bg-[#D42B22] text-white text-[12px] font-bold rounded-lg transition-colors">
-                    Demander la suppression
+                    Supprimer mon compte
                   </button>
                 </div>
               </div>
@@ -556,7 +558,7 @@ function ParametresPageDesktop() {
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowRevokeModal(false)} />
           <div className="relative bg-[#1A1D24] border border-[#2D3748] rounded-xl p-6 max-w-sm w-full mx-4 shadow-2xl">
             <h3 className="font-head text-[16px] font-black text-white uppercase tracking-tight">Retirer le consentement?</h3>
-            <p className="text-[13px] text-[#9CA3AF] mt-2 leading-relaxed">Ton profil sera immédiatement désactivé et invisible pour les recruteurs. Ton coach et le directeur sportif seront notifiés.</p>
+            <p className="text-[13px] text-[#9CA3AF] mt-2 leading-relaxed">Ton profil sera immédiatement désactivé et invisible pour les recruteurs. Ton coach et le responsable de sports seront notifiés.</p>
             <p className="text-[11px] text-[#6b7280] mt-2">Cette action peut être annulée en contactant ton coach.</p>
             <div className="flex items-center justify-end gap-3 mt-5">
               <button type="button" onClick={() => setShowRevokeModal(false)} className="px-4 py-2 text-[13px] font-bold text-[#9CA3AF] hover:text-white transition-colors">Annuler</button>
@@ -571,11 +573,11 @@ function ParametresPageDesktop() {
         <div className="fixed inset-0 z-[90] flex items-center justify-center">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowDeleteModal(false)} />
           <div className="relative bg-[#1A1D24] border border-[#2D3748] rounded-xl p-6 max-w-sm w-full mx-4 shadow-2xl">
-            <h3 className="font-head text-[16px] font-black text-white uppercase tracking-tight">Supprimer ton compte?</h3>
-            <p className="text-[13px] text-[#9CA3AF] mt-2 leading-relaxed">Ton profil sera désactivé et tu perdras l&apos;accès à ton espace athlète. La suppression définitive sera effectuée après 30 jours.</p>
+            <h3 className="font-head text-[16px] font-black text-white uppercase tracking-tight">Supprimer mon compte ?</h3>
+            <p className="text-[13px] text-[#9CA3AF] mt-2 leading-relaxed">Ton compte et tes données personnelles seront supprimés immédiatement et définitivement. Cette action est irréversible.</p>
             <div className="flex items-center justify-end gap-3 mt-5">
               <button type="button" onClick={() => setShowDeleteModal(false)} className="px-4 py-2 text-[13px] font-bold text-[#9CA3AF] hover:text-white transition-colors">Annuler</button>
-              <button type="button" disabled={actionPending} onClick={deactivateAccount} className="px-5 py-2 bg-[#E63946] hover:bg-[#D42B22] text-white text-[13px] font-bold rounded-lg transition-colors disabled:opacity-50">{actionPending ? "..." : "Confirmer la suppression"}</button>
+              <button type="button" disabled={actionPending} onClick={deleteAccount} className="px-5 py-2 bg-[#E63946] hover:bg-[#D42B22] text-white text-[13px] font-bold rounded-lg transition-colors disabled:opacity-50">{actionPending ? "..." : "Supprimer définitivement"}</button>
             </div>
           </div>
         </div>

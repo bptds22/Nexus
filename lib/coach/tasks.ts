@@ -9,7 +9,9 @@
 
    Three task types — independent, an athlete can appear in multiple:
 
-     1. UNVERIFIED         athletes.verified IS NOT true (sole gate)
+     1. UNVERIFIED         athletes.verified IS NOT true
+                           OR modified_since_verification = true
+                           (athlète vérifié mais modifié depuis → à re-vérifier)
      2. MISSING EVAL       missing star OR missing report (see isMissingEval)
      3. PENDING SUGGESTION athlete_suggestions.status='EN_ATTENTE'
 
@@ -92,6 +94,7 @@ interface AthleteRow {
   photo_url: string | null;
   annee_diplomation: number | null;
   verified: boolean | null;
+  modified_since_verification: boolean | null;
   cote_globale_entraineur: number | null;
   sports: SportJoin | SportJoin[] | null;
   positions: PositionJoin | PositionJoin[] | null;
@@ -200,6 +203,7 @@ export async function loadCoachTasks(
         photo_url,
         annee_diplomation,
         verified,
+        modified_since_verification,
         cote_globale_entraineur,
         sports!sport_id(nom),
         positions!position_id(abreviation),
@@ -249,8 +253,10 @@ export async function loadCoachTasks(
 
     // Treat null verified as unverified — matches the established
     // MobileTabBar / dashboard reading (filter by truthy `verified`,
-    // everything else is unverified).
-    if (!row.verified) {
+    // everything else is unverified). Un athlète vérifié MAIS modifié
+    // depuis sa dernière vérif (modified_since_verification) revient aussi
+    // dans la file « à vérifier » — symétrique du clear fait à la re-pose.
+    if (!row.verified || row.modified_since_verification) {
       unverified.push(task);
     }
     if (isMissingEval({ cote_globale_entraineur: row.cote_globale_entraineur }, myEval)) {

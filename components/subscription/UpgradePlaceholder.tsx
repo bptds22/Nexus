@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
+
 /* ═══════════════════════════════════════════════════════════════
    UpgradePlaceholder — replacement UI shown when a gate is locked.
 
@@ -26,7 +28,7 @@ const FEATURE_DESCRIPTIONS: Record<string, string> = {
   video_upload: "Upload des vidéos directement sur Nexus au lieu de liens externes.",
   who_viewed: "Découvre quels CÉGEPs et recruteurs consultent ton profil.",
   bulk_message: "Envoie des messages à plusieurs coachs en un clic.",
-  unlimited_pipeline: "Suis un nombre illimité d'athlètes dans ton pipeline.",
+  unlimited_pipeline: "Suis un nombre illimité d'athlètes dans ton processus.",
   unlimited_favorites: "Ajoute autant d'athlètes que tu veux à tes favoris.",
   unlimited_profiles: "Crée un nombre illimité de profils athlètes.",
   school_management: "Supervise tes coachs, suis les placements et gère ton école.",
@@ -60,12 +62,14 @@ export default function UpgradePlaceholder({ tier, featureName }: UpgradePlaceho
       <p className="text-[13px] text-[#9CA3AF] leading-relaxed max-w-sm mb-5">
         {description}
       </p>
-      <Link
-        href="/tarifs"
-        className="inline-flex items-center justify-center h-11 px-6 rounded-lg bg-[#E63946] hover:bg-[#D42B22] text-white font-head font-bold text-[12px] uppercase tracking-wider transition-colors"
-      >
-        Voir les forfaits →
-      </Link>
+      {!IS_CAPACITOR && (
+        <Link
+          href="/tarifs"
+          className="inline-flex items-center justify-center h-11 px-6 rounded-lg bg-[#E63946] hover:bg-[#D42B22] text-white font-head font-bold text-[12px] uppercase tracking-wider transition-colors"
+        >
+          Voir les forfaits →
+        </Link>
+      )}
     </div>
   );
 }

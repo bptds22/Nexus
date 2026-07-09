@@ -558,7 +558,7 @@ function ReassignationPage() {
           Réassignation des prospects
         </h1>
         <p className="text-[14px] text-[#9CA3AF] mt-1">
-          Transférez des athlètes d&apos;un recruteur à un autre sans perdre l&apos;historique du pipeline
+          Transférez des athlètes d&apos;un recruteur à un autre sans perdre l&apos;historique du processus
         </p>
       </div>
 

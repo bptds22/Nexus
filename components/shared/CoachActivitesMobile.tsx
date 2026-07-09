@@ -99,7 +99,7 @@ function generateVerb(item: CoachActivityItem): string {
     }
     case "PIPELINE_CHANGED": {
       if (item.newStatus) return `${a} : ${stage(item.newStatus)}`;
-      return `Pipeline de ${a} mis à jour`;
+      return `Processus de ${a} mis à jour`;
     }
     case "BADGE_EARNED":
       return `${a} a obtenu le badge « ${item.badgeName ?? "—"} »`;

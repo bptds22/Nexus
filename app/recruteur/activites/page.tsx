@@ -37,7 +37,7 @@ const ACTION_TO_TYPE: Record<string, ActivityType> = {
 const ACTION_LABELS: Record<string, { ctaLabel: string; ctaBase: string }> = {
   NOTE_ADDED: { ctaLabel: "Voir la note", ctaBase: "/recruteur/athletes/" },
   FAVORITED: { ctaLabel: "Voir le profil", ctaBase: "/recruteur/athletes/" },
-  PIPELINE_CHANGED: { ctaLabel: "Voir le pipeline", ctaBase: "/recruteur/pipeline" },
+  PIPELINE_CHANGED: { ctaLabel: "Voir le processus", ctaBase: "/recruteur/pipeline" },
   PROFILE_VIEWED: { ctaLabel: "Voir le profil", ctaBase: "/recruteur/athletes/" },
   NEW_ATHLETE: { ctaLabel: "Voir le profil", ctaBase: "/recruteur/athletes/" },
   VIDEO_ADDED: { ctaLabel: "Voir la vidéo", ctaBase: "/recruteur/athletes/" },
@@ -158,8 +158,8 @@ function RecruteurActivitesPageContent() {
             athleteName: athleteName || undefined,
             athletePosition: athletePos || undefined,
             coachName: coachName || undefined,
-            messagePreview: actionType === "PIPELINE_CHANGED" && stageLabel ? `Pipeline: ${stageLabel}` : undefined,
-            ctaLabel: actionType === "PIPELINE_CHANGED" && stageLabel ? `Pipeline: ${stageLabel}` : cfg.ctaLabel,
+            messagePreview: actionType === "PIPELINE_CHANGED" && stageLabel ? `Processus : ${stageLabel}` : undefined,
+            ctaLabel: actionType === "PIPELINE_CHANGED" && stageLabel ? `Processus : ${stageLabel}` : cfg.ctaLabel,
             ctaRoute: needsAthleteId ? `${cfg.ctaBase}${log.athlete_id || ""}` : cfg.ctaBase,
           };
         });
@@ -248,7 +248,7 @@ function RecruteurActivitesPageContent() {
           all.push({
             id: `pipe-${p.id}`, type: "profile_viewed", portal: "recruiter", timestamp: (p.updated_at as string) || "", isRead: true,
             athleteId: (a?.id as string), athleteName: `${a?.first_name || ""} ${a?.last_name || ""}`.trim(),
-            athletePosition: pos?.abreviation || "", ctaLabel: `Pipeline: ${sl[(p.stage as string)] || p.stage}`, ctaRoute: "/recruteur/pipeline",
+            athletePosition: pos?.abreviation || "", ctaLabel: `Processus : ${sl[(p.stage as string)] || p.stage}`, ctaRoute: "/recruteur/pipeline",
           });
         }
       }

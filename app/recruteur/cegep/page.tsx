@@ -253,12 +253,12 @@ function CegepDashboardContent() {
           iconBgColor="rgba(230,57,70,0.15)"
           icon={
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M6 9l6 6 6-6" /><path d="M12 3v12" /><path d="M5 21h14" /><circle cx="12" cy="3" r="2" />
+              <path d="M6 9H4a2 2 0 01-2-2V5a2 2 0 012-2h2" /><path d="M18 9h2a2 2 0 002-2V5a2 2 0 00-2-2h-2" /><path d="M6 3h12v6a6 6 0 01-12 0V3z" /><path d="M12 15v3M8 21h8" />
             </svg>
           }
         />
         <KpiCard
-          label="Athlètes dans le pipeline"
+          label="Athlètes dans le processus"
           value={pipelineCount}
           valueColor="#E63946"
           iconBgColor="rgba(230,57,70,0.15)"
@@ -324,7 +324,7 @@ function CegepDashboardContent() {
             </BarChart>
           </ResponsiveContainer>
         ) : (
-          <p className="text-[13px] text-[#4a4d56] italic py-8 text-center">Aucun athlète dans le pipeline</p>
+          <p className="text-[13px] text-[#4a4d56] italic py-8 text-center">Aucun athlète dans le processus</p>
         )}
       </div>
 
@@ -339,7 +339,7 @@ function CegepDashboardContent() {
                 <XAxis dataKey="short" tick={{ fill: "#9CA3AF", fontSize: 11 }} axisLine={false} tickLine={false} interval={0} />
                 <YAxis tick={{ fill: "#6B7280", fontSize: 11 }} axisLine={false} tickLine={false} />
                 <Tooltip content={<DarkTooltip />} cursor={{ fill: "rgba(255,255,255,0.04)" }} labelFormatter={(_, payload) => payload?.[0]?.payload?.name ?? ""} />
-                <Bar dataKey="messages" name="Pipeline" fill="#E63946" radius={[4, 4, 0, 0]} barSize={28} />
+                <Bar dataKey="messages" name="Processus" fill="#E63946" radius={[4, 4, 0, 0]} barSize={28} />
               </BarChart>
             </ResponsiveContainer>
           ) : (

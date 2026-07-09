@@ -300,7 +300,7 @@ export default function TableauDeBordPage() {
         const TYPE_CONFIG: Record<string, { icon: string; iconColor: string; priority: 1 | 2; label: string }> = {
           PROFILE_VIEWED: { icon: "eye", iconColor: "#6B7280", priority: 2, label: "profil consulté par un recruteur" },
           FAVORITED: { icon: "heart", iconColor: "#E63946", priority: 1, label: "ajouté en favori" },
-          PIPELINE_CHANGED: { icon: "activity", iconColor: "#F59E0B", priority: 1, label: "mouvement dans un pipeline" },
+          PIPELINE_CHANGED: { icon: "activity", iconColor: "#F59E0B", priority: 1, label: "mouvement dans un processus" },
           ATHLETE_VERIFIED: { icon: "check-circle", iconColor: "#3B82F6", priority: 2, label: "profil vérifié" },
           VIDEO_ADDED: { icon: "film", iconColor: "#8B5CF6", priority: 2, label: "vidéo ajoutée" },
           PROFILE_UPDATED: { icon: "file-text", iconColor: "#6B7280", priority: 2, label: "profil mis à jour" },
@@ -403,10 +403,10 @@ export default function TableauDeBordPage() {
           </svg>
           <div className="flex-1">
             <p className="text-[14px] font-bold text-[#c8c8cc]">
-              Tu es directeur sportif intérimaire{interimSchoolName ? ` de ${interimSchoolName}` : ""}
+              Tu es responsable de sports intérimaire{interimSchoolName ? ` de ${interimSchoolName}` : ""}
             </p>
             <p className="text-[13px] text-[#9CA3AF] mt-0.5 leading-relaxed">
-              Tu as les pleins pouvoirs administratifs jusqu&apos;à l&apos;arrivée d&apos;un directeur permanent. Si un directeur officiel s&apos;inscrit et choisit «&nbsp;C&apos;est moi&nbsp;», ton rôle sera automatiquement ramené à entraîneur.
+              Tu as les pleins pouvoirs administratifs jusqu&apos;à l&apos;arrivée d&apos;un responsable de sports permanent. Si un responsable de sports officiel s&apos;inscrit et choisit «&nbsp;C&apos;est moi&nbsp;», ton rôle sera automatiquement ramené à entraîneur.
             </p>
           </div>
         </div>

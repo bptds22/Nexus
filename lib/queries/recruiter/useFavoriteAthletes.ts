@@ -12,6 +12,7 @@ import { useMemo } from "react";
 import { useFavorites } from "@/lib/queries/shared/useFavorites";
 import { useFavoriteCounts } from "@/lib/queries/shared/useFavoriteCounts";
 import { useAthletesByIds, type AthleteRow } from "@/lib/queries/shared/useAthletesByIds";
+import { parseDistinctions } from "@/lib/config/badges";
 
 export interface FavoriAthlete {
   id: string;
@@ -58,8 +59,9 @@ function transformAthlete(a: AthleteRow, favCount: number): FavoriAthlete {
   const committedSchoolRel = a.committed_school;
   const committedSchool = (Array.isArray(committedSchoolRel) ? committedSchoolRel[0] : committedSchoolRel) as { name?: string } | null;
   const evalRel = a.evaluations;
-  const eval0 = (Array.isArray(evalRel) ? evalRel[0] : evalRel) as { cote_globale?: number | null; distinctions?: string[] | null } | null;
-  const distinctions: string[] = (eval0?.distinctions as string[]) || [];
+  const eval0 = (Array.isArray(evalRel) ? evalRel[0] : evalRel) as { cote_globale?: number | null; distinctions?: unknown } | null;
+  // #56 — parseDistinctions gère string[] (legacy) ET {badge,detail} (objet).
+  const distinctions = parseDistinctions(eval0?.distinctions);
 
   const ft = a.taille_pieds;
   const inches = a.taille_pouces;
@@ -94,8 +96,8 @@ function transformAthlete(a: AthleteRow, favCount: number): FavoriAthlete {
     committedSchoolName: committedSchool?.name || "",
     openToOffers: a.open_to_offers ?? null,
     badges: distinctions
-      .filter((d) => d != null && BADGE_MAP[d])
-      .map((d) => ({ badgeId: d, label: BADGE_MAP[d].label, icon: BADGE_MAP[d].icon })),
+      .filter((d) => !!BADGE_MAP[d.badge])
+      .map((d) => ({ badgeId: d.badge, label: BADGE_MAP[d.badge].label, icon: BADGE_MAP[d.badge].icon })),
     noTeam: !a.school_id,
   };
 }

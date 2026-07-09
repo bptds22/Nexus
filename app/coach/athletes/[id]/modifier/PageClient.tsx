@@ -11,6 +11,7 @@ import { coteChanged } from "@/lib/utils/cote";
 import { ConfirmSheet } from "@/components/shared/settings";
 import CoteChangeConfirmContent from "@/components/shared/CoteChangeConfirmContent";
 import { BADGE_CONFIG, BADGE_ORDER, MAX_BADGES, MAX_DETAIL_LENGTH, getSportStats, type DistinctionEntry } from "@/lib/config/badges";
+import { GRAD_YEAR_OPTIONS } from "@/lib/config/gradYears";
 import DistinctionBadge from "@/components/shared/DistinctionBadge";
 import StepIndicator from "../../../components/StepIndicator";
 import ReadOnlyIfPending from "@/components/auth/ReadOnlyIfPending";
@@ -597,8 +598,10 @@ function ModifierContent({ id }: { id: string }) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <div><label className={labelCls}>Prénom{req}</label><input type="text" value={d.firstName} onChange={(e) => updateIdentity("firstName", e.target.value)} placeholder="Prénom" className={`${inputCls} ${isFieldEmpty(d.firstName) ? errBorder : ""}`} /></div>
           <div><label className={labelCls}>Nom{req}</label><input type="text" value={d.lastName} onChange={(e) => updateIdentity("lastName", e.target.value)} placeholder="Nom de famille" className={`${inputCls} ${isFieldEmpty(d.lastName) ? errBorder : ""}`} /></div>
-          <div><label className={labelCls}>Date de naissance{req}</label><DatePicker value={d.dateOfBirth} onChange={(date) => updateIdentity("dateOfBirth", date)} placeholder="Sélectionner une date" hasError={isFieldEmpty(d.dateOfBirth)} /></div>
-          <div><label className={labelCls}>Promotion{req}</label><NxSelect value={d.gradYear} onChange={(v) => updateIdentity("gradYear", v)} hasError={isFieldEmpty(d.gradYear)} options={[2025, 2026, 2027, 2028, 2029].map((y) => ({ value: String(y), label: String(y) }))} /></div>
+          {/* DOB lecture seule à l'edit : aucun <14 ne peut légitimement exister
+              (gate à la création). La valeur reste affichée, non modifiable. */}
+          <div><label className={labelCls}>Date de naissance{req}</label><DatePicker value={d.dateOfBirth} onChange={(date) => updateIdentity("dateOfBirth", date)} placeholder="Sélectionner une date" hasError={isFieldEmpty(d.dateOfBirth)} disabled={true} /></div>
+          <div><label className={labelCls}>Promotion{req}</label><NxSelect value={d.gradYear} onChange={(v) => updateIdentity("gradYear", v)} hasError={isFieldEmpty(d.gradYear)} options={GRAD_YEAR_OPTIONS} /></div>
         </div>
 
         {isDetailed && (

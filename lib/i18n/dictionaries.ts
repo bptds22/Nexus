@@ -566,8 +566,8 @@ export const dictionaries: Record<Lang, Dictionary> = {
     home: {
       hero: {
         eyebrow: "Plateforme officielle · Québec 2026",
-        titleLine1: "Nexus te met dans' game.",
-        titleLine2: "À toi de jouer, deviens",
+        titleLine1: "Nexus te met dans la game.",
+        titleLine2: "À toi de jouer",
         ledeStrong: "Les recruteurs des CÉGEP cherchent des athlètes comme toi.",
         lede: "Assure-toi qu'ils te trouvent.",
         // Intentional brand pun on 'Nexus' — do NOT autocorrect to 'next' (FR + EN)

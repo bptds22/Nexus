@@ -159,7 +159,7 @@ function MobileSearchBar({
 }: MobileSearchBarProps) {
   return (
     <div
-      className="sticky top-0 z-30 px-4 py-3"
+      className="sticky top-0 z-30 px-4 pb-3 nx-safe-top"
       style={{
         backgroundColor: scrolled ? "rgba(17,19,23,0.85)" : "#111317",
         backdropFilter: scrolled ? "blur(20px) saturate(180%)" : "none",
@@ -1187,7 +1187,7 @@ export function RecruteurRechercheMobile() {
     const isFav = favorites.has(id);
     const atCap = maxFavorites !== -1 && favorites.size >= maxFavorites;
     if (!isFav && atCap) {
-      toast.warning({ message: "Limite de favoris atteinte", detail: "Passe à Pro pour favoriser plus d'athlètes" });
+      toast.warning({ message: "Limite de favoris atteinte", detail: "Favoris supplémentaires réservés aux membres Pro" });
       return;
     }
     const { data: existing } = await supabase

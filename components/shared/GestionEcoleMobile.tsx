@@ -41,8 +41,11 @@ import {
   SectionLabel, Group, NavRow,
   openExternal, triggerHaptic,
 } from "@/components/shared/settings";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 const WEB_BASE = "https://nexussports.ca";
+
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
 interface EntryDef {
   key: "mon_ecole" | "coachs" | "stats" | "analytique" | "placements" | "admin";
@@ -57,7 +60,7 @@ interface EntryDef {
 const ENTRIES: EntryDef[] = [
   { key: "mon_ecole",  label: "Mon école",                 sublabel: "Vue d'ensemble : roster, complétion, vues recruteurs", webPath: "/coach/ecole",            gate: "pro" },
   { key: "coachs",     label: "Mes coachs",                sublabel: "Les coachs de ton école",                              webPath: "/coach/ecole/coachs",     gate: "pro" },
-  { key: "stats",      label: "Stats école",               sublabel: "Statistiques par sport, pipeline, CÉGEPs intéressés",  webPath: "/coach/ecole/stats",      gate: "pro" },
+  { key: "stats",      label: "Stats école",               sublabel: "Statistiques par sport, processus, CÉGEPs intéressés",  webPath: "/coach/ecole/stats",      gate: "pro" },
   { key: "analytique", label: "Analytique",                sublabel: "Vues, performance par athlète, entonnoir de recrutement", webPath: "/coach/ecole/analytics", gate: "pro" },
   { key: "placements", label: "Placements",                sublabel: "Athlètes recrutés cette saison",                       webPath: "/coach/ecole/placements", gate: "pro" },
   { key: "admin",      label: "Administration de l'école", sublabel: "Gère les directeurs et les accès",                     webPath: "/coach/settings#admin_ecole", gate: "admin" },
@@ -125,6 +128,10 @@ export function GestionEcoleMobile() {
         });
         return;
       }
+      if (IS_CAPACITOR) {
+        toast.info({ message: "Disponible sur la version web", detail: "Cette section se gère sur nexussports.ca." });
+        return;
+      }
       openExternal(`${WEB_BASE}${e.webPath}`);
       return;
     }
@@ -137,13 +144,36 @@ export function GestionEcoleMobile() {
       router.push("/coach/settings");
       return;
     }
+    if (IS_CAPACITOR) {
+      toast.info({ message: "Disponible sur la version web", detail: "Cette section se gère sur nexussports.ca." });
+      return;
+    }
     openExternal(`${WEB_BASE}${e.webPath}`);
   }
 
   if (loading) {
     return (
       <div className="min-h-screen w-full overflow-x-hidden bg-[#111317] text-white nx-mobile-pb-tabbar">
-        <div className="px-4 pt-10 pb-3 text-[#6b7280] text-[14px]">Chargement…</div>
+        {/* Sticky header shell */}
+        <div className="sticky top-0 z-30 bg-[#111317]" style={{ paddingTop: "env(safe-area-inset-top)" }}>
+          <div className="h-11 flex items-center px-4">
+            <Skeleton className="w-32 h-5 rounded-full mx-auto" />
+          </div>
+        </div>
+        {/* Intro bandeau */}
+        <div className="px-4 pt-6 pb-2">
+          <Skeleton className="w-full h-20 rounded-2xl" />
+        </div>
+        {/* "Vue d'ensemble" group — 5 Pro-gated rows */}
+        <div className="px-4 pt-5">
+          <Skeleton className="w-32 h-3 rounded-full mb-3" />
+          <Skeleton className="w-full h-[280px] rounded-2xl" />
+        </div>
+        {/* "Administration" group — 1 row */}
+        <div className="px-4 pt-5">
+          <Skeleton className="w-32 h-3 rounded-full mb-3" />
+          <Skeleton className="w-full h-14 rounded-2xl" />
+        </div>
       </div>
     );
   }
@@ -174,7 +204,7 @@ export function GestionEcoleMobile() {
         <div className="rounded-2xl bg-[#1A1D24] border border-white/[0.06] p-4">
           <p className="text-[13px] text-[#9CA3AF] leading-relaxed">
             {hasProOrAdmin
-              ? "Toutes tes fonctionnalités de gestion d'école. Tape une section pour l'ouvrir sur le bureau."
+              ? "Tes fonctionnalités de gestion d'école se gèrent sur la version web de Nexus."
               : "Découvre la gestion d'école. Les sections marquées Pro débloquent l'analyse, les stats et le placement."}
           </p>
         </div>
@@ -191,7 +221,7 @@ export function GestionEcoleMobile() {
               isFirst={idx === 0}
               label={e.label}
               sublabel={e.sublabel}
-              rightChevron={hasProOrAdmin ? "external" : "chevron"}
+              rightChevron={hasProOrAdmin ? "none" : "chevron"}
               rightAccessory={showPill ? <ProPill /> : undefined}
               onTap={() => handleTap(e)}
             />
@@ -210,7 +240,7 @@ export function GestionEcoleMobile() {
               isFirst
               label={e.label}
               sublabel={e.sublabel}
-              rightChevron={isSchoolAdmin ? "external" : "chevron"}
+              rightChevron={isSchoolAdmin ? "none" : "chevron"}
               rightAccessory={showPill ? <AdminPill /> : undefined}
               onTap={() => handleTap(e)}
             />

@@ -43,6 +43,10 @@ export interface TeamSearchRow {
   school_id: string;
   school_name: string;
   coach_count: number;
+  /** Sport name (sports.nom). Optional — populated by the school/recruiter
+   *  umbrella pickers that surface teams across all sports, so the card can
+   *  show the sport. */
+  sport?: string | null;
 }
 
 export interface ClubSearchRow {

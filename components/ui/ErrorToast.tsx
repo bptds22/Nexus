@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
+
 /**
  * Red error toast — fixed top-center, slide-in from above.
  *
@@ -38,7 +40,7 @@ export default function ErrorToast({ data, onDismiss }: ErrorToastProps) {
           <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
         </svg>
         <span className="text-[14px] font-bold flex-1">{data.message}</span>
-        {data.showUpgrade && (
+        {data.showUpgrade && !IS_CAPACITOR && (
           <Link
             href="/tarifs"
             className="shrink-0 bg-white text-[#E63946] px-3 py-1.5 rounded-lg text-[12px] font-black uppercase tracking-wider hover:bg-white/90 transition-colors"

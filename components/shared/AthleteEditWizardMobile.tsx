@@ -40,11 +40,18 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { uploadAvatar } from "@/lib/storage/uploadAvatar";
+import AthletePhotoHero from "@/components/shared/AthletePhotoHero";
 import type { AthleteSuggestion, AthleteTraitRatings } from "@/lib/types/models";
 import { Card, InlineEditRow, PickerRow, ReadOnlyRow, DateRow, ToggleRow, ChipsBlock } from "@/components/shared/wizard/rows";
 import { StarRow } from "@/components/shared/wizard/stars";
 import { MobilePicker, type PickerOption } from "@/components/mobile/MobilePicker";
+import {
+  HeightWheel, WeightWheel, formatHeightDisplay, formatWeightDisplay,
+  UNIT_MODE_STORAGE_KEY, type UnitMode,
+} from "@/components/shared/wizard/HeightWeightWheel";
 import { WizardPills } from "@/components/shared/wizard/WizardPills";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { GREEN, YELLOW, RED, PencilIcon, LockIcon } from "@/components/shared/wizard/modeIcons";
 import {
   SUBJECTS, HONORS, CEGEP_REGIONS, PROGRAMME_TYPE_OPTIONS,
@@ -64,6 +71,7 @@ interface LoadedAthlete {
   id: string;
   /** Resolved coach FK ; used for athlete_suggestions.coach_id. */
   coachId: string | null;
+  photoUrl: string;                     // athletes.photo_url — DIRECT (athlete owns own photo)
   firstName: string;
   /* ── Identité — 5 DIRECT (first/last name, DOB, genre, telephone) +
         5 LOCKED (age computed / city + region from schools FK / school
@@ -246,7 +254,12 @@ interface SuggestExpandProps {
   champ: string;                    // exact French label written into athlete_suggestions.champ
   currentValue: string;             // displayed struck-through above the input
   initialProposed: string;
-  inputType: "text" | "picker";
+  inputType: "text" | "picker" | "wheel";
+  /** For inputType="wheel" : which shared wheel to mount. The committed
+   *  proposed value is ALWAYS the canonical imperial string the
+   *  apply_approved_suggestion trigger parses — "6'4\"" (height) or
+   *  "185 lbs" (weight) — regardless of the unit toggle. */
+  wheelKind?: "height" | "weight";
   pickerOptions?: PickerOption[];
   numericMode?: "numeric" | "decimal";
   /** Per-field placeholder shown in the text-input branch. When omitted,
@@ -259,13 +272,48 @@ interface SuggestExpandProps {
   onCancel: () => void;
 }
 
+/** Seed the wheel from the struck-through current value so it opens at
+ *  the athlete's existing measurement. "6'4\"" → {ft:"6",in:"4"} ;
+ *  "185 lbs" → {lbs:"185"}. Empty when there's nothing to parse. */
+function parseHeightSeed(v: string): { ft: string; inches: string } {
+  const m = v.match(/(\d+)\s*'\s*(\d+)?/);
+  if (!m) return { ft: "", inches: "" };
+  return { ft: m[1] || "", inches: m[2] || "0" };
+}
+function parseWeightSeed(v: string): string {
+  const m = v.match(/[\d.]+/);
+  return m ? m[0] : "";
+}
+
 function SuggestExpand({
-  champ, currentValue, initialProposed, inputType, pickerOptions, numericMode, placeholder,
+  champ, currentValue, initialProposed, inputType, wheelKind, pickerOptions, numericMode, placeholder,
   submitting, onSubmit, onCancel,
 }: SuggestExpandProps) {
   const [proposed, setProposed] = useState(initialProposed);
   const [message, setMessage] = useState("");
   const [pickerOpen, setPickerOpen] = useState(false);
+
+  /* ── Wheel state (inputType="wheel"). unitMode persists via the same
+        key the coach wizard uses. Lazy init from localStorage is safe
+        here : SuggestExpand only mounts on tap (client-only, post-
+        hydration), so there's no SSR mismatch. The imperial values
+        below drive the wheel position + the canonical proposed string. ── */
+  const [unitMode, setUnitMode] = useState<UnitMode>(() => {
+    if (typeof window === "undefined") return "imperial";
+    try {
+      const v = localStorage.getItem(UNIT_MODE_STORAGE_KEY);
+      return v === "metric" || v === "imperial" ? v : "imperial";
+    } catch { return "imperial"; }
+  });
+  const setUnit = (m: UnitMode) => {
+    setUnitMode(m);
+    try { localStorage.setItem(UNIT_MODE_STORAGE_KEY, m); } catch { /* no-op */ }
+  };
+  const heightSeed = parseHeightSeed(currentValue);
+  const [hFeet, setHFeet] = useState(heightSeed.ft);
+  const [hInches, setHInches] = useState(heightSeed.inches);
+  const [wLbs, setWLbs] = useState(parseWeightSeed(currentValue));
+  const [wheelOpen, setWheelOpen] = useState(false);
 
   const trimmed = proposed.trim();
   const canSubmit = trimmed.length > 0 && trimmed !== currentValue.trim();
@@ -294,6 +342,54 @@ function SuggestExpand({
           className="w-full bg-[#111317] border border-white/[0.10] rounded-2xl px-4 py-3 text-[15px] text-white placeholder:text-white/40 outline-none focus:border-[#EAB308]/40"
           placeholder={placeholder}
         />
+      ) : inputType === "wheel" ? (
+        <>
+          <button
+            type="button"
+            onClick={() => setWheelOpen(true)}
+            className="w-full flex items-center justify-between bg-[#111317] border border-white/[0.10] rounded-2xl px-4 py-3 active:bg-white/[0.04] text-left"
+          >
+            <span className={`text-[15px] ${proposed ? "text-white" : "text-white/40"}`}>
+              {proposed
+                ? (wheelKind === "height"
+                    ? formatHeightDisplay(hFeet, hInches, unitMode)
+                    : formatWeightDisplay(wLbs, unitMode))
+                : "Sélectionner…"}
+            </span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2.4" strokeLinecap="round">
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
+          </button>
+          {wheelKind === "height" ? (
+            <HeightWheel
+              open={wheelOpen}
+              onClose={() => setWheelOpen(false)}
+              feet={hFeet}
+              inches={hInches}
+              unitMode={unitMode}
+              onUnitChange={setUnit}
+              onCommit={(ft, inch) => {
+                setHFeet(ft);
+                setHInches(inch);
+                // Canonical imperial string the trigger parses : FT'IN".
+                setProposed(ft || inch ? `${ft || "0"}'${inch || "0"}"` : "");
+              }}
+            />
+          ) : (
+            <WeightWheel
+              open={wheelOpen}
+              onClose={() => setWheelOpen(false)}
+              lbs={wLbs}
+              unitMode={unitMode}
+              onUnitChange={setUnit}
+              onCommit={(lbs) => {
+                setWLbs(lbs);
+                // Canonical imperial string the trigger parses : "N lbs".
+                setProposed(lbs ? `${lbs} lbs` : "");
+              }}
+            />
+          )}
+        </>
       ) : (
         <>
           <button
@@ -365,7 +461,8 @@ interface SuggestRowProps {
   value: string;
   champ: string;
   pending: AthleteSuggestion | undefined;
-  inputType: "text" | "picker";
+  inputType: "text" | "picker" | "wheel";
+  wheelKind?: "height" | "weight";
   pickerOptions?: PickerOption[];
   numericMode?: "numeric" | "decimal";
   /** Per-field placeholder for the text-input branch. Threaded to
@@ -377,7 +474,7 @@ interface SuggestRowProps {
 }
 
 function SuggestRow({
-  label, value, champ, pending, inputType, pickerOptions, numericMode, placeholder,
+  label, value, champ, pending, inputType, wheelKind, pickerOptions, numericMode, placeholder,
   submitting, onSubmit, isLast,
 }: SuggestRowProps) {
   const [expanded, setExpanded] = useState(false);
@@ -431,6 +528,7 @@ function SuggestRow({
           currentValue={value}
           initialProposed=""
           inputType={inputType}
+          wheelKind={wheelKind}
           pickerOptions={pickerOptions}
           numericMode={numericMode}
           placeholder={placeholder}
@@ -491,6 +589,10 @@ export default function AthleteEditWizardMobile() {
   const [positionsOptions, setPositionsOptions] = useState<PositionOption[]>([]);
   const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
+  /* Photo upload (DIRECT, athlete owns own photo). photoError surfaces a
+     failed upload visibly — pas de faux succès silencieux. */
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const [photoError, setPhotoError] = useState<string | null>(null);
   /* `mounted` gates createPortal — same SSR/hydration safety guard the
      coach "Modifier le profil" sticky bar uses at
      AthleteRecruiterProfileBodyMobile.tsx :2538. Without it, createPortal
@@ -612,6 +714,7 @@ export default function AthleteEditWizardMobile() {
     setA({
       id: raw.id as string,
       coachId: (raw.coach_id as string) || null,
+      photoUrl: (raw.photo_url as string) || "",
       firstName: (raw.first_name as string) || "",
       // Identité — 5 DIRECT + 5 LOCKED (mixed mode after B-2.5 conversion)
       lastName: (raw.last_name as string) || "",
@@ -738,6 +841,32 @@ export default function AthleteEditWizardMobile() {
     await load();
   }, [a, load]);
 
+  /* ── Photo (DIRECT) — réutilise le MÊME mécanisme que le coach via le
+        helper partagé uploadAvatar : upload sous le dossier de l'athlète
+        connecté (auth.uid()), getPublicUrl, puis écriture photo_url par
+        le chemin DIRECT (saveDirect → UPDATE athletes + reload). L'erreur
+        d'upload est rendue visible (photoError) — jamais avalée. */
+  const handlePhotoChange = useCallback(async (file: File | null) => {
+    if (!file || !a) return;
+    setPhotoError(null);
+    setPhotoUploading(true);
+    try {
+      const publicUrl = await uploadAvatar(file);
+      await saveDirect("photo_url", publicUrl);
+    } catch (err) {
+      console.error("[AthleteEdit] photo upload error:", err);
+      setPhotoError("Échec du téléversement de la photo. Réessaie.");
+    } finally {
+      setPhotoUploading(false);
+    }
+  }, [a, saveDirect]);
+
+  const handlePhotoRemove = useCallback(async () => {
+    if (!a) return;
+    setPhotoError(null);
+    await saveDirect("photo_url", "");   // "" → null (efface la colonne)
+  }, [a, saveDirect]);
+
   /* ── SUGGEST submit — verbatim from page.tsx :1263-1272.
         One INSERT per field with the exact French champ string. */
   const submitSuggestion = useCallback(async (
@@ -780,8 +909,38 @@ export default function AthleteEditWizardMobile() {
 
   if (!a) {
     return (
-      <div className="min-h-screen bg-[#111317] flex items-center justify-center">
-        <p className="text-[13px] text-[#9CA3AF]">Chargement…</p>
+      <div className="min-h-screen bg-[#111317]" style={{ overflowY: "auto", overflowX: "hidden", height: "100dvh" }}>
+        {/* Header skeleton — mirrors WizardPills (eyebrow + title + pill row) */}
+        <div className="px-4 pt-4 pb-3 border-b border-white/[0.06]" style={{ paddingTop: "calc(env(safe-area-inset-top) + 16px)" }}>
+          <div className="flex items-center gap-2 mb-3">
+            <Skeleton width={44} height={44} rounded={999} />
+            <div className="flex-1">
+              <Skeleton className="h-3 w-12 rounded-full mb-2" />
+              <Skeleton className="h-4 w-40 rounded-full" />
+            </div>
+          </div>
+          <div className="flex gap-2">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Skeleton key={i} className="h-8 w-20 rounded-full flex-shrink-0" />
+            ))}
+          </div>
+        </div>
+        {/* Step body skeleton — mirrors px-4 pt-4 pb-48 space-y-5 field rows */}
+        <div className="px-4 pt-4 pb-48 space-y-5">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="rounded-2xl bg-[#1A1D24] border border-white/5 p-4 space-y-4">
+              <Skeleton className="h-3 w-24 rounded-full" />
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-4 w-28 rounded-full" />
+                <Skeleton className="h-4 w-20 rounded-full" />
+              </div>
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-4 w-32 rounded-full" />
+                <Skeleton className="h-4 w-16 rounded-full" />
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -808,7 +967,16 @@ export default function AthleteEditWizardMobile() {
           only buffer between the last row and the CTA's top edge. */}
       <div className="px-4 pt-4 pb-48 space-y-5">
         {/* ── Step 0 : Identité (MIXED — 5 DIRECT + 5 LOCKED) ── */}
-        {step === 0 && <IdentiteStep a={a} onDirect={saveDirect} />}
+        {step === 0 && (
+          <IdentiteStep
+            a={a}
+            onDirect={saveDirect}
+            onPhotoChange={handlePhotoChange}
+            onPhotoRemove={handlePhotoRemove}
+            photoUploading={photoUploading}
+            photoError={photoError}
+          />
+        )}
 
         {/* ── Step 1 : Académique (DIRECT — B-2.5 conversion) ── */}
         {step === 1 && <AcademiqueStep a={a} onDirect={saveDirect} />}
@@ -909,10 +1077,14 @@ export default function AthleteEditWizardMobile() {
    + mobile DateRow share this format).
 ═══════════════════════════════════════════════════════════════ */
 function IdentiteStep({
-  a, onDirect,
+  a, onDirect, onPhotoChange, onPhotoRemove, photoUploading, photoError,
 }: {
   a: LoadedAthlete;
   onDirect: (column: string, value: string | string[] | boolean) => Promise<void>;
+  onPhotoChange: (file: File | null) => void;
+  onPhotoRemove: () => void;
+  photoUploading: boolean;
+  photoError: string | null;
 }) {
   const affiliationLabel = a.isCivil ? "Équipe civile" : "École";
   const affiliationValue = a.isCivil
@@ -931,6 +1103,16 @@ function IdentiteStep({
       <p className="text-[12px] text-white/55 px-1">
         Certains champs sont modifiables directement ; d&apos;autres sont gérés par ton coach.
       </p>
+
+      {/* Photo de profil — DIRECT. Même composant que le wizard coach
+          (components/shared/AthletePhotoHero). */}
+      <AthletePhotoHero
+        photoUrl={a.photoUrl}
+        uploading={photoUploading}
+        error={photoError}
+        onChange={onPhotoChange}
+        onRemove={onPhotoRemove}
+      />
 
       {/* DIRECT rows — modifiable, green pencil indicator. */}
       <Card>
@@ -1546,9 +1728,9 @@ function PhysiqueStep({
           Tes propositions sont envoyées à ton coach pour approbation.
         </p>
         <Card>
-          <SuggestRow label="Taille"          value={a.heightDisplay}   champ="Taille"          pending={getPending("Taille")}          inputType="text" numericMode="numeric" placeholder="Ex: 6'4&quot;"   submitting={submitting} onSubmit={onSubmit} />
-          <SuggestRow label="Poids"           value={a.weightDisplay}   champ="Poids"           pending={getPending("Poids")}           inputType="text" numericMode="decimal" placeholder="Ex: 185 lbs"    submitting={submitting} onSubmit={onSubmit} />
-          <SuggestRow label="Envergure"       value={a.wingspan}        champ="Envergure"       pending={getPending("Envergure")}       inputType="text" numericMode="numeric" placeholder="Ex: 78&quot;"    submitting={submitting} onSubmit={onSubmit} />
+          <SuggestRow label="Taille"          value={a.heightDisplay}   champ="Taille"          pending={getPending("Taille")}          inputType="wheel" wheelKind="height" submitting={submitting} onSubmit={onSubmit} />
+          <SuggestRow label="Poids"           value={a.weightDisplay}   champ="Poids"           pending={getPending("Poids")}           inputType="wheel" wheelKind="weight" submitting={submitting} onSubmit={onSubmit} />
+          <SuggestRow label="Envergure"       value={a.wingspan}        champ="Envergure"       pending={getPending("Envergure")}       inputType="text" placeholder="Ex: 78&quot;"    submitting={submitting} onSubmit={onSubmit} />
           <SuggestRow label="Main dominante"  value={a.dominantHand}    champ="Main dominante"  pending={getPending("Main dominante")}  inputType="picker" pickerOptions={HAND_OPTIONS} submitting={submitting} onSubmit={onSubmit} />
           <SuggestRow label="Pied dominant"   value={a.dominantFoot}    champ="Pied dominant"   pending={getPending("Pied dominant")}   inputType="picker" pickerOptions={FOOT_OPTIONS} submitting={submitting} onSubmit={onSubmit} isLast />
         </Card>
@@ -1559,12 +1741,12 @@ function PhysiqueStep({
           Tests athlétiques
         </p>
         <Card>
-          <SuggestRow label="40 verges"        value={a.fortyYard}      champ="40 yards"         pending={getPending("40 yards")}         inputType="text" numericMode="decimal" placeholder="Ex: 4.72s"     submitting={submitting} onSubmit={onSubmit} />
-          <SuggestRow label="Saut vertical"    value={a.verticalJump}   champ="Saut vertical"    pending={getPending("Saut vertical")}    inputType="text" numericMode="decimal" placeholder="Ex: 32&quot;"   submitting={submitting} onSubmit={onSubmit} />
-          <SuggestRow label="Saut en longueur" value={a.broadJump}      champ="Saut longueur"    pending={getPending("Saut longueur")}    inputType="text" numericMode="decimal" placeholder="Ex: 9'2&quot;"  submitting={submitting} onSubmit={onSubmit} />
-          <SuggestRow label="Développé couché" value={a.benchPress}     champ="Développé couché" pending={getPending("Développé couché")} inputType="text" numericMode="decimal" placeholder="Ex: 225 × 8"   submitting={submitting} onSubmit={onSubmit} />
-          <SuggestRow label="Navette"          value={a.shuttleAgility} champ="Navette"          pending={getPending("Navette")}          inputType="text" numericMode="decimal" placeholder="Ex: 4.31s"     submitting={submitting} onSubmit={onSubmit} />
-          <SuggestRow label="Sprint 100m"      value={a.sprint100m}     champ="Sprint 100m"      pending={getPending("Sprint 100m")}      inputType="text" numericMode="decimal" placeholder="Ex: 10.9s"     submitting={submitting} onSubmit={onSubmit} isLast />
+          <SuggestRow label="40 verges"        value={a.fortyYard}      champ="40 yards"         pending={getPending("40 yards")}         inputType="text" placeholder="Ex: 4.72s"     submitting={submitting} onSubmit={onSubmit} />
+          <SuggestRow label="Saut vertical"    value={a.verticalJump}   champ="Saut vertical"    pending={getPending("Saut vertical")}    inputType="text" placeholder="Ex: 32&quot;"   submitting={submitting} onSubmit={onSubmit} />
+          <SuggestRow label="Saut en longueur" value={a.broadJump}      champ="Saut longueur"    pending={getPending("Saut longueur")}    inputType="text" placeholder="Ex: 9'2&quot;"  submitting={submitting} onSubmit={onSubmit} />
+          <SuggestRow label="Développé couché" value={a.benchPress}     champ="Développé couché" pending={getPending("Développé couché")} inputType="text" placeholder="Ex: 225 × 8"   submitting={submitting} onSubmit={onSubmit} />
+          <SuggestRow label="Navette"          value={a.shuttleAgility} champ="Navette"          pending={getPending("Navette")}          inputType="text" placeholder="Ex: 4.31s"     submitting={submitting} onSubmit={onSubmit} />
+          <SuggestRow label="Sprint 100m"      value={a.sprint100m}     champ="Sprint 100m"      pending={getPending("Sprint 100m")}      inputType="text" placeholder="Ex: 10.9s"     submitting={submitting} onSubmit={onSubmit} isLast />
         </Card>
       </div>
     </>

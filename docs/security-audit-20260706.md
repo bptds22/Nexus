@@ -175,3 +175,40 @@ confirmée :
 
 *Audit read-only — aucune modification appliquée. Items `TO CONFIRM` à valider
 dans le dashboard Supabase / proxy Coolify.*
+
+---
+
+## Mise à jour 2026-07-07 — Item #36 (énumération de comptes) + #34
+
+### Item #36 — état après audit du flux auth réel
+- **Signup (message)** : ✅ **FIXED** — `translateAuthError.ts` renvoyait « Cet
+  email est déjà utilisé » → remplacé par « Vérifie ton email pour compléter ton
+  inscription » (message neutre). Central → couvre web + mobile + recruteur.
+  (commit `fix(auth): remove account enumeration in signup error messages`).
+- **Login (message)** : ✅ **DÉJÀ GÉNÉRIQUE** — « Email ou mot de passe incorrect »
+  pour email inexistant ET mauvais password. Aucune action.
+- **Login email non-confirmé** : ⚠️ **décision produit = GARDER SPÉCIFIQUE**
+  (« Tu dois confirmer ton email… »). Fuite mineure d'un état intermédiaire
+  acceptée au profit de l'UX ; le vrai verrou est le comportement Supabase, pas
+  le texte.
+- **Reset password (énum)** : ⚪ **N/A** — flux non implémenté (stub `TODO Phase 2`
+  dans `mot-de-passe-oublie/page.tsx` + `reinitialiser/page.tsx`). À traiter au
+  moment du build reset (message générique dès la conception).
+- **OAuth callback (énum)** : ⚪ **N/A** — OAuth Google/Apple **non buildé** (UI
+  placeholder « Bientôt disponible », `SocialButtonsMobile.tsx`). À traiter au
+  build OAuth (**auto-link via `link_identities=true`** recommandé = anti-énum
+  natif).
+
+### Item #34 — « Confirm email » (EN SUSPENS, priorité HAUTE)
+- Toggle **Auth → Providers → Email → Confirm email** dans le dashboard Supabase :
+  **À VÉRIFIER / ACTIVER** (non accessible via MCP).
+- **Si OFF** : une fuite **comportementale** persiste malgré les messages — un
+  signup neuf redirige vers l'onboarding alors qu'un email existant reçoit
+  « Vérifie ton email », et les URLs/redirects diffèrent. **Plus impactant que la
+  fuite de message.**
+- Sous-tâche : templates d'emails de confirmation en **français**.
+- **Action manuelle BP** (dashboard, hors MCP). Priorité : **HAUTE**.
+
+### Features déférées (hors périmètre anti-énumération actuel)
+- Implémentation reset password (actuellement stub).
+- Build OAuth Google + Apple (actuellement placeholder).

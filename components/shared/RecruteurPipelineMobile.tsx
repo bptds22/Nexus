@@ -90,7 +90,7 @@ async function triggerHaptic(intensity: "Light" | "Medium" = "Light") {
 
 function PipelineHeader({ totalCount, onMenuTap }: { totalCount: number; onMenuTap: () => void }) {
   return (
-    <div className="px-4 pt-5 pb-3 bg-[#111317]">
+    <div className="px-4 pb-3 bg-[#111317]" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1.25rem)" }}>
       <div className="flex items-start justify-between">
         <div className="flex-1 min-w-0">
           <h1 className="font-head text-[24px] font-black text-white uppercase tracking-tight">Mon processus</h1>
@@ -133,7 +133,7 @@ function StageTabsSticky({
 
   return (
     <div
-      className="sticky top-0 z-30"
+      className="sticky top-0 z-30 nx-safe-top"
       style={{
         backgroundColor: scrolled ? "rgba(17,19,23,0.85)" : "#111317",
         backdropFilter: scrolled ? "blur(20px) saturate(180%)" : "none",
@@ -485,7 +485,7 @@ function PipelineMenuSheet({
             exit={{ y: "100%" }}
             transition={isDragging ? { duration: 0 } : { duration: 0.32, ease: [0.34, 1.56, 0.64, 1] }}
             className="fixed inset-x-0 bottom-0 z-[60] bg-[#111317] rounded-t-2xl flex flex-col"
-            style={{ maxHeight: "85vh", paddingBottom: "env(safe-area-inset-bottom)" }}
+            style={{ maxHeight: "85dvh", paddingBottom: "env(safe-area-inset-bottom)" }}
           >
             {/* Drag handle */}
             <div
@@ -766,7 +766,7 @@ function PipelineDetailSheet({
 
   const handleStageChange = async (newStage: string) => {
     if (isFreeDemoMode) {
-      toast.warning({ message: "Passe à Pro pour changer le stage" });
+      toast.warning({ message: "Changer le stage est réservé aux membres Pro" });
       return;
     }
     if (!card) return;
@@ -782,7 +782,7 @@ function PipelineDetailSheet({
 
   const handleTogglePriority = async () => {
     if (isFreeDemoMode) {
-      toast.warning({ message: "Passe à Pro pour marquer prioritaire" });
+      toast.warning({ message: "Marquer prioritaire est réservé aux membres Pro" });
       return;
     }
     if (!card) return;
@@ -800,7 +800,7 @@ function PipelineDetailSheet({
   const handleAddNote = async () => {
     if (!noteText.trim() || !card) return;
     if (isFreeDemoMode) {
-      toast.warning({ message: "Passe à Pro pour ajouter des notes" });
+      toast.warning({ message: "Les notes sont réservées aux membres Pro" });
       setNoteText("");
       return;
     }
@@ -819,7 +819,7 @@ function PipelineDetailSheet({
   const handleRemove = async () => {
     if (!card) return;
     if (isFreeDemoMode) {
-      toast.warning({ message: "Passe à Pro pour gérer ton processus" });
+      toast.warning({ message: "La gestion du processus est réservée aux membres Pro" });
       return;
     }
     if (!confirmRemove) { setConfirmRemove(true); return; }
@@ -870,7 +870,7 @@ function PipelineDetailSheet({
             exit={{ y: "100%" }}
             transition={isDragging ? { duration: 0 } : { duration: 0.32, ease: [0.34, 1.56, 0.64, 1] }}
             className="fixed inset-x-0 bottom-0 z-[60] bg-[#111317] rounded-t-2xl flex flex-col"
-            style={{ maxHeight: "90vh", paddingBottom: "env(safe-area-inset-bottom)" }}
+            style={{ maxHeight: "90dvh", paddingBottom: "env(safe-area-inset-bottom)" }}
           >
             {/* Handle iOS — drag area (swipe-down to close, Fix 5+7) */}
             <div
@@ -1171,7 +1171,7 @@ function EmptyState({ isFreeDemo }: { isFreeDemo: boolean }) {
       image="/empty/nexus-empty-effectif.png"
       title={isFreeDemo ? "Processus réservé Pro" : "Processus vide"}
       description={isFreeDemo
-        ? "Passe à Pro pour gérer ton processus de recrutement et suivre tes athlètes."
+        ? "La gestion du processus et le suivi des athlètes sont réservés aux membres Pro."
         : "Ajoute un athlète en favori depuis Recherche pour commencer à le suivre dans ton processus."}
       /* optical offset for left-weighted PNG — remove if asset re-exported balanced */
       imageOffsetX={14}
@@ -1356,7 +1356,7 @@ export function RecruteurPipelineMobile() {
   // Fix 6+7+8 — Swipe Tinder commit avec optimistic update + Toast Undo 5s
   const handleSwipeCommit = (card: PipelineKanbanCard, direction: "left" | "right") => {
     if (isFreeDemoMode) {
-      toast.warning({ message: "Passe à Pro pour gérer ton processus" });
+      toast.warning({ message: "La gestion du processus est réservée aux membres Pro" });
       return;
     }
     const fromStage = STAGES[activeStageIndex];
@@ -1428,7 +1428,7 @@ export function RecruteurPipelineMobile() {
             <circle cx="12" cy="12" r="10" /><path d="M12 8v4M12 16h.01" />
           </svg>
           <p className="text-[12px] text-[#9CA3AF] flex-1">
-            Mode démo — <span className="text-[#F59E0B] font-bold">Passe à Pro</span> pour sauvegarder.
+            Mode démo — sauvegarde réservée aux membres <span className="text-[#F59E0B] font-bold">Pro</span>.
           </p>
         </div>
       )}
