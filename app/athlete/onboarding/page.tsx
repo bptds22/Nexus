@@ -11,6 +11,7 @@ import { GRAD_YEAR_OPTIONS, DEFAULT_GRAD_YEAR } from "@/lib/config/gradYears";
 import { calculateProfileCompletion } from "@/lib/utils/calculateProfileCompletion";
 import SportPositionSelect from "@/app/coach/components/SportPositionSelect";
 import DatePicker from "@/app/coach/components/DatePicker";
+import { isUnder14 } from "@/lib/legal/ageGate";
 import SchoolSelect from "@/components/ui/SchoolSelect";
 import CoachPicker from "@/components/coach/CoachPicker";
 import PartnerVisibilityConsentCard from "@/components/shared/PartnerVisibilityConsentCard";
@@ -600,6 +601,11 @@ function AthleteOnboardingDesktop() {
   const [lastName, setLastName] = useState("");
   const [gender, setGender] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState("");
+  // DOB verrouillée = seedée depuis une source de confiance (signup metadata,
+  // users.date_naissance, ou row athletes). Rend le champ lecture seule. Reste
+  // false uniquement si aucune source ne l'a fournie (vieux compte NULL) →
+  // champ éditable + validation recouvrement (isUnder14) au save.
+  const [dobLocked, setDobLocked] = useState(false);
   const [gradYear, setGradYear] = useState(DEFAULT_GRAD_YEAR);
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
@@ -685,6 +691,15 @@ function AthleteOnboardingDesktop() {
       if (meta.last_name) setLastName(meta.last_name as string);
       if (meta.sport) setPrimarySport(meta.sport as string);
 
+      // Seed DOB depuis raw_user_meta_data (stashée au signup, parité mobile
+      // AthleteOnboardingMobile:875). Placé AVANT le prefill de la row athletes
+      // ci-dessous → sur un resume la row (:790) gagne encore. Verrouille le
+      // champ : la DOB vient du signup et a servi au gate d'âge, pas re-saisissable.
+      if (typeof meta.date_naissance === "string" && meta.date_naissance) {
+        setDateOfBirth(meta.date_naissance);
+        setDobLocked(true);
+      }
+
       // Minor pre-fill (parity mobile parentSlice) — if the signup captured
       // parental consent (i.e. the athlete is a minor: the parental screen
       // is only shown to minors at signup), pre-fill the parent fields and
@@ -719,11 +734,12 @@ function AthleteOnboardingDesktop() {
         context: string | null;
         onboarding_complete: boolean | null;
         privacy_preferences: Record<string, unknown> | null;
+        date_naissance: string | null;
       } | null = null;
       for (let attempt = 0; attempt < 3; attempt++) {
         const { data } = await supabase
           .from("users")
-          .select("first_name, last_name, context, onboarding_complete, privacy_preferences")
+          .select("first_name, last_name, context, onboarding_complete, privacy_preferences, date_naissance")
           .eq("id", user.id)
           .maybeSingle();
         if (data) { userRow = data; break; }
@@ -745,6 +761,15 @@ function AthleteOnboardingDesktop() {
       if (!meta.first_name) {
         if (userRow?.first_name) setFirstName(userRow.first_name);
         if (userRow?.last_name) setLastName(userRow.last_name);
+      }
+
+      // DOB fallback : users.date_naissance (peuplé au signup par le trigger
+      // handle_new_auth_user, migration 20260609160000). UNIQUEMENT si la
+      // metadata ne l'a pas déjà posée → priorité meta > users. La row athletes
+      // (:790) écrasera au besoin → row existante > metadata > users.
+      if (!meta.date_naissance && userRow?.date_naissance) {
+        setDateOfBirth(userRow.date_naissance);
+        setDobLocked(true);
       }
 
       // users.context is the civil/school discriminator. Wired at signup
@@ -787,7 +812,7 @@ function AthleteOnboardingDesktop() {
         // metadata comes from the team_athletes junction.
         if (existing.first_name) setFirstName(existing.first_name);
         if (existing.last_name) setLastName(existing.last_name);
-        if (existing.date_naissance) setDateOfBirth(existing.date_naissance);
+        if (existing.date_naissance) { setDateOfBirth(existing.date_naissance); setDobLocked(true); }
         if (existing.genre) setGender(existing.genre);
         if (existing.photo_url) setPhoto(existing.photo_url);
         if (existing.telephone) setPhone(existing.telephone);
@@ -935,7 +960,7 @@ function AthleteOnboardingDesktop() {
 
     if (full.first_name) setFirstName(full.first_name);
     if (full.last_name) setLastName(full.last_name);
-    if (full.date_naissance) setDateOfBirth(full.date_naissance);
+    if (full.date_naissance) { setDateOfBirth(full.date_naissance); setDobLocked(true); }
     if (full.genre) setGender(full.genre);
     if (full.photo_url) setPhoto(full.photo_url);
     if (full.telephone) setPhone(full.telephone);
@@ -985,6 +1010,12 @@ function AthleteOnboardingDesktop() {
     setOrphanMatch(null);
   }
 
+  // Chemin de recouvrement : DOB non verrouillée (aucune source signup) et
+  // saisie à la main. On rejoue le MÊME gate <14 que le signup (lib/legal/
+  // ageGate.isUnder14) pour qu'un vieux compte NULL ne contourne pas le verrou
+  // d'âge Loi 25. Le cas normal (seedé + verrouillé) n'est jamais concerné.
+  const dobRecoveryInvalid = !dobLocked && dateOfBirth.length > 0 && isUnder14(dateOfBirth);
+
   function canProceed(): boolean {
     switch (step) {
       case 1: {
@@ -1002,7 +1033,7 @@ function AthleteOnboardingDesktop() {
           ? !!(parentFirstName.trim() && parentLastName.trim() && parentEmail.trim()
               && consentProfile && consentVisibility)
           : true;
-        const baseValid = !!(firstName.trim() && lastName.trim() && gradYear) && parentValid;
+        const baseValid = !!(firstName.trim() && lastName.trim() && gradYear) && parentValid && !dobRecoveryInvalid;
         if (userContext === "ligue_civile") return baseValid && !!primarySport;
         return baseValid && !!selectedSchoolId;
       }
@@ -1360,7 +1391,13 @@ function AthleteOnboardingDesktop() {
               <div><label className={labelCls}>Genre</label>
                 <select title="Genre" value={gender} onChange={(e) => setGender(e.target.value)} className={inputCls}><option value="">—</option><option value="M">Masculin</option><option value="F">Féminin</option><option value="X">Autre</option></select>
               </div>
-              <div><label className={labelCls}>Date de naissance</label><DatePicker value={dateOfBirth} onChange={setDateOfBirth} placeholder="Sélectionner une date" /></div>
+              <div>
+                <label className={labelCls}>Date de naissance</label>
+                <DatePicker value={dateOfBirth} onChange={setDateOfBirth} placeholder="Sélectionner une date" disabled={dobLocked} />
+                {dobRecoveryInvalid && (
+                  <p className="text-[12px] text-[#EF4444] mt-1">Tu dois avoir au moins 14 ans pour créer un compte.</p>
+                )}
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div><label className={labelCls}>Année de graduation <span className="text-[#EF4444]">*</span></label>

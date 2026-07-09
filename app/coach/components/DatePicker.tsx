@@ -19,6 +19,7 @@ interface DatePickerProps {
   onChange: (date: string) => void;
   placeholder?: string;
   hasError?: boolean;
+  disabled?: boolean;     // read-only: shows the value, blocks the calendar
 }
 
 export default function DatePicker({
@@ -26,6 +27,7 @@ export default function DatePicker({
   onChange,
   placeholder = "Sélectionner une date",
   hasError = false,
+  disabled = false,
 }: DatePickerProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -129,9 +131,11 @@ export default function DatePicker({
       {/* Trigger input */}
       <button
         type="button"
-        onClick={() => { setOpen(!open); setMode("days"); }}
+        disabled={disabled}
+        onClick={() => { if (disabled) return; setOpen(!open); setMode("days"); }}
         className={`
-          w-full flex items-center justify-between bg-[#13151a] rounded-lg px-4 py-3 text-[15px] text-left transition-colors cursor-pointer
+          w-full flex items-center justify-between bg-[#13151a] rounded-lg px-4 py-3 text-[15px] text-left transition-colors
+          ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"}
           ${hasError ? "border border-[#E63946]" : "border border-[#2a2d36]"}
           ${open ? "border-[#E63946]" : ""}
           ${value ? "text-[#e0e0e0]" : "text-[#6b7280]"}
