@@ -33,8 +33,12 @@ const ORGANIZATION_JSONLD = {
     addressRegion: "Québec",
     addressCountry: "CA",
   },
-  // TODO SEO : ajouter les URL des réseaux sociaux quand disponibles
-  // sameAs: ["https://www.linkedin.com/company/nexussports", ...]
+  sameAs: [
+    "https://www.facebook.com/nexussportsca",
+    "https://www.instagram.com/nexussportsca/",
+    "https://www.youtube.com/@nexussportsca",
+    "https://www.tiktok.com/@nexussports.ca",
+  ],
 };
 
 // WebSite schema — aide Google à générer des sitelinks et identifier la marque
