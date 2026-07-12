@@ -91,3 +91,9 @@ backups/
 android/keystore.properties
 *.jks
 android/app/*.jks
+
+# Design handoff bundle (reference only, kept on disk, not versioned)
+design_handoff_nexus_scan_card/
+
+# Claude Code local settings (machine-local, not shared)
+.claude/settings.local.json
