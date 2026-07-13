@@ -85,6 +85,18 @@
   --color-wl-muted:       var(--wl-text-muted);
   --color-wl-border:      var(--wl-border);
 
+  /* ── Scan card ("2B") tokens — always-dark, fixed hex (poster surface,
+     not theme-aware). Consumed by app/carte/carte.module.css. ─────── */
+  --color-nx-bg:          #111317;
+  --color-nx-surface:     #1A1D24;
+  --color-nx-surface-2:   #22262F;
+  --color-nx-line:        #2A2F38;
+  --color-nx-red:         #E63946;
+  --color-nx-red-press:   #C42E3A;
+  --color-nx-fg:          #FFFFFF;
+  --color-nx-fg-2:        #C9CED6;
+  --color-nx-fg-3:        #AEB4BD;
+
   /* ── Brand spacing (8pt grid) ──────────────────────── */
   /* Usage: p-wl-1 = 8px, p-wl-2 = 16px … p-wl-6 = 64px */
   --spacing-wl-1:  8px;

@@ -26,6 +26,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { postLoginDispatch } from "@/lib/auth/postLoginDispatch";
+import { needsSignupRole, claimSignupRole, readSignupRole } from "@/lib/auth/claimSignupRole";
 
 const CALLBACK_PREFIX = "ca.nexussports.app://auth/callback";
 
@@ -71,11 +72,37 @@ export function OAuthDeepLinkHandler() {
             if (error) throw error;
           }
 
-          // Session posée → routage selon rôle/contexte (même dispatch que le natif).
+          // Session posée. AVANT de dispatcher : le compte a-t-il encore un rôle
+          // à réclamer ? Le signup OAuth ne peut pas écrire raw_user_meta_data →
+          // le trigger handle_new_auth_user défaute à ATHLETE, et /auth/callback
+          // (qui corrige ça sur web) est exclu du build output:'export'. Sans
+          // cette étape, tout nouveau compte Android partirait en ATHLETE.
+          // L'autorité est la DB (needs_signup_role), jamais une heuristique client.
           const { data } = await supabase.auth.getSession();
-          if (data.session?.user) {
-            await postLoginDispatch(supabase, data.session.user, router);
+          if (!data.session?.user) return;
+
+          if (await needsSignupRole(supabase)) {
+            // Rôle déposé par SocialButtonsMobile avant l'ouverture du Custom Tab
+            // (il ne survit pas à l'aller-retour autrement). Lecture unique.
+            const stashed = readSignupRole();
+
+            if (!stashed) {
+              // Welcome / Login, ou stash perdu/expiré → interstitiel.
+              // PAS de défaut ATHLETE.
+              router.replace("/inscription/role");
+              return;
+            }
+
+            const claimed = await claimSignupRole(supabase, stashed.role, stashed.context);
+            if (!claimed.ok) {
+              // Échec de la RPC → on ne dispatche PAS sur un rôle faux.
+              router.replace("/inscription/role");
+              return;
+            }
           }
+
+          // Rôle correct en DB → routage selon rôle/contexte (même dispatch que le natif).
+          await postLoginDispatch(supabase, data.session.user, router);
         } catch (e) {
           console.error("[OAuthDeepLink] échec du retour OAuth:", e);
         }
