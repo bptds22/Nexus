@@ -22,7 +22,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { isAdult } from "@/lib/legal/ageGate";
+import { isAdult, isUnder14 } from "@/lib/legal/ageGate";
 import { openLegalDocument } from "@/lib/legal";
 import {
   buildConsentMetadata,
@@ -137,6 +137,20 @@ export default function ConsentementsPage() {
     })();
   }, []);
 
+  // Loi 25 — hard-block self-signup sous 14 ans. Cet écran est le point de saisie
+  // de la DOB sur le chemin OAUTH (le flow email la collecte dans SignupMobile /
+  // usePartialSignup, qui portent déjà le gate). Sans ce contrôle ici, un <14 qui
+  // s'inscrit via Google/Apple contourne entièrement le blocage — web ET mobile.
+  //
+  // S'ajoute SOUS le seuil 18 : les 14-17 gardent le bloc parental (isMinor),
+  // seuls les <14 sont refusés.
+  //
+  // Vaut AUSSI pour la DOB verrouillée (fiche orpheline créée par un coach) :
+  // l'attestation d'un coach ne remplace pas le consentement parental légal sous
+  // 14 ans. Un hard-block avec une porte dérobée n'est pas un hard-block — un
+  // athlète <14 créé par un coach ne peut donc pas réclamer son compte, et c'est
+  // le comportement voulu.
+  const birthdateUnder14 = isUnder14(birthdate);
   const isMinor = birthdate.length > 0 && !isAdult(birthdate);
   const parentEmailValid = EMAIL_RE.test(parentEmail.trim());
 
@@ -144,16 +158,20 @@ export default function ConsentementsPage() {
     // Approche C — role/context déjà en DB : le gate ne porte que sur DOB +
     // consentements (+ parental si mineur).
     if (!birthdate) return false;
+    if (birthdateUnder14) return false;   // Loi 25 — hard-block <14, sans exception
     if (!consentPolicy || !consentData) return false;
     if (isMinor) {
       if (!parentFirstName.trim() || !parentLastName.trim() || !parentEmailValid) return false;
       if (!consentProfile || !consentVisibility) return false;
     }
     return true;
-  }, [birthdate, consentPolicy, consentData, isMinor, parentFirstName, parentLastName, parentEmailValid, consentProfile, consentVisibility]);
+  }, [birthdate, birthdateUnder14, consentPolicy, consentData, isMinor, parentFirstName, parentLastName, parentEmailValid, consentProfile, consentVisibility]);
 
   const handleSubmit = useCallback(async () => {
     if (!canSubmit || submitting || !user || !role) return;
+    // Loi 25 — aucune écriture pour un <14 (garde défensive en plus du blocage du
+    // CTA via canSubmit/birthdateUnder14). Miroir de SignupMobile:287.
+    if (isUnder14(birthdate)) return;
     setSubmitting(true);
     setError(null);
     const supabase = createClient();
@@ -266,14 +284,33 @@ export default function ConsentementsPage() {
           aria-readonly={dobLocked}
           className={`${inputCls}${dobLocked ? " opacity-60 cursor-not-allowed" : ""}`}
         />
-        {isMinor && (
+        {/* Loi 25 — hard-block <14. Formulation IDENTIQUE aux autres surfaces
+            (SignupMobile:1018, app/auth/page.tsx). Une seule phrase, partout. */}
+        {birthdate && birthdateUnder14 && (
+          <p className="text-[12px] text-[#EF4444] mt-2 px-1">
+            L&apos;inscription est réservée aux 14 ans et plus.
+          </p>
+        )}
+        {/* DOB verrouillée (fiche créée par un coach) : la date n'est pas
+            modifiable ici, l'utilisateur doit savoir qu'il n'a aucune action
+            corrective à tenter sur cet écran. */}
+        {birthdateUnder14 && dobLocked && (
+          <p className="text-[12px] text-[#9CA3AF] mt-1 px-1">
+            Cette date provient de ta fiche. Contacte ton entraîneur si elle est erronée.
+          </p>
+        )}
+
+        {/* Seuil 18 — bloc parental. Masqué sous 14 ans : le compte est refusé,
+            demander un consentement parental n'aurait aucun sens (et laisserait
+            croire qu'une saisie débloque la situation). */}
+        {isMinor && !birthdateUnder14 && (
           <p className="text-[12px] text-[#F59E0B] mt-2 px-1">
             Tu as moins de 18 ans : l&apos;accord d&apos;un parent ou tuteur est requis (Loi 25).
           </p>
         )}
 
         {/* 4. Bloc parental (mineur) */}
-        {isMinor && (
+        {isMinor && !birthdateUnder14 && (
           <>
             <SectionTitle>Tes parents</SectionTitle>
             <div className="space-y-3">
