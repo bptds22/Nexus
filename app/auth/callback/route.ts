@@ -67,6 +67,22 @@ export async function GET(request: Request) {
               privacy_preferences: profile.privacy_preferences,
             }
           : null;
+        // ── Filet de sécurité : OAuth sans rôle transmis ──────────────────
+        //    Le flow web normal envoie TOUJOURS ?role (picker écran 0), donc
+        //    `applied` est non-null et on ne passe pas ici. Mais si aucun rôle
+        //    n'a pu être appliqué et que le compte doit encore en réclamer un,
+        //    on ne le laisse PAS filer sur le défaut ATHLETE du trigger : on
+        //    l'envoie sur l'interstitiel. needs_signup_role() est évalué sous
+        //    l'identité de l'utilisateur (client serveur = ses cookies) et
+        //    retourne false pour tout compte établi — un login OAuth de retour
+        //    ne passe donc jamais par là.
+        if (!applied) {
+          const { data: needsRole } = await supabase.rpc("needs_signup_role");
+          if (needsRole === true) {
+            return NextResponse.redirect(`${origin}/inscription/role`);
+          }
+        }
+
         const dest = computeDispatchDestination(
           effectiveProfile,
           authUser.user_metadata as Record<string, unknown> | undefined,
@@ -135,7 +151,15 @@ async function maybeApplySignupRole(
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  const patch: { role: ValidRole; context?: string } = { role };
+  // role_claimed_at : marqueur one-shot partagé avec la RPC claim_signup_role
+  // (migration 20260713190000). Sans ce stamp, un coach inscrit ici mais dont
+  // l'onboarding n'est pas terminé serait vu comme "rôle non réclamé" par
+  // needs_signup_role() et se verrait redemander son rôle s'il ouvrait l'app
+  // mobile. Écrit par le même UPDATE service_role, aucune logique changée.
+  const patch: { role: ValidRole; context?: string; role_claimed_at: string } = {
+    role,
+    role_claimed_at: new Date().toISOString(),
+  };
   if (context) patch.context = context;
 
   const { error } = await sbAdmin.from("users").update(patch).eq("id", authUser.id);

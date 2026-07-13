@@ -46,13 +46,16 @@
    ⚠️ Hooks AVANT toute condition (canon Rules of Hooks).
 ═══════════════════════════════════════════════════════════════ */
 
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { translateAuthError } from "@/lib/utils/translateAuthError";
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import { MobilePicker, type PickerOption } from "@/components/mobile/MobilePicker";
 import { SocialButtonsMobile } from "./SocialButtonsMobile";
+import { RolePickerMobile } from "./RolePickerMobile";
+import { resolveRoleContext, type SignupRole } from "@/components/auth/signup/usePartialSignup";
+import type { ClaimableRole, ClaimableContext } from "@/lib/auth/claimSignupRole";
 import { NexusLogoSvg } from "./NexusLogoSvg";
 import {
   buildConsentMetadata,
@@ -109,6 +112,29 @@ export function SignupMobile({ onShowWelcome, onShowLogin }: SignupMobileProps) 
   // le flow natif (userType='recruiter') ; users.context est posé à
   // 'collegial' au signUp (hardcoded, pas via coachContext).
   const [coachContext, setCoachContext] = useState<"scolaire" | "ligue_civile" | null>(null);
+
+  /* ── Rôle/contexte pour les boutons sociaux de l'écran 1 ──────────────
+     Le signup email passe déjà le rôle à signUp() (→ raw_user_meta_data →
+     trigger). Le signup OAuth, lui, ne peut PAS écrire raw_user_meta_data :
+     sans ce couple transmis à SocialButtonsMobile, un coach qui tape "Continuer
+     avec Google" à l'écran 1 verrait son choix de l'écran 0 jeté et retomberait
+     sur le défaut ATHLETE du trigger. C'était le bug.
+
+     On dérive via resolveRoleContext — la table de correspondance canonique
+     déjà utilisée par le web (usePartialSignup.ts:26) — plutôt que de la
+     réécrire ici et risquer une divergence. */
+  const { role: socialRole, context: socialContext } = useMemo(() => {
+    const signupRole: SignupRole =
+      userType === "recruiter"
+        ? "recruiter"
+        : userType === "coach"
+          ? (coachContext === "ligue_civile" ? "coach_civil" : "coach_school")
+          : "athlete";
+    return resolveRoleContext(signupRole) as {
+      role: ClaimableRole;
+      context?: ClaimableContext;
+    };
+  }, [userType, coachContext]);
 
   // Form state athlète
   const [email, setEmail] = useState("");
@@ -538,7 +564,13 @@ export function SignupMobile({ onShowWelcome, onShowLogin }: SignupMobileProps) 
       </div>
 
       {/* Contenu */}
-      {step === 0 && <RolePicker onPickAthlete={handlePickAthlete} onPickPro={handlePickPro} />}
+      {step === 0 && (
+        <RolePickerMobile
+          onPickAthlete={handlePickAthlete}
+          onPickPro={handlePickPro}
+          footnote="Les inscriptions coach / recruteur passent encore par notre formulaire web (signup natif pro à venir)."
+        />
+      )}
       {step === 1 && (
         <Step1Account
           email={email} setEmail={setEmail}
@@ -549,6 +581,8 @@ export function SignupMobile({ onShowWelcome, onShowLogin }: SignupMobileProps) 
           emailValid={emailValid} pwdValid={pwdValid} pwdMatches={pwdMatches}
           onShowLogin={onShowLogin}
           setInputFocused={setInputFocused}
+          socialRole={socialRole}
+          socialContext={socialContext}
         />
       )}
       {step === 2 && (
@@ -681,116 +715,12 @@ export function SignupMobile({ onShowWelcome, onShowLogin }: SignupMobileProps) 
 
 /* ═══════════════════════════════════════════════════════════════
    ÉCRAN 0 — Role picker (4 cartes)
+
+   EXTRAIT vers components/mobile/auth/RolePickerMobile.tsx : le même
+   composant sert désormais l'écran 0 (ici) ET l'interstitiel post-OAuth
+   (/inscription/role). Un seul parcours de sélection de rôle, monté à deux
+   endroits — s'il change, il change aux deux.
 ═══════════════════════════════════════════════════════════════ */
-
-interface RolePickerProps {
-  onPickAthlete: () => void;
-  onPickPro: (role: "scolaire" | "collegial" | "ligue_civile") => void;
-}
-
-interface RoleCard {
-  key: string;
-  title: string;
-  subtitle: string;
-  icon: React.ReactNode;
-  onTap: () => void;
-}
-
-function RolePicker({ onPickAthlete, onPickPro }: RolePickerProps) {
-  const cards: RoleCard[] = [
-    {
-      key: "athlete",
-      title: "Athlète",
-      subtitle: "Tu es un athlète du secondaire et tu veux te faire recruter.",
-      icon: (
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="7" r="4" />
-          <path d="M5 21v-2a4 4 0 0 1 4-4h6a4 4 0 0 1 4 4v2" />
-        </svg>
-      ),
-      onTap: onPickAthlete,
-    },
-    {
-      key: "scolaire",
-      title: "Entraîneur d'école secondaire",
-      subtitle: "Tu coaches une équipe scolaire et veux donner de la visibilité à tes athlètes.",
-      icon: (
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="4" y="2" width="16" height="20" rx="2" />
-          <path d="M9 22V12h6v10" />
-        </svg>
-      ),
-      onTap: () => onPickPro("scolaire"),
-    },
-    {
-      key: "ligue_civile",
-      title: "Coach ligue ou club civil",
-      subtitle: "Tu coaches dans une ligue ou un club hors scolaire (ligue civile).",
-      icon: (
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M6 9H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h2" />
-          <path d="M18 9h2a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-2" />
-          <path d="M6 3h12v6a6 6 0 0 1-12 0V3z" />
-          <path d="M12 15v3M8 21h8" />
-        </svg>
-      ),
-      onTap: () => onPickPro("ligue_civile"),
-    },
-    {
-      key: "collegial",
-      title: "Recruteur CÉGEP",
-      subtitle: "Tu recrutes pour un programme sportif collégial.",
-      icon: (
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="11" cy="11" r="8" />
-          <path d="M21 21l-4.35-4.35" />
-        </svg>
-      ),
-      onTap: () => onPickPro("collegial"),
-    },
-  ];
-
-  return (
-    <div className="relative z-10 flex-1 px-6 pt-4 overflow-y-auto">
-      <h1
-        className="font-head font-black text-white uppercase tracking-tight"
-        style={{ fontSize: 28, lineHeight: 0.95 }}
-      >
-        Tu es ?
-      </h1>
-      <p className="text-[14px] text-[#9CA3AF] mt-2">
-        Choisis ton rôle pour adapter l&apos;inscription.
-      </p>
-
-      <div className="space-y-3 mt-6">
-        {cards.map((c) => (
-          <button
-            key={c.key}
-            type="button"
-            onClick={c.onTap}
-            className="w-full text-left bg-[#1A1D24] border border-white/[0.06] rounded-2xl px-4 py-4 flex items-center gap-3 active:scale-[0.98] active:bg-[#22262e] transition-all"
-            style={{ minHeight: 72 }}
-          >
-            <span className="w-11 h-11 rounded-full bg-white/[0.06] flex items-center justify-center text-white flex-shrink-0">
-              {c.icon}
-            </span>
-            <span className="flex-1 min-w-0">
-              <span className="block text-[16px] font-semibold text-white">{c.title}</span>
-              <span className="block text-[13px] text-white/55 mt-0.5 leading-snug">{c.subtitle}</span>
-            </span>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4a4d56" strokeWidth="2.4" strokeLinecap="round" className="flex-shrink-0">
-              <polyline points="9 18 15 12 9 6" />
-            </svg>
-          </button>
-        ))}
-      </div>
-
-      <p className="text-[11px] text-white/30 text-center mt-6 mb-4 italic">
-        Les inscriptions coach / recruteur passent encore par notre formulaire web (signup natif pro à venir).
-      </p>
-    </div>
-  );
-}
 
 /* ═══════════════════════════════════════════════════════════════
    ÉCRAN 1 — Crée ton compte (email + password + social)
@@ -811,6 +741,11 @@ interface Step1Props {
   emailValid: boolean; pwdValid: boolean; pwdMatches: boolean;
   onShowLogin: () => void;
   setInputFocused: (v: boolean) => void;
+  /* Rôle choisi à l'écran 0, transmis aux boutons sociaux : sans lui, un
+     signup Google/Apple depuis cet écran perdrait le choix de l'utilisateur
+     et retomberait sur le défaut ATHLETE du trigger. */
+  socialRole: ClaimableRole;
+  socialContext?: ClaimableContext;
 }
 
 function Step1Account(p: Step1Props) {
@@ -938,7 +873,7 @@ function Step1Account(p: Step1Props) {
 
       {/* Iter signup-reorg — bloc Consentements DÉPLACÉ vers l'écran 2
           (Toi) pour épurer cet écran 1 (compte + sociaux uniquement). */}
-      <SocialButtonsMobile topMargin={24} />
+      <SocialButtonsMobile topMargin={24} role={p.socialRole} context={p.socialContext} />
 
       <button
         type="button"

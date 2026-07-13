@@ -36,6 +36,12 @@ import { useMobileToast } from "@/components/mobile/MobileToast";
 import { createClient } from "@/lib/supabase/client";
 import { postLoginDispatch } from "@/lib/auth/postLoginDispatch";
 import { signInWithGoogle, signInWithApple } from "@/lib/auth/social";
+import {
+  needsSignupRole,
+  claimSignupRole,
+  type ClaimableRole,
+  type ClaimableContext,
+} from "@/lib/auth/claimSignupRole";
 
 async function triggerHaptic() {
   try {
@@ -82,9 +88,18 @@ function AppleLogo() {
 interface SocialButtonsMobileProps {
   /** Marge top entre le séparateur "ou" et le CTA primaire au-dessus. */
   topMargin?: number;
+  /**
+   * Rôle DÉJÀ choisi par l'utilisateur en amont (SignupMobile écran 0).
+   * Absent sur Welcome et Login : aucun rôle n'est connu à ce stade, et on ne
+   * défaute JAMAIS sur ATHLETE — un nouveau compte est alors envoyé sur
+   * /inscription/role.
+   */
+  role?: ClaimableRole;
+  /** Contexte associé au rôle (coach scolaire/civil). Ignoré pour ATHLETE. */
+  context?: ClaimableContext;
 }
 
-export function SocialButtonsMobile({ topMargin = 20 }: SocialButtonsMobileProps) {
+export function SocialButtonsMobile({ topMargin = 20, role, context }: SocialButtonsMobileProps) {
   const toast = useMobileToast();
   const router = useRouter();
   const [busy, setBusy] = useState<"google" | "apple" | null>(null);
@@ -96,20 +111,57 @@ export function SocialButtonsMobile({ topMargin = 20 }: SocialButtonsMobileProps
     try {
       if (Capacitor.isNativePlatform()) {
         // Device : flow NATIF (l'utilisateur reste dans l'app).
+        // signInWithIdToken ne peut porter ni redirectTo ni raw_user_meta_data,
+        // et /auth/callback (qui corrige le rôle sur web) est exclu du build
+        // output:'export'. Le rôle est donc réclamé ICI, via la RPC.
         const res = provider === "google" ? await signInWithGoogle() : await signInWithApple();
         if (!res.success) {
           toast.error({ message: "Connexion impossible", detail: res.error || "Réessaie." });
           return;
         }
-        if (res.session?.user) {
-          await postLoginDispatch(createClient(), res.session.user, router);
+        if (!res.session?.user) return;
+
+        const supabase = createClient();
+
+        // L'autorité est la DB, jamais une heuristique client type
+        // created_at ≈ last_sign_in_at : un faux positif re-rôlerait un
+        // utilisateur existant. needs_signup_role() évalue le même prédicat
+        // que la garde en écriture de claim_signup_role.
+        const needs = await needsSignupRole(supabase);
+
+        if (!needs) {
+          // Utilisateur existant → dispatch nu. Son rôle n'est JAMAIS touché.
+          await postLoginDispatch(supabase, res.session.user, router);
+          return;
         }
+
+        if (role) {
+          // Rôle connu (SignupMobile) → on le réclame AVANT de dispatcher,
+          // sinon computeDispatchDestination routerait sur un rôle encore faux.
+          const claimed = await claimSignupRole(supabase, role, context ?? null);
+          if (!claimed.ok) {
+            toast.error({ message: "Connexion impossible", detail: "Rôle non enregistré. Réessaie." });
+            return;
+          }
+          await postLoginDispatch(supabase, res.session.user, router);
+          return;
+        }
+
+        // Aucun rôle connu (Welcome / Login) → interstitiel. PAS de défaut ATHLETE.
+        router.replace("/inscription/role");
       } else {
         // Web : flow OAuth standard (redirect navigateur géré par Supabase).
+        // Le rôle connu voyage en query param — /auth/callback l'applique en
+        // service_role (maybeApplySignupRole). Sans rôle, le callback renvoie
+        // lui-même sur /inscription/role. Miroir de app/auth/page.tsx:248-256.
         const supabase = createClient();
+        const params = new URLSearchParams();
+        if (role) params.set("role", role);
+        if (role && context) params.set("context", context);
+        const qs = params.toString();
         const { error } = await supabase.auth.signInWithOAuth({
           provider,
-          options: { redirectTo: `${window.location.origin}/auth/callback` },
+          options: { redirectTo: `${window.location.origin}/auth/callback${qs ? `?${qs}` : ""}` },
         });
         if (error) toast.error({ message: "Connexion impossible", detail: error.message });
         // succès web → le navigateur redirige vers le provider puis le callback.
