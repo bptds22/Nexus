@@ -16,6 +16,8 @@ import type { RecruitmentStatus, RetireReason } from "@/lib/config/recruitmentSt
 import { getAthleteTracking } from "@/app/recruteur/_data/mockPipelineData";
 import RecruitmentStatusBadge from "@/app/recruteur/_components/RecruitmentStatusBadge";
 import StatusChangeDropdown from "@/app/recruteur/_components/StatusChangeDropdown";
+import VisitCalendarCard from "@/components/shared/VisitCalendarCard";
+import { persistPipelineStage } from "@/lib/pipeline/persistPipelineStage";
 import ComposeIntroModal from "@/app/recruteur/_components/ComposeIntroModal";
 import { useSubscription } from "@/lib/hooks/useSubscription";
 import { useFavoritesCount } from "@/lib/hooks/useFavoritesCount";
@@ -371,6 +373,7 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
   const [committedSchoolName, setCommittedSchoolName] = useState("");
   const [openToOffers, setOpenToOffers] = useState<boolean | null>(null);
   const [myPipelineStage, setMyPipelineStage] = useState<string | null>(null);
+  const [visitAt, setVisitAt] = useState<string | null>(null);
   const [coachId, setCoachId] = useState<string | null>(null);
   const [isAllStar, setIsAllStar] = useState(false);
 
@@ -801,11 +804,18 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
       if (!session?.user) return;
       const { data: pipelineData } = await supabase
         .from("recruiter_pipeline")
-        .select("stage")
+        .select("stage, visit_at")
         .eq("recruiter_id", session.user.id)
         .eq("athlete_id", id)
         .maybeSingle();
       setMyPipelineStage(pipelineData?.stage || null);
+      setVisitAt((pipelineData?.visit_at as string | null) ?? null);
+      // Le dropdown est piloté par la DB, plus par le mock : `pipelineStatus`
+      // était seedé depuis getAthleteTracking() (mockPipelineData), donc il
+      // n'était jamais aligné sur la vraie row du recruteur.
+      if (pipelineData?.stage) {
+        setPipelineStatus(String(pipelineData.stage).toLowerCase() as RecruitmentStatus);
+      }
     };
     loadPipeline();
   }, [id]);
@@ -903,9 +913,38 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
   const [showComposeIntro, setShowComposeIntro] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [statusToast, setStatusToast] = useState<SuccessToastData | null>(null);
 
-  function handleStatusChange(newStatus: RecruitmentStatus, _extra?: { visitDate?: string; retireReason?: RetireReason }) {
+  /* Le stage est désormais PERSISTÉ (avant : setState local uniquement → tout
+     changement de statut depuis la fiche était perdu au refresh). Optimiste :
+     on peint l'UI tout de suite, on rollback si Postgres refuse. */
+  async function handleStatusChange(newStatus: RecruitmentStatus, extra?: { visitDate?: string; retireReason?: RetireReason }) {
+    const prevStatus = pipelineStatus;
+    const prevVisitAt = visitAt;
+    const nextVisitAt = newStatus === "visite_planifiee" ? (extra?.visitDate ?? null) : null;
+
     setPipelineStatus(newStatus);
+    setVisitAt(nextVisitAt);
+
+    const res = await persistPipelineStage({
+      athleteId: id,
+      status: newStatus,
+      visitAtIso: extra?.visitDate,
+    });
+
+    if (!res.ok) {
+      setPipelineStatus(prevStatus);
+      setVisitAt(prevVisitAt);
+      setStatusToast({
+        message: res.reason === "pro_required"
+          ? "Fonctionnalité Pro — passe à Pro pour gérer ton processus."
+          : "Le changement de statut n'a pas pu être enregistré.",
+      });
+      return;
+    }
+
+    // Garde « Mon statut » (lu depuis la DB) cohérent avec le dropdown.
+    setMyPipelineStage(newStatus === "retire" ? null : newStatus.toUpperCase());
   }
 
   // INSERT into public.reports. type/status forced to DB CHECK-allowed
@@ -1111,6 +1150,19 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
                   onStatusChange={handleStatusChange}
                   onComposeIntro={() => setShowComposeIntro(true)}
                   onCelebrate={() => setShowCelebration(true)}
+                />
+              </div>
+            )}
+
+            {/* Visite planifiée + export agenda. Gate strict : le stage ET la
+                date. Une visite sans date affiche le stage, pas la carte. */}
+            {!isPreview && canUsePipeline && pipelineStatus === "visite_planifiee" && visitAt && (
+              <div className="max-w-[420px]">
+                <VisitCalendarCard
+                  visitAtIso={visitAt}
+                  athleteName={`${a.firstName} ${a.lastName}`}
+                  sport={a.primarySport}
+                  schoolName={a.schoolName}
                 />
               </div>
             )}
@@ -1758,6 +1810,7 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
       )}
 
       <SuccessToast data={flagSuccessToast} onDismiss={() => setFlagSuccessToast(null)} />
+      <SuccessToast data={statusToast} onDismiss={() => setStatusToast(null)} />
 
       <UpgradeModal
         open={showUpgradeModal}
