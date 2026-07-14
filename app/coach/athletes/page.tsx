@@ -18,6 +18,7 @@ import CoachAthleteRow from "@/components/coach/CoachAthleteRow";
 import { CoachAthletesMobile } from "@/components/shared/CoachAthletesMobile";
 import InviteByEmailModal from "./_components/InviteByEmailModal";
 
+import { TEAM_GENDER_FILTER_OPTIONS, firstTeamGender } from "@/lib/config/gender";
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -167,6 +168,7 @@ function MesAthletesContent() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [sport, setSport] = useState("");
+  const [genderFilter, setGenderFilter] = useState<string>("");
   const [position, setPosition] = useState("");
   const [region, setRegion] = useState("");
   const [promotion, setPromotion] = useState("");
@@ -279,7 +281,7 @@ function MesAthletesContent() {
           positions!position_id(nom, abreviation),
           schools!school_id(name, region),
           committed_school:schools!committed_school_id(name),
-          team_athletes(team_id),
+          team_athletes(team_id, teams!team_id(gender)),
           evaluations(cote_globale, rapport_entraineur, distinctions)
         `)
         .eq("school_id", coachSchoolId)
@@ -388,6 +390,9 @@ function MesAthletesContent() {
           ouvertPrive: a.ouvert_cegep_prive === true,
           ouvertAnglophone: a.ouvert_cegep_anglophone === true,
           createdAt: (a.created_at as string) || "",
+          // Genre de l'ÉQUIPE (teams.gender via team_athletes), PAS athletes.genre.
+          // null quand l'athlète n'a aucune équipe → exclu si un genre est filtré.
+          teamGender: firstTeamGender(a.team_athletes),
           coach_id: (a.coach_id as string | null) ?? null,
         };
 
@@ -503,6 +508,8 @@ function MesAthletesContent() {
     }
     if (sport) list = list.filter((a) => a.sport === sport);
     if (position) list = list.filter((a) => a.position === position);
+    // Genre d'ÉQUIPE (teams.gender), PAS athletes.genre. Sans équipe => exclu.
+    if (genderFilter) list = list.filter((a) => a.teamGender === genderFilter);
     if (region) list = list.filter((a) => a.region === region);
     if (promotion) list = list.filter((a) => a.gradYear === parseInt(promotion));
     if (verifiedOnly) list = list.filter((a) => a.isVerified);
@@ -530,12 +537,12 @@ function MesAthletesContent() {
     }
 
     return list;
-  }, [myRoster, search, sport, position, region, promotion, verifiedOnly, withVideoOnly, minRating, withSportBadge, withAcademicBadge, minGpa, filterOuvertDemenager, filterOuvertPrive, filterOuvertAnglophone, filterNewOnly, sortBy, urlFilter]);
+  }, [myRoster, search, sport, genderFilter, position, region, promotion, verifiedOnly, withVideoOnly, minRating, withSportBadge, withAcademicBadge, minGpa, filterOuvertDemenager, filterOuvertPrive, filterOuvertAnglophone, filterNewOnly, sortBy, urlFilter]);
 
   const hasFilters = sport || position || region || promotion || verifiedOnly || withVideoOnly || minRating || withSportBadge || withAcademicBadge || minGpa || filterOuvertDemenager || filterOuvertPrive || filterOuvertAnglophone || filterNewOnly || sortBy !== "rating_desc";
 
   const resetFilters = () => {
-    setSport(""); setPosition(""); setRegion(""); setPromotion(""); setVerifiedOnly(false); setWithVideoOnly(false); setMinRating(""); setWithSportBadge(false); setWithAcademicBadge(false); setMinGpa(""); setOrgType(""); setFilterOuvertDemenager(false); setFilterOuvertPrive(false); setFilterOuvertAnglophone(false); setFilterNewOnly(false); setSortBy("rating_desc");
+    setSport(""); setGenderFilter(""); setPosition(""); setRegion(""); setPromotion(""); setVerifiedOnly(false); setWithVideoOnly(false); setMinRating(""); setWithSportBadge(false); setWithAcademicBadge(false); setMinGpa(""); setOrgType(""); setFilterOuvertDemenager(false); setFilterOuvertPrive(false); setFilterOuvertAnglophone(false); setFilterNewOnly(false); setSortBy("rating_desc");
   };
 
   const totalPending = unverifiedAthletes.length + pendingSuggestions.length;
@@ -834,6 +841,11 @@ function MesAthletesContent() {
       <div className="flex flex-wrap items-center gap-2.5">
         <select title="Sport" value={sport} onChange={(e) => { setSport(e.target.value); setPosition(""); }} className={`nx-filter-select${sport ? " nx-filter-active" : ""}`}>
           {SPORTS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+        </select>
+
+        {/* Genre d'ÉQUIPE (teams.gender) — sport → genre → position. */}
+        <select title="Genre d&apos;équipe" value={genderFilter} onChange={(e) => setGenderFilter(e.target.value)} className={`nx-filter-select${genderFilter ? " nx-filter-active" : ""}`}>
+          {TEAM_GENDER_FILTER_OPTIONS.map((g) => <option key={g.value} value={g.value}>{g.label}</option>)}
         </select>
 
         <select title="Position" value={position} onChange={(e) => setPosition(e.target.value)} className={`nx-filter-select${position ? " nx-filter-active" : ""}`} disabled={!sport}>

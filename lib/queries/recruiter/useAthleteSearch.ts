@@ -21,6 +21,7 @@
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { parseDistinctions } from "@/lib/config/badges";
+import { firstTeamGender } from "@/lib/config/gender";
 
 export interface AthleteSearchFilters {
   search: string;           // déjà débouncé en amont
@@ -77,7 +78,14 @@ export interface SearchAthleteRow {
   createdAt: string;
   noTeam: boolean;
   context: string | null;
+  /** teams.gender de l'équipe de l'athlète — "Masculin" | "Féminin" | "Mixte".
+   *  null quand l'athlète n'est rattaché à AUCUNE équipe (team_athletes vide),
+   *  ce qui est le cas de la grande majorité des athlètes aujourd'hui. Le filtre
+   *  les exclut donc dès qu'un genre est sélectionné. Volontairement PAS
+   *  athletes.genre : ce champ-là est à moitié vide et encodé de 2 façons. */
+  teamGender: string | null;
 }
+
 
 const BADGE_MAP: Record<string, { label: string; icon: string }> = {
   captain: { label: "Capitaine", icon: "shield" },
@@ -113,6 +121,7 @@ export function useAthleteSearch(filters: AthleteSearchFilters) {
           schools!school_id(name, region, type),
           committed_school:schools!committed_school_id(name),
           context,
+          team_athletes(teams!team_id(gender)),
           evaluations(distinctions)
         ` as unknown as "*")
         .eq("status", "ACTIF");
@@ -230,6 +239,7 @@ export function useAthleteSearch(filters: AthleteSearchFilters) {
           createdAt: (a.created_at as string) || "",
           noTeam: !a.school_id,
           context: (a.context as string | null) ?? null,
+          teamGender: firstTeamGender(a.team_athletes),
         };
       });
     },
