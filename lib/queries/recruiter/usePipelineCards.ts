@@ -46,6 +46,7 @@ export function usePipelineCards() {
           flagged,
           next_action_at,
           next_action_note,
+          visit_at,
           moved_at,
           created_at,
           updated_at,
@@ -118,6 +119,9 @@ export function usePipelineCards() {
           flagged: !!p.flagged,
           next_action_at: (p.next_action_at as string) || null,
           next_action_note: (p.next_action_note as string) || null,
+          // Date+heure de la visite. Ne vit que sous VISITE_PLANIFIEE — les
+          // autres stages la remettent à NULL à l'écriture.
+          visit_at: (p.visit_at as string) || null,
           moved_at: movedAt,
           noTeam: !a?.school_id,
         } as PipelineKanbanCard;
