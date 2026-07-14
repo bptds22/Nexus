@@ -12,8 +12,9 @@ Sentry.init({
 
   // Define how likely traces are sampled. Adjust this value in production, or use tracesSampler for greater control.
   tracesSampleRate: 0.2,
-  // Enable logs to be sent to Sentry
-  enableLogs: true,
+  // Log ingestion off by default: it burns quota fast, and log strings could
+  // carry athlete data (minors — Loi 25). Turn on deliberately, scoped.
+  enableLogs: false,
 
   // Define how likely Replay events are sampled.
   // This sets the sample rate to be 5%. You may want this to be 100% while

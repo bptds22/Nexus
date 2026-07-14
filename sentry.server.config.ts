@@ -10,8 +10,9 @@ Sentry.init({
   // Define how likely traces are sampled. Adjust this value in production, or use tracesSampler for greater control.
   tracesSampleRate: 0.2,
 
-  // Enable logs to be sent to Sentry
-  enableLogs: true,
+  // Log ingestion off by default: it burns quota fast, and log strings could
+  // carry athlete data (minors — Loi 25). Turn on deliberately, scoped.
+  enableLogs: false,
 
   dataCollection: {
     // To disable sending user data and HTTP bodies, uncomment the lines below. For more info visit:
