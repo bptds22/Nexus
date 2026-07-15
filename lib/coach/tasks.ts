@@ -12,7 +12,8 @@
      1. UNVERIFIED         athletes.verified IS NOT true
                            OR modified_since_verification = true
                            (athlète vérifié mais modifié depuis → à re-vérifier)
-     2. MISSING EVAL       missing star OR missing report (see isMissingEval)
+     2. MISSING EVAL       missing star AND missing report (see isMissingEval)
+                           — a star-only or report-only eval counts as done
      3. PENDING SUGGESTION athlete_suggestions.status='EN_ATTENTE'
 
    Future migrators (port in lock-step so badges and lists agree) :
@@ -144,8 +145,10 @@ function toTaskAthlete(
 /* ── Detection logic — exported for unit tests + per-row UI checks ─ */
 
 /**
- * Is this athlete missing a coach evaluation? OR-logic — missing star
- * OR missing report → missing eval.
+ * Is this athlete missing a coach evaluation? AND-logic — an eval is
+ * present as soon as there is a star OR a report; it is missing only
+ * when BOTH are absent. A star-only eval (the quick-eval sheet lets you
+ * save one) is complete, and so is a report-only eval.
  *
  *   missing star   = evaluation.cote_globale IS NULL
  *                    AND athletes.cote_globale_entraineur IS NULL.
@@ -168,7 +171,7 @@ export function isMissingEval(
     (athlete.cote_globale_entraineur ?? null) === null;
   const missingReport =
     !evaluation || (evaluation.rapport_entraineur ?? "").trim() === "";
-  return missingStar || missingReport;
+  return missingStar && missingReport;
 }
 
 /* ── Main loader ──────────────────────────────────────────────── */
