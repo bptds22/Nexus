@@ -183,8 +183,10 @@ export function isMissingEval(
  *   1. athletes (coach_id=coachUserId, status='ACTIF') with verified
  *      + cote_globale_entraineur + joined evaluations(coach_id,
  *      cote_globale, rapport_entraineur) + joined sports/positions.
- *   2. athlete_suggestions (coach_id=coachUserId, status='EN_ATTENTE')
- *      ordered created_at DESC with joined athletes(first_name, last_name).
+ *   2. athlete_suggestions for athletes THIS coach owns (inner join on
+ *      athletes.coach_id=coachUserId, NOT the suggestion's own snapshot
+ *      coach_id column), status='EN_ATTENTE', ordered created_at DESC
+ *      with joined athletes(first_name, last_name).
  *
  * Mirrors the SELECT shape used by app/coach/athletes/page.tsx
  * (L241-292) — slimmer column set, no new columns invented.
@@ -224,9 +226,16 @@ export async function loadCoachTasks(
         valeur_proposee,
         message,
         created_at,
-        athletes!athlete_id(first_name, last_name)
+        athletes!athlete_id!inner(first_name, last_name, coach_id)
       `)
-      .eq("coach_id", coachUserId)
+      // Scope by the athlete's CURRENT coach, not the suggestion's own
+      // coach_id column. That column is a point-in-time snapshot: a
+      // suggestion filed before the coach claimed the athlete carries
+      // coach_id=null and is never backfilled, so filtering on it drops
+      // the task silently. The !inner embed + athletes.coach_id filter
+      // mirrors the RLS policy (athlete_id IN athletes WHERE coach_id =
+      // auth.uid()) and the coach athlete-profile view.
+      .eq("athletes.coach_id", coachUserId)
       .eq("status", "EN_ATTENTE")
       .order("created_at", { ascending: false }),
   ]);
