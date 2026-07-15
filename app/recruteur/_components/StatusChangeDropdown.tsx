@@ -18,9 +18,26 @@ interface Props {
   currentStatus: RecruitmentStatus;
   athleteId: string;
   hasExistingThread?: boolean;
+  /** `visitDate` : instant ISO COMPLET (date + heure si saisie), pas un
+   *  simple YYYY-MM-DD — il part tel quel dans recruiter_pipeline.visit_at
+   *  (timestamptz). Voir combineVisitInstant() plus bas. */
   onStatusChange: (newStatus: RecruitmentStatus, extra?: { visitDate?: string; retireReason?: RetireReason }) => void;
   onComposeIntro?: () => void;
   onCelebrate?: () => void;
+}
+
+/* `<input type="date">` donne "YYYY-MM-DD", `<input type="time">` donne
+ * "HH:MM". `new Date("2026-03-12T14:00")` (sans suffixe Z) est interprété
+ * en HEURE LOCALE par le moteur JS — exactement ce qu'on veut : le
+ * recruteur saisit 14h à Montréal, on stocke l'instant UTC correspondant.
+ * Ajouter un "Z" ici décalerait la visite de 4-5h.
+ *
+ * Heure absente → minuit local. VisitCalendarCard traite minuit pile comme
+ * « pas d'heure saisie » et n'affiche alors que la date. */
+function combineVisitInstant(date: string, time: string): string | undefined {
+  if (!date) return undefined;
+  const d = new Date(`${date}T${time || "00:00"}`);
+  return Number.isNaN(d.getTime()) ? undefined : d.toISOString();
 }
 
 export default function StatusChangeDropdown({
@@ -35,6 +52,7 @@ export default function StatusChangeDropdown({
   const [showRetireReason, setShowRetireReason] = useState(false);
   const [showVisitDate, setShowVisitDate] = useState(false);
   const [visitDate, setVisitDate] = useState("");
+  const [visitTime, setVisitTime] = useState("");
   const [retireReason, setRetireReason] = useState<RetireReason | "">("");
   const ref = useRef<HTMLDivElement>(null);
 
@@ -95,10 +113,11 @@ export default function StatusChangeDropdown({
   }
 
   function confirmVisit() {
-    onStatusChange("visite_planifiee", { visitDate: visitDate || undefined });
+    onStatusChange("visite_planifiee", { visitDate: combineVisitInstant(visitDate, visitTime) });
     setOpen(false);
     setShowVisitDate(false);
     setVisitDate("");
+    setVisitTime("");
   }
 
   function confirmRetire() {
@@ -186,6 +205,19 @@ export default function StatusChangeDropdown({
                 onChange={(e) => setVisitDate(e.target.value)}
                 className="w-full bg-[#13151a] border border-[#2a2d36] rounded-lg px-3 py-2 text-[13px] text-[#e0e0e0] focus:border-[#E63946] outline-none"
               />
+
+              <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#9CA3AF]">Heure (optionnel)</p>
+              <input
+                type="time"
+                value={visitTime}
+                onChange={(e) => setVisitTime(e.target.value)}
+                // Sans date, l'heure ne veut rien dire (et combineVisitInstant
+                // renverrait undefined) → on la verrouille tant que la date est vide.
+                disabled={!visitDate}
+                aria-label="Heure de la visite"
+                className="w-full bg-[#13151a] border border-[#2a2d36] rounded-lg px-3 py-2 text-[13px] text-[#e0e0e0] focus:border-[#E63946] outline-none disabled:opacity-40"
+              />
+
               <p className="text-[10px] text-[#6b7280]">Optionnel — tu peux ajouter la date plus tard</p>
               <div className="flex gap-2">
                 <button type="button" onClick={() => { setShowVisitDate(false); }} className="flex-1 px-3 py-2 rounded-lg text-[12px] font-bold text-[#6b7280] hover:text-white transition-colors">
