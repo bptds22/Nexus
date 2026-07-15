@@ -83,7 +83,7 @@ function toCoachAthlete(
     school: a.school,
     region: a.region,
     graduationYear: a.anneeDiplomation ?? 0,
-    stars: a.cote != null ? a.cote / 2 : 0,
+    stars: a.cote != null ? a.cote : 0,
     isVerified: a.verified,
     lastValidation: null,
     jersey: "",
