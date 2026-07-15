@@ -11,6 +11,8 @@
    l'athlète et l'instant.
 ═══════════════════════════════════════════════════════════════ */
 
+import { Capacitor } from "@capacitor/core";
+
 import { generateCalendarLinks, downloadIcs } from "@/lib/calendar/generateCalendarLinks";
 
 interface Props {
@@ -49,7 +51,7 @@ export default function VisitCalendarCard({ visitAtIso, athleteName, sport, scho
   const timeLabel = withTime ? start.toLocaleTimeString("fr-CA", TIME_FMT) : null;
 
   const title = sport ? `Visite — ${athleteName} (${sport})` : `Visite — ${athleteName}`;
-  const { googleUrl, icsBlob } = generateCalendarLinks({
+  const { googleUrl, icsBlob, icsContent } = generateCalendarLinks({
     title,
     description: `Visite planifiée avec ${athleteName} via Nexus.`,
     location: schoolName || "",
@@ -58,6 +60,46 @@ export default function VisitCalendarCard({ visitAtIso, athleteName, sport, scho
   });
 
   const icsName = `visite-${athleteName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}.ics`;
+
+  /* Capacitor WebView ne sait pas ouvrir un onglet (`target="_blank"` navigue
+     in-app ou no-op). Sur device on délègue au navigateur système via
+     @capacitor/browser — même convention que les écrans Paramètres. */
+  const openGoogle = async () => {
+    if (Capacitor.isNativePlatform()) {
+      const { Browser } = await import("@capacitor/browser");
+      await Browser.open({ url: googleUrl });
+    } else {
+      window.open(googleUrl, "_blank", "noopener,noreferrer");
+    }
+  };
+
+  /* Le download Blob (`URL.createObjectURL` + `<a download>`) est mort dans
+     WKWebView (iOS) et l'Android WebView. Sur device on écrit le .ics dans le
+     cache puis on ouvre la feuille de partage native (Calendrier, Mail, Fichiers…)
+     — même pattern que MonParcoursMobile (Filesystem + Share). Web inchangé. */
+  const exportIcs = async () => {
+    if (Capacitor.isNativePlatform()) {
+      try {
+        const { Filesystem, Directory, Encoding } = await import("@capacitor/filesystem");
+        const written = await Filesystem.writeFile({
+          path: icsName,
+          data: icsContent,
+          directory: Directory.Cache,
+          encoding: Encoding.UTF8,
+        });
+        const { Share } = await import("@capacitor/share");
+        await Share.share({
+          title: "Visite planifiée",
+          files: [written.uri],
+          dialogTitle: "Ajouter au calendrier",
+        });
+      } catch (e) {
+        console.error("[visite mobile] native calendar export failed:", e);
+      }
+    } else {
+      downloadIcs(icsBlob, icsName);
+    }
+  };
 
   return (
     <div className="bg-[#1A1D24] border border-[#2D3748] rounded-lg px-4 py-3">
@@ -75,17 +117,16 @@ export default function VisitCalendarCard({ visitAtIso, athleteName, sport, scho
       </div>
 
       <div className="flex gap-2 mt-3">
-        <a
-          href={googleUrl}
-          target="_blank"
-          rel="noopener noreferrer"
+        <button
+          type="button"
+          onClick={openGoogle}
           className="flex-1 text-center px-3 py-2 rounded-lg border border-[#2D3748] bg-[#13151a] text-sm font-semibold text-[#9CA3AF] hover:text-white hover:border-[#4a4d56] transition-colors"
         >
           Google Agenda
-        </a>
+        </button>
         <button
           type="button"
-          onClick={() => downloadIcs(icsBlob, icsName)}
+          onClick={exportIcs}
           className="flex-1 px-3 py-2 rounded-lg border border-[#2D3748] bg-[#13151a] text-sm font-semibold text-[#9CA3AF] hover:text-white hover:border-[#4a4d56] transition-colors"
         >
           Télécharger (.ics)
