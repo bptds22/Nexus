@@ -95,6 +95,9 @@ function toCoachAthlete(
     // (empty) school name. Mirrors desktop PageClient.tsx:636's
     // school={isCivil ? "Ligue civile" : a.school} override.
     noTeam: isCivilTeam,
+    // Non exposé par la requête d'équipe, et non utilisé par la row : seule la
+    // recherche roster filtre sur le genre d'équipe.
+    teamGender: null,
     coachId: null,
     favoritesCount: 0,
     hasVideo: false,
