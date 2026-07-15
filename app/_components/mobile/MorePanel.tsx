@@ -268,6 +268,7 @@ export default function MorePanel({
             // "Mes équipes" déplacé de la tab bar (refonte 5 slots : Accueil /
             // Mes athlètes / À traiter / Messages / Plus).
             { key: "equipes", label: "Mes équipes", href: "/coach/equipes", icon: Icons.layers },
+            { key: "transferts", label: "Transferts", href: "/coach/transferts", icon: Icons.reassign },
             { key: "activites", label: "Activités", href: "/coach/activites", icon: Icons.bell, badge: actBadge },
             { key: "reputation", label: "Ma réputation", href: "/coach/reputation", icon: Icons.star },
           ],
