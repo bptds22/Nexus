@@ -32,6 +32,7 @@ import { useMobileToast } from "@/components/mobile/MobileToast";
 import AthletePhoto from "@/components/shared/AthletePhoto";
 import { isValidationExpired } from "@/lib/utils/profileValidation";
 import { parseDistinctions } from "@/lib/config/badges";
+import { TEAM_GENDER_FILTER_OPTIONS, firstTeamGender } from "@/lib/config/gender";
 import {
   lookupInvitableByEmail,
   type AthleteEmailSuggestion,
@@ -107,6 +108,8 @@ export interface CoachAthlete {
   committedSchoolName: string | null;
   openToOffers: boolean | null;
   noTeam: boolean;
+  /** Genre de l'ÉQUIPE (teams.gender), jamais athletes.genre. null si sans équipe. */
+  teamGender: string | null;
   coachId: string | null;
   favoritesCount: number;
   hasVideo: boolean;
@@ -151,6 +154,7 @@ function mapCoachAthlete(a: Record<string, unknown>, favCounts: Record<string, n
 
   const teamAthletes = Array.isArray(a.team_athletes) ? a.team_athletes : [];
   const noTeam = teamAthletes.length === 0;
+  const teamGender = firstTeamGender(teamAthletes);
 
   const academicBadges = (a.mentions_academiques as string[]) || [];
   const sportSlug = (sportObj?.nom || "").toLowerCase().replace(/ /g, "_");
@@ -176,6 +180,7 @@ function mapCoachAthlete(a: Record<string, unknown>, favCounts: Record<string, n
     committedSchoolName: committedSchool?.name || null,
     openToOffers: (a.open_to_offers as boolean | null) ?? null,
     noTeam,
+    teamGender,
     coachId: (a.coach_id as string | null) ?? null,
     favoritesCount: favCounts[id] || 0,
     hasVideo: !!a.video_faits_saillants_url,
@@ -357,6 +362,8 @@ interface FiltersBottomSheetProps {
   onReset: () => void;
   resultCount: number;
   sport: string; setSport: (v: string) => void;
+  /** Genre de l'ÉQUIPE (teams.gender) — pas athletes.genre. */
+  genderFilter: string; setGenderFilter: (v: string) => void;
   position: string; setPosition: (v: string) => void;
   promotion: string; setPromotion: (v: string) => void;
   region: string; setRegion: (v: string) => void;
@@ -378,6 +385,7 @@ function FiltersBottomSheet(props: FiltersBottomSheetProps) {
   const [isDragging, setIsDragging] = useState(false);
 
   const [openSport, setOpenSport] = useState(false);
+  const [openGender, setOpenGender] = useState(false);
   const [openPosition, setOpenPosition] = useState(false);
   const [openPromotion, setOpenPromotion] = useState(false);
   const [openRegion, setOpenRegion] = useState(false);
@@ -392,6 +400,7 @@ function FiltersBottomSheet(props: FiltersBottomSheetProps) {
   const closeSheet = () => { triggerHaptic("Light"); onClose(); };
 
   const sportLabel = SPORTS.find((s) => s.value === props.sport)?.label || "Tous les sports";
+  const genderLabelValue = TEAM_GENDER_FILTER_OPTIONS.find((g) => g.value === props.genderFilter)?.label || "Tous";
   const positionLabel = props.positionOptions.find((p) => p.value === props.position)?.label || "Toutes les positions";
   const promotionLabel = PROMOTION_OPTIONS.find((p) => p.value === props.promotion)?.label || "Toutes les promotions";
   const regionLabel = props.regionOptions.find((r) => r.value === props.region)?.label || "Toutes les régions";
@@ -444,6 +453,7 @@ function FiltersBottomSheet(props: FiltersBottomSheetProps) {
         <div className="flex-1 overflow-y-auto py-4 space-y-6">
           <div className="mx-4 bg-[#1A1D24] rounded-2xl overflow-hidden">
             <FilterRow label="Sport" value={sportLabel} onTap={() => setOpenSport(true)} />
+            <FilterRow label="Genre d'équipe" value={genderLabelValue} onTap={() => setOpenGender(true)} />
             <FilterRow
               label="Position"
               value={positionLabel}
@@ -481,6 +491,7 @@ function FiltersBottomSheet(props: FiltersBottomSheetProps) {
       </div>
 
       <MobilePicker open={openSport} onClose={() => setOpenSport(false)} title="Sport" options={SPORTS} value={props.sport} onChange={(v) => props.setSport((v as string) ?? "")} />
+      <MobilePicker open={openGender} onClose={() => setOpenGender(false)} title="Genre d'équipe" options={TEAM_GENDER_FILTER_OPTIONS} value={props.genderFilter} onChange={(v) => props.setGenderFilter((v as string) ?? "")} />
       <MobilePicker open={openPosition} onClose={() => setOpenPosition(false)} title="Position" options={props.positionOptions} value={props.position} onChange={(v) => props.setPosition((v as string) ?? "")} />
       <MobilePicker open={openPromotion} onClose={() => setOpenPromotion(false)} title="Promotion" options={PROMOTION_OPTIONS} value={props.promotion} onChange={(v) => props.setPromotion((v as string) ?? "")} />
       <MobilePicker open={openRegion} onClose={() => setOpenRegion(false)} title="Région" options={props.regionOptions} value={props.region} onChange={(v) => props.setRegion((v as string) ?? "")} />
@@ -875,6 +886,8 @@ export function CoachAthletesMobile() {
   // Filters
   const [search, setSearch] = useState("");
   const [sport, setSport] = useState("");
+  // Genre d'ÉQUIPE (teams.gender), PAS athletes.genre.
+  const [genderFilter, setGenderFilter] = useState<string>("");
   const [position, setPosition] = useState("");
   const [promotion, setPromotion] = useState("");
   const [region, setRegion] = useState("");
@@ -946,7 +959,7 @@ export function CoachAthletesMobile() {
           positions!position_id(nom, abreviation),
           schools!school_id(name, region),
           committed_school:schools!committed_school_id(name),
-          team_athletes(team_id),
+          team_athletes(team_id, teams!team_id(gender)),
           evaluations(cote_globale, rapport_entraineur, distinctions)
         `)
         .eq("school_id", coachRow.school_id)
@@ -1028,6 +1041,8 @@ export function CoachAthletesMobile() {
       );
     }
     if (sport) list = list.filter((a) => a.sport === sport);
+    // Sans équipe → teamGender null → sort des résultats dès qu'un genre est choisi.
+    if (genderFilter) list = list.filter((a) => a.teamGender === genderFilter);
     if (position) list = list.filter((a) => a.position === position);
     if (region) list = list.filter((a) => a.region === region);
     if (promotion) list = list.filter((a) => a.graduationYear === parseInt(promotion, 10));
@@ -1048,16 +1063,16 @@ export function CoachAthletesMobile() {
     }
 
     return list;
-  }, [myRoster, search, sport, position, region, promotion, verifiedOnly, withVideoOnly, minRating, withSportBadge, withAcademicBadge, minGpa, sortBy]);
+  }, [myRoster, search, sport, genderFilter, position, region, promotion, verifiedOnly, withVideoOnly, minRating, withSportBadge, withAcademicBadge, minGpa, sortBy]);
 
   const activeFiltersCount = [
-    sport, position, promotion, region, minGpa,
+    sport, genderFilter, position, promotion, region, minGpa,
     verifiedOnly, withVideoOnly, minRating, withSportBadge, withAcademicBadge,
     sortBy !== "rating_desc",
   ].filter(Boolean).length;
 
   const resetFilters = useCallback(() => {
-    setSport(""); setPosition(""); setPromotion(""); setRegion(""); setMinGpa("");
+    setSport(""); setGenderFilter(""); setPosition(""); setPromotion(""); setRegion(""); setMinGpa("");
     setSortBy("rating_desc");
     setVerifiedOnly(false); setWithVideoOnly(false); setMinRating("");
     setWithSportBadge(false); setWithAcademicBadge(false);
@@ -1459,6 +1474,7 @@ export function CoachAthletesMobile() {
         onReset={resetFilters}
         resultCount={filtered.length}
         sport={sport} setSport={setSport}
+        genderFilter={genderFilter} setGenderFilter={setGenderFilter}
         position={position} setPosition={setPosition}
         promotion={promotion} setPromotion={setPromotion}
         region={region} setRegion={setRegion}

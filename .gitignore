@@ -102,3 +102,6 @@ design_handoff_nexus_scan_card/
 
 # Claude Code local settings (machine-local, not shared)
 .claude/settings.local.json
+
+# Sentry Config File
+.env.sentry-build-plugin

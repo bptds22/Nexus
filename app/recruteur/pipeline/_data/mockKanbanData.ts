@@ -31,6 +31,9 @@ export interface PipelineKanbanCard {
   flagged: boolean;
   next_action_at: string | null;
   next_action_note: string | null;
+  /** recruiter_pipeline.visit_at — date+heure de la visite planifiée.
+   *  Optionnel : les fixtures mock ci-dessous ne le portent pas. */
+  visit_at?: string | null;
   moved_at: string | null;
   // "Ligue Civile" indicator — true when athlete has neither school
   // nor league_team set (chk_school_or_league rules out both-set, so

@@ -120,7 +120,13 @@ function PhotoUpload({ photoUrl, onUploaded, sublabel = "Optionnel — visible p
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setUploading(false); return; }
 
-    const res = await uploadImage(f, { pathBase: `onboarding/${user.id}_${Date.now()}` });
+    // Le 1er segment du chemin DOIT être auth.uid() — c'est la condition de la
+    // policy INSERT du bucket ("Users upload to own folder under avatars" :
+    // (storage.foldername(name))[1] = auth.uid()::text, cf migration
+    // 20260519150000_storage_avatars_owner_scoped.sql). L'ancien préfixe
+    // `onboarding/...` mettait l'uid APRÈS un `_`, donc hors segment → RLS
+    // refusait tout upload photo en onboarding web (coach ET recruteur).
+    const res = await uploadImage(f, { pathBase: `${user.id}/onboarding-${Date.now()}` });
     if (!res.ok) { setError(res.message); setUploading(false); return; }
 
     onUploaded(res.publicUrl);
@@ -2910,11 +2916,12 @@ function RecruiterProfile({ user, save }: { user: NexusUser; save: (u: Partial<N
   const [sport, setSport] = useState((p.sport_principal as string) || "");
   const [experience, setExperience] = useState((p.experience_years as number) || 0);
   const [phone, setPhone] = useState((p.phone as string) || "");
+  const [photoUrl, setPhotoUrl] = useState((p.photo_url as string) || "");
 
   useEffect(() => {
-    save({ profile: { ...p, bio, sport_principal: sport, experience_years: experience, phone } });
+    save({ profile: { ...p, bio, sport_principal: sport, experience_years: experience, phone, photo_url: photoUrl } });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bio, sport, experience, phone]);
+  }, [bio, sport, experience, phone, photoUrl]);
 
   const cegepName = (user.institution as Record<string, unknown>)?.name as string || null;
 
@@ -2933,7 +2940,7 @@ function RecruiterProfile({ user, save }: { user: NexusUser; save: (u: Partial<N
       )}
 
       {/* Photo */}
-      <PhotoUpload photoUrl="" onUploaded={() => {}} sublabel="Optionnel" />
+      <PhotoUpload photoUrl={photoUrl} onUploaded={setPhotoUrl} sublabel="Optionnel" />
 
       <div>
         <label className={`${label} text-[#9CA3AF] mb-1.5 block`}>Bio courte</label>

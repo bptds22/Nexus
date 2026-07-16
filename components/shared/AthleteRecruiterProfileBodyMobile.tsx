@@ -27,6 +27,8 @@ import type {
   RetireReason,
 } from "@/lib/config/recruitmentStatuses";
 import { getAthleteTracking } from "@/app/recruteur/_data/mockPipelineData";
+import VisitCalendarCard from "@/components/shared/VisitCalendarCard";
+import { persistPipelineStage } from "@/lib/pipeline/persistPipelineStage";
 import StatusChangeDropdown from "@/app/recruteur/_components/StatusChangeDropdown";
 import ComposeIntroModal from "@/app/recruteur/_components/ComposeIntroModal";
 import { useSubscription } from "@/lib/hooks/useSubscription";
@@ -582,6 +584,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
   const [committedSchoolName, setCommittedSchoolName] = useState("");
   const [openToOffers, setOpenToOffers] = useState<boolean | null>(null);
   const [myPipelineStage, setMyPipelineStage] = useState<string | null>(null);
+  const [visitAt, setVisitAt] = useState<string | null>(null);
   const [coachId, setCoachId] = useState<string | null>(null);
   const [isAllStar, setIsAllStar] = useState(false);
 
@@ -1341,9 +1344,14 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) return;
       const { data: pipelineData } = await supabase
-        .from("recruiter_pipeline").select("stage")
+        .from("recruiter_pipeline").select("stage, visit_at")
         .eq("recruiter_id", session.user.id).eq("athlete_id", id).maybeSingle();
       setMyPipelineStage(pipelineData?.stage || null);
+      setVisitAt((pipelineData?.visit_at as string | null) ?? null);
+      // Dropdown piloté par la DB, plus par getAthleteTracking() (mock).
+      if (pipelineData?.stage) {
+        setPipelineStatus(String(pipelineData.stage).toLowerCase() as RecruitmentStatus);
+      }
     };
     loadPipeline();
   }, [id, isRecruiter]);
@@ -1480,8 +1488,37 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
   const [showCelebration, setShowCelebration] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
-  function handleStatusChange(newStatus: RecruitmentStatus, _extra?: { visitDate?: string; retireReason?: RetireReason }) {
+  /* Stage désormais PERSISTÉ (avant : state local → perdu au refresh).
+     Optimiste, rollback si Postgres refuse (RLS Free → user_has_pro()). */
+  async function handleStatusChange(newStatus: RecruitmentStatus, extra?: { visitDate?: string; retireReason?: RetireReason }) {
+    const prevStatus = pipelineStatus;
+    const prevVisitAt = visitAt;
+    const nextVisitAt = newStatus === "visite_planifiee" ? (extra?.visitDate ?? null) : null;
+
     setPipelineStatus(newStatus);
+    setVisitAt(nextVisitAt);
+
+    const res = await persistPipelineStage({
+      athleteId: id,
+      status: newStatus,
+      visitAtIso: extra?.visitDate,
+    });
+
+    if (!res.ok) {
+      setPipelineStatus(prevStatus);
+      setVisitAt(prevVisitAt);
+      toast.error({
+        message: res.reason === "pro_required"
+          ? "Fonctionnalité Pro"
+          : "Statut non enregistré",
+        detail: res.reason === "pro_required"
+          ? "Passe à Pro pour gérer ton processus."
+          : undefined,
+      });
+      return;
+    }
+
+    setMyPipelineStage(newStatus === "retire" ? null : newStatus.toUpperCase());
   }
 
   async function handleFlagSubmit() {
@@ -1931,6 +1968,18 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
               onStatusChange={handleStatusChange}
               onComposeIntro={() => setShowComposeIntro(true)}
               onCelebrate={() => setShowCelebration(true)}
+            />
+          </div>
+        )}
+
+        {/* Visite planifiée + export agenda — gate strict : stage ET date. */}
+        {isRecruiter && canUsePipeline && pipelineStatus === "visite_planifiee" && visitAt && (
+          <div className="mt-4">
+            <VisitCalendarCard
+              visitAtIso={visitAt}
+              athleteName={`${a.firstName} ${a.lastName}`}
+              sport={a.primarySport}
+              schoolName={a.schoolName}
             />
           </div>
         )}
