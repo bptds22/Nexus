@@ -4,14 +4,20 @@
 // SchoolProgramIdentity (program-wall is out of scope). All stats/campus data
 // are MOCK this ticket (real bindings / editor = later blocs).
 
-export interface SportCard {
-  slug:
-    | "football" | "basketball" | "soccer" | "volleyball" | "flag"
-    | "cross" | "badminton" | "cheer" | "hockey" | "natation";
-  name: string;
-  desc: string;
-  badges: { label: string; kind: "d1" | "rec" }[];
-  href: string;
+/** Sport S2 "L'affiche" — MOCK fixture (Bloc 2 = vraies équipes DB). Pills
+ *  (divisions / genre / nb) sont DÉRIVÉS de equipes[]. */
+export interface SportTeam {
+  nom: string;
+  /** "D1" | "D2" | "D3" | null (null → aucune pill division, ex. RSEQ). */
+  division: string | null;
+  /** genre équipe (forme chip) : "M" | "F" | "M&F" | "Mixte". */
+  genre: string;
+  /** route page équipe — placeholder "#" pour l'instant (câblage Bloc 2). */
+  url: string;
+}
+export interface Sport {
+  nom: string;
+  equipes: SportTeam[];
 }
 
 export interface TickerWord {
@@ -20,10 +26,26 @@ export interface TickerWord {
 }
 
 export interface RouteStat {
-  count: number;
+  /** SAISIE MANUELLE (fixture — Bloc 2). Undefined → item non rendu (jamais un 0). */
+  count?: number;
   suffix?: string;
   label: string;
 }
+
+/** News card — saisie manuelle (Bloc 2). 0 news → section #news absente. */
+export interface NewsItem {
+  source: string;
+  titre: string;
+  url: string;
+}
+
+/** Campus carousel card. Photo card = {image, titre, legende≤60}; the video
+ *  card = {type:'video', youtubeUrl}. image / youtubeUrl null → neutral
+ *  gradient fallback (no invented image). MOCK this ticket — recruiter upload
+ *  + real youtubeUrl binding = Bloc 2. */
+export type CampusCard =
+  | { type?: "photo"; image: string | null; titre: string; legende: string }
+  | { type: "video"; youtubeUrl: string | null };
 
 export interface ProgramPageContent {
   /** marquee vocabulary */
@@ -37,7 +59,7 @@ export interface ProgramPageContent {
     region: string; // tr-cream label "AHUNTSIC · QUÉBEC"
   };
   /** S2 — sports grid */
-  sports: SportCard[];
+  sports: Sport[];
   /** Campus (v8.2 — moved before À propos) */
   language: "FR" | "EN" | "BILINGUE";
   schoolType: "PRIVÉ" | "PUBLIC";
@@ -47,7 +69,10 @@ export interface ProgramPageContent {
   housing: { type: "campus" | "partner" | "pension" | "none"; note?: string };
   /** installations shown as facts (mock 2 items) */
   facts: { title: string; text: string }[];
-  videoUrl: string | null; // null → vstrip "à venir"; set → compact embed/link
+  videoUrl: string | null; // (legacy — display replaced by campusCards video card)
+  /** Campus carousel — ordered 0..n cards. Empty / undefined → no carousel
+   *  (never a bare strip). MOCK this ticket; DB binding = Bloc 2. */
+  campusCards?: CampusCard[];
   /** S3 — à propos */
   sellText: string;
   sellTitle: string;
@@ -63,6 +88,12 @@ export interface ProgramPageContent {
   universities: string[];
   nexusStripText: string;
   nexusRecruitedCount: number;
+  /** News — 0..n cards. Empty / undefined → section #news absente. MOCK (Bloc 2). */
+  news?: NewsItem[];
+  /** Programme visé du profil de l'athlète connecté (perfect match S5). MOCK ici
+   *  depuis le fixture ; Bloc 2 = vrai athlete.programmeVise (session). Absent →
+   *  board match masqué (seul "TOUS LES PROGRAMMES" s'affiche). */
+  viewerProgrammeVise?: string;
   /** CTA */
   ctaTitle: string;
   ctaNotifyName: string;

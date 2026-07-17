@@ -4,11 +4,16 @@
 // (z-index:0; all section content is z-index:2). Positions / sizes / angles /
 // opacities are copied EXACTLY from page-niveau1-web-v8.html, per section.
 //
-// v8.3 rule: masked motifs (.gm-fleur/.gm-maple/.gm-nx) are painted in --red so
-// they recolor per school (green for Momo); word / italic / marker / chalk /
-// RSEQ ghosts are cold Nexus neutral (rgba(237,239,243,…)) — colours live in CSS.
+// v8.3 rule: masked motifs (.gm-fleur/.gm-maple/.gm-nx) are painted in the page's
+// brand colour so they recolor per school (green for Momo); word / italic /
+// marker / chalk / RSEQ ghosts are cold Nexus neutral.
+//
+// This file is now COMPOSITION ONLY — the vocabulary itself (classes, fonts,
+// strokes, the chalk assets) lives in components/shared/dna, the single source of
+// truth shared with the team page. Sections here declare *what goes where*.
 
 import * as React from "react";
+import { GhostWords, PlaybookDecor, type GhostItem } from "@/components/shared/dna";
 
 export type GhostSection =
   | "apercu"
@@ -18,58 +23,39 @@ export type GhostSection =
   | "academique"
   | "parcours";
 
+const COMPOSITIONS: Record<GhostSection, GhostItem[]> = {
+  apercu: [
+    { variant: "mark", mask: "fleur", right: "3%", top: "6%", size: 300, opacity: 0.05, rotate: -8 },
+    { variant: "word", text: "ÉLITE", left: "1%", bottom: "24%", fontSize: 110, rotate: -2 },
+  ],
+  sports: [{ variant: "word", text: "ON MONTE", right: "2%", top: "5%", fontSize: 120, rotate: -2 }],
+  apropos: [
+    { variant: "mark", mask: "maple", left: "4%", bottom: "10%", size: 150, opacity: 0.04, rotate: 10 },
+    { variant: "italic", text: "Fierté", right: "8%", bottom: "14%", fontSize: 56, rotate: -5 },
+  ],
+  campus: [
+    { variant: "italic", text: "Québec", right: "4%", top: "9%", fontSize: 64, rotate: -4 },
+    { variant: "mark", mask: "fleur", left: "2%", top: "14%", size: 130, opacity: 0.045, rotate: 7 },
+  ],
+  academique: [{ variant: "word", text: "CANADA", left: "1%", top: "6%", fontSize: 110, rotate: -2 }],
+  parcours: [
+    { variant: "mark", mask: "nx", right: "2%", top: "8%", size: 330, opacity: 0.045, rotate: -7 },
+    { variant: "marker", text: "D’ici ➔ pour ici", left: "6%", bottom: "8%", fontSize: 44, rotate: -3 },
+    { variant: "word", text: "QUÉBEC", left: "38%", top: "4%", fontSize: 90, rotate: -2 },
+  ],
+};
+
 export default function GhostLayer({ section }: { section: GhostSection }) {
-  switch (section) {
-    case "apercu":
-      return (
-        <>
-          <div className="gm gm-fleur" style={{ right: "3%", top: "6%", width: 300, height: 300, opacity: 0.05, transform: "rotate(-8deg)" }} />
-          <div className="gwd" style={{ left: "1%", bottom: "24%", fontSize: 110, transform: "rotate(-2deg)" }}>ÉLITE</div>
-        </>
-      );
-    case "sports":
-      return (
-        <>
-          <div className="gwd" style={{ right: "2%", top: "5%", fontSize: 120, transform: "rotate(-2deg)" }}>ON MONTE</div>
-          <svg className="gchalk" style={{ left: -14, bottom: 30, width: 260 }} viewBox="0 0 260 180" fill="none" stroke="currentColor" strokeWidth="4">
-            <path d="M30 30l26 26M56 30L30 56" /><circle cx="150" cy="46" r="17" />
-            <path d="M46 100c46 34 106 6 168 52" strokeDasharray="8 10" /><path d="M204 142l24 12-6-26" />
-          </svg>
-        </>
-      );
-    case "apropos":
-      return (
-        <>
-          <div className="gm gm-maple" style={{ left: "4%", bottom: "10%", width: 150, height: 150, opacity: 0.04, transform: "rotate(10deg)" }} />
-          <div className="gwi" style={{ right: "8%", bottom: "14%", fontSize: 56, transform: "rotate(-5deg)" }}>Fierté</div>
-          <svg className="spine" style={{ right: 0, top: 50, width: 320 }} viewBox="0 0 320 240" fill="none" stroke="currentColor" strokeWidth="3">
-            <circle cx="270" cy="40" r="13" /><path d="M270 56v66c0 28-66 24-104 62" strokeDasharray="8 10" />
-            <path d="M172 172l-22 12 4-24" /><path d="M60 200l16 16M76 200l-16 16" />
-          </svg>
-        </>
-      );
-    case "campus":
-      return (
-        <>
-          <div className="gwi" style={{ right: "4%", top: "9%", fontSize: 64, transform: "rotate(-4deg)" }}>Québec</div>
-          <div className="gm gm-fleur" style={{ left: "2%", top: "14%", width: 130, height: 130, opacity: 0.045, transform: "rotate(7deg)" }} />
-        </>
-      );
-    case "academique":
-      return (
-        <>
-          <div className="gwd" style={{ left: "1%", top: "6%", fontSize: 110, transform: "rotate(-2deg)" }}>CANADA</div>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img className="grseq" style={{ right: "5%", bottom: "8%", width: 170, transform: "rotate(6deg)" }} src="/logos/rseq.png" alt="" />
-        </>
-      );
-    case "parcours":
-      return (
-        <>
-          <div className="gm gm-nx" style={{ right: "2%", top: "8%", width: 330, height: 330, opacity: 0.045, transform: "rotate(-7deg)" }} />
-          <div className="gmk" style={{ left: "6%", bottom: "8%", fontSize: 44, transform: "rotate(-3deg)" }}>D&apos;ici ➔ pour ici</div>
-          <div className="gwd" style={{ left: "38%", top: "4%", fontSize: 90, transform: "rotate(-2deg)" }}>QUÉBEC</div>
-        </>
-      );
-  }
+  return (
+    <>
+      <GhostWords items={COMPOSITIONS[section]} />
+      {/* craie playbook — mêmes assets partagés, densités d'origine par section */}
+      {section === "sports" && <PlaybookDecor preset="chalk" style={{ left: -14, bottom: 30, width: 260 }} />}
+      {section === "apropos" && <PlaybookDecor preset="spine" style={{ right: 0, top: 50, width: 320 }} />}
+      {section === "academique" && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img className="grseq" style={{ right: "5%", bottom: "8%", width: 170, transform: "rotate(6deg)" }} src="/logos/rseq.png" alt="" />
+      )}
+    </>
+  );
 }
