@@ -55,6 +55,11 @@ export const MOBILE_EXCLUDED_PAGES = [
   '/confidentialite',
   '/conditions',
   '/collecte-donnees',
+
+  // Routes dev/test — accès web URL-only (noindex), jamais bundlées mobile.
+  // Exclusion effective via le guard notFound() en tête de chaque page.
+  '/page-test',
+  '/team-test',
 ] as const;
 
 /**

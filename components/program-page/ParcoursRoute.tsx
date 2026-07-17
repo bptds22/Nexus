@@ -53,13 +53,17 @@ export default function ParcoursRoute({
             <div className="dot" style={{ fontSize: 14 }}>U.S.</div>
             <div className="sl">{route.stop3.sl}</div>
             <h4>{route.stop3.h4}</h4>
+            {/* Stats = SAISIE MANUELLE (fixture — Bloc 2). Une valeur absente
+                (count null/undefined) => item non rendu, jamais un 0. */}
             <div className="nums">
-              {route.stop3.stats.map((s, i) => (
-                <div key={i}>
-                  <span data-count={s.count} data-suffix={s.suffix || undefined}>0</span>
-                  <small>{s.label}</small>
-                </div>
-              ))}
+              {route.stop3.stats
+                .filter((s) => s.count != null)
+                .map((s, i) => (
+                  <div key={i}>
+                    <span data-count={s.count} data-suffix={s.suffix || undefined}>0</span>
+                    <small>{s.label}</small>
+                  </div>
+                ))}
             </div>
             <div className="uni">
               {universities.map((u, i) => (
