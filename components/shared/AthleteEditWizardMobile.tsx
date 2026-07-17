@@ -37,6 +37,7 @@
 ═══════════════════════════════════════════════════════════════ */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { selectBestEvaluation } from "@/lib/evaluations/selectEvaluation";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -620,7 +621,7 @@ export default function AthleteEditWizardMobile() {
         positions!position_id(nom, abreviation),
         schools!school_id(name, region, city, type),
         team_athletes(team_id, teams!team_id(name)),
-        evaluations(vitesse_explosivite, force_puissance, endurance_cardio, agilite_coordination, vision_du_jeu, sens_tactique, leadership, discipline, coachabilite, intelligence_jeu, competitivite, esprit_equipe, resilience, attitude_mentalite, cote_globale, rapport_entraineur, distinctions),
+        evaluations(vitesse_explosivite, force_puissance, endurance_cardio, agilite_coordination, vision_du_jeu, sens_tactique, leadership, discipline, coachabilite, intelligence_jeu, competitivite, esprit_equipe, resilience, attitude_mentalite, cote_globale, rapport_entraineur, distinctions, updated_at),
         users!athletes_coach_id_fkey(first_name, last_name)
       `)
       .eq("user_id", user.id)
@@ -682,7 +683,7 @@ export default function AthleteEditWizardMobile() {
     //    simple mode (where a flat Cote globale is suggestable).
     //    coachRel comes from the users!athletes_coach_id_fkey join
     //    so the rapport quote can be attributed.
-    const evalRel = (Array.isArray(raw.evaluations) ? raw.evaluations[0] : raw.evaluations) as Record<string, unknown> | null | undefined;
+    const evalRel = selectBestEvaluation(Array.isArray(raw.evaluations) ? raw.evaluations : raw.evaluations ? [raw.evaluations] : []) as Record<string, unknown> | null | undefined;
     const coachRel = (Array.isArray(raw.users) ? raw.users[0] : raw.users) as { first_name?: string; last_name?: string } | null | undefined;
     const traitRatings: AthleteTraitRatings | undefined = evalRel ? {
       speed:           (evalRel.vitesse_explosivite  as number) || 0,

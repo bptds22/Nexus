@@ -17,6 +17,7 @@ import type { AthleteProfileRecruiterView, AthleteTraitRatings, GlobalRecruitmen
 import { SPORT_NAME_MAP } from "@/lib/config/sportBadges";
 import { isValidationExpired } from "@/lib/utils/profileValidation";
 import { parseDistinctions, type DistinctionEntry } from "@/lib/config/badges";
+import { selectBestEvaluation } from "@/lib/evaluations/selectEvaluation";
 import AthletePlayerCard from "@/components/shared/AthletePlayerCard";
 import DistinctionBadge from "@/components/shared/DistinctionBadge";
 import StarRating from "@/components/ui/StarRating";
@@ -143,7 +144,7 @@ export default function AthleteProfileView({
 
         const evals = rawRec.evaluations;
         const evalArr = Array.isArray(evals) ? evals : [];
-        const e0 = evalArr[0] as Record<string, unknown> | undefined;
+        const e0 = selectBestEvaluation(evalArr) as Record<string, unknown> | undefined;
         if (e0?.distinctions) {
           let d: unknown = e0.distinctions;
           if (typeof d === "string") { try { d = JSON.parse(d); } catch { d = []; } }

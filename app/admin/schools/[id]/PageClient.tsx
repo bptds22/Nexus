@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { genderLabel } from "@/lib/config/gender";
+import { selectBestEvaluation } from "@/lib/evaluations/selectEvaluation";
 import { uploadImage } from "@/lib/upload/uploadImage";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -196,7 +197,7 @@ export default function AdminSchoolDetailPage() {
           coach_id, sport_id, position_id,
           sports!sport_id(nom),
           positions!position_id(nom, abreviation),
-          evaluations!athlete_id(cote_globale)
+          evaluations!athlete_id(cote_globale, updated_at)
         `)
         .eq("school_id", id)
         .order("last_name");
@@ -206,7 +207,8 @@ export default function AdminSchoolDetailPage() {
         const sp = Array.isArray(r.sports) ? r.sports[0] : r.sports;
         const po = Array.isArray(r.positions) ? r.positions[0] : r.positions;
         const evs = Array.isArray(r.evaluations) ? r.evaluations : [];
-        const cote = evs.length > 0 ? ((evs[0] as Record<string, unknown>).cote_globale as number | null) : null;
+        const bestEv = selectBestEvaluation(evs) as Record<string, unknown> | null;
+        const cote = bestEv ? (bestEv.cote_globale as number | null) : null;
         return {
           id: r.id as string,
           first_name: (r.first_name as string) ?? null,

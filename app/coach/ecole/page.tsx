@@ -10,6 +10,7 @@ import KpiCardRow from "@/components/director/KpiCardRow";
 import FunnelChart from "@/components/director/FunnelChart";
 import type { CoachOverview } from "@/lib/types/models";
 import { getCurrentSeason } from "@/lib/utils/season";
+import { formatTeamLabel } from "@/lib/teams/teamLabel";
 import {
   BarChart,
   Bar,
@@ -81,6 +82,9 @@ function SchoolDashboardContent() {
   const [viewsTrendData, setViewsTrendData] = useState<{ month: string; views: number }[]>([]);
   const [funnelData, setFunnelData] = useState<{ stage: string; value: number; color: string }[]>([]);
   const [rankedCoaches, setRankedCoaches] = useState<CoachOverview[]>([]);
+  const [schoolTeams, setSchoolTeams] = useState<
+    { id: string; name: string; label: string; headCoach: string; athleteCount: number }[]
+  >([]);
 
   useEffect(() => {
     async function loadDashboard() {
@@ -238,6 +242,44 @@ function SchoolDashboardContent() {
         setRankedCoaches(
           coachOverviews.sort((a, b) => b.athleteCount - a.athleteCount).slice(0, 5)
         );
+      }
+
+      // ── Équipes de l'école (aperçu supervision) ───────────────
+      const { data: teamRows } = await supabase
+        .from("teams")
+        .select("id, name, age_group, division, gender, sport_id, sports!sport_id(nom), team_coaches(coach_id, role), team_athletes(id)")
+        .eq("school_id", mySchool.school_id)
+        .eq("is_active", true)
+        .order("created_at", { ascending: false });
+      if (teamRows) {
+        const headIds = new Set<string>();
+        for (const t of teamRows) {
+          for (const tc of ((t as { team_coaches?: { coach_id?: string; role?: string }[] }).team_coaches || [])) {
+            if (tc.role === "head_coach" && tc.coach_id) headIds.add(tc.coach_id);
+          }
+        }
+        const headNameMap = new Map<string, string>();
+        if (headIds.size > 0) {
+          const { data: hu } = await supabase.from("users").select("id, first_name, last_name").in("id", Array.from(headIds));
+          for (const u of hu || []) headNameMap.set(u.id, `${u.first_name || ""} ${u.last_name || ""}`.trim());
+        }
+        setSchoolTeams(teamRows.map((t) => {
+          const tt = t as {
+            id: string; name: string; age_group?: string; division?: string; gender?: string;
+            sports?: { nom?: string } | { nom?: string }[];
+            team_coaches?: { coach_id?: string; role?: string }[];
+            team_athletes?: unknown[];
+          };
+          const sport = Array.isArray(tt.sports) ? tt.sports[0] : tt.sports;
+          const head = (tt.team_coaches || []).find((tc) => tc.role === "head_coach");
+          return {
+            id: tt.id,
+            name: tt.name,
+            label: formatTeamLabel(sport?.nom, tt.age_group, tt.division, tt.gender, tt.name),
+            headCoach: head?.coach_id ? (headNameMap.get(head.coach_id) || "Coach") : "",
+            athleteCount: (tt.team_athletes || []).length,
+          };
+        }));
       }
 
       setLoading(false);
@@ -515,6 +557,40 @@ function SchoolDashboardContent() {
             Voir tous les coachs &rarr;
           </Link>
         </div>
+      </div>
+
+      {/* ── Section 4b: Équipes de l'école ─────────────────── */}
+      <div className="bg-[#1A1D24] rounded-xl border border-[#1e2128] p-5 sm:p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-head text-[15px] font-bold text-white">
+            &Eacute;quipes ({schoolTeams.length})
+          </h3>
+          <Link href="/coach/equipes" className="text-[13px] text-[#E63946] hover:underline">
+            G&eacute;rer les &eacute;quipes &rarr;
+          </Link>
+        </div>
+        {schoolTeams.length === 0 ? (
+          <p className="text-[13px] text-[#4a4d56]">Aucune &eacute;quipe active dans cette &eacute;cole.</p>
+        ) : (
+          <div className="space-y-2">
+            {schoolTeams.map((t) => (
+              <Link key={t.id} href={`/coach/equipes/${t.id}`}
+                className="flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-white/[0.02] transition-colors group">
+                <div className="min-w-0">
+                  <p className="text-[14px] font-bold text-white group-hover:text-[#E63946] transition-colors truncate">{t.name}</p>
+                  <p className="text-[12px] text-[#6b7280] truncate">
+                    {t.label}
+                    {t.headCoach ? <> · <span className="text-[#9CA3AF]">{t.headCoach}</span></> : ""}
+                  </p>
+                </div>
+                <div className="text-center shrink-0 ml-4">
+                  <p className="text-[16px] font-head font-black text-white">{t.athleteCount}</p>
+                  <p className="text-[9px] text-[#6b7280] uppercase tracking-wider">athl&egrave;te{t.athleteCount !== 1 ? "s" : ""}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* ── Section 5: Recent activity ─────────────────────── */}

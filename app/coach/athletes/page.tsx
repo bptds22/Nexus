@@ -10,6 +10,7 @@ import NxIcon from "@/components/ui/NxIcon";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
 import type { GlobalRecruitmentStatus } from "@/lib/types/models";
 import { parseDistinctions } from "@/lib/config/badges";
+import { selectBestEvaluation } from "@/lib/evaluations/selectEvaluation";
 import { calculateCompletion, type AthleteLike, type EvalLike } from "@/lib/utils/profileCompletion";
 import { isValidationExpired } from "@/lib/utils/profileValidation";
 import { getCurrentSeason } from "@/lib/utils/season";
@@ -282,7 +283,7 @@ function MesAthletesContent() {
           schools!school_id(name, region),
           committed_school:schools!committed_school_id(name),
           team_athletes(team_id, teams!team_id(gender)),
-          evaluations(cote_globale, rapport_entraineur, distinctions)
+          evaluations(cote_globale, rapport_entraineur, distinctions, updated_at)
         `)
         .eq("school_id", coachSchoolId)
         .eq("status", "ACTIF");
@@ -324,7 +325,7 @@ function MesAthletesContent() {
 
         const evalsRaw = a.evaluations;
         const evals = Array.isArray(evalsRaw) ? evalsRaw : [];
-        const eval0 = evals[0] as { cote_globale?: number; distinctions?: unknown } | undefined;
+        const eval0 = selectBestEvaluation(evals) as { cote_globale?: number; distinctions?: unknown } | undefined;
         const stars = eval0?.cote_globale || (a.cote_globale_entraineur as number) || 0;
         const distinctions = parseDistinctions(eval0?.distinctions);
 

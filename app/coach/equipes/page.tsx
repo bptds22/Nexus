@@ -9,6 +9,7 @@ import {
   TeamCreateFormBlock, type TeamFormValues, resolveTeamFinalValues,
 } from "@/components/shared/teams/TeamCreateFormBlock";
 import { createTeam, joinTeam } from "@/lib/queries/coach/createTeam";
+import { loadSchoolDirectorStatus } from "@/lib/queries/coach/useSchoolDirector";
 import CoachEquipesMobile from "@/components/shared/CoachEquipesMobile";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
@@ -50,6 +51,10 @@ export default function EquipesPage() {
 
 function EquipesPageDesktop() {
   const [teams, setTeams] = useState<Team[]>([]);
+  // Oversight directeur : équipes de l'école dont le user n'est PAS membre.
+  // Vide pour un coach non-directeur → la 2e section ne s'affiche pas.
+  const [schoolTeams, setSchoolTeams] = useState<Team[]>([]);
+  const [isDirector, setIsDirector] = useState(false);
   const [loading, setLoading] = useState(true);
   const [sports, setSports] = useState<{ id: string; nom: string }[]>([]);
   const [schoolId, setSchoolId] = useState<string>("");
@@ -110,19 +115,31 @@ function EquipesPageDesktop() {
       .eq("coach_id", user.id);
     setRosterCount(count || 0);
 
-    // If coach has no teams, skip the teams query entirely
-    if (myTeamIds.length === 0) {
+    // Oversight directeur : un directeur d'école voit TOUTES les équipes
+    // actives de son école (pas seulement les siennes). La lecture est
+    // autorisée côté DB (RLS Part A). On charge alors par school_id ;
+    // sinon on garde le comportement coach classique (par myTeamIds).
+    const dir = await loadSchoolDirectorStatus(supabase, user.id);
+    setIsDirector(dir.isDirector);
+    const directorSchoolId = dir.isDirector ? dir.schoolId : null;
+
+    // Un coach non-directeur sans équipe : rien à charger.
+    if (!directorSchoolId && myTeamIds.length === 0) {
       setLoading(false);
       return;
     }
 
-    // Load teams with coaches and athlete counts
-    const { data: teamsData } = await supabase
+    // Load teams with coaches and athlete counts. Directeur → école
+    // entière ; coach → ses équipes.
+    let teamsQuery = supabase
       .from("teams")
       .select("id, name, age_group, division, league, season, sport_id, sports!sport_id(nom), team_coaches(coach_id, role), team_athletes(id)")
-      .in("id", myTeamIds)
       .eq("is_active", true)
       .order("created_at", { ascending: false });
+    teamsQuery = directorSchoolId
+      ? teamsQuery.eq("school_id", directorSchoolId)
+      : teamsQuery.in("id", myTeamIds);
+    const { data: teamsData } = await teamsQuery;
 
     if (teamsData) {
       // Collect all coach IDs to resolve names in one query
@@ -163,7 +180,14 @@ function EquipesPageDesktop() {
           coaches,
         };
       });
-      setTeams(mapped);
+
+      // Split : « mes équipes » (je suis dans team_coaches) vs « équipes
+      // de l'école » (supervision directeur). Le set des IDs où je suis
+      // coach = myTeamIds. Pour un non-directeur, tout tombe dans « mes
+      // équipes » (la requête n'a ramené que myTeamIds) → 2e section vide.
+      const myIdSet = new Set(myTeamIds);
+      setTeams(mapped.filter((t) => myIdSet.has(t.id)));
+      setSchoolTeams(mapped.filter((t) => !myIdSet.has(t.id)));
     }
     setLoading(false);
   }
@@ -276,8 +300,8 @@ function EquipesPageDesktop() {
         </div>
       )}
 
-      {/* Empty state */}
-      {teams.length === 0 && rosterCount === 0 && (
+      {/* Empty state — masqué si le directeur a des équipes d'école à superviser. */}
+      {teams.length === 0 && rosterCount === 0 && schoolTeams.length === 0 && (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <div className="w-16 h-16 rounded-full bg-[#1A1D24] border border-[#2D3748] flex items-center justify-center mb-4">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4a4d56" strokeWidth="1.5" strokeLinecap="round"><path d="M12 2L2 7l10 5 10-5-10-5z" /><path d="M2 17l10 5 10-5" /><path d="M2 12l10 5 10-5" /></svg>
@@ -288,6 +312,12 @@ function EquipesPageDesktop() {
       )}
 
       {/* Team list */}
+      {/* Libellé de section — n'apparaît que pour un directeur (qui a
+          aussi une 2e section « école ») ; un coach normal garde une
+          liste unique sans sous-titre redondant avec le H1. */}
+      {isDirector && teams.length > 0 && (
+        <h2 className="font-head text-[13px] font-bold tracking-[0.15em] uppercase text-[#9CA3AF]">Mes équipes</h2>
+      )}
       {teams.length > 0 && (
         <div className="space-y-3">
           {teams.map((t) => (
@@ -326,6 +356,52 @@ function EquipesPageDesktop() {
               </div>
             </Link>
           ))}
+        </div>
+      )}
+
+      {/* ── Équipes de l'école (supervision directeur) ─────────────
+          Équipes actives de l'école où le directeur n'est PAS coach.
+          Affiche l'entraîneur-chef + le nombre d'athlètes ; clic → même
+          détail d'équipe (le directeur y a une « Vue directeur »). */}
+      {isDirector && schoolTeams.length > 0 && (
+        <div className="space-y-3 pt-2">
+          <div className="flex items-center gap-2">
+            <h2 className="font-head text-[13px] font-bold tracking-[0.15em] uppercase text-[#9CA3AF]">Équipes de l&apos;école</h2>
+            <span className="text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded bg-[#3B82F6]/15 text-[#3B82F6] border border-[#3B82F6]/30">Directeur</span>
+          </div>
+          {schoolTeams.map((t) => {
+            const headCoach = t.coaches.find((c) => c.role === "head_coach")?.name;
+            return (
+              <Link key={t.id} href={`/coach/equipes/${t.id}`}
+                className="block bg-[#1A1D24] rounded-lg border-l-[3px] border-l-[#2D3748] hover:border-l-[#9CA3AF] transition-all group"
+                style={{ padding: "16px 20px" }}>
+                <div className="flex items-center justify-between">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <h3 className="text-[18px] font-bold text-white group-hover:text-[#9CA3AF] transition-colors">{t.name}</h3>
+                      <span className="text-[11px] font-bold tracking-wider uppercase px-2 py-0.5 rounded bg-[#2D3748] text-[#9CA3AF]">{t.season}</span>
+                    </div>
+                    <p className="text-[13px] text-[#6b7280] mt-1">
+                      {t.sportName}{t.ageGroup ? ` · ${t.ageGroup}` : ""}{t.division ? ` · ${t.division}` : ""}{t.league ? ` · ${t.league}` : ""}
+                    </p>
+                    <p className="text-[12px] text-[#6b7280] mt-1.5">
+                      {headCoach ? <>Entraîneur-chef : <span className="text-[#9CA3AF] font-semibold">{headCoach}</span></> : <span className="text-[#4a4d56] italic">Aucun entraîneur-chef</span>}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-4 shrink-0 ml-4">
+                    <div className="text-center">
+                      <p className="text-[20px] font-head font-black text-white">{t.athleteCount}</p>
+                      <p className="text-[10px] text-[#6b7280] uppercase tracking-wider">athlète{t.athleteCount !== 1 ? "s" : ""}</p>
+                    </div>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round"
+                      className="opacity-0 group-hover:opacity-100 transition-opacity">
+                      <path d="M5 12h14" /><path d="M12 5l7 7-7 7" />
+                    </svg>
+                  </div>
+                </div>
+              </Link>
+            );
+          })}
         </div>
       )}
 

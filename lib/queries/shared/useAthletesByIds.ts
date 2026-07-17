@@ -36,7 +36,7 @@ export interface AthleteRow {
   positions: { nom: string; abreviation: string } | { nom: string; abreviation: string }[] | null;
   schools: { name: string; region: string } | { name: string; region: string }[] | null;
   committed_school: { name: string } | { name: string }[] | null;
-  evaluations: { cote_globale: number | null; distinctions: string[] | null }[] | null;
+  evaluations: { cote_globale: number | null; distinctions: string[] | null; updated_at: string | null }[] | null;
 }
 
 export function useAthletesByIds(ids: string[]) {
@@ -59,7 +59,7 @@ export function useAthletesByIds(ids: string[]) {
           positions!position_id(nom, abreviation),
           schools!school_id(name, region),
           committed_school:schools!committed_school_id(name),
-          evaluations(cote_globale, distinctions)
+          evaluations(cote_globale, distinctions, updated_at)
         `)
         .in("id", stableIds);
       if (error) throw error;

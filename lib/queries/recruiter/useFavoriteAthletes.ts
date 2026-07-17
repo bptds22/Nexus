@@ -13,6 +13,7 @@ import { useFavorites } from "@/lib/queries/shared/useFavorites";
 import { useFavoriteCounts } from "@/lib/queries/shared/useFavoriteCounts";
 import { useAthletesByIds, type AthleteRow } from "@/lib/queries/shared/useAthletesByIds";
 import { parseDistinctions } from "@/lib/config/badges";
+import { selectBestEvaluation } from "@/lib/evaluations/selectEvaluation";
 
 export interface FavoriAthlete {
   id: string;
@@ -59,7 +60,7 @@ function transformAthlete(a: AthleteRow, favCount: number): FavoriAthlete {
   const committedSchoolRel = a.committed_school;
   const committedSchool = (Array.isArray(committedSchoolRel) ? committedSchoolRel[0] : committedSchoolRel) as { name?: string } | null;
   const evalRel = a.evaluations;
-  const eval0 = (Array.isArray(evalRel) ? evalRel[0] : evalRel) as { cote_globale?: number | null; distinctions?: unknown } | null;
+  const eval0 = selectBestEvaluation(Array.isArray(evalRel) ? evalRel : evalRel ? [evalRel] : []) as { cote_globale?: number | null; distinctions?: unknown } | null;
   // #56 — parseDistinctions gère string[] (legacy) ET {badge,detail} (objet).
   const distinctions = parseDistinctions(eval0?.distinctions);
 

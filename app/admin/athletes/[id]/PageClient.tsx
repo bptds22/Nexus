@@ -16,6 +16,7 @@ import PlaybookBackground from "@/app/components/PlaybookBackground";
 import AthleteProfileView from "@/components/shared/AthleteProfileView";
 import AthletePlayerCard from "@/components/shared/AthletePlayerCard";
 import { loadAthleteRaw, mapToRecruiterView } from "@/app/coach/athletes/_data/loadAthleteFromSupabase";
+import { selectBestEvaluation } from "@/lib/evaluations/selectEvaluation";
 import type { AthleteProfileRecruiterView, AthleteTraitRatings, GlobalRecruitmentStatus } from "@/lib/types/models";
 import {
   BADGE_CONFIG,
@@ -373,7 +374,7 @@ export default function AdminAthleteDetailPage() {
           setPreviewView(mapped);
           const evals = (rawA as Record<string, unknown>).evaluations;
           const evalArr = Array.isArray(evals) ? evals : [];
-          const e0 = evalArr[0] as Record<string, unknown> | undefined;
+          const e0 = selectBestEvaluation(evalArr) as Record<string, unknown> | undefined;
           if (e0?.distinctions) {
             let d: unknown = e0.distinctions;
             if (typeof d === "string") { try { d = JSON.parse(d); } catch { d = []; } }

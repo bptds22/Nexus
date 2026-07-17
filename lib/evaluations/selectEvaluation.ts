@@ -4,23 +4,28 @@
    deduction.
 
    An athlete can hold several evaluation rows (UNIQUE(coach_id,
-   athlete_id) → one per coach). The recruiter/coach views must NOT
-   take evaluations[0] (the DB returns an unordered array). Selection
-   rule (PO-confirmed):
+   athlete_id) → one per coach: coaches, directeur, directeur intérimaire
+   each hold at most one). The recruiter/coach views must NOT take
+   evaluations[0] (the DB returns an unordered array).
 
-     1. TYPE first  — a DÉTAILLÉE evaluation always beats a SIMPLE one.
-     2. DATE next   — among same-type rows, the most recent by updated_at.
+   Selection rule (PO-confirmed, révisé juillet 2026) :
+     LA PLUS RÉCENTE GAGNE, TOUJOURS. On trie sur updated_at décroissant
+     et on prend la première. Aucune priorité de type : une évaluation
+     SIMPLE récente l'emporte sur une DÉTAILLÉE plus ancienne. Ça rend le
+     tableau de bord directeur déterministe (« la dernière éval saisie est
+     celle qui s'affiche ») et aligne l'affichage sur la colonne
+     dénormalisée athletes.cote_globale_entraineur (trigger last-write).
 
-   Détaillée = at least one of the 14 numeric trait columns is
-   non-null / non-zero (8 mental + 6 physical/tactical). cote_globale
-   and rapport_entraineur are written in BOTH modes, so they do NOT
-   distinguish type.
+   No coach filter (the rule is date, not owning coach — PO decision).
+   This is DISPLAY-only; the write path is untouched.
 
-   No coach filter (the rule is type+date, not owning coach — PO
-   decision). This is DISPLAY-only; the write path is untouched.
+   isDetailed / EVALUATION_TRAIT_FIELDS restent exportés : ils servent
+   AILLEURS à décider l'affichage simple/détaillé d'une éval déjà choisie
+   (ils ne participent PLUS à la sélection).
 
    NOTE: the consuming Supabase query MUST select `updated_at` for the
-   date tiebreaker to work (and the 14 trait columns for the type rule).
+   sort to work. Sans lui, updatedAtMs → -Infinity pour toutes les lignes
+   et la sélection retombe sur l'ordre du tableau (non déterministe).
 ═══════════════════════════════════════════════════════════════ */
 
 export type EvalRow = Record<string, unknown>;
@@ -52,34 +57,24 @@ function updatedAtMs(evalRow: EvalRow): number {
   return -Infinity;
 }
 
-/** Pick the evaluation to display: détaillée over simple, then most recent
- *  by updated_at. Robust to empty/null input (→ null), a single row, many
- *  rows, and any DB ordering — never assumes order or a single row. */
+/** Pick the evaluation to display: LA PLUS RÉCENTE par updated_at, point.
+ *  Robust to empty/null input (→ null), a single row, many rows, and any
+ *  DB ordering — never assumes order or a single row. Sur égalité stricte
+ *  d'updated_at, garde la première rencontrée (stable). */
 export function selectBestEvaluation<T extends EvalRow>(
   evals: readonly T[] | null | undefined,
 ): T | null {
   if (!Array.isArray(evals) || evals.length === 0) return null;
 
   let best: T | null = null;
-  let bestDetailed = false;
   let bestTime = -Infinity;
 
   for (const e of evals) {
     if (!e) continue;
-    const detailed = isDetailed(e);
     const time = updatedAtMs(e);
-
-    if (best === null) {
-      best = e; bestDetailed = detailed; bestTime = time;
-      continue;
+    if (best === null || time > bestTime) {
+      best = e; bestTime = time;
     }
-    // 1. TYPE first: a detailed row beats any simple row.
-    if (detailed !== bestDetailed) {
-      if (detailed) { best = e; bestDetailed = true; bestTime = time; }
-      continue;
-    }
-    // 2. Same type → DATE: keep the most recent by updated_at.
-    if (time > bestTime) { best = e; bestTime = time; }
   }
 
   return best;

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { selectBestEvaluation } from "@/lib/evaluations/selectEvaluation";
 import { createClient } from "@/lib/supabase/client";
 import { calculateProfileCompletion, getIncompleteFields } from "@/lib/utils/calculateProfileCompletion";
 import { calculateCompletionForRole, SECTION_IDS } from "@/lib/utils/profileCompletion";
@@ -15,6 +16,17 @@ import DistinctionBadge from "@/components/shared/DistinctionBadge";
 import AthleteEditWizardMobile from "@/components/shared/AthleteEditWizardMobile";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
+
+/** Forme d'une éval choisie (selectBestEvaluation) telle que lue ici :
+ *  traits numériques + cote + rapport + distinctions. Cast local car la
+ *  requête athletes est typée large (embed evaluations). */
+type ProfilEval = {
+  vitesse_explosivite?: number; force_puissance?: number; endurance_cardio?: number;
+  agilite_coordination?: number; vision_du_jeu?: number; sens_tactique?: number;
+  leadership?: number; discipline?: number; coachabilite?: number; intelligence_jeu?: number;
+  competitivite?: number; esprit_equipe?: number; resilience?: number; attitude_mentalite?: number;
+  cote_globale?: number; rapport_entraineur?: string; distinctions?: unknown;
+};
 
 /* ═══════════════════════════════════════════════════════════════
    Athlete Profile — Co-creation page
@@ -999,7 +1011,7 @@ function AthleteProfilPageDesktop() {
           positions!position_id(nom, abreviation),
           schools!school_id(name, region, city, type),
           team_athletes(team_id, teams!team_id(name)),
-          evaluations(vitesse_explosivite, force_puissance, endurance_cardio, agilite_coordination, vision_du_jeu, sens_tactique, leadership, discipline, coachabilite, intelligence_jeu, competitivite, esprit_equipe, resilience, attitude_mentalite, cote_globale, rapport_entraineur, distinctions),
+          evaluations(vitesse_explosivite, force_puissance, endurance_cardio, agilite_coordination, vision_du_jeu, sens_tactique, leadership, discipline, coachabilite, intelligence_jeu, competitivite, esprit_equipe, resilience, attitude_mentalite, cote_globale, rapport_entraineur, distinctions, updated_at),
           users!athletes_coach_id_fkey(first_name, last_name)
         `)
         .eq("user_id", user.id)
@@ -1027,7 +1039,7 @@ function AthleteProfilPageDesktop() {
       const taRel = Array.isArray(raw.team_athletes) ? raw.team_athletes[0] : raw.team_athletes;
       const teamRelRaw = (taRel as { teams?: unknown } | null)?.teams;
       const teamRel = (Array.isArray(teamRelRaw) ? teamRelRaw[0] : teamRelRaw) as { name?: string } | null;
-      const evalRel = Array.isArray(raw.evaluations) ? raw.evaluations[0] : raw.evaluations;
+      const evalRel = selectBestEvaluation(Array.isArray(raw.evaluations) ? raw.evaluations : raw.evaluations ? [raw.evaluations] : []) as ProfilEval | null;
       const coachRel = Array.isArray(raw.users) ? raw.users[0] : raw.users;
       const schoolType = (schoolRel as { type?: string } | null)?.type;
       const isCivil = !raw.school_id || schoolType === "LIGUE_CIVILE";
@@ -1166,7 +1178,7 @@ function AthleteProfilPageDesktop() {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    const { data: raw } = await supabase.from("athletes").select("*, sports!sport_id(nom), positions!position_id(nom, abreviation), schools!school_id(name, region, city), team_athletes(team_id, teams!team_id(name)), evaluations(vitesse_explosivite, force_puissance, endurance_cardio, agilite_coordination, vision_du_jeu, sens_tactique, leadership, discipline, coachabilite, intelligence_jeu, competitivite, esprit_equipe, resilience, attitude_mentalite, cote_globale, rapport_entraineur, distinctions), users!athletes_coach_id_fkey(first_name, last_name)").eq("user_id", user.id).maybeSingle();
+    const { data: raw } = await supabase.from("athletes").select("*, sports!sport_id(nom), positions!position_id(nom, abreviation), schools!school_id(name, region, city), team_athletes(team_id, teams!team_id(name)), evaluations(vitesse_explosivite, force_puissance, endurance_cardio, agilite_coordination, vision_du_jeu, sens_tactique, leadership, discipline, coachabilite, intelligence_jeu, competitivite, esprit_equipe, resilience, attitude_mentalite, cote_globale, rapport_entraineur, distinctions, updated_at), users!athletes_coach_id_fkey(first_name, last_name)").eq("user_id", user.id).maybeSingle();
     if (!raw) return;
     // Re-run the same mapping (simplified — just update key display fields)
     const sportRel = Array.isArray(raw.sports) ? raw.sports[0] : raw.sports;
@@ -1175,7 +1187,7 @@ function AthleteProfilPageDesktop() {
     const taRel = Array.isArray(raw.team_athletes) ? raw.team_athletes[0] : raw.team_athletes;
     const teamRelRaw = (taRel as { teams?: unknown } | null)?.teams;
     const teamRel = (Array.isArray(teamRelRaw) ? teamRelRaw[0] : teamRelRaw) as { name?: string } | null;
-    const evalRel = Array.isArray(raw.evaluations) ? raw.evaluations[0] : raw.evaluations;
+    const evalRel = selectBestEvaluation(Array.isArray(raw.evaluations) ? raw.evaluations : raw.evaluations ? [raw.evaluations] : []) as ProfilEval | null;
     const coachRel = Array.isArray(raw.users) ? raw.users[0] : raw.users;
     const schoolType = (schoolRel as { type?: string } | null)?.type;
     const isCivil = !raw.school_id || schoolType === "LIGUE_CIVILE";
@@ -1355,7 +1367,7 @@ function AthleteProfilPageDesktop() {
   const traitAvg = traitEntries.length > 0 ? traitEntries.reduce((s, [, v]) => s + v, 0) / traitEntries.length : (a.overallRating || 0);
   // Compute completion via shared util (richer: sections + evaluation signals)
   const _rawEval = a._raw?.evaluations;
-  const _evalRow = Array.isArray(_rawEval) ? _rawEval[0] : _rawEval;
+  const _evalRow = selectBestEvaluation(Array.isArray(_rawEval) ? _rawEval : _rawEval ? [_rawEval] : []);
   const completionResult = a._raw
     ? calculateCompletionForRole(a._raw, _evalRow || null, null, "athlete")
     : { percentage: 0, missing: [], checks: [] };

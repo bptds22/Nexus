@@ -32,6 +32,7 @@ import { useMobileToast } from "@/components/mobile/MobileToast";
 import AthletePhoto from "@/components/shared/AthletePhoto";
 import { isValidationExpired } from "@/lib/utils/profileValidation";
 import { parseDistinctions } from "@/lib/config/badges";
+import { selectBestEvaluation } from "@/lib/evaluations/selectEvaluation";
 import { TEAM_GENDER_FILTER_OPTIONS, firstTeamGender } from "@/lib/config/gender";
 import {
   lookupInvitableByEmail,
@@ -147,7 +148,7 @@ function mapCoachAthlete(a: Record<string, unknown>, favCounts: Record<string, n
 
   const evalsRaw = a.evaluations;
   const evals = Array.isArray(evalsRaw) ? evalsRaw : [];
-  const eval0 = evals[0] as { cote_globale?: number; distinctions?: unknown } | undefined;
+  const eval0 = selectBestEvaluation(evals) as { cote_globale?: number; distinctions?: unknown } | undefined;
   const starsRaw = (eval0?.cote_globale ?? (a.cote_globale_entraineur as number) ?? 0) as number;
   const stars = Math.round(starsRaw * 10) / 10;
   const distinctions = parseDistinctions(eval0?.distinctions);
@@ -960,7 +961,7 @@ export function CoachAthletesMobile() {
           schools!school_id(name, region),
           committed_school:schools!committed_school_id(name),
           team_athletes(team_id, teams!team_id(gender)),
-          evaluations(cote_globale, rapport_entraineur, distinctions)
+          evaluations(cote_globale, rapport_entraineur, distinctions, updated_at)
         `)
         .eq("school_id", coachRow.school_id)
         .eq("status", "ACTIF");

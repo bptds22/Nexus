@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { selectBestEvaluation } from "@/lib/evaluations/selectEvaluation";
 import { createClient } from "@/lib/supabase/client";
 import AthletePlayerCard from "@/components/shared/AthletePlayerCard";
 import { loadAthleteRaw, mapToRecruiterView } from "@/app/coach/athletes/_data/loadAthleteFromSupabase";
@@ -276,7 +277,7 @@ export default function MonParcoursMobile() {
       const { data: a } = await supabase
         .from("athletes")
         .select(
-          "id, first_name, profile_completion, video_faits_saillants_url, video_match_complet_url, cote_globale_entraineur, moyenne_generale, consentement_parental, parcours_readiness, evaluations(distinctions)",
+          "id, first_name, profile_completion, video_faits_saillants_url, video_match_complet_url, cote_globale_entraineur, moyenne_generale, consentement_parental, parcours_readiness, evaluations(distinctions, updated_at)",
         )
         .eq("user_id", user.id)
         .maybeSingle();
@@ -297,7 +298,7 @@ export default function MonParcoursMobile() {
          and new {badge, detail} object shapes. Empty array for not-yet-
          evaluated athletes → Badges screen renders all 6 as "à viser". */
       const evalsRaw = (a as { evaluations?: unknown }).evaluations;
-      const evalRow = (Array.isArray(evalsRaw) ? evalsRaw[0] : evalsRaw) as { distinctions?: unknown } | null;
+      const evalRow = selectBestEvaluation(Array.isArray(evalsRaw) ? evalsRaw : evalsRaw ? [evalsRaw] : []) as { distinctions?: unknown } | null;
       setDistinctions(parseDistinctions(evalRow?.distinctions));
 
       /* Module 2 — saved targets + the CÉGEP list for the picker.

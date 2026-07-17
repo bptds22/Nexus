@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { selectBestEvaluation } from "@/lib/evaluations/selectEvaluation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { isValidationExpired } from "@/lib/utils/profileValidation";
@@ -235,14 +236,16 @@ function AthleteDashboardPageDesktop() {
         // ── Profile checklist (derived from real fields) ───────
         const { data: athleteFullRow } = await supabase
           .from("athletes")
-          .select("photo_url, first_name, last_name, date_naissance, telephone, taille_pieds, poids_lbs, sport_id, position_id, video_match_complet_url, video_faits_saillants_url, hudl_url, youtube_url, instagram_url, moyenne_generale, test_40_verges, saut_vertical, evaluations(vitesse_explosivite, force_puissance, leadership, rapport_entraineur)")
+          .select("photo_url, first_name, last_name, date_naissance, telephone, taille_pieds, poids_lbs, sport_id, position_id, video_match_complet_url, video_faits_saillants_url, hudl_url, youtube_url, instagram_url, moyenne_generale, test_40_verges, saut_vertical, evaluations(vitesse_explosivite, force_puissance, leadership, rapport_entraineur, updated_at)")
           .eq("id", athleteRow.id)
           .maybeSingle();
 
         if (athleteFullRow) {
-          const evalRow = Array.isArray(athleteFullRow.evaluations)
-            ? athleteFullRow.evaluations[0]
-            : athleteFullRow.evaluations;
+          const evalRow = selectBestEvaluation(
+            Array.isArray(athleteFullRow.evaluations)
+              ? athleteFullRow.evaluations
+              : athleteFullRow.evaluations ? [athleteFullRow.evaluations] : []
+          );
           const hasAnyTrait = evalRow && (
             (evalRow.vitesse_explosivite || 0) > 0 ||
             (evalRow.force_puissance || 0) > 0 ||
