@@ -255,7 +255,12 @@ function AdminCegepSection() {
 
   async function handleRemove(memberId: string) {
     const supabase = createClient();
-    await supabase.from("users").update({ school_id: null }).eq("id", memberId);
+    // Retrait via RPC SECURITY DEFINER (remove_cegep_member) : il n'existe
+    // AUCUNE policy UPDATE users pour un admin CÉGEP — l'autorisation + l'écriture
+    // (school_id = NULL) vivent dans la RPC, donc les autres colonnes du collègue
+    // restent intouchables.
+    const { error } = await supabase.rpc("remove_cegep_member", { p_target_recruiter_id: memberId });
+    if (error) { showToast("Retrait impossible"); return; }
     setMembers(prev => prev.filter(m => m.id !== memberId));
     setRemoveTarget(null);
     showToast("Membre retiré du CÉGEP");

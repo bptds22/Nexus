@@ -184,7 +184,7 @@ function DarkTooltip({
 
 export default function Page() {
   return (
-    <FeatureGate feature="cegep_management" requiredTier="all_star">
+    <FeatureGate feature="cegep_management" requiredTier="all_star" adminBypass>
       <CegepDashboardWrapperContent />
     </FeatureGate>
   );

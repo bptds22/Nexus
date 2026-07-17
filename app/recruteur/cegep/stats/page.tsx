@@ -92,7 +92,7 @@ interface TopTarget {
 
 export default function Page() {
   return (
-    <FeatureGate feature="cegep_management" requiredTier="all_star">
+    <FeatureGate feature="cegep_management" requiredTier="all_star" adminBypass>
       <CegepStatsWrapperContent />
     </FeatureGate>
   );
