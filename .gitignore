@@ -61,6 +61,12 @@ docs/audits/mobile-screenshots/*.png
 /android/build/
 /android/.gradle/
 /android/local.properties
+
+# Android signing secrets — NEVER commit (Play Store key rotation nightmare)
+/android/keystore.properties
+keystore.properties
+*.jks
+*.keystore
 /ios/App/build/
 /ios/App/Pods/
 /ios/App/output/
