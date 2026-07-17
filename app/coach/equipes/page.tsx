@@ -60,6 +60,8 @@ function EquipesPageDesktop() {
   // Create form only when the coach confirms no match.
   const [showPicker, setShowPicker] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
+  /** Confirmation après un « rejoindre » — précise le rôle obtenu. */
+  const [joinedNotice, setJoinedNotice] = useState<string | null>(null);
   const [formValues, setFormValues] = useState<TeamFormValues | null>(null);
   const [formValid, setFormValid] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -197,17 +199,23 @@ function EquipesPageDesktop() {
     loadTeams();
   }, [formValues, formValid, saving, schoolId, currentUserId]);
 
-  /* Coach picks an EXISTING team from the picker → join as assistant
-     (mirror civil RPC join branch) ; refresh list. */
+  /* Coach picks an EXISTING team from the picker → joinTeam décide du rôle
+     (équipe sans coach = revendication → head_coach ; sinon assistant) ;
+     refresh list. */
   const handlePickExisting = useCallback(async (team: TeamPickerItem) => {
     if (!currentUserId) return;
     const supabase = createClient();
-    const { error } = await joinTeam(supabase, { coachUserId: currentUserId, teamId: team.id });
+    const { error, role } = await joinTeam(supabase, { coachUserId: currentUserId, teamId: team.id });
     if (error) {
       setCreateError((error as { message?: string }).message || "Impossible de rejoindre cette équipe.");
       return;
     }
     setShowPicker(false);
+    setJoinedNotice(
+      role === "head_coach"
+        ? `${team.name} — tu en es maintenant l'entraîneur responsable.`
+        : `${team.name} — tu as rejoint l'équipe comme entraîneur adjoint.`,
+    );
     loadTeams();
   }, [currentUserId]);
 
@@ -241,6 +249,19 @@ function EquipesPageDesktop() {
           Ajouter une équipe
         </button>
       </div>
+
+      {/* Confirmation de rattachement — dit explicitement le rôle obtenu,
+          car revendiquer une équipe orpheline donne head_coach. */}
+      {joinedNotice && (
+        <div className="flex items-start gap-3 rounded-lg border border-[#22C55E]/40 bg-[#22C55E]/10 px-4 py-3">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="3" strokeLinecap="round" className="mt-0.5 shrink-0">
+            <path d="M20 6L9 17l-5-5" />
+          </svg>
+          <p className="text-[13px] text-white flex-1">{joinedNotice}</p>
+          <button type="button" onClick={() => setJoinedNotice(null)}
+            className="text-[#9CA3AF] hover:text-white text-[16px] leading-none shrink-0" aria-label="Fermer">×</button>
+        </div>
+      )}
 
       {/* Migration prompt */}
       {teams.length === 0 && rosterCount > 0 && (
@@ -316,6 +337,8 @@ function EquipesPageDesktop() {
         onClose={() => setShowPicker(false)}
         schoolId={schoolId || null}
         season={getCurrentSeason()}
+        /* Ne propose pas de « rejoindre » une équipe dont je suis déjà membre. */
+        excludeTeamIds={teams.map((t) => t.id)}
         onPicked={(team) => { handlePickExisting(team); }}
         onCreateNew={() => { setShowPicker(false); setShowCreate(true); }}
         title="Ajouter une équipe"

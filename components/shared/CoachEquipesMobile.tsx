@@ -114,13 +114,16 @@ export default function CoachEquipesMobile() {
   const handlePickExisting = useCallback(async (team: TeamPickerItem) => {
     if (!userId) return;
     const supabase = createClient();
-    const { error } = await joinTeam(supabase, { coachUserId: userId, teamId: team.id });
+    const { error, role } = await joinTeam(supabase, { coachUserId: userId, teamId: team.id });
     if (error) {
       toast.error({ message: (error as { message?: string }).message || "Impossible de rejoindre." });
       return;
     }
     triggerHaptic("Medium");
-    toast.success({ message: "Équipe rejointe" });
+    // Dit le rôle : revendiquer une équipe orpheline donne head_coach.
+    toast.success({
+      message: role === "head_coach" ? "Équipe revendiquée — tu en es responsable" : "Équipe rejointe",
+    });
     qc.invalidateQueries({ queryKey: ["coach-teams"] });
     setShowPicker(false);
     router.push(`/coach/equipes/${team.id}`);
@@ -254,6 +257,8 @@ export default function CoachEquipesMobile() {
         onClose={() => setShowPicker(false)}
         schoolId={schoolId || null}
         season={getCurrentSeason()}
+        /* Ne propose pas de « rejoindre » une équipe dont je suis déjà membre. */
+        excludeTeamIds={teams.map((t) => t.id)}
         onPicked={(team) => handlePickExisting(team)}
         onCreateNew={() => { setShowPicker(false); setShowCreate(true); }}
         title="Ajouter une équipe"

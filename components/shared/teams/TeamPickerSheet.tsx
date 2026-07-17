@@ -25,15 +25,24 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { createClient } from "@/lib/supabase/client";
+import { formatTeamLabel } from "@/lib/teams/teamLabel";
 
 export interface TeamPickerItem {
   id: string;
   name: string;
+  /** Sport name (sports.nom). Needed to tell apart same-named teams:
+   *  les équipes scrapées RSEQ portent le NOM DE L'ÉCOLE (5 lignes
+   *  « Collège St-Jean-Vianney »), donc seul le quadruplet
+   *  sport/âge/division/genre les distingue. */
+  sport: string | null;
   ageGroup: string | null;
   division: string | null;
   gender: string | null;
   /** Athlete count for the team (read from team_athletes). */
   athleteCount: number;
+  /** Nombre de coachs déjà sur l'équipe. 0 ⇒ équipe orpheline
+   *  (scrapée, jamais revendiquée) → le 1er arrivant devient head_coach. */
+  coachCount: number;
 }
 
 export interface TeamPickerSheetProps {
@@ -43,8 +52,14 @@ export interface TeamPickerSheetProps {
   schoolId: string | null;
   /** When set, filters teams to that sport. Optional. */
   sportId?: string | null;
-  /** Optional season filter. Default : surface every season. */
+  /** Optional season filter. Default : surface every season.
+   *  ⚠️ Filtre STRICT : une équipe dont season IS NULL ne matche jamais
+   *  (NULL = 'x' est faux). Les équipes scrapées avaient season NULL —
+   *  cf. migration 20260717120000_backfill_team_season.sql. */
   season?: string;
+  /** Équipes à masquer (typiquement : celles que le coach a déjà).
+   *  Évite de proposer « rejoindre » une équipe dont il est membre. */
+  excludeTeamIds?: string[];
   /** User chose an existing team → parent decides what next. */
   onPicked: (team: TeamPickerItem) => void;
   /** User confirmed no existing team matches — open the create form.
@@ -57,18 +72,14 @@ export interface TeamPickerSheetProps {
   hint?: string;
 }
 
-/* Display label idiom : "{age} · {division} · {gender}" with
-   empty parts dropped. Falls back to team.name when all 3 are
-   empty. Mirrors civilTeamLabel from CoachOnboardingMobileCivil. */
-function teamLabel(t: TeamPickerItem): string {
-  const parts = [t.ageGroup, t.division, t.gender]
-    .map((v) => (v ?? "").trim())
-    .filter((v) => v.length > 0);
-  return parts.length > 0 ? parts.join(" · ") : t.name;
-}
+/* Label = formatTeamLabel partagé (lib/teams/teamLabel) : "Sport ·
+   Catégorie · Division · Genre", champs vides retirés, repli sur le nom.
+   MÊME source que les pickers d'onboarding (école/civil/Programme) — la
+   sheet affichait auparavant son propre libellé SANS le sport, ce qui
+   rendait indiscernables les 5 équipes scrapées d'une même école. */
 
 export function TeamPickerSheet({
-  open, onClose, schoolId, sportId, season,
+  open, onClose, schoolId, sportId, season, excludeTeamIds,
   onPicked, onCreateNew,
   title = "Choisir une équipe",
   hint,
@@ -82,6 +93,11 @@ export function TeamPickerSheet({
   useEffect(() => { setMounted(true); }, []);
   useEffect(() => { if (!open) { setSearch(""); setDragOffset(0); } }, [open]);
 
+  /* Clé stable : sans ça, un appelant qui passe un tableau littéral
+     (`excludeTeamIds={ids}` recréé à chaque rendu) relancerait le fetch
+     en boucle. On dépend de la VALEUR, pas de l'identité du tableau. */
+  const excludeKey = (excludeTeamIds ?? []).join(",");
+
   /* Load existing teams whenever the sheet opens with a school_id. */
   useEffect(() => {
     if (!open || !schoolId) return;
@@ -91,7 +107,7 @@ export function TeamPickerSheet({
       const supabase = createClient();
       let q = supabase
         .from("teams")
-        .select("id, name, age_group, division, gender, season, sport_id, team_athletes(id)")
+        .select("id, name, age_group, division, gender, season, sport_id, sports!sport_id(nom), team_athletes(id), team_coaches(coach_id)")
         .eq("school_id", schoolId)
         .eq("is_active", true)
         .order("name", { ascending: true });
@@ -99,25 +115,35 @@ export function TeamPickerSheet({
       if (season)  q = q.eq("season", season);
       const { data } = await q;
       if (cancelled) return;
-      const mapped: TeamPickerItem[] = (data || []).map((r: Record<string, unknown>) => ({
-        id: r.id as string,
-        name: (r.name as string) || "",
-        ageGroup: (r.age_group as string | null) ?? null,
-        division: (r.division as string | null) ?? null,
-        gender: (r.gender as string | null) ?? null,
-        athleteCount: ((r.team_athletes as unknown[]) || []).length,
-      }));
+      const exclude = new Set(excludeKey ? excludeKey.split(",") : []);
+      const mapped: TeamPickerItem[] = (data || [])
+        .filter((r: Record<string, unknown>) => !exclude.has(r.id as string))
+        .map((r: Record<string, unknown>) => {
+          // L'embed peut arriver en objet ou en tableau selon la relation.
+          const sportRel = Array.isArray(r.sports) ? r.sports[0] : r.sports;
+          return {
+            id: r.id as string,
+            name: (r.name as string) || "",
+            sport: ((sportRel as { nom?: string } | null)?.nom as string | null) ?? null,
+            ageGroup: (r.age_group as string | null) ?? null,
+            division: (r.division as string | null) ?? null,
+            gender: (r.gender as string | null) ?? null,
+            athleteCount: ((r.team_athletes as unknown[]) || []).length,
+            coachCount: ((r.team_coaches as unknown[]) || []).length,
+          };
+        });
       setTeams(mapped);
       setLoading(false);
     })();
     return () => { cancelled = true; };
-  }, [open, schoolId, sportId, season]);
+  }, [open, schoolId, sportId, season, excludeKey]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return teams;
     return teams.filter((t) =>
       t.name.toLowerCase().includes(q)
+      || (t.sport ?? "").toLowerCase().includes(q)
       || (t.ageGroup ?? "").toLowerCase().includes(q)
       || (t.division ?? "").toLowerCase().includes(q)
       || (t.gender ?? "").toLowerCase().includes(q),
@@ -236,9 +262,16 @@ export function TeamPickerSheet({
                     <div className="flex-1 min-w-0">
                       <p className="text-[15px] font-semibold text-white truncate">{t.name}</p>
                       <p className="text-[12px] text-white/55 truncate">
-                        {teamLabel(t)}
+                        {formatTeamLabel(t.sport, t.ageGroup, t.division, t.gender, t.name)}
                         {t.athleteCount > 0 ? ` · ${t.athleteCount} athlète${t.athleteCount > 1 ? "s" : ""}` : ""}
                       </p>
+                      {/* Équipe orpheline (scrapée, jamais revendiquée) : le 1er
+                          arrivant en devient head_coach — on l'annonce. */}
+                      {t.coachCount === 0 && (
+                        <p className="text-[11px] text-[#22C55E] font-bold mt-0.5">
+                          Aucun entraîneur — tu en deviendras responsable
+                        </p>
+                      )}
                     </div>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4a4d56" strokeWidth="2.4" strokeLinecap="round">
                       <polyline points="9 18 15 12 9 6" />

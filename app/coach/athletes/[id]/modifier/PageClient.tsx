@@ -266,7 +266,9 @@ function ModifierContent({ id }: { id: string }) {
       if (schoolsData) setSchoolsList(schoolsData);
     });
 
-    // Load coach's school + teams from equipes table
+    // Load coach's school + teams from the `teams` table (cf. requête plus
+    // bas). NB : `equipes` est une table morte — 0 ligne, aucun code ne la
+    // lit ; ce commentaire disait le contraire.
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
