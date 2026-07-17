@@ -568,6 +568,42 @@ function SchoolTeamPicker({
   );
 }
 
+/* ── ÉTAPE 0 — Choix du contexte (École vs Ligue civile) ──────────────────
+   PORT 1:1 du Step-0 mobile (ContextPicker, AthleteOnboardingMobile, commit
+   0fff3f9) : même wording, mêmes deux options, même contrat onPick. Pilote la
+   branche existante de l'Étape 1 (scolaire = école/coach ; civil = sport +
+   club). Le choix vit en état LOCAL pendant la session et n'est persisté
+   (users.context) qu'au submit via la RPC one-shot set_initial_role_and_context
+   — exactement comme le mobile. Rendu avec les primitives du flow web (carte
+   #1A1D24 + bordure #2D3748), aucun nouveau design system. ────────────────── */
+function ContextPicker({ onPick }: { onPick: (c: "scolaire" | "ligue_civile") => void }) {
+  const card =
+    "w-full text-left p-4 bg-[#1A1D24] rounded-lg border border-[#2D3748] "
+    + "hover:border-[#E63946] hover:bg-[#20242c] transition-colors";
+  return (
+    <div className="space-y-3">
+      <div className="mb-5">
+        <h2 className="font-head font-bold text-[20px] text-white uppercase tracking-tight">Où joues-tu ?</h2>
+        <p className="text-[13px] text-[#6b7280] mt-1">
+          Choisis ton parcours — ça détermine comment tu relies ton équipe.
+        </p>
+      </div>
+      <button type="button" onClick={() => onPick("scolaire")} className={card}>
+        <p className="text-[16px] font-bold text-white">École / Cégep</p>
+        <p className="text-[13px] text-[#9CA3AF] mt-0.5">
+          Je joue pour mon école secondaire ou mon cégep.
+        </p>
+      </button>
+      <button type="button" onClick={() => onPick("ligue_civile")} className={card}>
+        <p className="text-[16px] font-bold text-white">Ligue civile / Club</p>
+        <p className="text-[13px] text-[#9CA3AF] mt-0.5">
+          Je joue pour un club ou une ligue civile (hors école).
+        </p>
+      </button>
+    </div>
+  );
+}
+
 export default function AthleteOnboardingPage() {
   // Iter 7.50-a — Capacitor (mobile natif) route vers le nouveau flow
   // minimal "Construis ta carte" (3 écrans). Le desktop ci-dessous reste
@@ -784,6 +820,14 @@ function AthleteOnboardingDesktop() {
         ctxRaw === "ligue_civile" ? "ligue_civile" : "scolaire";
       setUserContext(ctx);
 
+      // Étape 0 (choix de contexte) — PORT 1:1 du mobile (0fff3f9). Affichée
+      // tant que users.context n'est pas posé. Le signup athlète n'écrit pas
+      // context → NULL pour un compte frais → l'athlète choisit. Si context est
+      // déjà posé (compte claimé / mobile / resume post-submit), on saute
+      // l'étape 0 et la logique de resume plus bas décide step 1 vs 2.
+      let contextChosen = ctxRaw === "scolaire" || ctxRaw === "ligue_civile";
+      if (!contextChosen) setStep(0);
+
       // Check if athlete row exists — pre-fill all saved fields.
       // Phase 6.2: civil-context team membership is now read via the
       // team_athletes junction (joined to teams). The legacy
@@ -822,13 +866,17 @@ function AthleteOnboardingDesktop() {
         if (existing.annee_diplomation) setGradYear(String(existing.annee_diplomation));
         const schoolRel = Array.isArray(existing.schools) ? existing.schools[0] : existing.schools;
         const schoolType = (schoolRel as { type?: string } | null)?.type;
-        // Fallback civil (routage) : orphelin coach-créé SANS users.context posé
-        // → dériver le contexte du type de son école (school_id → schools.type).
-        // type=LIGUE_CIVILE → civil ; sinon défaut scolaire inchangé. users.context
-        // explicite (ctxRaw = 'scolaire'/'ligue_civile') garde TOUJOURS la priorité.
-        if (ctxRaw !== "ligue_civile" && ctxRaw !== "scolaire" && schoolType === "LIGUE_CIVILE") {
-          ctx = "ligue_civile";
-          setUserContext("ligue_civile");
+        // Fallback civil (routage) — PORT 1:1 du mobile : orphelin coach-créé
+        // SANS users.context posé → son school_id FAIT foi comme contexte (donc
+        // pas d'étape 0 : le coach a déjà tranché), et son type dérive la branche
+        // (LIGUE_CIVILE → civil ; sinon scolaire). users.context explicite garde
+        // TOUJOURS la priorité (contextChosen est déjà vrai dans ce cas).
+        if (!contextChosen && existing.school_id) {
+          contextChosen = true;
+          if (schoolType === "LIGUE_CIVILE") {
+            ctx = "ligue_civile";
+            setUserContext("ligue_civile");
+          }
         }
         if (existing.school_id && schoolType !== "LIGUE_CIVILE") {
           setSelectedSchoolId(existing.school_id);
@@ -897,7 +945,9 @@ function AthleteOnboardingDesktop() {
         const step1Complete = existing.first_name
           && (hasParentalConsent ? existing.consentement_parental : true)
           && (ctx === "ligue_civile" || existing.school_id);
-        if (step1Complete) {
+        // Reprise SEULEMENT si le contexte est posé — sinon on reste à l'étape 0
+        // (setStep(0) plus haut) pour faire choisir scolaire/civil. Parité mobile.
+        if (contextChosen && step1Complete) {
           if (existing.taille_pieds || existing.poids_lbs) setStep(4);
           else if (existing.moyenne_generale || (existing.matieres_fortes && existing.matieres_fortes.length > 0)) setStep(3);
           else setStep(2);
@@ -1273,6 +1323,24 @@ function AthleteOnboardingDesktop() {
       await supabase.from("athletes").update({ profile_completion: completion }).eq("user_id", userId);
     }
 
+    // Persiste le contexte choisi à l'étape 0 (scolaire | ligue_civile). RPC
+    // one-shot : context encore NULL ici + pas encore onboardé → réussit.
+    // Non bloquant (la visibilité recruteur dépend de status='ACTIF', pas de
+    // users.context) ; CONTEXT_ALREADY_SET / ALREADY_ONBOARDED → on garde
+    // l'existant et on continue. PORT 1:1 de AthleteOnboardingMobile.
+    {
+      const { error: ctxErr } = await supabase.rpc("set_initial_role_and_context", {
+        p_role: "ATHLETE",
+        p_context: userContext ?? "scolaire",
+      });
+      if (ctxErr) {
+        const m = ctxErr.message || "";
+        if (!m.includes("CONTEXT_ALREADY_SET") && !m.includes("ALREADY_ONBOARDED")) {
+          console.error("[Onboarding] set_initial_role_and_context:", ctxErr);
+        }
+      }
+    }
+
     await supabase.from("users").update({ onboarding_complete: true }).eq("id", userId);
     // Le profil caché (useCurrentUser, staleTime: Infinity) doit voir false→true
     // dans CETTE session pour que PushRegistrar demande la permission push.
@@ -1339,7 +1407,9 @@ function AthleteOnboardingDesktop() {
           <NexusLogo variant="white" height={36} priority />
         </div>
 
-        {/* Step indicator */}
+        {/* Step indicator — masqué à l'étape 0 (choix de contexte) : elle est
+            hors stepper côté mobile aussi, et STEPS[step-1] n'existe pas à 0. */}
+        {step > 0 && (
         <div className="flex items-center justify-center gap-1">
           {STEPS.map((s, i) => (
             <div key={s.number} className="flex items-center gap-1">
@@ -1356,7 +1426,22 @@ function AthleteOnboardingDesktop() {
             </div>
           ))}
         </div>
-        <p className="text-center text-[12px] text-[#6b7280]">Étape {step}/{STEPS.length} — {STEPS[step - 1].name}</p>
+        )}
+        {step > 0 && (
+          <p className="text-center text-[12px] text-[#6b7280]">Étape {step}/{STEPS.length} — {STEPS[step - 1].name}</p>
+        )}
+
+        {/* ═══════ STEP 0: CONTEXTE (école vs ligue civile) ═══════ */}
+        {step === 0 && (
+          <div className="bg-[#161920] border border-[#2D3748] rounded-xl p-6 sm:p-8">
+            <ContextPicker
+              onPick={(c) => {
+                setUserContext(c);
+                setStep(1);
+              }}
+            />
+          </div>
+        )}
 
         {/* ═══════ STEP 1: IDENTITÉ ═══════ */}
         {step === 1 && (
@@ -1763,7 +1848,9 @@ function AthleteOnboardingDesktop() {
           </div>
         )}
 
-        {/* Navigation */}
+        {/* Navigation — absente à l'étape 0 : les deux cartes SONT l'action
+            (parité mobile, où le Step-0 n'a ni Retour ni Suivant). */}
+        {step > 0 && (
         <div className="flex items-center gap-3">
           {step > 1 && (
             <button type="button" onClick={() => setStep(step - 1)}
@@ -1785,6 +1872,7 @@ function AthleteOnboardingDesktop() {
             </button>
           )}
         </div>
+        )}
       </div>
     </div>
   );
