@@ -54,6 +54,8 @@ import { findOrCreateRecruiterConversation } from "@/lib/utils/findOrCreateRecru
 import { AddToListSheet } from "@/components/shared/AddToListSheet";
 import AthletePhotoFill from "@/components/shared/AthletePhotoFill";
 import { TeamDetailsBlock, type TeamDetail } from "@/components/shared/athlete/TeamDetailsBlock";
+import TeamHistoryBlock from "@/components/shared/athlete/TeamHistoryBlock";
+import { parseTeamHistory } from "@/components/shared/athlete/teamHistory";
 import { motion } from "framer-motion";
 // Coach-only imports (Step 6 unification — viewer="coach" branch).
 import { loadAthleteRaw, mapToRecruiterView } from "@/app/coach/athletes/_data/loadAthleteFromSupabase";
@@ -703,7 +705,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
         bio, cote_globale_entraineur, consentement_parental,
         statut_recrutement_override, notes_coach, ouvert_entraineur_cegep,
         coach_id, recruitment_status, committed_school_id, open_to_offers,
-        sport_secondaire_id, position_secondaire_id, school_id,
+        sport_secondaire_id, position_secondaire_id, parcours_equipes, school_id,
         sports!athletes_sport_id_fkey(nom),
         positions!athletes_position_id_fkey(nom, abreviation),
         schools!school_id(name, region, city, type),
@@ -827,6 +829,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
           primaryPosition: pos?.abreviation ? `${pos.nom} (${pos.abreviation})` : pos?.nom || "",
           secondarySport: secondarySportName,
           secondaryPosition: secondaryPositionName,
+          teamHistory: parseTeamHistory(d.parcours_equipes),
           isCivil: !d.school_id || school?.type === "LIGUE_CIVILE",
           schoolName: (() => {
             if (!d.school_id) return "";
@@ -2457,6 +2460,9 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
                 </div>
               </section>
             )}
+
+            {/* Parcours d'équipes — après Sport principal ; se masque si vide. */}
+            <TeamHistoryBlock entries={a.teamHistory} />
 
             {/* DETAILED — secondaire + mesures + tests */}
             {isDetailed && (
