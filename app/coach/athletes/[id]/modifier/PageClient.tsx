@@ -6,6 +6,8 @@ import { useDynamicParam } from "@/lib/platform/useDynamicParam";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { loadAthleteRaw, buildFormFromRaw } from "../../_data/loadAthleteFromSupabase";
+import TeamHistoryEditor from "@/components/shared/athlete/TeamHistoryEditor";
+import type { TeamHistoryEntry } from "@/lib/types/models";
 import { saveAthleteEdit, computeCoteGlobale } from "../../_data/saveAthlete";
 import { coteChanged } from "@/lib/utils/cote";
 import { ConfirmSheet } from "@/components/shared/settings";
@@ -104,6 +106,7 @@ interface AthleteFormData {
     secondaryLeague: string;
     recruitingLevel: string;
     openToCoaching: boolean;
+    parcoursEquipes: TeamHistoryEntry[];
   };
   scouting: {
     evalMode: "simple" | "detailed";
@@ -175,7 +178,7 @@ function emptyForm(): AthleteFormData {
     identity: { identityMode: "simple", photo: "", firstName: "", lastName: "", gender: "", dateOfBirth: "", gradYear: "", school: "", city: "", region: "", phone: "", email: "", parentName: "", parentPhone: "" },
     academic: { academicMode: "simple", gpa: "", strongSubjects: [], academicHonors: [], cegepType: "", cegepProgramDetail: "", openToPrivate: false, openToAnglophone: false, openToRelocate: false, cegepRegions: [] },
     physical: { physicalMode: "simple", heightFeet: "", heightInches: "", weightLbs: "", wingspan: "", handSize: "", dominantHand: "", dominantFoot: "", fortyYard: "", verticalJump: "", broadJump: "", benchPress: "", shuttleAgility: "", sprint100m: "" },
-    sports: { sportsMode: "simple", primarySport: "", primarySportDetail: "", secondarySport: "", secondarySportDetail: "", primaryPosition: "", secondaryPosition: "", secondarySportPosition: "", selectedTeamId: "", currentTeam: "", teamLevel: "", teamDivision: "", jerseyNumber: "", league: "", secondaryTeamId: "", secondaryTeam: "", secondaryTeamLevel: "", secondaryTeamDivision: "", secondaryLeague: "", recruitingLevel: "", openToCoaching: false },
+    sports: { sportsMode: "simple", primarySport: "", primarySportDetail: "", secondarySport: "", secondarySportDetail: "", primaryPosition: "", secondaryPosition: "", secondarySportPosition: "", selectedTeamId: "", currentTeam: "", teamLevel: "", teamDivision: "", jerseyNumber: "", league: "", secondaryTeamId: "", secondaryTeam: "", secondaryTeamLevel: "", secondaryTeamDivision: "", secondaryLeague: "", recruitingLevel: "", openToCoaching: false, parcoursEquipes: [] },
     scouting: { evalMode: "simple", starRating: 0, traitRatings: {}, badges: [], coachEndorsement: "" },
     media: { mediaMode: "simple", hudlLink: "", youtubeLink: "", instagramLink: "", highlightVideo: "", fullGameVideo: "", trainingVideo: "" },
     submission: { recruitingStatus: "", preferredDivision: "" },
@@ -843,6 +846,17 @@ function ModifierContent({ id }: { id: string }) {
             )}
           </div>
         )}
+
+        {/* Parcours d'équipes — historique déclaratif (édition directe). */}
+        <div className="border-t border-[#1e2128] mt-2 pt-5">
+          <p className={sectionTitle}>Parcours d&apos;équipes</p>
+          <p className="text-[13px] text-[#6b7280] mb-4">Historique d&apos;équipes de l&apos;athlète (max 10). L&apos;équipe actuelle (sans année de fin) affiche une bague rouge.</p>
+          <TeamHistoryEditor
+            value={d.parcoursEquipes}
+            onChange={(v) => setForm((prev) => ({ ...prev, sports: { ...prev.sports, parcoursEquipes: v } }))}
+            sports={SPORTS.map((s) => ({ id: s, nom: s }))}
+          />
+        </div>
       </div>
     );
   }

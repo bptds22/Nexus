@@ -20,6 +20,7 @@ import { parseDistinctions, type DistinctionEntry } from "@/lib/config/badges";
 import { selectBestEvaluation } from "@/lib/evaluations/selectEvaluation";
 import AthletePlayerCard from "@/components/shared/AthletePlayerCard";
 import DistinctionBadge from "@/components/shared/DistinctionBadge";
+import TeamHistoryBlock from "@/components/shared/athlete/TeamHistoryBlock";
 import StarRating from "@/components/ui/StarRating";
 import VideoEmbed from "@/components/ui/VideoEmbed";
 import NxIcon from "@/components/ui/NxIcon";
@@ -391,6 +392,9 @@ export default function AthleteProfileView({
           </div>
         </div>
       </section>
+
+      {/* Parcours d'équipes — sous Profil académique (les deux modes). */}
+      <TeamHistoryBlock entries={a.teamHistory} />
 
       {/* DETAILED-ONLY */}
       {isDetailed && (

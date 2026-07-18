@@ -201,6 +201,8 @@ function buildSharedAthletesPayload(
     position_secondaire_id: ids.positionSecondaireId,
     numero_jersey: form.sports.jerseyNumber ? parseInt(form.sports.jerseyNumber) : null,
     ouvert_entraineur_cegep: form.sports.openToCoaching,
+    // Parcours d'équipes (JSONB) — cap 10 (DB CHECK also enforces).
+    parcours_equipes: (form.sports.parcoursEquipes ?? []).slice(0, 10),
 
     // Eval mirror (athletes mirror — recruteur uses this for the card)
     cote_globale_entraineur: coteGlobale,

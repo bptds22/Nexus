@@ -4,6 +4,7 @@ import type { AthleteProfileRecruiterView } from "@/lib/types/models";
 import { parseDistinctions } from "@/lib/config/badges";
 import { calculateCompletion, type AthleteLike, type EvalLike } from "@/lib/utils/profileCompletion";
 import { selectBestEvaluation, isDetailed } from "@/lib/evaluations/selectEvaluation";
+import { parseTeamHistory } from "@/components/shared/athlete/teamHistory";
 
 /* ═══════════════════════════════════════════════════════════════
    Shared Supabase loader for coach athlete pages.
@@ -70,6 +71,7 @@ const ATHLETE_SELECT = `
   committed_school_id,
   open_to_offers,
   position_secondaire_id,
+  parcours_equipes,
   school_id,
   coach_id,
   sports!sport_id(nom),
@@ -260,6 +262,7 @@ export function buildFormFromRaw(raw: Record<string, unknown>): Record<string, u
       secondaryLeague: "",
       recruitingLevel: "",
       openToCoaching: !!(raw.ouvert_entraineur_cegep),
+      parcoursEquipes: parseTeamHistory(raw.parcours_equipes),
     },
     scouting: {
       /* Mirror the apply_approved_suggestion trigger's "detailed wins"
@@ -399,6 +402,7 @@ export function mapToRecruiterView(raw: Record<string, unknown>): AthleteProfile
       const sp = raw._secondary_position as { abreviation?: string; nom?: string } | undefined;
       return sp?.abreviation || sp?.nom || "";
     })(),
+    teamHistory: parseTeamHistory(raw.parcours_equipes),
     jerseyNumber: raw.numero_jersey != null ? String(raw.numero_jersey) : "",
     heightFeet: heightFt,
     heightInches: heightIn,

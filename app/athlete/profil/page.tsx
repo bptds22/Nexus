@@ -8,7 +8,10 @@ import { calculateCompletionForRole, SECTION_IDS } from "@/lib/utils/profileComp
 import { isValidationDue, isValidationExpired, formatDeadlineFr, currentMonthKey } from "@/lib/utils/profileValidation";
 import VerifiedBadge from "@/components/ui/VerifiedBadge";
 import DatePicker from "@/app/coach/components/DatePicker";
-import type { AthleteSuggestion, AthleteTraitRatings } from "@/lib/types/models";
+import type { AthleteSuggestion, AthleteTraitRatings, TeamHistoryEntry } from "@/lib/types/models";
+import TeamHistoryBlock from "@/components/shared/athlete/TeamHistoryBlock";
+import TeamHistoryEditor from "@/components/shared/athlete/TeamHistoryEditor";
+import { parseTeamHistory, isTeamHistoryValid } from "@/components/shared/athlete/teamHistory";
 import StarRating from "@/components/ui/StarRating";
 import NxIcon from "@/components/ui/NxIcon";
 import { BADGE_CONFIG, BADGE_ORDER, MAX_BADGES, MAX_DETAIL_LENGTH, parseDistinctions, type DistinctionEntry } from "@/lib/config/badges";
@@ -806,6 +809,66 @@ function DistinctionsSuggest({ currentDistinctions, pending, onSubmit }: {
             </button>
           </div>
         </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Parcours d'équipes — direct-write editor (athlete-owned, NOT a
+      suggestion; saves straight to athletes.parcours_equipes). ─────── */
+function TeamHistoryDirectEdit({ athleteId, current, recruiterView, onSaved }: {
+  athleteId: string;
+  current: TeamHistoryEntry[];
+  recruiterView: boolean;
+  onSaved: (entries: TeamHistoryEntry[]) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState<TeamHistoryEntry[]>(current);
+  const [sports, setSports] = useState<{ id: string; nom: string }[]>([]);
+  const [saving, setSaving] = useState(false);
+  const maxYear = new Date().getFullYear() + 1;
+  const valid = isTeamHistoryValid(draft, maxYear);
+
+  useEffect(() => {
+    if (!editing || sports.length > 0) return;
+    (async () => {
+      const { data } = await createClient().from("sports").select("id, nom").order("nom");
+      if (data) setSports(data);
+    })();
+  }, [editing, sports.length]);
+
+  function start() { setDraft(current); setEditing(true); }
+  async function save() {
+    if (!valid) return;
+    setSaving(true);
+    const { error } = await createClient().from("athletes").update({ parcours_equipes: draft }).eq("id", athleteId);
+    setSaving(false);
+    if (!error) { onSaved(draft); setEditing(false); }
+  }
+
+  return (
+    <div id="parcours-equipes" className="bg-[#1A1D24] rounded-xl border border-white/5 p-5">
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-[13px] font-head font-bold tracking-[0.15em] uppercase text-[#9CA3AF]">Parcours d&apos;équipes</h2>
+        {!recruiterView && !editing && (
+          <button type="button" onClick={start} className="text-[12px] font-bold text-[#E63946] hover:text-[#ff4d5a] transition-colors">
+            {current.length > 0 ? "Modifier" : "Ajouter"}
+          </button>
+        )}
+      </div>
+
+      {editing ? (
+        <>
+          <TeamHistoryEditor value={draft} onChange={setDraft} sports={sports} maxYear={maxYear} />
+          <div className="flex items-center justify-end gap-3 mt-4 pt-3 border-t border-[#2D3748]/40">
+            <button type="button" onClick={() => setEditing(false)} className="text-[13px] font-bold text-[#9CA3AF] hover:text-white transition-colors">Annuler</button>
+            <button type="button" onClick={save} disabled={saving || !valid} className="px-4 py-2 bg-[#E63946] hover:bg-[#D42B22] disabled:opacity-50 text-white text-[13px] font-bold rounded-lg transition-colors">{saving ? "…" : "Enregistrer"}</button>
+          </div>
+        </>
+      ) : current.length === 0 ? (
+        <p className="text-[13px] text-[#6b7280]">Aucun parcours ajouté.</p>
+      ) : (
+        <TeamHistoryBlock entries={current} headingClassName="hidden" />
       )}
     </div>
   );
@@ -1624,6 +1687,14 @@ function AthleteProfilPageDesktop() {
               </>
             )}
           </div>
+
+          {/* ═══ PARCOURS D'ÉQUIPES ═══ (direct-write, athlete-owned) */}
+          <TeamHistoryDirectEdit
+            athleteId={athleteId}
+            current={parseTeamHistory((a._raw as Record<string, unknown> | undefined)?.parcours_equipes)}
+            recruiterView={recruiterView}
+            onSaved={(v) => setA((prev) => (prev ? { ...prev, _raw: { ...(prev._raw as Record<string, unknown>), parcours_equipes: v } } : prev))}
+          />
 
           {/* ═══ PHYSICAL + TESTS ═══ */}
           <div id={SECTION_IDS.physical} className="bg-[#1A1D24] rounded-xl border border-white/5 p-5">

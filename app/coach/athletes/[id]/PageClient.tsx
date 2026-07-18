@@ -25,6 +25,7 @@ import SuggestionsAlert from "@/components/coach/profile/SuggestionsAlert";
 // Step 6 unification — coach profile = shared body avec viewer="coach".
 // CoachAthleteProfileBodyMobile (paraphrase copy) supprimé.
 import AthleteRecruiterProfileBodyMobile from "@/components/shared/AthleteRecruiterProfileBodyMobile";
+import TeamHistoryBlock from "@/components/shared/athlete/TeamHistoryBlock";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -927,6 +928,9 @@ export default function CoachAthleteProfilePage() {
               </div>
             </section>
           )}
+
+          {/* Parcours d'équipes — se masque tout seul si vide. */}
+          <TeamHistoryBlock entries={a.teamHistory} />
 
           {/* ── DÉTAILS ACADÉMIQUES (matières, mentions, régions) ── */}
           {(a.strongSubjects?.length > 0 || a.academicHonors?.length > 0 || a.preferredRegions?.length > 0 || (Array.isArray(a.targetCegepProgram) && a.targetCegepProgram.length > 0)) && (

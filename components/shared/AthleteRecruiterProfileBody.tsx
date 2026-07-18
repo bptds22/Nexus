@@ -32,6 +32,8 @@ import { calculateCompletion, type AthleteLike, type EvalLike } from "@/lib/util
 import { isValidationExpired } from "@/lib/utils/profileValidation";
 import AthletePhotoFill from "@/components/shared/AthletePhotoFill";
 import { TeamDetailsBlock, type TeamDetail } from "@/components/shared/athlete/TeamDetailsBlock";
+import TeamHistoryBlock from "@/components/shared/athlete/TeamHistoryBlock";
+import { parseTeamHistory } from "@/components/shared/athlete/teamHistory";
 
 /* ═══════════════════════════════════════════════════════════════
    AthleteRecruiterProfileBody — shared across recruiter, athlete-
@@ -466,6 +468,7 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
         open_to_offers,
         sport_secondaire_id,
         position_secondaire_id,
+        parcours_equipes,
         school_id,
         sports!athletes_sport_id_fkey(nom),
         positions!athletes_position_id_fkey(nom, abreviation),
@@ -601,6 +604,7 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
           primaryPosition: pos?.abreviation ? `${pos.nom} (${pos.abreviation})` : pos?.nom || "",
           secondarySport: secondarySportName,
           secondaryPosition: secondaryPositionName,
+          teamHistory: parseTeamHistory(d.parcours_equipes),
           // Phase 1 audit (post-Phase 6.1): schoolName overload split
           // into isCivil / schoolName / teamName / leagueName. Canonical
           // civil rule = no school_id OR school.type === 'LIGUE_CIVILE'.
@@ -1375,6 +1379,10 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
             </div>
           </section>
         )}
+
+        {/* Parcours d'équipes — sous Profil académique, dans les deux modes.
+            Se masque tout seul si l'athlète n'a aucune entrée. */}
+        <TeamHistoryBlock entries={a.teamHistory} />
 
         {/* ════════════════════════════════════════════════════
            DETAILED SECTIONS — only when toggle = Détaillé

@@ -237,6 +237,19 @@ export interface AthleteFormPhysical {
   sprint100m: string;
 }
 
+/** One declarative team-history row ("Parcours d'équipes", LinkedIn-style).
+ *  Stored as a JSONB array on athletes.parcours_equipes. year_end null/absent
+ *  = current team (red ring + "Actif"). Free text, no link to the teams table. */
+export interface TeamHistoryEntry {
+  team_name: string;
+  sport: string;
+  ligue: string;
+  division: string;
+  year_start: number;
+  /** null / absent = current (équipe actuelle). */
+  year_end: number | null;
+}
+
 export interface AthleteFormSports {
   primarySport: string;
   primarySportDetail: string;
@@ -258,6 +271,8 @@ export interface AthleteFormSports {
   secondaryLeague: string;
   recruitingLevel: string;
   openToCoaching: boolean;
+  /** Parcours d'équipes — declarative team history (JSONB array). */
+  parcoursEquipes: TeamHistoryEntry[];
 }
 
 export interface AthleteFormMedia {
@@ -717,6 +732,8 @@ export interface AthleteProfileRecruiterView {
   jerseyNumber: string;
   secondarySport?: string;
   secondaryPosition?: string;
+  /** Parcours d'équipes — declarative team history (LinkedIn-style). */
+  teamHistory?: TeamHistoryEntry[];
   teamName?: string;
   leagueName?: string;
   teamLevel?: string;
