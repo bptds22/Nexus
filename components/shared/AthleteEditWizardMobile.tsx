@@ -101,15 +101,10 @@ interface LoadedAthlete {
   /* ── Sport (SUGGEST) — current values + ids for picker scoping ── */
   primarySport: string;                 // sports.nom via join (primary)
   primaryPosition: string;              // positions.nom via join (primary)
-  secondarySport: string;               // separate FK lookup (page.tsx :953-955)
-  secondaryPosition: string;            // separate FK lookup (page.tsx :957-959)
   jerseyNumber: string;                 // athletes.numero_jersey
   parcoursEquipes: TeamHistoryEntry[];  // athletes.parcours_equipes (JSONB)
-  /** FK ids needed to SCOPE the position pickers at row-render time.
-   *  Primary position picker → scoped by sportId. Secondary position
-   *  picker → scoped by sportSecondaireId (fallback sportId). */
+  /** FK id needed to SCOPE the primary position picker at row-render time. */
   sportId: string | null;
-  sportSecondaireId: string | null;
   /* ── Physique (SUGGEST) — current values ── */
   heightDisplay: string;
   weightDisplay: string;
@@ -635,18 +630,6 @@ export default function AthleteEditWizardMobile() {
     // ── Secondary sport / position NAME lookups (verbatim from
     //    page.tsx :953-959). Kept as separate queries to match the
     //    desktop's exact load pattern (Bug #8 — no joining away).
-    let secondarySportName = "";
-    let secondaryPositionName = "";
-    if (raw.sport_secondaire_id) {
-      const { data: ss } = await supabase
-        .from("sports").select("nom").eq("id", raw.sport_secondaire_id).maybeSingle();
-      secondarySportName = (ss?.nom as string) || "";
-    }
-    if (raw.position_secondaire_id) {
-      const { data: sp } = await supabase
-        .from("positions").select("nom").eq("id", raw.position_secondaire_id).maybeSingle();
-      secondaryPositionName = (sp?.nom as string) || "";
-    }
 
     // Civil / école derivation (verbatim from page.tsx :971-974).
     const schoolRel = Array.isArray(raw.schools) ? raw.schools[0] : raw.schools;
@@ -742,12 +725,9 @@ export default function AthleteEditWizardMobile() {
       // Sport (SUGGEST)
       primarySport,
       primaryPosition,
-      secondarySport: secondarySportName,
-      secondaryPosition: secondaryPositionName,
       jerseyNumber: raw.numero_jersey != null ? String(raw.numero_jersey) : "",
       parcoursEquipes: parseTeamHistory(raw.parcours_equipes),
       sportId: (raw.sport_id as string) || null,
-      sportSecondaireId: (raw.sport_secondaire_id as string) || null,
       // Physique (SUGGEST)
       heightDisplay,
       weightDisplay,
@@ -1649,13 +1629,6 @@ function SportStep({
       .map((p) => ({ value: p.nom, label: p.abreviation ? `${p.abreviation} — ${p.nom}` : p.nom })),
     [positionsOptions, a.sportId],
   );
-  const secondaryPositionScopeId = a.sportSecondaireId ?? a.sportId;
-  const secondaryPositionOptions: PickerOption[] = useMemo(
-    () => positionsOptions
-      .filter((p) => p.sport_id === secondaryPositionScopeId)
-      .map((p) => ({ value: p.nom, label: p.abreviation ? `${p.abreviation} — ${p.nom}` : p.nom })),
-    [positionsOptions, secondaryPositionScopeId],
-  );
 
   return (
     <div className="space-y-4">
@@ -1686,26 +1659,6 @@ function SportStep({
           pending={getPending("Position")}
           inputType="picker"
           pickerOptions={primaryPositionOptions}
-          submitting={submitting}
-          onSubmit={onSubmit}
-        />
-        <SuggestRow
-          label="Sport secondaire"
-          value={a.secondarySport}
-          champ="Sport secondaire"
-          pending={getPending("Sport secondaire")}
-          inputType="picker"
-          pickerOptions={sportPickerOptions}
-          submitting={submitting}
-          onSubmit={onSubmit}
-        />
-        <SuggestRow
-          label="Position sport secondaire"
-          value={a.secondaryPosition}
-          champ="Position secondaire"
-          pending={getPending("Position secondaire")}
-          inputType="picker"
-          pickerOptions={secondaryPositionOptions}
           submitting={submitting}
           onSubmit={onSubmit}
         />

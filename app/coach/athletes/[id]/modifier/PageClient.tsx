@@ -88,11 +88,7 @@ interface AthleteFormData {
     sportsMode: "simple" | "detailed";
     primarySport: string;
     primarySportDetail: string;
-    secondarySport: string;
-    secondarySportDetail: string;
     primaryPosition: string;
-    secondaryPosition: string;
-    secondarySportPosition: string;
     selectedTeamId: string;
     currentTeam: string;
     teamLevel: string;
@@ -178,7 +174,7 @@ function emptyForm(): AthleteFormData {
     identity: { identityMode: "simple", photo: "", firstName: "", lastName: "", gender: "", dateOfBirth: "", gradYear: "", school: "", city: "", region: "", phone: "", email: "", parentName: "", parentPhone: "" },
     academic: { academicMode: "simple", gpa: "", strongSubjects: [], academicHonors: [], cegepType: "", cegepProgramDetail: "", openToPrivate: false, openToAnglophone: false, openToRelocate: false, cegepRegions: [] },
     physical: { physicalMode: "simple", heightFeet: "", heightInches: "", weightLbs: "", wingspan: "", handSize: "", dominantHand: "", dominantFoot: "", fortyYard: "", verticalJump: "", broadJump: "", benchPress: "", shuttleAgility: "", sprint100m: "" },
-    sports: { sportsMode: "simple", primarySport: "", primarySportDetail: "", secondarySport: "", secondarySportDetail: "", primaryPosition: "", secondaryPosition: "", secondarySportPosition: "", selectedTeamId: "", currentTeam: "", teamLevel: "", teamDivision: "", jerseyNumber: "", league: "", secondaryTeamId: "", secondaryTeam: "", secondaryTeamLevel: "", secondaryTeamDivision: "", secondaryLeague: "", recruitingLevel: "", openToCoaching: false, parcoursEquipes: [] },
+    sports: { sportsMode: "simple", primarySport: "", primarySportDetail: "", primaryPosition: "", selectedTeamId: "", currentTeam: "", teamLevel: "", teamDivision: "", jerseyNumber: "", league: "", secondaryTeamId: "", secondaryTeam: "", secondaryTeamLevel: "", secondaryTeamDivision: "", secondaryLeague: "", recruitingLevel: "", openToCoaching: false, parcoursEquipes: [] },
     scouting: { evalMode: "simple", starRating: 0, traitRatings: {}, badges: [], coachEndorsement: "" },
     media: { mediaMode: "simple", hudlLink: "", youtubeLink: "", instagramLink: "", highlightVideo: "", fullGameVideo: "", trainingVideo: "" },
     submission: { recruitingStatus: "", preferredDivision: "" },
@@ -812,17 +808,12 @@ function ModifierContent({ id }: { id: string }) {
           <div><label className={labelCls}>Sport principal{req}</label><NxSelect value={d.primarySport} onChange={(v) => { updateSports("primarySport", v); if (v !== "Autre") updateSports("primarySportDetail", ""); }} hasError={isFieldEmpty(d.primarySport)} options={SPORTS.map((s) => ({ value: s, label: s }))} />{d.primarySport === "Autre" && <input type="text" value={d.primarySportDetail} onChange={(e) => updateSports("primarySportDetail", e.target.value)} placeholder="Précisez le sport…" className={`${inputCls} mt-2`} />}</div>
           <SportPositionSelect sport={d.primarySport === "Autre" && d.primarySportDetail ? "Autre" : d.primarySport} value={d.primaryPosition} onChange={(v) => updateSports("primaryPosition", v)} label="Position principale" required hasError={isFieldEmpty(d.primaryPosition)} />
           <div><label className={labelCls}>Numéro de chandail{req}</label><input type="text" inputMode="numeric" value={d.jerseyNumber} onChange={(e) => updateSports("jerseyNumber", e.target.value.replace(/\D/g, ""))} placeholder="#" className={`${inputCls} ${isFieldEmpty(d.jerseyNumber) ? errBorder : ""}`} /></div>
-          <SportPositionSelect sport={d.primarySport === "Autre" && d.primarySportDetail ? "Autre" : d.primarySport} value={d.secondaryPosition} onChange={(v) => updateSports("secondaryPosition", v)} label="Position secondaire" />
         </div>
 
         {isDetailed && (
           <div className="border-t border-[#1e2128] mt-2 pt-5">
             <p className={sectionTitle}>Détails additionnels</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
-              <div><label className={labelCls}>Sport secondaire</label><NxSelect value={d.secondarySport} onChange={(v) => { const val = v === "Aucun" ? "" : v; updateSports("secondarySport", val); if (val !== "Autre") updateSports("secondarySportDetail", ""); if (!val) { updateSports("secondarySportPosition", ""); updateSports("secondaryTeamId", ""); updateSports("secondaryTeam", ""); updateSports("secondaryTeamLevel", ""); updateSports("secondaryTeamDivision", ""); updateSports("secondaryLeague", ""); } }} placeholder="Aucun" options={[{ value: "Aucun", label: "Aucun" }, ...SPORTS.map((s) => ({ value: s, label: s }))]} />{d.secondarySport === "Autre" && <input type="text" value={d.secondarySportDetail} onChange={(e) => updateSports("secondarySportDetail", e.target.value)} placeholder="Précisez le sport…" className={`${inputCls} mt-2`} />}</div>
-              {d.secondarySport && d.secondarySport !== "" && (
-                <SportPositionSelect sport={d.secondarySport === "Autre" && d.secondarySportDetail ? "Autre" : d.secondarySport} value={d.secondarySportPosition} onChange={(v) => updateSports("secondarySportPosition", v)} label={`Position — ${d.secondarySport === "Autre" && d.secondarySportDetail ? d.secondarySportDetail : d.secondarySport}`} />
-              )}
 
               <div className="sm:col-span-2">
                 <label className={labelCls}>Équipe{req}{d.selectedTeamId && (() => { const t = coachTeam.teams.find((t) => t.id === d.selectedTeamId); return t ? <span className="ml-1.5 text-[#E63946] normal-case tracking-normal">({t.gender === "M" ? "Masculin" : "Féminin"})</span> : null; })()}</label>
@@ -1156,7 +1147,7 @@ function ModifierContent({ id }: { id: string }) {
 
         {summaryCard("Physique", 3, (<div>{infoRow("Taille", heightStr)}{infoRow("Poids", physical.weightLbs ? `${physical.weightLbs} lbs` : "")}{infoRow("Main dominante", physical.dominantHand)}{infoRow("40 verges", physical.fortyYard)}</div>))}
 
-        {summaryCard("Sport", 4, (<div>{infoRow("Sport principal", sports.primarySport)}{infoRow("Position", `${sports.primaryPosition}${sports.secondaryPosition ? ` / ${sports.secondaryPosition}` : ""}`)}{infoRow("Équipe", sports.currentTeam)}{infoRow("Niveau", sports.teamLevel)}</div>))}
+        {summaryCard("Sport", 4, (<div>{infoRow("Sport principal", sports.primarySport)}{infoRow("Position", sports.primaryPosition)}{infoRow("Équipe", sports.currentTeam)}{infoRow("Niveau", sports.teamLevel)}</div>))}
 
         {summaryCard("Évaluation", 5, (<div>
           {infoRow("Distinctions", scouting.badges.length > 0 ? scouting.badges.map((b) => {

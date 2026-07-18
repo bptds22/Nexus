@@ -70,7 +70,6 @@ const ATHLETE_SELECT = `
   recruitment_status,
   committed_school_id,
   open_to_offers,
-  position_secondaire_id,
   parcours_equipes,
   school_id,
   coach_id,
@@ -103,17 +102,6 @@ export async function loadAthleteRaw(athleteId: string) {
     .single();
 
 
-  // Resolve secondary position name (can't do two FK joins to same table)
-  if (data && (data as Record<string, unknown>).position_secondaire_id) {
-    const { data: secPos } = await supabase
-      .from("positions")
-      .select("nom, abreviation")
-      .eq("id", (data as Record<string, unknown>).position_secondaire_id)
-      .single();
-    if (secPos) {
-      (data as Record<string, unknown>)._secondary_position = secPos;
-    }
-  }
 
   return { data, error };
 }
@@ -241,14 +229,7 @@ export function buildFormFromRaw(raw: Record<string, unknown>): Record<string, u
       sportsMode: "detailed",
       primarySport: sportObj?.nom || "",
       primarySportDetail: "",
-      secondarySport: "",
-      secondarySportDetail: "",
       primaryPosition: posObj?.abreviation || posObj?.nom || "",
-      secondaryPosition: (() => {
-        const sp = raw._secondary_position as { abreviation?: string; nom?: string } | undefined;
-        return sp?.abreviation || sp?.nom || "";
-      })(),
-      secondarySportPosition: "",
       selectedTeamId: "",
       currentTeam: "",
       teamLevel: "",
@@ -398,10 +379,6 @@ export function mapToRecruiterView(raw: Record<string, unknown>): AthleteProfile
     dateOfBirth: (raw.date_naissance as string) || "",
     primarySport: sportObj?.nom || "",
     primaryPosition,
-    secondaryPosition: (() => {
-      const sp = raw._secondary_position as { abreviation?: string; nom?: string } | undefined;
-      return sp?.abreviation || sp?.nom || "";
-    })(),
     teamHistory: parseTeamHistory(raw.parcours_equipes),
     jerseyNumber: raw.numero_jersey != null ? String(raw.numero_jersey) : "",
     heightFeet: heightFt,

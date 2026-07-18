@@ -466,8 +466,6 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
         recruitment_status,
         committed_school_id,
         open_to_offers,
-        sport_secondaire_id,
-        position_secondaire_id,
         parcours_equipes,
         school_id,
         sports!athletes_sport_id_fkey(nom),
@@ -523,18 +521,6 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
         // Age from birth date
         const birthDate = d.date_naissance as string | null;
         const age = birthDate ? Math.floor((Date.now() - new Date(birthDate).getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : null;
-
-        // Secondary sport/position lookup
-        let secondarySportName = "";
-        let secondaryPositionName = "";
-        if (d.sport_secondaire_id) {
-          const { data: secSport } = await supabase.from("sports").select("nom").eq("id", d.sport_secondaire_id as string).maybeSingle();
-          secondarySportName = secSport?.nom || "";
-        }
-        if (d.position_secondaire_id) {
-          const { data: secPos } = await supabase.from("positions").select("nom, abreviation").eq("id", d.position_secondaire_id as string).maybeSingle();
-          secondaryPositionName = secPos ? (secPos.abreviation ? `${secPos.nom} (${secPos.abreviation})` : secPos.nom) : "";
-        }
 
         // Programme CÉGEP
         const progArr = (d.programme_cegep_vise as string[]) || [];
@@ -602,8 +588,6 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
           sprint100m: (d.sprint_100m as string) || "",
           primarySport: sport?.nom || "",
           primaryPosition: pos?.abreviation ? `${pos.nom} (${pos.abreviation})` : pos?.nom || "",
-          secondarySport: secondarySportName,
-          secondaryPosition: secondaryPositionName,
           teamHistory: parseTeamHistory(d.parcours_equipes),
           // Phase 1 audit (post-Phase 6.1): schoolName overload split
           // into isCivil / schoolName / teamName / leagueName. Canonical
@@ -1476,13 +1460,6 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
                     Replaced by the generalized TeamDetailsBlock below,
                     which surfaces team detail for BOTH école and civil
                     from the team_athletes → teams join. */}
-                {a.secondarySport && (
-                  <>
-                    <div className="border-t border-[#2D3748]/40 my-2" />
-                    <InfoRow label="Sport secondaire" value={a.secondarySport} icon="activity" />
-                    <InfoRow label="Position secondaire" value={a.secondaryPosition} icon="target" />
-                  </>
-                )}
                 <TeamDetailsBlock teams={teamDetails} />
               </div>
             </section>

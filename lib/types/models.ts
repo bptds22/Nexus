@@ -253,11 +253,7 @@ export interface TeamHistoryEntry {
 export interface AthleteFormSports {
   primarySport: string;
   primarySportDetail: string;
-  secondarySport: string;
-  secondarySportDetail: string;
   primaryPosition: string;
-  secondaryPosition: string;
-  secondarySportPosition: string;
   selectedTeamId: string;
   currentTeam: string;
   teamLevel: string;
@@ -730,8 +726,6 @@ export interface AthleteProfileRecruiterView {
   primarySport: string;
   primaryPosition: string;
   jerseyNumber: string;
-  secondarySport?: string;
-  secondaryPosition?: string;
   /** Parcours d'équipes — declarative team history (LinkedIn-style). */
   teamHistory?: TeamHistoryEntry[];
   teamName?: string;

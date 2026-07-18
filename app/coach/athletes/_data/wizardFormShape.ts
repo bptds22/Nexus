@@ -66,11 +66,7 @@ export interface AthleteFormData {
     sportsMode: "simple" | "detailed";
     primarySport: string;
     primarySportDetail: string;
-    secondarySport: string;
-    secondarySportDetail: string;
     primaryPosition: string;
-    secondaryPosition: string;
-    secondarySportPosition: string;
     selectedTeamId: string;
     currentTeam: string;
     teamLevel: string;
@@ -135,8 +131,7 @@ export function emptyAthleteForm(): AthleteFormData {
     sports: {
       sportsMode: "simple",
       primarySport: "", primarySportDetail: "",
-      secondarySport: "", secondarySportDetail: "",
-      primaryPosition: "", secondaryPosition: "", secondarySportPosition: "",
+      primaryPosition: "",
       selectedTeamId: "", currentTeam: "", teamLevel: "", teamDivision: "",
       jerseyNumber: "", league: "",
       secondaryTeamId: "", secondaryTeam: "", secondaryTeamLevel: "", secondaryTeamDivision: "", secondaryLeague: "",
