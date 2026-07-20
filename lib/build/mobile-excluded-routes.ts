@@ -27,6 +27,8 @@
 export const MOBILE_EXCLUDED_SEGMENTS = [
   '/admin',
   '/partenaire',
+  '/parent',   // Portal parental (Lot 1a) — web only. Exclusion effective via
+               // le guard notFound() dans app/parent/layout.tsx.
 ] as const;
 
 export const MOBILE_EXCLUDED_DYNAMIC_ROUTES = [
