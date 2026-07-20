@@ -773,6 +773,9 @@ export interface AthleteProfileRecruiterView {
   isVerified: boolean;
   parentalConsent: boolean;        // athletes.consentement_parental
   lastValidation?: string | null;
+  /** athletes.modified_since_verification — true = profil modifié depuis
+   *  la dernière vérif → le coach doit re-confirmer. */
+  modifiedSinceVerification?: boolean;
   profileCompleteness: number;
   favoriteCount: number;
   viewsThisMonth: number;

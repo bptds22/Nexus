@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import PlaybookBackground from "@/app/components/PlaybookBackground";
 import ErrorToast, { type ErrorToastData } from "@/components/ui/ErrorToast";
 import { translateAuthError } from "@/lib/utils/translateAuthError";
+import { isUnder14 } from "@/lib/legal/ageGate";
 import {
   persistInitialConsents,
   buildConsentMetadata,
@@ -113,7 +114,12 @@ function ProSignupContent() {
 
   const pwdMeetsMin = password.length >= 8;
   const pwdMismatch = confirmPassword.length > 0 && password !== confirmPassword;
-  const signupValid = firstName && lastName && email && pwdMeetsMin && !pwdMismatch && selectedRole && birthdate && consentPolicy && consentData;
+  // Loi 25 — hard-block self-signup sous 14 ans. Le signup PRO capture aussi une
+  // DOB (iter coach-dob-migration, parité avec SignupMobile) : sans ce contrôle,
+  // /auth/pro reste une porte d'entrée <14 alors que /auth (athlète) est fermée.
+  // Le seuil ne dépend pas du rôle — c'est l'auto-inscription qui est refusée.
+  const birthdateUnder14 = isUnder14(birthdate);
+  const signupValid = firstName && lastName && email && pwdMeetsMin && !pwdMismatch && selectedRole && birthdate && !birthdateUnder14 && consentPolicy && consentData;
 
   const fieldErr = (filled: boolean) => submitted && !filled ? "border-[#EF4444]" : "";
 
@@ -131,6 +137,9 @@ function ProSignupContent() {
       setTimeout(() => setShakeFields(false), 600);
       return;
     }
+    // Loi 25 — jamais de compte auth pour un <14 (garde défensive en plus du
+    // blocage via signupValid/birthdateUnder14). Miroir de SignupMobile:287.
+    if (isUnder14(birthdate)) return;
 
     const { signUp } = await import('@/lib/supabase/auth.actions');
     const role = ROLE_MAP[selectedRole as ProRole];
@@ -300,6 +309,11 @@ function ProSignupContent() {
                       onChange={(e) => setBirthdate(e.target.value)}
                       className={`${inputClass} ${fieldErr(!!birthdate)}`}
                     />
+                    {/* Loi 25 — hard-block <14. Formulation IDENTIQUE aux autres
+                        surfaces (app/auth/page.tsx:421, SignupMobile:1020). */}
+                    {birthdate && birthdateUnder14 && (
+                      <p className="text-xs mt-1.5 text-[#EF4444]">L&apos;inscription est réservée aux 14 ans et plus.</p>
+                    )}
                   </div>
 
                   {/* Consent checkboxes */}

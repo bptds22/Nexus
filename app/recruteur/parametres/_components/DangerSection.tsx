@@ -54,7 +54,7 @@ export default function DangerSection({ onDeactivate, onExport, onDelete }: Prop
           <div className="flex-1">
             <p className="text-[14px] font-bold text-white">Supprimer définitivement mon compte</p>
             <p className="text-[12px] text-[#9CA3AF] mt-1 leading-relaxed">
-              Cette action est permanente. Toutes vos données seront effacées après un délai de grâce de 30 jours. Conformité Loi 25 — droit à l&apos;effacement.
+              Votre compte et vos données personnelles seront supprimés immédiatement et définitivement. Cette action est irréversible. Conformité Loi 25 — droit à l&apos;effacement.
             </p>
           </div>
           <button type="button" onClick={onDelete}

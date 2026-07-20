@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
+import { uploadImage } from "@/lib/upload/uploadImage";
 import type { CoachProfile } from "../_data/mockSettingsData";
 
 /* ─────────────────────────────────────────────────────────────────
@@ -100,12 +101,15 @@ export default function ProfileSection() {
     loadData();
   }, []);
 
-  function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
-    if (!file || !file.type.startsWith("image/")) return;
-    const reader = new FileReader();
-    reader.onload = () => setAvatarUrl(reader.result as string);
-    reader.readAsDataURL(file);
+    if (!file) return;
+    if (!userId) { setError("Non authentifié"); return; }
+    // Upload immédiat via le helper partagé (compression). L'URL réelle
+    // remplace l'ancien aperçu data-URL ; la colonne est persistée au Save.
+    const res = await uploadImage(file, { pathBase: `${userId}/avatar` });
+    if (!res.ok) { setError(res.message); return; }
+    setAvatarUrl(res.publicUrl);
   }
 
   function update(field: keyof CoachProfile, value: string) {
@@ -136,6 +140,7 @@ export default function ProfileSection() {
         first_name: form.firstName,
         last_name: form.lastName,
         phone: form.phone,
+        avatar_url: avatarUrl,
       })
       .eq("id", user.id);
 

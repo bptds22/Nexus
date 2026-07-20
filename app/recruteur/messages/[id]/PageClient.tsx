@@ -4,6 +4,8 @@ import {  useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useDynamicParam } from "@/lib/platform/useDynamicParam";
 import { createClient } from "@/lib/supabase/client";
+import { parseDistinctions } from "@/lib/config/badges";
+import { selectBestEvaluation } from "@/lib/evaluations/selectEvaluation";
 import CoachInfoCard from "@/components/recruteur/CoachInfoCard";
 import AthleteInfoCard from "@/components/recruteur/AthleteInfoCard";
 import FeatureGate from "@/components/subscription/FeatureGate";
@@ -157,7 +159,7 @@ function RecruiterThreadPage() {
             positions!position_id(nom, abreviation),
             schools!school_id(name, region),
             committed_school:schools!committed_school_id(name),
-            evaluations(distinctions)
+            evaluations(distinctions, updated_at)
           )
         `)
         .eq("id", id)
@@ -179,11 +181,12 @@ function RecruiterThreadPage() {
         const committedSchoolRaw = athlete?.committed_school;
         const committedSchool = (Array.isArray(committedSchoolRaw) ? committedSchoolRaw[0] : committedSchoolRaw) as { name?: string } | null;
         const evalRaw = athlete?.evaluations;
-        const eval0 = (Array.isArray(evalRaw) ? evalRaw[0] : evalRaw) as { distinctions?: string[] } | null;
-        const rawDistinctions: unknown[] = Array.isArray(eval0?.distinctions) ? eval0!.distinctions as unknown[] : [];
-        const distinctions: string[] = rawDistinctions
-          .map((d) => (typeof d === "string" ? d : (d && typeof d === "object" ? ((d as { code?: string; id?: string }).code || (d as { code?: string; id?: string }).id || "") : "")))
-          .filter((d): d is string => typeof d === "string" && d !== "");
+        const eval0 = selectBestEvaluation(Array.isArray(evalRaw) ? evalRaw : evalRaw ? [evalRaw] : []) as { distinctions?: unknown } | null;
+        // #56 — parseDistinctions gère string[] + {badge,detail} (objet) et
+        // filtre les badges inconnus ; on garde le contrat string[] (clés badge)
+        // attendu en aval (athleteDistinctions). L'ancienne extraction d.code||d.id
+        // droppait silencieusement le format objet.
+        const distinctions: string[] = parseDistinctions(eval0?.distinctions).map((d) => d.badge);
 
         const cf = (coach?.first_name as string) || "";
         const cl = (coach?.last_name as string) || "";

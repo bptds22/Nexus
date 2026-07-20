@@ -62,7 +62,12 @@ schema_paths = []
 enabled = true
 # Specifies an ordered list of seed files to load during db reset.
 # Supports glob patterns relative to supabase directory: "./seeds/*.sql"
-sql_paths = ["./seed/reference_data.sql"]
+# reference_data.sql désactivé — redondant avec la migration 20260526100000
+# (source unique idempotente). Note : les tables legacy subscription_features_*
+# (9 lignes, non lues à l'exécution — flags hardcodés dans SubscriptionProvider)
+# ne sont plus seedées ; sans impact. Le fichier est conservé (juste retiré du
+# seed actif) et le mécanisme reste dispo pour un futur seed de test.
+sql_paths = []
 
 [db.network_restrictions]
 # Enable management of network restrictions.

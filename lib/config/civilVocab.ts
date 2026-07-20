@@ -27,6 +27,11 @@ export interface VocabOption {
 export const AUTRE_VALUE = "Autre";
 
 export const AGE_OPTIONS: VocabOption[] = [
+  // Catégories RSEQ scolaires (secondaire) — en tête car ce sont les
+  // plus courantes côté scolaire ; partagées avec le flux civil.
+  { value: "Benjamin",  label: "Benjamin" },
+  { value: "Cadet",     label: "Cadet" },
+  { value: "Juvénile",  label: "Juvénile" },
   { value: "M9",        label: "M9" },
   { value: "M11",       label: "M11" },
   { value: "M13",       label: "M13" },

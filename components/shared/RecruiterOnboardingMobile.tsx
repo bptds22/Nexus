@@ -36,7 +36,9 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
+import { uploadImage } from "@/lib/upload/uploadImage";
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import { MobilePicker, type PickerOption } from "@/components/mobile/MobilePicker";
 import { SearchSheet } from "@/components/mobile/SearchSheet";
@@ -81,7 +83,7 @@ function stripAccents(s: string): string {
   return s.normalize("NFD").replace(/[̀-ͯ]/g, "");
 }
 function normalize(s: string): string {
-  return stripAccents(s).toLowerCase().trim();
+  return stripAccents(s).replace(/[-\s]+/g, " ").toLowerCase().trim();
 }
 
 function programLabel(t: { name: string; division: string | null; age_group: string | null; gender: string | null }): string {
@@ -97,6 +99,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function RecruiterOnboardingMobile() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const toast = useMobileToast();
 
   const [slide, setSlide] = useState<0 | 1 | 2 | 3 | 4>(0);
@@ -243,7 +246,7 @@ export function RecruiterOnboardingMobile() {
       const { data } = await supabase
         .from("schools")
         .select("id, name, city, region")
-        .eq("has_collegial", true)
+        .eq("type", "CEGEP")
         .order("name");
       setCegeps((data as CegepRow[]) || []);
       setCegepsLoading(false);
@@ -352,19 +355,13 @@ export function RecruiterOnboardingMobile() {
     const file = e.target.files?.[0];
     if (!file || !userId) return;
     setPhotoUploading(true);
-    const supabase = createClient();
-    const ext = file.name.split(".").pop() || "jpg";
-    const filePath = `${userId}/${Date.now()}.${ext}`;
-    const { error: upErr } = await supabase.storage
-      .from("avatars")
-      .upload(filePath, file, { upsert: true });
-    if (upErr) {
-      toast.error({ message: "Échec de l'upload", detail: upErr.message });
+    const res = await uploadImage(file, { pathBase: `${userId}/${Date.now()}` });
+    if (!res.ok) {
+      toast.error({ message: "Échec de l'upload", detail: res.message });
       setPhotoUploading(false);
       return;
     }
-    const { data: pub } = supabase.storage.from("avatars").getPublicUrl(filePath);
-    setPhoto(pub.publicUrl);
+    setPhoto(res.publicUrl);
     setPhotoUploading(false);
     triggerHaptic("Light");
   }, [userId, toast]);
@@ -459,6 +456,9 @@ export function RecruiterOnboardingMobile() {
         return;
       }
 
+      // Re-fetch currentUser → PushRegistrar voit onboarding_complete=true (posé par
+      // la RPC finish_recruiter_onboarding) dans la MÊME session → registerPush().
+      await queryClient.invalidateQueries({ queryKey: ["currentUser"] });
       triggerHaptic("Medium");
       router.replace("/recruteur/tableau-de-bord");
     } catch (err) {
@@ -470,7 +470,7 @@ export function RecruiterOnboardingMobile() {
     canSubmit, userId, firstName, lastName, phone, photo, bio, sport, experienceYears,
     selectedCegepId, selectedProgramId,
     directorChoice, rprpAttested, inviteEmail, inviteEmailValid,
-    router, toast,
+    router, toast, queryClient,
   ]);
 
   /* ── Render ──────────────────────────────────────────────── */
@@ -487,7 +487,7 @@ export function RecruiterOnboardingMobile() {
 
   return (
     <div
-      className="min-h-screen bg-[#111317] text-white flex flex-col"
+      className="h-[100dvh] overflow-x-hidden bg-[#111317] text-white flex flex-col"
       style={{ opacity: mounted ? 1 : 0, transition: "opacity 400ms ease-out" }}
     >
       {/* Header sticky */}
@@ -525,8 +525,8 @@ export function RecruiterOnboardingMobile() {
 
       {/* Contenu */}
       <div
-        className="flex-1 overflow-y-auto"
-        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 96px)" }}
+        className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden"
+        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 96px)", overscrollBehavior: "contain" }}
       >
         {slide === 0 && (
           <Slide1Profile

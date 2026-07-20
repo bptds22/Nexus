@@ -7,6 +7,8 @@ import {
   getTiersForPersona,
 } from "@/lib/config/pricing";
 
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
+
 /* ═══════════════════════════════════════════════════════════════
    UpgradeModal — generic Pro/All Star upgrade prompt
 
@@ -125,24 +127,26 @@ export default function UpgradeModal({
             Cette fonctionnalité est réservée aux membres {tier.name}. Découvre tout ce que tu obtiens.
           </p>
 
-          {/* Pricing block */}
-          <div className="mt-5 pb-5 border-b border-white/[0.06]">
-            <div className="flex items-baseline gap-1.5">
-              <span className="font-head text-[32px] font-black text-white leading-none">
-                ${tier.monthly.toFixed(2)}
-              </span>
-              <span className="text-[14px] text-[#9CA3AF]">/mois</span>
+          {/* Pricing block — masqué sur iOS (3.1.1 : aucun prix ni achat) */}
+          {!IS_CAPACITOR && (
+            <div className="mt-5 pb-5 border-b border-white/[0.06]">
+              <div className="flex items-baseline gap-1.5">
+                <span className="font-head text-[32px] font-black text-white leading-none">
+                  ${tier.monthly.toFixed(2)}
+                </span>
+                <span className="text-[14px] text-[#9CA3AF]">/mois</span>
+              </div>
+              {tier.annualMonthlyEq !== null && (
+                <p className="text-[12px] text-[#c8c8cc] mt-1.5">
+                  ou{" "}
+                  <span className="font-bold text-white">
+                    ${tier.annualMonthlyEq.toFixed(2)}/mois
+                  </span>{" "}
+                  facturé annuellement
+                </p>
+              )}
             </div>
-            {tier.annualMonthlyEq !== null && (
-              <p className="text-[12px] text-[#c8c8cc] mt-1.5">
-                ou{" "}
-                <span className="font-bold text-white">
-                  ${tier.annualMonthlyEq.toFixed(2)}/mois
-                </span>{" "}
-                facturé annuellement
-              </p>
-            )}
-          </div>
+          )}
 
           {/* Top features */}
           <ul className="space-y-2.5 mt-5">
@@ -158,21 +162,24 @@ export default function UpgradeModal({
             ))}
           </ul>
 
-          {/* Primary CTA */}
-          <Link
-            href={tarifsUrl}
-            className="mt-6 inline-flex items-center justify-center w-full h-12 rounded-lg bg-[#E63946] hover:bg-[#D42B22] text-white font-head font-black text-[13px] uppercase tracking-widest transition-colors"
-          >
-            Passer à {tier.name} →
-          </Link>
+          {/* CTA d'achat — masqués sur iOS (3.1.1) ; modale = info seule */}
+          {!IS_CAPACITOR && (
+            <>
+              <Link
+                href={tarifsUrl}
+                className="mt-6 inline-flex items-center justify-center w-full h-12 rounded-lg bg-[#E63946] hover:bg-[#D42B22] text-white font-head font-black text-[13px] uppercase tracking-widest transition-colors"
+              >
+                Passer à {tier.name} →
+              </Link>
 
-          {/* Secondary link */}
-          <Link
-            href={tarifsUrl}
-            className="mt-3 block text-center text-[12px] font-bold uppercase tracking-wider text-[#9CA3AF] hover:text-white transition-colors"
-          >
-            Voir tous les forfaits
-          </Link>
+              <Link
+                href={tarifsUrl}
+                className="mt-3 block text-center text-[12px] font-bold uppercase tracking-wider text-[#9CA3AF] hover:text-white transition-colors"
+              >
+                Voir tous les forfaits
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </div>

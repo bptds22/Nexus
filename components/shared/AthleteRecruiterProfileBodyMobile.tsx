@@ -27,9 +27,12 @@ import type {
   RetireReason,
 } from "@/lib/config/recruitmentStatuses";
 import { getAthleteTracking } from "@/app/recruteur/_data/mockPipelineData";
+import VisitCalendarCard from "@/components/shared/VisitCalendarCard";
+import { persistPipelineStage } from "@/lib/pipeline/persistPipelineStage";
 import StatusChangeDropdown from "@/app/recruteur/_components/StatusChangeDropdown";
 import ComposeIntroModal from "@/app/recruteur/_components/ComposeIntroModal";
 import { useSubscription } from "@/lib/hooks/useSubscription";
+import { selectBestEvaluation } from "@/lib/evaluations/selectEvaluation";
 import { useFavoritesCount } from "@/lib/hooks/useFavoritesCount";
 import CelebrationToast from "@/app/recruteur/_components/CelebrationToast";
 import UpgradeModal from "@/components/ui/UpgradeModal";
@@ -374,7 +377,7 @@ function FreeLock() {
         <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
         <path d="M7 11V7a5 5 0 0110 0v4" />
       </svg>
-      <p className="text-[14px] text-[#9CA3AF] font-semibold mb-1">Passe à Pro pour voir</p>
+      <p className="text-[14px] text-[#9CA3AF] font-semibold mb-1">Réservé aux recruteurs Pro</p>
       <p className="text-[13px] text-[#6B7280] max-w-xs">Cette section est réservée aux recruteurs Pro.</p>
     </div>
   );
@@ -573,12 +576,15 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
   // a recruiter sees them.
   const isFreeRecruiter = tier === "free" && !isSelfPreview;
   const { count: myFavCount, setCount: setMyFavCount } = useFavoritesCount();
-  const [a, setA] = useState<AthleteProfileRecruiterView>(mockAthleteProfileFull);
+  // #52 — init à null (plus de mock initial) : aucun faux athlète rendu avant
+  // les vraies données. Le gate loadingAthlete plus bas court-circuite le rendu.
+  const [a, setA] = useState<AthleteProfileRecruiterView | null>(null);
   const [loadingAthlete, setLoadingAthlete] = useState(true);
   const [recruitmentStatus, setRecruitmentStatus] = useState<GlobalRecruitmentStatus>("OUVERT");
   const [committedSchoolName, setCommittedSchoolName] = useState("");
   const [openToOffers, setOpenToOffers] = useState<boolean | null>(null);
   const [myPipelineStage, setMyPipelineStage] = useState<string | null>(null);
+  const [visitAt, setVisitAt] = useState<string | null>(null);
   const [coachId, setCoachId] = useState<string | null>(null);
   const [isAllStar, setIsAllStar] = useState(false);
 
@@ -617,6 +623,9 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
      reste IDENTIQUE byte-pour-byte (en-dessous). */
   useEffect(() => {
     if (!isCoach) return;
+    // #52 — id placeholder (Capacitor static export, premier render avant
+    // résolution du vrai id) : ne pas fetcher un faux id, rester en loading.
+    if (id === "placeholder") return;
     let cancelled = false;
     (async () => {
       const { data, error } = await loadAthleteRaw(id);
@@ -673,6 +682,8 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
     // include first_name/last_name in this branch.
     if (!isRecruiter && !isSelfPreview) return;
     if (tierLoading) return;
+    // #52 — id placeholder (Capacitor) : pas de fetch faux id, rester en loading.
+    if (id === "placeholder") return;
     const supabase = createClient();
     const identityCols = isFreeRecruiter ? "" : "first_name, last_name,";
     supabase
@@ -703,7 +714,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
           vision_du_jeu, sens_tactique,
           leadership, discipline, coachabilite, intelligence_jeu,
           competitivite, esprit_equipe, resilience, attitude_mentalite,
-          cote_globale, rapport_entraineur, distinctions
+          cote_globale, rapport_entraineur, distinctions, updated_at
         ),
         users!athletes_coach_id_fkey(first_name, last_name)
       ` as unknown as "*")
@@ -715,7 +726,9 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
         const d = data as Record<string, unknown>;
         setAthleteUserId((d.user_id as string | null) ?? null);
         const evals = d.evaluations as Record<string, unknown>[] | null;
-        const eval0 = evals?.[0];
+        // Pick by rule (détaillée > simple, then most recent updated_at) —
+        // NOT evaluations[0] (unordered, often a non-owning coach's row).
+        const eval0 = selectBestEvaluation(evals);
 
         const recruitmentStatusRaw = (d.recruitment_status as string) || "OUVERT";
         const committedSchoolRel = d.committed_school as { name: string } | null;
@@ -1028,6 +1041,9 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
         verified_at: nowIso,
         verified_by: user.id,
         last_profile_validation: nowIso,
+        // Re-pose symétrique : on efface le flag « modifié depuis vérif »
+        // pour que l'athlète sorte de la file « À traiter » (cf. lib/coach/tasks).
+        modified_since_verification: false,
       })
       .eq("id", id);
     if (error) {
@@ -1088,7 +1104,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
     : null;
 
   const handleContactCoach = useCallback(async () => {
-    if (!coachId || contactingCoach) return;
+    if (!coachId || !a || contactingCoach) return;
     triggerHaptic("Medium");
     setContactingCoach(true);
     const result = await findOrCreateRecruiterConversation({ coachId, athleteId: a.id });
@@ -1102,7 +1118,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
     } else {
       toast.error({ message: "Échec", detail: result.error || "Impossible d'ouvrir la conversation." });
     }
-  }, [coachId, contactingCoach, a.id, router, toast]);
+  }, [coachId, contactingCoach, a?.id, router, toast]);
 
   // Rapport coach expandable (Fix 3 iter 2.8) — clamp à 3 lignes par défaut
   // si la citation dépasse 150 caractères. Bouton "Lire la suite / Réduire".
@@ -1204,7 +1220,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
 
   // Photo preload (Fix 2) — déclenche photoReady quand l'image est en cache navigateur
   useEffect(() => {
-    if (!a.photoUrl) { setPhotoReady(true); return; }
+    if (!a?.photoUrl) { setPhotoReady(true); return; }
     setPhotoReady(false);
     const img = new window.Image();
     img.onload = () => setPhotoReady(true);
@@ -1213,14 +1229,14 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
     // safety timeout 2s
     const t = window.setTimeout(() => setPhotoReady(true), 2000);
     return () => { window.clearTimeout(t); img.onload = null; img.onerror = null; };
-  }, [a.photoUrl]);
+  }, [a?.photoUrl]);
 
   // Mount cascade (Fix 2) — attend photoReady, puis cascade : card → étoiles → nom → badges → essentials
   useEffect(() => {
     if (loadingAthlete) return;
     if (!photoReady) return;
     setMounted(true);
-    const distinctionsCount = Math.min(a.distinctions?.length ?? 0, MAX_BADGES);
+    const distinctionsCount = Math.min(a?.distinctions?.length ?? 0, MAX_BADGES);
     const timers: number[] = [];
     // T+16 ms — card reveal (laisse le rendu initial se faire)
     timers.push(window.setTimeout(() => setCardRevealed(true), 16));
@@ -1237,7 +1253,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
     // T+1000 ms — essentials
     timers.push(window.setTimeout(() => setEssentialsRevealed(true), 1000));
     return () => { timers.forEach((t) => window.clearTimeout(t)); };
-  }, [loadingAthlete, photoReady, a.distinctions?.length]);
+  }, [loadingAthlete, photoReady, a?.distinctions?.length]);
 
   // Fade-in du contenu de tab à chaque switch + haptic (Fix 7 iter 3.1)
   const handleTabChange = (k: TabKey) => {
@@ -1279,7 +1295,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
 
   const favAtCap = maxFavorites !== -1 && myFavCount >= maxFavorites;
   const favButtonDisabled = favAtCap && !isFavorited;
-  const favDisabledTitle = `Limite de ${maxFavorites} favoris atteinte. Passez à Pro pour plus.`;
+  const favDisabledTitle = `Limite de ${maxFavorites} favoris atteinte — favoris illimités réservés aux membres Pro.`;
 
   const toggleFav = async () => {
     if (favButtonDisabled) return;
@@ -1328,9 +1344,14 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) return;
       const { data: pipelineData } = await supabase
-        .from("recruiter_pipeline").select("stage")
+        .from("recruiter_pipeline").select("stage, visit_at")
         .eq("recruiter_id", session.user.id).eq("athlete_id", id).maybeSingle();
       setMyPipelineStage(pipelineData?.stage || null);
+      setVisitAt((pipelineData?.visit_at as string | null) ?? null);
+      // Dropdown piloté par la DB, plus par getAthleteTracking() (mock).
+      if (pipelineData?.stage) {
+        setPipelineStatus(String(pipelineData.stage).toLowerCase() as RecruitmentStatus);
+      }
     };
     loadPipeline();
   }, [id, isRecruiter]);
@@ -1399,7 +1420,9 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
     loadCounts();
   }, [id, isFavorited]);
 
-  useEffect(() => { setA(prev => ({ ...prev, favoriteCount: favCount })); }, [favCount]);
+  // #52 — ne pas matérialiser un objet partiel quand a est null (sinon le
+  // gate !a serait contourné). Fusion du compteur seulement sur a chargé.
+  useEffect(() => { setA(prev => (prev ? { ...prev, favoriteCount: favCount } : prev)); }, [favCount]);
 
   // Pull-to-refresh (Fix 1 iter 3.2) — passive partout, jamais preventDefault.
   // Early-exit si modal Signaler ouvert (sinon document.touchstart vole les
@@ -1465,8 +1488,37 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
   const [showCelebration, setShowCelebration] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
-  function handleStatusChange(newStatus: RecruitmentStatus, _extra?: { visitDate?: string; retireReason?: RetireReason }) {
+  /* Stage désormais PERSISTÉ (avant : state local → perdu au refresh).
+     Optimiste, rollback si Postgres refuse (RLS Free → user_has_pro()). */
+  async function handleStatusChange(newStatus: RecruitmentStatus, extra?: { visitDate?: string; retireReason?: RetireReason }) {
+    const prevStatus = pipelineStatus;
+    const prevVisitAt = visitAt;
+    const nextVisitAt = newStatus === "visite_planifiee" ? (extra?.visitDate ?? null) : null;
+
     setPipelineStatus(newStatus);
+    setVisitAt(nextVisitAt);
+
+    const res = await persistPipelineStage({
+      athleteId: id,
+      status: newStatus,
+      visitAtIso: extra?.visitDate,
+    });
+
+    if (!res.ok) {
+      setPipelineStatus(prevStatus);
+      setVisitAt(prevVisitAt);
+      toast.error({
+        message: res.reason === "pro_required"
+          ? "Fonctionnalité Pro"
+          : "Statut non enregistré",
+        detail: res.reason === "pro_required"
+          ? "Passe à Pro pour gérer ton processus."
+          : undefined,
+      });
+      return;
+    }
+
+    setMyPipelineStage(newStatus === "retire" ? null : newStatus.toUpperCase());
   }
 
   async function handleFlagSubmit() {
@@ -1508,6 +1560,18 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
     } finally {
       setFlagSubmitting(false);
     }
+  }
+
+  // #52 — gate anti-flash (parité web) : tant que le fetch charge
+  // (loadingAthlete), que a est null, ou que l'id est encore le placeholder
+  // Capacitor → fallback spinner, jamais le mock. APRÈS tous les hooks, AVANT
+  // le premier accès a.xxx → narrowing non-null + pas de crash.
+  if (loadingAthlete || !a || id === "placeholder") {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#111317" }}>
+        <div className="w-8 h-8 rounded-full border-2 border-[#2D3748] border-t-[#E63946] animate-spin" role="status" aria-label="Chargement du profil" />
+      </div>
+    );
   }
 
   const traitEntries = a.traitRatings ? Object.entries(a.traitRatings) as [keyof AthleteTraitRatings, number][] : [];
@@ -1552,8 +1616,8 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
           PlayerCard). Maintenant : opaque dès le repos, le bloc TopBar+tabs
           forme une zone solide continue, contenu disparaît net dessous. */}
       <div
-        className="sticky top-0 z-40 h-11 flex items-center px-4"
-        style={{ backgroundColor: "#111317" }}
+        className="sticky top-0 z-40 min-h-11 flex items-center px-4"
+        style={{ backgroundColor: "#111317", paddingTop: "env(safe-area-inset-top)" }}
       >
         {/* Iter 6.1c — back vers le tab d'origine (sessionStorage 'lastRecruiterTab').
             Pipeline → profil → back doit revenir vers Pipeline et pas Recherche.
@@ -1714,7 +1778,11 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
         {isCoach && (
           <div className="space-y-3 mb-4">
             <ConsentAlert consentGiven={a.parentalConsent} onConfirm={coachConfirmConsent} />
-            <VerifyAlert isVerified={!!a.isVerified} onVerify={coachVerify} />
+            <VerifyAlert
+              isVerified={!!a.isVerified}
+              needsReverify={!!a.modifiedSinceVerification}
+              onVerify={coachVerify}
+            />
             <SuggestionsAlert
               pendingSuggestions={pendingSuggestions}
               onApprove={coachApprove}
@@ -1788,16 +1856,26 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
         >
           <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#6b7280]">Mon statut</span>
           {tier === "free" ? (
-            <button
-              type="button"
-              onClick={() => setShowUpgradeModal(true)}
-              className="inline-flex items-center gap-2 bg-[#E63946]/10 border border-[#E63946]/30 rounded-full px-4 py-2 text-[13px] font-bold uppercase tracking-wider text-[#E63946] active:bg-[#E63946]/20"
-            >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0110 0v4" />
-              </svg>
-              Passer à Pro pour le pipeline
-            </button>
+            IS_CAPACITOR ? (
+              // iOS (3.1.1) : pas de CTA d'achat. Pill descriptif non-cliquable.
+              <span className="inline-flex items-center gap-2 bg-white/[0.04] border border-white/[0.1] rounded-full px-4 py-2 text-[13px] font-bold uppercase tracking-wider text-[#9CA3AF]">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0110 0v4" />
+                </svg>
+                Suivi de processus — Pro
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowUpgradeModal(true)}
+                className="inline-flex items-center gap-2 bg-[#E63946]/10 border border-[#E63946]/30 rounded-full px-4 py-2 text-[13px] font-bold uppercase tracking-wider text-[#E63946] active:bg-[#E63946]/20"
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0110 0v4" />
+                </svg>
+                Passer à Pro pour le processus
+              </button>
+            )
           ) : myPipelineStage ? (() => {
             const upper = myPipelineStage.toUpperCase();
             const dotCfg = PIPELINE_DOT_MAP[upper]; // undefined si statut non répertorié → pas de dot
@@ -1827,7 +1905,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
               </span>
             );
           })() : (
-            <span className="text-[12px] italic text-[#6b7280]">Pas dans le pipeline</span>
+            <span className="text-[12px] italic text-[#6b7280]">Pas dans le processus</span>
           )}
         </div>
         )}
@@ -1893,6 +1971,18 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
             />
           </div>
         )}
+
+        {/* Visite planifiée + export agenda — gate strict : stage ET date. */}
+        {isRecruiter && canUsePipeline && pipelineStatus === "visite_planifiee" && visitAt && (
+          <div className="mt-4">
+            <VisitCalendarCard
+              visitAtIso={visitAt}
+              athleteName={`${a.firstName} ${a.lastName}`}
+              sport={a.primarySport}
+              schoolName={a.schoolName}
+            />
+          </div>
+        )}
         </div>
         );
       })()}
@@ -1911,7 +2001,8 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
         className="bg-[#111317] border-b border-white/[0.04] overflow-hidden"
         style={{
           position: collapsedActive ? "sticky" : "absolute",
-          top: collapsedActive ? 44 : -80,
+          // top suit le header (sticky top:0) qui fait désormais safe-area + 44px.
+          top: collapsedActive ? "calc(env(safe-area-inset-top) + 44px)" : -80,
           left: 0,
           right: 0,
           height: 80,
@@ -1952,7 +2043,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
           plus sous le bloc sticky. */}
       <div
         className="sticky z-30 bg-[#111317]"
-        style={{ top: isCollapsedActive ? 124 : 44 }}
+        style={{ top: isCollapsedActive ? "calc(env(safe-area-inset-top) + 124px)" : "calc(env(safe-area-inset-top) + 44px)" }}
       >
         <TabBar activeTab={activeTab} onChange={handleTabChange} />
         {/* Toggle Simplifié/Détaillé centré. Iter 7.8c-UI Section B —
@@ -1971,7 +2062,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
         key={tabFadeKey}
         className="px-4 pt-5 space-y-6"
         style={{
-          paddingBottom: "calc(72px + 64px + env(safe-area-inset-bottom) + 16px)",
+          paddingBottom: "calc(80px + 72px + 24px + env(safe-area-inset-bottom))",
           animation: "nx-tab-fade 200ms ease-out",
         }}
       >
@@ -2512,7 +2603,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
         <div
           className="fixed left-0 right-0 z-30 px-3 py-2.5 flex items-center gap-2"
           style={{
-            bottom: "calc(64px + env(safe-area-inset-bottom))",
+            bottom: "calc(env(safe-area-inset-bottom) + 80px)",
             backgroundColor: "rgba(17,19,23,0.85)",
             backdropFilter: "blur(20px) saturate(180%)",
             WebkitBackdropFilter: "blur(20px) saturate(180%)",
@@ -2526,7 +2617,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
               type="button"
               onClick={handleContactCoach}
               disabled={contactingCoach || !coachId}
-              className={`flex-1 flex items-center justify-center gap-2 bg-[#E63946] text-white rounded-2xl px-4 py-3 font-head font-bold text-[13px] uppercase tracking-widest active:bg-[#D42B22] shadow-[0_0_20px_rgba(230,57,70,0.3)] ${
+              className={`flex-1 flex items-center justify-center gap-2 bg-[#E63946] text-white rounded-2xl px-4 py-4 font-head font-bold text-[13px] uppercase tracking-widest active:bg-[#D42B22] shadow-[0_0_20px_rgba(230,57,70,0.3)] ${
                 contactingCoach || !coachId ? "opacity-70" : ""
               }`}
             >
@@ -2573,7 +2664,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
         <div
           className="fixed left-0 right-0 z-30 px-3 py-2.5"
           style={{
-            bottom: "calc(64px + env(safe-area-inset-bottom))",
+            bottom: "calc(env(safe-area-inset-bottom) + 80px)",
             backgroundColor: "rgba(17,19,23,0.85)",
             backdropFilter: "blur(20px) saturate(180%)",
             WebkitBackdropFilter: "blur(20px) saturate(180%)",
@@ -2598,7 +2689,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
                 router.push(`/coach/athletes/${id}/modifier`);
               }
             }}
-            className="w-full flex items-center justify-center gap-2 bg-[#E63946] text-white rounded-2xl px-4 py-3 font-head font-bold text-[13px] uppercase tracking-widest active:bg-[#D42B22] shadow-[0_0_20px_rgba(230,57,70,0.3)]"
+            className="w-full flex items-center justify-center gap-2 bg-[#E63946] text-white rounded-2xl px-4 py-4 font-head font-bold text-[13px] uppercase tracking-widest active:bg-[#D42B22] shadow-[0_0_20px_rgba(230,57,70,0.3)]"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 20h9" />
@@ -2926,7 +3017,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
           onClose={() => setShowUpgradeModal(false)}
           role="recruteur"
           tierId="rec_pro"
-          lockedFeatureTitle="Le pipeline de recrutement"
+          lockedFeatureTitle="Le processus de recrutement"
           returnTo={typeof window !== "undefined" ? window.location.pathname : undefined}
         />
       )}

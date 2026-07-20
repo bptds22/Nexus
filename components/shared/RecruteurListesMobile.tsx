@@ -295,7 +295,7 @@ function EmptyState({ onCreate }: { onCreate: () => void }) {
 
 function ListesInner() {
   const router = useRouter();
-  const { data: lists = [], isLoading } = useRecruiterLists();
+  const { data: lists = [], isLoading, isError, refetch } = useRecruiterLists();
   const deleteMut = useDeleteList();
   const toast = useMobileToast();
   const [createOpen, setCreateOpen] = useState(false);
@@ -362,6 +362,21 @@ function ListesInner() {
             {Array.from({ length: 3 }).map((_, i) => (
               <div key={i} className="h-24 rounded-2xl bg-[#1A1D24] animate-pulse" />
             ))}
+          </div>
+        ) : isError ? (
+          // Ne PLUS masquer une erreur de requête derrière un faux EmptyState :
+          // état d'erreur explicite + retry.
+          <div className="flex flex-col items-center justify-center px-6 py-16 text-center gap-4">
+            <p className="text-[14px] text-white/70 max-w-sm">
+              Impossible de charger tes listes. Vérifie ta connexion.
+            </p>
+            <button
+              type="button"
+              onClick={() => { triggerHaptic("Light"); refetch(); }}
+              className="px-5 h-11 bg-[#E63946] active:bg-[#D42B22] text-white font-bold uppercase tracking-widest text-[13px] rounded-xl"
+            >
+              Réessayer
+            </button>
           </div>
         ) : lists.length === 0 ? (
           <EmptyState onCreate={() => setCreateOpen(true)} />

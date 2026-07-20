@@ -112,7 +112,7 @@ export function MobilePicker({ open, onClose, title, options, value, onChange }:
           )}
 
           {/* Options scrollables */}
-          <div className="overflow-y-auto" style={{ maxHeight: "70vh" }}>
+          <div className="overflow-y-auto" style={{ maxHeight: "70dvh" }}>
             {options.map((opt, idx) => {
               const isSelected = opt.value === value;
               return (

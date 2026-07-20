@@ -15,7 +15,7 @@
    Sections :
    - Notifications (6 toggles app + master email — desktop NotificationsSection)
    - Confidentialité (3 toggles + dates consentement + openExternal vers web)
-   - Abonnement (READONLY honnête — CTAs "Bientôt disponible")
+   - Abonnement (Pro/All Star lancent le checkout Stripe via in-app browser)
    - Compte (changer mot de passe via sheet)
    - Zone danger (désactiver via RPC + déconnexion réelle)
 
@@ -42,6 +42,14 @@ import {
   SectionLabel, Group, ToggleRow, NavRow, DangerRow,
   TierCard, PasswordChangeSheet, ConfirmSheet,
 } from "@/components/shared/settings";
+import { deleteMyAccount } from "@/lib/auth/deleteAccount";
+// startMobileCheckout lives in the same shared settings module but isn't
+// re-exported by the barrel (yet), so import it from the file directly.
+import { startMobileCheckout, startMobilePortal, fmtSubDate, subStatusLabel } from "@/components/shared/settings/utils";
+import { openLegalDocument } from "@/lib/legal";
+import { hapticTap } from "@/lib/haptics";
+
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
 /* ── Shape des prefs notifications côté DB (DIAG 7.38) ────────── */
 
@@ -75,7 +83,7 @@ interface PrivacyPrefs {
 export function RecruteurParametresMobile() {
   const router = useRouter();
   const toast = useMobileToast();
-  const { tier } = useSubscription();
+  const { tier, refresh, isStripeManaged, periodEnd, billing, status, cancelAtPeriodEnd } = useSubscription();
 
   // Hooks AVANT toute condition (canon 7.8d).
   const [notifs, setNotifs] = useState<NotifPrefs>({});
@@ -97,7 +105,11 @@ export function RecruteurParametresMobile() {
   const [savingPrivacy, setSavingPrivacy] = useState(false);
   const [passwordSheetOpen, setPasswordSheetOpen] = useState(false);
   const [deactivateSheetOpen, setDeactivateSheetOpen] = useState(false);
+  const [deleteSheetOpen, setDeleteSheetOpen] = useState(false);
   const [logoutSheetOpen, setLogoutSheetOpen] = useState(false);
+  // Which tier is mid-checkout — drives the CTA label + blocks double-tap.
+  const [upgradingTier, setUpgradingTier] = useState<string | null>(null);
+  const [portalBusy, setPortalBusy] = useState(false);
 
   // Load notification + privacy preferences
   useEffect(() => {
@@ -157,6 +169,39 @@ export function RecruteurParametresMobile() {
     })();
     return () => { cancelled = true; };
   }, []);
+
+  // Refresh the displayed tier when the user comes back from the Stripe
+  // in-app browser — the webhook may have updated the subscription row,
+  // so we re-run the EXISTING useSubscription fetch (refresh) rather than
+  // a parallel query. browserFinished fires when the in-app browser closes;
+  // appStateChange (isActive) covers the user swiping back to the app.
+  // Both plugins absent on web → caught → no-op. Listeners removed on unmount.
+  useEffect(() => {
+    let browserListener: { remove: () => void } | null = null;
+    let appListener: { remove: () => void } | null = null;
+    (async () => {
+      try {
+        const { Browser } = await import("@capacitor/browser");
+        browserListener = await Browser.addListener("browserFinished", () => { refresh(); });
+      } catch { /* no-op (web) */ }
+      try {
+        const { App } = await import("@capacitor/app");
+        appListener = await App.addListener("appStateChange", ({ isActive }) => {
+          if (isActive) refresh();
+        });
+      } catch { /* no-op (web) */ }
+    })();
+    return () => {
+      browserListener?.remove();
+      appListener?.remove();
+    };
+  }, [refresh]);
+
+  // Lot 0 — re-pull du tier au montage de la page paramètres. Le Provider
+  // peut avoir fetché un tier périmé au lancement (un payant/all_star
+  // s'afficherait "Gratuit" → jamais de bouton "Gérer"). refresh est stable
+  // (useCallback sur userId) ; l'appel est idempotent.
+  useEffect(() => { refresh(); }, [refresh]);
 
   // Iter 7.41 §2 — dirty inclut le master courriel.
   const notifsDirty = useMemo(
@@ -229,6 +274,63 @@ export function RecruteurParametresMobile() {
     }
   }
 
+  // Mobile portal: open the Stripe billing portal in the in-app browser.
+  // Tier refresh on return is handled by the browserFinished/appStateChange
+  // effect (same as checkout). Errors surface via toast — never swallowed.
+  async function handlePortal() {
+    if (portalBusy) return;
+    if (IS_CAPACITOR) return; // iOS (3.1.1) : pas de portail de paiement in-app.
+    triggerHaptic("Light");
+    setPortalBusy(true);
+    try {
+      await startMobilePortal();
+    } catch (e) {
+      toast.error({
+        message: "Portail indisponible",
+        detail: e instanceof Error ? e.message : "Erreur inconnue",
+      });
+    } finally {
+      setPortalBusy(false);
+    }
+  }
+
+  // Mobile checkout: launch Stripe via the in-app browser. Loading state
+  // (upgradingTier) blocks a double-tap; any throw surfaces via the toast
+  // already used elsewhere in this screen (never swallowed). The displayed
+  // tier refreshes on return via the browserFinished/appStateChange effect.
+  async function handleUpgrade(targetTier: "pro" | "all_star", cycle: "monthly" | "annual") {
+    if (upgradingTier) return;
+    if (IS_CAPACITOR) return; // iOS (3.1.1) : aucun checkout in-app, défense en profondeur.
+    hapticTap(); // CTA checkout primaire — feedback tactile au tap
+
+    // Already on a paid plan → NEVER stack a second checkout (double-bill).
+    // Plan changes go through Stripe; the mobile portal isn't wired yet, so
+    // point the user to the web instead of starting a fresh checkout.
+    if (tier !== "free") {
+      // Déjà payant : jamais de 2e checkout. Vrai abo Stripe → portail
+      // (changement de plan + proration côté Stripe). Accès offert
+      // (admin_grant) → message dédié, pas de portail.
+      if (isStripeManaged) { void handlePortal(); return; }
+      toast.info({
+        message: "Accès accordé par Nexus",
+        detail: "Ton plan t'a été offert — aucune facturation à gérer.",
+      });
+      return;
+    }
+    setUpgradingTier(targetTier);
+    try {
+      await startMobileCheckout(targetTier, cycle);
+    } catch (e) {
+      toast.error({
+        message: "Paiement indisponible",
+        detail: e instanceof Error ? e.message : "Erreur inconnue",
+      });
+    } finally {
+      setUpgradingTier(null);
+    }
+  }
+
+  // Désactivation RÉVERSIBLE (conservation des données) — inchangée.
   async function handleDeactivate() {
     triggerHaptic("Heavy");
     const supabase = createClient();
@@ -238,6 +340,15 @@ export function RecruteurParametresMobile() {
     await supabase.auth.signOut();
     setDeactivateSheetOpen(false);
     router.push("/auth");
+  }
+
+  // Suppression DÉFINITIVE — RPC delete_my_account via le helper partagé.
+  async function handleDelete() {
+    triggerHaptic("Heavy");
+    setDeleteSheetOpen(false);
+    await deleteMyAccount({
+      onError: (detail) => toast.error({ message: "Échec de la suppression", detail }),
+    });
   }
 
   async function handleLogout() {
@@ -296,7 +407,56 @@ export function RecruteurParametresMobile() {
             <span className="text-[14px] font-semibold text-white uppercase tracking-wider">{tierLabel}</span>
           </div>
           {tier === "free" && (
-            <p className="text-[12px] text-[#6b7280] mt-2">Passe à Pro pour débloquer la pipeline, la messagerie et plus.</p>
+            <p className="text-[12px] text-[#6b7280] mt-2">Passe à Pro pour débloquer le processus, la messagerie et plus.</p>
+          )}
+          {/* Payant + vrai abo Stripe → résumé (statut/cycle/renouvellement)
+              + portail (in-app browser). */}
+          {tier !== "free" && isStripeManaged && (
+            <div className="mt-3 space-y-2">
+              <div className="space-y-1">
+                <div className="flex justify-between text-[12px]">
+                  <span className="text-[#9CA3AF]">Statut</span>
+                  <span className="text-white font-semibold">{subStatusLabel(status)}</span>
+                </div>
+                <div className="flex justify-between text-[12px]">
+                  <span className="text-[#9CA3AF]">Cycle</span>
+                  <span className="text-white font-semibold">{billing === "annual" ? "Annuel" : "Mensuel"}</span>
+                </div>
+                {cancelAtPeriodEnd ? (
+                  <p className="text-[12px] text-[#E63946]">Ton abonnement se termine le {fmtSubDate(periodEnd)}.</p>
+                ) : (
+                  <div className="flex justify-between text-[12px]">
+                    <span className="text-[#9CA3AF]">Renouvellement</span>
+                    <span className="text-white font-semibold">{fmtSubDate(periodEnd)}</span>
+                  </div>
+                )}
+              </div>
+              {IS_CAPACITOR ? (
+                // iOS (3.1.1) : pas de gestion de paiement in-app.
+                // Texte descriptif PUR — aucun lien ni bouton cliquable.
+                <p className="text-[12px] text-[#9CA3AF] leading-snug">
+                  Pour gérer ou modifier ton abonnement, rends-toi sur la version web de Nexus.
+                </p>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handlePortal}
+                  disabled={portalBusy}
+                  className="w-full h-11 rounded-xl border border-white/15 text-white font-bold text-[12px] uppercase tracking-wider active:bg-white/5 disabled:opacity-60"
+                >
+                  {portalBusy ? "Ouverture…" : "Gérer mon abonnement"}
+                </button>
+              )}
+            </div>
+          )}
+          {/* Payant SANS abo Stripe (accès offert) → pas de portail. */}
+          {tier !== "free" && !isStripeManaged && (
+            <div className="mt-3">
+              <p className="text-[13px] font-bold text-white">Accès accordé par l&apos;équipe Nexus</p>
+              <p className="text-[12px] text-[#6b7280] mt-1">
+                Ton plan t&apos;a été offert par Nexus — aucune facturation à gérer.
+              </p>
+            </div>
           )}
         </div>
       </div>
@@ -389,13 +549,22 @@ export function RecruteurParametresMobile() {
           label="Politique de confidentialité"
           isFirst
           rightChevron="external"
-          onTap={() => openExternal("https://nexussports.ca/confidentialite")}
+          onTap={() => {
+            if (IS_CAPACITOR) { openLegalDocument("confidentialite"); return; }
+            openExternal("https://nexussports.ca/confidentialite");
+          }}
         />
         <NavRow
           label="Exporter mes données (Loi 25)"
           isFirst={false}
-          rightChevron="external"
-          onTap={() => openExternal("https://nexussports.ca/recruteur/parametres?section=confidentialite")}
+          rightChevron={IS_CAPACITOR ? "none" : "external"}
+          onTap={() => {
+            if (IS_CAPACITOR) {
+              toast.info({ message: "Disponible sur la version web", detail: "L'export de tes données se fait sur nexussports.ca." });
+              return;
+            }
+            openExternal("https://nexussports.ca/recruteur/parametres?section=confidentialite");
+          }}
         />
       </Group>
       {/* Dates consentement read-only */}
@@ -406,10 +575,11 @@ export function RecruteurParametresMobile() {
         {consentDates.marketing && <p>Consentement marketing : {consentDates.marketing}</p>}
       </div>
 
-      {/* ABONNEMENT — iter 7.40 §3 : cards premium, "Bientôt" UNIQUEMENT
-          sur les tiers SUPÉRIEURS au tier courant. Tier actuel = bordure
-          rouge + glow + badge "Actuel" vert. Tiers inférieurs = compacts
-          en sourdine (aucun CTA — l'utilisateur a déjà mieux). */}
+      {/* ABONNEMENT — iter 7.40 §3 : cards premium. Tiers SUPÉRIEURS au
+          tier courant = CTA rouge actif (Pro/All Star) qui lance le
+          checkout Stripe via in-app browser. Tier actuel = bordure rouge +
+          glow + badge "Actuel" vert. Tiers inférieurs = compacts en
+          sourdine (aucun CTA — l'utilisateur a déjà mieux). */}
       <SectionLabel>Abonnement</SectionLabel>
       <div className="px-4 space-y-2">
         <TierCard
@@ -428,24 +598,28 @@ export function RecruteurParametresMobile() {
           price="19,99 $"
           period="/mois"
           features={[
-            "Pipeline complet + messagerie",
+            "Processus complet + messagerie",
             "Filtres avancés (taille, poids, cote)",
             "Coordonnées du coach révélées",
           ]}
           status={tierStatus(tier, "pro")}
           accentDot="#F59E0B"
+          onUpgrade={() => handleUpgrade("pro", "monthly")}
+          upgradeLabel={tier !== "free" ? "Changer de plan" : upgradingTier === "pro" ? "Redirection…" : "Passer à Pro"}
         />
         <TierCard
           name="All Star"
           price="29,99 $"
           period="/mois"
           features={[
-            "Pipeline illimité + analytics",
+            "Processus illimité + analytics",
             "Voir qui a consulté un athlète",
             "Listes de prospects personnalisées",
           ]}
           status={tierStatus(tier, "all_star")}
           accentDot="#E63946"
+          onUpgrade={() => handleUpgrade("all_star", "monthly")}
+          upgradeLabel={tier !== "free" ? "Changer de plan" : upgradingTier === "all_star" ? "Redirection…" : "Passer à All Star"}
         />
       </div>
 
@@ -468,6 +642,11 @@ export function RecruteurParametresMobile() {
           onTap={() => { triggerHaptic("Light"); setDeactivateSheetOpen(true); }}
         />
         <DangerRow
+          label="Supprimer mon compte"
+          isFirst={false}
+          onTap={() => { triggerHaptic("Light"); setDeleteSheetOpen(true); }}
+        />
+        <DangerRow
           label="Déconnexion"
           isFirst={false}
           onTap={() => { triggerHaptic("Light"); setLogoutSheetOpen(true); }}
@@ -485,6 +664,15 @@ export function RecruteurParametresMobile() {
         message="Votre profil deviendra invisible, alertes stoppées. Vos données seront conservées. Vous pourrez réactiver en contactant le support."
         confirmLabel="Désactiver"
         onConfirm={handleDeactivate}
+        variant="danger"
+      />
+      <ConfirmSheet
+        open={deleteSheetOpen}
+        onClose={() => setDeleteSheetOpen(false)}
+        title="Supprimer mon compte ?"
+        message="Votre compte et vos données personnelles seront supprimés immédiatement et définitivement. Cette action est irréversible."
+        confirmLabel="Supprimer définitivement"
+        onConfirm={handleDelete}
         variant="danger"
       />
       <ConfirmSheet

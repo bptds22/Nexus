@@ -21,6 +21,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { uploadImage } from "@/lib/upload/uploadImage";
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import { triggerHaptic } from "@/components/shared/settings";
 
@@ -128,15 +129,9 @@ export function CoachProfilEditMobile() {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      const ext = file.name.split(".").pop() || "jpg";
-      const path = `${user.id}/avatar-${Date.now()}.${ext}`;
-      const { error: upErr } = await supabase
-        .storage
-        .from("avatars")
-        .upload(path, file, { upsert: true, contentType: file.type });
-      if (upErr) { toast.error({ message: "Téléversement échoué", detail: upErr.message }); return; }
-      const { data: pub } = supabase.storage.from("avatars").getPublicUrl(path);
-      update("avatarUrl", pub.publicUrl);
+      const res = await uploadImage(file, { pathBase: `${user.id}/avatar-${Date.now()}` });
+      if (!res.ok) { toast.error({ message: "Téléversement échoué", detail: res.message }); return; }
+      update("avatarUrl", res.publicUrl);
     } finally {
       setUploading(false);
     }

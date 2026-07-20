@@ -60,6 +60,7 @@ export const MOBILE_EXCLUDED_PAGES = [
   // Exclusion effective via le guard notFound() en tête de chaque page.
   '/page-test',
   '/team-test',
+  '/wall-test',
 ] as const;
 
 /**

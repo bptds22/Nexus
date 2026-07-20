@@ -19,7 +19,10 @@
 ═══════════════════════════════════════════════════════════════ */
 
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
+import { selectBestEvaluation } from "@/lib/evaluations/selectEvaluation";
 import { createClient } from "@/lib/supabase/client";
+import { parseDistinctions } from "@/lib/config/badges";
+import { firstTeamGender } from "@/lib/config/gender";
 
 export interface AthleteSearchFilters {
   search: string;           // déjà débouncé en amont
@@ -76,7 +79,14 @@ export interface SearchAthleteRow {
   createdAt: string;
   noTeam: boolean;
   context: string | null;
+  /** teams.gender de l'équipe de l'athlète — "Masculin" | "Féminin" | "Mixte".
+   *  null quand l'athlète n'est rattaché à AUCUNE équipe (team_athletes vide),
+   *  ce qui est le cas de la grande majorité des athlètes aujourd'hui. Le filtre
+   *  les exclut donc dès qu'un genre est sélectionné. Volontairement PAS
+   *  athletes.genre : ce champ-là est à moitié vide et encodé de 2 façons. */
+  teamGender: string | null;
 }
+
 
 const BADGE_MAP: Record<string, { label: string; icon: string }> = {
   captain: { label: "Capitaine", icon: "shield" },
@@ -112,7 +122,8 @@ export function useAthleteSearch(filters: AthleteSearchFilters) {
           schools!school_id(name, region, type),
           committed_school:schools!committed_school_id(name),
           context,
-          evaluations(distinctions)
+          team_athletes(teams!team_id(gender)),
+          evaluations(distinctions, updated_at)
         ` as unknown as "*")
         .eq("status", "ACTIF");
 
@@ -174,8 +185,10 @@ export function useAthleteSearch(filters: AthleteSearchFilters) {
         const posRel = Array.isArray(a.positions) ? a.positions[0] : a.positions;
         const schoolRel = Array.isArray(a.schools) ? a.schools[0] : a.schools;
         const committedSchoolRel = Array.isArray(a.committed_school) ? a.committed_school[0] : a.committed_school;
-        const evalRel = Array.isArray(a.evaluations) ? a.evaluations[0] : a.evaluations;
-        const distinctions: string[] = ((evalRel as Record<string, unknown> | null)?.distinctions as string[]) || [];
+        const evalRel = selectBestEvaluation(Array.isArray(a.evaluations) ? a.evaluations : a.evaluations ? [a.evaluations] : []);
+        // #56 — parseDistinctions gère string[] (legacy) ET {badge,detail} (objet,
+        // 10 rows en prod), filtre les badges inconnus. Plus de cast "as string[]".
+        const distinctions = parseDistinctions((evalRel as Record<string, unknown> | null)?.distinctions);
         return {
           id: a.id as string,
           firstName: (a.first_name as string) || "",
@@ -194,8 +207,8 @@ export function useAthleteSearch(filters: AthleteSearchFilters) {
           isFavorited: false, // composé en page
           hasVideo: !!a.video_faits_saillants_url,
           badges: distinctions
-            .filter((d) => d != null && BADGE_MAP[d])
-            .map((d) => ({ badgeId: d, label: BADGE_MAP[d].label, icon: BADGE_MAP[d].icon })),
+            .filter((d) => !!BADGE_MAP[d.badge])
+            .map((d) => ({ badgeId: d.badge, label: BADGE_MAP[d.badge].label, icon: BADGE_MAP[d.badge].icon })),
           favorites: 0, // composé en page
           views: 0,
           stars: (a.cote_globale_entraineur as number) || 0,
@@ -227,6 +240,7 @@ export function useAthleteSearch(filters: AthleteSearchFilters) {
           createdAt: (a.created_at as string) || "",
           noTeam: !a.school_id,
           context: (a.context as string | null) ?? null,
+          teamGender: firstTeamGender(a.team_athletes),
         };
       });
     },

@@ -49,8 +49,11 @@ import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { createPortal } from "react-dom";
 import { createClient } from "@/lib/supabase/client";
+import { uploadAvatar } from "@/lib/storage/uploadAvatar";
+import AthletePhotoHero from "@/components/shared/AthletePhotoHero";
 import { MobilePicker, type PickerOption } from "@/components/mobile/MobilePicker";
-import { MobileWheelPicker } from "@/components/mobile/MobileWheelPicker";
+import { GRAD_YEAR_OPTIONS } from "@/lib/config/gradYears";
+import { HeightWheel, WeightWheel, formatHeightDisplay, formatWeightDisplay } from "@/components/shared/wizard/HeightWeightWheel";
 import { SearchSheet } from "@/components/mobile/SearchSheet";
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import { isValidationDue, isValidationExpired, formatDeadlineFr } from "@/lib/utils/profileValidation";
@@ -71,6 +74,7 @@ import {
 } from "@/components/shared/wizard/rows";
 import { labelCls, valueCls } from "@/components/shared/wizard/tokens";
 import { StarRow } from "@/components/shared/wizard/stars";
+import { useKeyboardHeight } from "@/lib/hooks/useKeyboardHeight";
 import {
   BADGE_CONFIG, BADGE_ORDER, MAX_BADGES, MAX_DETAIL_LENGTH,
   getSportStats,
@@ -78,7 +82,7 @@ import {
 } from "@/lib/config/badges";
 import { POSITIONS } from "@/lib/sports-data";
 import {
-  autocompleteOrphanAthletesByEmail,
+  autocompleteCivilUnclaimedByEmail,
   type AthleteEmailAutocompleteResult,
   type AthleteEmailSuggestion,
 } from "@/lib/coach/athleteEmailAutocomplete";
@@ -93,7 +97,9 @@ import {
   computeCoteGlobale,
 } from "@/app/coach/athletes/_data/saveAthlete";
 import { coteChanged } from "@/lib/utils/cote";
+import { isUnder14 } from "@/lib/legal/ageGate";
 import { ConfirmSheet } from "@/components/shared/settings";
+import { Skeleton } from "@/components/ui/Skeleton";
 import CoteChangeConfirmContent from "@/components/shared/CoteChangeConfirmContent";
 
 /* ── Haptics helper (matches onboarding shells) ─────────────── */
@@ -462,7 +468,7 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
     emailAutocompleteTimerRef.current = setTimeout(async () => {
       try {
         const supabase = createClient();
-        const result = await autocompleteOrphanAthletesByEmail(supabase, newEmail);
+        const result = await autocompleteCivilUnclaimedByEmail(supabase, newEmail);
         setEmailAutocomplete(result);
         setShowSuggestions(result.status === "ok" && result.suggestions.length > 0);
       } catch (err) {
@@ -529,24 +535,56 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
     const local = URL.createObjectURL(file);
     setForm((prev) => ({ ...prev, identity: { ...prev.identity, photo: local } }));
     try {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { setPhotoUploading(false); return; }
-      const ext = file.name.split(".").pop() || "jpg";
-      const path = `${user.id}/${Date.now()}.${ext}`;
-      const { error: upErr } = await supabase.storage.from("avatars").upload(path, file, { upsert: true });
-      if (upErr) {
-        console.error("Photo upload error:", upErr);
-        toast.error({ message: "Échec du téléversement de la photo" });
-        setPhotoUploading(false);
-        return;
-      }
-      const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
-      setForm((prev) => ({ ...prev, identity: { ...prev.identity, photo: urlData.publicUrl } }));
+      // Mécanisme partagé avec l'éditeur athlète (lib/storage/uploadAvatar) :
+      // upload sous le dossier de l'utilisateur courant + getPublicUrl.
+      const publicUrl = await uploadAvatar(file);
+      setForm((prev) => ({ ...prev, identity: { ...prev.identity, photo: publicUrl } }));
+    } catch (err) {
+      console.error("Photo upload error:", err);
+      toast.error({ message: "Échec du téléversement de la photo" });
     } finally {
       setPhotoUploading(false);
     }
   }, [toast]);
+
+  /* ── Forcer la vérification (coach override) ──────────────────
+     Re-pose manuelle symétrique du retrait : verified=true + méthode
+     manuelle + verified_at/by, efface modified_since_verification, ET
+     réinitialise le compteur mensuel en posant last_profile_validation
+     = now (c'est la colonne lue par isValidationDue/Expired). Erreur
+     rendue visible (toast), pas de faux succès. */
+  const [forcingVerify, setForcingVerify] = useState(false);
+  const coachForceVerify = useCallback(async () => {
+    if (!athleteId) return;
+    setForcingVerify(true);
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { toast.error({ message: "Non authentifié" }); return; }
+      const nowIso = new Date().toISOString();
+      const { error } = await supabase
+        .from("athletes")
+        .update({
+          verified: true,
+          verified_at: nowIso,
+          verified_by: user.id,
+          verification_method: "manuel_coach",
+          modified_since_verification: false,
+          last_profile_validation: nowIso,   // réinitialise le délai de 30 jours
+        })
+        .eq("id", athleteId);
+      if (error) {
+        toast.error({ message: "Erreur lors de la vérification", detail: error.message });
+        return;
+      }
+      triggerHaptic("Medium");
+      toast.success({ message: "Athlète vérifié — délai réinitialisé" });
+      // Reflète l'état localement → l'encart se masque immédiatement.
+      setValidationState({ verified: true, last_profile_validation: nowIso });
+    } finally {
+      setForcingVerify(false);
+    }
+  }, [athleteId, toast]);
 
   /* ── Updaters ─────────────────────────────────────────────── */
   const updateIdentity = useCallback((field: string, value: string) => {
@@ -602,7 +640,10 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
       case 1: {
         const d = form.identity;
         const base = !!(d.firstName && d.lastName && d.dateOfBirth && d.gradYear && d.gender && d.school);
-        return isCreate ? base && !!d.city && !!d.region : base;
+        // Hard-block <14 (Loi 25) — CREATE only. L'edit (composant unifié) n'est
+        // JAMAIS bloqué (un athlète existant peut garder sa DOB).
+        if (isCreate) return base && !!d.city && !!d.region && !isUnder14(d.dateOfBirth);
+        return base;
       }
       case 4: {
         const s = form.sports;
@@ -776,6 +817,15 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
       return;
     }
 
+    // Hard-stop <14 (Loi 25), CREATE only — ferme le contournement par saut de
+    // slide (canProceed ne gate que l'avance). Garantit qu'aucune row <14
+    // n'atteint saveAthleteCreate. L'edit n'est JAMAIS bloqué.
+    if (isCreate && isUnder14(form.identity.dateOfBirth)) {
+      toast.error({ message: "L'inscription est réservée aux 14 ans et plus." });
+      setSaving(false);
+      return;
+    }
+
     const result = isCreate
       ? await saveAthleteCreate(supabase, form, user.id, { coachSchoolId: coach.schoolId })
       : await saveAthleteEdit(supabase, athleteId!, form, user.id, {
@@ -844,8 +894,43 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#111317] text-white flex items-center justify-center">
-        <p className="text-[14px] text-[#6b7280]">Chargement…</p>
+      <div className="min-h-screen bg-[#111317] text-white flex flex-col">
+        {/* Sticky header skeleton — mirrors back button + eyebrow/title + chip row */}
+        <div
+          className="sticky top-0 z-30 bg-[#111317]/95 backdrop-blur-md border-b border-white/[0.06]"
+          style={{ paddingTop: "env(safe-area-inset-top)" }}
+        >
+          <div className="flex items-center px-4 pt-2 gap-2 min-h-[56px]">
+            <Skeleton width={44} height={44} rounded={999} />
+            <div className="flex-1 min-w-0">
+              <Skeleton className="h-3 w-16 rounded-full mb-2" />
+              <Skeleton className="h-4 w-44 rounded-full" />
+            </div>
+          </div>
+          <div className="overflow-x-auto px-4 pt-1 pb-3 nx-no-scrollbar">
+            <div className="flex items-center gap-2">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <Skeleton key={i} className="h-9 w-24 rounded-full flex-shrink-0" />
+              ))}
+            </div>
+          </div>
+        </div>
+        {/* Step content skeleton — mirrors px-4 py-5 field rows */}
+        <div className="flex-1 px-4 py-5 space-y-5">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="rounded-2xl bg-[#1A1D24] border border-white/5 p-4 space-y-4">
+              <Skeleton className="h-3 w-24 rounded-full" />
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-4 w-28 rounded-full" />
+                <Skeleton className="h-4 w-20 rounded-full" />
+              </div>
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-4 w-32 rounded-full" />
+                <Skeleton className="h-4 w-16 rounded-full" />
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -945,7 +1030,7 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
         <div
           className="fixed inset-x-0 z-[50] bg-[#111317]/95 backdrop-blur-md border-t border-white/[0.06] px-4 py-3"
           style={{
-            bottom: "calc(64px + env(safe-area-inset-bottom))",
+            bottom: "calc(env(safe-area-inset-bottom) + 88px + 12px)",
           }}
         >
           <button type="button"
@@ -975,7 +1060,7 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
         onChange={(v) => updateIdentity("gender", v ? String(v) : "")} />
       <MobilePicker open={openPromoPicker} onClose={() => setOpenPromoPicker(false)}
         title="Promotion"
-        options={[2025, 2026, 2027, 2028, 2029].map((y) => ({ value: String(y), label: String(y) }))}
+        options={GRAD_YEAR_OPTIONS}
         value={form.identity.gradYear || null}
         onChange={(v) => updateIdentity("gradYear", v ? String(v) : "")} />
       {/* Old flat MobilePickers for height ft/in removed — height is now
@@ -1072,130 +1157,30 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
         )} />
 
       {/* ═══ Wheel pickers — Taille + Poids ═══════════════════════
-          Imperial mode : 3-col / 1-col wheel that writes back to
-          taille_pieds + taille_pouces + poids_lbs (storage stays
-          imperial). Metric mode : 1-col cm / kg wheel, with onCommit
-          converting back to imperial. saveAthlete.ts UNCHANGED. */}
-      <MobileWheelPicker
+          Shared HeightWheel / WeightWheel (extracted to
+          components/shared/wizard/HeightWeightWheel). Storage stays
+          imperial : onCommit always emits feet/inches and lbs, which
+          we write straight to form state. saveAthlete.ts UNCHANGED. */}
+      <HeightWheel
         open={openHeightWheel}
         onClose={() => setOpenHeightWheel(false)}
-        title="Taille"
-        headerExtra={
-          <UnitToggle
-            mode={unitMode}
-            onChange={setUnitMode}
-            options={[{ value: "imperial", label: "pi/po" }, { value: "metric", label: "cm" }]}
-          />
-        }
-        columns={
-          unitMode === "imperial"
-            ? [
-                {
-                  key: "ft",
-                  label: "Pieds",
-                  options: [4, 5, 6, 7].map((v) => ({ value: String(v), label: `${v}'` })),
-                  value: form.physical.heightFeet || "5",
-                },
-                {
-                  key: "in",
-                  label: "Pouces",
-                  options: Array.from({ length: 12 }, (_, i) => ({ value: String(i), label: `${i}"` })),
-                  value: form.physical.heightInches || "10",
-                },
-              ]
-            : [
-                {
-                  key: "cm",
-                  label: "Centimètres",
-                  options: Array.from({ length: 106 }, (_, i) => ({
-                    value: String(120 + i),
-                    label: `${120 + i} cm`,
-                  })),
-                  value: (() => {
-                    const ft = parseInt(form.physical.heightFeet || "0");
-                    const inches = parseInt(form.physical.heightInches || "0");
-                    if (!ft && !inches) return "175";
-                    return String(Math.round((ft * 12 + inches) * 2.54));
-                  })(),
-                },
-              ]
-        }
-        onCommit={(values) => {
-          if (unitMode === "imperial") {
-            const [ft, inches] = values as [string, string];
-            updatePhysical("heightFeet", ft || "");
-            updatePhysical("heightInches", inches || "");
-          } else {
-            // cm → ft + in
-            const cm = parseInt(String(values[0] ?? "0"));
-            if (!cm) {
-              updatePhysical("heightFeet", "");
-              updatePhysical("heightInches", "");
-              return;
-            }
-            const totalIn = Math.round(cm / 2.54);
-            const ft = Math.floor(totalIn / 12);
-            const inches = totalIn % 12;
-            updatePhysical("heightFeet", String(ft));
-            updatePhysical("heightInches", String(inches));
-          }
+        feet={form.physical.heightFeet}
+        inches={form.physical.heightInches}
+        unitMode={unitMode}
+        onUnitChange={setUnitMode}
+        onCommit={(ft, inches) => {
+          updatePhysical("heightFeet", ft);
+          updatePhysical("heightInches", inches);
         }}
       />
 
-      <MobileWheelPicker
+      <WeightWheel
         open={openWeightWheel}
         onClose={() => setOpenWeightWheel(false)}
-        title="Poids"
-        headerExtra={
-          <UnitToggle
-            mode={unitMode}
-            onChange={setUnitMode}
-            options={[{ value: "imperial", label: "lbs" }, { value: "metric", label: "kg" }]}
-          />
-        }
-        columns={
-          unitMode === "imperial"
-            ? [
-                {
-                  key: "lbs",
-                  label: "Livres",
-                  options: Array.from({ length: 271 }, (_, i) => ({
-                    value: String(80 + i),
-                    label: `${80 + i} lbs`,
-                  })),
-                  value: (() => {
-                    const v = parseFloat(form.physical.weightLbs || "0");
-                    return v > 0 ? String(Math.round(v)) : "180";
-                  })(),
-                },
-              ]
-            : [
-                {
-                  key: "kg",
-                  label: "Kilogrammes",
-                  options: Array.from({ length: 141 }, (_, i) => ({
-                    value: String(40 + i),
-                    label: `${40 + i} kg`,
-                  })),
-                  value: (() => {
-                    const lbs = parseFloat(form.physical.weightLbs || "0");
-                    if (!lbs) return "82";
-                    return String(Math.round(lbs / 2.20462));
-                  })(),
-                },
-              ]
-        }
-        onCommit={(values) => {
-          if (unitMode === "imperial") {
-            const lbs = String(values[0] ?? "");
-            updatePhysical("weightLbs", lbs);
-          } else {
-            const kg = parseFloat(String(values[0] ?? "0"));
-            if (!kg) { updatePhysical("weightLbs", ""); return; }
-            const lbs = Math.round(kg * 2.20462 * 10) / 10;
-            updatePhysical("weightLbs", String(lbs));
-          }
-        }}
+        lbs={form.physical.weightLbs}
+        unitMode={unitMode}
+        onUnitChange={setUnitMode}
+        onCommit={(lbs) => updatePhysical("weightLbs", lbs)}
       />
 
       {/* ═══ Distinction detail popup (replaces under-grid blocks) ═══ */}
@@ -1291,10 +1276,19 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
                   Profil non confirmé — le badge vérifié est désactivé
                 </p>
                 <p className="text-[12px] text-white/55 mt-1 leading-snug">
-                  L&apos;athlète doit confirmer ses informations pour réactiver son badge.
+                  L&apos;athlète peut confirmer ses informations, ou tu peux forcer la vérification
+                  maintenant (réinitialise le délai de 30 jours).
                 </p>
               </div>
             </div>
+            <button
+              type="button"
+              onClick={() => { triggerHaptic("Medium"); void coachForceVerify(); }}
+              disabled={forcingVerify}
+              className="mt-3 w-full px-4 py-2.5 rounded-lg bg-[#3B82F6] active:bg-[#2563EB] text-white font-bold text-[12px] uppercase tracking-[0.1em] disabled:opacity-50 transition-colors"
+            >
+              {forcingVerify ? "Vérification…" : "Forcer la vérification"}
+            </button>
           </div>
         )}
         {due && !expired && (
@@ -1308,64 +1302,30 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
               <div>
                 <p className="text-[13px] font-bold text-[#F59E0B]">Confirmation mensuelle requise</p>
                 <p className="text-[12px] text-white/55 mt-1 leading-snug">
-                  Confirme que tes informations sont toujours à jour avant le {formatDeadlineFr()}.
+                  Confirme avant le {formatDeadlineFr()}, ou force la vérification maintenant
+                  (réinitialise le délai de 30 jours).
                 </p>
               </div>
             </div>
+            <button
+              type="button"
+              onClick={() => { triggerHaptic("Medium"); void coachForceVerify(); }}
+              disabled={forcingVerify}
+              className="mt-3 w-full px-4 py-2.5 rounded-lg bg-[#3B82F6] active:bg-[#2563EB] text-white font-bold text-[12px] uppercase tracking-[0.1em] disabled:opacity-50 transition-colors"
+            >
+              {forcingVerify ? "Vérification…" : "Forcer la vérification"}
+            </button>
           </div>
         )}
 
-        {/* Photo hero — card-with-fade (mirrors the recruiter Mon processus
-            / athlete card treatment : photo fills the card, a soft gradient
-            fades to the card color at the bottom so the prompt text reads
-            cleanly over it ; works for both filled and empty states. */}
-        <div className="relative w-full aspect-[16/10] rounded-2xl overflow-hidden bg-[#1A1D24] border border-white/[0.06]">
-          {d.photo ? (
-            <>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={d.photo} alt="" className="absolute inset-0 w-full h-full object-cover" />
-            </>
-          ) : (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#4a4d56" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-                <circle cx="12" cy="13" r="4" />
-              </svg>
-            </div>
-          )}
-          {/* Fade overlay — opaque card color at the bottom, transparent at
-              ~70% up. Same recipe as components/shared/RecruteurDashboardMobile
-              athlete cards. */}
-          <div
-            className="absolute inset-x-0 bottom-0 h-3/5 pointer-events-none"
-            style={{ background: "linear-gradient(to top, #1A1D24 0%, rgba(26,29,36,0.92) 30%, rgba(26,29,36,0.55) 55%, transparent 80%)" }}
-          />
-          {/* Bottom prompt + actions */}
-          <div className="absolute inset-x-0 bottom-0 px-4 pb-3 pt-6 flex items-end justify-between gap-3">
-            <p className="text-[13px] text-white font-semibold leading-tight">
-              {photoUploading
-                ? "Téléversement…"
-                : d.photo
-                  ? "Tape pour changer"
-                  : "Ajouter une photo · Tape pour choisir"}
-            </p>
-            {d.photo && (
-              <button type="button"
-                onClick={(e) => { e.preventDefault(); e.stopPropagation(); updateIdentity("photo", ""); }}
-                className="px-2.5 py-1 rounded-full bg-black/40 backdrop-blur-sm text-[10px] font-bold uppercase tracking-wider text-[#E63946] border border-[#E63946]/30 active:bg-[#E63946]/15">
-                Retirer
-              </button>
-            )}
-          </div>
-          {/* Tap layer — clicking anywhere on the card opens the file
-              picker. Sits above the gradient + below the Retirer button. */}
-          <label className="absolute inset-0 cursor-pointer">
-            <input type="file" accept="image/*" className="sr-only"
-              title="Téléverser une photo"
-              aria-label="Téléverser une photo"
-              onChange={(e) => handlePhotoChange(e.target.files?.[0] ?? null)} />
-          </label>
-        </div>
+        {/* Photo hero — composant partagé avec l'éditeur athlète
+            (components/shared/AthletePhotoHero). */}
+        <AthletePhotoHero
+          photoUrl={d.photo}
+          uploading={photoUploading}
+          onChange={handlePhotoChange}
+          onRemove={() => updateIdentity("photo", "")}
+        />
 
         {/* Essentials */}
         <Card>
@@ -1373,8 +1333,18 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
             onSave={(v) => updateIdentity("firstName", v)} required />
           <InlineEditRow label="Nom" value={d.lastName}
             onSave={(v) => updateIdentity("lastName", v)} required />
-          <DateRow label="Date de naissance" value={d.dateOfBirth}
-            onChange={(v) => updateIdentity("dateOfBirth", v)} required />
+          {/* DOB lecture seule à l'edit (ReadOnlyRow) : aucun <14 ne peut
+              légitimement exister (gate à la création). En create la DOB reste
+              saisissable (DateRow) + son gate <14. */}
+          {isEdit ? (
+            <ReadOnlyRow label="Date de naissance" value={d.dateOfBirth} />
+          ) : (
+            <DateRow label="Date de naissance" value={d.dateOfBirth}
+              onChange={(v) => updateIdentity("dateOfBirth", v)} required />
+          )}
+          {isCreate && d.dateOfBirth && isUnder14(d.dateOfBirth) && (
+            <p className="text-[12px] text-[#EF4444] px-4 pb-2">L&apos;inscription est réservée aux 14 ans et plus.</p>
+          )}
           <PickerRow label="Promotion"
             value={d.gradYear}
             onTap={() => setOpenPromoPicker(true)} required />
@@ -1596,10 +1566,10 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
         <Card>
           <InlineEditRow label="Envergure" value={d.wingspan}
             onSave={(v) => updatePhysical("wingspan", v)}
-            placeholder={`6'4"`} detailed numericMode="numeric" />
+            placeholder={`6'4"`} detailed />
           <InlineEditRow label="Taille des mains" value={d.handSize}
             onSave={(v) => updatePhysical("handSize", v)}
-            placeholder={`9.5"`} detailed numericMode="decimal" />
+            placeholder={`9.5"`} detailed />
           <PickerRow label="Pied dominant" value={d.dominantFoot}
             onTap={() => setOpenDominantFootPicker(true)} detailed />
         </Card>
@@ -1607,22 +1577,22 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
         <Card>
           <InlineEditRow label="40 verges" value={d.fortyYard}
             onSave={(v) => updatePhysical("fortyYard", v)}
-            placeholder="4.72s" detailed numericMode="decimal" />
+            placeholder="4.72s" detailed />
           <InlineEditRow label="Saut vertical" value={d.verticalJump}
             onSave={(v) => updatePhysical("verticalJump", v)}
-            placeholder={`32"`} detailed numericMode="decimal" />
+            placeholder={`32"`} detailed />
           <InlineEditRow label="Saut en longueur" value={d.broadJump}
             onSave={(v) => updatePhysical("broadJump", v)}
-            placeholder={`9'2"`} detailed numericMode="decimal" />
+            placeholder={`9'2"`} detailed />
           <InlineEditRow label="Développé couché" value={d.benchPress}
             onSave={(v) => updatePhysical("benchPress", v)}
-            placeholder="225 × 8" detailed numericMode="decimal" />
+            placeholder="225 × 8" detailed />
           <InlineEditRow label="Navette agilité" value={d.shuttleAgility}
             onSave={(v) => updatePhysical("shuttleAgility", v)}
-            placeholder="4.31s" detailed numericMode="decimal" />
+            placeholder="4.31s" detailed />
           <InlineEditRow label="Sprint 100m" value={d.sprint100m}
             onSave={(v) => updatePhysical("sprint100m", v)}
-            placeholder="10.9s" detailed numericMode="decimal" />
+            placeholder="10.9s" detailed />
         </Card>
       </div>
     );
@@ -2036,54 +2006,8 @@ function DualPickerRow({
    Unit toggle + height/weight display helpers
 ═══════════════════════════════════════════════════════════════ */
 
-function UnitToggle<T extends string>({
-  mode, onChange, options,
-}: {
-  mode: T;
-  onChange: (next: T) => void;
-  options: { value: T; label: string }[];
-}) {
-  return (
-    <div className="flex items-center gap-1 bg-[#13151a] rounded-2xl p-1 w-fit mx-auto">
-      {options.map((opt) => (
-        <button
-          key={opt.value}
-          type="button"
-          onClick={() => onChange(opt.value)}
-          className={`px-4 py-1.5 rounded-xl text-[11px] font-bold uppercase tracking-[0.12em] transition-colors ${
-            mode === opt.value ? "bg-[#E63946] text-white" : "text-white/55"
-          }`}
-        >
-          {opt.label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function formatHeightDisplay(ft: string, inches: string, unitMode: "imperial" | "metric"): string {
-  const ftN = parseInt(ft || "0");
-  const inN = parseInt(inches || "0");
-  if (!ft && !inches) return "";
-  if (unitMode === "imperial") {
-    if (ft && inches) return `${ftN}'${inN}"`;
-    if (ft) return `${ftN}'`;
-    return `${inN}"`;
-  }
-  // metric — display only ; storage stays in pi/po
-  const cm = Math.round((ftN * 12 + inN) * 2.54);
-  return cm > 0 ? `${cm} cm` : "";
-}
-
-function formatWeightDisplay(lbs: string, unitMode: "imperial" | "metric"): string {
-  const lbsN = parseFloat(lbs || "0");
-  if (!lbsN) return "";
-  if (unitMode === "imperial") {
-    return `${Number.isInteger(lbsN) ? lbsN.toFixed(0) : lbsN.toFixed(1)} lbs`;
-  }
-  const kg = Math.round(lbsN / 2.20462);
-  return `${kg} kg`;
-}
+/* UnitToggle / formatHeightDisplay / formatWeightDisplay now live in
+   components/shared/wizard/HeightWeightWheel (imported above). */
 
 /* ═══════════════════════════════════════════════════════════════
    Distinction detail popup — bottom sheet replacing the old
@@ -2114,6 +2038,10 @@ function DistinctionDetailSheet({
 }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
+  // Hauteur clavier (même source que le composer messages) → la sheet
+  // remonte au-dessus du clavier au lieu de se faire recouvrir. Hook appelé
+  // avant tout return conditionnel (règle des hooks).
+  const kbdH = useKeyboardHeight();
 
   if (!mounted || !badgeKey || !entry) return null;
   if (typeof document === "undefined") return null;
@@ -2138,7 +2066,11 @@ function DistinctionDetailSheet({
       <div
         className="fixed inset-x-0 bottom-0 z-[70] bg-[#1A1D24] rounded-t-2xl flex flex-col"
         style={{
-          paddingBottom: "env(safe-area-inset-bottom)",
+          // Clavier OUVERT : padder le bas de la sheet de sa hauteur exacte →
+          // l'input, le compteur et le footer "Retirer" remontent au-dessus du
+          // clavier (même mécanisme que le composer messages). FERMÉ : safe-area.
+          paddingBottom: kbdH > 0 ? `${kbdH}px` : "env(safe-area-inset-bottom)",
+          transition: "padding-bottom 200ms ease-out",
           maxHeight: "85vh",
           animation: "nx-modal-slideup 280ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards",
         }}
@@ -2199,7 +2131,6 @@ function DistinctionDetailSheet({
             maxLength={MAX_DETAIL_LENGTH}
             aria-label={badgeKey === "custom" ? "Titre" : "Détail"}
             placeholder={badgeKey === "custom" ? "Ex: Meilleur passeur RSEQ" : "Ex: Points"}
-            autoFocus
             className="w-full bg-[#13151a] border border-white/[0.06] rounded-2xl px-4 py-3 text-[15px] text-white placeholder:text-white/30 focus:border-[#E63946]/40 outline-none"
           />
           <p className="text-right text-[11px] text-white/45 mt-1 tabular-nums">

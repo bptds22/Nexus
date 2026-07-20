@@ -47,6 +47,11 @@ import {
   SectionLabel, Group, ToggleRow, NavRow, DangerRow,
   TierCard, PasswordChangeSheet, ConfirmSheet,
 } from "@/components/shared/settings";
+import { deleteMyAccount } from "@/lib/auth/deleteAccount";
+import { startMobilePortal, fmtSubDate, subStatusLabel } from "@/components/shared/settings/utils";
+import { openLegalDocument } from "@/lib/legal";
+
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
 /* ── Coach notification rows (DB JSONB — desktop NotificationsSection) ── */
 
@@ -62,7 +67,7 @@ const NOTIF_ROWS: {
   { key: "athleteFavorited",   appKey: "app_athlete_favorited",    emailKey: "email_athlete_favorited",
     label: "Athlète ajouté en favori",     sublabel: "Un recruteur a ajouté un de tes athlètes en favori" },
   { key: "pipelineMovement",   appKey: "app_pipeline_movement",    emailKey: "email_pipeline_movement",
-    label: "Mouvement dans un pipeline",   sublabel: "Un athlète a changé d'étape côté recruteur" },
+    label: "Mouvement dans un processus",   sublabel: "Un athlète a changé d'étape côté recruteur" },
   { key: "profileIncomplete",  appKey: "app_profile_incomplete",   emailKey: "email_profile_incomplete",
     label: "Profil athlète incomplet",     sublabel: "Un athlète a un profil sous 60 %" },
   { key: "newMessage",         appKey: "app_new_message",          emailKey: "email_new_message",
@@ -95,7 +100,7 @@ interface SchoolInfo {
 export function CoachParametresMobile() {
   const router = useRouter();
   const toast = useMobileToast();
-  const { tier } = useSubscription();
+  const { tier, isStripeManaged, refresh, periodEnd, billing, status, cancelAtPeriodEnd } = useSubscription();
 
   // Coach only has Free/Pro per business rules ; an "all_star" DB
   // value collapses to Pro for display.
@@ -116,12 +121,52 @@ export function CoachParametresMobile() {
 
   const [loading, setLoading] = useState(true);
   const [savingNotifs, setSavingNotifs] = useState(false);
+  const [portalBusy, setPortalBusy] = useState(false);
 
   const [passwordSheetOpen, setPasswordSheetOpen] = useState(false);
   const [deleteSheetOpen, setDeleteSheetOpen] = useState(false);
   const [logoutSheetOpen, setLogoutSheetOpen] = useState(false);
-  const [deleteConfirmText, setDeleteConfirmText] = useState("");
-  const [deleteReason, setDeleteReason] = useState("");
+
+  /* ── Portail Stripe mobile : fetch /api/stripe/portal (Bearer) +
+        in-app browser. Erreur visible (toast). ── */
+  async function handlePortal() {
+    if (portalBusy) return;
+    if (IS_CAPACITOR) return; // iOS (3.1.1) : pas de portail de paiement in-app.
+    triggerHaptic("Light");
+    setPortalBusy(true);
+    try {
+      await startMobilePortal();
+    } catch (e) {
+      toast.error({
+        message: "Portail indisponible",
+        detail: e instanceof Error ? e.message : "Erreur inconnue",
+      });
+    } finally {
+      setPortalBusy(false);
+    }
+  }
+
+  /* Refresh le tier au retour de l'in-app browser (portail). Plugins
+     absents sur web → no-op. Parité avec RecruteurParametresMobile. */
+  useEffect(() => {
+    let bl: { remove: () => void } | null = null;
+    let al: { remove: () => void } | null = null;
+    (async () => {
+      try {
+        const { Browser } = await import("@capacitor/browser");
+        bl = await Browser.addListener("browserFinished", () => { refresh(); });
+      } catch { /* web */ }
+      try {
+        const { App } = await import("@capacitor/app");
+        al = await App.addListener("appStateChange", ({ isActive }) => { if (isActive) refresh(); });
+      } catch { /* web */ }
+    })();
+    return () => { bl?.remove(); al?.remove(); };
+  }, [refresh]);
+
+  // Lot 0 — re-pull du tier au montage (le Provider peut être périmé au
+  // lancement → un payant s'afficherait "Gratuit" → jamais de bouton "Gérer").
+  useEffect(() => { refresh(); }, [refresh]);
 
   /* ── Load user prefs + school context ─────────────────────── */
   useEffect(() => {
@@ -253,17 +298,14 @@ export function CoachParametresMobile() {
   }
 
   async function handleDelete() {
-    if (deleteConfirmText !== "SUPPRIMER") return;
     triggerHaptic("Heavy");
-    const supabase = createClient();
-    const { error } = await supabase.rpc("request_account_deletion", {
-      p_reason: deleteReason || null,
-    });
-    if (error) { toast.error({ message: "Échec de la demande", detail: error.message }); return; }
-    try { localStorage.removeItem("nexus_user"); } catch { /* no-op */ }
-    await supabase.auth.signOut();
     setDeleteSheetOpen(false);
-    router.push("/auth");
+    // Suppression DÉFINITIVE via la RPC delete_my_account (helper partagé :
+    // signOut + redirection dedans). Remplace l'ancien request_account_deletion
+    // (RPC inexistante → l'appel échouait systématiquement).
+    await deleteMyAccount({
+      onError: (detail) => toast.error({ message: "Échec de la suppression", detail }),
+    });
   }
 
   function handleBack() {
@@ -321,7 +363,56 @@ export function CoachParametresMobile() {
             <span className="text-[14px] font-semibold text-white uppercase tracking-wider">{tierLabel}</span>
           </div>
           {displayTier === "free" && (
-            <p className="text-[12px] text-[#6b7280] mt-2">Passe à Pro pour {ecoleLabel.toLowerCase()}, {ecoleStatsLabel.toLowerCase()} et plus.</p>
+            <p className="text-[12px] text-[#6b7280] mt-2">Réservé aux membres Pro : {ecoleLabel.toLowerCase()}, {ecoleStatsLabel.toLowerCase()} et plus.</p>
+          )}
+          {/* Payant + vrai abo Stripe → résumé (statut/cycle/renouvellement)
+              + portail (in-app browser). */}
+          {tier !== "free" && isStripeManaged && (
+            <div className="mt-3 space-y-2">
+              <div className="space-y-1">
+                <div className="flex justify-between text-[12px]">
+                  <span className="text-[#9CA3AF]">Statut</span>
+                  <span className="text-white font-semibold">{subStatusLabel(status)}</span>
+                </div>
+                <div className="flex justify-between text-[12px]">
+                  <span className="text-[#9CA3AF]">Cycle</span>
+                  <span className="text-white font-semibold">{billing === "annual" ? "Annuel" : "Mensuel"}</span>
+                </div>
+                {cancelAtPeriodEnd ? (
+                  <p className="text-[12px] text-[#E63946]">Ton abonnement se termine le {fmtSubDate(periodEnd)}.</p>
+                ) : (
+                  <div className="flex justify-between text-[12px]">
+                    <span className="text-[#9CA3AF]">Renouvellement</span>
+                    <span className="text-white font-semibold">{fmtSubDate(periodEnd)}</span>
+                  </div>
+                )}
+              </div>
+              {IS_CAPACITOR ? (
+                // iOS (3.1.1) : pas de gestion de paiement in-app.
+                // Texte descriptif PUR — aucun lien ni bouton cliquable.
+                <p className="text-[12px] text-[#9CA3AF] leading-snug">
+                  Pour gérer ou modifier ton abonnement, rends-toi sur la version web de Nexus.
+                </p>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handlePortal}
+                  disabled={portalBusy}
+                  className="w-full h-11 rounded-xl border border-white/15 text-white font-bold text-[12px] uppercase tracking-wider active:bg-white/5 disabled:opacity-60"
+                >
+                  {portalBusy ? "Ouverture…" : "Gérer mon abonnement"}
+                </button>
+              )}
+            </div>
+          )}
+          {/* Payant SANS abo Stripe (accès offert) → pas de portail. */}
+          {tier !== "free" && !isStripeManaged && (
+            <div className="mt-3">
+              <p className="text-[13px] font-bold text-white">Accès accordé par l&apos;équipe Nexus</p>
+              <p className="text-[12px] text-[#6b7280] mt-1">
+                Ton plan t&apos;a été offert par Nexus — aucune facturation à gérer.
+              </p>
+            </div>
           )}
         </div>
       </div>
@@ -355,8 +446,14 @@ export function CoachParametresMobile() {
                 label={isCivilCoach ? "Modifier la ligue" : "Modifier l'école"}
                 sublabel="Disponible sur l'écran de bureau"
                 isFirst
-                rightChevron="external"
-                onTap={() => openExternal("https://nexussports.ca/coach/settings")}
+                rightChevron={IS_CAPACITOR ? "none" : "external"}
+                onTap={() => {
+                  if (IS_CAPACITOR) {
+                    toast.info({ message: "Disponible sur la version web", detail: "Cette section se gère sur nexussports.ca." });
+                    return;
+                  }
+                  openExternal("https://nexussports.ca/coach/settings");
+                }}
               />
             </Group>
           )}
@@ -376,8 +473,14 @@ export function CoachParametresMobile() {
               label={isCivilCoach ? "Administration de la ligue" : "Administration de l'école"}
               sublabel="Gestion des directeurs (écran de bureau)"
               isFirst
-              rightChevron="external"
-              onTap={() => openExternal("https://nexussports.ca/coach/settings")}
+              rightChevron={IS_CAPACITOR ? "none" : "external"}
+              onTap={() => {
+                if (IS_CAPACITOR) {
+                  toast.info({ message: "Disponible sur la version web", detail: "Cette section se gère sur nexussports.ca." });
+                  return;
+                }
+                openExternal("https://nexussports.ca/coach/settings");
+              }}
             />
           </Group>
         </>
@@ -464,13 +567,22 @@ export function CoachParametresMobile() {
           label="Politique de confidentialité"
           isFirst
           rightChevron="external"
-          onTap={() => openExternal("https://nexussports.ca/confidentialite")}
+          onTap={() => {
+            if (IS_CAPACITOR) { openLegalDocument("confidentialite"); return; }
+            openExternal("https://nexussports.ca/confidentialite");
+          }}
         />
         <NavRow
           label="Exporter mes données (Loi 25)"
           isFirst={false}
-          rightChevron="external"
-          onTap={() => openExternal("https://nexussports.ca/coach/settings?section=confidentialite")}
+          rightChevron={IS_CAPACITOR ? "none" : "external"}
+          onTap={() => {
+            if (IS_CAPACITOR) {
+              toast.info({ message: "Disponible sur la version web", detail: "L'export de tes données se fait sur nexussports.ca." });
+              return;
+            }
+            openExternal("https://nexussports.ca/coach/settings?section=confidentialite");
+          }}
         />
       </Group>
       <div className="px-6 pt-3 text-[11px] text-[#6b7280] leading-5">
@@ -498,8 +610,6 @@ export function CoachParametresMobile() {
           isFirst
           onTap={() => {
             triggerHaptic("Light");
-            setDeleteConfirmText("");
-            setDeleteReason("");
             setDeleteSheetOpen(true);
           }}
         />
@@ -519,31 +629,10 @@ export function CoachParametresMobile() {
         open={deleteSheetOpen}
         onClose={() => setDeleteSheetOpen(false)}
         title="Supprimer mon compte ?"
-        message="Cette action est permanente. Tes données seront effacées dans les 30 jours selon la Loi 25. Tape SUPPRIMER pour confirmer."
-        confirmLabel={deleteConfirmText === "SUPPRIMER" ? "Supprimer définitivement" : "Tape SUPPRIMER"}
+        message="Ton compte et tes données personnelles seront supprimés immédiatement et définitivement. Cette action est irréversible."
+        confirmLabel="Supprimer définitivement"
         onConfirm={handleDelete}
         variant="danger"
-        confirmDisabled={deleteConfirmText !== "SUPPRIMER"}
-        extra={
-          <div className="space-y-3">
-            <input
-              type="text"
-              autoCapitalize="characters"
-              autoCorrect="off"
-              value={deleteConfirmText}
-              onChange={(e) => setDeleteConfirmText(e.target.value.toUpperCase())}
-              placeholder="SUPPRIMER"
-              className="w-full bg-[#13151a] border border-[#2a2d36] rounded-2xl px-4 py-3 text-[16px] text-white placeholder:text-[#4a4d56] focus:outline-none focus:border-[#E63946]/50 tracking-widest text-center font-bold"
-            />
-            <textarea
-              value={deleteReason}
-              onChange={(e) => setDeleteReason(e.target.value)}
-              placeholder="Optionnel : Pourquoi pars-tu ?"
-              rows={2}
-              className="w-full bg-[#13151a] border border-[#2a2d36] rounded-2xl px-4 py-2.5 text-[14px] text-white placeholder:text-[#4a4d56] focus:outline-none focus:border-[#E63946]/50 resize-none"
-            />
-          </div>
-        }
       />
 
       <ConfirmSheet

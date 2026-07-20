@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import type { RecruiterSettings } from "@/lib/types/models";
 import { createClient } from "@/lib/supabase/client";
 import { useSubscription } from "@/lib/hooks/useSubscription";
+import { deleteMyAccount } from "@/lib/auth/deleteAccount";
 import { RecruteurParametresMobile } from "@/components/shared/RecruteurParametresMobile";
 import RecruiterSettingsNav, { type SectionKey } from "./_components/RecruiterSettingsNav";
 import CompteSection from "./_components/CompteSection";
@@ -15,6 +16,7 @@ import TransfertSection from "./_components/TransfertSection";
 import DangerSection from "./_components/DangerSection";
 import ConfirmModal from "./_components/ConfirmModal";
 import SaveToast from "./_components/SaveToast";
+import { uploadImage } from "@/lib/upload/uploadImage";
 import InvitationLinkModal from "@/components/ui/InvitationLinkModal";
 import SubscriptionManager from "@/components/subscription/SubscriptionManager";
 
@@ -253,7 +255,12 @@ function AdminCegepSection() {
 
   async function handleRemove(memberId: string) {
     const supabase = createClient();
-    await supabase.from("users").update({ school_id: null }).eq("id", memberId);
+    // Retrait via RPC SECURITY DEFINER (remove_cegep_member) : il n'existe
+    // AUCUNE policy UPDATE users pour un admin CÉGEP — l'autorisation + l'écriture
+    // (school_id = NULL) vivent dans la RPC, donc les autres colonnes du collègue
+    // restent intouchables.
+    const { error } = await supabase.rpc("remove_cegep_member", { p_target_recruiter_id: memberId });
+    if (error) { showToast("Retrait impossible"); return; }
     setMembers(prev => prev.filter(m => m.id !== memberId));
     setRemoveTarget(null);
     showToast("Membre retiré du CÉGEP");
@@ -717,13 +724,10 @@ function RecruiterSettingsDesktop() {
                   const supabase = createClient();
                   const { data: { user } } = await supabase.auth.getUser();
                   if (!user) return;
-                  const fileExt = file.name.split(".").pop();
-                  const filePath = `${user.id}/avatar.${fileExt}`;
-                  const { error: uploadError } = await supabase.storage.from("avatars").upload(filePath, file, { upsert: true });
-                  if (uploadError) { console.error("[Photo upload error]", uploadError); return; }
-                  const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(filePath);
-                  await supabase.from("users").update({ photo_url: urlData.publicUrl }).eq("id", user.id);
-                  updateField("avatarUrl", urlData.publicUrl);
+                  const res = await uploadImage(file, { pathBase: `${user.id}/avatar` });
+                  if (!res.ok) { showToast(res.message); return; }
+                  await supabase.from("users").update({ photo_url: res.publicUrl }).eq("id", user.id);
+                  updateField("avatarUrl", res.publicUrl);
                 }}
               />
             )}
@@ -818,12 +822,18 @@ function RecruiterSettingsDesktop() {
       <ConfirmModal
         open={deleteModal}
         onClose={() => setDeleteModal(false)}
-        onConfirm={() => {/* mock */}}
-        title="Suppression définitive"
-        message="Cette action est irréversible. Toutes vos données seront effacées après un délai de grâce de 30 jours."
-        confirmLabel="Supprimer mon compte"
+        onConfirm={() => {
+          // Suppression DÉFINITIVE via la RPC delete_my_account (helper partagé :
+          // signOut + redirection dedans). Le "deactivate" ci-dessus reste un
+          // mock distinct (désactivation réversible — hors de ce chantier).
+          void deleteMyAccount({
+            onError: (m) => { window.alert("Échec de la suppression : " + m); },
+          });
+        }}
+        title="Supprimer mon compte ?"
+        message="Votre compte et vos données personnelles seront supprimés immédiatement et définitivement. Cette action est irréversible."
+        confirmLabel="Supprimer définitivement"
         variant="danger"
-        requireTyped="SUPPRIMER"
       />
 
       {/* ── Toasts ─────────────────────────────────────────────── */}

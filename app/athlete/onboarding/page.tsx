@@ -2,12 +2,16 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import NexusLogo from "@/components/ui/NexusLogo";
 import { createClient } from "@/lib/supabase/client";
+import { needsConsent } from "@/lib/auth/needsConsent";
 import { genderLabel } from "@/lib/config/gender";
+import { GRAD_YEAR_OPTIONS, DEFAULT_GRAD_YEAR } from "@/lib/config/gradYears";
 import { calculateProfileCompletion } from "@/lib/utils/calculateProfileCompletion";
 import SportPositionSelect from "@/app/coach/components/SportPositionSelect";
 import DatePicker from "@/app/coach/components/DatePicker";
+import { isUnder14 } from "@/lib/legal/ageGate";
 import SchoolSelect from "@/components/ui/SchoolSelect";
 import CoachPicker from "@/components/coach/CoachPicker";
 import PartnerVisibilityConsentCard from "@/components/shared/PartnerVisibilityConsentCard";
@@ -49,19 +53,166 @@ const labelCls = "text-[11px] font-bold uppercase tracking-[0.2em] text-[#6b7280
 const sectionTitle = "text-[12px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mb-4 flex items-center gap-2";
 
 /* ─────────────────────────────────────────────────────────────────
-   CivilTeamPicker — civil-context replacement for the school block.
+   ClubPicker — civil-context CLUB tier (parity with mobile
+   AthleteOnboardingMobile.tsx clubs picker).
 
-   Phase 6.2: ported to the unified model. Civil leagues now live in
-   `schools` (type='LIGUE_CIVILE') and civil teams live in `teams`
-   anchored on those schools. The picker aggregates every team
-   across civil-league schools for the athlete's sport.
+   Civil athletes first pick their CLUB (a schools row with
+   type='LIGUE_CIVILE'), then optionally a team within it. The club
+   is the anchor written to athletes.school_id at submit — so an
+   athlete whose club has no Nexus team is still anchored to the club
+   (the case the old team-only aggregate could not express).
+
+   Query is sport-AGNOSTIC (mobile parity): all 266 LIGUE_CIVILE
+   schools, filtered client-side by name/city. Sport only scopes the
+   TEAM tier (CivilTeamPicker), not the club.
+
+   Opt-out via "Continuer sans club" → school_id stays NULL (a
+   legitimate skip; the athlete can associate later).
+───────────────────────────────────────────────────────────────── */
+type CivilClubRow = {
+  id: string;
+  name: string;
+  city: string | null;
+  region: string | null;
+};
+
+function ClubPicker({
+  selectedClubId,
+  onSelect,
+  onContinueWithoutClub,
+}: {
+  selectedClubId: string | null;
+  onSelect: (club: CivilClubRow) => void;
+  onContinueWithoutClub: () => void;
+}) {
+  const [clubs, setClubs] = useState<CivilClubRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [skipped, setSkipped] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadClubs() {
+      setLoading(true);
+      const supabase = createClient();
+      // Mobile parity (AthleteOnboardingMobile clubs loader): every
+      // LIGUE_CIVILE school, no sport filter. Client-side search below.
+      const { data } = await supabase
+        .from("schools")
+        .select("id, name, city, region")
+        .eq("type", "LIGUE_CIVILE")
+        .order("name");
+      if (!cancelled) {
+        setClubs((data as CivilClubRow[]) ?? []);
+        setLoading(false);
+      }
+    }
+    loadClubs();
+    return () => { cancelled = true; };
+  }, []);
+
+  const q = search.trim().toLowerCase();
+  const visible = (q.length > 0
+    ? clubs.filter((c) =>
+        c.name.toLowerCase().includes(q)
+        || (c.city ? c.city.toLowerCase().includes(q) : false),
+      )
+    : clubs
+  ).slice(0, 50);
+
+  if (skipped) {
+    return (
+      <p className="text-[13px] text-[#9CA3AF] italic">
+        Tu pourras associer ton club plus tard depuis ton profil.
+      </p>
+    );
+  }
+
+  if (loading) {
+    return <p className="text-[13px] text-[#6b7280]">Chargement des clubs...</p>;
+  }
+
+  if (clubs.length === 0) {
+    return (
+      <div className="bg-[#13151a] border border-[#2D3748] rounded-lg px-4 py-5">
+        <p className="text-[13px] text-[#9CA3AF] mb-1">Aucun club civil trouvé.</p>
+        <p className="text-[12px] text-[#6b7280] mb-4">Continue — tu pourras t&apos;associer plus tard.</p>
+        <button
+          type="button"
+          onClick={() => { setSkipped(true); onContinueWithoutClub(); }}
+          className="h-10 px-5 rounded-lg border border-[#E63946]/40 text-[12px] font-bold text-[#E63946] hover:bg-[#E63946]/10 transition-colors"
+        >
+          Continuer sans club →
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <input
+        type="text"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        placeholder="Rechercher ton club..."
+        className={inputCls}
+      />
+      <div className="space-y-2 max-h-[280px] overflow-y-auto">
+        {visible.map((c) => {
+          const isSelected = selectedClubId === c.id;
+          const meta = [c.city, c.region].filter(Boolean).join(" · ");
+          return (
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => onSelect(c)}
+              className={`w-full text-left rounded-lg px-4 py-3 transition-colors border ${
+                isSelected
+                  ? "bg-[#E63946]/10 border-[#E63946]"
+                  : "bg-[#13151a] border-[#2D3748] hover:border-[#4a4d56]"
+              }`}
+            >
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-[14px] font-bold text-white truncate">{c.name}</p>
+                  {meta && <p className="text-[11px] text-[#6b7280] truncate">{meta}</p>}
+                </div>
+                {isSelected && (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2.5" strokeLinecap="round" className="shrink-0">
+                    <path d="M20 6L9 17l-5-5" />
+                  </svg>
+                )}
+              </div>
+            </button>
+          );
+        })}
+        {visible.length === 0 && (
+          <p className="text-[12px] text-[#6b7280] px-1 py-2">Aucun club ne correspond à « {search} ».</p>
+        )}
+      </div>
+      <button
+        type="button"
+        onClick={() => { setSkipped(true); onContinueWithoutClub(); }}
+        className="text-[12px] text-[#6b7280] hover:text-[#E63946] transition-colors underline"
+      >
+        Mon club n&apos;est pas listé — continuer sans club
+      </button>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   CivilTeamPicker — civil-context TEAM tier (second tier, after
+   ClubPicker).
+
+   Étape 2: scoped to the club chosen in ClubPicker. Loads
+   `teams WHERE school_id=clubId AND sport_id AND is_active` (parity
+   mobile) — no longer a global aggregate across all LIGUE_CIVILE
+   schools. Rendered only once a club is picked and the sport is known.
 
    The athlete picks one or opts out via "Continuer sans équipe" —
-   no athlete-side team creation (teams are created by coaches).
-
-   School (league) name is displayed as a subtitle to disambiguate
-   when two coaches name their teams identically across different
-   civil-league organizations.
+   no athlete-side team creation (teams are created by coaches). The
+   team is optional: the club alone anchors athletes.school_id.
 ───────────────────────────────────────────────────────────────── */
 type CivilTeamRow = {
   id: string;
@@ -73,11 +224,15 @@ type CivilTeamRow = {
 };
 
 function CivilTeamPicker({
+  clubId,
+  clubName,
   sportName,
   selectedTeamId,
   onSelect,
   onContinueWithoutTeam,
 }: {
+  clubId: string;
+  clubName: string;
   sportName: string;
   selectedTeamId: string | null;
   onSelect: (team: CivilTeamRow) => void;
@@ -107,37 +262,35 @@ function CivilTeamPicker({
         return;
       }
 
-      // Aggregate ALL civil teams for this sport across every
-      // LIGUE_CIVILE school. Phase 6.2: teams now live in `teams`
-      // anchored on `schools`; the sport_id filter is server-side.
+      // Étape 2: scope teams to the CHOSEN club (parity mobile civil
+      // team loader): teams WHERE school_id=clubId AND sport_id AND
+      // is_active. No more global aggregate across all 266 clubs.
+      // school_id is guaranteed = clubId (a LIGUE_CIVILE school), so
+      // the previous client-side type filter is no longer needed.
       const { data: rows } = await supabase
         .from("teams")
-        .select("id, name, age_group, division, school_id, schools!school_id(name, type)")
+        .select("id, name, age_group, division")
+        .eq("school_id", clubId)
         .eq("sport_id", sportRow.id)
+        .eq("is_active", true)
         .order("name");
       if (!rows) { if (!cancelled) { setTeams([]); setLoading(false); } return; }
 
-      const filtered: CivilTeamRow[] = [];
-      for (const raw of rows as Record<string, unknown>[]) {
-        const schoolRel = Array.isArray(raw.schools) ? raw.schools[0] : raw.schools;
-        const s = schoolRel as { name?: string; type?: string } | null;
-        if (s?.type !== "LIGUE_CIVILE") continue;
-        filtered.push({
-          id: raw.id as string,
-          name: raw.name as string,
-          age_group: (raw.age_group as string) ?? null,
-          division: (raw.division as string) ?? null,
-          school_id: raw.school_id as string,
-          school_name: s.name ?? "",
-        });
-      }
+      const mapped: CivilTeamRow[] = (rows as Record<string, unknown>[]).map((raw) => ({
+        id: raw.id as string,
+        name: raw.name as string,
+        age_group: (raw.age_group as string) ?? null,
+        division: (raw.division as string) ?? null,
+        school_id: clubId,
+        school_name: clubName,
+      }));
 
-      if (!cancelled) { setTeams(filtered); setLoading(false); }
+      if (!cancelled) { setTeams(mapped); setLoading(false); }
     }
-    if (sportName) loadTeams();
+    if (clubId && sportName) loadTeams();
     else { setTeams([]); setLoading(false); }
     return () => { cancelled = true; };
-  }, [sportName]);
+  }, [clubId, clubName, sportName]);
 
   const visible = search.trim().length > 0
     ? teams.filter((t) =>
@@ -161,8 +314,8 @@ function CivilTeamPicker({
   if (teams.length === 0) {
     return (
       <div className="bg-[#13151a] border border-[#2D3748] rounded-lg px-4 py-5">
-        <p className="text-[13px] text-[#9CA3AF] mb-1">Aucune équipe civile trouvée pour {sportName || "ton sport"}.</p>
-        <p className="text-[12px] text-[#6b7280] mb-4">Si ton équipe n&apos;apparaît pas, continue — tu pourras l&apos;associer plus tard.</p>
+        <p className="text-[13px] text-[#9CA3AF] mb-1">Aucune équipe pour {sportName || "ton sport"} dans {clubName || "ce club"}.</p>
+        <p className="text-[12px] text-[#6b7280] mb-4">Tu peux rester rattaché au club seul — continue.</p>
         <button
           type="button"
           onClick={() => { setSkipped(true); onContinueWithoutTeam(); }}
@@ -415,6 +568,42 @@ function SchoolTeamPicker({
   );
 }
 
+/* ── ÉTAPE 0 — Choix du contexte (École vs Ligue civile) ──────────────────
+   PORT 1:1 du Step-0 mobile (ContextPicker, AthleteOnboardingMobile, commit
+   0fff3f9) : même wording, mêmes deux options, même contrat onPick. Pilote la
+   branche existante de l'Étape 1 (scolaire = école/coach ; civil = sport +
+   club). Le choix vit en état LOCAL pendant la session et n'est persisté
+   (users.context) qu'au submit via la RPC one-shot set_initial_role_and_context
+   — exactement comme le mobile. Rendu avec les primitives du flow web (carte
+   #1A1D24 + bordure #2D3748), aucun nouveau design system. ────────────────── */
+function ContextPicker({ onPick }: { onPick: (c: "scolaire" | "ligue_civile") => void }) {
+  const card =
+    "w-full text-left p-4 bg-[#1A1D24] rounded-lg border border-[#2D3748] "
+    + "hover:border-[#E63946] hover:bg-[#20242c] transition-colors";
+  return (
+    <div className="space-y-3">
+      <div className="mb-5">
+        <h2 className="font-head font-bold text-[20px] text-white uppercase tracking-tight">Où joues-tu ?</h2>
+        <p className="text-[13px] text-[#6b7280] mt-1">
+          Choisis ton parcours — ça détermine comment tu relies ton équipe.
+        </p>
+      </div>
+      <button type="button" onClick={() => onPick("scolaire")} className={card}>
+        <p className="text-[16px] font-bold text-white">École / Cégep</p>
+        <p className="text-[13px] text-[#9CA3AF] mt-0.5">
+          Je joue pour mon école secondaire ou mon cégep.
+        </p>
+      </button>
+      <button type="button" onClick={() => onPick("ligue_civile")} className={card}>
+        <p className="text-[16px] font-bold text-white">Ligue civile / Club</p>
+        <p className="text-[13px] text-[#9CA3AF] mt-0.5">
+          Je joue pour un club ou une ligue civile (hors école).
+        </p>
+      </button>
+    </div>
+  );
+}
+
 export default function AthleteOnboardingPage() {
   // Iter 7.50-a — Capacitor (mobile natif) route vers le nouveau flow
   // minimal "Construis ta carte" (3 écrans). Le desktop ci-dessous reste
@@ -426,9 +615,11 @@ export default function AthleteOnboardingPage() {
 
 function AthleteOnboardingDesktop() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [initError, setInitError] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [existingAthleteId, setExistingAthleteId] = useState<string | null>(null);
 
@@ -446,7 +637,12 @@ function AthleteOnboardingDesktop() {
   const [lastName, setLastName] = useState("");
   const [gender, setGender] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState("");
-  const [gradYear, setGradYear] = useState("2026");
+  // DOB verrouillée = seedée depuis une source de confiance (signup metadata,
+  // users.date_naissance, ou row athletes). Rend le champ lecture seule. Reste
+  // false uniquement si aucune source ne l'a fournie (vieux compte NULL) →
+  // champ éditable + validation recouvrement (isUnder14) au save.
+  const [dobLocked, setDobLocked] = useState(false);
+  const [gradYear, setGradYear] = useState(DEFAULT_GRAD_YEAR);
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   // School (used when userContext === 'scolaire')
@@ -466,9 +662,13 @@ function AthleteOnboardingDesktop() {
   // team_athletes junction. Legacy athletes.league_team_id is left
   // NULL on writes; the column itself is dropped in Phase 6.3.
   const [userContext, setUserContext] = useState<"scolaire" | "ligue_civile" | null>(null);
+  // Civil CLUB tier (parity with mobile selectedClubId/Name). The club
+  // is the anchor written to athletes.school_id at submit (Étape 3);
+  // the team below is optional and scoped to this club.
+  const [selectedClubId, setSelectedClubId] = useState<string | null>(null);
+  const [selectedClubName, setSelectedClubName] = useState("");
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
   const [selectedTeamName, setSelectedTeamName] = useState("");
-  const [selectedTeamSchoolId, setSelectedTeamSchoolId] = useState<string | null>(null);
 
   // Step 2 — Academic
   const [gpa, setGpa] = useState("");
@@ -507,10 +707,15 @@ function AthleteOnboardingDesktop() {
   const [consentVisibility, setConsentVisibility] = useState(false);
   const [consentComms, setConsentComms] = useState(false);
   const [consentPartnerVisibility, setConsentPartnerVisibility] = useState(false);
+  // Minor gate — set at init from hasParentalConsent (signup captured
+  // parental consent = minor). Drives whether the parent/consent section
+  // shows AND whether it is required (canProceed/submit). Adults: false.
+  const [isMinor, setIsMinor] = useState(false);
 
   useEffect(() => {
     async function init() {
       const supabase = createClient();
+      try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.push("/auth"); return; }
       setUserId(user.id);
@@ -522,26 +727,106 @@ function AthleteOnboardingDesktop() {
       if (meta.last_name) setLastName(meta.last_name as string);
       if (meta.sport) setPrimarySport(meta.sport as string);
 
-      // Fallback: try users table if metadata is empty
+      // Seed DOB depuis raw_user_meta_data (stashée au signup, parité mobile
+      // AthleteOnboardingMobile:875). Placé AVANT le prefill de la row athletes
+      // ci-dessous → sur un resume la row (:790) gagne encore. Verrouille le
+      // champ : la DOB vient du signup et a servi au gate d'âge, pas re-saisissable.
+      if (typeof meta.date_naissance === "string" && meta.date_naissance) {
+        setDateOfBirth(meta.date_naissance);
+        setDobLocked(true);
+      }
+
+      // Minor pre-fill (parity mobile parentSlice) — if the signup captured
+      // parental consent (i.e. the athlete is a minor: the parental screen
+      // is only shown to minors at signup), pre-fill the parent fields and
+      // pre-check the consents from raw_user_meta_data so the athlete doesn't
+      // re-type what they already gave. Placed BEFORE the existing-athletes
+      // prefill below → on a resume the DB row wins (preserves any edits);
+      // on a fresh signup only this metadata pre-fill applies. Adults have
+      // none of these keys → nothing pre-fills (unchanged). Fields stay
+      // editable. No telephone_parent (never captured at signup).
+      const hasParentalConsent = !!(meta.consent_parental_profile && meta.consent_parental_visibility);
+      setIsMinor(hasParentalConsent);
+      if (hasParentalConsent) {
+        if (meta.parent_first_name) setParentFirstName(meta.parent_first_name as string);
+        if (meta.parent_last_name) setParentLastName(meta.parent_last_name as string);
+        if (meta.parent_email) setParentEmail(meta.parent_email as string);
+        if (meta.parent_relationship) setParentRelationship(meta.parent_relationship as string);
+        setConsentProfile(true);
+        setConsentVisibility(true);
+        if (meta.consent_marketing) setConsentComms(true);
+        if (meta.consent_parental_partner_visibility) setConsentPartnerVisibility(true);
+      }
+
+      // Single retried read of public.users. Right after signup the JWT
+      // cookie hasn't fully propagated, so RLS can return 0 rows for ~1s
+      // (the SAME race documented in app/athlete/layout.tsx:276-282).
+      // .maybeSingle() returns null instead of throwing PGRST116, and we
+      // retry a few times so the wizard pre-fills once the row is visible
+      // — rather than aborting init() and hanging the spinner forever.
+      let userRow: {
+        first_name: string | null;
+        last_name: string | null;
+        context: string | null;
+        onboarding_complete: boolean | null;
+        privacy_preferences: Record<string, unknown> | null;
+        date_naissance: string | null;
+      } | null = null;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const { data } = await supabase
+          .from("users")
+          .select("first_name, last_name, context, onboarding_complete, privacy_preferences, date_naissance")
+          .eq("id", user.id)
+          .maybeSingle();
+        if (data) { userRow = data; break; }
+        if (attempt < 2) await new Promise((r) => setTimeout(r, 500));
+      }
+
+      // Gate consentements (BLOC 3B) : consent Loi 25 manquant + onboarding
+      // incomplet → interstitiel. Placé AVANT le build (couvre le nouvel
+      // athlète social sans ligne athletes). needsConsent gère le double
+      // signal (privacy_preferences OU user_metadata) anti-boucle. Fail-open :
+      // si userRow est null (race RLS), on ne gate pas (l'app se dévoile).
+      if (userRow && userRow.onboarding_complete !== true
+          && needsConsent(userRow.privacy_preferences, user.user_metadata)) {
+        router.replace("/consentements");
+        return;
+      }
+
+      // Fallback: fill name from the users row only if metadata was empty.
       if (!meta.first_name) {
-        const { data: userRow } = await supabase.from("users").select("first_name, last_name").eq("id", user.id).single();
         if (userRow?.first_name) setFirstName(userRow.first_name);
         if (userRow?.last_name) setLastName(userRow.last_name);
       }
 
-      // Read users.context for the civil/school discriminator. Wired
-      // at signup in 5.3a (commit 5dc7456). Defaults to 'scolaire'
-      // when null — preserves existing behavior for any user who
-      // signed up before 5.3a shipped.
-      const { data: contextRow } = await supabase
-        .from("users")
-        .select("context")
-        .eq("id", user.id)
-        .single();
-      const ctxRaw = contextRow?.context;
-      const ctx: "scolaire" | "ligue_civile" =
+      // DOB fallback : users.date_naissance (peuplé au signup par le trigger
+      // handle_new_auth_user, migration 20260609160000). UNIQUEMENT si la
+      // metadata ne l'a pas déjà posée → priorité meta > users. La row athletes
+      // (:790) écrasera au besoin → row existante > metadata > users.
+      if (!meta.date_naissance && userRow?.date_naissance) {
+        setDateOfBirth(userRow.date_naissance);
+        setDobLocked(true);
+      }
+
+      // users.context is the civil/school discriminator. Wired at signup
+      // in 5.3a (commit 5dc7456). Defaults to 'scolaire' when null —
+      // preserves existing behavior for pre-5.3a users (and the race
+      // window above, where the row may not be visible yet).
+      const ctxRaw = userRow?.context;
+      // Cascade de routage : users.context explicite d'abord ; sinon (orphelin
+      // coach-créé, context null) on dérive du type de l'école de l'orphelin
+      // plus bas (schools.type). Défaut scolaire si aucun signal.
+      let ctx: "scolaire" | "ligue_civile" =
         ctxRaw === "ligue_civile" ? "ligue_civile" : "scolaire";
       setUserContext(ctx);
+
+      // Étape 0 (choix de contexte) — PORT 1:1 du mobile (0fff3f9). Affichée
+      // tant que users.context n'est pas posé. Le signup athlète n'écrit pas
+      // context → NULL pour un compte frais → l'athlète choisit. Si context est
+      // déjà posé (compte claimé / mobile / resume post-submit), on saute
+      // l'étape 0 et la logique de resume plus bas décide step 1 vs 2.
+      let contextChosen = ctxRaw === "scolaire" || ctxRaw === "ligue_civile";
+      if (!contextChosen) setStep(0);
 
       // Check if athlete row exists — pre-fill all saved fields.
       // Phase 6.2: civil-context team membership is now read via the
@@ -550,19 +835,21 @@ function AthleteOnboardingDesktop() {
       // Phase 6.3 and the unified read is via schools + team_athletes.
       const { data: existing } = await supabase
         .from("athletes")
-        .select("*, schools!school_id(name, type), sports!sport_id(nom), team_athletes(team_id, teams!team_id(id, name, school_id))")
+        .select("*, schools!school_id(name, type), sports!sport_id(nom), positions!position_id(abreviation), team_athletes(team_id, teams!team_id(id, name, school_id))")
         .eq("user_id", user.id)
         .maybeSingle();
 
       if (existing) {
         setExistingAthleteId(existing.id);
-        // If profile is complete, skip to dashboard. Civil-context
-        // athletes anchor on a LIGUE_CIVILE schools row (existing.school_id
-        // is non-null when a team was picked); they can also have
-        // school_id NULL if they used "Continuer sans équipe".
-        const profileComplete = existing.first_name && existing.last_name && existing.sport_id
-          && (ctx === "ligue_civile" || existing.school_id);
-        if (profileComplete) {
+        // Skip onboarding ONLY when users.onboarding_complete is set — the SAME
+        // criterion as the athlete layout guard. Previously this redirected on
+        // the PRESENCE of athletes fields (first_name/last_name/sport_id/
+        // school_id), which a coach-seeded CLAIMED account already has → it
+        // jumped to the dashboard before handleSubmit could set the flag, so the
+        // layout (flag still false) bounced back → infinite loop. Now a claimed
+        // (or unfinished) account stays on the PRE-FILLED onboarding and
+        // completes it, which sets the flag — no more loop.
+        if (userRow?.onboarding_complete === true) {
           router.replace("/athlete/dashboard");
           return;
         }
@@ -572,16 +859,36 @@ function AthleteOnboardingDesktop() {
         // metadata comes from the team_athletes junction.
         if (existing.first_name) setFirstName(existing.first_name);
         if (existing.last_name) setLastName(existing.last_name);
-        if (existing.date_naissance) setDateOfBirth(existing.date_naissance);
+        if (existing.date_naissance) { setDateOfBirth(existing.date_naissance); setDobLocked(true); }
         if (existing.genre) setGender(existing.genre);
         if (existing.photo_url) setPhoto(existing.photo_url);
         if (existing.telephone) setPhone(existing.telephone);
         if (existing.annee_diplomation) setGradYear(String(existing.annee_diplomation));
         const schoolRel = Array.isArray(existing.schools) ? existing.schools[0] : existing.schools;
         const schoolType = (schoolRel as { type?: string } | null)?.type;
+        // Fallback civil (routage) — PORT 1:1 du mobile : orphelin coach-créé
+        // SANS users.context posé → son school_id FAIT foi comme contexte (donc
+        // pas d'étape 0 : le coach a déjà tranché), et son type dérive la branche
+        // (LIGUE_CIVILE → civil ; sinon scolaire). users.context explicite garde
+        // TOUJOURS la priorité (contextChosen est déjà vrai dans ce cas).
+        if (!contextChosen && existing.school_id) {
+          contextChosen = true;
+          if (schoolType === "LIGUE_CIVILE") {
+            ctx = "ligue_civile";
+            setUserContext("ligue_civile");
+          }
+        }
         if (existing.school_id && schoolType !== "LIGUE_CIVILE") {
           setSelectedSchoolId(existing.school_id);
           if (schoolRel?.name) setSelectedSchoolName(schoolRel.name);
+        }
+        // Civil-context CLUB prefill: the anchor school_id points to a
+        // LIGUE_CIVILE row = the club. Restore selectedClubId/Name so a
+        // resumed re-submit re-writes the SAME club (never wipes it to
+        // NULL). Replaces the old selectedTeamSchoolId path.
+        if (existing.school_id && schoolType === "LIGUE_CIVILE") {
+          setSelectedClubId(existing.school_id);
+          if (schoolRel?.name) setSelectedClubName(schoolRel.name);
         }
         if (existing.coach_id) setSelectedCoachId(existing.coach_id as string);
         // Civil-context team prefill: read from team_athletes junction.
@@ -594,10 +901,9 @@ function AthleteOnboardingDesktop() {
               : ((teamAthleteRel as Record<string, unknown>).teams as Record<string, unknown> | null))
           : null;
         if (teamRel && typeof teamRel === "object") {
-          const teamObj = teamRel as { id?: string; name?: string; school_id?: string };
+          const teamObj = teamRel as { id?: string; name?: string };
           if (teamObj.id) setSelectedTeamId(teamObj.id);
           if (teamObj.name) setSelectedTeamName(teamObj.name);
-          if (teamObj.school_id) setSelectedTeamSchoolId(teamObj.school_id);
         }
         if (existing.parent_first_name) setParentFirstName(existing.parent_first_name);
         if (existing.parent_last_name) setParentLastName(existing.parent_last_name);
@@ -620,6 +926,10 @@ function AthleteOnboardingDesktop() {
         if (existing.numero_jersey) setJerseyNumber(existing.numero_jersey);
         const sportRel = Array.isArray(existing.sports) ? existing.sports[0] : existing.sports;
         if (sportRel?.nom) setPrimarySport(sportRel.nom);
+        // Correctif : seed position (le coach l'a saisie au create). Sans ça,
+        // l'UPDATE d'onboarding l'écrase à null. L'athlète peut toujours changer.
+        const posRel = Array.isArray(existing.positions) ? existing.positions[0] : existing.positions;
+        if ((posRel as { abreviation?: string } | null)?.abreviation) setPrimaryPosition((posRel as { abreviation?: string }).abreviation as string);
         if (existing.video_faits_saillants_url) setHighlightVideo(existing.video_faits_saillants_url);
         if (existing.hudl_url) setHudlLink(existing.hudl_url);
         if (existing.youtube_url) setYoutubeLink(existing.youtube_url);
@@ -629,9 +939,15 @@ function AthleteOnboardingDesktop() {
         // legitimately be NULL ("Continuer sans équipe"), so we
         // don't require it. For scolaire context, school_id must
         // be a SECONDAIRE row.
-        const step1Complete = existing.first_name && existing.consentement_parental
+        // Parental consent only gates step-1 completion for minors. Uses
+        // the local hasParentalConsent const (the isMinor state isn't
+        // committed yet in this same init run). Adults skip the consent gate.
+        const step1Complete = existing.first_name
+          && (hasParentalConsent ? existing.consentement_parental : true)
           && (ctx === "ligue_civile" || existing.school_id);
-        if (step1Complete) {
+        // Reprise SEULEMENT si le contexte est posé — sinon on reste à l'étape 0
+        // (setStep(0) plus haut) pour faire choisir scolaire/civil. Parité mobile.
+        if (contextChosen && step1Complete) {
           if (existing.taille_pieds || existing.poids_lbs) setStep(4);
           else if (existing.moyenne_generale || (existing.matieres_fortes && existing.matieres_fortes.length > 0)) setStep(3);
           else setStep(2);
@@ -672,7 +988,17 @@ function AthleteOnboardingDesktop() {
         }
       }
 
-      setLoading(false);
+      } catch (err) {
+        // Unexpected failure (network, auth) — surface a recoverable
+        // error rather than hanging. The JWT-propagation 0-rows race is
+        // already handled above via .maybeSingle() + retry, so it does
+        // NOT land here.
+        console.error("[Onboarding] init failed:", err);
+        setInitError(true);
+      } finally {
+        // ALWAYS clear the spinner, no matter what threw above.
+        setLoading(false);
+      }
     }
     init();
   }, [router]);
@@ -699,7 +1025,7 @@ function AthleteOnboardingDesktop() {
 
     if (full.first_name) setFirstName(full.first_name);
     if (full.last_name) setLastName(full.last_name);
-    if (full.date_naissance) setDateOfBirth(full.date_naissance);
+    if (full.date_naissance) { setDateOfBirth(full.date_naissance); setDobLocked(true); }
     if (full.genre) setGender(full.genre);
     if (full.photo_url) setPhoto(full.photo_url);
     if (full.telephone) setPhone(full.telephone);
@@ -749,17 +1075,31 @@ function AthleteOnboardingDesktop() {
     setOrphanMatch(null);
   }
 
+  // Chemin de recouvrement : DOB non verrouillée (aucune source signup) et
+  // saisie à la main. On rejoue le MÊME gate <14 que le signup (lib/legal/
+  // ageGate.isUnder14) pour qu'un vieux compte NULL ne contourne pas le verrou
+  // d'âge Loi 25. Le cas normal (seedé + verrouillé) n'est jamais concerné.
+  const dobRecoveryInvalid = !dobLocked && dateOfBirth.length > 0 && isUnder14(dateOfBirth);
+
   function canProceed(): boolean {
     switch (step) {
       case 1: {
         // Identity + parental consent are required for both contexts
         // (Loi 25 minor consent applies regardless of school vs civil).
         // School context additionally requires selectedSchoolId; civil
-        // context permits NULL league_team_id ("Continuer sans équipe").
-        const baseValid = !!(firstName.trim() && lastName.trim() && gradYear
-          && parentFirstName.trim() && parentLastName.trim() && parentEmail.trim()
-          && consentProfile && consentVisibility);
-        if (userContext === "ligue_civile") return baseValid;
+        // context requires primarySport (chosen at Step 1 for civil, so
+        // the team tier is reachable without a Step-4 detour) but permits
+        // NULL club/team ("Continuer sans club/équipe"). Scolaire keeps
+        // its sport requirement at Step 4 (unchanged).
+        // Parent fields + parental consents are required ONLY for minors
+        // (isMinor = signup captured parental consent). Adults have no
+        // parent section shown → must not be blocked by hidden fields.
+        const parentValid = isMinor
+          ? !!(parentFirstName.trim() && parentLastName.trim() && parentEmail.trim()
+              && consentProfile && consentVisibility)
+          : true;
+        const baseValid = !!(firstName.trim() && lastName.trim() && gradYear) && parentValid && !dobRecoveryInvalid;
+        if (userContext === "ligue_civile") return baseValid && !!primarySport;
         return baseValid && !!selectedSchoolId;
       }
       case 2: return true;
@@ -780,17 +1120,18 @@ function AthleteOnboardingDesktop() {
     let payload: Record<string, unknown> = { user_id: userId };
 
     if (step === 1) {
-      // Phase 6.2 unified model: civil athletes anchor on
-      // athletes.school_id (the LIGUE_CIVILE schools row id resolved
-      // from the picked team) — `league_team_id` is no longer
-      // written. Team membership is captured via the team_athletes
-      // junction at submit time (handleSubmit), not at step-save
-      // time, to avoid orphan junction rows if the athlete drops
-      // out mid-flow. The chk_school_or_league constraint is still
-      // satisfied: we set school_id (possibly to the LIGUE_CIVILE
-      // school) and leave league_team_id NULL.
+      // Civil athletes anchor on athletes.school_id = the CHOSEN CLUB
+      // (a LIGUE_CIVILE schools row), parity with mobile
+      // AthleteOnboardingMobile. Previously derived from the picked
+      // team (selectedTeamSchoolId) — which stayed NULL when the club
+      // had no Nexus team, orphaning the athlete. Now the club alone
+      // anchors. Team membership is captured via the team_athletes
+      // junction at submit time (handleSubmit), not at step-save time,
+      // to avoid orphan junction rows if the athlete drops out
+      // mid-flow. chk_school_or_league is satisfied: we set school_id
+      // (the club, or NULL if skipped) and leave league_team_id NULL.
       const isCivil = userContext === "ligue_civile";
-      const civilAnchorSchoolId = isCivil ? selectedTeamSchoolId : null;
+      const civilAnchorSchoolId = isCivil ? selectedClubId : null;
       payload = {
         ...payload,
         first_name: firstName.trim(), last_name: lastName.trim(),
@@ -851,7 +1192,9 @@ function AthleteOnboardingDesktop() {
 
   async function handleSubmit() {
     if (!userId || !primarySport) return;
-    if (!consentProfile || !consentVisibility) return;
+    // Parental consent only blocks submit for minors (adults have no
+    // parental consent and no parent section shown).
+    if (isMinor && (!consentProfile || !consentVisibility)) return;
     setSaving(true);
 
     try {
@@ -884,13 +1227,14 @@ function AthleteOnboardingDesktop() {
       positionId = posData?.id || null;
     }
 
-    // Phase 6.2: civil athletes anchor on athletes.school_id (the
-    // LIGUE_CIVILE schools row id from the picked team). Team
-    // membership is recorded in the team_athletes junction after
-    // the athlete row is INSERT/UPDATE'd below. Legacy
-    // league_team_id is always NULL on writes.
+    // Civil athletes anchor on athletes.school_id = the CHOSEN CLUB
+    // (a LIGUE_CIVILE schools row), parity with mobile. Team
+    // membership is recorded in the team_athletes junction after the
+    // athlete row is INSERT/UPDATE'd below (only if a team was picked).
+    // league_team_id is always NULL on writes. school_id may be NULL
+    // when the athlete skipped the club (legitimate "sans club").
     const isCivil = userContext === "ligue_civile";
-    const civilAnchorSchoolId = isCivil ? selectedTeamSchoolId : null;
+    const civilAnchorSchoolId = isCivil ? selectedClubId : null;
 
     const athleteRecord = {
       user_id: userId,
@@ -979,7 +1323,29 @@ function AthleteOnboardingDesktop() {
       await supabase.from("athletes").update({ profile_completion: completion }).eq("user_id", userId);
     }
 
+    // Persiste le contexte choisi à l'étape 0 (scolaire | ligue_civile). RPC
+    // one-shot : context encore NULL ici + pas encore onboardé → réussit.
+    // Non bloquant (la visibilité recruteur dépend de status='ACTIF', pas de
+    // users.context) ; CONTEXT_ALREADY_SET / ALREADY_ONBOARDED → on garde
+    // l'existant et on continue. PORT 1:1 de AthleteOnboardingMobile.
+    {
+      const { error: ctxErr } = await supabase.rpc("set_initial_role_and_context", {
+        p_role: "ATHLETE",
+        p_context: userContext ?? "scolaire",
+      });
+      if (ctxErr) {
+        const m = ctxErr.message || "";
+        if (!m.includes("CONTEXT_ALREADY_SET") && !m.includes("ALREADY_ONBOARDED")) {
+          console.error("[Onboarding] set_initial_role_and_context:", ctxErr);
+        }
+      }
+    }
+
     await supabase.from("users").update({ onboarding_complete: true }).eq("id", userId);
+    // Le profil caché (useCurrentUser, staleTime: Infinity) doit voir false→true
+    // dans CETTE session pour que PushRegistrar demande la permission push.
+    // Await AVANT la nav : on lance le refetch avant de quitter l'onboarding.
+    await queryClient.invalidateQueries({ queryKey: ["currentUser"] });
     setSaving(false);
     router.replace("/athlete/dashboard");
     } catch (err) {
@@ -996,6 +1362,23 @@ function AthleteOnboardingDesktop() {
     `px-3 py-1.5 rounded-full text-[12px] font-bold transition-colors cursor-pointer ${
       active ? "bg-[#E63946]/15 text-[#E63946] border border-[#E63946]/30" : "bg-[#13151a] text-[#6b7280] border border-[#2D3748] hover:text-white hover:border-[#4a4d56]"
     }`;
+
+  if (initError) {
+    return (
+      <div className="hero-playbook nx-no-glow bg-[#111317] min-h-screen flex flex-col items-center justify-center gap-4 px-6 text-center">
+        <PlaybookBackground />
+        <p className="relative z-10 text-white font-semibold max-w-sm">
+          Une erreur est survenue au chargement de ton profil.
+        </p>
+        <button
+          onClick={() => window.location.reload()}
+          className="relative z-10 px-5 h-11 bg-[#E63946] text-white font-head font-bold uppercase tracking-widest text-sm rounded"
+        >
+          Réessayer
+        </button>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -1024,7 +1407,9 @@ function AthleteOnboardingDesktop() {
           <NexusLogo variant="white" height={36} priority />
         </div>
 
-        {/* Step indicator */}
+        {/* Step indicator — masqué à l'étape 0 (choix de contexte) : elle est
+            hors stepper côté mobile aussi, et STEPS[step-1] n'existe pas à 0. */}
+        {step > 0 && (
         <div className="flex items-center justify-center gap-1">
           {STEPS.map((s, i) => (
             <div key={s.number} className="flex items-center gap-1">
@@ -1041,7 +1426,22 @@ function AthleteOnboardingDesktop() {
             </div>
           ))}
         </div>
-        <p className="text-center text-[12px] text-[#6b7280]">Étape {step}/{STEPS.length} — {STEPS[step - 1].name}</p>
+        )}
+        {step > 0 && (
+          <p className="text-center text-[12px] text-[#6b7280]">Étape {step}/{STEPS.length} — {STEPS[step - 1].name}</p>
+        )}
+
+        {/* ═══════ STEP 0: CONTEXTE (école vs ligue civile) ═══════ */}
+        {step === 0 && (
+          <div className="bg-[#161920] border border-[#2D3748] rounded-xl p-6 sm:p-8">
+            <ContextPicker
+              onPick={(c) => {
+                setUserContext(c);
+                setStep(1);
+              }}
+            />
+          </div>
+        )}
 
         {/* ═══════ STEP 1: IDENTITÉ ═══════ */}
         {step === 1 && (
@@ -1091,11 +1491,17 @@ function AthleteOnboardingDesktop() {
               <div><label className={labelCls}>Genre</label>
                 <select title="Genre" value={gender} onChange={(e) => setGender(e.target.value)} className={inputCls}><option value="">—</option><option value="M">Masculin</option><option value="F">Féminin</option><option value="X">Autre</option></select>
               </div>
-              <div><label className={labelCls}>Date de naissance</label><DatePicker value={dateOfBirth} onChange={setDateOfBirth} placeholder="Sélectionner une date" /></div>
+              <div>
+                <label className={labelCls}>Date de naissance</label>
+                <DatePicker value={dateOfBirth} onChange={setDateOfBirth} placeholder="Sélectionner une date" disabled={dobLocked} />
+                {dobRecoveryInvalid && (
+                  <p className="text-[12px] text-[#EF4444] mt-1">Tu dois avoir au moins 14 ans pour créer un compte.</p>
+                )}
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div><label className={labelCls}>Année de graduation <span className="text-[#EF4444]">*</span></label>
-                <select title="Graduation" value={gradYear} onChange={(e) => setGradYear(e.target.value)} className={inputCls}><option value="2026">2026</option><option value="2027">2027</option><option value="2028">2028</option><option value="2029">2029</option></select>
+                <select title="Graduation" value={gradYear} onChange={(e) => setGradYear(e.target.value)} className={inputCls}>{GRAD_YEAR_OPTIONS.map((o) => (<option key={o.value} value={o.value}>{o.label}</option>))}</select>
               </div>
               <div><label className={labelCls}>Courriel</label><input type="email" title="Courriel" placeholder="courriel@exemple.com" value={email} onChange={(e) => setEmail(e.target.value)} className={`${inputCls} text-[#6b7280]`} readOnly /></div>
             </div>
@@ -1106,27 +1512,98 @@ function AthleteOnboardingDesktop() {
                 consent + partner-visibility blocks below. */}
             {userContext === "ligue_civile" ? (
               <>
+                {/* SPORT — chosen FIRST for civil (parity mobile Step 1),
+                    so the team tier below can filter by sport with no
+                    Step-4 detour. Same primarySport state as Step 4 (which
+                    is hidden for civil = single source). Optional: the club
+                    alone still anchors school_id if no sport is picked. */}
                 <div className={sectionTitle}>
                   <div className="w-0.5 h-4 bg-[#E63946] rounded-full" />
-                  Mon équipe
+                  Mon sport
+                </div>
+                <div className="grid grid-cols-4 gap-2 mb-6">
+                  {SPORTS.map((s) => (
+                    <button key={s} type="button" onClick={() => {
+                      setPrimarySport(s); setPrimaryPosition("");
+                      // Sport drives the team query → drop any team from
+                      // another sport (better than mobile, which leaves it
+                      // stale). The club anchor (school_id) is unaffected.
+                      setSelectedTeamId(null); setSelectedTeamName("");
+                    }}
+                      className={`py-2 rounded-lg text-[11px] font-bold transition-all ${primarySport === s ? "bg-[#E63946] text-white" : "bg-[#111317] border border-[#2D3748] text-[#9CA3AF] hover:border-[#4a4d56] hover:text-white"}`}>
+                      {s}
+                    </button>
+                  ))}
+                </div>
+
+                {/* CLUB tier — the civil anchor (athletes.school_id).
+                    Sport-agnostic; always selectable. Picking a club
+                    resets any previously chosen team (parity mobile). */}
+                <div className={sectionTitle}>
+                  <div className="w-0.5 h-4 bg-[#E63946] rounded-full" />
+                  Mon club
                   <span className="text-[10px] text-[#4a4d56] font-normal normal-case tracking-normal ml-2">(optionnel)</span>
                 </div>
                 <div className="mb-3">
-                  <CivilTeamPicker
-                    sportName={primarySport}
-                    selectedTeamId={selectedTeamId}
-                    onSelect={(t) => {
-                      setSelectedTeamId(t.id);
-                      setSelectedTeamName(t.name);
-                      setSelectedTeamSchoolId(t.school_id);
-                    }}
-                    onContinueWithoutTeam={() => {
+                  <ClubPicker
+                    selectedClubId={selectedClubId}
+                    onSelect={(c) => {
+                      setSelectedClubId(c.id);
+                      setSelectedClubName(c.name);
+                      // Club changed → drop stale team selection.
                       setSelectedTeamId(null);
                       setSelectedTeamName("");
-                      setSelectedTeamSchoolId(null);
+                    }}
+                    onContinueWithoutClub={() => {
+                      setSelectedClubId(null);
+                      setSelectedClubName("");
+                      setSelectedTeamId(null);
+                      setSelectedTeamName("");
                     }}
                   />
                 </div>
+                {selectedClubName && (
+                  <p className="text-[12px] text-[#22C55E] font-bold mb-6">✓ {selectedClubName}</p>
+                )}
+
+                {/* TEAM tier — scoped to the chosen club + sport.
+                    Gated: only shown once a club is picked; if the sport
+                    isn't set yet (it's chosen at step 4), we surface a
+                    hint instead of an empty picker. Club alone is a valid
+                    anchor, so this whole tier stays optional. */}
+                {selectedClubId && (
+                  <>
+                    <div className={sectionTitle}>
+                      <div className="w-0.5 h-4 bg-[#E63946] rounded-full" />
+                      Mon équipe
+                      <span className="text-[10px] text-[#4a4d56] font-normal normal-case tracking-normal ml-2">(optionnel)</span>
+                    </div>
+                    <div className="mb-3">
+                      {primarySport ? (
+                        <CivilTeamPicker
+                          clubId={selectedClubId}
+                          clubName={selectedClubName}
+                          sportName={primarySport}
+                          selectedTeamId={selectedTeamId}
+                          onSelect={(t) => {
+                            setSelectedTeamId(t.id);
+                            setSelectedTeamName(t.name);
+                          }}
+                          onContinueWithoutTeam={() => {
+                            setSelectedTeamId(null);
+                            setSelectedTeamName("");
+                          }}
+                        />
+                      ) : (
+                        <div className="bg-[#13151a] border border-[#2D3748] rounded-lg px-4 py-4">
+                          <p className="text-[13px] text-[#9CA3AF]">
+                            Choisis ton sport (étape suivante) pour voir les équipes de {selectedClubName}. Ton club seul suffit pour l&apos;instant.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
                 {selectedTeamName && (
                   <p className="text-[12px] text-[#22C55E] font-bold mb-6">✓ {selectedTeamName}</p>
                 )}
@@ -1169,6 +1646,12 @@ function AthleteOnboardingDesktop() {
               </>
             )}
 
+            {/* Parent / Guardian + Parental Consent — MINORS ONLY.
+                Gated on isMinor (signup captured parental consent). Adults
+                have no parental metadata → section hidden and NOT required
+                by canProceed/submit. Minors see it pre-filled (sous-étape A). */}
+            {isMinor && (
+            <>
             {/* Parent / Guardian */}
             <div className={sectionTitle}><div className="w-0.5 h-4 bg-[#E63946] rounded-full" />Parent / Tuteur</div>
             <div className="grid grid-cols-2 gap-4 mb-4">
@@ -1217,6 +1700,8 @@ function AthleteOnboardingDesktop() {
             </div>
 
             <PartnerVisibilityConsentCard checked={consentPartnerVisibility} onChange={setConsentPartnerVisibility} />
+            </>
+            )}
           </div>
         )}
 
@@ -1302,17 +1787,23 @@ function AthleteOnboardingDesktop() {
             <p className="text-[14px] text-[#6b7280] mb-6">Ton sport principal et tes liens vidéo</p>
 
             <div className="space-y-4">
-              <div>
-                <label className={labelCls}>Sport principal <span className="text-[#EF4444]">*</span></label>
-                <div className="grid grid-cols-4 gap-2">
-                  {SPORTS.map((s) => (
-                    <button key={s} type="button" onClick={() => { setPrimarySport(s); setPrimaryPosition(""); }}
-                      className={`py-2 rounded-lg text-[11px] font-bold transition-all ${primarySport === s ? "bg-[#E63946] text-white" : "bg-[#111317] border border-[#2D3748] text-[#9CA3AF] hover:border-[#4a4d56] hover:text-white"}`}>
-                      {s}
-                    </button>
-                  ))}
+              {/* Sport grid — hidden for civil, which picks the sport at
+                  Step 1 where it is REQUIRED (canProceed step 1). No dead-end
+                  possible (civil can't advance without a sport), so a plain
+                  hide suffices — no safety net. Scolaire keeps it here. */}
+              {userContext !== "ligue_civile" && (
+                <div>
+                  <label className={labelCls}>Sport principal <span className="text-[#EF4444]">*</span></label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {SPORTS.map((s) => (
+                      <button key={s} type="button" onClick={() => { setPrimarySport(s); setPrimaryPosition(""); }}
+                        className={`py-2 rounded-lg text-[11px] font-bold transition-all ${primarySport === s ? "bg-[#E63946] text-white" : "bg-[#111317] border border-[#2D3748] text-[#9CA3AF] hover:border-[#4a4d56] hover:text-white"}`}>
+                        {s}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
               {primarySport && (
                 <SportPositionSelect
                   sport={primarySport}
@@ -1357,7 +1848,9 @@ function AthleteOnboardingDesktop() {
           </div>
         )}
 
-        {/* Navigation */}
+        {/* Navigation — absente à l'étape 0 : les deux cartes SONT l'action
+            (parité mobile, où le Step-0 n'a ni Retour ni Suivant). */}
+        {step > 0 && (
         <div className="flex items-center gap-3">
           {step > 1 && (
             <button type="button" onClick={() => setStep(step - 1)}
@@ -1379,6 +1872,7 @@ function AthleteOnboardingDesktop() {
             </button>
           )}
         </div>
+        )}
       </div>
     </div>
   );

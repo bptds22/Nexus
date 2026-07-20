@@ -7,6 +7,7 @@ import StarRating from "@/components/ui/StarRating";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
 import type { GlobalRecruitmentStatus } from "@/lib/types/models";
 import { useConversations } from "@/lib/queries/recruiter/useConversations";
+import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import { RecruteurMessagesMobile } from "@/components/shared/RecruteurMessagesMobile";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
@@ -35,11 +36,12 @@ interface ThreadData {
   status: string;
 }
 
-type FilterPreset = "tous" | "non_lu" | "archive";
+type FilterPreset = "tous" | "non_lu" | "sans_reponse" | "archive";
 
 const PILLS: { key: FilterPreset; label: string }[] = [
   { key: "tous", label: "Tous" },
   { key: "non_lu", label: "Non lu" },
+  { key: "sans_reponse", label: "Sans réponse" },
   { key: "archive", label: "Archivé" },
 ];
 
@@ -148,6 +150,8 @@ function MessagesPageContent() {
   const [activeFilter, setActiveFilter] = useState<FilterPreset>("tous");
   // Migration TanStack (iter 5.2) — fetch + transformation déléguées au hook
   const { data: threads = [], isLoading: loading } = useConversations();
+  const { data: currentUser } = useCurrentUser();
+  const userId = currentUser?.authUser.id;
 
   const unreadCount = threads.filter(t => t.unreadCount > 0).length;
 
@@ -165,11 +169,13 @@ function MessagesPageContent() {
 
     switch (activeFilter) {
       case "non_lu": list = list.filter(t => t.unreadCount > 0); break;
+      // "Sans réponse" : dernier message du recruteur courant → en attente (def. (a)).
+      case "sans_reponse": list = list.filter(t => t.lastSenderId != null && t.lastSenderId === userId && t.status !== "ARCHIVE"); break;
       case "archive": list = list.filter(t => t.status === "ARCHIVE"); break;
     }
 
     return list;
-  }, [search, activeFilter, threads]);
+  }, [search, activeFilter, threads, userId]);
 
   if (loading) {
     return <div className="px-6 sm:px-10 py-8 max-w-[1280px] mx-auto text-[#6b7280]">Chargement...</div>;

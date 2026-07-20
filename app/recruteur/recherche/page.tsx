@@ -27,6 +27,7 @@ const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 type ExtendedAthlete = SearchAthlete & { academicBadges: string[]; stars: number; recruitmentStatus: string | null; heightWeight: string; gpa: number; committedSchoolName: string | null; openToOffers: boolean | null; jersey: string; sportName: string; ouvertDemenager: boolean; ouvertPrive: boolean; ouvertAnglophone: boolean; createdAt: string; lastValidation?: string | null; noTeam: boolean; context: string | null };
 import { useSubscription } from "@/lib/hooks/useSubscription";
 
+import { TEAM_GENDER_FILTER_OPTIONS } from "@/lib/config/gender";
 /* ═══════════════════════════════════════════════════════════════
    Recherche d'athlètes — Filterable card grid
    Core value page for recruiters.
@@ -343,6 +344,7 @@ function RechercheContent() {
   const isFreeRecruiter = tier === "free";
   const [search, setSearch] = useState("");
   const [sport, setSport] = useState("");
+  const [genderFilter, setGenderFilter] = useState<string>("");
   const [position, setPosition] = useState("");
   const [region, setRegion] = useState("");
   const [promotion, setPromotion] = useState("");
@@ -431,6 +433,9 @@ function RechercheContent() {
     }
     if (position) list = list.filter((a) => a.position === position);
     if (region) list = list.filter((a) => a.region === region);
+    // Genre d'ÉQUIPE (teams.gender), pas athletes.genre. Un athlète sans équipe
+    // a teamGender null → il sort des résultats dès qu'un genre est choisi.
+    if (genderFilter) list = list.filter((a) => a.teamGender === genderFilter);
     if (withSportBadge) list = list.filter((a) => a.badges.length > 0);
     if (withAcademicBadge) list = list.filter((a) => a.academicBadges && a.academicBadges.length > 0);
     if (hideFavorites) list = list.filter((a) => !favorites.has(a.id));
@@ -442,7 +447,7 @@ function RechercheContent() {
     }
 
     return list.map((a) => ({ ...a, isFavorited: favorites.has(a.id), favorites: favCounts[a.id] || 0 }));
-  }, [athletes, orgType, position, region, withSportBadge, withAcademicBadge, hideFavorites, sortBy, favorites, favCounts]);
+  }, [athletes, orgType, position, region, genderFilter, withSportBadge, withAcademicBadge, hideFavorites, sortBy, favorites, favCounts]);
 
   const toggleFav = async (id: string) => {
     const supabase = createClient();
@@ -475,7 +480,7 @@ function RechercheContent() {
   const hasFilters = sport || position || region || promotion || verifiedOnly || withVideoOnly || orgType || minRating || withSportBadge || withAcademicBadge || minGpa || hideFavorites || filterOuvertDemenager || filterOuvertPrive || filterOuvertAnglophone || filterNewOnly || sortBy !== "rating_desc";
 
   const resetFilters = () => {
-    setSport(""); setPosition(""); setRegion(""); setPromotion(""); setVerifiedOnly(false); setWithVideoOnly(false); setOrgType(""); setMinRating(""); setWithSportBadge(false); setWithAcademicBadge(false); setMinGpa(""); setHideFavorites(false); setFilterOuvertDemenager(false); setFilterOuvertPrive(false); setFilterOuvertAnglophone(false); setFilterNewOnly(false); setSortBy("rating_desc");
+    setSport(""); setGenderFilter(""); setPosition(""); setRegion(""); setPromotion(""); setVerifiedOnly(false); setWithVideoOnly(false); setOrgType(""); setMinRating(""); setWithSportBadge(false); setWithAcademicBadge(false); setMinGpa(""); setHideFavorites(false); setFilterOuvertDemenager(false); setFilterOuvertPrive(false); setFilterOuvertAnglophone(false); setFilterNewOnly(false); setSortBy("rating_desc");
   };
 
   return (
@@ -535,6 +540,12 @@ function RechercheContent() {
         <div className="flex flex-wrap items-center gap-2.5">
           <select value={sport} onChange={(e) => { setSport(e.target.value); setPosition(""); }} className={`nx-filter-select${sport ? " nx-filter-active" : ""}`}>
             {SPORTS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+          </select>
+
+          {/* Genre d'ÉQUIPE (teams.gender) — placé entre Sport et Position.
+              Un athlète sans équipe est exclu dès qu'un genre est choisi. */}
+          <select value={genderFilter} onChange={(e) => setGenderFilter(e.target.value)} className={`nx-filter-select${genderFilter ? " nx-filter-active" : ""}`} aria-label="Genre d&apos;équipe">
+            {TEAM_GENDER_FILTER_OPTIONS.map((g) => <option key={g.value} value={g.value}>{g.label}</option>)}
           </select>
 
           <select value={position} onChange={(e) => setPosition(e.target.value)} className={`nx-filter-select${position ? " nx-filter-active" : ""}`} disabled={!sport}>

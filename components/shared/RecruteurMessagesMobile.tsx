@@ -36,6 +36,8 @@ import {
 } from "@/components/shared/messaging/MessagesListShell";
 import { triggerHaptic, relativeTime } from "@/components/shared/messaging/utils";
 
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
+
 /* ── useArchiveConversation (mutation TanStack inline + optimistic) ── */
 
 function useArchiveConversation() {
@@ -73,12 +75,13 @@ function useArchiveConversation() {
 
 /* ── Filter keyset (recruiter-specific labels) ──────────────── */
 
-type FilterKey = "tous" | "non_lu" | "archive";
+type FilterKey = "tous" | "non_lu" | "sans_reponse" | "archive";
 
 const FILTER_OPTIONS: FilterOption<FilterKey>[] = [
-  { value: "tous",    label: "Tous" },
-  { value: "non_lu",  label: "Non lu" },
-  { value: "archive", label: "Archivé" },
+  { value: "tous",         label: "Tous" },
+  { value: "non_lu",       label: "Non lu" },
+  { value: "sans_reponse", label: "Sans réponse" },
+  { value: "archive",      label: "Archivé" },
 ];
 
 /* ═══════════════════════════════════════════════════════════════
@@ -92,6 +95,8 @@ export function RecruteurMessagesMobile() {
   const { tier, loading: tierLoading } = useSubscription();
   const isFree = tier === "free";
   const archiveMut = useArchiveConversation();
+  const { data: currentUser } = useCurrentUser();
+  const userId = currentUser?.authUser.id;
 
   // States
   const [search, setSearch] = useState("");
@@ -108,6 +113,9 @@ export function RecruteurMessagesMobile() {
   const filtered = useMemo(() => {
     let list = [...threads];
     if (filter === "non_lu") list = list.filter((t) => t.unreadCount > 0 && t.status !== "ARCHIVE");
+    // "Sans réponse" : le dernier message vient du recruteur courant → on attend
+    // la réponse du coach (def. (a)). Exclut les archivés.
+    else if (filter === "sans_reponse") list = list.filter((t) => t.lastSenderId != null && t.lastSenderId === userId && t.status !== "ARCHIVE");
     else if (filter === "archive") list = list.filter((t) => t.status === "ARCHIVE");
     else list = list.filter((t) => t.status !== "ARCHIVE");
 
@@ -120,12 +128,12 @@ export function RecruteurMessagesMobile() {
       );
     }
     return list;
-  }, [threads, filter, debouncedSearch]);
+  }, [threads, filter, debouncedSearch, userId]);
 
   // Handlers
   const handleTap = (thread: ThreadData) => {
     if (isFree) {
-      toast.warning({ message: "Messagerie réservée Pro", detail: "Passe à Pro pour répondre aux coachs" });
+      toast.warning({ message: "Messagerie réservée Pro", detail: "Répondre aux coachs est réservé aux membres Pro" });
       return;
     }
     try { sessionStorage.setItem("lastRecruiterTab", "messages"); } catch { /* no-op */ }
@@ -242,15 +250,19 @@ export function RecruteurMessagesMobile() {
         coach{totalThreads !== 1 ? "s" : ""} {totalThreads !== 1 ? "t'attendent" : "t'attend"}
       </p>
       <p className="text-[14px] text-white/85 mt-3 leading-snug">
-        Passe à Pro pour lire et répondre.
+        {IS_CAPACITOR
+          ? "Lecture et réponse réservées aux membres Pro."
+          : "Passe à Pro pour lire et répondre."}
       </p>
-      <button
-        type="button"
-        onClick={() => { triggerHaptic("Light"); router.push("/tarifs"); }}
-        className="mt-4 w-full py-2.5 rounded-2xl bg-[#E63946] text-white font-bold text-[14px] active:bg-[#D42B22] transition-colors"
-      >
-        Voir les forfaits
-      </button>
+      {!IS_CAPACITOR && (
+        <button
+          type="button"
+          onClick={() => { triggerHaptic("Light"); router.push("/tarifs"); }}
+          className="mt-4 w-full py-2.5 rounded-2xl bg-[#E63946] text-white font-bold text-[14px] active:bg-[#D42B22] transition-colors"
+        >
+          Voir les forfaits
+        </button>
+      )}
     </div>
   );
 

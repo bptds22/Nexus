@@ -50,7 +50,7 @@ export default function VisibilitePage() {
 
   if (loading) {
     return (
-      <div className="px-6 sm:px-10 py-8 max-w-[1200px] mx-auto">
+      <div className="px-6 sm:px-10 pb-8 max-w-[1200px] mx-auto nx-safe-top">
         <div className="animate-pulse space-y-6">
           <div className="h-8 bg-[#1A1D24] rounded w-48" />
           <div className="grid grid-cols-3 gap-4">
@@ -65,10 +65,12 @@ export default function VisibilitePage() {
   const hasViews = stats.viewsThisMonth > 0 || stats.viewsLastMonth > 0 || weeklyViews.length > 0;
 
   return (
-    <div className="px-6 sm:px-10 py-8 max-w-[1200px] mx-auto space-y-6 nx-mobile-pb-tabbar">
+    <div className="px-6 sm:px-10 pb-8 max-w-[1200px] mx-auto space-y-6 nx-mobile-pb-tabbar">
 
-      {/* Header */}
-      <div>
+      {/* Header — nx-safe-top : padding haut = env(safe-area-inset-top) + 0.75rem
+          (canon globals.css). Conteneur passé en pb-8 pour ne pas empiler ce
+          padding sur l'ancien py-8 top. */}
+      <div className="nx-safe-top">
         <h1 className="font-head text-2xl font-black text-white uppercase tracking-tight">Ma visibilité</h1>
         <p className="text-[14px] text-[#9CA3AF] mt-1">Suis l&apos;activité des recruteurs sur ton profil</p>
       </div>

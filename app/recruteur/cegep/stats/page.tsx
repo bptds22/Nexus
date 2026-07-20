@@ -92,7 +92,7 @@ interface TopTarget {
 
 export default function Page() {
   return (
-    <FeatureGate feature="cegep_management" requiredTier="all_star">
+    <FeatureGate feature="cegep_management" requiredTier="all_star" adminBypass>
       <CegepStatsWrapperContent />
     </FeatureGate>
   );
@@ -684,7 +684,7 @@ function CegepStatsPage() {
               </div>
             );
           }) : (
-            <p className="text-[13px] text-[#4a4d56] italic py-4 text-center">Aucun athlète dans le pipeline</p>
+            <p className="text-[13px] text-[#4a4d56] italic py-4 text-center">Aucun athlète dans le processus</p>
           )}
         </div>
       </div>

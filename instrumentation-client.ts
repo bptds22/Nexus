@@ -1,0 +1,35 @@
+// This file configures the initialization of Sentry on the client.
+// The added config here will be used whenever a users loads a page in their browser.
+// https://docs.sentry.io/platforms/javascript/guides/nextjs/
+
+import * as Sentry from "@sentry/nextjs";
+
+Sentry.init({
+  dsn: "https://ff9b0574720f3e4da653798546367a53@o4511733766619136.ingest.de.sentry.io/4511733773238352",
+
+  // Add optional integrations for additional features
+  integrations: [Sentry.replayIntegration()],
+
+  // Define how likely traces are sampled. Adjust this value in production, or use tracesSampler for greater control.
+  tracesSampleRate: 0.2,
+  // Log ingestion off by default: it burns quota fast, and log strings could
+  // carry athlete data (minors — Loi 25). Turn on deliberately, scoped.
+  enableLogs: false,
+
+  // Define how likely Replay events are sampled.
+  // This sets the sample rate to be 5%. You may want this to be 100% while
+  // in development and sample at a lower rate in production
+  replaysSessionSampleRate: 0.05,
+
+  // Define how likely Replay events are sampled when an error occurs.
+  replaysOnErrorSampleRate: 1.0,
+
+  dataCollection: {
+    // To disable sending user data and HTTP bodies, uncomment the lines below. For more info visit:
+    // https://docs.sentry.io/platforms/javascript/guides/nextjs/configuration/options/#dataCollection
+    // userInfo: false,
+    // httpBodies: [],
+  },
+});
+
+export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;

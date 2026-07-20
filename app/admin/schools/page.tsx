@@ -62,6 +62,26 @@ const SORT_OPTIONS: { value: SortBy; label: string }[] = [
   { value: "teams_desc", label: "# Équipes (↓)" },
 ];
 
+/** Fetch ALL rows for a query, paging past PostgREST's 1000-row cap.
+ *  Isolated to this admin page: loads the full schools list (+ the companion
+ *  count sources) so search / sort / filters run over EVERY establishment,
+ *  not just the first 1000. Each type stays < 1000, but the admin list mixes
+ *  all types (1000+ total), so a single request would silently truncate. */
+async function fetchAllRows<T>(
+  build: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: unknown }>,
+): Promise<T[]> {
+  const PAGE = 1000;
+  const all: T[] = [];
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await build(from, from + PAGE - 1);
+    if (error) { console.error("[AdminSchools] fetchAllRows", error); break; }
+    if (!data || data.length === 0) break;
+    all.push(...data);
+    if (data.length < PAGE) break;
+  }
+  return all;
+}
+
 export default function AdminSchoolsPage() {
   const supabase = useMemo(() => createClient(), []);
   const router = useRouter();
@@ -101,27 +121,27 @@ export default function AdminSchoolsPage() {
 
   async function fetchAll() {
     setLoading(true);
-    const [schoolsRes, athletesRes, scCoachesRes, legacyCoachesRes, recruitersRes, teamsRes] = await Promise.all([
-      supabase.from("schools").select("id,name,type,city,region,reseau,langue").order("name"),
-      supabase.from("athletes").select("school_id"),
-      supabase.from("school_coaches").select("school_id, user_id"),
-      supabase.from("users").select("id, school_id, role").eq("role", "COACH"),
-      supabase.from("users").select("id, school_id, role").eq("role", "RECRUTEUR"),
-      supabase.from("teams").select("school_id,sport_id"),
+    const [schoolsData, athletesData, scCoachesData, legacyCoachesData, recruitersData, teamsData] = await Promise.all([
+      fetchAllRows<Record<string, unknown>>((f, t) => supabase.from("schools").select("id,name,type,city,region,reseau,langue").order("name").range(f, t)),
+      fetchAllRows<{ school_id: string | null }>((f, t) => supabase.from("athletes").select("school_id").range(f, t)),
+      fetchAllRows<{ school_id: string | null; user_id: string | null }>((f, t) => supabase.from("school_coaches").select("school_id, user_id").range(f, t)),
+      fetchAllRows<{ id: string; school_id: string | null }>((f, t) => supabase.from("users").select("id, school_id, role").eq("role", "COACH").range(f, t)),
+      fetchAllRows<{ id: string; school_id: string | null }>((f, t) => supabase.from("users").select("id, school_id, role").eq("role", "RECRUTEUR").range(f, t)),
+      fetchAllRows<{ school_id: string | null; sport_id: string | null }>((f, t) => supabase.from("teams").select("school_id,sport_id").range(f, t)),
     ]);
 
     const athleteCounts = new Map<string, number>();
-    for (const a of (athletesRes.data || []) as { school_id: string | null }[]) {
+    for (const a of athletesData) {
       if (!a.school_id) continue;
       athleteCounts.set(a.school_id, (athleteCounts.get(a.school_id) || 0) + 1);
     }
     // Union school_coaches + legacy users.school_id, dedupe by (school_id, user_id)
     const coachPairs = new Set<string>();
-    for (const c of (scCoachesRes.data || []) as { school_id: string | null; user_id: string | null }[]) {
+    for (const c of scCoachesData) {
       if (!c.school_id || !c.user_id) continue;
       coachPairs.add(`${c.school_id}:${c.user_id}`);
     }
-    for (const u of (legacyCoachesRes.data || []) as { id: string; school_id: string | null }[]) {
+    for (const u of legacyCoachesData) {
       if (!u.school_id) continue;
       coachPairs.add(`${u.school_id}:${u.id}`);
     }
@@ -131,13 +151,13 @@ export default function AdminSchoolsPage() {
       coachCounts.set(sid, (coachCounts.get(sid) || 0) + 1);
     }
     const recruiterCounts = new Map<string, number>();
-    for (const u of (recruitersRes.data || []) as { id: string; school_id: string | null }[]) {
+    for (const u of recruitersData) {
       if (!u.school_id) continue;
       recruiterCounts.set(u.school_id, (recruiterCounts.get(u.school_id) || 0) + 1);
     }
     const teamCounts = new Map<string, number>();
     const sportSets = new Map<string, Set<string>>();
-    for (const t of (teamsRes.data || []) as { school_id: string | null; sport_id: string | null }[]) {
+    for (const t of teamsData) {
       if (!t.school_id) continue;
       teamCounts.set(t.school_id, (teamCounts.get(t.school_id) || 0) + 1);
       if (t.sport_id) {
@@ -146,7 +166,7 @@ export default function AdminSchoolsPage() {
       }
     }
 
-    const mapped: SchoolRow[] = ((schoolsRes.data || []) as Array<Record<string, unknown>>).map((s) => ({
+    const mapped: SchoolRow[] = schoolsData.map((s) => ({
       id: s.id as string,
       name: (s.name as string) ?? "",
       type: (s.type as SchoolType) ?? "SECONDAIRE",
@@ -572,8 +592,8 @@ export default function AdminSchoolsPage() {
           rows={filtered}
           columns={columns}
           table="schools"
-          searchFields={["name", "city", "region"]}
-          searchPlaceholder="Rechercher par nom, ville, région..."
+          searchFields={["id", "name", "city", "region"]}
+          searchPlaceholder="Rechercher par nom, ville, région, ID..."
           onRowClick={(r) => router.push(`/admin/schools/${r.id}`)}
           onSaved={(id, patch) =>
             setRows((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)))

@@ -9,6 +9,7 @@ import type { GlobalRecruitmentStatus } from "@/lib/types/models";
 import { relativeTimeFr } from "@/lib/utils/relativeTime";
 import { orgLabelPossessive, isCivilType, type SchoolType } from "@/lib/utils/orgLabel";
 import { getCurrentSeason } from "@/lib/utils/season";
+import { loadSchoolDirectorStatus } from "@/lib/queries/coach/useSchoolDirector";
 import CoachAthleteRow from "@/components/coach/CoachAthleteRow";
 import AthletePhoto from "@/components/shared/AthletePhoto";
 import { AGE_OPTIONS, DIVISION_OPTIONS, SEASON_OPTIONS } from "@/lib/config/civilVocab";
@@ -151,6 +152,10 @@ function TeamDetailPageDesktop() {
   const [editDivision, setEditDivision] = useState("");
   const [editLeague, setEditLeague] = useState("");
   const [editSeason, setEditSeason] = useState("");
+  // Vrai quand le user accède à l'équipe comme DIRECTEUR d'école (pas
+  // membre team_coaches). Affiche un badge « Vue directeur » ; le gating
+  // d'édition le traite comme ADMIN (myRole forcé à ADMIN plus bas).
+  const [isDirectorView, setIsDirectorView] = useState(false);
 
   // Derived context flag. After Phase 6.1 schools.type drives
   // everything UI-side; no more users.context guard.
@@ -217,14 +222,27 @@ function TeamDetailPageDesktop() {
     //     the empty skeleton branch — pre-Phase-6.2.d behavior).
     // RLS already blocks roster reads via team_athletes / team_coaches
     // policies, so the école skeleton renders without sensitive data.
+    let directorView = false;
     if (!roleRow) {
-      if (isTeamCivil) {
-        router.replace("/coach/equipes");
+      // Oversight directeur : aucune ligne team_coaches pour ce user, mais
+      // s'il est DIRECTEUR de l'école de CETTE équipe il a le droit (RLS
+      // Part A) de la superviser. On le traite alors comme ADMIN + badge
+      // « Vue directeur ». Sinon, comportement inchangé (redirect civil /
+      // skeleton école).
+      const dir = await loadSchoolDirectorStatus(supabase, authUser.id);
+      const teamSchoolId = (tRecPre.school_id as string | null) ?? null;
+      if (dir.isDirector && dir.schoolId && dir.schoolId === teamSchoolId) {
+        directorView = true;
       } else {
-        setLoading(false);
+        if (isTeamCivil) {
+          router.replace("/coach/equipes");
+        } else {
+          setLoading(false);
+        }
+        return;
       }
-      return;
     }
+    setIsDirectorView(directorView);
 
     const tRec = t as Record<string, unknown>;
     const sportRel = tRec.sports as { nom?: string } | { nom?: string }[] | null;
@@ -232,7 +250,8 @@ function TeamDetailPageDesktop() {
     const schoolRel = tRec.schools as { name?: string; type?: string } | { name?: string; type?: string }[] | null;
     const schoolRow = Array.isArray(schoolRel) ? schoolRel[0] : schoolRel;
     const rawRole = (roleRow as { role?: string } | null)?.role;
-    const myRole: "ADMIN" | "COACH" = rawRole === "head_coach" || rawRole === "ADMIN" ? "ADMIN" : "COACH";
+    const myRole: "ADMIN" | "COACH" =
+      directorView || rawRole === "head_coach" || rawRole === "ADMIN" ? "ADMIN" : "COACH";
 
     const teamState: TeamState = {
       name: (tRec.name as string) || "",
@@ -588,7 +607,16 @@ function TeamDetailPageDesktop() {
 
       {/* Header */}
       <div>
-        <h1 className="font-head text-2xl font-black text-white uppercase tracking-tight">{team.name}</h1>
+        <div className="flex items-center gap-3 flex-wrap">
+          <h1 className="font-head text-2xl font-black text-white uppercase tracking-tight">{team.name}</h1>
+          {/* Badge « Vue directeur » — signale que le user supervise cette
+              équipe sans en être entraîneur (accès oversight). */}
+          {isDirectorView && (
+            <span className="text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded bg-[#3B82F6]/15 text-[#3B82F6] border border-[#3B82F6]/30">
+              Vue directeur
+            </span>
+          )}
+        </div>
         {headerPills.length > 0 && (
           <p className="text-[14px] text-[#9CA3AF] mt-1">{headerPills.join(" · ")}</p>
         )}

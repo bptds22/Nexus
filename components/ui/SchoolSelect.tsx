@@ -33,17 +33,33 @@ interface Props {
 let _schoolsCache: SchoolRow[] | null = null;
 let _schoolsPromise: Promise<SchoolRow[]> | null = null;
 
+// Paginate past PostgREST's 1000-row cap (même patron que /admin/schools,
+// commit 4da34dd) → toutes les écoles chargent, pas juste les 1000 premières
+// par nom. Sinon un CÉGEP au-delà de la position 1000 (ex. Mérici) n'apparaît
+// dans aucune instance de SchoolSelect.
+async function fetchAllSchools(): Promise<SchoolRow[]> {
+  const supabase = createClient();
+  const PAGE = 1000;
+  const all: SchoolRow[] = [];
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await supabase
+      .from("schools")
+      .select("id,name,city,type")
+      .order("name")
+      .range(from, from + PAGE - 1);
+    if (error) { console.error("[SchoolSelect] loadSchools", error); break; }
+    if (!data || data.length === 0) break;
+    all.push(...(data as SchoolRow[]));
+    if (data.length < PAGE) break;
+  }
+  return all.filter((s) => s.id && s.name);
+}
+
 function loadSchools(): Promise<SchoolRow[]> {
   if (_schoolsCache) return Promise.resolve(_schoolsCache);
   if (_schoolsPromise) return _schoolsPromise;
-  const supabase = createClient();
-  _schoolsPromise = Promise.resolve(
-    supabase
-      .from("schools")
-      .select("id,name,city,type")
-      .order("name"),
-  ).then(({ data }) => {
-    _schoolsCache = ((data as SchoolRow[]) || []).filter((s) => s.id && s.name);
+  _schoolsPromise = fetchAllSchools().then((rows) => {
+    _schoolsCache = rows;
     return _schoolsCache;
   });
   return _schoolsPromise;

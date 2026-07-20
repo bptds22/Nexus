@@ -63,6 +63,12 @@ export interface EmptyCopy {
 export interface ActivitiesPageShellProps<T, F extends string = string> {
   items: T[];
   isLoading: boolean;
+  /** Vraie erreur de requête — affiche un état d'erreur + retry au lieu
+   *  de masquer le problème derrière le faux "Aucune activité". Optionnel
+   *  pour ne pas casser les appelants qui ne le passent pas. */
+  isError?: boolean;
+  /** Relance la requête depuis l'état d'erreur. */
+  onRetry?: () => void;
 
   /** Sticky header title (e.g. "Activité"). */
   title: string;
@@ -100,6 +106,8 @@ export interface ActivitiesPageShellProps<T, F extends string = string> {
 export function ActivitiesPageShell<T, F extends string = string>({
   items,
   isLoading,
+  isError = false,
+  onRetry,
   title,
   getId,
   getCreatedAt,
@@ -220,6 +228,11 @@ export function ActivitiesPageShell<T, F extends string = string>({
               <div key={i} className="h-[88px] rounded-2xl bg-[#1A1D24] animate-pulse" />
             ))}
           </div>
+        ) : isError && items.length === 0 ? (
+          /* Vraie erreur de requête → message + retry, plus jamais masquée
+             en faux "Aucune activité". Guardé sur items.length === 0 pour ne
+             pas écraser des données déjà affichées (placeholderData). */
+          <ShellErrorState onRetry={onRetry} />
         ) : filtered.length === 0 ? (
           <ShellEmptyState copy={emptyCopy(filter)} />
         ) : (
@@ -331,5 +344,26 @@ function ShellEmptyState({ copy }: { copy: EmptyCopy }) {
       title={copy.title}
       description={copy.description}
     />
+  );
+}
+
+/* ── Error-state wrapper ────────────────────────────────────── */
+
+function ShellErrorState({ onRetry }: { onRetry?: () => void }) {
+  return (
+    <div className="flex flex-col items-center justify-center px-6 py-16 text-center gap-4">
+      <p className="text-[14px] text-white/70 max-w-sm">
+        Impossible de charger ton activité. Vérifie ta connexion.
+      </p>
+      {onRetry && (
+        <button
+          type="button"
+          onClick={() => { triggerHaptic("Light"); onRetry(); }}
+          className="px-5 h-11 bg-[#E63946] active:bg-[#D42B22] text-white font-bold uppercase tracking-widest text-[13px] rounded-xl"
+        >
+          Réessayer
+        </button>
+      )}
+    </div>
   );
 }

@@ -1,0 +1,297 @@
+/* ═══════════════════════════════════════════════════════════════
+   app/carte/carte.module.css — Carte de contact scannable ("2B · Tabloïd
+   sombre"). Reproduction pixel-exacte de design_handoff_nexus_scan_card/
+   nexus-scan-card-2b.html, MINUS le phone frame (chrome de preview).
+
+   La carte EST la page : canvas #111317 full-bleed, contenu centré,
+   largeur cappée à 430px sur desktop. Valeurs (px / letter-spacing /
+   line-height / durées) copiées telles quelles depuis la réf.
+
+   Couleurs : tokens --color-nx-* définis dans app/globals.css (@theme).
+   Fonts : variables --font-anton / --font-plex-mono / --font-outfit
+   injectées par next/font dans app/carte/page.tsx.
+═══════════════════════════════════════════════════════════════ */
+
+.page {
+  --nx-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  justify-content: center;
+  background: var(--color-nx-bg);
+  /* clip le bleed du watermark (left:-46px) + de la tape (right:-22px)
+     → pas de scroll horizontal parasite. */
+  overflow-x: hidden;
+  font-family: var(--font-outfit), "Outfit", system-ui, sans-serif;
+}
+
+/* La carte = colonne unique. Réf .pad : padding 30px 24px 0, flex column. */
+.card {
+  position: relative;
+  width: 100%;
+  max-width: 430px;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 30px 24px calc(env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+  background: var(--color-nx-bg);
+}
+
+.watermark {
+  position: absolute;
+  left: -46px;
+  top: 250px;
+  width: 320px;
+  height: auto;
+  opacity: 0.07;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* ── Masthead ─────────────────────────────────────────────── */
+.masthead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+}
+.logo {
+  height: 46px;
+  width: auto;
+}
+.rule1 {
+  height: 3px;
+  background: #ffffff;
+  margin-top: 14px;
+}
+.rule2 {
+  height: 1px;
+  background: var(--color-nx-line);
+  margin-top: 3px;
+}
+
+/* ── "EST. 2017" tape ─────────────────────────────────────── */
+.tape {
+  position: absolute;
+  top: 158px;
+  right: -22px;
+  background: var(--color-nx-red);
+  color: #fff;
+  font-family: var(--font-plex-mono), "IBM Plex Mono", monospace;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  padding: 7px 26px;
+  transform: rotate(8deg);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
+}
+
+/* ── Name / eyebrow / lead ────────────────────────────────── */
+.name {
+  font-family: var(--font-anton), sans-serif;
+  font-style: italic; /* Anton n'a qu'un upright → italique synthétique (comme la réf) */
+  font-size: 60px;
+  line-height: 0.86;
+  letter-spacing: -0.02em;
+  color: #fff;
+  text-transform: uppercase;
+  text-shadow: 4px 4px 0 #0a0a0a;
+  margin-top: 28px;
+}
+.eyebrow {
+  font-family: var(--font-plex-mono), "IBM Plex Mono", monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--color-nx-red);
+  margin-top: 16px;
+}
+.lead {
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 1.45;
+  color: var(--color-nx-fg-2);
+  margin-top: 12px;
+  max-width: 300px;
+}
+
+/* ── Stat block ───────────────────────────────────────────── */
+.stats {
+  margin-top: 24px;
+  border-top: 2px solid #ffffff;
+  border-bottom: 1px solid var(--color-nx-line);
+  padding: 15px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+.stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+}
+.stat .k {
+  font-family: var(--font-plex-mono), "IBM Plex Mono", monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  color: var(--color-nx-fg-3);
+  white-space: nowrap;
+}
+.stat .v {
+  font-family: var(--font-plex-mono), "IBM Plex Mono", monospace;
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+/* Valeur cliquable (tél/courriel/web) : hérite du style .v, pas de couleur lien */
+.statLink {
+  color: #fff;
+  transition: color 140ms var(--nx-ease);
+}
+.statLink:hover {
+  color: var(--color-nx-red);
+}
+
+/* ── Primary CTA ──────────────────────────────────────────── */
+.cta {
+  margin-top: 22px;
+  width: 100%;
+  background: var(--color-nx-red);
+  color: #fff;
+  border: 0;
+  border-radius: 0;
+  padding: 18px;
+  font-family: var(--font-anton), sans-serif;
+  font-style: italic;
+  font-size: 22px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  text-align: center;
+  cursor: pointer;
+  transition: background 120ms var(--nx-ease);
+}
+.cta:hover {
+  background: var(--color-nx-red-press);
+}
+.cta:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+}
+
+/* ── Socials row ──────────────────────────────────────────── */
+.socials {
+  display: flex;
+  gap: 9px;
+  margin-top: 20px;
+}
+.soc {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 0;
+  background: var(--color-nx-surface);
+  border: 1px solid var(--color-nx-line);
+  color: #fff;
+  transition: all 140ms var(--nx-ease);
+}
+.soc svg {
+  width: 26px;
+  height: 26px;
+  display: block;
+}
+.soc:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+.ig:hover {
+  border-color: #e4405f;
+  color: #e4405f;
+  background: var(--color-nx-surface-2);
+}
+.tt:hover {
+  border-color: #4de7ee;
+  color: #4de7ee;
+  background: var(--color-nx-surface-2);
+}
+.yt:hover {
+  border-color: #ff0000;
+  color: #ff3b30;
+  background: var(--color-nx-surface-2);
+}
+.fb:hover {
+  border-color: #1877f2;
+  color: #4c93ff;
+  background: var(--color-nx-surface-2);
+}
+.ph:hover {
+  border-color: var(--color-nx-red);
+  color: var(--color-nx-red);
+  background: var(--color-nx-surface-2);
+}
+
+/* ── App store badges (bottom-pinned) ─────────────────────── */
+.stores {
+  margin-top: auto;
+  padding-top: 24px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
+.storeLink {
+  display: block;
+  transition: opacity 140ms var(--nx-ease);
+}
+.storeLink:hover {
+  opacity: 0.82;
+}
+.storeLink:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+}
+.storeImg {
+  height: 46px;
+  width: auto;
+  display: block;
+}
+
+/* ── Hashtag ──────────────────────────────────────────────── */
+.hashtag {
+  margin-top: 20px;
+  padding-bottom: 34px;
+  text-align: center;
+}
+.hashtag span {
+  font-family: var(--font-anton), sans-serif;
+  font-style: italic;
+  font-size: 26px;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  color: var(--color-nx-red);
+}
+
+/* ── Load-in (optional, on-brand) : fade + 4px translate-up, staggered.
+   Pure CSS, SSR-safe. Désactivé si l'utilisateur réduit les animations. */
+@media (prefers-reduced-motion: no-preference) {
+  .reveal {
+    animation: nxFadeUp 0.38s var(--nx-ease) both;
+    animation-delay: calc(var(--i, 0) * 70ms);
+  }
+}
+@keyframes nxFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

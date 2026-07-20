@@ -137,7 +137,7 @@ function CoachAnalyticsPage() {
           sports!sport_id(nom),
           positions!position_id(nom, abreviation),
           team_athletes(team_id),
-          evaluations(leadership, discipline, coachabilite, intelligence_jeu, competitivite, esprit_equipe, resilience, attitude_mentalite, cote_globale, rapport_entraineur, distinctions)
+          evaluations(leadership, discipline, coachabilite, intelligence_jeu, competitivite, esprit_equipe, resilience, attitude_mentalite, cote_globale, rapport_entraineur, distinctions, updated_at)
         `)
         .eq("school_id", mySchoolId);
 

@@ -94,7 +94,7 @@ function generateVerb(item: ActivityListItem): string {
         return `${a} : ${stage(item.beforeStage)} → ${stage(item.newStage)}`;
       }
       if (item.newStage) return `${a} → ${stage(item.newStage)}`;
-      return `Pipeline de ${a} mis à jour`;
+      return `Processus de ${a} mis à jour`;
     }
     case "PROFILE_VIEWED": return `${a} a été consulté`;
     case "NEW_ATHLETE": return `Nouvel athlète : ${a}`;
@@ -189,7 +189,7 @@ function emptyCopy(filter: FilterKey): EmptyCopy {
 
 function ActivitesInner() {
   const router = useRouter();
-  const { data: items = [], isLoading } = useActivityList();
+  const { data: items = [], isLoading, isError, refetch } = useActivityList();
   const markAllMut = useMarkAllActivitiesRead();
 
   const handleMount = useCallback(() => {
@@ -209,6 +209,8 @@ function ActivitesInner() {
     <ActivitiesPageShell<ActivityListItem, FilterKey>
       items={items}
       isLoading={isLoading}
+      isError={isError}
+      onRetry={refetch}
       title="Activité"
       getId={(it) => it.id}
       getCreatedAt={(it) => it.createdAt}

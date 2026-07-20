@@ -114,13 +114,16 @@ export default function CoachEquipesMobile() {
   const handlePickExisting = useCallback(async (team: TeamPickerItem) => {
     if (!userId) return;
     const supabase = createClient();
-    const { error } = await joinTeam(supabase, { coachUserId: userId, teamId: team.id });
+    const { error, role } = await joinTeam(supabase, { coachUserId: userId, teamId: team.id });
     if (error) {
       toast.error({ message: (error as { message?: string }).message || "Impossible de rejoindre." });
       return;
     }
     triggerHaptic("Medium");
-    toast.success({ message: "Équipe rejointe" });
+    // Dit le rôle : revendiquer une équipe orpheline donne head_coach.
+    toast.success({
+      message: role === "head_coach" ? "Équipe revendiquée — tu en es responsable" : "Équipe rejointe",
+    });
     qc.invalidateQueries({ queryKey: ["coach-teams"] });
     setShowPicker(false);
     router.push(`/coach/equipes/${team.id}`);
@@ -254,6 +257,8 @@ export default function CoachEquipesMobile() {
         onClose={() => setShowPicker(false)}
         schoolId={schoolId || null}
         season={getCurrentSeason()}
+        /* Ne propose pas de « rejoindre » une équipe dont je suis déjà membre. */
+        excludeTeamIds={teams.map((t) => t.id)}
         onPicked={(team) => handlePickExisting(team)}
         onCreateNew={() => { setShowPicker(false); setShowCreate(true); }}
         title="Ajouter une équipe"
@@ -275,11 +280,14 @@ export default function CoachEquipesMobile() {
             <div
               className="fixed left-0 right-0 z-[70] bg-[#1A1D24] rounded-t-2xl flex flex-col shadow-[0_-12px_32px_rgba(0,0,0,0.5)]"
               style={{
-                // Lifted above the tab bar (z-40, ~64px + safe-area) so
-                // the sticky "Créer l'équipe" action bar is never hidden.
-                // Mirrors the wizard's ENREGISTRER pattern.
-                bottom: "calc(64px + env(safe-area-inset-bottom))",
-                maxHeight: "min(82vh, calc(100dvh - env(safe-area-inset-top, 0px) - 64px))",
+                // Tab bar = bulle flottante désormais : la sheet part du bas
+                // RÉEL de l'écran (bottom:0), pleine largeur, et recouvre la
+                // bulle (z-[70] > nav z-40). paddingBottom safe-area pour que
+                // l'action bar dégage le home indicator (l'ancien offset 64px
+                // de tab-bar laissait un gap sous la sheet avec la bulle).
+                bottom: 0,
+                paddingBottom: "env(safe-area-inset-bottom)",
+                maxHeight: "min(82dvh, calc(100dvh - env(safe-area-inset-top, 0px)))",
                 transform: `translateY(${dragOffset}px)`,
                 transition: dragOffset === 0 ? "transform 280ms cubic-bezier(0.34, 1.56, 0.64, 1)" : "none",
               }}

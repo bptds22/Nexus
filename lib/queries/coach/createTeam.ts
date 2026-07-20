@@ -54,6 +54,10 @@ export interface JoinTeamParams {
 
 export interface JoinTeamResult {
   error?: PostgrestError | { message: string; code?: string };
+  /** Rôle réellement attribué : 'head_coach' si l'équipe n'avait aucun
+   *  coach (revendication d'une équipe scrapée), sinon 'assistant'.
+   *  Absent en cas d'erreur. Sert au message de confirmation. */
+  role?: "head_coach" | "assistant";
 }
 
 /* ── createTeam ──────────────────────────────────────────────── */
@@ -116,9 +120,23 @@ export async function createTeam(
 /* ── joinTeam ────────────────────────────────────────────────── */
 
 /**
- * Insert the coach as an ASSISTANT on an existing team. Mirrors the
- * civil RPC's join branch (p_team_id IS NOT NULL → role 'assistant'
- * ON CONFLICT DO NOTHING). Idempotent : tapping "Join" twice is safe.
+ * Rattache le coach à une équipe EXISTANTE.
+ *
+ * Rôle attribué :
+ *   - équipe SANS aucun coach (typiquement une équipe scrapée RSEQ, jamais
+ *     revendiquée) → 'head_coach' : le 1er arrivant en devient responsable,
+ *     sinon une équipe orpheline n'aurait jamais de responsable.
+ *   - équipe qui a déjà au moins un coach → 'assistant' (comportement
+ *     historique, miroir de la branche join du RPC civil).
+ *
+ * Idempotent : ON CONFLICT DO NOTHING sur (team_id, coach_id) — taper
+ * « Rejoindre » deux fois est sans effet, et ne peut pas promouvoir
+ * rétroactivement un assistant existant.
+ *
+ * ⚠️ Course : deux coachs qui revendiquent la MÊME équipe orpheline dans la
+ * même seconde liront tous deux 0 et deviendront head_coach. Bénin (deux
+ * responsables) et non détectable côté client ; un vrai verrou demanderait
+ * une RPC atomique — hors périmètre de ce ticket.
  */
 export async function joinTeam(
   supabase: SupabaseClient,
@@ -128,6 +146,18 @@ export async function joinTeam(
   if (!coachUserId) return { error: { message: "Coach manquant (non authentifié)." } };
   if (!teamId)      return { error: { message: "Équipe manquante." } };
 
+  /* Équipe orpheline ? → head_coach. La policy "team_coaches scoped
+     select" laisse lire les lignes des équipes de mon école, donc ce
+     compte est fiable pour le cas qui nous intéresse (équipe scrapée de
+     mon école). En cas d'erreur de lecture on retombe sur 'assistant' :
+     jamais de promotion accidentelle sur une équipe déjà encadrée. */
+  const { count, error: countErr } = await supabase
+    .from("team_coaches")
+    .select("coach_id", { count: "exact", head: true })
+    .eq("team_id", teamId);
+
+  const role = !countErr && (count ?? 0) === 0 ? "head_coach" : "assistant";
+
   /* Supabase doesn't have a clean .upsert-with-ignore on per-row
      unique violations the way RPC does ; .insert with onConflict
      ignore is supported when a unique constraint exists on the
@@ -136,10 +166,10 @@ export async function joinTeam(
   const { error } = await supabase
     .from("team_coaches")
     .upsert(
-      { team_id: teamId, coach_id: coachUserId, role: "assistant" },
+      { team_id: teamId, coach_id: coachUserId, role },
       { onConflict: "team_id,coach_id", ignoreDuplicates: true },
     );
 
   if (error) return { error };
-  return {};
+  return { role };
 }

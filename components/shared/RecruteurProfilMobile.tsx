@@ -23,6 +23,7 @@ import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
+import { uploadImage } from "@/lib/upload/uploadImage";
 import { MobilePicker, useMobilePicker } from "@/components/mobile/MobilePicker";
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import { useRecruiterProfile } from "@/lib/queries/recruiter/useRecruiterProfile";
@@ -364,26 +365,15 @@ export function RecruteurProfilMobile() {
   async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      toast.error({ message: "Format non supporté", detail: "JPG ou PNG uniquement" });
-      return;
-    }
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error({ message: "Photo trop lourde", detail: "Maximum 2 Mo" });
-      return;
-    }
     setUploading(true);
     try {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      const fileExt = file.name.split(".").pop() || "jpg";
-      const filePath = `${user.id}/avatar.${fileExt}`;
-      const { error: upErr } = await supabase.storage.from("avatars").upload(filePath, file, { upsert: true });
-      if (upErr) { toast.error({ message: "Échec upload", detail: upErr.message }); return; }
-      const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(filePath);
-      await supabase.from("users").update({ photo_url: urlData.publicUrl }).eq("id", user.id);
-      setAvatarUrl(urlData.publicUrl);
+      const res = await uploadImage(file, { pathBase: `${user.id}/avatar` });
+      if (!res.ok) { toast.error({ message: "Échec upload", detail: res.message }); return; }
+      await supabase.from("users").update({ photo_url: res.publicUrl }).eq("id", user.id);
+      setAvatarUrl(res.publicUrl);
       invalidateProfileCaches();
       toast.success({ message: "Photo mise à jour" });
     } finally {

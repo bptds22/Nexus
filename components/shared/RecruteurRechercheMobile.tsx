@@ -41,6 +41,7 @@ import { MobilePicker, type PickerOption } from "@/components/mobile/MobilePicke
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import { createClient } from "@/lib/supabase/client";
 
+import { TEAM_GENDER_FILTER_OPTIONS } from "@/lib/config/gender";
 /* ── Constants ────────────────────────────────────────────── */
 
 const SPORTS: PickerOption[] = [
@@ -159,7 +160,7 @@ function MobileSearchBar({
 }: MobileSearchBarProps) {
   return (
     <div
-      className="sticky top-0 z-30 px-4 py-3"
+      className="sticky top-0 z-30 px-4 pb-3 nx-safe-top"
       style={{
         backgroundColor: scrolled ? "rgba(17,19,23,0.85)" : "#111317",
         backdropFilter: scrolled ? "blur(20px) saturate(180%)" : "none",
@@ -803,6 +804,8 @@ interface FiltersBottomSheetProps {
   onReset: () => void;
   resultCount: number;
   sport: string; setSport: (v: string) => void;
+  /** Genre de l'ÉQUIPE (teams.gender) — pas athletes.genre. */
+  genderFilter: string; setGenderFilter: (v: string) => void;
   position: string; setPosition: (v: string) => void;
   promotion: string; setPromotion: (v: string) => void;
   region: string; setRegion: (v: string) => void;
@@ -828,8 +831,9 @@ function FiltersBottomSheet(props: FiltersBottomSheetProps) {
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
 
-  // 7 MobilePicker states
+  // 8 MobilePicker states (7 + genre d'équipe)
   const [openSport, setOpenSport] = useState(false);
+  const [openGender, setOpenGender] = useState(false);
   const [openPosition, setOpenPosition] = useState(false);
   const [openPromotion, setOpenPromotion] = useState(false);
   const [openRegion, setOpenRegion] = useState(false);
@@ -847,6 +851,7 @@ function FiltersBottomSheet(props: FiltersBottomSheetProps) {
   const closeSheet = () => { triggerHaptic("Light"); onClose(); };
 
   const sportLabel = SPORTS.find((s) => s.value === props.sport)?.label || "Tous les sports";
+  const genderLabelValue = TEAM_GENDER_FILTER_OPTIONS.find((g) => g.value === props.genderFilter)?.label || "Tous";
   const positionLabel = props.positionOptions.find((p) => p.value === props.position)?.label || "Toutes les positions";
   const promotionLabel = PROMOTION_OPTIONS.find((p) => p.value === props.promotion)?.label || "Toutes les promotions";
   const regionLabel = props.regionOptions.find((r) => r.value === props.region)?.label || "Toutes les régions";
@@ -902,6 +907,7 @@ function FiltersBottomSheet(props: FiltersBottomSheetProps) {
               Bg #1A1D24 (canon Nexus, cohérent avec les autres cards). */}
           <div className="mx-4 bg-[#1A1D24] rounded-2xl overflow-hidden">
             <FilterRow label="Sport" value={sportLabel} onTap={() => setOpenSport(true)} />
+            <FilterRow label="Genre d'équipe" value={genderLabelValue} onTap={() => setOpenGender(true)} />
             <FilterRow
               label="Position"
               value={positionLabel}
@@ -953,6 +959,7 @@ function FiltersBottomSheet(props: FiltersBottomSheetProps) {
 
       {/* MobilePickers — rendus APRÈS le sheet pour stacking z-index correct */}
       <MobilePicker open={openSport} onClose={() => setOpenSport(false)} title="Sport" options={SPORTS} value={props.sport} onChange={(v) => props.setSport((v as string) ?? "")} />
+      <MobilePicker open={openGender} onClose={() => setOpenGender(false)} title="Genre d'équipe" options={TEAM_GENDER_FILTER_OPTIONS} value={props.genderFilter} onChange={(v) => props.setGenderFilter((v as string) ?? "")} />
       <MobilePicker open={openPosition} onClose={() => setOpenPosition(false)} title="Position" options={props.positionOptions} value={props.position} onChange={(v) => props.setPosition((v as string) ?? "")} />
       <MobilePicker open={openPromotion} onClose={() => setOpenPromotion(false)} title="Promotion" options={PROMOTION_OPTIONS} value={props.promotion} onChange={(v) => props.setPromotion((v as string) ?? "")} />
       <MobilePicker open={openRegion} onClose={() => setOpenRegion(false)} title="Région" options={props.regionOptions} value={props.region} onChange={(v) => props.setRegion((v as string) ?? "")} />
@@ -1022,6 +1029,9 @@ export function RecruteurRechercheMobile() {
   // Filter states
   const [search, setSearch] = useState("");
   const [sport, setSport] = useState("");
+  // Genre d'ÉQUIPE (teams.gender), PAS athletes.genre. teamGender arrive déjà
+  // mappé par useAthleteSearch (partagé avec le web) — ici il n'y a que l'UI.
+  const [genderFilter, setGenderFilter] = useState<string>("");
   const [position, setPosition] = useState("");
   const [promotion, setPromotion] = useState("");
   const [region, setRegion] = useState("");
@@ -1147,6 +1157,8 @@ export function RecruteurRechercheMobile() {
     let list = [...athletes];
     if (position) list = list.filter((a) => a.position === position);
     if (region) list = list.filter((a) => a.region === region);
+    // Sans équipe → teamGender null → sort des résultats dès qu'un genre est choisi.
+    if (genderFilter) list = list.filter((a) => a.teamGender === genderFilter);
     if (orgType) list = list.filter((a) => a.orgType === orgType);
     if (withSportBadge) list = list.filter((a) => a.badges.length > 0);
     if (withAcademicBadge) list = list.filter((a) => a.academicBadges && a.academicBadges.length > 0);
@@ -1156,11 +1168,11 @@ export function RecruteurRechercheMobile() {
       list = [...list].sort((a, b) => (favCounts[b.id] || 0) - (favCounts[a.id] || 0));
     }
     return list.map((a) => ({ ...a, isFavorited: favorites.has(a.id), favorites: favCounts[a.id] || 0 }));
-  }, [athletes, position, region, orgType, withSportBadge, withAcademicBadge, hideFavorites, sortBy, favorites, favCounts]);
+  }, [athletes, position, region, genderFilter, orgType, withSportBadge, withAcademicBadge, hideFavorites, sortBy, favorites, favCounts]);
 
   // Active filters count (badge)
   const activeFiltersCount = [
-    sport, position, promotion, region, orgType, minGpa,
+    sport, genderFilter, position, promotion, region, orgType, minGpa,
     verifiedOnly, withVideoOnly, minRating, withSportBadge, withAcademicBadge,
     hideFavorites, filterOuvertDemenager, filterOuvertPrive, filterOuvertAnglophone,
     filterNewOnly, sortBy !== "rating_desc",
@@ -1168,7 +1180,7 @@ export function RecruteurRechercheMobile() {
   const hasFilters = activeFiltersCount > 0 || search.length > 0;
 
   const resetFilters = useCallback(() => {
-    setSport(""); setPosition(""); setPromotion(""); setRegion(""); setOrgType(""); setMinGpa("");
+    setSport(""); setGenderFilter(""); setPosition(""); setPromotion(""); setRegion(""); setOrgType(""); setMinGpa("");
     setSortBy("rating_desc");
     setVerifiedOnly(false); setWithVideoOnly(false); setMinRating("");
     setWithSportBadge(false); setWithAcademicBadge(false); setHideFavorites(false);
@@ -1187,7 +1199,7 @@ export function RecruteurRechercheMobile() {
     const isFav = favorites.has(id);
     const atCap = maxFavorites !== -1 && favorites.size >= maxFavorites;
     if (!isFav && atCap) {
-      toast.warning({ message: "Limite de favoris atteinte", detail: "Passe à Pro pour favoriser plus d'athlètes" });
+      toast.warning({ message: "Limite de favoris atteinte", detail: "Favoris supplémentaires réservés aux membres Pro" });
       return;
     }
     const { data: existing } = await supabase
@@ -1345,6 +1357,7 @@ export function RecruteurRechercheMobile() {
         onReset={resetFilters}
         resultCount={filtered.length}
         sport={sport} setSport={setSport}
+        genderFilter={genderFilter} setGenderFilter={setGenderFilter}
         position={position} setPosition={setPosition}
         promotion={promotion} setPromotion={setPromotion}
         region={region} setRegion={setRegion}

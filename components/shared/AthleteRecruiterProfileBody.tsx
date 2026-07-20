@@ -16,9 +16,12 @@ import type { RecruitmentStatus, RetireReason } from "@/lib/config/recruitmentSt
 import { getAthleteTracking } from "@/app/recruteur/_data/mockPipelineData";
 import RecruitmentStatusBadge from "@/app/recruteur/_components/RecruitmentStatusBadge";
 import StatusChangeDropdown from "@/app/recruteur/_components/StatusChangeDropdown";
+import VisitCalendarCard from "@/components/shared/VisitCalendarCard";
+import { persistPipelineStage } from "@/lib/pipeline/persistPipelineStage";
 import ComposeIntroModal from "@/app/recruteur/_components/ComposeIntroModal";
 import { useSubscription } from "@/lib/hooks/useSubscription";
 import { useFavoritesCount } from "@/lib/hooks/useFavoritesCount";
+import { selectBestEvaluation } from "@/lib/evaluations/selectEvaluation";
 import CelebrationToast from "@/app/recruteur/_components/CelebrationToast";
 import UpgradeModal from "@/components/ui/UpgradeModal";
 import SuccessToast, { type SuccessToastData } from "@/components/ui/SuccessToast";
@@ -361,12 +364,16 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
   // partner (own gating). Drives the name strip + content locks.
   const isFreeRecruiter = viewerMode === "recruiter" && tier === "free";
   const { count: myFavCount, setCount: setMyFavCount } = useFavoritesCount();
-  const [a, setA] = useState<AthleteProfileRecruiterView>(mockAthleteProfileFull);
+  // #52 — init à null (plus de mock comme valeur initiale) : aucun faux
+  // athlète n'est rendu avant l'arrivée des vraies données. Le gate
+  // loadingAthlete plus bas court-circuite le rendu tant que a est null.
+  const [a, setA] = useState<AthleteProfileRecruiterView | null>(null);
   const [loadingAthlete, setLoadingAthlete] = useState(true);
   const [recruitmentStatus, setRecruitmentStatus] = useState<GlobalRecruitmentStatus>("OUVERT");
   const [committedSchoolName, setCommittedSchoolName] = useState("");
   const [openToOffers, setOpenToOffers] = useState<boolean | null>(null);
   const [myPipelineStage, setMyPipelineStage] = useState<string | null>(null);
+  const [visitAt, setVisitAt] = useState<string | null>(null);
   const [coachId, setCoachId] = useState<string | null>(null);
   const [isAllStar, setIsAllStar] = useState(false);
 
@@ -476,7 +483,7 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
           vision_du_jeu, sens_tactique,
           leadership, discipline, coachabilite, intelligence_jeu,
           competitivite, esprit_equipe, resilience, attitude_mentalite,
-          cote_globale, rapport_entraineur, distinctions
+          cote_globale, rapport_entraineur, distinctions, updated_at
         ),
         users!athletes_coach_id_fkey(first_name, last_name)
       ` as unknown as "*")
@@ -488,7 +495,9 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
         const d = data as Record<string, unknown>;
         setAthleteUserId((d.user_id as string | null) ?? null);
         const evals = d.evaluations as Record<string, unknown>[] | null;
-        const eval0 = evals?.[0];
+        // Pick by rule (détaillée > simple, then most recent updated_at) —
+        // NOT evaluations[0] (unordered, often a non-owning coach's row).
+        const eval0 = selectBestEvaluation(evals);
 
         // Extract global recruitment fields
         const recruitmentStatusRaw = (d.recruitment_status as string) || "OUVERT";
@@ -795,11 +804,18 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
       if (!session?.user) return;
       const { data: pipelineData } = await supabase
         .from("recruiter_pipeline")
-        .select("stage")
+        .select("stage, visit_at")
         .eq("recruiter_id", session.user.id)
         .eq("athlete_id", id)
         .maybeSingle();
       setMyPipelineStage(pipelineData?.stage || null);
+      setVisitAt((pipelineData?.visit_at as string | null) ?? null);
+      // Le dropdown est piloté par la DB, plus par le mock : `pipelineStatus`
+      // était seedé depuis getAthleteTracking() (mockPipelineData), donc il
+      // n'était jamais aligné sur la vraie row du recruteur.
+      if (pipelineData?.stage) {
+        setPipelineStatus(String(pipelineData.stage).toLowerCase() as RecruitmentStatus);
+      }
     };
     loadPipeline();
   }, [id]);
@@ -878,7 +894,10 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
     loadCounts();
   }, [id, isFavorited]);
 
-  useEffect(() => { setA(prev => ({ ...prev, favoriteCount: favCount })); }, [favCount]);
+  // #52 — ne pas matérialiser un objet partiel quand a est encore null
+  // (sinon le gate !a serait contourné et le type cassé). On ne fusionne
+  // le compteur que sur un a déjà chargé.
+  useEffect(() => { setA(prev => (prev ? { ...prev, favoriteCount: favCount } : prev)); }, [favCount]);
 
   const [showFlagModal, setShowFlagModal] = useState(false);
   const [flagReason, setFlagReason] = useState("");
@@ -894,9 +913,38 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
   const [showComposeIntro, setShowComposeIntro] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [statusToast, setStatusToast] = useState<SuccessToastData | null>(null);
 
-  function handleStatusChange(newStatus: RecruitmentStatus, _extra?: { visitDate?: string; retireReason?: RetireReason }) {
+  /* Le stage est désormais PERSISTÉ (avant : setState local uniquement → tout
+     changement de statut depuis la fiche était perdu au refresh). Optimiste :
+     on peint l'UI tout de suite, on rollback si Postgres refuse. */
+  async function handleStatusChange(newStatus: RecruitmentStatus, extra?: { visitDate?: string; retireReason?: RetireReason }) {
+    const prevStatus = pipelineStatus;
+    const prevVisitAt = visitAt;
+    const nextVisitAt = newStatus === "visite_planifiee" ? (extra?.visitDate ?? null) : null;
+
     setPipelineStatus(newStatus);
+    setVisitAt(nextVisitAt);
+
+    const res = await persistPipelineStage({
+      athleteId: id,
+      status: newStatus,
+      visitAtIso: extra?.visitDate,
+    });
+
+    if (!res.ok) {
+      setPipelineStatus(prevStatus);
+      setVisitAt(prevVisitAt);
+      setStatusToast({
+        message: res.reason === "pro_required"
+          ? "Fonctionnalité Pro — passe à Pro pour gérer ton processus."
+          : "Le changement de statut n'a pas pu être enregistré.",
+      });
+      return;
+    }
+
+    // Garde « Mon statut » (lu depuis la DB) cohérent avec le dropdown.
+    setMyPipelineStage(newStatus === "retire" ? null : newStatus.toUpperCase());
   }
 
   // INSERT into public.reports. type/status forced to DB CHECK-allowed
@@ -943,6 +991,19 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
     } finally {
       setFlagSubmitting(false);
     }
+  }
+
+  // #52 — gate anti-flash : tant que le fetch charge (loadingAthlete) ou que
+  // a est null (aucune vraie donnée encore), on rend un fallback spinner —
+  // jamais le mock. Placé APRÈS tous les hooks et AVANT le premier accès
+  // a.xxx (traitEntries ci-dessous) → narrowing TS de a à non-null + pas de
+  // crash sur null.
+  if (loadingAthlete || !a) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#111317]">
+        <div className="w-8 h-8 rounded-full border-2 border-[#2D3748] border-t-[#E63946] animate-spin" role="status" aria-label="Chargement du profil" />
+      </div>
+    );
   }
 
   // Trait average — only average non-zero (rated) traits
@@ -1066,10 +1127,10 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
                         <rect x="3" y="11" width="18" height="11" rx="2" />
                         <path d="M7 11V7a5 5 0 0110 0v4" />
                       </svg>
-                      Passer à Pro pour le pipeline
+                      Passer à Pro pour le processus
                     </button>
                   ) : (
-                    <span className="text-[12px] text-[#6b7280]">Pas dans le pipeline</span>
+                    <span className="text-[12px] text-[#6b7280]">Pas dans le processus</span>
                   )}
                 </div>
               )}
@@ -1089,6 +1150,19 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
                   onStatusChange={handleStatusChange}
                   onComposeIntro={() => setShowComposeIntro(true)}
                   onCelebrate={() => setShowCelebration(true)}
+                />
+              </div>
+            )}
+
+            {/* Visite planifiée + export agenda. Gate strict : le stage ET la
+                date. Une visite sans date affiche le stage, pas la carte. */}
+            {!isPreview && canUsePipeline && pipelineStatus === "visite_planifiee" && visitAt && (
+              <div className="max-w-[420px]">
+                <VisitCalendarCard
+                  visitAtIso={visitAt}
+                  athleteName={`${a.firstName} ${a.lastName}`}
+                  sport={a.primarySport}
+                  schoolName={a.schoolName}
                 />
               </div>
             )}
@@ -1736,13 +1810,14 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
       )}
 
       <SuccessToast data={flagSuccessToast} onDismiss={() => setFlagSuccessToast(null)} />
+      <SuccessToast data={statusToast} onDismiss={() => setStatusToast(null)} />
 
       <UpgradeModal
         open={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
         role="recruteur"
         tierId="rec_pro"
-        lockedFeatureTitle="Le pipeline de recrutement"
+        lockedFeatureTitle="Le processus de recrutement"
         returnTo={typeof window !== "undefined" ? window.location.pathname : undefined}
       />
     </div>

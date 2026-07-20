@@ -5,6 +5,7 @@
 // to this route). Renders the 3 schools stacked, each = mosaic + menu, mirroring
 // the compare page's layout + labels.
 
+import { notFound } from "next/navigation";
 import ProgramWall from "@/components/program-wall/ProgramWall";
 import ProgramWallMenu from "@/components/program-wall/ProgramWallMenu";
 import { schoolPrograms } from "@/lib/mock/schoolPrograms";
@@ -21,6 +22,10 @@ const LABELS = [
 ];
 
 export default function WallTestPage() {
+  // URL-only web (dev/test) — jamais dans le bundle mobile (cf.
+  // lib/build/mobile-excluded-routes.ts).
+  if (process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true") notFound();
+
   return (
     <>
       <link rel="preconnect" href="https://fonts.googleapis.com" />

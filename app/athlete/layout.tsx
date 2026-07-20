@@ -265,7 +265,12 @@ export default function AthleteLayout({ children }: { children: React.ReactNode 
 
   useEffect(() => {
     async function checkAccess() {
+      try {
       const supabase = createClient();
+      // trailingSlash:true (export statique) → le pathname runtime a un slash
+      // final ("/athlete/onboarding/"). On le normalise AVANT toute comparaison
+      // exacte, sinon le garde se croit "ailleurs" et boucle en redirect.
+      const normalizedPath = pathname.replace(/\/+$/, "") || "/";
       const { data: { session } } = await supabase.auth.getSession();
 
       if (!session) {
@@ -309,17 +314,26 @@ export default function AthleteLayout({ children }: { children: React.ReactNode 
 
       const isComplete = !error && data?.onboarding_complete === true;
 
-      if (!isComplete && pathname !== "/athlete/onboarding") {
+      if (!isComplete && normalizedPath !== "/athlete/onboarding") {
         router.replace("/athlete/onboarding");
         return;
       }
 
-      if (isComplete && pathname === "/athlete/onboarding") {
+      if (isComplete && normalizedPath === "/athlete/onboarding") {
         router.replace("/athlete/dashboard");
         return;
       }
 
       setState("ok");
+      } catch (err) {
+        // Filet de sécurité : une lecture qui rejette (réseau, RLS) ne doit
+        // PLUS figer le layout en "loading" — on dévoile l'app, la page
+        // onboarding/dashboard re-vérifie l'état réel. (try/catch et NON
+        // finally : un finally écraserait les états wrong-role / redirect
+        // intentionnels ci-dessus.)
+        console.error("[AthleteLayout] checkAccess failed:", err);
+        setState("ok");
+      }
     }
     checkAccess();
   }, [router, pathname]);
@@ -356,7 +370,22 @@ export default function AthleteLayout({ children }: { children: React.ReactNode 
         )}
         <main
           className="relative z-10 flex-1"
-          style={IS_CAPACITOR ? { paddingBottom: "calc(64px + env(safe-area-inset-bottom))", overflowX: "hidden" } : undefined}
+          style={
+            IS_CAPACITOR
+              ? {
+                  // App-shell : conteneur scroll borné unique (body verrouillé
+                  // via globals .is-capacitor). flex:none pour que height:100dvh
+                  // prime sur flex-1. Pas de padding-top (headers sticky safe-area).
+                  height: "100dvh",
+                  flex: "none",
+                  overflowY: "auto",
+                  overscrollBehavior: "contain",
+                  WebkitOverflowScrolling: "touch",
+                  paddingBottom: "calc(env(safe-area-inset-bottom) + 88px)",
+                  overflowX: "hidden",
+                }
+              : undefined
+          }
         >
           <AnimatedRoute>{children}</AnimatedRoute>
         </main>

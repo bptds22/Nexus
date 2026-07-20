@@ -5,12 +5,15 @@
 ───────────────────────────────────────────────────────────────── */
 
 import { calculateCompletion, type AthleteLike, type EvalLike } from "./profileCompletion";
+import { selectBestEvaluation } from "@/lib/evaluations/selectEvaluation";
 
 function extractEval(row: Record<string, unknown>): EvalLike | null {
   const raw = row.evaluations;
   if (!raw) return null;
-  if (Array.isArray(raw)) return (raw[0] as EvalLike) || null;
-  return raw as EvalLike;
+  // Latest-eval-wins : la plus récente (updated_at) — même règle que l'affichage.
+  // Retombe sur l'ordre du tableau si la requête n'a pas sélectionné updated_at.
+  const arr = Array.isArray(raw) ? raw : [raw];
+  return (selectBestEvaluation(arr as Record<string, unknown>[]) as EvalLike) || null;
 }
 
 /**

@@ -9,8 +9,11 @@
 
    Three task types — independent, an athlete can appear in multiple:
 
-     1. UNVERIFIED         athletes.verified IS NOT true (sole gate)
-     2. MISSING EVAL       missing star OR missing report (see isMissingEval)
+     1. UNVERIFIED         athletes.verified IS NOT true
+                           OR modified_since_verification = true
+                           (athlète vérifié mais modifié depuis → à re-vérifier)
+     2. MISSING EVAL       missing star AND missing report (see isMissingEval)
+                           — a star-only or report-only eval counts as done
      3. PENDING SUGGESTION athlete_suggestions.status='EN_ATTENTE'
 
    Future migrators (port in lock-step so badges and lists agree) :
@@ -92,6 +95,7 @@ interface AthleteRow {
   photo_url: string | null;
   annee_diplomation: number | null;
   verified: boolean | null;
+  modified_since_verification: boolean | null;
   cote_globale_entraineur: number | null;
   sports: SportJoin | SportJoin[] | null;
   positions: PositionJoin | PositionJoin[] | null;
@@ -141,8 +145,10 @@ function toTaskAthlete(
 /* ── Detection logic — exported for unit tests + per-row UI checks ─ */
 
 /**
- * Is this athlete missing a coach evaluation? OR-logic — missing star
- * OR missing report → missing eval.
+ * Is this athlete missing a coach evaluation? AND-logic — an eval is
+ * present as soon as there is a star OR a report; it is missing only
+ * when BOTH are absent. A star-only eval (the quick-eval sheet lets you
+ * save one) is complete, and so is a report-only eval.
  *
  *   missing star   = evaluation.cote_globale IS NULL
  *                    AND athletes.cote_globale_entraineur IS NULL.
@@ -165,7 +171,7 @@ export function isMissingEval(
     (athlete.cote_globale_entraineur ?? null) === null;
   const missingReport =
     !evaluation || (evaluation.rapport_entraineur ?? "").trim() === "";
-  return missingStar || missingReport;
+  return missingStar && missingReport;
 }
 
 /* ── Main loader ──────────────────────────────────────────────── */
@@ -177,8 +183,10 @@ export function isMissingEval(
  *   1. athletes (coach_id=coachUserId, status='ACTIF') with verified
  *      + cote_globale_entraineur + joined evaluations(coach_id,
  *      cote_globale, rapport_entraineur) + joined sports/positions.
- *   2. athlete_suggestions (coach_id=coachUserId, status='EN_ATTENTE')
- *      ordered created_at DESC with joined athletes(first_name, last_name).
+ *   2. athlete_suggestions for athletes THIS coach owns (inner join on
+ *      athletes.coach_id=coachUserId, NOT the suggestion's own snapshot
+ *      coach_id column), status='EN_ATTENTE', ordered created_at DESC
+ *      with joined athletes(first_name, last_name).
  *
  * Mirrors the SELECT shape used by app/coach/athletes/page.tsx
  * (L241-292) — slimmer column set, no new columns invented.
@@ -200,6 +208,7 @@ export async function loadCoachTasks(
         photo_url,
         annee_diplomation,
         verified,
+        modified_since_verification,
         cote_globale_entraineur,
         sports!sport_id(nom),
         positions!position_id(abreviation),
@@ -217,9 +226,16 @@ export async function loadCoachTasks(
         valeur_proposee,
         message,
         created_at,
-        athletes!athlete_id(first_name, last_name)
+        athletes!athlete_id!inner(first_name, last_name, coach_id)
       `)
-      .eq("coach_id", coachUserId)
+      // Scope by the athlete's CURRENT coach, not the suggestion's own
+      // coach_id column. That column is a point-in-time snapshot: a
+      // suggestion filed before the coach claimed the athlete carries
+      // coach_id=null and is never backfilled, so filtering on it drops
+      // the task silently. The !inner embed + athletes.coach_id filter
+      // mirrors the RLS policy (athlete_id IN athletes WHERE coach_id =
+      // auth.uid()) and the coach athlete-profile view.
+      .eq("athletes.coach_id", coachUserId)
       .eq("status", "EN_ATTENTE")
       .order("created_at", { ascending: false }),
   ]);
@@ -249,8 +265,10 @@ export async function loadCoachTasks(
 
     // Treat null verified as unverified — matches the established
     // MobileTabBar / dashboard reading (filter by truthy `verified`,
-    // everything else is unverified).
-    if (!row.verified) {
+    // everything else is unverified). Un athlète vérifié MAIS modifié
+    // depuis sa dernière vérif (modified_since_verification) revient aussi
+    // dans la file « à vérifier » — symétrique du clear fait à la re-pose.
+    if (!row.verified || row.modified_since_verification) {
       unverified.push(task);
     }
     if (isMissingEval({ cote_globale_entraineur: row.cote_globale_entraineur }, myEval)) {

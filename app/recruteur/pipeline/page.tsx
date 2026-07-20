@@ -27,6 +27,7 @@ import { getCurrentSeason } from "@/lib/utils/season";
 import type { GlobalRecruitmentStatus } from "@/lib/types/models";
 import StarRating from "@/components/ui/StarRating";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
+import { generateCalendarLinks, downloadIcs } from "@/lib/calendar/generateCalendarLinks";
 import {
   KANBAN_COLUMNS,
   getCardsByStatus,
@@ -96,6 +97,71 @@ function formatDateFr(dateStr: string): string {
   const days = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
   const months = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
   return `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]}`;
+}
+
+/* ── Visite planifiée : formatage de visit_at ──────────────────────
+   visit_at est un timestamptz (instant absolu). On l'affiche dans le
+   fuseau local du navigateur — America/Toronto pour l'utilisateur cible.
+
+   L'heure est OPTIONNELLE à la saisie : quand elle est omise, on stocke
+   minuit local. Minuit pile est donc lu comme « pas d'heure » et on
+   n'affiche que la date — sinon on afficherait « à 00h00 », qui se lirait
+   comme un vrai rendez-vous à minuit. Conséquence assumée : une visite
+   réellement fixée à 00h00 s'affiche sans heure. */
+const MONTHS_SHORT = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
+const MONTHS_LONG = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
+
+function visitHasTime(d: Date): boolean {
+  return d.getHours() !== 0 || d.getMinutes() !== 0;
+}
+
+/** Pill kanban : « 12 mars · 14h00 ». Année ajoutée seulement si ≠ année courante.
+ *
+ *  `now` est un timestamp ms issu de useClientNow(), donc 0 au premier rendu
+ *  (SSR-safe : pas de Date.now() pendant le render). À 0 on n'a pas d'année de
+ *  référence : on omet le suffixe et on ne déclare rien « en retard » — sinon la
+ *  pill afficherait « 1970 » puis clignerait, et virerait au rouge à tort. */
+function formatVisitPill(iso: string, now: number): { label: string; isPast: boolean } | null {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+
+  const currentYear = now ? new Date(now).getFullYear() : d.getFullYear();
+  const yearSuffix = d.getFullYear() !== currentYear ? ` ${d.getFullYear()}` : "";
+  let label = `${d.getDate()} ${MONTHS_SHORT[d.getMonth()]}${yearSuffix}`;
+  if (visitHasTime(d)) {
+    label += ` · ${String(d.getHours()).padStart(2, "0")}h${String(d.getMinutes()).padStart(2, "0")}`;
+  }
+  return { label, isPast: now > 0 && d.getTime() < now };
+}
+
+/** Slide-over : « 12 mars 2026 à 14h00 ». */
+function formatVisitLong(iso: string): string | null {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  const base = `${d.getDate()} ${MONTHS_LONG[d.getMonth()]} ${d.getFullYear()}`;
+  return visitHasTime(d)
+    ? `${base} à ${String(d.getHours()).padStart(2, "0")}h${String(d.getMinutes()).padStart(2, "0")}`
+    : base;
+}
+
+/** ISO → valeurs des <input type="date"> / <input type="time"> (heure LOCALE). */
+function isoToInputs(iso: string | null): { date: string; time: string } {
+  if (!iso) return { date: "", time: "" };
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return { date: "", time: "" };
+  const p = (n: number) => String(n).padStart(2, "0");
+  return {
+    date: `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`,
+    time: visitHasTime(d) ? `${p(d.getHours())}:${p(d.getMinutes())}` : "",
+  };
+}
+
+/** Inverse : inputs → instant ISO. Pas de suffixe « Z » → interprété en heure
+ *  LOCALE, donc 14h à Montréal stocke bien l'instant UTC correspondant. */
+function inputsToIso(date: string, time: string): string | null {
+  if (!date) return null;
+  const d = new Date(`${date}T${time || "00:00"}`);
+  return Number.isNaN(d.getTime()) ? null : d.toISOString();
 }
 
 /* ── Competitor logic ─────────────────────────────────────────── */
@@ -415,14 +481,40 @@ const DraggableKanbanCard = memo(function DraggableKanbanCard({
             {card.graduation_year > 0 && <><span className="text-[#4a4d56] shrink-0">·</span><span className="shrink-0">{card.graduation_year}</span></>}
           </p>
 
-          {/* Global recruitment status */}
-          <div className="mt-1.5">
+          {/* Global recruitment status + pill « visite planifiée » ─────────
+              La pill n'apparaît que dans la colonne VISITE_PLANIFIEE et avec
+              une date. Ambre par défaut, rouge si la date est passée (signal
+              retard). Purement informative : le clic remonte au bouton parent
+              (ouverture du slide-over), l'édition se fait là-bas. */}
+          <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
             <RecruitmentStatusBadge
               status={(card.recruitment_status || "OUVERT") as GlobalRecruitmentStatus}
               committedSchoolName={card.committed_school_name || undefined}
               openToOffers={card.open_to_offers}
               size="sm"
             />
+            {card.status === "visite_planifiee" && card.visit_at && (() => {
+              const v = formatVisitPill(card.visit_at, now);
+              if (!v) return null;
+              const fg = v.isPast ? "#E63946" : "#F59E0B";
+              return (
+                <span
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold shrink-0"
+                  style={{
+                    color: fg,
+                    background: v.isPast ? "rgba(230,57,70,0.1)" : "rgba(245,158,11,0.1)",
+                    border: `1px solid ${v.isPast ? "rgba(230,57,70,0.3)" : "rgba(245,158,11,0.3)"}`,
+                  }}
+                  title={v.isPast ? "Visite passée" : "Visite planifiée"}
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={fg} strokeWidth="2" strokeLinecap="round" aria-hidden>
+                    <rect x="3" y="4" width="18" height="18" rx="2" />
+                    <path d="M16 2v4M8 2v4M3 10h18" />
+                  </svg>
+                  {v.label}
+                </span>
+              );
+            })()}
           </div>
           {card.recruitment_status === 'RECRUTE' && ['identifie', 'contacte', 'en_discussion', 'visite_planifiee'].includes(card.status) && (
             <div className="mt-1.5 px-2 py-1 rounded bg-[#F59E0B]/10 border-l-2 border-[#F59E0B]">
@@ -512,7 +604,7 @@ function KanbanColumn({
   const HeaderIcon = isExit ? TrashIcon : ArrowIcon;
   const tooltip = colDef.isAuto
     ? colDef.id === "contacte" ? "Statut automatique, mais accepte un retour depuis En discussion" : "Statut automatique — favori"
-    : isExit ? "Retirer du pipeline" : "Glisser un athlète ici";
+    : isExit ? "Retirer du processus" : "Glisser un athlète ici";
 
   return (
     <div className={`flex flex-col min-w-[300px] max-w-[340px] ${isExit ? "opacity-60 ml-4" : ""}`}>
@@ -562,16 +654,23 @@ interface NoteEntry {
 }
 
 function SlideOver({
-  card, onClose, onStatusChange, onTogglePriority,
+  card, onClose, onStatusChange, onTogglePriority, onSaveVisit,
   isFreeDemoMode, onTeaseUpgrade,
 }: {
   card: PipelineKanbanCard; onClose: () => void;
   onStatusChange: (cardId: string, newStatus: RecruitmentStatus) => void;
   onTogglePriority: (cardId: string, value: boolean) => void;
+  /** Écrit recruiter_pipeline.visit_at. `null` efface la date. */
+  onSaveVisit: (pipelineId: string, visitAtIso: string | null) => void;
   isFreeDemoMode: boolean;
   onTeaseUpgrade: () => void;
 }) {
   const [noteText, setNoteText] = useState("");
+  // Édition inline de la visite. Le panneau se ferme/rouvre par carte, donc
+  // on seed depuis card.visit_at à chaque montage — pas besoin de resync.
+  const [editingVisit, setEditingVisit] = useState(false);
+  const [visitDate, setVisitDate] = useState(() => isoToInputs(card.visit_at ?? null).date);
+  const [visitTime, setVisitTime] = useState(() => isoToInputs(card.visit_at ?? null).time);
   // Migration TanStack (iter 5.3b) — notes en cache per-athlete on-demand.
   const queryClient = useQueryClient();
   const { data: noteHistory = [] } = usePipelineNotes(card.id);
@@ -734,6 +833,100 @@ function SlideOver({
               })}
             </div>
           </div>
+          {/* ── Visite prévue ─────────────────────────────────────────────
+              VISITE_PLANIFIEE uniquement. Sauvegarde immédiate à chaque
+              changement d'input : pas de bouton « Enregistrer ». */}
+          {card.status === "visite_planifiee" && (() => {
+            const longLabel = card.visit_at ? formatVisitLong(card.visit_at) : null;
+
+            const commit = (nextDate: string, nextTime: string) => {
+              if (isFreeDemoMode) { onTeaseUpgrade(); return; }
+              onSaveVisit(card.pipeline_id, inputsToIso(nextDate, nextTime));
+            };
+
+            return (
+              <div className="bg-[#1A1D24] rounded-lg border border-[#2D3748]" style={{ padding: "12px 16px" }}>
+                <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-[#6B7280] mb-2">Visite prévue</h3>
+
+                {!editingVisit ? (
+                  <button
+                    type="button"
+                    onClick={() => setEditingVisit(true)}
+                    className="text-[13px] text-white hover:text-[#E63946] transition-colors text-left"
+                  >
+                    {longLabel ?? <span className="text-[#6B7280]">Aucune date</span>}
+                  </button>
+                ) : (
+                  <div className="space-y-2">
+                    <input
+                      type="date"
+                      value={visitDate}
+                      aria-label="Date de la visite"
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        setVisitDate(v);
+                        // Date effacée → l'heure seule n'a pas de sens : on efface tout.
+                        if (!v) setVisitTime("");
+                        commit(v, v ? visitTime : "");
+                      }}
+                      className="w-full bg-[#13151a] border border-[#2a2d36] rounded-lg px-3 py-2 text-[13px] text-[#e0e0e0] focus:border-[#E63946] outline-none"
+                    />
+                    <input
+                      type="time"
+                      value={visitTime}
+                      disabled={!visitDate}
+                      aria-label="Heure de la visite"
+                      onChange={(e) => { setVisitTime(e.target.value); commit(visitDate, e.target.value); }}
+                      className="w-full bg-[#13151a] border border-[#2a2d36] rounded-lg px-3 py-2 text-[13px] text-[#e0e0e0] focus:border-[#E63946] outline-none disabled:opacity-40"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setEditingVisit(false)}
+                      className="text-[11px] font-bold uppercase tracking-wider text-[#6b7280] hover:text-white transition-colors"
+                    >
+                      Terminé
+                    </button>
+                  </div>
+                )}
+
+                {/* Export agenda — seulement quand il y a une date à exporter. */}
+                {card.visit_at && (() => {
+                  const start = new Date(card.visit_at);
+                  if (Number.isNaN(start.getTime())) return null;
+                  const title = card.sport
+                    ? `Visite — ${card.full_name} (${card.sport})`
+                    : `Visite — ${card.full_name}`;
+                  const { googleUrl, icsBlob } = generateCalendarLinks({
+                    title,
+                    description: `Visite planifiée avec ${card.full_name} via Nexus.`,
+                    location: card.school || "",
+                    startDate: start,
+                    durationMinutes: 60,
+                  });
+                  const icsName = `visite-${card.full_name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}.ics`;
+                  const btn = "flex-1 inline-flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg border border-[#2D3748] bg-[#13151a] text-xs font-semibold text-[#6B7280] hover:text-[#E63946] hover:border-[#E63946]/40 transition-colors";
+
+                  return (
+                    <div className="flex gap-2 mt-3">
+                      <a href={googleUrl} target="_blank" rel="noopener noreferrer" className={btn}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
+                          <rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" />
+                        </svg>
+                        Google Agenda
+                      </a>
+                      <button type="button" onClick={() => downloadIcs(icsBlob, icsName)} className={btn}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
+                          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
+                        </svg>
+                        Télécharger (.ics)
+                      </button>
+                    </div>
+                  );
+                })()}
+              </div>
+            );
+          })()}
+
           <div className="space-y-2 pt-2 border-t border-[#2D3748]">
             <Link href={`/recruteur/athletes/${card.id}`} className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-[#13151a] border border-[#2D3748] rounded-lg text-[13px] font-bold text-white hover:border-[#E63946]/40 transition-colors">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
@@ -746,7 +939,7 @@ function SlideOver({
             {card.status !== "retire" && (
               <button type="button" onClick={() => handleStatusClick("retire")} className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-transparent border border-[#EF4444]/30 rounded-lg text-[13px] font-bold text-[#EF4444] hover:bg-[#EF4444]/10 transition-colors">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><path d="M15 9l-6 6" /><path d="M9 9l6 6" /></svg>
-                Retirer du pipeline
+                Retirer du processus
               </button>
             )}
           </div>
@@ -814,7 +1007,7 @@ function PipelinePageContent() {
   }, []);
 
   const teaseUpgrade = useCallback(() => {
-    showToast("Passe à Pro pour sauvegarder ton pipeline");
+    showToast("Passe à Pro pour sauvegarder ton processus");
   }, [showToast]);
 
   // Iter 6.1b — hook DELETE pour le statut "retire" qui violait
@@ -834,7 +1027,7 @@ function PipelinePageContent() {
       try {
         await removeFromPipeline.mutateAsync({ cardId });
         setSelectedCard(null);
-        showToast("Athlète retiré du pipeline");
+        showToast("Athlète retiré du processus");
       } catch {
         showToast("Erreur lors du retrait");
       }
@@ -844,9 +1037,16 @@ function PipelinePageContent() {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       const now = new Date().toISOString();
+      // visit_at n'a de sens que sous VISITE_PLANIFIEE. En quittant ce stage on
+      // l'efface, sinon la date survivrait au déplacement et ressortirait telle
+      // quelle si la carte revenait dans la colonne (rendez-vous fantôme).
+      // En y ENTRANT on ne touche pas à la clé — une date déjà posée est gardée.
+      const payload: Record<string, unknown> = { stage: newStatus.toUpperCase(), moved_at: now, updated_at: now };
+      if (newStatus !== "visite_planifiee") payload.visit_at = null;
+
       await supabase
         .from("recruiter_pipeline")
-        .update({ stage: newStatus.toUpperCase(), moved_at: now, updated_at: now })
+        .update(payload)
         .eq("athlete_id", cardId)
         .eq("recruiter_id", user.id);
 
@@ -870,6 +1070,32 @@ function PipelinePageContent() {
       queryClient.invalidateQueries({ queryKey: ["pipeline"] });
     }
     showToast(value ? "Marqué prioritaire" : "Priorité retirée");
+  }, [showToast, isFreeDemoMode, teaseUpgrade, queryClient]);
+
+  /* ── Save visit_at (slide-over) ─────────────────────────────────
+     Écriture immédiate à chaque changement d'input — pas de bouton
+     « Enregistrer ». Le panneau lit `selectedCard`, un snapshot : on le
+     patche localement en plus d'invalider, sinon la date affichée (et les
+     boutons agenda) resteraient sur l'ancienne valeur jusqu'à réouverture. */
+  const handleSaveVisit = useCallback(async (pipelineId: string, visitAtIso: string | null) => {
+    if (isFreeDemoMode) {
+      teaseUpgrade();
+      return;
+    }
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("recruiter_pipeline")
+      .update({ visit_at: visitAtIso, updated_at: new Date().toISOString() })
+      .eq("id", pipelineId);
+
+    if (error) {
+      showToast("Date de visite non enregistrée");
+      return;
+    }
+
+    setSelectedCard((prev) => (prev ? { ...prev, visit_at: visitAtIso } : prev));
+    queryClient.invalidateQueries({ queryKey: ["pipeline"] });
+    showToast(visitAtIso ? "Date de visite mise à jour" : "Date de visite retirée");
   }, [showToast, isFreeDemoMode, teaseUpgrade, queryClient]);
 
   /* ── Save next action ───────────────────────────────────────── */
@@ -954,7 +1180,7 @@ function PipelinePageContent() {
             <path d="M12 8v4M12 16h.01" />
           </svg>
           <p className="text-[13px] text-[#9CA3AF] flex-1">
-            Tu visualises ton pipeline.{" "}
+            Tu visualises ton processus.{" "}
             <Link href="/tarifs" className="text-[#F59E0B] font-bold hover:underline">
               Passe à Pro
             </Link>{" "}
@@ -1038,6 +1264,7 @@ function PipelinePageContent() {
           onClose={() => setSelectedCard(null)}
           onStatusChange={handleStatusChange}
           onTogglePriority={handleTogglePriority}
+          onSaveVisit={handleSaveVisit}
           isFreeDemoMode={isFreeDemoMode}
           onTeaseUpgrade={teaseUpgrade}
         />

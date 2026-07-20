@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { isTabBarHidden, isThreadRoute } from "./tabBarVisibility";
 import { createClient } from "@/lib/supabase/client";
 import { useSubscription } from "@/lib/hooks/useSubscription";
 import UpgradeModal from "@/components/ui/UpgradeModal";
@@ -180,11 +181,30 @@ interface MobileTabBarProps {
 
 export default function MobileTabBar({ role }: MobileTabBarProps) {
   const pathname = usePathname();
+  // trailingSlash:true → le pathname runtime a un slash final. Normalisé pour
+  // les comparaisons EXACTES ci-dessous (les .startsWith restent sur pathname,
+  // safe). Sans ça, les guards onboarding/messages se trompent d'écran.
+  const normalizedPath = pathname.replace(/\/+$/, "") || "/";
   const router = useRouter();
   const { tier, isSchoolAdmin } = useSubscription();
 
   const [moreOpen, setMoreOpen] = useState(false);
   const [upgradeModal, setUpgradeModal] = useState<{ tierId: string; lockedFeatureTitle: string } | null>(null);
+  // État clavier — sur une route thread, la tab bar est visible clavier fermé
+  // et masquée clavier ouvert (le composer colle alors au clavier).
+  const [kbdOpen, setKbdOpen] = useState(false);
+  useEffect(() => {
+    let show: { remove: () => void } | null = null;
+    let hide: { remove: () => void } | null = null;
+    (async () => {
+      try {
+        const { Keyboard } = await import("@capacitor/keyboard");
+        show = await Keyboard.addListener("keyboardWillShow", () => setKbdOpen(true));
+        hide = await Keyboard.addListener("keyboardWillHide", () => setKbdOpen(false));
+      } catch { /* web — no-op */ }
+    })();
+    return () => { show?.remove(); hide?.remove(); };
+  }, []);
 
   // Stacking-context fix — portal the tab bar to document.body so its z-40
   // escapes the `.hero-playbook` `isolation: isolate` trap created by the
@@ -320,83 +340,16 @@ export default function MobileTabBar({ role }: MobileTabBarProps) {
 
   if (!IS_CAPACITOR) return null;
 
-  // Iter 7.60 — masquer la TabBar sur les drill-down conversation (canon iOS
-  // Messages : la TabBar disparaît pendant qu'on lit une conversation pour
-  // laisser le composer respirer + éviter qu'elle cache la dernière bulle).
-  // /recruteur/messages → liste (TabBar visible)
-  // /recruteur/messages/[id] → thread (TabBar masquée)
-  // /recruteur/messages/nouveau → wizard (TabBar masquée aussi, même pattern).
-  const messagesDrillDown =
-    role === "recruteur" &&
-    pathname.startsWith("/recruteur/messages/") &&
-    pathname !== "/recruteur/messages";
-  if (messagesDrillDown) return null;
-
-  // Phase 2 — mirror du drill-down recruteur pour le coach. La mobile coach
-  // consomme MessagesListShell + MessageThreadShell exactement comme le
-  // recruteur, donc même UX iOS : TabBar visible sur la liste, masquée
-  // pendant le thread / le wizard nouveau message.
-  // /coach/demandes → liste (TabBar visible)
-  // /coach/demandes/[id] → thread (TabBar masquée)
-  // /coach/demandes/nouveau → wizard (TabBar masquée).
-  const coachDemandesDrillDown =
-    role === "coach" &&
-    pathname.startsWith("/coach/demandes/") &&
-    pathname !== "/coach/demandes";
-  if (coachDemandesDrillDown) return null;
-
-  // Coach parametres drill-downs (profil edit, école edit, admin école).
-  // Le top-level Paramètres reste accessible via /coach/settings ; les
-  // sous-écrans pleins-écran masquent la tab bar comme le pattern messages.
-  const coachParametresDrillDown =
-    role === "coach" &&
-    pathname.startsWith("/coach/parametres/");
-  if (coachParametresDrillDown) return null;
-
-  // Coach reputation drill-downs (career editor, etc.). Le top-level
-  // /coach/reputation garde la tab bar ; les drill-downs (carriere) la
-  // masquent — même pattern que /coach/parametres/*.
-  const coachReputationDrillDown =
-    role === "coach" &&
-    pathname.startsWith("/coach/reputation/");
-  if (coachReputationDrillDown) return null;
-
-  // Run 3 — Mes Équipes drill-down (detail d'une équipe + sous-routes).
-  // Le top-level /coach/equipes garde la tab bar (page liste pleine
-  // largeur) ; /coach/equipes/[teamId] et sous-écrans (modifier, etc.)
-  // la masquent pour donner le canon iOS "détail plein écran".
-  const coachEquipesDrillDown =
-    role === "coach" &&
-    pathname.startsWith("/coach/equipes/");
-  if (coachEquipesDrillDown) return null;
-
-  // Iter 7.50-a5 — masquer la TabBar pendant le wizard d'onboarding athlète
-  // plein écran (canon iOS : pas de nav globale durant un flow de capture
-  // critique). Sans ce guard, la TabBar z-40 couvre le CTA "Continuer" z-30
-  // de AthleteOnboardingMobile → l'utilisateur tap un onglet au lieu du CTA
-  // → rebond vers dashboard → re-mount onboarding → boucle (DIAG 7.50-a4).
-  // L'athlète en onboarding (onboarding_complete=false) n'a aucun usage de
-  // la TabBar puisque le layout shell le bounce vers /athlete/onboarding
-  // dès qu'il tente d'aller ailleurs. Même pattern que messagesDrillDown.
-  const athleteOnboarding =
-    role === "athlete" && pathname === "/athlete/onboarding";
-  if (athleteOnboarding) return null;
-
-  // Iter coach-3 — même guard pour le coach pendant son onboarding.
-  // Route /onboarding (le wizard coach/recruteur web — branche mobile
-  // coach école via dispatch IS_CAPACITOR). Couvre automatiquement le
-  // sprint coach-4 (civil) et le sprint recruteur mobile à venir.
-  const coachOnboarding =
-    role === "coach" && pathname === "/onboarding";
-  if (coachOnboarding) return null;
-
-  // Iter recruteur-onboarding-mobile — même guard pour le recruteur en
-  // onboarding. /onboarding route → wizard recruteur web ou natif via
-  // dispatch IS_CAPACITOR. Note : TabBar utilise 'recruteur' (FR) en
-  // interne alors que user.role est 'recruiter' (EN) côté front.
-  const recruiterOnboarding =
-    role === "recruteur" && pathname === "/onboarding";
-  if (recruiterOnboarding) return null;
+  // Thread de conversation : tab bar VISIBLE clavier fermé, MASQUÉE clavier
+  // ouvert (le composer colle alors au clavier). Les AUTRES drill-downs
+  // (wizard nouveau, paramètres/réputation/équipes, onboarding) restent
+  // masqués en permanence via isTabBarHidden. Source unique : tabBarVisibility.
+  if (isThreadRoute(role, normalizedPath)) {
+    if (kbdOpen) return null;            // clavier ouvert → masquée
+    // sinon : visible (on tombe dans le rendu normal)
+  } else if (isTabBarHidden(role, normalizedPath)) {
+    return null;
+  }
 
   // SSR-safe portal mount gate — comes AFTER every existing pathname guard
   // so the guards still run on first render (avoiding unnecessary work) and
@@ -423,53 +376,27 @@ export default function MobileTabBar({ role }: MobileTabBarProps) {
     }
   }
 
-  // Index actif : 0..n-1 si un tab matche, n si Plus est ouvert, -1 sinon.
-  const totalSlots = tabs.length + 1;
-  const activeIndex: number = (() => {
-    if (moreOpen) return tabs.length;
-    for (let i = 0; i < tabs.length; i++) {
-      if (isActive(tabs[i])) return i;
-    }
-    return -1;
-  })();
-  const slotWidthPct = 100 / totalSlots;
-
   return createPortal(
     <>
       <nav
-        className="fixed bottom-0 inset-x-0 z-40 bg-[#1A1D24] flex"
+        className="fixed z-40 flex"
         style={{
-          paddingBottom: "env(safe-area-inset-bottom)",
-          // Séparation douce avec le contenu : bordure top subtile (rgba blanc 6%)
-          // + ombre légère portée vers le haut pour un effet "flottant" à la ESPN.
-          borderTop: "1px solid rgba(255,255,255,0.06)",
-          boxShadow: "0 -1px 14px rgba(0,0,0,0.35)",
-          position: "fixed", // déjà via la classe, mais on assure pour le contexte relatif des enfants absolute
+          // Bulle flottante premium (style Instagram) : détachée des bords +
+          // décollée du bas, pilule arrondie, fond semi-opaque + blur (le
+          // contenu transparaît derrière), ombre douce pour le détachement.
+          left: 14,
+          right: 14,
+          bottom: "calc(env(safe-area-inset-bottom) + 10px)",
+          borderRadius: 30,
+          background: "rgba(26, 29, 36, 0.85)",
+          backdropFilter: "blur(20px)",
+          WebkitBackdropFilter: "blur(20px)",
+          border: "1px solid rgba(255, 255, 255, 0.08)",
+          boxShadow: "0 8px 32px rgba(0, 0, 0, 0.45)",
+          overflow: "hidden",
         }}
         aria-label="Navigation principale"
       >
-        {/* Indicateur d'actif unique — glisse horizontalement entre les onglets.
-            Material standard easing pour un feel premium type ESPN/Stripe. */}
-        <div
-          aria-hidden
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            width: `${slotWidthPct}%`,
-            height: 2,
-            pointerEvents: "none",
-            transform: `translateX(${activeIndex * 100}%)`,
-            transition: "transform 280ms cubic-bezier(0.4, 0.0, 0.2, 1), opacity 200ms",
-            opacity: activeIndex >= 0 ? 1 : 0,
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "flex-start",
-          }}
-        >
-          <div style={{ width: 32, height: 2, borderRadius: 9999, background: "#E63946" }} />
-        </div>
-
         {tabs.map((tab) => {
           const locked = !meetsRequiredTier(tier, tab.requiredTier, isSchoolAdmin, tab.adminBypass);
           const active = isActive(tab);
@@ -488,6 +415,13 @@ export default function MobileTabBar({ role }: MobileTabBarProps) {
               className={`relative flex-1 flex flex-col items-center justify-center gap-1.5 pt-2.5 pb-2 min-h-[64px] ${color} active:bg-white/[0.04] transition-colors`}
               aria-current={active ? "page" : undefined}
             >
+              {/* Capsule de fond derrière l'item actif (style pill Instagram). */}
+              {active && (
+                <span
+                  aria-hidden
+                  className="absolute inset-x-1.5 top-1.5 bottom-1.5 rounded-2xl bg-[#E63946]/[0.12]"
+                />
+              )}
               <span className="relative">
                 {tab.icon}
                 {locked && tab.requiredTier && <LockIcon />}
@@ -497,7 +431,7 @@ export default function MobileTabBar({ role }: MobileTabBarProps) {
                   </span>
                 )}
               </span>
-              <span className="text-[11px] font-medium tracking-[0.04em] whitespace-nowrap">{tab.label}</span>
+              <span className="relative text-[11px] font-medium tracking-[0.04em] whitespace-nowrap">{tab.label}</span>
             </Link>
           );
         })}
@@ -510,13 +444,20 @@ export default function MobileTabBar({ role }: MobileTabBarProps) {
           aria-label="Plus d'options"
           aria-expanded={moreOpen}
         >
+          {/* Capsule de fond quand le panneau "Plus" est ouvert. */}
+          {moreOpen && (
+            <span
+              aria-hidden
+              className="absolute inset-x-1.5 top-1.5 bottom-1.5 rounded-2xl bg-[#E63946]/[0.12]"
+            />
+          )}
           <span className="relative">
             {Icons.more}
             {moreDotActive && (
               <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-[#E63946]" aria-hidden />
             )}
           </span>
-          <span className="text-[11px] font-medium tracking-[0.04em] whitespace-nowrap">Plus</span>
+          <span className="relative text-[11px] font-medium tracking-[0.04em] whitespace-nowrap">Plus</span>
         </button>
       </nav>
 
