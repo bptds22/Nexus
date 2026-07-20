@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 
 /* Home parent minimale (Lot 1a) — identité de l'enfant lié via le RPC
@@ -40,11 +41,6 @@ export default function ParentHome() {
   const meta = [child.sport, child.school].filter(Boolean).join(" · ");
   const initial = ((child.first_name || "?").trim().charAt(0) || "?").toUpperCase();
 
-  const navItems = [
-    { label: "Consentements", sub: "Gérer les autorisations — à venir (Lot 1b)" },
-    { label: "Activité", sub: "Vues du profil et activité recruteur — à venir (Lot 1c)" },
-  ];
-
   return (
     <div className="space-y-6">
       <div className="bg-[#1A1D24] border border-white/5 rounded-xl p-5 flex items-center gap-4">
@@ -61,12 +57,17 @@ export default function ParentHome() {
       </div>
 
       <nav className="grid gap-3">
-        {navItems.map((it) => (
-          <div key={it.label} aria-disabled className="bg-[#1A1D24] border border-white/5 rounded-xl px-5 py-4 opacity-60 cursor-not-allowed">
-            <p className="font-semibold text-white">{it.label}</p>
-            <p className="text-[12px] text-[#6B7280] mt-0.5">{it.sub}</p>
+        <Link href="/parent/consentements" className="bg-[#1A1D24] border border-white/5 rounded-xl px-5 py-4 flex items-center justify-between gap-4 hover:border-[#E63946]/40 transition-colors group">
+          <div className="min-w-0">
+            <p className="font-semibold text-white">Consentements</p>
+            <p className="text-[12px] text-[#6B7280] mt-0.5">Gérer les autorisations liées au profil de votre enfant</p>
           </div>
-        ))}
+          <svg className="shrink-0 text-[#6B7280] group-hover:text-[#E63946] transition-colors" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
+        </Link>
+        <div aria-disabled className="bg-[#1A1D24] border border-white/5 rounded-xl px-5 py-4 opacity-60 cursor-not-allowed">
+          <p className="font-semibold text-white">Activité</p>
+          <p className="text-[12px] text-[#6B7280] mt-0.5">Vues du profil et activité recruteur — à venir (Lot 1c)</p>
+        </div>
       </nav>
     </div>
   );
