@@ -59,7 +59,8 @@ export interface InitialConsentFlags {
       (mandatoire au signup mobile athlète, mineur). */
   parentalVisibility?: boolean;
   /** Iter 7.50-a-bis — autorisation parentale partner_visibility (optionnel).
-      Copy v1 flaggée counsel Quebec — voir PartnerVisibilityConsentCard. */
+      Libellé = partnerResponsibilityText() (lib/legal/partnerMediaCopy.ts),
+      responsabilité partagée Nexus/partenaire. */
   parentalPartnerVisibility?: boolean;
 }
 
