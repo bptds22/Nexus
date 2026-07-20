@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import MarketingNav from "@/components/marketing/MarketingNav";
 import PlaybookBackground from "../../components/PlaybookBackground";
 import Footer from "@/components/marketing/Footer";
@@ -26,13 +27,51 @@ export default function ResetPasswordPage() {
 
 function ResetPasswordContent() {
   const searchParams = useSearchParams();
-  const token = searchParams.get("token"); // Will come from Supabase email link
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  // null = still verifying the recovery link, true = valid session ready,
+  // false = no/expired recovery session (link invalid or already used).
+  const [recoveryReady, setRecoveryReady] = useState<boolean | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  /* Establish the recovery session. On the web build Supabase uses PKCE, so
+     the email link lands here as ?code=…; detectSessionInUrl normally
+     exchanges it automatically, but we confirm via getSession + a manual
+     exchangeCodeForSession fallback, and listen for the PASSWORD_RECOVERY /
+     SIGNED_IN event so the form only unlocks once a session truly exists. */
+  useEffect(() => {
+    const supabase = createClient();
+    let active = true;
+
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (active && session) setRecoveryReady(true);
+    });
+
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!active) return;
+      if (session) { setRecoveryReady(true); return; }
+
+      const code = searchParams.get("code");
+      if (code) {
+        const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+        if (!active) return;
+        if (!exchangeError) { setRecoveryReady(true); return; }
+      }
+      // Nothing to exchange (or exchange failed). Don't clobber a session that
+      // detectSessionInUrl / the listener may have just resolved to true.
+      setRecoveryReady((prev) => (prev === true ? true : false));
+    })();
+
+    return () => {
+      active = false;
+      sub.subscription.unsubscribe();
+    };
+  }, [searchParams]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
@@ -45,7 +84,15 @@ function ResetPasswordContent() {
       return;
     }
 
-    // TODO: integrate with Supabase Auth updateUser({ password })
+    setLoading(true);
+    const supabase = createClient();
+    const { error: updateError } = await supabase.auth.updateUser({ password });
+    setLoading(false);
+
+    if (updateError) {
+      setError("Impossible de réinitialiser le mot de passe. Le lien a peut-être expiré — redemande un courriel de réinitialisation.");
+      return;
+    }
     setSubmitted(true);
   };
 
@@ -81,6 +128,34 @@ function ResetPasswordContent() {
             <div className="nx-auth-fade">
 
               {!submitted ? (
+                recoveryReady === false ? (
+                /* ── Invalid / expired recovery link ── */
+                <div className="text-center py-4">
+                  <div className="inline-flex items-center justify-center w-16 h-16 border-2 border-[#E63946] mb-6" style={{ borderRadius: "50%" }}>
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="10" /><path d="M12 8v4" /><path d="M12 16h.01" />
+                    </svg>
+                  </div>
+                  <h2 className="font-head text-2xl font-black text-white uppercase tracking-tight mb-3">
+                    Lien invalide ou expiré
+                  </h2>
+                  <p className="font-sans text-sm text-[#9AA3B2] leading-relaxed mb-6">
+                    Ce lien de réinitialisation n&apos;est plus valide.<br />
+                    Redemande un nouveau courriel pour continuer.
+                  </p>
+                  <Link
+                    href="/mot-de-passe-oublie"
+                    className="inline-flex items-center justify-center h-12 px-8 bg-wl-red text-white font-head font-black text-sm uppercase tracking-widest hover:bg-wl-red-hover transition-colors hover:shadow-[0_8px_28px_rgba(232,72,72,0.38)] hover:-translate-y-0.5"
+                  >
+                    Demander un nouveau lien
+                  </Link>
+                </div>
+                ) : recoveryReady === null ? (
+                /* ── Verifying the recovery link ── */
+                <div className="text-center py-8">
+                  <p className="font-sans text-sm text-[#9AA3B2]">Vérification du lien…</p>
+                </div>
+                ) : (
                 <form onSubmit={handleSubmit} className="flex flex-col gap-4">
 
                   {/* New password */}
@@ -125,11 +200,13 @@ function ResetPasswordContent() {
                   {/* Submit */}
                   <button
                     type="submit"
-                    className="h-12 w-full bg-wl-red text-white font-head font-black text-sm uppercase tracking-widest hover:bg-wl-red-hover transition-colors hover:shadow-[0_8px_28px_rgba(232,72,72,0.38)] hover:-translate-y-0.5 mt-2"
+                    disabled={loading}
+                    className={`h-12 w-full bg-wl-red text-white font-head font-black text-sm uppercase tracking-widest transition-colors mt-2 ${loading ? "opacity-60 cursor-wait" : "hover:bg-wl-red-hover hover:shadow-[0_8px_28px_rgba(232,72,72,0.38)] hover:-translate-y-0.5"}`}
                   >
-                    Réinitialiser le mot de passe
+                    {loading ? "Réinitialisation…" : "Réinitialiser le mot de passe"}
                   </button>
                 </form>
+                )
               ) : (
                 /* Success state */
                 <div className="text-center py-4">
