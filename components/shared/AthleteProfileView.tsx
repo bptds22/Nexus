@@ -20,6 +20,7 @@ import { parseDistinctions, type DistinctionEntry } from "@/lib/config/badges";
 import { selectBestEvaluation } from "@/lib/evaluations/selectEvaluation";
 import AthletePlayerCard from "@/components/shared/AthletePlayerCard";
 import DistinctionBadge from "@/components/shared/DistinctionBadge";
+import TeamHistoryBlock from "@/components/shared/athlete/TeamHistoryBlock";
 import StarRating from "@/components/ui/StarRating";
 import VideoEmbed from "@/components/ui/VideoEmbed";
 import NxIcon from "@/components/ui/NxIcon";
@@ -392,6 +393,18 @@ export default function AthleteProfileView({
         </div>
       </section>
 
+      {/* Parcours d'équipes — sous Profil académique (les deux modes).
+          Anchor = vraie affiliation Nexus (display-only, non éditable). */}
+      <TeamHistoryBlock
+        entries={a.teamHistory}
+        anchor={{
+          teamName: a.isCivil ? (a.teamName || a.leagueName || "") : (a.schoolName || ""),
+          sport: a.primarySport,
+          position: a.primaryPosition,
+          region: a.region,
+        }}
+      />
+
       {/* DETAILED-ONLY */}
       {isDetailed && (
         <div className="space-y-6">
@@ -462,8 +475,6 @@ export default function AthleteProfileView({
                 <InfoRow label="Sport principal" value={a.primarySport} icon="activity" />
                 <InfoRow label="Position" value={a.primaryPosition} icon="target" />
                 <InfoRow label="Numéro" value={a.jerseyNumber ? `#${a.jerseyNumber}` : undefined} icon="hash" />
-                {a.secondarySport && <InfoRow label="Sport secondaire" value={a.secondarySport} icon="activity" />}
-                {a.secondaryPosition && <InfoRow label="Position secondaire" value={a.secondaryPosition} icon="target" />}
                 {a.teamName && <InfoRow label="Équipe" value={a.teamName} icon="flag" />}
                 {a.leagueName && <InfoRow label="Ligue" value={a.leagueName} icon="trophy" />}
                 {a.teamLevel && <InfoRow label="Niveau" value={a.teamLevel} icon="layers" />}

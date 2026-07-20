@@ -43,7 +43,10 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { uploadAvatar } from "@/lib/storage/uploadAvatar";
 import AthletePhotoHero from "@/components/shared/AthletePhotoHero";
-import type { AthleteSuggestion, AthleteTraitRatings } from "@/lib/types/models";
+import type { AthleteSuggestion, AthleteTraitRatings, TeamHistoryEntry } from "@/lib/types/models";
+import TeamHistoryBlock from "@/components/shared/athlete/TeamHistoryBlock";
+import TeamHistoryEditor from "@/components/shared/athlete/TeamHistoryEditor";
+import { parseTeamHistory, isTeamHistoryValid } from "@/components/shared/athlete/teamHistory";
 import { Card, InlineEditRow, PickerRow, ReadOnlyRow, DateRow, ToggleRow, ChipsBlock } from "@/components/shared/wizard/rows";
 import { StarRow } from "@/components/shared/wizard/stars";
 import { MobilePicker, type PickerOption } from "@/components/mobile/MobilePicker";
@@ -98,14 +101,10 @@ interface LoadedAthlete {
   /* ── Sport (SUGGEST) — current values + ids for picker scoping ── */
   primarySport: string;                 // sports.nom via join (primary)
   primaryPosition: string;              // positions.nom via join (primary)
-  secondarySport: string;               // separate FK lookup (page.tsx :953-955)
-  secondaryPosition: string;            // separate FK lookup (page.tsx :957-959)
   jerseyNumber: string;                 // athletes.numero_jersey
-  /** FK ids needed to SCOPE the position pickers at row-render time.
-   *  Primary position picker → scoped by sportId. Secondary position
-   *  picker → scoped by sportSecondaireId (fallback sportId). */
+  parcoursEquipes: TeamHistoryEntry[];  // athletes.parcours_equipes (JSONB)
+  /** FK id needed to SCOPE the primary position picker at row-render time. */
   sportId: string | null;
-  sportSecondaireId: string | null;
   /* ── Physique (SUGGEST) — current values ── */
   heightDisplay: string;
   weightDisplay: string;
@@ -631,18 +630,6 @@ export default function AthleteEditWizardMobile() {
     // ── Secondary sport / position NAME lookups (verbatim from
     //    page.tsx :953-959). Kept as separate queries to match the
     //    desktop's exact load pattern (Bug #8 — no joining away).
-    let secondarySportName = "";
-    let secondaryPositionName = "";
-    if (raw.sport_secondaire_id) {
-      const { data: ss } = await supabase
-        .from("sports").select("nom").eq("id", raw.sport_secondaire_id).maybeSingle();
-      secondarySportName = (ss?.nom as string) || "";
-    }
-    if (raw.position_secondaire_id) {
-      const { data: sp } = await supabase
-        .from("positions").select("nom").eq("id", raw.position_secondaire_id).maybeSingle();
-      secondaryPositionName = (sp?.nom as string) || "";
-    }
 
     // Civil / école derivation (verbatim from page.tsx :971-974).
     const schoolRel = Array.isArray(raw.schools) ? raw.schools[0] : raw.schools;
@@ -738,11 +725,9 @@ export default function AthleteEditWizardMobile() {
       // Sport (SUGGEST)
       primarySport,
       primaryPosition,
-      secondarySport: secondarySportName,
-      secondaryPosition: secondaryPositionName,
       jerseyNumber: raw.numero_jersey != null ? String(raw.numero_jersey) : "",
+      parcoursEquipes: parseTeamHistory(raw.parcours_equipes),
       sportId: (raw.sport_id as string) || null,
-      sportSecondaireId: (raw.sport_secondaire_id as string) || null,
       // Physique (SUGGEST)
       heightDisplay,
       weightDisplay,
@@ -831,7 +816,7 @@ export default function AthleteEditWizardMobile() {
         recruiter-side .filter / .map). */
   const saveDirect = useCallback(async (
     column: string,
-    value: string | string[] | boolean,
+    value: string | string[] | boolean | TeamHistoryEntry[],
   ) => {
     if (!a) return;
     const supabase = createClient();
@@ -994,6 +979,7 @@ export default function AthleteEditWizardMobile() {
             getPending={getPending}
             submitting={submitting}
             onSubmit={submitSuggestion}
+            saveDirect={saveDirect}
           />
         )}
 
@@ -1590,7 +1576,7 @@ function CustomChip({ label, onRemove }: { label: string; onRemove: () => void }
    no secondary sport is set — mirrors page.tsx).
 ═══════════════════════════════════════════════════════════════ */
 function SportStep({
-  a, sportsOptions, positionsOptions, getPending, submitting, onSubmit,
+  a, sportsOptions, positionsOptions, getPending, submitting, onSubmit, saveDirect,
 }: {
   a: LoadedAthlete;
   sportsOptions: SportOption[];
@@ -1598,6 +1584,7 @@ function SportStep({
   getPending: (champ: string) => AthleteSuggestion | undefined;
   submitting: boolean;
   onSubmit: (champ: string, proposed: string, message: string, currentValue: string) => Promise<void>;
+  saveDirect: (column: string, value: string | string[] | boolean | TeamHistoryEntry[]) => Promise<void>;
 }) {
   /* The picker `value` field is the same string the trigger receives
      (the sport / position NAME), so we map each option to {value=nom,
@@ -1608,6 +1595,22 @@ function SportStep({
     () => sportsOptions.map((s) => ({ value: s.nom, label: s.nom })),
     [sportsOptions],
   );
+
+  // Parcours d'équipes — DIRECT write (distinct from the suggest-only rows).
+  const [phEditing, setPhEditing] = useState(false);
+  const [phDraft, setPhDraft] = useState<TeamHistoryEntry[]>([]);
+  const [phSaving, setPhSaving] = useState(false);
+  const phCurrent = a.parcoursEquipes ?? [];
+  const phMaxYear = new Date().getFullYear() + 1;
+  const phValid = isTeamHistoryValid(phDraft, phMaxYear);
+  const phStart = () => { setPhDraft(phCurrent); setPhEditing(true); };
+  const phSave = async () => {
+    if (!phValid) return;
+    setPhSaving(true);
+    await saveDirect("parcours_equipes", phDraft);
+    setPhSaving(false);
+    setPhEditing(false);
+  };
 
   // Primary position picker : scoped to the athlete's CURRENT primary
   // sport (athletes.sport_id). Secondary position picker : scoped to
@@ -1625,13 +1628,6 @@ function SportStep({
       .filter((p) => p.sport_id === a.sportId)
       .map((p) => ({ value: p.nom, label: p.abreviation ? `${p.abreviation} — ${p.nom}` : p.nom })),
     [positionsOptions, a.sportId],
-  );
-  const secondaryPositionScopeId = a.sportSecondaireId ?? a.sportId;
-  const secondaryPositionOptions: PickerOption[] = useMemo(
-    () => positionsOptions
-      .filter((p) => p.sport_id === secondaryPositionScopeId)
-      .map((p) => ({ value: p.nom, label: p.abreviation ? `${p.abreviation} — ${p.nom}` : p.nom })),
-    [positionsOptions, secondaryPositionScopeId],
   );
 
   return (
@@ -1667,26 +1663,6 @@ function SportStep({
           onSubmit={onSubmit}
         />
         <SuggestRow
-          label="Sport secondaire"
-          value={a.secondarySport}
-          champ="Sport secondaire"
-          pending={getPending("Sport secondaire")}
-          inputType="picker"
-          pickerOptions={sportPickerOptions}
-          submitting={submitting}
-          onSubmit={onSubmit}
-        />
-        <SuggestRow
-          label="Position sport secondaire"
-          value={a.secondaryPosition}
-          champ="Position secondaire"
-          pending={getPending("Position secondaire")}
-          inputType="picker"
-          pickerOptions={secondaryPositionOptions}
-          submitting={submitting}
-          onSubmit={onSubmit}
-        />
-        <SuggestRow
           label="Numéro"
           value={a.jerseyNumber}
           champ="Numéro"
@@ -1699,6 +1675,34 @@ function SportStep({
           isLast
         />
       </Card>
+
+      {/* Parcours d'équipes — édition directe (athlète-owned), distincte
+          des suggestions ci-dessus. */}
+      <div className="mt-4 rounded-2xl bg-[#1A1D24] border border-[#2D3748] p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-[13px] font-head font-bold tracking-[0.12em] uppercase text-[#9CA3AF]">Parcours d&apos;équipes</h3>
+          {!phEditing && (
+            <button type="button" onClick={phStart} className="text-[12px] font-bold text-[#E63946]">
+              {phCurrent.length ? "Modifier" : "Ajouter"}
+            </button>
+          )}
+        </div>
+        {phEditing ? (
+          <>
+            <TeamHistoryEditor value={phDraft} onChange={setPhDraft} sports={sportsOptions} maxYear={phMaxYear} />
+            <div className="flex items-center justify-end gap-3 mt-4 pt-3 border-t border-[#2D3748]/40">
+              <button type="button" onClick={() => setPhEditing(false)} className="text-[13px] font-bold text-[#9CA3AF]">Annuler</button>
+              <button type="button" onClick={phSave} disabled={phSaving || !phValid} className="px-4 py-2 bg-[#E63946] disabled:opacity-50 text-white text-[13px] font-bold rounded-lg">
+                {phSaving ? "…" : "Enregistrer"}
+              </button>
+            </div>
+          </>
+        ) : phCurrent.length === 0 ? (
+          <p className="text-[13px] text-[#6b7280]">Aucun parcours ajouté.</p>
+        ) : (
+          <TeamHistoryBlock entries={phCurrent} headingClassName="hidden" />
+        )}
+      </div>
     </div>
   );
 }

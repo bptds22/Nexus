@@ -25,6 +25,7 @@ import SuggestionsAlert from "@/components/coach/profile/SuggestionsAlert";
 // Step 6 unification — coach profile = shared body avec viewer="coach".
 // CoachAthleteProfileBodyMobile (paraphrase copy) supprimé.
 import AthleteRecruiterProfileBodyMobile from "@/components/shared/AthleteRecruiterProfileBodyMobile";
+import TeamHistoryBlock from "@/components/shared/athlete/TeamHistoryBlock";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -144,8 +145,7 @@ function InfoRow({ label, value, icon }: { label: string; value?: string | numbe
 function PlayerCard({ a }: { a: AthleteProfileRecruiterView }) {
   const ratingValue = a.overallRating;
   const posAbbr = positionAbbr(a.primaryPosition);
-  const secPosAbbr = a.secondaryPosition ? positionAbbr(a.secondaryPosition) : "";
-  const posDisplay = secPosAbbr ? `${posAbbr} / ${secPosAbbr}` : (posAbbr || "—");
+  const posDisplay = posAbbr || "—";
   const sportKey = SPORT_NAME_MAP[a.primarySport];
   const sportDisplay = sportKey ? (SPORT_DISPLAY[sportKey] || a.primarySport) : a.primarySport;
 
@@ -919,14 +919,15 @@ export default function CoachAthleteProfilePage() {
                 <InfoRow label="Sport principal" value={a.primarySport} icon="activity" />
                 <InfoRow label="Position" value={a.primaryPosition} icon="target" />
                 <InfoRow label="Numéro" value={a.jerseyNumber ? `#${a.jerseyNumber}` : undefined} icon="hash" />
-                {a.secondarySport && <InfoRow label="Sport secondaire" value={a.secondarySport} icon="activity" />}
-                {a.secondaryPosition && <InfoRow label="Position secondaire" value={a.secondaryPosition} icon="target" />}
                 {a.teamName && <InfoRow label="Équipe" value={a.teamName} icon="flag" />}
                 {a.leagueName && <InfoRow label="Ligue" value={a.leagueName} icon="trophy" />}
                 {a.teamLevel && <InfoRow label="Niveau" value={a.teamLevel} icon="layers" />}
               </div>
             </section>
           )}
+
+          {/* Parcours d'équipes — se masque tout seul si vide. */}
+          <TeamHistoryBlock entries={a.teamHistory} />
 
           {/* ── DÉTAILS ACADÉMIQUES (matières, mentions, régions) ── */}
           {(a.strongSubjects?.length > 0 || a.academicHonors?.length > 0 || a.preferredRegions?.length > 0 || (Array.isArray(a.targetCegepProgram) && a.targetCegepProgram.length > 0)) && (

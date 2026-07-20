@@ -54,6 +54,8 @@ import { findOrCreateRecruiterConversation } from "@/lib/utils/findOrCreateRecru
 import { AddToListSheet } from "@/components/shared/AddToListSheet";
 import AthletePhotoFill from "@/components/shared/AthletePhotoFill";
 import { TeamDetailsBlock, type TeamDetail } from "@/components/shared/athlete/TeamDetailsBlock";
+import TeamHistoryBlock from "@/components/shared/athlete/TeamHistoryBlock";
+import { parseTeamHistory } from "@/components/shared/athlete/teamHistory";
 import { motion } from "framer-motion";
 // Coach-only imports (Step 6 unification — viewer="coach" branch).
 import { loadAthleteRaw, mapToRecruiterView } from "@/app/coach/athletes/_data/loadAthleteFromSupabase";
@@ -703,7 +705,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
         bio, cote_globale_entraineur, consentement_parental,
         statut_recrutement_override, notes_coach, ouvert_entraineur_cegep,
         coach_id, recruitment_status, committed_school_id, open_to_offers,
-        sport_secondaire_id, position_secondaire_id, school_id,
+        parcours_equipes, school_id,
         sports!athletes_sport_id_fkey(nom),
         positions!athletes_position_id_fkey(nom, abreviation),
         schools!school_id(name, region, city, type),
@@ -748,17 +750,6 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
 
         const birthDate = d.date_naissance as string | null;
         const age = birthDate ? Math.floor((Date.now() - new Date(birthDate).getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : null;
-
-        let secondarySportName = "";
-        let secondaryPositionName = "";
-        if (d.sport_secondaire_id) {
-          const { data: secSport } = await supabase.from("sports").select("nom").eq("id", d.sport_secondaire_id as string).maybeSingle();
-          secondarySportName = secSport?.nom || "";
-        }
-        if (d.position_secondaire_id) {
-          const { data: secPos } = await supabase.from("positions").select("nom, abreviation").eq("id", d.position_secondaire_id as string).maybeSingle();
-          secondaryPositionName = secPos ? (secPos.abreviation ? `${secPos.nom} (${secPos.abreviation})` : secPos.nom) : "";
-        }
 
         const progArr = (d.programme_cegep_vise as string[]) || [];
 
@@ -825,8 +816,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
           sprint100m: (d.sprint_100m as string) || "",
           primarySport: sport?.nom || "",
           primaryPosition: pos?.abreviation ? `${pos.nom} (${pos.abreviation})` : pos?.nom || "",
-          secondarySport: secondarySportName,
-          secondaryPosition: secondaryPositionName,
+          teamHistory: parseTeamHistory(d.parcours_equipes),
           isCivil: !d.school_id || school?.type === "LIGUE_CIVILE",
           schoolName: (() => {
             if (!d.school_id) return "";
@@ -2458,26 +2448,21 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
               </section>
             )}
 
+            {/* Parcours d'équipes — après Sport principal ; se masque si vide.
+                Anchor = vraie affiliation Nexus (display-only, non éditable). */}
+            <TeamHistoryBlock
+              entries={a.teamHistory}
+              anchor={{
+                teamName: a.isCivil ? (a.teamName || a.leagueName || "") : (a.schoolName || ""),
+                sport: a.primarySport,
+                position: a.primaryPosition,
+                region: a.region,
+              }}
+            />
+
             {/* DETAILED — secondaire + mesures + tests */}
             {isDetailed && (
               <>
-                {a.secondarySport && (
-                  <section className={mobileSection}>
-                    <h2 className={sectionLabel}>Sport secondaire</h2>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="py-4 px-3 text-center" style={{ background: "#1A1D24", borderRadius: 12 }}>
-                        <p className="text-[18px] font-head font-black text-white leading-tight line-clamp-2 uppercase">{a.secondarySport}</p>
-                        <p className="text-[11px] font-bold uppercase tracking-wider text-[#6B7280] mt-2">Sport</p>
-                      </div>
-                      {a.secondaryPosition && (
-                        <div className="py-4 px-3 text-center" style={{ background: "#1A1D24", borderRadius: 12 }}>
-                          <p className="text-[22px] font-head font-black text-white leading-none">{positionAbbr(a.secondaryPosition)}</p>
-                          <p className="text-[11px] font-bold uppercase tracking-wider text-[#6B7280] mt-2">Position</p>
-                        </div>
-                      )}
-                    </div>
-                  </section>
-                )}
 
                 {(a.wingspan || a.handSize || a.dominantHand || a.dominantFoot) && (
                   <section className={mobileSection}>
