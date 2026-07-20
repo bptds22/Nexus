@@ -44,6 +44,7 @@ const CLAIM_MSG: Record<string, string> = {
   ...RESOLVE_MSG,
   email_mismatch: "Le courriel du compte ne correspond pas à l'invitation.",
   not_authenticated: "Session non établie. Réessayez de vous connecter.",
+  role_conflict: "Ce courriel est déjà associé à un compte existant (athlète, coach ou recruteur). Utilisez un autre courriel de contact parental.",
 };
 
 function Shell({ children }: { children: React.ReactNode }) {
@@ -81,6 +82,8 @@ function ParentClaimContent() {
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  // Collision d'email : le courriel a déjà un compte → bascule vers "Se connecter".
+  const [existingAccount, setExistingAccount] = useState(false);
 
   // Résolution du token au mount.
   useEffect(() => {
@@ -112,14 +115,31 @@ function ParentClaimContent() {
     password === confirm &&
     !submitting;
 
+  // Claim serveur (depuis n'importe quelle session authentifiée : signup OU signin).
+  async function doClaim(supabase: ReturnType<typeof createClient>) {
+    if (!token) return;
+    const { data: claimData, error: claimError } = await supabase.rpc("claim_parent_invitation", { p_token: token });
+    if (claimError) {
+      setFormError("Une erreur est survenue lors de la liaison. Réessayez.");
+      setSubmitting(false);
+      return;
+    }
+    const claim = claimData as { ok: boolean; reason?: string };
+    if (!claim?.ok) {
+      setFormError(CLAIM_MSG[claim?.reason ?? ""] ?? "Impossible de finaliser le compte parent.");
+      setSubmitting(false);
+      return;
+    }
+    router.push("/parent");
+  }
+
+  // Création du compte (courriel vierge). Rôle PARENT en metadata → handle_new_auth_user.
   async function handleSubmit() {
     if (state.kind !== "valid" || !canSubmit || !token) return;
     setSubmitting(true);
     setFormError(null);
     const supabase = createClient();
     try {
-      // 1. Création du compte auth — rôle PARENT dans la metadata (handle_new_auth_user
-      //    crée la row public.users ; claim_parent_invitation confirme le rôle).
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: state.parentEmail,
         password,
@@ -131,34 +151,45 @@ function ParentClaimContent() {
         return;
       }
 
-      // 2. S'assurer d'une session (auto-confirm local ; sinon tenter un sign-in).
-      let hasSession = !!signUpData.session;
-      if (!hasSession) {
-        const { data: sInData } = await supabase.auth.signInWithPassword({ email: state.parentEmail, password });
-        hasSession = !!sInData?.session;
-      }
-      if (!hasSession) {
-        setFormError("Compte créé. Confirmez votre courriel, puis rouvrez ce lien pour finaliser.");
+      // Collision : courriel déjà utilisé → signUp renvoie un user obfusqué
+      // (identities vide) + session null, SANS erreur. On bascule vers "Se connecter".
+      if ((signUpData.user?.identities?.length ?? 0) === 0) {
+        setExistingAccount(true);
+        setFormError("Un compte existe déjà avec ce courriel. Connectez-vous pour lier votre enfant.");
         setSubmitting(false);
         return;
       }
 
-      // 3. Claim serveur : rôle PARENT + parent_athletes + claimed_at (garde 1:1).
-      const { data: claimData, error: claimError } = await supabase.rpc("claim_parent_invitation", { p_token: token });
-      if (claimError) {
-        setFormError("Une erreur est survenue lors de la liaison. Réessayez.");
-        setSubmitting(false);
+      // Session immédiate (auto-confirm) → claim. Sinon confirmation courriel requise.
+      if (signUpData.session) {
+        await doClaim(supabase);
         return;
       }
-      const claim = claimData as { ok: boolean; reason?: string };
-      if (!claim?.ok) {
-        setFormError(CLAIM_MSG[claim?.reason ?? ""] ?? "Impossible de finaliser le compte parent.");
-        setSubmitting(false);
-        return;
-      }
-      router.push("/parent");
+      setFormError("Compte créé. Confirmez votre courriel, puis rouvrez ce lien pour finaliser.");
+      setSubmitting(false);
     } catch (err) {
-      console.error("[parent/claim] submit exception:", err);
+      console.error("[parent/claim] signup exception:", err);
+      setFormError("Une erreur est survenue. Réessayez.");
+      setSubmitting(false);
+    }
+  }
+
+  // Connexion à un compte existant (collision d'email) → puis claim.
+  async function handleSignIn() {
+    if (state.kind !== "valid" || !token || password.length < 1 || submitting) return;
+    setSubmitting(true);
+    setFormError(null);
+    const supabase = createClient();
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email: state.parentEmail, password });
+      if (error || !data?.session) {
+        setFormError("Courriel ou mot de passe incorrect.");
+        setSubmitting(false);
+        return;
+      }
+      await doClaim(supabase);
+    } catch (err) {
+      console.error("[parent/claim] signin exception:", err);
       setFormError("Une erreur est survenue. Réessayez.");
       setSubmitting(false);
     }
@@ -207,32 +238,43 @@ function ParentClaimContent() {
         <div>
           <label className={labelCls}>Mot de passe</label>
           <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
-            placeholder="Au moins 8 caractères" className={inputCls} />
+            placeholder={existingAccount ? "Mot de passe de votre compte" : "Au moins 8 caractères"} className={inputCls} />
         </div>
-        <div>
-          <label className={labelCls}>Confirme le mot de passe</label>
-          <input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} className={inputCls} />
-          {confirm.length > 0 && password !== confirm && (
-            <p className="text-[11px] text-[#EF4444] mt-1">Les mots de passe ne correspondent pas.</p>
-          )}
-        </div>
+        {!existingAccount && (
+          <div>
+            <label className={labelCls}>Confirme le mot de passe</label>
+            <input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} className={inputCls} />
+            {confirm.length > 0 && password !== confirm && (
+              <p className="text-[11px] text-[#EF4444] mt-1">Les mots de passe ne correspondent pas.</p>
+            )}
+          </div>
+        )}
 
-        <label className="flex items-start gap-2.5 cursor-pointer">
-          <input type="checkbox" checked={acceptTerms} onChange={(e) => setAcceptTerms(e.target.checked)} className="mt-0.5 w-4 h-4 accent-[#E63946]" />
-          <span className="text-[12px] text-[#9CA3AF] leading-snug">
-            J&apos;accepte les{" "}
-            <Link href="/conditions" target="_blank" className="text-[#E63946] hover:text-white">conditions d&apos;utilisation</Link>{" "}
-            et la{" "}
-            <Link href="/confidentialite" target="_blank" className="text-[#E63946] hover:text-white">politique de confidentialité</Link>.
-          </span>
-        </label>
+        {!existingAccount && (
+          <label className="flex items-start gap-2.5 cursor-pointer">
+            <input type="checkbox" checked={acceptTerms} onChange={(e) => setAcceptTerms(e.target.checked)} className="mt-0.5 w-4 h-4 accent-[#E63946]" />
+            <span className="text-[12px] text-[#9CA3AF] leading-snug">
+              J&apos;accepte les{" "}
+              <Link href="/conditions" target="_blank" className="text-[#E63946] hover:text-white">conditions d&apos;utilisation</Link>{" "}
+              et la{" "}
+              <Link href="/confidentialite" target="_blank" className="text-[#E63946] hover:text-white">politique de confidentialité</Link>.
+            </span>
+          </label>
+        )}
 
         {formError && <p className="text-[13px] text-[#EF4444] font-semibold">{formError}</p>}
 
-        <button type="button" onClick={handleSubmit} disabled={!canSubmit}
-          className="w-full h-12 rounded-lg bg-[#E63946] hover:bg-[#D42B22] disabled:opacity-50 disabled:cursor-not-allowed text-white font-head font-bold text-[13px] uppercase tracking-widest transition-colors">
-          {submitting ? "Création…" : "Créer mon compte parent"}
-        </button>
+        {existingAccount ? (
+          <button type="button" onClick={handleSignIn} disabled={password.length < 1 || submitting}
+            className="w-full h-12 rounded-lg bg-[#E63946] hover:bg-[#D42B22] disabled:opacity-50 disabled:cursor-not-allowed text-white font-head font-bold text-[13px] uppercase tracking-widest transition-colors">
+            {submitting ? "Connexion…" : "Se connecter"}
+          </button>
+        ) : (
+          <button type="button" onClick={handleSubmit} disabled={!canSubmit}
+            className="w-full h-12 rounded-lg bg-[#E63946] hover:bg-[#D42B22] disabled:opacity-50 disabled:cursor-not-allowed text-white font-head font-bold text-[13px] uppercase tracking-widest transition-colors">
+            {submitting ? "Création…" : "Créer mon compte parent"}
+          </button>
+        )}
       </div>
     </Shell>
   );
