@@ -35,7 +35,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import { useSubscription } from "@/lib/hooks/useSubscription";
 import { isMinor } from "@/lib/utils/age";
-import { PARTNER_MEDIA_COPY } from "@/lib/legal/partnerMediaCopy";
+import { PARTNER_MEDIA_COPY, partnerResponsibilityText } from "@/lib/legal/partnerMediaCopy";
 import { Skeleton } from "@/components/ui/Skeleton";
 import {
   triggerHaptic, tierStatus,
@@ -644,10 +644,8 @@ export function AthleteParametresMobile() {
                     {PARTNER_MEDIA_COPY.bullets.map((b) => (
                       <li key={b}>{b}</li>
                     ))}
-                    <li>
-                      <span className="font-bold text-white">{PARTNER_MEDIA_COPY.responsibilityBullet}</span>
-                    </li>
                   </ul>
+                  <p className="pt-1">{partnerResponsibilityText("self")}</p>
                 </div>
               )}
             </Group>
