@@ -22,7 +22,26 @@
       "Bash(find /c/Users/bptds/Documents/Nexus -type f \\\\\\( -name \"*.tsx\" -o -name \"*.ts\" \\\\\\) -exec grep -l \"RSEQ\\\\|NEXUS.*banner\\\\|profil.*athlete\" {} \\\\;)",
       "Bash(npm install *)",
       "Bash(git commit -m ' *)",
-      "Bash(grep -E \"\\\\.\\(tsx|ts|jsx|js\\)$\")"
+      "Bash(grep -E \"\\\\.\\(tsx|ts|jsx|js\\)$\")",
+      "Bash(break)",
+      "Bash(echo \"dev server starting \\(bg pid $!\\)\")",
+      "Bash(curl -s -o /dev/null -w \"http_%{http_code}\\\\n\" http://localhost:3002/page-test)",
+      "PowerShell(Test-Path *)",
+      "mcp__supabase__execute_sql",
+      "mcp__supabase__list_migrations",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3002/page-test)",
+      "Bash(grep -n \"field\\\\|court\\\\|\\\\.tok\\\\|/\\\\* cards \\\\*/\\\\|/\\\\* tokens \\\\*/\\\\|b-mid\\\\|b-full\\\\|b-pri\\\\|card .dep\\\\|@media\\(max-width:720px\\)\" components/team-page/TeamPage.tsx)",
+      "Bash(cd *)",
+      "Bash(node -e \"console.log\\('next', require\\('./package.json'\\).dependencies.next\\)\")",
+      "PowerShell(npx tsc --noEmit -p tsconfig.json 2>&1 | Select-Object -First 30)",
+      "Bash(node \"/c/Users/bptds/Documents/Nexus/shot-audit.cjs\")",
+      "Bash(npm ci *)",
+      "Bash(xargs echo \"adds:\")",
+      "Bash(xargs echo \"removes:\")",
+      "Bash(xargs echo \"changes:\")",
+      "Bash(npm ls *)",
+      "Bash(git config *)",
+      "Bash(echo \"core.editor set to: $\\(git config core.editor\\)\")"
     ]
   }
 }
