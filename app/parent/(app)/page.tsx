@@ -57,18 +57,22 @@ export default function ParentHome() {
       </div>
 
       <nav className="grid gap-3">
-        <Link href="/parent/consentements" className="bg-[#1A1D24] border border-white/5 rounded-xl px-5 py-4 flex items-center justify-between gap-4 hover:border-[#E63946]/40 transition-colors group">
-          <div className="min-w-0">
-            <p className="font-semibold text-white">Consentements</p>
-            <p className="text-[12px] text-[#6B7280] mt-0.5">Gérer les autorisations liées au profil de votre enfant</p>
-          </div>
-          <svg className="shrink-0 text-[#6B7280] group-hover:text-[#E63946] transition-colors" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
-        </Link>
-        <div aria-disabled className="bg-[#1A1D24] border border-white/5 rounded-xl px-5 py-4 opacity-60 cursor-not-allowed">
-          <p className="font-semibold text-white">Activité</p>
-          <p className="text-[12px] text-[#6B7280] mt-0.5">Vues du profil et activité recruteur — à venir (Lot 1c)</p>
-        </div>
+        <HomeTile href="/parent/consentements" title="Consentements" sub="Gérer les autorisations liées au profil de votre enfant" />
+        <HomeTile href="/parent/activite" title="Activité" sub="Vues du profil et intérêt des recruteurs (anonyme)" />
+        <HomeTile href="/parent/notifications" title="Notifications" sub="Événements récents liés au profil de votre enfant" />
       </nav>
     </div>
+  );
+}
+
+function HomeTile({ href, title, sub }: { href: string; title: string; sub: string }) {
+  return (
+    <Link href={href} className="bg-[#1A1D24] border border-white/5 rounded-xl px-5 py-4 flex items-center justify-between gap-4 hover:border-[#E63946]/40 transition-colors group">
+      <div className="min-w-0">
+        <p className="font-semibold text-white">{title}</p>
+        <p className="text-[12px] text-[#6B7280] mt-0.5">{sub}</p>
+      </div>
+      <svg className="shrink-0 text-[#6B7280] group-hover:text-[#E63946] transition-colors" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
+    </Link>
   );
 }
