@@ -21,6 +21,7 @@ const HIDE_PATTERNS = [
   // Whole excluded segments
   'app/admin/**/page.tsx',
   'app/partenaire/**/page.tsx',
+  'app/parent/**/page.tsx',   // Portal parental (Lot 1a) — web only.
   // Public partner profile
   'app/partenaires/[id]/page.tsx',
   // NOTE: app/page.tsx is NOT hidden — Capacitor needs an out/index.html
