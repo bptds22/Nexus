@@ -4,3 +4,7 @@
    change matériellement. (Il n'existe pas de table de versions — surdimensionné
    pour l'usage actuel ; cette constante est la source.) */
 export const PRIVACY_POLICY_VERSION = "2026-07-v1";
+
+/** Libellé de date affiché à côté de la version sur la politique publiée
+ *  (app/confidentialite/page.tsx). Bumper avec PRIVACY_POLICY_VERSION. */
+export const PRIVACY_POLICY_DATE_LABEL = "Juillet 2026";

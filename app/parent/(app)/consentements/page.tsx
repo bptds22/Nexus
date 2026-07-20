@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { PRIVACY_POLICY_VERSION } from "@/lib/legal/policyVersion";
+import { partnerResponsibilityText } from "@/lib/legal/partnerMediaCopy";
 
 /* ═══════════════════════════════════════════════════════════════
    Portal parental — Lot 1b. Page consentements (web only).
@@ -186,7 +187,7 @@ export default function ParentConsentsPage() {
 
         <ToggleRow
           label="Image et visibilité auprès des partenaires"
-          hint="Autoriser les partenaires média approuvés de Nexus à voir le profil (photo incluse). Le retrait masque immédiatement le profil aux partenaires."
+          hint={partnerResponsibilityText("child")}
           on={partnerOn}
           date={partnerOn ? partnerDate : null}
           saving={!!saving.image_partenaire}

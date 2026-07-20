@@ -1,8 +1,11 @@
 /* ═══════════════════════════════════════════════════════════════
    content/legal/confidentialite.ts — iter 7.50-a-bis (legal-1)
 
-   Politique de confidentialité (Loi 25 v2.0). Extrait verbatim
-   de app/confidentialite/page.tsx — aucun mot changé.
+   Politique de confidentialité (Loi 25, version 2026-07-v1).
+   Source unique rendue par app/confidentialite/page.tsx.
+
+   Section 7.5 « Communication à des partenaires média » ajoutée sur
+   instruction BP (mise en cohérence légale — juillet 2026).
 
    ⚠️ Contenu juridique : ne PAS modifier sans accord BP + counsel.
 ═══════════════════════════════════════════════════════════════ */
@@ -318,6 +321,16 @@ export const SECTIONS_CONFIDENTIALITE: Section[] = [
         title: "7.4 — Communication requise par la loi",
         blocks: [
           { type: "p", text: "Nexus peut être tenu de communiquer des renseignements personnels en réponse à une ordonnance judiciaire, une assignation, une demande d'une autorité compétente ou pour se conformer à une obligation légale. Dans la mesure permise par la loi, la personne concernée sera informée d'une telle communication." },
+        ],
+      },
+      {
+        type: "subsection",
+        id: "communication-partenaires",
+        title: "7.5 — Communication à des partenaires média",
+        blocks: [
+          { type: "p", text: "Sur le fondement d'un consentement explicite et facultatif, Nexus peut communiquer la carte officielle de l'athlète — soit son nom, sa position, son établissement et sa photo — à ses partenaires média approuvés (par exemple journalistes sportifs, pages de contenu sportif, balados ou camps spécialisés). Ces partenaires utilisent la carte dans leurs publications, à des fins éditoriales et promotionnelles. Aucun partenaire ne peut contacter l'athlète directement." },
+          { type: "p", text: "Cette communication repose sur une responsabilité partagée : chaque partenaire média est responsable de la protection des renseignements qu'il reçoit et de l'usage qu'il en fait dans ses publications, tandis que Nexus demeure responsable de la communication elle-même et de l'obtention du consentement préalable." },
+          { type: "p", text: "Ce consentement est facultatif et peut être retiré en tout temps, soit par l'athlète depuis les paramètres de son profil, soit par son parent ou tuteur depuis l'espace parent. Le retrait met fin à toute nouvelle communication de la carte aux partenaires." },
         ],
       },
     ],

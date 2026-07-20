@@ -9,9 +9,10 @@ import Footer from "@/components/marketing/Footer";
 import { notFound } from "next/navigation";
 import { SECTIONS_CONFIDENTIALITE as SECTIONS } from "@/content/legal/confidentialite";
 import SectionRenderer, { LegalTocDesktop, LegalTocMobile } from "@/components/legal/SectionRenderer";
+import { PRIVACY_POLICY_VERSION, PRIVACY_POLICY_DATE_LABEL } from "@/lib/legal/policyVersion";
 
 /* ─────────────────────────────────────────────────────────────────
-   Nexus — Politique de confidentialité (Loi 25, v2.0)
+   Nexus — Politique de confidentialité (Loi 25, version 2026-07-v1)
 
    Iter 7.50-a-bis (legal-1) — refactor : le contenu (SECTIONS) +
    les renderers (BlockRenderer, SectionRenderer, LegalToc*) ont été
@@ -86,7 +87,7 @@ export default function ConfidentialitePage() {
           </p>
 
           <p className={`${label} text-[#475569] mt-4`}>
-            Dernière mise à jour : Mars 2026 · Version 2.0
+            Dernière mise à jour : {PRIVACY_POLICY_DATE_LABEL} · Version {PRIVACY_POLICY_VERSION}
           </p>
 
         </div>

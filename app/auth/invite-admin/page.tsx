@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import NexusLogo from "@/components/ui/NexusLogo";
 import Link from "next/link";
 import PlaybookBackground from "@/app/components/PlaybookBackground";
+import { PRIVACY_POLICY_VERSION } from "@/lib/legal/policyVersion";
 
 /* ═══════════════════════════════════════════════════════════════
    Admin Invitation — Director accepts invite + creates account
@@ -66,7 +67,7 @@ function InviteAdminContent() {
     if (!canSubmit) return;
 
     const privacyData = {
-      privacy_policy_accepted: true, privacy_policy_version: "2026-04-v1",
+      privacy_policy_accepted: true, privacy_policy_version: PRIVACY_POLICY_VERSION,
       data_collection_accepted: true, data_responsibility_acknowledged: true,
       consent_privacy_policy: new Date().toISOString(),
       consent_data_collection: new Date().toISOString(),
