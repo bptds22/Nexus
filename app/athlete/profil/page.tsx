@@ -8,7 +8,10 @@ import { calculateCompletionForRole, SECTION_IDS } from "@/lib/utils/profileComp
 import { isValidationDue, isValidationExpired, formatDeadlineFr, currentMonthKey } from "@/lib/utils/profileValidation";
 import VerifiedBadge from "@/components/ui/VerifiedBadge";
 import DatePicker from "@/app/coach/components/DatePicker";
-import type { AthleteSuggestion, AthleteTraitRatings } from "@/lib/types/models";
+import type { AthleteSuggestion, AthleteTraitRatings, TeamHistoryEntry } from "@/lib/types/models";
+import TeamHistoryBlock from "@/components/shared/athlete/TeamHistoryBlock";
+import TeamHistoryEditor from "@/components/shared/athlete/TeamHistoryEditor";
+import { parseTeamHistory, isTeamHistoryValid } from "@/components/shared/athlete/teamHistory";
 import StarRating from "@/components/ui/StarRating";
 import NxIcon from "@/components/ui/NxIcon";
 import { BADGE_CONFIG, BADGE_ORDER, MAX_BADGES, MAX_DETAIL_LENGTH, parseDistinctions, type DistinctionEntry } from "@/lib/config/badges";
@@ -139,8 +142,6 @@ const MESSAGE_PLACEHOLDERS: Record<string, string> = {
   "Sprint 100m": "Ex: Chrono de la compétition d'athlétisme",
   "Sport principal": "Ex: J'ai changé de sport cette saison",
   "Position": "Ex: Le coach m'a déplacé à cette position",
-  "Sport secondaire": "Ex: Je joue aussi au basketball en parascolaire",
-  "Position secondaire": "Ex: Je joue meneur quand je suis au basketball",
   "Numéro": "Ex: J'ai changé de numéro cette saison",
 };
 
@@ -151,8 +152,6 @@ const FIELD_PLACEHOLDERS: Record<string, string> = {
   "Taille mains": "Ex: 9.5\"",
   "Ville": "Ex: Québec",
   "Position": "Ex: Quart-arrière (QB)",
-  "Position secondaire": "Ex: Receveur (WR)",
-  "Sport secondaire": "Ex: Basketball",
   "Numéro": "Ex: #12",
   "Programme": "Ex: Sciences humaines",
   "Moyenne générale": "Ex: 82%",
@@ -184,8 +183,8 @@ const UNIT_FIELDS: Record<string, { unit: string; type: "number" }> = {
 
 const DUAL_FIELDS = new Set(["Taille", "Saut longueur"]);
 
-const DB_SPORT_FIELDS = new Set(["Sport principal", "Sport secondaire"]);
-const DB_POSITION_FIELDS = new Set(["Position", "Position secondaire"]);
+const DB_SPORT_FIELDS = new Set(["Sport principal"]);
+const DB_POSITION_FIELDS = new Set(["Position"]);
 
 function StructuredInput({ fieldKey, proposed, setProposed, inputCls }: { fieldKey: string; proposed: string; setProposed: (v: string) => void; inputCls: string }) {
   const [sports, setSports] = useState<{ id: string; nom: string }[]>([]);
@@ -811,6 +810,66 @@ function DistinctionsSuggest({ currentDistinctions, pending, onSubmit }: {
   );
 }
 
+/* ── Parcours d'équipes — direct-write editor (athlete-owned, NOT a
+      suggestion; saves straight to athletes.parcours_equipes). ─────── */
+function TeamHistoryDirectEdit({ athleteId, current, recruiterView, onSaved }: {
+  athleteId: string;
+  current: TeamHistoryEntry[];
+  recruiterView: boolean;
+  onSaved: (entries: TeamHistoryEntry[]) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState<TeamHistoryEntry[]>(current);
+  const [sports, setSports] = useState<{ id: string; nom: string }[]>([]);
+  const [saving, setSaving] = useState(false);
+  const maxYear = new Date().getFullYear() + 1;
+  const valid = isTeamHistoryValid(draft, maxYear);
+
+  useEffect(() => {
+    if (!editing || sports.length > 0) return;
+    (async () => {
+      const { data } = await createClient().from("sports").select("id, nom").order("nom");
+      if (data) setSports(data);
+    })();
+  }, [editing, sports.length]);
+
+  function start() { setDraft(current); setEditing(true); }
+  async function save() {
+    if (!valid) return;
+    setSaving(true);
+    const { error } = await createClient().from("athletes").update({ parcours_equipes: draft }).eq("id", athleteId);
+    setSaving(false);
+    if (!error) { onSaved(draft); setEditing(false); }
+  }
+
+  return (
+    <div id="parcours-equipes" className="bg-[#1A1D24] rounded-xl border border-white/5 p-5">
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-[13px] font-head font-bold tracking-[0.15em] uppercase text-[#9CA3AF]">Parcours d&apos;équipes</h2>
+        {!recruiterView && !editing && (
+          <button type="button" onClick={start} className="text-[12px] font-bold text-[#E63946] hover:text-[#ff4d5a] transition-colors">
+            {current.length > 0 ? "Modifier" : "Ajouter"}
+          </button>
+        )}
+      </div>
+
+      {editing ? (
+        <>
+          <TeamHistoryEditor value={draft} onChange={setDraft} sports={sports} maxYear={maxYear} />
+          <div className="flex items-center justify-end gap-3 mt-4 pt-3 border-t border-[#2D3748]/40">
+            <button type="button" onClick={() => setEditing(false)} className="text-[13px] font-bold text-[#9CA3AF] hover:text-white transition-colors">Annuler</button>
+            <button type="button" onClick={save} disabled={saving || !valid} className="px-4 py-2 bg-[#E63946] hover:bg-[#D42B22] disabled:opacity-50 text-white text-[13px] font-bold rounded-lg transition-colors">{saving ? "…" : "Enregistrer"}</button>
+          </div>
+        </>
+      ) : current.length === 0 ? (
+        <p className="text-[13px] text-[#6b7280]">Aucun parcours ajouté.</p>
+      ) : (
+        <TeamHistoryBlock entries={current} headingClassName="hidden" />
+      )}
+    </div>
+  );
+}
+
 /* ── Trait labels ──────────────────────────────────────────────── */
 
 const TRAIT_LABELS: Record<keyof AthleteTraitRatings, string> = {
@@ -1021,17 +1080,6 @@ function AthleteProfilPageDesktop() {
 
       setAthleteId(raw.id);
 
-      // Secondary sport/position lookups
-      let secondarySportName = "";
-      let secondaryPositionName = "";
-      if (raw.sport_secondaire_id) {
-        const { data: ss } = await supabase.from("sports").select("nom").eq("id", raw.sport_secondaire_id).maybeSingle();
-        secondarySportName = ss?.nom || "";
-      }
-      if (raw.position_secondaire_id) {
-        const { data: sp } = await supabase.from("positions").select("nom").eq("id", raw.position_secondaire_id).maybeSingle();
-        secondaryPositionName = sp?.nom || "";
-      }
 
       const sportRel = Array.isArray(raw.sports) ? raw.sports[0] : raw.sports;
       const posRel = Array.isArray(raw.positions) ? raw.positions[0] : raw.positions;
@@ -1090,8 +1138,6 @@ function AthleteProfilPageDesktop() {
         profileCompleteness,
         primarySport: sportRel?.nom || "",
         primaryPosition: posRel?.nom || posRel?.abreviation || "",
-        secondarySport: secondarySportName,
-        secondaryPosition: secondaryPositionName,
         schoolName,
         teamName,
         leagueName,
@@ -1321,8 +1367,7 @@ function AthleteProfilPageDesktop() {
       "Taille mains": "taille_mains", "Main dominante": "main_dominante", "Pied dominant": "pied_dominant",
       "40 yards": "test_40_verges", "Saut vertical": "saut_vertical", "Saut longueur": "saut_longueur",
       "Développé couché": "developpe_couche", "Navette": "navette_agilite", "Sprint 100m": "sprint_100m",
-      "Sport principal": "sport_id", "Position": "position_id", "Sport secondaire": "sport_secondaire_id",
-      "Position secondaire": "position_secondaire_id", "Numéro": "numero_jersey",
+      "Sport principal": "sport_id", "Position": "position_id", "Numéro": "numero_jersey",
     };
     const dbField = fieldMap[field] || field;
     const currentVal = a._raw ? String(a._raw[dbField] || "") : "";
@@ -1609,8 +1654,6 @@ function AthleteProfilPageDesktop() {
               <div className="space-y-1">
                 <SuggestibleField label="Sport principal" value={a.primarySport || "—"} fieldKey="Sport principal" pending={getPending("Sport principal")} onSubmit={submitSuggestion} recruiterView={recruiterView} />
                 <SuggestibleField label="Position principale" value={a.primaryPosition || "—"} fieldKey="Position" pending={getPending("Position")} onSubmit={submitSuggestion} recruiterView={recruiterView} />
-                <SuggestibleField label="Sport secondaire" value={a.secondarySport || "—"} fieldKey="Sport secondaire" pending={getPending("Sport secondaire")} onSubmit={submitSuggestion} recruiterView={recruiterView} />
-                <SuggestibleField label="Position secondaire" value={a.secondaryPosition || "—"} fieldKey="Position secondaire" pending={getPending("Position secondaire")} onSubmit={submitSuggestion} recruiterView={recruiterView} />
                 <SuggestibleField label="Numéro" value={a.jerseyNumber ? `#${a.jerseyNumber}` : "—"} fieldKey="Numéro" pending={getPending("Numéro")} onSubmit={submitSuggestion} recruiterView={recruiterView} />
                 <div className="pt-2"><button type="button" onClick={() => setEditSection(null)} className="text-[12px] text-[#6b7280] hover:text-white transition-colors">Fermer</button></div>
               </div>
@@ -1618,12 +1661,18 @@ function AthleteProfilPageDesktop() {
               <>
                 <LockedField label="Sport principal" value={a.primarySport} recruiterView={recruiterView} />
                 <LockedField label="Position principale" value={a.primaryPosition} recruiterView={recruiterView} />
-                {a.secondarySport && <LockedField label="Sport secondaire" value={a.secondarySport} recruiterView={recruiterView} />}
-                {a.secondaryPosition && <LockedField label="Position secondaire" value={a.secondaryPosition} recruiterView={recruiterView} />}
                 <LockedField label="Numéro" value={a.jerseyNumber ? `#${a.jerseyNumber}` : null} recruiterView={recruiterView} />
               </>
             )}
           </div>
+
+          {/* ═══ PARCOURS D'ÉQUIPES ═══ (direct-write, athlete-owned) */}
+          <TeamHistoryDirectEdit
+            athleteId={athleteId}
+            current={parseTeamHistory((a._raw as Record<string, unknown> | undefined)?.parcours_equipes)}
+            recruiterView={recruiterView}
+            onSaved={(v) => setA((prev) => (prev ? { ...prev, _raw: { ...(prev._raw as Record<string, unknown>), parcours_equipes: v } } : prev))}
+          />
 
           {/* ═══ PHYSICAL + TESTS ═══ */}
           <div id={SECTION_IDS.physical} className="bg-[#1A1D24] rounded-xl border border-white/5 p-5">

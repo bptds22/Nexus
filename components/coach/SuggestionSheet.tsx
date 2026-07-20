@@ -25,9 +25,7 @@ import type { CoachTaskSuggestion } from "@/lib/coach/tasks";
 export const CHAMP_LABEL_MAP: Record<string, string> = {
   "Numéro": "Changement de numéro",
   "Position": "Changement de position",
-  "Position secondaire": "Changement de position secondaire",
   "Sport principal": "Changement de sport principal",
-  "Sport secondaire": "Changement de sport secondaire",
   "Taille": "Changement de taille",
   "Poids": "Changement de poids",
   "Envergure": "Changement d'envergure",

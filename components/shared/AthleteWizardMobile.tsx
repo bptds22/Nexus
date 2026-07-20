@@ -723,8 +723,6 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
 
     push("Sport principal", f.sports.primarySport, b.sports.primarySport);
     push("Position", f.sports.primaryPosition, b.sports.primaryPosition);
-    push("Position secondaire", f.sports.secondaryPosition, b.sports.secondaryPosition);
-    push("Sport secondaire", f.sports.secondarySport, b.sports.secondarySport);
     push("Numéro", f.sports.jerseyNumber, b.sports.jerseyNumber);
     push("Équipe", f.sports.currentTeam, b.sports.currentTeam);
     push("Ouvert entraîneur CÉGEP", f.sports.openToCoaching, b.sports.openToCoaching);
@@ -1048,11 +1046,6 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
         options={SPORTS.map((s) => ({ value: s, label: s }))}
         value={form.sports.primarySport || null}
         onChange={(v) => updateSports("primarySport", v ? String(v) : "")} />
-      <MobilePicker open={openSecondarySportPicker} onClose={() => setOpenSecondarySportPicker(false)}
-        title="Sport secondaire"
-        options={[{ value: "", label: "Aucun" }, ...SPORTS.map((s) => ({ value: s, label: s }))]}
-        value={form.sports.secondarySport || ""}
-        onChange={(v) => updateSports("secondarySport", v ? String(v) : "")} />
       <MobilePicker open={openGenderPicker} onClose={() => setOpenGenderPicker(false)}
         title="Genre"
         options={[{ value: "M", label: "Masculin" }, { value: "F", label: "Féminin" }, { value: "X", label: "Non genré" }]}
@@ -1080,10 +1073,6 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
         title="Position principale" options={primaryPositions}
         value={form.sports.primaryPosition || null}
         onChange={(v) => updateSports("primaryPosition", v ? String(v) : "")} />
-      <MobilePicker open={openSecondaryPosPicker} onClose={() => setOpenSecondaryPosPicker(false)}
-        title="Position secondaire" options={primaryPositions}
-        value={form.sports.secondaryPosition || null}
-        onChange={(v) => updateSports("secondaryPosition", v ? String(v) : "")} />
       <MobilePicker open={openRecruitmentStatusPicker} onClose={() => setOpenRecruitmentStatusPicker(false)}
         title="Statut de recrutement" options={RECRUITMENT_STATUS_OPTIONS}
         value={recruitmentStatus}
@@ -1649,18 +1638,6 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
         <AdvancedDivider />
 
         <Card>
-          {isCustomSport ? (
-            <InlineEditRow label="Position secondaire" value={s.secondaryPosition}
-              onSave={(v) => updateSports("secondaryPosition", v)}
-              placeholder="Saisis la position secondaire…" detailed />
-          ) : (
-            <PickerRow label="Position secondaire" value={s.secondaryPosition}
-              onTap={() => s.primarySport ? setOpenSecondaryPosPicker(true) : null}
-              placeholder="Aucune" detailed />
-          )}
-          <PickerRow label="Sport secondaire" value={s.secondarySport}
-            onTap={() => setOpenSecondarySportPicker(true)}
-            placeholder="Aucun" detailed />
           <ToggleRow label="Ouvert à devenir entraîneur CÉGEP"
             checked={s.openToCoaching}
             onToggle={() => updateSports("openToCoaching", !s.openToCoaching)}
@@ -2354,7 +2331,7 @@ function CreateSummary({
       title: "Sport",
       rows: [
         { label: "Sport principal", value: form.sports.primarySport },
-        { label: "Position", value: `${form.sports.primaryPosition}${form.sports.secondaryPosition ? ` / ${form.sports.secondaryPosition}` : ""}` },
+        { label: "Position", value: form.sports.primaryPosition },
         { label: "Numéro", value: form.sports.jerseyNumber },
         { label: "Équipe", value: form.sports.currentTeam },
       ],

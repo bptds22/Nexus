@@ -68,8 +68,6 @@ export interface SaveCreateOptions {
 interface SportIds {
   sportId: string | null;
   positionId: string | null;
-  sportSecondaireId: string | null;
-  positionSecondaireId: string | null;
 }
 
 /** COTE AUTO-AVERAGE — DETAILED ALWAYS WINS.
@@ -102,8 +100,6 @@ export function computeCoteGlobale(form: AthleteFormData): number | null {
 async function resolveSportIds(supabase: SupabaseClient, form: AthleteFormData): Promise<SportIds> {
   let sportId: string | null = null;
   let positionId: string | null = null;
-  let sportSecondaireId: string | null = null;
-  let positionSecondaireId: string | null = null;
 
   if (form.sports.primarySport) {
     const { data } = await supabase
@@ -125,19 +121,7 @@ async function resolveSportIds(supabase: SupabaseClient, form: AthleteFormData):
       positionId = (posRow2 as { id?: string } | null)?.id ?? null;
     }
   }
-  if (form.sports.secondaryPosition && sportId) {
-    const { data } = await supabase
-      .from("positions").select("id")
-      .eq("abreviation", form.sports.secondaryPosition).eq("sport_id", sportId).maybeSingle();
-    positionSecondaireId = (data as { id?: string } | null)?.id ?? null;
-  }
-  if (form.sports.secondarySport && form.sports.secondarySport !== "Aucun") {
-    const { data } = await supabase
-      .from("sports").select("id")
-      .eq("nom", form.sports.secondarySport).maybeSingle();
-    sportSecondaireId = (data as { id?: string } | null)?.id ?? null;
-  }
-  return { sportId, positionId, sportSecondaireId, positionSecondaireId };
+  return { sportId, positionId };
 }
 
 function programmeCegepVise(form: AthleteFormData): string[] {
@@ -197,10 +181,10 @@ function buildSharedAthletesPayload(
     // Sport
     sport_id: ids.sportId,
     position_id: ids.positionId,
-    sport_secondaire_id: ids.sportSecondaireId,
-    position_secondaire_id: ids.positionSecondaireId,
     numero_jersey: form.sports.jerseyNumber ? parseInt(form.sports.jerseyNumber) : null,
     ouvert_entraineur_cegep: form.sports.openToCoaching,
+    // Parcours d'équipes (JSONB) — cap 10 (DB CHECK also enforces).
+    parcours_equipes: (form.sports.parcoursEquipes ?? []).slice(0, 10),
 
     // Eval mirror (athletes mirror — recruteur uses this for the card)
     cote_globale_entraineur: coteGlobale,

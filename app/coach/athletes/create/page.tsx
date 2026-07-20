@@ -90,11 +90,7 @@ interface AthleteFormData {
     sportsMode: "simple" | "detailed";
     primarySport: string;
     primarySportDetail: string;
-    secondarySport: string;
-    secondarySportDetail: string;
     primaryPosition: string;
-    secondaryPosition: string;
-    secondarySportPosition: string;
     selectedTeamId: string;
     currentTeam: string;
     teamLevel: string;
@@ -213,8 +209,8 @@ const INITIAL_FORM: AthleteFormData = {
   },
   sports: {
     sportsMode: "simple",
-    primarySport: "", primarySportDetail: "", secondarySport: "", secondarySportDetail: "", primaryPosition: "",
-    secondaryPosition: "", secondarySportPosition: "", selectedTeamId: "", currentTeam: "", teamLevel: "", teamDivision: "",
+    primarySport: "", primarySportDetail: "", primaryPosition: "",
+    selectedTeamId: "", currentTeam: "", teamLevel: "", teamDivision: "",
     jerseyNumber: "", league: "",
     secondaryTeamId: "", secondaryTeam: "", secondaryTeamLevel: "", secondaryTeamDivision: "", secondaryLeague: "",
     recruitingLevel: "", openToCoaching: false,
@@ -1165,7 +1161,6 @@ export default function CreateAthletePage() {
             <label className={labelCls}>Numéro de chandail{req}</label>
             <input type="text" inputMode="numeric" value={d.jerseyNumber} onChange={(e) => { const v = e.target.value.replace(/\D/g, ""); updateSports("jerseyNumber", v); }} placeholder="#" className={`${inputCls} ${isFieldEmpty(d.jerseyNumber) ? errBorder : ""}`} />
           </div>
-          <SportPositionSelect sport={d.primarySport === "Autre" && d.primarySportDetail ? "Autre" : d.primarySport} value={d.secondaryPosition} onChange={(v) => updateSports("secondaryPosition", v)} label="Position secondaire" />
 
           {/* Équipe — always visible (Simplifiée + Détaillée) */}
           <div className="sm:col-span-2">
@@ -1182,22 +1177,6 @@ export default function CreateAthletePage() {
           <div className="border-t border-[#1e2128] mt-2 pt-5">
             <p className={sectionTitle}>Détails additionnels</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
-              <div>
-                <label className={labelCls}>Sport secondaire</label>
-                <NxSelect value={d.secondarySport}
-                  onChange={(v) => {
-                    const val = v === "Aucun" ? "" : v;
-                    updateSports("secondarySport", val);
-                    if (val !== "Autre") updateSports("secondarySportDetail", "");
-                    if (!val) { updateSports("secondarySportPosition", ""); updateSports("secondaryTeamId", ""); updateSports("secondaryTeam", ""); updateSports("secondaryTeamLevel", ""); updateSports("secondaryTeamDivision", ""); updateSports("secondaryLeague", ""); }
-                  }}
-                  placeholder="Aucun" options={[{ value: "Aucun", label: "Aucun" }, ...SPORTS.map((s) => ({ value: s, label: s }))]} />
-                {d.secondarySport === "Autre" && <input type="text" value={d.secondarySportDetail} onChange={(e) => updateSports("secondarySportDetail", e.target.value)} placeholder="Précisez le sport…" className={`${inputCls} mt-2`} />}
-              </div>
-              {d.secondarySport && d.secondarySport !== "" && (
-                <SportPositionSelect sport={d.secondarySport === "Autre" && d.secondarySportDetail ? "Autre" : d.secondarySport} value={d.secondarySportPosition} onChange={(v) => updateSports("secondarySportPosition", v)}
-                  label={`Position — ${d.secondarySport === "Autre" && d.secondarySportDetail ? d.secondarySportDetail : d.secondarySport}`} />
-              )}
 
               {d.selectedTeamId && (
                 <>
@@ -1575,7 +1554,7 @@ export default function CreateAthletePage() {
         {summaryCard("Sport", 4, (
           <div>
             {infoRow("Sport principal", sports.primarySport)}
-            {infoRow("Position", `${sports.primaryPosition}${sports.secondaryPosition ? ` / ${sports.secondaryPosition}` : ""}`)}
+            {infoRow("Position", sports.primaryPosition)}
             {infoRow("Équipe", sports.currentTeam)}
             {infoRow("Niveau", sports.teamLevel)}
             {infoRow("Chandail", sports.jerseyNumber ? `#${sports.jerseyNumber}` : "")}

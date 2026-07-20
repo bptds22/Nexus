@@ -475,7 +475,6 @@ export default function AdminAthleteDetailPage() {
   }
 
   const filteredPositions = positions.filter((p) => p.sport_id === A("sport_id"));
-  const filteredSecPositions = positions.filter((p) => p.sport_id === A("sport_secondaire_id"));
 
   async function updatePipelineStage(rowId: string, nextStage: string) {
     setPipelineSaving(rowId);
@@ -513,8 +512,6 @@ export default function AdminAthleteDetailPage() {
       telephone_parent: A("telephone_parent") || null,
       sport_id: A("sport_id") || null,
       position_id: A("position_id") || null,
-      sport_secondaire_id: A("sport_secondaire_id") || null,
-      position_secondaire_id: A("position_secondaire_id") || null,
       school_id: A("school_id") || null,
       numero_jersey: A("numero_jersey") || null,
       taille_pieds: A("taille_pieds") ?? null,
@@ -1133,10 +1130,6 @@ export default function AdminAthleteDetailPage() {
 
   const sportOpts = [{ v: "", l: "—" }, ...sports.map((s) => ({ v: s.id, l: s.nom }))];
   const posOpts = [{ v: "", l: "—" }, ...filteredPositions.map((p) => ({ v: p.id, l: p.nom }))];
-  const secPosOpts = [
-    { v: "", l: "—" },
-    ...filteredSecPositions.map((p) => ({ v: p.id, l: p.nom })),
-  ];
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-8 space-y-6">
@@ -1263,11 +1256,6 @@ export default function AdminAthleteDetailPage() {
             select("sport_id", sportOpts, () => setA("position_id", null)),
           )}
           {row("Position principale", select("position_id", posOpts))}
-          {row(
-            "Sport secondaire",
-            select("sport_secondaire_id", sportOpts, () => setA("position_secondaire_id", null)),
-          )}
-          {row("Position secondaire", select("position_secondaire_id", secPosOpts))}
           {row(
             "École",
             <SchoolSelect
@@ -1761,8 +1749,6 @@ export default function AdminAthleteDetailPage() {
                   <InfoRow label="Sport principal" value={a.primarySport} icon="activity" />
                   <InfoRow label="Position" value={a.primaryPosition} icon="target" />
                   <InfoRow label="Numéro" value={a.jerseyNumber ? `#${a.jerseyNumber}` : undefined} icon="hash" />
-                  {a.secondarySport && <InfoRow label="Sport secondaire" value={a.secondarySport} icon="activity" />}
-                  {a.secondaryPosition && <InfoRow label="Position secondaire" value={a.secondaryPosition} icon="target" />}
                   {a.teamName && <InfoRow label="Équipe" value={a.teamName} icon="flag" />}
                   {a.leagueName && <InfoRow label="Ligue" value={a.leagueName} icon="trophy" />}
                   {a.teamLevel && <InfoRow label="Niveau" value={a.teamLevel} icon="layers" />}
