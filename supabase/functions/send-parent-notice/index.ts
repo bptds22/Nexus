@@ -4,8 +4,9 @@
 // (secret DÉDIÉ, distinct de PUSH_DISPATCH_SECRET).
 //
 // PII minimisée : le corps ne nomme JAMAIS l'enfant. Le body n'attend que
-// { parent_email, parent_first_name } — le prénom/nom de l'athlète n'est ni
-// requis ni transmis.
+// { parent_email, parent_first_name, claim_token? } — le prénom/nom de
+// l'athlète n'est ni requis ni transmis. claim_token (facultatif, envoyé par le
+// trigger v2 20260720170400) alimente le CTA « Créer mon compte parent ».
 //
 // Gabarit : mutualisé dans ../_shared/emailLayout.ts (renderEmail). Le corps
 // spécifique à ce courriel vit dans ./email.ts (buildBody).
@@ -31,11 +32,14 @@ Deno.serve(async (req) => {
   // (formule d'appel). Aucun nom d'enfant attendu ni lu.
   const parent_email = typeof payload?.parent_email === "string" ? payload.parent_email.trim() : "";
   const parent_first_name = typeof payload?.parent_first_name === "string" ? payload.parent_first_name.trim() : "";
+  // claim_token facultatif : alimente le CTA portail. Absent (trigger v1 /
+  // appel manuel) → repli sur ${APP_URL} côté email.ts, jamais d'URL cassée.
+  const claim_token = typeof payload?.claim_token === "string" ? payload.claim_token.trim() : "";
   if (!parent_email) {
     return new Response("parent_email requis", { status: 400 });
   }
 
-  const { html, text } = buildBody(parent_first_name);
+  const { html, text } = buildBody(parent_first_name, claim_token);
 
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
