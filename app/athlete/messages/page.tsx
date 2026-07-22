@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import { useAthleteConversations, type AthleteThreadData } from "@/lib/queries/athlete/useAthleteConversations";
+import { AthleteMessagesMobile } from "@/components/shared/AthleteMessagesMobile";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -61,7 +61,7 @@ function ThreadRow({ t }: { t: AthleteThreadData }) {
 }
 
 export default function AthleteMessagesPage() {
-  if (IS_CAPACITOR) notFound();
+  if (IS_CAPACITOR) return <AthleteMessagesMobile />;
   const { data: threads = [], isLoading } = useAthleteConversations();
 
   return (

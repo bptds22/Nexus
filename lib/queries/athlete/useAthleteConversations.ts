@@ -25,6 +25,7 @@ export interface AthleteThreadData {
   lastMessageAt: string;
   lastSenderId: string | null;
   unreadCount: number;
+  status: string;
 }
 
 function roleLabel(scRole: string | undefined): string {
@@ -137,6 +138,7 @@ export function useAthleteConversations() {
           lastMessageAt: (c.last_message_at as string) || (c.created_at as string) || "",
           lastSenderId: lastSenderMap.get(c.id as string) ?? null,
           unreadCount: unreadMap.get(c.id as string) ?? 0,
+          status: (c.status as string) || "ACTIVE",
         };
       });
     },

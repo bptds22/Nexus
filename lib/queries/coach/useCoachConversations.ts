@@ -26,10 +26,11 @@ export interface CoachThreadData {
   recruiterInitials: string;
   recruiterPhotoUrl: string | null;
   recruiterCegep: string;
-  /** Athlete subject (which player the recruiter is asking about). */
+  /** Athlete subject (RECRUTEUR_COACH) OR counterparty (ATHLETE_COACH). */
   athleteId: string;
   athleteName: string;
   athleteInitials: string;
+  athletePhotoUrl: string | null;
   athletePosition: string;
   /** Last message preview + meta. */
   lastMessage: string;
@@ -60,7 +61,7 @@ export function useCoachConversations() {
             schools!school_id(name)
           ),
           athlete:athletes!athlete_id(
-            id, first_name, last_name,
+            id, first_name, last_name, photo_url,
             positions!position_id(nom, abreviation)
           )
         `)
@@ -118,6 +119,7 @@ export function useCoachConversations() {
           athleteId: (ath?.id as string) || "",
           athleteName: `${af} ${al}`.trim() || "Athlète",
           athleteInitials: `${af[0] || ""}${al[0] || ""}`.toUpperCase(),
+          athletePhotoUrl: (ath?.photo_url as string) || null,
           athletePosition: pos?.abreviation || "",
           lastMessage: lastMsgMap.get(c.id as string) || "",
           lastMessageAt: (c.last_message_at as string) || (c.created_at as string) || "",

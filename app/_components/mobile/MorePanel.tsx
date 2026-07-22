@@ -70,6 +70,7 @@ const Icons = {
   lists: <svg {...I_PROPS}><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" /></svg>,
   activity: <svg {...I_PROPS}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></svg>,
   bell: <svg {...I_PROPS}><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 01-3.46 0" /></svg>,
+  eye: <svg {...I_PROPS}><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>,
   cegep: <svg {...I_PROPS}><path d="M22 10v6M2 10l10-5 10 5-10 5z" /><path d="M6 12v5c0 1.66 2.69 3 6 3s6-1.34 6-3v-5" /></svg>,
   recruteurs: <svg {...I_PROPS}><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" /></svg>,
   users: <svg {...I_PROPS}><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" /></svg>,
@@ -401,6 +402,8 @@ export default function MorePanel({
     return [
       {
         items: [
+          // "Ma visibilité" déplacée de la tab bar (Messages a pris son slot).
+          { key: "visibilite", label: "Ma visibilité", href: "/athlete/visibilite", icon: Icons.eye },
           { key: "notifications", label: "Notifications", href: "/athlete/notifications", icon: Icons.bell, badge: actBadge },
         ],
       },

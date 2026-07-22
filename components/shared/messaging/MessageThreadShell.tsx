@@ -60,6 +60,8 @@ export interface MessageThreadShellProps<M> {
   getCreatedAt: (m: M) => string;
   getSenderId: (m: M) => string | undefined;
   getStatus?: (m: M) => "sending" | "sent" | "error" | undefined;
+  /** Optionnel : message rétracté → ligne système (tous types). Défaut false. */
+  getRetracted?: (m: M) => boolean;
 
   /** Bubble color when the message is from the current user. */
   meColor?: string;
@@ -88,7 +90,7 @@ export interface MessageThreadShellProps<M> {
 export function MessageThreadShell<M>({
   messages, isLoading,
   currentUserId,
-  getId, getContent, getCreatedAt, getSenderId, getStatus,
+  getId, getContent, getCreatedAt, getSenderId, getStatus, getRetracted,
   meColor = "#0A84FF",
   otherColor = "#262628",
   headerCenter, onBack,
@@ -225,6 +227,7 @@ export function MessageThreadShell<M>({
                   status={getStatus?.(item.msg)}
                   meColor={meColor}
                   otherColor={otherColor}
+                  retracted={getRetracted?.(item.msg) ?? false}
                 />
               )
             )}

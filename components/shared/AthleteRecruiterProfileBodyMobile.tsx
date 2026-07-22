@@ -11,6 +11,7 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { findOrCreateAthleteCoachConversation } from "@/lib/queries/messaging/createAthleteCoachConversation";
 import { mockAthleteProfileFull } from "@/lib/mock/athleteProfileRecruiter";
 import type {
   AthleteProfileRecruiterView,
@@ -2658,30 +2659,53 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
             transition: "transform 280ms cubic-bezier(0.4, 0, 0.2, 1)",
           }}
         >
-          <button
-            type="button"
-            onClick={() => {
-              triggerHaptic("Medium");
-              // Capacitor static export : matche le pattern stash-puis-push
-              // d'app/page.tsx (errorPath fallback). Sans le stash, le shell
-              // placeholder/modifier reçoit athleteId="placeholder" et la
-              // pre-fill du wizard échoue (loadAthleteRaw rejette le non-UUID
-              // → blank form). Le web push direct l'id réel.
-              if (IS_CAPACITOR) {
-                try { sessionStorage.setItem(`${SESSION_KEY_PREFIX}id`, id); } catch { /* no-op */ }
-                router.push("/coach/athletes/placeholder/modifier/");
-              } else {
-                router.push(`/coach/athletes/${id}/modifier`);
-              }
-            }}
-            className="w-full flex items-center justify-center gap-2 bg-[#E63946] text-white rounded-2xl px-4 py-4 font-head font-bold text-[13px] uppercase tracking-widest active:bg-[#D42B22] shadow-[0_0_20px_rgba(230,57,70,0.3)]"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 20h9" />
-              <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
-            </svg>
-            Modifier le profil
-          </button>
+          <div className="flex items-stretch gap-2">
+            {/* Q4 — Envoyer un message (athlète↔coach). Find-or-create + route
+                vers le fil coach. Le coach est déjà sur la fiche de l'athlète. */}
+            <button
+              type="button"
+              onClick={async () => {
+                triggerHaptic("Light");
+                const supabase = createClient();
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) return;
+                const { conversationId } = await findOrCreateAthleteCoachConversation(supabase, { athleteId: id, coachId: user.id });
+                if (conversationId) router.push(`/coach/demandes/${conversationId}`);
+                else toast.error({ message: "Impossible d'ouvrir la conversation" });
+              }}
+              className="flex items-center justify-center gap-1.5 shrink-0 px-4 py-4 rounded-2xl border border-[#22C55E]/40 text-[#22C55E] font-head font-bold text-[13px] uppercase tracking-widest active:bg-[#22C55E]/10"
+              aria-label="Envoyer un message"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
+              Message
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                triggerHaptic("Medium");
+                // Capacitor static export : matche le pattern stash-puis-push
+                // d'app/page.tsx (errorPath fallback). Sans le stash, le shell
+                // placeholder/modifier reçoit athleteId="placeholder" et la
+                // pre-fill du wizard échoue (loadAthleteRaw rejette le non-UUID
+                // → blank form). Le web push direct l'id réel.
+                if (IS_CAPACITOR) {
+                  try { sessionStorage.setItem(`${SESSION_KEY_PREFIX}id`, id); } catch { /* no-op */ }
+                  router.push("/coach/athletes/placeholder/modifier/");
+                } else {
+                  router.push(`/coach/athletes/${id}/modifier`);
+                }
+              }}
+              className="flex-1 flex items-center justify-center gap-2 bg-[#E63946] text-white rounded-2xl px-4 py-4 font-head font-bold text-[13px] uppercase tracking-widest active:bg-[#D42B22] shadow-[0_0_20px_rgba(230,57,70,0.3)]"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 20h9" />
+                <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
+              </svg>
+              Modifier le profil
+            </button>
+          </div>
         </div>,
         document.body,
       )}

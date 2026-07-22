@@ -76,10 +76,12 @@ function useArchiveCoachConversation() {
 
 /* ── Filter keyset (parité recruteur — 3 filtres simples) ──── */
 
-type FilterKey = "tous" | "non_lu" | "sans_reponse" | "archive";
+type FilterKey = "tous" | "recruteurs" | "athletes" | "non_lu" | "sans_reponse" | "archive";
 
 const FILTER_OPTIONS: FilterOption<FilterKey>[] = [
   { value: "tous",         label: "Tous" },
+  { value: "recruteurs",   label: "Recruteurs" },
+  { value: "athletes",     label: "Athlètes" },
   { value: "non_lu",       label: "Non lu" },
   { value: "sans_reponse", label: "Sans réponse" },
   { value: "archive",      label: "Archivé" },
@@ -111,7 +113,9 @@ export function CoachDemandesMobile() {
   // Filtre + recherche local
   const filtered = useMemo(() => {
     let list = [...threads];
-    if (filter === "non_lu") list = list.filter((t) => t.unreadCount > 0 && t.status !== "ARCHIVE");
+    if (filter === "recruteurs") list = list.filter((t) => t.conversationType !== "ATHLETE_COACH" && t.status !== "ARCHIVE");
+    else if (filter === "athletes") list = list.filter((t) => t.conversationType === "ATHLETE_COACH" && t.status !== "ARCHIVE");
+    else if (filter === "non_lu") list = list.filter((t) => t.unreadCount > 0 && t.status !== "ARCHIVE");
     // "Sans réponse" : le dernier message vient du coach courant → on attend
     // la réponse du recruteur (def. (a)). Exclut les archivés.
     else if (filter === "sans_reponse") list = list.filter((t) => t.lastSenderId != null && t.lastSenderId === userId && t.status !== "ARCHIVE");
@@ -193,45 +197,46 @@ export function CoachDemandesMobile() {
     archive: { title: "Aucune conversation archivée",    sub: "Les conversations archivées apparaîtront ici." },
   }[emptyKind];
 
-  /* Recruiter-first row content. Avatar = recruiter photo/initials.
-     Primary line = recruiter name. Secondary = their CÉGEP. Context
-     = "Au sujet de {athlete}". Time + last message preview.
-     The shell handles selection circle, unread dot, swipe-archive
-     motion, and inset separator around this slot. */
+  /* Row content — un seul inbox, DEUX types :
+     - RECRUTEUR_COACH : contrepartie = recruteur (contenu identique à avant,
+       + une pastille RECRUTEUR rouge).
+     - ATHLETE_COACH   : contrepartie = athlète (avatar/nom athlète, position),
+       + une pastille ATHLÈTE verte.
+     La chrome (dot non-lu, swipe, edit, séparateur) reste au shell. */
   const renderRow = (t: CoachThreadData) => {
     const unread = t.unreadCount > 0;
+    const isAth = t.conversationType === "ATHLETE_COACH";
+    const typeBadge = (
+      <span className={`inline-flex items-center px-1.5 h-[17px] rounded-full text-[9px] font-black uppercase tracking-wider border flex-shrink-0 ${
+        isAth ? "bg-[#22C55E]/15 border-[#22C55E]/30 text-[#22C55E]" : "bg-[#E63946]/15 border-[#E63946]/30 text-[#E63946]"
+      }`}>
+        {isAth ? "Athlète" : "Recruteur"}
+      </span>
+    );
+    const name = isAth ? t.athleteName : t.recruiterName;
+    const initials = isAth ? t.athleteInitials : t.recruiterInitials;
+    const photoUrl = isAth ? t.athletePhotoUrl : t.recruiterPhotoUrl;
+    const subtitle = isAth
+      ? [t.athletePosition].filter(Boolean).join(" · ")
+      : t.recruiterCegep;
     return (
       <div className="flex items-center gap-3">
         <div className="relative w-[52px] h-[52px] rounded-full overflow-hidden flex-shrink-0 bg-[#2F3440]">
-          <AthletePhotoFill
-            photoUrl={t.recruiterPhotoUrl}
-            firstName={t.recruiterInitials[0] ?? ""}
-            lastName={t.recruiterInitials[1] ?? ""}
-            initialsFontSize={20}
-          />
+          <AthletePhotoFill photoUrl={photoUrl} firstName={initials[0] ?? ""} lastName={initials[1] ?? ""} initialsFontSize={20} />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-baseline justify-between gap-2">
-            <p className={`text-base truncate ${unread ? "font-bold text-white" : "font-semibold text-white/95"}`}>
-              {t.recruiterName}
-            </p>
+            <div className="flex items-center gap-1.5 min-w-0">
+              <p className={`text-base truncate ${unread ? "font-bold text-white" : "font-semibold text-white/95"}`}>{name}</p>
+              {typeBadge}
+            </div>
             <span className={`text-[13px] flex-shrink-0 ${unread ? "text-[#3B82F6] font-semibold" : "text-white/40"}`}>
               {relativeTime(t.lastMessageAt)}
             </span>
           </div>
-          {t.recruiterCegep && (
-            <p className="text-[15px] text-white/55 mt-0.5 truncate">
-              {t.recruiterCegep}
-            </p>
-          )}
-          <p className="text-[13px] text-white/45 mt-0.5 truncate">
-            Au sujet de {t.athleteName}
-          </p>
-          {t.lastMessage && (
-            <p className="text-[15px] text-white/40 mt-0.5 truncate">
-              {t.lastMessage}
-            </p>
-          )}
+          {subtitle && <p className="text-[15px] text-white/55 mt-0.5 truncate">{subtitle}</p>}
+          {!isAth && <p className="text-[13px] text-white/45 mt-0.5 truncate">Au sujet de {t.athleteName}</p>}
+          {t.lastMessage && <p className="text-[15px] text-white/40 mt-0.5 truncate">{t.lastMessage}</p>}
         </div>
       </div>
     );

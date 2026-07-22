@@ -32,12 +32,33 @@ import { useMobileToast } from "@/components/mobile/MobileToast";
 import { useQueryClient } from "@tanstack/react-query";
 import { MessageThreadShell } from "@/components/shared/messaging/MessageThreadShell";
 import { triggerHaptic } from "@/components/shared/messaging/utils";
+import { CoachAthleteThreadMobile } from "@/components/shared/CoachAthleteThreadMobile";
 
 /* ═══════════════════════════════════════════════════════════════
-   MAIN
+   ROUTER — route par conversation_type. ATHLETE_COACH → vue athlète
+   (carte "Athlète concerné", pas de panneau réputation). Sinon → le fil
+   recruteur↔coach existant (inchangé).
 ═══════════════════════════════════════════════════════════════ */
 
 export function CoachDemandesThreadMobile() {
+  const conversationId = useDynamicParam("id");
+  const { data: ctx, isLoading } = useCoachThreadContext(conversationId);
+  if (isLoading) {
+    return (
+      <div className="h-full bg-[#111317] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-[#E63946] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+  if (ctx?.conversationType === "ATHLETE_COACH") return <CoachAthleteThreadMobile />;
+  return <CoachRecruiterThreadMobile />;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Fil recruteur↔coach (contenu inchangé — ne touche pas la vue existante)
+═══════════════════════════════════════════════════════════════ */
+
+function CoachRecruiterThreadMobile() {
   const router = useRouter();
   const conversationId = useDynamicParam("id");
   const toast = useMobileToast();

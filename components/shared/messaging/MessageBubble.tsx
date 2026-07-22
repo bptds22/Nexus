@@ -24,13 +24,26 @@ export interface MessageBubbleProps {
   meColor?: string;
   /** Bubble color when the message is from the other party. */
   otherColor?: string;
+  /** Message rétracté par l'admin → rendu comme une ligne système centrée
+      (italique #6B7280, pas de bulle). Le contenu est déjà le marqueur. */
+  retracted?: boolean;
 }
 
 export function MessageBubble({
   content, createdAt, isMe, status,
   meColor = "#0A84FF",
   otherColor = "#262628",
+  retracted = false,
 }: MessageBubbleProps) {
+  if (retracted) {
+    return (
+      <div className="flex justify-center px-4 py-1">
+        <span className="text-[12px] italic text-[#6B7280]">
+          {content || "Message retiré par Nexus"}
+        </span>
+      </div>
+    );
+  }
   const isSending = status === "sending";
   const isError = status === "error";
   return (

@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { notFound, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import SchoolStaffPicker, { type StaffOption } from "@/components/messaging/SchoolStaffPicker";
 import { findOrCreateAthleteCoachConversation } from "@/lib/queries/messaging/createAthleteCoachConversation";
+import { AthleteMessageNouveauMobile } from "@/components/shared/AthleteMessageNouveauMobile";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -17,7 +18,7 @@ const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 ═══════════════════════════════════════════════════════════════ */
 
 export default function AthleteNouveauMessagePage() {
-  if (IS_CAPACITOR) notFound();
+  if (IS_CAPACITOR) return <AthleteMessageNouveauMobile />;
   const router = useRouter();
   const queryClient = useQueryClient();
 

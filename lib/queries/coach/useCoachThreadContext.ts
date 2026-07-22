@@ -10,6 +10,7 @@ import { createClient } from "@/lib/supabase/client";
 
 export interface CoachThreadContextMobile {
   conversationId: string;
+  conversationType: string;
   status: string;
   /** Recruiter — counterparty. */
   recruiterId: string;
@@ -35,7 +36,7 @@ export function useCoachThreadContext(conversationId: string | null) {
       const { data, error } = await supabase
         .from("conversations")
         .select(`
-          id, status, recruiter_id, athlete_id,
+          id, conversation_type, status, recruiter_id, athlete_id,
           recruiter:users!recruiter_id(
             id, first_name, last_name, avatar_url, photo_url, school_id,
             schools!school_id(name)
@@ -66,6 +67,7 @@ export function useCoachThreadContext(conversationId: string | null) {
 
       return {
         conversationId: data.id as string,
+        conversationType: (data.conversation_type as string) || "RECRUTEUR_COACH",
         status: (data.status as string) || "ACTIVE",
         recruiterId: (rec?.id as string) || "",
         recruiterName: `${rf} ${rl}`.trim() || "Recruteur",

@@ -2,10 +2,10 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import { useDynamicParam } from "@/lib/platform/useDynamicParam";
 import { createClient } from "@/lib/supabase/client";
 import RetractedMessageRow from "@/components/messaging/RetractedMessageRow";
+import { AthleteMessagesThreadMobile } from "@/components/shared/AthleteMessagesThreadMobile";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -82,7 +82,7 @@ function MessageBubble({ msg, isMe, otherName }: { msg: MessageData; isMe: boole
 }
 
 export default function Page() {
-  if (IS_CAPACITOR) notFound();
+  if (IS_CAPACITOR) return <AthleteMessagesThreadMobile />;
   return <AthleteThreadPage />;
 }
 
