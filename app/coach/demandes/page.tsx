@@ -66,7 +66,47 @@ function StatusBadge({ status }: { status: ThreadStatus }) {
   );
 }
 
-/* ── Thread Card ───────────────────────────────────────────── */
+/* ── Type Badge (Recruteur / Athlète) ──────────────────────── */
+
+function TypeBadge({ isAthlete }: { isAthlete: boolean }) {
+  return isAthlete ? (
+    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#22C55E]/15 border border-[#22C55E]/30 text-[#22C55E] shrink-0">Athlète</span>
+  ) : (
+    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#E63946]/15 border border-[#E63946]/30 text-[#E63946] shrink-0">Recruteur</span>
+  );
+}
+
+/* ── Athlete Thread Card (ATHLETE_COACH) — counterparty = athlete ── */
+
+function AthleteThreadCard({ thread: t }: { thread: ConversationThread }) {
+  const a = t.athlete;
+  const initials = `${a.firstName[0] || ""}${a.lastName[0] || ""}`;
+  return (
+    <Link
+      href={`/coach/demandes/${t.id}`}
+      className={`flex items-center gap-4 px-5 py-4 transition-colors hover:bg-[#252D3A] ${
+        t.unread ? "bg-[#1E2430] border-l-[3px] border-l-[#22C55E]" : "bg-[#1A1D24] border-l-[3px] border-l-transparent"
+      }`}
+    >
+      <div className="flex items-center gap-3 flex-1 min-w-0">
+        <AthletePhoto photoUrl={(a as { photoUrl?: string | null }).photoUrl} firstName={a.firstName} lastName={a.lastName} size={44} />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span className={`text-[15px] truncate ${t.unread ? "text-white font-bold" : "text-[#e0e0e0] font-semibold"}`}>{a.firstName} {a.lastName}</span>
+            <TypeBadge isAthlete />
+            {a.position && <span className="text-[11px] text-[#6b7280] font-bold uppercase shrink-0 hidden sm:inline">{a.position}</span>}
+          </div>
+          <p className="text-[13px] text-[#6b7280] truncate mt-0.5">{t.lastMessagePreview}</p>
+        </div>
+      </div>
+      <div className="flex flex-col items-end gap-1.5 shrink-0 w-[130px]">
+        <span className={`text-[12px] ${t.unread ? "text-white font-semibold" : "text-[#6b7280]"}`}>{relativeTime(t.lastMessageTime)}</span>
+      </div>
+    </Link>
+  );
+}
+
+/* ── Thread Card (recruiter — unchanged layout + a Recruteur pill) ── */
 
 function ThreadCard({ thread: t }: { thread: ConversationThread }) {
   const r = t.recruiter;
@@ -97,6 +137,7 @@ function ThreadCard({ thread: t }: { thread: ConversationThread }) {
               nested
               className={`text-[15px] truncate ${t.unread ? "" : "!text-[#e0e0e0]"}`}
             />
+            <TypeBadge isAthlete={false} />
             <span className="text-[12px] text-[#6b7280] shrink-0 hidden sm:inline">{r.cegep} · {r.division}</span>
           </div>
           <p className="text-[13px] text-[#6b7280] truncate mt-0.5">{t.lastMessagePreview}</p>
@@ -176,7 +217,9 @@ function DemandesContent() {
 
   const [search, setSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState<FilterPreset>(mapUrlFilter(urlFilter));
+  const [typeFilter, setTypeFilter] = useState<"all" | "recruteur" | "athlete">("all");
   const [threads, setThreads] = useState<ConversationThread[]>([]);
+  const [convTypes, setConvTypes] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -189,7 +232,7 @@ function DemandesContent() {
         // Fetch conversations for this coach
         const { data: conversations, error: convError } = await supabase
           .from("conversations")
-          .select("id, recruiter_id, coach_id, athlete_id, status, last_message_at, unread_count, created_at, athletes!athlete_id(id, first_name, last_name, verified, cote_globale_entraineur, profile_completion, annee_diplomation, photo_url, positions!position_id(nom, abreviation))")
+          .select("id, conversation_type, recruiter_id, coach_id, athlete_id, status, last_message_at, unread_count, created_at, athletes!athlete_id(id, first_name, last_name, verified, cote_globale_entraineur, profile_completion, annee_diplomation, photo_url, positions!position_id(nom, abreviation))")
           .eq("coach_id", user.id)
           .order("last_message_at", { ascending: false });
 
@@ -293,6 +336,7 @@ function DemandesContent() {
         });
 
         setThreads(mapped);
+        setConvTypes(Object.fromEntries(conversations.map((c: any) => [c.id as string, (c.conversation_type as string) || "RECRUTEUR_COACH"])));
       } catch (err) {
         console.error("[Demandes] Error loading threads:", err);
       } finally {
@@ -306,6 +350,10 @@ function DemandesContent() {
 
   const filtered = useMemo(() => {
     let list = [...threads];
+
+    // Type filter (Recruteurs / Athlètes)
+    if (typeFilter === "recruteur") list = list.filter((t) => convTypes[t.id] !== "ATHLETE_COACH");
+    else if (typeFilter === "athlete") list = list.filter((t) => convTypes[t.id] === "ATHLETE_COACH");
 
     // Search
     if (search.trim().length >= 2) {
@@ -348,7 +396,7 @@ function DemandesContent() {
     });
 
     return list;
-  }, [search, activeFilter, threads, userId]);
+  }, [search, activeFilter, typeFilter, threads, convTypes, userId]);
 
   return (
     <div className="px-6 sm:px-10 py-8 max-w-[1280px] mx-auto space-y-6">
@@ -358,10 +406,10 @@ function DemandesContent() {
         <div className="flex items-center gap-4">
           <div>
             <h1 className="font-head text-2xl sm:text-3xl font-black text-white uppercase tracking-tight">
-              Demandes des recruteurs
+              Messages
             </h1>
             <p className="text-[14px] text-[#9CA3AF] mt-1">
-              Tes conversations avec les recruteurs CÉGEP
+              Tes conversations avec les recruteurs CÉGEP et tes athlètes
             </p>
           </div>
           {unreadCount > 0 && (
@@ -396,6 +444,22 @@ function DemandesContent() {
             onChange={(e) => setSearch(e.target.value)}
             className="w-full bg-[#13151a] border border-[#2a2d36] rounded-lg pl-10 pr-4 py-2.5 text-[14px] text-[#e0e0e0] placeholder:text-[#6b7280] focus:border-[#E63946] outline-none transition-colors"
           />
+        </div>
+
+        {/* Type filter (Tous / Recruteurs / Athlètes) */}
+        <div className="flex items-center gap-1 bg-[#13151a] border border-[#2a2d36] rounded-lg p-1 shrink-0">
+          {([["all", "Tous"], ["recruteur", "Recruteurs"], ["athlete", "Athlètes"]] as const).map(([key, label]) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setTypeFilter(key)}
+              className={`px-3 py-1.5 rounded-md text-[12px] font-bold transition-colors ${
+                typeFilter === key ? "bg-[#2D3748] text-white" : "text-[#9CA3AF] hover:text-white"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
         </div>
 
         {/* Filter pills */}
@@ -455,7 +519,9 @@ function DemandesContent() {
       ) : (
         <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] overflow-hidden divide-y divide-[#2D3748]/50">
           {filtered.map((t) => (
-            <ThreadCard key={t.id} thread={t} />
+            convTypes[t.id] === "ATHLETE_COACH"
+              ? <AthleteThreadCard key={t.id} thread={t} />
+              : <ThreadCard key={t.id} thread={t} />
           ))}
         </div>
       )}

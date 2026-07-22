@@ -10,6 +10,7 @@ import { SPORT_NAME_MAP } from "@/lib/config/sportBadges";
 import NxIcon from "@/components/ui/NxIcon";
 import StarRating from "@/components/ui/StarRating";
 import { createClient } from "@/lib/supabase/client";
+import { findOrCreateAthleteCoachConversation } from "@/lib/queries/messaging/createAthleteCoachConversation";
 import InvitationLinkModal from "@/components/ui/InvitationLinkModal";
 import { createAthleteInvitationLink } from "@/lib/queries/coach/createAthleteInvitation";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
@@ -526,6 +527,22 @@ export default function CoachAthleteProfilePage() {
             {/* Invitation : le bouton "Générer le lien" vit dans la bannière
                 "Compte non réclamé" ci-dessous (chemin token-based #48).
                 L'ancien bouton e-mail best-effort a été retiré. */}
+
+            {/* Envoyer un message (athlète ↔ coach) — Q4 */}
+            <button
+              type="button"
+              onClick={async () => {
+                const supabase = createClient();
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) return;
+                const { conversationId } = await findOrCreateAthleteCoachConversation(supabase, { athleteId: id, coachId: user.id });
+                if (conversationId) router.push(`/coach/demandes/${conversationId}`);
+              }}
+              className="flex items-center gap-2 px-4 py-2 border border-[#22C55E] text-[#22C55E] rounded-lg text-[11px] font-bold uppercase tracking-wider hover:bg-[#22C55E]/10 transition-colors"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z" /></svg>
+              Message
+            </button>
 
             {/* Edit */}
             <Link href={`/coach/athletes/${id}/modifier`} className="flex items-center gap-2 px-4 py-2 border border-[#E63946] text-[#E63946] rounded-lg text-[11px] font-bold uppercase tracking-wider hover:bg-[#E63946]/10 transition-colors">

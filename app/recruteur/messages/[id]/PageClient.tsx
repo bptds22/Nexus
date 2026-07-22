@@ -10,6 +10,7 @@ import CoachInfoCard from "@/components/recruteur/CoachInfoCard";
 import AthleteInfoCard from "@/components/recruteur/AthleteInfoCard";
 import FeatureGate from "@/components/subscription/FeatureGate";
 import { RecruteurMessagesThreadMobile } from "@/components/shared/RecruteurMessagesThreadMobile";
+import RetractedMessageRow from "@/components/messaging/RetractedMessageRow";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -23,6 +24,7 @@ interface MessageData {
   senderId: string;
   content: string;
   createdAt: string;
+  retracted?: boolean;
 }
 
 interface ThreadContext {
@@ -93,6 +95,7 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 function MessageBubble({ msg, isMe, coachName }: { msg: MessageData; isMe: boolean; coachName: string }) {
+  if (msg.retracted) return <RetractedMessageRow text={msg.content} />;
   return (
     <div className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}>
       <p className="text-[11px] text-[#6b7280] mb-1.5">{isMe ? "Vous" : coachName} · {relativeTime(msg.createdAt)}</p>
@@ -238,7 +241,7 @@ function RecruiterThreadPage() {
       // Load messages
       const { data: msgData } = await supabase
         .from("messages")
-        .select("id, sender_id, content, created_at")
+        .select("id, sender_id, content, created_at, retracted_at")
         .eq("conversation_id", id)
         .order("created_at", { ascending: true });
 
@@ -248,6 +251,7 @@ function RecruiterThreadPage() {
           senderId: m.sender_id,
           content: m.content,
           createdAt: m.created_at,
+          retracted: !!m.retracted_at,
         })));
       }
 
