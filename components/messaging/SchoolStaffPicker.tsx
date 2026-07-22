@@ -30,11 +30,6 @@ export interface SchoolStaffPickerProps {
   busyId?: string | null;
 }
 
-function roleLabel(scRole: string | undefined): string {
-  if (scRole === "DIRECTEUR" || scRole === "DIRECTEUR_INTERIM") return "Directeur sportif";
-  return "Entraîneur";
-}
-
 function initialsFor(name: string): string {
   return (name || "?").split(" ").map((p) => p[0] || "").join("").slice(0, 2).toUpperCase() || "?";
 }
@@ -46,83 +41,39 @@ export default function SchoolStaffPicker({ athleteId, onSelect, busyId }: Schoo
 
   useEffect(() => {
     let cancelled = false;
-    if (!athleteId) { setLoading(false); return; }
-
     (async () => {
       setLoading(true);
       setError(null);
       const supabase = createClient();
 
-      // 1. Athlete anchor : school_id (scolaire) or league_team_id (civil).
-      const { data: ath, error: athErr } = await supabase
-        .from("athletes")
-        .select("school_id, league_team_id")
-        .eq("id", athleteId)
-        .maybeSingle();
-      if (athErr || !ath) {
-        if (!cancelled) { setError("Profil introuvable"); setLoading(false); }
+      // Source UNIQUE : RPC SECURITY DEFINER list_messageable_staff
+      // (migration 20260722100500) — miroir exact de la garde RLS
+      // athlete_messageable_coach. Contourne l'absence de SELECT RLS athlète sur
+      // school_coaches → le picker ne peut PAS revenir vide alors que l'INSERT
+      // serait autorisé (prouvé via un JWT athlète réel).
+      const { data, error: rpcErr } = await supabase.rpc("list_messageable_staff");
+      if (cancelled) return;
+      if (rpcErr) {
+        setError("Impossible de charger le personnel");
+        setLoading(false);
         return;
       }
 
-      // Effective school = scolaire school OR the club (LIGUE_CIVILE) school
-      // of the athlete's team.
-      let effectiveSchoolId = (ath.school_id as string | null) ?? null;
-      const leagueTeamId = (ath.league_team_id as string | null) ?? null;
-      if (!effectiveSchoolId && leagueTeamId) {
-        const { data: team } = await supabase
-          .from("teams")
-          .select("school_id")
-          .eq("id", leagueTeamId)
-          .maybeSingle();
-        effectiveSchoolId = (team?.school_id as string | null) ?? null;
-      }
+      const rows = (data ?? []) as {
+        coach_id: string;
+        first_name: string | null;
+        last_name: string | null;
+        photo_url: string | null;
+        role_label: string | null;
+      }[];
 
-      const roleByCoach = new Map<string, string>();
-
-      // 2. school_coaches at the effective school (excludes PENDING).
-      if (effectiveSchoolId) {
-        const { data: scRows } = await supabase
-          .from("school_coaches")
-          .select("coach_id, role")
-          .eq("school_id", effectiveSchoolId)
-          .in("role", ["COACH", "DIRECTEUR", "DIRECTEUR_INTERIM"]);
-        for (const r of (scRows ?? []) as { coach_id: string; role: string }[]) {
-          const cur = roleByCoach.get(r.coach_id);
-          if (!cur || r.role.startsWith("DIRECTEUR")) roleByCoach.set(r.coach_id, r.role);
-        }
-      }
-
-      // 3. team_coaches on the athlete's civil team (fallback union).
-      if (leagueTeamId) {
-        const { data: tcRows } = await supabase
-          .from("team_coaches")
-          .select("coach_id")
-          .eq("team_id", leagueTeamId);
-        for (const r of (tcRows ?? []) as { coach_id: string }[]) {
-          if (!roleByCoach.has(r.coach_id)) roleByCoach.set(r.coach_id, "COACH");
-        }
-      }
-
-      const coachIds = [...roleByCoach.keys()];
-      if (coachIds.length === 0) {
-        if (!cancelled) { setStaff([]); setLoading(false); }
-        return;
-      }
-
-      // 4. Hydrate identities.
-      const { data: users } = await supabase
-        .from("users")
-        .select("id, first_name, last_name, photo_url")
-        .in("id", coachIds);
-
-      const result: StaffOption[] = (users ?? []).map((u) => {
-        const f = (u.first_name as string) || "";
-        const l = (u.last_name as string) || "";
+      const result: StaffOption[] = rows.map((r) => {
+        const name = `${r.first_name ?? ""} ${r.last_name ?? ""}`.trim();
         return {
-          id: u.id as string,
-          name: `${f} ${l}`.trim() || "Membre du personnel",
-          photoUrl: (u.photo_url as string | null) ?? null,
-          roleLabel: roleLabel(roleByCoach.get(u.id as string)),
+          id: r.coach_id,
+          name: name || "Membre du personnel",
+          photoUrl: r.photo_url ?? null,
+          roleLabel: r.role_label === "Directeur sportif" ? "Directeur sportif" : "Entraîneur",
         };
       });
       // Directors first, then alphabetical.
