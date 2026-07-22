@@ -3,19 +3,30 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import AthleteParticipantHeader from "@/components/messaging/AthleteParticipantHeader";
+import AthleteInfoCard from "@/components/recruteur/AthleteInfoCard";
 import RetractedMessageRow from "@/components/messaging/RetractedMessageRow";
+import { parseDistinctions } from "@/lib/config/badges";
+import { selectBestEvaluation } from "@/lib/evaluations/selectEvaluation";
 
 /* ═══════════════════════════════════════════════════════════════
    CoachAthleteThreadView — coach side of an ATHLETE_COACH thread.
    2-party ; the athlete is the counterparty (not a recruiter subject).
-   Replaces the recruiter context panels with AthleteParticipantHeader.
+   Sidebar reuses the SAME "Athlète concerné" card (AthleteInfoCard) as the
+   recruiter↔coach thread — WITHOUT the coach-reputation panel (a coach doesn't
+   review themselves) — and its CTA routes to the coach athlete page.
    Rendered by the coach thread router when conversation_type is
    'ATHLETE_COACH'. Recruiter threads keep the original view untouched.
 ═══════════════════════════════════════════════════════════════ */
 
 interface MessageData { id: string; senderId: string; content: string; createdAt: string; retracted: boolean; }
-interface AthleteInfo { id: string; name: string; initials: string; photoUrl: string | null; position: string; school: string; }
+interface AthleteInfo {
+  id: string; name: string; initials: string; photoUrl: string | null;
+  jersey: string; sport: string; position: string; gradYear: number;
+  verified: boolean; stars: number; school: string; region: string;
+  recruitmentStatus: string; committedSchool: string; openToOffers: boolean | null;
+  gpa: number; programmes: string[]; openRelocate: boolean; openPrivate: boolean;
+  openAnglophone: boolean; distinctions: string[];
+}
 
 function relativeTime(isoStr: string): string {
   const d = new Date(isoStr);
@@ -76,7 +87,19 @@ export default function CoachAthleteThreadView({ id }: { id: string }) {
 
         const { data: conv } = await supabase
           .from("conversations")
-          .select("id, athlete_id, athletes!athlete_id(id, first_name, last_name, photo_url, positions!position_id(nom, abreviation), schools!school_id(name))")
+          .select(`
+            id, athlete_id,
+            athletes!athlete_id(
+              id, first_name, last_name, photo_url, verified, cote_globale_entraineur,
+              annee_diplomation, numero_jersey, recruitment_status, committed_school_id, open_to_offers,
+              moyenne_generale, programme_cegep_vise, pret_changer_region, ouvert_cegep_prive, ouvert_cegep_anglophone,
+              sports!sport_id(nom),
+              positions!position_id(nom, abreviation),
+              schools!school_id(name, region),
+              committed_school:schools!committed_school_id(name),
+              evaluations(distinctions, updated_at)
+            )
+          `)
           .eq("id", id)
           .maybeSingle();
         if (!conv) { setLoading(false); return; }
@@ -86,7 +109,18 @@ export default function CoachAthleteThreadView({ id }: { id: string }) {
         const posRaw = a?.positions;
         const pos = (Array.isArray(posRaw) ? posRaw[0] : posRaw) as { abreviation?: string; nom?: string } | null;
         const schRaw = a?.schools;
-        const sch = (Array.isArray(schRaw) ? schRaw[0] : schRaw) as { name?: string } | null;
+        const sch = (Array.isArray(schRaw) ? schRaw[0] : schRaw) as { name?: string; region?: string } | null;
+        const sportRaw = a?.sports;
+        const sport = (Array.isArray(sportRaw) ? sportRaw[0] : sportRaw) as { nom?: string } | null;
+        const committedRaw = a?.committed_school;
+        const committed = (Array.isArray(committedRaw) ? committedRaw[0] : committedRaw) as { name?: string } | null;
+        const evalRaw = a?.evaluations;
+        const eval0 = selectBestEvaluation(Array.isArray(evalRaw) ? evalRaw : evalRaw ? [evalRaw] : []) as { distinctions?: unknown } | null;
+        const distinctions: string[] = parseDistinctions(eval0?.distinctions).map((d) => d.badge);
+        const rawProg: unknown = a?.programme_cegep_vise;
+        const programmes: string[] = Array.isArray(rawProg)
+          ? (rawProg as unknown[]).filter((p): p is string => typeof p === "string" && p !== "")
+          : (typeof rawProg === "string" && rawProg !== "" ? [rawProg] : []);
         const af = (a?.first_name as string) || "";
         const al = (a?.last_name as string) || "";
         setAthlete({
@@ -94,8 +128,23 @@ export default function CoachAthleteThreadView({ id }: { id: string }) {
           name: `${af} ${al}`.trim() || "Athlète",
           initials: `${af[0] || ""}${al[0] || ""}`.toUpperCase() || "?",
           photoUrl: (a?.photo_url as string | null) ?? null,
+          jersey: a?.numero_jersey ? String(a.numero_jersey) : "",
+          sport: sport?.nom || "",
           position: pos?.abreviation || pos?.nom || "",
+          gradYear: (a?.annee_diplomation as number) || 0,
+          verified: !!(a?.verified),
+          stars: (a?.cote_globale_entraineur as number) || 0,
           school: sch?.name || "",
+          region: sch?.region || "",
+          recruitmentStatus: (a?.recruitment_status as string) || "OUVERT",
+          committedSchool: committed?.name || "",
+          openToOffers: (a?.open_to_offers as boolean | null) ?? null,
+          gpa: (a?.moyenne_generale as number) || 0,
+          programmes,
+          openRelocate: !!(a?.pret_changer_region),
+          openPrivate: !!(a?.ouvert_cegep_prive),
+          openAnglophone: !!(a?.ouvert_cegep_anglophone),
+          distinctions,
         });
 
         const { data: msgs } = await supabase
@@ -211,13 +260,32 @@ export default function CoachAthleteThreadView({ id }: { id: string }) {
         </div>
 
         <div className="xl:w-[320px] shrink-0 space-y-4 mt-6 xl:mt-0">
-          <AthleteParticipantHeader
+          {/* Même carte "Athlète concerné" que le fil recruteur↔coach. PAS de
+              panneau réputation coach ici (un coach ne s'évalue pas lui-même).
+              Le CTA route vers la page athlète du portail coach. */}
+          <AthleteInfoCard
             athleteId={athlete.id}
-            name={athlete.name}
-            photoUrl={athlete.photoUrl}
-            position={athlete.position}
-            school={athlete.school}
-            initials={athlete.initials}
+            athleteName={athlete.name}
+            athleteInitials={athlete.initials}
+            athletePhotoUrl={athlete.photoUrl || undefined}
+            athleteJersey={athlete.jersey}
+            athleteSport={athlete.sport}
+            athletePosition={athlete.position}
+            athleteGradYear={athlete.gradYear}
+            athleteVerified={athlete.verified}
+            athleteStars={athlete.stars}
+            athleteSchool={athlete.school}
+            athleteRegion={athlete.region}
+            athleteRecruitmentStatus={athlete.recruitmentStatus}
+            athleteCommittedSchool={athlete.committedSchool}
+            athleteOpenToOffers={athlete.openToOffers}
+            athleteGpa={athlete.gpa}
+            athleteProgrammes={athlete.programmes}
+            athleteOpenRelocate={athlete.openRelocate}
+            athleteOpenPrivate={athlete.openPrivate}
+            athleteOpenAnglophone={athlete.openAnglophone}
+            athleteDistinctions={athlete.distinctions}
+            profileHref={`/coach/athletes/${athlete.id}`}
           />
         </div>
       </div>
