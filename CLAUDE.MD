@@ -337,6 +337,29 @@ rd /s /q .next && npx next dev --port 3002  # full rebuild
 
 ---
 
+## MIGRATION SAFETY CHECKLIST
+
+Follow this for EVERY schema change. (Authored 2026-07 from the working discipline — reconcile if a canonical version surfaces elsewhere.)
+
+1. **Diagnostic-first.** Confirm the CURRENT live schema (columns, constraints, RLS, triggers) before drafting — never trust a summary or an old snapshot. Reconcile any discrepancy explicitly.
+2. **Additive before code (expand-then-contract).** Ship additive DDL first (new nullable columns, new tables, `DEFAULT`-backfilled columns, `ADD CONSTRAINT … NOT VALID` then `VALIDATE`). Deploy it, then the code that uses it.
+3. **No contract-breaking change while a shipped binary references it.** Drops/renames/`NOT NULL`-tightening only AFTER verifying no shipped mobile bundle calls the old shape. A dropped column once 400'd shipped apps; a **nullable stub shim** re-added it. Track deferred contractions in the ledger below.
+4. **RLS via `SECURITY DEFINER` helpers**, never a raw `users` subquery inside a policy. Make participant/relationship checks type-aware where a discriminator exists.
+5. **Guard positional triggers explicitly.** A trigger that infers role by position (sender vs a participant column) must carry an explicit discriminator guard (e.g. `conversation_type = 'RECRUTEUR_COACH'`) as an allowlist, so new rows/types are inert by default.
+6. **Apply SQL UTF-8-safely:** `docker cp` + `psql -f` (never `Get-Content | psql`); run the `docker exec` from the **PowerShell** tool. Verify accents by bytes (`octet_length` vs `char_length`), not by eye.
+7. **Local-first, per-role proof.** Apply locally, then prove behavior under each real role via `SET ROLE authenticated` + `request.jwt.claims` (or real JWTs/REST): allow-paths, deny-paths, cross-tenant denial, and **trigger non-firing** for the paths that must not fire. Runtime proof over logic claims.
+8. **Both builds pass** (`npm run build` + `npm run build:mobile`) before committing app code.
+9. **Prod only on BP's explicit per-migration GO.** CC commits on the branch; BP pushes/merges and applies to prod.
+
+### Deferred contractions (post-build-3 — pending a no-shipped-caller check)
+
+Contraction-breaking changes parked until no shipped binary references the old shape:
+
+- **`athletes.sport_secondaire_id` / `position_secondaire_id`** — stub columns kept nullable for frozen binaries; real drop deferred (`20260717240000_remove_sport_secondaire.sql`).
+- **`conversations` hard-delete (`recruiter_conversations_delete` policy)** — "no hard deletes anywhere" requires removing the recruiter's DELETE policy (CASCADE → messages), but that would 400 any shipped delete/archive button. Defer removal until verified no shipped bundle calls conversation delete.
+
+---
+
 ## GIT WORKFLOW
 
 - Commit before each major restructure
