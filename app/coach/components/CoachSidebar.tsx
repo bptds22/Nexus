@@ -12,7 +12,7 @@ import { createClient } from "@/lib/supabase/client";
    Data loaded from Supabase auth + users table.
 ───────────────────────────────────────────────────────────────── */
 
-type NavItem = { label: string; href: string; icon: React.ReactNode; badgeKey?: "activites" };
+type NavItem = { label: string; href: string; icon: React.ReactNode; badgeKey?: "activites" | "messages"; badgeColor?: string };
 
 const CORE_ITEMS: NavItem[] = [
   {
@@ -33,6 +33,8 @@ const CORE_ITEMS: NavItem[] = [
   },
   {
     label: "Messages", href: "/coach/demandes",
+    badgeKey: "messages",
+    badgeColor: "#22C55E",
     icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" /></svg>,
   },
   {
@@ -105,12 +107,32 @@ export default function CoachSidebar({ mobileOpen, onClose }: CoachSidebarProps)
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    const { count } = await supabase
+    const { count: actCount } = await supabase
       .from("activities")
       .select("id", { count: "exact", head: true })
       .eq("coach_id", user.id)
       .eq("read", false);
-    setBadges({ activites: count || 0 });
+
+    // Unread messages across the coach's conversations (coach_id OR coach_b_id —
+    // incl. COACH_COACH), read_at IS NULL, sender != me. Mirrors the athlete
+    // Messages badge; read_at is kept current by the coach thread views.
+    let msgUnread = 0;
+    const { data: myConvs } = await supabase
+      .from("conversations")
+      .select("id")
+      .or(`coach_id.eq.${user.id},coach_b_id.eq.${user.id}`);
+    const convIds = (myConvs || []).map((c) => (c as { id: string }).id);
+    if (convIds.length > 0) {
+      const { count } = await supabase
+        .from("messages")
+        .select("id", { count: "exact", head: true })
+        .in("conversation_id", convIds)
+        .is("read_at", null)
+        .neq("sender_id", user.id);
+      msgUnread = count || 0;
+    }
+
+    setBadges({ activites: actCount || 0, messages: msgUnread });
   }, []);
 
   useEffect(() => {
@@ -118,7 +140,9 @@ export default function CoachSidebar({ mobileOpen, onClose }: CoachSidebarProps)
     const handler = () => fetchBadges();
     window.addEventListener("activities-updated", handler);
     return () => window.removeEventListener("activities-updated", handler);
-  }, [fetchBadges]);
+    // pathname dep → re-fetch on navigation so the Messages badge clears
+    // after the coach opens a thread (read_at updated in the thread view).
+  }, [fetchBadges, pathname]);
 
   useEffect(() => {
     async function loadUser() {
@@ -232,7 +256,7 @@ export default function CoachSidebar({ mobileOpen, onClose }: CoachSidebarProps)
         </span>
         <span className="flex-1">{item.label}</span>
         {item.badgeKey && badges[item.badgeKey] > 0 && (
-          <span className="bg-[#E63946] text-white text-[10px] font-bold rounded-full px-1.5 min-w-[18px] h-[18px] flex items-center justify-center leading-none">
+          <span className="text-white text-[10px] font-bold rounded-full px-1.5 min-w-[18px] h-[18px] flex items-center justify-center leading-none" style={{ backgroundColor: item.badgeColor || "#E63946" }}>
             {badges[item.badgeKey]}
           </span>
         )}

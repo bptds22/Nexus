@@ -291,8 +291,27 @@ export default function MobileTabBar({ role }: MobileTabBarProps) {
         // leurs athlètes — intentionnel : le badge doit matcher /coach/a-traiter.
         const counts = await loadCoachTaskCounts(supabase, user.id);
 
+        // Messages non lus (RECRUTEUR_COACH + ATHLETE_COACH + COACH_COACH) →
+        // badge VERT du tab Messages. Convs où le coach participe (coach_id OU
+        // coach_b_id), read_at IS NULL, sender != moi. Miroir de l'athlète.
+        let cMsgUnread = 0;
+        const { data: cConvs } = await supabase
+          .from("conversations")
+          .select("id")
+          .or(`coach_id.eq.${user.id},coach_b_id.eq.${user.id}`);
+        const cConvIds = (cConvs ?? []).map((c) => (c as { id: string }).id);
+        if (cConvIds.length > 0) {
+          const { count } = await supabase
+            .from("messages")
+            .select("*", { count: "exact", head: true })
+            .in("conversation_id", cConvIds)
+            .neq("sender_id", user.id)
+            .is("read_at", null);
+          cMsgUnread = count ?? 0;
+        }
+
         if (cancelled) return;
-        setMsgBadge(0);
+        setMsgBadge(cMsgUnread);
         setActBadge(actCount ?? 0);
         setATraiterBadge(counts.total);
         setMoreDotActive((actCount ?? 0) > 0);
@@ -420,8 +439,8 @@ export default function MobileTabBar({ role }: MobileTabBarProps) {
             : tab.key === "a-traiter" ? aTraiterBadge
             : 0;
           const showBadge = tabBadgeCount > 0 && !locked;
-          // Le badge Messages de l'athlète est VERT (#22C55E) ; les autres rouges.
-          const badgeBg = role === "athlete" && tab.key === "messages" ? "bg-[#22C55E]" : "bg-[#E63946]";
+          // Badge Messages VERT (#22C55E) pour athlète ET coach ; les autres rouges.
+          const badgeBg = (role === "athlete" || role === "coach") && tab.key === "messages" ? "bg-[#22C55E]" : "bg-[#E63946]";
           const color = active ? "text-[#E63946]" : locked ? "text-[#8a8d96]/60" : "text-[#8a8d96]";
           return (
             <Link

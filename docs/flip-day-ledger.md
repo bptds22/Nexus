@@ -45,14 +45,15 @@ immutability inherited, mark-read).
 Re-run its proof after prod apply: `scratchpad/validation-coach-coach.sql`
 (+ the T13 uuid fix) — expect 15/15.
 
-### [ ] handle_new_auth_user — verify prod parity, apply diff if prod lags
-The local `handle_new_auth_user()` trigger inserts the `public.users` row from
-`raw_user_meta_data` (role/first/last/context/date_naissance) **and** consumes an
-`invitation_token` (school/coach) and a `claim_token` (athlete orphan link,
-best-effort with an EXCEPTION guard). ⚠️ **BP to confirm the exact intended
-prod-vs-local diff** before flip — this line is a reminder that the function must
-match, not a captured patch. If prod's version predates the claim-token branch,
-ship the current local definition as a `CREATE OR REPLACE` on flip-day.
+### [x] handle_new_auth_user — VERIFIED prod == local (no diff, no action)
+Diffed 2026-07-23, prod (nexus-prod `nrloizyemulbhujrqhgx`) vs local via
+`pg_get_functiondef`: **byte-identical.** Both have the same 8 INSERT columns
+(id, email, role, status, first_name, last_name, context, date_naissance), the
+same `context` CASE (scolaire/collegial/ligue_civile), the same `date_naissance`
+ISO-regex cast, the same `ON CONFLICT (id) DO NOTHING`, and BOTH already carry
+the `invitation_token` (`consume_invitation_token`) and `claim_token`
+(`consume_athlete_invitation`, EXCEPTION-guarded) branches. **No flip-day action
+for this trigger** — prod is not lagging.
 
 ### Note — idempotent re-apply
 Every entry above is safe to re-apply. The pre-flight runs the batch top-to-bottom;
