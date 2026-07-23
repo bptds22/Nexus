@@ -15,11 +15,17 @@
 import { useQuery } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
+import { loadSenderBroadcastSummaries } from "@/lib/queries/coach/loadSenderBroadcasts";
 
 export interface CoachThreadData {
   id: string;
-  /** 'RECRUTEUR_COACH' (default) | 'ATHLETE_COACH' | 'COACH_COACH'. */
+  /** 'RECRUTEUR_COACH' (default) | 'ATHLETE_COACH' | 'COACH_COACH' | 'BROADCAST'. */
   conversationType: string;
+  /** Broadcast (Annonce) pseudo-thread — folds N member threads into one row. */
+  isBroadcast?: boolean;
+  broadcastId?: string;
+  targetLabel?: string;
+  recipientCount?: number;
   /** COACH_COACH counterparty (the other coach/director). */
   otherCoachName: string;
   otherCoachInitials: string;
@@ -116,7 +122,27 @@ export function useCoachConversations() {
         }
       }
 
-      return data.map((c: Record<string, unknown>): CoachThreadData => {
+      // Annonce (broadcast) folding — one pseudo-thread per broadcast this
+      // coach sent, and DROP its N member threads (replaced by the Annonce row).
+      const { annonces, memberConvIds } = await loadSenderBroadcastSummaries(supabase, userId);
+      const annonceThreads: CoachThreadData[] = annonces.map((a) => ({
+        id: `annonce:${a.broadcastId}`,
+        conversationType: "BROADCAST",
+        isBroadcast: true,
+        broadcastId: a.broadcastId,
+        targetLabel: a.targetLabel,
+        recipientCount: a.recipientCount,
+        otherCoachName: "", otherCoachInitials: "", otherCoachIsDirector: false,
+        recruiterId: "", recruiterName: "", recruiterInitials: "", recruiterPhotoUrl: null, recruiterCegep: "",
+        athleteId: "", athleteName: "", athleteInitials: "", athletePhotoUrl: null, athletePosition: "",
+        lastMessage: a.content,
+        lastMessageAt: a.lastActivityAt,
+        lastSenderId: null,
+        unreadCount: a.unreadReplies,
+        status: "ACTIVE",
+      }));
+
+      const threads = data.map((c: Record<string, unknown>): CoachThreadData => {
         const recRaw = c.recruiter;
         const rec = (Array.isArray(recRaw) ? recRaw[0] : recRaw) as Record<string, unknown> | null;
         const recSchoolRaw = rec?.schools;
@@ -157,6 +183,11 @@ export function useCoachConversations() {
           status: (c.status as string) || "ACTIVE",
         };
       });
+
+      const visible = memberConvIds.size > 0 ? threads.filter((t) => !memberConvIds.has(t.id)) : threads;
+      // Annonces first (newest broadcasts), then the normal threads (already
+      // sorted by last_message_at desc from the query).
+      return [...annonceThreads, ...visible];
     },
     enabled: !!userId,
   });

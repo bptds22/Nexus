@@ -19,6 +19,7 @@ import {
   type StatusPreset,
 } from "@/lib/messaging/threadStatus";
 import { deriveTypeSegments, matchesTypeSegment } from "@/lib/messaging/typeSegments";
+import { loadSenderBroadcastSummaries, type AnnonceSummary } from "@/lib/queries/coach/loadSenderBroadcasts";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -219,6 +220,45 @@ function ThreadCard({ thread: t }: { thread: ConversationThread }) {
   );
 }
 
+/* ── Annonce Card (broadcast — REPLACES the N member rows) ────── */
+
+function AnnonceCard({ a }: { a: AnnonceSummary }) {
+  const unread = a.unreadReplies > 0;
+  return (
+    <Link
+      href={`/coach/demandes/annonce/${a.broadcastId}`}
+      className={`flex items-center gap-4 px-5 py-4 transition-colors hover:bg-[#252D3A] ${
+        unread ? "bg-[#1E2430] border-l-[3px] border-l-[#8B5CF6]" : "bg-[#1A1D24] border-l-[3px] border-l-transparent"
+      }`}
+    >
+      <div className="w-11 h-11 rounded-full bg-[#8B5CF6]/15 border border-[#8B5CF6]/30 flex items-center justify-center shrink-0">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A78BFA" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M3 11l18-5v12L3 14v-3z" /><path d="M11.6 16.8a3 3 0 11-5.8-1.6" />
+        </svg>
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <span className={`text-[15px] truncate ${unread ? "text-white font-bold" : "text-[#e0e0e0] font-semibold"}`}>Annonce</span>
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#8B5CF6]/15 border border-[#8B5CF6]/30 text-[#A78BFA] shrink-0">Diffusion</span>
+        </div>
+        <p className="text-[12px] text-[#9CA3AF] truncate mt-0.5">{a.targetLabel} · Envoyé à {a.recipientCount}</p>
+        {a.content && <p className="text-[13px] text-[#6b7280] truncate mt-0.5">{a.content}</p>}
+      </div>
+      <div className="flex flex-col items-end gap-1.5 shrink-0 w-[130px]">
+        <span className={`text-[12px] ${unread ? "text-white font-semibold" : "text-[#6b7280]"}`}>{relativeTime(a.lastActivityAt)}</span>
+        {a.replyCount > 0 ? (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wide bg-[#8B5CF6]/15 text-[#A78BFA]">
+            {a.replyCount} réponse{a.replyCount > 1 ? "s" : ""}
+            {unread && <span className="w-1.5 h-1.5 rounded-full bg-[#8B5CF6]" />}
+          </span>
+        ) : (
+          <span className="text-[11px] text-[#4a4d56]">Aucune réponse</span>
+        )}
+      </div>
+    </Link>
+  );
+}
+
 /* ═══════════════════════════════════════════════════════════════
    MAIN PAGE
 ═══════════════════════════════════════════════════════════════ */
@@ -248,6 +288,7 @@ function DemandesContent() {
   const [activeFilter, setActiveFilter] = useState<StatusPreset>(mapUrlStatusPreset(urlFilter));
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [threads, setThreads] = useState<ConversationThread[]>([]);
+  const [annonces, setAnnonces] = useState<AnnonceSummary[]>([]);
   const [convTypes, setConvTypes] = useState<Record<string, string>>({});
   /** COACH_COACH render meta : is the other party a director + optional attached athlete. */
   const [coachMeta, setCoachMeta] = useState<Record<string, { isDirector: boolean; athleteName: string }>>({});
@@ -401,7 +442,14 @@ function DemandesContent() {
           };
         });
 
-        setThreads(mapped);
+        // Annonce (broadcast) folding — one consolidated entry per broadcast
+        // this coach sent, and DROP its N member threads from the list (they're
+        // replaced by the Annonce row → no double-clutter).
+        const { annonces: annonceList, memberConvIds } = await loadSenderBroadcastSummaries(supabase, user.id);
+        const visible = memberConvIds.size > 0 ? mapped.filter((t) => !memberConvIds.has(t.id)) : mapped;
+
+        setThreads(visible);
+        setAnnonces(annonceList);
         setCoachMeta(nextCoachMeta);
         setConvTypes(Object.fromEntries(conversations.map((c: any) => [c.id as string, (c.conversation_type as string) || "RECRUTEUR_COACH"])));
       } catch (err) {
@@ -453,6 +501,19 @@ function DemandesContent() {
     return list;
   }, [debouncedSearch, activeFilter, typeFilter, typeSegments, threads, convTypes, userId]);
 
+  // Annonces sit in the default inbox view (Tous · all types). A specific
+  // status/type filter or a search term scopes them out — matching the
+  // per-thread filters the sender is applying.
+  const visibleAnnonces = useMemo(() => {
+    if (activeFilter !== "tous" || typeFilter !== "all") return [];
+    let list = [...annonces];
+    if (debouncedSearch.trim().length >= 2) {
+      const q = debouncedSearch.toLowerCase();
+      list = list.filter((a) => a.targetLabel.toLowerCase().includes(q) || a.content.toLowerCase().includes(q));
+    }
+    return list.sort((a, b) => new Date(b.lastActivityAt).getTime() - new Date(a.lastActivityAt).getTime());
+  }, [annonces, activeFilter, typeFilter, debouncedSearch]);
+
   return (
     <div className="px-6 sm:px-10 py-8 max-w-[1280px] mx-auto space-y-6">
 
@@ -501,7 +562,7 @@ function DemandesContent() {
         <div className="flex items-center justify-center py-20">
           <div className="w-8 h-8 border-2 border-[#E63946] border-t-transparent rounded-full animate-spin" />
         </div>
-      ) : filtered.length === 0 ? (
+      ) : filtered.length === 0 && visibleAnnonces.length === 0 ? (
         /* Empty state */
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <div className="w-20 h-20 rounded-full bg-[#1A1D24] border border-[#2D3748] flex items-center justify-center mb-6">
@@ -530,6 +591,7 @@ function DemandesContent() {
         </div>
       ) : (
         <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] overflow-hidden divide-y divide-[#2D3748]/50">
+          {visibleAnnonces.map((a) => <AnnonceCard key={a.broadcastId} a={a} />)}
           {filtered.map((t) => {
             const ct = convTypes[t.id];
             if (ct === "ATHLETE_COACH") return <AthleteThreadCard key={t.id} thread={t} />;

@@ -142,6 +142,7 @@ export function CoachDemandesMobile() {
         t.recruiterName.toLowerCase().includes(q) ||
         t.recruiterCegep.toLowerCase().includes(q) ||
         t.athleteName.toLowerCase().includes(q) ||
+        (t.targetLabel || "").toLowerCase().includes(q) ||
         t.lastMessage.toLowerCase().includes(q)
       );
     }
@@ -151,6 +152,10 @@ export function CoachDemandesMobile() {
   // Handlers
   const handleTap = (thread: CoachThreadData) => {
     try { sessionStorage.setItem("lastCoachTab", "demandes"); } catch { /* no-op */ }
+    if (thread.isBroadcast && thread.broadcastId) {
+      router.push(`/coach/demandes/annonce/${thread.broadcastId}`);
+      return;
+    }
     router.push(`/coach/demandes/${thread.id}`);
   };
 
@@ -164,6 +169,7 @@ export function CoachDemandesMobile() {
   };
 
   const handleArchiveSwipe = (thread: CoachThreadData) => {
+    if (thread.isBroadcast) return; // Annonces aren't archivable (they fold N threads)
     const newStatus = thread.status === "ARCHIVE" ? "ACTIVE" : "ARCHIVE";
     archiveMut.mutate(
       { conversationId: thread.id, newStatus },
@@ -219,6 +225,29 @@ export function CoachDemandesMobile() {
      La chrome (dot non-lu, swipe, edit, séparateur) reste au shell. */
   const renderRow = (t: CoachThreadData) => {
     const unread = t.unreadCount > 0;
+    // Annonce (broadcast) pseudo-thread — megaphone + purple, target + count.
+    if (t.isBroadcast) {
+      return (
+        <div className="flex items-center gap-3">
+          <div className="relative w-[52px] h-[52px] rounded-full overflow-hidden flex-shrink-0 bg-[#8B5CF6]/15 border border-[#8B5CF6]/30 flex items-center justify-center">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#A78BFA" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 11l18-5v12L3 14v-3z" /><path d="M11.6 16.8a3 3 0 11-5.8-1.6" />
+            </svg>
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-baseline justify-between gap-2">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <p className={`text-base truncate ${unread ? "font-bold text-white" : "font-semibold text-white/95"}`}>Annonce</p>
+                <span className="inline-flex items-center px-1.5 h-[17px] rounded-full text-[9px] font-black uppercase tracking-wider border flex-shrink-0 bg-[#8B5CF6]/15 border-[#8B5CF6]/30 text-[#A78BFA]">Diffusion</span>
+              </div>
+              <span className={`text-[13px] flex-shrink-0 ${unread ? "text-[#A78BFA] font-semibold" : "text-white/40"}`}>{relativeTime(t.lastMessageAt)}</span>
+            </div>
+            <p className="text-[15px] text-white/55 mt-0.5 truncate">{t.targetLabel} · Envoyé à {t.recipientCount}</p>
+            {t.lastMessage && <p className="text-[15px] text-white/40 mt-0.5 truncate">{t.lastMessage}</p>}
+          </div>
+        </div>
+      );
+    }
     const isAth = t.conversationType === "ATHLETE_COACH";
     const isCC = t.conversationType === "COACH_COACH";
     const typeBadge = (
