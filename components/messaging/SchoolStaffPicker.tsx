@@ -28,13 +28,15 @@ export interface SchoolStaffPickerProps {
   athleteId: string;
   onSelect: (staff: StaffOption) => void;
   busyId?: string | null;
+  /** Audience filter (athlete "À qui veux-tu écrire ?" tiles). */
+  roleFilter?: "all" | "coach" | "directeur";
 }
 
 function initialsFor(name: string): string {
   return (name || "?").split(" ").map((p) => p[0] || "").join("").slice(0, 2).toUpperCase() || "?";
 }
 
-export default function SchoolStaffPicker({ athleteId, onSelect, busyId }: SchoolStaffPickerProps) {
+export default function SchoolStaffPicker({ athleteId, onSelect, busyId, roleFilter = "all" }: SchoolStaffPickerProps) {
   const [staff, setStaff] = useState<StaffOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -102,17 +104,25 @@ export default function SchoolStaffPicker({ athleteId, onSelect, busyId }: Schoo
     return <div className="text-[13px] text-[#EF4444]">{error}</div>;
   }
 
-  if (staff.length === 0) {
+  const shown = staff.filter((s) =>
+    roleFilter === "directeur" ? s.roleLabel === "Directeur sportif"
+    : roleFilter === "coach" ? s.roleLabel !== "Directeur sportif"
+    : true,
+  );
+
+  if (shown.length === 0) {
     return (
       <div className="bg-[#13151a] border border-[#2D3748] rounded-lg p-5">
-        <p className="text-[14px] text-[#9CA3AF]">Aucun entraîneur rattaché à ton école pour l&apos;instant.</p>
+        <p className="text-[14px] text-[#9CA3AF]">
+          {roleFilter === "directeur" ? "Aucun directeur sportif rattaché à ton école." : "Aucun entraîneur rattaché à ton école pour l'instant."}
+        </p>
       </div>
     );
   }
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-      {staff.map((s) => {
+      {shown.map((s) => {
         const busy = busyId === s.id;
         return (
           <button

@@ -8,6 +8,8 @@ import { createClient } from "@/lib/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { createCoachConversation } from "@/lib/queries/messaging/createCoachConversation";
 import { CoachDemandesNouveauMobile } from "@/components/shared/CoachDemandesNouveauMobile";
+import AudienceTiles, { type CoachAudience } from "@/components/messaging/AudienceTiles";
+import CoachStaffCompose from "@/components/messaging/CoachStaffCompose";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -428,6 +430,7 @@ function CoachNouveauMessageContent() {
   const router = useRouter();
   const queryClient = useQueryClient();
 
+  const [audience, setAudience] = useState<CoachAudience | null>(null);
   const [selectedAthlete, setSelectedAthlete] = useState<RosterAthlete | null>(null);
   const [selectedCegep, setSelectedCegep] = useState<CegepOption | null>(null);
   const [selectedRecruiter, setSelectedRecruiter] = useState<RecruiterProfile | null>(null);
@@ -700,6 +703,31 @@ ${coachProfile.school}`;
           </h1>
         </div>
 
+        {/* Step 1 — "À qui veux-tu écrire ?" audience selector */}
+        {audience === null && <AudienceTiles onPick={setAudience} />}
+
+        {/* Coach ↔ coach / directeur / école (P4) — staff compose */}
+        {audience && audience !== "recruteur" && currentUserId && (
+          <div className="space-y-4">
+            <button type="button" onClick={() => setAudience(null)} className="inline-flex items-center gap-1.5 text-[13px] text-[#9CA3AF] hover:text-white transition-colors">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
+              Changer de destinataire
+            </button>
+            <CoachStaffCompose
+              selfId={currentUserId}
+              audience={audience}
+              onCreated={(id) => { queryClient.invalidateQueries({ queryKey: ["conversations"] }); router.push(`/coach/demandes/${id}`); }}
+            />
+          </div>
+        )}
+
+        {/* Recruteur CÉGEP flow (existing, unchanged) */}
+        {audience === "recruteur" && (
+        <>
+        <button type="button" onClick={() => setAudience(null)} className="inline-flex items-center gap-1.5 text-[13px] text-[#9CA3AF] hover:text-white transition-colors mb-1">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
+          Changer de destinataire
+        </button>
         {/* Two-column layout */}
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6">
           {/* ── LEFT: Compose form ──────────────────────────────── */}
@@ -886,6 +914,8 @@ ${coachProfile.school}`;
             )}
           </div>
         </div>
+        </>
+        )}
       </div>
 
       <style jsx>{`

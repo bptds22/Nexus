@@ -97,6 +97,43 @@ function AthleteThreadCard({ thread: t }: { thread: ConversationThread }) {
   );
 }
 
+/* ── Coach↔Coach Thread Card (COACH_COACH) — counterparty = a coach ── */
+
+function CoachCoachThreadCard({ thread: t, meta }: { thread: ConversationThread; meta?: { isDirector: boolean; athleteName: string } }) {
+  const name = t.recruiter.firstName || "Coach"; // full name lives in firstName
+  const parts = name.split(" ");
+  const initials = `${parts[0]?.[0] || ""}${parts[1]?.[0] || ""}` || "?";
+  const isDir = meta?.isDirector;
+  const athleteName = meta?.athleteName;
+  return (
+    <Link
+      href={`/coach/demandes/${t.id}`}
+      className={`flex items-center gap-4 px-5 py-4 transition-colors hover:bg-[#252D3A] ${
+        t.unread ? "bg-[#1E2430] border-l-[3px] border-l-[#14B8A6]" : "bg-[#1A1D24] border-l-[3px] border-l-transparent"
+      }`}
+    >
+      <div className="flex items-center gap-3 flex-1 min-w-0">
+        <div className="w-11 h-11 rounded-full bg-[#14B8A6]/15 border border-[#14B8A6]/30 flex items-center justify-center shrink-0">
+          <span className="text-[13px] font-bold text-[#14B8A6]">{initials}</span>
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span className={`text-[15px] truncate ${t.unread ? "text-white font-bold" : "text-[#e0e0e0] font-semibold"}`}>{name}</span>
+            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider shrink-0 bg-[#14B8A6]/15 border border-[#14B8A6]/30 text-[#14B8A6]`}>
+              {isDir ? "Directeur" : "Coach"}
+            </span>
+          </div>
+          {athleteName && <p className="text-[12px] text-[#6b7280] truncate">Au sujet de {athleteName}</p>}
+          <p className="text-[13px] text-[#6b7280] truncate mt-0.5">{t.lastMessagePreview}</p>
+        </div>
+      </div>
+      <div className="flex flex-col items-end gap-1.5 shrink-0 w-[130px]">
+        <span className={`text-[12px] ${t.unread ? "text-white font-semibold" : "text-[#6b7280]"}`}>{relativeTime(t.lastMessageTime)}</span>
+      </div>
+    </Link>
+  );
+}
+
 /* ── Thread Card (recruiter — unchanged layout + a Recruteur pill) ── */
 
 function ThreadCard({ thread: t }: { thread: ConversationThread }) {
@@ -212,6 +249,8 @@ function DemandesContent() {
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [threads, setThreads] = useState<ConversationThread[]>([]);
   const [convTypes, setConvTypes] = useState<Record<string, string>>({});
+  /** COACH_COACH render meta : is the other party a director + optional attached athlete. */
+  const [coachMeta, setCoachMeta] = useState<Record<string, { isDirector: boolean; athleteName: string }>>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -224,8 +263,8 @@ function DemandesContent() {
         // Fetch conversations for this coach
         const { data: conversations, error: convError } = await supabase
           .from("conversations")
-          .select("id, conversation_type, recruiter_id, coach_id, athlete_id, status, last_message_at, unread_count, created_at, athletes!athlete_id(id, first_name, last_name, verified, cote_globale_entraineur, profile_completion, annee_diplomation, photo_url, positions!position_id(nom, abreviation))")
-          .eq("coach_id", user.id)
+          .select("id, conversation_type, recruiter_id, coach_id, coach_b_id, athlete_id, status, last_message_at, unread_count, created_at, athletes!athlete_id(id, first_name, last_name, verified, cote_globale_entraineur, profile_completion, annee_diplomation, photo_url, positions!position_id(nom, abreviation))")
+          .or(`coach_id.eq.${user.id},coach_b_id.eq.${user.id}`)
           .order("last_message_at", { ascending: false });
 
         if (!conversations || conversations.length === 0) {
@@ -246,15 +285,36 @@ function DemandesContent() {
         const latestMsgMap: Record<string, { content: string; created_at: string; sender_id: string }> = {};
         const coachRepliedMap: Record<string, boolean> = {};
         const recruiterRepliedMap: Record<string, boolean> = {};
+        const sendersByConv: Record<string, Set<string>> = {};
         if (latestMessages) {
           for (const msg of latestMessages as any[]) {
             if (!latestMsgMap[msg.conversation_id]) {
               latestMsgMap[msg.conversation_id] = msg;
             }
+            (sendersByConv[msg.conversation_id] ||= new Set()).add(msg.sender_id);
             // Track who has sent messages
             const conv = conversations.find((c: any) => c.id === msg.conversation_id);
             if (conv && msg.sender_id === (conv as any).coach_id) coachRepliedMap[msg.conversation_id] = true;
             if (conv && msg.sender_id === (conv as any).recruiter_id) recruiterRepliedMap[msg.conversation_id] = true;
+          }
+        }
+
+        // COACH_COACH — resolve the "other coach" (coach_b_id when I'm coach_id)
+        // + whether they're a director (label only ; no separate type).
+        const otherCoachIds = [...new Set(conversations
+          .filter((c: any) => c.conversation_type === "COACH_COACH")
+          .map((c: any) => (c.coach_id === user.id ? c.coach_b_id : c.coach_id))
+          .filter(Boolean))] as string[];
+        const coachInfoMap = new Map<string, { name: string; isDirector: boolean }>();
+        if (otherCoachIds.length > 0) {
+          const { data: coachUsers } = await supabase.from("users").select("id, first_name, last_name").in("id", otherCoachIds);
+          const { data: dirRows } = await supabase.from("school_coaches").select("coach_id, role").in("coach_id", otherCoachIds);
+          const directorSet = new Set((dirRows || []).filter((r: any) => r.role === "DIRECTEUR" || r.role === "DIRECTEUR_INTERIM").map((r: any) => r.coach_id));
+          for (const u of coachUsers || []) {
+            coachInfoMap.set((u as any).id, {
+              name: `${(u as any).first_name || ""} ${(u as any).last_name || ""}`.trim() || "Coach",
+              isDirector: directorSet.has((u as any).id),
+            });
           }
         }
 
@@ -284,29 +344,41 @@ function DemandesContent() {
         }
 
         // Map to ConversationThread
+        const nextCoachMeta: Record<string, { isDirector: boolean; athleteName: string }> = {};
         const mapped: ConversationThread[] = conversations.map((c: any) => {
+          const isCoachCoach = c.conversation_type === "COACH_COACH";
+          const otherCoachId = c.coach_id === user.id ? c.coach_b_id : c.coach_id;
+          const otherCoach = isCoachCoach ? coachInfoMap.get(otherCoachId) : undefined;
           const recruiterUser = recruiterMap.get(c.recruiter_id);
           const athleteData = c.athletes;
           const position = athleteData?.positions;
           const latestMsg = latestMsgMap[c.id];
+          const athleteName = athleteData ? `${athleteData.first_name || ""} ${athleteData.last_name || ""}`.trim() : "";
+
+          if (isCoachCoach) {
+            nextCoachMeta[c.id] = { isDirector: !!otherCoach?.isDirector, athleteName };
+          }
 
           return {
             id: c.id,
             recruiter: {
-              id: c.recruiter_id,
-              firstName: recruiterUser?.first_name || "",
-              lastName: recruiterUser?.last_name || "",
+              // COACH_COACH : the counterparty coach lives in `recruiter` so the
+              // shared search/sort/status pipeline works unchanged. Full name in
+              // firstName ; cegep = role label (Entraîneur | Directeur).
+              id: isCoachCoach ? (otherCoachId || "") : c.recruiter_id,
+              firstName: isCoachCoach ? (otherCoach?.name || "Coach") : (recruiterUser?.first_name || ""),
+              lastName: "",
               title: "",
-              cegep: recruiterUser?.school_name || "",
+              cegep: isCoachCoach ? (otherCoach?.isDirector ? "Directeur" : "Entraîneur") : (recruiterUser?.school_name || ""),
               cegepTeamName: "",
               division: "Div. 1" as const,
               sport: "",
               region: "",
-              email: recruiterUser?.email || "",
+              email: isCoachCoach ? "" : (recruiterUser?.email || ""),
               phone: "",
             },
             athlete: {
-              id: athleteData?.id || c.athlete_id,
+              id: athleteData?.id || c.athlete_id || "",
               firstName: athleteData?.first_name || "",
               lastName: athleteData?.last_name || "",
               photoUrl: athleteData?.photo_url || "",
@@ -319,7 +391,9 @@ function DemandesContent() {
               stars: athleteData?.cote_globale_entraineur ?? 0,
             },
             messages: [],
-            status: mapDbStatus(c.status, coachRepliedMap[c.id], recruiterRepliedMap[c.id]),
+            status: isCoachCoach
+              ? mapDbStatus(c.status, !!sendersByConv[c.id]?.has(user.id), !!sendersByConv[c.id]?.has(otherCoachId))
+              : mapDbStatus(c.status, coachRepliedMap[c.id], recruiterRepliedMap[c.id]),
             lastMessagePreview: latestMsg?.content ? latestMsg.content.slice(0, 80) + (latestMsg.content.length > 80 ? "..." : "") : "",
             lastMessageTime: latestMsg?.created_at || c.last_message_at || c.created_at,
             lastSenderId: latestMsg?.sender_id ?? null,
@@ -328,6 +402,7 @@ function DemandesContent() {
         });
 
         setThreads(mapped);
+        setCoachMeta(nextCoachMeta);
         setConvTypes(Object.fromEntries(conversations.map((c: any) => [c.id as string, (c.conversation_type as string) || "RECRUTEUR_COACH"])));
       } catch (err) {
         console.error("[Demandes] Error loading threads:", err);
@@ -455,11 +530,12 @@ function DemandesContent() {
         </div>
       ) : (
         <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] overflow-hidden divide-y divide-[#2D3748]/50">
-          {filtered.map((t) => (
-            convTypes[t.id] === "ATHLETE_COACH"
-              ? <AthleteThreadCard key={t.id} thread={t} />
-              : <ThreadCard key={t.id} thread={t} />
-          ))}
+          {filtered.map((t) => {
+            const ct = convTypes[t.id];
+            if (ct === "ATHLETE_COACH") return <AthleteThreadCard key={t.id} thread={t} />;
+            if (ct === "COACH_COACH") return <CoachCoachThreadCard key={t.id} thread={t} meta={coachMeta[t.id]} />;
+            return <ThreadCard key={t.id} thread={t} />;
+          })}
         </div>
       )}
     </div>

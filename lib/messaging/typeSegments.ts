@@ -29,6 +29,9 @@ export interface TypeSegment {
 const COACH_ORDER: { value: string; label: string; type: string }[] = [
   { value: "recruteur", label: "Recruteurs", type: "RECRUTEUR_COACH" },
   { value: "athlete", label: "Athlètes", type: "ATHLETE_COACH" },
+  // Coach↔coach same-school (P4) : "Coachs" appears the moment a
+  // COACH_COACH thread exists (directors included — no separate type).
+  { value: "coach", label: "Coachs", type: "COACH_COACH" },
   { value: "parent", label: "Parents", type: "PARENT_COACH" },
 ];
 

@@ -36,6 +36,8 @@ import { createClient } from "@/lib/supabase/client";
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import AthletePhoto from "@/components/shared/AthletePhoto";
 import { createCoachConversation } from "@/lib/queries/messaging/createCoachConversation";
+import AudienceTiles, { type CoachAudience } from "@/components/messaging/AudienceTiles";
+import CoachStaffCompose from "@/components/messaging/CoachStaffCompose";
 
 async function triggerHaptic(intensity: "Light" | "Medium" = "Light") {
   try {
@@ -100,6 +102,7 @@ export function CoachDemandesNouveauMobile() {
   const [messageBody, setMessageBody] = useState("");
   const [sending, setSending] = useState(false);
 
+  const [audience, setAudience] = useState<CoachAudience | null>(null);
   const [drillDown, setDrillDown] = useState<DrillDown>("none");
   const [athleteSearch, setAthleteSearch] = useState("");
   const [cegepSearch, setCegepSearch] = useState("");
@@ -318,6 +321,35 @@ Je vous écris au sujet de ${selectedAthlete.firstName} ${selectedAthlete.lastNa
   }, [canSend, selectedAthlete, selectedRecruiter, coachUserId, messageBody, toast, queryClient, router]);
 
   /* ─────────────────────────────────────────────────────────── */
+
+  // Step 1 — "À qui veux-tu écrire ?" audience gate. Recruteur → the full
+  // recruiter flow below ; Coach/Directeur/École (COACH_COACH) reuse the
+  // presentation-neutral CoachStaffCompose panel.
+  if (audience === null || audience !== "recruteur") {
+    return (
+      <div className="min-h-[100dvh] bg-[#111317] text-white flex flex-col">
+        <div className="sticky top-0 z-30 bg-[#111317]/95 backdrop-blur-md border-b border-white/[0.06]" style={{ paddingTop: "env(safe-area-inset-top)" }}>
+          <div className="flex items-center px-4 py-2 gap-2 min-h-[64px]">
+            <button type="button" onClick={() => (audience ? setAudience(null) : router.push("/coach/demandes"))} aria-label="Retour" className="w-11 h-11 rounded-full flex items-center justify-center active:bg-white/5 flex-shrink-0">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
+            </button>
+            <h1 className="font-head text-[20px] font-black text-white uppercase tracking-tight flex-1 truncate">Nouveau message</h1>
+          </div>
+        </div>
+        <div className="flex-1 px-4 pt-4 nx-mobile-pb-tabbar overflow-y-auto">
+          {audience === null ? (
+            <AudienceTiles onPick={setAudience} />
+          ) : coachUserId ? (
+            <CoachStaffCompose
+              selfId={coachUserId}
+              audience={audience as "coach" | "directeur" | "ecole"}
+              onCreated={(id) => { queryClient.invalidateQueries({ queryKey: ["conversations"] }); router.replace(`/coach/demandes/${id}`); }}
+            />
+          ) : null}
+        </div>
+      </div>
+    );
+  }
 
   return (
     // min-h-[100dvh] (pas min-h-screen/100vh) : suit le frame sous Keyboard

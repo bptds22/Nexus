@@ -18,8 +18,12 @@ import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 
 export interface CoachThreadData {
   id: string;
-  /** 'RECRUTEUR_COACH' (default) | 'ATHLETE_COACH'. */
+  /** 'RECRUTEUR_COACH' (default) | 'ATHLETE_COACH' | 'COACH_COACH'. */
   conversationType: string;
+  /** COACH_COACH counterparty (the other coach/director). */
+  otherCoachName: string;
+  otherCoachInitials: string;
+  otherCoachIsDirector: boolean;
   /** Recruiter — counterparty. */
   recruiterId: string;
   recruiterName: string;
@@ -56,6 +60,7 @@ export function useCoachConversations() {
         .from("conversations")
         .select(`
           id, conversation_type, status, last_message_at, unread_count, created_at,
+          coach_id, coach_b_id,
           recruiter:users!recruiter_id(
             id, first_name, last_name, avatar_url, photo_url, school_id,
             schools!school_id(name)
@@ -65,11 +70,29 @@ export function useCoachConversations() {
             positions!position_id(nom, abreviation)
           )
         `)
-        .eq("coach_id", userId)
+        .or(`coach_id.eq.${userId},coach_b_id.eq.${userId}`)
         .order("last_message_at", { ascending: false });
 
       if (error) throw error;
       if (!data) return [];
+
+      // COACH_COACH — resolve the "other coach" (coach_b_id when I'm coach_id)
+      // + director status (label only). Secondary fetch keeps the FK join simple.
+      const otherCoachIds = [...new Set(data
+        .filter((c: Record<string, unknown>) => c.conversation_type === "COACH_COACH")
+        .map((c: Record<string, unknown>) => (c.coach_id === userId ? c.coach_b_id : c.coach_id) as string)
+        .filter(Boolean))];
+      const otherCoachMap = new Map<string, { name: string; initials: string; isDirector: boolean }>();
+      if (otherCoachIds.length > 0) {
+        const { data: cu } = await supabase.from("users").select("id, first_name, last_name").in("id", otherCoachIds);
+        const { data: dr } = await supabase.from("school_coaches").select("coach_id, role").in("coach_id", otherCoachIds);
+        const directorSet = new Set((dr || []).filter((r) => (r as { role: string }).role === "DIRECTEUR" || (r as { role: string }).role === "DIRECTEUR_INTERIM").map((r) => (r as { coach_id: string }).coach_id));
+        for (const u of cu || []) {
+          const uu = u as { id: string; first_name?: string; last_name?: string };
+          const f = uu.first_name || ""; const l = uu.last_name || "";
+          otherCoachMap.set(uu.id, { name: `${f} ${l}`.trim() || "Coach", initials: `${f[0] || ""}${l[0] || ""}`.toUpperCase(), isDirector: directorSet.has(uu.id) });
+        }
+      }
 
       // Last message per conversation (preview line).
       const convIds = data.map((c: Record<string, unknown>) => c.id as string);
@@ -108,9 +131,15 @@ export function useCoachConversations() {
         const af = (ath?.first_name as string) || "";
         const al = (ath?.last_name as string) || "";
 
+        const otherId = (c.coach_id === userId ? c.coach_b_id : c.coach_id) as string | undefined;
+        const oc = otherId ? otherCoachMap.get(otherId) : undefined;
+
         return {
           id: c.id as string,
           conversationType: (c.conversation_type as string) || "RECRUTEUR_COACH",
+          otherCoachName: oc?.name || "Coach",
+          otherCoachInitials: oc?.initials || "",
+          otherCoachIsDirector: !!oc?.isDirector,
           recruiterId: (rec?.id as string) || "",
           recruiterName: `${rf} ${rl}`.trim() || "Recruteur",
           recruiterInitials: `${rf[0] || ""}${rl[0] || ""}`.toUpperCase(),

@@ -11,6 +11,7 @@ import { createClient } from "@/lib/supabase/client";
 import { parseDistinctions, type DistinctionEntry } from "@/lib/config/badges";
 import { CoachDemandesThreadMobile } from "@/components/shared/CoachDemandesThreadMobile";
 import CoachAthleteThreadView from "./CoachAthleteThreadView";
+import CoachCoachThreadView from "./CoachCoachThreadView";
 import RetractedMessageRow from "@/components/messaging/RetractedMessageRow";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
@@ -112,14 +113,15 @@ export default function Page() {
    anything else → the existing recruiter↔coach thread (byte-identical). */
 function CoachThreadRouter() {
   const id = useDynamicParam("id");
-  const [convType, setConvType] = useState<"loading" | "ATHLETE_COACH" | "OTHER">("loading");
+  const [convType, setConvType] = useState<"loading" | "ATHLETE_COACH" | "COACH_COACH" | "OTHER">("loading");
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
         const supabase = createClient();
         const { data } = await supabase.from("conversations").select("conversation_type").eq("id", id).maybeSingle();
-        if (!cancelled) setConvType(data?.conversation_type === "ATHLETE_COACH" ? "ATHLETE_COACH" : "OTHER");
+        const t = data?.conversation_type;
+        if (!cancelled) setConvType(t === "ATHLETE_COACH" ? "ATHLETE_COACH" : t === "COACH_COACH" ? "COACH_COACH" : "OTHER");
       } catch {
         if (!cancelled) setConvType("OTHER");
       }
@@ -135,6 +137,7 @@ function CoachThreadRouter() {
     );
   }
   if (convType === "ATHLETE_COACH") return <CoachAthleteThreadView id={id} />;
+  if (convType === "COACH_COACH") return <CoachCoachThreadView id={id} />;
   return <ThreadDetailPage />;
 }
 

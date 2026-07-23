@@ -26,6 +26,7 @@ export default function AthleteNouveauMessagePage() {
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [aud, setAud] = useState<"all" | "coach" | "directeur">("all");
 
   useEffect(() => {
     (async () => {
@@ -83,7 +84,32 @@ export default function AthleteNouveauMessagePage() {
       ) : !athleteId ? (
         <div className="bg-[#13151a] border border-[#2D3748] rounded-lg p-5"><p className="text-[14px] text-[#9CA3AF]">Profil athlète introuvable.</p></div>
       ) : (
-        <SchoolStaffPicker athleteId={athleteId} onSelect={handleSelect} busyId={busyId} />
+        <div className="space-y-4">
+          {/* "À qui veux-tu écrire ?" — athlete audiences are staff only
+              (Coach / Directeur), both write ATHLETE_COACH. */}
+          <div>
+            <h2 className="text-[13px] font-bold tracking-[0.25em] uppercase text-[#9CA3AF] mb-2">À qui veux-tu écrire&nbsp;?</h2>
+            <div className="flex flex-wrap gap-2">
+              {([
+                { key: "all", label: "Tous" },
+                { key: "coach", label: "Entraîneur" },
+                { key: "directeur", label: "Directeur sportif" },
+              ] as const).map((o) => (
+                <button
+                  key={o.key}
+                  type="button"
+                  onClick={() => setAud(o.key)}
+                  className={`px-3.5 py-1.5 rounded-full text-[13px] font-semibold border transition-colors ${
+                    aud === o.key ? "bg-[#22C55E]/15 border-[#22C55E]/40 text-[#22C55E]" : "bg-[#13151a] border-[#2D3748] text-[#9CA3AF] hover:text-white"
+                  }`}
+                >
+                  {o.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <SchoolStaffPicker athleteId={athleteId} onSelect={handleSelect} busyId={busyId} roleFilter={aud} />
+        </div>
       )}
     </div>
   );
