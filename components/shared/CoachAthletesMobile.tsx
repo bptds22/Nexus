@@ -40,6 +40,8 @@ import {
 } from "@/lib/coach/athleteEmailAutocomplete";
 import { createAthleteInvitationLink } from "@/lib/queries/coach/createAthleteInvitation";
 import { loadCoachTeams, inviteAthleteToTeam, type CoachTeamOption } from "@/lib/queries/coach/teamInvite";
+import { loadSchoolDirectorStatus } from "@/lib/queries/coach/useSchoolDirector";
+import { AthleteSectionHeader } from "@/components/shared/coach/AthleteSectionHeader";
 
 /* ── Constants ────────────────────────────────────────────── */
 
@@ -878,6 +880,7 @@ export function CoachAthletesMobile() {
   // Data state
   const [athletes, setAthletes] = useState<CoachAthlete[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string>("");
+  const [isDirector, setIsDirector] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshVersion, setRefreshVersion] = useState(0);
 
@@ -921,6 +924,10 @@ export function CoachAthletesMobile() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user || cancelled) { setLoading(false); return; }
       setCurrentUserId(user.id);
+
+      // Director oversight → second "Athlètes de l'école" section.
+      const dir = await loadSchoolDirectorStatus(supabase, user.id);
+      if (!cancelled) setIsDirector(dir.isDirector);
 
       const { data: coachRow, error: coachError } = await supabase
         .from("users")
@@ -1028,10 +1035,16 @@ export function CoachAthletesMobile() {
     () => athletes.filter((a) => a.coachId == null),
     [athletes]
   );
+  // Director oversight: school athletes owned by OTHER coaches (unclaimed
+  // stay in the À réclamer tab, never double-listed).
+  const schoolAthletes = useMemo(
+    () => athletes.filter((a) => a.coachId !== currentUserId && a.coachId != null),
+    [athletes, currentUserId]
+  );
 
-  /* ── Filter pipeline (Roster tab) ── */
-  const filtered = useMemo(() => {
-    let list = [...myRoster];
+  /* ── Filter pipeline (Roster tab) — shared across both director sections ── */
+  const applyFilters = useCallback((source: CoachAthlete[]) => {
+    let list = [...source];
     if (search.trim().length >= 2) {
       const q = search.toLowerCase();
       list = list.filter((a) =>
@@ -1064,7 +1077,10 @@ export function CoachAthletesMobile() {
     }
 
     return list;
-  }, [myRoster, search, sport, genderFilter, position, region, promotion, verifiedOnly, withVideoOnly, minRating, withSportBadge, withAcademicBadge, minGpa, sortBy]);
+  }, [search, sport, genderFilter, position, region, promotion, verifiedOnly, withVideoOnly, minRating, withSportBadge, withAcademicBadge, minGpa, sortBy]);
+
+  const filtered = useMemo(() => applyFilters(myRoster), [applyFilters, myRoster]);
+  const filteredSchool = useMemo(() => applyFilters(schoolAthletes), [applyFilters, schoolAthletes]);
 
   const activeFiltersCount = [
     sport, genderFilter, position, promotion, region, minGpa,
@@ -1193,6 +1209,33 @@ export function CoachAthletesMobile() {
     }
   }, [loading, filtered.length, unclaimedAthletes.length, activeTab]);
 
+  /* Shared section body — reused by both director sections. Plain (no
+     per-card stagger) to avoid framer key collisions across two lists;
+     the non-director path keeps its animated grid/list untouched. */
+  const renderMobileSection = (list: CoachAthlete[]) =>
+    viewMode === "grid" ? (
+      <div className="grid grid-cols-2 gap-3 p-4">
+        {list.map((a) => (
+          <AthleteCardMobile
+            key={a.id}
+            a={cardData(a)}
+            isFree={false}
+            favDisabled
+            onToggleFav={() => { /* no-op coach roster */ }}
+            favoritesCount={a.favoritesCount}
+            profileHref={`/coach/athletes/${a.id}`}
+            layoutIdPrefix="coach-athlete-photo"
+          />
+        ))}
+      </div>
+    ) : (
+      <div className="space-y-2 p-4">
+        {list.map((a) => (
+          <CoachAthleteRowMobile key={a.id} a={a} onTap={() => router.push(`/coach/athletes/${a.id}`)} />
+        ))}
+      </div>
+    );
+
   /* ── Render ── */
   return (
     <div className="min-h-screen bg-[#111317] text-white nx-mobile-pb-tabbar">
@@ -1268,7 +1311,7 @@ export function CoachAthletesMobile() {
           {loading
             ? "Chargement…"
             : activeTab === "roster"
-              ? `${filtered.length} athlète${filtered.length !== 1 ? "s" : ""}`
+              ? (() => { const n = isDirector ? filtered.length + filteredSchool.length : filtered.length; return `${n} athlète${n !== 1 ? "s" : ""}`; })()
               : `${unclaimedAthletes.length} à réclamer`}
         </span>
       </div>
@@ -1280,7 +1323,30 @@ export function CoachAthletesMobile() {
             <SkeletonGrid />
           </motion.div>
         ) : activeTab === "roster" ? (
-          filtered.length === 0 ? (
+          isDirector ? (
+            <motion.div key="roster-director" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.22 }}>
+              {/* Mes athlètes */}
+              <div className="px-4 pt-2 pb-1">
+                <AthleteSectionHeader title="Mes athlètes" count={filtered.length} />
+              </div>
+              {filtered.length === 0 ? (
+                <p className="px-4 py-3 text-[13px] text-[#6b7280]">
+                  {myRoster.length === 0 ? "Tu n'as pas encore d'athlètes." : "Aucun de tes athlètes ne correspond aux filtres."}
+                </p>
+              ) : renderMobileSection(filtered)}
+              {/* Athlètes de l'école (supervision directeur) */}
+              {schoolAthletes.length > 0 && (
+                <>
+                  <div className="px-4 pt-4 pb-1">
+                    <AthleteSectionHeader title="Athlètes de l'école" count={filteredSchool.length} director />
+                  </div>
+                  {filteredSchool.length === 0 ? (
+                    <p className="px-4 py-3 text-[13px] text-[#6b7280]">Aucun athlète de l&apos;école ne correspond aux filtres.</p>
+                  ) : renderMobileSection(filteredSchool)}
+                </>
+              )}
+            </motion.div>
+          ) : filtered.length === 0 ? (
             <motion.div key="empty-roster" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="px-6 py-12 text-center">
               {myRoster.length === 0 && unclaimedAthletes.length > 0 ? (
                 <>
