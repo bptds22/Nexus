@@ -20,6 +20,9 @@ export interface StaffMember {
   photoUrl: string | null;
   roleLabel: "Directeur" | "Entraîneur";
   isDirector: boolean;
+  /** Context line — sport(s) + team(s) they coach (from team_coaches).
+   *  null for directors (role only) and coaches with no team. */
+  context: string | null;
 }
 
 const DIRECTOR_ROLES = ["DIRECTEUR", "DIRECTEUR_INTERIM"];
@@ -59,6 +62,35 @@ export async function loadSchoolStaff(
     .select("id, first_name, last_name, photo_url, avatar_url")
     .in("id", ids);
 
+  // 3b. Sport(s) + team(s) each coaches — team_coaches is school-scoped
+  //     readable ("team_coaches scoped select"), so peers' teams are visible.
+  const { data: tcRows } = await supabase
+    .from("team_coaches")
+    .select("coach_id, teams!team_id(name, is_active, sports!sport_id(nom))")
+    .in("coach_id", ids);
+  const teamMap = new Map<string, { sports: Set<string>; teams: string[] }>();
+  for (const tc of (tcRows ?? []) as { coach_id: string; teams: unknown }[]) {
+    const team = (Array.isArray(tc.teams) ? tc.teams[0] : tc.teams) as
+      { name?: string; is_active?: boolean; sports?: unknown } | null;
+    if (!team || team.is_active === false) continue;
+    const sport = (Array.isArray(team.sports) ? team.sports[0] : team.sports) as { nom?: string } | null;
+    const entry = teamMap.get(tc.coach_id) ?? { sports: new Set<string>(), teams: [] };
+    if (sport?.nom) entry.sports.add(sport.nom);
+    if (team.name) entry.teams.push(team.name);
+    teamMap.set(tc.coach_id, entry);
+  }
+
+  // "Football · Titans M18, Cadets M15 (+1)" — sports, then up to 2 team names.
+  function buildContext(coachId: string): string | null {
+    const e = teamMap.get(coachId);
+    if (!e || e.teams.length === 0) return null;
+    const sports = [...e.sports].join(", ");
+    const head = e.teams.slice(0, 2).join(", ");
+    const extra = e.teams.length > 2 ? ` (+${e.teams.length - 2})` : "";
+    const teams = `${head}${extra}`;
+    return sports ? `${sports} · ${teams}` : teams;
+  }
+
   const staff: StaffMember[] = (users ?? []).map((u) => {
     const uu = u as { id: string; first_name?: string; last_name?: string; photo_url?: string; avatar_url?: string };
     const isDirector = DIRECTOR_ROLES.includes(roleMap.get(uu.id) || "");
@@ -69,6 +101,8 @@ export async function loadSchoolStaff(
       photoUrl: uu.photo_url ?? uu.avatar_url ?? null,
       roleLabel: isDirector ? "Directeur" : "Entraîneur",
       isDirector,
+      // Directors keep role only; coaches get their sport(s) + team(s).
+      context: isDirector ? null : buildContext(uu.id),
     };
   });
 

@@ -157,6 +157,7 @@ export default function CoachStaffCompose({
               <div className="min-w-0 flex-1">
                 <p className="text-[14px] font-bold text-white truncate">{s.name}</p>
                 <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${s.isDirector ? "bg-[#14B8A6]/12 border-[#14B8A6]/30 text-[#14B8A6]" : "bg-[#2D3748] border-transparent text-[#9CA3AF]"}`}>{s.roleLabel}</span>
+                {s.context && <p className="text-[11px] text-[#6b7280] truncate mt-1">{s.context}</p>}
               </div>
               {busyId === s.id && <div className="w-4 h-4 border-2 border-[#14B8A6] border-t-transparent rounded-full animate-spin shrink-0" />}
             </button>
