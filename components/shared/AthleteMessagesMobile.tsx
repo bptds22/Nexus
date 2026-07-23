@@ -22,6 +22,7 @@ import { useDebouncedValue } from "@/lib/utils/useDebouncedValue";
 import { createClient } from "@/lib/supabase/client";
 import { MessagesListShell, type FilterOption } from "@/components/shared/messaging/MessagesListShell";
 import { triggerHaptic, relativeTime } from "@/components/shared/messaging/utils";
+import { deriveTypeSegments, matchesTypeSegment } from "@/lib/messaging/typeSegments";
 
 function useArchiveAthleteConversation() {
   const queryClient = useQueryClient();
@@ -47,11 +48,12 @@ function useArchiveAthleteConversation() {
   });
 }
 
-type FilterKey = "tous" | "non_lu" | "archive";
-const FILTER_OPTIONS: FilterOption<FilterKey>[] = [
-  { value: "tous",    label: "Tous" },
-  { value: "non_lu",  label: "Non lu" },
-  { value: "archive", label: "Archivé" },
+/* Status presets (non-type portion of the filter sheet). Type segments
+   ("Mes coachs" ; "Recruteurs" auto with P3) are derived + prepended. */
+const STATUS_FILTER_OPTIONS: FilterOption<string>[] = [
+  { value: "non_lu",       label: "Non lu" },
+  { value: "sans_reponse", label: "Sans réponse" },
+  { value: "archive",      label: "Archivé" },
 ];
 
 export function AthleteMessagesMobile() {
@@ -59,19 +61,41 @@ export function AthleteMessagesMobile() {
   const toast = useMobileToast();
   const { data: threads = [], isLoading } = useAthleteConversations();
   const archiveMut = useArchiveAthleteConversation();
+  const { data: currentUser } = useCurrentUser();
+  const userId = currentUser?.authUser.id;
 
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebouncedValue(search, 200);
-  const [filter, setFilter] = useState<FilterKey>("tous");
+  const [filter, setFilter] = useState<string>("tous");
   const [editMode, setEditMode] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
   useEffect(() => { if (threads.length === 0) setEditMode(false); }, [threads.length]);
   useEffect(() => { if (!editMode) setSelected(new Set()); }, [editMode]);
 
+  // Type-driven segments — "Recruteurs" auto-appears avec un fil
+  // RECRUTEUR_ATHLETE (P3-ready). Segments (dont "Tous") + presets statut.
+  const typeSegments = useMemo(
+    () => deriveTypeSegments(threads.map((t) => t.conversationType), "athlete"),
+    [threads],
+  );
+  const typeValues = useMemo(
+    () => new Set(typeSegments.filter((s) => s.value !== "all").map((s) => s.value)),
+    [typeSegments],
+  );
+  const filterOptions = useMemo<FilterOption<string>[]>(
+    () => [
+      ...typeSegments.map((s) => ({ value: s.value === "all" ? "tous" : s.value, label: s.label })),
+      ...STATUS_FILTER_OPTIONS,
+    ],
+    [typeSegments],
+  );
+
   const filtered = useMemo(() => {
     let list = [...threads];
-    if (filter === "non_lu") list = list.filter((t) => t.unreadCount > 0 && t.status !== "ARCHIVE");
+    if (typeValues.has(filter)) list = list.filter((t) => matchesTypeSegment(typeSegments, filter, t.conversationType) && t.status !== "ARCHIVE");
+    else if (filter === "non_lu") list = list.filter((t) => t.unreadCount > 0 && t.status !== "ARCHIVE");
+    else if (filter === "sans_reponse") list = list.filter((t) => t.lastSenderId != null && t.lastSenderId === userId && t.status !== "ARCHIVE");
     else if (filter === "archive") list = list.filter((t) => t.status === "ARCHIVE");
     else list = list.filter((t) => t.status !== "ARCHIVE");
     if (debouncedSearch.trim().length >= 2) {
@@ -82,7 +106,7 @@ export function AthleteMessagesMobile() {
         t.lastMessage.toLowerCase().includes(q));
     }
     return list;
-  }, [threads, filter, debouncedSearch]);
+  }, [threads, filter, typeSegments, typeValues, debouncedSearch, userId]);
 
   const handleTap = (t: AthleteThreadData) => router.push(`/athlete/messages/${t.id}`);
   const handleToggleSelect = (id: string) => {
@@ -135,7 +159,8 @@ export function AthleteMessagesMobile() {
             <p className={`text-base truncate ${unread ? "font-bold text-white" : "font-semibold text-white/95"}`}>{t.coachName}</p>
             <span className={`text-[13px] flex-shrink-0 ${unread ? "text-[#22C55E] font-semibold" : "text-white/40"}`}>{relativeTime(t.lastMessageAt)}</span>
           </div>
-          <p className="text-[15px] text-white/55 mt-0.5 truncate">{t.coachRole}{t.coachSchool ? ` · ${t.coachSchool}` : ""}</p>
+          {/* Coach sans nom résolu → coachName porte déjà "{rôle} — {école}". */}
+          {t.hasCoachName && <p className="text-[15px] text-white/55 mt-0.5 truncate">{t.coachRole}{t.coachSchool ? ` · ${t.coachSchool}` : ""}</p>}
           {t.lastMessage && <p className="text-[15px] text-white/40 mt-0.5 truncate">{t.lastMessage}</p>}
         </div>
       </div>
@@ -150,9 +175,9 @@ export function AthleteMessagesMobile() {
       getUnread={(t) => t.unreadCount > 0}
       getStatus={(t) => (t.status === "ARCHIVE" ? "ARCHIVE" : "ACTIVE")}
       renderRowContent={renderRow}
-      filterOptions={FILTER_OPTIONS as unknown as FilterOption<string>[]}
+      filterOptions={filterOptions}
       filter={filter}
-      onFilterChange={(v) => setFilter(v as FilterKey)}
+      onFilterChange={setFilter}
       search={search}
       onSearchChange={setSearch}
       searchPlaceholder="Rechercher"

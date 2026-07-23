@@ -10,6 +10,15 @@ import AthletePhoto from "@/components/shared/AthletePhoto";
 import { createClient } from "@/lib/supabase/client";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import { CoachDemandesMobile } from "@/components/shared/CoachDemandesMobile";
+import { useDebouncedValue } from "@/lib/utils/useDebouncedValue";
+import { MessagesToolbar } from "@/components/shared/messaging/MessagesToolbar";
+import {
+  STATUS_SORT_PRIORITY,
+  matchesStatusPreset,
+  mapUrlStatusPreset,
+  type StatusPreset,
+} from "@/lib/messaging/threadStatus";
+import { deriveTypeSegments, matchesTypeSegment } from "@/lib/messaging/typeSegments";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -35,24 +44,6 @@ function relativeTime(isoStr: string): string {
   }
   const opts: Intl.DateTimeFormatOptions = { day: "numeric", month: "long" };
   return d.toLocaleDateString("fr-CA", opts);
-}
-
-type FilterPreset = "tous" | "nouveau" | "reponse_recue" | "sans_reponse" | "archive";
-
-const PILLS: { key: FilterPreset; label: string }[] = [
-  { key: "tous", label: "Tous" },
-  { key: "nouveau", label: "Nouveau" },
-  { key: "reponse_recue", label: "Réponse reçue" },
-  { key: "sans_reponse", label: "Sans réponse" },
-  { key: "archive", label: "Archivé" },
-];
-
-function mapUrlFilter(p: string | null): FilterPreset {
-  if (p === "nouveau") return "nouveau";
-  if (p === "reponse_recue") return "reponse_recue";
-  if (p === "sans_reponse") return "sans_reponse";
-  if (p === "archive") return "archive";
-  return "tous";
 }
 
 /* ── Status Badge ──────────────────────────────────────────── */
@@ -216,8 +207,9 @@ function DemandesContent() {
   const userId = currentUser?.authUser.id;
 
   const [search, setSearch] = useState("");
-  const [activeFilter, setActiveFilter] = useState<FilterPreset>(mapUrlFilter(urlFilter));
-  const [typeFilter, setTypeFilter] = useState<"all" | "recruteur" | "athlete">("all");
+  const debouncedSearch = useDebouncedValue(search, 200);
+  const [activeFilter, setActiveFilter] = useState<StatusPreset>(mapUrlStatusPreset(urlFilter));
+  const [typeFilter, setTypeFilter] = useState<string>("all");
   const [threads, setThreads] = useState<ConversationThread[]>([]);
   const [convTypes, setConvTypes] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
@@ -348,55 +340,43 @@ function DemandesContent() {
 
   const unreadCount = threads.filter((t) => t.unread).length;
 
+  // Type-driven segments — "Parents" auto-appears when a PARENT_COACH
+  // thread exists (P2-ready), with zero rework here.
+  const typeSegments = useMemo(
+    () => deriveTypeSegments(Object.values(convTypes), "coach"),
+    [convTypes],
+  );
+
   const filtered = useMemo(() => {
     let list = [...threads];
 
-    // Type filter (Recruteurs / Athlètes)
-    if (typeFilter === "recruteur") list = list.filter((t) => convTypes[t.id] !== "ATHLETE_COACH");
-    else if (typeFilter === "athlete") list = list.filter((t) => convTypes[t.id] === "ATHLETE_COACH");
+    // Type filter (derived segments : Recruteurs / Athlètes / Parents…)
+    list = list.filter((t) => matchesTypeSegment(typeSegments, typeFilter, convTypes[t.id] || "RECRUTEUR_COACH"));
 
-    // Search
-    if (search.trim().length >= 2) {
-      const q = search.toLowerCase();
+    // Search (participant names, CÉGEP, last message)
+    if (debouncedSearch.trim().length >= 2) {
+      const q = debouncedSearch.toLowerCase();
       list = list.filter(
         (t) =>
           `${t.recruiter.firstName} ${t.recruiter.lastName}`.toLowerCase().includes(q) ||
           t.recruiter.cegep.toLowerCase().includes(q) ||
-          `${t.athlete.firstName} ${t.athlete.lastName}`.toLowerCase().includes(q)
+          `${t.athlete.firstName} ${t.athlete.lastName}`.toLowerCase().includes(q) ||
+          t.lastMessagePreview.toLowerCase().includes(q)
       );
     }
 
-    // Filter
-    switch (activeFilter) {
-      case "nouveau":
-        list = list.filter((t) => t.status === "nouveau");
-        break;
-      case "reponse_recue":
-        list = list.filter((t) => t.status === "reponse_recue");
-        break;
-      // "Sans réponse" : le dernier message vient du coach courant → on attend
-      // la réponse du recruteur (def. (a)). Remplace l'ancien "Envoyé" (basé sur
-      // mapDbStatus, qui ne renvoie jamais "envoye"). mapDbStatus/badges intacts.
-      case "sans_reponse":
-        list = list.filter((t) => t.lastSenderId != null && t.lastSenderId === userId && t.status !== "archive");
-        break;
-      case "archive":
-        list = list.filter((t) => t.status === "archive");
-        break;
-    }
+    // Status preset (shared with the athlete inbox)
+    list = list.filter((t) => matchesStatusPreset(activeFilter, t, userId));
 
     // Sort: nouveau first, then reponse_recue, then by most recent
-    const statusPriority: Record<ThreadStatus, number> = {
-      nouveau: 0, reponse_recue: 1, repondu: 2, envoye: 3, archive: 4,
-    };
     list.sort((a, b) => {
-      const sp = statusPriority[a.status] - statusPriority[b.status];
+      const sp = STATUS_SORT_PRIORITY[a.status] - STATUS_SORT_PRIORITY[b.status];
       if (sp !== 0) return sp;
       return new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime();
     });
 
     return list;
-  }, [search, activeFilter, typeFilter, threads, convTypes, userId]);
+  }, [debouncedSearch, activeFilter, typeFilter, typeSegments, threads, convTypes, userId]);
 
   return (
     <div className="px-6 sm:px-10 py-8 max-w-[1280px] mx-auto space-y-6">
@@ -430,59 +410,16 @@ function DemandesContent() {
         </Link>
       </div>
 
-      {/* ── Toolbar ─────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-        {/* Search */}
-        <div className="relative w-full sm:w-[40%] min-w-[200px]">
-          <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#6b7280]" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
-          </svg>
-          <input
-            type="text"
-            placeholder="Rechercher par recruteur, CÉGEP ou athlète..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-[#13151a] border border-[#2a2d36] rounded-lg pl-10 pr-4 py-2.5 text-[14px] text-[#e0e0e0] placeholder:text-[#6b7280] focus:border-[#E63946] outline-none transition-colors"
-          />
-        </div>
-
-        {/* Type filter (Tous / Recruteurs / Athlètes) */}
-        <div className="flex items-center gap-1 bg-[#13151a] border border-[#2a2d36] rounded-lg p-1 shrink-0">
-          {([["all", "Tous"], ["recruteur", "Recruteurs"], ["athlete", "Athlètes"]] as const).map(([key, label]) => (
-            <button
-              key={key}
-              type="button"
-              onClick={() => setTypeFilter(key)}
-              className={`px-3 py-1.5 rounded-md text-[12px] font-bold transition-colors ${
-                typeFilter === key ? "bg-[#2D3748] text-white" : "text-[#9CA3AF] hover:text-white"
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-
-        {/* Filter pills */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
-          {PILLS.map((pill) => {
-            const isActive = activeFilter === pill.key;
-            return (
-              <button
-                key={pill.key}
-                type="button"
-                onClick={() => setActiveFilter(pill.key)}
-                className={`px-4 py-2.5 rounded-full text-[13px] font-bold tracking-wide whitespace-nowrap transition-all ${
-                  isActive
-                    ? "bg-[#E63946] text-white"
-                    : "bg-transparent border border-[#2D3748] text-[#9CA3AF] hover:text-white hover:border-[#4a4d56]"
-                }`}
-              >
-                {pill.label}
-              </button>
-            );
-          })}
-        </div>
-      </div>
+      {/* ── Toolbar (shared with the athlete inbox) ─────────── */}
+      <MessagesToolbar
+        search={search}
+        onSearchChange={setSearch}
+        typeSegments={typeSegments}
+        typeValue={typeFilter}
+        onTypeChange={setTypeFilter}
+        statusValue={activeFilter}
+        onStatusChange={setActiveFilter}
+      />
 
       {/* ── Thread List ─────────────────────────────────────── */}
       {loading ? (

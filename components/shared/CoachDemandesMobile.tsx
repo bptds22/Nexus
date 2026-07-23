@@ -37,6 +37,7 @@ import {
   type FilterOption,
 } from "@/components/shared/messaging/MessagesListShell";
 import { triggerHaptic, relativeTime } from "@/components/shared/messaging/utils";
+import { deriveTypeSegments, matchesTypeSegment } from "@/lib/messaging/typeSegments";
 
 /* ── useArchiveCoachConversation (TanStack + optimistic) ─────── */
 
@@ -74,14 +75,9 @@ function useArchiveCoachConversation() {
   });
 }
 
-/* ── Filter keyset (parité recruteur — 3 filtres simples) ──── */
+/* ── Status presets (the non-type portion of the filter sheet) ─── */
 
-type FilterKey = "tous" | "recruteurs" | "athletes" | "non_lu" | "sans_reponse" | "archive";
-
-const FILTER_OPTIONS: FilterOption<FilterKey>[] = [
-  { value: "tous",         label: "Tous" },
-  { value: "recruteurs",   label: "Recruteurs" },
-  { value: "athletes",     label: "Athlètes" },
+const STATUS_FILTER_OPTIONS: FilterOption<string>[] = [
   { value: "non_lu",       label: "Non lu" },
   { value: "sans_reponse", label: "Sans réponse" },
   { value: "archive",      label: "Archivé" },
@@ -102,7 +98,7 @@ export function CoachDemandesMobile() {
   // States
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebouncedValue(search, 200);
-  const [filter, setFilter] = useState<FilterKey>("tous");
+  const [filter, setFilter] = useState<string>("tous");
   const [editMode, setEditMode] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
@@ -110,11 +106,29 @@ export function CoachDemandesMobile() {
   useEffect(() => { if (threads.length === 0) setEditMode(false); }, [threads.length]);
   useEffect(() => { if (!editMode) setSelected(new Set()); }, [editMode]);
 
+  // Type-driven segments — "Parents" auto-appears quand un fil PARENT_COACH
+  // existe (P2-ready). Le filtre sheet = segments de type (dont "Tous") +
+  // les presets de statut.
+  const typeSegments = useMemo(
+    () => deriveTypeSegments(threads.map((t) => t.conversationType), "coach"),
+    [threads],
+  );
+  const typeValues = useMemo(
+    () => new Set(typeSegments.filter((s) => s.value !== "all").map((s) => s.value)),
+    [typeSegments],
+  );
+  const filterOptions = useMemo<FilterOption<string>[]>(
+    () => [
+      ...typeSegments.map((s) => ({ value: s.value === "all" ? "tous" : s.value, label: s.label })),
+      ...STATUS_FILTER_OPTIONS,
+    ],
+    [typeSegments],
+  );
+
   // Filtre + recherche local
   const filtered = useMemo(() => {
     let list = [...threads];
-    if (filter === "recruteurs") list = list.filter((t) => t.conversationType !== "ATHLETE_COACH" && t.status !== "ARCHIVE");
-    else if (filter === "athletes") list = list.filter((t) => t.conversationType === "ATHLETE_COACH" && t.status !== "ARCHIVE");
+    if (typeValues.has(filter)) list = list.filter((t) => matchesTypeSegment(typeSegments, filter, t.conversationType) && t.status !== "ARCHIVE");
     else if (filter === "non_lu") list = list.filter((t) => t.unreadCount > 0 && t.status !== "ARCHIVE");
     // "Sans réponse" : le dernier message vient du coach courant → on attend
     // la réponse du recruteur (def. (a)). Exclut les archivés.
@@ -132,7 +146,7 @@ export function CoachDemandesMobile() {
       );
     }
     return list;
-  }, [threads, filter, debouncedSearch, userId]);
+  }, [threads, filter, typeSegments, typeValues, debouncedSearch, userId]);
 
   // Handlers
   const handleTap = (thread: CoachThreadData) => {
@@ -250,9 +264,9 @@ export function CoachDemandesMobile() {
       getUnread={(t) => t.unreadCount > 0}
       getStatus={(t) => (t.status === "ARCHIVE" ? "ARCHIVE" : "ACTIVE")}
       renderRowContent={renderRow}
-      filterOptions={FILTER_OPTIONS as unknown as FilterOption<string>[]}
+      filterOptions={filterOptions}
       filter={filter}
-      onFilterChange={(v) => setFilter(v as FilterKey)}
+      onFilterChange={setFilter}
       search={search}
       onSearchChange={setSearch}
       searchPlaceholder="Rechercher"
