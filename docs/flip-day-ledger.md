@@ -58,3 +58,18 @@ ship the current local definition as a `CREATE OR REPLACE` on flip-day.
 Every entry above is safe to re-apply. The pre-flight runs the batch top-to-bottom;
 already-applied statements no-op. The only ordering constraint is enum-before-model
 (P4 file 1 before file 2).
+
+---
+
+## Product decisions (no code — recorded, not action items)
+
+### Athlete claim scope = SCHOOL-ONLY (no sport restriction) — deliberate
+A coach may claim any unclaimed athlete at their school regardless of the coach's
+sport(s). Confirmed as intended, NOT a bug — no code/RLS change.
+- **Where enforced:** RLS `coaches can claim unclaimed school athletes`
+  (`coach_id IS NULL AND school_id = current_user_school_id()`) + `ReclamerSection`
+  (no sport filter). Same for the roster's "À réclamer" pool.
+- **Rationale:** athletes are frequently multi-sport, so a sport gate would wrongly
+  hide legitimate claims; the **Transferts** page is the correction path if an
+  athlete lands under the wrong coach.
+- Revisit only if a school reports mis-claims at scale.
