@@ -61,12 +61,30 @@ export async function transferAthletes(
 
   const coachId = toCoachId === UNASSIGNED_COACH_ID ? null : toCoachId;
 
-  const { error } = await supabase
+  // `.select()` so we can count rows ACTUALLY updated. RLS
+  // ("Coaches update own team athletes" / own-athlete / claim-unclaimed)
+  // limits reassignment to the athlete's owner, its team coach, or a
+  // director — a denied row updates silently (no error, 0 rows). Without
+  // this check the caller reported a phantom success on athletes it
+  // couldn't move.
+  const { data, error } = await supabase
     .from("athletes")
     .update({ coach_id: coachId, updated_at: new Date().toISOString() })
-    .in("id", athleteIds);
+    .in("id", athleteIds)
+    .select("id");
 
   if (error) return { success: false, error: error.message };
+
+  const moved = (data ?? []).length;
+  if (moved < athleteIds.length) {
+    const blocked = athleteIds.length - moved;
+    return {
+      success: false,
+      error:
+        `${blocked} athlète${blocked > 1 ? "s" : ""} n'ont pas pu être transféré${blocked > 1 ? "s" : ""}. ` +
+        "Tu peux seulement réassigner tes propres athlètes, ceux de tes équipes, ou (en tant que directeur) tous ceux de l'école.",
+    };
+  }
   return { success: true };
 }
 

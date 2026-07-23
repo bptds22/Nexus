@@ -133,7 +133,7 @@ export default function TransfertAthletesMobile() {
 
     if (!res.success) {
       console.error("[Transfert] failed", res.error);
-      toast.error({ message: "Échec du transfert", detail: "Impossible de déplacer ces athlètes." });
+      toast.error({ message: "Échec du transfert", detail: res.error || "Impossible de déplacer ces athlètes." });
       setSubmitting(false);
       setShowConfirm(false);
       return;

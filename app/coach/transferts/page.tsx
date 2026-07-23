@@ -155,7 +155,7 @@ function MesTransfertsContent() {
 
     if (!res.success) {
       console.error("[Transfert] failed", res.error);
-      flashToast("error", "Impossible de déplacer ces athlètes.");
+      flashToast("error", res.error || "Impossible de déplacer ces athlètes.");
       setSubmitting(false);
       setShowConfirm(false);
       return;
