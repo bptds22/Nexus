@@ -20,7 +20,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { ActivityEvent } from "@/lib/types/activityEvents";
-import { loadCoachTaskCounts } from "@/lib/coach/tasks";
+import { loadCoachTaskCounts, loadSchoolTaskCounts } from "@/lib/coach/tasks";
+import { loadSchoolDirectorStatus } from "@/lib/queries/coach/useSchoolDirector";
 import { DashboardGradientLayout } from "@/components/shared/dashboard/DashboardGradientLayout";
 import { DashboardGreeting } from "@/components/shared/dashboard/DashboardGreeting";
 import { DashboardHero } from "@/components/shared/dashboard/DashboardHero";
@@ -561,6 +562,16 @@ export function CoachDashboardMobile() {
       const coachSchoolId = (profile?.school_id as string) || null;
       if (!coachSchoolId) return;
 
+      // Director → school-wide dashboard scope (BP rule). Non-director unchanged.
+      const dir = await loadSchoolDirectorStatus(supabase, user.id);
+      const isDir = dir.isDirector;
+      let schoolCoachIds: string[] = [];
+      if (isDir) {
+        const { data: scRows } = await supabase
+          .from("school_coaches").select("coach_id").eq("school_id", coachSchoolId);
+        schoolCoachIds = [...new Set((scRows ?? []).map((r) => (r as { coach_id: string }).coach_id).filter(Boolean))];
+      }
+
       // Demotion notifications
       const { data: demotions } = await supabase
         .from("coach_notifications")
@@ -579,12 +590,11 @@ export function CoachDashboardMobile() {
         })));
       }
 
-      // Athletes claimed by this coach
-      const { data: athleteRows } = await supabase
-        .from("athletes")
-        .select("id, verified")
-        .eq("coach_id", user.id)
-        .eq("status", "ACTIF");
+      // Roster scope: director → whole school; coach → own claimed athletes.
+      const athletesSel = supabase.from("athletes").select("id, verified").eq("status", "ACTIF");
+      const { data: athleteRows } = await (isDir
+        ? athletesSel.eq("school_id", coachSchoolId)
+        : athletesSel.eq("coach_id", user.id));
 
       const athletes = athleteRows || [];
       const coachAthleteIds = athletes.map((a: { id: string }) => a.id);
@@ -606,15 +616,19 @@ export function CoachDashboardMobile() {
       // manquante) viennent du helper partagé lib/coach/tasks.loadCoachTaskCounts.
       // Une seule source de vérité — tab badge, web dashboard, mobile dashboard
       // et /coach/a-traiter consomment tous le même helper. Adds missingEvals.
-      const taskCounts = await loadCoachTaskCounts(supabase, user.id);
+      const taskCounts = isDir
+        ? await loadSchoolTaskCounts(supabase, coachSchoolId)
+        : await loadCoachTaskCounts(supabase, user.id);
 
       // ActionBar #3: new athletes added (unread) — séparé, pas une "tâche"
-      const { count: newAthletesCount } = await supabase
+      const newAthletesSel = supabase
         .from("activities")
         .select("id", { count: "exact", head: true })
-        .eq("coach_id", user.id)
         .eq("type", "ATHLETE_ADDED")
         .eq("read", false);
+      const { count: newAthletesCount } = await (isDir
+        ? newAthletesSel.in("coach_id", schoolCoachIds.length ? schoolCoachIds : ["00000000-0000-0000-0000-000000000000"])
+        : newAthletesSel.eq("coach_id", user.id));
 
       setActionBar({
         unreadMessages,

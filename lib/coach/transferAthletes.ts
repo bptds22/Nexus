@@ -15,6 +15,20 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 /** Sentinel used in the UI dropdowns for the coach_id IS NULL pool. */
 export const UNASSIGNED_COACH_ID = "__UNASSIGNED__";
 
+/**
+ * Pick a sensible initial SOURCE so the transfer panel isn't empty on load:
+ *   me (if I have athletes) → "Non assigné" pool (if it has any) →
+ *   first coach with athletes → "" (nothing to select).
+ */
+export function pickInitialSource(coaches: SchoolCoachOption[], selfId: string): string {
+  const me = coaches.find((c) => c.id === selfId);
+  if (me && me.athleteCount > 0) return me.id;
+  const pool = coaches.find((c) => c.id === UNASSIGNED_COACH_ID);
+  if (pool && pool.athleteCount > 0) return UNASSIGNED_COACH_ID;
+  const firstNonEmpty = coaches.find((c) => c.athleteCount > 0);
+  return firstNonEmpty ? firstNonEmpty.id : "";
+}
+
 export interface SchoolCoachOption {
   /** Coach user id, or UNASSIGNED_COACH_ID for the unclaimed pool. */
   id: string;

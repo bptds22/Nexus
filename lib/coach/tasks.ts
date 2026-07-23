@@ -319,3 +319,47 @@ export async function loadCoachTaskCounts(
     total: breakdown.total,
   };
 }
+
+/* ── School-wide variant (director dashboard) ─────────────────────
+   Same task definitions, scoped by SCHOOL instead of one coach.
+   missingEval is judged against the athlete's OWNER coach
+   (athletes.coach_id) — an unclaimed athlete (coach_id null) has no
+   owner eval → counts as missing. Count-only (dashboard needs numbers).
+─────────────────────────────────────────────────────────────────── */
+export async function loadSchoolTaskCounts(
+  supabase: SupabaseClient,
+  schoolId: string,
+): Promise<CoachTaskCounts> {
+  const [athletesRes, suggestionsRes] = await Promise.all([
+    supabase
+      .from("athletes")
+      .select("id, coach_id, verified, modified_since_verification, cote_globale_entraineur, evaluations(coach_id, cote_globale, rapport_entraineur)")
+      .eq("school_id", schoolId)
+      .eq("status", "ACTIF"),
+    supabase
+      .from("athlete_suggestions")
+      .select("id, athletes!athlete_id!inner(school_id)")
+      .eq("athletes.school_id", schoolId)
+      .eq("status", "EN_ATTENTE"),
+  ]);
+
+  if (athletesRes.error) console.error("[loadSchoolTaskCounts] athletes:", athletesRes.error.message);
+  if (suggestionsRes.error) console.error("[loadSchoolTaskCounts] suggestions:", suggestionsRes.error.message);
+
+  const athletes = (athletesRes.data ?? []) as (AthleteRow & { coach_id: string | null })[];
+  let unverified = 0;
+  let missingEval = 0;
+  for (const row of athletes) {
+    if (!row.verified || row.modified_since_verification) unverified++;
+    const evals = (row.evaluations ?? []) as EvalJoinRow[];
+    const ownerEval = evals.find((e) => e.coach_id === row.coach_id) ?? null;
+    if (isMissingEval({ cote_globale_entraineur: row.cote_globale_entraineur }, ownerEval)) missingEval++;
+  }
+  const pendingSuggestions = (suggestionsRes.data ?? []).length;
+  return {
+    unverified,
+    missingEval,
+    pendingSuggestions,
+    total: unverified + missingEval + pendingSuggestions,
+  };
+}

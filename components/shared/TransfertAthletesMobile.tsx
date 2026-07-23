@@ -10,6 +10,7 @@ import {
   loadSchoolCoaches,
   loadAthletesForCoach,
   transferAthletes,
+  pickInitialSource,
   UNASSIGNED_COACH_ID,
   type SchoolCoachOption,
   type TransferAthlete,
@@ -52,14 +53,27 @@ export default function TransfertAthletesMobile() {
       const supabase = createClient();
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { router.replace("/auth"); return; }
+      const uid = session.user.id;
       const { data: me } = await supabase
-        .from("users").select("school_id").eq("id", session.user.id).maybeSingle();
+        .from("users").select("school_id").eq("id", uid).maybeSingle();
       const sid = me?.school_id ?? null;
       setSchoolId(sid);
-      if (sid) await refreshCoaches(sid);
+      if (sid) {
+        const list = await loadSchoolCoaches(supabase, sid);
+        setCoaches(list);
+        // Auto-select a non-empty source so the panel isn't empty on load.
+        const auto = pickInitialSource(list, uid);
+        if (auto) {
+          setSourceId(auto);
+          setLoadingAthletes(true);
+          setSourceAthletes(await loadAthletesForCoach(supabase, sid, auto));
+          setLoadingAthletes(false);
+        }
+      }
       setLoading(false);
     })();
-  }, [router, refreshCoaches]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router]);
 
   const loadSource = useCallback(async (sid: string, coachId: string) => {
     if (!coachId) { setSourceAthletes([]); return; }
