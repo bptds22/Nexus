@@ -97,3 +97,26 @@ CREATE POLICY "ra_athlete_messages_insert" ON public.messages
         AND a.user_id = auth.uid()
     )
   );
+
+-- Mark-read ATHLÈTE (UPDATE direct) — symétrie avec le recruteur (messages_update).
+-- Scopé RA + participant athlète → P1 (athlète↔coach, RPC-only) INCHANGÉ. Le
+-- CONTENU reste immuable : enforce_message_content_immutable (trigger, type-
+-- agnostique) bloque toute édition de content → seul read_at est modifiable.
+-- Le RPC mark_conversation_read reste disponible (belt-and-suspenders).
+CREATE POLICY "ra_athlete_messages_update" ON public.messages
+  FOR UPDATE
+  TO authenticated
+  USING (
+    EXISTS (SELECT 1 FROM public.conversations c
+            JOIN public.athletes a ON a.id = c.athlete_id
+            WHERE c.id = messages.conversation_id
+              AND c.conversation_type = 'RECRUTEUR_ATHLETE'
+              AND a.user_id = auth.uid())
+  )
+  WITH CHECK (
+    EXISTS (SELECT 1 FROM public.conversations c
+            JOIN public.athletes a ON a.id = c.athlete_id
+            WHERE c.id = messages.conversation_id
+              AND c.conversation_type = 'RECRUTEUR_ATHLETE'
+              AND a.user_id = auth.uid())
+  );
