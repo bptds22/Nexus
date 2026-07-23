@@ -16,7 +16,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import AudienceTiles, { type CoachAudience } from "@/components/messaging/AudienceTiles";
 import CoachStaffCompose from "@/components/messaging/CoachStaffCompose";
-import InterestedRecruiterCompose from "@/components/messaging/InterestedRecruiterCompose";
+import RecruiterBrowserCompose from "@/components/messaging/RecruiterBrowserCompose";
 import GroupeCompose from "@/components/messaging/GroupeCompose";
 
 export function CoachDemandesNouveauMobile() {
@@ -66,8 +66,8 @@ export function CoachDemandesNouveauMobile() {
           <CoachStaffCompose selfId={userId} audience={audience} onCreated={routeToThread} />
         )}
 
-        {audience === "recruteurs_interesses" && userId && (
-          <InterestedRecruiterCompose selfId={userId} onCreated={routeToThread} />
+        {audience === "recruteurs" && userId && (
+          <RecruiterBrowserCompose selfId={userId} onCreated={routeToThread} />
         )}
 
         {audience === "groupe" && userId && (

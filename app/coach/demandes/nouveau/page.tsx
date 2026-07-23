@@ -8,7 +8,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { CoachDemandesNouveauMobile } from "@/components/shared/CoachDemandesNouveauMobile";
 import AudienceTiles, { type CoachAudience } from "@/components/messaging/AudienceTiles";
 import CoachStaffCompose from "@/components/messaging/CoachStaffCompose";
-import InterestedRecruiterCompose from "@/components/messaging/InterestedRecruiterCompose";
+import RecruiterBrowserCompose from "@/components/messaging/RecruiterBrowserCompose";
 import GroupeCompose from "@/components/messaging/GroupeCompose";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
@@ -83,8 +83,8 @@ function CoachNouveauMessageContent() {
             <CoachStaffCompose selfId={userId} audience={audience} onCreated={routeToThread} />
           )}
 
-          {audience === "recruteurs_interesses" && (
-            <InterestedRecruiterCompose selfId={userId} onCreated={routeToThread} />
+          {audience === "recruteurs" && (
+            <RecruiterBrowserCompose selfId={userId} onCreated={routeToThread} />
           )}
 
           {audience === "groupe" && (

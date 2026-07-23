@@ -58,6 +58,25 @@ recruiter read/reply; recruiter-initiate intact; helper returns).
   coach's own athlete). Reuses the RECRUTEUR_COACH type; `athlete_id` stays NOT NULL.
 
 Re-run its proof after prod apply: `scratchpad/validation-coach-initiate.sql` — expect 8/8.
+⚠️ **SUPERSEDED by the reversal below** — apply both in order; the favoris
+precondition no longer applies after `20260723150000`.
+
+### [ ] Coach→recruiter OPENED — favoris precondition REVERSED (deliberate)
+Branch `feat/messaging-athlete-coach`. Proven locally 5/5 (allow WITHOUT favoris;
+deny non-owned anchor; deny non-recruiter target; recruiter reads; recruiter-
+initiate intact).
+
+- `supabase/migrations/20260723150000_open_coach_recruiter_messaging.sql`
+  — replaces `coach_initiate_recruteur_coach`: **removes** the
+  `recruiter_favorited_athlete` precondition; keeps anchor = the coach's own
+  athlete; adds `user_is_recruiter(recruiter_id)` DEFINER guard (recruiter_id
+  must be a real RECRUTEUR — via DEFINER to avoid the users↔conversations
+  recursion an inline `EXISTS(users)` triggers).
+- **Rationale (BP):** coach/director outbound "sell my athletes" motion — a coach
+  contacts any CÉGEP recruiter about one of his athletes without waiting for the
+  recruiter to favorite first. Anchor-ownership + recruiter-role stay enforced.
+
+Re-run its proof after prod apply: `scratchpad/validation-open-recruiter.sql` — expect 5/5.
 
 ### [ ] Broadcast messaging (Groupe, option a — N individual threads)
 Branch `feat/messaging-athlete-coach`. Proven locally 7/7 (all-athletes = school
