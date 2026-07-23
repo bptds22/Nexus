@@ -59,6 +59,21 @@ recruiter read/reply; recruiter-initiate intact; helper returns).
 
 Re-run its proof after prod apply: `scratchpad/validation-coach-initiate.sql` — expect 8/8.
 
+### [ ] Broadcast messaging (Groupe, option a — N individual threads)
+Branch `feat/messaging-athlete-coach`. Proven locally 7/7 (all-athletes = school
+count only; **leak check: other-school athlete never reached**; martin received a
+normal thread; team resolves to members; recruiter favorited_coaches; "Envoyé à N"
+via recipient_count; every broadcast msg carries broadcast_id).
+
+- `supabase/migrations/20260723140000_broadcast_messaging.sql`
+  — `broadcasts` table (sender-read RLS) + `messages.broadcast_id` marker +
+  `send_broadcast(jsonb, text)` DEFINER RPC. Recipients resolved ONLY from the
+  sender's legal set (same-school staff / school athletes / team members /
+  favorited-athlete coaches) → a broadcast can't reach anyone a 1-on-1 couldn't.
+  Reuses ATHLETE_COACH / COACH_COACH / RECRUTEUR_COACH via find-or-create.
+
+Re-run its proof after prod apply: `scratchpad/validation-broadcast.sql` — expect 7/7.
+
 ### [x] handle_new_auth_user — VERIFIED prod == local (no diff, no action)
 Diffed 2026-07-23, prod (nexus-prod `nrloizyemulbhujrqhgx`) vs local via
 `pg_get_functiondef`: **byte-identical.** Both have the same 8 INSERT columns
