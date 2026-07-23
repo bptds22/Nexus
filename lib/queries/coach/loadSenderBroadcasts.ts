@@ -102,9 +102,12 @@ export async function loadSenderBroadcastSummaries(
   }
 
   // Replies (anything the sender didn't write) inside those member threads.
+  // replyCount = recipients who replied (distinct member threads with >=1
+  // reply), matching the Annonce detail's "N reponse(s)" — NOT raw message
+  // count, so the inbox badge and the detail header agree.
   const lastActivityByB = new Map<string, string>();
   const unreadByB = new Map<string, number>();
-  const replyCountByB = new Map<string, number>();
+  const repliedConvsByB = new Map<string, Set<string>>();
   if (memberConvIds.size > 0) {
     const { data: replies } = await supabase
       .from("messages")
@@ -119,7 +122,7 @@ export async function loadSenderBroadcastSummaries(
       if (!lastActivityByB.has(b) || at > (lastActivityByB.get(b) as string)) {
         lastActivityByB.set(b, at);
       }
-      replyCountByB.set(b, (replyCountByB.get(b) || 0) + 1);
+      (repliedConvsByB.get(b) ?? repliedConvsByB.set(b, new Set()).get(b)!).add(c);
       if (!m.read_at) unreadByB.set(b, (unreadByB.get(b) || 0) + 1);
     }
   }
@@ -152,7 +155,7 @@ export async function loadSenderBroadcastSummaries(
         return reply && reply > createdAt ? reply : createdAt;
       })(),
       unreadReplies: unreadByB.get(id) || 0,
-      replyCount: replyCountByB.get(id) || 0,
+      replyCount: repliedConvsByB.get(id)?.size || 0,
     };
   });
 
