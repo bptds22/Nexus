@@ -45,6 +45,20 @@ immutability inherited, mark-read).
 Re-run its proof after prod apply: `scratchpad/validation-coach-coach.sql`
 (+ the T13 uuid fix) — expect 15/15.
 
+### [ ] Coach-initiated RECRUTEUR_COACH (favoris-symmetric)
+Branch `feat/messaging-athlete-coach`. Proven locally 8/8 (allow with
+favoris+ownership; deny zero-favoris — **bypass closed**; deny non-owned anchor;
+recruiter read/reply; recruiter-initiate intact; helper returns).
+
+- `supabase/migrations/20260723130000_coach_initiate_recruteur_coach.sql`
+  — `recruiter_favorited_athlete()` + `list_interested_recruiters()` DEFINER
+  helpers; **`coach_conversations_insert` RE-TIGHTENED** to also exclude
+  `RECRUTEUR_COACH` (it was a favoris-gate bypass); `coach_initiate_recruteur_coach`
+  INSERT policy (coach_id=self + recruiter favorited the anchor + anchor is the
+  coach's own athlete). Reuses the RECRUTEUR_COACH type; `athlete_id` stays NOT NULL.
+
+Re-run its proof after prod apply: `scratchpad/validation-coach-initiate.sql` — expect 8/8.
+
 ### [x] handle_new_auth_user — VERIFIED prod == local (no diff, no action)
 Diffed 2026-07-23, prod (nexus-prod `nrloizyemulbhujrqhgx`) vs local via
 `pg_get_functiondef`: **byte-identical.** Both have the same 8 INSERT columns
