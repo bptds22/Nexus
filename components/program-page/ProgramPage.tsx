@@ -165,7 +165,10 @@ export default function ProgramPage({ school, content }: ProgramPageProps) {
 }
 
 /* ------------------------------------------------ scoped page CSS (1:1) ----- */
-const PP_CSS = `
+// Exporté (additif, 0-diff) pour que l'éditeur « Ma page » injecte le MÊME CSS
+// scopé .pp dans ses previews (les composants program-page ne sont pas
+// self-contained). ProgramPage rend identiquement — prouvé 0-diff /page-test.
+export const PP_CSS = `
 .pp{background:#111317;color:var(--p-ink);font-family:'Barlow Condensed',sans-serif;scroll-margin-top:60px}
 .pp .frame{max-width:1500px;margin:0 auto}
 /* menu v2 lives in ProgramWallMenu (.mb2) */

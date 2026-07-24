@@ -139,7 +139,7 @@ export default function ProgramWall({ school, minContrast }: ProgramWallProps) {
               <React.Fragment key={i}>{i > 0 && <br />}{ln}</React.Fragment>
             ))}
           </div>
-          <div className="l3">élite collégiale</div>
+          <div className="l3">{r.tagline}</div>
         </div>
         <div className="blk wblk f-cream" style={{ gridColumn: "9", gridRow: "1" }}>
           <div className="bebas" style={{ fontSize: "1.55cqw", color: "var(--c1-cream)" }}>SOIS LE NEX</div>
@@ -155,9 +155,9 @@ export default function ProgramWall({ school, minContrast }: ProgramWallProps) {
           <div className="k-rule" style={{ left: "10%", top: "24%", width: "56%" }} />
           <div className="k-bnr" style={{ left: "10%", top: "28%", fontSize: "1.15cqw", transform: "rotate(-2deg)" }}>{r.regionTag}</div>
           <div className="kw" style={{ left: "14%", top: "38%", fontFamily: "'Anton'", fontSize: "5cqw", opacity: ".92" }}>{r.areaCode}</div>
-          <div className="kw red" style={{ left: "66%", top: "38%", fontFamily: "'Bebas Neue'", fontSize: "1.4cqw", letterSpacing: ".18em", transform: "rotate(90deg)", transformOrigin: "left top" }}>FIER · FORT</div>
+          <div className="kw red" style={{ left: "66%", top: "38%", fontFamily: "'Bebas Neue'", fontSize: "1.4cqw", letterSpacing: ".18em", transform: "rotate(90deg)", transformOrigin: "left top" }}>{r.devise}</div>
           <div style={{ position: "absolute", left: "12%", top: "62%", width: "26%", aspectRatio: "1", background: "#cdbf9f" }} className="mask-fleur" />
-          <div className="kw" style={{ left: "14%", top: "84%", fontFamily: "'Barlow Condensed'", fontStyle: "italic", fontWeight: 800, fontSize: "1.8cqw", color: "var(--c1-cream)" }}>D'ICI ➔ POUR ICI</div>
+          <div className="kw" style={{ left: "14%", top: "84%", fontFamily: "'Barlow Condensed'", fontStyle: "italic", fontWeight: 800, fontSize: "1.8cqw", color: "var(--c1-cream)" }}>{r.arrowPhrase}</div>
           <div className="k-rule" style={{ left: "10%", top: "95%", width: "64%", opacity: ".35" }} />
         </div>
         <div className="blk p-stripe-h" style={{ gridColumn: "3", gridRow: "2" }} />
