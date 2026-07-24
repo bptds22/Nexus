@@ -756,7 +756,23 @@ export function RecruteurMessagesThreadMobile() {
   /* Header centre — bloc spécifique recruteur :
      - photo coach 36 + "Coach {nom}" + chevron (ouvre CoachDetailsSheet)
      - sous-titre "À propos de {athlète} ›" (ouvre AthleteThreadSheet) */
-  const headerCenter = (
+  // RECRUTEUR_ATHLETE = direct thread : the ATHLETE is the counterparty. No coach
+  // header, no "à propos de", no coach details sheet — a simple participant header.
+  const headerCenter = ctx?.isDirect ? (
+    <button
+      type="button"
+      onClick={handleAthleteDetails}
+      className="flex flex-col items-center gap-0.5 active:opacity-70 transition-opacity min-w-0 max-w-full"
+    >
+      <div className="w-9 h-9 rounded-full overflow-hidden flex-shrink-0 bg-[#2F3440]">
+        <AthletePhoto photoUrl={ctx?.athletePhotoUrl ?? null} firstName={ctx?.athleteFirstName ?? "A"} lastName={ctx?.athleteLastName ?? ""} size={36} />
+      </div>
+      <div className="flex items-center gap-1.5 min-w-0 max-w-full">
+        <span className="text-[16px] font-bold text-white truncate">{ctx?.athleteName ?? "Athlète"}</span>
+        <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border bg-[#22C55E]/15 border-[#22C55E]/30 text-[#22C55E] flex-shrink-0">Athlète</span>
+      </div>
+    </button>
+  ) : (
     <>
       <button
         type="button"

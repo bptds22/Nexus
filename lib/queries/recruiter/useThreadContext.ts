@@ -12,6 +12,8 @@ import { createClient } from "@/lib/supabase/client";
 
 export interface ThreadContextMobile {
   conversationId: string;
+  /** RECRUTEUR_ATHLETE = direct (athlete is the counterparty, no coach panels). */
+  isDirect: boolean;
   status: string;
   coachId: string;
   coachName: string;
@@ -34,7 +36,7 @@ export function useThreadContext(conversationId: string | null) {
       const { data, error } = await supabase
         .from("conversations")
         .select(`
-          id, status, coach_id, athlete_id,
+          id, conversation_type, status, coach_id, athlete_id,
           coach:users!coach_id(id, first_name, last_name, avatar_url, photo_url),
           athlete:athletes!athlete_id(
             id, first_name, last_name, photo_url,
@@ -61,6 +63,7 @@ export function useThreadContext(conversationId: string | null) {
 
       return {
         conversationId: data.id as string,
+        isDirect: (data.conversation_type as string) === "RECRUTEUR_ATHLETE",
         status: (data.status as string) || "ACTIVE",
         coachId: (coach?.id as string) || "",
         coachName: `${cf} ${cl}`.trim() || "Coach",

@@ -230,7 +230,9 @@ export function RecruteurMessagesMobile() {
             </span>
           </div>
           <p className="text-[15px] text-white/55 mt-0.5 truncate">
-            Coach {t.coachName}
+            {t.conversationType === "RECRUTEUR_ATHLETE"
+              ? (t.athletePosition ? `Athlète · ${t.athletePosition}` : "Athlète · message direct")
+              : `Coach ${t.coachName}`}
           </p>
           <p className="text-[15px] text-white/40 mt-0.5 truncate">
             {t.lastMessage || "Aucun message"}
