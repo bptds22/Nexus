@@ -1313,6 +1313,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
   // ── "Contacter l'athlète" (RECRUTEUR_ATHLETE) — favorite-first gate ──
   const [contactingAthlete, setContactingAthlete] = useState(false);
   const [showFavContactPrompt, setShowFavContactPrompt] = useState(false);
+  const [showContactMenu, setShowContactMenu] = useState(false);
 
   const openAthleteThread = useCallback(async () => {
     if (!a) return;
@@ -2625,34 +2626,16 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
           }}
         >
           {canMessageCoach && (
-            <div className="flex-1 flex flex-col gap-2 min-w-0">
-              <button
-                type="button"
-                onClick={handleContactCoach}
-                disabled={contactingCoach || !coachId}
-                className={`flex items-center justify-center gap-2 bg-[#E63946] text-white rounded-2xl px-4 py-3 font-head font-bold text-[13px] uppercase tracking-widest active:bg-[#D42B22] shadow-[0_0_20px_rgba(230,57,70,0.3)] ${
-                  contactingCoach || !coachId ? "opacity-70" : ""
-                }`}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" />
-                </svg>
-                {contactingCoach ? "Ouverture..." : "Contacter le coach"}
-              </button>
-              <button
-                type="button"
-                onClick={handleContactAthlete}
-                disabled={contactingAthlete || favButtonDisabled}
-                className={`flex items-center justify-center gap-2 rounded-2xl px-4 py-3 font-head font-bold text-[13px] uppercase tracking-widest border transition-colors ${
-                  favButtonDisabled ? "opacity-40 border-[#2D3748] text-[#6B7280]" : "bg-[#1A1D24] border-[#E63946]/40 text-[#E63946] active:bg-[#E63946]/10"
-                }`}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" />
-                </svg>
-                {contactingAthlete ? "Ouverture..." : "Contacter l'athlète"}
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => { triggerHaptic("Light"); setShowContactMenu(true); }}
+              className="flex-1 flex items-center justify-center gap-2 bg-[#E63946] text-white rounded-2xl px-4 py-3.5 font-head font-bold text-[14px] uppercase tracking-widest active:bg-[#D42B22] shadow-[0_0_20px_rgba(230,57,70,0.3)]"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" />
+              </svg>
+              Contacter
+            </button>
           )}
           {/* Iter 7.23 Sprint 4 — bouton "Ajouter à une liste" (PRO-only).
               Icône liste-avec-+ pour signaler l'action d'ajout. Tap → ouvre
@@ -2681,6 +2664,47 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
               size="md"
               disabled={favButtonDisabled}
             />
+          </div>
+        </div>,
+        document.body,
+      )}
+
+      {/* ══ Contact choice sheet (coach vs athlete) ══ */}
+      {showContactMenu && mounted && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[60] flex items-end justify-center" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowContactMenu(false)} />
+          <div className="relative w-full max-w-[520px] bg-[#1A1D24] border-t border-white/[0.08] rounded-t-3xl px-5 pt-5 pb-8">
+            <div className="w-10 h-1 rounded-full bg-white/15 mx-auto mb-5" />
+            <h3 className="font-head text-lg font-black text-white uppercase tracking-tight mb-1">Contacter</h3>
+            <p className="text-[13px] text-[#9CA3AF] mb-4">Qui veux-tu contacter au sujet de {a?.firstName} {a?.lastName}&nbsp;?</p>
+            <div className="space-y-3">
+              <button type="button" disabled={contactingCoach || !coachId}
+                onClick={() => { setShowContactMenu(false); handleContactCoach(); }}
+                className={`w-full flex items-center gap-3 rounded-2xl px-4 py-3.5 bg-[#111317] border border-[#2D3748] active:bg-[#E63946]/[0.06] transition-colors text-left ${contactingCoach || !coachId ? "opacity-60" : ""}`}>
+                <span className="w-10 h-10 rounded-lg bg-[#E63946]/10 border border-[#E63946]/30 flex items-center justify-center shrink-0">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2" strokeLinecap="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></svg>
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-[15px] font-bold text-white">Contacter le coach</span>
+                  <span className="block text-[12px] text-[#6b7280]">Écris à l&apos;entraîneur de l&apos;athlète</span>
+                </span>
+              </button>
+              <button type="button" disabled={contactingAthlete || favButtonDisabled}
+                onClick={() => { setShowContactMenu(false); handleContactAthlete(); }}
+                className={`w-full flex items-center gap-3 rounded-2xl px-4 py-3.5 border transition-colors text-left ${favButtonDisabled ? "opacity-40 bg-[#111317] border-[#2D3748]" : "bg-[#111317] border-[#2D3748] active:bg-[#E63946]/[0.06]"}`}>
+                <span className="w-10 h-10 rounded-lg bg-[#E63946]/10 border border-[#E63946]/30 flex items-center justify-center shrink-0">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-[15px] font-bold text-white">Contacter l&apos;athlète</span>
+                  <span className="block text-[12px] text-[#6b7280]">{isFavorited ? "Message direct à l'athlète" : "Ajoute-le aux favoris pour le contacter"}</span>
+                </span>
+              </button>
+            </div>
+            <button type="button" onClick={() => setShowContactMenu(false)}
+              className="mt-4 w-full rounded-xl px-4 py-3 text-[13px] font-bold text-[#9CA3AF] active:text-white transition-colors">
+              Annuler
+            </button>
           </div>
         </div>,
         document.body,
