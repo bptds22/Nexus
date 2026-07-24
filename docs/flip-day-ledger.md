@@ -180,6 +180,23 @@ d'un athlète DÉJÀ réclamé par un non-directeur reste DENY (aucun élargisse
 
 Re-run its proof après prod apply : `scratchpad/proof-unclaimed-assign.sql` — expect 4/4.
 
+### [ ] Notification tableau de bord — message coach↔coach (correctif #6)
+Branch `feat/messaging-athlete-coach`. Proven locally : diffusion Tremblay →
+coachs crée +1 activité NEW_MESSAGE pour coachb (2 → 3, preview de la diffusion).
+
+- `supabase/migrations/20260724140000_coach_message_activity.sql`
+  — `CREATE OR REPLACE log_coach_activity_message` : ajoute une branche
+  COACH_COACH qui insère une activité `NEW_MESSAGE` (table `activities`,
+  coach-facing) pour le coach DESTINATAIRE (participant ≠ expéditeur), avec le
+  nom de l'expéditeur en metadata. Vaut pour message direct ET diffusion (le RPC
+  `send_broadcast` insère des messages normaux → AFTER INSERT s'applique).
+  RECRUTEUR_COACH inchangé. Idempotent.
+- **Effet** : un coach qui reçoit une diffusion « tous les entraîneurs » (ou un
+  message direct d'un collègue) obtient l'entrée « Activités » + le badge sidebar,
+  comme pour un message recruteur→coach (corrige #2b « pas reçu »). Les broadcasts
+  vers ATHLÈTES notifient l'athlète via son inbox (déjà OK) ; `activities` est
+  coach-facing donc pas d'entrée athlète (hors-scope).
+
 ### [x] handle_new_auth_user — VERIFIED prod == local (no diff, no action)
 Diffed 2026-07-23, prod (nexus-prod `nrloizyemulbhujrqhgx`) vs local via
 `pg_get_functiondef`: **byte-identical.** Both have the same 8 INSERT columns
