@@ -197,6 +197,22 @@ coachs crée +1 activité NEW_MESSAGE pour coachb (2 → 3, preview de la diffus
   vers ATHLÈTES notifient l'athlète via son inbox (déjà OK) ; `activities` est
   coach-facing donc pas d'entrée athlète (hors-scope).
 
+### [ ] Broadcast « Une équipe » = athlètes + coachs (correctif systémique)
+Branch `feat/messaging-athlete-coach`. Proven locally 4/4 (`scratchpad/proof-team.sql`):
+un broadcast équipe atteint les athlètes (team_athletes) ET les coachs
+(team_coaches), et un coach de l'équipe SANS athlète (coachb, assistant Titans)
+reçoit + voit le fil.
+
+- `supabase/migrations/20260724150000_broadcast_team_full_roster.sql`
+  — `CREATE OR REPLACE send_broadcast` : le kind `team` a sa propre branche —
+  TOUS les `team_athletes` (ACTIF) → ATHLETE_COACH (coach_id=expéditeur, sans la
+  restriction « mes athlètes »), + TOUS les `team_coaches` sauf soi → COACH_COACH.
+  all_athletes/athletes gardent la portée directeur=école / coach=SES athlètes
+  (#2 inchangé). last_message_at bumpé partout. Idempotent.
+- **Règle BP** : messager une équipe = tout le monde dessus.
+
+Re-run après prod apply : `scratchpad/proof-team.sql` — expect 4/4.
+
 ### [x] handle_new_auth_user — VERIFIED prod == local (no diff, no action)
 Diffed 2026-07-23, prod (nexus-prod `nrloizyemulbhujrqhgx`) vs local via
 `pg_get_functiondef`: **byte-identical.** Both have the same 8 INSERT columns

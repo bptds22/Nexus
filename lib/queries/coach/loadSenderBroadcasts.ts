@@ -91,13 +91,32 @@ export async function loadSenderBroadcastSummaries(
     .in("broadcast_id", bIds)
     .eq("sender_id", userId);
 
+  // Fold ONLY ATHLETE_COACH member threads. A broadcast to coaches (or a team's
+  // coaches) creates COACH_COACH threads, which are bidirectional PEER
+  // conversations — the recipient coach is ALSO a participant, and the same
+  // thread is reused in both directions. Folding those hides a coach's RECEIVED
+  // broadcast (Principle: every inbox lists every conversation I participate in).
+  // So COACH_COACH broadcast threads always render individually, never fold.
+  const allMemberIds = [...new Set((sentMsgs || []).map((m: Record<string, unknown>) => m.conversation_id as string))];
+  const typeById = new Map<string, string>();
+  if (allMemberIds.length > 0) {
+    const { data: convTypes } = await supabase
+      .from("conversations").select("id, conversation_type").in("id", allMemberIds);
+    for (const c of (convTypes || []) as Record<string, unknown>[]) {
+      typeById.set(c.id as string, c.conversation_type as string);
+    }
+  }
+
   const contentByB = new Map<string, string>();
   const convToB = new Map<string, string>();
+  const athleteBroadcastIds = new Set<string>(); // broadcasts with >=1 folded athlete thread
   for (const m of (sentMsgs || []) as Record<string, unknown>[]) {
     const b = m.broadcast_id as string;
     const c = m.conversation_id as string;
+    if (typeById.get(c) !== "ATHLETE_COACH") continue; // only fold athlete threads
     convToB.set(c, b);
     memberConvIds.add(c);
+    athleteBroadcastIds.add(b);
     if (!contentByB.has(b)) contentByB.set(b, (m.content as string) || "");
   }
 
@@ -141,7 +160,12 @@ export async function loadSenderBroadcastSummaries(
     }
   }
 
-  const annonces: AnnonceSummary[] = broadcasts.map((b: Record<string, unknown>) => {
+  // Annonce entries ONLY for broadcasts that folded athlete threads. A pure
+  // coach broadcast (all_coaches/coaches) folds nothing → no Annonce; its
+  // COACH_COACH threads show individually in the list.
+  const annonces: AnnonceSummary[] = broadcasts
+    .filter((b: Record<string, unknown>) => athleteBroadcastIds.has(b.id as string))
+    .map((b: Record<string, unknown>) => {
     const id = b.id as string;
     const createdAt = (b.created_at as string) || "";
     return {
@@ -230,11 +254,14 @@ export async function loadAnnonceDetail(
     };
   }
 
-  // The member conversations (to identify each recipient).
+  // The member conversations (to identify each recipient). Only ATHLETE_COACH
+  // members are folded into an Annonce — COACH_COACH members (a team's coaches)
+  // render as individual peer threads, so the Annonce recipient list is athletes.
   const { data: convs } = await supabase
     .from("conversations")
     .select("id, conversation_type, coach_id, coach_b_id, recruiter_id, athlete_id")
-    .in("id", convIds);
+    .in("id", convIds)
+    .eq("conversation_type", "ATHLETE_COACH");
 
   // Resolve recipient identities in bulk.
   const athleteIds = new Set<string>();
