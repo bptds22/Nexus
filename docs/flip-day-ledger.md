@@ -138,6 +138,27 @@ Phase A → **NO `ALTER TYPE ADD VALUE`**. Two shipped-object changes land:
 `RECRUTEUR_COACH` (file 2). Eligibility ships as a `true` stub. Re-run
 `scratchpad/validation-p3-ra.sql` after prod apply → expect 11/11.
 
+### [ ] Broadcast — ciblage propriétaire + remontée du fil (correctifs #2)
+Branch `feat/messaging-athlete-coach`. Proven locally 4/4
+(`scratchpad/proof-broadcast-scope.sql`): coach régulier `all_athletes` → SES
+athlètes seulement (coachb 0-own → 0 ; Tremblay 2-own → 2) ; directeur
+`all_athletes` → école entière (6) ; fil réutilisé bumpe `last_message_at`.
+
+- `supabase/migrations/20260724120000_broadcast_scope_and_surface.sql`
+  — `CREATE OR REPLACE send_broadcast` (signature inchangée, idempotent). Deux
+  correctifs : **(a) ciblage** — un COACH régulier ne diffuse qu'à SES propres
+  athlètes (`a.coach_id = expéditeur`) ; un **DIRECTEUR** (school_coaches role
+  DIRECTEUR/DIRECTEUR_INTERIM) garde la portée école (`a.school_id = école`).
+  Vaut pour all_athletes/athletes(ids)/team. **(b) remontée** — bump
+  `last_message_at = now()` à chaque message (fils réutilisés inclus) pour les
+  trois types, sinon la diffusion restait enterrée chez le destinataire.
+- **Pas de RLS touchée** — c'est un correctif de RÉSOLUTION des destinataires
+  dans le RPC DEFINER. La visibilité inter-coach était déjà étanche (aucun coach
+  ne SELECT les fils d'un autre ; vérifié). UI alignée : `GroupeCompose` scope la
+  liste d'athlètes au roster du coach (école pour le directeur) + libellé adapté.
+
+Re-run its proof après prod apply : `scratchpad/proof-broadcast-scope.sql` — expect 4/4.
+
 ### [x] handle_new_auth_user — VERIFIED prod == local (no diff, no action)
 Diffed 2026-07-23, prod (nexus-prod `nrloizyemulbhujrqhgx`) vs local via
 `pg_get_functiondef`: **byte-identical.** Both have the same 8 INSERT columns

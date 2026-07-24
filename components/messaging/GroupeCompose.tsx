@@ -35,6 +35,9 @@ export default function GroupeCompose({
   const [athletes, setAthletes] = useState<Opt[]>([]);
   const [teams, setTeams] = useState<Opt[]>([]);
   const [loading, setLoading] = useState(!isRecruiter);
+  // Director sends school-wide ; a regular coach only reaches HIS OWN athletes
+  // (mirrors send_broadcast's server-side scope — migration 20260724120000).
+  const [isDirector, setIsDirector] = useState(false);
   const [checked, setChecked] = useState<Set<string>>(new Set());
   const [teamId, setTeamId] = useState<string>("");
   const [content, setContent] = useState("");
@@ -50,11 +53,21 @@ export default function GroupeCompose({
       const st = await loadSchoolStaff(supabase, selfId);
       const { data: me } = await supabase.from("users").select("school_id").eq("id", selfId).maybeSingle();
       const schoolId = (me as { school_id?: string } | null)?.school_id;
+      // Director status → school-wide athlete scope ; otherwise own-roster scope.
+      const { data: scRows } = await supabase.from("school_coaches").select("role").eq("coach_id", selfId);
+      const director = (scRows ?? []).some((r) => {
+        const role = (r as { role?: string }).role;
+        return role === "DIRECTEUR" || role === "DIRECTEUR_INTERIM";
+      });
       let aths: Opt[] = []; let tms: Opt[] = [];
       if (schoolId) {
-        const { data: a } = await supabase.from("athletes")
+        const athletesQuery = supabase.from("athletes")
           .select("id, first_name, last_name, positions!position_id(abreviation)")
-          .eq("school_id", schoolId).eq("status", "ACTIF").order("last_name");
+          .eq("status", "ACTIF").order("last_name");
+        // Coach → own athletes only ; director → whole school.
+        const { data: a } = await (director
+          ? athletesQuery.eq("school_id", schoolId)
+          : athletesQuery.eq("coach_id", selfId));
         aths = (a ?? []).map((r) => {
           const posRaw = (r as { positions?: unknown }).positions;
           const pos = (Array.isArray(posRaw) ? posRaw[0] : posRaw) as { abreviation?: string } | null;
@@ -64,7 +77,7 @@ export default function GroupeCompose({
           .select("id, name").eq("school_id", schoolId).eq("is_active", true).order("name");
         tms = (t ?? []).map((r) => ({ id: (r as { id: string }).id, name: (r as { name?: string }).name || "Équipe" }));
       }
-      if (!cancelled) { setStaff(st); setAthletes(aths); setTeams(tms); setLoading(false); }
+      if (!cancelled) { setStaff(st); setAthletes(aths); setTeams(tms); setIsDirector(director); setLoading(false); }
     })();
     return () => { cancelled = true; };
   }, [selfId, isRecruiter]);
@@ -128,7 +141,7 @@ export default function GroupeCompose({
       {loading ? (
         <div className="flex items-center justify-center py-8"><div className="w-6 h-6 border-2 border-[#8B5CF6] border-t-transparent rounded-full animate-spin" /></div>
       ) : mode === "all_athletes" ? (
-        <p className="text-[13px] text-[#9CA3AF]">Le message ira à <b className="text-white">tous les athlètes actifs de ton école</b> (un fil individuel chacun).</p>
+        <p className="text-[13px] text-[#9CA3AF]">Le message ira à <b className="text-white">{isDirector ? "tous les athlètes actifs de l'école" : "tous tes athlètes actifs"}</b> (un fil individuel chacun).</p>
       ) : mode === "all_coaches" ? (
         <p className="text-[13px] text-[#9CA3AF]">Le message ira à <b className="text-white">tous les entraîneurs de ton école</b>.</p>
       ) : mode === "favorited_coaches" ? (
