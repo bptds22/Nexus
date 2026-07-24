@@ -250,19 +250,20 @@ export function CoachDemandesMobile() {
     }
     const isAth = t.conversationType === "ATHLETE_COACH";
     const isCC = t.conversationType === "COACH_COACH";
+    const isParent = t.conversationType === "PARENT_COACH";
     const typeBadge = (
       <span className={`inline-flex items-center px-1.5 h-[17px] rounded-full text-[9px] font-black uppercase tracking-wider border flex-shrink-0 ${
         isCC ? "bg-[#14B8A6]/15 border-[#14B8A6]/30 text-[#14B8A6]"
           : isAth ? "bg-[#22C55E]/15 border-[#22C55E]/30 text-[#22C55E]"
           : "bg-[#E63946]/15 border-[#E63946]/30 text-[#E63946]"
       }`}>
-        {isCC ? (t.otherCoachIsDirector ? "Directeur" : "Coach") : isAth ? "Athlète" : "Recruteur"}
+        {isCC ? (t.otherCoachIsDirector ? "Directeur" : "Coach") : isAth ? "Athlète" : isParent ? "Parent" : "Recruteur"}
       </span>
     );
-    const name = isCC ? t.otherCoachName : isAth ? t.athleteName : t.recruiterName;
-    const initials = isCC ? t.otherCoachInitials : isAth ? t.athleteInitials : t.recruiterInitials;
-    const photoUrl = isCC ? null : isAth ? t.athletePhotoUrl : t.recruiterPhotoUrl;
-    const subtitle = isCC
+    const name = isCC ? t.otherCoachName : isAth ? t.athleteName : isParent ? t.parentName : t.recruiterName;
+    const initials = isCC ? t.otherCoachInitials : isAth ? t.athleteInitials : isParent ? t.parentInitials : t.recruiterInitials;
+    const photoUrl = isCC || isParent ? null : isAth ? t.athletePhotoUrl : t.recruiterPhotoUrl;
+    const subtitle = isCC || isParent
       ? ""
       : isAth
         ? [t.athletePosition].filter(Boolean).join(" · ")
@@ -283,7 +284,8 @@ export function CoachDemandesMobile() {
             </span>
           </div>
           {subtitle && <p className="text-[15px] text-white/55 mt-0.5 truncate">{subtitle}</p>}
-          {!isAth && !isCC && <p className="text-[13px] text-white/45 mt-0.5 truncate">Au sujet de {t.athleteName}</p>}
+          {isParent && <p className="text-[13px] text-white/45 mt-0.5 truncate">Parent de {t.athleteName}</p>}
+          {!isAth && !isCC && !isParent && <p className="text-[13px] text-white/45 mt-0.5 truncate">Au sujet de {t.athleteName}</p>}
           {t.lastMessage && <p className="text-[15px] text-white/40 mt-0.5 truncate">{t.lastMessage}</p>}
         </div>
       </div>

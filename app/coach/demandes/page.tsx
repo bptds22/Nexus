@@ -135,6 +135,39 @@ function CoachCoachThreadCard({ thread: t, meta }: { thread: ConversationThread;
   );
 }
 
+/* ── Parent Thread Card (PARENT_COACH) — counterparty = a parent ── */
+
+function ParentThreadCard({ thread: t, meta }: { thread: ConversationThread; meta?: { parentName: string; childName: string } }) {
+  const name = meta?.parentName || t.recruiter.firstName || "Parent";
+  const parts = name.split(" ");
+  const initials = `${parts[0]?.[0] || ""}${parts[1]?.[0] || ""}` || "?";
+  return (
+    <Link
+      href={`/coach/demandes/${t.id}`}
+      className={`flex items-center gap-4 px-5 py-4 transition-colors hover:bg-[#252D3A] ${
+        t.unread ? "bg-[#1E2430] border-l-[3px] border-l-[#E63946]" : "bg-[#1A1D24] border-l-[3px] border-l-transparent"
+      }`}
+    >
+      <div className="flex items-center gap-3 flex-1 min-w-0">
+        <div className="w-11 h-11 rounded-full bg-[#E63946]/15 border border-[#E63946]/30 flex items-center justify-center shrink-0">
+          <span className="text-[13px] font-bold text-[#E63946]">{initials}</span>
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span className={`text-[15px] truncate ${t.unread ? "text-white font-bold" : "text-[#e0e0e0] font-semibold"}`}>{name}</span>
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider shrink-0 bg-[#E63946]/15 border border-[#E63946]/30 text-[#E63946]">Parent</span>
+          </div>
+          {meta?.childName && <p className="text-[12px] text-[#6b7280] truncate">Parent de {meta.childName}</p>}
+          <p className="text-[13px] text-[#6b7280] truncate mt-0.5">{t.lastMessagePreview}</p>
+        </div>
+      </div>
+      <div className="flex flex-col items-end gap-1.5 shrink-0 w-[130px]">
+        <span className={`text-[12px] ${t.unread ? "text-white font-semibold" : "text-[#6b7280]"}`}>{relativeTime(t.lastMessageTime)}</span>
+      </div>
+    </Link>
+  );
+}
+
 /* ── Thread Card (recruiter — unchanged layout + a Recruteur pill) ── */
 
 function ThreadCard({ thread: t }: { thread: ConversationThread }) {
@@ -292,6 +325,8 @@ function DemandesContent() {
   const [convTypes, setConvTypes] = useState<Record<string, string>>({});
   /** COACH_COACH render meta : is the other party a director + optional attached athlete. */
   const [coachMeta, setCoachMeta] = useState<Record<string, { isDirector: boolean; athleteName: string }>>({});
+  /** PARENT_COACH render meta : the linked parent's name + which child. */
+  const [parentMeta, setParentMeta] = useState<Record<string, { parentName: string; childName: string }>>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -304,7 +339,7 @@ function DemandesContent() {
         // Fetch conversations for this coach
         const { data: conversations, error: convError } = await supabase
           .from("conversations")
-          .select("id, conversation_type, recruiter_id, coach_id, coach_b_id, athlete_id, status, last_message_at, unread_count, created_at, athletes!athlete_id(id, first_name, last_name, verified, cote_globale_entraineur, profile_completion, annee_diplomation, photo_url, positions!position_id(nom, abreviation))")
+          .select("id, conversation_type, recruiter_id, coach_id, coach_b_id, parent_id, athlete_id, status, last_message_at, unread_count, created_at, athletes!athlete_id(id, first_name, last_name, verified, cote_globale_entraineur, profile_completion, annee_diplomation, photo_url, positions!position_id(nom, abreviation))")
           .or(`coach_id.eq.${user.id},coach_b_id.eq.${user.id}`)
           .order("last_message_at", { ascending: false });
 
@@ -359,6 +394,19 @@ function DemandesContent() {
           }
         }
 
+        // PARENT_COACH — resolve the linked parent's name (counterparty).
+        const parentIds = [...new Set(conversations
+          .filter((c: any) => c.conversation_type === "PARENT_COACH")
+          .map((c: any) => c.parent_id)
+          .filter(Boolean))] as string[];
+        const parentInfoMap = new Map<string, string>();
+        if (parentIds.length > 0) {
+          const { data: parentUsers } = await supabase.from("users").select("id, first_name, last_name").in("id", parentIds);
+          for (const u of parentUsers || []) {
+            parentInfoMap.set((u as any).id, `${(u as any).first_name || ""} ${(u as any).last_name || ""}`.trim() || "Parent");
+          }
+        }
+
         // Load recruiter info separately (avoids ambiguous FK on users)
         const recruiterIds = [...new Set(conversations.map((c: any) => c.recruiter_id).filter(Boolean))];
         const recruiterMap = new Map<string, { first_name: string; last_name: string; email: string; school_name: string }>();
@@ -386,10 +434,13 @@ function DemandesContent() {
 
         // Map to ConversationThread
         const nextCoachMeta: Record<string, { isDirector: boolean; athleteName: string }> = {};
+        const nextParentMeta: Record<string, { parentName: string; childName: string }> = {};
         const mapped: ConversationThread[] = conversations.map((c: any) => {
           const isCoachCoach = c.conversation_type === "COACH_COACH";
+          const isParent = c.conversation_type === "PARENT_COACH";
           const otherCoachId = c.coach_id === user.id ? c.coach_b_id : c.coach_id;
           const otherCoach = isCoachCoach ? coachInfoMap.get(otherCoachId) : undefined;
+          const parentName = isParent ? (parentInfoMap.get(c.parent_id) || "Parent") : "";
           const recruiterUser = recruiterMap.get(c.recruiter_id);
           const athleteData = c.athletes;
           const position = athleteData?.positions;
@@ -399,18 +450,21 @@ function DemandesContent() {
           if (isCoachCoach) {
             nextCoachMeta[c.id] = { isDirector: !!otherCoach?.isDirector, athleteName };
           }
+          if (isParent) {
+            nextParentMeta[c.id] = { parentName, childName: athleteName };
+          }
 
           return {
             id: c.id,
             recruiter: {
-              // COACH_COACH : the counterparty coach lives in `recruiter` so the
-              // shared search/sort/status pipeline works unchanged. Full name in
-              // firstName ; cegep = role label (Entraîneur | Directeur).
-              id: isCoachCoach ? (otherCoachId || "") : c.recruiter_id,
-              firstName: isCoachCoach ? (otherCoach?.name || "Coach") : (recruiterUser?.first_name || ""),
+              // COACH_COACH / PARENT_COACH : the counterparty (coach or parent)
+              // lives in `recruiter` so the shared search/sort/status pipeline
+              // works unchanged. Full name in firstName ; cegep = role label.
+              id: isCoachCoach ? (otherCoachId || "") : isParent ? (c.parent_id || "") : c.recruiter_id,
+              firstName: isCoachCoach ? (otherCoach?.name || "Coach") : isParent ? parentName : (recruiterUser?.first_name || ""),
               lastName: "",
               title: "",
-              cegep: isCoachCoach ? (otherCoach?.isDirector ? "Directeur" : "Entraîneur") : (recruiterUser?.school_name || ""),
+              cegep: isCoachCoach ? (otherCoach?.isDirector ? "Directeur" : "Entraîneur") : isParent ? "Parent" : (recruiterUser?.school_name || ""),
               cegepTeamName: "",
               division: "Div. 1" as const,
               sport: "",
@@ -434,6 +488,8 @@ function DemandesContent() {
             messages: [],
             status: isCoachCoach
               ? mapDbStatus(c.status, !!sendersByConv[c.id]?.has(user.id), !!sendersByConv[c.id]?.has(otherCoachId))
+              : isParent
+              ? mapDbStatus(c.status, !!sendersByConv[c.id]?.has(user.id), !!sendersByConv[c.id]?.has(c.parent_id))
               : mapDbStatus(c.status, coachRepliedMap[c.id], recruiterRepliedMap[c.id]),
             lastMessagePreview: latestMsg?.content ? latestMsg.content.slice(0, 80) + (latestMsg.content.length > 80 ? "..." : "") : "",
             lastMessageTime: latestMsg?.created_at || c.last_message_at || c.created_at,
@@ -451,6 +507,7 @@ function DemandesContent() {
         setThreads(visible);
         setAnnonces(annonceList);
         setCoachMeta(nextCoachMeta);
+        setParentMeta(nextParentMeta);
         setConvTypes(Object.fromEntries(conversations.map((c: any) => [c.id as string, (c.conversation_type as string) || "RECRUTEUR_COACH"])));
       } catch (err) {
         console.error("[Demandes] Error loading threads:", err);
@@ -596,6 +653,7 @@ function DemandesContent() {
             const ct = convTypes[t.id];
             if (ct === "ATHLETE_COACH") return <AthleteThreadCard key={t.id} thread={t} />;
             if (ct === "COACH_COACH") return <CoachCoachThreadCard key={t.id} thread={t} meta={coachMeta[t.id]} />;
+            if (ct === "PARENT_COACH") return <ParentThreadCard key={t.id} thread={t} meta={parentMeta[t.id]} />;
             return <ThreadCard key={t.id} thread={t} />;
           })}
         </div>

@@ -275,41 +275,39 @@ already-applied statements no-op. The only ordering constraint is enum-before-mo
 
 ---
 
-## Train-2 (P2 — parent ↔ coach messaging) — held local, SEPARATE flip
+### [ ] P2 — parent↔coach RLS + picker RPCs + notify fan-out  ⚠️ PROMOTED TO TRAIN-1
+**Was train-2; PROMOTED to the P1 pre-flight batch.** The P2 UI shipped on THIS
+train (parent Messages portal surface + coach Parent tile / inbox segment / thread
+view), so the DB half is now a FLIP DEPENDENCY of train-1 — the coach compose +
+parent portal would 42501 in prod without these policies/RPCs. Apply in filename
+order in the P1 pre-flight (after the coach-coach + guard migrations it builds on).
 
-These are the **DB half of P2**, applied + proven locally but NOT part of the P1
-messaging flip. They ride a later (train-2) flip-day batch, after P1 is live. The
-parent PORTAL/UI half (parent Messages surface, coach inbox parent branch) is NOT
-in this ledger — it is a feature build for the P2 train, tracked separately.
+Decisions (BP): (1) BOTH parent & coach initiate. (2) Coach reach = ANY staff of the
+child's school/club. (3) Parent diffusions DEFERRED — Parent tile is compose-only,
+NOT a Groupe audience. (4) Freeze reopened for this feature only, then resealed.
 
-Decisions (BP, this session): (1) BOTH parent & coach initiate; the coach-initiate
-HOLE fix ships on train-1 (above). (2) Coach reach = ANY staff of the child's
-school/club. (3) Parent diffusions DEFERRED — the AudienceTiles Parent tile stays
-"Bientôt". (4) P2 rides train-2; freeze holds on train-1.
-
-### [ ] P2 — parent↔coach RLS + notify fan-out
-Branch `feat/messaging-athlete-coach`. Proven locally (`scratchpad/prove-p2.sql`):
-parent→child's-staff-coach ALLOW; parent→non-staff DENY; coach→child's-real-parent
-ALLOW; coach→arbitrary-user DENY; parent sends + reads own thread; notify includes
-parent.
+Branch `feat/messaging-athlete-coach`. Proven locally (`scratchpad/prove-p2.sql` +
+browser both-directions): parent→child's-staff-coach ALLOW; parent→non-staff DENY;
+coach→child's-real-parent ALLOW; coach→arbitrary-user DENY; parent sends + reads own
+thread; child-scoping (a parent cannot reach another child's staff); notify parent.
 
 - `supabase/migrations/20260725120000_p2_parent_coach_rls.sql`
-  — Two DEFINER helpers (`coach_reaches_athlete`, `is_parent_link`) that resolve the
-  child's user_id / the parent link with `row_security off` — REQUIRED because an
-  inline subquery in a policy WITH CHECK runs under the CALLER's RLS (a parent can't
-  SELECT `athletes`; a coach can't SELECT `parent_athletes`), so the naive inline
-  form silently denied legitimate inserts. Policies: `parent_initiate_parent_coach`
-  (parent + is_parent_of + coach_reaches_athlete), `coach_initiate_parent_coach`
-  (coach=self + is_parent_link + coach_reaches_athlete — the GUARDED coach-initiate
-  that closes the hole), `parent_conversations_select/update`,
-  `parent_messages_select/insert/update`. Read side already covered by
-  `is_conversation_participant` (parent-aware). Rewrites `notify_on_message` to add
-  `c.parent_id` to the push fan-out (was omitted). Idempotent.
-- Depends on: PARENT_COACH enum + `parent_id` column + per-type CHECK (Phase A),
-  `is_parent_of`, `athlete_messageable_coach`/`_messageable_staff_ids`,
-  `parent_athletes` — all present.
+  — DEFINER helpers `coach_reaches_athlete` + `is_parent_link` (resolve the child's
+  user_id / the parent link with `row_security off` — REQUIRED: an inline subquery in
+  a policy WITH CHECK runs under the CALLER's RLS, a parent can't SELECT `athletes`, a
+  coach can't SELECT `parent_athletes`, so the naive inline form silently denied
+  legitimate inserts). Policies: `parent_initiate_parent_coach`,
+  `coach_initiate_parent_coach` (GUARDED — closes the hole), `parent_conversations_
+  select/update`, `parent_messages_select/insert/update`. Dedup index
+  `uq_conversations_parent_coach`. Picker RPCs `list_messageable_staff_for_child`
+  (parent→child's staff, gated by is_parent_of) + `list_athlete_parents`
+  (coach→child's parents, gated by coach_reaches_athlete). `notify_on_message` gains
+  `c.parent_id` in the push fan-out. Read side reuses `is_conversation_participant`
+  (parent-aware). Idempotent.
+- Depends on: PARENT_COACH enum + `parent_id` column + per-type CHECK (Phase A —
+  already prod), `is_parent_of`, `_messageable_staff_ids`, `parent_athletes`.
 
-Re-run after prod apply: `scratchpad/prove-p2.sql` (needs a seeded parent cast —
+Re-run after prod apply: `scratchpad/prove-p2.sql` (seeded cast —
 `scratchpad/civil-fixture.sql` + `scratchpad/parent-seed.sql`).
 
 ## Product decisions (no code — recorded, not action items)

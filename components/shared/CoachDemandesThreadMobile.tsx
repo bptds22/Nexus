@@ -51,7 +51,122 @@ export function CoachDemandesThreadMobile() {
     );
   }
   if (ctx?.conversationType === "ATHLETE_COACH") return <CoachAthleteThreadMobile />;
+  if (ctx?.conversationType === "PARENT_COACH") return <CoachParentThreadMobile />;
   return <CoachRecruiterThreadMobile />;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Fil parent↔coach (coach side). Contrepartie = le parent ; en-tête
+   simple "À propos de {enfant}" (pas de panneau athlète). Le coach
+   peut lire le nom du parent via la policy coach_reads_athlete_parent.
+═══════════════════════════════════════════════════════════════ */
+
+function CoachParentThreadMobile() {
+  const router = useRouter();
+  const conversationId = useDynamicParam("id");
+  const toast = useMobileToast();
+  const queryClient = useQueryClient();
+  const { data: currentUser } = useCurrentUser();
+  const userId = currentUser?.authUser.id;
+
+  const { data: messages = [], isLoading: msgsLoading } = useMessages(conversationId);
+  const sendMut = useSendMessage();
+  const markRead = useMarkConversationRead();
+
+  const [parent, setParent] = useState<{ name: string; initials: string; childName: string } | null>(null);
+  const [ctxLoading, setCtxLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!conversationId) return;
+      const supabase = createClient();
+      const { data: conv } = await supabase
+        .from("conversations")
+        .select("parent:users!parent_id(first_name, last_name), child:athletes!athlete_id(first_name, last_name)")
+        .eq("id", conversationId)
+        .maybeSingle();
+      if (cancelled) return;
+      const pRaw = (conv as Record<string, unknown> | null)?.parent;
+      const p = (Array.isArray(pRaw) ? pRaw[0] : pRaw) as Record<string, unknown> | null;
+      const chRaw = (conv as Record<string, unknown> | null)?.child;
+      const ch = (Array.isArray(chRaw) ? chRaw[0] : chRaw) as Record<string, unknown> | null;
+      const pf = (p?.first_name as string) || ""; const pl = (p?.last_name as string) || "";
+      setParent({
+        name: `${pf} ${pl}`.trim() || "Parent",
+        initials: `${pf[0] || ""}${pl[0] || ""}`.toUpperCase() || "P",
+        childName: `${(ch?.first_name as string) || ""} ${(ch?.last_name as string) || ""}`.trim() || "l'athlète",
+      });
+      setCtxLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, [conversationId]);
+
+  const markedRef = useRef(false);
+  useEffect(() => {
+    if (!conversationId || markedRef.current) return;
+    markedRef.current = true;
+    markRead.mutate({ conversationId });
+  }, [conversationId, markRead]);
+
+  useEffect(() => {
+    if (!conversationId) return;
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`messages:${conversationId}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "messages", filter: `conversation_id=eq.${conversationId}` },
+        (payload) => {
+          const newMsg = payload.new as MessageRow;
+          const queryKey = ["messages", conversationId];
+          queryClient.setQueryData<MessageRow[]>(queryKey, (old) => {
+            if (!old) return [newMsg];
+            if (old.some((m) => m.id === newMsg.id)) return old;
+            return [...old, newMsg];
+          });
+          if (newMsg.sender_id !== userId) markRead.mutate({ conversationId });
+        }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [conversationId, userId, queryClient, markRead]);
+
+  const handleSendContent = (content: string) => {
+    if (!conversationId) return;
+    sendMut.mutate({ conversationId, content }, { onError: () => toast.error({ message: "Erreur d'envoi", detail: "Vérifie ta connexion" }) });
+  };
+
+  const headerCenter = (
+    <div className="flex flex-col items-center gap-0.5 min-w-0 max-w-full">
+      <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 bg-[#E63946]/15 border border-[#E63946]/30">
+        <span className="text-[12px] font-bold text-[#E63946]">{parent?.initials ?? "P"}</span>
+      </div>
+      <span className="text-[16px] font-bold text-white truncate max-w-full">{parent?.name ?? "Parent"}</span>
+      <span className="text-[12px] text-white/55 truncate max-w-full">À propos de {parent?.childName ?? "l'athlète"}</span>
+    </div>
+  );
+
+  return (
+    <MessageThreadShell<MessageRow>
+      messages={messages}
+      isLoading={ctxLoading || msgsLoading}
+      currentUserId={userId}
+      getId={(m) => m.id}
+      getContent={(m) => m.content}
+      getCreatedAt={(m) => m.created_at}
+      getSenderId={(m) => m.sender_id}
+      getStatus={(m) => m.status}
+      meColor="#0A84FF"
+      otherColor="#262628"
+      headerCenter={headerCenter}
+      onBack={() => router.push("/coach/demandes")}
+      onSend={handleSendContent}
+      composerPlaceholder="Message…"
+      emptyTitle="Démarre la conversation"
+      emptyDescription={`Écris à ${parent?.name ?? "le parent"} au sujet de ${parent?.childName ?? "l'athlète"}.`}
+    />
+  );
 }
 
 /* ═══════════════════════════════════════════════════════════════

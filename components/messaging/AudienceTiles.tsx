@@ -7,11 +7,11 @@
      • Recruteurs                     → RECRUTEUR_COACH (OPEN : CÉGEP browser,
        no favoris precondition — coach outbound "sell my athletes")
      • Groupe                         → diffusion (broadcast)
-     • Parent                         → PARENT_COACH (P2) : visible, DISABLED "Bientôt"
+     • Parent                         → PARENT_COACH (P2) : ACTIVE
    No "École" tile ("toute l'école" lives under Groupe → tous les entraîneurs).
 ═══════════════════════════════════════════════════════════════ */
 
-export type CoachAudience = "coach" | "directeur" | "recruteurs" | "groupe" | "athlete";
+export type CoachAudience = "coach" | "directeur" | "recruteurs" | "groupe" | "athlete" | "parent";
 
 const WHISTLE = (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8a6 6 0 00-6-6H8a2 2 0 000 4h4" /><circle cx="7" cy="15" r="6" /></svg>);
 const ATHLETE_ICON = (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>);
@@ -26,7 +26,7 @@ const TILES = [
   { key: "athlete" as const, label: "Athlète", sub: "Un de tes athlètes", hue: "#22C55E", icon: ATHLETE_ICON, disabled: false, soon: false },
   { key: "recruteurs" as const, label: "Recruteurs", sub: "Contacter un recruteur CÉGEP", hue: "#E63946", icon: CEGEP, disabled: false, soon: false },
   { key: "groupe" as const, label: "Groupe", sub: "Diffusion à plusieurs destinataires", hue: "#8B5CF6", icon: GROUP, disabled: false, soon: false },
-  { key: "parent" as const, label: "Parent", sub: "Bientôt", hue: "#6B7280", icon: PARENT, disabled: true, soon: true },
+  { key: "parent" as const, label: "Parent", sub: "Le parent d'un de tes athlètes", hue: "#E63946", icon: PARENT, disabled: false, soon: false },
 ];
 
 export default function AudienceTiles({ onPick }: { onPick: (a: CoachAudience) => void }) {

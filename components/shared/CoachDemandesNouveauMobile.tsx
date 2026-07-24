@@ -18,6 +18,7 @@ import AudienceTiles, { type CoachAudience } from "@/components/messaging/Audien
 import CoachStaffCompose from "@/components/messaging/CoachStaffCompose";
 import RecruiterBrowserCompose from "@/components/messaging/RecruiterBrowserCompose";
 import AthleteRosterCompose from "@/components/messaging/AthleteRosterCompose";
+import ParentCompose from "@/components/messaging/ParentCompose";
 import GroupeCompose from "@/components/messaging/GroupeCompose";
 
 export function CoachDemandesNouveauMobile() {
@@ -69,6 +70,10 @@ export function CoachDemandesNouveauMobile() {
 
         {audience === "athlete" && userId && (
           <AthleteRosterCompose selfId={userId} onCreated={routeToThread} />
+        )}
+
+        {audience === "parent" && userId && (
+          <ParentCompose selfId={userId} onCreated={routeToThread} />
         )}
 
         {audience === "recruteurs" && userId && (

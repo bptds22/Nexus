@@ -30,6 +30,9 @@ export interface CoachThreadData {
   otherCoachName: string;
   otherCoachInitials: string;
   otherCoachIsDirector: boolean;
+  /** PARENT_COACH counterparty (the linked parent). Child = athlete fields. */
+  parentName: string;
+  parentInitials: string;
   /** Recruiter — counterparty. */
   recruiterId: string;
   recruiterName: string;
@@ -66,7 +69,7 @@ export function useCoachConversations() {
         .from("conversations")
         .select(`
           id, conversation_type, status, last_message_at, unread_count, created_at,
-          coach_id, coach_b_id,
+          coach_id, coach_b_id, parent_id,
           recruiter:users!recruiter_id(
             id, first_name, last_name, avatar_url, photo_url, school_id,
             schools!school_id(name)
@@ -97,6 +100,23 @@ export function useCoachConversations() {
           const uu = u as { id: string; first_name?: string; last_name?: string };
           const f = uu.first_name || ""; const l = uu.last_name || "";
           otherCoachMap.set(uu.id, { name: `${f} ${l}`.trim() || "Coach", initials: `${f[0] || ""}${l[0] || ""}`.toUpperCase(), isDirector: directorSet.has(uu.id) });
+        }
+      }
+
+      // PARENT_COACH — resolve the linked parent's name (counterparty). The
+      // coach can read these users rows via the coach_reads_athlete_parent RLS
+      // policy (migration 20260725120000).
+      const parentIds = [...new Set(data
+        .filter((c: Record<string, unknown>) => c.conversation_type === "PARENT_COACH")
+        .map((c: Record<string, unknown>) => c.parent_id as string)
+        .filter(Boolean))];
+      const parentMap = new Map<string, { name: string; initials: string }>();
+      if (parentIds.length > 0) {
+        const { data: pu } = await supabase.from("users").select("id, first_name, last_name").in("id", parentIds);
+        for (const u of pu || []) {
+          const uu = u as { id: string; first_name?: string; last_name?: string };
+          const f = uu.first_name || ""; const l = uu.last_name || "";
+          parentMap.set(uu.id, { name: `${f} ${l}`.trim() || "Parent", initials: `${f[0] || ""}${l[0] || ""}`.toUpperCase() || "P" });
         }
       }
 
@@ -133,6 +153,7 @@ export function useCoachConversations() {
         targetLabel: a.targetLabel,
         recipientCount: a.recipientCount,
         otherCoachName: "", otherCoachInitials: "", otherCoachIsDirector: false,
+        parentName: "", parentInitials: "",
         recruiterId: "", recruiterName: "", recruiterInitials: "", recruiterPhotoUrl: null, recruiterCegep: "",
         athleteId: "", athleteName: "", athleteInitials: "", athletePhotoUrl: null, athletePosition: "",
         lastMessage: a.content,
@@ -159,6 +180,7 @@ export function useCoachConversations() {
 
         const otherId = (c.coach_id === userId ? c.coach_b_id : c.coach_id) as string | undefined;
         const oc = otherId ? otherCoachMap.get(otherId) : undefined;
+        const pm = parentMap.get(c.parent_id as string);
 
         return {
           id: c.id as string,
@@ -166,6 +188,8 @@ export function useCoachConversations() {
           otherCoachName: oc?.name || "Coach",
           otherCoachInitials: oc?.initials || "",
           otherCoachIsDirector: !!oc?.isDirector,
+          parentName: pm?.name || "Parent",
+          parentInitials: pm?.initials || "P",
           recruiterId: (rec?.id as string) || "",
           recruiterName: `${rf} ${rl}`.trim() || "Recruteur",
           recruiterInitials: `${rf[0] || ""}${rl[0] || ""}`.toUpperCase(),

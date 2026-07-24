@@ -118,6 +118,71 @@ CREATE POLICY parent_messages_update ON public.messages
   USING (public.is_conversation_participant(conversation_id))
   WITH CHECK (public.is_conversation_participant(conversation_id));
 
+-- ── 4b. Dedup: at most one PARENT_COACH thread per (parent, coach, child) ─
+CREATE UNIQUE INDEX IF NOT EXISTS uq_conversations_parent_coach
+  ON public.conversations (parent_id, coach_id, athlete_id)
+  WHERE conversation_type = 'PARENT_COACH';
+
+-- ── 4c. Picker RPCs (DEFINER, row_security off) ───────────────────────────
+-- Parent → the messageable staff of ONE of their children. Mirrors
+-- list_messageable_staff() but keyed on a child athlete_id, gated by is_parent_of.
+CREATE OR REPLACE FUNCTION public.list_messageable_staff_for_child(p_athlete_id uuid)
+RETURNS TABLE(coach_id uuid, first_name text, last_name text, photo_url text, role_label text)
+LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path TO 'public', 'pg_temp'
+SET row_security TO 'off'
+AS $function$
+  WITH ids AS (
+    SELECT s.coach_id,
+           bool_or(s.role IN ('DIRECTEUR','DIRECTEUR_INTERIM')) AS is_director
+    FROM public._messageable_staff_ids(
+           (SELECT a.user_id FROM public.athletes a WHERE a.id = p_athlete_id)
+         ) s
+    WHERE public.is_parent_of(p_athlete_id)   -- caller must be a parent of the child
+    GROUP BY s.coach_id
+  )
+  SELECT u.id, u.first_name, u.last_name, u.photo_url,
+         CASE WHEN ids.is_director THEN 'Directeur sportif' ELSE 'Entraîneur' END
+  FROM ids JOIN public.users u ON u.id = ids.coach_id;
+$function$;
+
+-- Coach → the linked parent(s) of one of their reachable athletes. Gated by
+-- coach_reaches_athlete (a coach cannot enumerate parents of arbitrary athletes).
+CREATE OR REPLACE FUNCTION public.list_athlete_parents(p_athlete_id uuid)
+RETURNS TABLE(parent_user_id uuid, first_name text, last_name text)
+LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path TO 'public', 'pg_temp'
+SET row_security TO 'off'
+AS $function$
+  SELECT pa.parent_user_id, u.first_name, u.last_name
+  FROM public.parent_athletes pa
+  JOIN public.users u ON u.id = pa.parent_user_id
+  WHERE pa.athlete_id = p_athlete_id
+    AND public.coach_reaches_athlete(auth.uid(), p_athlete_id);
+$function$;
+
+-- ── 4d. Coach may READ the users row of a parent linked to a reachable ───
+--    athlete — so the coach inbox / thread FK embeds resolve the parent's
+--    NAME (otherwise blocked by users RLS → falls back to "Parent"). DEFINER
+--    helper avoids the parent_athletes RLS wall a plain policy subquery hits.
+CREATE OR REPLACE FUNCTION public.coach_reads_parent_user(p_user_id uuid)
+RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path TO 'public', 'pg_temp'
+SET row_security TO 'off'
+AS $function$
+  SELECT EXISTS (
+    SELECT 1 FROM public.parent_athletes pa
+    WHERE pa.parent_user_id = p_user_id
+      AND public.coach_reaches_athlete(auth.uid(), pa.athlete_id)
+  );
+$function$;
+
+DROP POLICY IF EXISTS coach_reads_athlete_parent ON public.users;
+CREATE POLICY coach_reads_athlete_parent ON public.users
+  FOR SELECT TO authenticated
+  USING (public.coach_reads_parent_user(id));
+
 -- ── 5. Push fan-out: include the parent (was omitted) ─────────────────────
 --    notify_on_message cross-joined recruiter/coach/coach_b/athlete.user_id
 --    but NOT parent_id → a PARENT_COACH message never pushed the parent.
