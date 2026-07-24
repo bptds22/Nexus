@@ -159,6 +159,27 @@ athlètes seulement (coachb 0-own → 0 ; Tremblay 2-own → 2) ; directeur
 
 Re-run its proof après prod apply : `scratchpad/proof-broadcast-scope.sql` — expect 4/4.
 
+### [ ] Transferts — assigner un athlète non réclamé (correctif #1)
+Branch `feat/messaging-athlete-coach`. Règle validée BP. Proven locally 4/4
+(`scratchpad/proof-unclaimed-assign.sql`): coach régulier assigne un athlète NON
+RÉCLAMÉ → autre coach (allow) ; → soi (allow) ; → non-coach (deny) ; réassignation
+d'un athlète DÉJÀ réclamé par un non-directeur reste DENY (aucun élargissement).
+
+- `supabase/migrations/20260724130000_assign_unclaimed_school_athletes.sql`
+  — nouvelle policy UPDATE `coaches assign unclaimed school athletes` :
+  `USING (coach_id IS NULL AND school_id = current_user_school_id())` +
+  `WITH CHECK (school_id = current_user_school_id() AND (coach_id IS NULL OR le
+  nouveau coach_id est un school_coach de mon école))`.
+- **Portée STRICTE** : la clause USING `coach_id IS NULL` fait que la policy ne
+  s'applique JAMAIS aux athlètes déjà réclamés → la réassignation d'un athlète
+  réclamé reste directeur/team-coach seulement. Additif, idempotent.
+- **Bug corrigé** : assigner un athlète du pool « Non assigné » à un collègue
+  échouait ("new row violates RLS") — la policy `claim` existante ne permettait
+  le WITH CHECK que vers soi. Vérifié navigateur : coachb assigne Émile (non
+  réclamé) → Marc Tremblay, succès.
+
+Re-run its proof après prod apply : `scratchpad/proof-unclaimed-assign.sql` — expect 4/4.
+
 ### [x] handle_new_auth_user — VERIFIED prod == local (no diff, no action)
 Diffed 2026-07-23, prod (nexus-prod `nrloizyemulbhujrqhgx`) vs local via
 `pg_get_functiondef`: **byte-identical.** Both have the same 8 INSERT columns
