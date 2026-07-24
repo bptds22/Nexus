@@ -43,6 +43,9 @@ import { useMobileToast } from "@/components/mobile/MobileToast";
 import { MobilePicker, type PickerOption } from "@/components/mobile/MobilePicker";
 import { SearchSheet } from "@/components/mobile/SearchSheet";
 import { AGE_OPTIONS, DIVISION_OPTIONS, AUTRE_VALUE } from "@/lib/config/civilVocab";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { ExistingTeamBanner } from "@/components/shared/teams/ExistingTeamBanner";
+import type { DetectedTeam } from "@/lib/queries/coach/detectExistingTeam";
 import { TeamCreateFormBlock, type TeamFormValues } from "@/components/shared/teams/TeamCreateFormBlock";
 
 /* ── Constantes ──────────────────────────────────────────────── */
@@ -147,6 +150,26 @@ export function CoachOnboardingMobileCivil() {
   const [teamMode, setTeamMode] = useState<TeamMode>("pick");
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
   const [selectedTeamName, setSelectedTeamName] = useState<string>("");
+
+  // Détection adoption (Morceau 2) : client stable + sport_id (uuid) résolu
+  // depuis le NOM (ce flux ne tient que le nom du sport). handleAdoptTeam =
+  // sélection locale de l'équipe existante (finish RPC rattache via p_team_id).
+  const bannerSupabase = useMemo(() => createClient(), []);
+  const [resolvedSportId, setResolvedSportId] = useState<string | null>(null);
+  useEffect(() => {
+    if (!sport) { setResolvedSportId(null); return; }
+    let cancelled = false;
+    (async () => {
+      const { data } = await bannerSupabase.from("sports").select("id").eq("nom", sport).maybeSingle();
+      if (!cancelled) setResolvedSportId((data?.id as string) ?? null);
+    })();
+    return () => { cancelled = true; };
+  }, [sport, bannerSupabase]);
+  const handleAdoptTeam = useCallback((t: DetectedTeam) => {
+    setSelectedTeamId(t.id);
+    setSelectedTeamName([t.name, t.ageGroup, t.gender, t.division].filter(Boolean).join(" · "));
+    setTeamMode("pick");
+  }, []);
   // New team to create
   const [newTeamName, setNewTeamName] = useState("");
   const [newTeamAgeGroup, setNewTeamAgeGroup] = useState("");
@@ -658,6 +681,10 @@ export function CoachOnboardingMobileCivil() {
             newTeamGender={newTeamGender} setNewTeamGender={setNewTeamGender}
             onOpenAge={() => setOpenAge(true)}
             onOpenDivision={() => setOpenDivision(true)}
+            adoptSupabase={bannerSupabase}
+            adoptClubId={selectedClubId}
+            adoptSportId={resolvedSportId}
+            onAdoptTeam={handleAdoptTeam}
           />
         )}
         {slide === 2 && (
@@ -1029,6 +1056,11 @@ interface Slide2Props {
   newTeamGender: Gender | ""; setNewTeamGender: (v: Gender | "") => void;
   onOpenAge: () => void;
   onOpenDivision: () => void;
+  // Adoption (Morceau 2) — threadés depuis le parent (le sous-composant est pur).
+  adoptSupabase: SupabaseClient;
+  adoptClubId: string | null;
+  adoptSportId: string | null;
+  onAdoptTeam: (t: DetectedTeam) => void;
 }
 
 function Slide2ClubTeam(p: Slide2Props) {
@@ -1174,6 +1206,19 @@ function Slide2ClubTeam(p: Slide2Props) {
                   p.setNewTeamGender(v.gender as Gender | "");
                 }}
               />
+
+              {/* Adoption visible AVANT de continuer (Morceau 2) : si l'identité
+                  normalisée matche une équipe existante du club+sport. */}
+              <ExistingTeamBanner
+                supabase={p.adoptSupabase}
+                schoolId={p.adoptClubId}
+                sportId={p.adoptSportId}
+                ageGroup={p.newTeamAgeGroup === AUTRE_VALUE ? p.newTeamAgeOther.trim() : p.newTeamAgeGroup}
+                gender={p.newTeamGender}
+                division={p.newTeamDivision === AUTRE_VALUE ? p.newTeamDivisionOther.trim() : p.newTeamDivision}
+                onAdopt={p.onAdoptTeam}
+              />
+
               {p.clubMode === "pick" && (
                 <button
                   type="button"

@@ -40,6 +40,7 @@ import { useMobileToast } from "@/components/mobile/MobileToast";
 import { MobilePicker, type PickerOption } from "@/components/mobile/MobilePicker";
 import { SearchSheet } from "@/components/mobile/SearchSheet";
 import { formatTeamLabel } from "@/lib/teams/teamLabel";
+import { ExistingTeamBanner } from "@/components/shared/teams/ExistingTeamBanner";
 import TeamCreateForm, { type TeamFormData } from "@/components/onboarding/TeamCreateForm";
 
 /* ── Constantes ──────────────────────────────────────────────── */
@@ -139,6 +140,21 @@ export function CoachOnboardingMobileSchool() {
   const [selectedSchoolRegion, setSelectedSchoolRegion] = useState<string>("");
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
   const [selectedTeamName, setSelectedTeamName] = useState<string>("");
+
+  // Détection adoption (Morceau 2) : la bannière a besoin du sport_id (uuid) —
+  // ce flux ne tient que le NOM du sport, on le résout ici. Client stable
+  // (l'effet de détection clé sur son identité).
+  const bannerSupabase = useMemo(() => createClient(), []);
+  const [resolvedSportId, setResolvedSportId] = useState<string | null>(null);
+  useEffect(() => {
+    if (!sport) { setResolvedSportId(null); return; }
+    let cancelled = false;
+    (async () => {
+      const { data } = await bannerSupabase.from("sports").select("id").eq("nom", sport).maybeSingle();
+      if (!cancelled) setResolvedSportId((data?.id as string) ?? null);
+    })();
+    return () => { cancelled = true; };
+  }, [sport, bannerSupabase]);
 
   // Slide 3 — Directeur
   const [directorChoice, setDirectorChoice] = useState<DirectorChoice>(null);
@@ -806,6 +822,26 @@ export function CoachOnboardingMobileSchool() {
               lockedSchoolId={selectedSchoolId ?? undefined}
               lockedSchoolName={selectedSchoolName}
               lockedLabel="École"
+              renderAdoption={(a) => (
+                <ExistingTeamBanner
+                  supabase={bannerSupabase}
+                  schoolId={selectedSchoolId}
+                  sportId={resolvedSportId}
+                  ageGroup={a.ageGroup}
+                  gender={a.gender}
+                  division={a.division}
+                  onAdopt={(t) => {
+                    // Adopter = sélection locale de l'équipe existante (le
+                    // rattachement réel se fait au finish, RPC branche LINK).
+                    setPendingCreateTeam(null);
+                    setSelectedTeamId(t.id);
+                    setSelectedTeamName(
+                      formatTeamLabel(sport, t.ageGroup ?? "", t.division ?? "", t.gender ?? "", t.name),
+                    );
+                    setCreateTeamOpen(false);
+                  }}
+                />
+              )}
               onCancel={() => setCreateTeamOpen(false)}
               onSubmit={(data: TeamFormData) => {
                 setPendingCreateTeam({
