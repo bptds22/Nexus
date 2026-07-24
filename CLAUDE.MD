@@ -358,6 +358,12 @@ Contraction-breaking changes parked until no shipped binary references the old s
 - **`athletes.sport_secondaire_id` / `position_secondaire_id`** — stub columns kept nullable for frozen binaries; real drop deferred (`20260717240000_remove_sport_secondaire.sql`).
 - **`conversations` hard-delete (`recruiter_conversations_delete` policy)** — "no hard deletes anywhere" requires removing the recruiter's DELETE policy (CASCADE → messages), but that would 400 any shipped delete/archive button. Defer removal until verified no shipped bundle calls conversation delete.
 
+### Deferred prod applies
+
+Migrations validated locally but intentionally NOT applied to prod yet:
+
+- **P3 recruiter↔athlete (`20260722110000`–`110300`, branch `feat/messaging-recruiter-athlete`)** — full backend (RLS + blackout + triggers + notifications), 10/10 per-role proofs + mark-read green locally. **Apply to prod only when the P3 UI build begins** (P1 is the active release train; P1 → main first, then P3). At apply time: (a) `RECRUTEUR_ATHLETE` already exists on prod from Phase A, so **no `ALTER TYPE ADD VALUE`** — but keep each migration a separate `apply_migration` (the enum/transaction split rule) and don't bundle; (b) pre-flight **diff prod's `message_insert_to_pipeline` against the base** before `110300` re-defines it; (c) two shipped-object changes land — `conversations.coach_id` NOT-NULL drop and the `conversations_insert` scope to `RECRUTEUR_COACH`; (d) eligibility ships as a `true` stub.
+
 ---
 
 ## GIT WORKFLOW
