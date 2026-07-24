@@ -93,6 +93,51 @@ via recipient_count; every broadcast msg carries broadcast_id).
 
 Re-run its proof after prod apply: `scratchpad/validation-broadcast.sql` — expect 7/7.
 
+### [ ] P3 — recruteur↔athlète messaging (RLS + blackout + pipeline + notify)
+Branch `feat/messaging-athlete-coach` (merged from `feat/messaging-recruiter-athlete`).
+Proven locally **11/11** (per-role suite `scratchpad/validation-p3-ra.sql`): recruiter+
+favorite creates RA (allow), recruiter+non-favorite denied (favoris-gate, bypass
+closed), recruiter first message (Pro), pipeline auto-CONTACTE, first-contact notif
+(coach+parent recorded), athlete replies (free), athlete cannot initiate, eligibility
+stub true, blackout dormant + active-blackout blocks send, athlete mark-read.
+
+Apply in filename order, **each as its own `apply_migration` / `psql -f`** (enum/txn
+split rule — do NOT bundle):
+
+1. `supabase/migrations/20260722110000_p3_eligibility_and_blackout.sql`
+   — **`ALTER TABLE conversations ALTER COLUMN coach_id DROP NOT NULL`** (the per-type
+   CHECK re-imposes coach_id NOT NULL on RECRUTEUR_COACH/ATHLETE_COACH/PARENT_COACH →
+   zero behavior change; only RECRUTEUR_ATHLETE needs it null). `is_athlete_contactable`
+   **eligibility STUB (returns true for all)** — "pas sous sec. 5" rule pending BP/ligue,
+   swap the body via CREATE OR REPLACE with zero migration when confirmed.
+   `blackout_periods` table (admin-write via `is_platform_admin`, all-read) +
+   `is_messaging_blacked_out` (GLOBAL scope in v1).
+2. `supabase/migrations/20260722110100_p3_recruiter_athlete_rls.sql`
+   — **`conversations_insert` RE-SCOPED to RECRUTEUR_COACH** (was type-agnostic → a Pro
+   recruiter could create RA and bypass the favoris-gate; closes it). New RA policies:
+   recruiter-initiate (recruiter=self + coach_id NULL + parent_id NULL + athlete in the
+   recruiter's `recruiter_favorites` + `is_athlete_contactable`); recruiter + athlete
+   SELECT; participant UPDATE; `ra_messages_select`; **`ra_athlete_messages_insert`**
+   (athlete replies, free — recruiter still routes through the Pro-gated
+   `messages_insert`); `ra_athlete_messages_update` (athlete mark-read).
+3. `supabase/migrations/20260722110200_p3_blackout_enforcement.sql`
+   — `enforce_messaging_blackout()` BEFORE INSERT triggers on conversations + messages,
+   scoped RECRUTEUR_ATHLETE (mute both sides during an active GLOBAL window; existing
+   threads persist, only sending suspends). Dormant — no blackout rows in prod.
+4. `supabase/migrations/20260722110300_p3_pipeline_and_notify.sql`
+   — **⚠️ pre-flight: `pg_get_functiondef` prod's `message_insert_to_pipeline` and diff
+   vs base BEFORE this CREATE OR REPLACE** (it only extends the allowlist to
+   `IN ('RECRUTEUR_COACH','RECRUTEUR_ATHLETE')`; confirm nothing else drifted).
+   `recruiter_contact_notifications` table (admin-read + coach-read-own) +
+   `notify_first_recruiter_contact()` AFTER INSERT trigger on conversations (records
+   COACH + PARENT first-contact rows; best-effort push via Vault+pg_net, errors swallowed).
+
+**Prod notes (from the P3 deferral):** `RECRUTEUR_ATHLETE` already exists on prod from
+Phase A → **NO `ALTER TYPE ADD VALUE`**. Two shipped-object changes land:
+`conversations.coach_id` NOT-NULL drop (file 1) + `conversations_insert` scope to
+`RECRUTEUR_COACH` (file 2). Eligibility ships as a `true` stub. Re-run
+`scratchpad/validation-p3-ra.sql` after prod apply → expect 11/11.
+
 ### [x] handle_new_auth_user — VERIFIED prod == local (no diff, no action)
 Diffed 2026-07-23, prod (nexus-prod `nrloizyemulbhujrqhgx`) vs local via
 `pg_get_functiondef`: **byte-identical.** Both have the same 8 INSERT columns

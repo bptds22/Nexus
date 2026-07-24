@@ -73,22 +73,56 @@ export function useAthleteConversations() {
       const athleteId = athleteRow?.id as string | undefined;
       if (!athleteId) return [];
 
-      // My ATHLETE_COACH conversations (RLS scopes to mine anyway).
+      // My ATHLETE_COACH threads (counterparty = coach) + my RECRUTEUR_ATHLETE
+      // threads (counterparty = recruiter — P3, coach_id NULL). RLS scopes to
+      // mine anyway. The athlete only ever RECEIVES/REPLIES to RA threads.
       const { data, error } = await supabase
         .from("conversations")
         .select(`
-          id, conversation_type, status, last_message_at, unread_count, created_at,
+          id, conversation_type, status, last_message_at, unread_count, created_at, recruiter_id,
           coach:users!coach_id(
             id, first_name, last_name, photo_url, avatar_url, school_id,
             schools!school_id(name)
           )
         `)
-        .eq("conversation_type", "ATHLETE_COACH")
+        .in("conversation_type", ["ATHLETE_COACH", "RECRUTEUR_ATHLETE"])
         .eq("athlete_id", athleteId)
         .order("last_message_at", { ascending: false });
 
       if (error) throw error;
       if (!data) return [];
+
+      // RA counterparty = recruiter. Fetch separately (a second `users` embed
+      // alongside the coach one triggers PostgREST FK ambiguity) — same pattern
+      // useCoachConversations uses for recruiters.
+      const recruiterIds = [...new Set(
+        data.filter((c: Record<string, unknown>) => c.conversation_type === "RECRUTEUR_ATHLETE")
+          .map((c: Record<string, unknown>) => c.recruiter_id as string)
+          .filter(Boolean),
+      )];
+      const recruiterMap = new Map<string, { name: string; initials: string; photo: string | null; school: string }>();
+      if (recruiterIds.length > 0) {
+        const { data: recs } = await supabase
+          .from("users")
+          .select("id, first_name, last_name, photo_url, avatar_url, school_id")
+          .in("id", recruiterIds);
+        const schoolIds = [...new Set((recs ?? []).map((r) => (r as Record<string, unknown>).school_id as string).filter(Boolean))];
+        const schoolNameMap = new Map<string, string>();
+        if (schoolIds.length > 0) {
+          const { data: sc } = await supabase.from("schools").select("id, name").in("id", schoolIds);
+          for (const s of (sc ?? []) as { id: string; name: string }[]) schoolNameMap.set(s.id, s.name);
+        }
+        for (const r of (recs ?? []) as Record<string, unknown>[]) {
+          const rf = (r.first_name as string) || "";
+          const rl = (r.last_name as string) || "";
+          recruiterMap.set(r.id as string, {
+            name: `${rf} ${rl}`.trim() || "Recruteur",
+            initials: `${rf[0] || ""}${rl[0] || ""}`.toUpperCase() || "R",
+            photo: (r.photo_url as string) || (r.avatar_url as string) || null,
+            school: schoolNameMap.get(r.school_id as string) || "",
+          });
+        }
+      }
 
       const convIds = data.map((c: Record<string, unknown>) => c.id as string);
       const coachIds = [
@@ -143,6 +177,33 @@ export function useAthleteConversations() {
       }
 
       return data.map((c: Record<string, unknown>): AthleteThreadData => {
+        const isRA = (c.conversation_type as string) === "RECRUTEUR_ATHLETE";
+        const cid_status = (c.id as string);
+
+        // RECRUTEUR_ATHLETE : counterparty = recruiter (from recruiterMap).
+        if (isRA) {
+          const r = recruiterMap.get(c.recruiter_id as string);
+          const rName = r?.name || "Recruteur";
+          return {
+            id: cid_status,
+            conversationType: "RECRUTEUR_ATHLETE",
+            coachId: (c.recruiter_id as string) || "",
+            coachName: rName,
+            coachInitials: r?.initials || "R",
+            coachPhotoUrl: r?.photo || null,
+            coachRole: "Recruteur",
+            coachSchool: r?.school || "",
+            hasCoachName: !!r?.name,
+            lastMessage: lastMsgMap.get(cid_status) || "",
+            lastMessageAt: (c.last_message_at as string) || (c.created_at as string) || "",
+            lastSenderId: lastSenderMap.get(cid_status) ?? null,
+            unreadCount: unreadMap.get(cid_status) ?? 0,
+            status: (c.status as string) || "ACTIVE",
+            threadStatus: mapDbStatus(c.status as string, meRepliedMap.get(cid_status), otherRepliedMap.get(cid_status)),
+          };
+        }
+
+        // ATHLETE_COACH : counterparty = coach.
         const raw = c.coach;
         const co = (Array.isArray(raw) ? raw[0] : raw) as Record<string, unknown> | null;
         const schoolRaw = co?.schools;
@@ -155,14 +216,13 @@ export function useAthleteConversations() {
 
         // Name-resolution fallback : a bare fixture coach (no first/last
         // name on its users row) resolves gracefully to "{role} — {école}"
-        // instead of a generic "Entraîneur" + "?" avatar.
+        // instead of a generic label + "?" avatar.
         const realName = `${cf} ${cl}`.trim();
         const hasCoachName = realName.length > 0;
         const coachName = hasCoachName ? realName : schoolName ? `${role} — ${schoolName}` : role;
         const initials = hasCoachName
           ? `${cf[0] || ""}${cl[0] || ""}`.toUpperCase()
           : schoolName ? schoolInitials(schoolName) : "•";
-        const cid_status = (c.id as string);
 
         return {
           id: cid_status,

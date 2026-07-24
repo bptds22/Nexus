@@ -106,30 +106,52 @@ function AthleteThreadPage() {
 
         const { data: conv } = await supabase
           .from("conversations")
-          .select("id, coach_id, conversation_type, coach:users!coach_id(id, first_name, last_name, photo_url, avatar_url, schools!school_id(name))")
+          .select("id, coach_id, recruiter_id, conversation_type, coach:users!coach_id(id, first_name, last_name, photo_url, avatar_url, schools!school_id(name))")
           .eq("id", id)
           .maybeSingle();
 
         if (!conv) { setNotFoundState(true); setLoading(false); return; }
 
-        const raw = (conv as Record<string, unknown>).coach;
-        const co = (Array.isArray(raw) ? raw[0] : raw) as Record<string, unknown> | null;
-        const schoolRaw = co?.schools;
-        const school = (Array.isArray(schoolRaw) ? schoolRaw[0] : schoolRaw) as { name?: string } | null;
+        // Counterparty : coach (ATHLETE_COACH) or recruiter (RECRUTEUR_ATHLETE).
+        // The recruiter is fetched separately (a second `users` embed alongside
+        // the coach one triggers PostgREST FK ambiguity).
+        const isRA = (conv as Record<string, unknown>).conversation_type === "RECRUTEUR_ATHLETE";
+        let co: Record<string, unknown> | null = null;
+        let school: { name?: string } | null = null;
+        let counterId = "";
+        if (isRA) {
+          const { data: rec } = await supabase
+            .from("users")
+            .select("id, first_name, last_name, photo_url, avatar_url, school_id")
+            .eq("id", (conv as Record<string, unknown>).recruiter_id as string)
+            .maybeSingle();
+          co = (rec as Record<string, unknown>) || null;
+          counterId = (co?.id as string) || "";
+          if (co?.school_id) {
+            const { data: s } = await supabase.from("schools").select("name").eq("id", co.school_id as string).maybeSingle();
+            school = (s as { name?: string }) || null;
+          }
+        } else {
+          const raw = (conv as Record<string, unknown>).coach;
+          co = (Array.isArray(raw) ? raw[0] : raw) as Record<string, unknown> | null;
+          const schoolRaw = co?.schools;
+          school = (Array.isArray(schoolRaw) ? schoolRaw[0] : schoolRaw) as { name?: string } | null;
+          counterId = (co?.id as string) || (conv.coach_id as string) || "";
+        }
         const cf = (co?.first_name as string) || "";
         const cl = (co?.last_name as string) || "";
-        const coachId = (co?.id as string) || (conv.coach_id as string) || "";
+        const coachId = counterId;
 
-        // Role label from school_coaches.
-        let role = "Entraîneur";
-        if (coachId) {
+        // Role label : recruiter → "Recruteur" ; coach → coach/director.
+        let role = isRA ? "Recruteur" : "Entraîneur";
+        if (!isRA && coachId) {
           const { data: sc } = await supabase.from("school_coaches").select("role").eq("coach_id", coachId);
           if ((sc ?? []).some((r) => (r.role as string).startsWith("DIRECTEUR"))) role = "Directeur sportif";
         }
 
         setCoach({
           id: coachId,
-          name: `${cf} ${cl}`.trim() || "Entraîneur",
+          name: `${cf} ${cl}`.trim() || role,
           initials: `${cf[0] || ""}${cl[0] || ""}`.toUpperCase() || "?",
           photoUrl: (co?.photo_url as string) || (co?.avatar_url as string) || null,
           role,

@@ -54,25 +54,43 @@ export function AthleteMessagesThreadMobile() {
         const supabase = createClient();
         const { data } = await supabase
           .from("conversations")
-          .select("coach_id, coach:users!coach_id(id, first_name, last_name, photo_url, avatar_url, schools!school_id(name))")
+          .select("coach_id, recruiter_id, conversation_type, coach:users!coach_id(id, first_name, last_name, photo_url, avatar_url, schools!school_id(name))")
           .eq("id", conversationId)
           .maybeSingle();
-        const raw = (data as Record<string, unknown> | null)?.coach;
-        const co = (Array.isArray(raw) ? raw[0] : raw) as Record<string, unknown> | null;
-        const schRaw = co?.schools;
-        const sch = (Array.isArray(schRaw) ? schRaw[0] : schRaw) as { name?: string } | null;
+        // Counterparty : coach (ATHLETE_COACH) or recruiter (RECRUTEUR_ATHLETE).
+        // Recruiter fetched separately (a 2nd `users` embed clashes on the FK).
+        const isRA = (data as Record<string, unknown> | null)?.conversation_type === "RECRUTEUR_ATHLETE";
+        let co: Record<string, unknown> | null = null;
+        let sch: { name?: string } | null = null;
+        if (isRA) {
+          const { data: rec } = await supabase
+            .from("users")
+            .select("id, first_name, last_name, photo_url, avatar_url, school_id")
+            .eq("id", (data as Record<string, unknown>).recruiter_id as string)
+            .maybeSingle();
+          co = (rec as Record<string, unknown>) || null;
+          if (co?.school_id) {
+            const { data: s } = await supabase.from("schools").select("name").eq("id", co.school_id as string).maybeSingle();
+            sch = (s as { name?: string }) || null;
+          }
+        } else {
+          const raw = (data as Record<string, unknown> | null)?.coach;
+          co = (Array.isArray(raw) ? raw[0] : raw) as Record<string, unknown> | null;
+          const schRaw = co?.schools;
+          sch = (Array.isArray(schRaw) ? schRaw[0] : schRaw) as { name?: string } | null;
+        }
         const cid = (co?.id as string) || "";
         const cf = (co?.first_name as string) || "";
         const cl = (co?.last_name as string) || "";
-        // Role label from school_coaches.
-        let role = "Entraîneur";
-        if (cid) {
+        // Role label : recruiter → "Recruteur" ; coach → coach/director.
+        let role = isRA ? "Recruteur" : "Entraîneur";
+        if (!isRA && cid) {
           const { data: sc } = await supabase.from("school_coaches").select("role").eq("coach_id", cid).limit(1).maybeSingle();
           role = roleLabel((sc?.role as string) || undefined);
         }
         if (!cancelled) {
           setCoach({
-            name: `${cf} ${cl}`.trim() || "Entraîneur",
+            name: `${cf} ${cl}`.trim() || role,
             initials: `${cf[0] || ""}${cl[0] || ""}`.toUpperCase() || "?",
             photoUrl: (co?.photo_url as string) || (co?.avatar_url as string) || null,
             role, school: sch?.name || "",

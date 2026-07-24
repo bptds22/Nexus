@@ -51,7 +51,7 @@ import { isValidationExpired } from "@/lib/utils/profileValidation";
 import { SESSION_KEY_PREFIX } from "@/lib/platform/mobileRoutes";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
-import { findOrCreateRecruiterConversation } from "@/lib/utils/findOrCreateRecruiterConversation";
+import { findOrCreateRecruiterConversation, findOrCreateRecruiterAthleteConversation } from "@/lib/utils/findOrCreateRecruiterConversation";
 import { AddToListSheet } from "@/components/shared/AddToListSheet";
 import AthletePhotoFill from "@/components/shared/AthletePhotoFill";
 import { TeamDetailsBlock, type TeamDetail } from "@/components/shared/athlete/TeamDetailsBlock";
@@ -1309,6 +1309,32 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
       triggerHaptic("Medium");
     }
   };
+
+  // ── "Contacter l'athlète" (RECRUTEUR_ATHLETE) — favorite-first gate ──
+  const [contactingAthlete, setContactingAthlete] = useState(false);
+  const [showFavContactPrompt, setShowFavContactPrompt] = useState(false);
+
+  const openAthleteThread = useCallback(async () => {
+    if (!a) return;
+    setContactingAthlete(true);
+    const res = await findOrCreateRecruiterAthleteConversation(a.id);
+    if (res.ok) { router.push(`/recruteur/messages/${res.conversationId}`); return; }
+    setContactingAthlete(false);
+    setShowFavContactPrompt(false);
+    toast.error({ message: "Échec", detail: res.error || "Impossible d'ouvrir la conversation." });
+  }, [a?.id, router, toast]);
+
+  const handleContactAthlete = useCallback(() => {
+    if (favButtonDisabled || contactingAthlete) return;
+    triggerHaptic("Medium");
+    if (isFavorited) { void openAthleteThread(); return; }
+    setShowFavContactPrompt(true);
+  }, [favButtonDisabled, contactingAthlete, isFavorited, openAthleteThread]);
+
+  const favoriteAndContact = useCallback(async () => {
+    await toggleFav();
+    await openAthleteThread();
+  }, [openAthleteThread]);
 
   useEffect(() => {
     // Recruiter-only — recruiter_favorites RLS scopes to the row owner,
@@ -2599,19 +2625,34 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
           }}
         >
           {canMessageCoach && (
-            <button
-              type="button"
-              onClick={handleContactCoach}
-              disabled={contactingCoach || !coachId}
-              className={`flex-1 flex items-center justify-center gap-2 bg-[#E63946] text-white rounded-2xl px-4 py-4 font-head font-bold text-[13px] uppercase tracking-widest active:bg-[#D42B22] shadow-[0_0_20px_rgba(230,57,70,0.3)] ${
-                contactingCoach || !coachId ? "opacity-70" : ""
-              }`}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" />
-              </svg>
-              {contactingCoach ? "Ouverture..." : "Contacter le coach"}
-            </button>
+            <div className="flex-1 flex flex-col gap-2 min-w-0">
+              <button
+                type="button"
+                onClick={handleContactCoach}
+                disabled={contactingCoach || !coachId}
+                className={`flex items-center justify-center gap-2 bg-[#E63946] text-white rounded-2xl px-4 py-3 font-head font-bold text-[13px] uppercase tracking-widest active:bg-[#D42B22] shadow-[0_0_20px_rgba(230,57,70,0.3)] ${
+                  contactingCoach || !coachId ? "opacity-70" : ""
+                }`}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" />
+                </svg>
+                {contactingCoach ? "Ouverture..." : "Contacter le coach"}
+              </button>
+              <button
+                type="button"
+                onClick={handleContactAthlete}
+                disabled={contactingAthlete || favButtonDisabled}
+                className={`flex items-center justify-center gap-2 rounded-2xl px-4 py-3 font-head font-bold text-[13px] uppercase tracking-widest border transition-colors ${
+                  favButtonDisabled ? "opacity-40 border-[#2D3748] text-[#6B7280]" : "bg-[#1A1D24] border-[#E63946]/40 text-[#E63946] active:bg-[#E63946]/10"
+                }`}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" />
+                </svg>
+                {contactingAthlete ? "Ouverture..." : "Contacter l'athlète"}
+              </button>
+            </div>
           )}
           {/* Iter 7.23 Sprint 4 — bouton "Ajouter à une liste" (PRO-only).
               Icône liste-avec-+ pour signaler l'action d'ajout. Tap → ouvre
@@ -2640,6 +2681,37 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
               size="md"
               disabled={favButtonDisabled}
             />
+          </div>
+        </div>,
+        document.body,
+      )}
+
+      {/* ══ Favorite-first contact prompt (RECRUTEUR_ATHLETE) ══ */}
+      {showFavContactPrompt && mounted && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[60] flex items-end justify-center" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => { if (!contactingAthlete) setShowFavContactPrompt(false); }} />
+          <div className="relative w-full max-w-[520px] bg-[#1A1D24] border-t border-white/[0.08] rounded-t-3xl px-5 pt-5 pb-8">
+            <div className="w-10 h-1 rounded-full bg-white/15 mx-auto mb-5" />
+            <div className="w-12 h-12 rounded-full bg-[#E63946]/10 border border-[#E63946]/30 flex items-center justify-center mb-4">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
+              </svg>
+            </div>
+            <h3 className="font-head text-lg font-black text-white uppercase tracking-tight mb-2">Ajouter aux favoris pour contacter</h3>
+            <p className="text-[14px] text-[#9CA3AF] leading-relaxed mb-1">
+              Pour contacter {a?.firstName} {a?.lastName} directement, ajoute-le d&apos;abord à tes favoris.
+            </p>
+            <p className="text-[12px] text-[#6b7280] leading-relaxed mb-5">Son coach et son parent seront avisés de ce premier contact.</p>
+            <div className="flex items-center gap-3">
+              <button type="button" onClick={() => { if (!contactingAthlete) setShowFavContactPrompt(false); }}
+                className="flex-1 rounded-xl px-4 py-3.5 text-[13px] font-bold text-[#9CA3AF] bg-[#111317] border border-[#2D3748] active:text-white transition-colors">
+                Annuler
+              </button>
+              <button type="button" onClick={() => void favoriteAndContact()} disabled={contactingAthlete}
+                className="flex-1 rounded-xl px-4 py-3.5 text-[13px] font-head font-bold uppercase tracking-widest text-white bg-[#E63946] active:bg-[#D42B22] transition-colors disabled:opacity-60">
+                {contactingAthlete ? "..." : "Ajouter et contacter"}
+              </button>
+            </div>
           </div>
         </div>,
         document.body,

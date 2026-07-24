@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { findOrCreateRecruiterAthleteConversation } from "@/lib/utils/findOrCreateRecruiterConversation";
 import {
   mockAthleteProfileFull,
 } from "@/lib/mock/athleteProfileRecruiter";
@@ -359,6 +361,7 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
   // broaden its meaning.
   const isPreview = viewerMode !== "recruiter";
   const isPartner = viewerMode === "partner";
+  const router = useRouter();
   const { maxFavorites, tier, loading: tierLoading } = useSubscription();
   const canMessageCoach = tier === "pro" || tier === "all_star";
   const canUsePipeline = tier === "pro" || tier === "all_star";
@@ -784,6 +787,37 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
     };
     checkFav();
   }, [id]);
+
+  // ── "Contacter l'athlète" (RECRUTEUR_ATHLETE) — favorite-first gate ──
+  // Not favorited → auto-prompt "Ajouter aux favoris pour contacter" ; once
+  // favorited → find-or-create the RA thread and jump into it (the recruiter
+  // types the first message there ; conversation creation fires the
+  // coach+parent first-contact notification).
+  const [showFavContactPrompt, setShowFavContactPrompt] = useState(false);
+  const [contacting, setContacting] = useState(false);
+  const [contactError, setContactError] = useState<string | null>(null);
+
+  const openAthleteThread = async () => {
+    setContacting(true);
+    setContactError(null);
+    const res = await findOrCreateRecruiterAthleteConversation(id);
+    setContacting(false);
+    if (!res.ok) { setContactError(res.error); return; }
+    setShowFavContactPrompt(false);
+    router.push(`/recruteur/messages/${res.conversationId}`);
+  };
+
+  const handleContactAthlete = () => {
+    if (favButtonDisabled) return; // fav cap → can't favorite → can't contact
+    setContactError(null);
+    if (isFavorited) { void openAthleteThread(); return; }
+    setShowFavContactPrompt(true);
+  };
+
+  const favoriteAndContact = async () => {
+    await toggleFav();       // adds to favorites (isFavorited flips true)
+    await openAthleteThread();
+  };
 
   useEffect(() => {
     const loadPipeline = async () => {
@@ -1651,13 +1685,23 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
         {/* Mobile — full-width bar */}
         <div className="md:hidden bg-[#111317]/95 backdrop-blur-sm border-t border-[#2D3748] px-4 py-3 flex items-center gap-2">
           {canMessageCoach && (
-            <Link href={`/recruteur/messages/nouveau?athlete=${a.id}`}
-              className="flex-1 flex items-center justify-center gap-2.5 bg-[#E63946] text-white rounded-xl px-6 py-3.5 font-head font-bold text-[14px] uppercase tracking-widest transition-all hover:bg-[#D42B22] active:scale-[0.98] shadow-[0_0_20px_rgba(230,57,70,0.3)]">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" />
-              </svg>
-              Contacter le coach
-            </Link>
+            <div className="flex-1 flex flex-col gap-2 min-w-0">
+              <Link href={`/recruteur/messages/nouveau?athlete=${a.id}`}
+                className="flex items-center justify-center gap-2.5 bg-[#E63946] text-white rounded-xl px-6 py-2.5 font-head font-bold text-[13px] uppercase tracking-widest transition-all hover:bg-[#D42B22] active:scale-[0.98] shadow-[0_0_20px_rgba(230,57,70,0.3)]">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" />
+                </svg>
+                Contacter le coach
+              </Link>
+              <button type="button" onClick={handleContactAthlete} disabled={contacting || favButtonDisabled}
+                title={favButtonDisabled ? favDisabledTitle : "Contacter l'athlète directement"}
+                className={`flex items-center justify-center gap-2.5 rounded-xl px-6 py-2.5 font-head font-bold text-[13px] uppercase tracking-widest border transition-all active:scale-[0.98] ${favButtonDisabled ? "cursor-not-allowed opacity-40 border-[#2D3748] text-[#6B7280]" : "bg-[#1A1D24] border-[#E63946]/40 text-[#E63946] hover:bg-[#E63946]/10 hover:border-[#E63946]"}`}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" />
+                </svg>
+                {contacting ? "..." : "Contacter l'athlète"}
+              </button>
+            </div>
           )}
           <button type="button" onClick={toggleFav}
             disabled={favButtonDisabled}
@@ -1685,6 +1729,16 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
               </svg>
               Contacter le coach
             </Link>
+          )}
+          {canMessageCoach && (
+            <button type="button" onClick={handleContactAthlete} disabled={contacting || favButtonDisabled}
+              title={favButtonDisabled ? favDisabledTitle : "Contacter l'athlète directement"}
+              className={`flex items-center gap-2.5 rounded-xl px-8 py-4 font-head font-bold text-[14px] uppercase tracking-widest justify-center border transition-all ${favButtonDisabled ? "cursor-not-allowed opacity-40 border-[#2D3748] text-[#6B7280]" : "bg-[#1A1D24] border-[#E63946]/40 text-[#E63946] hover:bg-[#E63946]/10 hover:border-[#E63946] hover:-translate-y-0.5 active:scale-[0.98]"}`}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" />
+              </svg>
+              {contacting ? "..." : "Contacter l'athlète"}
+            </button>
           )}
           <button type="button" onClick={toggleFav}
             disabled={favButtonDisabled}
@@ -1727,6 +1781,47 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
           onSend={() => { setPipelineStatus("contacte"); setShowComposeIntro(false); }}
           onCancel={() => setShowComposeIntro(false)}
         />
+      )}
+
+      {/* ══════════ FAVORITE-FIRST CONTACT PROMPT (RECRUTEUR_ATHLETE) ══════════ */}
+      {showFavContactPrompt && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => { if (!contacting) setShowFavContactPrompt(false); }} />
+          <div className="relative bg-[#1A1D24] border border-[#2D3748] rounded-xl w-full max-w-[440px] mx-4 shadow-2xl p-6">
+            <div className="w-12 h-12 rounded-full bg-[#E63946]/10 border border-[#E63946]/30 flex items-center justify-center mb-4">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
+              </svg>
+            </div>
+            <h3 className="font-head text-lg font-black text-white uppercase tracking-tight mb-2">
+              Ajouter aux favoris pour contacter
+            </h3>
+            <p className="text-[14px] text-[#9CA3AF] leading-relaxed mb-1">
+              Pour contacter {a.firstName} {a.lastName} directement, ajoute-le d&apos;abord à tes favoris.
+            </p>
+            <p className="text-[12px] text-[#6b7280] leading-relaxed mb-5">
+              Son coach et son parent seront avisés de ce premier contact.
+            </p>
+            {contactError && <p className="text-[13px] text-[#EF4444] mb-4">{contactError}</p>}
+            <div className="flex items-center gap-3">
+              <button type="button" onClick={() => { if (!contacting) setShowFavContactPrompt(false); }}
+                className="flex-1 rounded-lg px-4 py-3 text-[13px] font-bold text-[#9CA3AF] bg-[#111317] border border-[#2D3748] hover:text-white transition-colors">
+                Annuler
+              </button>
+              <button type="button" onClick={() => void favoriteAndContact()} disabled={contacting}
+                className="flex-1 rounded-lg px-4 py-3 text-[13px] font-head font-bold uppercase tracking-widest text-white bg-[#E63946] hover:bg-[#D42B22] transition-colors disabled:opacity-60">
+                {contacting ? "..." : "Ajouter et contacter"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Direct-contact error (already-favorited path) — modal carries its own. */}
+      {contactError && !showFavContactPrompt && (
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 bg-[#1A1D24] border border-[#EF4444]/40 rounded-lg px-4 py-3 shadow-2xl max-w-[90vw]">
+          <p className="text-[13px] text-[#EF4444]">{contactError}</p>
+        </div>
       )}
 
       <CelebrationToast show={showCelebration} onDone={() => setShowCelebration(false)} />
