@@ -78,6 +78,24 @@ initiate intact).
 
 Re-run its proof after prod apply: `scratchpad/validation-open-recruiter.sql` — expect 5/5.
 
+### [ ] Guard — PARENT_COACH excluded from generic coach insert (SECURITY, this train)
+Branch `feat/messaging-athlete-coach`. A **today-bug**, not a P2 feature: the generic
+`coach_conversations_insert` allowed any type except COACH_COACH/RECRUTEUR_COACH — so
+it permitted **PARENT_COACH** (Phase A type). Its per-type CHECK only requires
+`parent_id NOT NULL`, NOT that parent_id is the child's real parent → a coach could
+open a channel to an ARBITRARY user by labelling them the "parent" of one of their
+athletes (`is_conversation_participant` grants the named parent read access). Nothing
+creates PARENT_COACH today (0 rows, no UI), so the fix breaks nothing live.
+
+- `supabase/migrations/20260724170000_guard_parent_coach_generic_insert.sql`
+  — `DROP`+`CREATE coach_conversations_insert` adding `'PARENT_COACH'` to the excluded
+  types. After this PARENT_COACH is unreachable from ANY policy until the P2 train adds
+  the guarded ones. **Must apply AFTER** the coach_coach / coach-initiate-recruteur
+  migrations that define this policy (filename order guarantees it). Idempotent.
+
+Proof (local): `scratchpad/prove-guard.sql` — coach PARENT_COACH-with-arbitrary-parent
+insert BLOCKED (t), ATHLETE_COACH own-athlete insert still ALLOWED (t).
+
 ### [ ] Broadcast messaging (Groupe, option a — N individual threads)
 Branch `feat/messaging-athlete-coach`. Proven locally 7/7 (all-athletes = school
 count only; **leak check: other-school athlete never reached**; martin received a
@@ -256,6 +274,43 @@ already-applied statements no-op. The only ordering constraint is enum-before-mo
 (P4 file 1 before file 2).
 
 ---
+
+## Train-2 (P2 — parent ↔ coach messaging) — held local, SEPARATE flip
+
+These are the **DB half of P2**, applied + proven locally but NOT part of the P1
+messaging flip. They ride a later (train-2) flip-day batch, after P1 is live. The
+parent PORTAL/UI half (parent Messages surface, coach inbox parent branch) is NOT
+in this ledger — it is a feature build for the P2 train, tracked separately.
+
+Decisions (BP, this session): (1) BOTH parent & coach initiate; the coach-initiate
+HOLE fix ships on train-1 (above). (2) Coach reach = ANY staff of the child's
+school/club. (3) Parent diffusions DEFERRED — the AudienceTiles Parent tile stays
+"Bientôt". (4) P2 rides train-2; freeze holds on train-1.
+
+### [ ] P2 — parent↔coach RLS + notify fan-out
+Branch `feat/messaging-athlete-coach`. Proven locally (`scratchpad/prove-p2.sql`):
+parent→child's-staff-coach ALLOW; parent→non-staff DENY; coach→child's-real-parent
+ALLOW; coach→arbitrary-user DENY; parent sends + reads own thread; notify includes
+parent.
+
+- `supabase/migrations/20260725120000_p2_parent_coach_rls.sql`
+  — Two DEFINER helpers (`coach_reaches_athlete`, `is_parent_link`) that resolve the
+  child's user_id / the parent link with `row_security off` — REQUIRED because an
+  inline subquery in a policy WITH CHECK runs under the CALLER's RLS (a parent can't
+  SELECT `athletes`; a coach can't SELECT `parent_athletes`), so the naive inline
+  form silently denied legitimate inserts. Policies: `parent_initiate_parent_coach`
+  (parent + is_parent_of + coach_reaches_athlete), `coach_initiate_parent_coach`
+  (coach=self + is_parent_link + coach_reaches_athlete — the GUARDED coach-initiate
+  that closes the hole), `parent_conversations_select/update`,
+  `parent_messages_select/insert/update`. Read side already covered by
+  `is_conversation_participant` (parent-aware). Rewrites `notify_on_message` to add
+  `c.parent_id` to the push fan-out (was omitted). Idempotent.
+- Depends on: PARENT_COACH enum + `parent_id` column + per-type CHECK (Phase A),
+  `is_parent_of`, `athlete_messageable_coach`/`_messageable_staff_ids`,
+  `parent_athletes` — all present.
+
+Re-run after prod apply: `scratchpad/prove-p2.sql` (needs a seeded parent cast —
+`scratchpad/civil-fixture.sql` + `scratchpad/parent-seed.sql`).
 
 ## Product decisions (no code — recorded, not action items)
 
