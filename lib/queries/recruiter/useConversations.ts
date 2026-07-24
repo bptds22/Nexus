@@ -11,6 +11,9 @@ import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 
 export interface ThreadData {
   id: string;
+  /** 'RECRUTEUR_COACH' (about an athlete, counterparty = coach) |
+      'RECRUTEUR_ATHLETE' (DIRECT, counterparty = athlete). */
+  conversationType: string;
   coachName: string;
   coachInitials: string;
   coachSchool: string;
@@ -44,7 +47,7 @@ export function useConversations() {
       const { data, error } = await supabase
         .from("conversations")
         .select(`
-          id, status, last_message_at, unread_count, created_at,
+          id, conversation_type, status, last_message_at, unread_count, created_at,
           coach:users!coach_id(id, first_name, last_name, school_id, schools!school_id(name)),
           athlete:athletes!athlete_id(
             id, first_name, last_name, verified, cote_globale_entraineur,
@@ -99,6 +102,7 @@ export function useConversations() {
 
         return {
           id: c.id as string,
+          conversationType: (c.conversation_type as string) || "RECRUTEUR_COACH",
           coachName: `${coachFirst} ${coachLast}`.trim() || "Coach",
           coachInitials: `${coachFirst[0] || ""}${coachLast[0] || ""}`.toUpperCase(),
           coachSchool: coachSchool?.name || "",
