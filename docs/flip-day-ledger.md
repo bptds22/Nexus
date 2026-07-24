@@ -213,6 +213,33 @@ reçoit + voit le fil.
 
 Re-run après prod apply : `scratchpad/proof-team.sql` — expect 4/4.
 
+### [ ] Staff-picker civil — fallback team_coaches ressuscité (correctif civil)
+Branch `feat/messaging-athlete-coach`. Trouvé pendant la PASSE VÉRIF CIVIL :
+`_messageable_staff_ids` branchait son fallback team_coaches sur
+`athletes.league_team_id`, colonne JAMAIS peuplée (onboarding + saveAthlete
+écrivent l'appartenance dans `team_athletes` et forcent `league_team_id = NULL`).
+Fallback mort → un athlète ne pouvait PAS messager un coach qui dirige SON équipe
+si ce coach n'était pas AUSSI un school_coach du club. 2 coachs « team-only »
+réels existaient déjà en base (invisibles à leurs athlètes).
+
+- `supabase/migrations/20260724160000_fix_messageable_staff_team_athletes.sql`
+  — `CREATE OR REPLACE _messageable_staff_ids` : les équipes viennent de
+  `team_athletes` (roster réel), l'école effective = `school_id` propre UNION
+  l'école-club de l'équipe. Branche school_coaches (club/école) + branche
+  team_coaches (coachs de l'équipe même hors roster club). Corrige aussi le gate
+  RLS `athlete_messageable_coach` (il délègue à cette fonction). Idempotent.
+- Anti-régression scolaire : un athlète scolaire (school_id + zéro team_athletes)
+  résout au même school_coaches qu'avant. Vérifié (Olivier, Académie
+  Antoine-Manseau → 4 staff inchangés).
+- **Orphelin (school_id NULL, aucun team_athletes)** : résout à VIDE — pas
+  corrigé ici, chantier orphelin PARKÉ. L'UI dégrade proprement
+  (« Aucun entraîneur rattaché à ton école pour l'instant »), pas de crash.
+
+Preuve navigateur (civil, local) : cast fixture `scratchpad/civil-fixture.sql` —
+club LIGUE_CIVILE « Union Test Civil », directrice + 3 coachs (A/B roster,
+C team-only), athlète civil (school_id=club) + orphelin (school_id NULL).
+Charlie voit 4 staff dont Carla CoachC (team-only) ; l'orphelin voit l'empty state.
+
 ### [x] handle_new_auth_user — VERIFIED prod == local (no diff, no action)
 Diffed 2026-07-23, prod (nexus-prod `nrloizyemulbhujrqhgx`) vs local via
 `pg_get_functiondef`: **byte-identical.** Both have the same 8 INSERT columns
