@@ -17,6 +17,7 @@ import { createClient } from "@/lib/supabase/client";
 import AudienceTiles, { type CoachAudience } from "@/components/messaging/AudienceTiles";
 import CoachStaffCompose from "@/components/messaging/CoachStaffCompose";
 import RecruiterBrowserCompose from "@/components/messaging/RecruiterBrowserCompose";
+import AthleteRosterCompose from "@/components/messaging/AthleteRosterCompose";
 import GroupeCompose from "@/components/messaging/GroupeCompose";
 
 export function CoachDemandesNouveauMobile() {
@@ -64,6 +65,10 @@ export function CoachDemandesNouveauMobile() {
 
         {audience !== null && userId && (audience === "coach" || audience === "directeur") && (
           <CoachStaffCompose selfId={userId} audience={audience} onCreated={routeToThread} />
+        )}
+
+        {audience === "athlete" && userId && (
+          <AthleteRosterCompose selfId={userId} onCreated={routeToThread} />
         )}
 
         {audience === "recruteurs" && userId && (

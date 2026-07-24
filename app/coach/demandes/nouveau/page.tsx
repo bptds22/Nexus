@@ -9,6 +9,7 @@ import { CoachDemandesNouveauMobile } from "@/components/shared/CoachDemandesNou
 import AudienceTiles, { type CoachAudience } from "@/components/messaging/AudienceTiles";
 import CoachStaffCompose from "@/components/messaging/CoachStaffCompose";
 import RecruiterBrowserCompose from "@/components/messaging/RecruiterBrowserCompose";
+import AthleteRosterCompose from "@/components/messaging/AthleteRosterCompose";
 import GroupeCompose from "@/components/messaging/GroupeCompose";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
@@ -81,6 +82,10 @@ function CoachNouveauMessageContent() {
 
           {(audience === "coach" || audience === "directeur") && (
             <CoachStaffCompose selfId={userId} audience={audience} onCreated={routeToThread} />
+          )}
+
+          {audience === "athlete" && (
+            <AthleteRosterCompose selfId={userId} onCreated={routeToThread} />
           )}
 
           {audience === "recruteurs" && (
