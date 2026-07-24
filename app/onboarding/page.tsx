@@ -10,6 +10,7 @@ import { uploadImage } from "@/lib/upload/uploadImage";
 import PlaybookBackground from "../components/PlaybookBackground";
 import TeamSearchOrCreate, { type TeamSearchRow } from "@/components/onboarding/TeamSearchOrCreate";
 import TeamCreateForm, { type TeamFormData } from "@/components/onboarding/TeamCreateForm";
+import { ExistingTeamBanner } from "@/components/shared/teams/ExistingTeamBanner";
 import { findOrCreateSchool } from "@/lib/onboarding/findOrCreateSchool";
 import { getCurrentSeason } from "@/lib/utils/season";
 import { genderLabel } from "@/lib/config/gender";
@@ -2232,6 +2233,8 @@ function SchoolCoachTeamStep({ user, save }: { user: NexusUser; save: (u: Partia
   // same way. Resume defaults to "joined" (prior-session pick).
   const [joinedKind, setJoinedKind] = useState<"joined" | "created">("joined");
   const [mode, setMode] = useState<"umbrella" | "create">("umbrella");
+  // Stable client for the pre-submit detection banner (effect keys on it).
+  const bannerSupabase = useMemo(() => createClient(), []);
 
   // Resolve sport_principal (name) → sport_id (uuid). Mirrors the
   // resolution in LeagueCoachLeagueStep — same query, same fallback.
@@ -2465,6 +2468,27 @@ function SchoolCoachTeamStep({ user, save }: { user: NexusUser; save: (u: Partia
           lockedSchoolId={schoolId}
           lockedSchoolName={schoolNameFromLocal}
           lockedLabel="École"
+          renderAdoption={(a) => (
+            <ExistingTeamBanner
+              supabase={bannerSupabase}
+              schoolId={schoolId}
+              sportId={a.sportId}
+              ageGroup={a.ageGroup}
+              gender={a.gender}
+              division={a.division}
+              onAdopt={(t) => {
+                // Sélection locale (même flux que handlePick) — le
+                // rattachement réel se fait au finish (RPC, branche LINK).
+                handlePick({
+                  id: t.id, name: t.name,
+                  age_group: t.ageGroup, gender: t.gender, division: t.division,
+                  league: null, school_id: schoolId, school_name: schoolNameFromLocal,
+                  coach_count: 0,
+                });
+                setMode("umbrella");
+              }}
+            />
+          )}
         />
       )}
 
@@ -3604,6 +3628,8 @@ function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Part
   const [selectedTeam, setSelectedTeam] = useState<TeamSearchRow | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Stable client for the pre-submit detection banner (effect keys on it).
+  const bannerSupabase = useMemo(() => createClient(), []);
 
   // Resolve the sport NAME from step 0 to its uuid for downstream
   // team/league queries. step 0 saves users.sport as a name string,
@@ -3952,6 +3978,24 @@ function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Part
           }}
           lockedSchoolId={lockedSchoolId ?? undefined}
           lockedSchoolName={lockedSchoolName || undefined}
+          renderAdoption={(a) => (
+            <ExistingTeamBanner
+              supabase={bannerSupabase}
+              schoolId={lockedSchoolId ?? undefined}
+              sportId={a.sportId}
+              ageGroup={a.ageGroup}
+              gender={a.gender}
+              division={a.division}
+              onAdopt={(t) => {
+                handleJoinExistingTeam({
+                  id: t.id, name: t.name,
+                  age_group: t.ageGroup, gender: t.gender, division: t.division,
+                  league: null, school_id: lockedSchoolId ?? "", school_name: lockedSchoolName,
+                  coach_count: 0,
+                });
+              }}
+            />
+          )}
         />
       )}
 

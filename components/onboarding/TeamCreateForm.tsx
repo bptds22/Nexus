@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { getCurrentSeason } from "@/lib/utils/season";
 import { AGE_OPTIONS, AUTRE_VALUE, DIVISION_OPTIONS } from "@/lib/config/civilVocab";
@@ -78,6 +78,17 @@ export interface TeamCreateFormProps {
   /** Label for the locked parent box. Civil → "Club" (default); the school
    *  coach flow passes "École" since the parent is a real school. */
   lockedLabel?: string;
+  /** Render-prop for the pre-submit adoption banner (Morceau 2). Called
+   *  on every render with the FINAL attributes (Autre already substituted)
+   *  and rendered just above the action buttons. The parent supplies an
+   *  <ExistingTeamBanner> (it owns supabase + schoolId + the join flow) —
+   *  keeping this form pure/fetch-agnostic. Omit → no banner. */
+  renderAdoption?: (attrs: {
+    sportId: string;
+    ageGroup: string;
+    gender: string;
+    division: string;
+  }) => ReactNode;
 }
 
 interface LeagueOption {
@@ -106,6 +117,7 @@ export default function TeamCreateForm({
   lockedSchoolId,
   lockedSchoolName,
   lockedLabel = "Club",
+  renderAdoption,
 }: TeamCreateFormProps) {
   // Locked-by-name : the upstream club pick passes a name (always)
   // and an id (only when picking an EXISTING LIGUE_CIVILE row). New
@@ -421,6 +433,16 @@ export default function TeamCreateForm({
           className={inputCls}
         />
       </div>
+
+      {/* Adoption visible AVANT le submit (Morceau 2) — parent supplies the
+          banner ; we feed it the FINAL live attributes. Only shows when the
+          normalized identity matches an existing team of this school+sport. */}
+      {renderAdoption?.({
+        sportId,
+        ageGroup: ageValueForSubmit,
+        gender,
+        division: divisionValueForSubmit,
+      })}
 
       <div className="flex items-center gap-3 pt-2">
         <button

@@ -9,14 +9,19 @@
    atomic RPCs for the multi-step submit but pass through this
    function's signature in V2 ; for now they call the same UI block).
 
-   NO blocking duplicate pre-check : the TeamPickerSheet UI surfaces
-   existing teams BEFORE the create form opens, which is the dedup
-   mechanism (a coach sees the existing team and joins it via
-   joinTeam instead of creating a duplicate). DB-level UNIQUE was
-   intentionally not added — picker UX handles it.
+   ADOPTION GUARD (dedup) : before INSERT, createTeam looks for an
+   existing team with the same NORMALIZED identity — (school_id,
+   sport_id, lower(age_group), gender, normalized division with
+   Division N ≡ DN), ignoring name+season. If one exists it is ADOPTED
+   (the coach is attached via joinTeam) and NO row is inserted. This
+   backstops the picker UX : the RSEQ import gave every team the school
+   name, so a coach typing a different name would otherwise silently
+   create a duplicate that carries no RSEQ calendar. The DB UNIQUE
+   (…, name, season) does not catch that — this guard does.
 ═══════════════════════════════════════════════════════════════ */
 
 import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
+import { normalizeKey, normalizeDivision } from "./detectExistingTeam";
 
 export interface CreateTeamParams {
   /** auth.uid() of the coach creating the team — becomes head_coach. */
@@ -45,6 +50,12 @@ export interface CreateTeamParams {
 export interface CreateTeamResult {
   teamId?: string;
   error?: PostgrestError | { message: string; code?: string };
+  /** true when an existing team with the same normalized identity was
+   *  ADOPTED instead of creating a new row (no INSERT happened). */
+  adopted?: boolean;
+  /** Role attributed on adoption (via joinTeam) : 'head_coach' if the
+   *  adopted team had no coach, else 'assistant'. Absent when created. */
+  role?: "head_coach" | "assistant";
 }
 
 export interface JoinTeamParams {
@@ -91,7 +102,36 @@ export async function createTeam(
      column default ('2025-2026') applies. */
   if (params.season) payload.season = params.season;
 
-  /* 1. INSERT teams. */
+  /* ── ADOPTION GUARD ──────────────────────────────────────────────
+     Look for an existing team with the SAME normalized identity
+     (school+sport+age+gender+division, Division N ≡ DN), ignoring
+     name+season. If found → adopt it (attach coach via joinTeam),
+     NO insert. Idempotent : re-submitting adopts the same team and
+     joinTeam's ON CONFLICT DO NOTHING makes a repeat a clean no-op.
+     Normalization is the SHARED source (detectExistingTeam) — same
+     functions the pre-submit banner uses, mirroring the SQL guard. */
+  const { data: candidates } = await supabase
+    .from("teams")
+    .select("id, age_group, gender, division")
+    .eq("school_id", schoolId)
+    .eq("sport_id", sportId)
+    .eq("is_active", true);
+  const existing = (candidates ?? []).find(
+    (c) =>
+      normalizeKey(c.age_group as string) === normalizeKey(params.ageGroup) &&
+      normalizeKey(c.gender as string) === normalizeKey(params.gender) &&
+      normalizeDivision(c.division as string) === normalizeDivision(params.division),
+  );
+  if (existing) {
+    const join = await joinTeam(supabase, {
+      coachUserId,
+      teamId: existing.id as string,
+    });
+    if (join.error) return { error: join.error };
+    return { teamId: existing.id as string, adopted: true, role: join.role };
+  }
+
+  /* 1. INSERT teams (aucune team identique — création réelle). */
   const { data: team, error: teamErr } = await supabase
     .from("teams")
     .insert(payload)
