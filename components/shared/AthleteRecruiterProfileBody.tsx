@@ -1338,6 +1338,25 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
           )}
         </section>
 
+        {/* Parcours d'équipes — remonté AU-DESSUS du profil académique et
+            renforcé (en-tête plus grand + accent) : le parcours sportif est
+            un signal de premier plan pour le recruteur (#8). Se masque tout
+            seul si aucune entrée. Anchor = vraie affiliation Nexus. */}
+        {!isPartner && (
+          <div className="rounded-xl border border-[#E63946]/25 bg-[#E63946]/[0.04] p-4 sm:p-5">
+            <TeamHistoryBlock
+              entries={a.teamHistory}
+              anchor={{
+                teamName: a.isCivil ? (a.teamName || a.leagueName || "") : (a.schoolName || ""),
+                sport: a.primarySport,
+                position: a.primaryPosition,
+                region: a.region,
+              }}
+              headingClassName="font-head text-[17px] sm:text-[19px] font-black tracking-tight uppercase text-white mb-4 flex items-center gap-2.5 before:content-[''] before:w-1 before:h-5 before:rounded-full before:bg-[#E63946]"
+            />
+          </div>
+        )}
+
         {/* ══════════ ACADEMIC PROFILE — partner mode swaps for a
             locked placeholder so the redaction reads as
             intentional rather than missing. */}
@@ -1398,19 +1417,6 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
             </div>
           </section>
         )}
-
-        {/* Parcours d'équipes — sous Profil académique, dans les deux modes.
-            Se masque tout seul si l'athlète n'a aucune entrée. Anchor = vraie
-            affiliation Nexus (display-only, jamais éditable). */}
-        <TeamHistoryBlock
-          entries={a.teamHistory}
-          anchor={{
-            teamName: a.isCivil ? (a.teamName || a.leagueName || "") : (a.schoolName || ""),
-            sport: a.primarySport,
-            position: a.primaryPosition,
-            region: a.region,
-          }}
-        />
 
         {/* ════════════════════════════════════════════════════
            DETAILED SECTIONS — only when toggle = Détaillé
