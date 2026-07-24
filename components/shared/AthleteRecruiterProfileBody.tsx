@@ -20,7 +20,6 @@ import RecruitmentStatusBadge from "@/app/recruteur/_components/RecruitmentStatu
 import StatusChangeDropdown from "@/app/recruteur/_components/StatusChangeDropdown";
 import VisitCalendarCard from "@/components/shared/VisitCalendarCard";
 import { persistPipelineStage } from "@/lib/pipeline/persistPipelineStage";
-import ComposeIntroModal from "@/app/recruteur/_components/ComposeIntroModal";
 import { useSubscription } from "@/lib/hooks/useSubscription";
 import { useFavoritesCount } from "@/lib/hooks/useFavoritesCount";
 import { selectBestEvaluation } from "@/lib/evaluations/selectEvaluation";
@@ -933,7 +932,6 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
   // Pipeline status tracking
   const initialTracking = getAthleteTracking(id);
   const [pipelineStatus, setPipelineStatus] = useState<RecruitmentStatus>(initialTracking?.status || "none");
-  const [showComposeIntro, setShowComposeIntro] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [statusToast, setStatusToast] = useState<SuccessToastData | null>(null);
@@ -1171,7 +1169,7 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
                   athleteId={id}
                   hasExistingThread={false}
                   onStatusChange={handleStatusChange}
-                  onComposeIntro={() => setShowComposeIntro(true)}
+                  onComposeIntro={() => router.push(`/recruteur/messages/nouveau?athlete=${id}`)}
                   onCelebrate={() => setShowCelebration(true)}
                 />
               </div>
@@ -1746,29 +1744,6 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
       </div>
       )}
 
-      {/* ══════════ COMPOSE INTRO MODAL ══════════ */}
-      {showComposeIntro && (
-        <ComposeIntroModal
-          recruiter={{
-            firstName: "Pierre",
-            lastName: "Dufour",
-            title: "Recruteur en chef",
-            cegep: "CÉGEP Garneau",
-            teamName: "Élans",
-            division: "D1",
-          }}
-          athlete={{
-            firstName: a.firstName,
-            lastName: a.lastName,
-            position: a.primaryPosition,
-            school: a.isCivil ? (a.teamName || a.leagueName || "") : a.schoolName,
-            graduationYear: a.graduationYear,
-          }}
-          coachName={a.coachName || "Coach"}
-          onSend={() => { setPipelineStatus("contacte"); setShowComposeIntro(false); }}
-          onCancel={() => setShowComposeIntro(false)}
-        />
-      )}
 
       {/* ══════════ CONTACT CHOICE MENU (coach vs athlete) ══════════ */}
       {showContactMenu && (

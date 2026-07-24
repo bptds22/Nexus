@@ -31,7 +31,6 @@ import { getAthleteTracking } from "@/app/recruteur/_data/mockPipelineData";
 import VisitCalendarCard from "@/components/shared/VisitCalendarCard";
 import { persistPipelineStage } from "@/lib/pipeline/persistPipelineStage";
 import StatusChangeDropdown from "@/app/recruteur/_components/StatusChangeDropdown";
-import ComposeIntroModal from "@/app/recruteur/_components/ComposeIntroModal";
 import { useSubscription } from "@/lib/hooks/useSubscription";
 import { selectBestEvaluation } from "@/lib/evaluations/selectEvaluation";
 import { useFavoritesCount } from "@/lib/hooks/useFavoritesCount";
@@ -1502,7 +1501,6 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
 
   const initialTracking = getAthleteTracking(id);
   const [pipelineStatus, setPipelineStatus] = useState<RecruitmentStatus>(initialTracking?.status || "none");
-  const [showComposeIntro, setShowComposeIntro] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
@@ -1984,7 +1982,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
               athleteId={id}
               hasExistingThread={false}
               onStatusChange={handleStatusChange}
-              onComposeIntro={() => setShowComposeIntro(true)}
+              onComposeIntro={() => router.push(`/recruteur/messages/nouveau?athlete=${id}`)}
               onCelebrate={() => setShowCelebration(true)}
             />
           </div>
@@ -2823,29 +2821,6 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
         />
       )}
 
-      {/* ── Modals (RECRUITER-ONLY — Step 6 gate) ── */}
-      {isRecruiter && showComposeIntro && (
-        <ComposeIntroModal
-          recruiter={{
-            firstName: "Pierre",
-            lastName: "Dufour",
-            title: "Recruteur en chef",
-            cegep: "CÉGEP Garneau",
-            teamName: "Élans",
-            division: "D1",
-          }}
-          athlete={{
-            firstName: a.firstName,
-            lastName: a.lastName,
-            position: a.primaryPosition,
-            school: a.isCivil ? (a.teamName || a.leagueName || "") : a.schoolName,
-            graduationYear: a.graduationYear,
-          }}
-          coachName={a.coachName || "Coach"}
-          onSend={() => { setPipelineStatus("contacte"); setShowComposeIntro(false); }}
-          onCancel={() => setShowComposeIntro(false)}
-        />
-      )}
 
       {isRecruiter && (
         <CelebrationToast show={showCelebration} onDone={() => setShowCelebration(false)} />
