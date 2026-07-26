@@ -12,10 +12,11 @@
    PartnerVisibilityConsentCard because it's specific to the
    coach-creates-on-behalf flow and not reused elsewhere.
 
-   The Loi 25 responsibility-transfer bullet phrasing is flagged v1
-   in docs/post-launch-bugs.md — Quebec privacy counsel review
-   pending before the production launch. Treat this file as the
-   single edit point for that revision.
+   Le texte de responsabilité partagée (Loi 25) est exposé par la fonction
+   partnerResponsibilityText() ci-dessous — SOURCE UNIQUE, pronom adapté par
+   paramètre. Consommée par PartnerVisibilityConsentCard (signup athlète/coach),
+   AthleteParametresMobile ("En savoir plus") et le portail parent
+   (/parent/consentements). Toute révision de ce libellé se fait ICI.
 ═══════════════════════════════════════════════════════════════ */
 
 export const PARTNER_MEDIA_COPY = {
@@ -27,6 +28,27 @@ export const PARTNER_MEDIA_COPY = {
     "Aucun partenaire ne peut te contacter directement",
     "Les partenaires sont vérifiés par l’équipe Nexus et s’engagent par contrat à un usage éditorial responsable",
   ],
-  responsibilityBullet:
-    "Une fois la carte téléchargée par un partenaire, celui-ci devient responsable de l’usage qu’il en fait dans ses publications, conformément à la Loi 25",
 } as const;
+
+/* Texte canonique de RESPONSABILITÉ PARTAGÉE (Loi 25) du consentement de
+   communication aux partenaires média. Pronom adapté selon la surface :
+   - "self"    : l'athlète 14-17 gère son propre consentement → « votre carte »
+   - "child"   : le parent gère celui de son enfant          → « la carte de votre enfant »
+   - "athlete" : le coach enregistre l'autorisation parentale → « la carte de l'athlète »
+   Nexus reste responsable de la communication + du consentement ; le partenaire
+   de la protection des renseignements reçus. */
+export function partnerResponsibilityText(subject: "self" | "child" | "athlete"): string {
+  const objet =
+    subject === "self"
+      ? "votre carte"
+      : subject === "child"
+        ? "la carte de votre enfant"
+        : "la carte de l’athlète";
+  return (
+    `En activant cette option, vous autorisez Nexus à communiquer ${objet} ` +
+    "(nom, position, établissement, photo) à ses partenaires média approuvés, " +
+    "qui l’utilisent dans leurs publications. Chaque partenaire est responsable " +
+    "de la protection des renseignements qu’il reçoit ; Nexus demeure responsable " +
+    "de cette communication et du consentement. Vous pouvez retirer ce consentement en tout temps."
+  );
+}
