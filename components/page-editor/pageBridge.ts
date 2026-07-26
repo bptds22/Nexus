@@ -10,24 +10,30 @@ import type { ProgramPageContent, NewsItem, CampusCard } from "@/components/prog
 
 export const SCHOOL_NAME = "Collège André-Grasset";
 
-/* rootStyle du shell .pp nx-dna — réplique EXACTEMENT ProgramPage (thème Grasset)
-   pour que les composants scopés .pp rendent à l'identique. */
-const t = deriveWallTheme("#A6192E", "#5A0E1B", "#E8C7CD");
-export const PREVIEW_ROOT_STYLE = {
-  "--red": t.red, "--red-deep": t.redDeep, "--ink": t.ink, "--char": t.char,
-  "--cream": t.cream, "--kraft": t.kraft, "--beige": t.beige,
-  "--pop": "cubic-bezier(0.34,1.56,0.64,1)", "--nx-red": "#E63946", "--green": "#22C55E",
-  "--p-ink": "#EDEFF3", "--p-soft": "#C9CCD4", "--p-mut": "#8A909C", "--p-faint": "#5A616D", "--p-inv": "#15171B",
-  "--dna-mark": t.red, "--dna-ink": "#EDEFF3",
-} as React.CSSProperties;
+/* rootStyle du shell .pp nx-dna — dérivé des 3 couleurs de l'éditeur (deriveWall
+   Theme, mêmes vars que ProgramPage). Les couleurs choisies pilotent DONC les
+   accents de TOUTES les previews de section (Campus/À propos/Parcours/News),
+   pas seulement le mur. */
+export function buildPreviewRootStyle(c1: string, c2: string, c3: string): React.CSSProperties {
+  const t = deriveWallTheme(c1, c2, c3);
+  return {
+    "--red": t.red, "--red-deep": t.redDeep, "--ink": t.ink, "--char": t.char,
+    "--cream": t.cream, "--kraft": t.kraft, "--beige": t.beige,
+    "--pop": "cubic-bezier(0.34,1.56,0.64,1)", "--nx-red": "#E63946", "--green": "#22C55E",
+    "--p-ink": "#EDEFF3", "--p-soft": "#C9CCD4", "--p-mut": "#8A909C", "--p-faint": "#5A616D", "--p-inv": "#15171B",
+    "--dna-mark": t.red, "--dna-ink": "#EDEFF3",
+  } as React.CSSProperties;
+}
+/** Défaut Grasset — repli quand le contexte n'a pas encore de couleurs. */
+export const PREVIEW_ROOT_STYLE = buildPreviewRootStyle("#A6192E", "#5A0E1B", "#E8C7CD");
 
 /* ── S3 Campus → CampusSection (props: content) ─────────────────────────── */
 export function campusContent(
-  cards: { t: string; x: string }[], yt: string,
+  cards: { t: string; x: string; image?: string | null }[], yt: string,
 ): ProgramPageContent {
   const campusCards: CampusCard[] = cards
     .filter((c) => c.t)
-    .map((c) => ({ type: "photo", image: null, titre: c.t, legende: c.x }));
+    .map((c) => ({ type: "photo", image: c.image ?? null, titre: c.t, legende: c.x }));
   if (yt.trim()) campusCards.push({ type: "video", youtubeUrl: yt.trim() });
   // CampusSection ne lit que language/schoolType/region/mapQuery/campusCards ;
   // le reste satisfait le type (fixture, non affiché).
@@ -62,6 +68,13 @@ export interface ParcoursInput {
 }
 export function parcoursProps(i: ParcoursInput) {
   const encText = i.enc.length ? i.enc.join(" · ") : "encadrement sport-études";
+  // stop2 : composition qui SAUTE les parties vides → jamais de virgule orpheline
+  // (« , étudiants-athlètes, … » quand le niveau est vide).
+  const stop2parts = [
+    i.pniv.trim(),
+    i.nbath.trim() ? `${i.nbath.trim()} étudiants-athlètes` : "",
+    encText,
+  ].filter(Boolean);
   return {
     schoolName: SCHOOL_NAME,
     initials: i.initials || "AG",
@@ -69,7 +82,7 @@ export function parcoursProps(i: ParcoursInput) {
     route: {
       // stop1/stop3(sl,h4) = fixture ; stop2 COMPOSÉ depuis pniv+nbath+enc.
       stop1: { sl: "AUJOURD'HUI · SECONDAIRE", h4: "Ton profil Nexus", p: "Stats, vidéos, bulletins — tout ce que les coachs veulent voir." },
-      stop2: { sl: "2027–2029 · ANDRÉ-GRASSET", h4: "Tu portes le rouge", p: `${i.pniv}, ${i.nbath} étudiants-athlètes, ${encText}.` },
+      stop2: { sl: "2027–2029 · ANDRÉ-GRASSET", h4: "Tu portes le rouge", p: `${stop2parts.join(", ")}.` },
       stop3: {
         sl: "ENSUITE · U SPORTS", h4: "Tu montes encore",
         stats: [

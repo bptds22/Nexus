@@ -2,17 +2,18 @@
 
 // components/page-editor/PageEditor.tsx
 //
-// Éditeur « Ma page » CÉGEP — Bloc 1, port 1:1 (desktop only) de
-// docs/reference/editeur-page-cegep-mock.html. 8 sections, previews live sticky
-// à droite, topbar sticky. State LOCAL uniquement (useState + fixture) — AUCUNE
-// écriture DB, aucun appel Supabase (tout le save = toast mock, câblage Bloc 2).
-// CSS scopé sous .pe (même approche que components/program-page). Aucune police
-// réimportée : Outfit/Anton/Bebas Neue sont chargées par la route de test.
+// Éditeur « Ma page » CÉGEP — Bloc 2 étape 4a : câblage RÉEL. Charge l'école du
+// compte connecté (SchoolPageEditorProvider → useCurrentUser), chaque section
+// s'initialise depuis la DB et reporte son slice ; « Enregistrer » = saveAll
+// (UPDATE/INSERT/DELETE via le client authentifié, la RLS fait le contrôle),
+// « Aperçu » ouvre la page publique avec l'état sauvé. Badge dirty/saved réel.
+// 8 sections, previews live sticky à droite, topbar sticky. CSS scopé sous .pe.
+// Aucune police réimportée : Outfit/Anton/Bebas Neue viennent de la route de test.
 
 import * as React from "react";
-import { GRASSET } from "./fixture";
 import { ToastProvider, useToast } from "./toast";
 import { PREVIEW_CSS } from "./PreviewShell";
+import { SchoolPageEditorProvider, useEditor } from "./editorContext";
 import IdentityWall from "./IdentityWall";
 import SportsAffiche from "./SportsAffiche";
 import CampusSection from "./CampusSection";
@@ -24,40 +25,70 @@ import PlatformSection from "./PlatformSection";
 
 function Topbar() {
   const toast = useToast();
-  const [saved, setSaved] = React.useState(false);
-  const timer = React.useRef<number | undefined>(undefined);
+  const { schoolId, schoolName, saveAll, dirty, saving } = useEditor();
 
-  // Bloc 2 : persistance draft + notif. Ici = feedback visuel mock uniquement.
-  const saveMock = () => {
-    setSaved(true);
-    toast("Brouillon enregistré (mock — câblage Bloc 2)");
-    if (timer.current) window.clearTimeout(timer.current);
-    timer.current = window.setTimeout(() => setSaved(false), 2600);
+  const onSave = async () => {
+    try {
+      await saveAll();
+      toast("Page enregistrée");
+    } catch (e) {
+      toast("Échec de l'enregistrement : " + (e instanceof Error ? e.message : "erreur"));
+    }
   };
-  React.useEffect(() => () => { if (timer.current) window.clearTimeout(timer.current); }, []);
+  // Aperçu = page publique réelle avec l'état SAUVÉ (nouvel onglet). Si brouillon
+  // → mini-confirm pour rappeler que l'aperçu ne montre pas les modifs non sauvées.
+  const onPreview = () => {
+    if (dirty && !window.confirm("Modifications non enregistrées — l'aperçu montrera la dernière sauvegarde. Continuer ?")) return;
+    window.open(`/page-test?school=${schoolId}`, "_blank", "noopener");
+  };
 
+  const saved = !dirty;
   return (
     <div className="topbar"><div className="tb">
       <span className="kick">MA PAGE</span>
-      <h1>{GRASSET.schoolName}</h1>
-      <span className={"status" + (saved ? " saved" : "")}>{saved ? "ENREGISTRÉ" : "BROUILLON"}</span>
+      <h1>{schoolName}</h1>
+      <span className={"status" + (saved ? " saved" : "")}>{saving ? "…" : saved ? "ENREGISTRÉ" : "BROUILLON"}</span>
       <span className="sp"></span>
-      {/* Bloc 2 : ouvre /page-test avec le brouillon */}
-      <button className="btn ghost" onClick={() => toast("Ouvre la page publique avec ton brouillon (câblage Bloc 2)")}>👁 Aperçu</button>
-      <button className="btn prim" onClick={saveMock}>Enregistrer</button>
+      <span className="tb-hint">👁 L'aperçu montre la version <b>enregistrée</b></span>
+      <button className="btn ghost" onClick={onPreview} title="Ouvre la page publique telle qu'elle est ENREGISTRÉE">👁 Aperçu</button>
+      <button className="btn prim" onClick={onSave} disabled={saving}>{saving ? "Enregistrement…" : "Enregistrer"}</button>
     </div></div>
   );
 }
 
-export default function PageEditor() {
-  // Valeurs S1 partagées avec d'autres sections : nick (route S6), init (initiales
-  // route), nbath (compose stop2 S6), slog (marker slogan S6).
-  const g = GRASSET.identity;
-  const [nick, setNick] = React.useState(g.nick);
-  const [init, setInit] = React.useState(g.init);
-  const [nbath, setNbath] = React.useState(g.nbath);
-  const [slog, setSlog] = React.useState(g.slog);
+// Corps de l'éditeur — DANS le provider (sections lisent ctx.initial). Les
+// valeurs S1 partagées (nick/init/nbath/slog) sont remontées ici depuis l'init
+// DB et passées à S1 (IdentityWall) + S6 (ParcoursSection : route + marker).
+function EditorBody() {
+  const { initial } = useEditor();
+  const [nick, setNick] = React.useState(initial.nick);
+  const [init, setInit] = React.useState(initial.init);
+  const [nbath, setNbath] = React.useState(initial.nbath);
+  const [slog, setSlog] = React.useState(initial.slog);
 
+  return (
+    <>
+      <Topbar />
+      <div className="wrap">
+        <div className="head">
+          <div className="cap">ÉDITEUR « MA PAGE » · desktop · recruteur / gestionnaire du collège (comptes validés)</div>
+          <div className="sub">L'éditeur suit <b>l'ordre exact de la page publique</b>. Tu édites ce qui t'appartient (badge <b style={{ color: "var(--nexus)" }}>MANUEL</b>), le reste est automatique (badge <b style={{ color: "var(--ok)" }}>AUTO</b>) — visible mais verrouillé, jamais un mystère. Budget total : <b>~5 minutes</b>.</div>
+        </div>
+
+        <IdentityWall nick={nick} setNick={setNick} slog={slog} setSlog={setSlog} init={init} setInit={setInit} nbath={nbath} setNbath={setNbath} />
+        <SportsAffiche />
+        <CampusSection />
+        <AboutSell />
+        <ProgramsSection />
+        <ParcoursSection nick={nick} init={init} nbath={nbath} slog={slog} />
+        <NewsSection />
+        <PlatformSection />
+      </div>
+    </>
+  );
+}
+
+export default function PageEditor() {
   return (
     <div className="pe">
       <style dangerouslySetInnerHTML={{ __html: PE_CSS }} />
@@ -65,22 +96,9 @@ export default function PageEditor() {
           previews « vrai composant » (voir PreviewShell). */}
       <style dangerouslySetInnerHTML={{ __html: PREVIEW_CSS }} />
       <ToastProvider>
-        <Topbar />
-        <div className="wrap">
-          <div className="head">
-            <div className="cap">MOCK — ÉDITEUR « MA PAGE » · desktop · recruteur / directeur (tous les comptes validés du collège peuvent éditer)</div>
-            <div className="sub">L'éditeur suit <b>l'ordre exact de la page publique</b>. Tu édites ce qui t'appartient (badge <b style={{ color: "var(--nexus)" }}>MANUEL</b>), le reste est automatique (badge <b style={{ color: "var(--ok)" }}>AUTO</b>) — visible mais verrouillé, jamais un mystère. Budget total : <b>~5 minutes</b>.</div>
-          </div>
-
-          <IdentityWall nick={nick} setNick={setNick} slog={slog} setSlog={setSlog} init={init} setInit={setInit} nbath={nbath} setNbath={setNbath} />
-          <SportsAffiche />
-          <CampusSection />
-          <AboutSell />
-          <ProgramsSection />
-          <ParcoursSection nick={nick} init={init} nbath={nbath} slog={slog} />
-          <NewsSection />
-          <PlatformSection />
-        </div>
+        <SchoolPageEditorProvider>
+          <EditorBody />
+        </SchoolPageEditorProvider>
       </ToastProvider>
     </div>
   );
@@ -91,6 +109,9 @@ const PE_CSS = `
 .pe{--red:#A6192E;--redD:#7A1222;--redL:#E8C7CD;--bg:#111317;--card:#1A1D24;--card2:#20242D;--in:#171A20;--line:#2A2F3A;--txt:#EDEFF3;--mut:#8A909C;--nexus:#E63946;--ok:#22C55E;--warn:#F59E0B;background:var(--bg);color:var(--txt);font-family:'Outfit';padding-bottom:80px;min-height:100vh}
 .pe *{box-sizing:border-box;margin:0;padding:0}
 .pe .wrap{width:min(1240px,100%);margin:0 auto;padding:0 16px}
+.pe .pe-load{min-height:60vh;display:flex;align-items:center;justify-content:center;color:var(--mut);font-family:'Bebas Neue';letter-spacing:.18em;font-size:16px;text-align:center;padding:40px}
+.pe .pe-load.pe-err{color:var(--warn)}
+.pe .btn:disabled{opacity:.6;cursor:default}
 /* topbar */
 .pe .topbar{position:sticky;top:0;z-index:50;background:rgba(17,19,23,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
 .pe .tb{width:min(1240px,100%);margin:0 auto;padding:12px 16px;display:flex;align-items:center;gap:14px}
@@ -99,6 +120,8 @@ const PE_CSS = `
 .pe .status{font-family:'Bebas Neue';letter-spacing:.14em;font-size:11px;color:var(--warn);border:1px solid var(--warn);padding:3px 10px;border-radius:99px}
 .pe .status.saved{color:var(--ok);border-color:var(--ok)}
 .pe .tb .sp{flex:1}
+.pe .tb-hint{font-size:11px;color:var(--mut);margin-right:2px;white-space:nowrap}
+.pe .tb-hint b{color:#B9BFC9}
 .pe .btn{font-family:'Outfit';font-weight:700;font-size:13px;border-radius:10px;padding:10px 18px;cursor:pointer;transition:.15s}
 .pe .btn.ghost{background:none;border:1.5px solid var(--line);color:var(--txt)}
 .pe .btn.ghost:hover{border-color:#3A404D}
@@ -117,6 +140,15 @@ const PE_CSS = `
 .pe .sech .tag{font-family:'Bebas Neue';letter-spacing:.14em;font-size:11px;padding:3px 10px;border-radius:99px}
 .pe .tag.man{color:var(--nexus);border:1px solid var(--nexus)}
 .pe .tag.auto{color:var(--ok);border:1px solid var(--ok)}
+/* toggle visibilité section (R3 #3) */
+.pe .sech .vistoggle{margin-left:auto;display:inline-flex;align-items:center;gap:8px;background:none;border:0;cursor:pointer;font-family:'Outfit';font-weight:600;font-size:11.5px;color:var(--mut);padding:2px 0}
+.pe .vistoggle .vt-track{width:34px;height:19px;border-radius:99px;background:#2A2F3A;position:relative;transition:.18s;flex:0 0 auto}
+.pe .vistoggle .vt-knob{position:absolute;top:2px;left:2px;width:15px;height:15px;border-radius:50%;background:#8A909C;transition:.18s}
+.pe .vistoggle.on .vt-track{background:var(--ok)}
+.pe .vistoggle.on .vt-knob{left:17px;background:#fff}
+.pe .vistoggle.on .vt-lab{color:#B9BFC9}
+.pe .sec-hidden{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;background:var(--card);border:1.5px dashed var(--line);border-radius:16px;padding:20px 22px;color:#6A6F78;font-size:13px}
+.pe .sec-hidden b{color:#8A909C}
 .pe .cols{display:grid;grid-template-columns:1fr 1fr;gap:18px}
 .pe .panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px}
 .pe .pt{font-family:'Bebas Neue';letter-spacing:.2em;font-size:13px;color:var(--mut);margin-bottom:12px;display:flex;align-items:center;gap:8px}
@@ -164,6 +196,8 @@ const PE_CSS = `
 .pe .sw{background:var(--card2);border:1.5px solid var(--line);border-radius:11px;padding:10px}
 .pe .sw label{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);font-weight:700;display:block;margin-bottom:8px}
 .pe .sw input[type=color]{width:100%;height:44px;border:0;border-radius:8px;background:none;cursor:pointer}
+.pe .sw .pip{margin-top:7px;width:100%;background:var(--in);border:1.5px solid var(--line);color:var(--mut);font-family:'Outfit';font-weight:700;font-size:11px;border-radius:8px;padding:6px 4px;cursor:pointer;transition:.15s}
+.pe .sw .pip:hover{border-color:var(--nexus);color:var(--txt)}
 .pe .cmeter{margin-top:10px;background:#16181D;border:1px solid var(--line);border-radius:11px;padding:10px 12px;font-size:12px;display:flex;align-items:center;gap:10px}
 .pe .cmeter .val{font-family:'Anton';font-size:16px}
 .pe .cmeter.ok .val{color:var(--ok)}

@@ -6,11 +6,15 @@
 import * as React from "react";
 import RealAboutSell from "@/components/program-page/AboutSell";
 import PreviewShell, { useDebounced } from "./PreviewShell";
-import { GRASSET } from "./fixture";
+import { useEditor } from "./editorContext";
+import { VisibilityToggle, SectionHidden } from "./SectionVisibility";
 
 export default function AboutSell() {
-  const [abt, setAbt] = React.useState(GRASSET.about.title);
-  const [abx, setAbx] = React.useState(GRASSET.about.text);
+  const { initial, report, hiddenSections } = useEditor();
+  const hidden = hiddenSections.includes("about");
+  const [abt, setAbt] = React.useState(initial.about_title);
+  const [abx, setAbx] = React.useState(initial.sell_text);
+  React.useEffect(() => { report("content.about", { about_title: abt, sell_text: abx }); }, [abt, abx, report]);
   const debAbt = useDebounced(abt);
   const debAbx = useDebounced(abx);
   const preview = React.useMemo(
@@ -20,7 +24,8 @@ export default function AboutSell() {
 
   return (
     <section className="sec">
-      <div className="sech"><span className="num">4</span><h2>À propos</h2><span className="tag man">MANUEL</span></div>
+      <div className="sech"><span className="num">4</span><h2>À propos</h2><span className="tag man">MANUEL</span><VisibilityToggle sectionKey="about" /></div>
+      {hidden ? <SectionHidden sectionKey="about" /> : (
       <div className="cols">
         <div className="panel">
           <div className="pt"><span className="n">1</span>LE TEXTE VENDEUR — 2 CHAMPS (modérés)</div>
@@ -36,6 +41,7 @@ export default function AboutSell() {
           <PreviewShell>{preview}</PreviewShell>
         </div>
       </div>
+      )}
     </section>
   );
 }

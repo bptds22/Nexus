@@ -88,6 +88,9 @@ export interface ProgramPageContent {
   universities: string[];
   nexusStripText: string;
   nexusRecruitedCount: number;
+  /** S1 preuve sociale — nb d'athlètes ciblant ce collège (count_followers_by_school).
+   *  Absent (fixture dev) → StatRows retombe sur la valeur historique. Bloc 2 étape 4d. */
+  followersCount?: number;
   /** News — 0..n cards. Empty / undefined → section #news absente. MOCK (Bloc 2). */
   news?: NewsItem[];
   /** Programme visé du profil de l'athlète connecté (perfect match S5). MOCK ici
@@ -97,6 +100,9 @@ export interface ProgramPageContent {
   /** CTA */
   ctaTitle: string;
   ctaNotifyName: string;
+  /** Sections masquées par l'école (about/campus/programs/parcours/news) —
+   *  la page publique les SAUTE (aucun trou). Absent → tout visible. */
+  hiddenSections?: string[];
 }
 
 /** LANGUE tile display. */

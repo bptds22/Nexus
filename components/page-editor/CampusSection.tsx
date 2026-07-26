@@ -9,23 +9,49 @@ import * as React from "react";
 import RealCampusSection from "@/components/program-page/CampusSection";
 import PreviewShell, { useDebounced } from "./PreviewShell";
 import { campusContent } from "./pageBridge";
-import { SUGG, FICHE, ADDRESS, GRASSET } from "./fixture";
+import { SUGG, FICHE, ADDRESS } from "./fixture";
+import { useEditor } from "./editorContext";
+import { VisibilityToggle, SectionHidden } from "./SectionVisibility";
 import { useToast } from "./toast";
 
-interface Card { t: string; x: string }
+interface Card { id?: string; uid: string; t: string; x: string; image_path: string | null }
+const newUid = () => Math.random().toString(36).slice(2);
 
 export default function CampusSection() {
   const toast = useToast();
-  const [cards, setCards] = React.useState<Card[]>([{ ...GRASSET.campusCard }]);
-  const [yt, setYt] = React.useState("");
+  const { initial, report, uploadAsset, assetUrl, hiddenSections } = useEditor();
+  const hidden = hiddenSections.includes("campus");
+  const [cards, setCards] = React.useState<Card[]>(() => initial.cards.map((c) => ({ ...c, uid: c.id ?? newUid() })));
+  const [yt, setYt] = React.useState(initial.yt);
+
+  React.useEffect(() => {
+    report("cards", cards.filter((c) => c.t).map((c) => ({ id: c.id, titre: c.t, legende: c.x, image_path: c.image_path })));
+    report("content.campus", { campus_video_url: yt });
+  }, [cards, yt, report]);
+
+  // Upload réel → bucket campus-photos, chemin {school_id}/… (policies ma_page).
+  const pickPhoto = (i: number) => {
+    const input = document.createElement("input");
+    input.type = "file"; input.accept = "image/*";
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      try {
+        const path = await uploadAsset("campus-photos", file);
+        setCards((cs) => cs.map((x, k) => (k === i ? { ...x, image_path: path } : x)));
+        toast("Photo téléversée");
+      } catch (e) { toast(e instanceof Error ? e.message : "Échec de l'upload"); }
+    };
+    input.click();
+  };
 
   const addCard = () => {
     if (cards.length >= 5) { toast("Maximum 5 cartes"); return; }
-    setCards((c) => [...c, { t: "", x: "" }]);
+    setCards((c) => [...c, { uid: newUid(), t: "", x: "", image_path: null }]);
   };
   const addSugg = (t: string) => {
     if (cards.length >= 5) { toast("Maximum 5 cartes"); return; }
-    setCards((c) => [...c, { t, x: "" }]);
+    setCards((c) => [...c, { uid: newUid(), t, x: "", image_path: null }]);
     toast("Carte « " + t + " » créée — ajoute photo + description");
   };
 
@@ -33,15 +59,18 @@ export default function CampusSection() {
   const budget = Math.round(n * 25);
 
   // débounce les cartes+yt bruts (inclut la carte vidéo), reconstruit le content.
+  // #5 : résout image_path → URL storage (même consommation que la page publique).
   const debKey = useDebounced(JSON.stringify({ cards, yt }));
   const preview = React.useMemo(() => {
     const s = JSON.parse(debKey) as { cards: Card[]; yt: string };
-    return <RealCampusSection content={campusContent(s.cards, s.yt)} />;
-  }, [debKey]);
+    const resolved = s.cards.map((c) => ({ t: c.t, x: c.x, image: assetUrl(c.image_path, "campus-photos") }));
+    return <RealCampusSection content={campusContent(resolved, s.yt)} />;
+  }, [debKey, assetUrl]);
 
   return (
     <section className="sec">
-      <div className="sech"><span className="num">3</span><h2>Campus</h2><span className="tag man">MANUEL</span></div>
+      <div className="sech"><span className="num">3</span><h2>Campus</h2><span className="tag man">MANUEL</span><VisibilityToggle sectionKey="campus" /></div>
+      {hidden ? <SectionHidden sectionKey="campus" /> : (
       <div className="cols">
         <div>
           <div className="panel" style={{ marginBottom: 14 }}>
@@ -57,8 +86,8 @@ export default function CampusSection() {
             <div className="pt"><span className="n">1</span>LES CARTES DU CAMPUS (max 5 + 1 vidéo)</div>
             <div>
               {cards.map((c, i) => (
-                <div key={i} style={{ border: "1px solid var(--line)", borderRadius: 11, padding: 12, marginBottom: 10 }}>
-                  <div className="drop" style={{ marginBottom: 8 }} onClick={() => toast("Upload photo (câblage Bloc 2)")}><b>Photo {i + 1}</b>16:9 · JPG/PNG · aucun mineur identifiable</div>
+                <div key={c.uid} style={{ border: "1px solid var(--line)", borderRadius: 11, padding: 12, marginBottom: 10 }}>
+                  <div className="drop" style={{ marginBottom: 8 }} onClick={() => pickPhoto(i)}><b>{c.image_path ? `Photo ${i + 1} ✓ — remplacer` : `Photo ${i + 1}`}</b>16:9 · JPG/PNG · aucun mineur identifiable</div>
                   <div className="nrow" style={{ gridTemplateColumns: "1fr 1.6fr auto" }}>
                     <input className="ti" maxLength={24} placeholder="Titre ≤ 24" value={c.t} onChange={(e) => setCards((cs) => cs.map((x, k) => (k === i ? { ...x, t: e.target.value } : x)))} />
                     <input className="ti" maxLength={90} placeholder="Description ≤ 90" value={c.x} onChange={(e) => setCards((cs) => cs.map((x, k) => (k === i ? { ...x, x: e.target.value } : x)))} />
@@ -89,6 +118,7 @@ export default function CampusSection() {
           <PreviewShell>{preview}</PreviewShell>
         </div>
       </div>
+      )}
     </section>
   );
 }

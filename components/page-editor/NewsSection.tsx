@@ -7,18 +7,25 @@ import * as React from "react";
 import RealNewsSection from "@/components/program-page/NewsSection";
 import PreviewShell, { useDebounced } from "./PreviewShell";
 import { newsItems } from "./pageBridge";
-import { GRASSET } from "./fixture";
+import { useEditor } from "./editorContext";
+import { VisibilityToggle, SectionHidden } from "./SectionVisibility";
 import { useToast } from "./toast";
 
-interface News { t: string; u: string }
+interface News { uid: string; t: string; u: string }
+const newUid = () => Math.random().toString(36).slice(2);
 
 export default function NewsSection() {
   const toast = useToast();
-  const [news, setNews] = React.useState<News[]>(GRASSET.news.map((n) => ({ ...n })));
+  const { initial, report, hiddenSections } = useEditor();
+  const hidden = hiddenSections.includes("news");
+  const [news, setNews] = React.useState<News[]>(initial.news.map((n) => ({ ...n, uid: newUid() })));
+  React.useEffect(() => {
+    report("news", news.map((n) => ({ titre: n.t, url: n.u })));
+  }, [news, report]);
 
   const addNews = () => {
     if (news.length >= 5) { toast("Maximum 5 nouvelles"); return; }
-    setNews((n) => [...n, { t: "", u: "" }]);
+    setNews((n) => [...n, { uid: newUid(), t: "", u: "" }]);
   };
 
   const items = newsItems(news);
@@ -32,13 +39,14 @@ export default function NewsSection() {
 
   return (
     <section className="sec">
-      <div className="sech"><span className="num">7</span><h2>Actualités</h2><span className="tag man">MANUEL</span></div>
+      <div className="sech"><span className="num">7</span><h2>Actualités</h2><span className="tag man">MANUEL</span><VisibilityToggle sectionKey="news" /></div>
+      {hidden ? <SectionHidden sectionKey="news" /> : (
       <div className="cols">
         <div className="panel">
           <div className="pt"><span className="n">1</span>TES NOUVELLES — TITRE + LIEN (max 5)</div>
           <div>
             {news.map((n, i) => (
-              <div className="nrow" key={i}>
+              <div className="nrow" key={n.uid}>
                 <input className="ti" maxLength={80} placeholder="Titre" value={n.t} onChange={(e) => setNews((s) => s.map((x, k) => (k === i ? { ...x, t: e.target.value } : x)))} />
                 <input className="ti" placeholder="Lien https://…" value={n.u} onChange={(e) => setNews((s) => s.map((x, k) => (k === i ? { ...x, u: e.target.value } : x)))} />
                 <button className="xbtn" onClick={() => setNews((s) => s.filter((_, k) => k !== i))}>✕</button>
@@ -55,6 +63,7 @@ export default function NewsSection() {
             : <div className="empty">0 nouvelle → la section n'apparaît pas sur la page (comportement réel). Ajoute un titre pour la voir.</div>}
         </div>
       </div>
+      )}
     </section>
   );
 }

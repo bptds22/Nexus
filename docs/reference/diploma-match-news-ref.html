@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NEXUS — Diplôme (perfect match) + News (réf pass 3)</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Outfit:wght@400;500;600;700&display=swap');
+
+:root{
+  --red:#A6192E; --red-deep:#7E1122;
+  --nx-red:#E63946; --green:#22C55E;
+  --cream:#F1EBDD;
+  --pop:cubic-bezier(0.34,1.56,0.64,1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0B0C0E;color:var(--cream);font-family:'Outfit',sans-serif;padding:22px 14px}
+.cap{max-width:1180px;margin:0 auto 10px;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:#6a6f78;font-weight:700}
+.demo{max-width:1180px;margin:0 auto 18px}
+.demo button{font-family:'Outfit';font-weight:600;font-size:12px;background:#1A1D24;color:#C9CCD4;border:1.5px solid #2A2F3A;
+  border-radius:9px;padding:8px 14px;cursor:pointer;margin-right:8px}
+.demo button.act{border-color:var(--green);color:#EDEFF3}
+
+section{position:relative;padding:56px 26px;background:#111317;max-width:1232px;margin:0 auto 18px;border-radius:16px;overflow:hidden}
+.sec-in{max-width:1180px;margin:0 auto;position:relative}
+.kick{font-family:'Bebas Neue';letter-spacing:.34em;font-size:13px;color:var(--red);filter:brightness(1.5)}
+.sec-h{font-family:'Anton';font-size:clamp(30px,3.6vw,46px);text-transform:uppercase;color:#EDEFF3;margin:6px 0 4px;line-height:1.02}
+.pbar{width:100px;height:9px;background:repeating-conic-gradient(var(--red) 0 25%,transparent 0 50%) 0 0/9px 9px;margin:14px 0 8px}
+
+.planche{margin-top:30px;background:#161A21;border:1.6px dashed rgba(237,239,243,.28);border-radius:18px;padding:30px;position:relative;overflow:hidden}
+
+/* === PERFECT MATCH (remplace EN VEDETTE) === */
+.match-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:22px}
+.mh-kick{font-family:'Bebas Neue';letter-spacing:.22em;font-size:12.5px;color:#8A909C}
+.mh-prog{font-family:'Anton';font-size:clamp(20px,2vw,26px);color:#EDEFF3;text-transform:uppercase}
+.mh-tag{font-family:'Outfit';font-weight:600;font-size:10px;letter-spacing:.1em;color:#8A909C;border:1px dashed #3a3f49;
+  border-radius:6px;padding:3px 8px;text-transform:uppercase}
+
+.matches{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+.mcard{background:#12151C;border:1.5px solid #232833;border-radius:14px;padding:18px 20px;position:relative}
+.mcard.exact{border-color:var(--green);box-shadow:0 0 0 1px var(--green) inset, 0 14px 34px -22px rgba(34,197,94,.5)}
+.mbadge{display:inline-flex;align-items:center;gap:6px;font-family:'Outfit';font-weight:700;font-size:10.5px;letter-spacing:.06em;
+  text-transform:uppercase;padding:4px 10px;border-radius:99px;margin-bottom:12px}
+.mbadge.exact{background:var(--green);color:#07130B}
+.mbadge.sim{background:#1D212A;color:#8A909C;border:1px solid #2A2F3A}
+.mcard b{font-family:'Outfit';font-weight:700;font-size:16px;color:#EDEFF3;display:block}
+.mcard span.d{font-family:'Outfit';font-size:12.5px;color:#98A0AB;line-height:1.5;display:block;margin-top:5px}
+
+.match-empty{background:#12151C;border:1.5px dashed #2A2F3A;border-radius:14px;padding:22px 24px}
+.match-empty p{font-family:'Outfit';font-size:14px;color:#C9CCD4;line-height:1.55;max-width:640px}
+.match-empty p b{color:#EDEFF3}
+.me-cta{display:inline-flex;align-items:center;gap:8px;margin-top:14px;font-family:'Outfit';font-weight:700;font-size:13px;
+  background:var(--nx-red);color:#fff;border:0;border-radius:10px;padding:11px 18px;cursor:pointer}
+
+.chalkline{border:0;border-top:1.4px dashed rgba(241,235,221,.2);margin:26px 0 18px}
+.pl-t{font-family:'Bebas Neue';letter-spacing:.22em;font-size:12px;color:#8A909C;margin-bottom:12px}
+.psearch{width:100%;max-width:440px;display:block;margin:0 0 14px;background:#1D212A;border:1.5px solid #2A2F3A;border-radius:11px;
+  padding:12px 16px;color:#EDEFF3;font-family:'Outfit';font-size:13.5px}
+.psearch:focus{border-color:var(--red);outline:none}
+.psearch::placeholder{color:#6A707C}
+.progs{display:flex;gap:9px;flex-wrap:wrap}
+.prog{font-family:'Outfit';font-weight:600;font-size:12.5px;color:#C9CCD4;background:#1D212A;padding:9px 14px;border-radius:99px}
+.prog i{font-style:normal;color:var(--red);filter:brightness(1.4);margin-right:6px}
+
+/* === NEWS === */
+.news-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-top:28px}
+.ncard{background:#1A1D24;border:1.5px solid #262A33;border-radius:14px;padding:22px 22px 20px;display:flex;flex-direction:column;gap:10px}
+.n-src{font-family:'Bebas Neue';letter-spacing:.18em;font-size:11px;color:#8A909C}
+.n-title{font-family:'Anton';font-size:20px;line-height:1.1;color:#EDEFF3;text-transform:uppercase}
+.n-link{margin-top:auto;display:inline-flex;align-items:center;gap:7px;font-family:'Outfit';font-weight:700;font-size:13px;
+  color:#EDEFF3;text-decoration:none;border:1.5px solid #2A2F3A;border-radius:10px;padding:10px 16px;align-self:flex-start;
+  transition:border-color .2s,transform .2s var(--pop)}
+.n-link:hover{border-color:var(--red);transform:translateY(-2px)}
+.n-link .ar{color:var(--red);filter:brightness(1.5)}
+</style>
+</head>
+<body>
+
+<div class="cap">Réf pass 3 — Diplôme : perfect match (pilote = « Programme visé » du profil athlète, correspondance par ressemblance) + News (titre + lien article)</div>
+<div class="demo">
+  <button id="bMatch" class="act" onclick="setState('match')">Démo : match trouvé</button>
+  <button id="bEmpty" onclick="setState('empty')">Démo : rien trouvé</button>
+</div>
+
+<!-- S5 — DIPLÔME -->
+<section id="academique">
+  <div class="sec-in">
+    <div class="kick">LES ÉTUDES</div>
+    <h2 class="sec-h">Le diplôme d'abord</h2>
+    <div class="pbar"></div>
+
+    <div class="planche">
+      <div class="match-head">
+        <span class="mh-kick">TON PROFIL VISE</span>
+        <span class="mh-prog" id="viseProg">Techniques policières</span>
+        <span class="mh-tag">depuis ton profil</span>
+      </div>
+
+      <!-- état MATCH -->
+      <div class="matches" id="stMatch">
+        <div class="mcard exact">
+          <span class="mbadge exact">✓ Correspond à ta recherche</span>
+          <b>Techniques policières</b>
+          <span class="d">Offert ici — DEC technique, encadrement sport-études, horaire adapté aux entraînements.</span>
+        </div>
+        <div class="mcard">
+          <span class="mbadge sim">Programme similaire</span>
+          <b>Sciences humaines — Individu</b>
+          <span class="d">Passerelle fréquente vers criminologie et sécurité publique.</span>
+        </div>
+      </div>
+
+      <!-- état VIDE -->
+      <div class="match-empty" id="stEmpty" style="display:none">
+        <p>Aucun programme comme <b>« Danse »</b> n'est offert au Collège André-Grasset pour l'instant. Contacte le collège pour explorer des programmes similaires qui pourraient t'intéresser.</p>
+        <button class="me-cta">Contacter le collège →</button>
+      </div>
+
+      <hr class="chalkline">
+      <div class="pl-t">TOUS LES PROGRAMMES</div>
+      <input class="psearch" type="text" placeholder="🔍 Cherche ton programme… (ex. sciences, soins, informatique)">
+      <div class="progs">
+        <span class="prog"><i>●</i>Sciences de la nature</span><span class="prog"><i>●</i>Sc. humaines — Administration</span>
+        <span class="prog"><i>●</i>Sc. humaines — Individu</span><span class="prog"><i>●</i>Sc. humaines — Monde</span>
+        <span class="prog"><i>●</i>Arts, lettres et communication</span><span class="prog"><i>●</i>Double DEC</span>
+        <span class="prog"><i>●</i>Cheminement Sport-Études</span><span class="prog"><i>●</i>Soins infirmiers</span>
+        <span class="prog"><i>●</i>Techniques policières</span><span class="prog"><i>●</i>Techniques de l'informatique</span>
+        <span class="prog"><i>●</i>Comptabilité et gestion</span><span class="prog"><i>●</i>Éducation à l'enfance</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- S? — ACTUALITÉS -->
+<section id="news">
+  <div class="sec-in">
+    <div class="kick">ACTUALITÉS</div>
+    <h2 class="sec-h">Ce qui bouge au collège</h2>
+    <div class="pbar"></div>
+
+    <div class="news-grid">
+      <article class="ncard">
+        <span class="n-src">GRASSET.QC.CA</span>
+        <span class="n-title">Nouveau stade extérieur inauguré</span>
+        <a class="n-link" href="#" target="_blank" rel="noopener">Lire l'article <span class="ar">→</span></a>
+      </article>
+      <article class="ncard">
+        <span class="n-src">GRASSET.QC.CA</span>
+        <span class="n-title">Le Phénix football champion D1</span>
+        <a class="n-link" href="#" target="_blank" rel="noopener">Lire l'article <span class="ar">→</span></a>
+      </article>
+      <article class="ncard">
+        <span class="n-src">GRASSET.QC.CA</span>
+        <span class="n-title">Camps de sélection hockey — dates</span>
+        <a class="n-link" href="#" target="_blank" rel="noopener">Lire l'article <span class="ar">→</span></a>
+      </article>
+    </div>
+  </div>
+</section>
+
+<script>
+function setState(s){
+  const m = s==='match';
+  document.getElementById('stMatch').style.display = m ? '' : 'none';
+  document.getElementById('stEmpty').style.display = m ? 'none' : '';
+  document.getElementById('viseProg').textContent = m ? 'Techniques policières' : 'Danse';
+  document.getElementById('bMatch').classList.toggle('act', m);
+  document.getElementById('bEmpty').classList.toggle('act', !m);
+}
+</script>
+</body>
+</html>

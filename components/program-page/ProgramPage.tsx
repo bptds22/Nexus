@@ -24,6 +24,7 @@ import AcademicPlanche from "./AcademicPlanche";
 import ParcoursRoute from "./ParcoursRoute";
 import NewsSection from "./NewsSection";
 import CtaCibles from "./CtaCibles";
+import { useSchoolTargets } from "@/lib/queries/schoolPage/useSchoolTargets";
 
 export interface ProgramPageProps {
   school: SchoolProgramIdentity;
@@ -57,11 +58,13 @@ export default function ProgramPage({ school, content }: ProgramPageProps) {
     "--dna-ink": "#EDEFF3",
   } as React.CSSProperties;
 
-  // S1 follow + CTA share ONE targets state — single source of truth. Toggling
-  // either reflects the other (no second state, no second backend). Mock this
-  // ticket; persistence + notif = Bloc 2 (athlete_targets table).
-  const [inTargets, setInTargets] = React.useState(false);
-  const toggleTargets = React.useCallback(() => setInTargets((v) => !v), []);
+  // S1 follow + CTA partagent UN seul état cible — source unique. Câblé sur
+  // athlete_targets (Bloc 2 étape 4d) : le hook résout l'athlète connecté, la
+  // RLS applique. Compteur « suivent » = count_followers_by_school (serveur) +
+  // ajustement optimiste. 86 = repli historique du fixture dev (non-régression).
+  const { inTargets, followers, toggle: toggleTargets } = useSchoolTargets(school.id, content.followersCount ?? 86);
+  // Sections masquées par l'école → la page les SAUTE (aucun trou). Absent → tout visible.
+  const hidden = content.hiddenSections ?? [];
 
   // Reveals (above-fold sync fix) + counters (ease-out cubic). Reduced-motion →
   // reveals static via CSS, counters jump to final value.
@@ -142,21 +145,23 @@ export default function ProgramPage({ school, content }: ProgramPageProps) {
       <div className="pagewrap">
         <GrainOverlay />
 
-        <StatRows schoolName={school.schoolName} city={school.city} stats={content.stats} inTargets={inTargets} onToggleTargets={toggleTargets} />
+        <StatRows schoolName={school.schoolName} city={school.city} stats={content.stats} inTargets={inTargets} onToggleTargets={toggleTargets} followers={followers} />
         <SportsGrid sports={content.sports} />
-        <CampusSection content={content} />
-        <AboutSell title={content.sellTitle} sellText={content.sellText} />
-        <AcademicPlanche programs={content.programsList} viewerProgrammeVise={content.viewerProgrammeVise} schoolName={school.schoolName} />
-        <ParcoursRoute
-          schoolName={school.schoolName}
-          initials={school.initials}
-          slogan={school.slogan}
-          route={content.route}
-          universities={content.universities}
-          nexusStripText={content.nexusStripText}
-          nexusRecruitedCount={content.nexusRecruitedCount}
-        />
-        <NewsSection news={content.news} />
+        {!hidden.includes("campus") && <CampusSection content={content} />}
+        {!hidden.includes("about") && <AboutSell title={content.sellTitle} sellText={content.sellText} />}
+        {!hidden.includes("programs") && <AcademicPlanche programs={content.programsList} viewerProgrammeVise={content.viewerProgrammeVise} schoolName={school.schoolName} />}
+        {!hidden.includes("parcours") && (
+          <ParcoursRoute
+            schoolName={school.schoolName}
+            initials={school.initials}
+            slogan={school.slogan}
+            route={content.route}
+            universities={content.universities}
+            nexusStripText={content.nexusStripText}
+            nexusRecruitedCount={content.nexusRecruitedCount}
+          />
+        )}
+        {!hidden.includes("news") && <NewsSection news={content.news} />}
         <CtaCibles ctaTitle={content.ctaTitle} notifyName={content.ctaNotifyName} inTargets={inTargets} onToggleTargets={toggleTargets} />
         <div className="pfoot">⚡ Propulsé par Nexus · données de démonstration</div>
       </div>

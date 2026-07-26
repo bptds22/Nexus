@@ -27,12 +27,13 @@ const FONTS = (
   </>
 );
 
-export default async function PageTest({ searchParams }: { searchParams: { school?: string } }) {
+export default async function PageTest({ searchParams }: { searchParams: Promise<{ school?: string }> }) {
   // URL-only web (dev/test) — jamais dans le bundle mobile.
   if (process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true") notFound();
 
   // ── mode DB paramétrable : /page-test?school=<id|slug> ──
-  const schoolParam = searchParams?.school;
+  // Next 16 : searchParams est asynchrone (Promise) — doit être await.
+  const schoolParam = (await searchParams)?.school;
   if (schoolParam) {
     const res = await loadSchoolPageForRender(schoolParam);
     const grassetFix = schoolPrograms.find((s) => s.id === "andre-grasset")!;

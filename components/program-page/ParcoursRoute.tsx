@@ -25,7 +25,12 @@ export default function ParcoursRoute({
   nexusRecruitedCount: number;
 }) {
   const kick = schoolName.slice(schoolName.split(" ")[0].length).trim().toUpperCase();
+  // Slogan sans saut de ligne → sortie inchangée (non-régression /page-test
+  // fixture byte-identique). Avec saut → 2 lignes via white-space:pre-line inline
+  // (aucune modif de PP_CSS, aucun impact fixture).
+  const sloganHasBreak = !!slogan && /\n/.test(slogan);
   const markerSlogan = slogan ? `« ${slogan.replace(/\n/g, " ")} »` : null;
+  const markerSloganMulti = slogan ? `« ${slogan} »` : null;
 
   return (
     <section id="parcours">
@@ -73,7 +78,9 @@ export default function ParcoursRoute({
           </div>
           <svg className="fin" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6"><path d="M12 3v15M6 12l6 7 6-7" /></svg>
         </div>
-        {markerSlogan && <span className="mknote rv">{markerSlogan}</span>}
+        {markerSlogan && (sloganHasBreak
+          ? <span className="mknote rv" style={{ whiteSpace: "pre-line" }}>{markerSloganMulti}</span>
+          : <span className="mknote rv">{markerSlogan}</span>)}
         <NexusStrip text={nexusStripText} count={nexusRecruitedCount} />
       </div>
     </section>

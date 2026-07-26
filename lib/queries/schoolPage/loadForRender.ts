@@ -31,14 +31,16 @@ export async function loadSchoolPageForRender(idOrSlug: string): Promise<RenderR
   if (!content) return { configured: false, schoolName: school.name };
 
   // RPC Bloc 2 non encore dans les types générés → cast des args (runtime OK).
-  const { data: rc } = await svc.rpc(
-    "count_recruited_by_school", { p_school_id: school.id } as unknown as undefined,
-  );
+  const [{ data: rc }, { data: fc }] = await Promise.all([
+    svc.rpc("count_recruited_by_school", { p_school_id: school.id } as unknown as undefined),
+    svc.rpc("count_followers_by_school", { p_school_id: school.id } as unknown as undefined),
+  ]);
   const assetUrl = (path: string | null | undefined, bucket: "school-logos" | "campus-photos") =>
     path ? svc.storage.from(bucket).getPublicUrl(path).data.publicUrl : null;
 
   const { school: identity, content: pageContent } = dbToProgramPage(
-    school, content, cards, programs, news, (rc as number | null) ?? 0, assetUrl,
+    school, content, cards, programs, news,
+    (rc as number | null) ?? 0, (fc as number | null) ?? 0, assetUrl,
   );
   return { configured: true, school: identity, content: pageContent, schoolName: school.name };
 }

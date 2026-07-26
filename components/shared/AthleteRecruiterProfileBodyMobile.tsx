@@ -2448,8 +2448,17 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
               </section>
             )}
 
-            {/* Parcours d'équipes — après Sport principal ; se masque si vide. */}
-            <TeamHistoryBlock entries={a.teamHistory} />
+            {/* Parcours d'équipes — après Sport principal ; se masque si vide.
+                Anchor = vraie affiliation Nexus (display-only, non éditable). */}
+            <TeamHistoryBlock
+              entries={a.teamHistory}
+              anchor={{
+                teamName: a.isCivil ? (a.teamName || a.leagueName || "") : (a.schoolName || ""),
+                sport: a.primarySport,
+                position: a.primaryPosition,
+                region: a.region,
+              }}
+            />
 
             {/* DETAILED — secondaire + mesures + tests */}
             {isDetailed && (

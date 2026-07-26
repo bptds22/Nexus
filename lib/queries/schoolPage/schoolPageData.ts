@@ -32,10 +32,12 @@ export interface SchoolPageState {
   stat_usa: number | null; stat_diplomation: number | null; universities: string[];
   // S7 news
   news: EditorNews[];
+  // visibilité par section (clés masquées : about/campus/programs/parcours/news)
+  hidden_sections: string[];
 }
 
 const CONTENT_COLS =
-  "nickname, slogan, tagline, province, ville, quartier, code_regional, initiales, rail_word, devise_1, devise_2, arrow_avant, arrow_apres, wall_words, ticker_text, color_primary, color_dark, color_light, nb_athletes, logo_path, campus_video_url, about_title, sell_text, niveau, encadrement, stat_usports, stat_usa, stat_diplomation, universities";
+  "nickname, slogan, tagline, province, ville, quartier, code_regional, initiales, rail_word, devise_1, devise_2, arrow_avant, arrow_apres, wall_words, ticker_text, color_primary, color_dark, color_light, nb_athletes, logo_path, campus_video_url, about_title, sell_text, niveau, encadrement, stat_usports, stat_usa, stat_diplomation, universities, hidden_sections";
 
 /** null-safe : chaîne DB → chaîne éditeur ('' si null). */
 const s = (v: unknown): string => (v == null ? "" : String(v));
@@ -68,6 +70,7 @@ export async function loadSchoolPage(
     stat_usa: (row.stat_usa as number | null) ?? null,
     stat_diplomation: (row.stat_diplomation as number | null) ?? null,
     universities: arr(row.universities),
+    hidden_sections: arr(row.hidden_sections),
   };
   return {
     content,

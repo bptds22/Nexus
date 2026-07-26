@@ -23,6 +23,7 @@ export function dbToProgramPage(
   programs: { name: string; is_displayed: boolean }[],
   news: { titre: string; url: string }[],
   recrutedCount: number,
+  followersCount: number,
   assetUrl: (path: string | null | undefined, bucket: "school-logos" | "campus-photos") => string | null,
 ): { school: SchoolProgramIdentity; content: ProgramPageContent } {
   const code = PROV_CODE[nn(c.province, "Québec")] ?? "QC";
@@ -34,6 +35,9 @@ export function dbToProgramPage(
     colorPrimary: nn(c.color_primary, "#A6192E"),
     colorDarker: nn(c.color_dark, "#5A0E1B"),
     colorNeutral: nn(c.color_light, "#E8C7CD"),
+    // claire custom en DB (≠ défaut #E8C7CD) → glyphes tuiles claires assombris (#3)
+    lightDefined: !!(c.color_light && c.color_light.trim() && c.color_light.trim().toLowerCase() !== "#e8c7cd"),
+
     logoUrl: assetUrl(c.logo_path, "school-logos"),
     city: nn(c.ville, (school.city || "").toUpperCase()),
     regionTag: `${nn(c.quartier, (school.region || "").toUpperCase())} · ${code}`,
@@ -87,8 +91,10 @@ export function dbToProgramPage(
     universities: (c.universities ?? []).filter(Boolean),
     nexusStripText: `Des athlètes du secondaire ont rejoint ${school.name} grâce à leur profil Nexus — vus, évalués, recrutés.`,
     nexusRecruitedCount: recrutedCount,
+    followersCount,
     news: news.filter((n) => n.titre).map((n) => ({ source: domainOf(n.url), titre: n.titre, url: n.url || "#" })),
     ctaTitle: "Prêt à porter les couleurs ?", ctaNotifyName: nn(c.nickname, school.name),
+    hiddenSections: (c.hidden_sections ?? []).filter(Boolean),
   };
   return { school: identity, content };
 }

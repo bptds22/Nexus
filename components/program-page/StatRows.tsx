@@ -15,12 +15,16 @@ export default function StatRows({
   stats,
   inTargets,
   onToggleTargets,
+  followers = 86,
 }: {
   schoolName: string;
   city: string;
   stats: ProgramPageContent["stats"];
   inTargets: boolean;
   onToggleTargets: () => void;
+  /** nb d'athlètes ciblant ce collège (count_followers_by_school). Défaut 86 =
+   *  valeur historique du fixture dev (préserve la non-régression /page-test). */
+  followers?: number;
 }) {
   const first = schoolName.split(" ")[0];
   const body = schoolName.slice(first.length).trim();
@@ -55,7 +59,7 @@ export default function StatRows({
               )}
               <span className="t">{inTargets ? "Dans tes cibles" : "Rajouter dans mes cibles"}</span>
             </button>
-            <div className="hf-note"><b>86 athlètes</b> suivent ce collège</div>
+            <div className="hf-note"><b>{`${followers} athlètes`}</b> suivent ce collège</div>
           </div>
         </div>
       </div>

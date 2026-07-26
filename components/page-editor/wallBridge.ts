@@ -25,6 +25,8 @@ export interface EditorIdentityState {
   /** mots-tuiles sélectionnés, dans l'ordre (max 4) → 4 slots du mur. */
   words: string[];
   nbath: string;
+  /** URL publique du logo uploadé (storage) ; null → monogramme (initiales). */
+  logoUrl: string | null;
 }
 
 const PROV_CODE: Record<string, string> = { Québec: "QC", Ontario: "ON", Canada: "CA" };
@@ -42,7 +44,9 @@ export function editorToSchool(s: EditorIdentityState): SchoolProgramIdentity {
     colorPrimary: s.c1,
     colorDarker: s.c2,
     colorNeutral: s.c3,
-    logoUrl: null, // upload = Bloc 2 → monogramme (initiales) en fallback
+    // claire custom = différente du défaut #E8C7CD → glyphes tuiles claires en claire-assombrie (#3)
+    lightDefined: s.c3.trim().toLowerCase() !== "#e8c7cd",
+    logoUrl: s.logoUrl ?? null, // logo uploadé (storage) ; null → monogramme (initiales)
     city: s.ville || "",
     regionTag: `${s.quartier} · ${code}`,
     areaCode: s.rtag || code,

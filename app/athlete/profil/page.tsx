@@ -9,7 +9,7 @@ import { isValidationDue, isValidationExpired, formatDeadlineFr, currentMonthKey
 import VerifiedBadge from "@/components/ui/VerifiedBadge";
 import DatePicker from "@/app/coach/components/DatePicker";
 import type { AthleteSuggestion, AthleteTraitRatings, TeamHistoryEntry } from "@/lib/types/models";
-import TeamHistoryBlock from "@/components/shared/athlete/TeamHistoryBlock";
+import TeamHistoryBlock, { type TeamHistoryAnchor } from "@/components/shared/athlete/TeamHistoryBlock";
 import TeamHistoryEditor from "@/components/shared/athlete/TeamHistoryEditor";
 import { parseTeamHistory, isTeamHistoryValid } from "@/components/shared/athlete/teamHistory";
 import StarRating from "@/components/ui/StarRating";
@@ -812,9 +812,10 @@ function DistinctionsSuggest({ currentDistinctions, pending, onSubmit }: {
 
 /* ── Parcours d'équipes — direct-write editor (athlete-owned, NOT a
       suggestion; saves straight to athletes.parcours_equipes). ─────── */
-function TeamHistoryDirectEdit({ athleteId, current, recruiterView, onSaved }: {
+function TeamHistoryDirectEdit({ athleteId, current, anchor, recruiterView, onSaved }: {
   athleteId: string;
   current: TeamHistoryEntry[];
+  anchor?: TeamHistoryAnchor | null;
   recruiterView: boolean;
   onSaved: (entries: TeamHistoryEntry[]) => void;
 }) {
@@ -861,10 +862,10 @@ function TeamHistoryDirectEdit({ athleteId, current, recruiterView, onSaved }: {
             <button type="button" onClick={save} disabled={saving || !valid} className="px-4 py-2 bg-[#E63946] hover:bg-[#D42B22] disabled:opacity-50 text-white text-[13px] font-bold rounded-lg transition-colors">{saving ? "…" : "Enregistrer"}</button>
           </div>
         </>
-      ) : current.length === 0 ? (
+      ) : current.length === 0 && !anchor?.teamName ? (
         <p className="text-[13px] text-[#6b7280]">Aucun parcours ajouté.</p>
       ) : (
-        <TeamHistoryBlock entries={current} headingClassName="hidden" />
+        <TeamHistoryBlock entries={current} anchor={anchor} headingClassName="hidden" />
       )}
     </div>
   );
@@ -1670,6 +1671,12 @@ function AthleteProfilPageDesktop() {
           <TeamHistoryDirectEdit
             athleteId={athleteId}
             current={parseTeamHistory((a._raw as Record<string, unknown> | undefined)?.parcours_equipes)}
+            anchor={{
+              teamName: a.isCivil ? (a.teamName || a.leagueName || "") : (a.schoolName || ""),
+              sport: a.primarySport,
+              position: a.primaryPosition,
+              region: a.region,
+            }}
             recruiterView={recruiterView}
             onSaved={(v) => setA((prev) => (prev ? { ...prev, _raw: { ...(prev._raw as Record<string, unknown>), parcours_equipes: v } } : prev))}
           />

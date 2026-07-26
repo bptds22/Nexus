@@ -10,8 +10,9 @@ import * as React from "react";
 import ProgramWall from "@/components/program-wall/ProgramWall";
 import Ticker from "@/components/program-page/Ticker";
 import { ratio, CONTRAST_FLOOR } from "./contrast";
-import { WORDS, PROVINCES, GRASSET } from "./fixture";
+import { WORDS, PROVINCES } from "./fixture";
 import { editorToSchool, type EditorIdentityState } from "./wallBridge";
+import { useEditor } from "./editorContext";
 import { useToast } from "./toast";
 
 // Débounce par ÉGALITÉ DE CONTENU (value = clé string stable) : le timer ne se
@@ -36,28 +37,55 @@ export default function IdentityWall({
   nbath: string; setNbath: (v: string) => void;
 }) {
   const toast = useToast();
-  const g = GRASSET.identity;
-  const [tagline, setTagline] = React.useState(g.tagline);
-  const [prov, setProv] = React.useState(g.prov);
-  const [tick, setTick] = React.useState(g.tick);
-  const [ville, setVille] = React.useState(g.ville);
-  const [quartier, setQuartier] = React.useState(g.quartier);
-  const [rtag, setRtag] = React.useState(g.rtag);
-  const [c1, setC1] = React.useState(g.c1);
-  const [c2, setC2] = React.useState(g.c2);
-  const [c3, setC3] = React.useState(g.c3);
+  const { initial, report, uploadAsset, assetUrl, setPreviewColors } = useEditor();
+  const [tagline, setTagline] = React.useState(initial.tagline);
+  const [prov, setProv] = React.useState(initial.prov);
+  const [tick, setTick] = React.useState(initial.tick);
+  const [ville, setVille] = React.useState(initial.ville);
+  const [quartier, setQuartier] = React.useState(initial.quartier);
+  const [rtag, setRtag] = React.useState(initial.rtag);
+  const [c1, setC1] = React.useState(initial.c1);
+  const [c2, setC2] = React.useState(initial.c2);
+  const [c3, setC3] = React.useState(initial.c3);
   // init / nbath / slog sont remontés (partagés avec S6 Parcours) — reçus en props.
-  const [vword, setVword] = React.useState(g.vword);
-  const [dev1, setDev1] = React.useState(g.dev1);
-  const [dev2, setDev2] = React.useState(g.dev2);
-  const [fla, setFla] = React.useState(g.fla);
-  const [flb, setFlb] = React.useState(g.flb);
+  const [vword, setVword] = React.useState(initial.vword);
+  const [dev1, setDev1] = React.useState(initial.dev1);
+  const [dev2, setDev2] = React.useState(initial.dev2);
+  const [fla, setFla] = React.useState(initial.fla);
+  const [flb, setFlb] = React.useState(initial.flb);
   const [wcustom, setWcustom] = React.useState("");
-  // catalogue de mots (14 + persos ajoutés) + états cochés (défaut 4 premiers).
+  const [logoPath, setLogoPath] = React.useState<string | null>(initial.logoPath);
+  const logoUrl = assetUrl(logoPath, "school-logos");
+  // catalogue de mots (14 + persos DB/ajoutés) + états cochés (init depuis la DB).
+  const wordExtras = React.useMemo(() => initial.wallWords.filter((w) => !WORDS.includes(w)), [initial.wallWords]);
   const [catalog, setCatalog] = React.useState<{ w: string; custom: boolean }[]>(
-    WORDS.map((w) => ({ w, custom: false })),
+    () => [...WORDS.map((w) => ({ w, custom: false })), ...wordExtras.map((w) => ({ w, custom: true }))],
   );
-  const [wordOn, setWordOn] = React.useState<boolean[]>(WORDS.map((_, i) => g.words.includes(i)));
+  const [wordOn, setWordOn] = React.useState<boolean[]>(
+    () => [...WORDS.map((w) => initial.wallWords.includes(w)), ...wordExtras.map(() => true)],
+  );
+
+  // Pipette EyeDropper (Chrome desktop) — picke une couleur n'importe où à
+  // l'écran (dont le logo uploadé). Fallback silencieux si l'API est absente.
+  const [hasEye, setHasEye] = React.useState(false);
+  React.useEffect(() => { setHasEye(typeof window !== "undefined" && "EyeDropper" in window); }, []);
+  const pickEye = async (set: (v: string) => void) => {
+    const ED = (window as unknown as { EyeDropper?: new () => { open: () => Promise<{ sRGBHex: string }> } }).EyeDropper;
+    if (!ED) return;
+    try { const res = await new ED().open(); if (res?.sRGBHex) set(res.sRGBHex); } catch { /* annulé */ }
+  };
+
+  const pickLogo = () => {
+    const input = document.createElement("input");
+    input.type = "file"; input.accept = "image/*,.svg";
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      try { const path = await uploadAsset("school-logos", file); setLogoPath(path); toast("Logo téléversé"); }
+      catch (e) { toast(e instanceof Error ? e.message : "Échec de l'upload"); }
+    };
+    input.click();
+  };
 
   const upperOn = (fn: (v: string) => void) => (e: React.ChangeEvent<HTMLInputElement>) =>
     fn(e.target.value.toUpperCase());
@@ -78,10 +106,31 @@ export default function IdentityWall({
   };
 
   const selectedWords = catalog.filter((_, i) => wordOn[i]).map((c) => c.w);
+
+  // #3 : propage les couleurs (débouncées) au contexte → toutes les previews de
+  // section suivent. Débounce = pas de re-render en rafale pendant le drag.
+  const debColors = useDebounced(`${c1}|${c2}|${c3}`, 150);
+  React.useEffect(() => {
+    const [a, b, c] = debColors.split("|");
+    setPreviewColors({ c1: a, c2: b, c3: c });
+  }, [debColors, setPreviewColors]);
+
+  React.useEffect(() => {
+    report("content.identity", {
+      nickname: nick, slogan: slog, tagline, province: prov, ticker_text: tick,
+      ville, quartier, code_regional: rtag,
+      color_primary: c1, color_dark: c2, color_light: c3,
+      initiales: init, rail_word: vword, devise_1: dev1, devise_2: dev2,
+      arrow_avant: fla, arrow_apres: flb,
+      wall_words: selectedWords, nb_athletes: nbath, logo_path: logoPath,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nick, slog, tagline, prov, tick, ville, quartier, rtag, c1, c2, c3, init, vword, dev1, dev2, fla, flb, nbath, logoPath, JSON.stringify(selectedWords), report]);
+
   const wallInput: EditorIdentityState = {
     nick, slog, tagline, prov, tick, ville, quartier, rtag,
     c1, c2, c3, init, vword, dev1, dev2, fla, flb,
-    words: selectedWords, nbath,
+    words: selectedWords, nbath, logoUrl,
   };
   // Le mur suit le contenu débouncé (clé string) — reconstruit seulement quand
   // une valeur change réellement, 180 ms après la dernière frappe.
@@ -92,6 +141,13 @@ export default function IdentityWall({
   );
   const tickerText = tick || slog;
   const villeTitle = ville ? ville.charAt(0) + ville.slice(1).toLowerCase() : "—";
+
+  // #7 : le mur (feTurbulence) et le ticker sont memoïsés → ils ne se re-rendent
+  // PAS à chaque frappe (state controlled), seulement quand la valeur débouncée
+  // change réellement. Fin des re-renders en rafale du filtre SVG.
+  const wallPreview = React.useMemo(() => <ProgramWall school={school} />, [school]);
+  const debTicker = useDebounced(tickerText, 180);
+  const tickerPreview = React.useMemo(() => <Ticker words={[{ text: debTicker, hot: false }]} />, [debTicker]);
 
   // contraste Principale ↔ fond Nexus (plancher 2.4)
   const r = ratio(c1, "#111317");
@@ -106,7 +162,7 @@ export default function IdentityWall({
             <div className="pt"><span className="n">0</span>IDENTITÉ — AUTOMATIQUE</div>
             <div className="auto">
               <span className="achip"><b>✓</b>Type : Collège privé</span>
-              <span className="achip"><b>✓</b>Nom : André-Grasset</span>
+              <span className="achip"><b>✓</b>Nom : {initial.schoolName}</span>
             </div>
             <div className="note">Le nom officiel vient du seed Nexus. Une erreur ? Le ⚑ de la fiche Campus (section 3) la signale.</div>
           </div>
@@ -114,22 +170,33 @@ export default function IdentityWall({
           <div className="panel" style={{ marginBottom: 14 }}>
             <div className="pt"><span className="n">1</span>LOGO</div>
             <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-              <div style={{ width: 74, height: 74, borderRadius: 12, background: "#20242D", border: "1px solid var(--line)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Anton'", fontSize: 26, color: "var(--red)" }}>{init || "AG"}</div>
+              <div style={{ width: 74, height: 74, borderRadius: 12, background: "#20242D", border: "1px solid var(--line)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Anton'", fontSize: 26, color: "var(--red)", overflow: "hidden" }}>
+                {logoUrl
+                  // eslint-disable-next-line @next/next/no-img-element
+                  ? <img src={logoUrl} alt="Logo" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                  : (init || "—")}
+              </div>
               <div style={{ flex: 1 }}>
                 <span className="achip"><b>✓</b>Logo actuel — hérité de ton compte Nexus</span>
                 <div className="note" style={{ marginTop: 6 }}>Chargé automatiquement depuis la réclamation de ton collège (RPRP).</div>
               </div>
             </div>
             {/* Bloc 2 : upload réel */}
-            <div className="drop" style={{ marginTop: 12 }} onClick={() => toast("Upload de fichier (câblage Bloc 2)")}><b>Remplacer le logo</b>SVG préféré · PNG accepté · remplace l'actuel partout (mur, hero, name-card)</div>
+            <div className="drop" style={{ marginTop: 12 }} onClick={pickLogo}><b>Remplacer le logo</b>SVG préféré · PNG accepté · remplace l'actuel partout (mur, hero, name-card)</div>
           </div>
 
           <div className="panel" style={{ marginBottom: 14 }}>
             <div className="pt"><span className="n">2</span>NAME-CARD — 5 CHAMPS (~40 s)</div>
             <label className="fl">Surnom / nom des équipes (PHÉNIX, NOMADES…)</label>
             <input className="ti" maxLength={14} value={nick} onChange={(e) => setNick(e.target.value)} />
-            <label className="fl">Slogan</label>
-            <input className="ti" maxLength={40} value={slog} onChange={(e) => setSlog(e.target.value)} />
+            <label className="fl">Slogan <span style={{ textTransform: "none", fontWeight: 400, color: "#5A616D" }}>(Entrée = 2e ligne, max 2)</span></label>
+            <textarea
+              className="ti" maxLength={40} rows={2} value={slog}
+              placeholder="Ex. « Phénix un jour,&#10;Phénix toujours »"
+              onChange={(e) => setSlog(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter" && slog.includes("\n")) e.preventDefault(); }}
+              style={{ minHeight: 0, resize: "none" }}
+            />
             <div className="cnt">{slog.length}/40</div>
             <div className="row2">
               <div>
@@ -173,9 +240,9 @@ export default function IdentityWall({
           <div className="panel" style={{ marginBottom: 14 }}>
             <div className="pt"><span className="n">4</span>COULEURS — 3 SWATCHES + CONTRASTE</div>
             <div className="sw3">
-              <div className="sw"><label>Principale</label><input type="color" value={c1} onChange={(e) => setC1(e.target.value)} /></div>
-              <div className="sw"><label>Foncée</label><input type="color" value={c2} onChange={(e) => setC2(e.target.value)} /></div>
-              <div className="sw"><label>Claire</label><input type="color" value={c3} onChange={(e) => setC3(e.target.value)} /></div>
+              <div className="sw"><label>Principale</label><input type="color" value={c1} onChange={(e) => setC1(e.target.value)} />{hasEye && <button type="button" className="pip" title="Pipette — picke une couleur (ex. sur ton logo)" onClick={() => pickEye(setC1)}>💧 Pipette</button>}</div>
+              <div className="sw"><label>Foncée</label><input type="color" value={c2} onChange={(e) => setC2(e.target.value)} />{hasEye && <button type="button" className="pip" title="Pipette" onClick={() => pickEye(setC2)}>💧 Pipette</button>}</div>
+              <div className="sw"><label>Claire</label><input type="color" value={c3} onChange={(e) => setC3(e.target.value)} />{hasEye && <button type="button" className="pip" title="Pipette" onClick={() => pickEye(setC3)}>💧 Pipette</button>}</div>
             </div>
             <div className={"cmeter " + (ok ? "ok" : "bad")}>
               <span className="val">{r.toFixed(2)}</span>
@@ -243,10 +310,10 @@ export default function IdentityWall({
         <div className="pv">
           <div className="pvhead">APERÇU LIVE — LE VRAI MUR</div>
           <div className="pe-wallhost">
-            <ProgramWall school={school} />
-            <div className="pe-tickwrap"><Ticker words={[{ text: tickerText, hot: false }]} /></div>
+            {wallPreview}
+            <div className="pe-tickwrap">{tickerPreview}</div>
           </div>
-          <div className="note" style={{ marginTop: 12 }}>Aperçu réel — c'est exactement le mur public. Les stats hero (hors-mur) : <b>{GRASSET.statEquipes} équipes · {nbath || "—"} athlètes · {villeTitle}</b></div>
+          <div className="note" style={{ marginTop: 12 }}>Aperçu réel — c'est exactement le mur public. Les stats hero (hors-mur) : <b>équipes AUTO · {nbath || "—"} athlètes · {villeTitle}</b></div>
         </div>
       </div>
     </section>

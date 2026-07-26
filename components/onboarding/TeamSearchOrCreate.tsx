@@ -197,10 +197,15 @@ export default function TeamSearchOrCreate({
       //   in a different sport.
       let teamsQuery = supabase
         .from("teams")
+        // schools!...!inner + type filter server-side so the limit(500)
+        // applies to CIVIL teams only. Without this, the RSEQ scolaire
+        // import (thousands of teams) fills the alphabetical window and
+        // pushes civil teams out before the client-side civil filter runs.
         .select(
-          "id, name, age_group, gender, division, league, school_id, schools!school_id(id, name, type), team_coaches(coach_id)"
+          "id, name, age_group, gender, division, league, school_id, schools!school_id!inner(id, name, type), team_coaches(coach_id)"
         )
         .eq("sport_id", sportId)
+        .eq("schools.type", "LIGUE_CIVILE")
         .order("name")
         .limit(500);
 

@@ -1365,8 +1365,17 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
         )}
 
         {/* Parcours d'équipes — sous Profil académique, dans les deux modes.
-            Se masque tout seul si l'athlète n'a aucune entrée. */}
-        <TeamHistoryBlock entries={a.teamHistory} />
+            Se masque tout seul si l'athlète n'a aucune entrée. Anchor = vraie
+            affiliation Nexus (display-only, jamais éditable). */}
+        <TeamHistoryBlock
+          entries={a.teamHistory}
+          anchor={{
+            teamName: a.isCivil ? (a.teamName || a.leagueName || "") : (a.schoolName || ""),
+            sport: a.primarySport,
+            position: a.primaryPosition,
+            region: a.region,
+          }}
+        />
 
         {/* ════════════════════════════════════════════════════
            DETAILED SECTIONS — only when toggle = Détaillé

@@ -11,20 +11,53 @@ import * as React from "react";
 import RealParcoursRoute from "@/components/program-page/ParcoursRoute";
 import PreviewShell, { useDebounced } from "./PreviewShell";
 import { parcoursProps } from "./pageBridge";
-import { ENC, UNIS, GRASSET } from "./fixture";
+import { ENC, UNIS } from "./fixture";
+import { useEditor } from "./editorContext";
+import { VisibilityToggle, SectionHidden } from "./SectionVisibility";
+
+const toNum = (s: string): number | null => { const n = parseInt(s, 10); return Number.isFinite(n) ? n : null; };
+
+// #2b : le vrai ParcoursRoute rend en largeur desktop ; dans la colonne étroite
+// de l'éditeur il déborde (cercles sur le texte). On le rend à sa largeur de
+// design puis on le met à l'échelle (zoom) pour tenir la colonne — comme le mur.
+function ScaleToFit({ designWidth, children }: { designWidth: number; children: React.ReactNode }) {
+  const ref = React.useRef<HTMLDivElement>(null);
+  const [zoom, setZoom] = React.useState(1);
+  React.useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(() => {
+      const cw = el.clientWidth;
+      if (cw > 0) setZoom(Math.min(1, cw / designWidth));
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [designWidth]);
+  return (
+    <div ref={ref} style={{ overflow: "hidden" }}>
+      <div style={{ width: designWidth, zoom }}>{children}</div>
+    </div>
+  );
+}
 
 export default function ParcoursSection({
   init, nbath, slog,
 }: { nick: string; init: string; nbath: string; slog: string }) {
-  const g = GRASSET.parcours;
-  const [pniv, setPniv] = React.useState(g.pniv);
-  const [enc, setEnc] = React.useState<boolean[]>(ENC.map((_, i) => g.enc.includes(i)));
-  const [pus, setPus] = React.useState(g.pus);
-  const [pdip, setPdip] = React.useState(g.pdip);
-  const [pusa, setPusa] = React.useState(g.pusa);
-  const [unis, setUnis] = React.useState<{ u: string; on: boolean }[]>(
-    UNIS.map((u, i) => ({ u, on: g.unis.includes(i) })),
+  const { initial, report, hiddenSections } = useEditor();
+  const hidden = hiddenSections.includes("parcours");
+  // catalogue ENC + extras venus de la DB (encadrement libre déjà saisi ailleurs).
+  const encCatalog = React.useMemo(
+    () => [...ENC, ...initial.encOn.filter((e) => !ENC.includes(e))], [initial.encOn],
   );
+  const [pniv, setPniv] = React.useState(initial.pniv);
+  const [enc, setEnc] = React.useState<boolean[]>(() => encCatalog.map((t) => initial.encOn.includes(t)));
+  const [pus, setPus] = React.useState(initial.pus);
+  const [pdip, setPdip] = React.useState(initial.pdip);
+  const [pusa, setPusa] = React.useState(initial.pusa);
+  const [unis, setUnis] = React.useState<{ u: string; on: boolean }[]>(() => [
+    ...UNIS.map((u) => ({ u, on: initial.universities.includes(u) })),
+    ...initial.universities.filter((u) => !UNIS.includes(u)).map((u) => ({ u, on: true })),
+  ]);
   const [ucustom, setUcustom] = React.useState("");
 
   const addUni = () => {
@@ -34,12 +67,24 @@ export default function ParcoursSection({
     setUcustom("");
   };
 
+  const selectedEnc = encCatalog.filter((_, i) => enc[i]);
+  const selectedUnis = unis.filter((u) => u.on).map((u) => u.u);
+  React.useEffect(() => {
+    report("content.parcours", {
+      niveau: pniv, encadrement: selectedEnc,
+      stat_usports: toNum(pus), stat_diplomation: toNum(pdip), stat_usa: toNum(pusa),
+      universities: selectedUnis,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pniv, pus, pdip, pusa, JSON.stringify(selectedEnc), JSON.stringify(selectedUnis), report]);
+
+  // recrutés = AUTO (compteur runtime count_recruited_by_school) — cosmétique ici.
   const props = parcoursProps({
     pniv, nbath,
-    enc: ENC.filter((_, i) => enc[i]),
-    recrutes: g.recrutes,
+    enc: selectedEnc,
+    recrutes: 0,
     pus, pusa, pdip,
-    universities: unis.filter((u) => u.on).map((u) => u.u),
+    universities: selectedUnis,
     initials: init,
     slogan: slog,
   });
@@ -48,7 +93,8 @@ export default function ParcoursSection({
 
   return (
     <section className="sec">
-      <div className="sech"><span className="num">6</span><h2>Parcours</h2><span className="tag man">MANUEL</span></div>
+      <div className="sech"><span className="num">6</span><h2>Parcours</h2><span className="tag man">MANUEL</span><VisibilityToggle sectionKey="parcours" /></div>
+      {hidden ? <SectionHidden sectionKey="parcours" /> : (
       <div className="cols">
         <div>
           <div className="panel" style={{ marginBottom: 14 }}>
@@ -57,7 +103,7 @@ export default function ParcoursSection({
             <input className="ti" maxLength={30} value={pniv} onChange={(e) => setPniv(e.target.value)} />
             <label className="fl">Encadrement sport-études — catalogue (compose l'étape 2 du parcours)</label>
             <div className="cklist">
-              {ENC.map((t, i) => (
+              {encCatalog.map((t, i) => (
                 <div key={t} className={"ck" + (enc[i] ? " on" : "")} onClick={() => setEnc((s) => s.map((v, k) => (k === i ? !v : v)))}>
                   <span className="box">{enc[i] ? "✓" : ""}</span><span>{t}</span>
                 </div>
@@ -66,7 +112,7 @@ export default function ParcoursSection({
           </div>
           <div className="panel">
             <div className="pt"><span className="n">2</span>LES STATS &amp; LES UNIVERSITÉS</div>
-            <div className="auto" style={{ marginBottom: 12 }}><span className="achip"><b>✓</b>Recrutés cette saison : {g.recrutes} — AUTO (engagés + lettres signées, tous sports)</span></div>
+            <div className="auto" style={{ marginBottom: 12 }}><span className="achip"><b>✓</b>Recrutés cette saison — AUTO (engagés + lettres signées, tous sports)</span></div>
             <div className="row2">
               <div><label className="fl">Passés en U SPORTS</label><input className="ti" maxLength={4} value={pus} onChange={(e) => setPus(e.target.value)} /></div>
               <div><label className="fl">Taux de diplomation (%)</label><input className="ti" maxLength={3} value={pdip} onChange={(e) => setPdip(e.target.value)} /></div>
@@ -89,9 +135,10 @@ export default function ParcoursSection({
         </div>
         <div className="pv">
           <div className="pvhead">APERÇU LIVE — RENDU RÉEL (compteurs animés)</div>
-          <PreviewShell contentKey={debKey}>{preview}</PreviewShell>
+          <PreviewShell contentKey={debKey}><ScaleToFit designWidth={720}>{preview}</ScaleToFit></PreviewShell>
         </div>
       </div>
+      )}
     </section>
   );
 }

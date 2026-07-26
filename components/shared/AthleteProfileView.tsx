@@ -393,8 +393,17 @@ export default function AthleteProfileView({
         </div>
       </section>
 
-      {/* Parcours d'équipes — sous Profil académique (les deux modes). */}
-      <TeamHistoryBlock entries={a.teamHistory} />
+      {/* Parcours d'équipes — sous Profil académique (les deux modes).
+          Anchor = vraie affiliation Nexus (display-only, non éditable). */}
+      <TeamHistoryBlock
+        entries={a.teamHistory}
+        anchor={{
+          teamName: a.isCivil ? (a.teamName || a.leagueName || "") : (a.schoolName || ""),
+          sport: a.primarySport,
+          position: a.primaryPosition,
+          region: a.region,
+        }}
+      />
 
       {/* DETAILED-ONLY */}
       {isDetailed && (

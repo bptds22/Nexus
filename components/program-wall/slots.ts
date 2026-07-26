@@ -24,6 +24,10 @@ export interface SchoolProgramIdentity {
   colorPrimary: string; // "Couleur principale"
   colorDarker: string; // "Couleur foncée"
   colorNeutral: string; // "Couleur claire"
+  /** true = une couleur claire CUSTOM a été définie → les glyphes des tuiles
+   *  claires (ex. QUÉBEC) passent en claire-assombrie (theme.tileGlyph). Absent/
+   *  false → comportement gelé (fixture inchangé, non-régression). */
+  lightDefined?: boolean;
   /** SVG recommended; null → monogram (initials) on cream card + menu chip. */
   logoUrl: string | null;
   city: string;
