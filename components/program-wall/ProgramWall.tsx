@@ -159,7 +159,7 @@ export default function ProgramWall({ school, minContrast }: ProgramWallProps) {
         </div>
 
         {/* ===== ROW 2 ===== */}
-        <div className="blk b-kraft raise" style={{ gridColumn: "1/3", gridRow: "2/5" }}>
+        <div className="blk b-kraft raise" style={{ gridColumn: "1/3", gridRow: "2/5", ...(ld ? { background: "var(--cream)", color: "var(--tile-glyph)" } : {}) }}>
           <div className="kw" style={{ left: "10%", top: "5%", fontFamily: "'Bebas Neue'", fontSize: "1.25cqw", letterSpacing: ".26em" }}>— ICI C'EST —</div>
           <div className="kw red" style={{ left: "9%", top: "11.5%", fontFamily: "'Anton'", fontSize: r.cityFont }}>{r.cityUpper}</div>
           <div className="k-rule" style={{ left: "10%", top: "24%", width: "56%" }} />
@@ -196,7 +196,7 @@ export default function ProgramWall({ school, minContrast }: ProgramWallProps) {
         <div className="blk wblk f-cream" style={{ gridColumn: "8", gridRow: "3" }}>
           <div className="anton" style={{ fontSize: "8.2cqw", color: g, lineHeight: ".8" }}>#1</div>
         </div>
-        <div className="blk b-fleur" style={{ gridColumn: "9", gridRow: "3/5" }}>
+        <div className="blk b-fleur" style={{ gridColumn: "9", gridRow: "3/5", ...(ld ? { background: "var(--cream)" } : {}) }}>
           <div className="mask-fleur" style={{ position: "absolute", left: "10%", top: "8%", width: "40%", aspectRatio: "1", background: ld ? "var(--tile-glyph)" : "#C4B48D", transform: "rotate(-8deg)" }} />
           <div className="mask-maple" style={{ position: "absolute", right: "6%", top: "46%", width: "52%", aspectRatio: "1", background: ld ? "var(--tile-glyph)" : "#C4B48D", transform: "rotate(6deg)" }} />
           <div className="mask-maple" style={{ position: "absolute", right: "10%", top: "8%", width: "26%", aspectRatio: "1", background: ld ? "var(--tile-glyph)" : "#C4B48D", transform: "rotate(14deg)" }} />
@@ -245,7 +245,7 @@ export default function ProgramWall({ school, minContrast }: ProgramWallProps) {
           <svg style={{ width: "34%", color: "var(--on-c1)" }} viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.7 5.9 6.4.7-4.8 4.3 1.3 6.3L12 16.9 6.4 19.7l1.3-6.3L2.9 9.1l6.4-.7L12 2.5Z" /></svg>
         </div>
         <div className="blk p-diag" style={{ gridColumn: "6", gridRow: "5" }} />
-        <div className="blk wblk f-red" style={{ gridColumn: "7", gridRow: "5" }}>
+        <div className="blk wblk f-red" style={{ gridColumn: "7", gridRow: "5", ...(ld ? { background: "var(--cream)" } : {}) }}>
           <div className="anton" style={{ fontSize: "2.2cqw", color: ld ? "var(--tile-glyph)" : "var(--on-c1)", transform: "rotate(-8deg)" }}>CANADA</div>
         </div>
         <div className="blk wblk f-cream raise" style={{ gridColumn: "8", gridRow: "5" }}>
