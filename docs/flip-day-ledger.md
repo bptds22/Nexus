@@ -322,3 +322,63 @@ sport(s). Confirmed as intended, NOT a bug — no code/RLS change.
   hide legitimate claims; the **Transferts** page is the correction path if an
   athlete lands under the wrong coach.
 - Revisit only if a school reports mis-claims at scale.
+
+---
+
+## [ ] RLS initplan + FK indexes (Pass 1) — athlete-screen statement-timeout fix
+
+**Migration:** `supabase/migrations/20260727130000_rls_initplan_and_fk_indexes.sql`
+(64 policy rewrites + 20 FK indexes). **Held LOCAL — prove then flip prod on BP GO.**
+
+### Verdict (execution-proven, not code-reading)
+The athlete screen "won't load / multi-minute timeout → onboarding, logout" is a
+server-side **HTTP 500 from `canceling statement due to statement timeout`** (prod
+postgres log, bursts at 2026-07-27 09:54 **and** 10:27). NOT CORS, NOT the Supabase
+client type (bundle ships the cookieless localStorage client, verified), NOT a broken
+self-RLS (impersonation shows the athlete reads its own rows with data), NOT a stale
+bundle. Every earlier client-side theory was refuted by raw logs / the shipped binary.
+
+### Measured numbers (prod, athlete `b79de13d`, context=scolaire)
+- **Heavy athlete profil query** (embeds `users!athletes_coach_id_fkey` + full
+  `evaluations` + schools + team_athletes): **Planning 302 ms** / Execution 75 ms,
+  **147 KB plan** — the embeds drag the RLS of users/evaluations/schools into the plan,
+  which (post the 22 messaging migrations) references **school_coaches ×37, conversations
+  ×14** and calls `current_user_school_id ×86 / is_coach ×43 / is_recruiter ×37 /
+  is_approved_partner ×36`.
+- **Light `select id`**: Planning ~21 ms / Exec ~4 ms — but it **also 500'd** during the
+  bursts → the athlete dashboard fires a concurrent burst of heavy queries; under
+  contention even trivial ones exceed `statement_timeout`.
+- Civil athlete `fc73a8fe` and the recruiter session (09:33) were fast/200 — the failure
+  concentrates on the school-athlete dashboard burst.
+
+### What Pass 1 does / does NOT
+- **Does:** wrap every direct `auth.uid()` in the hot-table policies in `(select auth.uid())`
+  (initplan — evaluate once per query, not per row); + priority FK indexes to kill the
+  school_coaches/conversations seq-scans. Strictly behaviour-preserving.
+- **Does NOT:** consolidate `multiple_permissive_policies` (257 lints — **Pass 2**, biggest
+  planning win, deferred); no app-side embed lightening (separate track).
+- **Honest caveat:** the measured bottleneck is PLANNING (302 ms); initplan is mostly an
+  EXECUTION fix. The FK indexes + eventual permissive consolidation are what most cut
+  planning. The before/after EXPLAIN will quantify Pass 1's real gain — don't assume it
+  alone clears 302 ms.
+
+### Proof required BEFORE prod (local Windows loop)
+- `supabase/tests/rls-initplan-equivalence-matrix.sql` — per-role visibility matrix
+  (athlete scolaire+civil / coach / director / recruiter / parent). Run before + after,
+  `diff` MUST be empty. Any differing cell = STOP.
+- `supabase/tests/rls-initplan-explain-before-after.sql` — EXPLAIN heavy (302 ms → ?) +
+  light (21 ms → ?). Put both numbers in the report.
+- Then prod on BP's explicit per-migration GO (rule 9), with pre-apply backup. **Prod
+  index note:** consider `CREATE INDEX CONCURRENTLY` (outside a txn) at prod apply.
+- BP re-tests the iPhone **WITHOUT rebuild** — app code is innocent; if the DB answers
+  fast the existing screen loads.
+
+### Lessons (record)
+- **Process:** a verdict without raw output is not a verdict. A fix was once asserted at a
+  commit (`07dbd06`) that **never existed** (`git cat-file` → not a valid object); several
+  client-side theories were stated with confidence and refuted by logs. Rule: name the
+  cause only with its execution proof attached (raw log line / EXPLAIN / bundle grep).
+- **Technical:** the first paint must NEVER carry heavy embeds on an RLS-rich table — each
+  embed pulls that table's full policy set into the plan. And every RLS migration on a hot
+  table (conversations/users/…) adds its cost to the **planning of every query that touches
+  it, directly or via an embed**. Budget RLS complexity like a shared runtime cost.
