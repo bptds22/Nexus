@@ -1,0 +1,118 @@
+Pager usage is off.
+=== representative users ===
+athlete_scolaire= 5cb054c3-ebd0-437b-8995-6875efa4b8c3  athlete_civil= a2c104d3-2c7b-493a-9451-7cfee88081d1  coach= 11111111-1111-1111-1111-111111111111
+director= 2a74cbe0-fcda-49f6-8bb4-a4472784b42c  recruiter= 3e53ee75-bb0d-4188-8892-fc1f7a2bd112  parent= 7f2056f2-edb1-4f98-8aba-152e5e812078
+
+################ PART 1 — READ VISIBILITY MATRIX ################
+BEGIN
+SET
+SET
+    role_label    | athletes | users | conversations | messages | evaluations | favorites | pipeline | activity | notifs | schools | team_ath | team_coa | teams | sch_coa | par_ath | bcasts | activs 
+------------------+----------+-------+---------------+----------+-------------+-----------+----------+----------+--------+---------+----------+----------+-------+---------+---------+--------+--------
+ athlete_scolaire |        1 |    13 |             3 |       23 |           3 |         2 |        0 |        0 |     31 |    1164 |        1 |        8 |   178 |       4 |       0 |      0 |     47
+(1 row)
+
+ROLLBACK
+BEGIN
+SET
+SET
+  role_label   | count | count | count | count | count | count | count | count | count | count | count | count | count | count | count | count | count 
+---------------+-------+-------+-------+-------+-------+-------+-------+-------+-------+-------+-------+-------+-------+-------+-------+-------+-------
+ athlete_civil |     1 |    13 |     1 |     2 |     0 |     0 |     0 |     0 |     0 |  1164 |     1 |     8 |   178 |     3 |     0 |     0 |    47
+(1 row)
+
+ROLLBACK
+BEGIN
+SET
+SET
+ role_label | count | count | count | count | count | count | count | count | count | count | count | count | count | count | count | count | count 
+------------+-------+-------+-------+-------+-------+-------+-------+-------+-------+-------+-------+-------+-------+-------+-------+-------+-------
+ coach      |     6 |    18 |     4 |    11 |     0 |     2 |     2 |    10 |     0 |  1164 |     0 |     8 |   178 |     4 |     0 |     0 |    47
+(1 row)
+
+ROLLBACK
+BEGIN
+SET
+SET
+ role_label | count | count | count | count | count | count | count | count | count | count | count | count | count | count | count | count | count 
+------------+-------+-------+-------+-------+-------+-------+-------+-------+-------+-------+-------+-------+-------+-------+-------+-------+-------
+ director   |     1 |    19 |     4 |     7 |     0 |     0 |     0 |     0 |     0 |  1164 |     1 |     8 |   178 |     3 |     0 |     3 |    47
+(1 row)
+
+ROLLBACK
+BEGIN
+SET
+SET
+ role_label | count | count | count | count | count | count | count | count | count | count | count | count | count | count | count | count | count 
+------------+-------+-------+-------+-------+-------+-------+-------+-------+-------+-------+-------+-------+-------+-------+-------+-------+-------
+ recruiter  |    36 |    13 |     2 |     2 |    25 |     3 |     3 |    31 |     0 |  1164 |    11 |     8 |   572 |     0 |     0 |     0 |    47
+(1 row)
+
+ROLLBACK
+BEGIN
+SET
+SET
+ role_label | count | count | count | count | count | count | count | count | count | count | count | count | count | count | count | count | count 
+------------+-------+-------+-------+-------+-------+-------+-------+-------+-------+-------+-------+-------+-------+-------+-------+-------+-------
+ parent     |     0 |    13 |     1 |     2 |     0 |     0 |     0 |     0 |     0 |  1164 |     0 |     8 |   178 |     0 |     1 |     0 |    47
+(1 row)
+
+ROLLBACK
+
+################ PART 2 — WRITE-PATH ALLOW/DENY PROBES ################
+CREATE FUNCTION
+BEGIN
+SET
+SET
+ w1_coach_upd_own | w2_coach_upd_other | w3_coach_ins_own 
+------------------+--------------------+------------------
+ ALLOW(4)         | ALLOW(0)           | ALLOW(1)
+(1 row)
+
+ROLLBACK
+BEGIN
+SET
+SET
+ w4_ath_upd_own | w5_ath_upd_other | w6_ath_upd_own_user | w7_ath_upd_other_user 
+----------------+------------------+---------------------+-----------------------
+ ALLOW(1)       | ALLOW(0)         | ALLOW(1)            | ALLOW(0)
+(1 row)
+
+ROLLBACK
+BEGIN
+SET
+SET
+ w8_ath_conv_own_coach | w9_ath_conv_arbitrary 
+-----------------------+-----------------------
+ ERR-23505             | DENY
+(1 row)
+
+ROLLBACK
+BEGIN
+SET
+SET
+ w10_coach_conv_own_athlete | w11_coach_parent_arbitrary | w11b_coach_coach_generic 
+----------------------------+----------------------------+--------------------------
+ ALLOW(1)                   | DENY                       | ERR-23505
+(1 row)
+
+ROLLBACK
+BEGIN
+SET
+SET
+ w12_rec_fav_self | w13_rec_fav_impersonate | w14_rec_pipe_self 
+------------------+-------------------------+-------------------
+ ALLOW(1)         | DENY                    | ERR-23505
+(1 row)
+
+ROLLBACK
+BEGIN
+SET
+SET
+psql:/tmp/matrix.sql:298: WARNING:  notify_on_message: PUSH_DISPATCH_SECRET absent du Vault
+ w15_parent_msg_own | w16_parent_msg_foreign 
+--------------------+------------------------
+ ALLOW(1)           | DENY
+(1 row)
+
+ROLLBACK
