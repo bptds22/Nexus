@@ -1021,7 +1021,28 @@ nettoyage.
 (b) si déjà Micro → viser Small ; (c) faire le lot 2 de toute façon, car il
 supprime la demande CPU à 0 $/mois là où le tier ne fait que l'absorber.
 
-### [~] LOT 2a — team_invitations : APPLIQUE, VERIFICATION INCOMPLETE (2026-07-27)
+### [x] LOT 2a — team_invitations : APPLIQUE ET VERIFIE (2026-07-27)
+
+**Verification terminee apres l upgrade compute** (les 3 echecs de connexion
+etaient le REDEMARRAGE de l instance pendant l upgrade, pas une saturation) :
+
+| controle | resultat |
+|---|---|
+| sous-requetes inline restantes sur `team_invitations` | **0** |
+| `qual` de `Coaches select invitations on own teams` | `coach_manages_team(team_id)` |
+| `with_check` de `Athletes update own invitations` | `(is_own_athlete(athlete_id) AND (status = ANY (ARRAY['ACCEPTED','REJECTED'])))` — clause statut **preservee** |
+| filtre `DIRECTEUR_INTERIM` dans le helper | **PRESENT** |
+| sous-requetes inline, global | 32 -> **27** |
+
+**Mesure** (PREPARE + 8 EXECUTE sous le JWT reel, franchit le seuil des 5) :
+it1 3,77 ms (froid) -> it2 0,25 -> it6 0,10 -> **it8 0,04 ms**, moyenne it2-8
+**0,104 ms**. Conforme a la projection (~80 ms -> ~0,03 ms).
+
+**Upgrade compute confirme au catalogue** : `shared_buffers` 224 Mo -> **512 Mo**,
+`max_connections` 60 -> **90**, `work_mem` 2,1 -> **5 Mo**. Soit ~2 Go de RAM =
+**Small**, la cible recommandee (et non Micro : l instance etait deja Micro).
+
+
 
 Migration `rls_definer_conversion_lot2_team_invitations` — **retour `success:true`,
 donc appliquee et enregistree au catalogue**. Les 5 policies a sous-requete de
@@ -1034,13 +1055,10 @@ prototype jetable de la veille OMETTAIT ce filtre — l appliquer tel quel aurai
 **elargi l acces a tout school_coach**. Les corps exacts ont ete relus avant
 reecriture ; le filtre est present dans le helper livre.
 
-⚠️ **VERIFICATION NON TERMINEE.** Les trois requetes de controle qui devaient
-suivre (equivalence du predicat, catalogue relu, mesure repetee) ont echoue :
-`read ECONNRESET`, puis deux `Connection terminated due to connection timeout`,
-sur des requetes triviales. **Prod n'acceptait plus de nouvelle connexion.**
-Interrogation arretee volontairement pour ne pas aggraver une saturation
-probable (meme signature que l incident de l apres-midi : effondrement, puis
-auto-resorption).
+**Note d incident resolue** : les 3 echecs de connexion pendant la verification
+n etaient PAS une saturation — c etait le redemarrage de l instance pendant
+l upgrade compute lance par BP en parallele. L arret volontaire des requetes
+etait la bonne reaction, mais le diagnostic initial (saturation) etait faux.
 
 **RESTE A FAIRE des que prod repond** (dans cet ordre) :
 1. `select count(*) from pg_policies ... ~ 'FROM athletes|FROM team_coaches|FROM school_coaches'`
