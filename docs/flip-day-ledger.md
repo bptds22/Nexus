@@ -793,3 +793,46 @@ Le lot 2 doit être fait table par table, intégralement.
   embed pulls that table's full policy set into the plan. And every RLS migration on a hot
   table (conversations/users/…) adds its cost to the **planning of every query that touches
   it, directly or via an embed**. Budget RLS complexity like a shared runtime cost.
+
+---
+
+## [x] Athlete-screen resolution — the three-layer fix (2026-07-27)
+
+The "athlete screen empty / TypeError: Load failed / bounced to onboarding" was
+**one root cause with three layers**, proven by a live `pg_stat_activity` capture
+during BP's navigation burst: `athletes` PostgREST queries running **9, 20, 30,
+44 s of CPU** (`RUNNING`, zero lock waits, pool 26/60 — **CPU-bound, not pool/lock**),
+because the RLS was unoptimized AND the app fired a self-inflicted burst.
+
+- **Layer 1 — DB (applied to prod, verified separate-session):** wrapped every bare
+  `auth.uid()` in `(select auth.uid())` across all public policies (initplan) + 20 FK
+  indexes. Proof: `bare_auth_uid = 0`, witness raw qual `(user_id = ( SELECT auth.uid()
+  AS uid))`, EXPLAIN heavy athlete query **302 → ~102 ms** planning. Backup:
+  `supabase/rollback/20260727_rls_initplan_revert.sql` (155 original bodies). Applied via
+  committed DO-block batches (not a rollbackable measurement). Caught + fixed a
+  double-wrap (case-sensitive filter bug) mid-apply.
+- **Layer 2a — guard (`4f0e1d6`):** `app/athlete/layout.tsx` no longer ejects a logged-in
+  athlete to `/athlete/onboarding` on a FAILED `onboarding_complete` read — a transient
+  DB slowdown used to fall into `!isComplete → redirect`. Now: `error → render shell`; only
+  a *successful* read of `onboarding_complete === false` routes to the wizard.
+- **Layer 2b — coalescence (`3f1f9f5`):** `useAthleteVisibility` mounted from ~17 dashboard
+  components fired 17× `getUser + get_sport_view_stats`. A module-level in-flight promise
+  collapses concurrent mounts to **1** round-trip (cleared on settle, retry-safe).
+
+**Concurrent-prod note:** this initplan apply ran while CC-Windows applied its "LOT 1
+DEFINER" conversion to the SAME prod RLS. Verified no clobber: `bare = 0` holds, indexes
+survive, witnesses stay wrapped (155 wrapped → 140 wrapped + ~15 converted to DEFINER
+function calls — complementary, not conflicting). **Two agents on one prod DB is a real
+hazard — serialize prod RLS work next time.**
+
+**Custody rule (widened):** a fix's signature must be located in the SHIPPED bundle, but
+know which survive minification. Static-grep-able: string literals (the guard's
+`"rendering shell, NOT redirecting"` warn) and structural absence (no `@supabase/ssr`
+cookie client). NOT grep-able (comments/var-names stripped): the coalescence — its proof
+is **runtime** (Network tab shows 1 `get_sport_view_stats`, not 17). Don't claim a grep
+you can't produce.
+
+**Phantom log (fixes cited that never existed — each verified absent before acting):**
+`07dbd06`, the "cookieless commit" (the gate has lived in `f27bfa3`/`d5073cb` all along),
+`sync_user_role_claim` trigger, `f1a01c8` "dedup". Rule: `git cat-file -t <hash>` /
+catalog read BEFORE implementing a cited fix — several were phantoms.
