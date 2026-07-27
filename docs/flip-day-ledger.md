@@ -991,6 +991,36 @@ supprimer avant validation complète de la conversion.**
 `_deprecated_athlete_views_2026_05` et `_deprecated_profile_views_2026_05`
 préexistaient à cette semaine — hors périmètre, non touchés.
 
+### Upgrade compute — NON EXÉCUTÉ (2026-07-27) : hors de portée outillage + prémisse à vérifier
+
+Consigne reçue : « upgrade nano → Micro ». **Non exécuté**, pour deux raisons
+factuelles.
+
+1. **Aucun outil ne l'expose.** Le serveur MCP Supabase disponible ne couvre pas
+   le dimensionnement compute (les outils voisins sont `restore_project` —
+   destiné aux projets EN PAUSE, à ne pas confondre —, `create_branch`,
+   `create_project`, `deploy_edge_function`, `get_advisors`). `get_project` ne
+   renvoie pas non plus la taille d'instance. **L'upgrade est une opération
+   dashboard/facturation, à faire par BP.**
+2. **L'instance semble DÉJÀ être Micro, pas nano.** `shared_buffers = 224 Mo`
+   correspond à ~1 Go de RAM ; un nano (0,5 Go) donnerait ~128 Mo. Un
+   « nano → Micro » serait alors un no-op. **À confirmer au dashboard avant de
+   payer quoi que ce soit.**
+
+**Et la cible recommandée était Small (~15 $/mois), pas Micro** — voir l'entrée
+dimensionnement ci-dessus. Passer à Micro alors qu'on y est déjà ne changerait
+rien à la crise observée.
+
+**Backup avant opération** : les sauvegardes managées Supabase (PITR/daily) ne
+sont pas pilotables depuis les outils disponibles — à vérifier au dashboard.
+Ce qui EST confirmé intact côté logique : `public._rls_backup_20260727`
+(47 corps de policies d'origine), seul artefact volontairement conservé après le
+nettoyage.
+
+**Ordre recommandé, inchangé** : (a) confirmer le tier réel au dashboard ;
+(b) si déjà Micro → viser Small ; (c) faire le lot 2 de toute façon, car il
+supprime la demande CPU à 0 $/mois là où le tier ne fait que l'absorber.
+
 ### Lessons (record)
 - **Process:** a verdict without raw output is not a verdict. A fix was once asserted at a
   commit (`07dbd06`) that **never existed** (`git cat-file` → not a valid object); several
