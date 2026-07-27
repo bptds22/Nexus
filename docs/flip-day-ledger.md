@@ -818,6 +818,103 @@ soit passer par PostgREST, soit reproduire `PREPARE` + ≥6 `EXECUTE` — ce que
 fait le test ci-dessus. La règle tient même si la conclusion s'est inversée :
 c'est elle qui a permis de voir que le correctif proposé était une régression.
 
+### Consolidation de la semaine — état au 2026-07-27 fin de journée
+
+#### A. Ce que CETTE session a réellement touché
+
+**APPLIQUÉ À PROD, commis au catalogue (`schema_migrations`)** :
+
+| objet | version | contenu |
+|---|---|---|
+| `rls_backup_before_definer_conversion` | 20260727183338 | table `public._rls_backup_20260727` — les **47** corps de policies d'origine |
+| `rls_equivalence_baseline_capture` | 20260727183400 | table `public._rls_equiv_20260727` (matrice avant/après) |
+| `rls_definer_conversion_lot1` | 20260727183554 | **15 policies / 9 tables** + helpers `is_own_athlete()`, `is_coach_of_athlete()` |
+
+**APPLIQUÉ À PROD, PAS commis au catalogue** (dette à régulariser) :
+- fonction `public._snap(text,text,uuid)` — sonde de matrice d'équivalence, créée
+  via `execute_sql` et non via une migration. Sans danger (lecture seule, appelée
+  à la main) mais **orpheline** : absente de `schema_migrations` et du repo.
+- `ALTER TABLE public._rls_equiv_20260727 DISABLE ROW LEVEL SECURITY` + grants
+  `authenticated` — fait via `execute_sql`. La table ne contient que des
+  comptages, mais elle est lisible par tout authentifié.
+- `DROP FUNCTION public._rls_equiv_snap(text)` — première version SECURITY DEFINER
+  (buggée : elle contournait la RLS et comptait les tables entières).
+
+**JAMAIS APPLIQUÉ NULLE PART** : le **lot 2** — les **32** policies à sous-requête
+inline restantes (dont les 22 « sur mesure »). C'est ce qui débloquerait
+`app/athlete/profil`.
+
+**APPLIQUÉ EN LOCAL SEULEMENT** (Docker `supabase_db_Nexus`) :
+`20260727130000_rls_initplan_and_fk_indexes.sql` (version corrigée, 9 index) et
+`20260727140000_rls_pass2_definer_hot_path.sql`. Prouvés localement, jamais
+poussés en prod.
+
+⚠️ **PIÈGE `db push`** : ces deux fichiers sont commis dans le repo mais prod a
+reçu l'initplan par **SQL direct, non enregistré**. Un futur `db push` les
+rejouerait — et `20260727130000` **régresserait** `evaluations."evaluations coach"`
+de `TO authenticated` vers `TO public`. À régulariser avant tout push :
+enregistrer la version côté prod, ou corriger le fichier.
+
+#### B. État partiel assumé (pas un lot avorté)
+
+La conversion DEFINER est **partielle mais cohérente** : 15 policies converties
+sur 47, et surtout **9 tables converties à 100 %**. La règle de totalité par
+table est respectée — aucune table n'est à moitié convertie. Les 32 restantes
+sont sur des tables **intactes**, dans leur forme d'origine. Il n'y a donc pas
+d'état bâtard : soit une table est entièrement convertie, soit elle n'est pas
+touchée.
+
+#### C. Verdicts de la semaine
+
+- **`plan_cache_mode` : réfuté et inversé.** `force_custom_plan` (proposé) =
+  3,2 ms constant ; `auto` (actuel) = 1,4 ms ; `force_generic_plan` = 0,5 ms.
+  Le plan générique est le PLUS rapide et `auto` y bascule déjà tout seul.
+  **NON APPLIQUÉ** — il aurait été une régression ~6× pour tous les rôles.
+- **Le « retrait du trigger compteur de vues » n'a jamais eu lieu** :
+  `trg_log_view` est toujours en place sur `recruiter_athlete_views`, et aucune
+  colonne `profile_views_count` n'existe.
+- **Le fix cookieless existait déjà** (`f27bfa3`, sur origin) — trois jours de
+  chasse sur un correctif présent depuis le début.
+- **Buckets** : `avatars` et `legal-documents` sont `public = true`. Les 5
+  athlètes ayant une photo sont **tous mineurs**. Décision produit prise (fermer),
+  chantier séquencé, timing non arrêté.
+
+#### D. Règles gagnées cette semaine
+
+1. **La preuve d'un correctif inclut son hash sur origin.** Corollaire : une
+   mesure prise dans une transaction annulée prouve le MÉCANISME, jamais le
+   DÉPLOIEMENT. Les deux se rapportent séparément.
+2. **Mesurer via le chemin de l'app, pas en SQL direct.** Un `EXPLAIN` direct
+   reçoit toujours un plan *custom* et ment par omission sur le plan *générique*
+   que reçoit l'app via ses prepared statements. Reproduire `PREPARE` + ≥6
+   `EXECUTE`, ou passer par PostgREST.
+3. **Conversion RLS : totale par table, ou rien.** Les policies permissives sont
+   OR-ées donc toutes planifiées. Mesuré : `team_invitations` 1 sur 5 → 224→75 ms
+   (rien) ; 5 sur 5 → 0,03 ms.
+4. **Custody jusqu'au device.** Un correctif n'est acquis que lorsqu'il est
+   vérifié sur l'appareil réel. Catalogue vert + EXPLAIN vert ≠ écran qui
+   s'affiche : cette semaine, chaque maillon a été prouvé isolément pendant que
+   l'écran restait mort.
+5. **Vérifier la prémisse avant d'exécuter.** Cinq consignes de la semaine
+   reposaient sur un état supposé faux (fix jamais commité, bucket privé, trigger
+   retiré, policy manquante, verrou write-hot). Les cinq ont été réfutées par le
+   catalogue avant toute action.
+
+#### E. Chantier actif — bissection binaire (Mac)
+
+Base 1.1.1 buildée localement contre la DB actuelle, par groupes de features,
+test device à chaque étape. **Silence prod maintenu de mon côté** pour ne pas
+polluer les mesures.
+
+Facteur confondant écarté : aucun changement DB modifié/restrictif ne touche le
+chemin de LECTURE athlète. Les deux seules contraintes posées après 1.1.1
+(`team_athletes_one_per_sport`, `teams_season_guard`) concernent des ÉCRITURES
+d'équipe. Voir l'inventaire des 44 migrations depuis le 20 juillet.
+
+⚠️ La base de code a bougé pendant la bissection (`3f1f9f5` coalesce 17×→1×,
+`4f0e1d6` no-eject-on-failed-read, `d2cdbfe`). Bissecter sur une cible mouvante
+donne un résultat non reproductible — figer avant de conclure.
+
 ### Lessons (record)
 - **Process:** a verdict without raw output is not a verdict. A fix was once asserted at a
   commit (`07dbd06`) that **never existed** (`git cat-file` → not a valid object); several
