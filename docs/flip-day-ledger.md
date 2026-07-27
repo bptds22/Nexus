@@ -560,6 +560,69 @@ rafale. À confirmer par un EXPLAIN prod après l'apply.
 6. BP re-teste l'iPhone **SANS rebuild** — le code applicatif est innocent ; si
    la DB répond vite, l'écran existant se charge.
 
+### Passe 2b — mesures PROD du 2026-07-27 (transaction annulée, prod inchangée)
+
+Diagnostic établi sur la session iPhone réelle de BP (100 requêtes / 72,6 s,
+11 × HTTP 500). `authenticated` porte `statement_timeout = 8s` en prod : chaque
+500 est une requête qui a dépassé 8 s. La ligne de partage est nette —
+**`athletes` AVEC embeds PostgREST → 500 ; sans embed → 200**. La même URL
+apparaît en 500 ET en 200 : dépassement intermittent, pas erreur déterministe.
+
+**Ce que la cause n'est PAS** (réfuté par le catalogue, pas par raisonnement) :
+`team_invitations` 500 sur un `select id` alors que la table a **0 ligne vive**
+(`ins=2 upd=1 del=3 live=0`), que `idx_team_invitations_athlete (athlete_id)`
+**existe déjà**, qu'aucun `AccessExclusiveLock` n'est posé, qu'aucune session
+n'attend dans `pg_stat_activity`, et que son seul trigger est un
+`AFTER UPDATE OF status WHEN status='ACCEPTED'` (inerte en lecture). Volume,
+index et verrous sont donc exclus par construction. Un compteur dénormalisé sur
+`athletes` n'aiderait pas non plus : la lecture paierait les 16 policies
+d'`athletes` au lieu de celles de `team_invitations` — même taxe, plus un
+trigger à maintenir.
+
+**La cause : l'expansion des policies RLS au PLANNING.** 38 policies sur
+14 tables portent une sous-requête inline (`athlete_id IN (SELECT … FROM
+athletes …)` ou `EXISTS(athletes …)`) qui déplie tout le jeu de policies de la
+table visée dans le plan, récursivement. 22 déplient `athletes` (16 policies),
+8 déplient `conversations` (25), 3 `school_coaches`.
+
+**RÈGLE DÉCOUVERTE — la conversion doit être TOTALE par table.** Les policies
+permissives sont OR-ées : le planificateur les planifie TOUTES, quelle que soit
+celle qui matche. Convertir une seule policy ne donne qu'un gain partiel.
+Mesuré sur prod, `team_invitations` :
+
+| | planning |
+|---|---|
+| avant | 79,5 – 224,5 ms |
+| 1 policy convertie sur 5 | 75,4 – 75,8 ms (variance tuée, plancher intact) |
+| **les 5 converties** | **0,03 – 0,11 ms** |
+
+Autres mesures prod (JWT athlète réel `b79de13d`) : profil lourd 6 embeds =
+247 ms planning / 86 ms exec à froid ; `athlete_notifications` 5,4 → 0,1 ms ;
+`team_athletes` reste à ~100 ms tant que ses 4 policies ne sont pas toutes
+converties.
+
+**Portée du correctif** : toutes les policies porteuses de sous-requête des
+tables du premier paint athlète — `athlete_notifications`, `athlete_suggestions`,
+`team_invitations`, `athlete_targets`, `recruiter_athlete_views`,
+`recruiter_favorites`, `team_athletes`, `conversations`, `evaluations` — **table
+par table, intégralement**. Helpers : `is_own_athlete(uuid)` couvre les deux
+formes athlète ; `coach_reaches_team(uuid)` la forme coach.
+
+### [ ] FIX APP OBLIGATOIRE avant soumission App Store (pas aujourd'hui)
+
+Mesuré sur la session iPhone : **9 URL distinctes tirées DEUX FOIS à 0–4 ms
+d'intervalle** (le profil lourd en double, la requête d'en-tête en double,
+`users.onboarding_complete` en double), rafales de 10–13 requêtes parallèles, et
+**~20 appels `/auth/v1/user`** sur 72 s.
+
+⚠️ **Nuance factuelle** : ce n'est PAS un retry-storm sans backoff — aucun
+réessai après échec n'apparaît dans les logs. C'est du **double-fetch
+concurrent** (double montage React / deux hooks sans déduplication) plus une
+revalidation de session répétée. Le correctif n'est donc pas « ajouter un
+backoff » mais **dédupliquer/mettre en cache les fetchs et mutualiser la session**.
+Effet : divise la rafale par deux. À faire au prochain build — une app qui
+double chaque requête sur un backend en difficulté est une bombe de rentrée.
+
 ### Lessons (record)
 - **Process:** a verdict without raw output is not a verdict. A fix was once asserted at a
   commit (`07dbd06`) that **never existed** (`git cat-file` → not a valid object); several
