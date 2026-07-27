@@ -1,5 +1,36 @@
 # Flip-day ledger — DB changes held LOCAL, pending prod
 
+> ## ✅ PRE-FLIGHT DB : FAIT — 2026-07-26 (anticipé, décision BP)
+>
+> **Les 16 migrations tenues ont été appliquées à `nexus-prod`
+> (`nrloizyemulbhujrqhgx`), dans l'ordre de nom de fichier, une par une,
+> vérifiées entre chaque.** Le flip day n'a plus que **merge + release**.
+>
+> - **Pré-flight diff** : les 5 objets vivants réécrits par le batch
+>   (`message_insert_to_pipeline`, `log_coach_activity_message`,
+>   `_messageable_staff_ids`, `is_conversation_participant`, `notify_on_message`)
+>   ont été diffés corps-à-corps contre leur base git → **zéro dérive
+>   sémantique** (md5 des corps normalisés identiques ; prod diffère seulement
+>   par le strip des commentaires, artefact de l'apply MCP de `20260722100000`).
+> - **Règle enum/txn respectée** : `20260723120000_coach_coach_enum` appliquée
+>   et committée SEULE avant `20260723120100`.
+> - **Smoke test** (chemin vivant recruteur→coach, sous RLS, comptes démo
+>   `@nexussports.ca`, transaction annulée) : fil créé → message livré →
+>   `recruiter_pipeline` créé à **CONTACTE** → activité `NEW_MESSAGE` au coach.
+> - **Inertie vérifiée** : conversations 1, messages 1, pipeline 4, activities 8
+>   — identiques avant/après. Zéro résidu de test.
+> - **Versions `schema_migrations` réalignées** sur les noms de fichiers du repo
+>   (l'apply MCP attribue sinon un timestamp du jour → un futur `db push` les
+>   rejouerait).
+> - **Kit de revert** : `scratchpad/revert-kit/` (REVERT.sql + les corps
+>   d'origine + les 2 policies d'origine).
+> - ⚠️ **Reste à faire (hors batch)** : les 5 helpers DEFINER de
+>   `20260725120000_p2_parent_coach_rls.sql` n'ont pas de
+>   `REVOKE ALL … FROM public, anon` (toutes les autres migrations du batch en
+>   ont un). `coach_reaches_athlete` et `is_parent_link` sont donc exécutables
+>   par `anon` — sondes booléennes nécessitant 2 UUID connus. À corriger par une
+>   migration de suivi.
+
 Single source of truth for schema/RLS changes that are **applied locally and
 proven, but deliberately NOT applied to production yet**. They are applied to
 prod as a batch on the P1 messaging **flip-day pre-flight**, in filename order,
@@ -21,7 +52,7 @@ docker exec -e PGCLIENTENCODING=UTF8 supabase_db_Nexus psql -U postgres -d postg
 
 ## Flip-day checklist
 
-### [ ] P4 — COACH_COACH messaging (coach↔coach same-school, directors included)
+### [x] P4 — COACH_COACH messaging (coach↔coach same-school, directors included)
 Branch `feat/messaging-athlete-coach`. Proven locally 15/15 (per-role suite:
 same-school allow, cross-school deny incl. own-athlete hole-closure, director↔coach,
 recruiter paths untouched, per-type CHECK rejects null athlete on the 4 anchored
@@ -45,7 +76,7 @@ immutability inherited, mark-read).
 Re-run its proof after prod apply: `scratchpad/validation-coach-coach.sql`
 (+ the T13 uuid fix) — expect 15/15.
 
-### [ ] Coach-initiated RECRUTEUR_COACH (favoris-symmetric)
+### [x] Coach-initiated RECRUTEUR_COACH (favoris-symmetric)
 Branch `feat/messaging-athlete-coach`. Proven locally 8/8 (allow with
 favoris+ownership; deny zero-favoris — **bypass closed**; deny non-owned anchor;
 recruiter read/reply; recruiter-initiate intact; helper returns).
@@ -61,7 +92,7 @@ Re-run its proof after prod apply: `scratchpad/validation-coach-initiate.sql` �
 ⚠️ **SUPERSEDED by the reversal below** — apply both in order; the favoris
 precondition no longer applies after `20260723150000`.
 
-### [ ] Coach→recruiter OPENED — favoris precondition REVERSED (deliberate)
+### [x] Coach→recruiter OPENED — favoris precondition REVERSED (deliberate)
 Branch `feat/messaging-athlete-coach`. Proven locally 5/5 (allow WITHOUT favoris;
 deny non-owned anchor; deny non-recruiter target; recruiter reads; recruiter-
 initiate intact).
@@ -78,7 +109,7 @@ initiate intact).
 
 Re-run its proof after prod apply: `scratchpad/validation-open-recruiter.sql` — expect 5/5.
 
-### [ ] Guard — PARENT_COACH excluded from generic coach insert (SECURITY, this train)
+### [x] Guard — PARENT_COACH excluded from generic coach insert (SECURITY, this train)
 Branch `feat/messaging-athlete-coach`. A **today-bug**, not a P2 feature: the generic
 `coach_conversations_insert` allowed any type except COACH_COACH/RECRUTEUR_COACH — so
 it permitted **PARENT_COACH** (Phase A type). Its per-type CHECK only requires
@@ -96,7 +127,7 @@ creates PARENT_COACH today (0 rows, no UI), so the fix breaks nothing live.
 Proof (local): `scratchpad/prove-guard.sql` — coach PARENT_COACH-with-arbitrary-parent
 insert BLOCKED (t), ATHLETE_COACH own-athlete insert still ALLOWED (t).
 
-### [ ] Broadcast messaging (Groupe, option a — N individual threads)
+### [x] Broadcast messaging (Groupe, option a — N individual threads)
 Branch `feat/messaging-athlete-coach`. Proven locally 7/7 (all-athletes = school
 count only; **leak check: other-school athlete never reached**; martin received a
 normal thread; team resolves to members; recruiter favorited_coaches; "Envoyé à N"
@@ -111,7 +142,7 @@ via recipient_count; every broadcast msg carries broadcast_id).
 
 Re-run its proof after prod apply: `scratchpad/validation-broadcast.sql` — expect 7/7.
 
-### [ ] P3 — recruteur↔athlète messaging (RLS + blackout + pipeline + notify)
+### [x] P3 — recruteur↔athlète messaging (RLS + blackout + pipeline + notify)
 Branch `feat/messaging-athlete-coach` (merged from `feat/messaging-recruiter-athlete`).
 Proven locally **11/11** (per-role suite `scratchpad/validation-p3-ra.sql`): recruiter+
 favorite creates RA (allow), recruiter+non-favorite denied (favoris-gate, bypass
@@ -156,7 +187,7 @@ Phase A → **NO `ALTER TYPE ADD VALUE`**. Two shipped-object changes land:
 `RECRUTEUR_COACH` (file 2). Eligibility ships as a `true` stub. Re-run
 `scratchpad/validation-p3-ra.sql` after prod apply → expect 11/11.
 
-### [ ] Broadcast — ciblage propriétaire + remontée du fil (correctifs #2)
+### [x] Broadcast — ciblage propriétaire + remontée du fil (correctifs #2)
 Branch `feat/messaging-athlete-coach`. Proven locally 4/4
 (`scratchpad/proof-broadcast-scope.sql`): coach régulier `all_athletes` → SES
 athlètes seulement (coachb 0-own → 0 ; Tremblay 2-own → 2) ; directeur
@@ -177,7 +208,7 @@ athlètes seulement (coachb 0-own → 0 ; Tremblay 2-own → 2) ; directeur
 
 Re-run its proof après prod apply : `scratchpad/proof-broadcast-scope.sql` — expect 4/4.
 
-### [ ] Transferts — assigner un athlète non réclamé (correctif #1)
+### [x] Transferts — assigner un athlète non réclamé (correctif #1)
 Branch `feat/messaging-athlete-coach`. Règle validée BP. Proven locally 4/4
 (`scratchpad/proof-unclaimed-assign.sql`): coach régulier assigne un athlète NON
 RÉCLAMÉ → autre coach (allow) ; → soi (allow) ; → non-coach (deny) ; réassignation
@@ -198,7 +229,7 @@ d'un athlète DÉJÀ réclamé par un non-directeur reste DENY (aucun élargisse
 
 Re-run its proof après prod apply : `scratchpad/proof-unclaimed-assign.sql` — expect 4/4.
 
-### [ ] Notification tableau de bord — message coach↔coach (correctif #6)
+### [x] Notification tableau de bord — message coach↔coach (correctif #6)
 Branch `feat/messaging-athlete-coach`. Proven locally : diffusion Tremblay →
 coachs crée +1 activité NEW_MESSAGE pour coachb (2 → 3, preview de la diffusion).
 
@@ -215,7 +246,7 @@ coachs crée +1 activité NEW_MESSAGE pour coachb (2 → 3, preview de la diffus
   vers ATHLÈTES notifient l'athlète via son inbox (déjà OK) ; `activities` est
   coach-facing donc pas d'entrée athlète (hors-scope).
 
-### [ ] Broadcast « Une équipe » = athlètes + coachs (correctif systémique)
+### [x] Broadcast « Une équipe » = athlètes + coachs (correctif systémique)
 Branch `feat/messaging-athlete-coach`. Proven locally 4/4 (`scratchpad/proof-team.sql`):
 un broadcast équipe atteint les athlètes (team_athletes) ET les coachs
 (team_coaches), et un coach de l'équipe SANS athlète (coachb, assistant Titans)
@@ -231,7 +262,7 @@ reçoit + voit le fil.
 
 Re-run après prod apply : `scratchpad/proof-team.sql` — expect 4/4.
 
-### [ ] Staff-picker civil — fallback team_coaches ressuscité (correctif civil)
+### [x] Staff-picker civil — fallback team_coaches ressuscité (correctif civil)
 Branch `feat/messaging-athlete-coach`. Trouvé pendant la PASSE VÉRIF CIVIL :
 `_messageable_staff_ids` branchait son fallback team_coaches sur
 `athletes.league_team_id`, colonne JAMAIS peuplée (onboarding + saveAthlete
@@ -275,7 +306,7 @@ already-applied statements no-op. The only ordering constraint is enum-before-mo
 
 ---
 
-### [ ] P2 — parent↔coach RLS + picker RPCs + notify fan-out  ⚠️ PROMOTED TO TRAIN-1
+### [x] P2 — parent↔coach RLS + picker RPCs + notify fan-out  ⚠️ PROMOTED TO TRAIN-1
 **Was train-2; PROMOTED to the P1 pre-flight batch.** The P2 UI shipped on THIS
 train (parent Messages portal surface + coach Parent tile / inbox segment / thread
 view), so the DB half is now a FLIP DEPENDENCY of train-1 — the coach compose +
@@ -325,10 +356,21 @@ sport(s). Confirmed as intended, NOT a bug — no code/RLS change.
 
 ---
 
-## [ ] RLS initplan + FK indexes (Pass 1) — athlete-screen statement-timeout fix
+## [ ] RLS initplan + FK indexes (Pass 1) + DEFINER hot path (Pass 2) — athlete-screen statement-timeout fix
 
-**Migration:** `supabase/migrations/20260727130000_rls_initplan_and_fk_indexes.sql`
-(64 policy rewrites + 20 FK indexes). **Held LOCAL — prove then flip prod on BP GO.**
+**Migrations:** `supabase/migrations/20260727130000_rls_initplan_and_fk_indexes.sql`
+(64 policy rewrites + **9** FK indexes — 11 of the Mac's 20 were redundant, see
+écarts below) and `supabase/migrations/20260727140000_rls_pass2_definer_hot_path.sql`
+(2 policies de-subqueried into DEFINER helpers).
+**Held LOCAL — proven on the Windows loop 2026-07-27; flip prod on BP GO.**
+
+> **VERDICT D'AUTEUR : les deux passes partent ensemble. Pass 1 SEULE NE SUFFIT
+> PAS.** Mesuré, pas déduit : pass 1 ne fait rien gagner au PLANNING (64,1 ms →
+> 69,8 ms warm) alors que c'est le planning qui pèse ~80 % du temps total et qui
+> déclenche le `statement_timeout` en prod. Pass 1 divise l'exécution par ~2, ce
+> qui ne rattrape pas 302 ms de planning. Pass 2 fait tomber le planning à
+> 12 ms (÷5,3). Un flip pass-1-seule serait le « flip à moitié efficace » à
+> éviter.
 
 ### Verdict (execution-proven, not code-reading)
 The athlete screen "won't load / multi-minute timeout → onboarding, logout" is a
@@ -362,16 +404,161 @@ bundle. Every earlier client-side theory was refuted by raw logs / the shipped b
   planning. The before/after EXPLAIN will quantify Pass 1's real gain — don't assume it
   alone clears 302 ms.
 
-### Proof required BEFORE prod (local Windows loop)
-- `supabase/tests/rls-initplan-equivalence-matrix.sql` — per-role visibility matrix
-  (athlete scolaire+civil / coach / director / recruiter / parent). Run before + after,
-  `diff` MUST be empty. Any differing cell = STOP.
-- `supabase/tests/rls-initplan-explain-before-after.sql` — EXPLAIN heavy (302 ms → ?) +
-  light (21 ms → ?). Put both numbers in the report.
-- Then prod on BP's explicit per-migration GO (rule 9), with pre-apply backup. **Prod
-  index note:** consider `CREATE INDEX CONCURRENTLY` (outside a txn) at prod apply.
-- BP re-tests the iPhone **WITHOUT rebuild** — app code is innocent; if the DB answers
-  fast the existing screen loads.
+### Pass 2 — ce qui coûte VRAIMENT le planning (mesuré 2026-07-27)
+
+Ce n'est **pas** la consolidation des 257 `multiple_permissive_policies`.
+Fusionner N policies permissives en une seule policy OR-ée produit le même arbre
+d'expression : ce lint est surtout un coût d'EXÉCUTION. Testé, le gain planning
+serait marginal.
+
+Le vrai moteur, ce sont les **sous-requêtes inline** dans les policies du chemin
+chaud. Une sous-requête sur une autre table tire cette table **et tout son jeu de
+policies** dans le plan, récursivement :
+
+```
+users."Users read conversation participants" -> conversations
+  -> les 9 policies SELECT de conversations  -> athletes
+    -> les 6 policies SELECT d'athletes      -> school_coaches -> ...
+```
+
+C'est ça, le plan de 147 Ko et les 528 subplans vus en prod. Une fonction
+`SECURITY DEFINER` est **opaque au planificateur** : elle ne tire rien et casse
+la récursion. C'est déjà la règle 4 de CLAUDE.md — ces deux policies la violaient.
+
+**Preuve de mécanisme** (mêmes 3 requêtes, plan complet) :
+
+| | subplans | occurrences `school_coaches` | scans `conversations` | taille du plan |
+|---|---|---|---|---|
+| pass 0 | 232 | 89 | 14 | 156 Ko |
+| pass 1 | 232 | 44 | 14 | 144 Ko |
+| **pass 2** | **62** | **1** | **0** | **41 Ko** |
+
+Le plan local (156 Ko) colle au plan prod (147 Ko) : la STRUCTURE du plan est
+dictée par le schéma, pas par le volume de données. C'est ce qui permet
+d'attendre en prod un gain du même ordre qu'en local.
+
+### Chiffres mesurés (local, requête lourde du dashboard athlète, médiane à chaud)
+
+| | planning | exécution | total |
+|---|---|---|---|
+| pass 0 (pristine) | 64,1 ms | 23,6 ms | 87,7 ms |
+| après pass 1 | 69,8 ms | 12,8 ms | 82,6 ms |
+| **après pass 2** | **12,1 ms** | **9,0 ms** | **21,1 ms** |
+
+- requête légère `select id` : 0,338 → 0,335 → **0,182 ms**
+- `users.onboarding_complete` (le gate de `app/athlete/layout.tsx`, tiré à chaque
+  chargement de page athlète) : 3,714 → 3,545 → **0,467 ms** (÷8)
+- À froid (1re requête d'une session, le cas réel d'un cold start) :
+  125,4 ms → 92,5 ms → **26,7 ms** total.
+
+**Transposition prod (extrapolation, pas une mesure) :** prod était à 302 ms
+planning + 75 ms exec = 377 ms. Au ratio local (÷5,3 planning, ÷2,6 exec) →
+~57 + ~29 = **~86 ms**, sous le `statement_timeout` avec de la marge même en
+rafale. À confirmer par un EXPLAIN prod après l'apply.
+
+### Écarts vs la passe 1 du Mac (corrigés + documentés)
+
+1. **11 index sur 20 étaient redondants** — retirés. `CREATE INDEX IF NOT EXISTS`
+   ne teste que le NOM : les 11 portaient un nom neuf (`idx_athletes_coach_id`)
+   alors qu'un index de même colonne existait sous un nom plus court
+   (`idx_athletes_coach`) ou en préfixe d'un composite. Ils auraient donc bel et
+   bien été créés en double. Coût : écriture amplifiée sur des tables chaudes,
+   bloat, autovacuum — et un chemin de plus à considérer au planificateur, ce qui
+   joue CONTRE une passe qui vise le temps de planning. Audit rejouable :
+   `supabase/tests/rls-initplan-index-redundancy-audit.sql` (local : 9 CREATE /
+   11 REDUNDANT). ⚠️ **à rejouer sur prod avant l'apply** — le jeu d'index de
+   prod n'est pas garanti identique.
+2. **`evaluations."evaluations coach"` réécrite hors substitution mécanique** —
+   la passe 1 la passait de `TO public` à `TO authenticated` et lui ajoutait un
+   `WITH CHECK` explicite. Le `WITH CHECK` est inerte (sur une policy `FOR ALL`,
+   un WITH CHECK omis retombe sur le USING) ; le changement de rôle est un
+   rétrécissement, inerte lui aussi (anon voit 0 évaluation avant comme après —
+   vérifié ; seuls anon et authenticated sont soumis à la RLS, service_role et
+   postgres ont BYPASSRLS). **Restaurée à l'identique** : la valeur de la passe 1
+   tient entièrement à sa garantie « rien d'autre que la cadence d'évaluation ne
+   change ». Le resserrement `TO authenticated` reste souhaitable → migration de
+   portée séparée.
+3. **Couverture : 64/64 policies, 0 en trop.** Les 64 réécrites = exactement
+   100 % des policies à `auth.uid()` nu des 10 tables chaudes ; aucune policy
+   sans `auth.uid()` nu n'a été touchée. Restent **91** policies à `auth.uid()`
+   nu sur 39 autres tables (hors chemin chaud) — passe 3 éventuelle, sans
+   urgence.
+4. **Non converti délibérément : `users."Coaches lookup orphan athletes"`.** Son
+   `EXISTS(athletes …)` s'évalue sous la RLS de l'APPELANT ; un athlète orphelin
+   a `school_id NULL` donc la branche « mon école » ne peut pas matcher — la
+   policy ne se déclenche aujourd'hui que pour les orphelins que le coach possède
+   DÉJÀ, autrement dit elle est quasi morte. La passer en DEFINER laisserait
+   N'IMPORTE quel coach lire la ligne `users` de N'IMPORTE quel orphelin :
+   **élargissement d'accès**, pas un changement de perf. Ça aurait fait gagner
+   12 ms → 6 ms de planning ; ça ne vaut pas de faire passer un changement de
+   comportement en douce dans une passe de perf. **Décision produit/sécurité à
+   prendre séparément — le NOM de la policy dit qu'elle est censée marcher, elle
+   ne marche pas.**
+
+### Écarts sur les scripts de preuve (corrigés)
+
+- **Découverte des utilisateurs non déterministe** : le directeur et le parent
+  étaient tirés par `limit 1` SANS `order by`. Or cette migration crée
+  `idx_school_coaches_coach_id` → le planificateur peut changer de scan → un
+  AUTRE directeur tiré après qu'avant → un faux diff et un STOP injustifié.
+  Tri total (tiebreak uuid) partout.
+- **La matrice ne couvrait que la LECTURE.** Les passes réécrivent aussi des
+  `WITH CHECK` INSERT/UPDATE, invisibles à un comptage de lignes. Ajout de
+  **16 sondes d'écriture** allow/deny.
+- **Sondes d'écriture à verdict binaire = piège** : un UPDATE dont le USING
+  masque toutes les lignes, ou un `INSERT … SELECT` sur une source vide,
+  RÉUSSIT sans rien écrire — un booléen le rapporte « autorisé ». Verdict passé
+  à trois états (`ALLOW(n)` / `DENY` / `ERR-sqlstate`) et sources en `VALUES`
+  à une ligne. Le coach représentatif est désormais celui qui POSSÈDE le plus
+  d'athlètes (l'ancien tirage tombait sur un coach à 0 athlète → toutes les
+  sondes coach vides).
+- **Planning mesuré en un seul coup = bruit.** Le planning est dominé par la
+  chaleur du relcache. Chaque requête tourne maintenant **5 fois**, on rapporte
+  le froid (run 1) et la médiane à chaud (runs 2-5), et on ne compare jamais un
+  froid à un chaud.
+- **Preuve d'équivalence ajoutée, plus forte que la matrice** :
+  `supabase/tests/rls-initplan-policy-snapshot.sql` diffe le TEXTE normalisé des
+  272 policies (`( SELECT auth.uid() AS uid)` renormalisé en `auth.uid()`). Une
+  substitution purement mécanique donne un diff VIDE ; tout autre changement
+  (rôle, commande, WITH CHECK perdu) saute aux yeux. C'est cette preuve qui a
+  attrapé l'écart n°2 ci-dessus — la matrice, elle, ne l'avait pas vu.
+
+### Preuves obtenues (local, 2026-07-27)
+
+- **Équivalence pass 1 : 2 diffs / 2 VIDES.** Corps de policies normalisés :
+  0 différence sur 272 policies. Matrice par rôle (6 rôles × 17 tables + 16
+  sondes d'écriture) : 0 différence.
+- **Équivalence pass 2 : 3 diffs / 3 conformes.** Matrice : 0 différence, contre
+  pass 1 ET contre la base pristine. Corps de policies : exactement les 2
+  policies annoncées ont changé, rôle/commande/permissivité préservés. Preuve
+  ciblée `supabase/tests/rls-pass2-targeted-equivalence.sql` (forme inline vs
+  forme DEFINER) : **identique** — coach↔recruteur se voient (1/1), coach staff
+  voit les 6 athlètes de son école, coach non rattaché en voit 0.
+- **Kit de revert validé de bout en bout** : appliqué pour de vrai, il restaure
+  la base pristine à 0 différence (policies ET matrice), puis les deux passes ont
+  été ré-appliquées. `scratchpad/revert-kit/REVERT-rls-passes-1-2.sql`
+  (105 policies des 10 tables + 9 DROP INDEX + 2 DROP FUNCTION) + les deux
+  baselines pristine.
+- ⚠️ **Non rejoué** : les suites `scratchpad/validation-*.sql` (15/15, 8/8, 11/11…)
+  n'existent pas sur cette machine (gitignorées / restées côté Mac). Pour la
+  passe 1 le diff de corps normalisé est une garantie PLUS forte qu'un rejeu
+  (il prouve que les prédicats sont littéralement identiques). Pour la passe 2,
+  couverture = matrice + sondes d'écriture + preuve ciblée. **À rejouer après
+  l'apply prod si les scripts sont récupérés.**
+
+### Apply prod (sur GO explicite de BP, par migration — rule 9)
+1. Rejouer `rls-initplan-index-redundancy-audit.sql` **sur prod** et n'appliquer
+   que les index réellement manquants.
+2. Générer le kit de revert **depuis prod** (`rls-initplan-generate-revert-kit.sql`,
+   `psql -At`) — ce sont les corps de PROD qu'il faut pouvoir restaurer.
+3. Capturer matrice + snapshot + EXPLAIN **avant** sur prod.
+4. `20260727130000` puis `20260727140000`, une par une, vérifiées entre chaque.
+   **Index en `CREATE INDEX CONCURRENTLY`, hors transaction, une commande à la
+   fois** (la migration les pose en transactionnel : sortir les 9 `CREATE INDEX`
+   et les jouer séparément en CONCURRENTLY).
+5. Re-capturer après → les 3 diffs doivent tomber comme en local.
+6. BP re-teste l'iPhone **SANS rebuild** — le code applicatif est innocent ; si
+   la DB répond vite, l'écran existant se charge.
 
 ### Lessons (record)
 - **Process:** a verdict without raw output is not a verdict. A fix was once asserted at a

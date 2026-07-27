@@ -237,10 +237,24 @@ CREATE POLICY "authenticated read evaluations" ON public.evaluations AS PERMISSI
   WHERE ((a.id = evaluations.athlete_id) AND (a.user_id = (select auth.uid()))))) OR is_admin()));
 
 -- evaluations.evaluations coach
+-- ÉCART CC-Windows (2026-07-27) : la passe 1 du Mac réécrivait cette policy en
+-- `TO authenticated` + un `WITH CHECK` explicite, alors que l'originale est
+-- `TO public` SANS `WITH CHECK`. Deux dérives hors substitution mécanique :
+--   * le WITH CHECK explicite est inerte (sur une policy FOR ALL, un WITH CHECK
+--     omis retombe sur l'expression USING — donc identique) ;
+--   * le passage public -> authenticated est un RÉTRÉCISSEMENT de portée. Il
+--     s'avère inerte ici (seuls anon et authenticated sont soumis à la RLS —
+--     service_role et postgres ont BYPASSRLS ; et pour anon, auth.uid() est
+--     NULL donc `coach_id = NULL` ne rendait déjà aucune ligne : vérifié,
+--     anon voit 0 évaluation avant comme après).
+-- Mais la passe 1 tire toute sa valeur de sa garantie « rien d'autre que la
+-- cadence d'évaluation ne change » : c'est ce qui permet de l'appliquer en prod
+-- sans analyse de risque comportemental. On restaure donc la forme exacte
+-- d'origine. Le resserrement `TO authenticated` reste souhaitable — il ira
+-- dans une migration de portée, séparée et assumée, pas ici.
 DROP POLICY IF EXISTS "evaluations coach" ON public.evaluations;
-CREATE POLICY "evaluations coach" ON public.evaluations AS PERMISSIVE FOR ALL TO authenticated
-  USING ((coach_id = (select auth.uid())))
-  WITH CHECK ((coach_id = (select auth.uid())));
+CREATE POLICY "evaluations coach" ON public.evaluations AS PERMISSIVE FOR ALL TO public
+  USING ((coach_id = (select auth.uid())));
 
 -- messages.athlete_messages_insert
 DROP POLICY IF EXISTS athlete_messages_insert ON public.messages;
@@ -444,27 +458,64 @@ CREATE POLICY "users update own" ON public.users AS PERMISSIVE FOR UPDATE TO pub
 
 -- ============================================================
 -- INDEX FK — chemin athlète (tue les seq-scans du plan : school_coaches 37x,
--- conversations 14x). CREATE INDEX IF NOT EXISTS = idempotent.
--- NOTE PROD : envisager CONCURRENTLY à l'apply prod (hors transaction) ;
--- en local l'apply transactionnel standard suffit.
+-- conversations 14x).
+--
+-- ÉCART CC-Windows vs la passe 1 du Mac (2026-07-27) — 11 index RETIRÉS sur 20.
+-- `CREATE INDEX IF NOT EXISTS` ne teste que le NOM, jamais la DÉFINITION : les
+-- 11 ci-dessous portaient un nom neuf (`..._coach_id`) alors qu'un index de
+-- même colonne existait déjà sous un nom plus court (`..._coach`) ou en
+-- préfixe d'un index composite. `IF NOT EXISTS` ne les aurait donc PAS
+-- protégés — ils auraient bel et bien été créés en double.
+--
+-- Un index redondant coûte de l'écriture à chaque INSERT/UPDATE, de l'espace,
+-- de l'autovacuum — et surtout il AJOUTE un chemin de plus à considérer au
+-- planificateur. Sur une passe dont le but explicite est de faire baisser le
+-- temps de PLANNING (302 ms en prod), en poser 11 inutiles joue contre
+-- l'objectif.
+--
+--   RETIRÉS (déjà couverts en local) :
+--     idx_school_coaches_school_id          <- idx_school_coaches_school (school_id)
+--     idx_conversations_athlete_id          <- idx_conversations_athlete (athlete_id)
+--     idx_athletes_coach_id                 <- idx_athletes_coach (coach_id)
+--     idx_athletes_school_id                <- idx_athletes_school (school_id)
+--     idx_evaluations_athlete_id            <- idx_evaluations_athlete (athlete_id)
+--     idx_evaluations_coach_id              <- idx_evaluations_coach (coach_id)
+--     idx_messages_conversation_id          <- idx_messages_conversation (conversation_id)
+--     idx_recruiter_activity_log_athlete_id <- idx_activity_log_athlete (athlete_id, created_at DESC)  [préfixe]
+--     idx_athlete_notifications_athlete_id  <- idx_athlete_notif_athlete (athlete_id, created_at DESC) [préfixe]
+--     idx_team_athletes_athlete_id          <- team_athletes_athlete_sport_uidx (athlete_id, sport_id) [préfixe]
+--     idx_team_athletes_team_id             <- team_athletes_team_id_athlete_id_key (team_id, athlete_id) [préfixe]
+--
+-- ⚠️ PRÉ-FLIGHT PROD OBLIGATOIRE : cet audit a été fait contre la base LOCALE.
+-- Si le jeu d'index de prod diffère, la liste change. Rejouer
+-- `supabase/tests/rls-initplan-index-redundancy-audit.sql` SUR PROD avant
+-- l'apply et n'appliquer que ce qui manque réellement.
+--
+-- NOTE PROD : CREATE INDEX CONCURRENTLY (hors transaction, une commande à la
+-- fois) à l'apply prod ; en local l'apply transactionnel standard suffit.
 -- ============================================================
+
+-- idx_athletes_user_id est le plus important du lot : la requête lourde du
+-- dashboard athlète filtre `athletes.user_id = auth.uid()` et tombe
+-- actuellement en Seq Scan (aucun index sur user_id n'existait).
+CREATE INDEX IF NOT EXISTS idx_athletes_user_id          ON public.athletes (user_id);
+
+-- school_coaches.coach_id : les index existants mènent tous par school_id
+-- (idx_school_coaches_school, school_coaches_school_id_coach_id_key), donc une
+-- recherche par coach_id seul — le motif des policies — n'est pas servie.
 CREATE INDEX IF NOT EXISTS idx_school_coaches_coach_id   ON public.school_coaches (coach_id);
-CREATE INDEX IF NOT EXISTS idx_school_coaches_school_id  ON public.school_coaches (school_id);
+
+-- conversations : aucun index plein menant par ces colonnes (les uniques
+-- existants sont partiels et/ou mènent par athlete_id).
 CREATE INDEX IF NOT EXISTS idx_conversations_coach_id    ON public.conversations (coach_id);
 CREATE INDEX IF NOT EXISTS idx_conversations_coach_b_id  ON public.conversations (coach_b_id);
 CREATE INDEX IF NOT EXISTS idx_conversations_recruiter_id ON public.conversations (recruiter_id);
 CREATE INDEX IF NOT EXISTS idx_conversations_parent_id   ON public.conversations (parent_id);
-CREATE INDEX IF NOT EXISTS idx_conversations_athlete_id  ON public.conversations (athlete_id);
-CREATE INDEX IF NOT EXISTS idx_athletes_coach_id         ON public.athletes (coach_id);
-CREATE INDEX IF NOT EXISTS idx_athletes_school_id        ON public.athletes (school_id);
-CREATE INDEX IF NOT EXISTS idx_athletes_user_id          ON public.athletes (user_id);
-CREATE INDEX IF NOT EXISTS idx_evaluations_athlete_id    ON public.evaluations (athlete_id);
-CREATE INDEX IF NOT EXISTS idx_evaluations_coach_id      ON public.evaluations (coach_id);
-CREATE INDEX IF NOT EXISTS idx_messages_conversation_id  ON public.messages (conversation_id);
+
 CREATE INDEX IF NOT EXISTS idx_messages_sender_id        ON public.messages (sender_id);
+
+-- favorites/pipeline : l'unique existant mène par recruiter_id, donc la
+-- recherche par athlete_id (policies coach « favoris de mes athlètes ») ne
+-- l'utilise pas.
 CREATE INDEX IF NOT EXISTS idx_recruiter_favorites_athlete_id ON public.recruiter_favorites (athlete_id);
 CREATE INDEX IF NOT EXISTS idx_recruiter_pipeline_athlete_id  ON public.recruiter_pipeline (athlete_id);
-CREATE INDEX IF NOT EXISTS idx_recruiter_activity_log_athlete_id ON public.recruiter_activity_log (athlete_id);
-CREATE INDEX IF NOT EXISTS idx_athlete_notifications_athlete_id  ON public.athlete_notifications (athlete_id);
-CREATE INDEX IF NOT EXISTS idx_team_athletes_athlete_id  ON public.team_athletes (athlete_id);
-CREATE INDEX IF NOT EXISTS idx_team_athletes_team_id     ON public.team_athletes (team_id);
