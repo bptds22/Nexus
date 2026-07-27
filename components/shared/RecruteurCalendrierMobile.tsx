@@ -179,7 +179,7 @@ function DetailColumn({ name, targets }: { name: string; targets: CalendarTarget
       <div className="mb-2 text-[12px] font-bold uppercase tracking-[0.1em] text-[#B9BFC9]">
         {name}
         <span className="ml-2 text-[11.5px] font-medium normal-case tracking-normal text-[#5C6575]">
-          {targets.length} cible{targets.length !== 1 ? "s" : ""}
+          {targets.length} cible{targets.length > 1 ? "s" : ""}
         </span>
       </div>
       {targets.length === 0 ? (
@@ -244,7 +244,7 @@ function MatchCard({ m }: { m: MatchView }) {
               {extra > 0 && <Avatar text={`+${extra}`} more className="-ml-2" />}
             </div>
             <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-[rgba(230,57,70,0.28)] bg-[rgba(230,57,70,0.09)] px-3 py-1 text-[13px] font-semibold text-[#EDEFF3]">
-              <b className="font-extrabold text-[#E63946]">{m.count}</b> cible{m.count !== 1 ? "s" : ""}
+              <b className="font-extrabold text-[#E63946]">{m.count}</b> cible{m.count > 1 ? "s" : ""}
             </span>
           </div>
         </div>
@@ -540,7 +540,7 @@ export function RecruteurCalendrierMobile() {
                     <div className="mb-3 flex flex-wrap items-baseline gap-2 border-b border-[#1E2129] pb-2">
                       <h2 className="text-[13px] font-bold uppercase tracking-[0.14em] text-[#B9BFC9]">{w.label}</h2>
                       <span className="text-[12px] font-medium text-[#5C6575]">
-                        {w.matchCount} match{w.matchCount !== 1 ? "s" : ""} · {w.targetCount} cible{w.targetCount !== 1 ? "s" : ""}
+                        {w.matchCount} match{w.matchCount > 1 ? "s" : ""} · {w.targetCount} cible{w.targetCount > 1 ? "s" : ""}
                       </span>
                     </div>
                     <div className="flex flex-col gap-2.5">

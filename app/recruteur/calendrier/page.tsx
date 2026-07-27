@@ -264,7 +264,7 @@ function DetailColumn({ name, targets, className = "" }: { name: string; targets
       <div className="mb-3 text-[13px] font-bold tracking-[0.1em] uppercase text-[#B9BFC9]">
         {name}
         <span className="ml-2 text-[12.5px] font-medium tracking-normal normal-case text-[#5C6575]">
-          {targets.length} cible{targets.length !== 1 ? "s" : ""}
+          {targets.length} cible{targets.length > 1 ? "s" : ""}
         </span>
       </div>
       {targets.length === 0 ? (
@@ -337,7 +337,7 @@ function MatchCard({ m }: { m: MatchView }) {
             {extra > 0 && <Avatar text={`+${extra}`} more className="-ml-[9px]" />}
           </div>
           <span className="inline-flex items-center gap-[7px] whitespace-nowrap rounded-full border border-[rgba(230,57,70,0.28)] bg-[rgba(230,57,70,0.09)] px-[15px] py-[7px] text-[14px] font-semibold text-[#EDEFF3]">
-            <b className="font-extrabold text-[#E63946]">{m.count}</b> cible{m.count !== 1 ? "s" : ""}
+            <b className="font-extrabold text-[#E63946]">{m.count}</b> cible{m.count > 1 ? "s" : ""}
           </span>
           <svg
             width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
@@ -691,7 +691,7 @@ function CalendrierContent() {
                   <div className="mb-4 flex items-baseline gap-3.5 border-b border-[#1E2129] pb-2.5">
                     <h2 className="text-[14px] font-bold uppercase tracking-[0.14em] text-[#B9BFC9]">{w.label}</h2>
                     <span className="text-[12.5px] font-medium text-[#5C6575]">
-                      {w.matchCount} match{w.matchCount !== 1 ? "s" : ""} · {w.targetCount} cible{w.targetCount !== 1 ? "s" : ""}
+                      {w.matchCount} match{w.matchCount > 1 ? "s" : ""} · {w.targetCount} cible{w.targetCount > 1 ? "s" : ""}
                     </span>
                   </div>
                   <div className="flex flex-col gap-3">
@@ -751,7 +751,7 @@ function CalendrierContent() {
                       {c.day}
                       {c.targetCount > 0 && (
                         <span className="absolute bottom-2 left-[9px] inline-flex items-center rounded-full bg-[#E63946] px-[9px] py-0.5 text-[11.5px] font-bold text-white">
-                          {selected ? `${c.targetCount} cible${c.targetCount !== 1 ? "s" : ""}` : c.targetCount}
+                          {selected ? `${c.targetCount} cible${c.targetCount > 1 ? "s" : ""}` : c.targetCount}
                         </span>
                       )}
                     </button>
