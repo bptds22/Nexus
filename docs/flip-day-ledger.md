@@ -784,6 +784,40 @@ par une — pas de substitution mécanique possible. Helpers pressentis :
 (mesuré : `team_invitations` 1 policy sur 5 → 224 → 75 ms ; 5 sur 5 → 0,03 ms).
 Le lot 2 doit être fait table par table, intégralement.
 
+### plan_cache_mode — hypothèse testée, RÉFUTÉE et inversée (2026-07-27)
+
+Hypothèse : PostgREST utilise des prepared statements ; après 5 exécutions
+Postgres passe au plan générique ; un plan générique catastrophique
+expliquerait l'écart entre mes EXPLAIN directs et le vécu de l'app. Correctif
+proposé : `ALTER ROLE authenticator SET plan_cache_mode = force_custom_plan`.
+
+**Mesuré AVANT d'appliquer** (PREPARE + 8 EXECUTE sous le JWT réel de
+b79de13d, ce qui franchit le seuil des 5) :
+
+| mode | it1 | it5 | it6 | it7 | it8 | moy. post-seuil |
+|---|---|---|---|---|---|---|
+| `auto` (actuel) | 12,4 | 3,2 | 3,2 | 0,6 | 0,5 | **1,4 ms** |
+| `force_custom_plan` | 3,7 | 3,2 | 3,2 | 3,2 | 3,3 | **3,2 ms** |
+| `force_generic_plan` | 3,9 | 0,5 | 0,5 | 0,6 | 0,5 | **0,5 ms** |
+
+**Le plan générique est le PLUS RAPIDE, pas le plus lent.** `auto` bascule
+correctement vers lui vers l'itération 7 et accélère (3,2 → 0,5 ms) : le cache
+de plans fait déjà son travail. `force_custom_plan` est le pire des trois
+(~6× plus lent que le comportement spontané) et aurait été une régression
+durable pour tous les rôles. **NON APPLIQUÉ.**
+
+Réglage de départ, pour mémoire : `authenticator` ne porte AUCUN
+`plan_cache_mode` (`session_preload_libraries=supautils, safeupdate |
+statement_timeout=8s | lock_timeout=8s`) ; l'effectif est `auto`. Un revert
+éventuel serait donc un `RESET`, pas une valeur.
+
+**Règle de mesure conservée (elle, elle est bonne)** : un `EXPLAIN` direct
+reçoit toujours un plan custom et ne dit donc rien du plan générique que
+recevra l'app via des prepared statements. Pour mesurer le chemin réel, il faut
+soit passer par PostgREST, soit reproduire `PREPARE` + ≥6 `EXECUTE` — ce que
+fait le test ci-dessus. La règle tient même si la conclusion s'est inversée :
+c'est elle qui a permis de voir que le correctif proposé était une régression.
+
 ### Lessons (record)
 - **Process:** a verdict without raw output is not a verdict. A fix was once asserted at a
   commit (`07dbd06`) that **never existed** (`git cat-file` → not a valid object); several
