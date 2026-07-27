@@ -623,6 +623,47 @@ backoff » mais **dédupliquer/mettre en cache les fetchs et mutualiser la sessi
 Effet : divise la rafale par deux. À faire au prochain build — une app qui
 double chaque requête sur un backend en difficulté est une bombe de rentrée.
 
+### Règle — la preuve d'un correctif inclut son hash sur origin
+
+**Adoptée. Et elle vient de servir dans les deux sens.**
+
+Le 2026-07-27, la consigne « le fix cookieless n'a jamais été commité, implémente-le
+maintenant » a été vérifiée avant d'être exécutée. Résultat : **le correctif existe
+à chaque maillon depuis longtemps.**
+
+- **Code** : `lib/supabase/client.ts` porte le gate `IS_CAPACITOR`
+  (`NEXT_PUBLIC_CAPACITOR_BUILD === "true"`) → `createClient` de
+  `@supabase/supabase-js` avec `storage: window.localStorage`, sans cookie ;
+  la branche WEB garde `createBrowserClient` de `@supabase/ssr`. C'est
+  mot pour mot ce qui était demandé.
+- **Commit** : `f27bfa3`.
+- **Origin** : présent sur `origin/main`, `origin/dev` et toutes les branches,
+  y compris `origin/feat/messaging-athlete-coach` au moment de la vérification.
+
+Donc pas de fix fantôme sur ce point — et le ledger le disait déjà (« NOT the
+Supabase client type (bundle ships the cookieless localStorage client,
+verified) »). Aucun build/sync n'a été lancé : réimplémenter l'existant aurait
+coûté un rebuild pour un no-op.
+
+**Ce qui est réellement fantôme, c'est le correctif RLS.** Vérifié sur prod le
+même jour : **0 helper, 0 index de la passe 1, 64 policies à `auth.uid()` nu,
+47 policies à sous-requête inline** — rien n'a jamais été appliqué. Toutes les
+mesures « 0,03 ms / 1-6 ms » citées venaient de transactions `rollback`, ce que
+le log Postgres de prod montre littéralement (chaque `statement:` finit par
+`rollback;`). Et les `canceling statement due to statement timeout` continuaient
+~5,5 min APRÈS la dernière transaction de mesure.
+
+**Corollaire de la règle** : un chiffre de perf n'est une preuve que si l'état
+qui l'a produit a été COMMIS. Une mesure dans une transaction annulée prouve le
+mécanisme, jamais le déploiement. Les deux doivent être rapportés séparément.
+
+**Sur `TypeError: Load failed`** : dans WKWebView, `fetch` lève ça sur échec
+réseau — y compris quand une requête est coupée après une longue attente. C'est
+donc un SYMPTÔME des requêtes qui dépassent le `statement_timeout = 8s` côté
+serveur, pas un signe de problème de cookies ou de type de client. Les logs API
+le confirment : 100 requêtes de la WebView iPhone sont bien ARRIVÉES à prod
+(88 × 200, 11 × 500). Un client incapable d'émettre ne produirait pas ça.
+
 ### Lessons (record)
 - **Process:** a verdict without raw output is not a verdict. A fix was once asserted at a
   commit (`07dbd06`) that **never existed** (`git cat-file` → not a valid object); several
