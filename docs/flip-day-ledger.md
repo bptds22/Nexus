@@ -726,6 +726,64 @@ débloque `app/athlete/profil`. Bloqué sur deux décisions : rétablir le bloc
 ledger) ; (c) si la décision produit va vers un bucket privé : signed URLs +
 migration des `photo_url`.
 
+### [x] Conversion DEFINER — LOT 1 APPLIQUÉ EN PROD (2026-07-27, migration `rls_definer_conversion_lot1`)
+
+**Enregistré au catalogue** via `apply_migration` → présent dans
+`supabase_migrations.schema_migrations`. Plus de fantôme.
+
+**Portée** : 15 policies / **9 tables intégralement converties** — motifs purs
+uniquement (`athlete_id IN (SELECT id FROM athletes WHERE user_id|coach_id =
+auth.uid())`), aucune clause additionnelle à préserver. Helpers créés :
+`is_own_athlete(uuid)` et `is_coach_of_athlete(uuid)` (SECURITY DEFINER, STABLE,
+`search_path` épinglé, REVOKE public + GRANT anon/authenticated — les policies
+sont `TO public`, anon doit pouvoir évaluer sans erreur).
+
+Tables converties à 100 % : `athlete_notifications`, `athlete_suggestions`,
+`recruiter_athlete_views`, `recruiter_favorites`, `recruiter_pipeline`,
+`recruiter_activity_log`, `partner_card_downloads`, `partner_profile_views`,
+`_deprecated_profile_views_2026_05`.
+
+**Preuves** :
+- Équivalence per-role (athlète b79de13d / coach le plus doté / recruteur le
+  plus doté × 14 tables) : **IDENTIQUE, 0 divergence**. Baseline et after
+  stockés en base (`public._rls_equiv_20260727`).
+- Catalogue relu : **0** sous-requête `FROM athletes` sur les 9 tables.
+  `qual` bruts témoins : `is_own_athlete(athlete_id)` /
+  `is_coach_of_athlete(athlete_id)`.
+- Backup des 47 corps d'origine : **`public._rls_backup_20260727`** (en base,
+  survit à la session).
+
+**Perf mesurée (JWT réel b79de13d)** :
+
+| requête | avant | après lot 1 |
+|---|---|---|
+| `athlete_notifications` | 0,9–5,4 ms | **0,04–0,34 ms** |
+| `athlete_suggestions` | 1,5–4,7 ms | **0,03–0,13 ms** |
+| `recruiter_favorites` | — | **0,08–0,26 ms** |
+| **profil ligne 1228** | ~141 ms | **120–130 ms** |
+
+**Lecture honnête** : le lot 1 supprime la taxe des satellites de la rafale
+(÷20 à ÷40 sur chacune). Il ne corrige PAS la requête ligne 1228 — normal,
+aucune de SES tables n'est dans ce lot.
+
+### [ ] LOT 2 — ce qui débloque réellement `app/athlete/profil`
+
+**32 policies à sous-requête restent**, sur les tables que la ligne 1228 traverse :
+`athletes` (3), `users` (1), `conversations` (7), `messages` (7),
+`team_athletes` (5), `team_invitations` (5), `evaluations` (1),
+`school_coaches` (1), `athlete_targets` (1), + variantes.
+
+Ce sont les 22 policies « sur mesure » (motif `P9_AUTRE`) : chacune porte des
+clauses propres (type de conversation, rôle, statut) qu'il faut préserver une
+par une — pas de substitution mécanique possible. Helpers pressentis :
+`coach_reaches_team(uuid)`, `coach_staffs_school(uuid)`,
+`user_shares_conversation(uuid)`, plus la réutilisation de
+`is_conversation_participant` existant.
+
+⚠️ **Règle de totalité** : convertir partiellement une table ne donne RIEN
+(mesuré : `team_invitations` 1 policy sur 5 → 224 → 75 ms ; 5 sur 5 → 0,03 ms).
+Le lot 2 doit être fait table par table, intégralement.
+
 ### Lessons (record)
 - **Process:** a verdict without raw output is not a verdict. A fix was once asserted at a
   commit (`07dbd06`) that **never existed** (`git cat-file` → not a valid object); several
