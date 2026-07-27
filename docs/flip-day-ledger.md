@@ -915,6 +915,82 @@ d'équipe. Voir l'inventaire des 44 migrations depuis le 20 juillet.
 `4f0e1d6` no-eject-on-failed-read, `d2cdbfe`). Bissecter sur une cible mouvante
 donne un résultat non reproductible — figer avant de conclure.
 
+### Incident 2026-07-27 fin de journée — saturation, auto-résorption, et dimensionnement
+
+**Les trois clients morts ensemble (web + App Store + local) = UNE file d'attente
+commune, pas trois pannes.** Relevé au pic : 7 connexions `authenticator` actives
+sur 11, dont **5 bloquées 160–178 s** — 4 sur `team_invitations`, 1 sur
+`athletes`. **Aucun verrou bloquant** (`pg_locks` non accordés : vide). Trois
+minutes plus tard, sans intervention : **11 idle, 0 active, aucune requête >20 s**.
+
+**`plan_cache_mode` n'a jamais été appliqué** — vérifié : aucun rôle ne le porte,
+effectif `auto`. Le « revert d'urgence » demandé aurait été un no-op. NON exécuté,
+pour ne pas fabriquer un faux coupable puis l'innocenter à tort.
+
+`team_invitations` est le point chaud : c'est la table à 5 policies à sous-requête
+**délibérément exclue du lot 1** (ses 3 policies coach sont « sur mesure »). Elle
+paie toujours 80–300 ms de planning par requête.
+
+#### Dimensionnement — ce que dit le catalogue
+
+| | valeur |
+|---|---|
+| `shared_buffers` | 224 Mo |
+| `effective_cache_size` | 384 Mo |
+| `work_mem` | 2,1 Mo |
+| `max_connections` | 60 |
+| `max_parallel_workers` / par gather | 2 / 1 |
+| **taille de la base** | **54 Mo** |
+| **cache hit ratio** | **100,00 %** |
+
+Ces valeurs correspondent à ~1 Go de RAM — soit **Micro**, pas nano (nano
+donnerait `shared_buffers` ~128 Mo). À confirmer côté dashboard.
+
+**La base entière (54 Mo) tient des dizaines de fois en RAM, et le cache hit est
+à 100 %. Il n'y a AUCUNE pression I/O ni mémoire.** Le goulot est le **CPU de
+planification**, exclusivement.
+
+**Hypothèse forte — épuisement des crédits CPU burstables.** Les instances
+`t4g.micro/nano` sont burstables : au-delà du baseline (~10–20 % d'un vCPU),
+elles consomment des crédits. Générer un plan de 500 Ko à chaque requête, ×10 en
+parallèle, brûle ces crédits. Une fois à zéro → throttling brutal → **tous les
+clients meurent en même temps** → les crédits se rechargent → **ça repart tout
+seul**. C'est exactement la courbe observée aujourd'hui : effondrement simultané
+puis auto-résorption en ~3 min sans intervention. **La signature est celle des
+crédits, pas d'un bug.**
+
+#### Recommandation de tier
+
+Passer à **Small (~15 $/mois)** : double la RAM et le taux de recharge des
+crédits, marge immédiate pour la rentrée. ⚠️ **Small reste burstable** — c'est un
+amortisseur, pas une immunité.
+
+**Ce n'est PAS « le fix que la semaine cherchait ».** Un plan de 500 Ko par
+requête est un coût de conception qu'aucun tier ne rend gratuit : monter en gamme
+achète du temps, le lot 2 supprime la demande — définitivement, et à 0 $/mois.
+Faire les deux : Small pour le tampon, lot 2 pour la cause.
+
+#### Sentry — « Lock stolen » sur /athlete/profil (rapporté par BP, non vérifié par moi)
+
+Signalé dans la capture de BP ; je n'ai pas eu accès à Sentry et ne l'ai pas
+confirmé. Signature connue de `supabase-js` : le rafraîchissement de token
+s'appuie sur `navigator.locks`, et plusieurs onglets/clients concurrents se
+volent le verrou. Cohérent avec le double-montage mesuré (9 URL tirées 2× à
+0–4 ms, corrigé depuis par `3f1f9f5` coalesce 17×→1×). **À regarder post-crise**,
+priorité basse : bruyant, rarement bloquant.
+
+#### Nettoyage des artefacts de la semaine
+
+Supprimés de prod : `public._rls_equiv_20260727`, `public._snap(text,text,uuid)`,
+`public._rls_equiv_snap(text)`. Vérifié : plus aucun reliquat `%snap%`/`%probe%`.
+
+**CONSERVÉ volontairement** : `public._rls_backup_20260727` — les 47 corps de
+policies d'origine. C'est le kit de revert du lot 1 et du futur lot 2. **Ne pas
+supprimer avant validation complète de la conversion.**
+
+`_deprecated_athlete_views_2026_05` et `_deprecated_profile_views_2026_05`
+préexistaient à cette semaine — hors périmètre, non touchés.
+
 ### Lessons (record)
 - **Process:** a verdict without raw output is not a verdict. A fix was once asserted at a
   commit (`07dbd06`) that **never existed** (`git cat-file` → not a valid object); several
