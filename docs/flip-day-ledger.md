@@ -1021,6 +1021,46 @@ nettoyage.
 (b) si déjà Micro → viser Small ; (c) faire le lot 2 de toute façon, car il
 supprime la demande CPU à 0 $/mois là où le tier ne fait que l'absorber.
 
+### [~] LOT 2a — team_invitations : APPLIQUE, VERIFICATION INCOMPLETE (2026-07-27)
+
+Migration `rls_definer_conversion_lot2_team_invitations` — **retour `success:true`,
+donc appliquee et enregistree au catalogue**. Les 5 policies a sous-requete de
+`team_invitations` converties ; `Admins manage all invitations` (`is_admin()`,
+sans sous-requete) non touchee. Helper `coach_manages_team(uuid)` cree.
+
+**Detail critique rattrape avant ecriture** : la branche `school_coaches` du
+predicat coach exige `sc.role IN ('DIRECTEUR','DIRECTEUR_INTERIM')`. Le
+prototype jetable de la veille OMETTAIT ce filtre — l appliquer tel quel aurait
+**elargi l acces a tout school_coach**. Les corps exacts ont ete relus avant
+reecriture ; le filtre est present dans le helper livre.
+
+⚠️ **VERIFICATION NON TERMINEE.** Les trois requetes de controle qui devaient
+suivre (equivalence du predicat, catalogue relu, mesure repetee) ont echoue :
+`read ECONNRESET`, puis deux `Connection terminated due to connection timeout`,
+sur des requetes triviales. **Prod n'acceptait plus de nouvelle connexion.**
+Interrogation arretee volontairement pour ne pas aggraver une saturation
+probable (meme signature que l incident de l apres-midi : effondrement, puis
+auto-resorption).
+
+**RESTE A FAIRE des que prod repond** (dans cet ordre) :
+1. `select count(*) from pg_policies ... ~ 'FROM athletes|FROM team_coaches|FROM school_coaches'`
+   sur `team_invitations` → attendu **0**.
+2. Temoin `qual` brut de `Coaches select invitations on own teams` → attendu
+   `coach_manages_team(team_id)`.
+3. Temoin `with_check` de `Athletes update own invitations` → doit contenir
+   `is_own_athlete(athlete_id)` **ET** `status = ANY (ARRAY['ACCEPTED','REJECTED'])`.
+4. Verifier que `pg_get_functiondef(coach_manages_team)` contient bien
+   `DIRECTEUR_INTERIM`.
+5. Mesure repetee (PREPARE + ≥6 EXECUTE) : attendu ~80 ms → ~0,03 ms.
+
+**Revert si besoin** : corps d origine dans `public._rls_backup_20260727`
+(captures avant le lot 1, incluent les 5 de `team_invitations`), plus
+`drop function public.coach_manages_team(uuid)`.
+
+**Preuve PostgREST ×8 : NON FOURNIE.** Je ne peux pas signer de JWT depuis les
+outils disponibles ; l equivalent mecanique reste `PREPARE` + ≥6 `EXECUTE`.
+La mesure via le vrai chemin PostgREST demande un JWT fourni par BP.
+
 ### Lessons (record)
 - **Process:** a verdict without raw output is not a verdict. A fix was once asserted at a
   commit (`07dbd06`) that **never existed** (`git cat-file` → not a valid object); several
