@@ -350,7 +350,21 @@ export default function AthleteLayout({ children }: { children: React.ReactNode 
         .eq("id", session.user.id)
         .single();
 
-      const isComplete = !error && data?.onboarding_complete === true;
+      // Distinguish a NETWORK/RLS failure from a genuinely incomplete profile.
+      // A failed read must NEVER eject a logged-in athlete to the onboarding
+      // wizard — that is exactly how a transient DB slowdown (statement timeout
+      // under load) wiped the screen and bounced the user mid-session. Only a
+      // SUCCESSFUL read of onboarding_complete === false is a real "go to the
+      // wizard" signal. On error, render the shell and let each page re-fetch
+      // its own data (the athletes-table check in onboarding/dashboard is the
+      // backstop for a truly-incomplete profile).
+      if (error) {
+        console.warn("[AthleteLayout] onboarding_complete read failed — rendering shell, NOT redirecting:", error.message);
+        setState("ok");
+        return;
+      }
+
+      const isComplete = data?.onboarding_complete === true;
 
       if (!isComplete && normalizedPath !== "/athlete/onboarding") {
         router.replace("/athlete/onboarding");
