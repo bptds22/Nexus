@@ -455,11 +455,58 @@ function TeamDetailPageDesktop() {
     }
   }
 
-  async function addAthlete(athleteId: string) {
+  // FIX 4 — « ajouter » devient « déplacer » quand l'athlète appartient déjà
+  // à une équipe DU MÊME SPORT. La contrainte UNIQUE (athlete_id, sport_id)
+  // rejetterait l'INSERT (23505) ; plutôt que d'afficher une erreur brute, on
+  // explicite le déplacement et on demande confirmation. Un athlète peut
+  // toujours être dans plusieurs équipes de sports DIFFÉRENTS — seul le même
+  // sport est exclusif.
+  async function addAthlete(athleteId: string, athleteName: string) {
     const supabase = createClient();
-    await supabase.from("team_athletes").insert({ team_id: teamId, athlete_id: athleteId });
+    const sportId = team?.sportId || "";
+    if (!sportId) {
+      alert("Sport de l'équipe non résolu — recharge la page.");
+      return;
+    }
+
+    const { data: existing, error: exErr } = await supabase
+      .from("team_athletes")
+      .select("id, team_id, teams!team_id(name)")
+      .eq("athlete_id", athleteId)
+      .eq("sport_id", sportId)
+      .maybeSingle();
+    if (exErr) {
+      alert("Erreur: " + exErr.message);
+      return;
+    }
+
+    if (existing) {
+      if (existing.team_id === teamId) {
+        setShowAddAthlete(false);
+        showToast("Déjà dans cette équipe");
+        return;
+      }
+      const prevRel = existing.teams as { name?: string } | { name?: string }[] | null;
+      const prevName = (Array.isArray(prevRel) ? prevRel[0]?.name : prevRel?.name) || "son équipe actuelle";
+      const ok = confirm(
+        `${athleteName} joue déjà dans « ${prevName} » pour ce sport.\n\n` +
+        `Le déplacer vers « ${team?.name ?? "cette équipe"} » ? Il sera retiré de « ${prevName} ».`,
+      );
+      if (!ok) return;
+      const delRes = await supabase.from("team_athletes").delete().eq("id", existing.id as string);
+      if (delRes.error) {
+        alert("Erreur: " + delRes.error.message);
+        return;
+      }
+    }
+
+    const insRes = await supabase.from("team_athletes").insert({ team_id: teamId, athlete_id: athleteId });
+    if (insRes.error) {
+      alert("Erreur: " + insRes.error.message);
+      return;
+    }
     setShowAddAthlete(false);
-    showToast("Athlète ajouté");
+    showToast(existing ? "Athlète déplacé" : "Athlète ajouté");
     load();
   }
 
@@ -828,7 +875,7 @@ function TeamDetailPageDesktop() {
               {filteredAthletes.length === 0 ? (
                 <p className="text-[13px] text-[#4a4d56] py-4 text-center">Aucun athlète disponible</p>
               ) : filteredAthletes.map((a) => (
-                <button key={a.id} type="button" onClick={() => addAthlete(a.id)}
+                <button key={a.id} type="button" onClick={() => addAthlete(a.id, a.name)}
                   className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/[0.04] text-left transition-colors">
                   {/* Canonical photo (athletes.photo_url) + initials fallback
                       — mirrors the /coach/athletes roster and the mobile
