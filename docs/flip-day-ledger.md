@@ -664,6 +664,68 @@ serveur, pas un signe de problème de cookies ou de type de client. Les logs API
 le confirment : 100 requêtes de la WebView iPhone sont bien ARRIVÉES à prod
 (88 × 200, 11 × 500). Un client incapable d'émettre ne produirait pas ça.
 
+### Audit du 2026-07-27 — trois verdicts, et une décision produit à prendre
+
+**Verdict 1 — policy SELECT `athlete_suggestions` pour l'athlète : SANS OBJET.**
+`Athletes can read own suggestions` existe déjà (SELECT/PERMISSIVE/public,
+`athlete_id IN (SELECT id FROM athletes WHERE user_id = auth.uid())`). Testée
+sous le JWT réel de b79de13d : **20 lignes visibles** (APPROUVEE + EN_ATTENTE),
+dont 9 EN_ATTENTE sur son `athlete_id`. Les logs iPhone la montrent en **200**
+six fois. Rien à ajouter — une seconde policy SELECT serait un doublon
+permissif, et les doublons permissifs AGGRAVENT le planning (toutes les
+policies sont planifiées, cf. la règle de conversion totale).
+
+**Verdict 2 — `PGRST201` (embed ambigu) : AUCUNE PREUVE.** Rien dans les logs
+API ni Postgres. Les embeds du chemin athlète sont déjà désambiguïsés à la main
+(`users!athletes_coach_id_fkey`, `sports!sport_id`, `positions!position_id`,
+`schools!school_id`, `teams!team_id`). À rouvrir seulement avec un message
+d'erreur brut à l'appui.
+
+**Verdict 3 — la photo : le mécanisme n'est PAS ce qu'on croyait.**
+- **Le bucket `avatars` est `public = true` AUJOURD'HUI**, et l'a toujours été.
+- **Zéro `createSignedUrl` dans tout le dépôt.** Web, mobile, athlète, coach,
+  admin : tout passe par `getPublicUrl`, et l'URL publique est PERSISTÉE dans
+  `athletes.photo_url` (`lib/storage/uploadAvatar.ts`, `lib/upload/uploadImage.ts`,
+  `app/athlete/profil/page.tsx`, `app/athlete/onboarding/page.tsx`,
+  `app/coach/athletes/**`, `app/admin/athletes/**`, les 3 composants mobiles).
+- Le web n'est donc PAS cassé et n'utilise PAS de signed URLs : **web et mobile
+  partagent le même mécanisme**, qui suppose le bucket public.
+- Passer le bucket en privé casserait l'affichage **partout, instantanément** :
+  chaque `photo_url` déjà stockée est une URL `/object/public/…` qui
+  retournerait une erreur. Ce n'est pas un changement de policy, c'est une
+  migration de données + un chantier app (upload, lecture, ré-écriture des
+  `photo_url` existantes).
+
+**Le bug d'affichage de la photo n'est pas un bug de storage.** Preuve :
+`curl` anonyme sur la photo de b79de13d → `200`, 109 680 octets, JPEG 1638×2048,
+59 ms. La photo n'apparaît jamais parce que le **seul écran qui la rend** est
+`app/athlete/profil`, tué par la requête ligne 1228 (`select *` + 6 embeds).
+Le dashboard récupère bien `photo_url` mais ne s'en sert que pour cocher une
+checklist de complétion (ligne 255) — il ne l'affiche pas.
+
+⚠️ **DÉCISION PRODUIT À PRENDRE (séparée du bug, plus importante que lui).**
+L'intention exprimée est « le bucket avatars reste PRIVÉ — des photos de
+mineurs ». **L'état réel est l'inverse : il est public depuis le début.** Les
+photos d'athlètes mineurs sont lisibles par quiconque connaît l'URL, sans
+authentification — vérifié en anonyme. Sujet Loi 25, indépendant de la panne
+d'affichage. Le passage en privé (signed URLs) est un chantier app à planifier,
+pas un correctif DB. Même constat pour le bucket **`legal-documents`, également
+`public = true`**.
+
+### Répartition DB-now / build-next — mise à jour
+
+**DB maintenant (toujours pas appliqué) :** la conversion RLS — passe 1
+(`20260727130000`) + passe 2 étendue à toutes les policies porteuses de
+sous-requête des ~9 tables du premier paint. C'est le seul correctif qui
+débloque `app/athlete/profil`. Bloqué sur deux décisions : rétablir le bloc
+`evaluations coach` du Mac, et le GO pour la conversion totale.
+
+**Build suivant (app) :** (a) déduplication des fetchs — 9 URL tirées 2× à
+0–4 ms, dont la requête profil en double ; (b) alléger `profil/page.tsx:1228`
+(`select *` + 6 embeds sur la première peinture — la leçon déjà écrite dans ce
+ledger) ; (c) si la décision produit va vers un bucket privé : signed URLs +
+migration des `photo_url`.
+
 ### Lessons (record)
 - **Process:** a verdict without raw output is not a verdict. A fix was once asserted at a
   commit (`07dbd06`) that **never existed** (`git cat-file` → not a valid object); several
