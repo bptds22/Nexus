@@ -51,7 +51,7 @@ export default function VisitCalendarCard({ visitAtIso, athleteName, sport, scho
   const timeLabel = withTime ? start.toLocaleTimeString("fr-CA", TIME_FMT) : null;
 
   const title = sport ? `Visite — ${athleteName} (${sport})` : `Visite — ${athleteName}`;
-  const { googleUrl, icsBlob, icsContent } = generateCalendarLinks({
+  const { googleUrl, icsBlob } = generateCalendarLinks({
     title,
     description: `Visite planifiée avec ${athleteName} via Nexus.`,
     location: schoolName || "",
@@ -73,31 +73,36 @@ export default function VisitCalendarCard({ visitAtIso, athleteName, sport, scho
     }
   };
 
-  /* Le download Blob (`URL.createObjectURL` + `<a download>`) est mort dans
-     WKWebView (iOS) et l'Android WebView. Sur device on écrit le .ics dans le
-     cache puis on ouvre la feuille de partage native (Calendrier, Mail, Fichiers…)
-     — même pattern que MonParcoursMobile (Filesystem + Share). Web inchangé. */
-  const exportIcs = async () => {
-    if (Capacitor.isNativePlatform()) {
-      try {
-        const { Filesystem, Directory, Encoding } = await import("@capacitor/filesystem");
-        const written = await Filesystem.writeFile({
-          path: icsName,
-          data: icsContent,
-          directory: Directory.Cache,
-          encoding: Encoding.UTF8,
-        });
-        const { Share } = await import("@capacitor/share");
-        await Share.share({
-          title: "Visite planifiée",
-          files: [written.uri],
-          dialogTitle: "Ajouter au calendrier",
-        });
-      } catch (e) {
-        console.error("[visite mobile] native calendar export failed:", e);
-      }
-    } else {
+  /* LE vrai chemin natif (iOS + Android). Ni le download Blob (mort en
+     WKWebView) ni la feuille de partage (`Share.share` n'offre PAS « Ajouter au
+     calendrier » pour un .ics sur iOS) ni `Browser.open` sur un file:// (que
+     SFSafariViewController refuse) ne mettent l'événement dans l'agenda.
+
+     On utilise EventKit via @ebarooni/capacitor-calendar : `createEventWithPrompt`
+     ouvre l'ÉDITEUR D'ÉVÉNEMENT NATIF pré-rempli (titre/date/lieu). L'utilisateur
+     tape « Ajouter » → l'événement entre RÉELLEMENT dans le calendrier de
+     l'appareil (iOS : EKEventEditViewController ; Android : intent d'insertion).
+     iOS demande l'accès calendrier la 1ʳᵉ fois (clés Info.plist ajoutées). Web :
+     download .ics classique (marche dans un vrai navigateur). */
+  const addToCalendar = async () => {
+    if (!Capacitor.isNativePlatform()) {
       downloadIcs(icsBlob, icsName);
+      return;
+    }
+    try {
+      const { CapacitorCalendar } = await import("@ebarooni/capacitor-calendar");
+      const startMs = start.getTime();
+      await CapacitorCalendar.createEventWithPrompt({
+        title,
+        location: schoolName || undefined,
+        description: `Visite planifiée avec ${athleteName} via Nexus.`,
+        startDate: startMs,
+        // Heure saisie → événement d'1 h ; sinon journée entière.
+        endDate: withTime ? startMs + 60 * 60 * 1000 : undefined,
+        isAllDay: !withTime,
+      });
+    } catch (e) {
+      console.error("[visite mobile] createEventWithPrompt a échoué:", e);
     }
   };
 
@@ -126,7 +131,7 @@ export default function VisitCalendarCard({ visitAtIso, athleteName, sport, scho
         </button>
         <button
           type="button"
-          onClick={exportIcs}
+          onClick={addToCalendar}
           className="flex-1 px-3 py-2 rounded-lg border border-[#2D3748] bg-[#13151a] text-sm font-semibold text-[#9CA3AF] hover:text-white hover:border-[#4a4d56] transition-colors"
         >
           Ajouter au calendrier
