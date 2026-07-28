@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import NexusLogo from "@/components/ui/NexusLogo";
 import Link from "next/link";
 import PlaybookBackground from "@/app/components/PlaybookBackground";
+import { PRIVACY_POLICY_VERSION } from "@/lib/legal/policyVersion";
 
 /* ═══════════════════════════════════════════════════════════════
    Athlete Invitation — Accept invite + set password
@@ -64,7 +65,7 @@ function InviteContent() {
       profile: { coach: coachName },
       privacy_consent: {
         privacy_policy_accepted: true,
-        privacy_policy_version: "2026-04-v1",
+        privacy_policy_version: PRIVACY_POLICY_VERSION,
         data_collection_accepted: true,
         parental_consent_acknowledged: true,
         consent_privacy_policy: new Date().toISOString(),

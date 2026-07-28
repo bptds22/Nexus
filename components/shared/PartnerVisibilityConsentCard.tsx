@@ -23,13 +23,12 @@
    When unchecked, those columns should NOT be written (preserve
    existing values for repeat onboarding flows).
 
-   Wording note: the responsibility-transfer bullet contains
-   approximate Loi 25 phrasing flagged as v1 in
-   docs/post-launch-bugs.md — Quebec privacy counsel review
-   pending before the production launch.
+   Wording note: le texte de responsabilité partagée (Loi 25) provient
+   de partnerResponsibilityText() dans lib/legal/partnerMediaCopy.ts —
+   SOURCE UNIQUE, pronom adapté selon l'audience (self / athlete).
 ═══════════════════════════════════════════════════════════════ */
 
-import { PARTNER_MEDIA_COPY } from "@/lib/legal/partnerMediaCopy";
+import { PARTNER_MEDIA_COPY, partnerResponsibilityText } from "@/lib/legal/partnerMediaCopy";
 
 interface PartnerVisibilityConsentCardProps {
   checked: boolean;
@@ -45,22 +44,20 @@ interface Copy {
   intro: string;
   whatAppears: string;
   bullets: string[];
-  responsibilityBullet: string;
   checkboxLabel: string;
   helper: string;
 }
 
 const COPY: Record<"athlete" | "coach", Copy> = {
   athlete: {
-    /* Explainer fields (intro / whatAppears / bullets / responsibilityBullet)
-       are sourced from lib/legal/partnerMediaCopy.ts so the onboarding card
-       + the AthleteParametresMobile "En savoir plus" disclosure stay
-       byte-identical. checkboxLabel + helper are flow-specific (consent
-       phrasing + onboarding nudge) and stay inline. */
+    /* Explainer fields (intro / whatAppears / bullets) are sourced from
+       lib/legal/partnerMediaCopy.ts so the onboarding card + the
+       AthleteParametresMobile "En savoir plus" disclosure stay byte-identical.
+       The shared-responsibility paragraph comes from partnerResponsibilityText()
+       (same source). checkboxLabel + helper are flow-specific and stay inline. */
     intro: PARTNER_MEDIA_COPY.intro,
     whatAppears: PARTNER_MEDIA_COPY.whatAppears,
     bullets: [...PARTNER_MEDIA_COPY.bullets],
-    responsibilityBullet: PARTNER_MEDIA_COPY.responsibilityBullet,
     checkboxLabel:
       "Mes parents autorisent l’utilisation de ma carte Nexus par les partenaires Nexus.",
     helper:
@@ -75,8 +72,6 @@ const COPY: Record<"athlete" | "coach", Copy> = {
       "Aucun partenaire ne peut contacter l’athlète directement",
       "Les partenaires sont vérifiés par l’équipe Nexus et s’engagent par contrat à un usage éditorial responsable",
     ],
-    responsibilityBullet:
-      "Une fois la carte téléchargée par un partenaire, celui-ci devient responsable de l’usage qu’il en fait dans ses publications, conformément à la Loi 25",
     checkboxLabel:
       "Le parent ou tuteur de l’athlète autorise l’utilisation de sa carte Nexus par les partenaires Nexus.",
     helper:
@@ -116,10 +111,11 @@ export default function PartnerVisibilityConsentCard({
         {copy.bullets.map((b) => (
           <li key={b}>{b}</li>
         ))}
-        <li>
-          <span className="font-bold text-white">{copy.responsibilityBullet}</span>
-        </li>
       </ul>
+
+      <p className="text-[12px] text-[#9CA3AF] leading-relaxed mt-3 pt-3 border-t border-[#2D3748]">
+        {partnerResponsibilityText(audience === "coach" ? "athlete" : "self")}
+      </p>
 
       <label className="flex items-start gap-3 cursor-pointer group mt-5">
         <input
