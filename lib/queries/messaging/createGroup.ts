@@ -32,3 +32,22 @@ export async function createGroup(
   const res = (data ?? {}) as { conversation_id?: string; created?: boolean };
   return { conversationId: res.conversation_id, created: res.created };
 }
+
+/* Groupe CUSTOM (ad-hoc, #2) : nom libre + sélection de membres (user_id) DU
+   PÉRIMÈTRE de l'expéditeur (coach = ses athlètes + staff école ; directeur =
+   toute l'école). Le RPC valide chaque membre et ignore les hors-périmètre ;
+   member_role est déduit serveur (athlète → ATHLETE, coach → STAFF). La
+   visibilité suit la composition (un ATHLETE dedans → réponses staff-seulement). */
+export async function createCustomGroup(
+  supabase: SupabaseClient,
+  name: string,
+  memberUserIds: string[],
+): Promise<CreateGroupResult & { seeded?: number }> {
+  const { data, error } = await supabase.rpc("create_custom_group", {
+    p_name: name,
+    p_member_ids: memberUserIds,
+  });
+  if (error) return { error };
+  const res = (data ?? {}) as { conversation_id?: string; seeded?: number };
+  return { conversationId: res.conversation_id, seeded: res.seeded };
+}
