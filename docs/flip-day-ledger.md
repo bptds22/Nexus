@@ -1224,3 +1224,19 @@ unique-par-école/équipe) — Team + All-coaches couvrent le besoin ; notificat
   scope=CUSTOM, staff=1+athletes=1, outsider ignoré. Visibilité = suit la composition (ATHLETE
   dedans → asymétrie via trigger+RLS existants). Compose UI (tuile "Groupe personnalisé") = en cours.
 Verif catalogue = session séparée.
+
+## [x] Re-test groupe chat — 3 fixes (2026-07-30)
+
+- #1 (code) GroupeCompose : boucle infinie du picker custom. Cause : setCustomLoading(true)
+  avec customLoading DANS les deps → l'effet se re-déclenchait et annulait sa 1ère invocation
+  avant commit (spinner infini, data jetée) + pas de try/catch. Fix : customLoading retiré du
+  guard+deps, try/catch/finally.
+- #2 (code) Éval règle finale BP (UNE éval vivante) : buildFormFromRaw ouvre le form sur
+  selectBestEvaluation (l'éval publique/latest), tous champs inclus ; save = latest-wins. Bandeau
+  = contextuel (publicByOther). Surfaces cohérentes (cote 5.0 + traits du directeur partout).
+- #3 (DB, APPLIQUÉ PROD) 20260730140000 : gestion staff d'équipe. Prouvé : (a) dir s'ajoute ✅,
+  (b) dir change un rôle ✅, MAIS (c) un HEAD COACH qui ajoute un coach (le directeur) → RLS
+  refuse. Fix : helper is_team_head_coach ajouté en OR à INSERT+UPDATE team_coaches (+ directeur).
+  Preuve : head_coach ajoute le directeur ✅, outsider refusé ✅. NB : le role CHECK n'accepte que
+  head_coach/assistant/coordinator (si l'UI envoie CHEF/COORDO → erreur CHECK distincte).
+Verif catalogue = session séparée.
