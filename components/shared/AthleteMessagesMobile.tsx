@@ -63,6 +63,7 @@ export function AthleteMessagesMobile() {
   const archiveMut = useArchiveAthleteConversation();
   const { data: currentUser } = useCurrentUser();
   const userId = currentUser?.authUser.id;
+  const queryClient = useQueryClient();
 
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebouncedValue(search, 200);
@@ -72,6 +73,38 @@ export function AthleteMessagesMobile() {
 
   useEffect(() => { if (threads.length === 0) setEditMode(false); }, [threads.length]);
   useEffect(() => { if (!editMode) setSelected(new Set()); }, [editMode]);
+
+  // Fraîcheur de l'inbox (fix #4 — diffusion invisible). Un message de
+  // diffusion crée/rafraîchit une conversation ATHLETE_COACH côté serveur
+  // (prouvé visible par RLS), mais la LISTE n'avait aucun signal pour se
+  // rafraîchir : l'écran fil s'abonne à SON channel, pas l'inbox. On ajoute
+  // deux déclencheurs d'invalidation : (1) realtime INSERT sur messages
+  // (RLS-scopé aux fils de cet athlète) → un broadcast reçu pendant que
+  // l'inbox est à l'écran apparaît ; (2) app-resume → le thread arrivé par
+  // push pendant que l'app était en arrière-plan apparaît à la réouverture.
+  useEffect(() => {
+    if (!userId) return;
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`athlete-inbox:${userId}`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, () => {
+        queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      })
+      .subscribe();
+
+    let removeResume: (() => void) | undefined;
+    (async () => {
+      const { Capacitor } = await import("@capacitor/core");
+      if (!Capacitor.isNativePlatform()) return;
+      const { App } = await import("@capacitor/app");
+      const sub = await App.addListener("appStateChange", ({ isActive }) => {
+        if (isActive) queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      });
+      removeResume = () => { sub.remove(); };
+    })();
+
+    return () => { supabase.removeChannel(channel); removeResume?.(); };
+  }, [userId, queryClient]);
 
   // Type-driven segments — "Recruteurs" auto-appears avec un fil
   // RECRUTEUR_ATHLETE (P3-ready). Segments (dont "Tous") + presets statut.
