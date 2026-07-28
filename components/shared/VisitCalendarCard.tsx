@@ -129,7 +129,7 @@ export default function VisitCalendarCard({ visitAtIso, athleteName, sport, scho
           onClick={exportIcs}
           className="flex-1 px-3 py-2 rounded-lg border border-[#2D3748] bg-[#13151a] text-sm font-semibold text-[#9CA3AF] hover:text-white hover:border-[#4a4d56] transition-colors"
         >
-          Télécharger (.ics)
+          Ajouter au calendrier
         </button>
       </div>
     </div>
