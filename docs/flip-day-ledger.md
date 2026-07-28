@@ -1180,3 +1180,16 @@ réponse privée d'un coéquipier) · symétrique. Mineur-safety garanti au nive
 Inerte pour l'instant : rien ne crée de GROUP (le RPC = Phase 2). Verif catalogue = session séparée.
 RESTE : Phase 2 (RPC create/send-to-group + déprécier send_broadcast) · Phase 3 (UI staff) ·
 Phase 4 (UI équipe asymétrique) · Phase 5 (cleanup vue Annonce).
+
+## [x] Phase A — Groupe chat : RPC create_group (APPLIQUÉ PROD 2026-07-30)
+
+`20260730110000_group_chat_create_rpc.sql` — RPC DEFINER `create_group(p_audience jsonb)`
+appliqué au cloud. audience `{kind:'team',team_id}` → GROUP TEAM (seed staff via team_coaches
++ athlètes actifs à compte via team_athletes) · `{kind:'all_coaches'}` → GROUP STAFF (tous les
+school_coaches de l'école de l'expéditeur). Find-or-create via les index uniques ; idempotent
+(re-seed = reconcile roster). Autorité : team = coach de l'équipe/école ; staff = école de
+l'expéditeur. REVOKE anon. Résolution de roster calquée sur send_broadcast (mineur-safety).
+
+Preuve AVANT apply (transaction annulée, équipe réelle « Dragons Juvenile ») : 1er appel
+created:true, 2e created:false (idempotent), scope=TEAM, staff=1 + athletes=1 seedés. Helper
+client `lib/queries/messaging/createGroup.ts`. UI (compose/liste/thread 3-rôles) = en cours.
