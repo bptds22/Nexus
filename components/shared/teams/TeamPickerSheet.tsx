@@ -43,6 +43,10 @@ export interface TeamPickerItem {
   /** Nombre de coachs déjà sur l'équipe. 0 ⇒ équipe orpheline
    *  (scrapée, jamais revendiquée) → le 1er arrivant devient head_coach. */
   coachCount: number;
+  /** L'une des équipes DU coach courant (passée via excludeTeamIds). On ne
+   *  l'exclut plus (bug #3 : la seule équipe de l'école était masquée) — on
+   *  l'affiche marquée « Ton équipe », non rejoignable. */
+  isMine: boolean;
 }
 
 export interface TeamPickerSheetProps {
@@ -116,8 +120,10 @@ export function TeamPickerSheet({
       const { data } = await q;
       if (cancelled) return;
       const exclude = new Set(excludeKey ? excludeKey.split(",") : []);
+      // Bug #3 : on N'EXCLUT PLUS les équipes du coach (sinon sa seule équipe
+      // masque toute la liste → « Aucune équipe existante »). On les garde et
+      // on les marque isMine pour les afficher « Ton équipe », non rejoignables.
       const mapped: TeamPickerItem[] = (data || [])
-        .filter((r: Record<string, unknown>) => !exclude.has(r.id as string))
         .map((r: Record<string, unknown>) => {
           // L'embed peut arriver en objet ou en tableau selon la relation.
           const sportRel = Array.isArray(r.sports) ? r.sports[0] : r.sports;
@@ -130,6 +136,7 @@ export function TeamPickerSheet({
             gender: (r.gender as string | null) ?? null,
             athleteCount: ((r.team_athletes as unknown[]) || []).length,
             coachCount: ((r.team_coaches as unknown[]) || []).length,
+            isMine: exclude.has(r.id as string),
           };
         });
       setTeams(mapped);
@@ -251,8 +258,9 @@ export function TeamPickerSheet({
                 <li key={t.id}>
                   <button
                     type="button"
-                    onClick={() => onPicked(t)}
-                    className="w-full flex items-center gap-3 p-3 bg-[#111317] rounded-2xl active:bg-[#22262e] transition-colors text-left"
+                    onClick={t.isMine ? undefined : () => onPicked(t)}
+                    disabled={t.isMine}
+                    className={`w-full flex items-center gap-3 p-3 bg-[#111317] rounded-2xl transition-colors text-left ${t.isMine ? "opacity-60 cursor-default" : "active:bg-[#22262e]"}`}
                   >
                     <div className="w-10 h-10 rounded-xl bg-[#E63946]/15 border border-[#E63946]/30 flex items-center justify-center flex-shrink-0">
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2" strokeLinecap="round">
@@ -267,15 +275,21 @@ export function TeamPickerSheet({
                       </p>
                       {/* Équipe orpheline (scrapée, jamais revendiquée) : le 1er
                           arrivant en devient head_coach — on l'annonce. */}
-                      {t.coachCount === 0 && (
+                      {!t.isMine && t.coachCount === 0 && (
                         <p className="text-[11px] text-[#22C55E] font-bold mt-0.5">
                           Aucun entraîneur — tu en deviendras responsable
                         </p>
                       )}
                     </div>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4a4d56" strokeWidth="2.4" strokeLinecap="round">
-                      <polyline points="9 18 15 12 9 6" />
-                    </svg>
+                    {t.isMine ? (
+                      <span className="text-[10px] font-black uppercase tracking-wider text-white/70 bg-white/10 rounded-full px-2 py-1 flex-shrink-0">
+                        Ton équipe
+                      </span>
+                    ) : (
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4a4d56" strokeWidth="2.4" strokeLinecap="round">
+                        <polyline points="9 18 15 12 9 6" />
+                      </svg>
+                    )}
                   </button>
                 </li>
               ))}
