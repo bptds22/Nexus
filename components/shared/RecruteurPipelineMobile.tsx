@@ -80,10 +80,6 @@ function statusGlobalColor(status: string): { dot: string; label: string; animat
 }
 
 /* ── Visite planifiée — pilule de date ───────────────────────── */
-// Convention CLAUDE.md : VISITE = violet/purple #8B5CF6. Le stage kanban
-// est peint en ambre dans la liste, mais la pilule de DATE de visite suit
-// la couleur sémantique « visite » comme sur le profil complet.
-const VISIT_PURPLE = "#8B5CF6";
 
 /** « Visite · 12 août » à partir de l'instant ISO (recruiter_pipeline.visit_at).
  *  Formaté en heure locale FR-CA (produit québécois) ; retourne null si l'ISO
@@ -301,21 +297,17 @@ function PipelineCardMobile({ card, onTap }: { card: PipelineKanbanCard; onTap: 
         )}
 
         {/* Pilule de date de visite — VISITE_PLANIFIEE avec une date planifiée.
-            Couleur violette #8B5CF6 (convention « visite ») pour la distinguer
-            du dot de statut global au-dessus. */}
+            Style blanc/neutre (décision BP) sur fond subtil. */}
         {card.status === "visite_planifiee" && (() => {
           const label = formatVisitPill(card.visit_at);
           if (!label) return null;
           return (
             <div className="mt-1.5">
-              <span
-                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full"
-                style={{ backgroundColor: `${VISIT_PURPLE}1f` }}
-              >
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={VISIT_PURPLE} strokeWidth="2.5" strokeLinecap="round" aria-hidden>
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/10">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2.5" strokeLinecap="round" aria-hidden>
                   <rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" />
                 </svg>
-                <span className="text-[11px] font-bold" style={{ color: VISIT_PURPLE }}>{label}</span>
+                <span className="text-[11px] font-bold text-white">{label}</span>
               </span>
             </div>
           );

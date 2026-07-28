@@ -50,12 +50,19 @@ export default function VisitCalendarCard({ visitAtIso, athleteName, sport, scho
   const dateLabel = start.toLocaleDateString("fr-CA", DATE_FMT);
   const timeLabel = withTime ? start.toLocaleTimeString("fr-CA", TIME_FMT) : null;
 
+  // Événement d'1 h TOUJOURS. Sans heure saisie (instant à minuit local), on
+  // cale le départ à 12:00 — sinon le preview affiche un « minuit → 1 h »
+  // illisible. Avec heure saisie, on la respecte.
+  const eventStart = withTime
+    ? start
+    : new Date(start.getFullYear(), start.getMonth(), start.getDate(), 12, 0, 0, 0);
+
   const title = sport ? `Visite — ${athleteName} (${sport})` : `Visite — ${athleteName}`;
   const { googleUrl, icsBlob } = generateCalendarLinks({
     title,
     description: `Visite planifiée avec ${athleteName} via Nexus.`,
     location: schoolName || "",
-    startDate: start,
+    startDate: eventStart,
     durationMinutes: 60,
   });
 
@@ -91,15 +98,14 @@ export default function VisitCalendarCard({ visitAtIso, athleteName, sport, scho
     }
     try {
       const { CapacitorCalendar } = await import("@ebarooni/capacitor-calendar");
-      const startMs = start.getTime();
+      const startMs = eventStart.getTime();
       await CapacitorCalendar.createEventWithPrompt({
         title,
         location: schoolName || undefined,
         description: `Visite planifiée avec ${athleteName} via Nexus.`,
         startDate: startMs,
-        // Heure saisie → événement d'1 h ; sinon journée entière.
-        endDate: withTime ? startMs + 60 * 60 * 1000 : undefined,
-        isAllDay: !withTime,
+        // Toujours un événement d'1 h (jamais journée entière ni minuit→1h).
+        endDate: startMs + 60 * 60 * 1000,
       });
     } catch (e) {
       console.error("[visite mobile] createEventWithPrompt a échoué:", e);
