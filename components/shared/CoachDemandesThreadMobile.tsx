@@ -33,6 +33,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { MessageThreadShell } from "@/components/shared/messaging/MessageThreadShell";
 import { triggerHaptic } from "@/components/shared/messaging/utils";
 import { CoachAthleteThreadMobile } from "@/components/shared/CoachAthleteThreadMobile";
+import { CoachGroupThreadMobile } from "@/components/shared/CoachGroupThreadMobile";
 
 /* ═══════════════════════════════════════════════════════════════
    ROUTER — route par conversation_type. ATHLETE_COACH → vue athlète
@@ -50,6 +51,7 @@ export function CoachDemandesThreadMobile() {
       </div>
     );
   }
+  if (ctx?.conversationType === "GROUP") return <CoachGroupThreadMobile />;
   if (ctx?.conversationType === "ATHLETE_COACH") return <CoachAthleteThreadMobile />;
   if (ctx?.conversationType === "PARENT_COACH") return <CoachParentThreadMobile />;
   return <CoachRecruiterThreadMobile />;

@@ -88,7 +88,7 @@ export function CoachDemandesNouveauMobile() {
               <button type="button" onClick={() => router.replace("/coach/demandes")} className="mt-3 text-[13px] font-bold text-[#A78BFA]">Voir mes messages</button>
             </div>
           ) : (
-            <GroupeCompose selfId={userId} role={role} onSent={(n) => setSentCount(n)} />
+            <GroupeCompose selfId={userId} role={role} onSent={(n) => setSentCount(n)} onCreated={routeToThread} />
           )
         )}
       </div>

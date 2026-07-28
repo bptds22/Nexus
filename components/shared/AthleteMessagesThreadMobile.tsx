@@ -24,6 +24,7 @@ import { useSendMessage } from "@/lib/queries/recruiter/useSendMessage";
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import { useQueryClient } from "@tanstack/react-query";
 import { MessageThreadShell } from "@/components/shared/messaging/MessageThreadShell";
+import { AthleteGroupThreadMobile } from "@/components/shared/AthleteGroupThreadMobile";
 
 interface CoachHeader { name: string; initials: string; photoUrl: string | null; role: string; school: string; }
 
@@ -31,7 +32,41 @@ function roleLabel(scRole: string | undefined): string {
   return scRole === "DIRECTEUR" || scRole === "DIRECTEUR_INTERIM" ? "Directeur sportif" : "Entraîneur";
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   ROUTER — route par conversation_type. GROUP → fil de groupe
+   (multi-parties, visibilité asymétrique). Sinon → le fil 2-party
+   existant (ATHLETE_COACH / RECRUTEUR_ATHLETE), inchangé.
+═══════════════════════════════════════════════════════════════ */
 export function AthleteMessagesThreadMobile() {
+  const conversationId = useDynamicParam("id");
+  const [convType, setConvType] = useState<"loading" | "GROUP" | "OTHER">("loading");
+  useEffect(() => {
+    if (!conversationId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const supabase = createClient();
+        const { data } = await supabase.from("conversations").select("conversation_type").eq("id", conversationId).maybeSingle();
+        if (!cancelled) setConvType(data?.conversation_type === "GROUP" ? "GROUP" : "OTHER");
+      } catch {
+        if (!cancelled) setConvType("OTHER");
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [conversationId]);
+
+  if (convType === "loading") {
+    return (
+      <div className="h-full bg-[#111317] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-[#22C55E] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+  if (convType === "GROUP") return <AthleteGroupThreadMobile />;
+  return <AthleteCoachThreadMobile />;
+}
+
+function AthleteCoachThreadMobile() {
   const router = useRouter();
   const conversationId = useDynamicParam("id");
   const toast = useMobileToast();

@@ -44,6 +44,35 @@ function relativeTime(isoStr: string): string {
 
 function ThreadRow({ t }: { t: AthleteThreadData }) {
   const unread = t.unreadCount > 0;
+  // Vrai groupe chat — UNE row : avatar de groupe générique (icône groupe,
+  // pas une photo) + groupName + dernier message visible (RLS-filtré) + badge.
+  if (t.isGroup) {
+    return (
+      <Link
+        href={`/athlete/messages?id=${t.id}`}
+        className={`flex items-center gap-4 px-5 py-4 transition-colors hover:bg-[#252D3A] ${
+          unread ? "bg-[#1E2430] border-l-[3px] border-l-[#0EA5E9]" : "bg-[#1A1D24] border-l-[3px] border-l-transparent"
+        }`}
+      >
+        <div className="w-11 h-11 rounded-full bg-[#0EA5E9]/15 border border-[#0EA5E9]/30 flex items-center justify-center shrink-0">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
+          </svg>
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <p className={`text-[15px] truncate ${unread ? "font-bold text-white" : "font-semibold text-[#e0e0e0]"}`}>{t.groupName || "Groupe"}</p>
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#0EA5E9]/15 border border-[#0EA5E9]/30 text-[#38BDF8] shrink-0">Groupe</span>
+          </div>
+          <p className="text-[13px] text-[#6b7280] truncate mt-0.5">{t.lastMessage || "Nouvelle conversation"}</p>
+        </div>
+        <div className="flex flex-col items-end gap-1.5 shrink-0">
+          <span className={`text-[12px] ${unread ? "text-white font-semibold" : "text-[#6b7280]"}`}>{relativeTime(t.lastMessageAt)}</span>
+          {unread && <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-[#0EA5E9] text-[#0b0d10] text-[10px] font-black inline-flex items-center justify-center">{t.unreadCount}</span>}
+        </div>
+      </Link>
+    );
+  }
   return (
     <Link
       href={`/athlete/messages?id=${t.id}`}

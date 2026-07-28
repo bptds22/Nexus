@@ -20,7 +20,7 @@ import {
   type StatusPreset,
 } from "@/lib/messaging/threadStatus";
 import { deriveTypeSegments, matchesTypeSegment } from "@/lib/messaging/typeSegments";
-import { loadSenderBroadcastSummaries, type AnnonceSummary } from "@/lib/queries/coach/loadSenderBroadcasts";
+import { type AnnonceSummary } from "@/lib/queries/coach/loadSenderBroadcasts";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -293,6 +293,101 @@ function AnnonceCard({ a }: { a: AnnonceSummary }) {
   );
 }
 
+/* ── Group row (vrai groupe chat, conversation_type='GROUP') ──── */
+
+interface GroupRow {
+  id: string;
+  groupName: string;
+  groupScope: string;
+  lastMessage: string;
+  lastMessageAt: string;
+  unreadCount: number;
+}
+
+/* Charge les GROUP dont je suis membre. Invisibles à la query .or bipartite
+   (coach_id / coach_b_id NULL) → on passe par conversation_participants. Le
+   dernier message visible est viewer-aware GRATUITEMENT : la RLS messages
+   filtre déjà (staff = tout ; athlète = audience='ALL' + ses envois). */
+async function loadCoachGroupRows(
+  supabase: ReturnType<typeof createClient>,
+  userId: string,
+): Promise<GroupRow[]> {
+  const { data: cpRows } = await supabase
+    .from("conversation_participants")
+    .select("conversation_id, last_read_at")
+    .eq("user_id", userId);
+  const groupIds = [...new Set((cpRows || []).map((r: any) => r.conversation_id as string))];
+  if (groupIds.length === 0) return [];
+
+  const lastReadMap = new Map<string, string | null>();
+  for (const r of (cpRows || []) as any[]) lastReadMap.set(r.conversation_id, r.last_read_at);
+
+  const { data: groupConvs } = await supabase
+    .from("conversations")
+    .select("id, group_scope, group_name, status, last_message_at, created_at")
+    .in("id", groupIds)
+    .eq("conversation_type", "GROUP");
+  if (!groupConvs || groupConvs.length === 0) return [];
+
+  const gConvIds = groupConvs.map((c: any) => c.id as string);
+  const gLast = new Map<string, { content: string; at: string }>();
+  const gUnread = new Map<string, number>();
+  if (gConvIds.length > 0) {
+    const { data: gMsgs } = await supabase
+      .from("messages")
+      .select("conversation_id, content, created_at, sender_id")
+      .in("conversation_id", gConvIds)
+      .order("created_at", { ascending: false });
+    for (const m of (gMsgs || []) as any[]) {
+      if (!gLast.has(m.conversation_id)) gLast.set(m.conversation_id, { content: m.content, at: m.created_at });
+      const lr = lastReadMap.get(m.conversation_id) ?? null;
+      if (m.sender_id !== userId && (!lr || m.created_at > lr)) {
+        gUnread.set(m.conversation_id, (gUnread.get(m.conversation_id) || 0) + 1);
+      }
+    }
+  }
+
+  return (groupConvs as any[]).map((c) => ({
+    id: c.id as string,
+    groupName: (c.group_name as string) || "Groupe",
+    groupScope: (c.group_scope as string) || "",
+    lastMessage: gLast.get(c.id)?.content || "",
+    lastMessageAt: gLast.get(c.id)?.at || (c.last_message_at as string) || (c.created_at as string) || "",
+    unreadCount: gUnread.get(c.id) || 0,
+  }));
+}
+
+function GroupThreadCard({ g }: { g: GroupRow }) {
+  const unread = g.unreadCount > 0;
+  return (
+    <Link
+      href={`/coach/demandes?id=${g.id}`}
+      className={`flex items-center gap-4 px-5 py-4 transition-colors hover:bg-[#252D3A] ${
+        unread ? "bg-[#1E2430] border-l-[3px] border-l-[#0EA5E9]" : "bg-[#1A1D24] border-l-[3px] border-l-transparent"
+      }`}
+    >
+      <div className="w-11 h-11 rounded-full bg-[#0EA5E9]/15 border border-[#0EA5E9]/30 flex items-center justify-center shrink-0">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
+        </svg>
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <span className={`text-[15px] truncate ${unread ? "text-white font-bold" : "text-[#e0e0e0] font-semibold"}`}>{g.groupName}</span>
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#0EA5E9]/15 border border-[#0EA5E9]/30 text-[#38BDF8] shrink-0">Groupe</span>
+        </div>
+        {g.lastMessage && <p className="text-[13px] text-[#6b7280] truncate mt-0.5">{g.lastMessage}</p>}
+      </div>
+      <div className="flex flex-col items-end gap-1.5 shrink-0 w-[130px]">
+        <span className={`text-[12px] ${unread ? "text-white font-semibold" : "text-[#6b7280]"}`}>{relativeTime(g.lastMessageAt)}</span>
+        {unread && (
+          <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-[#0EA5E9] text-[#0b0d10] text-[10px] font-black inline-flex items-center justify-center">{g.unreadCount}</span>
+        )}
+      </div>
+    </Link>
+  );
+}
+
 /* ═══════════════════════════════════════════════════════════════
    MAIN PAGE
 ═══════════════════════════════════════════════════════════════ */
@@ -337,6 +432,7 @@ function DemandesContent() {
   const [activeFilter, setActiveFilter] = useState<StatusPreset>(mapUrlStatusPreset(urlFilter));
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [threads, setThreads] = useState<ConversationThread[]>([]);
+  const [groups, setGroups] = useState<GroupRow[]>([]);
   const [annonces, setAnnonces] = useState<AnnonceSummary[]>([]);
   const [convTypes, setConvTypes] = useState<Record<string, string>>({});
   /** COACH_COACH render meta : is the other party a director + optional attached athlete. */
@@ -351,6 +447,11 @@ function DemandesContent() {
         const supabase = createClient();
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) { setLoading(false); return; }
+
+        // GROUP threads (vrai groupe chat) — chargés indépendamment des
+        // bipartites (coach_id/coach_b_id NULL → invisibles à la query .or).
+        // Fait AVANT le early-return : un coach n'ayant QUE des groupes les voit.
+        setGroups(await loadCoachGroupRows(supabase, user.id));
 
         // Fetch conversations for this coach
         const { data: conversations, error: convError } = await supabase
@@ -514,14 +615,11 @@ function DemandesContent() {
           };
         });
 
-        // Annonce (broadcast) folding — one consolidated entry per broadcast
-        // this coach sent, and DROP its N member threads from the list (they're
-        // replaced by the Annonce row → no double-clutter).
-        const { annonces: annonceList, memberConvIds } = await loadSenderBroadcastSummaries(supabase, user.id);
-        const visible = memberConvIds.size > 0 ? mapped.filter((t) => !memberConvIds.has(t.id)) : mapped;
-
-        setThreads(visible);
-        setAnnonces(annonceList);
+        // Broadcast déprécié → remplacé par le vrai groupe chat. Plus de repli
+        // "Annonce" (la vue sender-only est retirée) : les anciens fils-membres
+        // de diffusion restent tels quels dans la liste (historique, design #4).
+        setThreads(mapped);
+        setAnnonces([]);
         setCoachMeta(nextCoachMeta);
         setParentMeta(nextParentMeta);
         setConvTypes(Object.fromEntries(conversations.map((c: any) => [c.id as string, (c.conversation_type as string) || "RECRUTEUR_COACH"])));
@@ -587,6 +685,19 @@ function DemandesContent() {
     return list.sort((a, b) => new Date(b.lastActivityAt).getTime() - new Date(a.lastActivityAt).getTime());
   }, [annonces, activeFilter, typeFilter, debouncedSearch]);
 
+  // Groupes (vrai groupe chat) — affichés dans la vue par défaut (Tous · tous
+  // types), comme les annonces. Un filtre type/statut spécifique ou une
+  // recherche les scope hors liste. Une recherche matche groupName + preview.
+  const visibleGroups = useMemo(() => {
+    if (activeFilter !== "tous" || typeFilter !== "all") return [];
+    let list = [...groups];
+    if (debouncedSearch.trim().length >= 2) {
+      const q = debouncedSearch.toLowerCase();
+      list = list.filter((g) => g.groupName.toLowerCase().includes(q) || g.lastMessage.toLowerCase().includes(q));
+    }
+    return list.sort((a, b) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime());
+  }, [groups, activeFilter, typeFilter, debouncedSearch]);
+
   return (
     <div className="px-6 sm:px-10 py-8 max-w-[1280px] mx-auto space-y-6">
 
@@ -635,7 +746,7 @@ function DemandesContent() {
         <div className="flex items-center justify-center py-20">
           <div className="w-8 h-8 border-2 border-[#E63946] border-t-transparent rounded-full animate-spin" />
         </div>
-      ) : filtered.length === 0 && visibleAnnonces.length === 0 ? (
+      ) : filtered.length === 0 && visibleAnnonces.length === 0 && visibleGroups.length === 0 ? (
         /* Empty state */
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <div className="w-20 h-20 rounded-full bg-[#1A1D24] border border-[#2D3748] flex items-center justify-center mb-6">
@@ -664,6 +775,7 @@ function DemandesContent() {
         </div>
       ) : (
         <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] overflow-hidden divide-y divide-[#2D3748]/50">
+          {visibleGroups.map((g) => <GroupThreadCard key={g.id} g={g} />)}
           {visibleAnnonces.map((a) => <AnnonceCard key={a.broadcastId} a={a} />)}
           {filtered.map((t) => {
             const ct = convTypes[t.id];

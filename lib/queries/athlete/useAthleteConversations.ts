@@ -15,8 +15,15 @@ import { mapDbStatus, type ThreadStatus } from "@/lib/messaging/threadStatus";
 
 export interface AthleteThreadData {
   id: string;
-  /** 'ATHLETE_COACH' today ; 'RECRUTEUR_ATHLETE' auto-appears with P3. */
+  /** 'ATHLETE_COACH' | 'RECRUTEUR_ATHLETE' | 'GROUP'. */
   conversationType: string;
+  /** Vrai groupe chat (conversation_type='GROUP'). Une conversation = UNE row
+      (avatar de groupe générique + groupName + dernier message visible). */
+  isGroup?: boolean;
+  /** group_name (ex "Équipe Dragons Juvenile" / "Staff — École X"). */
+  groupName?: string;
+  /** group_scope : 'STAFF' | 'TEAM'. */
+  groupScope?: string;
   coachId: string;
   coachName: string;
   coachInitials: string;
@@ -176,7 +183,7 @@ export function useAthleteConversations() {
         }
       }
 
-      return data.map((c: Record<string, unknown>): AthleteThreadData => {
+      const bipartite = data.map((c: Record<string, unknown>): AthleteThreadData => {
         const isRA = (c.conversation_type as string) === "RECRUTEUR_ATHLETE";
         const cid_status = (c.id as string);
 
@@ -242,6 +249,16 @@ export function useAthleteConversations() {
           threadStatus: mapDbStatus(c.status as string, meRepliedMap.get(cid_status), otherRepliedMap.get(cid_status)),
         };
       });
+
+      // ── Branche GROUP (vrai groupe chat) ──────────────────────────
+      // Les GROUP ont athlete_id NULL (participants bipartites NULL) →
+      // invisibles à la query .eq("athlete_id", …). On les charge via ma
+      // membership matérialisée : conversation_participants WHERE user_id=me.
+      const groupThreads = await loadGroupThreads(supabase, userId);
+
+      return [...bipartite, ...groupThreads].sort(
+        (a, b) => new Date(b.lastMessageAt || 0).getTime() - new Date(a.lastMessageAt || 0).getTime(),
+      );
     },
     enabled: !!userId,
     // Fix #4 : rafraîchit l'inbox au premier plan pour qu'une diffusion reçue
@@ -249,5 +266,91 @@ export function useAthleteConversations() {
     // `messages` en prod). refetchOnWindowFocus complète resume/visibilitychange.
     refetchInterval: 45_000,
     refetchOnWindowFocus: true,
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   loadGroupThreads — les conversations GROUP dont l'athlète est membre.
+
+   Le "dernier message visible" est viewer-aware GRATUITEMENT : la RLS
+   messages filtre déjà (l'athlète ne voit que audience='ALL' + ses
+   propres envois — la réponse privée d'un coéquipier est masquée), donc
+   une query messages normale (ordre desc) renvoie déjà le bon sous-
+   ensemble → on prend le premier par conversation. Idem pour les non-lus
+   (created_at > mon last_read_at, sender <> moi, sur le même sous-ensemble).
+═══════════════════════════════════════════════════════════════ */
+async function loadGroupThreads(
+  supabase: ReturnType<typeof createClient>,
+  userId: string,
+): Promise<AthleteThreadData[]> {
+  const { data: cpRows } = await supabase
+    .from("conversation_participants")
+    .select("conversation_id, last_read_at")
+    .eq("user_id", userId);
+  const groupIds = [...new Set((cpRows || []).map((r) => (r as Record<string, unknown>).conversation_id as string))];
+  if (groupIds.length === 0) return [];
+
+  const lastReadMap = new Map<string, string | null>();
+  for (const r of (cpRows || []) as { conversation_id: string; last_read_at: string | null }[]) {
+    lastReadMap.set(r.conversation_id, r.last_read_at);
+  }
+
+  const { data: groupConvs } = await supabase
+    .from("conversations")
+    .select("id, conversation_type, group_scope, group_name, status, last_message_at, created_at")
+    .in("id", groupIds)
+    .eq("conversation_type", "GROUP");
+  if (!groupConvs || groupConvs.length === 0) return [];
+
+  const gConvIds = groupConvs.map((c: Record<string, unknown>) => c.id as string);
+  const gLastMsg = new Map<string, string>();
+  const gLastAt = new Map<string, string>();
+  const gLastSender = new Map<string, string>();
+  const gUnread = new Map<string, number>();
+  const gMeReplied = new Map<string, boolean>();
+  const gOtherReplied = new Map<string, boolean>();
+  if (gConvIds.length > 0) {
+    const { data: gMsgs } = await supabase
+      .from("messages")
+      .select("conversation_id, content, created_at, sender_id")
+      .in("conversation_id", gConvIds)
+      .order("created_at", { ascending: false });
+    for (const m of (gMsgs || []) as { conversation_id: string; content: string; created_at: string; sender_id: string }[]) {
+      if (!gLastMsg.has(m.conversation_id)) {
+        gLastMsg.set(m.conversation_id, m.content);
+        gLastAt.set(m.conversation_id, m.created_at);
+        gLastSender.set(m.conversation_id, m.sender_id);
+      }
+      if (m.sender_id === userId) gMeReplied.set(m.conversation_id, true);
+      else gOtherReplied.set(m.conversation_id, true);
+      const lr = lastReadMap.get(m.conversation_id) ?? null;
+      if (m.sender_id !== userId && (!lr || m.created_at > lr)) {
+        gUnread.set(m.conversation_id, (gUnread.get(m.conversation_id) || 0) + 1);
+      }
+    }
+  }
+
+  return (groupConvs as Record<string, unknown>[]).map((c): AthleteThreadData => {
+    const id = c.id as string;
+    return {
+      id,
+      conversationType: "GROUP",
+      isGroup: true,
+      groupName: (c.group_name as string) || "Groupe",
+      groupScope: (c.group_scope as string) || "",
+      coachId: "",
+      coachName: (c.group_name as string) || "Groupe",
+      coachInitials: "",
+      coachPhotoUrl: null,
+      coachRole: "",
+      coachSchool: "",
+      hasCoachName: false,
+      lastMessage: gLastMsg.get(id) || "",
+      lastMessageAt: (gLastAt.get(id) as string) || (c.last_message_at as string) || (c.created_at as string) || "",
+      lastSenderId: gLastSender.get(id) ?? null,
+      unreadCount: gUnread.get(id) || 0,
+      status: (c.status as string) || "ACTIVE",
+      threadStatus: mapDbStatus(c.status as string, gMeReplied.get(id), gOtherReplied.get(id)),
+    };
   });
 }

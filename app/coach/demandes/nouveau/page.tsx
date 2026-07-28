@@ -104,7 +104,7 @@ function CoachNouveauMessageContent() {
                 <p className="text-[13px] text-[#9CA3AF] mt-1">Chacun a reçu un fil individuel. <Link href="/coach/demandes" className="text-[#A78BFA] hover:underline">Voir mes messages</Link></p>
               </div>
             ) : (
-              <GroupeCompose selfId={userId} role={role} onSent={(n) => setSentCount(n)} />
+              <GroupeCompose selfId={userId} role={role} onSent={(n) => setSentCount(n)} onCreated={routeToThread} />
             )
           )}
         </div>

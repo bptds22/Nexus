@@ -15,17 +15,23 @@
 import { useQuery } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
-import { loadSenderBroadcastSummaries } from "@/lib/queries/coach/loadSenderBroadcasts";
 
 export interface CoachThreadData {
   id: string;
-  /** 'RECRUTEUR_COACH' (default) | 'ATHLETE_COACH' | 'COACH_COACH' | 'BROADCAST'. */
+  /** 'RECRUTEUR_COACH' (default) | 'ATHLETE_COACH' | 'COACH_COACH' | 'GROUP'. */
   conversationType: string;
   /** Broadcast (Annonce) pseudo-thread — folds N member threads into one row. */
   isBroadcast?: boolean;
   broadcastId?: string;
   targetLabel?: string;
   recipientCount?: number;
+  /** Vrai groupe chat (conversation_type='GROUP'). Une conversation = UNE row
+      (avatar de groupe générique + groupName + dernier message visible). */
+  isGroup?: boolean;
+  /** group_name (ex "Équipe Dragons Juvenile" / "Staff — École X"). */
+  groupName?: string;
+  /** group_scope : 'STAFF' | 'TEAM'. */
+  groupScope?: string;
   /** COACH_COACH counterparty (the other coach/director). */
   otherCoachName: string;
   otherCoachInitials: string;
@@ -144,27 +150,6 @@ export function useCoachConversations() {
         }
       }
 
-      // Annonce (broadcast) folding — one pseudo-thread per broadcast this
-      // coach sent, and DROP its N member threads (replaced by the Annonce row).
-      const { annonces, memberConvIds } = await loadSenderBroadcastSummaries(supabase, userId);
-      const annonceThreads: CoachThreadData[] = annonces.map((a) => ({
-        id: `annonce:${a.broadcastId}`,
-        conversationType: "BROADCAST",
-        isBroadcast: true,
-        broadcastId: a.broadcastId,
-        targetLabel: a.targetLabel,
-        recipientCount: a.recipientCount,
-        otherCoachName: "", otherCoachInitials: "", otherCoachIsDirector: false, otherCoachPhotoUrl: null,
-        parentName: "", parentInitials: "", parentPhotoUrl: null,
-        recruiterId: "", recruiterName: "", recruiterInitials: "", recruiterPhotoUrl: null, recruiterCegep: "",
-        athleteId: "", athleteName: "", athleteInitials: "", athletePhotoUrl: null, athletePosition: "",
-        lastMessage: a.content,
-        lastMessageAt: a.lastActivityAt,
-        lastSenderId: null,
-        unreadCount: a.unreadReplies,
-        status: "ACTIVE",
-      }));
-
       const threads = data.map((c: Record<string, unknown>): CoachThreadData => {
         const recRaw = c.recruiter;
         const rec = (Array.isArray(recRaw) ? recRaw[0] : recRaw) as Record<string, unknown> | null;
@@ -212,11 +197,96 @@ export function useCoachConversations() {
         };
       });
 
-      const visible = memberConvIds.size > 0 ? threads.filter((t) => !memberConvIds.has(t.id)) : threads;
-      // Annonces first (newest broadcasts), then the normal threads (already
-      // sorted by last_message_at desc from the query).
-      return [...annonceThreads, ...visible];
+      // ── Branche GROUP (vrai groupe chat) ──────────────────────────
+      // Les GROUP n'ont ni coach_id ni coach_b_id (participants bipartites
+      // NULL) → invisibles à la query .or ci-dessus. On les charge via ma
+      // membership matérialisée : conversation_participants WHERE user_id=me →
+      // conversation_id[] (+ mon last_read_at pour les non-lus).
+      const groupThreads = await loadGroupThreads(supabase, userId);
+
+      // Fusion + tri unique par dernier message (desc). Un GROUP = UNE row.
+      return [...threads, ...groupThreads].sort(
+        (a, b) => new Date(b.lastMessageAt || 0).getTime() - new Date(a.lastMessageAt || 0).getTime(),
+      );
     },
     enabled: !!userId,
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   loadGroupThreads — les conversations GROUP dont je suis membre.
+
+   Le "dernier message visible" est viewer-aware GRATUITEMENT : la RLS
+   messages filtre déjà (staff = tout ; athlète = audience='ALL' + ses
+   propres envois), donc une query messages normale (ordre desc) sous
+   l'identité du viewer renvoie déjà le bon sous-ensemble → on prend le
+   premier par conversation. Idem pour les non-lus (comptés sur le même
+   sous-ensemble RLS-filtré : created_at > mon last_read_at, sender <> moi).
+═══════════════════════════════════════════════════════════════ */
+async function loadGroupThreads(
+  supabase: ReturnType<typeof createClient>,
+  userId: string,
+): Promise<CoachThreadData[]> {
+  const { data: cpRows } = await supabase
+    .from("conversation_participants")
+    .select("conversation_id, last_read_at")
+    .eq("user_id", userId);
+  const groupIds = [...new Set((cpRows || []).map((r) => (r as Record<string, unknown>).conversation_id as string))];
+  if (groupIds.length === 0) return [];
+
+  const lastReadMap = new Map<string, string | null>();
+  for (const r of (cpRows || []) as { conversation_id: string; last_read_at: string | null }[]) {
+    lastReadMap.set(r.conversation_id, r.last_read_at);
+  }
+
+  const { data: groupConvs } = await supabase
+    .from("conversations")
+    .select("id, conversation_type, group_scope, group_name, status, last_message_at, created_at")
+    .in("id", groupIds)
+    .eq("conversation_type", "GROUP");
+  if (!groupConvs || groupConvs.length === 0) return [];
+
+  const gConvIds = groupConvs.map((c: Record<string, unknown>) => c.id as string);
+  const gLastMsg = new Map<string, string>();
+  const gLastAt = new Map<string, string>();
+  const gLastSender = new Map<string, string>();
+  const gUnread = new Map<string, number>();
+  if (gConvIds.length > 0) {
+    const { data: gMsgs } = await supabase
+      .from("messages")
+      .select("conversation_id, content, created_at, sender_id")
+      .in("conversation_id", gConvIds)
+      .order("created_at", { ascending: false });
+    for (const m of (gMsgs || []) as { conversation_id: string; content: string; created_at: string; sender_id: string }[]) {
+      if (!gLastMsg.has(m.conversation_id)) {
+        gLastMsg.set(m.conversation_id, m.content);
+        gLastAt.set(m.conversation_id, m.created_at);
+        gLastSender.set(m.conversation_id, m.sender_id);
+      }
+      const lr = lastReadMap.get(m.conversation_id) ?? null;
+      if (m.sender_id !== userId && (!lr || m.created_at > lr)) {
+        gUnread.set(m.conversation_id, (gUnread.get(m.conversation_id) || 0) + 1);
+      }
+    }
+  }
+
+  return (groupConvs as Record<string, unknown>[]).map((c): CoachThreadData => {
+    const id = c.id as string;
+    return {
+      id,
+      conversationType: "GROUP",
+      isGroup: true,
+      groupName: (c.group_name as string) || "Groupe",
+      groupScope: (c.group_scope as string) || "",
+      otherCoachName: "", otherCoachInitials: "", otherCoachIsDirector: false, otherCoachPhotoUrl: null,
+      parentName: "", parentInitials: "", parentPhotoUrl: null,
+      recruiterId: "", recruiterName: "", recruiterInitials: "", recruiterPhotoUrl: null, recruiterCegep: "",
+      athleteId: "", athleteName: "", athleteInitials: "", athletePhotoUrl: null, athletePosition: "",
+      lastMessage: gLastMsg.get(id) || "",
+      lastMessageAt: (gLastAt.get(id) as string) || (c.last_message_at as string) || (c.created_at as string) || "",
+      lastSenderId: gLastSender.get(id) ?? null,
+      unreadCount: gUnread.get(id) || 0,
+      status: (c.status as string) || "ACTIVE",
+    };
   });
 }

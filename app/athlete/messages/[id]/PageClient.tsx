@@ -6,6 +6,7 @@ import { useDynamicParam } from "@/lib/platform/useDynamicParam";
 import { createClient } from "@/lib/supabase/client";
 import RetractedMessageRow from "@/components/messaging/RetractedMessageRow";
 import { AthleteMessagesThreadMobile } from "@/components/shared/AthleteMessagesThreadMobile";
+import AthleteGroupThreadView from "./AthleteGroupThreadView";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -83,6 +84,36 @@ function MessageBubble({ msg, isMe, otherName }: { msg: MessageData; isMe: boole
 
 export default function Page() {
   if (IS_CAPACITOR) return <AthleteMessagesThreadMobile />;
+  return <AthleteThreadRouter />;
+}
+
+/* Route par conversation_type : GROUP → fil de groupe (multi-parties) ;
+   sinon → le fil 2-party existant (ATHLETE_COACH / RECRUTEUR_ATHLETE). */
+function AthleteThreadRouter() {
+  const id = useDynamicParam("id");
+  const [convType, setConvType] = useState<"loading" | "GROUP" | "OTHER">("loading");
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const supabase = createClient();
+        const { data } = await supabase.from("conversations").select("conversation_type").eq("id", id).maybeSingle();
+        if (!cancelled) setConvType(data?.conversation_type === "GROUP" ? "GROUP" : "OTHER");
+      } catch {
+        if (!cancelled) setConvType("OTHER");
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [id]);
+
+  if (convType === "loading") {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-[#22C55E] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+  if (convType === "GROUP") return <AthleteGroupThreadView id={id} />;
   return <AthleteThreadPage />;
 }
 

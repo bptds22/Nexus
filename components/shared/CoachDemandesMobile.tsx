@@ -143,6 +143,7 @@ export function CoachDemandesMobile() {
         t.recruiterCegep.toLowerCase().includes(q) ||
         t.athleteName.toLowerCase().includes(q) ||
         (t.targetLabel || "").toLowerCase().includes(q) ||
+        (t.groupName || "").toLowerCase().includes(q) ||
         t.lastMessage.toLowerCase().includes(q)
       );
     }
@@ -243,6 +244,30 @@ export function CoachDemandesMobile() {
               <span className={`text-[13px] flex-shrink-0 ${unread ? "text-[#A78BFA] font-semibold" : "text-white/40"}`}>{relativeTime(t.lastMessageAt)}</span>
             </div>
             <p className="text-[15px] text-white/55 mt-0.5 truncate">{t.targetLabel} · Envoyé à {t.recipientCount}</p>
+            {t.lastMessage && <p className="text-[15px] text-white/40 mt-0.5 truncate">{t.lastMessage}</p>}
+          </div>
+        </div>
+      );
+    }
+    // Vrai groupe chat — UNE row : avatar de groupe générique (icône groupe,
+    // pas une photo d'athlète) + groupName + dernier message visible (RLS-
+    // filtré) + badge "GROUPE".
+    if (t.isGroup) {
+      return (
+        <div className="flex items-center gap-3">
+          <div className="relative w-[52px] h-[52px] rounded-full overflow-hidden flex-shrink-0 bg-[#0EA5E9]/15 border border-[#0EA5E9]/30 flex items-center justify-center">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
+            </svg>
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-baseline justify-between gap-2">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <p className={`text-base truncate ${unread ? "font-bold text-white" : "font-semibold text-white/95"}`}>{t.groupName || "Groupe"}</p>
+                <span className="inline-flex items-center px-1.5 h-[17px] rounded-full text-[9px] font-black uppercase tracking-wider border flex-shrink-0 bg-[#0EA5E9]/15 border-[#0EA5E9]/30 text-[#38BDF8]">Groupe</span>
+              </div>
+              <span className={`text-[13px] flex-shrink-0 ${unread ? "text-[#38BDF8] font-semibold" : "text-white/40"}`}>{relativeTime(t.lastMessageAt)}</span>
+            </div>
             {t.lastMessage && <p className="text-[15px] text-white/40 mt-0.5 truncate">{t.lastMessage}</p>}
           </div>
         </div>
