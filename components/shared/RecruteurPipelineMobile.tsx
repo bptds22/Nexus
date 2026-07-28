@@ -516,7 +516,8 @@ function PipelineMenuSheet({
             exit={{ y: "100%" }}
             transition={isDragging ? { duration: 0 } : { duration: 0.32, ease: [0.34, 1.56, 0.64, 1] }}
             className="fixed inset-x-0 bottom-0 z-[60] bg-[#111317] rounded-t-2xl flex flex-col"
-            style={{ maxHeight: "85dvh", paddingBottom: "env(safe-area-inset-bottom)" }}
+            // touchAction pan-y (#2) : geste vertical uniquement, pas de glisse horizontale.
+            style={{ maxHeight: "85dvh", paddingBottom: "env(safe-area-inset-bottom)", touchAction: "pan-y" }}
           >
             {/* Drag handle */}
             <div
@@ -931,7 +932,8 @@ function PipelineDetailSheet({
             exit={{ y: "100%" }}
             transition={isDragging ? { duration: 0 } : { duration: 0.32, ease: [0.34, 1.56, 0.64, 1] }}
             className="fixed inset-x-0 bottom-0 z-[60] bg-[#111317] rounded-t-2xl flex flex-col"
-            style={{ maxHeight: "90dvh", paddingBottom: "env(safe-area-inset-bottom)" }}
+            // touchAction pan-y (#2) : geste vertical uniquement, pas de glisse horizontale.
+            style={{ maxHeight: "90dvh", paddingBottom: "env(safe-area-inset-bottom)", touchAction: "pan-y" }}
           >
             {/* Handle iOS — drag area (swipe-down to close, Fix 5+7) */}
             <div
