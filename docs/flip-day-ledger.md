@@ -1131,3 +1131,27 @@ you can't produce.
 `07dbd06`, the "cookieless commit" (the gate has lived in `f27bfa3`/`d5073cb` all along),
 `sync_user_role_claim` trigger, `f1a01c8` "dedup". Rule: `git cat-file -t <hash>` /
 catalog read BEFORE implementing a cited fix — several were phantoms.
+
+---
+
+## [x] #1 éval désync — RLS lecture élargie (APPLIQUÉE PROD 2026-07-29)
+
+Migration `20260729120000_evaluations_coach_reads_managed.sql` — appliquée au cloud
+(`nrloizyemulbhujrqhgx`) sur GO explicite de BP. **Lecture seule, additive.**
+
+- Cause : un coach primaire (`athletes.coach_id`) ne lisait que SA ligne `evaluations`
+  (policy `authenticated read evaluations` = `coach_id = auth.uid()`). Il voyait la bonne
+  COTE publique (colonne dénormalisée `cote_globale_entraineur`, last-write) mais pas la
+  LIGNE du directeur → nom (« Évaluée par … ») + traits invisibles.
+- Fix : nouveau helper `coach_can_read_athlete_evals(uuid)` (SECURITY DEFINER, row_security
+  off, REVOKE anon) = coach PROPRIÉTAIRE (`athletes.coach_id`, que `coach_can_manage_athlete`
+  NE couvre PAS) OU gestionnaire (team_coaches / directeur). Ajouté à la policy SELECT.
+- ⚠️ Découverte : `coach_can_manage_athlete` ne teste QUE team_coaches + directeur, PAS
+  `athletes.coach_id` — d'où le helper dédié (sinon la migration ratait le cas de BP).
+- Preuve per-rôle AVANT apply (transaction annulée sur le cloud, faute de Postgres local) :
+  coach primaire `1 → 2` (sa ligne + directeur) · uid non lié `0` (deny) · athlète inchangé.
+  Branche recruteur non touchée (copiée verbatim) → inchangée par construction.
+- Verif catalogue = **session séparée** (règle BP), pas dans la session d'apply.
+- Companion code (déjà livré, commit 78f9bd9) : `buildFormFromRaw(raw, coachUserId)` charge
+  l'éval PROPRE de l'éditeur → le formulaire Modifier n'édite jamais l'éval du directeur
+  malgré la RLS élargie. Le « Évaluée par {nom} » (web) s'allume désormais pour le coach.
