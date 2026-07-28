@@ -12,6 +12,7 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { loadInterestedRecruiters, type InterestedRecruiter } from "@/lib/queries/messaging/loadInterestedRecruiters";
 import { findOrCreateRecruiterCoachConversation } from "@/lib/queries/messaging/createRecruiterCoachConversation";
+import AthleteSelectCard from "@/components/messaging/AthleteSelectCard";
 
 function initials(name: string): string {
   return (name || "?").split(" ").map((p) => p[0] || "").join("").slice(0, 2).toUpperCase() || "?";
@@ -86,18 +87,19 @@ export default function InterestedRecruiterCompose({
         {error && <div className="rounded-lg border border-[#EF4444]/40 bg-[#EF4444]/10 px-4 py-3 text-[13px] text-[#FCA5A5]">{error}</div>}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {picked.athletes.map((a) => (
-            <button key={a.id} type="button" disabled={!!busyAthlete} onClick={() => pickAthlete(a.id)}
-              className="text-left rounded-xl p-4 flex items-center gap-3 bg-[#1A1D24] border border-[#2D3748] hover:border-[#E63946]/60 transition-colors disabled:opacity-50">
-              <div className="w-11 h-11 rounded-full bg-[#2D3748] flex items-center justify-center shrink-0"><span className="text-[12px] font-bold text-white">{initials(a.name)}</span></div>
-              <div className="min-w-0 flex-1">
-                <p className="text-[14px] font-bold text-white truncate">{a.name}</p>
+            <AthleteSelectCard
+              key={a.id}
+              name={a.name}
+              disabled={!!busyAthlete}
+              busy={busyAthlete === a.id}
+              onClick={() => pickAthlete(a.id)}
+              meta={
                 <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#E63946] mt-0.5">
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="#E63946" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" /></svg>
                   En favori chez ce recruteur
                 </span>
-              </div>
-              {busyAthlete === a.id && <div className="w-4 h-4 border-2 border-[#E63946] border-t-transparent rounded-full animate-spin shrink-0" />}
-            </button>
+              }
+            />
           ))}
         </div>
       </div>

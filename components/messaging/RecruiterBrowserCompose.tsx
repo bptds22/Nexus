@@ -10,10 +10,11 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { findOrCreateRecruiterCoachConversation } from "@/lib/queries/messaging/createRecruiterCoachConversation";
+import AthleteSelectCard from "@/components/messaging/AthleteSelectCard";
 
 interface Cegep { id: string; name: string; }
 interface Recruiter { id: string; name: string; photoUrl: string | null; }
-interface Ath { id: string; name: string; position: string; }
+interface Ath { id: string; firstName: string; lastName: string; name: string; sport: string; position: string; photoUrl: string | null; stars: number; }
 
 function initials(n: string) { return (n || "?").split(" ").map((p) => p[0] || "").join("").slice(0, 2).toUpperCase() || "?"; }
 
@@ -50,10 +51,13 @@ export default function RecruiterBrowserCompose({
       }
       list.sort((a, b) => a.name.localeCompare(b.name, "fr"));
       // My athletes (own roster).
-      const { data: aths } = await supabase.from("athletes").select("id, first_name, last_name, positions!position_id(abreviation)").eq("coach_id", selfId).eq("status", "ACTIF").order("last_name");
+      const { data: aths } = await supabase.from("athletes").select("id, first_name, last_name, photo_url, cote_globale_entraineur, sports!sport_id(nom), positions!position_id(abreviation)").eq("coach_id", selfId).eq("status", "ACTIF").order("last_name");
       const mine: Ath[] = (aths ?? []).map((a) => {
         const p = (Array.isArray((a as { positions?: unknown }).positions) ? (a as { positions: unknown[] }).positions[0] : (a as { positions?: unknown }).positions) as { abreviation?: string } | null;
-        return { id: (a as { id: string }).id, name: `${(a as { first_name?: string }).first_name || ""} ${(a as { last_name?: string }).last_name || ""}`.trim() || "Athlète", position: p?.abreviation || "" };
+        const s = (Array.isArray((a as { sports?: unknown }).sports) ? (a as { sports: unknown[] }).sports[0] : (a as { sports?: unknown }).sports) as { nom?: string } | null;
+        const af = (a as { first_name?: string }).first_name || "";
+        const al = (a as { last_name?: string }).last_name || "";
+        return { id: (a as { id: string }).id, firstName: af, lastName: al, name: `${af} ${al}`.trim() || "Athlète", sport: s?.nom || "", position: p?.abreviation || "", photoUrl: (a as { photo_url?: string }).photo_url ?? null, stars: Number((a as { cote_globale_entraineur?: number }).cote_globale_entraineur) || 0 };
       });
       if (!cancelled) { setCegeps(list); setMyAthletes(mine); setLoading(false); }
     })();
@@ -96,11 +100,19 @@ export default function RecruiterBrowserCompose({
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {myAthletes.map((a) => (
-              <button key={a.id} type="button" disabled={!!busyAthlete} onClick={() => pickAthlete(a.id)} className="text-left rounded-xl p-4 flex items-center gap-3 bg-[#1A1D24] border border-[#2D3748] hover:border-[#E63946]/60 transition-colors disabled:opacity-50">
-                <div className="w-11 h-11 rounded-full bg-[#2D3748] flex items-center justify-center shrink-0"><span className="text-[12px] font-bold text-white">{initials(a.name)}</span></div>
-                <div className="min-w-0 flex-1"><p className="text-[14px] font-bold text-white truncate">{a.name}</p>{a.position && <p className="text-[12px] text-[#6b7280]">{a.position}</p>}</div>
-                {busyAthlete === a.id && <div className="w-4 h-4 border-2 border-[#E63946] border-t-transparent rounded-full animate-spin shrink-0" />}
-              </button>
+              <AthleteSelectCard
+                key={a.id}
+                firstName={a.firstName}
+                lastName={a.lastName}
+                name={a.name}
+                photoUrl={a.photoUrl}
+                sport={a.sport}
+                position={a.position}
+                stars={a.stars}
+                disabled={!!busyAthlete}
+                busy={busyAthlete === a.id}
+                onClick={() => pickAthlete(a.id)}
+              />
             ))}
           </div>
         )}
