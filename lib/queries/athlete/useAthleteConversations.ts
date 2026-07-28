@@ -244,5 +244,10 @@ export function useAthleteConversations() {
       });
     },
     enabled: !!userId,
+    // Fix #4 : rafraîchit l'inbox au premier plan pour qu'une diffusion reçue
+    // apparaisse sans action manuelle (la publication realtime n'inclut pas
+    // `messages` en prod). refetchOnWindowFocus complète resume/visibilitychange.
+    refetchInterval: 45_000,
+    refetchOnWindowFocus: true,
   });
 }
