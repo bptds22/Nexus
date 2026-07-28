@@ -29,6 +29,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { loadSchoolDirectorStatus } from "@/lib/queries/coach/useSchoolDirector";
+import { loadTeamAthleteIds } from "@/lib/queries/coach/teamAthleteIds";
 
 export interface CoachAthleteOption {
   id: string;
@@ -101,13 +102,19 @@ export async function loadCoachAthleteOptions(
   supabase: SupabaseClient,
   selfId: string,
 ): Promise<CoachAthleteOptions> {
-  // 1. Mes athlètes (roster propre) — inchangé.
-  const { data: mineRaw } = await supabase
+  // 1. Mes athlètes — PROPRIÉTAIRE (coach_id = selfId) OU rattachés à une
+  //    équipe que ce coach coache (autorité d'équipe, BP). coach_id reste
+  //    le lien propriétaire inchangé ; on ÉLARGIT juste la visibilité.
+  const teamIds = await loadTeamAthleteIds(supabase, selfId);
+  const mineSel = supabase
     .from("athletes")
     .select(ATHLETE_OPTION_SELECT)
-    .eq("coach_id", selfId)
     .eq("status", "ACTIF")
     .order("last_name", { ascending: true });
+  // `.or` + `.eq("status", …)` se combinent en AND → statut gardé séparé.
+  const { data: mineRaw } = await (teamIds.length
+    ? mineSel.or(`coach_id.eq.${selfId},id.in.(${teamIds.join(",")})`)
+    : mineSel.eq("coach_id", selfId));
   const mine = ((mineRaw ?? []) as AthleteRow[]).map(toOption);
 
   // 2. Athlètes de l'école — directeur seulement.

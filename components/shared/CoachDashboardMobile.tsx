@@ -22,6 +22,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { ActivityEvent } from "@/lib/types/activityEvents";
 import { loadCoachTaskCounts, loadSchoolTaskCounts } from "@/lib/coach/tasks";
 import { loadSchoolDirectorStatus } from "@/lib/queries/coach/useSchoolDirector";
+import { loadTeamAthleteIds } from "@/lib/queries/coach/teamAthleteIds";
 import { DashboardGradientLayout } from "@/components/shared/dashboard/DashboardGradientLayout";
 import { DashboardGreeting } from "@/components/shared/dashboard/DashboardGreeting";
 import { DashboardHero } from "@/components/shared/dashboard/DashboardHero";
@@ -590,11 +591,20 @@ export function CoachDashboardMobile() {
         })));
       }
 
-      // Roster scope: director → whole school; coach → own claimed athletes.
+      // Roster scope: director → whole school; coach → athlètes PROPRIÉTAIRE
+      // (coach_id = self) OU rattachés à une équipe qu'il coache (autorité
+      // d'équipe, BP). coach_id reste le lien propriétaire inchangé.
       const athletesSel = supabase.from("athletes").select("id, verified").eq("status", "ACTIF");
-      const { data: athleteRows } = await (isDir
-        ? athletesSel.eq("school_id", coachSchoolId)
-        : athletesSel.eq("coach_id", user.id));
+      let athleteRows: { id: string; verified: boolean }[] | null = null;
+      if (isDir) {
+        ({ data: athleteRows } = await athletesSel.eq("school_id", coachSchoolId));
+      } else {
+        const teamIds = await loadTeamAthleteIds(supabase, user.id);
+        // `.or` + `.eq("status", …)` se combinent en AND → statut gardé séparé.
+        ({ data: athleteRows } = await (teamIds.length
+          ? athletesSel.or(`coach_id.eq.${user.id},id.in.(${teamIds.join(",")})`)
+          : athletesSel.eq("coach_id", user.id)));
+      }
 
       const athletes = athleteRows || [];
       const coachAthleteIds = athletes.map((a: { id: string }) => a.id);

@@ -10,6 +10,7 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { findOrCreateAthleteCoachConversation } from "@/lib/queries/messaging/createAthleteCoachConversation";
+import { loadTeamAthleteIds } from "@/lib/queries/coach/teamAthleteIds";
 
 interface Ath { id: string; name: string; position: string; photoUrl: string | null; }
 
@@ -33,9 +34,16 @@ export default function AthleteRosterCompose({
     (async () => {
       setLoading(true);
       const supabase = createClient();
-      const { data } = await supabase.from("athletes")
+      // Owned (coach_id = self) OU rattaché à une équipe que ce coach coache
+      // (autorité d'équipe, BP). coach_id reste le lien propriétaire inchangé.
+      const teamIds = await loadTeamAthleteIds(supabase, selfId);
+      const sel = supabase.from("athletes")
         .select("id, first_name, last_name, photo_url, positions!position_id(abreviation)")
-        .eq("coach_id", selfId).eq("status", "ACTIF").order("last_name");
+        .eq("status", "ACTIF").order("last_name");
+      // `.or` + `.eq("status", …)` se combinent en AND → statut gardé séparé.
+      const { data } = await (teamIds.length
+        ? sel.or(`coach_id.eq.${selfId},id.in.(${teamIds.join(",")})`)
+        : sel.eq("coach_id", selfId));
       const mine: Ath[] = (data ?? []).map((a) => {
         const p = (Array.isArray((a as { positions?: unknown }).positions) ? (a as { positions: unknown[] }).positions[0] : (a as { positions?: unknown }).positions) as { abreviation?: string } | null;
         return {
