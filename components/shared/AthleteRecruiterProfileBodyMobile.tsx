@@ -1976,7 +1976,11 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
         {/* Pipeline status dropdown si Pro + déjà dans pipeline (conservé).
             RECRUITER-ONLY (Step 6 gate) — coach n'a pas de pipeline recruteur. */}
         {isRecruiter && canUsePipeline && pipelineStatus !== "none" && (
-          <div className="mt-4">
+          /* Le menu de StatusChangeDropdown est `absolute right-0 w-[260px]`,
+             ancré sur le petit bouton. Ancré à gauche il débordait hors écran ;
+             on colle donc le bouton au bord droit de la colonne (justify-end)
+             pour que le menu se déploie vers la gauche en restant dans le viewport. */
+          <div className="mt-4 flex justify-end">
             <StatusChangeDropdown
               currentStatus={pipelineStatus}
               athleteId={id}
