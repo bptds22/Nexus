@@ -1155,3 +1155,28 @@ Migration `20260729120000_evaluations_coach_reads_managed.sql` — appliquée au
 - Companion code (déjà livré, commit 78f9bd9) : `buildFormFromRaw(raw, coachUserId)` charge
   l'éval PROPRE de l'éditeur → le formulaire Modifier n'édite jamais l'éval du directeur
   malgré la RLS élargie. Le « Évaluée par {nom} » (web) s'allume désormais pour le coach.
+
+---
+
+## [x] Phase A — Groupe chat : FONDATION DB (Phase 1/5 APPLIQUÉE PROD 2026-07-30)
+
+Trois migrations appliquées au cloud sur GO de BP (remplace le broadcast).
+- `20260730100000_group_chat_enum.sql` — `conversation_type += 'GROUP'` (seule, règle enum/txn).
+- `20260730100100_group_chat_schema.sql` — colonnes group_* + branche CHECK GROUP (5 types
+  existants verbatim) + index uniques find-or-create + table `conversation_participants`
+  (membership matérialisée, RLS on) + `messages.audience ('ALL'|'STAFF')` + helpers DEFINER
+  `is_group_participant`/`group_member_role` (REVOKE anon) + trigger `stamp_message_audience`
+  (BEFORE INSERT, gardé `type='GROUP'`, inerte pour les 5 types).
+- `20260730100200_group_chat_rls.sql` — policies : conversations SELECT (participant),
+  messages SELECT **asymétrique** (staff voit tout · athlète voit audience='ALL' + ses envois),
+  messages INSERT (participant, gratuit), participants SELECT (athlète ne voit que staff+soi)
+  + UPDATE last_read.
+
+**Preuve leak-check per-rôle AVANT apply** (transaction annulée, données synthétiques : 2 staff
++ 2 athlètes + 3 messages) : `aud(staff=ALL, ath=STAFF)` (trigger OK) · staff voit **3** ·
+ath1 voit **2** (annonce + sa réponse) · **LEAK ath1→ath2 = 0** (un athlète NE voit PAS la
+réponse privée d'un coéquipier) · symétrique. Mineur-safety garanti au niveau RLS.
+
+Inerte pour l'instant : rien ne crée de GROUP (le RPC = Phase 2). Verif catalogue = session séparée.
+RESTE : Phase 2 (RPC create/send-to-group + déprécier send_broadcast) · Phase 3 (UI staff) ·
+Phase 4 (UI équipe asymétrique) · Phase 5 (cleanup vue Annonce).
