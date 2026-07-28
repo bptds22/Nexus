@@ -1690,11 +1690,11 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
        athlete-suggestion path. */
     const hasDetailedTraits = ratedTraits.length > 0;
 
-    // Bandeau contexte (#1) : quand la note PUBLIQUE last-write (souvent celle
-    // du directeur) diffère de l'éval PROPRE du coach chargée dans le form, on
-    // le prévient qu'il modifie SA note, pas la publique. (Le nom de
-    // l'évaluateur s'affichera une fois la RLS lecture élargie appliquée.)
+    // Bandeau contexte (#3) : la VALEUR, pas l'alerte. Quand la note PUBLIQUE
+    // last-write diffère de l'éval propre du coach, on affiche sobrement la note
+    // publique + qui l'a modifiée (le directeur, lisible via la RLS #1).
     const publicNote = (form as { publicNote?: number }).publicNote ?? 0;
+    const publicEvaluatorName = (form as { publicEvaluatorName?: string }).publicEvaluatorName ?? "";
     const showPublicNoteBanner = publicNote > 0 && Math.abs(publicNote - (sc.starRating || 0)) >= 0.05;
 
     return (
@@ -1705,12 +1705,10 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
         </div>
 
         {showPublicNoteBanner && (
-          <div className="rounded-2xl bg-[#3B82F6]/10 border border-[#3B82F6]/30 px-4 py-3">
-            <p className="text-[13px] text-white">
-              <span className="font-bold">Note publique actuelle : {publicNote.toFixed(1)}</span>
-              {" "}— une évaluation plus récente fait foi côté athlète et recruteur. Ici, <span className="font-bold">tu modifies ta propre évaluation</span>.
-            </p>
-          </div>
+          <p className="text-[12px] text-white/55 -mt-1">
+            Note publique : <span className="font-semibold text-white/85">{publicNote.toFixed(1)}</span>
+            {publicEvaluatorName ? <> — modifiée par {publicEvaluatorName}</> : null}
+          </p>
         )}
 
         {/* Behavior-changing toggle (kept) */}

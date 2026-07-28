@@ -181,6 +181,15 @@ export function buildFormFromRaw(raw: Record<string, unknown>, coachUserId?: str
   // recruteur, potentiellement celle du directeur). Exposée pour le bandeau
   // contexte du formulaire (« Note publique actuelle : X.X »).
   const publicNote = (raw.cote_globale_entraineur as number) || 0;
+  // #3 : évaluateur de la note PUBLIQUE (la plus récente = souvent le directeur).
+  // Lisible depuis la RLS élargie #1. Sert au bandeau « modifiée par {nom} ».
+  const publicEval = selectBestEvaluation(evals) as Record<string, unknown> | null;
+  const publicEvaluatorName = ((): string => {
+    const evRaw = publicEval?.evaluator;
+    const ev = (Array.isArray(evRaw) ? evRaw[0] : evRaw) as { first_name?: string; last_name?: string } | null;
+    return ev ? `${ev.first_name || ""} ${ev.last_name || ""}`.trim() : "";
+  })();
+  const publicEvaluatorId = (publicEval?.coach_id as string) || "";
 
 
   const heightFt = raw.taille_pieds != null ? String(raw.taille_pieds) : "";
@@ -194,8 +203,10 @@ export function buildFormFromRaw(raw: Record<string, unknown>, coachUserId?: str
   else if (typeof progRaw === "string" && progRaw.startsWith("[")) try { progArr = JSON.parse(progRaw).filter((v: unknown) => v != null); } catch { /* */ }
 
   const formData = {
-    // Note publique last-write (#1) — pour le bandeau contexte du formulaire.
+    // Note publique last-write (#1/#3) — pour le bandeau contexte du formulaire.
     publicNote,
+    publicEvaluatorName,
+    publicEvaluatorId,
     identity: {
       identityMode: "detailed",
       photo: (raw.photo_url as string) || "",
