@@ -1208,3 +1208,19 @@ Le vrai groupe chat remplace le broadcast. DB (schéma+RLS+RPC) prouvée+appliqu
 Custody : create_group + les mentions 3-rôles présentes out/+public/.
 Suivi : "sélection multiple" de coachs spécifiques non implémenté (modèle ad-hoc hors schéma
 unique-par-école/équipe) — Team + All-coaches couvrent le besoin ; notifications = unread par participant OK.
+
+## [x] Groupe chat — FIX #1 directeur muet + #2 groupes CUSTOM (APPLIQUÉS PROD 2026-07-30)
+
+- `20260730120000_group_school_authority.sql` — helper `is_group_school_authority` (DEFINER,
+  REVOKE anon) ajouté au branch STAFF des policies GROUP (conv SELECT, messages SELECT « voit
+  tout », messages INSERT). Un DIRECTEUR/INTERIM accède aux groupes de son école même sans être
+  participant explicite (cas TEAM où il n'est pas team_coach). Preuve : `dir_insert_ok=t`,
+  `dir_audience=ALL`, **leak athlète = 0** (asymétrie intacte). Cause : sur un groupe TEAM le
+  directeur n'était pas seedé (is_participant=false).
+- `20260730130000_group_custom.sql` — scope `CUSTOM` (group_school_id, pas d'unicité) + branche
+  CHECK + helper étendu (CUSTOM scopé école) + RPC `create_custom_group(name, member_ids[])` :
+  seed créateur STAFF + membres validés CONTRE LE PÉRIMÈTRE (coach=ses athlètes+coachs école ;
+  directeur=école), member_role déduit serveur, hors-périmètre ignorés. Preuve : seeded=1,
+  scope=CUSTOM, staff=1+athletes=1, outsider ignoré. Visibilité = suit la composition (ATHLETE
+  dedans → asymétrie via trigger+RLS existants). Compose UI (tuile "Groupe personnalisé") = en cours.
+Verif catalogue = session séparée.
