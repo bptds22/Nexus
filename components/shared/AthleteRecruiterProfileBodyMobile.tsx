@@ -2684,7 +2684,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
                 </span>
                 <span className="min-w-0">
                   <span className="block text-[15px] font-bold text-white">Contacter le coach</span>
-                  <span className="block text-[12px] text-[#6b7280]">Écris à l&apos;entraîneur de l&apos;athlète</span>
+                  <span className="block text-[12px] text-[#6b7280]">{coachId ? "Écris à l’entraîneur de l’athlète" : "Aucun coach connecté pour cet athlète"}</span>
                 </span>
               </button>
               <button type="button" disabled={contactingAthlete || favButtonDisabled}

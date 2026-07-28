@@ -18,9 +18,11 @@ export interface ThreadData {
   coachInitials: string;
   coachSchool: string;
   coachId: string;
+  coachPhotoUrl: string | null;
   athleteName: string;
   athleteInitials: string;
   athleteId: string;
+  athletePhotoUrl: string | null;
   athletePosition: string;
   athleteVerified: boolean;
   athleteStars: number;
@@ -48,9 +50,9 @@ export function useConversations() {
         .from("conversations")
         .select(`
           id, conversation_type, status, last_message_at, unread_count, created_at,
-          coach:users!coach_id(id, first_name, last_name, school_id, schools!school_id(name)),
+          coach:users!coach_id(id, first_name, last_name, photo_url, avatar_url, school_id, schools!school_id(name)),
           athlete:athletes!athlete_id(
-            id, first_name, last_name, verified, cote_globale_entraineur,
+            id, first_name, last_name, photo_url, verified, cote_globale_entraineur,
             numero_jersey, annee_diplomation, recruitment_status,
             sports!sport_id(nom),
             positions!position_id(nom, abreviation),
@@ -107,9 +109,11 @@ export function useConversations() {
           coachInitials: `${coachFirst[0] || ""}${coachLast[0] || ""}`.toUpperCase(),
           coachSchool: coachSchool?.name || "",
           coachId: (coach?.id as string) || "",
+          coachPhotoUrl: (coach?.photo_url as string) || (coach?.avatar_url as string) || null,
           athleteName: `${athFirst} ${athLast}`.trim() || "Athlète",
           athleteInitials: `${athFirst[0] || ""}${athLast[0] || ""}`.toUpperCase(),
           athleteId: (athlete?.id as string) || "",
+          athletePhotoUrl: (athlete?.photo_url as string) || null,
           athletePosition: pos?.abreviation || "",
           athleteVerified: !!athlete?.verified,
           athleteStars: (athlete?.cote_globale_entraineur as number) || 0,

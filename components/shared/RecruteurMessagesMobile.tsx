@@ -214,7 +214,7 @@ export function RecruteurMessagesMobile() {
       <div className="flex items-center gap-3">
         <div className="relative w-[52px] h-[52px] rounded-full overflow-hidden flex-shrink-0 bg-[#2F3440]">
           <AthletePhotoFill
-            photoUrl={null}
+            photoUrl={t.athletePhotoUrl}
             firstName={t.athleteInitials[0] ?? ""}
             lastName={t.athleteInitials[1] ?? ""}
             initialsFontSize={20}

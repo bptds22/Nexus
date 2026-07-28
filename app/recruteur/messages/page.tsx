@@ -86,6 +86,7 @@ function ThreadCard({ thread: t }: { thread: ThreadData }) {
   const primaryName = isDirect ? t.athleteName : t.coachName;
   const primaryInitials = isDirect ? t.athleteInitials : t.coachInitials;
   const primarySub = isDirect ? t.athletePosition : t.coachSchool;
+  const primaryPhotoUrl = isDirect ? t.athletePhotoUrl : t.coachPhotoUrl;
   return (
     <Link
       href={`/recruteur/messages?id=${t.id}`}
@@ -97,9 +98,14 @@ function ThreadCard({ thread: t }: { thread: ThreadData }) {
     >
       {/* Counterparty avatar + identity */}
       <div className="flex items-center gap-3 flex-1 min-w-0">
-        <div className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 ${isDirect ? "bg-[#22C55E]/15 border border-[#22C55E]/30" : "bg-[#2D3748]"}`}>
-          <span className={`text-[13px] font-bold ${isDirect ? "text-[#22C55E]" : "text-[#9CA3AF]"}`}>{primaryInitials}</span>
-        </div>
+        {primaryPhotoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={primaryPhotoUrl} alt="" className="w-11 h-11 rounded-full object-cover shrink-0" />
+        ) : (
+          <div className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 ${isDirect ? "bg-[#22C55E]/15 border border-[#22C55E]/30" : "bg-[#2D3748]"}`}>
+            <span className={`text-[13px] font-bold ${isDirect ? "text-[#22C55E]" : "text-[#9CA3AF]"}`}>{primaryInitials}</span>
+          </div>
+        )}
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <span className={`text-[15px] font-bold truncate ${t.unreadCount > 0 ? "text-white" : "text-[#e0e0e0]"}`}>

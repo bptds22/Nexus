@@ -174,8 +174,8 @@ export default function TransfertAthletesMobile() {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header + source picker */}
-      <div className="px-5 pt-5 pb-3 shrink-0">
+      {/* Header + source picker — top safe-area so the title clears the iOS clock */}
+      <div className="px-5 pb-3 shrink-0" style={{ paddingTop: "calc(env(safe-area-inset-top) + 1.25rem)" }}>
         <h1 className="font-head text-[22px] font-black text-white uppercase tracking-tight">Gestion des athlètes</h1>
         <p className="text-[13px] text-[#9CA3AF] mt-1">Assigne des athlètes à un entraîneur de ton école.</p>
 
@@ -242,8 +242,8 @@ export default function TransfertAthletesMobile() {
         })}
       </div>
 
-      {/* Sticky destination + CTA */}
-      <div className="shrink-0 border-t border-[#2D3748] bg-[#1A1D24] px-5 pt-3 pb-4">
+      {/* Sticky destination + CTA — bottom safe-area so the button clears the tab bar */}
+      <div className="shrink-0 border-t border-[#2D3748] bg-[#1A1D24] px-5 pt-3" style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 1rem)" }}>
         <label className="block text-[11px] font-bold tracking-wider uppercase text-[#6b7280] mb-1.5">Destination</label>
         <button
           type="button"

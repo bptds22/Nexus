@@ -1753,15 +1753,15 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
             <h3 className="font-head text-lg font-black text-white uppercase tracking-tight mb-1">Contacter</h3>
             <p className="text-[13px] text-[#9CA3AF] mb-5">Qui veux-tu contacter au sujet de {a.firstName} {a.lastName}&nbsp;?</p>
             <div className="space-y-3">
-              <button type="button"
-                onClick={() => { setShowContactMenu(false); router.push(`/recruteur/messages/nouveau?athlete=${a.id}`); }}
-                className="w-full flex items-center gap-3 rounded-xl px-4 py-3.5 bg-[#111317] border border-[#2D3748] hover:border-[#E63946]/50 hover:bg-[#E63946]/[0.06] transition-colors text-left">
+              <button type="button" disabled={!coachId}
+                onClick={() => { if (!coachId) return; setShowContactMenu(false); router.push(`/recruteur/messages/nouveau?athlete=${a.id}`); }}
+                className={`w-full flex items-center gap-3 rounded-xl px-4 py-3.5 border transition-colors text-left ${!coachId ? "cursor-not-allowed opacity-40 bg-[#111317] border-[#2D3748]" : "bg-[#111317] border-[#2D3748] hover:border-[#E63946]/50 hover:bg-[#E63946]/[0.06]"}`}>
                 <span className="w-10 h-10 rounded-lg bg-[#E63946]/10 border border-[#E63946]/30 flex items-center justify-center shrink-0">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2" strokeLinecap="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></svg>
                 </span>
                 <span className="min-w-0">
                   <span className="block text-[14px] font-bold text-white">Contacter le coach</span>
-                  <span className="block text-[12px] text-[#6b7280]">Écris à l&apos;entraîneur de l&apos;athlète</span>
+                  <span className="block text-[12px] text-[#6b7280]">{coachId ? "Écris à l’entraîneur de l’athlète" : "Aucun coach connecté pour cet athlète"}</span>
                 </span>
               </button>
               <button type="button" disabled={contacting || favButtonDisabled}
