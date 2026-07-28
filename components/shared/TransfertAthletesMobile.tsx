@@ -242,8 +242,10 @@ export default function TransfertAthletesMobile() {
         })}
       </div>
 
-      {/* Sticky destination + CTA — bottom safe-area so the button clears the tab bar */}
-      <div className="shrink-0 border-t border-[#2D3748] bg-[#1A1D24] px-5 pt-3" style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 1rem)" }}>
+      {/* Sticky destination + CTA — clears the full 64px tab bar + bottom safe-area
+          (nx-mobile-pb-tabbar value) + 1rem breathing room, so the TRANSFÉRER
+          button is never hidden behind the bottom nav. */}
+      <div className="shrink-0 border-t border-[#2D3748] bg-[#1A1D24] px-5 pt-3" style={{ paddingBottom: "calc(64px + env(safe-area-inset-bottom) + 1rem)" }}>
         <label className="block text-[11px] font-bold tracking-wider uppercase text-[#6b7280] mb-1.5">Destination</label>
         <button
           type="button"
