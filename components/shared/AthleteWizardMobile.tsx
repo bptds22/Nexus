@@ -61,6 +61,7 @@ import { SESSION_KEY_PREFIX } from "@/lib/platform/mobileRoutes";
 import PartnerVisibilityConsentCard from "@/components/shared/PartnerVisibilityConsentCard";
 import DistinctionBadge from "@/components/shared/DistinctionBadge";
 import TeamHistoryEditor from "@/components/shared/athlete/TeamHistoryEditor";
+import { diffTeamHistory, isTeamHistoryDiffEmpty, summarizeTeamHistoryDiff } from "@/components/shared/athlete/teamHistory";
 import type { TeamHistoryEntry } from "@/lib/types/models";
 import {
   Card,
@@ -731,6 +732,12 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
     push("Numéro", f.sports.jerseyNumber, b.sports.jerseyNumber);
     push("Équipe", f.sports.currentTeam, b.sports.currentTeam);
     push("Ouvert entraîneur CÉGEP", f.sports.openToCoaching, b.sports.openToCoaching);
+    // Parcours d'équipes — array diff (ajouts / retraits / modifs par
+    // team_name+year_start). One consolidated row w/ counts + team names.
+    const parcoursDiff = diffTeamHistory(b.sports.parcoursEquipes ?? [], f.sports.parcoursEquipes ?? []);
+    if (!isTeamHistoryDiffEmpty(parcoursDiff)) {
+      rows.push({ label: "Parcours d'équipes", old: "", new: summarizeTeamHistoryDiff(parcoursDiff) });
+    }
 
     push("Cote étoile", f.scouting.starRating, b.scouting.starRating);
     push("Rapport coach", f.scouting.coachEndorsement, b.scouting.coachEndorsement);

@@ -1136,6 +1136,12 @@ function ModifierContent({ id }: { id: string }) {
 
     const heightStr = physical.heightFeet && physical.heightInches ? `${physical.heightFeet}'${physical.heightInches}"` : physical.heightFeet ? `${physical.heightFeet}'` : "";
 
+    // Parcours d'équipes — résumé lisible pour la carte Sport (nb + noms).
+    const parcours = sports.parcoursEquipes ?? [];
+    const parcoursStr = parcours.length === 0
+      ? ""
+      : `${parcours.length} équipe${parcours.length > 1 ? "s" : ""} : ${parcours.map((e) => (e.team_name || "").trim() || "Sans nom").join(", ")}`;
+
     return (
       <div className={cardCls}>
         <h2 className="font-head text-xl sm:text-2xl font-black text-white uppercase tracking-tight mb-1">Révision &amp; Enregistrement</h2>
@@ -1147,7 +1153,7 @@ function ModifierContent({ id }: { id: string }) {
 
         {summaryCard("Physique", 3, (<div>{infoRow("Taille", heightStr)}{infoRow("Poids", physical.weightLbs ? `${physical.weightLbs} lbs` : "")}{infoRow("Main dominante", physical.dominantHand)}{infoRow("40 verges", physical.fortyYard)}</div>))}
 
-        {summaryCard("Sport", 4, (<div>{infoRow("Sport principal", sports.primarySport)}{infoRow("Position", sports.primaryPosition)}{infoRow("Équipe", sports.currentTeam)}{infoRow("Niveau", sports.teamLevel)}</div>))}
+        {summaryCard("Sport", 4, (<div>{infoRow("Sport principal", sports.primarySport)}{infoRow("Position", sports.primaryPosition)}{infoRow("Équipe", sports.currentTeam)}{infoRow("Niveau", sports.teamLevel)}{infoRow("Parcours d'équipes", parcoursStr)}</div>))}
 
         {summaryCard("Évaluation", 5, (<div>
           {infoRow("Distinctions", scouting.badges.length > 0 ? scouting.badges.map((b) => {

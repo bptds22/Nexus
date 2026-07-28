@@ -64,3 +64,69 @@ export const entryHasError = (err: EntryError): boolean => !!(err.team_name || e
 export function isTeamHistoryValid(entries: TeamHistoryEntry[], maxYear: number): boolean {
   return entries.length <= MAX_TEAM_HISTORY && entries.every((e) => !entryHasError(validateEntry(e, maxYear)));
 }
+
+/* ── Diff helpers (save-summary "what changed" on the coach editors) ──── */
+
+/** Stable identity of a parcours row for diffing : team_name (trimmed,
+ *  case-insensitive) + year_start. Renaming or moving the start year reads
+ *  as a remove+add rather than an in-place modification — intentional. */
+const entryKey = (e: TeamHistoryEntry): string =>
+  `${(e.team_name || "").trim().toLowerCase()}::${e.year_start}`;
+
+/** True when two entries carry identical field values (same key already assumed). */
+const sameEntry = (a: TeamHistoryEntry, b: TeamHistoryEntry): boolean =>
+  a.team_name === b.team_name && a.sport === b.sport && a.ligue === b.ligue &&
+  a.division === b.division && a.year_start === b.year_start && a.year_end === b.year_end;
+
+export interface TeamHistoryDiff {
+  /** Entries present now but absent from the baseline. */
+  added: TeamHistoryEntry[];
+  /** Entries present in the baseline but gone now. */
+  removed: TeamHistoryEntry[];
+  /** Same team_name+year_start, but at least one other field changed (current value). */
+  modified: TeamHistoryEntry[];
+}
+
+/** Classify current vs baseline parcours into added / removed / modified. */
+export function diffTeamHistory(
+  baseline: TeamHistoryEntry[],
+  current: TeamHistoryEntry[],
+): TeamHistoryDiff {
+  const baseMap = new Map((baseline ?? []).map((e) => [entryKey(e), e]));
+  const curMap = new Map((current ?? []).map((e) => [entryKey(e), e]));
+  const added: TeamHistoryEntry[] = [];
+  const removed: TeamHistoryEntry[] = [];
+  const modified: TeamHistoryEntry[] = [];
+  curMap.forEach((e, k) => {
+    const prev = baseMap.get(k);
+    if (!prev) added.push(e);
+    else if (!sameEntry(prev, e)) modified.push(e);
+  });
+  baseMap.forEach((e, k) => {
+    if (!curMap.has(k)) removed.push(e);
+  });
+  return { added, removed, modified };
+}
+
+/** True when nothing about the parcours changed. */
+export function isTeamHistoryDiffEmpty(d: TeamHistoryDiff): boolean {
+  return d.added.length === 0 && d.removed.length === 0 && d.modified.length === 0;
+}
+
+const entryDisplayName = (e: TeamHistoryEntry): string => (e.team_name || "").trim() || "Sans nom";
+
+/** Short, readable one-liner listing counts + team names, e.g.
+ *  "+2 ajoutées (Titans, Lions) · −1 retirée (Aigles) · 1 modifiée (Lynx)".
+ *  Returns "" when nothing changed. */
+export function summarizeTeamHistoryDiff(d: TeamHistoryDiff): string {
+  const seg = (arr: TeamHistoryEntry[], verb: string, sign = ""): string | null => {
+    if (arr.length === 0) return null;
+    const plural = arr.length > 1 ? "s" : "";
+    return `${sign}${arr.length} ${verb}${plural} (${arr.map(entryDisplayName).join(", ")})`;
+  };
+  return [
+    seg(d.added, "ajoutée", "+"),
+    seg(d.removed, "retirée", "−"),
+    seg(d.modified, "modifiée"),
+  ].filter(Boolean).join(" · ");
+}
