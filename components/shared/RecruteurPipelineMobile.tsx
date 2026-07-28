@@ -36,6 +36,7 @@ import { useRemoveFromPipeline } from "@/lib/queries/recruiter/useRemoveFromPipe
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import { MobilePicker } from "@/components/mobile/MobilePicker";
 import VisitCalendarCard from "@/components/shared/VisitCalendarCard";
+import VisitDateEditor from "@/components/shared/VisitDateEditor";
 import type { PipelineKanbanCard } from "@/app/recruteur/pipeline/_data/mockKanbanData";
 
 /* ── Stages config (DB enum stage) ───────────────────────────── */
@@ -758,6 +759,11 @@ function PipelineDetailSheet({
   const [isPriority, setIsPriority] = useState(card?.flagged ?? false);
   const [posting, setPosting] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState(false);
+  // Date de visite locale — le `card` prop est un snapshot (non réactif au
+  // cache TanStack). On la garde en local pour un feedback immédiat après
+  // enregistrement ; l'invalidate du hook rafraîchit la liste kanban.
+  const [visitAtLocal, setVisitAtLocal] = useState<string | null>(card?.visit_at ?? null);
+  const [savingVisit, setSavingVisit] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
@@ -767,6 +773,7 @@ function PipelineDetailSheet({
 
   useEffect(() => { setMounted(true); }, []);
   useEffect(() => { setIsPriority(card?.flagged ?? false); }, [card?.id, card?.flagged]);
+  useEffect(() => { setVisitAtLocal(card?.visit_at ?? null); }, [card?.id, card?.visit_at]);
   useEffect(() => {
     if (!open) { setDragOffset(0); setIsDragging(false); setNoteText(""); setConfirmRemove(false); }
   }, [open]);
@@ -807,6 +814,30 @@ function PipelineDetailSheet({
       onClose();
     } catch {
       toast.error({ message: "Erreur lors du changement de stage" });
+    }
+  };
+
+  // Modification de la date de visite depuis le kanban — CHEMIN UNIQUE côté
+  // kanban : useUpdatePipelineStage avec le stage VISITE_PLANIFIEE + la date
+  // (cache TanStack cohérent via l'optimistic update du hook). Optimiste local,
+  // rollback si l'écriture échoue.
+  const handleSaveVisitDate = async (iso: string | undefined) => {
+    if (!card) return;
+    if (isFreeDemoMode) {
+      toast.warning({ message: "Planifier une visite est réservé aux membres Pro" });
+      return;
+    }
+    const prev = visitAtLocal;
+    setSavingVisit(true);
+    setVisitAtLocal(iso ?? null);
+    try {
+      await updateStage.mutateAsync({ cardId: card.id, newStage: "VISITE_PLANIFIEE", visitAtIso: iso });
+      toast.success({ message: iso ? "Date de visite enregistrée" : "Date de visite effacée" });
+    } catch {
+      setVisitAtLocal(prev);
+      toast.error({ message: "Erreur lors de l'enregistrement de la date" });
+    } finally {
+      setSavingVisit(false);
     }
   };
 
@@ -1011,18 +1042,30 @@ function PipelineDetailSheet({
                 );
               })()}
 
-              {/* Menu visite — MÊME carte « voir la visite » (+ export agenda)
-                  que le profil complet. Réutilise le composant partagé
-                  VisitCalendarCard ; gate strict identique au profil : le stage
-                  VISITE_PLANIFIEE ET une date. Une visite sans date n'affiche
-                  rien (pas de carte vide). */}
-              {card.status === "visite_planifiee" && card.visit_at && (
-                <VisitCalendarCard
-                  visitAtIso={card.visit_at}
-                  athleteName={card.full_name}
-                  sport={card.sport || undefined}
-                  schoolName={card.noTeam ? undefined : card.school || undefined}
-                />
+              {/* Section visite — quand le stage est VISITE_PLANIFIEE : mini
+                  date-picker pour POSER/MODIFIER la date (visit_at), plus la
+                  MÊME carte « voir la visite » (+ export agenda) que le profil
+                  complet (VisitCalendarCard, gate strict : une date). Piloté
+                  par visitAtLocal pour un feedback immédiat. */}
+              {card.status === "visite_planifiee" && (
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-[11px] uppercase tracking-[0.18em] text-[#6B7280] font-bold mb-3">Visite planifiée</h3>
+                    <VisitDateEditor
+                      visitAtIso={visitAtLocal}
+                      onSave={handleSaveVisitDate}
+                      saving={savingVisit}
+                    />
+                  </div>
+                  {visitAtLocal && (
+                    <VisitCalendarCard
+                      visitAtIso={visitAtLocal}
+                      athleteName={card.full_name}
+                      sport={card.sport || undefined}
+                      schoolName={card.noTeam ? undefined : card.school || undefined}
+                    />
+                  )}
+                </div>
               )}
 
               {/* Cote */}
