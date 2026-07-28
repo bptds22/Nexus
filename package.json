@@ -44,6 +44,7 @@
     "framer-motion": "^12.38.0",
     "html-to-image": "^1.11.13",
     "jszip": "^3.10.1",
+    "leaflet": "^1.9.4",
     "lucide-react": "^1.8.0",
     "next": "16.1.6",
     "react": "19.2.3",
@@ -54,6 +55,7 @@
   "devDependencies": {
     "@capacitor/assets": "^3.0.5",
     "@tailwindcss/postcss": "^4",
+    "@types/leaflet": "^1.9.21",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
