@@ -1695,7 +1695,10 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
     // publique + qui l'a modifiée (le directeur, lisible via la RLS #1).
     const publicNote = (form as { publicNote?: number }).publicNote ?? 0;
     const publicEvaluatorName = (form as { publicEvaluatorName?: string }).publicEvaluatorName ?? "";
-    const showPublicNoteBanner = publicNote > 0 && Math.abs(publicNote - (sc.starRating || 0)) >= 0.05;
+    // #2 : le form ouvre déjà sur l'éval publique → le bandeau est purement
+    // contextuel (qui a fait la note), affiché quand c'est un AUTRE évaluateur.
+    const publicByOther = (form as { publicByOther?: boolean }).publicByOther ?? false;
+    const showPublicNoteBanner = publicNote > 0 && publicByOther;
 
     return (
       <div className="space-y-5">

@@ -168,28 +168,24 @@ export function buildFormFromRaw(raw: Record<string, unknown>, coachUserId?: str
   const posObj = posRel as { nom?: string; abreviation?: string } | null;
   const schoolObj = schoolRel as { name?: string; city?: string; region?: string; type?: string } | null;
   const evals = (Array.isArray(raw.evaluations) ? raw.evaluations : []) as Record<string, unknown>[];
-  // #1 : le FORMULAIRE Modifier édite TOUJOURS l'éval PROPRE de l'éditeur
-  // (coach_id = self), jamais celle d'un autre évaluateur — sinon, une fois la
-  // RLS élargie (le coach lit l'éval du directeur), selectBestEvaluation
-  // chargerait la 5.0 du directeur dans le form et le coach l'écraserait. Pré-
-  // RLS c'est équivalent (seule sa ligne est visible). Repli selectBestEvaluation
-  // si l'éditeur n'a pas d'id (chemins hors édition).
-  const eval0 = ((coachUserId
-    ? evals.find((e) => (e.coach_id as string) === coachUserId)
-    : undefined) ?? selectBestEvaluation(evals) ?? undefined) as Record<string, unknown> | undefined;
-  // Note publique = colonne dénormalisée last-write (celle vue par athlète/
-  // recruteur, potentiellement celle du directeur). Exposée pour le bandeau
-  // contexte du formulaire (« Note publique actuelle : X.X »).
+  // #2 (règle finale BP — UNE seule éval vivante) : le FORMULAIRE Modifier ouvre
+  // sur l'éval PUBLIQUE ACTUELLE = la plus récente (celle du directeur si dernière),
+  // TOUS les champs (cote + traits) inclus. Le coach modifie À PARTIR d'elle et sa
+  // sauvegarde (coach_id=self, updated_at=now) devient la nouvelle publique
+  // (latest-wins à l'écriture). Plus de « chacun édite sa version ».
+  const eval0 = (selectBestEvaluation(evals) ?? undefined) as Record<string, unknown> | undefined;
+  // Note publique = colonne dénormalisée last-write (identique à eval0 ci-dessus).
   const publicNote = (raw.cote_globale_entraineur as number) || 0;
-  // #3 : évaluateur de la note PUBLIQUE (la plus récente = souvent le directeur).
-  // Lisible depuis la RLS élargie #1. Sert au bandeau « modifiée par {nom} ».
-  const publicEval = selectBestEvaluation(evals) as Record<string, unknown> | null;
+  // Évaluateur de la note publique (souvent le directeur), lisible via la RLS #1.
   const publicEvaluatorName = ((): string => {
-    const evRaw = publicEval?.evaluator;
+    const evRaw = eval0?.evaluator;
     const ev = (Array.isArray(evRaw) ? evRaw[0] : evRaw) as { first_name?: string; last_name?: string } | null;
     return ev ? `${ev.first_name || ""} ${ev.last_name || ""}`.trim() : "";
   })();
-  const publicEvaluatorId = (publicEval?.coach_id as string) || "";
+  const publicEvaluatorId = (eval0?.coach_id as string) || "";
+  // Le bandeau « modifiée par {nom} » ne s'affiche que si l'éval publique vient
+  // d'un AUTRE évaluateur que le coach courant (sinon c'est déjà la sienne).
+  const publicByOther = !!publicEvaluatorId && !!coachUserId && publicEvaluatorId !== coachUserId;
 
 
   const heightFt = raw.taille_pieds != null ? String(raw.taille_pieds) : "";
@@ -203,10 +199,11 @@ export function buildFormFromRaw(raw: Record<string, unknown>, coachUserId?: str
   else if (typeof progRaw === "string" && progRaw.startsWith("[")) try { progArr = JSON.parse(progRaw).filter((v: unknown) => v != null); } catch { /* */ }
 
   const formData = {
-    // Note publique last-write (#1/#3) — pour le bandeau contexte du formulaire.
+    // Note publique last-write (#2/#3) — pour le bandeau contexte du formulaire.
     publicNote,
     publicEvaluatorName,
     publicEvaluatorId,
+    publicByOther,
     identity: {
       identityMode: "detailed",
       photo: (raw.photo_url as string) || "",
