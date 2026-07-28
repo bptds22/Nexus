@@ -405,7 +405,7 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
           return;
         }
         const raw = data as Record<string, unknown>;
-        const formFromDB = buildFormFromRaw(raw) as unknown as AthleteFormData;
+        const formFromDB = buildFormFromRaw(raw, user?.id) as unknown as AthleteFormData;
         const finalForm: AthleteFormData = { ...formFromDB, partnerVisibilityConsent: false };
         if (cancelled) return;
         setForm(finalForm);
@@ -1690,12 +1690,28 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
        athlete-suggestion path. */
     const hasDetailedTraits = ratedTraits.length > 0;
 
+    // Bandeau contexte (#1) : quand la note PUBLIQUE last-write (souvent celle
+    // du directeur) diffère de l'éval PROPRE du coach chargée dans le form, on
+    // le prévient qu'il modifie SA note, pas la publique. (Le nom de
+    // l'évaluateur s'affichera une fois la RLS lecture élargie appliquée.)
+    const publicNote = (form as { publicNote?: number }).publicNote ?? 0;
+    const showPublicNoteBanner = publicNote > 0 && Math.abs(publicNote - (sc.starRating || 0)) >= 0.05;
+
     return (
       <div className="space-y-5">
         <div>
           <h2 className="font-head text-[22px] font-black text-white uppercase tracking-tight">Évaluation</h2>
           <p className="text-[13px] text-white/55 mt-1">Cote, distinctions, rapport</p>
         </div>
+
+        {showPublicNoteBanner && (
+          <div className="rounded-2xl bg-[#3B82F6]/10 border border-[#3B82F6]/30 px-4 py-3">
+            <p className="text-[13px] text-white">
+              <span className="font-bold">Note publique actuelle : {publicNote.toFixed(1)}</span>
+              {" "}— une évaluation plus récente fait foi côté athlète et recruteur. Ici, <span className="font-bold">tu modifies ta propre évaluation</span>.
+            </p>
+          </div>
+        )}
 
         {/* Behavior-changing toggle (kept) */}
         <div className="flex items-center gap-1 bg-[#1A1D24] rounded-2xl p-1 w-fit">

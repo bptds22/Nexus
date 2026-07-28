@@ -353,7 +353,7 @@ function ModifierContent({ id }: { id: string }) {
       }
       const raw = data as Record<string, unknown>;
       // Build form directly from raw DB data — preserves all values
-      const formFromDB = buildFormFromRaw(raw) as unknown as AthleteFormData;
+      const formFromDB = buildFormFromRaw(raw, user?.id) as unknown as AthleteFormData;
       setForm(formFromDB);
 
       // Load recruitment status fields from athlete record

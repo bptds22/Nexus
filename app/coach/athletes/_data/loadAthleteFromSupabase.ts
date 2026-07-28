@@ -160,15 +160,27 @@ export function mapToAthleteProfile(raw: Record<string, unknown>): AthleteProfil
 }
 
 /** Build modifier form data directly from raw Supabase response — preserves ALL fields */
-export function buildFormFromRaw(raw: Record<string, unknown>): Record<string, unknown> {
+export function buildFormFromRaw(raw: Record<string, unknown>, coachUserId?: string): Record<string, unknown> {
   const sportRel = Array.isArray(raw.sports) ? raw.sports[0] : raw.sports;
   const posRel = Array.isArray(raw.positions) ? raw.positions[0] : raw.positions;
   const schoolRel = Array.isArray(raw.schools) ? raw.schools[0] : raw.schools;
   const sportObj = sportRel as { nom?: string } | null;
   const posObj = posRel as { nom?: string; abreviation?: string } | null;
   const schoolObj = schoolRel as { name?: string; city?: string; region?: string; type?: string } | null;
-  const evals = Array.isArray(raw.evaluations) ? raw.evaluations : [];
-  const eval0 = (selectBestEvaluation(evals) ?? undefined) as Record<string, unknown> | undefined;
+  const evals = (Array.isArray(raw.evaluations) ? raw.evaluations : []) as Record<string, unknown>[];
+  // #1 : le FORMULAIRE Modifier édite TOUJOURS l'éval PROPRE de l'éditeur
+  // (coach_id = self), jamais celle d'un autre évaluateur — sinon, une fois la
+  // RLS élargie (le coach lit l'éval du directeur), selectBestEvaluation
+  // chargerait la 5.0 du directeur dans le form et le coach l'écraserait. Pré-
+  // RLS c'est équivalent (seule sa ligne est visible). Repli selectBestEvaluation
+  // si l'éditeur n'a pas d'id (chemins hors édition).
+  const eval0 = ((coachUserId
+    ? evals.find((e) => (e.coach_id as string) === coachUserId)
+    : undefined) ?? selectBestEvaluation(evals) ?? undefined) as Record<string, unknown> | undefined;
+  // Note publique = colonne dénormalisée last-write (celle vue par athlète/
+  // recruteur, potentiellement celle du directeur). Exposée pour le bandeau
+  // contexte du formulaire (« Note publique actuelle : X.X »).
+  const publicNote = (raw.cote_globale_entraineur as number) || 0;
 
 
   const heightFt = raw.taille_pieds != null ? String(raw.taille_pieds) : "";
@@ -182,6 +194,8 @@ export function buildFormFromRaw(raw: Record<string, unknown>): Record<string, u
   else if (typeof progRaw === "string" && progRaw.startsWith("[")) try { progArr = JSON.parse(progRaw).filter((v: unknown) => v != null); } catch { /* */ }
 
   const formData = {
+    // Note publique last-write (#1) — pour le bandeau contexte du formulaire.
+    publicNote,
     identity: {
       identityMode: "detailed",
       photo: (raw.photo_url as string) || "",

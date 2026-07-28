@@ -608,7 +608,9 @@ function StatusVisitSheet({
             exit={{ y: "100%" }}
             transition={isDragging ? { duration: 0 } : { duration: 0.32, ease: [0.34, 1.56, 0.64, 1] }}
             className="fixed inset-x-0 bottom-0 z-[60] bg-[#111317] rounded-t-2xl flex flex-col"
-            style={{ maxHeight: "90dvh", paddingBottom: "env(safe-area-inset-bottom)" }}
+            // touchAction pan-y (#2) : verrouille le geste en vertical — le sheet
+            // ne peut plus glisser gauche-droite (down = fermer uniquement).
+            style={{ maxHeight: "90dvh", paddingBottom: "env(safe-area-inset-bottom)", touchAction: "pan-y" }}
           >
             {/* Handle iOS — drag area (swipe-down to close) */}
             <div
@@ -1825,7 +1827,10 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
   const traitEntries = a.traitRatings ? Object.entries(a.traitRatings) as [keyof AthleteTraitRatings, number][] : [];
   const ratedTraits = traitEntries.filter(([, v]) => v > 0);
   const traitAvg = ratedTraits.length > 0 ? ratedTraits.reduce((s, [, v]) => s + v, 0) / ratedTraits.length : null;
-  const coteGlobale = traitAvg ?? a.overallRating;
+  // #1 latest-wins : la COTE GLOBALE affichée = la note publique (overallRating =
+  // cote_globale_entraineur last-write, 5.0), PAS la moyenne des traits (qui, pour
+  // un coach, sont les SIENS via la RLS → 4.6). traitAvg reste le repli.
+  const coteGlobale = a.overallRating || traitAvg || 0;
 
   const tests: { label: string; value?: string }[] = [
     { label: "40 verges", value: a.fortyYard },
