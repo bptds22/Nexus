@@ -32,6 +32,9 @@ import { loadSchoolDirectorStatus } from "@/lib/queries/coach/useSchoolDirector"
 
 export interface CoachAthleteOption {
   id: string;
+  /** user_id du compte de l'athlète (null si l'athlète n'a pas de compte).
+   *  `id` reste l'athlete_id ; `userId` est ce qu'attend le RPC groupe custom. */
+  userId: string | null;
   firstName: string;
   lastName: string;
   name: string;
@@ -52,6 +55,7 @@ export interface CoachAthleteOptions {
 /* Ligne athlete + jointures sport/position, telle que sélectionnée. */
 interface AthleteRow {
   id: string;
+  user_id: string | null;
   first_name: string | null;
   last_name: string | null;
   photo_url: string | null;
@@ -62,7 +66,7 @@ interface AthleteRow {
 }
 
 const ATHLETE_OPTION_SELECT =
-  "id, first_name, last_name, photo_url, cote_globale_entraineur, coach_id, " +
+  "id, user_id, first_name, last_name, photo_url, cote_globale_entraineur, coach_id, " +
   "sports!sport_id(nom), positions!position_id(abreviation)";
 
 function pickFirst<T>(v: T | T[] | null | undefined): T | null {
@@ -77,6 +81,7 @@ function toOption(a: AthleteRow): CoachAthleteOption {
   const al = a.last_name || "";
   return {
     id: a.id,
+    userId: a.user_id ?? null,
     firstName: af,
     lastName: al,
     name: `${af} ${al}`.trim() || "Athlète",
