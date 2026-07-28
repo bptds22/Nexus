@@ -64,28 +64,37 @@ export default function GroupeCompose({
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
   // Charge la source du picker custom à la 1re entrée dans l'onglet (coach only).
+  // ⚠️ NE PAS mettre customLoading dans le guard NI les deps : setCustomLoading(true)
+  // re-déclencherait l'effet, dont le cleanup annulerait sa propre 1ère invocation
+  // avant qu'elle commite → spinner infini (bug re-test). Guard sur customLoaded seul ;
+  // try/catch/finally garantit que le loading retombe même si une requête throw.
   useEffect(() => {
-    if (isRecruiter || mode !== "custom" || customLoaded || customLoading) return;
+    if (isRecruiter || mode !== "custom" || customLoaded) return;
     let cancelled = false;
     (async () => {
       setCustomLoading(true);
-      const supabase = createClient();
-      // Athlètes du périmètre AVEC un compte (user_id non null) — coach = ses
-      // athlètes ; directeur = école (loadCoachAthleteOptions fait la distinction).
-      const { mine, school } = await loadCoachAthleteOptions(supabase, selfId);
-      const withAccount = (l: CoachAthleteOption[]) => l.filter((a) => !!a.userId);
-      // Coachs de l'école (school_coaches → users). id = coach_id = user_id.
-      const staff = await loadSchoolStaff(supabase, selfId);
-      if (!cancelled) {
-        setMyAthletes(withAccount(mine));
-        setSchoolAthletes(withAccount(school));
-        setCoachs(staff);
-        setCustomLoaded(true);
-        setCustomLoading(false);
+      try {
+        const supabase = createClient();
+        // Athlètes du périmètre AVEC un compte (user_id non null) — coach = ses
+        // athlètes ; directeur = école (loadCoachAthleteOptions fait la distinction).
+        const { mine, school } = await loadCoachAthleteOptions(supabase, selfId);
+        const withAccount = (l: CoachAthleteOption[]) => l.filter((a) => !!a.userId);
+        // Coachs de l'école (school_coaches → users). id = coach_id = user_id.
+        const staff = await loadSchoolStaff(supabase, selfId);
+        if (!cancelled) {
+          setMyAthletes(withAccount(mine));
+          setSchoolAthletes(withAccount(school));
+          setCoachs(staff);
+          setCustomLoaded(true);
+        }
+      } catch (e) {
+        console.error("[GroupeCompose] chargement périmètre custom échoué:", e);
+      } finally {
+        if (!cancelled) setCustomLoading(false);
       }
     })();
     return () => { cancelled = true; };
-  }, [isRecruiter, mode, customLoaded, customLoading, selfId]);
+  }, [isRecruiter, mode, customLoaded, selfId]);
 
   function toggleMember(userId: string) {
     setSelected((prev) => {
