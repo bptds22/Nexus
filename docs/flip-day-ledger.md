@@ -1193,3 +1193,18 @@ l'expéditeur. REVOKE anon. Résolution de roster calquée sur send_broadcast (m
 Preuve AVANT apply (transaction annulée, équipe réelle « Dragons Juvenile ») : 1er appel
 created:true, 2e created:false (idempotent), scope=TEAM, staff=1 + athletes=1 seedés. Helper
 client `lib/queries/messaging/createGroup.ts`. UI (compose/liste/thread 3-rôles) = en cours.
+
+## [x] Phase A — Groupe chat : UI Phase 2 (COMMIT 9f0205d, buildée)
+
+Le vrai groupe chat remplace le broadcast. DB (schéma+RLS+RPC) prouvée+appliquée ; UI buildée.
+- COMPOSE : GroupeCompose → create_group (Équipe hybride / Tous les entraîneurs staff).
+- LISTE : branche GROUP dans les 2 hooks, dernier message VIEWER-AWARE (RLS masque la réponse
+  privée d'un coéquipier jusque dans le preview), non-lus par participant (last_read_at), row
+  groupe (badge GROUPE, sky #0EA5E9).
+- THREAD 3-rôles : Coach/Athlete GroupThreadView + shells + useGroupThreadMeta. Staff voit tout
+  (réponses athlètes taggées « visible staff seulement ») ; athlète voit annonces + ses envois
+  (composer « visible que par les entraîneurs »). Aucun re-filtre client ; realtime via invalidate.
+- CLEANUP : vue Annonce sender-only supprimée ; anciens fils-membres restent tels quels (design #4).
+Custody : create_group + les mentions 3-rôles présentes out/+public/.
+Suivi : "sélection multiple" de coachs spécifiques non implémenté (modèle ad-hoc hors schéma
+unique-par-école/équipe) — Team + All-coaches couvrent le besoin ; notifications = unread par participant OK.
