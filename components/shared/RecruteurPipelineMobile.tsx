@@ -35,6 +35,7 @@ import { useAddPipelineNote } from "@/lib/queries/recruiter/useAddPipelineNote";
 import { useRemoveFromPipeline } from "@/lib/queries/recruiter/useRemoveFromPipeline";
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import { MobilePicker } from "@/components/mobile/MobilePicker";
+import VisitCalendarCard from "@/components/shared/VisitCalendarCard";
 import type { PipelineKanbanCard } from "@/app/recruteur/pipeline/_data/mockKanbanData";
 
 /* ── Stages config (DB enum stage) ───────────────────────────── */
@@ -76,6 +77,22 @@ function statusGlobalColor(status: string): { dot: string; label: string; animat
     default:
       return null;
   }
+}
+
+/* ── Visite planifiée — pilule de date ───────────────────────── */
+// Convention CLAUDE.md : VISITE = violet/purple #8B5CF6. Le stage kanban
+// est peint en ambre dans la liste, mais la pilule de DATE de visite suit
+// la couleur sémantique « visite » comme sur le profil complet.
+const VISIT_PURPLE = "#8B5CF6";
+
+/** « Visite · 12 août » à partir de l'instant ISO (recruiter_pipeline.visit_at).
+ *  Formaté en heure locale FR-CA (produit québécois) ; retourne null si l'ISO
+ *  est invalide pour que l'appelant n'affiche rien. */
+function formatVisitPill(iso: string | null | undefined): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return `Visite · ${d.toLocaleDateString("fr-CA", { day: "numeric", month: "short" })}`;
 }
 
 async function triggerHaptic(intensity: "Light" | "Medium" = "Light") {
@@ -282,6 +299,27 @@ function PipelineCardMobile({ card, onTap }: { card: PipelineKanbanCard; onTap: 
             </span>
           </div>
         )}
+
+        {/* Pilule de date de visite — VISITE_PLANIFIEE avec une date planifiée.
+            Couleur violette #8B5CF6 (convention « visite ») pour la distinguer
+            du dot de statut global au-dessus. */}
+        {card.status === "visite_planifiee" && (() => {
+          const label = formatVisitPill(card.visit_at);
+          if (!label) return null;
+          return (
+            <div className="mt-1.5">
+              <span
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full"
+                style={{ backgroundColor: `${VISIT_PURPLE}1f` }}
+              >
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={VISIT_PURPLE} strokeWidth="2.5" strokeLinecap="round" aria-hidden>
+                  <rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" />
+                </svg>
+                <span className="text-[11px] font-bold" style={{ color: VISIT_PURPLE }}>{label}</span>
+              </span>
+            </div>
+          );
+        })()}
 
         {/* Ligne 4 : staleness conditionnelle (text-[12px] muted) */}
         {showStaleness && (
@@ -980,6 +1018,20 @@ function PipelineDetailSheet({
                   </div>
                 );
               })()}
+
+              {/* Menu visite — MÊME carte « voir la visite » (+ export agenda)
+                  que le profil complet. Réutilise le composant partagé
+                  VisitCalendarCard ; gate strict identique au profil : le stage
+                  VISITE_PLANIFIEE ET une date. Une visite sans date n'affiche
+                  rien (pas de carte vide). */}
+              {card.status === "visite_planifiee" && card.visit_at && (
+                <VisitCalendarCard
+                  visitAtIso={card.visit_at}
+                  athleteName={card.full_name}
+                  sport={card.sport || undefined}
+                  schoolName={card.noTeam ? undefined : card.school || undefined}
+                />
+              )}
 
               {/* Cote */}
               <div className="flex items-center gap-2">
