@@ -124,6 +124,11 @@ function CoachAthleteCard({ a }: { a: RosterAthlete }) {
           <p className="text-[13px] text-[#9CA3AF] mt-0.5">{a.heightWeight}</p>
         )}
 
+        {/* Attribution — note évaluée par un autre coach (ex. directeur) */}
+        {a.evaluatedByName && (
+          <p className="text-[11px] text-[#6b7280] mt-0.5">Évalué par <span className="font-semibold text-[#9CA3AF]">{a.evaluatedByName}</span></p>
+        )}
+
         {/* Footer — school · year left, actions right */}
         <div className="flex items-center justify-between pt-3 mt-auto border-t border-[#2D3748]/60">
           <span className="text-[12px] text-[#6b7280] truncate">{a.school} <span className="text-[#4a4d56]">·</span> {a.gradYear}</span>
@@ -291,7 +296,8 @@ function MesAthletesContent() {
           schools!school_id(name, region),
           committed_school:schools!committed_school_id(name),
           team_athletes(team_id, teams!team_id(gender)),
-          evaluations(cote_globale, rapport_entraineur, distinctions, updated_at)
+          evaluations(cote_globale, rapport_entraineur, distinctions, updated_at, coach_id,
+            evaluator:users!evaluations_coach_id_fkey(first_name, last_name))
         `)
         .eq("school_id", coachSchoolId)
         .eq("status", "ACTIF");
@@ -333,9 +339,22 @@ function MesAthletesContent() {
 
         const evalsRaw = a.evaluations;
         const evals = Array.isArray(evalsRaw) ? evalsRaw : [];
-        const eval0 = selectBestEvaluation(evals) as { cote_globale?: number; distinctions?: unknown } | undefined;
-        const stars = eval0?.cote_globale || (a.cote_globale_entraineur as number) || 0;
+        const eval0 = selectBestEvaluation(evals) as { cote_globale?: number; distinctions?: unknown; coach_id?: string; evaluator?: unknown } | undefined;
+        // Note = LA PLUS RÉCENTE. cote_globale_entraineur (colonne last-write,
+        // maintenue par le trigger, toujours lisible) d'abord ; eval0 en repli.
+        // Sans ça, la RLL evaluations ne renvoyant au coach que SA ligne, il
+        // voyait sa vieille note au lieu de la dernière (ex. celle du directeur).
+        const stars = (a.cote_globale_entraineur as number) || eval0?.cote_globale || 0;
         const distinctions = parseDistinctions(eval0?.distinctions);
+        // Attribution : auteur de l'éval choisie (join users). Affichée sur la
+        // carte quand la note vient d'un autre évaluateur que le coach connecté.
+        const evalCoachId = (eval0?.coach_id as string | null) ?? null;
+        const evaluatedByName = (() => {
+          const ev = eval0?.evaluator as { first_name?: string; last_name?: string } | Array<{ first_name?: string; last_name?: string }> | null | undefined;
+          const evObj = Array.isArray(ev) ? ev[0] : ev;
+          const name = evObj ? `${evObj.first_name || ""} ${evObj.last_name || ""}`.trim() : "";
+          return name && evalCoachId && evalCoachId !== session.user.id ? name : "";
+        })();
 
         const position = posObj?.abreviation || posObj?.nom || "";
         const gradYear = (a.annee_diplomation as number) || 0;
@@ -403,6 +422,7 @@ function MesAthletesContent() {
           // null quand l'athlète n'a aucune équipe → exclu si un genre est filtré.
           teamGender: firstTeamGender(a.team_athletes),
           coach_id: (a.coach_id as string | null) ?? null,
+          evaluatedByName,
         };
 
         return athlete;

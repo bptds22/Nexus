@@ -114,6 +114,9 @@ export interface CoachAthlete {
   /** Genre de l'ÉQUIPE (teams.gender), jamais athletes.genre. null si sans équipe. */
   teamGender: string | null;
   coachId: string | null;
+  /** Nom de l'évaluateur quand la note affichée n'est pas l'éval du coach
+   *  connecté (attribution « Évalué par … »). Vide sinon. */
+  evaluatedByName: string;
   favoritesCount: number;
   hasVideo: boolean;
   gpa: number;
@@ -132,7 +135,7 @@ async function triggerHaptic(intensity: "Light" | "Medium" = "Light") {
   } catch { /* no-op */ }
 }
 
-function mapCoachAthlete(a: Record<string, unknown>, favCounts: Record<string, number>): CoachAthlete {
+function mapCoachAthlete(a: Record<string, unknown>, favCounts: Record<string, number>, currentUserId?: string | null): CoachAthlete {
   const posRaw = a.positions;
   const pos = Array.isArray(posRaw) ? posRaw[0] : posRaw;
   const posObj = pos as { nom?: string; abreviation?: string } | null;
@@ -150,10 +153,23 @@ function mapCoachAthlete(a: Record<string, unknown>, favCounts: Record<string, n
 
   const evalsRaw = a.evaluations;
   const evals = Array.isArray(evalsRaw) ? evalsRaw : [];
-  const eval0 = selectBestEvaluation(evals) as { cote_globale?: number; distinctions?: unknown } | undefined;
-  const starsRaw = (eval0?.cote_globale ?? (a.cote_globale_entraineur as number) ?? 0) as number;
+  const eval0 = selectBestEvaluation(evals) as { cote_globale?: number; distinctions?: unknown; coach_id?: string; evaluator?: unknown } | undefined;
+  // Note = LA PLUS RÉCENTE. cote_globale_entraineur (last-write, toujours
+  // lisible) d'abord ; eval0 en repli. Aligne le mobile sur le web : la RLS
+  // evaluations ne renvoyant au coach que SA ligne, selectBestEvaluation seul
+  // affichait sa vieille note au lieu de la dernière (ex. celle du directeur).
+  const starsRaw = ((a.cote_globale_entraineur as number) ?? eval0?.cote_globale ?? 0) as number;
   const stars = Math.round(starsRaw * 10) / 10;
   const distinctions = parseDistinctions(eval0?.distinctions);
+  // Attribution : auteur de l'éval choisie (join users), seulement s'il diffère
+  // du coach connecté (ex. le directeur).
+  const evalCoachId = (eval0?.coach_id as string | null) ?? null;
+  const evaluatedByName = (() => {
+    const ev = eval0?.evaluator as { first_name?: string; last_name?: string } | Array<{ first_name?: string; last_name?: string }> | null | undefined;
+    const evObj = Array.isArray(ev) ? ev[0] : ev;
+    const name = evObj ? `${evObj.first_name || ""} ${evObj.last_name || ""}`.trim() : "";
+    return name && evalCoachId && currentUserId && evalCoachId !== currentUserId ? name : "";
+  })();
 
   const teamAthletes = Array.isArray(a.team_athletes) ? a.team_athletes : [];
   const noTeam = teamAthletes.length === 0;
@@ -185,6 +201,7 @@ function mapCoachAthlete(a: Record<string, unknown>, favCounts: Record<string, n
     noTeam,
     teamGender,
     coachId: (a.coach_id as string | null) ?? null,
+    evaluatedByName,
     favoritesCount: favCounts[id] || 0,
     hasVideo: !!a.video_faits_saillants_url,
     gpa: (a.moyenne_generale as number) || 0,
@@ -968,7 +985,8 @@ export function CoachAthletesMobile() {
           schools!school_id(name, region),
           committed_school:schools!committed_school_id(name),
           team_athletes(team_id, teams!team_id(gender)),
-          evaluations(cote_globale, rapport_entraineur, distinctions, updated_at)
+          evaluations(cote_globale, rapport_entraineur, distinctions, updated_at, coach_id,
+            evaluator:users!evaluations_coach_id_fkey(first_name, last_name))
         `)
         .eq("school_id", coachRow.school_id)
         .eq("status", "ACTIF");
@@ -990,7 +1008,7 @@ export function CoachAthletesMobile() {
         }
       }
 
-      const mapped: CoachAthlete[] = data.map((a: Record<string, unknown>) => mapCoachAthlete(a, favCounts));
+      const mapped: CoachAthlete[] = data.map((a: Record<string, unknown>) => mapCoachAthlete(a, favCounts, user.id));
       if (cancelled) return;
       setAthletes(mapped);
       setLoading(false);

@@ -770,6 +770,12 @@ export interface AthleteProfileRecruiterView {
   traitRatings?: AthleteTraitRatings;
   overallRating: number;
   distinctions: DistinctionEntry[];
+  /** Auteur de l'éval AFFICHÉE (celle choisie par selectBestEvaluation, la
+   *  plus récente). Porte le coach_id de la ligne évaluée + son nom résolu via
+   *  users. Sert à l'attribution « Évalué par … » quand la note affichée n'est
+   *  PAS l'éval du coach courant (evaluatorCoachId !== coach connecté). */
+  evaluatorCoachId?: string | null;
+  evaluatorName?: string;
 
   // Media
   highlightVideoUrl?: string;

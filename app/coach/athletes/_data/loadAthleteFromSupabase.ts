@@ -84,7 +84,8 @@ const ATHLETE_SELECT = `
     vision_du_jeu, sens_tactique,
     leadership, discipline, coachabilite, intelligence_jeu,
     competitivite, esprit_equipe, resilience, attitude_mentalite,
-    rapport_entraineur, distinctions, updated_at
+    rapport_entraineur, distinctions, updated_at, coach_id,
+    evaluator:users!evaluations_coach_id_fkey(first_name, last_name)
   ),
   users!coach_id(first_name, last_name)
 `;
@@ -423,8 +424,24 @@ export function mapToRecruiterView(raw: Record<string, unknown>): AthleteProfile
     coachSchool: schoolObj?.name || "",
     coachReport: (raw.notes_coach as string) || (eval0?.rapport_entraineur as string) || "",
     traitRatings: traitRatings as AthleteProfileRecruiterView["traitRatings"],
-    overallRating: (eval0?.cote_globale as number) || (raw.cote_globale_entraineur as number) || 0,
+    // NOTE affichée = LA PLUS RÉCENTE. On lit d'abord la colonne dénormalisée
+    // athletes.cote_globale_entraineur (maintenue en last-write par le trigger
+    // calc_cote_globale : elle reflète TOUJOURS la dernière éval saisie, tous
+    // coachs confondus, et reste lisible même quand la RLS evaluations ne
+    // renvoie au coach courant que SA propre ligne). eval0 (selectBestEvaluation)
+    // ne sert que de repli si la colonne est nulle (données legacy sans cascade).
+    overallRating: (raw.cote_globale_entraineur as number) || (eval0?.cote_globale as number) || 0,
     distinctions: parseDistinctions(eval0?.distinctions),
+    // Attribution : auteur de l'éval choisie (selectBestEvaluation → coach_id +
+    // users embed). Le composant compare evaluatorCoachId au coach connecté pour
+    // décider d'afficher « Évalué par … ». Visible quand la requête renvoie la
+    // ligne d'un autre évaluateur (directeur en oversight, admin).
+    evaluatorCoachId: (eval0?.coach_id as string | null) ?? null,
+    evaluatorName: (() => {
+      const ev = eval0?.evaluator as { first_name?: string; last_name?: string } | Array<{ first_name?: string; last_name?: string }> | null | undefined;
+      const evObj = Array.isArray(ev) ? ev[0] : ev;
+      return evObj ? `${evObj.first_name || ""} ${evObj.last_name || ""}`.trim() : "";
+    })(),
     highlightVideoUrl: (raw.video_faits_saillants_url as string) || "",
     hudlUrl: (raw.hudl_url as string) || "",
     youtubeUrl: (raw.youtube_url as string) || "",

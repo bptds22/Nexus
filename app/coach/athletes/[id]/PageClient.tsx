@@ -296,6 +296,10 @@ export default function CoachAthleteProfilePage() {
       // Load pipeline data (how many recruiters are interested)
       const { createClient } = await import("@/lib/supabase/client");
       const supabase = createClient();
+      // Coach connecté — sert à l'attribution « Évalué par … » : on ne l'affiche
+      // que si l'éval affichée (la plus récente) appartient à un AUTRE évaluateur.
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      setCurrentCoachId(authUser?.id ?? null);
       const { data: pipeRows } = await supabase
         .from("recruiter_pipeline")
         .select("stage, updated_at")
@@ -447,6 +451,7 @@ export default function CoachAthleteProfilePage() {
   const [pipelineMaxAt, setPipelineMaxAt] = useState("");
   const [recruitOverride, setRecruitOverride] = useState<{ value: string; at: string } | null>(null);
   const [dbDistinctions, setDbDistinctions] = useState<DistinctionEntry[]>([]);
+  const [currentCoachId, setCurrentCoachId] = useState<string | null>(null);
   const [viewCount, setViewCount] = useState(0);
   const [favoriteCount, setFavoriteCount] = useState(0);
   const [globalRecruitmentStatus, setGlobalRecruitmentStatus] = useState<string>("OUVERT");
@@ -473,6 +478,13 @@ export default function CoachAthleteProfilePage() {
   const ratedTraits = traitEntries.filter(([, v]) => v > 0);
   const traitAvg = ratedTraits.length > 0 ? ratedTraits.reduce((s, [, v]) => s + v, 0) / ratedTraits.length : null;
   const coteGlobale = traitAvg ?? a.overallRating;
+
+  // Attribution — la note/éval affichée (la plus récente) n'est PAS celle du
+  // coach connecté : afficher « Évalué par {Prénom Nom} » (typiquement le
+  // directeur). evaluatorCoachId + evaluatorName viennent de la ligne choisie
+  // par selectBestEvaluation (join users). Ne s'affiche que si l'auteur diffère.
+  const evaluatedByOther =
+    !!a.evaluatorName && !!a.evaluatorCoachId && a.evaluatorCoachId !== currentCoachId;
 
   // FIX 4 — age calculation
   const age = a.dateOfBirth ? Math.floor((new Date().getTime() - new Date(a.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : 0;
@@ -741,10 +753,15 @@ export default function CoachAthleteProfilePage() {
             <div className={a.coachReport ? "mt-3" : ""}>
 
               {!isDetailed && (
-                <div className="mt-3 pl-5 flex items-center gap-3">
-                  <StarRating rating={coteGlobale} size="md" showNumber={false} />
-                  <span className="text-[18px] font-head font-black text-white">{coteGlobale.toFixed(1)}<span className="text-[14px] text-[#6B7280] font-normal">/5</span></span>
-                  <span className="text-[12px] text-[#6B7280] uppercase tracking-wider font-bold">Cote Globale</span>
+                <div className="mt-3 pl-5">
+                  <div className="flex items-center gap-3">
+                    <StarRating rating={coteGlobale} size="md" showNumber={false} />
+                    <span className="text-[18px] font-head font-black text-white">{coteGlobale.toFixed(1)}<span className="text-[14px] text-[#6B7280] font-normal">/5</span></span>
+                    <span className="text-[12px] text-[#6B7280] uppercase tracking-wider font-bold">Cote Globale</span>
+                  </div>
+                  {evaluatedByOther && (
+                    <p className="text-[12px] text-[#9CA3AF] mt-1.5">Évalué par <span className="font-bold text-white">{a.evaluatorName}</span></p>
+                  )}
                 </div>
               )}
 
@@ -755,6 +772,9 @@ export default function CoachAthleteProfilePage() {
                     <div>
                       <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#6b7280]">Cote globale (moyenne auto)</p>
                       <p className="text-[28px] font-head font-black text-[#F59E0B] leading-none mt-1">{coteGlobale.toFixed(1)}<span className="text-[14px] text-[#6b7280] font-normal ml-1">/ 5</span></p>
+                      {evaluatedByOther && (
+                        <p className="text-[12px] text-[#9CA3AF] mt-2">Évalué par <span className="font-bold text-white">{a.evaluatorName}</span></p>
+                      )}
                     </div>
                     <StarRating rating={coteGlobale} size="md" showNumber={false} />
                   </div>
