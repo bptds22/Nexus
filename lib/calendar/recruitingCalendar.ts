@@ -33,6 +33,11 @@ export interface CalendarFilters {
   listIds: string[];
   verifiedOnly: boolean;
   withVideoOnly: boolean;
+  /** Seuil de densité appliqué au compteur du match APRÈS les filtres de
+   *  cibles ci-dessus. 1 = pas de seuil (tout match ayant au moins une
+   *  cible filtrée). Ce n'est PAS un filtre de cible : il ne retire
+   *  personne du décompte, il masque les matchs sous le seuil. */
+  minTargets: number;
 }
 
 export const EMPTY_FILTERS: CalendarFilters = {
@@ -47,13 +52,15 @@ export const EMPTY_FILTERS: CalendarFilters = {
   listIds: [],
   verifiedOnly: false,
   withVideoOnly: false,
+  minTargets: 1,
 };
 
 export function hasActiveFilters(f: CalendarFilters): boolean {
   return (
     !!f.sport || !!f.position || f.promotions.length > 0 || !!f.region ||
     !!f.orgType || !!f.minRating || !!f.minGpa || !!f.stage ||
-    f.listIds.length > 0 || f.verifiedOnly || f.withVideoOnly
+    f.listIds.length > 0 || f.verifiedOnly || f.withVideoOnly ||
+    f.minTargets > 1
   );
 }
 
@@ -90,11 +97,18 @@ export interface MatchView {
 export type CalendarSort = "date" | "density";
 
 /** Construit les matchs visibles à partir des cibles filtrées.
- *  Un match sans aucune cible filtrée disparaît. */
+ *  Un match sans aucune cible filtrée disparaît.
+ *
+ *  `minTargets` est appliqué APRÈS le décompte, donc après les filtres de
+ *  cibles : un match n'apparaît que si son compte de cibles FILTRÉES
+ *  atteint le seuil. Le seuil est appliqué AVANT `markHotMatches`, sinon
+ *  un match masqué continuerait de fixer le maximum de sa semaine et
+ *  aucun match visible ne serait « fort potentiel ». */
 export function buildMatches(
   games: CalendarGame[],
   targets: CalendarTarget[],
   sort: CalendarSort = "date",
+  minTargets: number = 1,
 ): MatchView[] {
   // Index rseq_team_id → cibles, construit une fois : la boucle sur les
   // matchs reste en O(matchs), pas en O(matchs × cibles).
@@ -111,6 +125,7 @@ export function buildMatches(
     const visitorTargets = (game.visitorRseqTeamId && byTeam.get(game.visitorRseqTeamId)) || [];
     const count = homeTargets.length + visitorTargets.length;
     if (count === 0) return;
+    if (count < Math.max(1, minTargets)) return;
     views.push({ game, homeTargets, visitorTargets, count, hot: false });
   });
 
@@ -227,8 +242,12 @@ export interface CalendarCell {
   /** Hors du mois affiché (débord de grille). */
   outside: boolean;
   isToday: boolean;
-  /** Somme des cibles des matchs du jour (0 = pas de badge). */
-  targetCount: number;
+  /** Au moins un match à cibles ce jour-là → point rouge. */
+  hasMatch: boolean;
+  /** Au moins un « fort potentiel » ce jour-là → ★ rouge, qui remplace
+   *  le point. La grille ne porte plus de compteur : le détail vit dans
+   *  les cartes rendues sous la grille. */
+  hasHot: boolean;
 }
 
 /** Grille lundi → dimanche couvrant tout le mois, débords compris. */
@@ -238,9 +257,11 @@ export function buildMonthGrid(
   views: MatchView[],
   todayIsoStr: string,
 ): CalendarCell[] {
-  const countByDay = new Map<string, number>();
+  const matchDays = new Set<string>();
+  const hotDays = new Set<string>();
   views.forEach((v) => {
-    countByDay.set(v.game.gameDate, (countByDay.get(v.game.gameDate) ?? 0) + v.count);
+    matchDays.add(v.game.gameDate);
+    if (v.hot) hotDays.add(v.game.gameDate);
   });
 
   const first = new Date(year, month, 1);
@@ -260,7 +281,8 @@ export function buildMonthGrid(
       day: d.getDate(),
       outside: d.getMonth() !== month,
       isToday: iso === todayIsoStr,
-      targetCount: countByDay.get(iso) ?? 0,
+      hasMatch: matchDays.has(iso),
+      hasHot: hotDays.has(iso),
     });
   }
   return cells;

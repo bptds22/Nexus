@@ -34,7 +34,6 @@ import {
   filterTargets,
   formatLastUpdated,
   groupByWeek,
-  hasActiveFilters,
   matchesOnDay,
   monthLabel,
   shortMonthLabel,
@@ -43,6 +42,7 @@ import {
   type MatchView,
 } from "@/lib/calendar/recruitingCalendar";
 import { RECRUITER_TIERS } from "@/lib/config/pricing";
+import StarRating from "@/components/ui/StarRating";
 import { MobilePicker, type PickerOption } from "@/components/mobile/MobilePicker";
 
 async function triggerHaptic(intensity: "Light" | "Medium" = "Light") {
@@ -114,6 +114,16 @@ const SORT_OPTIONS: PickerOption[] = [
 
 const PROMOTION_OPTIONS = ["2026", "2027", "2028"];
 
+/** Seuil de densité — appliqué au compteur du match APRÈS les filtres de
+ *  cibles. Même sémantique que le desktop. */
+const MIN_TARGETS_OPTIONS: PickerOption[] = [
+  { value: "1", label: "1+ cible" },
+  { value: "2", label: "2+ cibles" },
+  { value: "3", label: "3+ cibles" },
+  { value: "4", label: "4+ cibles" },
+  { value: "5", label: "5+ cibles" },
+];
+
 const STAGE_LABEL: Record<string, string> = {
   IDENTIFIE: "Identifié",
   CONTACTE: "Contacté",
@@ -164,7 +174,10 @@ function TargetRow({ t }: { t: CalendarTarget }) {
           {t.firstName} {t.lastName}
           {t.verified && <span className="text-[#3B82F6]"> ✓</span>}
         </b>
-        <span className="text-[12px] text-[#8A909C]">
+        {/* Cote coach — même composant partagé que le desktop et la
+            Recherche. Athlète non coté : rien, pas de « N/A ». */}
+        {t.stars > 0 && <StarRating rating={t.stars} size="sm" className="mt-0.5" />}
+        <span className="block text-[12px] text-[#8A909C]">
           {[t.position, t.graduationYear ? `Promotion ${t.graduationYear}` : ""].filter(Boolean).join(" · ")}
         </span>
       </div>
@@ -321,6 +334,25 @@ function EmptyBoard() {
   );
 }
 
+/** Vide contextuel : des matchs existent, mais seuil/filtres les écartent. */
+function NoMatchForFilters({ minTargets, onReset }: { minTargets: number; onReset: () => void }) {
+  return (
+    <div className="mt-6 rounded-2xl border border-[#262A33] bg-[#1A1D24] px-6 py-12 text-center">
+      <h3 className="mb-2 text-[18px] font-bold text-[#EDEFF3]">
+        {minTargets > 1
+          ? `Aucun match avec ${minTargets} cibles ou plus.`
+          : "Aucun match ne correspond à vos filtres."}
+      </h3>
+      <p className="mx-auto max-w-[420px] text-[14px] text-[#8A909C]">
+        {minTargets > 1
+          ? "Réduisez le seuil ou élargissez vos filtres."
+          : "Élargissez vos filtres pour retrouver des matchs."}{" "}
+        <button type="button" onClick={onReset} className="font-semibold text-[#E63946]">Réinitialiser</button>
+      </p>
+    </div>
+  );
+}
+
 function FreeWall() {
   const pro = RECRUITER_TIERS.find((t) => t.id === "rec_pro");
   const price = pro ? `${pro.monthly.toFixed(2).replace(".", ",")} $/mois` : "";
@@ -368,7 +400,7 @@ function FreeWall() {
 
 /* ── Main ──────────────────────────────────────────────────── */
 
-type PickerKey = "sport" | "position" | "region" | "orgType" | "minRating" | "minGpa" | "stage" | "sort" | null;
+type PickerKey = "sport" | "position" | "region" | "orgType" | "minRating" | "minGpa" | "stage" | "sort" | "minTargets" | null;
 
 export function RecruteurCalendrierMobile() {
   const { tier, loading: tierLoading } = useSubscription();
@@ -396,8 +428,14 @@ export function RecruteurCalendrierMobile() {
   const games = data?.games ?? [];
 
   const matches = useMemo(
-    () => buildMatches(games, filterTargets(targets, filters), sort),
+    () => buildMatches(games, filterTargets(targets, filters), sort, filters.minTargets),
     [games, targets, filters, sort],
+  );
+  // Référence sans filtre ni seuil — distingue « aucun match RSEQ » de
+  // « rien ne passe le seuil / les filtres ».
+  const baseMatchCount = useMemo(
+    () => buildMatches(games, targets, sort).length,
+    [games, targets, sort],
   );
   const weeks = useMemo(() => groupByWeek(matches), [matches]);
   const grid = useMemo(
@@ -449,7 +487,8 @@ export function RecruteurCalendrierMobile() {
     (filters.sport ? 1 : 0) + (filters.position ? 1 : 0) + filters.promotions.length +
     (filters.region ? 1 : 0) + (filters.orgType ? 1 : 0) + (filters.minRating ? 1 : 0) +
     (filters.minGpa ? 1 : 0) + (filters.stage ? 1 : 0) + filters.listIds.length +
-    (filters.verifiedOnly ? 1 : 0) + (filters.withVideoOnly ? 1 : 0);
+    (filters.verifiedOnly ? 1 : 0) + (filters.withVideoOnly ? 1 : 0) +
+    (filters.minTargets > 1 ? 1 : 0);
 
   return (
     <div className="min-h-screen bg-[#111317] text-white nx-mobile-pb-tabbar">
@@ -522,17 +561,14 @@ export function RecruteurCalendrierMobile() {
                 </p>
               </div>
             ) : matches.length === 0 ? (
-              <>
+              baseMatchCount > 0 ? (
+                <NoMatchForFilters
+                  minTargets={filters.minTargets}
+                  onReset={() => setFilters(EMPTY_FILTERS)}
+                />
+              ) : (
                 <EmptyBoard />
-                {hasActiveFilters(filters) && (
-                  <div className="mt-3 text-center text-[13px] text-[#5C6575]">
-                    Aucun match ne correspond à ces filtres.{" "}
-                    <button type="button" onClick={() => setFilters(EMPTY_FILTERS)} className="font-semibold text-[#E63946]">
-                      Réinitialiser
-                    </button>
-                  </div>
-                )}
-              </>
+              )
             ) : view === "list" ? (
               <div className="flex flex-col gap-7 pt-1">
                 {weeks.map((w) => (
@@ -591,9 +627,17 @@ export function RecruteurCalendrierMobile() {
                         }`}
                       >
                         {c.day}
-                        {c.targetCount > 0 && (
-                          <span className="absolute bottom-1 left-1 inline-flex h-[15px] min-w-[15px] items-center justify-center rounded-full bg-[#E63946] px-1 text-[10px] font-bold text-white">
-                            {c.targetCount}
+                        {/* Marqueur, pas compteur — même règle que le desktop. */}
+                        {c.hasMatch && (
+                          <span
+                            className="absolute bottom-1 left-1.5 leading-none text-[#E63946]"
+                            aria-label={c.hasHot ? "Match à fort potentiel" : "Match à surveiller"}
+                          >
+                            {c.hasHot ? (
+                              <span className="text-[11px]">★</span>
+                            ) : (
+                              <span className="block h-[6px] w-[6px] rounded-full bg-[#E63946]" />
+                            )}
                           </span>
                         )}
                       </button>
@@ -639,6 +683,11 @@ export function RecruteurCalendrierMobile() {
                   label="Position"
                   value={filters.sport ? labelOf(positionOptions, filters.position, "Toutes") : "Choisir un sport"}
                   onOpen={() => { if (filters.sport) setPicker("position"); }}
+                />
+                <FilterRow
+                  label="Cibles minimum"
+                  value={labelOf(MIN_TARGETS_OPTIONS, String(filters.minTargets), "1+ cible")}
+                  onOpen={() => setPicker("minTargets")}
                 />
                 <FilterRow label="Région" value={labelOf(regionOptions, filters.region, "Toutes")} onOpen={() => setPicker("region")} />
                 <FilterRow label="Organisation" value={labelOf(ORG_OPTIONS, filters.orgType, "Toutes")} onOpen={() => setPicker("orgType")} />
@@ -718,6 +767,11 @@ export function RecruteurCalendrierMobile() {
             open={picker === "sort"} onClose={() => setPicker(null)} title="Trier par"
             options={SORT_OPTIONS} value={sort}
             onChange={(v) => setSort((String(v ?? "date") as CalendarSort))}
+          />
+          <MobilePicker
+            open={picker === "minTargets"} onClose={() => setPicker(null)} title="Cibles minimum"
+            options={MIN_TARGETS_OPTIONS} value={String(filters.minTargets)}
+            onChange={(v) => set("minTargets", Number(v ?? 1))}
           />
         </>
       )}

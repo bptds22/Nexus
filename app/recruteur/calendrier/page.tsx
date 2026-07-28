@@ -39,6 +39,7 @@ import {
   type MatchView,
 } from "@/lib/calendar/recruitingCalendar";
 import { RECRUITER_TIERS } from "@/lib/config/pricing";
+import StarRating from "@/components/ui/StarRating";
 import { RecruteurCalendrierMobile } from "@/components/shared/RecruteurCalendrierMobile";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
@@ -106,43 +107,35 @@ const LockIcon = ({ size = 26 }: { size?: number }) => (
   </svg>
 );
 
-/** `.f-select` de la réf, en <select> natif. */
+/** Select de filtre — classes `nx-filter-select` / `nx-filter-active` de la
+ *  plateforme, identiques à recherche/page.tsx. Aucun style local. */
 function FilterSelect({
-  value, onChange, disabled, active, children,
+  value, onChange, disabled, active, ariaLabel, children,
 }: {
   value: string;
   onChange: (v: string) => void;
   disabled?: boolean;
   active?: boolean;
+  ariaLabel?: string;
   children: React.ReactNode;
 }) {
   return (
-    <div
-      className={`relative inline-flex items-center rounded-full border transition-colors ${
-        disabled
-          ? "bg-[#1A1D24] border-[#262A33] text-[#5C6575]"
-          : active
-            ? "bg-[rgba(230,57,70,0.09)] border-[rgba(230,57,70,0.28)] text-[#EDEFF3]"
-            : "bg-[#1A1D24] border-[#262A33] text-[#EDEFF3]"
-      }`}
+    <select
+      value={value}
+      disabled={disabled}
+      aria-label={ariaLabel}
+      onChange={(e) => onChange(e.target.value)}
+      className={`nx-filter-select${active ? " nx-filter-active" : ""}`}
     >
-      <select
-        value={value}
-        disabled={disabled}
-        onChange={(e) => onChange(e.target.value)}
-        className={`appearance-none bg-transparent outline-none pl-[18px] pr-9 py-[10px] text-[14.5px] whitespace-nowrap ${
-          active ? "font-semibold" : "font-medium"
-        } ${disabled ? "cursor-not-allowed" : "cursor-pointer"}`}
-      >
-        {children}
-      </select>
-      <Chevron className="pointer-events-none absolute right-[15px] opacity-55" />
-    </div>
+      {children}
+    </select>
   );
 }
 
-/** `.f-select.on-list` — multi-sélection : chaque choix s'ajoute, la pastille
- *  teintée porte le × de la réf pour tout effacer. */
+/** Multi-sélection : chaque choix s'ajoute, la pastille teintée porte un ×
+ *  pour tout effacer. Métriques alignées sur `nx-filter-select` (13px / 600 /
+ *  8-14px / rounded-full) pour que la rangée reste homogène — un <select>
+ *  natif ne peut pas héberger le bouton ×, d'où le wrapper. */
 function MultiFilterSelect({
   values, onAdd, onClear, placeholder, renderLabel, children,
 }: {
@@ -156,45 +149,46 @@ function MultiFilterSelect({
   const active = values.length > 0;
   return (
     <div
-      className={`relative inline-flex items-center rounded-full border transition-colors ${
+      className={`relative inline-flex items-center rounded-full border text-[13px] font-semibold text-white transition-colors ${
         active
-          ? "bg-[rgba(230,57,70,0.09)] border-[rgba(230,57,70,0.28)] text-[#EDEFF3] font-semibold"
-          : "bg-[#1A1D24] border-[#262A33] text-[#EDEFF3] font-medium"
+          ? "border-[#E63946] bg-[rgba(230,57,70,0.08)]"
+          : "border-[#3a3f4b] bg-[#1A1D24] hover:border-[#555a66] hover:bg-[#1E2128]"
       }`}
     >
       <select
         value=""
         onChange={(e) => { if (e.target.value) onAdd(e.target.value); }}
-        className={`appearance-none bg-transparent outline-none cursor-pointer pl-[18px] py-[10px] text-[14.5px] whitespace-nowrap ${active ? "pr-2" : "pr-9"}`}
+        className={`cursor-pointer appearance-none whitespace-nowrap bg-transparent py-2 pl-[14px] text-[13px] font-semibold outline-none ${active ? "pr-1.5" : "pr-9"}`}
       >
         <option value="">{active ? renderLabel(values) : placeholder}</option>
         {children}
       </select>
-      {active && (
+      {active ? (
         <button
           type="button"
           onClick={onClear}
           aria-label="Effacer le filtre"
-          className="pr-[15px] pl-0.5 text-[#8A909C] hover:text-[#EDEFF3] font-normal text-[14.5px] leading-none"
+          className="pl-0.5 pr-[12px] text-[14px] font-normal leading-none text-[#9CA3AF] transition-colors hover:text-white"
         >
           ×
         </button>
+      ) : (
+        <Chevron className="pointer-events-none absolute right-[12px] opacity-60" />
       )}
-      {!active && <Chevron className="pointer-events-none absolute right-[15px] opacity-55" />}
     </div>
   );
 }
 
-/** `.f-chip` */
+/** Chip — même rendu que les quick presets de recherche/page.tsx. */
 function FilterChip({ on, onClick, children }: { on: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`flex items-center gap-2 rounded-full border px-[15px] py-2 text-[14px] font-medium transition-colors ${
+      className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-bold transition-colors ${
         on
-          ? "text-[#EDEFF3] border-[rgba(230,57,70,0.28)] bg-[rgba(230,57,70,0.09)]"
-          : "text-[#8A909C] border-[#262A33] bg-transparent hover:text-[#EDEFF3] hover:border-[#333B4A]"
+          ? "border-[#E63946]/30 bg-[#E63946]/15 text-[#E63946]"
+          : "border-[#2D3748] bg-[#13151a] text-[#6b7280] hover:border-[#4a4d56] hover:text-white"
       }`}
     >
       {children}
@@ -242,9 +236,15 @@ function TargetRow({ t }: { t: CalendarTarget }) {
     <div className="flex items-center gap-3 py-2 border-t border-[#1E2129] first:border-t-0">
       <Avatar text={t.initials} className="!w-8 !h-8 !border-[#171A20]" />
       <div className="flex-1 min-w-0">
-        <b className="block text-[14.5px] font-semibold leading-[1.3] text-[#EDEFF3]">
-          {t.firstName} {t.lastName}
-          {t.verified && <span className="text-[#3B82F6]"> ✓</span>}
+        <b className="flex flex-wrap items-center gap-x-2 text-[14.5px] font-semibold leading-[1.3] text-[#EDEFF3]">
+          <span>
+            {t.firstName} {t.lastName}
+            {t.verified && <span className="text-[#3B82F6]"> ✓</span>}
+          </span>
+          {/* Cote coach — composant étoiles partagé de la plateforme, même
+              rendu que les cartes de la Recherche. Athlète non coté : rien,
+              pas de « N/A ». */}
+          {t.stars > 0 && <StarRating rating={t.stars} size="sm" />}
         </b>
         <i className="not-italic text-[12.5px] text-[#8A909C]">
           {[t.position, t.graduationYear ? `Promotion ${t.graduationYear}` : ""]
@@ -382,6 +382,32 @@ function EmptyBoard() {
   );
 }
 
+/** Vide contextuel : des matchs existent pour les cibles, mais le seuil ou
+ *  les filtres les écartent tous. Distinct de la planche RSEQ, qui affirme
+ *  qu'il n'y a aucun match — ce qui serait faux ici. */
+function NoMatchForFilters({ minTargets, onReset }: { minTargets: number; onReset: () => void }) {
+  return (
+    <div className="mt-[34px] rounded-2xl border border-[#262A33] bg-[#1A1D24] px-[30px] py-[60px] text-center">
+      <div className="mb-[18px] inline-flex h-[58px] w-[58px] items-center justify-center rounded-full bg-[#20242C] text-[#8A909C]">
+        <CalendarIcon size={26} strokeWidth={1.8} />
+      </div>
+      <h3 className="mb-2 text-[20px] font-bold text-[#EDEFF3]">
+        {minTargets > 1
+          ? `Aucun match avec ${minTargets} cibles ou plus.`
+          : "Aucun match ne correspond à vos filtres."}
+      </h3>
+      <p className="mx-auto max-w-[520px] text-[15px] text-[#8A909C]">
+        {minTargets > 1
+          ? "Réduisez le seuil ou élargissez vos filtres."
+          : "Élargissez vos filtres pour retrouver des matchs."}{" "}
+        <button type="button" onClick={onReset} className="font-semibold text-[#E63946]">
+          Réinitialiser
+        </button>
+      </p>
+    </div>
+  );
+}
+
 /** Mur Free — planche `.board.lock` de la réf. Le fond flouté est le
  *  décor de la réf (fixture), pas de la donnée : aucune requête ne
  *  part pour un recruteur Free. */
@@ -450,6 +476,7 @@ function CalendrierContent() {
   const [filters, setFilters] = useState<CalendarFilters>(EMPTY_FILTERS);
   const [sort, setSort] = useState<CalendarSort>("date");
   const [view, setView] = useState<"list" | "cal">("list");
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const today = useMemo(() => todayIso(), []);
   const [cursor, setCursor] = useState(() => {
@@ -470,8 +497,15 @@ function CalendrierContent() {
   const games = data?.games ?? [];
 
   const matches = useMemo(
-    () => buildMatches(games, filterTargets(targets, filters), sort),
+    () => buildMatches(games, filterTargets(targets, filters), sort, filters.minTargets),
     [games, targets, filters, sort],
+  );
+  // Référence sans aucun filtre ni seuil : sert à distinguer « vos cibles
+  // n'ont aucun match RSEQ » (planche vide) de « des matchs existent mais
+  // rien ne passe le seuil / les filtres » (message contextuel).
+  const baseMatchCount = useMemo(
+    () => buildMatches(games, targets, sort).length,
+    [games, targets, sort],
   );
   const weeks = useMemo(() => groupByWeek(matches), [matches]);
   const grid = useMemo(
@@ -562,105 +596,166 @@ function CalendrierContent() {
         <FreeWall />
       ) : (
         <>
-          {/* ── Filtres ── */}
-          <div className="mt-[22px] flex flex-wrap gap-2.5">
-            <FilterSelect
-              value={filters.sport}
-              active={!!filters.sport}
-              onChange={(v) => setFilters((f) => ({ ...f, sport: v, position: "" }))}
-            >
-              {SPORTS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
-            </FilterSelect>
+          {/* ── Filtres — deux étages, pattern de recherche/page.tsx ── */}
+          <div className="mt-[22px] space-y-3">
+            {/* Rangée principale : toujours visible */}
+            <div className="flex flex-wrap items-center gap-2.5">
+              <FilterSelect
+                value={filters.sport}
+                active={!!filters.sport}
+                ariaLabel="Sport"
+                onChange={(v) => setFilters((f) => ({ ...f, sport: v, position: "" }))}
+              >
+                {SPORTS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+              </FilterSelect>
 
-            <FilterSelect
-              value={filters.position}
-              active={!!filters.position}
-              disabled={!filters.sport}
-              onChange={(v) => set("position", v)}
-            >
-              <option value="">
-                {filters.sport ? "Toutes les positions" : "Sélectionner un sport d'abord"}
-              </option>
-              {positions.map((p) => <option key={p.abbr} value={p.abbr}>{p.abbr} — {p.label}</option>)}
-            </FilterSelect>
-
-            <MultiFilterSelect
-              values={filters.promotions}
-              placeholder="Toutes les promotions"
-              renderLabel={(v) => (v.length === 1 ? `Promotion ${v[0]}` : `${v.length} promotions`)}
-              onAdd={(v) => set("promotions", toggleIn(filters.promotions, v))}
-              onClear={() => set("promotions", [])}
-            >
-              {PROMOTIONS.map((p) => (
-                <option key={p} value={p}>{filters.promotions.includes(p) ? `✓ ${p}` : p}</option>
-              ))}
-            </MultiFilterSelect>
-
-            <FilterSelect value={filters.region} active={!!filters.region} onChange={(v) => set("region", v)}>
-              <option value="">Toutes les régions</option>
-              {regions.map((r) => <option key={r} value={r}>{r}</option>)}
-            </FilterSelect>
-
-            <FilterSelect value={filters.orgType} active={!!filters.orgType} onChange={(v) => set("orgType", v)}>
-              <option value="">Toutes les organisations</option>
-              <option value="scolaire">Scolaire</option>
-              <option value="ligue_civile">Ligue civile</option>
-            </FilterSelect>
-
-            <FilterSelect value={filters.minRating} active={!!filters.minRating} onChange={(v) => set("minRating", v)}>
-              <option value="">Toutes les cotes</option>
-              <option value="1">★ 1+</option>
-              <option value="2">★★ 2+</option>
-              <option value="3">★★★ 3+</option>
-              <option value="4">★★★★ 4+</option>
-              <option value="5">★★★★★ 5</option>
-            </FilterSelect>
-
-            <FilterSelect value={filters.minGpa} active={!!filters.minGpa} onChange={(v) => set("minGpa", v)}>
-              <option value="">Toutes les moyennes</option>
-              <option value="60">60 %+</option>
-              <option value="70">70 %+</option>
-              <option value="80">80 %+</option>
-              <option value="85">85 %+</option>
-              <option value="90">90 %+</option>
-            </FilterSelect>
-
-            <MultiFilterSelect
-              values={filters.listIds}
-              placeholder="Mes listes"
-              renderLabel={(v) =>
-                v.length === 1
-                  ? `Liste : ${lists.find((l) => l.id === v[0])?.name ?? "—"}`
-                  : `${v.length} listes`
-              }
-              onAdd={(v) => set("listIds", toggleIn(filters.listIds, v))}
-              onClear={() => set("listIds", [])}
-            >
-              {lists.map((l) => (
-                <option key={l.id} value={l.id}>
-                  {filters.listIds.includes(l.id) ? `✓ ${l.name}` : l.name}
+              <FilterSelect
+                value={filters.position}
+                active={!!filters.position}
+                disabled={!filters.sport}
+                ariaLabel="Position"
+                onChange={(v) => set("position", v)}
+              >
+                <option value="">
+                  {filters.sport ? "Toutes les positions" : "Sélectionner un sport d'abord"}
                 </option>
-              ))}
-            </MultiFilterSelect>
+                {positions.map((p) => <option key={p.abbr} value={p.abbr}>{p.abbr} — {p.label}</option>)}
+              </FilterSelect>
 
-            <FilterSelect value={filters.stage} active={!!filters.stage} onChange={(v) => set("stage", v)}>
-              <option value="">Statut : tous</option>
-              {STAGES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
-            </FilterSelect>
+              <MultiFilterSelect
+                values={filters.promotions}
+                placeholder="Toutes les promotions"
+                renderLabel={(v) => (v.length === 1 ? `Promotion ${v[0]}` : `${v.length} promotions`)}
+                onAdd={(v) => set("promotions", toggleIn(filters.promotions, v))}
+                onClear={() => set("promotions", [])}
+              >
+                {PROMOTIONS.map((p) => (
+                  <option key={p} value={p}>{filters.promotions.includes(p) ? `✓ ${p}` : p}</option>
+                ))}
+              </MultiFilterSelect>
 
-            <FilterSelect value={sort} onChange={(v) => setSort(v as CalendarSort)}>
-              <option value="date">Trier : date</option>
-              <option value="density">Trier : densité</option>
-            </FilterSelect>
-          </div>
+              {/* Seuil de densité — pastille teintée + × dès qu'il dépasse 1+ */}
+              <MultiFilterSelect
+                values={filters.minTargets > 1 ? [String(filters.minTargets)] : []}
+                placeholder="Cibles : 1+"
+                renderLabel={(v) => `Cibles : ${v[0]}+`}
+                onAdd={(v) => set("minTargets", Number(v))}
+                onClear={() => set("minTargets", 1)}
+              >
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <option key={n} value={n}>{n}+ cible{n > 1 ? "s" : ""}</option>
+                ))}
+              </MultiFilterSelect>
 
-          <div className="mt-3 flex flex-wrap gap-2.5">
-            <FilterChip on={filters.verifiedOnly} onClick={() => set("verifiedOnly", !filters.verifiedOnly)}>
-              <span className={filters.verifiedOnly ? "text-[#E63946]" : ""}>✓</span> Vérifié
-            </FilterChip>
-            <FilterChip on={filters.withVideoOnly} onClick={() => set("withVideoOnly", !filters.withVideoOnly)}>
-              🎬 Avec vidéo
-            </FilterChip>
+              <FilterSelect value={sort} ariaLabel="Trier" onChange={(v) => setSort(v as CalendarSort)}>
+                <option value="date">Trier : date</option>
+                <option value="density">Trier : densité</option>
+              </FilterSelect>
+
+              <div className="mx-1 hidden h-6 w-px bg-[#2D3748] sm:block" />
+
+              <button
+                type="button"
+                onClick={() => setShowAdvanced(!showAdvanced)}
+                className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-[13px] font-semibold transition-colors ${
+                  showAdvanced
+                    ? "border border-[#E63946]/30 bg-[#E63946]/10 text-[#E63946]"
+                    : "border border-[#2D3748] text-[#9CA3AF] hover:text-white"
+                }`}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <line x1="4" y1="21" x2="4" y2="14" /><line x1="4" y1="10" x2="4" y2="3" />
+                  <line x1="12" y1="21" x2="12" y2="12" /><line x1="12" y1="8" x2="12" y2="3" />
+                  <line x1="20" y1="21" x2="20" y2="16" /><line x1="20" y1="12" x2="20" y2="3" />
+                  <line x1="1" y1="14" x2="7" y2="14" /><line x1="9" y1="8" x2="15" y2="8" /><line x1="17" y1="16" x2="23" y2="16" />
+                </svg>
+                Filtres avancés
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className={`transition-transform ${showAdvanced ? "rotate-180" : ""}`}>
+                  <path d="M6 9l6 6 6-6" />
+                </svg>
+              </button>
+
+              {hasActiveFilters(filters) && (
+                <button
+                  type="button"
+                  onClick={() => setFilters(EMPTY_FILTERS)}
+                  className="nx-filter-reset ml-1 flex items-center gap-1.5 text-[13px] font-bold text-[#E63946] transition-colors hover:text-[#D42B22]"
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                    <path d="M18 6L6 18" /><path d="M6 6l12 12" />
+                  </svg>
+                  Réinitialiser
+                </button>
+              )}
+            </div>
+
+            {/* Panneau avancé — replié par défaut */}
+            {showAdvanced && (
+              <div className="flex flex-wrap items-center gap-2.5 rounded-lg border border-[#2a2d36] bg-[#13151a] p-3">
+                <FilterSelect value={filters.region} active={!!filters.region} ariaLabel="Région" onChange={(v) => set("region", v)}>
+                  <option value="">Toutes les régions</option>
+                  {regions.map((r) => <option key={r} value={r}>{r}</option>)}
+                </FilterSelect>
+
+                <FilterSelect value={filters.orgType} active={!!filters.orgType} ariaLabel="Organisation" onChange={(v) => set("orgType", v)}>
+                  <option value="">Toutes les organisations</option>
+                  <option value="scolaire">Scolaire</option>
+                  <option value="ligue_civile">Ligue civile</option>
+                </FilterSelect>
+
+                <FilterSelect value={filters.minRating} active={!!filters.minRating} ariaLabel="Cote" onChange={(v) => set("minRating", v)}>
+                  <option value="">Toutes les cotes</option>
+                  <option value="1">★ 1+</option>
+                  <option value="2">★★ 2+</option>
+                  <option value="3">★★★ 3+</option>
+                  <option value="4">★★★★ 4+</option>
+                  <option value="5">★★★★★ 5</option>
+                </FilterSelect>
+
+                <FilterSelect value={filters.minGpa} active={!!filters.minGpa} ariaLabel="Moyenne" onChange={(v) => set("minGpa", v)}>
+                  <option value="">Toutes les moyennes</option>
+                  <option value="60">60 %+</option>
+                  <option value="70">70 %+</option>
+                  <option value="80">80 %+</option>
+                  <option value="85">85 %+</option>
+                  <option value="90">90 %+</option>
+                </FilterSelect>
+
+                <MultiFilterSelect
+                  values={filters.listIds}
+                  placeholder="Mes listes"
+                  renderLabel={(v) =>
+                    v.length === 1
+                      ? `Liste : ${lists.find((l) => l.id === v[0])?.name ?? "—"}`
+                      : `${v.length} listes`
+                  }
+                  onAdd={(v) => set("listIds", toggleIn(filters.listIds, v))}
+                  onClear={() => set("listIds", [])}
+                >
+                  {lists.map((l) => (
+                    <option key={l.id} value={l.id}>
+                      {filters.listIds.includes(l.id) ? `✓ ${l.name}` : l.name}
+                    </option>
+                  ))}
+                </MultiFilterSelect>
+
+                <FilterSelect value={filters.stage} active={!!filters.stage} ariaLabel="Statut pipeline" onChange={(v) => set("stage", v)}>
+                  <option value="">Statut : tous</option>
+                  {STAGES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+                </FilterSelect>
+
+                <div className="mx-1 h-6 w-px bg-[#2D3748]" />
+
+                <FilterChip on={filters.verifiedOnly} onClick={() => set("verifiedOnly", !filters.verifiedOnly)}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill={filters.verifiedOnly ? "#E63946" : "none"} stroke={filters.verifiedOnly ? "#E63946" : "#6b7280"} strokeWidth="2" strokeLinecap="round"><path d="M20 6L9 17l-5-5" /></svg>
+                  Vérifié
+                </FilterChip>
+                <FilterChip on={filters.withVideoOnly} onClick={() => set("withVideoOnly", !filters.withVideoOnly)}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={filters.withVideoOnly ? "#E63946" : "#6b7280"} strokeWidth="2" strokeLinecap="round"><polygon points="23 7 16 12 23 17 23 7" /><rect x="1" y="5" width="15" height="14" rx="2" /></svg>
+                  Avec vidéo
+                </FilterChip>
+              </div>
+            )}
           </div>
 
           {/* ── Contenu ── */}
@@ -683,7 +778,17 @@ function CalendrierContent() {
               </p>
             </div>
           ) : matches.length === 0 ? (
-            <EmptyBoard />
+            /* Deux vides distincts : aucun match RSEQ du tout (planche de la
+               réf) vs des matchs existent mais rien ne franchit le seuil ou
+               les filtres (message contextuel, actionnable). */
+            baseMatchCount > 0 ? (
+              <NoMatchForFilters
+                minTargets={filters.minTargets}
+                onReset={() => setFilters(EMPTY_FILTERS)}
+              />
+            ) : (
+              <EmptyBoard />
+            )
           ) : view === "list" ? (
             <div className="mt-[34px] flex flex-col gap-[34px]">
               {weeks.map((w) => (
@@ -749,9 +854,20 @@ function CalendrierContent() {
                       }`}
                     >
                       {c.day}
-                      {c.targetCount > 0 && (
-                        <span className="absolute bottom-2 left-[9px] inline-flex items-center rounded-full bg-[#E63946] px-[9px] py-0.5 text-[11.5px] font-bold text-white">
-                          {selected ? `${c.targetCount} cible${c.targetCount > 1 ? "s" : ""}` : c.targetCount}
+                      {/* Marqueur, pas compteur : point rouge si le jour porte
+                          au moins un match à cibles, ★ rouge s'il contient un
+                          « fort potentiel ». Le détail vit dans les cartes
+                          rendues sous la grille. */}
+                      {c.hasMatch && (
+                        <span
+                          className="absolute bottom-2 left-[11px] leading-none text-[#E63946]"
+                          aria-label={c.hasHot ? "Match à fort potentiel" : "Match à surveiller"}
+                        >
+                          {c.hasHot ? (
+                            <span className="text-[13px]">★</span>
+                          ) : (
+                            <span className="block h-[7px] w-[7px] rounded-full bg-[#E63946]" />
+                          )}
                         </span>
                       )}
                     </button>
@@ -775,20 +891,6 @@ function CalendrierContent() {
             </div>
           )}
 
-          {/* Filtres actifs mais plus aucune cible : on le dit, plutôt que
-              de laisser croire à un calendrier vide. */}
-          {!isLoading && matches.length === 0 && hasActiveFilters(filters) && (
-            <div className="mt-4 text-center text-[13.5px] text-[#5C6575]">
-              Aucun match ne correspond à ces filtres.{" "}
-              <button
-                type="button"
-                onClick={() => setFilters(EMPTY_FILTERS)}
-                className="font-semibold text-[#E63946]"
-              >
-                Réinitialiser
-              </button>
-            </div>
-          )}
         </>
       )}
     </div>
