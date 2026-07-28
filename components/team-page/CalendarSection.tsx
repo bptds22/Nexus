@@ -74,8 +74,13 @@ function EventCard({ e, today }: { e: TeamEvent; today: string }) {
     );
   }
 
-  // Match : tuile foncée (domicile) / claire (extérieur). Passé = atténué, sans score.
+  // Match : tuile foncée (domicile) / claire (extérieur). Passé = atténué. Le
+  // score n'apparaît QUE si la DB le fournit (match joué) — sinon la tuile est
+  // rendue exactement comme avant (fixtures, matchs à venir).
   const past = isPast(e, today);
+  const hasScore = e.scorePour != null && e.scoreContre != null;
+  const win = hasScore && e.scorePour! > e.scoreContre!;
+  const loss = hasScore && e.scorePour! < e.scoreContre!;
   return (
     <article className={`ev match ${e.domicile ? "home" : "away"}${past ? " past" : ""}`}>
       <div className="ev-date">
@@ -86,7 +91,13 @@ function EventCard({ e, today }: { e: TeamEvent; today: string }) {
         {e.domicile ? "vs " : "à "}
         {e.adversaire}
       </div>
-      <div className="ev-meta">{e.heure} · {e.lieu}</div>
+      {hasScore ? (
+        <div className={`ev-score${win ? " w" : loss ? " l" : ""}`}>
+          {e.scorePour}–{e.scoreContre}
+        </div>
+      ) : (
+        <div className="ev-meta">{e.heure} · {e.lieu}</div>
+      )}
     </article>
   );
 }

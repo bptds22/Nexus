@@ -8,11 +8,23 @@
 import type { SocialLink } from "@/components/marketing/SocialIcons";
 
 export type Level = "pri" | "hi" | "mid" | "full";
+// Libellés PUBLICS des 4 niveaux — alignés 1:1 sur l'éditeur « Page équipe »
+// (COMPLET / BESOIN MOYEN / BESOIN ÉLEVÉ / URGENT). `pri` disait « Priorité » :
+// le coach réglait « urgent » et l'athlète lisait autre chose.
 export const LEVEL_LABEL: Record<Level, string> = {
-  pri: "Priorité",
+  pri: "Urgent",
   hi: "Besoin élevé",
   mid: "Besoin moyen",
   full: "Complet",
+};
+
+/** Niveau SAISI dans l'éditeur (= team_position_needs.niveau en DB). */
+export type Niveau = "complet" | "moyen" | "eleve" | "urgent";
+export const NIVEAU_TO_LEVEL: Record<Niveau, Level> = {
+  complet: "full", moyen: "mid", eleve: "hi", urgent: "pri",
+};
+export const LEVEL_TO_NIVEAU: Record<Level, Niveau> = {
+  full: "complet", mid: "moyen", hi: "eleve", pri: "urgent",
 };
 
 /** Un joueur du roster (shape team_athletes JOIN athletes). */
@@ -22,8 +34,14 @@ export interface RosterPlayer {
   annee_fin: number | null;  // annee_diplomation ; null = exclu du calcul
 }
 
-/** Un groupe = une plaque terrain. `positions` = abréviations agrégées. */
+/** Un groupe = une plaque terrain. `positions` = abréviations agrégées.
+ *  `key` est l'identité STABLE du slot (= team_position_needs.slot_key) : le
+ *  `label` est renommable par le collège, il ne peut donc pas servir de clé, et
+ *  un index de tableau casserait tous les ancrages au moindre réordonnancement.
+ *  `acro` = initiales par défaut affichées SUR la plaque (l'éditeur les surcharge). */
 export interface GroupDef {
+  key: string;               // slug stable, unique par sport
+  acro: string;              // initiales par défaut (≤3)
   label: string;             // texte plaque (verbatim spec)
   positions: string[];       // abréviations public.positions
   left: number;
@@ -56,8 +74,11 @@ export interface ConnectedAthlete {
  *  → l'élément est absent (jamais un trou). */
 export interface StaffMember { nom: string; role: string; }
 export interface HeadCoach { nom: string; photoUrl: string | null; bio: string; }
-/** Fanion de palmarès (bannière plafond de gym). type → couleur. */
-export interface Pennant { titre: string; annee: number; type: "championnat" | "finale"; }
+/** Fanion de palmarès (bannière plafond de gym). Le TYPE pilote la COULEUR
+ *  (même forme fanion, 3 habits) : championnat = Principale · coupe =
+ *  Foncée/Claire · banniere = rectangle sombre liseré (« retirée au plafond »). */
+export type PennantType = "championnat" | "coupe" | "banniere";
+export interface Pennant { titre: string; annee: number; type: PennantType; }
 export interface TeamContent {
   // Alimente le slot `.lead` (l'accroche sous le titre, même style que la page
   // école). C'est le SEUL texte d'accroche réel dont l'équipe dispose : les
@@ -67,13 +88,16 @@ export interface TeamContent {
   presentationText: string;  // texte libre coach (modéré Bloc 2)
   championships: number;     // fanions gagnés
   staffSince: number;        // année de mise en place du staff
-  headCoach: HeadCoach;
+  // null = aucun entraîneur-chef au staff de l'équipe → le bloc coach est absent
+  // (PresentationSection le garde déjà). Jamais un nom vide affiché.
+  headCoach: HeadCoach | null;
   staff: StaffMember[];
   palmares: Pennant[];       // fanions suspendus ; [] → aucun (l'espace se resserre)
 }
 
-/** Événement calendrier (saisie coach / scraping Bloc 1). type → card / camp.
- *  Pas de score : le scraping ne les fournit pas ; passé = date révolue (atténué). */
+/** Événement calendrier. `match` = AUTO (public.games, RSEQ) · `camp` = MANUEL
+ *  (team_events, max 3 — mis en évidence). Les scores des matchs JOUÉS viennent
+ *  de games ; absents (fixture, match à venir) → la tuile est rendue comme avant. */
 export interface TeamEvent {
   type: "match" | "camp";
   date: string;               // ISO "YYYY-MM-DD" (comparaison lexicale, pas de fuseau)
@@ -81,6 +105,8 @@ export interface TeamEvent {
   domicile: boolean;
   heure: string;
   lieu: string;
+  scorePour?: number | null;   // score de CETTE équipe (match joué)
+  scoreContre?: number | null; // score de l'adversaire
 }
 
 /** Recrue engagée (section « Déjà engagées »). MOCK ; Bloc 2 = commits DB.
@@ -106,6 +132,10 @@ export interface TeamData {
   nom: string;
   nickname: string;
   schoolName: string;
+  // id du collège — les cibles sont au niveau ÉCOLE (arbitrage D-1) : cibler
+  // depuis une page équipe cible le cégep. Absent (fixtures) → le CTA reste
+  // décoratif, aucune écriture.
+  schoolId?: string | null;
   schoolInitial: string;       // monogramme (fallback si pas de crest)
   logoUrl?: string | null;     // crest école (PNG transparent) ; null → monogramme
   // ── Couleurs de l'équipe. La primaire éclaircie est STOCKÉE (pas dérivée) :
@@ -136,12 +166,36 @@ export interface TeamData {
   // centrage vertical leur coupe la tête). Bloc 2 : hero_image.focal_x/focal_y
   // → composer ici en `${focal_x}% ${focal_y}%`.
   heroFocal?: string | null;
+  // Zoom du cadrage hero, en POURCENT (100 = image non zoomée). L'agrandissement
+  // se fait autour du point focal — même réglage que l'éditeur. Absent → 100.
+  heroZoom?: number | null;
   // Contenu éditorial (section Présentation). null → section absente.
   content?: TeamContent | null;
   // Calendrier (section Calendrier). [] / absent → section absente.
   events?: TeamEvent[] | null;
   // Recrues engagées (section « Déjà engagées »). [] / absent → section absente.
   commits?: Commit[] | null;
+  // Sections masquées par le collège (team_page_content.hidden_sections) :
+  // 'camps' | 'presentation' | 'besoins' | 'engagees'. La page publique SAUTE la
+  // section — elle ne la grise pas. Absent → tout est visible (fixtures).
+  hiddenSections?: string[] | null;
+  // Besoins SAISIS par le collège (team_position_needs). null / [] → le moteur
+  // dérivé du roster reste seul maître (comportement historique, fixtures
+  // incluses). Une ligne existe → elle GAGNE sur le dérivé pour SON slot.
+  needs?: TeamNeed[] | null;
+}
+
+/** Un slot de besoin édité par le collège (1 ligne team_position_needs).
+ *  `slotKey` référence GroupDef.key — jamais un index, jamais le label. */
+export interface TeamNeed {
+  slotKey: string;
+  facette: string;
+  acronym: string;      // initiales sur la plaque (≤3)
+  label: string;        // nom du groupe (≤24)
+  positions: string[];  // abréviations public.positions — l'ancrage match parfait
+  niveau: Niveau;
+  pitch: string;        // message diffusé à l'athlète (≤80)
+  hidden: boolean;      // plaque retirée du terrain (banque de l'éditeur)
 }
 
 /* ── MAPPING GROUPES par sport (§6) — abréviations public.positions ────────── */
@@ -155,29 +209,29 @@ export const SPORT_CONFIGS = {
         // Slot map v2.3 : anchors exacts QUART 38/72 · PORTEURS 60/82 ; LIGNE OFF.
         // et RECEVEURS écartés pour zéro chevauchement.
         groups: [
-          { label: "LIGNE OFFENSIVE", positions: ["OL", "OT", "OG", "C"], left: 52, top: 56 },
-          { label: "QUART-ARRIÈRE", positions: ["QB"], left: 38, top: 72 },
-          { label: "PORTEURS", positions: ["RB", "FB"], left: 60, top: 82 },
-          { label: "RECEVEURS", positions: ["WR", "TE"], left: 15, top: 54 },
+          { key: "ol", acro: "OL", label: "LIGNE OFFENSIVE", positions: ["OL", "OT", "OG", "C"], left: 52, top: 56 },
+          { key: "qb", acro: "QB", label: "QUART-ARRIÈRE", positions: ["QB"], left: 38, top: 72 },
+          { key: "rb", acro: "RB", label: "PORTEURS", positions: ["RB", "FB"], left: 60, top: 82 },
+          { key: "wr", acro: "WR", label: "RECEVEURS", positions: ["WR", "TE"], left: 15, top: 54 },
         ],
       },
       {
         key: "defense", label: "Défense",
         groups: [
-          { label: "LIGNE DÉFENSIVE", positions: ["DL", "DE", "DT"], left: 54, top: 58 },
-          { label: "SECONDEURS", positions: ["LB", "ILB", "OLB"], left: 44, top: 40 },
-          { label: "DEMIS", positions: ["CB"], left: 18, top: 30 },
-          { label: "MARAUDEURS", positions: ["S", "FS", "SS"], left: 66, top: 18 },
+          { key: "dl", acro: "DL", label: "LIGNE DÉFENSIVE", positions: ["DL", "DE", "DT"], left: 54, top: 58 },
+          { key: "lb", acro: "LB", label: "SECONDEURS", positions: ["LB", "ILB", "OLB"], left: 44, top: 40 },
+          { key: "cb", acro: "DB", label: "DEMIS", positions: ["CB"], left: 18, top: 30 },
+          { key: "s", acro: "S", label: "MARAUDEURS", positions: ["S", "FS", "SS"], left: 66, top: 18 },
         ],
       },
       {
         key: "specialistes", label: "Spécialistes",
         // Pas dans la démo spec (2 facettes) — 3ᵉ facette imposée §6, coords écartées.
         groups: [
-          { label: "RETOURNEUR", positions: ["RET"], left: 50, top: 16 },
-          { label: "LONGUE REMISE", positions: ["LS"], left: 42, top: 60 },
-          { label: "BOTTEUR", positions: ["K"], left: 58, top: 72 },
-          { label: "BOTTEUR DÉG.", positions: ["P"], left: 46, top: 86 },
+          { key: "ret", acro: "RET", label: "RETOURNEUR", positions: ["RET"], left: 50, top: 16 },
+          { key: "ls", acro: "LS", label: "LONGUE REMISE", positions: ["LS"], left: 42, top: 60 },
+          { key: "k", acro: "K", label: "BOTTEUR", positions: ["K"], left: 58, top: 72 },
+          { key: "p", acro: "P", label: "BOTTEUR DÉG.", positions: ["P"], left: 46, top: 86 },
         ],
       },
     ],
@@ -189,19 +243,19 @@ export const SPORT_CONFIGS = {
       {
         key: "offense", label: "Offense",
         groups: [
-          { label: "CENTRE", positions: ["C"], left: 50, top: 48 },
-          { label: "QUART-ARRIÈRE", positions: ["QB"], left: 44, top: 64 },
-          { label: "PORTEUR", positions: ["RB"], left: 64, top: 76 },
-          { label: "RECEVEUR", positions: ["WR"], left: 20, top: 40 },
+          { key: "c", acro: "C", label: "CENTRE", positions: ["C"], left: 50, top: 48 },
+          { key: "qb", acro: "QB", label: "QUART-ARRIÈRE", positions: ["QB"], left: 44, top: 64 },
+          { key: "rb", acro: "RB", label: "PORTEUR", positions: ["RB"], left: 64, top: 76 },
+          { key: "wr", acro: "WR", label: "RECEVEUR", positions: ["WR"], left: 20, top: 40 },
         ],
       },
       {
         key: "defense", label: "Défense",
         groups: [
-          { label: "CHASSEUR", positions: ["RU"], left: 50, top: 44 },
-          { label: "SECONDEUR", positions: ["LB"], left: 38, top: 58 },
-          { label: "DEMI DÉF.", positions: ["DB"], left: 28, top: 30 },
-          { label: "MARAUDEUR", positions: ["S"], left: 72, top: 30 },
+          { key: "ru", acro: "RU", label: "CHASSEUR", positions: ["RU"], left: 50, top: 44 },
+          { key: "lb", acro: "LB", label: "SECONDEUR", positions: ["LB"], left: 38, top: 58 },
+          { key: "db", acro: "DB", label: "DEMI DÉF.", positions: ["DB"], left: 28, top: 30 },
+          { key: "s", acro: "S", label: "MARAUDEUR", positions: ["S"], left: 72, top: 30 },
         ],
       },
     ],
@@ -214,11 +268,11 @@ export const SPORT_CONFIGS = {
       {
         key: "main", label: "",
         groups: [
-          { label: "MENEUR", positions: ["PG"], left: 50, top: 26 },
-          { label: "ARRIÈRE", positions: ["SG"], left: 26, top: 38 },
-          { label: "AILIER", positions: ["SF"], left: 74, top: 38 },
-          { label: "AILIER FORT", positions: ["PF"], left: 36, top: 64 },
-          { label: "PIVOT", positions: ["C"], left: 56, top: 70 },
+          { key: "pg", acro: "PG", label: "MENEUR", positions: ["PG"], left: 50, top: 26 },
+          { key: "sg", acro: "SG", label: "ARRIÈRE", positions: ["SG"], left: 26, top: 38 },
+          { key: "sf", acro: "SF", label: "AILIER", positions: ["SF"], left: 74, top: 38 },
+          { key: "pf", acro: "PF", label: "AILIER FORT", positions: ["PF"], left: 36, top: 64 },
+          { key: "c", acro: "C", label: "PIVOT", positions: ["C"], left: 56, top: 70 },
         ],
       },
     ],
@@ -230,12 +284,12 @@ export const SPORT_CONFIGS = {
       {
         key: "main", label: "",
         groups: [
-          { label: "CENTRE", positions: ["C"], left: 50, top: 28 },
-          { label: "AILIER G", positions: ["LW"], left: 22, top: 32 },
-          { label: "AILIER D", positions: ["RW"], left: 78, top: 32 },
-          { label: "DÉFENSEUR G", positions: ["LD"], left: 34, top: 58 },
-          { label: "DÉFENSEUR D", positions: ["RD"], left: 66, top: 58 },
-          { label: "GARDIEN", positions: ["G"], left: 50, top: 84 },
+          { key: "c", acro: "C", label: "CENTRE", positions: ["C"], left: 50, top: 28 },
+          { key: "lw", acro: "AG", label: "AILIER G", positions: ["LW"], left: 22, top: 32 },
+          { key: "rw", acro: "AD", label: "AILIER D", positions: ["RW"], left: 78, top: 32 },
+          { key: "ld", acro: "DG", label: "DÉFENSEUR G", positions: ["LD"], left: 34, top: 58 },
+          { key: "rd", acro: "DD", label: "DÉFENSEUR D", positions: ["RD"], left: 66, top: 58 },
+          { key: "g", acro: "G", label: "GARDIEN", positions: ["G"], left: 50, top: 84 },
         ],
       },
     ],
@@ -247,15 +301,15 @@ export const SPORT_CONFIGS = {
       {
         key: "main", label: "",
         groups: [
-          { label: "CHAMP CENTRE", positions: ["CF"], left: 50, top: 16 },
-          { label: "CHAMP G", positions: ["LF"], left: 22, top: 26 },
-          { label: "CHAMP D", positions: ["RF"], left: 78, top: 26 },
-          { label: "ARRÊT-COURT", positions: ["SS"], left: 38, top: 40 },
-          { label: "2E BUT", positions: ["2B"], left: 62, top: 40 },
-          { label: "3E BUT", positions: ["3B"], left: 26, top: 56 },
-          { label: "1ER BUT", positions: ["1B"], left: 74, top: 56 },
-          { label: "LANCEUR", positions: ["P"], left: 50, top: 62 },
-          { label: "RECEVEUR", positions: ["C"], left: 50, top: 88 },
+          { key: "cf", acro: "CF", label: "CHAMP CENTRE", positions: ["CF"], left: 50, top: 16 },
+          { key: "lf", acro: "LF", label: "CHAMP G", positions: ["LF"], left: 22, top: 26 },
+          { key: "rf", acro: "RF", label: "CHAMP D", positions: ["RF"], left: 78, top: 26 },
+          { key: "ss", acro: "SS", label: "ARRÊT-COURT", positions: ["SS"], left: 38, top: 40 },
+          { key: "2b", acro: "2B", label: "2E BUT", positions: ["2B"], left: 62, top: 40 },
+          { key: "3b", acro: "3B", label: "3E BUT", positions: ["3B"], left: 26, top: 56 },
+          { key: "1b", acro: "1B", label: "1ER BUT", positions: ["1B"], left: 74, top: 56 },
+          { key: "p", acro: "P", label: "LANCEUR", positions: ["P"], left: 50, top: 62 },
+          { key: "c", acro: "C", label: "RECEVEUR", positions: ["C"], left: 50, top: 88 },
         ],
       },
     ],
@@ -270,10 +324,10 @@ export const SPORT_CONFIGS = {
       {
         key: "main", label: "",
         groups: [
-          { label: "ATTAQUANTS", positions: ["RW", "LW", "CF", "ST"], left: 50, top: 22 },
-          { label: "MILIEUX", positions: ["CDM", "CM", "RM", "LM", "CAM"], left: 50, top: 46 },
-          { label: "DÉFENSEURS", positions: ["CB", "RB", "LB", "RWB", "LWB"], left: 50, top: 68 },
-          { label: "GARDIEN", positions: ["GK"], left: 50, top: 87 },
+          { key: "att", acro: "ATT", label: "ATTAQUANTS", positions: ["RW", "LW", "CF", "ST"], left: 50, top: 22 },
+          { key: "mil", acro: "MIL", label: "MILIEUX", positions: ["CDM", "CM", "RM", "LM", "CAM"], left: 50, top: 46 },
+          { key: "def", acro: "DEF", label: "DÉFENSEURS", positions: ["CB", "RB", "LB", "RWB", "LWB"], left: 50, top: 68 },
+          { key: "gk", acro: "GK", label: "GARDIEN", positions: ["GK"], left: 50, top: 87 },
         ],
       },
     ],
@@ -288,11 +342,11 @@ export const SPORT_CONFIGS = {
       {
         key: "main", label: "",
         groups: [
-          { label: "CENTRAL", positions: ["MB"], left: 50, top: 28 },
-          { label: "AILIER", positions: ["OH"], left: 24, top: 34 },
-          { label: "POINTU", positions: ["OPP"], left: 76, top: 34 },
-          { label: "PASSEUR", positions: ["P"], left: 62, top: 60 },
-          { label: "LIBÉRO", positions: ["L", "DS"], left: 36, top: 66 },
+          { key: "mb", acro: "MB", label: "CENTRAL", positions: ["MB"], left: 50, top: 28 },
+          { key: "oh", acro: "OH", label: "AILIER", positions: ["OH"], left: 24, top: 34 },
+          { key: "opp", acro: "OPP", label: "POINTU", positions: ["OPP"], left: 76, top: 34 },
+          { key: "set", acro: "P", label: "PASSEUR", positions: ["P"], left: 62, top: 60 },
+          { key: "lib", acro: "L", label: "LIBÉRO", positions: ["L", "DS"], left: 36, top: 66 },
         ],
       },
     ],
@@ -304,7 +358,7 @@ export const SPORT_CONFIGS = {
 const levelOf = (departures: number): Level =>
   departures === 0 ? "full" : departures === 1 ? "mid" : departures === 2 ? "hi" : "pri";
 
-export interface Plaque { label: string; left: number; top: number; level: Level; levelLabel: string; }
+export interface Plaque { acro: string; label: string; left: number; top: number; level: Level; levelLabel: string; }
 export interface NeedCard { label: string; level: Level; places: number; depText: string; }
 
 /** Besoins d'une facette : plaques (toutes) + cards (besoin>0). */
@@ -320,7 +374,7 @@ export function deriveFacette(
     const effectif = inGroup.length;
     const departures = inGroup.filter((p) => p.annee_fin === season).length;
     const level = levelOf(departures);
-    plaques.push({ label: g.label, left: g.left, top: g.top, level, levelLabel: LEVEL_LABEL[level] });
+    plaques.push({ acro: g.acro, label: g.label, left: g.left, top: g.top, level, levelLabel: LEVEL_LABEL[level] });
     if (departures > 0) {
       cards.push({
         label: g.label, level, places: departures,
@@ -328,6 +382,44 @@ export function deriveFacette(
       });
     }
   }
+  return { plaques, cards };
+}
+
+/** Index des besoins saisis, par slot_key (vide = aucun besoin édité). */
+export function needsBySlot(team: TeamData): Map<string, TeamNeed> {
+  return new Map((team.needs ?? []).map((n) => [n.slotKey, n]));
+}
+
+/** Besoins d'une facette, ÉDITEUR PRIORITAIRE.
+ *  - aucune ligne saisie pour l'équipe → strictement `deriveFacette` (le
+ *    comportement historique, fixtures comprises : rien ne bouge) ;
+ *  - une ligne existe pour un slot → elle gagne (initiales, nom, niveau) ;
+ *  - `hidden` → la plaque disparaît du terrain (banque côté éditeur). */
+export function resolveFacette(
+  team: TeamData,
+  groups: readonly GroupDef[],
+  season: number,
+): { plaques: Plaque[]; cards: NeedCard[] } {
+  const manual = needsBySlot(team);
+  const base = deriveFacette(team.roster, groups, season);
+  if (manual.size === 0) return base;
+
+  const plaques: Plaque[] = [];
+  const cards: NeedCard[] = [];
+  groups.forEach((g, i) => {
+    const n = manual.get(g.key);
+    if (n?.hidden) return;
+    const p = base.plaques[i];
+    const level = n ? NIVEAU_TO_LEVEL[n.niveau] : p.level;
+    plaques.push({
+      acro: (n?.acronym || g.acro),
+      label: (n?.label || g.label),
+      left: g.left, top: g.top,
+      level, levelLabel: LEVEL_LABEL[level],
+    });
+    const c = base.cards.find((x) => x.label === g.label);
+    if (c) cards.push({ ...c, label: n?.label || c.label, level });
+  });
   return { plaques, cards };
 }
 
@@ -384,13 +476,44 @@ export function positionMatch(
  *  - `null`   → pas d'athlète connecté / autre sport → box absente
  */
 export type MatchState =
-  | { kind: "match"; posLabel: string; posLabelPlural: string; departures: number; effectif: number }
+  | {
+      kind: "match"; posLabel: string; posLabelPlural: string; departures: number; effectif: number;
+      /** Message du collège (besoin saisi) — remplace la phrase dérivée. */
+      pitch?: string;
+      /** Niveau saisi → intensité visuelle du bandeau. Absent = chemin dérivé. */
+      level?: Level;
+    }
   | { kind: "none" }
   | null;
+
+/** Match parfait SAISI : une plaque visible, de niveau ≥ MOYEN, dont l'ancrage
+ *  contient le poste de l'athlète (principal d'abord, puis secondaire). C'est le
+ *  contrat éditeur — le pitch du collège est le message diffusé. */
+function manualMatch(team: TeamData, season: number): MatchState | null {
+  const needs = (team.needs ?? []).filter((n) => !n.hidden && n.niveau !== "complet");
+  if (needs.length === 0) return null;
+  const v = team.viewer!;
+  const find = (code: string) => needs.find((n) => n.positions.includes(code));
+  const n = find(v.pos) ?? (v.pos2 ? find(v.pos2) : undefined);
+  if (!n) return null;
+  const players = team.roster.filter((p) => n.positions.includes(p.pos) && p.annee_fin != null);
+  return {
+    kind: "match",
+    posLabel: v.posLabel, posLabelPlural: v.posLabelPlural,
+    departures: players.filter((p) => p.annee_fin === season).length,
+    effectif: players.length,
+    pitch: n.pitch || undefined,
+    level: NIVEAU_TO_LEVEL[n.niveau],
+  };
+}
 
 export function matchState(team: TeamData, season: number): MatchState {
   const v = team.viewer;
   if (!v || v.sport !== team.sportNom) return null; // non connecté / autre sport
+  // Besoins saisis prioritaires ; sinon moteur dérivé du roster (inchangé).
+  const manual = manualMatch(team, season);
+  if (manual) return manual;
+  if ((team.needs ?? []).length > 0) return { kind: "none" }; // édité, mais pas à ce poste
   const m = positionMatch(team, season);
   return m ? { kind: "match", ...m } : { kind: "none" };
 }

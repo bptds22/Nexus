@@ -30,7 +30,10 @@ export function useSchoolTargets(schoolId: string, initialFollowers: number): Sc
   React.useEffect(() => { setFollowers(initialFollowers); }, [initialFollowers]);
 
   // Résout l'athlète connecté + son état de ciblage pour ce collège.
+  // schoolId vide = appelant sans collège résolu (page équipe en mode fixture) :
+  // on ne résout rien et le toggle est inerte — aucune requête, aucune écriture.
   React.useEffect(() => {
+    if (!schoolId) return;
     let cancelled = false;
     (async () => {
       const supabase = createClient();
@@ -48,7 +51,7 @@ export function useSchoolTargets(schoolId: string, initialFollowers: number): Sc
   }, [schoolId]);
 
   const toggle = React.useCallback(async () => {
-    if (!athleteId || busy) return;
+    if (!schoolId || !athleteId || busy) return;
     setBusy(true);
     const next = !inTargets;
     setInTargets(next);

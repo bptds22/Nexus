@@ -1,0 +1,599 @@
+<!doctype html>
+<html lang="fr-CA">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=1280">
+<title>Nexus — Éditeur « Page équipe » (mock) · recruteur/directeur CÉGEP</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Anton&family=Bebas+Neue&display=swap" rel="stylesheet">
+<style>
+:root{--red:#A6192E;--redD:#5A0E1B;--redL:#E8C7CD;--bg:#111317;--card:#1A1D24;--card2:#20242D;--in:#171A20;--line:#2A2F3A;--txt:#EDEFF3;--mut:#8A909C;--nexus:#E63946;--ok:#22C55E;--warn:#F59E0B}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font-family:'Outfit';padding-bottom:80px}
+.wrap{width:min(1240px,100%);margin:0 auto;padding:0 16px}
+.topbar{position:sticky;top:0;z-index:50;background:rgba(17,19,23,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.tb{width:min(1240px,100%);margin:0 auto;padding:12px 16px;display:flex;align-items:center;gap:14px}
+.tb .back{font-size:13px;font-weight:700;color:var(--mut);text-decoration:none;cursor:pointer}
+.tb .back:hover{color:var(--txt)}
+.tb .kick{font-family:'Bebas Neue';letter-spacing:.22em;font-size:12px;color:var(--mut)}
+.tb h1{font-size:16px;font-weight:800}
+.teamchip{font-family:'Bebas Neue';letter-spacing:.12em;font-size:12px;color:#fff;background:var(--red);padding:4px 12px;border-radius:99px}
+.status{font-family:'Bebas Neue';letter-spacing:.14em;font-size:11px;color:var(--warn);border:1px solid var(--warn);padding:3px 10px;border-radius:99px}
+.tb .sp{flex:1}
+.btn{font-family:'Outfit';font-weight:700;font-size:13px;border-radius:10px;padding:10px 18px;cursor:pointer;transition:.15s}
+.btn.ghost{background:none;border:1.5px solid var(--line);color:var(--txt)}
+.btn.ghost:hover{border-color:#3A404D}
+.btn.prim{background:var(--nexus);border:1.5px solid var(--nexus);color:#fff}
+.head{padding:26px 0 6px}
+.cap{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#6a6f78;font-weight:700;margin-bottom:10px}
+.sub{color:var(--mut);font-size:13px;margin:4px 0 0;max-width:780px}
+.sub b{color:#B9BFC9}
+.sec{margin-top:34px}
+.sech{display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+.sech .num{font-family:'Anton';font-size:26px;color:#2E333E}
+.sech h2{font-family:'Anton';font-size:20px;letter-spacing:.02em;text-transform:uppercase}
+.tag{font-family:'Bebas Neue';letter-spacing:.14em;font-size:11px;padding:3px 10px;border-radius:99px}
+.tag.man{color:var(--nexus);border:1px solid var(--nexus)}
+.tag.auto{color:var(--ok);border:1px solid var(--ok)}
+.tag.plat{color:#3B82F6;border:1px solid #3B82F6}
+/* toggle visibilité (pattern round 3) */
+.vis{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--mut);cursor:pointer;user-select:none}
+.sw{width:36px;height:20px;border-radius:99px;background:#2E333E;position:relative;transition:.15s}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#8A909C;transition:.15s}
+.vis.on .sw{background:var(--ok)}
+.vis.on .sw::after{left:18px;background:#fff}
+.vis.on{color:var(--txt)}
+.masked{border:1.5px dashed var(--line);border-radius:16px;padding:22px;color:#5A616D;font-size:13px;display:none;align-items:center;gap:12px}
+.masked button{background:none;border:1.5px solid var(--ok);color:var(--ok);border-radius:9px;padding:7px 14px;font-family:'Outfit';font-weight:700;font-size:12px;cursor:pointer}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px}
+.pt{font-family:'Bebas Neue';letter-spacing:.2em;font-size:13px;color:var(--mut);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.pt .n{background:var(--nexus);color:#fff;font-family:'Outfit';font-weight:800;font-size:11px;width:20px;height:20px;border-radius:6px;display:inline-flex;align-items:center;justify-content:center}
+.note{font-size:11.5px;color:var(--mut);margin-top:10px}
+.note b{color:#B9BFC9}
+.mod{font-size:11px;color:var(--warn);margin-top:8px}
+label.fl{display:block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);font-weight:700;margin:14px 0 6px}
+label.fl:first-of-type{margin-top:2px}
+.row2 label.fl,.row3 label.fl{margin-top:14px;min-height:13px}
+.ti{width:100%;background:var(--in);border:1.5px solid var(--line);border-radius:9px;padding:10px 12px;font-family:'Outfit';font-size:12.5px;color:var(--txt);outline:none}
+.ti:focus{border-color:var(--nexus)}
+textarea.ti{resize:vertical;min-height:84px}
+.cnt{font-size:10.5px;color:var(--mut);text-align:right;margin-top:3px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+select.ti{appearance:none}
+.auto{display:flex;gap:8px;flex-wrap:wrap}
+.achip{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:#B9BFC9;background:var(--card2);border:1px solid var(--line);padding:7px 12px;border-radius:99px}
+.achip b{color:#6EE7A0;margin-right:5px}
+.hint{display:inline-flex;align-items:center;gap:8px;font-size:11.5px;color:#B9BFC9;background:#16221B;border:1px solid #1E4230;border-radius:9px;padding:7px 11px;margin-top:8px;cursor:pointer}
+.hint b{color:var(--ok)}
+.hint:hover{border-color:var(--ok)}
+.drop{border:1.5px dashed #3A404D;border-radius:11px;padding:16px;text-align:center;color:#5A616D;font-size:12px;cursor:pointer}
+.drop:hover{border-color:var(--nexus);color:var(--mut)}
+.drop b{display:block;color:#8A909C;font-size:12.5px;margin-bottom:3px}
+.focal{display:grid;grid-template-columns:repeat(3,34px);gap:5px;margin-top:8px}
+.focal div{width:34px;height:24px;border-radius:6px;background:var(--card2);border:1.5px solid var(--line);cursor:pointer}
+.focal div.on{border-color:var(--nexus);background:#241A1E}
+.nrow{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;margin-bottom:8px}
+.xbtn{border:1.5px solid var(--line);background:none;color:#5A616D;border-radius:9px;width:38px;cursor:pointer;font-size:15px}
+.xbtn:hover{color:var(--nexus);border-color:var(--nexus)}
+.addbtn{margin-top:4px;background:none;border:1.5px dashed var(--line);color:var(--mut);font-family:'Outfit';font-weight:700;font-size:12.5px;border-radius:10px;padding:9px 14px;cursor:pointer;width:100%}
+.addbtn:hover{border-color:var(--nexus);color:var(--txt)}
+.pv{position:sticky;top:74px;align-self:start}
+.pvhead{font-family:'Bebas Neue';letter-spacing:.24em;font-size:12px;color:var(--mut);margin-bottom:12px}
+.facts{display:flex;flex-direction:column;gap:12px}
+.fact{background:#1A1D24;border:1.5px solid #262A33;border-radius:12px;padding:15px 16px}
+.fact b{font-weight:700;font-size:14.5px;color:#EDEFF3;display:block}
+.fact span{font-size:12.5px;color:#8A909C}
+.empty{border:1.5px dashed var(--line);border-radius:12px;padding:18px;text-align:center;font-size:12px;color:#5A616D}
+/* focal drag */
+.crop{position:relative;height:150px;border-radius:11px;overflow:hidden;border:1.5px solid var(--line);margin-top:10px;background:linear-gradient(135deg,#3A2226 0%,#1A1D24 40%,#232A38 70%,#14171D 100%);cursor:grab}
+.crop .grid9{position:absolute;inset:0;background:
+ linear-gradient(#ffffff14 1px,transparent 1px) 0 0/100% 33.4%,
+ linear-gradient(90deg,#ffffff14 1px,transparent 1px) 0 0/33.4% 100%}
+.crop .dot{position:absolute;width:26px;height:26px;border-radius:50%;border:3px solid var(--nexus);background:#E6394633;transform:translate(-50%,-50%);cursor:grab}
+.zoomrow{display:flex;align-items:center;gap:10px;margin-top:10px;font-size:11.5px;color:var(--mut)}
+.zoomrow input[type=range]{flex:1;accent-color:var(--nexus)}
+/* fanions variants */
+.fanion.coupe{background:var(--redD);color:var(--redL);filter:drop-shadow(0 0 0.5px var(--redL))}
+.fanion.banniere{background:#14171D;border:1.5px solid var(--red);color:#EDEFF3;clip-path:none;border-radius:6px;padding:12px 10px}
+/* besoins builder */
+.pillrow{border:1px solid var(--line);border-radius:11px;padding:12px;margin-bottom:10px}
+.pillrow .l1{display:grid;grid-template-columns:64px 1.1fr auto auto;gap:8px;align-items:center}
+.pillrow .acro{text-align:center;font-family:'Anton';text-transform:uppercase}
+.crit{display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;color:var(--mut);cursor:pointer;user-select:none;white-space:nowrap}
+.crit input{accent-color:var(--nexus)}
+.poswrap{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.poschip{font-size:11px;font-weight:600;color:#B9BFC9;background:var(--card2);border:1.5px solid var(--line);padding:4px 10px;border-radius:99px;cursor:pointer;user-select:none}
+.poschip.on{border-color:var(--nexus);color:#fff;background:#241A1E}
+.bank{margin-top:12px;border:1.5px dashed var(--line);border-radius:11px;padding:12px;font-size:12px;color:#5A616D}
+.bank .rest{display:inline-flex;align-items:center;gap:6px;margin:4px 8px 0 0;border:1px solid var(--line);border-radius:99px;padding:4px 11px;cursor:pointer;color:#8A909C;font-weight:600;font-size:11.5px}
+.bank .rest:hover{border-color:var(--ok);color:var(--ok)}
+.ftabs{display:flex;gap:8px;margin-bottom:12px}
+.ftab{font-family:'Bebas Neue';letter-spacing:.14em;font-size:12px;padding:6px 16px;border-radius:99px;border:1.5px solid var(--line);color:var(--mut);cursor:pointer;user-select:none}
+.ftab.on{border-color:var(--nexus);color:#fff;background:#241A1E}
+.prow{border:1px solid var(--line);border-radius:11px;margin-bottom:8px;overflow:hidden}
+.prow .sum{display:flex;align-items:center;gap:12px;padding:11px 13px;cursor:pointer;user-select:none}
+.prow .sum:hover{background:#1E222B}
+.prow .sum .a{font-family:'Anton';font-size:17px;color:var(--red);min-width:38px;text-align:center}
+.prow .sum b{font-size:13px;flex:1}
+.lvlb{font-family:'Bebas Neue';letter-spacing:.1em;font-size:10.5px;padding:3px 10px;border-radius:99px;border:1px solid var(--line);color:var(--mut)}
+.lvlb.l1{color:var(--ok);border-color:var(--ok)}
+.lvlb.l2{color:var(--warn);border-color:var(--warn)}
+.lvlb.l3{color:var(--nexus);border-color:var(--nexus)}
+.prow .chev{color:#5A616D;font-size:12px}
+.prow .body{display:none;padding:0 13px 13px;border-top:1px solid var(--line)}
+.prow.open .body{display:block}
+.lvlseg{display:flex;gap:6px;margin-top:6px}
+.lvlseg span{flex:1;text-align:center;font-size:11.5px;font-weight:700;padding:8px 4px;border:1.5px solid var(--line);border-radius:9px;color:var(--mut);cursor:pointer;user-select:none}
+.lvlseg span.on{border-color:var(--nexus);color:#fff;background:#241A1E}
+.helper{font-size:11px;color:#8A909C;margin-top:6px;line-height:1.5}
+.helper b{color:#B9BFC9}
+.posrow{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;align-items:center}
+.posadd{position:relative}
+.posadd>button{background:none;border:1.5px dashed var(--line);color:var(--mut);font-family:'Outfit';font-weight:700;font-size:11.5px;border-radius:99px;padding:5px 12px;cursor:pointer}
+.posadd>button:hover{border-color:var(--nexus);color:#fff}
+.posmenu{position:absolute;top:110%;left:0;z-index:20;background:#20242D;border:1px solid var(--line);border-radius:11px;padding:6px;min-width:190px;max-height:240px;overflow-y:auto;overscroll-behavior:contain;display:none;box-shadow:0 10px 30px #0008}
+.posmenu::-webkit-scrollbar{width:8px}
+.posmenu::-webkit-scrollbar-thumb{background:#3A404D;border-radius:99px}
+.posmenu.open{display:block}
+.posmenu div{padding:8px 11px;border-radius:8px;font-size:12px;font-weight:600;color:#B9BFC9;cursor:pointer}
+.posmenu div:hover{background:#241A1E;color:#fff}
+.poschip .rm{margin-left:6px;color:#5A616D;font-weight:800}
+.poschip:hover .rm{color:var(--nexus)}
+/* terrain preview */
+.terrain{border-radius:14px;border:1px solid var(--line);padding:16px 12px;background:#131B15 repeating-linear-gradient(90deg,transparent 0 44px,#ffffff0d 44px 46px);display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
+.plq{position:relative;width:104px;background:#1A1D24EE;border:2px solid #2E333E;border-radius:13px;text-align:center;padding:12px 6px 10px}
+.plq .a{font-family:'Anton';font-size:26px;line-height:1;color:var(--red)}
+.plq .n{font-family:'Bebas Neue';letter-spacing:.1em;font-size:10px;color:#B9BFC9;margin-top:5px}
+.plq.crit{border-color:var(--nexus);box-shadow:0 0 14px #E6394633}
+.plq .fl2{position:absolute;top:-9px;right:-7px;font-size:14px}
+.mpcard{margin-top:12px;background:#241A1E;border:1.5px solid var(--nexus);border-radius:12px;padding:12px 14px}
+.mpcard .k{font-family:'Bebas Neue';letter-spacing:.18em;font-size:11px;color:var(--nexus)}
+.mpcard b{display:block;font-size:13px;margin-top:4px}
+.mpcard span{font-size:11.5px;color:#8A909C}
+/* besoins preview */
+.bpill{background:#1A1D24;border:1.5px solid #262A33;border-radius:12px;padding:12px 14px;display:flex;gap:12px;align-items:flex-start}
+.bpill .a{font-family:'Anton';font-size:22px;color:var(--red);min-width:44px}
+.bpill b{font-size:13px;display:block}
+.bpill span{font-size:11.5px;color:#8A909C;display:block;margin-top:2px}
+.bpill .flame{margin-left:auto;font-size:14px}
+.bpill.crit{border-color:var(--red)}
+/* engagées cards */
+.recruit{display:flex;align-items:center;gap:12px;background:#1A1D24;border:1.5px solid #262A33;border-radius:12px;padding:11px 13px}
+.recruit .av{width:34px;height:34px;border-radius:50%;background:var(--red);display:flex;align-items:center;justify-content:center;font-family:'Anton';font-size:13px;color:#fff}
+.recruit b{font-size:13px;display:block}
+.recruit span{font-size:11px;color:#8A909C}
+.recruit .stars{margin-left:auto;color:#F59E0B;font-size:12px;letter-spacing:1px}
+/* hero preview */
+.heropv{border-radius:14px;overflow:hidden;border:1px solid var(--line)}
+.heropv .img{height:130px;background:linear-gradient(160deg,#2A1518,#14171D);display:flex;align-items:flex-end;padding:12px;position:relative}
+.heropv .img .ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#3B414D;font-size:12px}
+.heropv .name{font-family:'Anton';font-size:24px;letter-spacing:.02em;color:#fff;text-transform:uppercase;position:relative}
+.heropv .strip{display:flex;gap:8px;padding:12px;background:#14171D;flex-wrap:wrap}
+.rchip{font-family:'Bebas Neue';letter-spacing:.12em;font-size:12px;padding:4px 11px;border-radius:99px;border:1px solid var(--line);color:#B9BFC9}
+.rchip.hot{background:var(--red);border-color:var(--red);color:#fff}
+/* cal preview */
+.calrow{display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--line);padding:10px 4px;font-size:12.5px}
+.calrow:last-child{border-bottom:0}
+.calrow .d{font-family:'Bebas Neue';letter-spacing:.1em;color:var(--mut);width:64px}
+.calrow .vs{flex:1;font-weight:600}
+.calrow .sc{font-family:'Anton';font-size:15px}
+.calrow .sc.w{color:var(--ok)}
+.calrow .sc.l{color:var(--nexus)}
+.aff{opacity:.55;pointer-events:none}
+/* fanions preview */
+.fanions{display:flex;gap:8px;flex-wrap:wrap}
+.fanion{background:var(--red);color:#fff;clip-path:polygon(0 0,100% 0,100% 72%,50% 100%,0 72%);padding:12px 10px 20px;text-align:center;width:96px}
+.fanion .y{font-family:'Anton';font-size:17px}
+.fanion .t{font-family:'Bebas Neue';letter-spacing:.08em;font-size:9.5px;margin-top:2px;opacity:.9}
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:#20242D;border:1px solid var(--line);color:var(--txt);font-size:13px;font-weight:600;padding:12px 20px;border-radius:12px;opacity:0;transition:.25s;pointer-events:none;z-index:99}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<div class="topbar"><div class="tb">
+  <span class="back" onclick="toast('Route vers Mes équipes')">← Mes équipes</span>
+  <span class="kick">PAGE ÉQUIPE</span>
+  <h1>Collège André-Grasset</h1>
+  <span class="teamchip">FOOTBALL · D1 · M</span>
+  <span class="status" id="status">BROUILLON</span>
+  <span class="sp"></span>
+  <button class="btn ghost" onclick="toast('Aperçu = la page équipe publique, version ENREGISTRÉE')">👁 Aperçu</button>
+  <button class="btn prim" onclick="saveMock()">Enregistrer</button>
+</div></div>
+
+<div class="wrap">
+<div class="head">
+  <div class="cap">MOCK — ÉDITEUR « PAGE ÉQUIPE » · desktop · une page d'édition PAR équipe (accédée depuis Mes équipes) · recruteurs + directeurs du collège</div>
+  <div class="sub">Même logique que « Ma page » : tu édites le <b style="color:var(--nexus)">MANUEL</b>, le reste est <b style="color:var(--ok)">AUTO</b> (équipes, calendrier RSEQ) ou <b style="color:#3B82F6">PLATEFORME</b>. L'aperçu montre la version <b>enregistrée</b>.</div>
+</div>
+
+<!-- S1 — HÉRITÉ DE L'ÉCOLE -->
+<section class="sec">
+  <div class="sech"><span class="num">1</span><h2>Identité — héritée de l'école</h2><span class="tag auto">AUTO</span></div>
+  <div class="cols">
+    <div class="panel aff" style="opacity:1">
+      <div class="pt">UNE IDENTITÉ, TOUTES TES ÉQUIPES</div>
+      <div class="auto">
+        <span class="achip"><b>✓</b>Logo école</span>
+        <span class="achip"><b>✓</b>Surnom : PHÉNIX</span>
+        <span class="achip"><b>✓</b>Couleurs (3) + accent dérivé</span>
+        <span class="achip"><b>✓</b>Nom équipe · division · genre (Mes équipes)</span>
+        <span class="achip"><b>✓</b>Entraîneur-chef (staff de l'équipe)</span>
+      </div>
+      <a style="font-size:12.5px;font-weight:700;color:var(--ok);margin-top:12px;display:inline-block;cursor:pointer" onclick="toast('Route vers l\'éditeur Ma page')">Modifier l'identité dans « Ma page » →</a>
+      <div class="note">La 4e teinte (accent clair) est <b>calculée</b> depuis la Principale — rien à configurer.</div>
+    </div>
+    <div class="pv"><div class="panel">
+      <div class="pvhead">POURQUOI</div>
+      <div class="empty">Une école = une marque. Toutes les pages équipes partagent le mur, le logo et les couleurs — zéro config en double, impossible d'être incohérent.</div>
+    </div></div>
+  </div>
+</section>
+
+<!-- S2 — HERO -->
+<section class="sec">
+  <div class="sech"><span class="num">2</span><h2>Hero de l'équipe</h2><span class="tag man">MANUEL</span></div>
+  <div class="cols">
+    <div>
+      <div class="panel" style="margin-bottom:14px">
+        <div class="pt"><span class="n">1</span>PHOTO HERO + CADRAGE</div>
+        <div class="drop" onclick="toast('Upload photo (câblage)')"><b>Photo de l'équipe / action</b>Large · JPG/PNG · AUCUN mineur identifiable sans consentement (Loi 25)</div>
+        <label class="fl">Cadrage — glisse le point sur le sujet, ajuste le zoom</label>
+        <div class="crop" id="crop"><div class="grid9"></div><div class="dot" id="dot" style="left:50%;top:50%"></div></div>
+        <div class="zoomrow">🔍 <input type="range" id="zoom" min="100" max="220" value="120"> <span id="zoomv">120%</span></div>
+        <div class="note">Stocké en <b>focal x/y % + zoom</b> — le hero recadre exactement là où t'as pointé, à toutes les tailles.</div>
+      </div>
+      <div class="panel" style="margin-bottom:14px">
+        <div class="pt"><span class="n">2</span>RECORD & PLAYOFFS — PRÉ-REMPLIS RSEQ, TOI T'AS LE DERNIER MOT</div>
+        <div class="row2">
+          <div>
+            <label class="fl">Record de saison</label>
+            <input class="ti" id="rec" maxlength="7" value="8-2" oninput="rHero()">
+            <div class="hint" onclick="applyRseq()"><b>RSEQ calcule : 8-2</b> (matchs joués en DB) — cliquer pour appliquer</div>
+          </div>
+          <div>
+            <label class="fl">Résultat séries (libre)</label>
+            <input class="ti" id="po" maxlength="30" value="Finalistes Bol d'Or" oninput="rHero()">
+          </div>
+        </div>
+        <div class="note">Pré-rempli depuis les <b>48 000 matchs RSEQ en DB</b> (W-L des scores). Forfaits/exhibitions peuvent fausser le calcul — corrige librement, ta valeur gagne.</div>
+      </div>
+      <div class="panel">
+        <div class="pt"><span class="n">3</span>RÉSEAUX DE L'ÉQUIPE</div>
+        <label style="display:flex;align-items:center;gap:10px;font-size:12.5px;font-weight:600;cursor:pointer"><input type="checkbox" id="socInherit" checked onchange="rSoc()"> Utiliser les réseaux de l'école</label>
+        <div id="socFields" style="display:none">
+          <label class="fl">Instagram</label><input class="ti" placeholder="@phenixfootball">
+          <label class="fl">YouTube / autre</label><input class="ti" placeholder="https://…">
+        </div>
+      </div>
+    </div>
+    <div class="pv"><div class="panel">
+      <div class="pvhead">APERÇU LIVE</div>
+      <div class="heropv">
+        <div class="img"><span class="ph">— photo hero (cadrage : <span id="pvfocal">50% · 50% · 120%</span>) —</span><span class="name">Football D1</span></div>
+        <div class="strip">
+          <span class="rchip hot" id="pvrec">8-2</span>
+          <span class="rchip" id="pvpo">FINALISTES BOL D'OR</span>
+          <span class="rchip">PHÉNIX · ANDRÉ-GRASSET</span>
+        </div>
+      </div>
+      <div class="note" style="margin-top:10px">Au build : la preview = le vrai TeamHero.</div>
+    </div></div>
+  </div>
+</section>
+
+<!-- S3 — CALENDRIER + CAMPS -->
+<section class="sec">
+  <div class="sech"><span class="num">3</span><h2>Calendrier &amp; camps</h2><span class="tag auto">AUTO</span><span class="tag man">CAMPS = MANUEL</span>
+    <span class="vis on" id="vis-camps" onclick="tgl('camps')"><span>Afficher les camps</span><span class="sw"></span></span>
+  </div>
+  <div class="cols">
+    <div>
+      <div class="panel aff" style="margin-bottom:14px">
+        <div class="pt">MATCHS — RSEQ AUTOMATIQUE, RIEN À FAIRE</div>
+        <div class="calrow"><span class="d">SAM 05/09</span><span class="vs">vs Vieux Montréal</span><span class="sc">—</span></div>
+        <div class="calrow"><span class="d">SAM 12/09</span><span class="vs">@ Garneau</span><span class="sc">—</span></div>
+        <div class="calrow"><span class="d">SAM 30/05</span><span class="vs">vs Lévis (joué)</span><span class="sc w">34-12</span></div>
+        <div class="note">Dates, adversaires, lieux et <b>scores des matchs joués</b> viennent du calendrier RSEQ en DB (mise à jour saisonnière).</div>
+      </div>
+      <div class="panel" id="sec-camps">
+        <div class="pt"><span class="n">1</span>CAMPS DE SÉLECTION &amp; ESSAIS (max 3)</div>
+        <div id="camps"></div>
+        <button class="addbtn" onclick="addCamp()">+ Ajouter un camp / essai</button>
+        <div class="note">Le RSEQ n'a pas tes camps — c'est TON canal de recrutement : titre, date, lieu.</div>
+      </div>
+      <div class="masked" id="mask-camps"><span>🚫 Camps masqués sur ta page publique — rien à remplir ici.</span><button onclick="tgl('camps')">Réactiver</button></div>
+    </div>
+    <div class="pv"><div class="panel">
+      <div class="pvhead">APERÇU LIVE — CAMPS</div>
+      <div class="facts" id="pvcamps"></div>
+    </div></div>
+  </div>
+</section>
+
+<!-- S4 — PRÉSENTATION -->
+<section class="sec">
+  <div class="sech"><span class="num">4</span><h2>Présentation &amp; palmarès</h2><span class="tag man">MANUEL</span>
+    <span class="vis on" id="vis-pres" onclick="tgl('pres')"><span>Afficher sur ma page</span><span class="sw"></span></span>
+  </div>
+  <div class="cols">
+    <div id="sec-pres">
+      <div class="panel" style="margin-bottom:14px">
+        <div class="pt"><span class="n">1</span>L'ACCROCHE (modérée)</div>
+        <textarea class="ti" id="lead" maxlength="280" oninput="rPres()">Le programme de football le plus titré du réseau collégial. Ici, on forme des joueurs — et des hommes.</textarea>
+        <div class="cnt"><span id="leadc">0</span>/280</div>
+        <div class="mod">⚠ Modéré avant publication.</div>
+        <div class="row2" style="margin-top:12px">
+          <div><label class="fl">Championnats</label><input class="ti" id="champs" maxlength="2" value="6" oninput="rPres()"><div class="note">Astuce : = ton nombre de fanions.</div></div>
+          <div><label class="fl">Staff en place depuis</label><input class="ti" id="since" maxlength="4" value="2018" oninput="rPres()"></div>
+        </div>
+      </div>
+      <div class="panel" style="margin-bottom:14px">
+        <div class="pt"><span class="n">2</span>ENTRAÎNEUR-CHEF — PHOTO &amp; BIO</div>
+        <div class="auto" style="margin-bottom:10px"><span class="achip"><b>✓</b>Nom &amp; rôle : depuis le staff de l'équipe</span></div>
+        <div class="drop" onclick="toast('Upload photo (câblage)')"><b>Photo du coach</b>portrait · JPG/PNG</div>
+        <label class="fl">Bio courte (modérée)</label>
+        <textarea class="ti" id="bio" maxlength="200" oninput="rPres()">15 saisons au collégial, 3 Bols d'Or, ancien des Carabins.</textarea>
+        <div class="cnt"><span id="bioc">0</span>/200</div>
+      </div>
+      <div class="panel">
+        <div class="pt"><span class="n">3</span>PALMARÈS — LES FANIONS (max 8)</div>
+        <div class="note" style="margin-top:0;margin-bottom:10px">Le type pilote la COULEUR (même forme fanion, 3 habits) : <b>Championnat</b> = Principale · <b>Coupe</b> = Foncée/Claire · <b>Bannière</b> = rectangle sombre liseré (style « retirée au plafond »).</div>
+        <div id="pens"></div>
+        <button class="addbtn" onclick="addPen()">+ Ajouter un fanion</button>
+      </div>
+    </div>
+    <div class="masked" id="mask-pres"><span>🚫 Section masquée sur ta page publique — rien à remplir ici.</span><button onclick="tgl('pres')">Réactiver</button></div>
+    <div class="pv"><div class="panel">
+      <div class="pvhead">APERÇU LIVE</div>
+      <div class="fact" style="margin-bottom:12px"><b id="pvlead2" style="font-size:13px;line-height:1.5;font-weight:500;color:#B9BFC9"></b>
+        <span id="pvstats" style="display:block;margin-top:8px;font-family:'Bebas Neue';letter-spacing:.1em;color:#EDEFF3"></span></div>
+      <div class="fanions" id="pvpens"></div>
+    </div></div>
+  </div>
+</section>
+
+<!-- S5 — BESOINS -->
+<section class="sec">
+  <div class="sech"><span class="num">5</span><h2>Besoins par position</h2><span class="tag man">MANUEL — DANS LE LAYOUT DU SPORT</span>
+    <span class="vis on" id="vis-bes" onclick="tgl('bes')"><span>Afficher sur ma page</span><span class="sw"></span></span>
+  </div>
+  <div class="cols">
+    <div>
+      <div class="panel" id="sec-bes">
+        <div class="pt"><span class="n">1</span>TES PLAQUES — FOOTBALL (layout Nexus, slots fixes)</div>
+        <div class="auto" style="margin-bottom:12px">
+          <span class="achip"><b>✓</b>Terrain, facettes et slots = design Nexus du sport (automatique, tous les sports couverts)</span>
+        </div>
+        <div class="ftabs" id="ftabs"></div>
+        <div id="pills"></div>
+        <div class="bank" id="bank" style="display:none"><b style="color:#8A909C">Plaques masquées</b> — clique pour réafficher :<div id="bankrow"></div></div>
+        <div class="note">Clique une plaque pour l'ouvrir. Tu peux renommer, choisir les initiales, ancrer les positions, régler le niveau de besoin, masquer (✕) — mais <b>pas ajouter</b> : le layout par sport est fixe.</div>
+      </div>
+      <div class="masked" id="mask-bes"><span>🚫 Section masquée sur ta page publique.</span><button onclick="tgl('bes')">Réactiver</button></div>
+    </div>
+    <div class="pv"><div class="panel">
+      <div class="pvhead">APERÇU LIVE — CE QUE L'ATHLÈTE VOIT</div>
+      <div class="facts" id="pvpills"></div>
+      <div class="note" style="margin-top:10px"><b style="color:#EDEFF3">Comment le match parfait marche :</b> besoin <b style="color:var(--warn)">⚡ important</b> ou <b style="color:var(--nexus)">🔥 urgent</b> + la position de l'athlète est ancrée à la plaque → ton <b>message</b> s'affiche en « MATCH PARFAIT » sur SA vue de la page.</div>
+    </div></div>
+  </div>
+</section>
+
+<!-- S6 — DÉJÀ ENGAGÉES -->
+<section class="sec">
+  <div class="sech"><span class="num">6</span><h2>Recrues déjà engagées</h2><span class="tag plat">PLATEFORME</span>
+    <span class="vis on" id="vis-eng" onclick="tgl('eng')"><span>Afficher sur ma page</span><span class="sw"></span></span>
+  </div>
+  <div class="cols">
+    <div>
+      <div class="panel aff" id="sec-eng">
+        <div class="pt">LES ENGAGEMENTS NEXUS — AUTOMATIQUE</div>
+        <div class="auto">
+          <span class="achip"><b>✓</b>Fiches complètes : nom · position · étoiles · école · promo</span>
+          <span class="achip"><b>✓</b>Engagés en <b style="color:#EDEFF3">football</b> au collège (engagés + lettres signées)</span>
+        </div>
+        <div class="note">Libellé honnête : « engagé·e·s en [sport] au [collège] » (le pipeline est au niveau école — on n'invente pas l'équipe exacte). <b>Mineurs : seuls les profils publics/consentis sont nommés</b>; les autres comptent sans nom (Loi 25).</div>
+      </div>
+      <div class="masked" id="mask-eng"><span>🚫 Section masquée sur ta page publique.</span><button onclick="tgl('eng')">Réactiver</button></div>
+    </div>
+    <div class="pv"><div class="panel">
+      <div class="pvhead">CE QUE L'ATHLÈTE VOIT — LES VRAIES RECRUES</div>
+      <div class="facts">
+        <div class="recruit"><div class="av">WT</div><div><b>William Tremblay</b><span>Quart-arrière · Saint-Jean-Eudes · promo 2027</span></div><div class="stars">★★★★★</div></div>
+        <div class="recruit"><div class="av">ML</div><div><b>Mathis Larouche</b><span>Receveur · De Rochebelle · promo 2027</span></div><div class="stars">★★★★☆</div></div>
+        <div class="recruit"><div class="av">?</div><div><b>1 recrue confidentielle</b><span>Profil non public — comptée, jamais nommée (Loi 25)</span></div><div class="stars"></div></div>
+      </div>
+      <div class="note" style="margin-top:10px">Nom · position · étoiles (évaluations) · école de provenance · promo — depuis les engagements réels. Profils de mineurs non consentis = anonymisés.</div>
+    </div></div>
+  </div>
+</section>
+
+</div>
+<div id="toast"></div>
+
+<script>
+const $=id=>document.getElementById(id);
+function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),2200)}
+function saveMock(){$('status').textContent='ENREGISTRÉ';$('status').style.color='var(--ok)';$('status').style.borderColor='var(--ok)';toast('Page équipe enregistrée (mock)');setTimeout(()=>{$('status').textContent='BROUILLON';$('status').style.color='';$('status').style.borderColor=''},2600)}
+/* focal drag + zoom */
+const crop=$('crop'),dot=$('dot');let focal={x:50,y:50,z:120};
+function setDot(e){
+  const r=crop.getBoundingClientRect();
+  focal.x=Math.round(Math.min(100,Math.max(0,(e.clientX-r.left)/r.width*100)));
+  focal.y=Math.round(Math.min(100,Math.max(0,(e.clientY-r.top)/r.height*100)));
+  dot.style.left=focal.x+'%';dot.style.top=focal.y+'%';
+  $('pvfocal').textContent=focal.x+'% · '+focal.y+'% · '+focal.z+'%';
+}
+let drag=false;
+crop.addEventListener('mousedown',e=>{drag=true;setDot(e)});
+window.addEventListener('mousemove',e=>{if(drag)setDot(e)});
+window.addEventListener('mouseup',()=>drag=false);
+$('zoom').oninput=e=>{focal.z=+e.target.value;$('zoomv').textContent=focal.z+'%';$('pvfocal').textContent=focal.x+'% · '+focal.y+'% · '+focal.z+'%'};
+/* hero */
+function rHero(){$('pvrec').textContent=$('rec').value||'—';$('pvpo').textContent=($('po').value||'').toUpperCase();$('pvpo').style.display=$('po').value?'':'none'}
+function applyRseq(){$('rec').value='8-2';rHero();toast('Record RSEQ appliqué — tu peux le corriger librement')}
+rHero();
+function rSoc(){$('socFields').style.display=$('socInherit').checked?'none':'block'}
+/* camps */
+const camps=[{t:'Camp de sélection printemps',d:'2027-04-18',l:'Stade Claude-Robillard'}];
+function addCamp(){if(camps.length>=3){toast('Maximum 3 camps');return}camps.push({t:'',d:'',l:''});rCamps()}
+function rCamps(){
+  const el=$('camps');el.innerHTML='';
+  camps.forEach((c,i)=>{
+    const d=document.createElement('div');d.className='nrow';d.style.gridTemplateColumns='1.3fr .8fr 1fr auto';
+    d.innerHTML=`<input class="ti" maxlength="40" placeholder="Titre" value="${c.t}"><input class="ti" type="date" value="${c.d}"><input class="ti" maxlength="40" placeholder="Lieu" value="${c.l}"><button class="xbtn">✕</button>`;
+    const [ti,di,li]=d.querySelectorAll('input');
+    ti.oninput=e=>{c.t=e.target.value;rCampsPv()};di.oninput=e=>{c.d=e.target.value;rCampsPv()};li.oninput=e=>{c.l=e.target.value;rCampsPv()};
+    d.querySelector('.xbtn').onclick=()=>{camps.splice(i,1);rCamps()};
+    el.appendChild(d);
+  });rCampsPv();
+}
+function rCampsPv(){
+  const pv=$('pvcamps');pv.innerHTML='';
+  camps.filter(c=>c.t).forEach(c=>pv.insertAdjacentHTML('beforeend',`<div class="fact"><b>📣 ${c.t}</b><span>${c.d||'date à venir'} · ${c.l||'lieu à confirmer'} — carte mise en évidence dans le calendrier</span></div>`));
+  if(!pv.children.length)pv.innerHTML='<div class="empty">Tes camps apparaissent en évidence dans le calendrier public.</div>';
+}
+rCamps();
+/* présentation */
+function rPres(){
+  $('leadc').textContent=$('lead').value.length;$('bioc').textContent=$('bio').value.length;
+  $('pvlead2').textContent='« '+$('lead').value+' »';
+  $('pvstats').textContent=`${$('champs').value||'—'} CHAMPIONNATS · STAFF DEPUIS ${$('since').value||'—'}`;
+}
+/* fanions */
+const pens=[{t:'BOL D\'OR',y:'2023',k:'Championnat'},{t:'BOL D\'OR',y:'2021',k:'Championnat'},{t:'DIV. NORD',y:'2019',k:'Bannière'}];
+const KINDS=['Championnat','Coupe','Bannière'];
+function addPen(){if(pens.length>=8){toast('Maximum 8 fanions');return}pens.push({t:'',y:'',k:KINDS[0]});rPens()}
+function rPens(){
+  const el=$('pens');el.innerHTML='';
+  pens.forEach((p,i)=>{
+    const d=document.createElement('div');d.className='nrow';d.style.gridTemplateColumns='1.4fr .6fr 1fr auto';
+    d.innerHTML=`<input class="ti" maxlength="30" placeholder="Titre (ex. BOL D'OR)" value="${p.t}"><input class="ti" maxlength="4" placeholder="Année" value="${p.y}"><select class="ti">${KINDS.map(k=>`<option ${k===p.k?'selected':''}>${k}</option>`).join('')}</select><button class="xbtn">✕</button>`;
+    const [ti,yi]=d.querySelectorAll('input');
+    ti.oninput=e=>{p.t=e.target.value;rPensPv()};yi.oninput=e=>{p.y=e.target.value;rPensPv()};
+    d.querySelector('select').onchange=e=>{p.k=e.target.value;rPensPv()};
+    d.querySelector('.xbtn').onclick=()=>{pens.splice(i,1);rPens()};
+    el.appendChild(d);
+  });rPensPv();
+}
+function rPensPv(){
+  const pv=$('pvpens');pv.innerHTML='';
+  const cls={'Championnat':'','Coupe':' coupe','Bannière':' banniere'};
+  pens.filter(p=>p.t).forEach(p=>pv.insertAdjacentHTML('beforeend',`<div class="fanion${cls[p.k]||''}"><div class="y">${p.y||'—'}</div><div class="t">${p.t}</div></div>`));
+  if(!pv.children.length)pv.innerHTML='<div class="empty" style="width:100%">Tes fanions s\'affichent dans le hall du palmarès.</div>';
+}
+rPens();rPres();
+/* besoins — plaques du layout football (slots fixes, facettes) */
+const SPORT_POS=['Quart-arrière','Porteur','Fullback','Receveur','Ailier rapproché','Ligne offensive','Ligne défensive','Secondeur','Demi défensif','Maraudeur','Botteur'];
+const LVLS=['Aucun','Besoin ouvert','⚡ Important','🔥 Urgent'];
+const pills=[
+ {f:'off',a:'QB',n:'Quarts-arrières',pos:[0],lvl:3,pitch:'2 finissants — le poste #1 est ouvert en 2027',hid:false,open:false},
+ {f:'off',a:'OW',n:'Offensive Weapons',pos:[1,2,3],lvl:2,pitch:'3 finissants · 2 postes ouverts',hid:false,open:true},
+ {f:'off',a:'OL',n:'Ligne offensive',pos:[5],lvl:1,pitch:'',hid:false,open:false},
+ {f:'def',a:'DL',n:'Ligne défensive',pos:[6],lvl:0,pitch:'',hid:false,open:false},
+ {f:'def',a:'LB',n:'Secondeurs',pos:[7],lvl:1,pitch:'1 finissant',hid:false,open:false},
+ {f:'def',a:'DB',n:'Tertiaire',pos:[8,9],lvl:0,pitch:'',hid:true,open:false},
+];
+let facette='off';
+function rTabs(){
+  const el=$('ftabs');el.innerHTML='';
+  [['off','OFFENSE'],['def','DÉFENSE']].forEach(([k,l])=>{
+    const d=document.createElement('span');d.className='ftab'+(facette===k?' on':'');d.textContent=l;
+    d.onclick=()=>{facette=k;rTabs();rPills()};el.appendChild(d);
+  });
+}
+function rPills(){
+  const el=$('pills');el.innerHTML='';
+  pills.filter(p=>!p.hid&&p.f===facette).forEach(p=>{
+    const d=document.createElement('div');d.className='prow'+(p.open?' open':'');
+    d.innerHTML=`
+      <div class="sum">
+        <span class="a">${p.a||'—'}</span><b>${p.n||'—'}</b>
+        <span class="lvlb l${p.lvl}">${LVLS[p.lvl]}</span>
+        <button class="xbtn" style="width:30px;height:30px" title="Masquer">✕</button>
+        <span class="chev">${p.open?'▲':'▼'}</span>
+      </div>
+      <div class="body">
+        <div class="row2">
+          <div><label class="fl">Initiales — SUR la plaque (≤3)</label><input class="ti acro" maxlength="3" value="${p.a}"></div>
+          <div><label class="fl">Nom du groupe</label><input class="ti" maxlength="24" value="${p.n}"></div>
+        </div>
+        <label class="fl">Positions couvertes — l'ancrage du match parfait</label>
+        <div class="poswrap"></div>
+        <div class="helper">L'athlète dont la position est cochée ici « matche » cette plaque. Ta plaque, tes mots — mais l'ancrage reste réel.</div>
+        <label class="fl">Niveau de besoin</label>
+        <div class="lvlseg"></div>
+        <label class="fl">Message diffusé à l'athlète</label>
+        <input class="ti" maxlength="80" placeholder="Suggéré : « 3 finissants · 2 postes ouverts en 2027 »" value="${p.pitch}">
+        <div class="helper"><b>Important ⚡ ou Urgent 🔥</b> + position qui matche → ce message s'affiche en <b>MATCH PARFAIT</b> sur la vue de l'athlète. C'est ton pitch de recrutement — dis-lui pourquoi SA place est ici.</div>
+      </div>`;
+    d.querySelector('.sum').onclick=e=>{if(e.target.closest('.xbtn'))return;p.open=!p.open;rPills()};
+    d.querySelector('.xbtn').onclick=()=>{p.hid=true;rPills()};
+    const [ai,ni]=d.querySelectorAll('.body .row2 input');
+    ai.oninput=e=>{p.a=e.target.value.toUpperCase();d.querySelector('.sum .a').textContent=p.a;rPillsPv()};
+    ni.oninput=e=>{p.n=e.target.value;d.querySelector('.sum b').textContent=p.n;rPillsPv()};
+    const pw=d.querySelector('.poswrap');pw.className='posrow';
+    function drawPos(){
+      pw.innerHTML='';
+      p.pos.forEach(i=>{
+        const c=document.createElement('span');c.className='poschip on';c.innerHTML=SPORT_POS[i]+'<span class="rm">✕</span>';
+        c.onclick=()=>{p.pos.splice(p.pos.indexOf(i),1);drawPos();rPillsPv()};
+        pw.appendChild(c);
+      });
+      const add=document.createElement('span');add.className='posadd';
+      add.innerHTML='<button>+ Ajouter une position ▾</button><div class="posmenu"></div>';
+      const menu=add.querySelector('.posmenu');
+      SPORT_POS.forEach((s,i)=>{
+        if(p.pos.includes(i))return;
+        const m=document.createElement('div');m.textContent=s;
+        m.onclick=e=>{e.stopPropagation();p.pos.push(i);drawPos();rPillsPv()};
+        menu.appendChild(m);
+      });
+      if(!menu.children.length)menu.innerHTML='<div style="cursor:default;color:#5A616D">Toutes les positions sont ancrées</div>';
+      add.querySelector('button').onclick=e=>{e.stopPropagation();document.querySelectorAll('.posmenu.open').forEach(x=>x!==menu&&x.classList.remove('open'));menu.classList.toggle('open')};
+      pw.appendChild(add);
+    }
+    drawPos();
+    const seg=d.querySelector('.lvlseg');
+    LVLS.forEach((l,i)=>{
+      const s=document.createElement('span');s.className=i===p.lvl?'on':'';s.textContent=l;
+      s.onclick=()=>{p.lvl=i;rPills()};seg.appendChild(s);
+    });
+    d.querySelector('input[maxlength="80"]').oninput=e=>{p.pitch=e.target.value;rPillsPv()};
+    el.appendChild(d);
+  });
+  const hid=pills.filter(p=>p.hid);
+  $('bank').style.display=hid.length?'block':'none';
+  const br=$('bankrow');br.innerHTML='';
+  hid.forEach(p=>{const s=document.createElement('span');s.className='rest';s.textContent='↩ '+p.a+' — '+p.n;
+    s.onclick=()=>{p.hid=false;facette=p.f;rTabs();rPills()};br.appendChild(s)});
+  rPillsPv();
+}
+function rPillsPv(){
+  const pv=$('pvpills');pv.innerHTML='';
+  const terrain=document.createElement('div');terrain.className='terrain';
+  let warn='';
+  pills.filter(p=>!p.hid).forEach(p=>{
+    terrain.insertAdjacentHTML('beforeend',`<div class="plq${p.lvl>=2?' crit':''}"><div class="a">${p.a||'—'}</div><div class="n">${p.n||'—'}</div>${p.lvl===3?'<span class="fl2">🔥</span>':p.lvl===2?'<span class="fl2">⚡</span>':''}</div>`);
+    if(!p.pos.length)warn=p.a;
+  });
+  pv.appendChild(terrain);
+  const mp=pills.find(p=>!p.hid&&p.lvl>=2&&p.pitch&&p.pos.length);
+  if(mp)pv.insertAdjacentHTML('beforeend',`<div class="mpcard"><span class="k">🎯 MATCH PARFAIT — exemple : athlète ${SPORT_POS[mp.pos[0]]}</span><b>${mp.n} (${mp.a})</b><span>« ${mp.pitch} »</span></div>`);
+  if(warn)pv.insertAdjacentHTML('beforeend',`<div class="note" style="color:var(--warn)">⚠ Plaque ${warn} : aucune position ancrée — pas de match parfait possible.</div>`);
+}
+rTabs();rPills();
+document.addEventListener('click',()=>document.querySelectorAll('.posmenu.open').forEach(x=>x.classList.remove('open')));
+/* visibilité */
+const vstate={camps:true,pres:true,bes:true,eng:true};
+function tgl(k){
+  vstate[k]=!vstate[k];
+  $('vis-'+k).classList.toggle('on',vstate[k]);
+  $('sec-'+k).style.display=vstate[k]?'':'none';
+  $('mask-'+k).style.display=vstate[k]?'none':'flex';
+}
+</script>
+</body>
+</html>
