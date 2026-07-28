@@ -262,7 +262,7 @@ export function CoachDemandesMobile() {
     );
     const name = isCC ? t.otherCoachName : isAth ? t.athleteName : isParent ? t.parentName : t.recruiterName;
     const initials = isCC ? t.otherCoachInitials : isAth ? t.athleteInitials : isParent ? t.parentInitials : t.recruiterInitials;
-    const photoUrl = isCC || isParent ? null : isAth ? t.athletePhotoUrl : t.recruiterPhotoUrl;
+    const photoUrl = isCC ? t.otherCoachPhotoUrl : isParent ? t.parentPhotoUrl : isAth ? t.athletePhotoUrl : t.recruiterPhotoUrl;
     const subtitle = isCC || isParent
       ? ""
       : isAth

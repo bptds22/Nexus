@@ -210,13 +210,20 @@ export function RecruteurMessagesMobile() {
      and inset separator around this slot. */
   const renderRow = (t: ThreadData) => {
     const unread = t.unreadCount > 0;
+    // Règle contrepartie (#9) : l'avatar est TOUJOURS l'autre participant.
+    // RECRUTEUR_ATHLETE (direct) → l'athlète ; RECRUTEUR_COACH (à propos d'un
+    // athlète) → le COACH. Ça distingue un fil AVEC l'athlète d'un fil À PROPOS
+    // de lui — jamais l'athlète-du-contexte quand la contrepartie est le coach.
+    const isDirect = t.conversationType === "RECRUTEUR_ATHLETE";
+    const cpPhoto = isDirect ? t.athletePhotoUrl : t.coachPhotoUrl;
+    const cpInitials = isDirect ? t.athleteInitials : t.coachInitials;
     return (
       <div className="flex items-center gap-3">
         <div className="relative w-[52px] h-[52px] rounded-full overflow-hidden flex-shrink-0 bg-[#2F3440]">
           <AthletePhotoFill
-            photoUrl={t.athletePhotoUrl}
-            firstName={t.athleteInitials[0] ?? ""}
-            lastName={t.athleteInitials[1] ?? ""}
+            photoUrl={cpPhoto}
+            firstName={cpInitials[0] ?? ""}
+            lastName={cpInitials[1] ?? ""}
             initialsFontSize={20}
           />
         </div>

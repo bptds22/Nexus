@@ -30,9 +30,11 @@ export interface CoachThreadData {
   otherCoachName: string;
   otherCoachInitials: string;
   otherCoachIsDirector: boolean;
+  otherCoachPhotoUrl: string | null;
   /** PARENT_COACH counterparty (the linked parent). Child = athlete fields. */
   parentName: string;
   parentInitials: string;
+  parentPhotoUrl: string | null;
   /** Recruiter — counterparty. */
   recruiterId: string;
   recruiterName: string;
@@ -91,15 +93,15 @@ export function useCoachConversations() {
         .filter((c: Record<string, unknown>) => c.conversation_type === "COACH_COACH")
         .map((c: Record<string, unknown>) => (c.coach_id === userId ? c.coach_b_id : c.coach_id) as string)
         .filter(Boolean))];
-      const otherCoachMap = new Map<string, { name: string; initials: string; isDirector: boolean }>();
+      const otherCoachMap = new Map<string, { name: string; initials: string; isDirector: boolean; photoUrl: string | null }>();
       if (otherCoachIds.length > 0) {
-        const { data: cu } = await supabase.from("users").select("id, first_name, last_name").in("id", otherCoachIds);
+        const { data: cu } = await supabase.from("users").select("id, first_name, last_name, photo_url, avatar_url").in("id", otherCoachIds);
         const { data: dr } = await supabase.from("school_coaches").select("coach_id, role").in("coach_id", otherCoachIds);
         const directorSet = new Set((dr || []).filter((r) => (r as { role: string }).role === "DIRECTEUR" || (r as { role: string }).role === "DIRECTEUR_INTERIM").map((r) => (r as { coach_id: string }).coach_id));
         for (const u of cu || []) {
-          const uu = u as { id: string; first_name?: string; last_name?: string };
+          const uu = u as { id: string; first_name?: string; last_name?: string; photo_url?: string; avatar_url?: string };
           const f = uu.first_name || ""; const l = uu.last_name || "";
-          otherCoachMap.set(uu.id, { name: `${f} ${l}`.trim() || "Coach", initials: `${f[0] || ""}${l[0] || ""}`.toUpperCase(), isDirector: directorSet.has(uu.id) });
+          otherCoachMap.set(uu.id, { name: `${f} ${l}`.trim() || "Coach", initials: `${f[0] || ""}${l[0] || ""}`.toUpperCase(), isDirector: directorSet.has(uu.id), photoUrl: uu.photo_url || uu.avatar_url || null });
         }
       }
 
@@ -110,13 +112,13 @@ export function useCoachConversations() {
         .filter((c: Record<string, unknown>) => c.conversation_type === "PARENT_COACH")
         .map((c: Record<string, unknown>) => c.parent_id as string)
         .filter(Boolean))];
-      const parentMap = new Map<string, { name: string; initials: string }>();
+      const parentMap = new Map<string, { name: string; initials: string; photoUrl: string | null }>();
       if (parentIds.length > 0) {
-        const { data: pu } = await supabase.from("users").select("id, first_name, last_name").in("id", parentIds);
+        const { data: pu } = await supabase.from("users").select("id, first_name, last_name, photo_url, avatar_url").in("id", parentIds);
         for (const u of pu || []) {
-          const uu = u as { id: string; first_name?: string; last_name?: string };
+          const uu = u as { id: string; first_name?: string; last_name?: string; photo_url?: string; avatar_url?: string };
           const f = uu.first_name || ""; const l = uu.last_name || "";
-          parentMap.set(uu.id, { name: `${f} ${l}`.trim() || "Parent", initials: `${f[0] || ""}${l[0] || ""}`.toUpperCase() || "P" });
+          parentMap.set(uu.id, { name: `${f} ${l}`.trim() || "Parent", initials: `${f[0] || ""}${l[0] || ""}`.toUpperCase() || "P", photoUrl: uu.photo_url || uu.avatar_url || null });
         }
       }
 
@@ -152,8 +154,8 @@ export function useCoachConversations() {
         broadcastId: a.broadcastId,
         targetLabel: a.targetLabel,
         recipientCount: a.recipientCount,
-        otherCoachName: "", otherCoachInitials: "", otherCoachIsDirector: false,
-        parentName: "", parentInitials: "",
+        otherCoachName: "", otherCoachInitials: "", otherCoachIsDirector: false, otherCoachPhotoUrl: null,
+        parentName: "", parentInitials: "", parentPhotoUrl: null,
         recruiterId: "", recruiterName: "", recruiterInitials: "", recruiterPhotoUrl: null, recruiterCegep: "",
         athleteId: "", athleteName: "", athleteInitials: "", athletePhotoUrl: null, athletePosition: "",
         lastMessage: a.content,
@@ -188,8 +190,10 @@ export function useCoachConversations() {
           otherCoachName: oc?.name || "Coach",
           otherCoachInitials: oc?.initials || "",
           otherCoachIsDirector: !!oc?.isDirector,
+          otherCoachPhotoUrl: oc?.photoUrl ?? null,
           parentName: pm?.name || "Parent",
           parentInitials: pm?.initials || "P",
+          parentPhotoUrl: pm?.photoUrl ?? null,
           recruiterId: (rec?.id as string) || "",
           recruiterName: `${rf} ${rl}`.trim() || "Recruteur",
           recruiterInitials: `${rf[0] || ""}${rl[0] || ""}`.toUpperCase(),
