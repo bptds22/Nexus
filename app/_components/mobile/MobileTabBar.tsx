@@ -187,7 +187,11 @@ export default function MobileTabBar({ role }: MobileTabBarProps) {
   // safe). Sans ça, les guards onboarding/messages se trompent d'écran.
   const normalizedPath = pathname.replace(/\/+$/, "") || "/";
   const router = useRouter();
-  const { tier, isSchoolAdmin } = useSubscription();
+  // `tierLoading` distingue « tier pas encore chargé » de « tier = free ».
+  // Le Provider défaute tier→"free" avant le fetch : sans ce flag, un All Star
+  // voit les cadenas (verrous) une fraction de seconde au login. On ne verrouille
+  // donc QU'UNE FOIS le tier réellement chargé — voir `locked` plus bas.
+  const { tier, isSchoolAdmin, loading: tierLoading } = useSubscription();
 
   const [moreOpen, setMoreOpen] = useState(false);
   const [upgradeModal, setUpgradeModal] = useState<{ tierId: string; lockedFeatureTitle: string } | null>(null);
@@ -399,7 +403,7 @@ export default function MobileTabBar({ role }: MobileTabBarProps) {
   }
 
   function handleTabClick(e: React.MouseEvent, tab: TabConfig) {
-    const locked = !meetsRequiredTier(tier, tab.requiredTier, isSchoolAdmin, tab.adminBypass);
+    const locked = !tierLoading && !meetsRequiredTier(tier, tab.requiredTier, isSchoolAdmin, tab.adminBypass);
     if (locked && tab.requiredTier) {
       e.preventDefault();
       setUpgradeModal({
@@ -431,7 +435,8 @@ export default function MobileTabBar({ role }: MobileTabBarProps) {
         aria-label="Navigation principale"
       >
         {tabs.map((tab) => {
-          const locked = !meetsRequiredTier(tier, tab.requiredTier, isSchoolAdmin, tab.adminBypass);
+          // Pas de cadenas tant que le tier n'est pas chargé (évite le flash free).
+          const locked = !tierLoading && !meetsRequiredTier(tier, tab.requiredTier, isSchoolAdmin, tab.adminBypass);
           const active = isActive(tab);
           // Badge par tab key : messages (recruteur), a-traiter (coach).
           const tabBadgeCount =
@@ -501,6 +506,7 @@ export default function MobileTabBar({ role }: MobileTabBarProps) {
         onClose={() => setMoreOpen(false)}
         role={role}
         tier={tier}
+        tierLoading={tierLoading}
         isSchoolAdmin={isSchoolAdmin}
         actBadge={actBadge}
         onLockedClick={(tierId, label) => setUpgradeModal({ tierId, lockedFeatureTitle: label })}

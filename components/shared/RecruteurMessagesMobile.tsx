@@ -94,6 +94,11 @@ export function RecruteurMessagesMobile() {
   const { data: threads = [], isLoading } = useConversations();
   const { tier, loading: tierLoading } = useSubscription();
   const isFree = tier === "free";
+  // Le verrou (overlay Pro) ne doit s'afficher QU'UNE FOIS le tier chargé : le
+  // Provider défaute tier→"free" avant le fetch, sinon un All Star voit le tease
+  // « réservé Pro » flasher au login. Tant que ça charge, le shell montre son
+  // skeleton (isLoading={loading}), pas l'overlay free.
+  const showFreeLock = !tierLoading && isFree;
   const archiveMut = useArchiveConversation();
   const { data: currentUser } = useCurrentUser();
   const userId = currentUser?.authUser.id;
@@ -298,12 +303,12 @@ export function RecruteurMessagesMobile() {
       onSwipeArchive={handleArchiveSwipe}
       title="Messages"
       onCreate={() => router.push("/recruteur/messages/nouveau")}
-      createDisabled={isFree}
+      createDisabled={showFreeLock}
       onCreateBlocked={() => toast.info({
         message: "Abonnement Pro requis",
         detail: "L'envoi de messages est réservé Pro.",
       })}
-      isLocked={isFree}
+      isLocked={showFreeLock}
       lockOverlay={lockTease}
       emptyTitle={emptyCopy.title}
       emptyDescription={emptyCopy.sub}

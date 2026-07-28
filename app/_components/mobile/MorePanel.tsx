@@ -163,6 +163,9 @@ interface MorePanelProps {
   onClose: () => void;
   role: "recruteur" | "coach" | "athlete";
   tier: "free" | "pro" | "all_star";
+  /** True tant que le tier n'est pas chargé. Empêche d'afficher les cadenas /
+   *  la carte d'upgrade en état « free » par défaut avant le fetch. */
+  tierLoading: boolean;
   isSchoolAdmin: boolean;
   /** Compteur affiché sur l'item correspondant : Activités (recruteur, coach)
    *  ou Notifications (athlete). */
@@ -175,6 +178,7 @@ export default function MorePanel({
   onClose,
   role,
   tier,
+  tierLoading,
   isSchoolAdmin,
   actBadge,
   onLockedClick,
@@ -423,7 +427,8 @@ export default function MorePanel({
   })();
 
   function renderItem(item: PanelItem) {
-    const locked = !meetsRequiredTier(tier, item.requiredTier, isSchoolAdmin, item.adminBypass);
+    // Pas de cadenas tant que le tier n'est pas chargé (évite le flash free).
+    const locked = !tierLoading && !meetsRequiredTier(tier, item.requiredTier, isSchoolAdmin, item.adminBypass);
     const lockTitle = item.requiredTier === "all_star"
       ? "Fonctionnalité Recruteur All Star"
       : "Fonctionnalité Recruteur Pro";
@@ -587,7 +592,7 @@ export default function MorePanel({
 
           {/* Upgrade prompt — recruteur uniquement (les autres rôles n'ont
               pas de tier gating actif dans la nav pour l'instant). */}
-          {role === "recruteur" && !hasProAccess && (
+          {role === "recruteur" && !tierLoading && !hasProAccess && (
             <div className="px-4 pt-3">
               <SidebarUpgradeCard />
             </div>

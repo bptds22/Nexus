@@ -30,7 +30,10 @@ async function triggerHaptic(intensity: "Light" | "Medium" = "Light") {
 
 export function RecruteurFavorisMobile() {
   const { athletes, isLoading } = useFavoriteAthletes();
-  const { tier } = useSubscription();
+  // `tierLoading` : tant que le tier n'est pas chargé, on ne rend PAS les cartes
+  // (le Provider défaute tier→"free" avant le fetch, ce qui anonymiserait les
+  // cartes d'un All Star une fraction de seconde au login). Skeleton jusque-là.
+  const { tier, loading: tierLoading } = useSubscription();
   const isFree = tier === "free";
   const queryClient = useQueryClient();
   const toast = useMobileToast();
@@ -180,7 +183,7 @@ export function RecruteurFavorisMobile() {
             optimistic, athletes.length > 0 (grâce au placeholderData
             de useAthletesByIds) → on saute le skeleton → l'AnimatePresence
             reste montée → exit anim des cartes peut jouer. */}
-        {isLoading && athletes.length === 0 ? (
+        {(isLoading || tierLoading) && athletes.length === 0 ? (
           <div className="grid grid-cols-2 gap-3">
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="aspect-[4/5] rounded-2xl bg-[#1A1D24] animate-pulse" />

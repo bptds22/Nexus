@@ -143,7 +143,10 @@ interface RecruiterSidebarProps {
 export default function RecruiterSidebar({ mobileOpen, onClose }: RecruiterSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { tier, isSchoolAdmin } = useSubscription();
+  // `tierLoading` distingue « tier pas encore chargé » de « tier = free ».
+  // Le Provider défaute tier→"free" avant le fetch : sans ce flag, un All Star
+  // voit les verrous + la carte d'upgrade une fraction de seconde au login.
+  const { tier, isSchoolAdmin, loading: tierLoading } = useSubscription();
   const [userName, setUserName] = useState("Pierre Dufour");
   const [userSub, setUserSub] = useState("Recruteur \u2014 C\u00c9GEP Garneau");
   const [userInitials, setUserInitials] = useState("PD");
@@ -237,7 +240,8 @@ export default function RecruiterSidebar({ mobileOpen, onClose }: RecruiterSideb
   const showRecruiterItems = isAlsoRecruiter || !isAdmin;
 
   function renderNavItem(item: NavItem) {
-    const locked = !meetsRequiredTier(tier, item.requiredTier, isSchoolAdmin, item.adminBypass);
+    // Pas de verrou tant que le tier n'est pas chargé (évite le flash free).
+    const locked = !tierLoading && !meetsRequiredTier(tier, item.requiredTier, isSchoolAdmin, item.adminBypass);
     const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
     const lockTitle = item.requiredTier === "all_star"
       ? "Fonctionnalité Recruteur All Star"
@@ -324,8 +328,9 @@ export default function RecruiterSidebar({ mobileOpen, onClose }: RecruiterSideb
         {BOTTOM_ITEMS.filter((i) => i.label === "Paramètres").map((item) => renderNavItem(item))}
       </nav>
 
-      {/* Upgrade prompt (only for free tier) */}
-      {!hasProAccess && <SidebarUpgradeCard />}
+      {/* Upgrade prompt (only for free tier — pas avant le chargement du tier,
+          sinon un All Star voit la carte flasher au login). */}
+      {!tierLoading && !hasProAccess && <SidebarUpgradeCard />}
 
       {/* Bottom — user card */}
       <div className="px-4 py-5 border-t border-[#1e2128]">
