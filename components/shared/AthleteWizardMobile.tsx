@@ -60,6 +60,8 @@ import { isValidationDue, isValidationExpired, formatDeadlineFr } from "@/lib/ut
 import { SESSION_KEY_PREFIX } from "@/lib/platform/mobileRoutes";
 import PartnerVisibilityConsentCard from "@/components/shared/PartnerVisibilityConsentCard";
 import DistinctionBadge from "@/components/shared/DistinctionBadge";
+import TeamHistoryEditor from "@/components/shared/athlete/TeamHistoryEditor";
+import type { TeamHistoryEntry } from "@/lib/types/models";
 import {
   Card,
   InlineEditRow,
@@ -595,6 +597,9 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
   }, []);
   const updatePhysical = useCallback((field: string, value: string) => {
     setForm((prev) => ({ ...prev, physical: { ...prev.physical, [field]: value } }));
+  }, []);
+  const updateParcours = useCallback((entries: TeamHistoryEntry[]) => {
+    setForm((prev) => ({ ...prev, sports: { ...prev.sports, parcoursEquipes: entries } }));
   }, []);
   const updateSports = useCallback((field: string, value: string | boolean) => {
     setForm((prev) => ({ ...prev, sports: { ...prev.sports, [field]: value } }));
@@ -1634,6 +1639,20 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
             <ReadOnlyRow label="Niveau" value={s.teamLevel} />
           )}
         </Card>
+
+        {/* Parcours d'équipes (#5) — édition complète (add/modify/remove) de
+            l'historique d'équipes de l'athlète par le coach/directeur. Persisté
+            avec le reste du profil (form.sports.parcoursEquipes → saveAthlete) ;
+            RLS UPDATE athletes couvre déjà coach (coach_id) + directeur (école). */}
+        <div>
+          <h3 className="font-head text-[15px] font-black text-white uppercase tracking-tight mb-1">Parcours d&apos;équipes</h3>
+          <p className="text-[12px] text-white/45 mb-3">Historique d&apos;équipes de l&apos;athlète (max 10).</p>
+          <TeamHistoryEditor
+            value={s.parcoursEquipes ?? []}
+            onChange={updateParcours}
+            sports={SPORTS.filter((x) => x !== "Autre").map((x) => ({ id: x, nom: x }))}
+          />
+        </div>
 
         <AdvancedDivider />
 
