@@ -12,6 +12,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { findOrCreateAthleteCoachConversation } from "@/lib/queries/messaging/createAthleteCoachConversation";
+import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import { mockAthleteProfileFull } from "@/lib/mock/athleteProfileRecruiter";
 import type {
   AthleteProfileRecruiterView,
@@ -766,6 +767,8 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
   const { count: myFavCount, setCount: setMyFavCount } = useFavoritesCount();
   // #52 — init à null (plus de mock initial) : aucun faux athlète rendu avant
   // les vraies données. Le gate loadingAthlete plus bas court-circuite le rendu.
+  const { data: currentUser } = useCurrentUser();
+  const currentUserId = currentUser?.authUser.id;
   const [a, setA] = useState<AthleteProfileRecruiterView | null>(null);
   const [loadingAthlete, setLoadingAthlete] = useState(true);
   const [recruitmentStatus, setRecruitmentStatus] = useState<GlobalRecruitmentStatus>("OUVERT");
@@ -902,7 +905,8 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
           vision_du_jeu, sens_tactique,
           leadership, discipline, coachabilite, intelligence_jeu,
           competitivite, esprit_equipe, resilience, attitude_mentalite,
-          cote_globale, rapport_entraineur, distinctions, updated_at
+          cote_globale, rapport_entraineur, distinctions, updated_at, coach_id,
+          evaluator:users!evaluations_coach_id_fkey(first_name, last_name)
         ),
         users!athletes_coach_id_fkey(first_name, last_name)
       ` as unknown as "*")
@@ -1041,6 +1045,15 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
           // le last-write (lisible par tous) → elle prime sur eval0 (que la RLS
           // scope à la ligne du coach courant, d'où le 4.6 vu par le coach).
           overallRating: (d.cote_globale_entraineur as number) ?? (eval0?.cote_globale as number) ?? 0,
+          // #1 attribution : l'évaluateur de l'éval retenue (post-RLS élargie, ça
+          // peut être le directeur). Le rendu affiche « Évaluée par {nom} » quand
+          // ce n'est pas le coach qui regarde.
+          evaluatorCoachId: (eval0?.coach_id as string) || null,
+          evaluatorName: ((): string | null => {
+            const evRaw = eval0?.evaluator;
+            const ev = (Array.isArray(evRaw) ? evRaw[0] : evRaw) as { first_name?: string; last_name?: string } | null;
+            return ev ? (`${ev.first_name || ""} ${ev.last_name || ""}`.trim() || null) : null;
+          })(),
           traitRatings: traitRatings as AthleteProfileRecruiterView["traitRatings"],
           distinctions: parseDistinctions(eval0?.distinctions),
           favoriteCount: 0,
@@ -2381,6 +2394,11 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
                       {coteGlobale.toFixed(1)}<span className="text-[16px] text-[#6B7280] font-normal">/5</span>
                     </p>
                     <p className="text-[11px] font-bold tracking-[0.2em] uppercase text-[#6B7280] mt-2">Cote Globale</p>
+                    {/* #1 attribution : quand la cote publique vient d'un AUTRE
+                        évaluateur que le coach qui regarde (ex. le directeur). */}
+                    {a.evaluatorCoachId && a.evaluatorName && a.evaluatorCoachId !== currentUserId && (
+                      <p className="text-[11px] text-[#3B82F6] font-semibold mt-1">Évaluée par {a.evaluatorName}</p>
+                    )}
                     {isDetailed && ratedTraits.length > 0 && (
                       <p className="text-[11px] text-[#6B7280] mt-1">Moyenne sur {ratedTraits.length} {ratedTraits.length > 1 ? "traits" : "trait"}</p>
                     )}
