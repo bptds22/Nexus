@@ -804,7 +804,7 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
     setContacting(false);
     if (!res.ok) { setContactError(res.error); return; }
     setShowFavContactPrompt(false);
-    router.push(`/recruteur/messages/${res.conversationId}`);
+    router.push(`/recruteur/messages?id=${res.conversationId}`);
   };
 
   const handleContactAthlete = () => {

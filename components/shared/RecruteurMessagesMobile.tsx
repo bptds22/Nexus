@@ -137,7 +137,7 @@ export function RecruteurMessagesMobile() {
       return;
     }
     try { sessionStorage.setItem("lastRecruiterTab", "messages"); } catch { /* no-op */ }
-    router.push(`/recruteur/messages/${thread.id}`);
+    router.push(`/recruteur/messages?id=${thread.id}`);
   };
 
   const handleToggleSelect = (id: string) => {

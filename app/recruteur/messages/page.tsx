@@ -1,8 +1,10 @@
 "use client";
 
 import FeatureGate from "@/components/subscription/FeatureGate";
-import { useState, useMemo } from "react";
+import { Suspense, useState, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import RecruteurMessagesThread from "./[id]/PageClient";
 import StarRating from "@/components/ui/StarRating";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
 import type { GlobalRecruitmentStatus } from "@/lib/types/models";
@@ -86,7 +88,7 @@ function ThreadCard({ thread: t }: { thread: ThreadData }) {
   const primarySub = isDirect ? t.athletePosition : t.coachSchool;
   return (
     <Link
-      href={`/recruteur/messages/${t.id}`}
+      href={`/recruteur/messages?id=${t.id}`}
       className={`flex items-center gap-4 px-5 py-4 transition-colors hover:bg-[#252D3A] ${
         t.unreadCount > 0
           ? "bg-[#1E2430] border-l-[3px] border-l-[#E63946]"
@@ -147,6 +149,21 @@ function ThreadCard({ thread: t }: { thread: ThreadData }) {
 }
 
 export default function Page() {
+  return (
+    <Suspense fallback={null}>
+      <RecruteurMessagesRouter />
+    </Suspense>
+  );
+}
+
+// STRATÉGIE A — query-param routing : ?id=<uuid> → le fil, sinon l'inbox.
+function RecruteurMessagesRouter() {
+  const threadId = useSearchParams().get("id");
+  if (threadId) return <RecruteurMessagesThread />;
+  return <RecruteurMessagesDispatch />;
+}
+
+function RecruteurMessagesDispatch() {
   // Iter 7.8a — mobile early return AVANT le FeatureGate desktop : la mobile
   // gère son propre gating Free (blur + tease) en interne.
   if (IS_CAPACITOR) return <RecruteurMessagesMobile />;

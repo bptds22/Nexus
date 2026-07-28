@@ -1,7 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import MessagesThread from "./[id]/PageClient";
 import { useAthleteConversations, type AthleteThreadData } from "@/lib/queries/athlete/useAthleteConversations";
 import { AthleteMessagesMobile } from "@/components/shared/AthleteMessagesMobile";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
@@ -44,7 +46,7 @@ function ThreadRow({ t }: { t: AthleteThreadData }) {
   const unread = t.unreadCount > 0;
   return (
     <Link
-      href={`/athlete/messages/${t.id}`}
+      href={`/athlete/messages?id=${t.id}`}
       className={`flex items-center gap-4 px-5 py-4 transition-colors hover:bg-[#252D3A] ${
         unread ? "bg-[#1E2430] border-l-[3px] border-l-[#22C55E]" : "bg-[#1A1D24] border-l-[3px] border-l-transparent"
       }`}
@@ -77,6 +79,17 @@ function ThreadRow({ t }: { t: AthleteThreadData }) {
 }
 
 export default function AthleteMessagesPage() {
+  return (
+    <Suspense fallback={null}>
+      <AthleteMessagesRouter />
+    </Suspense>
+  );
+}
+
+// STRATÉGIE A — query-param routing : ?id=<uuid> → le fil, sinon l'inbox.
+function AthleteMessagesRouter() {
+  const threadId = useSearchParams().get("id");
+  if (threadId) return <MessagesThread />;
   if (IS_CAPACITOR) return <AthleteMessagesMobile />;
   return <AthleteMessagesContent />;
 }

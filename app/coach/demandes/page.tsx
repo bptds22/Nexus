@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import CoachDemandesThread from "./[id]/PageClient";
 import StarRating from "@/components/ui/StarRating";
 import { STATUS_CONFIG, mapDbStatus, type ConversationThread, type ThreadStatus } from "./_data/mockThreadsData";
 import EntityLink from "@/components/shared/EntityLink";
@@ -75,7 +76,7 @@ function AthleteThreadCard({ thread: t }: { thread: ConversationThread }) {
   const initials = `${a.firstName[0] || ""}${a.lastName[0] || ""}`;
   return (
     <Link
-      href={`/coach/demandes/${t.id}`}
+      href={`/coach/demandes?id=${t.id}`}
       className={`flex items-center gap-4 px-5 py-4 transition-colors hover:bg-[#252D3A] ${
         t.unread ? "bg-[#1E2430] border-l-[3px] border-l-[#22C55E]" : "bg-[#1A1D24] border-l-[3px] border-l-transparent"
       }`}
@@ -108,7 +109,7 @@ function CoachCoachThreadCard({ thread: t, meta }: { thread: ConversationThread;
   const athleteName = meta?.athleteName;
   return (
     <Link
-      href={`/coach/demandes/${t.id}`}
+      href={`/coach/demandes?id=${t.id}`}
       className={`flex items-center gap-4 px-5 py-4 transition-colors hover:bg-[#252D3A] ${
         t.unread ? "bg-[#1E2430] border-l-[3px] border-l-[#14B8A6]" : "bg-[#1A1D24] border-l-[3px] border-l-transparent"
       }`}
@@ -143,7 +144,7 @@ function ParentThreadCard({ thread: t, meta }: { thread: ConversationThread; met
   const initials = `${parts[0]?.[0] || ""}${parts[1]?.[0] || ""}` || "?";
   return (
     <Link
-      href={`/coach/demandes/${t.id}`}
+      href={`/coach/demandes?id=${t.id}`}
       className={`flex items-center gap-4 px-5 py-4 transition-colors hover:bg-[#252D3A] ${
         t.unread ? "bg-[#1E2430] border-l-[3px] border-l-[#E63946]" : "bg-[#1A1D24] border-l-[3px] border-l-transparent"
       }`}
@@ -177,7 +178,7 @@ function ThreadCard({ thread: t }: { thread: ConversationThread }) {
 
   return (
     <Link
-      href={`/coach/demandes/${t.id}`}
+      href={`/coach/demandes?id=${t.id}`}
       className={`flex items-center gap-4 px-5 py-4 transition-colors hover:bg-[#252D3A] ${
         t.unread
           ? "bg-[#1E2430] border-l-[3px] border-l-[#E63946]"
@@ -259,7 +260,7 @@ function AnnonceCard({ a }: { a: AnnonceSummary }) {
   const unread = a.unreadReplies > 0;
   return (
     <Link
-      href={`/coach/demandes/annonce/${a.broadcastId}`}
+      href={`/coach/demandes/annonce?id=${a.broadcastId}`}
       className={`flex items-center gap-4 px-5 py-4 transition-colors hover:bg-[#252D3A] ${
         unread ? "bg-[#1E2430] border-l-[3px] border-l-[#8B5CF6]" : "bg-[#1A1D24] border-l-[3px] border-l-transparent"
       }`}
@@ -297,6 +298,21 @@ function AnnonceCard({ a }: { a: AnnonceSummary }) {
 ═══════════════════════════════════════════════════════════════ */
 
 export default function DemandesPage() {
+  return (
+    <Suspense fallback={null}>
+      <DemandesRouter />
+    </Suspense>
+  );
+}
+
+// STRATÉGIE A — query-param routing : ?id=<uuid> → le fil, sinon l'inbox.
+function DemandesRouter() {
+  const threadId = useSearchParams().get("id");
+  if (threadId) return <CoachDemandesThread />;
+  return <DemandesDispatch />;
+}
+
+function DemandesDispatch() {
   // Phase 2 — mobile early return AVANT le rendu desktop. Comme côté
   // recruteur (cf. /recruteur/messages/page.tsx), la mobile possède
   // son propre flux iOS (MessagesListShell + recruteur-first row).

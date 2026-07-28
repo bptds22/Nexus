@@ -536,7 +536,7 @@ export default function CoachAthleteProfilePage() {
                 const { data: { user } } = await supabase.auth.getUser();
                 if (!user) return;
                 const { conversationId } = await findOrCreateAthleteCoachConversation(supabase, { athleteId: id, coachId: user.id });
-                if (conversationId) router.push(`/coach/demandes/${conversationId}`);
+                if (conversationId) router.push(`/coach/demandes?id=${conversationId}`);
               }}
               className="flex items-center gap-2 px-4 py-2 border border-[#22C55E] text-[#22C55E] rounded-lg text-[11px] font-bold uppercase tracking-wider hover:bg-[#22C55E]/10 transition-colors"
             >

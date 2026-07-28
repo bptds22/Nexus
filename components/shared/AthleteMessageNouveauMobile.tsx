@@ -52,7 +52,7 @@ export function AthleteMessageNouveauMobile() {
       return;
     }
     queryClient.invalidateQueries({ queryKey: ["conversations"] });
-    router.replace(`/athlete/messages/${conversationId}`);
+    router.replace(`/athlete/messages?id=${conversationId}`);
   }
 
   return (

@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useDynamicParam } from "@/lib/platform/useDynamicParam";
 import { createClient } from "@/lib/supabase/client";
 import RetractedMessageRow from "@/components/messaging/RetractedMessageRow";
 
@@ -45,8 +45,7 @@ function MessageBubble({ msg, isMe, otherName }: { msg: MessageData; isMe: boole
 }
 
 export default function ParentThreadPage() {
-  const params = useParams();
-  const id = (Array.isArray(params?.id) ? params.id[0] : params?.id) as string;
+  const id = useDynamicParam("id"); // Stratégie A : ?id (fallback [id]/sessionStorage)
   const [coach, setCoach] = useState<CoachInfo | null>(null);
   const [messages, setMessages] = useState<MessageData[]>([]);
   const [reply, setReply] = useState("");

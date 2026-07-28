@@ -153,10 +153,10 @@ export function CoachDemandesMobile() {
   const handleTap = (thread: CoachThreadData) => {
     try { sessionStorage.setItem("lastCoachTab", "demandes"); } catch { /* no-op */ }
     if (thread.isBroadcast && thread.broadcastId) {
-      router.push(`/coach/demandes/annonce/${thread.broadcastId}`);
+      router.push(`/coach/demandes/annonce?id=${thread.broadcastId}`);
       return;
     }
-    router.push(`/coach/demandes/${thread.id}`);
+    router.push(`/coach/demandes?id=${thread.id}`);
   };
 
   const handleToggleSelect = (id: string) => {

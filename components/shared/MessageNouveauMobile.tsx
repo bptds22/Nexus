@@ -279,7 +279,7 @@ J'ai consulté le profil de ${a.firstName} ${a.lastName}${a.position ? ` (${a.po
     triggerHaptic("Medium");
     toast.success({ message: "Message envoyé" });
     // Navigation vers le thread créé.
-    router.replace(`/recruteur/messages/${convId}`);
+    router.replace(`/recruteur/messages?id=${convId}`);
   }, [selected, messageBody, canSend, sending, router, toast]);
 
   return (

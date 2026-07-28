@@ -61,7 +61,7 @@ export default function AthleteNouveauMessagePage() {
       return;
     }
     queryClient.invalidateQueries({ queryKey: ["conversations"] });
-    router.push(`/athlete/messages/${conversationId}`);
+    router.push(`/athlete/messages?id=${conversationId}`);
   }
 
   return (

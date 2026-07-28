@@ -56,7 +56,7 @@ function CoachNouveauMessageContent() {
 
   function routeToThread(id: string) {
     queryClient.invalidateQueries({ queryKey: ["conversations"] });
-    router.push(`/coach/demandes/${id}`);
+    router.push(`/coach/demandes?id=${id}`);
   }
 
   return (

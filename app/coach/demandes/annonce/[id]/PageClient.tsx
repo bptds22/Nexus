@@ -48,7 +48,7 @@ function RecipientRow({ r }: { r: AnnonceRecipient }) {
   const parts = r.name.split(" ");
   return (
     <Link
-      href={`/coach/demandes/${r.conversationId}`}
+      href={`/coach/demandes?id=${r.conversationId}`}
       className={`flex items-center gap-3 px-4 sm:px-5 py-3.5 transition-colors hover:bg-[#252D3A] ${
         r.hasUnread ? "bg-[#1E2430]" : "bg-transparent"
       }`}

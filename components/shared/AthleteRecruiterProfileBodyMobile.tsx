@@ -1099,7 +1099,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
     setContactingCoach(true);
     const result = await findOrCreateRecruiterConversation({ coachId, athleteId: a.id });
     if (result.ok) {
-      router.push(`/recruteur/messages/${result.conversationId}`);
+      router.push(`/recruteur/messages?id=${result.conversationId}`);
       return;
     }
     setContactingCoach(false);
@@ -1318,7 +1318,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
     if (!a) return;
     setContactingAthlete(true);
     const res = await findOrCreateRecruiterAthleteConversation(a.id);
-    if (res.ok) { router.push(`/recruteur/messages/${res.conversationId}`); return; }
+    if (res.ok) { router.push(`/recruteur/messages?id=${res.conversationId}`); return; }
     setContactingAthlete(false);
     setShowFavContactPrompt(false);
     toast.error({ message: "Échec", detail: res.error || "Impossible d'ouvrir la conversation." });
@@ -2764,7 +2764,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
                 const { data: { user } } = await supabase.auth.getUser();
                 if (!user) return;
                 const { conversationId } = await findOrCreateAthleteCoachConversation(supabase, { athleteId: id, coachId: user.id });
-                if (conversationId) router.push(`/coach/demandes/${conversationId}`);
+                if (conversationId) router.push(`/coach/demandes?id=${conversationId}`);
                 else toast.error({ message: "Impossible d'ouvrir la conversation" });
               }}
               className="flex items-center justify-center gap-1.5 shrink-0 px-4 py-4 rounded-2xl border border-[#22C55E]/40 text-[#22C55E] font-head font-bold text-[13px] uppercase tracking-widest active:bg-[#22C55E]/10"

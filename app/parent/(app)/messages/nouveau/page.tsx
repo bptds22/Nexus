@@ -72,7 +72,7 @@ export default function ParentNouveauMessagePage() {
       return;
     }
     queryClient.invalidateQueries({ queryKey: ["conversations"] });
-    router.push(`/parent/messages/${conversationId}`);
+    router.push(`/parent/messages?id=${conversationId}`);
   }
 
   const childName = (c: Child) => `${c.first_name ?? ""} ${c.last_name ?? ""}`.trim() || "Mon enfant";

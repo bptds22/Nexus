@@ -108,7 +108,7 @@ export function AthleteMessagesMobile() {
     return list;
   }, [threads, filter, typeSegments, typeValues, debouncedSearch, userId]);
 
-  const handleTap = (t: AthleteThreadData) => router.push(`/athlete/messages/${t.id}`);
+  const handleTap = (t: AthleteThreadData) => router.push(`/athlete/messages?id=${t.id}`);
   const handleToggleSelect = (id: string) => {
     triggerHaptic("Light");
     setSelected((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });

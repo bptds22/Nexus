@@ -42,7 +42,7 @@ export function CoachDemandesNouveauMobile() {
 
   function routeToThread(id: string) {
     queryClient.invalidateQueries({ queryKey: ["conversations"] });
-    router.replace(`/coach/demandes/${id}`);
+    router.replace(`/coach/demandes?id=${id}`);
   }
 
   function back() {

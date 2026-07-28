@@ -1,7 +1,10 @@
 "use client";
 
+import { Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useParentConversations, type ParentThreadData } from "@/lib/queries/parent/useParentConversations";
+import ParentThread from "./[id]/page";
 
 /* ═══════════════════════════════════════════════════════════════
    Parent Messages — thread list (PARENT_COACH). Universal
@@ -28,7 +31,7 @@ function ThreadRow({ t }: { t: ParentThreadData }) {
   const unread = t.unreadCount > 0;
   return (
     <Link
-      href={`/parent/messages/${t.id}`}
+      href={`/parent/messages?id=${t.id}`}
       className={`flex items-center gap-4 px-5 py-4 transition-colors hover:bg-[#252D3A] ${
         unread ? "bg-[#1E2430] border-l-[3px] border-l-[#E63946]" : "bg-[#1A1D24] border-l-[3px] border-l-transparent"
       }`}
@@ -58,6 +61,21 @@ function ThreadRow({ t }: { t: ParentThreadData }) {
 }
 
 export default function ParentMessagesPage() {
+  return (
+    <Suspense fallback={null}>
+      <ParentMessagesRouter />
+    </Suspense>
+  );
+}
+
+// STRATÉGIE A — query-param routing : ?id=<uuid> → le fil, sinon l'inbox.
+function ParentMessagesRouter() {
+  const threadId = useSearchParams().get("id");
+  if (threadId) return <ParentThread />;
+  return <ParentMessagesInbox />;
+}
+
+function ParentMessagesInbox() {
   const { data: threads = [], isLoading } = useParentConversations();
   const unreadCount = threads.filter((t) => t.unreadCount > 0).length;
 
