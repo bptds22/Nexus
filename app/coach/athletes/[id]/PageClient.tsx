@@ -15,7 +15,7 @@ import InvitationLinkModal from "@/components/ui/InvitationLinkModal";
 import { createAthleteInvitationLink } from "@/lib/queries/coach/createAthleteInvitation";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
 import DistinctionBadge from "@/components/shared/DistinctionBadge";
-import { parseDistinctions, type DistinctionEntry } from "@/lib/config/badges";
+import { type DistinctionEntry } from "@/lib/config/badges";
 import VideoEmbed from "@/components/ui/VideoEmbed";
 import type { GlobalRecruitmentStatus } from "@/lib/types/models";
 import { isValidationExpired } from "@/lib/utils/profileValidation";
@@ -280,6 +280,15 @@ export default function CoachAthleteProfilePage() {
 
       const mapped = mapToRecruiterView(raw);
       setA(mapped);
+      // Distinctions : réutiliser CELLES de l'éval choisie par
+      // selectBestEvaluation (mapped.distinctions), pas une lecture à part.
+      // L'ancien chemin refetchait evaluations avec .limit(1).maybeSingle()
+      // SANS order updated_at : pour un directeur (RLS lui laisse voir l'éval
+      // du coach propriétaire ET la sienne) ça renvoyait une ligne arbitraire
+      // — typiquement celle du coach — donc ses propres distinctions tout
+      // juste enregistrées ne se reflétaient pas. mapped.distinctions vient
+      // de selectBestEvaluation (la plus récente par updated_at) = la sienne.
+      setDbDistinctions(mapped.distinctions);
       setAthleteHasAccount(!!raw.user_id);
       setAthleteEmail((raw.email as string | null) ?? null);
       setLoading(false);
@@ -306,20 +315,6 @@ export default function CoachAthleteProfilePage() {
       const overrideAt = raw.recrutement_override_at as string | null;
       if (overrideVal && overrideAt) {
         setRecruitOverride({ value: overrideVal, at: overrideAt });
-      }
-
-      // Load full evaluation from evaluations table
-      const { data: evalRow } = await supabase
-        .from("evaluations")
-        .select("*")
-        .eq("athlete_id", id)
-        .limit(1)
-        .maybeSingle();
-      if (evalRow?.distinctions) {
-        let d = evalRow.distinctions;
-        if (typeof d === "string") { try { d = JSON.parse(d); } catch { d = []; } }
-        const parsed = parseDistinctions(d);
-        setDbDistinctions(parsed);
       }
 
       // Engagement metrics
