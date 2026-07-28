@@ -11,6 +11,7 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { findOrCreateRecruiterCoachConversation } from "@/lib/queries/messaging/createRecruiterCoachConversation";
 import AthleteSelectCard from "@/components/messaging/AthleteSelectCard";
+import { loadCoachAthleteOptions } from "@/lib/queries/messaging/loadCoachAthleteOptions";
 
 interface Cegep { id: string; name: string; }
 interface Recruiter { id: string; name: string; photoUrl: string | null; }
@@ -27,6 +28,7 @@ export default function RecruiterBrowserCompose({
 }) {
   const [cegeps, setCegeps] = useState<Cegep[]>([]);
   const [myAthletes, setMyAthletes] = useState<Ath[]>([]);
+  const [schoolAthletes, setSchoolAthletes] = useState<Ath[]>([]);
   const [loading, setLoading] = useState(true);
   const [cegep, setCegep] = useState<Cegep | null>(null);
   const [recruiters, setRecruiters] = useState<Recruiter[]>([]);
@@ -50,16 +52,10 @@ export default function RecruiterBrowserCompose({
         list.push({ id: sid, name: s?.name || "" });
       }
       list.sort((a, b) => a.name.localeCompare(b.name, "fr"));
-      // My athletes (own roster).
-      const { data: aths } = await supabase.from("athletes").select("id, first_name, last_name, photo_url, cote_globale_entraineur, sports!sport_id(nom), positions!position_id(abreviation)").eq("coach_id", selfId).eq("status", "ACTIF").order("last_name");
-      const mine: Ath[] = (aths ?? []).map((a) => {
-        const p = (Array.isArray((a as { positions?: unknown }).positions) ? (a as { positions: unknown[] }).positions[0] : (a as { positions?: unknown }).positions) as { abreviation?: string } | null;
-        const s = (Array.isArray((a as { sports?: unknown }).sports) ? (a as { sports: unknown[] }).sports[0] : (a as { sports?: unknown }).sports) as { nom?: string } | null;
-        const af = (a as { first_name?: string }).first_name || "";
-        const al = (a as { last_name?: string }).last_name || "";
-        return { id: (a as { id: string }).id, firstName: af, lastName: al, name: `${af} ${al}`.trim() || "Athlète", sport: s?.nom || "", position: p?.abreviation || "", photoUrl: (a as { photo_url?: string }).photo_url ?? null, stars: Number((a as { cote_globale_entraineur?: number }).cote_globale_entraineur) || 0 };
-      });
-      if (!cancelled) { setCegeps(list); setMyAthletes(mine); setLoading(false); }
+      // Athlete options (#6) — "Mes athlètes" (coach_id=self) + "Athlètes de
+      // l'école" (peuplé seulement pour un directeur ; vide pour un coach normal).
+      const { mine, school } = await loadCoachAthleteOptions(supabase, selfId);
+      if (!cancelled) { setCegeps(list); setMyAthletes(mine as Ath[]); setSchoolAthletes(school as Ath[]); setLoading(false); }
     })();
     return () => { cancelled = true; };
   }, [selfId]);
@@ -95,24 +91,35 @@ export default function RecruiterBrowserCompose({
         <div><p className="text-[14px] font-bold text-white">{recruiter.name}</p><p className="text-[12px] text-[#6b7280]">{cegep?.name}</p></div>
         <p className="text-[12px] font-bold tracking-[0.2em] uppercase text-[#9CA3AF]">À propos de quel athlète&nbsp;?</p>
         {error && <div className="rounded-lg border border-[#EF4444]/40 bg-[#EF4444]/10 px-4 py-3 text-[13px] text-[#FCA5A5]">{error}</div>}
-        {myAthletes.length === 0 ? (
+        {myAthletes.length === 0 && schoolAthletes.length === 0 ? (
           <div className="bg-[#13151a] border border-[#2D3748] rounded-lg p-5"><p className="text-[14px] text-[#9CA3AF]">Tu n&apos;as pas encore d&apos;athlète dans ton roster.</p></div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {myAthletes.map((a) => (
-              <AthleteSelectCard
-                key={a.id}
-                firstName={a.firstName}
-                lastName={a.lastName}
-                name={a.name}
-                photoUrl={a.photoUrl}
-                sport={a.sport}
-                position={a.position}
-                stars={a.stars}
-                disabled={!!busyAthlete}
-                busy={busyAthlete === a.id}
-                onClick={() => pickAthlete(a.id)}
-              />
+          <div className="space-y-4">
+            {([
+              { label: "Mes athlètes", list: myAthletes },
+              // "Athlètes de l'école" : peuplé seulement pour un directeur (#6).
+              { label: "Athlètes de l’école", list: schoolAthletes },
+            ] as const).filter((sec) => sec.list.length > 0).map((sec) => (
+              <div key={sec.label} className="space-y-2">
+                <p className="text-[11px] font-bold tracking-wider uppercase text-[#6b7280]">{sec.label}</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {sec.list.map((a) => (
+                    <AthleteSelectCard
+                      key={a.id}
+                      firstName={a.firstName}
+                      lastName={a.lastName}
+                      name={a.name}
+                      photoUrl={a.photoUrl}
+                      sport={a.sport}
+                      position={a.position}
+                      stars={a.stars}
+                      disabled={!!busyAthlete}
+                      busy={busyAthlete === a.id}
+                      onClick={() => pickAthlete(a.id)}
+                    />
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
         )}
