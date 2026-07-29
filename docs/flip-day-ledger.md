@@ -1262,3 +1262,17 @@ directeurs civils sont dans school_coaches (fixture ✅).
   dans school_coaches) ; à vérifier que l'onboarding civil crée bien school_coaches.
 - ORPHELIN (chantier connu) : un athlète sans équipe ET sans coach_id n'est atteint par aucun
   chemin team/owner → hors groupes TEAM. Pas de NOUVELLE régression (jamais en scope).
+
+## [x] Groupe chat civil — EN_ATTENTE + dépendance school_coaches fermée (APPLIQUÉ PROD 2026-07-29)
+
+Sur GO de BP (les 2 drapeaux du rapport civil précédent) :
+- create_group + create_custom_group : `status='ACTIF'` → `IN ('ACTIF','EN_ATTENTE')` (les mineurs
+  en attente de consentement entrent dans les groupes). Picker groupe : loadCoachAthleteOptions
+  gagne `includePending` (true depuis GroupeCompose custom) pour les AFFICHER.
+- Dépendance school_coaches fermée : `v_school = COALESCE(school_coaches, école de l'équipe du
+  sender)` → un coach civil purement team-linked crée groupes STAFF/custom (v_school via team).
+  STAFF seed + validation membre-coach = school_coaches ∪ team_coaches du club (les coachs civils
+  team-only sont inclus/sélectionnables).
+Preuve per-rôle avant apply : STAFF participants=2 · TEAM ath_EN_ATTENTE=1 · custom coach
+team-linked seeded=1 scope=club · AVANT='sender has no school'. Migration 20260731110000
+(bodies via apply_migration). Verif catalogue = session séparée.

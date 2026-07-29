@@ -77,7 +77,8 @@ export default function GroupeCompose({
         const supabase = createClient();
         // Athlètes du périmètre AVEC un compte (user_id non null) — coach = ses
         // athlètes ; directeur = école (loadCoachAthleteOptions fait la distinction).
-        const { mine, school } = await loadCoachAthleteOptions(supabase, selfId);
+        // includePending : les groupes incluent les athlètes EN_ATTENTE (décision BP).
+        const { mine, school } = await loadCoachAthleteOptions(supabase, selfId, true);
         const withAccount = (l: CoachAthleteOption[]) => l.filter((a) => !!a.userId);
         // Coachs de l'école (school_coaches → users). id = coach_id = user_id.
         const staff = await loadSchoolStaff(supabase, selfId);

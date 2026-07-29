@@ -101,7 +101,12 @@ function toOption(a: AthleteRow): CoachAthleteOption {
 export async function loadCoachAthleteOptions(
   supabase: SupabaseClient,
   selfId: string,
+  // #civil : les groupes incluent les athlètes EN_ATTENTE (mineurs en attente de
+  // consentement inclus, décision BP) → le picker groupe doit les AFFICHER. Les
+  // autres surfaces (compose recruteur) gardent ACTIF seul par défaut.
+  includePending = false,
 ): Promise<CoachAthleteOptions> {
+  const statuses = includePending ? ["ACTIF", "EN_ATTENTE"] : ["ACTIF"];
   // 1. Mes athlètes — PROPRIÉTAIRE (coach_id = selfId) OU rattachés à une
   //    équipe que ce coach coache (autorité d'équipe, BP). coach_id reste
   //    le lien propriétaire inchangé ; on ÉLARGIT juste la visibilité.
@@ -109,7 +114,7 @@ export async function loadCoachAthleteOptions(
   const mineSel = supabase
     .from("athletes")
     .select(ATHLETE_OPTION_SELECT)
-    .eq("status", "ACTIF")
+    .in("status", statuses)
     .order("last_name", { ascending: true });
   // `.or` + `.eq("status", …)` se combinent en AND → statut gardé séparé.
   const { data: mineRaw } = await (teamIds.length
@@ -127,7 +132,7 @@ export async function loadCoachAthleteOptions(
     .from("athletes")
     .select(ATHLETE_OPTION_SELECT)
     .eq("school_id", director.schoolId)
-    .eq("status", "ACTIF")
+    .in("status", statuses)
     .order("last_name", { ascending: true });
   // Dédup en JS (et NON via .neq("coach_id", selfId), qui laisserait
   // tomber les athlètes NON réclamés — coach_id NULL — de l'école à cause
