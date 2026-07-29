@@ -1240,3 +1240,25 @@ Verif catalogue = session séparée.
   Preuve : head_coach ajoute le directeur ✅, outsider refusé ✅. NB : le role CHECK n'accepte que
   head_coach/assistant/coordinator (si l'UI envoie CHEF/COORDO → erreur CHECK distincte).
 Verif catalogue = session séparée.
+
+## [x] Vérification civile — neutralité école/club du delta (2026-07-29)
+
+Fixture "Nexus Civil" (c1710000-..0003) : directeur a0..a3 (school_coaches DIRECTEUR + head_coach
+équipe 30a35d43), athlète fbf03493 (coach_id=a3, school_id=club, EN_ATTENTE, sur l'équipe).
+
+Verdict par JWT (rollback) : la plupart des objets du delta sont team-based → civil-neutres
+(coach_can_manage_athlete, is_team_head_coach, create_group TEAM, loadTeamAthleteIds). Les
+helpers "directeur" (is_group_school_authority, is_director_of_team_school) marchent CAR les
+directeurs civils sont dans school_coaches (fixture ✅).
+
+- BUG TROUVÉ + FIXÉ (appliqué prod, migration 20260731100000) : create_custom_group branche coach
+  sans fallback team → un coach civil (ou assistant école) perdait les athlètes de son équipe
+  non-possédés. Preuve : AVANT seeded=0 → APRÈS seeded=1 (+ coach_can_manage_athlete).
+- DRAPEAU (décision produit, NON auto-fixé) : status='ACTIF' exclut les athlètes EN_ATTENTE du
+  seeding des groupes (TEAM + custom). L'athlète civil du fixture est EN_ATTENTE → non seedé.
+  Loi 25 : un mineur en attente de consentement ne devrait peut-être PAS être dans un groupe.
+- DÉPENDANCE : create_group STAFF + create_custom_group exigent une ligne school_coaches (v_school).
+  Un coach purement team-linked (sans school_coaches) → 'sender has no school'. Fixture OK (civils
+  dans school_coaches) ; à vérifier que l'onboarding civil crée bien school_coaches.
+- ORPHELIN (chantier connu) : un athlète sans équipe ET sans coach_id n'est atteint par aucun
+  chemin team/owner → hors groupes TEAM. Pas de NOUVELLE régression (jamais en scope).
