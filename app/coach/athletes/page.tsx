@@ -19,6 +19,8 @@ import CoachAthleteRow from "@/components/coach/CoachAthleteRow";
 import { CoachAthletesMobile } from "@/components/shared/CoachAthletesMobile";
 import InviteByEmailModal from "./_components/InviteByEmailModal";
 import { loadSchoolDirectorStatus } from "@/lib/queries/coach/useSchoolDirector";
+import { loadTeamAthleteIds } from "@/lib/queries/coach/teamAthleteIds";
+import { orgNounDe, orgNounPossessif, type SchoolType } from "@/lib/utils/orgLabel";
 import { AthleteSectionHeader } from "@/components/shared/coach/AthleteSectionHeader";
 
 import { TEAM_GENDER_FILTER_OPTIONS, firstTeamGender } from "@/lib/config/gender";
@@ -189,6 +191,8 @@ function MesAthletesContent() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [minGpa, setMinGpa] = useState("");
   const [orgType, setOrgType] = useState("");
+  // Type d'org du coach courant (club vs école vs cégep) → vocabulaire type-aware.
+  const [coachOrgType, setCoachOrgType] = useState<SchoolType | null>(null);
   const [filterOuvertDemenager, setFilterOuvertDemenager] = useState(false);
   const [filterOuvertPrive, setFilterOuvertPrive] = useState(false);
   const [filterOuvertAnglophone, setFilterOuvertAnglophone] = useState(false);
@@ -236,7 +240,7 @@ function MesAthletesContent() {
       // me in memory.
       const { data: coachRow, error: coachError } = await supabase
         .from("users")
-        .select("school_id")
+        .select("school_id, schools!school_id(type)")
         .eq("id", session.user.id)
         .single();
 
@@ -247,8 +251,16 @@ function MesAthletesContent() {
       }
 
       const coachSchoolId = coachRow.school_id;
+      const coachSchoolRel = (coachRow as { schools?: unknown }).schools;
+      setCoachOrgType(((Array.isArray(coachSchoolRel) ? coachSchoolRel[0] : coachSchoolRel) as { type?: SchoolType } | null)?.type ?? null);
 
-      const { data, error } = await supabase
+      // Angle mort team-based (BP) : un coach CIVIL peut posséder / coacher
+      // des athlètes dont le school_id = club ≠ son users.school_id. Le scope
+      // école seul les rate → on ÉLARGIT avec les athlete_id des équipes
+      // coachées (team_coaches → team_athletes). coach_id reste inchangé.
+      const teamIds = await loadTeamAthleteIds(supabase, session.user.id);
+
+      const athletesQuery = supabase
         .from("athletes")
         .select(`
           id,
@@ -299,8 +311,11 @@ function MesAthletesContent() {
           evaluations(cote_globale, rapport_entraineur, distinctions, updated_at, coach_id,
             evaluator:users!evaluations_coach_id_fkey(first_name, last_name))
         `)
-        .eq("school_id", coachSchoolId)
         .eq("status", "ACTIF");
+      // `.or` + `.eq("status", …)` se combinent en AND → statut gardé séparé.
+      const { data, error } = await (teamIds.length
+        ? athletesQuery.or(`school_id.eq.${coachSchoolId},id.in.(${teamIds.join(",")})`)
+        : athletesQuery.eq("school_id", coachSchoolId));
 
 
       if (!data) { setLoading(false); return; }
@@ -816,6 +831,7 @@ function MesAthletesContent() {
         <ReclamerSection
           unclaimedAthletes={unclaimedAthletes}
           currentUserId={currentUserId}
+          orgType={coachOrgType}
           onClaimSuccess={() => setRefreshVersion((v) => v + 1)}
         />
       )}
@@ -1110,9 +1126,9 @@ function MesAthletesContent() {
 
           {schoolAthletes.length > 0 && (
             <div className="space-y-4 pt-5 border-t border-[#2D3748]/60">
-              <AthleteSectionHeader title="Athlètes de l&apos;école" count={filteredSchool.length} director />
+              <AthleteSectionHeader title={`Athlètes ${orgNounDe(coachOrgType)}`} count={filteredSchool.length} director />
               {filteredSchool.length === 0 ? (
-                <p className="text-[13px] text-[#6b7280] py-2">Aucun athlète de l&apos;école ne correspond aux filtres.</p>
+                <p className="text-[13px] text-[#6b7280] py-2">Aucun athlète {orgNounDe(coachOrgType)} ne correspond aux filtres.</p>
               ) : renderAthletes(filteredSchool)}
             </div>
           )}
@@ -1128,7 +1144,7 @@ function MesAthletesContent() {
             <>
               <h3 className="font-head text-xl font-black text-white uppercase tracking-wide mb-2">Tu n&apos;as pas encore réclamé d&apos;athlètes</h3>
               <p className="text-[14px] text-[#9CA3AF] max-w-md leading-relaxed mb-4">
-                Réclame des athlètes parmi ceux disponibles à ton école pour bâtir ton roster.
+                Réclame des athlètes parmi ceux disponibles à {orgNounPossessif(coachOrgType)} pour bâtir ton roster.
               </p>
               <button
                 type="button"

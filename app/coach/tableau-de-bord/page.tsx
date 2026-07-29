@@ -137,13 +137,18 @@ export default function TableauDeBordPage() {
       // Roster scope: director → whole school; coach → athlètes PROPRIÉTAIRE
       // (coach_id = self) OU rattachés à une équipe qu'il coache (autorité
       // d'équipe, BP). coach_id reste le lien propriétaire inchangé.
+      const teamIds = await loadTeamAthleteIds(supabase, user.id);
       const athletesSel = supabase.from("athletes").select("id, verified").eq("status", "ACTIF");
       let athleteRows: { id: string; verified: boolean }[] | null = null;
+      // `.or` + `.eq("status", …)` se combinent en AND → statut gardé séparé.
       if (isDir) {
-        ({ data: athleteRows } = await athletesSel.eq("school_id", coachSchoolId));
+        // Directeur CIVIL : son users.school_id peut ≠ club → le scope école
+        // seul rate les athlètes team-based du club. On ÉLARGIT avec les
+        // équipes coachées, comme la branche coach.
+        ({ data: athleteRows } = await (teamIds.length
+          ? athletesSel.or(`school_id.eq.${coachSchoolId},id.in.(${teamIds.join(",")})`)
+          : athletesSel.eq("school_id", coachSchoolId)));
       } else {
-        const teamIds = await loadTeamAthleteIds(supabase, user.id);
-        // `.or` + `.eq("status", …)` se combinent en AND → statut gardé séparé.
         ({ data: athleteRows } = await (teamIds.length
           ? athletesSel.or(`coach_id.eq.${user.id},id.in.(${teamIds.join(",")})`)
           : athletesSel.eq("coach_id", user.id)));
@@ -170,7 +175,7 @@ export default function TableauDeBordPage() {
       // le tab badge, le dashboard et la page /coach/a-traiter soient tous
       // alimentés par UNE SEULE source. Adds 'missingEvals' (ÉTAPE 3b nouveau).
       const taskCounts = isDir
-        ? await loadSchoolTaskCounts(supabase, coachSchoolId)
+        ? await loadSchoolTaskCounts(supabase, coachSchoolId, teamIds)
         : await loadCoachTaskCounts(supabase, user.id);
 
       // Banner 3: new athletes added (unread) — séparé, pas une "tâche"

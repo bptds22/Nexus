@@ -329,18 +329,33 @@ export async function loadCoachTaskCounts(
 export async function loadSchoolTaskCounts(
   supabase: SupabaseClient,
   schoolId: string,
+  // Angle mort team-based (BP) : un directeur CIVIL peut avoir un
+  // users.school_id ≠ club → le scope école seul rate les athlètes
+  // team-based du club. Le dashboard passe les athlete_id des équipes
+  // coachées pour ÉLARGIR le décompte, cohérent avec la requête roster/KPI.
+  // [] (défaut) = aucun élargissement, comportement école-seul inchangé.
+  teamIds: string[] = [],
 ): Promise<CoachTaskCounts> {
+  const hasTeam = teamIds.length > 0;
+  const teamCsv = teamIds.join(",");
+  // `.or` + `.eq("status", …)` se combinent en AND → statut gardé séparé.
+  const athletesSel = supabase
+    .from("athletes")
+    .select("id, coach_id, verified, modified_since_verification, cote_globale_entraineur, evaluations(coach_id, cote_globale, rapport_entraineur)")
+    .eq("status", "ACTIF");
+  const suggestionsSel = supabase
+    .from("athlete_suggestions")
+    .select("id, athletes!athlete_id!inner(id, school_id)")
+    .eq("status", "EN_ATTENTE");
   const [athletesRes, suggestionsRes] = await Promise.all([
-    supabase
-      .from("athletes")
-      .select("id, coach_id, verified, modified_since_verification, cote_globale_entraineur, evaluations(coach_id, cote_globale, rapport_entraineur)")
-      .eq("school_id", schoolId)
-      .eq("status", "ACTIF"),
-    supabase
-      .from("athlete_suggestions")
-      .select("id, athletes!athlete_id!inner(school_id)")
-      .eq("athletes.school_id", schoolId)
-      .eq("status", "EN_ATTENTE"),
+    hasTeam
+      ? athletesSel.or(`school_id.eq.${schoolId},id.in.(${teamCsv})`)
+      : athletesSel.eq("school_id", schoolId),
+    // OR sur la ressource embarquée `athletes` (inner join) : la suggestion
+    // remonte si son athlète est dans l'école OU dans une équipe coachée.
+    hasTeam
+      ? suggestionsSel.or(`school_id.eq.${schoolId},id.in.(${teamCsv})`, { referencedTable: "athletes" })
+      : suggestionsSel.eq("athletes.school_id", schoolId),
   ]);
 
   if (athletesRes.error) console.error("[loadSchoolTaskCounts] athletes:", athletesRes.error.message);

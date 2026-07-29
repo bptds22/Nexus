@@ -41,7 +41,9 @@ import {
 import { createAthleteInvitationLink } from "@/lib/queries/coach/createAthleteInvitation";
 import { loadCoachTeams, inviteAthleteToTeam, type CoachTeamOption } from "@/lib/queries/coach/teamInvite";
 import { loadSchoolDirectorStatus } from "@/lib/queries/coach/useSchoolDirector";
+import { loadTeamAthleteIds } from "@/lib/queries/coach/teamAthleteIds";
 import { AthleteSectionHeader } from "@/components/shared/coach/AthleteSectionHeader";
+import { orgNounDe, orgNounPossessif, type SchoolType } from "@/lib/utils/orgLabel";
 
 /* ── Constants ────────────────────────────────────────────── */
 
@@ -898,6 +900,8 @@ export function CoachAthletesMobile() {
   const [athletes, setAthletes] = useState<CoachAthlete[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string>("");
   const [isDirector, setIsDirector] = useState(false);
+  // Type d'org du coach courant → vocabulaire type-aware (club vs école).
+  const [coachOrgType, setCoachOrgType] = useState<SchoolType | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshVersion, setRefreshVersion] = useState(0);
 
@@ -948,7 +952,7 @@ export function CoachAthletesMobile() {
 
       const { data: coachRow, error: coachError } = await supabase
         .from("users")
-        .select("school_id")
+        .select("school_id, schools!school_id(type)")
         .eq("id", user.id)
         .single();
 
@@ -957,7 +961,16 @@ export function CoachAthletesMobile() {
         return;
       }
 
-      const { data } = await supabase
+      const coachSchoolRel = (coachRow as { schools?: unknown }).schools;
+      if (!cancelled) setCoachOrgType(((Array.isArray(coachSchoolRel) ? coachSchoolRel[0] : coachSchoolRel) as { type?: SchoolType } | null)?.type ?? null);
+
+      // Angle mort team-based (BP) : un coach CIVIL peut posséder / coacher
+      // des athlètes dont le school_id = club ≠ son users.school_id. Le scope
+      // école seul les rate → on ÉLARGIT avec les athlete_id des équipes
+      // coachées (team_coaches → team_athletes). coach_id reste inchangé.
+      const teamIds = await loadTeamAthleteIds(supabase, user.id);
+
+      const athletesQuery = supabase
         .from("athletes")
         .select(`
           id,
@@ -988,8 +1001,11 @@ export function CoachAthletesMobile() {
           evaluations(cote_globale, rapport_entraineur, distinctions, updated_at, coach_id,
             evaluator:users!evaluations_coach_id_fkey(first_name, last_name))
         `)
-        .eq("school_id", coachRow.school_id)
         .eq("status", "ACTIF");
+      // `.or` + `.eq("status", …)` se combinent en AND → statut gardé séparé.
+      const { data } = await (teamIds.length
+        ? athletesQuery.or(`school_id.eq.${coachRow.school_id},id.in.(${teamIds.join(",")})`)
+        : athletesQuery.eq("school_id", coachRow.school_id));
 
       if (!data || cancelled) { if (!cancelled) setLoading(false); return; }
 
@@ -1356,10 +1372,10 @@ export function CoachAthletesMobile() {
               {schoolAthletes.length > 0 && (
                 <>
                   <div className="px-4 pt-4 pb-1">
-                    <AthleteSectionHeader title="Athlètes de l'école" count={filteredSchool.length} director />
+                    <AthleteSectionHeader title={`Athlètes ${orgNounDe(coachOrgType)}`} count={filteredSchool.length} director />
                   </div>
                   {filteredSchool.length === 0 ? (
-                    <p className="px-4 py-3 text-[13px] text-[#6b7280]">Aucun athlète de l&apos;école ne correspond aux filtres.</p>
+                    <p className="px-4 py-3 text-[13px] text-[#6b7280]">Aucun athlète {orgNounDe(coachOrgType)} ne correspond aux filtres.</p>
                   ) : renderMobileSection(filteredSchool)}
                 </>
               )}
@@ -1378,7 +1394,7 @@ export function CoachAthletesMobile() {
                   </div>
                   <h3 className="font-head text-[16px] font-black text-white uppercase tracking-tight mb-2">Aucun athlète dans ton roster</h3>
                   <p className="text-[13px] text-[#9CA3AF] max-w-xs mx-auto leading-relaxed mb-4">
-                    Réclame des athlètes parmi ceux disponibles à ton école pour bâtir ton roster.
+                    Réclame des athlètes parmi ceux disponibles à {orgNounPossessif(coachOrgType)} pour bâtir ton roster.
                   </p>
                   <button
                     type="button"
@@ -1482,7 +1498,7 @@ export function CoachAthletesMobile() {
               />
               <h3 className="font-head text-[16px] font-black text-white uppercase tracking-tight">Aucun athlète non réclamé</h3>
               <p className="text-[13px] text-[#9CA3AF] mt-2 max-w-sm mx-auto">
-                Aucun athlète non réclamé à ton école pour l&apos;instant.
+                Aucun athlète non réclamé à {orgNounPossessif(coachOrgType)} pour l&apos;instant.
               </p>
             </motion.div>
           ) : (
