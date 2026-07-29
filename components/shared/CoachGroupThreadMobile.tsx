@@ -16,7 +16,7 @@
    payload brut — mineur-safety (jamais de fuite de réponse privée).
 ═══════════════════════════════════════════════════════════════ */
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useDynamicParam } from "@/lib/platform/useDynamicParam";
 import { createClient } from "@/lib/supabase/client";
@@ -28,6 +28,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { MessageThreadShell } from "@/components/shared/messaging/MessageThreadShell";
 import { timeOfDay } from "@/components/shared/messaging/utils";
 import { useGroupThreadMeta } from "@/lib/queries/shared/useGroupThread";
+import { GroupMembersSheet, buildGroupMembers } from "@/components/shared/messaging/GroupMembersSheet";
 
 export function CoachGroupThreadMobile() {
   const router = useRouter();
@@ -74,9 +75,13 @@ export function CoachGroupThreadMobile() {
   };
 
   const isTeam = meta?.groupScope === "TEAM";
+  const [membersOpen, setMembersOpen] = useState(false);
+  const members = meta ? buildGroupMembers(meta.names, meta.roles, meta.initials, userId) : [];
 
+  // Header tappable → ouvre le sheet des membres (#1).
   const headerCenter = (
-    <div className="flex flex-col items-center gap-0.5 min-w-0 max-w-full">
+    <button type="button" onClick={() => setMembersOpen(true)}
+      className="flex flex-col items-center gap-0.5 min-w-0 max-w-full active:opacity-70 transition-opacity">
       <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 bg-[#6366F1]/15 border border-[#6366F1]/30">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#818CF8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
@@ -86,7 +91,7 @@ export function CoachGroupThreadMobile() {
       <span className="text-[12px] text-white/55 truncate max-w-full">
         {isTeam ? "Équipe" : "Staff"}{(meta?.memberCount ?? 0) > 0 ? ` · ${meta?.memberCount} membres` : ""}
       </span>
-    </div>
+    </button>
   );
 
   const renderMessage = (m: MessageRow, isMe: boolean) => {
@@ -116,7 +121,7 @@ export function CoachGroupThreadMobile() {
         )}
         <div
           className={`max-w-[78%] rounded-2xl px-4 py-2.5 ${isMe ? `rounded-br-md ${isSending ? "opacity-70" : ""} ${isError ? "ring-2 ring-[#EF4444]/60" : ""}` : "rounded-bl-md"} ${isAthleteReply && !isMe ? "border border-[#F59E0B]/25" : ""}`}
-          style={{ backgroundColor: isMe ? "#4338CA" : isAthleteReply ? "#3B2E12" : "#262628" }}
+          style={{ backgroundColor: isMe ? "#0A84FF" : "#262628" }}
         >
           <p className="text-[16px] text-white leading-relaxed whitespace-pre-wrap break-words">{m.content}</p>
         </div>
@@ -130,23 +135,27 @@ export function CoachGroupThreadMobile() {
   };
 
   return (
-    <MessageThreadShell<MessageRow>
-      messages={messages}
-      isLoading={metaLoading || msgsLoading}
-      currentUserId={userId}
-      getId={(m) => m.id}
-      getContent={(m) => m.content}
-      getCreatedAt={(m) => m.created_at}
-      getSenderId={(m) => m.sender_id}
-      getStatus={(m) => m.status}
-      getRetracted={(m) => !!m.retracted_at}
-      headerCenter={headerCenter}
-      onBack={() => router.push("/coach/demandes")}
-      onSend={handleSend}
-      renderMessage={renderMessage}
-      composerPlaceholder={isTeam ? "Annonce au groupe…" : "Message…"}
-      emptyTitle="Démarre la conversation"
-      emptyDescription={`Écris une première annonce à ${meta?.groupName ?? "ton groupe"}.`}
-    />
+    <>
+      <MessageThreadShell<MessageRow>
+        messages={messages}
+        isLoading={metaLoading || msgsLoading}
+        currentUserId={userId}
+        getId={(m) => m.id}
+        getContent={(m) => m.content}
+        getCreatedAt={(m) => m.created_at}
+        getSenderId={(m) => m.sender_id}
+        getStatus={(m) => m.status}
+        getRetracted={(m) => !!m.retracted_at}
+        headerCenter={headerCenter}
+        onBack={() => router.push("/coach/demandes")}
+        onSend={handleSend}
+        renderMessage={renderMessage}
+        composerPlaceholder={isTeam ? "Annonce au groupe…" : "Message…"}
+        emptyTitle="Démarre la conversation"
+        emptyDescription={`Écris une première annonce à ${meta?.groupName ?? "ton groupe"}.`}
+      />
+      <GroupMembersSheet open={membersOpen} onClose={() => setMembersOpen(false)} members={members}
+        title={isTeam ? "Membres de l’équipe" : "Membres du staff"} />
+    </>
   );
 }
