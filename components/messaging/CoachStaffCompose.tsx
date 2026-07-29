@@ -16,6 +16,7 @@ import { createClient } from "@/lib/supabase/client";
 import { loadSchoolStaff, type StaffMember } from "@/lib/queries/messaging/loadSchoolStaff";
 import { findOrCreateCoachCoachConversation } from "@/lib/queries/messaging/createCoachCoachConversation";
 import AthleteSelectCard from "@/components/messaging/AthleteSelectCard";
+import { orgNounPossessif, type SchoolType } from "@/lib/utils/orgLabel";
 
 interface AthleteOpt { id: string; firstName: string; lastName: string; name: string; sport: string; position: string; photoUrl: string | null; stars: number; }
 
@@ -34,6 +35,8 @@ export default function CoachStaffCompose({
 }) {
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [athletes, setAthletes] = useState<AthleteOpt[]>([]);
+  // Type d'org du coach courant → vocabulaire type-aware (club vs école).
+  const [orgType, setOrgType] = useState<SchoolType | null>(null);
   const [loading, setLoading] = useState(true);
   const [attachOn, setAttachOn] = useState(false);
   const [athleteId, setAthleteId] = useState<string | null>(null);
@@ -47,9 +50,11 @@ export default function CoachStaffCompose({
       const supabase = createClient();
       const list = await loadSchoolStaff(supabase, selfId);
       // Athletes at my school (RLS "coaches read own athletes" allows school-wide).
-      const { data: me } = await supabase.from("users").select("school_id").eq("id", selfId).maybeSingle();
+      const { data: me } = await supabase.from("users").select("school_id, schools!school_id(type)").eq("id", selfId).maybeSingle();
       let athOpts: AthleteOpt[] = [];
       const schoolId = (me as { school_id?: string } | null)?.school_id;
+      const schoolRel = (me as { schools?: unknown } | null)?.schools;
+      const orgT = ((Array.isArray(schoolRel) ? schoolRel[0] : schoolRel) as { type?: SchoolType } | null)?.type ?? null;
       if (schoolId) {
         const { data: aths } = await supabase
           .from("athletes")
@@ -76,7 +81,7 @@ export default function CoachStaffCompose({
           };
         });
       }
-      if (!cancelled) { setStaff(list); setAthletes(athOpts); setLoading(false); }
+      if (!cancelled) { setStaff(list); setAthletes(athOpts); setOrgType(orgT); setLoading(false); }
     })();
     return () => { cancelled = true; };
   }, [selfId]);
@@ -100,7 +105,7 @@ export default function CoachStaffCompose({
     if (err || !conversationId) {
       const code = (err as { code?: string } | undefined)?.code;
       const isRls = code === "42501" || /permission denied|row-level security|policy/i.test((err as { message?: string } | undefined)?.message ?? "");
-      setError(isRls ? "Tu ne peux écrire qu'au personnel de ton école." : ((err as { message?: string } | undefined)?.message || "Impossible d'ouvrir la conversation."));
+      setError(isRls ? `Tu ne peux écrire qu'au personnel de ${orgNounPossessif(orgType)}.` : ((err as { message?: string } | undefined)?.message || "Impossible d'ouvrir la conversation."));
       setBusyId(null);
       return;
     }
@@ -108,9 +113,9 @@ export default function CoachStaffCompose({
   }
 
   const emptyCopy =
-    audience === "directeur" ? "Aucun directeur sportif rattaché à ton école." :
-    audience === "coach" ? "Aucun autre entraîneur rattaché à ton école." :
-    "Aucun autre membre du personnel à ton école.";
+    audience === "directeur" ? `Aucun directeur sportif rattaché à ${orgNounPossessif(orgType)}.` :
+    audience === "coach" ? `Aucun autre entraîneur rattaché à ${orgNounPossessif(orgType)}.` :
+    `Aucun autre membre du personnel à ${orgNounPossessif(orgType)}.`;
 
   return (
     <div className="space-y-5">
@@ -125,7 +130,7 @@ export default function CoachStaffCompose({
         </label>
         {attachOn && (
           athletes.length === 0 ? (
-            <p className="mt-3 text-[13px] text-[#6b7280]">Aucun athlète actif à ton école.</p>
+            <p className="mt-3 text-[13px] text-[#6b7280]">Aucun athlète actif à {orgNounPossessif(orgType)}.</p>
           ) : (
             <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
               {athletes.map((a) => (

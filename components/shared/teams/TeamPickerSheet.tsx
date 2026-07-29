@@ -26,6 +26,7 @@ import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { createClient } from "@/lib/supabase/client";
 import { formatTeamLabel } from "@/lib/teams/teamLabel";
+import { orgNounCe, type SchoolType } from "@/lib/utils/orgLabel";
 
 export interface TeamPickerItem {
   id: string;
@@ -93,6 +94,8 @@ export function TeamPickerSheet({
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [dragOffset, setDragOffset] = useState(0);
+  // Type de l'org ciblée (école / club / cégep) → vocabulaire type-aware.
+  const [orgType, setOrgType] = useState<SchoolType | null>(null);
 
   useEffect(() => { setMounted(true); }, []);
   useEffect(() => { if (!open) { setSearch(""); setDragOffset(0); } }, [open]);
@@ -109,6 +112,10 @@ export function TeamPickerSheet({
     setLoading(true);
     (async () => {
       const supabase = createClient();
+      // Type de l'org ciblée pour le vocabulaire (école vs club vs cégep).
+      supabase.from("schools").select("type").eq("id", schoolId).maybeSingle().then(({ data: s }) => {
+        if (!cancelled) setOrgType((s as { type?: SchoolType } | null)?.type ?? null);
+      });
       let q = supabase
         .from("teams")
         .select("id, name, age_group, division, gender, season, sport_id, sports!sport_id(nom), team_athletes(id), team_coaches(coach_id)")
@@ -248,7 +255,7 @@ export function TeamPickerSheet({
               </p>
               <p className="text-[12px] text-white/55 mt-1 max-w-xs">
                 {teams.length === 0
-                  ? "Sois la première personne à créer une équipe à cette école."
+                  ? `Sois la première personne à créer une équipe à ${orgNounCe(orgType)}.`
                   : "Essaie un autre nom ou crée une nouvelle équipe."}
               </p>
             </div>

@@ -114,7 +114,7 @@ export default function SchoolStaffPicker({ athleteId, onSelect, busyId, roleFil
     return (
       <div className="bg-[#13151a] border border-[#2D3748] rounded-lg p-5">
         <p className="text-[14px] text-[#9CA3AF]">
-          {roleFilter === "directeur" ? "Aucun directeur sportif rattaché à ton école." : "Aucun entraîneur rattaché à ton école pour l'instant."}
+          {roleFilter === "directeur" ? "Aucun directeur sportif rattaché à ton organisation." : "Aucun entraîneur rattaché à ton organisation pour l'instant."}
         </p>
       </div>
     );

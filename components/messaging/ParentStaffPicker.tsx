@@ -75,7 +75,7 @@ export default function ParentStaffPicker({ childId, onSelect, busyId }: ParentS
   if (staff.length === 0) {
     return (
       <div className="bg-[#13151a] border border-[#2D3748] rounded-lg p-5">
-        <p className="text-[14px] text-[#9CA3AF]">Aucun membre du personnel rattaché à l&apos;école de votre enfant pour l&apos;instant.</p>
+        <p className="text-[14px] text-[#9CA3AF]">Aucun membre du personnel rattaché à l&apos;organisation de votre enfant pour l&apos;instant.</p>
       </div>
     );
   }

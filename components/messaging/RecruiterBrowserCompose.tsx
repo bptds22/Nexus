@@ -12,6 +12,7 @@ import { createClient } from "@/lib/supabase/client";
 import { findOrCreateRecruiterCoachConversation } from "@/lib/queries/messaging/createRecruiterCoachConversation";
 import AthleteSelectCard from "@/components/messaging/AthleteSelectCard";
 import { loadCoachAthleteOptions } from "@/lib/queries/messaging/loadCoachAthleteOptions";
+import { orgNounDe, type SchoolType } from "@/lib/utils/orgLabel";
 
 interface Cegep { id: string; name: string; }
 interface Recruiter { id: string; name: string; photoUrl: string | null; }
@@ -37,6 +38,8 @@ export default function RecruiterBrowserCompose({
   const [busyAthlete, setBusyAthlete] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [q, setQ] = useState("");
+  // Type d'org du coach/directeur courant → libellé « Athlètes du club/de l'école ».
+  const [orgType, setOrgType] = useState<SchoolType | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -55,7 +58,11 @@ export default function RecruiterBrowserCompose({
       // Athlete options (#6) — "Mes athlètes" (coach_id=self) + "Athlètes de
       // l'école" (peuplé seulement pour un directeur ; vide pour un coach normal).
       const { mine, school } = await loadCoachAthleteOptions(supabase, selfId);
-      if (!cancelled) { setCegeps(list); setMyAthletes(mine as Ath[]); setSchoolAthletes(school as Ath[]); setLoading(false); }
+      // Type d'org du coach courant, pour le libellé de section directeur.
+      const { data: meRow } = await supabase.from("users").select("schools!school_id(type)").eq("id", selfId).maybeSingle();
+      const schoolRel = (meRow as { schools?: unknown } | null)?.schools;
+      const orgT = ((Array.isArray(schoolRel) ? schoolRel[0] : schoolRel) as { type?: SchoolType } | null)?.type ?? null;
+      if (!cancelled) { setCegeps(list); setMyAthletes(mine as Ath[]); setSchoolAthletes(school as Ath[]); setOrgType(orgT); setLoading(false); }
     })();
     return () => { cancelled = true; };
   }, [selfId]);
@@ -98,7 +105,7 @@ export default function RecruiterBrowserCompose({
             {([
               { label: "Mes athlètes", list: myAthletes },
               // "Athlètes de l'école" : peuplé seulement pour un directeur (#6).
-              { label: "Athlètes de l’école", list: schoolAthletes },
+              { label: `Athlètes ${orgNounDe(orgType)}`, list: schoolAthletes },
             ] as const).filter((sec) => sec.list.length > 0).map((sec) => (
               <div key={sec.label} className="space-y-2">
                 <p className="text-[11px] font-bold tracking-wider uppercase text-[#6b7280]">{sec.label}</p>

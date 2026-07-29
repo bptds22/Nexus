@@ -12,6 +12,7 @@ import RecruiterBrowserCompose from "@/components/messaging/RecruiterBrowserComp
 import AthleteRosterCompose from "@/components/messaging/AthleteRosterCompose";
 import ParentCompose from "@/components/messaging/ParentCompose";
 import GroupeCompose from "@/components/messaging/GroupeCompose";
+import { type SchoolType } from "@/lib/utils/orgLabel";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -41,6 +42,7 @@ function CoachNouveauMessageContent() {
   const [audience, setAudience] = useState<CoachAudience | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [role, setRole] = useState<"COACH" | "RECRUTEUR">("COACH");
+  const [orgType, setOrgType] = useState<SchoolType | null>(null);
   const [sentCount, setSentCount] = useState<number | null>(null);
 
   useEffect(() => {
@@ -49,8 +51,10 @@ function CoachNouveauMessageContent() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       setUserId(user.id);
-      const { data } = await supabase.from("users").select("role").eq("id", user.id).maybeSingle();
+      const { data } = await supabase.from("users").select("role, schools!school_id(type)").eq("id", user.id).maybeSingle();
       if ((data as { role?: string } | null)?.role === "RECRUTEUR") setRole("RECRUTEUR");
+      const schoolRel = (data as { schools?: unknown } | null)?.schools;
+      setOrgType(((Array.isArray(schoolRel) ? schoolRel[0] : schoolRel) as { type?: SchoolType } | null)?.type ?? null);
     })();
   }, []);
 
@@ -71,7 +75,7 @@ function CoachNouveauMessageContent() {
       </div>
 
       {/* Step 1 — audience */}
-      {audience === null && <AudienceTiles onPick={setAudience} />}
+      {audience === null && <AudienceTiles onPick={setAudience} orgType={orgType} />}
 
       {/* Step 2 — the matching compose panel */}
       {audience !== null && userId && (

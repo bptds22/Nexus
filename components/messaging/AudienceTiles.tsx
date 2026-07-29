@@ -11,6 +11,8 @@
    No "École" tile ("toute l'école" lives under Groupe → tous les entraîneurs).
 ═══════════════════════════════════════════════════════════════ */
 
+import { orgNounPossessif, type SchoolType } from "@/lib/utils/orgLabel";
+
 export type CoachAudience = "coach" | "directeur" | "recruteurs" | "groupe" | "athlete" | "parent";
 
 const WHISTLE = (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8a6 6 0 00-6-6H8a2 2 0 000 4h4" /><circle cx="7" cy="15" r="6" /></svg>);
@@ -21,7 +23,7 @@ const GROUP = (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" strok
 const PARENT = (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>);
 
 const TILES = [
-  { key: "coach" as const, label: "Entraîneur", sub: "Un collègue de ton école", hue: "#14B8A6", icon: WHISTLE, disabled: false, soon: false },
+  { key: "coach" as const, label: "Entraîneur", sub: "Un collègue de ton école", hue: "#14B8A6", icon: WHISTLE, disabled: false, soon: false }, // sub recalculé type-aware au rendu
   { key: "directeur" as const, label: "Directeur sportif", sub: "Direction sportive", hue: "#14B8A6", icon: STAR, disabled: false, soon: false },
   { key: "athlete" as const, label: "Athlète", sub: "Un de tes athlètes", hue: "#22C55E", icon: ATHLETE_ICON, disabled: false, soon: false },
   { key: "recruteurs" as const, label: "Recruteurs", sub: "Contacter un recruteur CÉGEP", hue: "#E63946", icon: CEGEP, disabled: false, soon: false },
@@ -29,12 +31,17 @@ const TILES = [
   { key: "parent" as const, label: "Parent", sub: "Le parent d'un de tes athlètes", hue: "#E63946", icon: PARENT, disabled: false, soon: false },
 ];
 
-export default function AudienceTiles({ onPick }: { onPick: (a: CoachAudience) => void }) {
+export default function AudienceTiles({ onPick, orgType }: { onPick: (a: CoachAudience) => void; orgType?: SchoolType | null }) {
+  // Le sous-titre du tuile « Entraîneur » est type-aware : « de ton club »
+  // pour un LIGUE_CIVILE, « de ton école » pour un secondaire, etc.
+  const tiles = TILES.map((t) =>
+    t.key === "coach" ? { ...t, sub: `Un collègue de ${orgNounPossessif(orgType)}` } : t,
+  );
   return (
     <div>
       <h2 className="text-[13px] font-bold tracking-[0.25em] uppercase text-[#9CA3AF] mb-3">À qui veux-tu écrire&nbsp;?</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        {TILES.map((t) => (
+        {tiles.map((t) => (
           <button
             key={t.key}
             type="button"

@@ -14,6 +14,7 @@ import {
   type SchoolCoachOption,
   type TransferAthlete,
 } from "@/lib/coach/transferAthletes";
+import { orgNounPossessif, type SchoolType } from "@/lib/utils/orgLabel";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -47,6 +48,7 @@ function MesTransfertsContent() {
 
   const [loading, setLoading] = useState(true);
   const [schoolId, setSchoolId] = useState<string | null>(null);
+  const [orgType, setOrgType] = useState<SchoolType | null>(null);
   const [coaches, setCoaches] = useState<SchoolCoachOption[]>([]);
 
   const [sourceId, setSourceId] = useState<string>("");
@@ -80,11 +82,13 @@ function MesTransfertsContent() {
       const uid = session.user.id;
       const { data: me } = await supabase
         .from("users")
-        .select("school_id")
+        .select("school_id, schools!school_id(type)")
         .eq("id", uid)
         .maybeSingle();
 
       const sid = me?.school_id ?? null;
+      const schoolRel = (me as { schools?: unknown } | null)?.schools;
+      setOrgType(((Array.isArray(schoolRel) ? schoolRel[0] : schoolRel) as { type?: SchoolType } | null)?.type ?? null);
       setSchoolId(sid);
       if (sid) {
         const list = await loadSchoolCoaches(supabase, sid);
@@ -191,10 +195,10 @@ function MesTransfertsContent() {
       <div className="max-w-6xl mx-auto px-6 py-10">
         <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] p-8 text-center">
           <h3 className="font-head text-[18px] font-black text-white uppercase tracking-tight">
-            Aucune école rattachée
+            Aucune organisation rattachée
           </h3>
           <p className="text-[13px] text-[#9CA3AF] mt-2">
-            Rejoins une école pour gérer l&apos;assignation des athlètes.
+            Rejoins une organisation pour gérer l&apos;assignation des athlètes.
           </p>
         </div>
       </div>
@@ -209,7 +213,7 @@ function MesTransfertsContent() {
           Gestion des athlètes
         </h1>
         <p className="text-[13px] text-[#9CA3AF] mt-1">
-          Assigne des athlètes à un entraîneur de ton école.
+          Assigne des athlètes à un entraîneur de {orgNounPossessif(orgType)}.
         </p>
       </div>
 

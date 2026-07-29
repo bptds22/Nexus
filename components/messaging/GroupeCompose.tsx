@@ -23,6 +23,7 @@ import { sendBroadcast } from "@/lib/queries/messaging/sendBroadcast";
 import { loadCoachAthleteOptions, type CoachAthleteOption } from "@/lib/queries/messaging/loadCoachAthleteOptions";
 import { loadSchoolStaff, type StaffMember } from "@/lib/queries/messaging/loadSchoolStaff";
 import AthleteSelectCard from "@/components/messaging/AthleteSelectCard";
+import { orgNounPossessif, orgNounDe, type SchoolType } from "@/lib/utils/orgLabel";
 
 const HUE = "#8B5CF6"; // Groupe = violet (distinct from teal/red/green/blue)
 
@@ -49,6 +50,8 @@ export default function GroupeCompose({
   const [teams, setTeams] = useState<Opt[]>([]);
   const [loading, setLoading] = useState(!isRecruiter);
   const [teamId, setTeamId] = useState<string>("");
+  // Type d'org du coach/directeur courant → vocabulaire type-aware (club vs école).
+  const [orgType, setOrgType] = useState<SchoolType | null>(null);
   const [content, setContent] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -111,15 +114,17 @@ export default function GroupeCompose({
     (async () => {
       setLoading(true);
       const supabase = createClient();
-      const { data: me } = await supabase.from("users").select("school_id").eq("id", selfId).maybeSingle();
+      const { data: me } = await supabase.from("users").select("school_id, schools!school_id(type)").eq("id", selfId).maybeSingle();
       const schoolId = (me as { school_id?: string } | null)?.school_id;
+      const schoolRel = (me as { schools?: unknown } | null)?.schools;
+      const orgT = ((Array.isArray(schoolRel) ? schoolRel[0] : schoolRel) as { type?: SchoolType } | null)?.type ?? null;
       let tms: Opt[] = [];
       if (schoolId) {
         const { data: t } = await supabase.from("teams")
           .select("id, name").eq("school_id", schoolId).eq("is_active", true).order("name");
         tms = (t ?? []).map((r) => ({ id: (r as { id: string }).id, name: (r as { name?: string }).name || "Équipe" }));
       }
-      if (!cancelled) { setTeams(tms); setLoading(false); }
+      if (!cancelled) { setTeams(tms); setOrgType(orgT); setLoading(false); }
     })();
     return () => { cancelled = true; };
   }, [selfId, isRecruiter]);
@@ -236,7 +241,7 @@ export default function GroupeCompose({
       {loading ? (
         <div className="flex items-center justify-center py-8"><div className="w-6 h-6 border-2 border-[#8B5CF6] border-t-transparent rounded-full animate-spin" /></div>
       ) : mode === "all_coaches" ? (
-        <p className="text-[13px] text-[#9CA3AF]">Un groupe avec <b className="text-white">tous les entraîneurs de ton école</b> — un seul fil partagé.</p>
+        <p className="text-[13px] text-[#9CA3AF]">Un groupe avec <b className="text-white">tous les entraîneurs de {orgNounPossessif(orgType)}</b> — un seul fil partagé.</p>
       ) : mode === "favorited_coaches" ? (
         <p className="text-[13px] text-[#9CA3AF]">Le message ira aux <b className="text-white">coachs des athlètes que tu as mis en favori</b> (un fil individuel chacun).</p>
       ) : mode === "custom" ? (
@@ -259,7 +264,7 @@ export default function GroupeCompose({
               {([
                 { label: "Mes athlètes", list: myAthletes },
                 // « Athlètes de l'école » : peuplé seulement pour un directeur.
-                { label: "Athlètes de l’école", list: schoolAthletes },
+                { label: `Athlètes ${orgNounDe(orgType)}`, list: schoolAthletes },
               ] as const).filter((sec) => sec.list.length > 0).map((sec) => (
                 <div key={sec.label} className="space-y-2">
                   <p className="text-[11px] font-bold tracking-wider uppercase text-[#6b7280]">{sec.label}</p>
@@ -284,7 +289,7 @@ export default function GroupeCompose({
 
               {coachs.length > 0 && (
                 <div className="space-y-2">
-                  <p className="text-[11px] font-bold tracking-wider uppercase text-[#6b7280]">Entraîneurs de l’école</p>
+                  <p className="text-[11px] font-bold tracking-wider uppercase text-[#6b7280]">Entraîneurs {orgNounDe(orgType)}</p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {coachs.map((c) => {
                       const on = selected.has(c.id);

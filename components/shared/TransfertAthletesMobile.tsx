@@ -15,6 +15,7 @@ import {
   type SchoolCoachOption,
   type TransferAthlete,
 } from "@/lib/coach/transferAthletes";
+import { orgNounPossessif, type SchoolType } from "@/lib/utils/orgLabel";
 
 /* ═══════════════════════════════════════════════════════════════
    TransfertAthletesMobile — Capacitor variant of GESTION DES
@@ -29,6 +30,7 @@ export default function TransfertAthletesMobile() {
 
   const [loading, setLoading] = useState(true);
   const [schoolId, setSchoolId] = useState<string | null>(null);
+  const [orgType, setOrgType] = useState<SchoolType | null>(null);
   const [coaches, setCoaches] = useState<SchoolCoachOption[]>([]);
 
   const [sourceId, setSourceId] = useState<string>("");
@@ -55,8 +57,10 @@ export default function TransfertAthletesMobile() {
       if (!session) { router.replace("/auth"); return; }
       const uid = session.user.id;
       const { data: me } = await supabase
-        .from("users").select("school_id").eq("id", uid).maybeSingle();
+        .from("users").select("school_id, schools!school_id(type)").eq("id", uid).maybeSingle();
       const sid = me?.school_id ?? null;
+      const schoolRel = (me as { schools?: unknown } | null)?.schools;
+      setOrgType(((Array.isArray(schoolRel) ? schoolRel[0] : schoolRel) as { type?: SchoolType } | null)?.type ?? null);
       setSchoolId(sid);
       if (sid) {
         const list = await loadSchoolCoaches(supabase, sid);
@@ -166,8 +170,8 @@ export default function TransfertAthletesMobile() {
   if (!schoolId) {
     return (
       <div className="px-5 py-10 text-center">
-        <h3 className="font-head text-[18px] font-black text-white uppercase tracking-tight">Aucune école rattachée</h3>
-        <p className="text-[13px] text-[#9CA3AF] mt-2">Rejoins une école pour gérer l&apos;assignation des athlètes.</p>
+        <h3 className="font-head text-[18px] font-black text-white uppercase tracking-tight">Aucune organisation rattachée</h3>
+        <p className="text-[13px] text-[#9CA3AF] mt-2">Rejoins une organisation pour gérer l&apos;assignation des athlètes.</p>
       </div>
     );
   }
@@ -177,7 +181,7 @@ export default function TransfertAthletesMobile() {
       {/* Header + source picker — top safe-area so the title clears the iOS clock */}
       <div className="px-5 pb-3 shrink-0" style={{ paddingTop: "calc(env(safe-area-inset-top) + 1.25rem)" }}>
         <h1 className="font-head text-[22px] font-black text-white uppercase tracking-tight">Gestion des athlètes</h1>
-        <p className="text-[13px] text-[#9CA3AF] mt-1">Assigne des athlètes à un entraîneur de ton école.</p>
+        <p className="text-[13px] text-[#9CA3AF] mt-1">Assigne des athlètes à un entraîneur de {orgNounPossessif(orgType)}.</p>
 
         <label className="block text-[11px] font-bold tracking-wider uppercase text-[#6b7280] mt-4 mb-1.5">Source</label>
         <button

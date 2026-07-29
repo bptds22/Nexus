@@ -16,6 +16,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { createClient } from "@/lib/supabase/client";
+import { orgNounDe, orgNounPossessif, type SchoolType } from "@/lib/utils/orgLabel";
 
 export interface CoachCandidate {
   id: string;
@@ -41,6 +42,7 @@ export function TeamAddCoachSheet({
   const [search, setSearch] = useState("");
   const [role, setRole] = useState<"head_coach" | "assistant" | "coordinator">("assistant");
   const [dragOffset, setDragOffset] = useState(0);
+  const [orgType, setOrgType] = useState<SchoolType | null>(null);
 
   useEffect(() => { setMounted(true); }, []);
   useEffect(() => { if (!open) { setSearch(""); setDragOffset(0); setRole("assistant"); } }, [open]);
@@ -51,6 +53,10 @@ export function TeamAddCoachSheet({
     setLoading(true);
     (async () => {
       const supabase = createClient();
+      // Type de l'org (école vs club vs cégep) pour le vocabulaire type-aware.
+      supabase.from("schools").select("type").eq("id", schoolId).maybeSingle().then(({ data: s }) => {
+        if (!cancelled) setOrgType((s as { type?: SchoolType } | null)?.type ?? null);
+      });
       const { data } = await supabase
         .from("users")
         .select("id, first_name, last_name")
@@ -124,7 +130,7 @@ export function TeamAddCoachSheet({
             Ajouter un entraîneur
           </h2>
           <p className="text-[12px] text-[#9CA3AF] text-center mt-1">
-            Choisis le rôle puis la personne dans ton école.
+            Choisis le rôle puis la personne dans {orgNounPossessif(orgType)}.
           </p>
         </div>
 
@@ -185,7 +191,7 @@ export function TeamAddCoachSheet({
               </p>
               <p className="text-[12px] text-white/55 mt-1 max-w-xs">
                 {coaches.length === 0
-                  ? "Tous les entraîneurs de l'école sont déjà sur l'équipe."
+                  ? `Tous les entraîneurs ${orgNounDe(orgType)} sont déjà sur l'équipe.`
                   : "Essaie un autre nom."}
               </p>
             </div>
