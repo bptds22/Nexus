@@ -311,7 +311,7 @@ function MesAthletesContent() {
           evaluations(cote_globale, rapport_entraineur, distinctions, updated_at, coach_id,
             evaluator:users!evaluations_coach_id_fkey(first_name, last_name))
         `)
-        .eq("status", "ACTIF");
+        .in("status", ["ACTIF", "EN_ATTENTE"]);   // #EN_ATTENTE visible au coach (liseré).
       // `.or` + `.eq("status", …)` se combinent en AND → statut gardé séparé.
       const { data, error } = await (teamIds.length
         ? athletesQuery.or(`school_id.eq.${coachSchoolId},id.in.(${teamIds.join(",")})`)

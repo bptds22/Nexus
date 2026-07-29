@@ -101,10 +101,11 @@ function toOption(a: AthleteRow): CoachAthleteOption {
 export async function loadCoachAthleteOptions(
   supabase: SupabaseClient,
   selfId: string,
-  // #civil : les groupes incluent les athlètes EN_ATTENTE (mineurs en attente de
-  // consentement inclus, décision BP) → le picker groupe doit les AFFICHER. Les
-  // autres surfaces (compose recruteur) gardent ACTIF seul par défaut.
-  includePending = false,
+  // #EN_ATTENTE : par défaut le coach voit SES athlètes en attente de consentement
+  // dans ses pickers (roster/groupe/message) — il les gère. Le côté RECRUTEUR reste
+  // protégé par sa propre RLS (status='ACTIF' seul) : un athlète en attente n'est
+  // jamais exposé au marché, même si le coach le sélectionne pour en parler.
+  includePending = true,
 ): Promise<CoachAthleteOptions> {
   const statuses = includePending ? ["ACTIF", "EN_ATTENTE"] : ["ACTIF"];
   // 1. Mes athlètes — PROPRIÉTAIRE (coach_id = selfId) OU rattachés à une

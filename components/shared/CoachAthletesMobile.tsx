@@ -108,6 +108,7 @@ export interface CoachAthlete {
   stars: number;
   isVerified: boolean;
   lastValidation: string | null;
+  isPending: boolean;
   jersey: string;
   recruitmentStatus: string;
   committedSchoolName: string | null;
@@ -196,6 +197,7 @@ function mapCoachAthlete(a: Record<string, unknown>, favCounts: Record<string, n
     stars,
     isVerified: !!a.verified,
     lastValidation: (a.last_profile_validation as string) || null,
+    isPending: (a.status as string) === "EN_ATTENTE",
     jersey: a.numero_jersey != null ? String(a.numero_jersey) : "",
     recruitmentStatus: (a.recruitment_status as string) || (a.statut_recrutement_override as string) || "OUVERT",
     committedSchoolName: committedSchool?.name || null,
@@ -229,6 +231,7 @@ function cardData(a: CoachAthlete) {
     stars: a.stars,
     isVerified: a.isVerified,
     lastValidation: a.lastValidation,
+    isPending: a.isPending,
     isFavorited: false,
     jersey: a.jersey,
     recruitmentStatus: a.recruitmentStatus,
@@ -626,9 +629,14 @@ export function CoachAthleteRowMobile({ a, onTap }: { a: CoachAthlete; onTap: ()
         )}
       </motion.div>
       <div className="flex-1 min-w-0">
-        <p className="text-white font-bold text-[14px] truncate leading-tight">
-          {a.firstName} {a.lastName}
-        </p>
+        <div className="flex items-center gap-1.5 min-w-0">
+          <p className="text-white font-bold text-[14px] truncate leading-tight">
+            {a.firstName} {a.lastName}
+          </p>
+          {a.isPending && (
+            <span className="shrink-0 text-[9px] font-black uppercase tracking-wider text-[#F59E0B] bg-[#F59E0B]/15 border border-[#F59E0B]/30 rounded-full px-1.5 py-0.5">En attente</span>
+          )}
+        </div>
         <p className="text-[11px] text-[#9CA3AF] truncate mt-0.5">
           {a.position || a.sportName || "—"} · {a.noTeam ? "Ligue civile" : a.school || "—"}
         </p>
@@ -1001,8 +1009,8 @@ export function CoachAthletesMobile() {
           evaluations(cote_globale, rapport_entraineur, distinctions, updated_at, coach_id,
             evaluator:users!evaluations_coach_id_fkey(first_name, last_name))
         `)
-        .eq("status", "ACTIF");
-      // `.or` + `.eq("status", …)` se combinent en AND → statut gardé séparé.
+        .in("status", ["ACTIF", "EN_ATTENTE"]);   // #EN_ATTENTE : le coach voit ses athlètes en attente de consentement (liseré).
+      // `.or` + `.in("status", …)` se combinent en AND → statut gardé séparé.
       const { data } = await (teamIds.length
         ? athletesQuery.or(`school_id.eq.${coachRow.school_id},id.in.(${teamIds.join(",")})`)
         : athletesQuery.eq("school_id", coachRow.school_id));
