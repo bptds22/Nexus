@@ -28,8 +28,7 @@
 ═══════════════════════════════════════════════════════════════ */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { loadSchoolDirectorStatus } from "@/lib/queries/coach/useSchoolDirector";
-import { loadTeamAthleteIds } from "@/lib/queries/coach/teamAthleteIds";
+import { loadCoachAthleteScope } from "@/lib/queries/coach/getCoachAthletes";
 
 export interface CoachAthleteOption {
   id: string;
@@ -43,6 +42,8 @@ export interface CoachAthleteOption {
   position: string;
   photoUrl: string | null;
   stars: number;
+  /** #EN_ATTENTE : athlète en attente de consentement → liseré « En attente ». */
+  isPending: boolean;
 }
 
 export interface CoachAthleteOptions {
@@ -90,6 +91,7 @@ function toOption(a: AthleteRow): CoachAthleteOption {
     position: pos?.abreviation || "",
     photoUrl: a.photo_url ?? null,
     stars: Number(a.cote_globale_entraineur) || 0,
+    isPending: false,
   };
 }
 
@@ -100,49 +102,38 @@ function toOption(a: AthleteRow): CoachAthleteOption {
  */
 export async function loadCoachAthleteOptions(
   supabase: SupabaseClient,
-  selfId: string,
+  // selfId n'est plus requis pour le scope — le RPC get_coach_athletes lit
+  // auth.uid(). Conservé pour la stabilité de signature des appelants.
+  _selfId: string,
   // #EN_ATTENTE : par défaut le coach voit SES athlètes en attente de consentement
   // dans ses pickers (roster/groupe/message) — il les gère. Le côté RECRUTEUR reste
   // protégé par sa propre RLS (status='ACTIF' seul) : un athlète en attente n'est
   // jamais exposé au marché, même si le coach le sélectionne pour en parler.
   includePending = true,
 ): Promise<CoachAthleteOptions> {
-  const statuses = includePending ? ["ACTIF", "EN_ATTENTE"] : ["ACTIF"];
-  // 1. Mes athlètes — PROPRIÉTAIRE (coach_id = selfId) OU rattachés à une
-  //    équipe que ce coach coache (autorité d'équipe, BP). coach_id reste
-  //    le lien propriétaire inchangé ; on ÉLARGIT juste la visibilité.
-  const teamIds = await loadTeamAthleteIds(supabase, selfId);
-  const mineSel = supabase
+  // Périmètre canonique — source unique get_coach_athletes (owner ∪ team,
+  // +école si directeur ; statut filtré serveur). On partitionne par `relation` :
+  //   • OWNER / TEAM → « mes athlètes »
+  //   • SCHOOL       → « athlètes de l'école » (le RPC ne renvoie SCHOOL que
+  //                    pour un directeur — un coach ordinaire n'a jamais cette
+  //                    section). Les non réclamés (coach_id NULL) de l'école
+  //                    ressortent en SCHOOL, comme avant.
+  const { ids, relationById, statusById } = await loadCoachAthleteScope(supabase, { includePending });
+  if (!ids.length) return { mine: [], school: [] };
+
+  const { data } = await supabase
     .from("athletes")
     .select(ATHLETE_OPTION_SELECT)
-    .in("status", statuses)
+    .in("id", ids)
     .order("last_name", { ascending: true });
-  // `.or` + `.eq("status", …)` se combinent en AND → statut gardé séparé.
-  const { data: mineRaw } = await (teamIds.length
-    ? mineSel.or(`coach_id.eq.${selfId},id.in.(${teamIds.join(",")})`)
-    : mineSel.eq("coach_id", selfId));
-  const mine = ((mineRaw ?? []) as AthleteRow[]).map(toOption);
 
-  // 2. Athlètes de l'école — directeur seulement.
-  const director = await loadSchoolDirectorStatus(supabase, selfId);
-  if (!director.isDirector || !director.schoolId) {
-    return { mine, school: [] };
+  const mine: CoachAthleteOption[] = [];
+  const school: CoachAthleteOption[] = [];
+  for (const raw of (data ?? []) as unknown as AthleteRow[]) {
+    const opt = toOption(raw);
+    opt.isPending = statusById.get(raw.id) === "EN_ATTENTE";
+    if (relationById.get(raw.id) === "SCHOOL") school.push(opt);
+    else mine.push(opt);
   }
-
-  const { data: schoolRaw } = await supabase
-    .from("athletes")
-    .select(ATHLETE_OPTION_SELECT)
-    .eq("school_id", director.schoolId)
-    .in("status", statuses)
-    .order("last_name", { ascending: true });
-  // Dédup en JS (et NON via .neq("coach_id", selfId), qui laisserait
-  // tomber les athlètes NON réclamés — coach_id NULL — de l'école à cause
-  // de la sémantique SQL `NULL != x` → NULL). On garde donc les non
-  // réclamés dans « Athlètes de l'école », on retire juste « mes athlètes ».
-  const mineIds = new Set(mine.map((a) => a.id));
-  const school = ((schoolRaw ?? []) as AthleteRow[])
-    .map(toOption)
-    .filter((a) => !mineIds.has(a.id));
-
   return { mine, school };
 }

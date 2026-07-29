@@ -16,7 +16,7 @@ import { orgNounDe, type SchoolType } from "@/lib/utils/orgLabel";
 
 interface Cegep { id: string; name: string; }
 interface Recruiter { id: string; name: string; photoUrl: string | null; }
-interface Ath { id: string; firstName: string; lastName: string; name: string; sport: string; position: string; photoUrl: string | null; stars: number; }
+interface Ath { id: string; firstName: string; lastName: string; name: string; sport: string; position: string; photoUrl: string | null; stars: number; isPending: boolean; }
 
 function initials(n: string) { return (n || "?").split(" ").map((p) => p[0] || "").join("").slice(0, 2).toUpperCase() || "?"; }
 
@@ -120,6 +120,7 @@ export default function RecruiterBrowserCompose({
                       sport={a.sport}
                       position={a.position}
                       stars={a.stars}
+                      isPending={a.isPending}
                       disabled={!!busyAthlete}
                       busy={busyAthlete === a.id}
                       onClick={() => pickAthlete(a.id)}

@@ -10,9 +10,9 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { findOrCreateAthleteCoachConversation } from "@/lib/queries/messaging/createAthleteCoachConversation";
-import { loadTeamAthleteIds } from "@/lib/queries/coach/teamAthleteIds";
+import { loadCoachAthleteScope } from "@/lib/queries/coach/getCoachAthletes";
 
-interface Ath { id: string; name: string; position: string; photoUrl: string | null; }
+interface Ath { id: string; name: string; position: string; photoUrl: string | null; isPending: boolean; }
 
 function initials(n: string) { return (n || "?").split(" ").map((p) => p[0] || "").join("").slice(0, 2).toUpperCase() || "?"; }
 
@@ -34,23 +34,30 @@ export default function AthleteRosterCompose({
     (async () => {
       setLoading(true);
       const supabase = createClient();
-      // Owned (coach_id = self) OU rattaché à une équipe que ce coach coache
-      // (autorité d'équipe, BP). coach_id reste le lien propriétaire inchangé.
-      const teamIds = await loadTeamAthleteIds(supabase, selfId);
-      const sel = supabase.from("athletes")
-        .select("id, first_name, last_name, photo_url, positions!position_id(abreviation)")
-        .eq("status", "ACTIF").order("last_name");
-      // `.or` + `.eq("status", …)` se combinent en AND → statut gardé séparé.
-      const { data } = await (teamIds.length
-        ? sel.or(`coach_id.eq.${selfId},id.in.(${teamIds.join(",")})`)
-        : sel.eq("coach_id", selfId));
+      // Périmètre canonique — source unique get_coach_athletes (owner ∪ team,
+      // +école si directeur, décision BP « directeur = école entière dans le
+      // picker chat » ; ACTIF+EN_ATTENTE badgés). La RLS de création
+      // (athlete_messageable_coach) autorise déjà ce même périmètre.
+      const { ids, statusById } = await loadCoachAthleteScope(supabase);
+      // On ne garde que les athlètes AVEC un compte (user_id) — seuls
+      // messageables. Sans ça, le scope école d'un directeur ferait apparaître
+      // des athlètes coach-créés sans compte (entrée morte → erreur au clic).
+      const { data } = ids.length
+        ? await supabase.from("athletes")
+            .select("id, first_name, last_name, photo_url, positions!position_id(abreviation)")
+            .in("id", ids)
+            .not("user_id", "is", null)
+            .order("last_name")
+        : { data: [] as unknown[] };
       const mine: Ath[] = (data ?? []).map((a) => {
         const p = (Array.isArray((a as { positions?: unknown }).positions) ? (a as { positions: unknown[] }).positions[0] : (a as { positions?: unknown }).positions) as { abreviation?: string } | null;
+        const id = (a as { id: string }).id;
         return {
-          id: (a as { id: string }).id,
+          id,
           name: `${(a as { first_name?: string }).first_name || ""} ${(a as { last_name?: string }).last_name || ""}`.trim() || "Athlète",
           position: p?.abreviation || "",
           photoUrl: ((a as { photo_url?: string }).photo_url) || null,
+          isPending: statusById.get(id) === "EN_ATTENTE",
         };
       });
       if (!cancelled) { setAthletes(mine); setLoading(false); }
@@ -91,7 +98,13 @@ export default function AthleteRosterCompose({
             {shown.map((a) => (
               <button key={a.id} type="button" disabled={!!busy} onClick={() => pick(a.id)} className="text-left rounded-xl p-4 flex items-center gap-3 bg-[#1A1D24] border border-[#2D3748] hover:border-[#22C55E]/60 transition-colors disabled:opacity-50">
                 {a.photoUrl ? (/* eslint-disable-next-line @next/next/no-img-element */ <img src={a.photoUrl} alt="" className="w-11 h-11 rounded-full object-cover shrink-0" />) : (<div className="w-11 h-11 rounded-full bg-[#22C55E]/15 border border-[#22C55E]/30 flex items-center justify-center shrink-0"><span className="text-[12px] font-bold text-[#22C55E]">{initials(a.name)}</span></div>)}
-                <div className="min-w-0 flex-1"><p className="text-[14px] font-bold text-white truncate">{a.name}</p>{a.position && <p className="text-[12px] text-[#6b7280]">{a.position}</p>}</div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-[14px] font-bold text-white truncate">{a.name}</p>
+                    {a.isPending && <span className="shrink-0 rounded-full bg-[#F59E0B]/15 border border-[#F59E0B]/30 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#F59E0B]">En attente</span>}
+                  </div>
+                  {a.position && <p className="text-[12px] text-[#6b7280]">{a.position}</p>}
+                </div>
                 {busy === a.id && <div className="w-4 h-4 border-2 border-[#22C55E] border-t-transparent rounded-full animate-spin shrink-0" />}
               </button>
             ))}

@@ -279,6 +279,7 @@ export default function GroupeCompose({
                         sport={a.sport}
                         position={a.position}
                         stars={a.stars}
+                        isPending={a.isPending}
                         selected={selected.has(a.userId!)}
                         onClick={() => toggleMember(a.userId!)}
                       />

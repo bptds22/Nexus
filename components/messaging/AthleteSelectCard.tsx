@@ -28,6 +28,8 @@ interface AthleteSelectCardProps {
   position?: string | null;
   /** cote_globale_entraineur (0–5). Stars hidden when ≤ 0. */
   stars?: number;
+  /** #EN_ATTENTE : athlète en attente de consentement → liseré « En attente ». */
+  isPending?: boolean;
   selected?: boolean;
   disabled?: boolean;
   busy?: boolean;
@@ -44,6 +46,7 @@ export default function AthleteSelectCard({
   sport,
   position,
   stars = 0,
+  isPending = false,
   selected = false,
   disabled = false,
   busy = false,
@@ -74,7 +77,10 @@ export default function AthleteSelectCard({
         <AthletePhotoFill photoUrl={photoUrl} firstName={fn} lastName={ln} initialsFontSize={15} />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-[14px] font-bold text-white truncate">{displayName}</p>
+        <div className="flex items-center gap-1.5">
+          <p className="text-[14px] font-bold text-white truncate">{displayName}</p>
+          {isPending && <span className="shrink-0 rounded-full bg-[#F59E0B]/15 border border-[#F59E0B]/30 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#F59E0B]">En attente</span>}
+        </div>
         {subtitle && <p className="text-[12px] text-[#6b7280] truncate">{subtitle}</p>}
         {stars > 0 && (
           <span className="inline-flex items-center gap-[2px] mt-1">

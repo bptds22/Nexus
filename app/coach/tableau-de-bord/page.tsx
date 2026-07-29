@@ -7,9 +7,9 @@ import KpiCards from "./_components/KpiCards";
 import HotAthletes from "./_components/HotAthletes";
 import ActivityFeed from "./_components/ActivityFeed";
 import { CoachDashboardMobile } from "@/components/shared/CoachDashboardMobile";
-import { loadCoachTaskCounts, loadSchoolTaskCounts } from "@/lib/coach/tasks";
+import { loadCoachTaskCounts } from "@/lib/coach/tasks";
 import { loadSchoolDirectorStatus } from "@/lib/queries/coach/useSchoolDirector";
-import { loadTeamAthleteIds } from "@/lib/queries/coach/teamAthleteIds";
+import { loadCoachAthleteScope } from "@/lib/queries/coach/getCoachAthletes";
 
 import type { ActionBarData, KpiData, HotAthlete } from "./_data/mockDashboardData";
 import type { ActivityEvent } from "@/lib/types/activityEvents";
@@ -134,24 +134,16 @@ export default function TableauDeBordPage() {
         })));
       }
 
-      // Roster scope: director → whole school; coach → athlètes PROPRIÉTAIRE
-      // (coach_id = self) OU rattachés à une équipe qu'il coache (autorité
-      // d'équipe, BP). coach_id reste le lien propriétaire inchangé.
-      const teamIds = await loadTeamAthleteIds(supabase, user.id);
-      const athletesSel = supabase.from("athletes").select("id, verified").eq("status", "ACTIF");
+      // Périmètre canonique roster — source unique get_coach_athletes (owner ∪
+      // team, +école si directeur ; ACTIF+EN_ATTENTE). Même set que le roster,
+      // le chat, l'à-traiter : le compte du dashboard ne peut plus diverger.
+      const { ids: scopeIds } = await loadCoachAthleteScope(supabase);
       let athleteRows: { id: string; verified: boolean }[] | null = null;
-      // `.or` + `.eq("status", …)` se combinent en AND → statut gardé séparé.
-      if (isDir) {
-        // Directeur CIVIL : son users.school_id peut ≠ club → le scope école
-        // seul rate les athlètes team-based du club. On ÉLARGIT avec les
-        // équipes coachées, comme la branche coach.
-        ({ data: athleteRows } = await (teamIds.length
-          ? athletesSel.or(`school_id.eq.${coachSchoolId},id.in.(${teamIds.join(",")})`)
-          : athletesSel.eq("school_id", coachSchoolId)));
-      } else {
-        ({ data: athleteRows } = await (teamIds.length
-          ? athletesSel.or(`coach_id.eq.${user.id},id.in.(${teamIds.join(",")})`)
-          : athletesSel.eq("coach_id", user.id)));
+      if (scopeIds.length) {
+        ({ data: athleteRows } = await supabase
+          .from("athletes")
+          .select("id, verified")
+          .in("id", scopeIds));
       }
 
       const athletes = athleteRows || [];
@@ -174,9 +166,9 @@ export default function TableauDeBordPage() {
       // ÉTAPE 3c — convergence sur lib/coach/tasks.loadCoachTaskCounts pour que
       // le tab badge, le dashboard et la page /coach/a-traiter soient tous
       // alimentés par UNE SEULE source. Adds 'missingEvals' (ÉTAPE 3b nouveau).
-      const taskCounts = isDir
-        ? await loadSchoolTaskCounts(supabase, coachSchoolId, teamIds)
-        : await loadCoachTaskCounts(supabase, user.id);
+      // Un seul appel : get_coach_athletes (dans loadCoachTaskCounts) détecte
+      // le directeur → périmètre école automatique. Plus de branche isDir.
+      const taskCounts = await loadCoachTaskCounts(supabase, user.id);
 
       // Banner 3: new athletes added (unread) — séparé, pas une "tâche"
       const newAthletesSel = supabase

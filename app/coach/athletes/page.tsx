@@ -19,7 +19,7 @@ import CoachAthleteRow from "@/components/coach/CoachAthleteRow";
 import { CoachAthletesMobile } from "@/components/shared/CoachAthletesMobile";
 import InviteByEmailModal from "./_components/InviteByEmailModal";
 import { loadSchoolDirectorStatus } from "@/lib/queries/coach/useSchoolDirector";
-import { loadTeamAthleteIds } from "@/lib/queries/coach/teamAthleteIds";
+import { loadCoachAthleteScope } from "@/lib/queries/coach/getCoachAthletes";
 import { orgNounDe, orgNounPossessif, type SchoolType } from "@/lib/utils/orgLabel";
 import { AthleteSectionHeader } from "@/components/shared/coach/AthleteSectionHeader";
 
@@ -250,15 +250,15 @@ function MesAthletesContent() {
         return;
       }
 
-      const coachSchoolId = coachRow.school_id;
       const coachSchoolRel = (coachRow as { schools?: unknown }).schools;
       setCoachOrgType(((Array.isArray(coachSchoolRel) ? coachSchoolRel[0] : coachSchoolRel) as { type?: SchoolType } | null)?.type ?? null);
 
-      // Angle mort team-based (BP) : un coach CIVIL peut posséder / coacher
-      // des athlètes dont le school_id = club ≠ son users.school_id. Le scope
-      // école seul les rate → on ÉLARGIT avec les athlete_id des équipes
-      // coachées (team_coaches → team_athletes). coach_id reste inchangé.
-      const teamIds = await loadTeamAthleteIds(supabase, session.user.id);
+      // Périmètre canonique « mes athlètes » — source unique get_coach_athletes
+      // (owner ∪ team, +école si directeur ; ACTIF+EN_ATTENTE badgés). Le
+      // partitionnement myRoster / à réclamer / autres reste en mémoire
+      // (coach_id) sur CE périmètre — plus de query parallèle.
+      const { ids: scopeIds } = await loadCoachAthleteScope(supabase);
+      if (!scopeIds.length) { setRealAthletes([]); setLoading(false); return; }
 
       const athletesQuery = supabase
         .from("athletes")
@@ -311,11 +311,8 @@ function MesAthletesContent() {
           evaluations(cote_globale, rapport_entraineur, distinctions, updated_at, coach_id,
             evaluator:users!evaluations_coach_id_fkey(first_name, last_name))
         `)
-        .in("status", ["ACTIF", "EN_ATTENTE"]);   // #EN_ATTENTE visible au coach (liseré).
-      // `.or` + `.eq("status", …)` se combinent en AND → statut gardé séparé.
-      const { data, error } = await (teamIds.length
-        ? athletesQuery.or(`school_id.eq.${coachSchoolId},id.in.(${teamIds.join(",")})`)
-        : athletesQuery.eq("school_id", coachSchoolId));
+        .in("id", scopeIds);   // périmètre canonique (statut déjà filtré par le RPC)
+      const { data, error } = await athletesQuery;
 
 
       if (!data) { setLoading(false); return; }
