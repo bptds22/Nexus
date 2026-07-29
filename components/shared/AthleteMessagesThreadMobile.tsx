@@ -3,7 +3,7 @@
 /* ═══════════════════════════════════════════════════════════════
    AthleteMessagesThreadMobile — Thread détail mobile (Phase C — athlète)
    Miroir de CoachDemandesThreadMobile. HeaderCenter = coach/directeur
-   (photo + nom + rôle · école). Bulles : athlète = vert #14532D (moi),
+   (photo + nom + rôle · école). Bulles : athlète = bleu #0A84FF (moi),
    coach = gris #262628. Rétraction → ligne système (getRetracted).
 
    Mark-read via le RPC mark_conversation_read (l'athlète n'a AUCUNE
@@ -208,7 +208,7 @@ function AthleteCoachThreadMobile() {
       getSenderId={(m) => m.sender_id}
       getStatus={(m) => m.status}
       getRetracted={(m) => !!m.retracted_at}
-      meColor="#14532D"
+      meColor="#0A84FF"
       otherColor="#262628"
       headerCenter={headerCenter}
       onBack={() => router.push("/athlete/messages")}

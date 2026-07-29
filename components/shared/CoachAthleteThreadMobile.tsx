@@ -10,7 +10,7 @@
    /coach/athletes/[id].
 
    Mark-read via mark_conversation_read (RPC, participant-safe). Bulles :
-   coach = vert #14532D (moi), athlète = gris #262628. Rétraction → ligne
+   coach = bleu #0A84FF (moi), athlète = gris #262628. Rétraction → ligne
    système (getRetracted).
 ═══════════════════════════════════════════════════════════════ */
 
@@ -198,7 +198,7 @@ export function CoachAthleteThreadMobile() {
       getSenderId={(m) => m.sender_id}
       getStatus={(m) => m.status}
       getRetracted={(m) => !!m.retracted_at}
-      meColor="#14532D"
+      meColor="#0A84FF"
       otherColor="#262628"
       headerCenter={headerCenter}
       onBack={() => router.push("/coach/demandes")}

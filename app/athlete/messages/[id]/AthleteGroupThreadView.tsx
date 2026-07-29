@@ -68,7 +68,7 @@ function GroupBubble({ msg, isMe, senderName }: { msg: GroupMessage; isMe: boole
       <p className="text-[11px] text-[#6b7280] mb-1.5">
         {isMe ? "Vous" : senderName} · {relativeTime(msg.createdAt)}
       </p>
-      <div className={`max-w-[80%] sm:max-w-[70%] rounded-2xl px-4 py-3 ${isMe ? "bg-[#14532D] rounded-br-md" : "bg-[#1E293B] rounded-bl-md"}`}>
+      <div className={`max-w-[80%] sm:max-w-[70%] rounded-2xl px-4 py-3 ${isMe ? "bg-[#0A84FF] rounded-br-md" : "bg-[#262628] rounded-bl-md"}`}>
         <p className="text-[14px] text-white leading-relaxed whitespace-pre-wrap">{msg.content}</p>
       </div>
     </div>

@@ -78,8 +78,8 @@ function MessageBubble({ msg, recruiterName }: { msg: Message; recruiterName?: s
       </p>
       <div className={`max-w-[80%] sm:max-w-[70%] rounded-2xl px-4 py-3 ${
         isCoach
-          ? "bg-[#14532D] rounded-br-md"
-          : "bg-[#1E293B] rounded-bl-md"
+          ? "bg-[#0A84FF] rounded-br-md"
+          : "bg-[#262628] rounded-bl-md"
       }`}>
         <p className="text-[14px] text-white leading-relaxed whitespace-pre-wrap">{msg.text}</p>
       </div>
