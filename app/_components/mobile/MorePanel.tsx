@@ -412,6 +412,10 @@ export default function MorePanel({
     return [
       {
         items: [
+          // Sell-page CTA (public cible) : la recherche CÉGEP avec carte, même
+          // page/carte que le recruteur (composant CegepSearch partagé), servie
+          // DANS l'espace athlète (/athlete/recherche, native mobile).
+          { key: "recherche-cegep", label: "Trouve ton cégep", href: "/athlete/recherche", icon: Icons.cegep },
           // "Ma visibilité" déplacée de la tab bar (Messages a pris son slot).
           { key: "visibilite", label: "Ma visibilité", href: "/athlete/visibilite", icon: Icons.eye },
           { key: "notifications", label: "Notifications", href: "/athlete/notifications", icon: Icons.bell, badge: actBadge },

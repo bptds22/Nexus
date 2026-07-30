@@ -20,6 +20,25 @@ import { loadSearchData, type SearchData, type CegepRow } from "@/lib/queries/ce
 import { norm, regionCentroid, scoreCegep } from "@/lib/queries/cegepSearch/scoring";
 import type { MapFocus } from "./MapPane";
 
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
+const PUBLIC_BASE = "https://nexussports.ca";
+
+// La page école (ProgramPage) est server-only — loaders service-role + params
+// dynamiques ?school= → absente du bundle mobile (routes (dev) exclues). Sur
+// Capacitor, on ouvre la version HÉBERGÉE dans le navigateur in-app
+// (@capacitor/browser, overlay SafariVC → l'athlète reste dans Nexus et revient
+// à la carte en fermant). MÊME pattern que « Mon école » du coach
+// (GestionEcoleMobile) et les items external du MorePanel. Sur web : lien
+// relatif normal (nouvel onglet), inchangé.
+async function openCegepPageMobile(schoolId: string) {
+  const url = `${PUBLIC_BASE}/page-test?school=${schoolId}`;
+  try {
+    const { Browser } = await import("@capacitor/browser");
+    await Browser.open({ url });
+  } catch {
+    window.open(url, "_blank", "noopener,noreferrer");
+  }
+}
 
 const MapPane = dynamic(() => import("./MapPane"), { ssr: false });
 
@@ -560,7 +579,13 @@ function Apercu({
 
       <div className="pcta">
         {c.riche ? (
-          <a className="btn page" href={`/page-test?school=${c.id}`} target="_blank" rel="noopener noreferrer">Accéder à la page →</a>
+          <a
+            className="btn page"
+            href={`/page-test?school=${c.id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={IS_CAPACITOR ? (e) => { e.preventDefault(); void openCegepPageMobile(c.id); } : undefined}
+          >Accéder à la page →</a>
         ) : (
           <button className="btn nopage" disabled>Page à venir — cible-le.</button>
         )}
