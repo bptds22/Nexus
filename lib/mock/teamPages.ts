@@ -74,7 +74,7 @@ export const teamPages: TeamData[] = [
       ],
       palmares: [
         { titre: "Champions", annee: 2022, type: "championnat" },
-        { titre: "Finale", annee: 2024, type: "finale" },
+        { titre: "Finale", annee: 2024, type: "coupe" },
       ],
     },
     // commits (MOCK) — 3 recrues (masculin → « Ils ont déjà dit oui »).
@@ -127,7 +127,7 @@ export const teamPages: TeamData[] = [
       palmares: [
         { titre: "Championnes", annee: 2023, type: "championnat" },
         { titre: "Championnes", annee: 2024, type: "championnat" },
-        { titre: "Finale", annee: 2025, type: "finale" },
+        { titre: "Finale", annee: 2025, type: "coupe" },
       ],
     },
     // team_events (MOCK, Bloc 2) : camp (à venir, en tête) + matchs passés/à venir (sans score).

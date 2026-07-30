@@ -10,6 +10,7 @@
 
 import * as React from "react";
 import { DNA_CSS, GrainOverlay } from "@/components/shared/dna";
+import { useSchoolTargets } from "@/lib/queries/schoolPage/useSchoolTargets";
 import TeamHero from "./TeamHero";
 import CalendarSection from "./CalendarSection";
 import PresentationSection from "./PresentationSection";
@@ -28,9 +29,20 @@ export default function TeamPage({ team }: { team: TeamData }) {
   const [r, g, b] = hexToRgb(team.teamColor);
   const [lr, lg, lb] = hexToRgb(team.teamColorLt);
 
-  // Cibles — un seul state partagé hero ⇄ box besoins (R3, backend unique Bloc 2).
-  const [cible, setCible] = React.useState(false);
-  const toggleCible = React.useCallback(() => setCible((c) => !c), []);
+  // Cibles — un seul état partagé hero ⇄ box besoins (R3). La cible est au
+  // niveau ÉCOLE (arbitrage D-1) : depuis une page équipe, on cible le CÉGEP,
+  // via le MÊME hook que la page école (insert/delete idempotents, RLS
+  // « Athletes manage own targets »).
+  // Sans schoolId (fixtures /team-test sans paramètre), rien n'est résolu ni
+  // écrit : le bouton garde son bascule visuel local, comme avant.
+  const targets = useSchoolTargets(team.schoolId ?? "", 0);
+  const [localCible, setLocalCible] = React.useState(false);
+  const wired = !!team.schoolId;
+  const cible = wired ? targets.inTargets : localCible;
+  const toggleCible = React.useCallback(() => {
+    if (wired) targets.toggle();
+    else setLocalCible((c) => !c);
+  }, [wired, targets]);
 
   // Thème ÉQUIPE — les 4 couleurs de la fixture, verbatim. La primaire éclaircie
   // (--red-lt) est STOCKÉE : tous les accents clairs la lisent directement.
@@ -73,6 +85,9 @@ export default function TeamPage({ team }: { team: TeamData }) {
     "--dna-ink": "#EDEFF3",
     // Point focal du crop hero — par image. Défaut : haut de cadre (sujets debout).
     "--hero-focal": team.heroFocal ?? "50% 25%",
+    // Zoom du cadrage (éditeur) : facteur d'échelle appliqué à la photo, centré
+    // sur le point focal. 100 % → 1 (aucune transformation).
+    "--hero-zoom": String(Math.max(100, team.heroZoom ?? 100) / 100),
   } as React.CSSProperties;
 
   // Reveals opacity-only (au-dessus de la ligne de flottaison → visibles direct).
@@ -100,14 +115,20 @@ export default function TeamPage({ team }: { team: TeamData }) {
       </div>
       <CalendarSection team={team} />
       <PresentationSection team={team} />
-      <BesoinsWidget team={team} cible={cible} onToggleCible={toggleCible} />
+      {/* Besoins : seule section qui ne se vide pas d'elle-même (le terrain se
+          rend même sans donnée) → la visibilité se décide ici. */}
+      {!(team.hiddenSections ?? []).includes("besoins") && (
+        <BesoinsWidget team={team} cible={cible} onToggleCible={toggleCible} />
+      )}
       <DejaEngageesSection team={team} />
     </div>
   );
 }
 
-/* ── CSS scopé (.tp) — team-hero-A-final + besoins-widget-final, verbatim ──── */
-const TP_CSS = `
+/* ── CSS scopé (.tp) — team-hero-A-final + besoins-widget-final, verbatim ────
+   Exporté : l'éditeur « Page équipe » l'injecte une fois pour ses previews
+   (mêmes composants, même feuille — aucun style dupliqué). */
+export const TP_CSS = `
 .tp{background:var(--bg);color:var(--p-ink);font-family:'Outfit',sans-serif;padding:24px 0 0;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility}
 /* ── RYTHME DE SECTION — porté 1:1 de la page école (.pp section / .pp .sec-in).
    Section pleine largeur + divider bas, contenu contraint à 1180px. Les fantômes
@@ -145,7 +166,9 @@ const TP_CSS = `
    LARGEUR 66% (desktop) : au-delà de 61% le fade est OPAQUE — la photo n'y est
    pas visible. La contraindre à la zone réellement vue divise l'upscale par ~1.5
    (3.22× → 2.13×) sans changer d'un pixel ce que l'œil voit. */
-.tp .hero-bg{position:absolute;inset:0 auto 0 0;z-index:1;width:66%;height:100%;object-fit:cover;object-position:var(--hero-focal, 50% 25%)}
+/* object-position = le point visé ; transform-origin = le MÊME point, pour que
+   le zoom agrandisse autour du sujet et non autour du centre du cadre. */
+.tp .hero-bg{position:absolute;inset:0 auto 0 0;z-index:1;width:66%;height:100%;object-fit:cover;object-position:var(--hero-focal, 50% 25%);transform:scale(var(--hero-zoom, 1));transform-origin:var(--hero-focal, 50% 25%)}
 .tp .hero.nophoto .hero-bg{display:none}
 /* fade Texas COMPLET : image ~60% → fondu total vers un aplat OPAQUE #111317
    (aucune photo sous le texte) + fade bas sans couture vers le fond de page */
@@ -203,6 +226,11 @@ const TP_CSS = `
 .tp .ev-date .m{font-family:'Outfit';font-weight:700;font-size:13px;letter-spacing:.08em;text-transform:uppercase}
 .tp .ev-vs{font-family:'Outfit';font-weight:700;font-size:16px}
 .tp .ev-meta{font-family:'Outfit';font-weight:500;font-size:14.5px;margin-top:6px}
+/* score d'un match JOUÉ (public.games) — remplace l'heure/lieu sur la tuile */
+.tp .ev-score{font-family:'Anton';font-size:22px;letter-spacing:.02em;margin-top:6px;color:var(--p-inv)}
+.tp .ev.match.home .ev-score{color:var(--p-ink)}
+.tp .ev-score.w{color:var(--green)}
+.tp .ev-score.l{color:var(--p-mut)}
 /* match EXTÉRIEUR = tuile CLAIRE (texte foncé) — défaut */
 .tp .ev.match.away{background:var(--cream);color:var(--p-inv)}
 .tp .ev.match.away .ev-date .d{color:var(--p-inv)}
@@ -233,8 +261,11 @@ const TP_CSS = `
 .tp .pen-string{height:2px;background:linear-gradient(90deg, transparent, var(--ink) 8% 92%, transparent)}
 .tp .pen-row{display:flex;gap:14px;flex-wrap:wrap;padding-top:0}
 .tp .pennant{width:96px;padding:11px 8px 20px;text-align:center;color:var(--cream);clip-path:polygon(0 0,100% 0,100% 74%,50% 100%,0 74%);box-shadow:0 8px 16px -10px rgba(0,0,0,.7)}
+/* 3 habits, une seule forme : le TYPE pilote la couleur (contrat éditeur). */
 .tp .pennant.championnat{background:var(--red)}
-.tp .pennant.finale{background:var(--ink);border:1px solid rgba(237,239,243,.14)}
+.tp .pennant.coupe{background:var(--ink);border:1px solid rgba(237,239,243,.14)}
+/* bannière « retirée au plafond » : rectangle sombre à liseré, pas de pointe */
+.tp .pennant.banniere{background:#14171D;border:1.5px solid var(--red);color:var(--p-ink);clip-path:none;border-radius:6px;padding:12px 10px}
 .tp .pen-t{display:block;font-family:'Outfit';font-weight:800;font-size:12px;letter-spacing:.06em;line-height:1.15}
 .tp .pen-y{display:block;font-family:'Anton';font-size:20px;margin-top:4px}
 /* staff — colonne droite */
@@ -289,15 +320,28 @@ const TP_CSS = `
 .tp .tk{position:absolute;transform:translate(-50%,-50%);transition:transform .2s var(--pop)}
 .tp .tk:hover{transform:translate(-50%,-50%) scale(1.06);z-index:9}
 .tp .tk .pl{background:#fff;border-radius:9px;padding:10px 18px;text-align:center;box-shadow:0 12px 24px -8px rgba(0,0,0,.8)}
+.tp .tk .pa{font-family:'Anton';font-size:24px;line-height:1;letter-spacing:.02em;color:var(--red);white-space:nowrap}
 .tp .tk .po{font-family:'Outfit';font-weight:800;font-size:17px;color:var(--p-inv);line-height:1;white-space:nowrap}
+/* avec initiales : le nom du groupe passe en sous-titre (l'acronyme porte la plaque) */
+.tp .tk .pa+.po{font-size:12.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;margin-top:4px}
 .tp .tk .pn{font-family:'Outfit';font-weight:700;font-size:12px;letter-spacing:.07em;text-transform:uppercase;margin-top:3px;white-space:nowrap}
-.tp .tk.pri .pl{box-shadow:0 0 0 2.5px var(--red-lt),0 12px 24px -8px rgba(0,0,0,.8)}
-.tp .tk.pri .pn{color:var(--red)}
-.tp .tk.hi .pl{box-shadow:0 0 0 2px var(--red-lt-55),0 12px 24px -8px rgba(0,0,0,.8)}
-.tp .tk.hi .pn{color:var(--red-lt)}
-.tp .tk.mid .pn{color:var(--gold-ink)}
-.tp .tk.full .pl{background:var(--plaque-off);box-shadow:0 8px 18px -8px rgba(0,0,0,.8)}
+/* ── ÉCHELLE DES NIVEAUX — lisible en une demi-seconde, de loin ──────────────
+   COMPLET = éteint · MOYEN = neutre clair · ÉLEVÉ = ambre · URGENT = rouge
+   Nexus (bordure épaisse + halo). C'est une échelle de PLATEFORME : elle ne
+   suit pas la couleur de l'école, sinon deux collèges ne se comparent plus. */
+.tp .tk.pri{z-index:6}
+.tp .tk.pri .pl{box-shadow:0 0 0 3px var(--nx-red),0 0 22px -2px rgba(230,57,70,.55),0 12px 24px -8px rgba(0,0,0,.8)}
+.tp .tk.pri .pa{color:var(--nx-red)}
+.tp .tk.pri .pn{color:var(--nx-red);font-weight:800;letter-spacing:.09em}
+.tp .tk.hi .pl{box-shadow:0 0 0 2.5px #F59E0B,0 0 14px -4px rgba(245,158,11,.45),0 12px 24px -8px rgba(0,0,0,.8)}
+.tp .tk.hi .pa{color:#B4770B}
+.tp .tk.hi .pn{color:#B4770B;font-weight:800}
+.tp .tk.mid .pl{box-shadow:0 0 0 1.5px #B6BCC7,0 12px 24px -8px rgba(0,0,0,.8)}
+.tp .tk.mid .pa{color:var(--p-inv)}
+.tp .tk.mid .pn{color:var(--p-mut-inv)}
+.tp .tk.full .pl{background:var(--plaque-off);box-shadow:0 8px 18px -8px rgba(0,0,0,.8);opacity:.82}
 .tp .tk.full .po{color:var(--plaque-off-ink)}
+.tp .tk.full .pa{color:var(--plaque-off-ink)}
 .tp .tk.full .pn{color:var(--plaque-off-mut)}
 /* warning « sans année » — texte discret sous le terrain (§A1) */
 .tp .noyear{position:relative;z-index:1;margin-top:10px;font-family:'Outfit';font-weight:500;font-size:14.5px;color:var(--p-mut)}
@@ -307,6 +351,10 @@ const TP_CSS = `
 .tp .needbox{position:relative;z-index:1;margin-top:20px;border-radius:12px;padding:22px 26px;background:var(--card-deep)}
 .tp .needbox.match{border:1.5px solid var(--green)}
 .tp .needbox.none{border:1.5px solid var(--line-card)}
+/* intensité du bandeau selon le NIVEAU saisi (besoin moyen → urgent). Le vert
+   reste la couleur du match ; seuls le halo et l'épaisseur montent. */
+.tp .needbox.match.nb-hi{box-shadow:0 0 0 1px rgba(34,197,94,.28)}
+.tp .needbox.match.nb-pri{border-width:2px;box-shadow:0 0 0 2px rgba(34,197,94,.34),0 10px 26px -14px rgba(34,197,94,.5)}
 .tp .needbox .nb-l{font-family:'Outfit';font-weight:700;font-size:17px;line-height:1.45;color:var(--p-ink);max-width:660px}
 .tp .needbox.match .nb-l b{color:var(--green);font-weight:800}
 .tp .needbox .nb-s{font-family:'Outfit';font-weight:500;font-size:14px;color:var(--p-mut);margin-top:6px}

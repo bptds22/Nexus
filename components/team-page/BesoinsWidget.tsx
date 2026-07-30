@@ -11,7 +11,7 @@ import { Heart } from "lucide-react";
 import { GhostWords, PlaybookDecor, wallWordGhosts } from "@/components/shared/dna";
 import TerrainStage from "./TerrainStage";
 import {
-  SPORT_CONFIGS, deriveFacette, countNoYear, matchState,
+  SPORT_CONFIGS, resolveFacette, countNoYear, matchState,
   type TeamData, type SportConfig,
 } from "./content";
 
@@ -22,12 +22,16 @@ export default function BesoinsWidget({
   cible: boolean;
   onToggleCible: () => void;
 }) {
-  const cfg: SportConfig = SPORT_CONFIGS[team.sportKey];
-  const hasToggle = cfg.facettes.length > 1;
+  const cfg: SportConfig | undefined = SPORT_CONFIGS[team.sportKey];
   const [fi, setFi] = React.useState(0);
+  // Sport sans terrain Nexus (athlétisme, natation…) : aucune plaque à montrer →
+  // la section s'efface au lieu de casser la page.
+  if (!cfg) return null;
+  const hasToggle = cfg.facettes.length > 1;
   const facette = cfg.facettes[fi];
 
-  const { plaques } = deriveFacette(team.roster, facette.groups, team.season);
+  // Besoins SAISIS prioritaires ; aucune ligne → moteur dérivé du roster.
+  const { plaques } = resolveFacette(team, facette.groups, team.season);
   const noYear = countNoYear(team.roster);
   const ms = matchState(team, team.season);
   const nextYear = team.season + 1;
@@ -83,10 +87,17 @@ export default function BesoinsWidget({
 
       {/* Box UNIQUE (§A2) — double état, absente si non connecté / autre sport */}
       {ms?.kind === "match" && (
-        <div className="needbox match">
+        // `nb-<level>` = intensité visuelle du besoin SAISI (absent sur le
+        // chemin dérivé). `pitch` = le message du collège, qui remplace la
+        // phrase calculée quand il existe.
+        <div className={`needbox match${ms.level ? " nb-" + ms.level : ""}`}>
           <div className="nb-l"><b>✓ Match parfait</b> — {ms.posLabel} est un besoin ici.</div>
           <div className="nb-s">
-            {ms.departures} des {ms.effectif} {ms.posLabelPlural} graduent l&apos;an prochain.
+            {ms.pitch
+              ? ms.pitch
+              : ms.departures > 0
+                ? `${ms.departures} des ${ms.effectif} ${ms.posLabelPlural} graduent l'an prochain.`
+                : `Le staff recrute à ce poste pour la rentrée ${nextYear}.`}
           </div>
         </div>
       )}

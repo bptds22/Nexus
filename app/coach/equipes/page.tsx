@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { getCurrentSeason } from "@/lib/utils/season";
@@ -8,6 +8,7 @@ import { TeamPickerSheet, type TeamPickerItem } from "@/components/shared/teams/
 import {
   TeamCreateFormBlock, type TeamFormValues, resolveTeamFinalValues,
 } from "@/components/shared/teams/TeamCreateFormBlock";
+import { ExistingTeamBanner } from "@/components/shared/teams/ExistingTeamBanner";
 import { createTeam, joinTeam } from "@/lib/queries/coach/createTeam";
 import { loadSchoolDirectorStatus } from "@/lib/queries/coach/useSchoolDirector";
 import CoachEquipesMobile from "@/components/shared/CoachEquipesMobile";
@@ -191,6 +192,11 @@ function EquipesPageDesktop() {
     }
     setLoading(false);
   }
+
+  /* Stable client for the pre-submit detection banner (its effect keys
+     on the client identity — a fresh createClient() each render would
+     re-run detection every render). */
+  const bannerSupabase = useMemo(() => createClient(), []);
 
   /* Unified create using the shared layer. Mirrors createCoachConversation :
      returns { teamId, error } ; on success refreshes the list. */
@@ -440,6 +446,27 @@ function EquipesPageDesktop() {
               initialValues={{ season: getCurrentSeason(), league: "RSEQ" }}
               onChange={(values, isValid) => { setFormValues(values); setFormValid(isValid); }}
             />
+
+            {/* Adoption visible AVANT le submit : si l'identité normalisée
+                matche une team existante (dont les ~6 187 RSEQ), bannière
+                d'adoption. Le bouton créer reste actif (garde serveur). */}
+            {formValues && schoolId && (
+              <div className="mt-4">
+                <ExistingTeamBanner
+                  supabase={bannerSupabase}
+                  schoolId={schoolId}
+                  sportId={formValues.sportId}
+                  ageGroup={resolveTeamFinalValues(formValues).finalAge}
+                  gender={formValues.gender}
+                  division={resolveTeamFinalValues(formValues).finalDivision}
+                  adopting={saving}
+                  onAdopt={async (t) => {
+                    setShowCreate(false);
+                    await handlePickExisting({ id: t.id, name: t.name } as TeamPickerItem);
+                  }}
+                />
+              </div>
+            )}
 
             {createError && (
               <p className="mt-3 text-[13px] text-[#EF4444] font-semibold">{createError}</p>

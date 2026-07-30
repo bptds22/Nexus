@@ -48,8 +48,11 @@ export default function TerrainStage({
       <div className="glow" />
       <div className="tokens">
         {plaques.map((p, i) => (
+          // Plaque = INITIALES en gros (Anton) + nom du groupe + niveau, comme le
+          // spec éditeur : l'athlète lit d'abord le poste, à distance.
           <div key={i} className={`tk ${p.level}`} style={{ left: `${p.left}%`, top: `${p.top}%` }}>
             <div className="pl">
+              {p.acro && <div className="pa">{p.acro}</div>}
               <div className="po">{p.label}</div>
               <div className="pn">{p.levelLabel}</div>
             </div>

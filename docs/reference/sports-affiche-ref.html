@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NEXUS — Sports (Concept A · L'affiche) réf</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Outfit:wght@400;500;600;700&display=swap');
+:root{ --red:#A6192E; --nx-red:#E63946; --green:#22C55E; --pop:cubic-bezier(0.34,1.56,0.64,1); }
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0B0C0E;color:#EDEFF3;font-family:'Outfit',sans-serif;padding:22px 14px}
+.cap{max-width:1180px;margin:0 auto 14px;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:#6a6f78;font-weight:700}
+
+section{position:relative;padding:56px 26px;background:#111317;max-width:1232px;margin:0 auto;border-radius:16px;overflow:hidden}
+.sec-in{max-width:1180px;margin:0 auto}
+.kick{font-family:'Bebas Neue';letter-spacing:.34em;font-size:13px;color:var(--red);filter:brightness(1.5)}
+.sec-h{font-family:'Anton';font-size:clamp(30px,3.6vw,46px);text-transform:uppercase;margin:6px 0 4px;line-height:1.02}
+.pbar{width:100px;height:9px;background:repeating-conic-gradient(var(--red) 0 25%,transparent 0 50%) 0 0/9px 9px;margin:14px 0 24px}
+
+/* pills */
+.pill{font-family:'Outfit';font-weight:700;font-size:11px;letter-spacing:.04em;padding:4px 10px;border-radius:99px;display:inline-flex;align-items:center;white-space:nowrap}
+.pill.div1{background:var(--red);color:#fff}
+.pill.div{background:transparent;color:#C9CCD4;border:1.5px solid #333844}
+.pill.gen{background:#1D212A;color:#8A909C}
+.pill.cnt{background:#12151C;color:#EDEFF3;border:1px solid #262A33}
+
+/* rows */
+.aList{display:flex;flex-direction:column;border-top:1px solid #1E2129}
+.aRow{border-bottom:1px solid #1E2129;padding:18px 4px;transition:background .2s}
+.aRow.multi{cursor:pointer}
+.aRow.multi:hover{background:#14171D}
+.aTop{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.aName{font-family:'Anton';font-size:clamp(22px,2.4vw,32px);text-transform:uppercase;line-height:1;min-width:220px}
+.aPills{display:flex;gap:7px;flex-wrap:wrap;flex:1}
+.aChev{font-size:20px;color:#4a505c;transition:transform .25s}
+.aRow.open .aChev{transform:rotate(90deg);color:var(--red);filter:brightness(1.4)}
+/* single-team row: whole row is a link, arrow points right */
+.aRow.single{cursor:pointer}
+.aRow.single:hover{background:#14171D}
+.aRow.single .aChev{color:var(--red);filter:brightness(1.4)}
+
+.teams{display:none;gap:8px;flex-wrap:wrap;margin-top:14px}
+.teams.open{display:flex}
+.tchip{display:inline-flex;align-items:center;gap:9px;background:#12151C;border:1.5px solid #262A33;border-radius:11px;padding:9px 13px;
+  font-family:'Outfit';font-weight:600;font-size:13px;color:#EDEFF3;cursor:pointer;transition:border-color .2s,transform .2s var(--pop)}
+.tchip:hover{border-color:var(--red);transform:translateY(-2px)}
+.tchip .ar{color:var(--red);filter:brightness(1.5)}
+.tchip small{font-family:'Outfit';font-weight:500;color:#8A909C}
+</style>
+</head>
+<body>
+<div class="cap">Sports — Concept A (L'affiche) · vraies données Grasset · single = clic → page équipe · multi = clic → ouvre le choix d'équipe</div>
+
+<section id="sports">
+  <div class="sec-in">
+    <div class="kick">NOS ÉQUIPES</div>
+    <h2 class="sec-h">Choisis ton sport</h2>
+    <div class="pbar"></div>
+    <div class="aList">
+
+      <div class="aRow single" onclick="go(this)">
+        <div class="aTop"><div class="aName">Football</div>
+          <div class="aPills"><span class="pill div1">D1</span><span class="pill gen">Masculin</span><span class="pill cnt">1 équipe</span></div>
+          <span class="aChev">→</span></div>
+      </div>
+
+      <div class="aRow multi" onclick="tog(this)">
+        <div class="aTop"><div class="aName">Soccer</div>
+          <div class="aPills"><span class="pill div">D2</span><span class="pill div">D3</span><span class="pill gen">M &amp; F</span><span class="pill cnt">2 équipes</span></div>
+          <span class="aChev">›</span></div>
+        <div class="teams">
+          <div class="tchip">Soccer intérieur <small>D2 · M&amp;F</small><span class="ar">→</span></div>
+          <div class="tchip">Soccer extérieur <small>D3 · F</small><span class="ar">→</span></div>
+        </div>
+      </div>
+
+      <div class="aRow multi" onclick="tog(this)">
+        <div class="aTop"><div class="aName">Flag football</div>
+          <div class="aPills"><span class="pill div">D2</span><span class="pill div">D3</span><span class="pill gen">M &amp; F</span><span class="pill cnt">2 équipes</span></div>
+          <span class="aChev">›</span></div>
+        <div class="teams">
+          <div class="tchip">Flag féminin <small>D2 · F</small><span class="ar">→</span></div>
+          <div class="tchip">Flag masculin <small>D3 · M</small><span class="ar">→</span></div>
+        </div>
+      </div>
+
+      <div class="aRow multi" onclick="tog(this)">
+        <div class="aTop"><div class="aName">Volleyball</div>
+          <div class="aPills"><span class="pill div">D3</span><span class="pill gen">M &amp; F</span><span class="pill cnt">2 équipes</span></div>
+          <span class="aChev">›</span></div>
+        <div class="teams">
+          <div class="tchip">Volleyball masculin <small>D3 · M</small><span class="ar">→</span></div>
+          <div class="tchip">Volleyball féminin <small>D3 · F</small><span class="ar">→</span></div>
+        </div>
+      </div>
+
+      <div class="aRow single" onclick="go(this)">
+        <div class="aTop"><div class="aName">Hockey</div>
+          <div class="aPills"><span class="pill div">D2</span><span class="pill gen">Masculin</span><span class="pill cnt">1 équipe</span></div>
+          <span class="aChev">→</span></div>
+      </div>
+
+      <div class="aRow single" onclick="go(this)">
+        <div class="aTop"><div class="aName">Basketball</div>
+          <div class="aPills"><span class="pill div">D3</span><span class="pill gen">Masculin</span><span class="pill cnt">1 équipe</span></div>
+          <span class="aChev">→</span></div>
+      </div>
+
+      <div class="aRow single" onclick="go(this)">
+        <div class="aTop"><div class="aName">Cross-country</div>
+          <div class="aPills"><span class="pill gen">Mixte</span><span class="pill cnt">1 équipe</span></div>
+          <span class="aChev">→</span></div>
+      </div>
+
+      <div class="aRow single" onclick="go(this)">
+        <div class="aTop"><div class="aName">Tennis</div>
+          <div class="aPills"><span class="pill gen">Mixte</span><span class="pill cnt">1 équipe</span></div>
+          <span class="aChev">→</span></div>
+      </div>
+
+      <div class="aRow single" onclick="go(this)">
+        <div class="aTop"><div class="aName">Ultimate</div>
+          <div class="aPills"><span class="pill gen">Mixte</span><span class="pill cnt">1 équipe</span></div>
+          <span class="aChev">→</span></div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<script>
+/* multi-team: toggle the team drawer. single-team: go straight to the team page. */
+function tog(r){ r.classList.toggle('open'); const t=r.querySelector('.teams'); if(t)t.classList.toggle('open'); }
+function go(r){ /* single équipe → route direct vers la page équipe (Bloc 2) */ }
+</script>
+</body>
+</html>

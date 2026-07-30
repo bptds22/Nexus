@@ -26,6 +26,10 @@ export default function CampusSection({
     caraRef.current?.scrollBy({ left: dir * 316, behavior: "smooth" });
 
   const cards = content.campusCards ?? [];
+  // Carte vidéo : clic → embed YouTube inline (lecture DANS la carte, aucune
+  // redirection). `playing` null au SSR → rendu identique (non-régression) ;
+  // l'iframe (style inline) n'apparaît qu'après clic, jamais dans le HTML SSR.
+  const [playing, setPlaying] = React.useState<number | null>(null);
 
   return (
     <section id="campus">
@@ -66,11 +70,26 @@ export default function CampusSection({
             <div className="cara" ref={caraRef}>
               {cards.map((card, i) => {
                 if ("type" in card && card.type === "video") {
+                  const vid = card.youtubeUrl ? ytId(card.youtubeUrl) : null;
+                  if (playing === i && vid) {
+                    return (
+                      <article className="ccard rv" key={i}>
+                        <iframe
+                          title="Vidéo du campus"
+                          src={`https://www.youtube.com/embed/${vid}?autoplay=1&rel=0`}
+                          loading="lazy"
+                          allow="autoplay; encrypted-media; picture-in-picture"
+                          allowFullScreen
+                          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: 0, borderRadius: "inherit" }}
+                        />
+                      </article>
+                    );
+                  }
                   return (
-                    <article className="ccard rv" key={i}>
-                      {card.youtubeUrl ? (
+                    <article className="ccard rv" key={i} onClick={() => vid && setPlaying(i)}>
+                      {vid ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img className="cimg" src={`https://img.youtube.com/vi/${ytId(card.youtubeUrl)}/hqdefault.jpg`} alt="Vidéo du campus" loading="lazy" />
+                        <img className="cimg" src={`https://img.youtube.com/vi/${vid}/hqdefault.jpg`} alt="Vidéo du campus" loading="lazy" />
                       ) : (
                         <div className="ph" />
                       )}

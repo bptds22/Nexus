@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NEXUS — Page équipe · Hero (A final)</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Outfit:wght@400;500;600;700&display=swap');
+:root{
+  --bg:#0B0C0E; --panel:#111317; --line:#1E2129;
+  --team:#A6192E; --team-lt:#D8394C;      /* crimson école (Grasset) — re-thémé par équipe */
+  --ink:#EDEFF3; --mut:#8A909C;
+  --nx-red:#E63946;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;padding:24px 14px}
+.cap{max-width:1232px;margin:0 auto 14px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#6a6f78;font-weight:700}
+
+.hero{position:relative;max-width:1232px;margin:0 auto;border-radius:16px;overflow:hidden;background:var(--panel);border:1px solid var(--line);
+  display:grid;grid-template-columns:1.05fr 1fr;min-height:520px}
+
+/* left — filtered image (le filtre garde le texte lisible sur n'importe quelle photo coach) */
+.imgcol{position:relative}
+.ph{position:absolute;inset:0;background:linear-gradient(135deg,#2b3038,#161a20 72%)}
+.ph-tag{position:absolute;top:14px;left:14px;font-family:'Outfit';font-weight:600;font-size:10px;letter-spacing:.14em;color:rgba(255,255,255,.3);text-transform:uppercase;z-index:5}
+.flt{position:absolute;inset:0;z-index:1;background:linear-gradient(90deg,rgba(9,10,13,.2),rgba(9,10,13,.78))}
+.accent{position:absolute;top:0;bottom:0;left:0;width:6px;z-index:6;background:var(--team)}
+.accent::after{content:"";position:absolute;top:0;bottom:0;left:6px;width:2px;background:rgba(255,255,255,.85)}
+.logo{position:absolute;top:22px;left:26px;z-index:5;width:58px;height:58px;border-radius:13px;background:var(--team);display:flex;align-items:center;justify-content:center;font-family:'Anton';font-size:27px;color:#fff}
+.soc{position:absolute;left:28px;bottom:26px;z-index:5;display:flex;gap:18px}
+.soc span{display:flex;align-items:center;justify-content:center;color:#EDEFF3;cursor:pointer;transition:color .2s}
+.soc span:hover{color:var(--team-lt)}
+.soc svg{width:21px;height:21px;fill:currentColor}
+
+/* right — editorial panel */
+.pnl{background:#0E1014;padding:48px 50px;display:flex;flex-direction:column;justify-content:center;gap:20px}
+.eyebrow{font-family:'Bebas Neue';letter-spacing:.28em;font-size:13px;color:var(--team-lt)}
+.name{font-family:'Anton';font-size:clamp(40px,4.6vw,64px);line-height:.94;text-transform:uppercase}
+.meta{display:flex;gap:8px;flex-wrap:wrap}
+.chip{font-family:'Outfit';font-weight:700;font-size:13px;letter-spacing:.04em;padding:7px 15px;border-radius:99px}
+.chip.solid{background:var(--team);color:#fff}
+.chip.out{border:1.5px solid rgba(255,255,255,.45);color:#fff;background:rgba(255,255,255,.06)}
+
+/* the 3-block stat display (record / playoff / coach) */
+.stats{display:flex;gap:34px;flex-wrap:wrap;padding-top:4px}
+.stat .v{font-family:'Anton';font-size:clamp(26px,2.4vw,34px);line-height:1;color:var(--ink)}
+.stat .v em{color:var(--team-lt);font-style:normal}
+.stat .l{font-family:'Outfit';font-weight:600;font-size:10.5px;letter-spacing:.1em;color:var(--mut);text-transform:uppercase;margin-top:8px}
+
+.cibles{display:inline-flex;align-items:center;gap:9px;font-family:'Outfit';font-weight:700;font-size:14px;background:var(--nx-red);color:#fff;border:0;border-radius:12px;padding:13px 22px;cursor:pointer;box-shadow:0 8px 22px -10px rgba(230,57,70,.7);align-self:flex-start;transition:transform .25s cubic-bezier(0.34,1.56,0.64,1)}
+.cibles:hover{transform:translateY(-2px)}
+
+@media(max-width:820px){
+  .hero{grid-template-columns:1fr}
+  .imgcol{min-height:260px}
+  .pnl{padding:36px 32px}
+}
+</style>
+</head>
+<body>
+<div class="cap">Page équipe · Hero A (final) — split image/panneau · display record 3-blocs · sans « prochain match »</div>
+
+<div class="hero">
+  <div class="imgcol">
+    <div class="ph"></div><span class="ph-tag">Photo</span>
+    <div class="flt"></div><div class="accent"></div>
+    <div class="logo">P</div>
+    <div class="soc">
+      <span aria-label="Instagram"><svg viewBox="0 0 24 24"><path d="M12 2.2c3.2 0 3.6 0 4.8.07 1.17.05 1.8.25 2.23.42.56.22.96.48 1.38.9.42.42.68.82.9 1.38.17.42.37 1.06.42 2.23.06 1.2.07 1.56.07 4.8s0 3.6-.07 4.8c-.05 1.17-.25 1.8-.42 2.23-.22.56-.48.96-.9 1.38-.42.42-.82.68-1.38.9-.42.17-1.06.37-2.23.42-1.2.06-1.56.07-4.8.07s-3.6 0-4.8-.07c-1.17-.05-1.8-.25-2.23-.42-.56-.22-.96-.48-1.38-.9-.42-.42-.68-.82-.9-1.38-.17-.42-.37-1.06-.42-2.23C2.2 15.6 2.2 15.24 2.2 12s0-3.6.07-4.8c.05-1.17.25-1.8.42-2.23.22-.56.48-.96.9-1.38.42-.42.82-.68 1.38-.9.42-.17 1.06-.37 2.23-.42C8.4 2.2 8.76 2.2 12 2.2zm0 3.05A6.75 6.75 0 1 0 18.75 12 6.75 6.75 0 0 0 12 5.25zm0 11.13A4.38 4.38 0 1 1 16.38 12 4.38 4.38 0 0 1 12 16.38zm6.9-11.4a1.58 1.58 0 1 1-1.58-1.57 1.58 1.58 0 0 1 1.58 1.57z"/></svg></span>
+      <span aria-label="Facebook"><svg viewBox="0 0 24 24"><path d="M22 12a10 10 0 1 0-11.56 9.88v-6.99H7.9V12h2.54V9.8c0-2.5 1.49-3.89 3.78-3.89 1.09 0 2.24.2 2.24.2v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56V12h2.78l-.44 2.89h-2.34v6.99A10 10 0 0 0 22 12z"/></svg></span>
+      <span aria-label="X"><svg viewBox="0 0 24 24"><path d="M18.24 2.25h3.31l-7.23 8.26 8.5 11.24h-6.65l-5.22-6.82-5.97 6.82H1.66l7.73-8.84L1.24 2.25H8.06l4.71 6.23 5.47-6.23zm-1.16 17.52h1.83L7.01 4.13H5.05l12.03 15.64z"/></svg></span>
+    </div>
+  </div>
+  <div class="pnl">
+    <div class="eyebrow">PHÉNIX · COLLÈGE ANDRÉ-GRASSET</div>
+    <div class="name">Basketball<br>masculin</div>
+    <div class="meta"><span class="chip solid">D3</span><span class="chip out">Masculin</span></div>
+    <div class="stats">
+      <div class="stat"><div class="v">18–6</div><div class="l">Saison 24-25</div></div>
+      <div class="stat"><div class="v"><em>½</em> finale</div><div class="l">Séries RSEQ</div></div>
+      <div class="stat"><div class="v">M. Tremblay</div><div class="l">Entraîneur-chef</div></div>
+    </div>
+    <button class="cibles">♥ Rajouter à mes cibles</button>
+  </div>
+</div>
+</body>
+</html>

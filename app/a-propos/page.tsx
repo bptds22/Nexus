@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import MarketingNav from "@/components/marketing/MarketingNav";
 import PlaybookBackground from "@/app/components/PlaybookBackground";
 import { useTranslation } from "@/lib/i18n/useTranslation";
+import { createClient } from "@/lib/supabase/client";
 
 import { notFound } from "next/navigation";
 /* ═══════════════════════════════════════════════════════════════
@@ -67,23 +68,44 @@ export default function AProposPage() {
     email: "",
     subject: T.contact.subjects.general,
     message: "",
+    company: "", // honeypot — champ caché, doit rester vide
   });
   const [submitted, setSubmitted] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [errored, setErrored] = useState(false);
   const fadeRef = useRef<HTMLDivElement>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name.trim() || !form.email.trim() || !form.message.trim()) return;
-    // TODO: integrate with backend / email service
-    setSubmitted(true);
-    setTimeout(() => {
-      setSubmitted(false);
-      setForm({ name: "", email: "", subject: T.contact.subjects.general, message: "" });
-    }, 4000);
+    if (sending || !form.name.trim() || !form.email.trim() || !form.message.trim()) return;
+    setErrored(false);
+    setSending(true);
+    try {
+      const supabase = createClient();
+      const { data, error } = await supabase.functions.invoke("send-contact", {
+        body: {
+          name: form.name,
+          email: form.email,
+          subject: form.subject,
+          message: form.message,
+          company: form.company, // honeypot
+        },
+      });
+      if (error || !data?.ok) throw error ?? new Error("send-contact failed");
+
+      setSubmitted(true);
+      setForm({ name: "", email: "", subject: T.contact.subjects.general, message: "", company: "" });
+      setTimeout(() => setSubmitted(false), 4000);
+    } catch {
+      setErrored(true);
+      setTimeout(() => setErrored(false), 6000);
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -255,12 +277,25 @@ export default function AProposPage() {
                     />
                   </div>
 
+                  {/* Honeypot anti-spam — caché aux humains, rempli par les bots. */}
+                  <input
+                    type="text"
+                    name="company"
+                    value={form.company}
+                    onChange={handleChange}
+                    tabIndex={-1}
+                    autoComplete="off"
+                    aria-hidden="true"
+                    className="hidden"
+                  />
+
                   {/* Submit */}
                   <button
                     type="submit"
-                    className="w-full h-12 rounded-lg bg-[#E63946] text-white font-bold uppercase tracking-wider text-[13px] hover:bg-[#D42B22] transition-colors mt-1"
+                    disabled={sending}
+                    className="w-full h-12 rounded-lg bg-[#E63946] text-white font-bold uppercase tracking-wider text-[13px] hover:bg-[#D42B22] transition-colors mt-1 disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    {T.contact.submit}
+                    {sending ? T.contact.submitting : T.contact.submit}
                   </button>
                 </form>
             </div>
@@ -275,6 +310,18 @@ export default function AProposPage() {
               <path d="M9 12l2 2 4-4" />
             </svg>
             <span className="text-[13px] text-white">{T.contact.toast}</span>
+          </div>
+        )}
+
+        {/* Error toast */}
+        {errored && (
+          <div className="fixed bottom-6 right-6 bg-[#1A1D24] border border-[#EF4444]/50 rounded-lg px-5 py-3.5 shadow-2xl flex items-center gap-3 z-50 max-w-[360px]">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 8v4" />
+              <path d="M12 16h.01" />
+            </svg>
+            <span className="text-[13px] text-white">{T.contact.toastError}</span>
           </div>
         )}
       </div>

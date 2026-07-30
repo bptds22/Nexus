@@ -7,6 +7,20 @@
 import { notFound } from "next/navigation";
 import TeamPage from "@/components/team-page/TeamPage";
 import { teamPages } from "@/lib/mock/teamPages";
+import { loadTeamPageForRender } from "@/lib/queries/teamPage/loadForRender";
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+const FONTS = (
+  <>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Outfit:wght@400;500;600;700;800&display=swap"
+    />
+  </>
+);
 
 export const metadata = {
   title: "Page équipe — dev test",
@@ -28,6 +42,24 @@ export default async function TeamTest({
   if (process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true") notFound();
   // Next 16 : searchParams est une Promise → à await.
   const sp = await searchParams;
+
+  // ── mode DB : ?team=<uuid> → l'équipe réelle. Équipe jamais configurée (ou
+  // introuvable) → FALLBACK fixture : la page ne casse JAMAIS.
+  if (sp?.team && UUID.test(sp.team)) {
+    const res = await loadTeamPageForRender(sp.team);
+    if (res.configured) {
+      return (
+        <>
+          {FONTS}
+          <main style={{ background: "#111317", minHeight: "100vh" }}>
+            <TeamPage team={res.team} />
+          </main>
+        </>
+      );
+    }
+  }
+
+  // ── mode fixture (sans paramètre, ou ?team=<slug>) — INCHANGÉ ──
   // Démo par défaut = Flag féminin (photo réelle Grasset). Autres via ?team=<id>.
   const team =
     teamPages.find((t) => t.id === sp?.team) ??
@@ -36,12 +68,7 @@ export default async function TeamTest({
 
   return (
     <>
-      <link rel="preconnect" href="https://fonts.googleapis.com" />
-      <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-      <link
-        rel="stylesheet"
-        href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Outfit:wght@400;500;600;700;800&display=swap"
-      />
+      {FONTS}
       {/* fond aligné sur la coquille Nexus (#111317) — sinon bande visible sous .tp */}
       <main style={{ background: "#111317", minHeight: "100vh" }}>
         <TeamPage team={team} />

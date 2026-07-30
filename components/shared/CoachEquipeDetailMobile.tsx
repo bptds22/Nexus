@@ -124,6 +124,10 @@ export default function CoachEquipeDetailMobile() {
   const [showAddCoach, setShowAddCoach] = useState(false);
   const [showAddAthlete, setShowAddAthlete] = useState(false);
   const [confirmRemoveAthlete, setConfirmRemoveAthlete] = useState<{ id: string; name: string } | null>(null);
+  // FIX 4 — déplacement inter-équipes d'un même sport (voir addAthleteToTeam).
+  const [confirmMoveAthlete, setConfirmMoveAthlete] = useState<
+    { athleteId: string; rowId: string; prevTeamName: string } | null
+  >(null);
   const [confirmRemoveCoach, setConfirmRemoveCoach] = useState<{ id: string; name: string } | null>(null);
   const [confirmCancelInvite, setConfirmCancelInvite] = useState<{ id: string; name: string } | null>(null);
 
@@ -143,13 +147,55 @@ export default function CoachEquipeDetailMobile() {
     invalidate();
   }
 
+  // FIX 4 (parité desktop) — un athlète ne peut être que dans UNE équipe par
+  // sport (UNIQUE athlete_id, sport_id). S'il joue déjà dans une autre équipe
+  // du même sport, l'ajout devient un DÉPLACEMENT confirmé plutôt qu'une
+  // erreur 23505 brute. Les autres sports ne sont jamais touchés.
   async function addAthleteToTeam(athleteId: string) {
     if (!teamId) return;
     const supabase = createClient();
+    const sportId = team?.sportId || "";
+    if (!sportId) { toast.error({ message: "Sport de l'équipe non résolu." }); return; }
+
+    const { data: existing, error: exErr } = await supabase
+      .from("team_athletes")
+      .select("id, team_id, teams!team_id(name)")
+      .eq("athlete_id", athleteId)
+      .eq("sport_id", sportId)
+      .maybeSingle();
+    if (exErr) { toast.error({ message: exErr.message }); return; }
+
+    if (existing) {
+      if (existing.team_id === teamId) {
+        setShowAddAthlete(false);
+        toast.success({ message: "Déjà dans cette équipe" });
+        return;
+      }
+      const rel = existing.teams as { name?: string } | { name?: string }[] | null;
+      setConfirmMoveAthlete({
+        athleteId,
+        rowId: existing.id as string,
+        prevTeamName: (Array.isArray(rel) ? rel[0]?.name : rel?.name) || "son équipe actuelle",
+      });
+      return;
+    }
+
+    await commitAddAthlete(athleteId, null);
+  }
+
+  // Retrait de l'ancienne ligne (si déplacement) puis insertion.
+  async function commitAddAthlete(athleteId: string, previousRowId: string | null) {
+    if (!teamId) return;
+    const supabase = createClient();
+    if (previousRowId) {
+      const delRes = await supabase.from("team_athletes").delete().eq("id", previousRowId);
+      if (delRes.error) { toast.error({ message: delRes.error.message }); return; }
+    }
     const { error } = await supabase.from("team_athletes").insert({ team_id: teamId, athlete_id: athleteId });
     if (error) { toast.error({ message: error.message }); return; }
     triggerHaptic("Medium");
-    toast.success({ message: "Athlète ajouté" });
+    toast.success({ message: previousRowId ? "Athlète déplacé" : "Athlète ajouté" });
+    setConfirmMoveAthlete(null);
     setShowAddAthlete(false);
     invalidate();
   }
@@ -443,6 +489,20 @@ export default function CoachEquipeDetailMobile() {
       />
 
       {/* Confirm sheets */}
+      <ConfirmSheet
+        open={!!confirmMoveAthlete}
+        onClose={() => setConfirmMoveAthlete(null)}
+        title="Déplacer cet athlète ?"
+        message={
+          confirmMoveAthlete
+            ? `Cet athlète joue déjà dans « ${confirmMoveAthlete.prevTeamName} » pour ce sport. Il en sera retiré et rattaché à « ${team.name || "cette équipe"} ». Ses équipes dans d'autres sports ne changent pas.`
+            : ""
+        }
+        confirmLabel="Déplacer"
+        onConfirm={() =>
+          confirmMoveAthlete && commitAddAthlete(confirmMoveAthlete.athleteId, confirmMoveAthlete.rowId)
+        }
+      />
       <ConfirmSheet
         open={!!confirmRemoveAthlete}
         onClose={() => setConfirmRemoveAthlete(null)}

@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NEXUS — Campus : map + carousel (réf pass 2)</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Outfit:wght@400;500;600;700&display=swap');
+
+:root{
+  --red:#A6192E;            /* crimson école (Grasset) */
+  --nx-red:#E63946;         /* rouge Nexus — plateforme */
+  --pop:cubic-bezier(0.34,1.56,0.64,1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0B0C0E;color:#F1EBDD;font-family:'Outfit',sans-serif;padding:26px 14px}
+.cap{max-width:1180px;margin:0 auto 14px;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:#6a6f78;font-weight:700}
+
+section{position:relative;padding:64px 26px 56px;background:#111317;max-width:1232px;margin:0 auto;border-radius:16px;overflow:hidden}
+.sec-in{max-width:1180px;margin:0 auto;position:relative}
+.kick{font-family:'Bebas Neue';letter-spacing:.34em;font-size:13px;color:var(--red);filter:brightness(1.5)}
+.sec-h{font-family:'Anton';font-size:clamp(30px,3.6vw,46px);text-transform:uppercase;color:#EDEFF3;margin:6px 0 4px;line-height:1.02}
+.pbar{width:100px;height:9px;background:repeating-conic-gradient(var(--red) 0 25%,transparent 0 50%) 0 0/9px 9px;margin:14px 0 8px}
+
+/* 3 tuiles */
+.fiche{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-top:28px}
+.itile{background:#1A1D24;border:1.5px solid #262A33;border-radius:14px;padding:18px 20px}
+.itile .il{font-family:'Bebas Neue';letter-spacing:.22em;font-size:12px;color:#8A909C}
+.itile .iv{font-family:'Anton';font-size:clamp(20px,1.9vw,26px);color:#EDEFF3;margin-top:5px;text-transform:uppercase}
+.itile.hot{background:var(--red);border-color:transparent}
+.itile.hot .il{color:rgba(255,255,255,.75)}
+.itile.hot .iv{color:#fff}
+
+/* map — pleine largeur, moins zoomée, sans mappin */
+.mapwrap{position:relative;margin-top:20px;border-radius:16px;overflow:hidden;border:1.5px solid #262A33;height:380px;background:#14161C}
+.mapwrap iframe{position:absolute;inset:0;width:100%;height:100%;border:0;filter:grayscale(.2) contrast(1.02)}
+
+/* carousel */
+.cara-head{display:flex;justify-content:space-between;align-items:flex-end;margin:34px 0 14px}
+.cara-kick{font-family:'Bebas Neue';letter-spacing:.24em;font-size:14px;color:#8A909C}
+.cara-nav{display:flex;gap:8px}
+.cara-nav button{width:40px;height:40px;border-radius:50%;background:#1A1D24;border:1.5px solid #2A2F3A;color:#EDEFF3;
+  font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .2s var(--pop),border-color .2s}
+.cara-nav button:hover{transform:translateY(-2px);border-color:var(--nx-red)}
+
+.cara{display:flex;gap:16px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;padding-bottom:6px;
+  scrollbar-width:none}
+.cara::-webkit-scrollbar{display:none}
+.ccard{flex:0 0 300px;scroll-snap-align:start;height:380px;border-radius:16px;position:relative;overflow:hidden;
+  border:1.5px solid #262A33;cursor:pointer;transition:transform .3s var(--pop),box-shadow .3s}
+.ccard:hover{transform:translateY(-4px);box-shadow:0 18px 40px -20px rgba(230,57,70,.55)}
+/* placeholders image = slots d'upload recruteur */
+.ccard .ph{position:absolute;inset:0}
+.ph.p1{background:linear-gradient(150deg,#2a2f38,#171a20 70%)}
+.ph.p2{background:linear-gradient(150deg,#3a1720,#171a20 70%)}
+.ph.p3{background:linear-gradient(150deg,#232a34,#151820 70%)}
+.ph.p4{background:linear-gradient(150deg,#28323a,#141820 70%)}
+.ph.p5{background:linear-gradient(150deg,#1e2732,#12151c 70%)}
+.ph-tag{position:absolute;top:14px;right:14px;font-family:'Outfit';font-weight:600;font-size:10px;letter-spacing:.14em;
+  color:rgba(255,255,255,.4);text-transform:uppercase}
+.ccard .grad{position:absolute;inset:0;background:linear-gradient(to top,rgba(10,11,14,.92) 8%,rgba(10,11,14,.15) 55%,transparent)}
+.cc-t{position:absolute;left:18px;right:18px;bottom:16px;font-family:'Anton';font-size:22px;line-height:1.05;
+  color:#fff;text-transform:uppercase;z-index:2}
+.cc-cap{position:absolute;left:18px;right:18px;bottom:16px;transform:translateY(0);z-index:2}
+.cc-cap .t{font-family:'Anton';font-size:22px;line-height:1.05;color:#fff;text-transform:uppercase;display:block}
+.cc-cap .c{font-family:'Outfit';font-weight:500;font-size:12.5px;color:#C9CCD4;margin-top:6px;display:block}
+.cc-badge{position:absolute;top:14px;left:14px;z-index:2;font-family:'Bebas Neue';letter-spacing:.16em;font-size:10.5px;
+  background:var(--red);color:#fff;padding:4px 10px;border-radius:99px}
+.cc-play{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:2}
+.cc-play span{width:52px;height:52px;border-radius:50%;background:rgba(230,57,70,.92);color:#fff;display:flex;
+  align-items:center;justify-content:center;font-size:18px;padding-left:3px}
+</style>
+</head>
+<body>
+
+<div class="cap">Réf pass 2 — Campus : map pleine largeur + carousel façon Features · cards = catalogue (image + titre + légende ≤60) · aucun mineur identifiable</div>
+
+<section id="campus">
+  <div class="sec-in">
+    <div class="kick">L'ESSENTIEL</div>
+    <h2 class="sec-h">Le campus</h2>
+    <div class="pbar"></div>
+
+    <div class="fiche">
+      <div class="itile"><div class="il">LANGUE</div><div class="iv">FRANCOPHONE</div></div>
+      <div class="itile hot"><div class="il">STATUT</div><div class="iv">PRIVÉ</div></div>
+      <div class="itile"><div class="il">RÉGION</div><div class="iv">MONTRÉAL</div></div>
+    </div>
+
+    <div class="mapwrap">
+      <iframe title="Carte — Collège André-Grasset" loading="lazy" referrerpolicy="no-referrer-when-downgrade"
+        src="https://www.google.com/maps?q=Coll%C3%A8ge+Andr%C3%A9-Grasset,+1001+Boulevard+Cr%C3%A9mazie+Est,+Montr%C3%A9al&z=12&output=embed"></iframe>
+    </div>
+
+    <div class="cara-head">
+      <div class="cara-kick">LE CAMPUS EN IMAGES</div>
+      <div class="cara-nav">
+        <button onclick="scrollCara(-1)" aria-label="Précédent">‹</button>
+        <button onclick="scrollCara(1)" aria-label="Suivant">›</button>
+      </div>
+    </div>
+
+    <div class="cara" id="cara">
+      <article class="ccard"><div class="ph p1"></div><span class="ph-tag">Photo</span><div class="grad"></div>
+        <div class="cc-cap"><span class="t">Installations Phénix</span><span class="c">Gymnase double, salle de musculation dédiée.</span></div></article>
+
+      <article class="ccard"><div class="ph p2"></div><span class="ph-tag">Photo</span><div class="grad"></div>
+        <div class="cc-cap"><span class="t">Résidences &amp; hébergement</span><span class="c">Résidence à proximité, ententes de pension.</span></div></article>
+
+      <article class="ccard"><div class="ph p3"></div><span class="ph-tag">Photo</span><div class="grad"></div>
+        <div class="cc-cap"><span class="t">Encadrement sport-études</span><span class="c">Horaires adaptés, tuteurs, suivi académique.</span></div></article>
+
+      <article class="ccard"><div class="ph p4"></div><span class="ph-tag">Photo</span><div class="grad"></div>
+        <div class="cc-cap"><span class="t">Plateaux partenaires</span><span class="c">Claude-Robillard, stade de soccer, aréna.</span></div></article>
+
+      <article class="ccard"><div class="ph p5"></div><div class="cc-play"><span>▶</span></div><div class="grad"></div>
+        <div class="cc-t">Vidéo du campus</div></article>
+    </div>
+  </div>
+</section>
+
+<script>
+function scrollCara(dir){
+  document.getElementById('cara').scrollBy({left:dir*316,behavior:'smooth'});
+}
+</script>
+</body>
+</html>

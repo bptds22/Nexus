@@ -404,6 +404,8 @@ type SchoolTeamRow = {
   age_group: string | null;
   division: string | null;
   gender: string | null;
+  /** Saison de l'équipe — sert au tri du picker (FIX 3), pas à l'affichage. */
+  season?: string;
 };
 
 function SchoolTeamPicker({
@@ -444,37 +446,56 @@ function SchoolTeamPicker({
         return;
       }
 
-      let query = supabase
+      // FIX 3 — TOUTES les équipes de l'école pour ce sport. Le coach
+      // sélectionné ne FILTRE plus, il TRIE.
+      //
+      // Avant : dès que le coach avait au moins une ligne team_coaches, la
+      // liste était restreinte à SES équipes (.in("id", ...)). Le filtre
+      // s'activait donc exactement dans le scénario qu'on veut éviter — un
+      // coach qui a créé un doublon voyait l'équipe RSEQ de son école
+      // disparaître de la liste de l'athlète, et l'athlète se retrouvait
+      // rattaché à une équipe sans rseq_team_id, donc sans calendrier.
+      const { data: rows } = await supabase
         .from("teams")
-        .select("id, name, age_group, division, gender")
+        .select("id, name, age_group, division, gender, season")
         .eq("school_id", schoolId)
         .eq("sport_id", sportRow.id)
-        .eq("is_active", true);
+        .eq("is_active", true)
+        .order("name");
 
-      // Narrow to the selected coach's teams — but ONLY if that coach
-      // has linked teams (team_coaches). That table fills organically
-      // via the coach portal; until a coach has links, fall back to all
-      // school teams rather than hide them behind an empty picker.
+      // Équipes du coach choisi → remontées en tête (signal utile, jamais
+      // une exclusion). Échec de lecture = tri neutre, la liste reste complète.
+      let coachTeamIds = new Set<string>();
       if (selectedCoachId) {
         const { data: ct } = await supabase
           .from("team_coaches")
           .select("team_id")
           .eq("coach_id", selectedCoachId);
-        if (ct && ct.length > 0) {
-          query = query.in("id", ct.map((r) => r.team_id as string));
-        }
+        coachTeamIds = new Set((ct ?? []).map((r) => r.team_id as string));
       }
 
-      const { data: rows } = await query.order("name");
-
       if (!cancelled) {
-        setTeams((rows ?? []).map((r: Record<string, unknown>) => ({
+        const mapped = (rows ?? []).map((r: Record<string, unknown>) => ({
           id: r.id as string,
           name: r.name as string,
           age_group: (r.age_group as string) ?? null,
           division: (r.division as string) ?? null,
           gender: (r.gender as string) ?? null,
-        })));
+          season: (r.season as string) ?? "",
+        }));
+        // 1) équipes du coach d'abord, 2) saison la plus récente d'abord
+        // (en septembre les deux saisons coexistent — l'athlète doit tomber
+        // sur celle qui porte le calendrier), 3) nom.
+        mapped.sort((a, b) => {
+          const aMine = coachTeamIds.has(a.id) ? 0 : 1;
+          const bMine = coachTeamIds.has(b.id) ? 0 : 1;
+          if (aMine !== bMine) return aMine - bMine;
+          const aS = a.season ?? "";
+          const bS = b.season ?? "";
+          if (aS !== bS) return bS.localeCompare(aS);
+          return a.name.localeCompare(b.name);
+        });
+        setTeams(mapped);
         setLoading(false);
       }
     }

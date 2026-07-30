@@ -238,6 +238,10 @@ export interface WallTheme {
   onC1: string;
   /** primary AS TEXT on cream: primary if legible, else the deep variant */
   c1OnCream: string;
+  /** glyphe sur tuile CLAIRE quand une claire custom est définie : la claire
+   *  assombrie ~38% (×0.62/canal) → lisible sur la tuile claire. Consommé
+   *  conditionnellement (school.lightDefined) pour ne pas toucher le fixture. */
+  tileGlyph: string;
   /** foam-finger recolor: hue-rotate(Δ from #A6192E) + saturate — rule #5 */
   foamFilter: string;
 }
@@ -351,6 +355,7 @@ export function deriveWallTheme(
     beige: warmShade(n, 0.9, 0.868, 0.787),
     onC1,
     c1OnCream,
+    tileGlyph: toHex(darken(n, 0.38)), // claire × 0.62/canal
     foamFilter: foamFilterFor(p),
   };
 }

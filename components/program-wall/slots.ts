@@ -24,6 +24,10 @@ export interface SchoolProgramIdentity {
   colorPrimary: string; // "Couleur principale"
   colorDarker: string; // "Couleur foncée"
   colorNeutral: string; // "Couleur claire"
+  /** true = une couleur claire CUSTOM a été définie → les glyphes des tuiles
+   *  claires (ex. QUÉBEC) passent en claire-assombrie (theme.tileGlyph). Absent/
+   *  false → comportement gelé (fixture inchangé, non-régression). */
+  lightDefined?: boolean;
   /** SVG recommended; null → monogram (initials) on cream card + menu chip. */
   logoUrl: string | null;
   city: string;
@@ -44,6 +48,18 @@ export interface SchoolProgramIdentity {
     allezWord: string;
     ensembleWord: string;
   }>;
+  /* -- v2 éditeur « Ma page » : 4 slots ADDITIFS, tous optionnels. Absents =>
+     resolveWall retombe EXACTEMENT sur le comportement gelé d'avant (byte-
+     identique). Ne jamais rendre requis — les mocks existants ne les fournissent
+     pas et doivent rester inchangés. -- */
+  /** mention sous le type-block (.l3) ; défaut "élite collégiale". */
+  tagline?: string;
+  /** mot du rail vertical ; défaut = shortName(schoolName). */
+  railWordOverride?: string;
+  /** devise kraft (2 mots) ; défaut "FIER" · "FORT" → "FIER · FORT". */
+  deviseWords?: { first: string; second: string };
+  /** phrase flèche kraft ; défaut "D'ICI" ➔ "POUR ICI". */
+  arrowPhrase?: { before: string; after: string };
   /** AUTO — swaps league logo, fleur↔maple, QUÉBEC↔CANADA accent. */
   league: "RSEQ" | "USPORTS";
   /** AUTO — provinceMotifFor(): 'QC'→fleur (only one implemented). */
@@ -124,6 +140,9 @@ export interface ResolvedWall {
   nameCard: string;
   sloganLines: string[] | null;
   nickname: string | null;
+  tagline: string;
+  devise: string;
+  arrowPhrase: string;
   eliteWord: string;
   boldWord: string;
   allezWord: string;
@@ -140,7 +159,11 @@ export function resolveWall(
 ): ResolvedWall {
   const l2Lines = nameBodyLines(s.schoolName);
   const maxLine = Math.max(...l2Lines.map((l) => l.length));
-  const rail = shortName(s.schoolName);
+  // railWordOverride absent/vide => shortName(schoolName) (comportement gelé).
+  const rail =
+    s.railWordOverride && s.railWordOverride.trim()
+      ? s.railWordOverride
+      : shortName(s.schoolName);
   const cw = s.customWords ?? {};
   const areaCode = s.areaCode ?? s.initials;
 
@@ -161,6 +184,14 @@ export function resolveWall(
     nameCard: s.mascot.toUpperCase(),
     sloganLines: s.slogan ? s.slogan.split(/\n|<br\s*\/?>/i) : null,
     nickname: s.nickname,
+    // Fallbacks byte-identiques aux constantes gelées de ProgramWall.tsx.
+    tagline: s.tagline ?? "élite collégiale",
+    devise: s.deviseWords
+      ? `${s.deviseWords.first} · ${s.deviseWords.second}`
+      : "FIER · FORT",
+    arrowPhrase: s.arrowPhrase
+      ? `${s.arrowPhrase.before} ➔ ${s.arrowPhrase.after}`
+      : "D'ICI ➔ POUR ICI",
     eliteWord: cw.eliteWord ?? "ÉLITE",
     boldWord: cw.boldWord ?? "BOL D'OR",
     allezWord: cw.allezWord ?? "ALLEZ",

@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calendrier de recrutement — réf Nexus</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ══════════════════════════════════════════════════════════════════
+   RÉF — Calendrier de recrutement (portail recruteur = PLATEFORME)
+   Rouge Nexus légitime ici. Outfit only. Vouvoiement.
+   Toutes les données = FIXTURE (Bloc données réelles : requête games
+   par home_rseq_team_id/visitor_rseq_team_id, cibles = pipeline ∪
+   favoris ∪ listes, policy FIX 5).
+   ══════════════════════════════════════════════════════════════════ */
+:root{
+  --bg:#111317; --card:#1A1D24; --card-2:#20242C;
+  --line:#262A33; --line-soft:#1E2129;
+  --nx-red:#E63946; --nx-red-deep:#B32330;
+  --green:#22C55E; --gold:#F59E0B; --blue:#3B82F6;
+  --ink:#EDEFF3; --soft:#B9BFC9; --mut:#8A909C; --faint:#5C6575;
+  --red-tint-bg:rgba(230,57,70,.09); --red-tint-bd:rgba(230,57,70,.28);
+  --green-tint-bg:rgba(34,197,94,.10); --green-tint-bd:rgba(34,197,94,.30);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+.wrap{max-width:1180px;margin:0 auto;padding:40px 26px 90px}
+button{font-family:'Outfit',sans-serif;cursor:pointer}
+
+/* ── HEADER ─────────────────────────────────────────────────────── */
+.head{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.head h1{font-weight:800;font-size:clamp(28px,3.2vw,40px);letter-spacing:-.01em;line-height:1.1;text-transform:uppercase}
+.head .sub{font-weight:400;font-size:16px;color:var(--soft);margin-top:6px}
+.viewtoggle{display:flex;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;flex-shrink:0}
+.viewtoggle button{display:flex;align-items:center;gap:8px;background:none;border:0;color:var(--mut);font-weight:600;font-size:14px;padding:11px 18px;transition:all .2s}
+.viewtoggle button.on{background:var(--nx-red);color:#fff}
+.viewtoggle button:not(.on):hover{color:var(--ink)}
+
+/* disclaimer + maj */
+.notice{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-top:18px;padding:12px 16px;background:var(--card);border:1px solid var(--line-soft);border-radius:12px}
+.notice .txt{font-size:14.5px;color:var(--mut)}
+.notice .txt b{color:var(--soft);font-weight:600}
+.notice .maj{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);white-space:nowrap}
+.notice .maj .dot{display:inline-block;width:7px;height:7px;border-radius:99px;background:var(--green);margin-right:7px;vertical-align:1px}
+
+/* ── FILTRES (langage de la page Recherche) ─────────────────────── */
+.filters{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
+.f-select{display:flex;align-items:center;gap:9px;background:var(--card);border:1px solid var(--line);border-radius:99px;color:var(--ink);font-weight:500;font-size:14.5px;padding:10px 18px;white-space:nowrap}
+.f-select svg{opacity:.55}
+.f-select.disabled{color:var(--faint)}
+.f-select.on-list{border-color:var(--red-tint-bd);background:var(--red-tint-bg);font-weight:600}
+.f-select .clr{color:var(--mut);font-weight:400;margin-left:2px;cursor:pointer}
+.f-select .clr:hover{color:var(--ink)}
+.f-chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+.f-chip{display:flex;align-items:center;gap:8px;background:none;border:1px solid var(--line);border-radius:99px;color:var(--mut);font-weight:500;font-size:14px;padding:8px 15px;transition:all .2s}
+.f-chip:hover{color:var(--ink);border-color:#333B4A}
+.f-chip.on{color:var(--ink);border-color:var(--red-tint-bd);background:var(--red-tint-bg)}
+.f-chip.on .ck{color:var(--nx-red)}
+
+/* ── LISTE — semaines + matchs ──────────────────────────────────── */
+.weeks{margin-top:34px;display:flex;flex-direction:column;gap:34px}
+.wk-head{display:flex;align-items:baseline;gap:14px;border-bottom:1px solid var(--line-soft);padding-bottom:10px;margin-bottom:16px}
+.wk-head h2{font-weight:700;font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--soft)}
+.wk-head .n{font-size:12.5px;font-weight:500;color:var(--faint)}
+.wk{display:flex;flex-direction:column;gap:12px}
+
+.match{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;transition:border-color .2s}
+.match:hover{border-color:#333B4A}
+.match.hot{border-left:3px solid var(--nx-red)}
+.m-row{display:flex;align-items:center;gap:22px;padding:18px 22px;width:100%;background:none;border:0;text-align:left;color:var(--ink)}
+.m-date{flex-shrink:0;width:64px;text-align:center}
+.m-date .d{font-weight:800;font-size:30px;line-height:1;letter-spacing:-.02em}
+.m-date .mo{font-weight:700;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--nx-red);margin-top:3px}
+.m-main{flex:1;min-width:0}
+.m-vs{font-weight:700;font-size:17px;line-height:1.35}
+.m-vs .at{color:var(--faint);font-weight:500;font-size:14.5px;padding:0 4px}
+.m-meta{font-weight:500;font-size:14.5px;color:var(--mut);margin-top:4px;display:flex;flex-wrap:wrap;gap:6px 14px}
+.m-meta .lg{color:var(--faint)}
+.hotlbl{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--nx-red);margin-bottom:6px}
+.m-count{flex-shrink:0;display:flex;align-items:center;gap:14px}
+.avstack{display:flex}
+.av{width:34px;height:34px;border-radius:99px;background:var(--card-2);border:2px solid var(--card);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--soft);margin-left:-9px}
+.av:first-child{margin-left:0}
+.av.more{background:var(--nx-red-deep);color:#fff;font-size:11.5px}
+.cbadge{display:inline-flex;align-items:center;gap:7px;background:var(--red-tint-bg);border:1px solid var(--red-tint-bd);border-radius:99px;color:var(--ink);font-weight:600;font-size:14px;padding:7px 15px;white-space:nowrap}
+.cbadge b{color:var(--nx-red);font-weight:800}
+.chev{color:var(--faint);transition:transform .25s;flex-shrink:0}
+.match.open .chev{transform:rotate(180deg)}
+
+/* détail par équipe (déplié) */
+.m-detail{display:none;border-top:1px solid var(--line-soft);background:#171A20}
+.match.open .m-detail{display:grid;grid-template-columns:1fr 1fr}
+.md-col{padding:18px 22px}
+.md-col + .md-col{border-left:1px solid var(--line-soft)}
+.md-team{font-weight:700;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--soft);margin-bottom:12px}
+.md-team span{color:var(--faint);font-weight:500;letter-spacing:0;text-transform:none;font-size:12.5px;margin-left:8px}
+.tgt{display:flex;align-items:center;gap:12px;padding:8px 0}
+.tgt + .tgt{border-top:1px solid var(--line-soft)}
+.tgt .av{width:32px;height:32px;margin:0;border-color:#171A20}
+.tgt .nm{flex:1;min-width:0}
+.tgt .nm b{font-weight:600;font-size:14.5px;display:block;line-height:1.3}
+.tgt .nm i{font-style:normal;font-size:12.5px;color:var(--mut)}
+.tgt .nm i .vf{color:var(--blue)}
+.stg{font-size:11.5px;font-weight:600;letter-spacing:.04em;border-radius:99px;padding:3px 10px;white-space:nowrap}
+.stg.ident{background:var(--card-2);color:var(--soft)}
+.stg.visite{background:var(--green-tint-bg);border:1px solid var(--green-tint-bd);color:var(--green)}
+.md-empty{font-size:13.5px;color:var(--faint);font-style:italic}
+
+/* ── VUE CALENDRIER ─────────────────────────────────────────────── */
+.calview{display:none;margin-top:34px}
+body.cal .calview{display:block}
+body.cal .weeks{display:none}
+.cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.cal-head h2{font-weight:700;font-size:19px;text-transform:capitalize}
+.cal-nav{display:flex;gap:8px}
+.cal-nav button{width:38px;height:38px;border-radius:99px;background:var(--card);border:1px solid var(--line);color:var(--soft);font-size:16px}
+.cal-nav button:hover{border-color:#333B4A;color:var(--ink)}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
+.dow{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);text-align:center;padding:6px 0}
+.day{aspect-ratio:1.15;background:var(--card);border:1px solid var(--line-soft);border-radius:12px;padding:9px 11px;position:relative;font-weight:600;font-size:14px;color:var(--mut)}
+.day.out{opacity:.32}
+.day.today{border-color:var(--nx-red);color:var(--ink)}
+.day .cnt{position:absolute;bottom:8px;left:9px;display:inline-flex;align-items:center;background:var(--nx-red);color:#fff;font-size:11.5px;font-weight:700;border-radius:99px;padding:2px 9px}
+.day.sel{background:var(--card-2);border-color:#333B4A;color:var(--ink)}
+.cal-note{margin-top:14px;font-size:13.5px;color:var(--faint)}
+
+/* ── ÉTATS (planches pour eyeball) ──────────────────────────────── */
+.boards{margin-top:80px;border-top:1px dashed #333B4A;padding-top:34px}
+.boards > h2{font-weight:700;font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);margin-bottom:22px}
+.board{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:60px 30px;text-align:center;margin-bottom:22px}
+.board .ico{width:58px;height:58px;border-radius:99px;background:var(--card-2);display:inline-flex;align-items:center;justify-content:center;margin-bottom:18px;color:var(--mut)}
+.board h3{font-weight:700;font-size:20px;margin-bottom:8px}
+.board p{font-size:15px;color:var(--mut);max-width:520px;margin:0 auto}
+.board p a{color:var(--nx-red);font-weight:600;text-decoration:none}
+.board.lock{position:relative;overflow:hidden}
+.lock-bg{position:absolute;inset:0;padding:24px;filter:blur(7px);opacity:.45;pointer-events:none;user-select:none}
+.lock-bg .match{margin-bottom:12px}
+.lock-fg{position:relative;z-index:2}
+.btn-pro{display:inline-flex;align-items:center;gap:9px;background:var(--nx-red);color:#fff;border:0;border-radius:12px;font-weight:700;font-size:15px;padding:13px 26px;margin-top:20px;box-shadow:0 8px 22px -10px rgba(230,57,70,.7)}
+
+@media(max-width:860px){
+  .m-row{flex-wrap:wrap;gap:12px 18px}
+  .m-count{width:100%;justify-content:flex-end}
+  .match.open .m-detail{grid-template-columns:1fr}
+  .md-col + .md-col{border-left:0;border-top:1px solid var(--line-soft)}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- HEADER -->
+  <div class="head">
+    <div>
+      <h1>Calendrier de recrutement</h1>
+      <div class="sub">Vos prochains matchs à surveiller, selon vos cibles</div>
+    </div>
+    <div class="viewtoggle">
+      <button class="on" id="btnList" onclick="setView('list')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg>
+        Liste
+      </button>
+      <button id="btnCal" onclick="setView('cal')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Calendrier
+      </button>
+    </div>
+  </div>
+
+  <!-- DISCLAIMER + MAJ -->
+  <div class="notice">
+    <div class="txt"><b>Basé sur le calendrier officiel RSEQ.</b> Horaires et lieux à confirmer avant de vous déplacer.</div>
+    <div class="maj"><span class="dot"></span>Mis à jour le 24 juillet 2026</div>
+  </div>
+
+  <!-- FILTRES — sous-ensemble calendrier (composants de la page Recherche) -->
+  <div class="filters">
+    <div class="f-select">Tous les sports <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div>
+    <div class="f-select disabled">Sélectionner un sport d'abord <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div>
+    <div class="f-select">Toutes les promotions <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div>
+    <div class="f-select">Toutes les régions <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div>
+    <div class="f-select">Toutes les organisations <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div>
+    <div class="f-select">Toutes les cotes <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div>
+    <div class="f-select">Toutes les moyennes <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div>
+    <div class="f-select on-list">Liste : Prospects QB 2027 <span class="clr">×</span> <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div>
+    <div class="f-select">Statut : tous <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div>
+    <div class="f-select">Trier : date <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div>
+  </div>
+  <div class="f-chips">
+    <button class="f-chip on"><span class="ck">✓</span> Vérifié</button>
+    <button class="f-chip">🎬 Avec vidéo</button>
+  </div>
+
+  <!-- ═══ VUE LISTE — groupée par semaine ═══ -->
+  <div class="weeks">
+
+    <div class="wk">
+      <div class="wk-head"><h2>Semaine du 12 octobre</h2><span class="n">3 matchs · 9 cibles</span></div>
+
+      <!-- match à fort potentiel (plus haute densité de la semaine) -->
+      <div class="match hot open" id="mx1">
+        <button class="m-row" onclick="tg('mx1')">
+          <div class="m-date"><div class="d">12</div><div class="mo">Oct</div></div>
+          <div class="m-main">
+            <span class="hotlbl">★ Match à fort potentiel</span>
+            <div class="m-vs">Vulkins Jean-Eudes <span class="at">vs</span> Phénix André-Grasset</div>
+            <div class="m-meta"><span>14:00</span><span>Stade Jean-Eudes, Québec</span><span class="lg">Football juvénile D2 · Masculin</span></div>
+          </div>
+          <div class="m-count">
+            <div class="avstack"><div class="av">TL</div><div class="av">MG</div><div class="av">JD</div><div class="av more">+3</div></div>
+            <span class="cbadge"><b>6</b> cibles</span>
+            <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+        </button>
+        <div class="m-detail">
+          <div class="md-col">
+            <div class="md-team">Vulkins Jean-Eudes <span>4 cibles</span></div>
+            <div class="tgt"><div class="av">TL</div><div class="nm"><b>Thomas Lavoie <span class="vf">✓</span></b><i>QB · Promotion 2027</i></div><span class="stg visite">En visite</span></div>
+            <div class="tgt"><div class="av">MG</div><div class="nm"><b>Mathis Gagnon</b><i>WR · Promotion 2027</i></div><span class="stg ident">Identifié</span></div>
+            <div class="tgt"><div class="av">JD</div><div class="nm"><b>Jacob Dubé <span class="vf">✓</span></b><i>LB · Promotion 2028</i></div><span class="stg ident">Identifié</span></div>
+            <div class="tgt"><div class="av">EP</div><div class="nm"><b>Elliot Poirier</b><i>RB · Promotion 2027</i></div><span class="stg ident">Identifié</span></div>
+          </div>
+          <div class="md-col">
+            <div class="md-team">Phénix André-Grasset <span>2 cibles</span></div>
+            <div class="tgt"><div class="av">NB</div><div class="nm"><b>Nathan Bélanger <span class="vf">✓</span></b><i>DL · Promotion 2027</i></div><span class="stg visite">En visite</span></div>
+            <div class="tgt"><div class="av">WT</div><div class="nm"><b>William Tremblay</b><i>S · Promotion 2028</i></div><span class="stg ident">Identifié</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="match" id="mx2">
+        <button class="m-row" onclick="tg('mx2')">
+          <div class="m-date"><div class="d">14</div><div class="mo">Oct</div></div>
+          <div class="m-main">
+            <div class="m-vs">Titans Limoilou <span class="at">vs</span> Élans Garneau</div>
+            <div class="m-meta"><span>19:30</span><span>Terrain Limoilou, Québec</span><span class="lg">Football collégial D1</span></div>
+          </div>
+          <div class="m-count">
+            <div class="avstack"><div class="av">SC</div><div class="av">AL</div></div>
+            <span class="cbadge"><b>2</b> cibles</span>
+            <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+        </button>
+        <div class="m-detail">
+          <div class="md-col">
+            <div class="md-team">Titans Limoilou <span>2 cibles</span></div>
+            <div class="tgt"><div class="av">SC</div><div class="nm"><b>Samuel Côté <span class="vf">✓</span></b><i>CB · Promotion 2027</i></div><span class="stg ident">Identifié</span></div>
+            <div class="tgt"><div class="av">AL</div><div class="nm"><b>Antoine Leblanc</b><i>K · Promotion 2027</i></div><span class="stg ident">Identifié</span></div>
+          </div>
+          <div class="md-col">
+            <div class="md-team">Élans Garneau <span>0 cible</span></div>
+            <div class="md-empty">Aucune de vos cibles dans cette équipe.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="match" id="mx3">
+        <button class="m-row" onclick="tg('mx3')">
+          <div class="m-date"><div class="d">17</div><div class="mo">Oct</div></div>
+          <div class="m-main">
+            <div class="m-vs">Cheetahs Vanier <span class="at">vs</span> Nomades Montmorency</div>
+            <div class="m-meta"><span>13:00</span><span>Complexe sportif Vanier, Saint-Laurent</span><span class="lg">Flag football collégial D2 · Féminin</span></div>
+          </div>
+          <div class="m-count">
+            <div class="avstack"><div class="av">LR</div></div>
+            <span class="cbadge"><b>1</b> cible</span>
+            <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+        </button>
+        <div class="m-detail">
+          <div class="md-col">
+            <div class="md-team">Cheetahs Vanier <span>0 cible</span></div>
+            <div class="md-empty">Aucune de vos cibles dans cette équipe.</div>
+          </div>
+          <div class="md-col">
+            <div class="md-team">Nomades Montmorency <span>1 cible</span></div>
+            <div class="tgt"><div class="av">LR</div><div class="nm"><b>Léa Rousseau <span class="vf">✓</span></b><i>RU · Promotion 2028</i></div><span class="stg visite">En visite</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="wk">
+      <div class="wk-head"><h2>Semaine du 19 octobre</h2><span class="n">1 match · 3 cibles</span></div>
+      <div class="match" id="mx4">
+        <button class="m-row" onclick="tg('mx4')">
+          <div class="m-date"><div class="d">24</div><div class="mo">Oct</div></div>
+          <div class="m-main">
+            <div class="m-vs">Dynamiques Sainte-Foy <span class="at">vs</span> Vulkins Jean-Eudes</div>
+            <div class="m-meta"><span>15:00</span><span>PEPS de l'Université Laval, Québec</span><span class="lg">Football juvénile D2 · Masculin</span></div>
+          </div>
+          <div class="m-count">
+            <div class="avstack"><div class="av">TL</div><div class="av">MG</div><div class="av">JD</div></div>
+            <span class="cbadge"><b>3</b> cibles</span>
+            <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+        </button>
+        <div class="m-detail">
+          <div class="md-col">
+            <div class="md-team">Dynamiques Sainte-Foy <span>0 cible</span></div>
+            <div class="md-empty">Aucune de vos cibles dans cette équipe.</div>
+          </div>
+          <div class="md-col">
+            <div class="md-team">Vulkins Jean-Eudes <span>3 cibles</span></div>
+            <div class="tgt"><div class="av">TL</div><div class="nm"><b>Thomas Lavoie <span class="vf">✓</span></b><i>QB · Promotion 2027</i></div><span class="stg visite">En visite</span></div>
+            <div class="tgt"><div class="av">MG</div><div class="nm"><b>Mathis Gagnon</b><i>WR · Promotion 2027</i></div><span class="stg ident">Identifié</span></div>
+            <div class="tgt"><div class="av">JD</div><div class="nm"><b>Jacob Dubé <span class="vf">✓</span></b><i>LB · Promotion 2028</i></div><span class="stg ident">Identifié</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ═══ VUE CALENDRIER (grille mensuelle) ═══ -->
+  <div class="calview">
+    <div class="cal-head">
+      <h2>Octobre 2026</h2>
+      <div class="cal-nav"><button>‹</button><button>›</button></div>
+    </div>
+    <div class="grid">
+      <div class="dow">Lun</div><div class="dow">Mar</div><div class="dow">Mer</div><div class="dow">Jeu</div><div class="dow">Ven</div><div class="dow">Sam</div><div class="dow">Dim</div>
+      <div class="day out">28</div><div class="day out">29</div><div class="day out">30</div><div class="day">1</div><div class="day">2</div><div class="day">3</div><div class="day">4</div>
+      <div class="day">5</div><div class="day">6</div><div class="day">7</div><div class="day">8</div><div class="day">9</div><div class="day">10</div><div class="day">11</div>
+      <div class="day sel">12<span class="cnt">6 cibles</span></div><div class="day">13</div><div class="day">14<span class="cnt">2</span></div><div class="day">15</div><div class="day">16</div><div class="day">17<span class="cnt">1</span></div><div class="day">18</div>
+      <div class="day">19</div><div class="day">20</div><div class="day">21</div><div class="day">22</div><div class="day">23</div><div class="day">24<span class="cnt">3</span></div><div class="day">25</div>
+      <div class="day">26</div><div class="day">27</div><div class="day">28</div><div class="day">29</div><div class="day">30</div><div class="day">31</div><div class="day out">1</div>
+    </div>
+    <div class="cal-note">Sélectionnez un jour pour voir ses matchs (même carte que la vue liste, rendue sous la grille).</div>
+  </div>
+
+  <!-- ═══ PLANCHES D'ÉTATS — pour eyeball, pas dans la page finale ═══ -->
+  <div class="boards">
+    <h2>États — vide · mur Free</h2>
+
+    <!-- État vide honnête -->
+    <div class="board">
+      <div class="ico"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+      <h3>Aucun match à venir pour vos cibles</h3>
+      <p>Leurs équipes ne sont pas encore reliées au calendrier RSEQ, ou la saison n'est pas publiée. Les matchs apparaîtront automatiquement dès que les calendriers seront disponibles. <a href="#">Explorer des athlètes →</a></p>
+    </div>
+
+    <!-- Mur Free (pattern « Mon processus ») -->
+    <div class="board lock">
+      <div class="lock-bg">
+        <div class="match"><div class="m-row"><div class="m-date"><div class="d">12</div><div class="mo">Oct</div></div><div class="m-main"><div class="m-vs">Vulkins Jean-Eudes <span class="at">vs</span> Phénix André-Grasset</div><div class="m-meta"><span>14:00 · Stade Jean-Eudes</span></div></div><div class="m-count"><span class="cbadge"><b>6</b> cibles</span></div></div></div>
+        <div class="match"><div class="m-row"><div class="m-date"><div class="d">14</div><div class="mo">Oct</div></div><div class="m-main"><div class="m-vs">Titans Limoilou <span class="at">vs</span> Élans Garneau</div><div class="m-meta"><span>19:30 · Terrain Limoilou</span></div></div><div class="m-count"><span class="cbadge"><b>2</b> cibles</span></div></div></div>
+      </div>
+      <div class="lock-fg">
+        <div class="ico"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+        <h3>Planifiez vos déplacements avec le tier Pro</h3>
+        <p>Voyez quels matchs regroupent le plus de vos cibles, filtrés par position, promotion et région.</p>
+        <button class="btn-pro">Passer au tier Pro — 19,99 $/mois</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function tg(id){document.getElementById(id).classList.toggle('open')}
+function setView(v){
+  document.body.classList.toggle('cal', v==='cal');
+  document.getElementById('btnList').classList.toggle('on', v==='list');
+  document.getElementById('btnCal').classList.toggle('on', v==='cal');
+}
+</script>
+</body>
+</html>

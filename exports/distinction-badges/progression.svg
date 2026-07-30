@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="-12 -2 80 80" preserveAspectRatio="xMidYMid meet">
+  <title>Progression marquée</title>
+  <defs>
+    <style>
+      @keyframes svgSweep {
+        0%   { transform: translateX(-120%); }
+        60%  { transform: translateX(120%); }
+        100% { transform: translateX(120%); }
+      }
+      .badge-shimmer { animation: svgSweep 3s ease-in-out infinite; }
+    </style>
+    <clipPath id="clip-progression">
+      <path d="M28 4C28 4 20 16 20 36V56H36V36C36 16 28 4 28 4Z" />
+    </clipPath>
+  </defs>
+  <path d="M28 0C28 0 18 14 18 36V58H38V36C38 14 28 0 28 0Z" fill="#B71C1C" />
+  <path d="M28 0C28 0 18 14 18 36V58H38V36C38 14 28 0 28 0Z" fill="#D32F2F" opacity="0.3" />
+  <path d="M28 4C28 4 20 16 20 36V56H36V36C36 16 28 4 28 4Z" fill="#E63946" />
+  <path d="M18 44L6 62L18 58Z" fill="#B71C1C" />
+  <path d="M38 44L50 62L38 58Z" fill="#B71C1C" />
+  <path d="M19 45L8 60L19 57Z" fill="#E63946" opacity="0.8" />
+  <path d="M37 45L48 60L37 57Z" fill="#E63946" opacity="0.8" />
+  <circle cx="28" cy="32" r="6" fill="#8B1A1A" />
+  <circle cx="28" cy="32" r="4.5" fill="#7A1515" />
+  <circle cx="28" cy="32" r="4.5" fill="rgba(230,57,70,0.3)" />
+  <path d="M22 58L20 72L24 66L28 76L32 66L36 72L34 58Z" fill="#B71C1C" />
+  <path d="M24 58L22 68L25 64L28 72L31 64L34 68L32 58Z" fill="#E63946" opacity="0.7" />
+  <g clip-path="url(#clip-progression)">
+    <rect class="badge-shimmer" x="-20" y="0" width="20" height="90" fill="rgba(255,255,255,0.15)" transform="skewX(-20)" />
+  </g>
+</svg>

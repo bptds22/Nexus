@@ -8,61 +8,17 @@
 // Clone structurel de send-parent-notice. Body attendu :
 //   { email, coach_name, school_name, claim_token }
 // email + claim_token strictement requis ; coach_name/school_name = repli gracieux.
+//
+// Gabarit : mutualisé dans ../_shared/emailLayout.ts (renderEmail). Le corps
+// spécifique à ce courriel vit dans ./email.ts (buildBody).
+
+import { FROM, APP_URL } from "../_shared/emailLayout.ts";
+import { buildBody } from "./email.ts";
 
 const NOTICE_SECRET = Deno.env.get("INVITE_NOTICE_SECRET")!;
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY")!;
 
-// Base publique du lien de claim (mirroir de createAthleteInvitation.ts :
-// `${NEXT_PUBLIC_APP_URL || origin}/claim?token=…`). Override possible via env.
-const APP_URL = Deno.env.get("APP_URL") ?? "https://nexussports.ca";
-
-const FROM = "Nexus <info@nexussports.ca>";
 const SUBJECT = "Invitation à rejoindre Nexus";
-
-// Corps FR minimal (chantier template séparé).
-function buildBody(coachName: string, schoolName: string, claimUrl: string): { html: string; text: string } {
-  const coachLabel = coachName ? `Le coach ${coachName}` : "Un coach";
-  const schoolPart = schoolName ? ` de ${schoolName}` : "";
-  const headline = `${coachLabel}${schoolPart} t'invite à rejoindre Nexus.`;
-
-  const text = [
-    headline,
-    "",
-    "Nexus est la plateforme québécoise qui met en relation les athlètes du",
-    "secondaire avec les recruteurs des CÉGEP (réseau RSEQ).",
-    "",
-    "Pour accepter l'invitation et créer ton profil :",
-    claimUrl,
-    "",
-    "Ce lien est valide 30 jours.",
-    "",
-    "— L'équipe Nexus",
-  ].join("\n");
-
-  const html = `
-  <div style="font-family: Arial, Helvetica, sans-serif; font-size: 15px; line-height: 1.55; color: #1a1d24;">
-    <p><strong>${headline}</strong></p>
-    <p>
-      Nexus est la plateforme québécoise qui met en relation les athlètes du
-      secondaire avec les recruteurs des CÉGEP (réseau RSEQ).
-    </p>
-    <p style="margin: 24px 0;">
-      <a href="${claimUrl}"
-         style="display: inline-block; background: #E63946; color: #ffffff; text-decoration: none;
-                font-weight: bold; padding: 12px 24px; border-radius: 8px;">
-        Accepter l'invitation
-      </a>
-    </p>
-    <p style="color: #6b7280; font-size: 13px;">
-      Ou copie ce lien dans ton navigateur :<br />
-      <a href="${claimUrl}">${claimUrl}</a>
-    </p>
-    <p style="color: #6b7280; font-size: 13px;">Ce lien est valide 30 jours.</p>
-    <p style="color: #6b7280; font-size: 13px;">— L'équipe Nexus</p>
-  </div>`.trim();
-
-  return { html, text };
-}
 
 Deno.serve(async (req) => {
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
@@ -83,9 +39,11 @@ Deno.serve(async (req) => {
   // Repli gracieux : noms optionnels (le courriel part même sans).
   const coach_name = typeof payload?.coach_name === "string" ? payload.coach_name.trim() : "";
   const school_name = typeof payload?.school_name === "string" ? payload.school_name.trim() : "";
+  const coachName = coach_name || "Ton coach";
+  const schoolName = school_name || "ton école";
 
   const claimUrl = `${APP_URL}/claim?token=${encodeURIComponent(claim_token)}`;
-  const { html, text } = buildBody(coach_name, school_name, claimUrl);
+  const { html, text } = buildBody(coachName, schoolName, claimUrl);
 
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",

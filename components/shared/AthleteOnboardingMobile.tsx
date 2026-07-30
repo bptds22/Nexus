@@ -570,12 +570,17 @@ export function AthleteOnboardingMobile() {
         setScolaireTeamsLoading(false);
         return;
       }
+      // FIX 3 (parité web) — saison la plus récente d'abord. En septembre les
+      // équipes 2025-2026 et 2026-2027 coexistent ; sans ce tri l'athlète peut
+      // choisir celle de l'an dernier, qui ne porte aucun match de la saison
+      // en cours. Tri serveur : aucun filtre, rien n'est masqué.
       const { data: rows } = await supabase
         .from("teams")
         .select("id, name, division, age_group, gender")
         .eq("school_id", selectedSchoolId)
         .eq("sport_id", sportRow.id)
         .eq("is_active", true)
+        .order("season", { ascending: false })
         .order("name");
       if (cancelled) return;
       const mapped: ScolaireTeamRow[] = ((rows as Record<string, unknown>[]) || []).map((r) => ({

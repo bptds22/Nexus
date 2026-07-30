@@ -92,7 +92,10 @@ export default function PresentationSection({ team }: { team: TeamData }) {
                   <span className="cph-tag">Photo</span>
                 )}
               </div>
-              <div className="cname">{hc.nom}</div>
+              {/* Le nom vient du staff de l'équipe (team_coaches) : absent tant
+                  qu'aucun entraîneur-chef n'y est rattaché. La photo et la bio,
+                  elles, sont saisies — elles s'affichent quand même. */}
+              {hc.nom && <div className="cname">{hc.nom}</div>}
               <div className="crole">Entraîneur-chef</div>
               {hc.bio && <p className="cbio">{hc.bio}</p>}
             </div>

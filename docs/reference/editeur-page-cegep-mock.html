@@ -1,0 +1,783 @@
+<!doctype html>
+<html lang="fr-CA">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=1280">
+<title>Nexus — Éditeur « Ma page » (mock) · recruteur/directeur CÉGEP</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Anton&family=Bebas+Neue&display=swap" rel="stylesheet">
+<style>
+:root{--red:#A6192E;--redD:#7A1222;--redL:#E8C7CD;--bg:#111317;--card:#1A1D24;--card2:#20242D;--in:#171A20;--line:#2A2F3A;--txt:#EDEFF3;--mut:#8A909C;--nexus:#E63946;--ok:#22C55E;--warn:#F59E0B}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font-family:'Outfit';padding-bottom:80px}
+.wrap{width:min(1240px,100%);margin:0 auto;padding:0 16px}
+/* ===== TOPBAR STICKY ===== */
+.topbar{position:sticky;top:0;z-index:50;background:rgba(17,19,23,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.tb{width:min(1240px,100%);margin:0 auto;padding:12px 16px;display:flex;align-items:center;gap:14px}
+.tb .kick{font-family:'Bebas Neue';letter-spacing:.22em;font-size:12px;color:var(--mut)}
+.tb h1{font-size:17px;font-weight:800}
+.status{font-family:'Bebas Neue';letter-spacing:.14em;font-size:11px;color:var(--warn);border:1px solid var(--warn);padding:3px 10px;border-radius:99px}
+.tb .sp{flex:1}
+.btn{font-family:'Outfit';font-weight:700;font-size:13px;border-radius:10px;padding:10px 18px;cursor:pointer;transition:.15s}
+.btn.ghost{background:none;border:1.5px solid var(--line);color:var(--txt)}
+.btn.ghost:hover{border-color:#3A404D}
+.btn.prim{background:var(--nexus);border:1.5px solid var(--nexus);color:#fff}
+.btn.prim:hover{filter:brightness(1.08)}
+/* ===== HEADER ===== */
+.head{padding:26px 0 6px}
+.cap{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#6a6f78;font-weight:700;margin-bottom:10px}
+.sub{color:var(--mut);font-size:13px;margin:4px 0 0;max-width:760px}
+.sub b{color:#B9BFC9}
+/* ===== SECTIONS ===== */
+.sec{margin-top:34px}
+.sech{display:flex;align-items:baseline;gap:12px;margin-bottom:14px}
+.sech .num{font-family:'Anton';font-size:26px;color:#2E333E}
+.sech h2{font-family:'Anton';font-size:20px;letter-spacing:.02em;text-transform:uppercase}
+.sech .tag{font-family:'Bebas Neue';letter-spacing:.14em;font-size:11px;padding:3px 10px;border-radius:99px}
+.tag.man{color:var(--nexus);border:1px solid var(--nexus)}
+.tag.auto{color:var(--ok);border:1px solid var(--ok)}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px}
+.pt{font-family:'Bebas Neue';letter-spacing:.2em;font-size:13px;color:var(--mut);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.pt .n{background:var(--nexus);color:#fff;font-family:'Outfit';font-weight:800;font-size:11px;width:20px;height:20px;border-radius:6px;display:inline-flex;align-items:center;justify-content:center}
+.note{font-size:11.5px;color:var(--mut);margin-top:10px}
+.note b{color:#B9BFC9}
+.mod{font-size:11px;color:var(--warn);margin-top:8px}
+label.fl{display:block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);font-weight:700;margin:14px 0 6px}
+label.fl:first-of-type{margin-top:2px}
+.ti{width:100%;background:var(--in);border:1.5px solid var(--line);border-radius:9px;padding:10px 12px;font-family:'Outfit';font-size:12.5px;color:var(--txt);outline:none}
+.ti:focus{border-color:var(--nexus)}
+textarea.ti{resize:vertical;min-height:84px}
+.cnt{font-size:10.5px;color:var(--mut);text-align:right;margin-top:3px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+select.ti{appearance:none}
+/* auto chips */
+.auto{display:flex;gap:8px;flex-wrap:wrap}
+.achip{position:relative;display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:#B9BFC9;background:var(--card2);border:1px solid var(--line);padding:7px 12px;border-radius:99px}
+.achip b{color:#6EE7A0;margin-right:5px}
+.flag{cursor:pointer;color:#5A616D;font-size:12px;border:0;background:none;padding:0}
+.flag:hover{color:var(--warn)}
+.achip.flagged{border-color:var(--warn)}
+.achip.flagged .fl-t{color:var(--warn);font-size:10.5px;font-weight:700}
+/* checklists / radios (patterns du mock campus) */
+.cklist{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px}
+.ck{display:flex;align-items:center;gap:10px;background:var(--card2);border:1.5px solid var(--line);border-radius:11px;padding:10px 12px;cursor:pointer;user-select:none;transition:.15s}
+.ck:hover{border-color:#3A404D}
+.ck.on{border-color:var(--nexus);background:#241A1E}
+.ck .box{width:20px;height:20px;border-radius:6px;border:2px solid #3A404D;flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff}
+.ck.on .box{background:var(--nexus);border-color:var(--nexus)}
+.ck .ic{font-size:16px}
+.ck span{font-size:12.5px;font-weight:600}
+.det{grid-column:1/-1;display:none;margin:-2px 0 4px}
+.det.show{display:block}
+.det input{width:100%;background:var(--in);border:1.5px solid var(--line);border-radius:9px;padding:9px 12px;font-family:'Outfit';font-size:12px;color:var(--txt);outline:none}
+.det input:focus{border-color:var(--nexus)}
+.radios{display:flex;flex-direction:column;gap:8px}
+.rad{display:flex;align-items:center;gap:10px;background:var(--card2);border:1.5px solid var(--line);border-radius:11px;padding:10px 12px;cursor:pointer}
+.rad.on{border-color:var(--nexus);background:#241A1E}
+.rad .dot{width:18px;height:18px;border-radius:50%;border:2px solid #3A404D;display:flex;align-items:center;justify-content:center}
+.rad.on .dot::after{content:"";width:9px;height:9px;border-radius:50%;background:var(--nexus)}
+.rad span{font-size:12.5px;font-weight:600}
+/* swatches + contraste */
+.sw3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.sw{background:var(--card2);border:1.5px solid var(--line);border-radius:11px;padding:10px}
+.sw label{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);font-weight:700;display:block;margin-bottom:8px}
+.sw input[type=color]{width:100%;height:44px;border:0;border-radius:8px;background:none;cursor:pointer}
+.cmeter{margin-top:10px;background:#16181D;border:1px solid var(--line);border-radius:11px;padding:10px 12px;font-size:12px;display:flex;align-items:center;gap:10px}
+.cmeter .val{font-family:'Anton';font-size:16px}
+.cmeter.ok .val{color:var(--ok)}
+.cmeter.bad .val{color:var(--warn)}
+.cbadge{font-family:'Bebas Neue';letter-spacing:.12em;font-size:11px;padding:2px 9px;border-radius:99px}
+.cmeter.ok .cbadge{color:var(--ok);border:1px solid var(--ok)}
+.cmeter.bad .cbadge{color:var(--warn);border:1px solid var(--warn)}
+/* upload zones */
+.drop{border:1.5px dashed #3A404D;border-radius:11px;padding:16px;text-align:center;color:#5A616D;font-size:12px;cursor:pointer}
+.drop:hover{border-color:var(--nexus);color:var(--mut)}
+.drop b{display:block;color:#8A909C;font-size:12.5px;margin-bottom:3px}
+/* budget */
+.budget{margin-top:16px;background:#16181D;border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:12px;color:var(--mut)}
+.budget b{color:#6EE7A0}
+/* ===== PREVIEWS ===== */
+.pv{position:sticky;top:74px;align-self:start}
+.pvhead{font-family:'Bebas Neue';letter-spacing:.24em;font-size:12px;color:var(--mut);margin-bottom:12px}
+.facts{display:flex;flex-direction:column;gap:12px}
+.fact{display:flex;gap:14px;align-items:flex-start;background:#1A1D24;border:1.5px solid #262A33;border-radius:12px;padding:15px 16px}
+.fact .fi{width:38px;height:38px;border-radius:50%;background:var(--red);border:2.5px solid #F2F3F6;flex:0 0 auto;display:flex;align-items:center;justify-content:center;transform:rotate(-5deg);font-size:16px}
+.fact b{font-weight:700;font-size:14.5px;color:#EDEFF3;display:block}
+.fact span{font-size:12.5px;color:#8A909C}
+.fact.hf{border-color:var(--red)}
+.hbdg{display:inline-block;font-family:'Bebas Neue';letter-spacing:.16em;font-size:10.5px;background:var(--red);color:#fff;padding:3px 9px;border-radius:99px;margin-bottom:5px;transform:rotate(-1.5deg)}
+.empty{border:1.5px dashed var(--line);border-radius:12px;padding:18px;text-align:center;font-size:12px;color:#5A616D}
+/* preview mur — mini-collage */
+.wgrid{display:grid;grid-template-columns:1.25fr .85fr .45fr;gap:8px;background:#0B0C0E;padding:10px;border-radius:14px 14px 0 0}
+.wt{border-radius:8px;overflow:hidden}
+.wt-beige{background:#EDE6D6;color:#16181D;padding:14px 12px;text-align:center}
+.wt-beige .k{font-family:'Bebas Neue';letter-spacing:.24em;font-size:10px}
+.wt-beige .city{font-family:'Anton';font-size:22px;line-height:1;margin-top:2px}
+.wt-beige .bar{font-family:'Bebas Neue';letter-spacing:.16em;font-size:10px;color:#EDE6D6;padding:3px 0;margin:8px -12px}
+.wt-beige .code{font-family:'Anton';font-size:34px;line-height:1;margin:6px 0 2px}
+.wt-beige .dev{font-family:'Bebas Neue';letter-spacing:.2em;font-size:10.5px;margin-top:4px}
+.wt-beige .fl{font-family:'Anton';font-size:11px;letter-spacing:.04em;margin-top:10px;border-top:2px solid #16181D;padding-top:8px}
+.wt-init{background:#16181D;display:flex;align-items:center;justify-content:center}
+.wt-init span{font-family:'Anton';font-size:56px;line-height:1}
+.wt-vert{background:#14161B;display:flex;align-items:center;justify-content:center;padding:8px 2px}
+.wt-vert span{font-family:'Anton';writing-mode:vertical-rl;font-size:26px;letter-spacing:.06em;color:transparent;-webkit-text-stroke:1.2px #3A3F4A;line-height:1}
+.wtiles{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;background:#0B0C0E;padding:0 10px 10px}
+.wtile{font-family:'Bebas Neue';letter-spacing:.14em;font-size:12px;text-align:center;padding:12px 4px;border-radius:8px}
+/* preview mur */
+.wallpv{border-radius:14px;overflow:hidden;border:1px solid var(--line)}
+.wp-card{padding:26px 22px;text-align:center}
+.wp-name{font-family:'Anton';font-size:38px;letter-spacing:.04em;line-height:1}
+.wp-slog{font-size:12.5px;font-style:italic;margin-top:8px;opacity:.85}
+.wp-tag{display:inline-block;font-family:'Bebas Neue';letter-spacing:.2em;font-size:12px;margin-top:10px;padding:2px 12px;border:1.5px solid currentColor;border-radius:99px}
+.wp-words{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;padding:14px;background:var(--bg)}
+.wp-w{font-family:'Bebas Neue';letter-spacing:.14em;font-size:13px;color:#3B414D;border:1px dashed #2A2F3A;padding:3px 10px;border-radius:6px}
+.wp-tick{font-family:'Bebas Neue';letter-spacing:.18em;font-size:11.5px;color:#B9BFC9;background:#0B0C0E;padding:8px 12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* affiche AUTO */
+.aff{opacity:.55;pointer-events:none}
+.affrow{display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--line);padding:12px 4px}
+.affrow:last-child{border-bottom:0}
+.affrow .s{font-family:'Anton';font-size:19px;letter-spacing:.02em;flex:1}
+.pill{font-family:'Bebas Neue';letter-spacing:.12em;font-size:11px;color:#B9BFC9;border:1px solid var(--line);padding:2px 9px;border-radius:99px}
+.autolink{font-size:12.5px;font-weight:700;color:var(--ok);margin-top:12px;display:inline-block}
+/* programmes */
+.prog{display:flex;align-items:center;gap:10px;background:var(--card2);border:1.5px solid var(--line);border-radius:11px;padding:9px 12px;cursor:pointer;user-select:none}
+.prog.on{border-color:var(--nexus);background:#241A1E}
+.prog .box{width:18px;height:18px;border-radius:5px;border:2px solid #3A404D;flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff}
+.prog.on .box{background:var(--nexus);border-color:var(--nexus)}
+.prog span{font-size:12.5px;font-weight:600;flex:1}
+.star{border:0;background:none;font-size:15px;color:#3A404D;cursor:pointer;padding:0 2px}
+.prog.on .star{color:#4A5160}
+.prog.on .star.on{color:var(--warn)}
+.plist{display:flex;flex-direction:column;gap:7px;max-height:280px;overflow:auto;padding-right:4px}
+.vchip{display:inline-flex;align-items:center;gap:6px;background:var(--card2);border:1px solid var(--warn);color:#EDEFF3;font-size:12px;font-weight:700;padding:6px 11px;border-radius:99px}
+.vchip i{color:var(--warn);font-style:normal}
+/* universités picker */
+.uwrap{display:flex;gap:8px;flex-wrap:wrap}
+.uchip{font-size:12px;font-weight:600;color:#B9BFC9;background:var(--card2);border:1.5px solid var(--line);padding:7px 12px;border-radius:99px;cursor:pointer;user-select:none}
+.uchip.on{border-color:var(--nexus);color:#fff;background:#241A1E}
+/* parcours preview */
+.route{display:flex;align-items:center;gap:10px;justify-content:center;font-family:'Bebas Neue';letter-spacing:.14em;font-size:14px;color:#B9BFC9;padding:6px 0 14px}
+.route .arrow{color:#3B414D}
+.route .hot{color:var(--red)}
+.pstats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.pstat{background:#1A1D24;border:1.5px solid #262A33;border-radius:12px;padding:12px;text-align:center}
+.pstat .v{font-family:'Anton';font-size:26px}
+.pstat .l{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);margin-top:2px}
+.upills{display:flex;gap:7px;flex-wrap:wrap;justify-content:center;margin-top:12px}
+.upill{font-size:11.5px;font-weight:700;color:#EDEFF3;border:1px solid #3A404D;padding:4px 11px;border-radius:99px}
+/* news */
+.nrow{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;margin-bottom:8px}
+.xbtn{border:1.5px solid var(--line);background:none;color:#5A616D;border-radius:9px;width:38px;cursor:pointer;font-size:15px}
+.xbtn:hover{color:var(--nexus);border-color:var(--nexus)}
+.addbtn{margin-top:4px;background:none;border:1.5px dashed var(--line);color:var(--mut);font-family:'Outfit';font-weight:700;font-size:12.5px;border-radius:10px;padding:9px 14px;cursor:pointer;width:100%}
+.addbtn:hover{border-color:var(--nexus);color:var(--txt)}
+.newspv b{display:block;font-size:13.5px}
+.newspv .dom{font-family:'Bebas Neue';letter-spacing:.1em;font-size:10.5px;color:var(--mut);border:1px solid var(--line);padding:1px 8px;border-radius:99px;margin-top:4px;display:inline-block}
+/* plateforme recap */
+.pfgrid{display:flex;gap:10px;flex-wrap:wrap}
+.pfchip{font-size:12px;font-weight:600;color:#8A909C;background:var(--card2);border:1px dashed var(--line);padding:8px 13px;border-radius:99px}
+.pfchip b{color:#B9BFC9}
+/* toast */
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:#20242D;border:1px solid var(--line);color:var(--txt);font-size:13px;font-weight:600;padding:12px 20px;border-radius:12px;opacity:0;transition:.25s;pointer-events:none;z-index:99}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<!-- ================= TOPBAR ================= -->
+<div class="topbar"><div class="tb">
+  <span class="kick">MA PAGE</span>
+  <h1>Collège André-Grasset</h1>
+  <span class="status" id="status">BROUILLON</span>
+  <span class="sp"></span>
+  <button class="btn ghost" onclick="toast('Ouvre la page publique avec ton brouillon (câblage Bloc 2)')">👁 Aperçu</button>
+  <button class="btn prim" onclick="saveMock()">Enregistrer</button>
+</div></div>
+
+<div class="wrap">
+<div class="head">
+  <div class="cap">MOCK — ÉDITEUR « MA PAGE » · desktop · recruteur / directeur (tous les comptes validés du collège peuvent éditer)</div>
+  <div class="sub">L'éditeur suit <b>l'ordre exact de la page publique</b>. Tu édites ce qui t'appartient (badge <b style="color:var(--nexus)">MANUEL</b>), le reste est automatique (badge <b style="color:var(--ok)">AUTO</b>) — visible mais verrouillé, jamais un mystère. Budget total : <b>~5 minutes</b>.</div>
+</div>
+
+<!-- ================= S1 — IDENTITÉ & MUR ================= -->
+<section class="sec">
+  <div class="sech"><span class="num">1</span><h2>Identité &amp; mur</h2><span class="tag man">MANUEL</span></div>
+  <div class="cols">
+    <div>
+      <div class="panel" style="margin-bottom:14px">
+        <div class="pt"><span class="n">0</span>IDENTITÉ — AUTOMATIQUE</div>
+        <div class="auto">
+          <span class="achip"><b>✓</b>Type : Collège privé</span>
+          <span class="achip"><b>✓</b>Nom : André-Grasset</span>
+        </div>
+        <div class="note">Le nom officiel vient du seed Nexus. Une erreur ? Le ⚑ de la fiche Campus (section 3) la signale.</div>
+      </div>
+
+      <div class="panel" style="margin-bottom:14px">
+        <div class="pt"><span class="n">1</span>LOGO</div>
+        <div style="display:flex;gap:12px;align-items:center">
+          <div style="width:74px;height:74px;border-radius:12px;background:#20242D;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:'Anton';font-size:26px;color:var(--red)">AG</div>
+          <div style="flex:1">
+            <span class="achip"><b>✓</b>Logo actuel — hérité de ton compte Nexus</span>
+            <div class="note" style="margin-top:6px">Chargé automatiquement depuis la réclamation de ton collège (RPRP).</div>
+          </div>
+        </div>
+        <div class="drop" style="margin-top:12px" onclick="toast('Upload de fichier (câblage Bloc 2)')"><b>Remplacer le logo</b>SVG préféré · PNG accepté · remplace l'actuel partout (mur, hero, name-card)</div>
+      </div>
+
+      <div class="panel" style="margin-bottom:14px">
+        <div class="pt"><span class="n">2</span>NAME-CARD — 5 CHAMPS (~40 s)</div>
+        <label class="fl">Surnom / nom des équipes (PHÉNIX, NOMADES…)</label>
+        <input class="ti" id="nick" maxlength="14" value="PHÉNIX" oninput="rWall()">
+        <label class="fl">Slogan</label>
+        <input class="ti" id="slog" maxlength="40" value="Phénix un jour, Phénix toujours" oninput="rWall()">
+        <div class="cnt"><span id="slogc">30</span>/40</div>
+        <div class="row2">
+          <div>
+            <label class="fl">Mention sous le nom</label>
+            <input class="ti" id="tagline" maxlength="20" value="élite collégiale" oninput="rWall()">
+          </div>
+          <div>
+            <label class="fl">Province (pilote les logos)</label>
+            <select class="ti" id="prov" onchange="rWall()">
+              <option selected>Québec</option><option>Ontario</option><option>Canada</option>
+            </select>
+          </div>
+        </div>
+        <label class="fl">Ticker — le bandeau défilant en haut de ta page</label>
+        <input class="ti" id="tick" maxlength="60" placeholder="Ex. « Fier programme des Phénix depuis 1927 »" oninput="rWall()">
+        <div class="note">Laisse vide → ton <b>slogan</b> défile à la place.</div>
+      </div>
+
+      <div class="panel" style="margin-bottom:14px">
+        <div class="pt"><span class="n">3</span>GÉO — PRÉ-REMPLI PAR NEXUS, MODIFIABLE</div>
+        <div class="auto" style="margin-bottom:10px"><span class="achip"><b>✓</b>Rempli depuis l'adresse de ton collège — corrige si ça sonne pas juste</span></div>
+        <div class="row2">
+          <div>
+            <label class="fl" style="margin-top:0">Ville</label>
+            <input class="ti" id="ville" maxlength="18" value="MONTRÉAL" oninput="rWall()" style="text-transform:uppercase">
+          </div>
+          <div>
+            <label class="fl" style="margin-top:0">Quartier / secteur</label>
+            <input class="ti" id="quartier" maxlength="18" value="AHUNTSIC" oninput="rWall()" style="text-transform:uppercase">
+          </div>
+        </div>
+        <div class="row2">
+          <div>
+            <label class="fl">Code régional (ou texte, ex. « QC »)</label>
+            <input class="ti" id="rtag" maxlength="4" value="514" oninput="rWall()">
+          </div>
+          <div></div>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-bottom:14px">
+        <div class="pt"><span class="n">4</span>COULEURS — 3 SWATCHES + CONTRASTE</div>
+        <div class="sw3">
+          <div class="sw"><label>Principale</label><input type="color" id="c1" value="#A6192E" oninput="rWall()"></div>
+          <div class="sw"><label>Foncée</label><input type="color" id="c2" value="#5A0E1B" oninput="rWall()"></div>
+          <div class="sw"><label>Claire</label><input type="color" id="c3" value="#E8C7CD" oninput="rWall()"></div>
+        </div>
+        <div class="cmeter ok" id="cm">
+          <span class="val" id="cmv">—</span>
+          <span style="color:var(--mut)">contraste Principale ↔ fond Nexus · plancher <b style="color:#B9BFC9">2.4</b></span>
+          <span class="cbadge" id="cmb">✓ OK</span>
+        </div>
+        <div class="note">Sous 2.4, la couleur est <b>éclaircie automatiquement</b> à l'affichage — ta marque reste lisible, le design reste protégé.</div>
+      </div>
+
+      <div class="panel" style="margin-bottom:14px">
+        <div class="pt"><span class="n">5</span>LETTRES &amp; MOTS DU MUR — TOUT SE CHANGE</div>
+        <div class="auto" style="margin-bottom:10px"><span class="achip"><b>✓</b>Pré-remplis depuis ton collège — chaque mot ici a sa place sur le mur</span></div>
+        <div class="row2">
+          <div>
+            <label class="fl" style="margin-top:0">Initiales (tuile géante)</label>
+            <input class="ti" id="init" maxlength="3" value="AG" oninput="rWall()" style="text-transform:uppercase">
+          </div>
+          <div>
+            <label class="fl" style="margin-top:0">Mot vertical (bord du mur)</label>
+            <input class="ti" id="vword" maxlength="12" value="GRASSET" oninput="rWall()" style="text-transform:uppercase">
+          </div>
+        </div>
+        <div class="row2">
+          <div>
+            <label class="fl">Devise — 2 mots</label>
+            <div class="nrow" style="grid-template-columns:1fr 1fr;margin-bottom:0">
+              <input class="ti" id="dev1" maxlength="8" value="FIER" oninput="rWall()" style="text-transform:uppercase">
+              <input class="ti" id="dev2" maxlength="8" value="FORT" oninput="rWall()" style="text-transform:uppercase">
+            </div>
+          </div>
+          <div>
+            <label class="fl">Phrase flèche (avant → après)</label>
+            <div class="nrow" style="grid-template-columns:1fr 1fr;margin-bottom:0">
+              <input class="ti" id="fla" maxlength="10" value="D'ICI" oninput="rWall()" style="text-transform:uppercase">
+              <input class="ti" id="flb" maxlength="10" value="POUR ICI" oninput="rWall()" style="text-transform:uppercase">
+            </div>
+          </div>
+        </div>
+        <label class="fl">Tuiles-mots (max 4 affichées sur le mur)</label>
+        <div class="cklist" id="words"></div>
+        <label class="fl">Mot perso (si le catalogue suffit pas)</label>
+        <div class="nrow" style="grid-template-columns:1fr auto">
+          <input class="ti" id="wcustom" maxlength="12" placeholder="≤ 12 caractères — ex. « KA-POW »" style="text-transform:uppercase">
+          <button class="btn ghost" onclick="addWord()">Ajouter</button>
+        </div>
+        <div class="mod">⚠ Mots persos modérés avant publication.</div>
+        <div class="note">Max 4 mots affichés. Les mots deviennent les ghosts typographiques du mur.</div>
+      </div>
+
+      <div class="panel">
+        <div class="pt"><span class="n">6</span>CHIFFRE COLLÈGE — 1 CHAMP</div>
+        <label class="fl">Nombre d'étudiants-athlètes (affiché « saisie collège »)</label>
+        <input class="ti" id="nbath" maxlength="6" value="250+" oninput="rWall()">
+        <div class="note">Le nombre d'équipes et la région sont AUTO — celui-ci vient de toi.</div>
+      </div>
+    </div>
+
+    <div class="pv"><div class="panel">
+      <div class="pvhead">APERÇU LIVE — NAME-CARD &amp; MUR</div>
+      <div class="wallpv">
+        <div class="wgrid">
+          <div class="wt wt-beige">
+            <div class="k">— ICI C'EST —</div>
+            <div class="city" id="wpville">MONTRÉAL</div>
+            <div class="bar" id="wpbar">AHUNTSIC · QC</div>
+            <div class="code" id="wpcode">514</div>
+            <div class="dev" id="wpdev">FIER · FORT</div>
+            <div class="fl" id="wpfl">D'ICI → POUR ICI</div>
+          </div>
+          <div class="wt wt-init"><span id="wpinit">AG</span></div>
+          <div class="wt wt-vert"><span id="wpvert">GRASSET</span></div>
+        </div>
+        <div class="wp-card" id="wpcard" style="border-radius:0">
+          <div class="wp-name" id="wpname">PHÉNIX</div>
+          <div style="font-family:'Bebas Neue';letter-spacing:.2em;font-size:11px;opacity:.8;margin-top:4px" id="wptagline">ÉLITE COLLÉGIALE</div>
+          <div class="wp-slog" id="wpslog">Phénix un jour, Phénix toujours</div>
+        </div>
+        <div class="wtiles" id="wpwords"></div>
+        <div class="wp-tick" id="wptick">★ PHÉNIX UN JOUR, PHÉNIX TOUJOURS ★</div>
+      </div>
+      <div class="note" style="margin-top:12px">Aperçu simplifié — le mur complet se voit via <b>Aperçu</b> en haut. Les stats hero : <b id="wpstats">13 équipes · 250+ athlètes · Montréal</b></div>
+    </div></div>
+  </div>
+</section>
+
+<!-- ================= S2 — SPORTS (AUTO) ================= -->
+<section class="sec">
+  <div class="sech"><span class="num">2</span><h2>Sports — « L'affiche »</h2><span class="tag auto">AUTO</span></div>
+  <div class="cols">
+    <div class="panel">
+      <div class="pt">DÉRIVÉ DE TES ÉQUIPES — RIEN À FAIRE ICI</div>
+      <div class="aff">
+        <div class="affrow"><span class="s">FOOTBALL</span><span class="pill">D1</span><span class="pill">M</span><span class="pill">1 ÉQUIPE</span></div>
+        <div class="affrow"><span class="s">HOCKEY</span><span class="pill">D2</span><span class="pill">M</span><span class="pill">1 ÉQUIPE</span></div>
+        <div class="affrow"><span class="s">FLAG FOOTBALL</span><span class="pill">D2 · D3</span><span class="pill">F · M</span><span class="pill">2 ÉQUIPES</span></div>
+        <div class="affrow"><span class="s">VOLLEYBALL</span><span class="pill">D3</span><span class="pill">M · F</span><span class="pill">2 ÉQUIPES</span></div>
+      </div>
+      <a class="autolink" onclick="toast('Route vers Mes équipes')">Gérer mes équipes →</a>
+      <div class="note">Les rangées, divisions et genres viennent de <b>tes équipes</b> (seed RSEQ + Mes équipes). Ajouter/retirer un sport = gérer l'équipe, la page suit toute seule.</div>
+    </div>
+    <div class="pv"><div class="panel">
+      <div class="pvhead">UNE ÉQUIPE MANQUE OU EST EN TROP ?</div>
+      <div class="fact" style="display:block">
+        <b>La page suit tes équipes, automatiquement.</b>
+        <span style="display:block;margin-top:8px;line-height:1.55">Un <b style="color:#EDEFF3">coach ou directeur</b> de ton collège crée (ou corrige) l'équipe dans <b style="color:#EDEFF3">Mes équipes</b> → elle apparaît ici toute seule. La plupart des équipes RSEQ sont déjà chargées par Nexus — vérifie avant de créer, le système te proposera d'adopter l'existante.</span>
+      </div>
+    </div></div>
+  </div>
+</section>
+
+<!-- ================= S3 — CAMPUS (mock intégré tel quel) ================= -->
+<section class="sec">
+  <div class="sech"><span class="num">3</span><h2>Campus</h2><span class="tag man">MANUEL</span></div>
+  <div class="cols">
+    <div>
+      <div class="panel" style="margin-bottom:14px">
+        <div class="pt"><span class="n">0</span>FICHE — AUTOMATIQUE, RIEN À FAIRE</div>
+        <div class="auto" id="fiche"></div>
+        <div class="row2" style="margin-top:12px;grid-template-columns:1.2fr 1fr">
+          <div>
+            <label class="fl" style="margin-top:0">Adresse complète (à confirmer)</label>
+            <div class="fact" style="padding:11px 13px;display:block"><b style="font-size:13px">1001, boul. Crémazie Est</b><span>Montréal (Québec) H2M 1M3</span></div>
+          </div>
+          <div>
+            <label class="fl" style="margin-top:0">La carte qui s'affichera</label>
+            <div style="border:1px solid var(--line);border-radius:11px;height:86px;background:#20242D;display:flex;align-items:center;justify-content:center;color:#5A616D;font-size:11.5px">🗺 Google Maps (z=12)</div>
+          </div>
+        </div>
+        <div class="note" style="margin-top:10px">Une erreur dans la fiche ou l'adresse ? Écris-nous directement → <a href="mailto:info@nexussports.ca" style="color:var(--warn);font-weight:700;text-decoration:none">info@nexussports.ca</a> — Nexus corrige le seed, tous les affichages suivent.</div>
+      </div>
+
+      <div class="panel" style="margin-bottom:14px">
+        <div class="pt"><span class="n">1</span>LES CARTES DU CAMPUS — TON TRAVAIL MANUEL (max 5 + 1 vidéo)</div>
+        <div id="carou"></div>
+        <button class="addbtn" onclick="addCard()">+ Ajouter une carte (photo + titre + description)</button>
+        <label class="fl">Carte vidéo (YouTube, optionnel)</label>
+        <input class="ti" id="yt" placeholder="https://youtube.com/watch?v=…" oninput="rCampus()">
+        <div class="mod">⚠ Modéré avant publication · AUCUN mineur identifiable dans les images (Loi 25).</div>
+      </div>
+
+      <div class="panel" style="margin-bottom:14px">
+        <div class="pt"><span class="n">2</span>PANNE D'IDÉES ? — CLIQUE, ÇA PART UNE CARTE</div>
+        <div class="uwrap" id="sugg"></div>
+        <div class="note">Suggestions Nexus : le clic crée une carte pré-titrée (hébergement inclus — même format que les autres) — t'ajoutes ta photo pis ta description.</div>
+      </div>
+
+      <div class="budget">⏱ Temps estimé pour cette section : <b id="tt">0 s</b> · cartes : <b id="tc">0</b></div>
+    </div>
+
+    <div class="pv"><div class="panel">
+      <div class="pvhead">APERÇU LIVE — CE QUE L'ATHLÈTE VERRA</div>
+      <div class="facts" id="out"></div>
+    </div></div>
+  </div>
+</section>
+
+<!-- ================= S4 — À PROPOS ================= -->
+<section class="sec">
+  <div class="sech"><span class="num">4</span><h2>À propos</h2><span class="tag man">MANUEL</span></div>
+  <div class="cols">
+    <div class="panel">
+      <div class="pt"><span class="n">1</span>LE TEXTE VENDEUR — 2 CHAMPS (modérés)</div>
+      <label class="fl">Titre</label>
+      <input class="ti" id="abt" maxlength="40" value="Plus qu'un cégep" oninput="rAbout()">
+      <label class="fl">Texte (≤ 280)</label>
+      <textarea class="ti" id="abx" maxlength="280" oninput="rAbout()">Chez les Phénix, tu rejoins une famille qui gagne sur le terrain et en classe. Encadrement complet, installations pro, et une tradition d'excellence depuis 1927.</textarea>
+      <div class="cnt"><span id="abc">0</span>/280</div>
+      <div class="mod">⚠ File de modération Nexus avant publication.</div>
+    </div>
+    <div class="pv"><div class="panel">
+      <div class="pvhead">APERÇU LIVE</div>
+      <div class="fact" style="display:block">
+        <b style="font-family:'Anton';font-size:19px;letter-spacing:.02em;text-transform:uppercase" id="pvabt">Plus qu'un cégep</b>
+        <span id="pvabx" style="display:block;margin-top:8px;line-height:1.55"></span>
+      </div>
+    </div></div>
+  </div>
+</section>
+
+<!-- ================= S5 — PROGRAMMES ================= -->
+<section class="sec">
+  <div class="sech"><span class="num">5</span><h2>Programmes &amp; diplôme</h2><span class="tag man">MANUEL</span></div>
+  <div class="cols">
+    <div class="panel">
+      <div class="pt"><span class="n">1</span>TES PROGRAMMES — SEEDÉS PAR NEXUS · ★ = EN VEDETTE (max 4)</div>
+      <div class="auto" style="margin-bottom:10px"><span class="achip"><b>✓</b>Liste pré-chargée depuis le catalogue officiel de ton collège (SRAM/SRACQ)</span></div>
+      <input class="ti" id="psearch" placeholder="Rechercher dans le catalogue…" oninput="rProgs()" style="margin-bottom:10px">
+      <div class="plist" id="plist"></div>
+      <label class="fl">Programme absent du catalogue ? Ajout manuel</label>
+      <div class="nrow" style="grid-template-columns:1fr auto auto">
+        <input class="ti" id="pman" maxlength="60" placeholder="Nom exact du programme">
+        <button class="btn ghost" onclick="addProg()">Ajouter</button>
+        <button class="btn ghost" onclick="toast('Import CSV (câblage Bloc 2) — une colonne : nom du programme')">⇪ CSV</button>
+      </div>
+      <div class="note">Coche = affiché sur ta page · ✕ = retirer de la liste · Le <b>match parfait</b> avec le programme visé de l'athlète est automatique (recherche accent-insensible). Toi, tu dis juste ce que tu offres.</div>
+    </div>
+    <div class="pv"><div class="panel">
+      <div class="pvhead">APERÇU LIVE — PLANCHE « EN VEDETTE »</div>
+      <div id="pvved" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+      <div class="note" style="margin-top:12px"><b id="pvpcount">0</b> programmes affichés dans « Tous les programmes ».</div>
+    </div></div>
+  </div>
+</section>
+
+<!-- ================= S6 — PARCOURS ================= -->
+<section class="sec">
+  <div class="sech"><span class="num">6</span><h2>Parcours</h2><span class="tag man">MANUEL</span></div>
+  <div class="cols">
+    <div>
+      <div class="panel" style="margin-bottom:14px">
+        <div class="pt"><span class="n">1</span>INTRO — NIVEAU &amp; ENCADREMENT</div>
+        <label class="fl">Niveau / division</label>
+        <input class="ti" id="pniv" maxlength="30" value="Division 1" oninput="rParc()">
+        <label class="fl">Encadrement sport-études — catalogue</label>
+        <div class="cklist" id="enc"></div>
+      </div>
+      <div class="panel">
+        <div class="pt"><span class="n">2</span>LES STATS &amp; LES UNIVERSITÉS</div>
+        <div class="auto" style="margin-bottom:12px"><span class="achip"><b>✓</b>Recrutés cette saison : 31 — AUTO (engagés + lettres signées, tous sports)</span></div>
+        <div class="row2">
+          <div><label class="fl">Passés en U SPORTS</label><input class="ti" id="pus" maxlength="4" value="11" oninput="rParc()"></div>
+          <div><label class="fl">Taux de diplomation (%)</label><input class="ti" id="pdip" maxlength="3" value="90" oninput="rParc()"></div>
+        </div>
+        <div class="row2">
+          <div><label class="fl">Partis aux États-Unis (NCAA/NJCAA)</label><input class="ti" id="pusa" maxlength="4" value="3" oninput="rParc()"></div>
+          <div></div>
+        </div>
+        <label class="fl">Mot du programme (texte libre, modéré)</label>
+        <textarea class="ti" id="pfree" maxlength="200" oninput="rParc()">Ici, on développe des athlètes complets — sur le terrain, en classe, dans la vie.</textarea>
+        <div class="cnt"><span id="pfreec">0</span>/200</div>
+        <div class="mod">⚠ Modéré avant publication.</div>
+        <label class="fl">Universités où tes athlètes sont rendus — picker + persos</label>
+        <div class="uwrap" id="unis"></div>
+        <div class="nrow" style="grid-template-columns:1fr auto;margin-top:10px">
+          <input class="ti" id="ucustom" maxlength="40" placeholder="Autre (ex. « Michigan State »…)">
+          <button class="btn ghost" onclick="addUni()">Ajouter</button>
+        </div>
+      </div>
+    </div>
+    <div class="pv"><div class="panel">
+      <div class="pvhead">APERÇU LIVE — LA ROUTE</div>
+      <div class="route"><span>TOI</span><span class="arrow">→</span><span class="hot" id="pvroute">PHÉNIX</span><span class="arrow">→</span><span>U SPORTS</span></div>
+      <div class="pstats" style="grid-template-columns:1fr 1fr">
+        <div class="pstat"><div class="v" style="color:var(--red)">31</div><div class="l">Recrutés</div></div>
+        <div class="pstat"><div class="v" id="pvus">11</div><div class="l">En U Sports</div></div>
+        <div class="pstat"><div class="v" id="pvusa">3</div><div class="l">Aux États-Unis</div></div>
+        <div class="pstat"><div class="v" id="pvdip">90%</div><div class="l">Diplomation</div></div>
+      </div>
+      <div class="note" style="margin-top:12px;font-style:italic" id="pvfree"></div>
+      <div class="upills" id="pvunis"></div>
+    </div></div>
+  </div>
+</section>
+
+<!-- ================= S7 — ACTUALITÉS ================= -->
+<section class="sec">
+  <div class="sech"><span class="num">7</span><h2>Actualités</h2><span class="tag man">MANUEL</span></div>
+  <div class="cols">
+    <div class="panel">
+      <div class="pt"><span class="n">1</span>TES NOUVELLES — TITRE + LIEN (max 5)</div>
+      <div id="news"></div>
+      <button class="addbtn" onclick="addNews()">+ Ajouter une nouvelle</button>
+      <div class="note">La source (domaine) est dérivée du lien automatiquement.</div>
+    </div>
+    <div class="pv"><div class="panel">
+      <div class="pvhead">APERÇU LIVE</div>
+      <div class="facts newspv" id="pvnews"></div>
+    </div></div>
+  </div>
+</section>
+
+<!-- ================= S8 — PLATEFORME ================= -->
+<section class="sec">
+  <div class="sech"><span class="num">8</span><h2>Généré par Nexus</h2><span class="tag auto">PLATEFORME</span></div>
+  <div class="panel">
+    <div class="pfgrid">
+      <span class="pfchip">👁 <b>Vues de ta page</b> — tracking runtime</span>
+      <span class="pfchip">❤ <b>« X athlètes suivent ce collège »</b> — agrégat cibles</span>
+      <span class="pfchip">🎯 <b>Strip « Recrutés via Nexus »</b> — compteur plateforme</span>
+      <span class="pfchip">🧭 <b>Match programme visé</b> — profil de l'athlète</span>
+    </div>
+    <div class="note">Ces éléments vivent sur ta page mais appartiennent à la plateforme — ils se mettent à jour tout seuls, et c'est ce qui rend ta page crédible.</div>
+  </div>
+</section>
+
+</div>
+<div id="toast"></div>
+
+<script>
+/* ============ helpers ============ */
+const $=id=>document.getElementById(id);
+function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),2200)}
+function saveMock(){$('status').textContent='ENREGISTRÉ';$('status').style.color='var(--ok)';$('status').style.borderColor='var(--ok)';toast('Brouillon enregistré (mock — câblage Bloc 2)');setTimeout(()=>{$('status').textContent='BROUILLON';$('status').style.color='';$('status').style.borderColor=''},2600)}
+function lum(hex){const c=[1,3,5].map(i=>parseInt(hex.substr(i,2),16)/255).map(v=>v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4));return .2126*c[0]+.7152*c[1]+.0722*c[2]}
+function ratio(h1,h2){const a=lum(h1),b=lum(h2);return (Math.max(a,b)+.05)/(Math.min(a,b)+.05)}
+
+/* ============ S1 — mur ============ */
+const WORDS=['ALLEZ','ENSEMBLE','ÉLITE','BOL D\'OR','LA TRIBU','DEPUIS 1927','GO GO GO','CHAMPIONS','LA FAMILLE','LA MEUTE','TOUJOURS PLUS','UNIS','LA RELÈVE','ICI ON GAGNE'];
+const wstate={};
+const wEl=$('words');
+WORDS.forEach((w,i)=>{
+  const d=document.createElement('div');d.className='ck';d.innerHTML=`<span class="box"></span><span>${w}</span>`;
+  d.onclick=()=>{const on=!wstate[i];const cnt=Object.values(wstate).filter(Boolean).length;
+    if(on&&cnt>=4){toast('Maximum 4 mots — décoche pour changer');return}
+    wstate[i]=on;d.classList.toggle('on',on);d.querySelector('.box').textContent=on?'✓':'';rWall()};
+  wEl.appendChild(d);
+});
+[0,1,2,3].forEach(i=>wEl.children[i].click());
+function addWord(){const v=$('wcustom').value.trim().toUpperCase();if(!v)return;
+  const cnt=Object.values(wstate).filter(Boolean).length;
+  WORDS.push(v);const i=WORDS.length-1;
+  const d=document.createElement('div');d.className='ck';d.innerHTML=`<span class="box"></span><span>${v} <i style="color:#5A616D;font-size:10.5px">(perso)</i></span>`;
+  d.onclick=()=>{const on=!wstate[i];const c=Object.values(wstate).filter(Boolean).length;
+    if(on&&c>=4){toast('Maximum 4 mots — décoche pour changer');return}
+    wstate[i]=on;d.classList.toggle('on',on);d.querySelector('.box').textContent=on?'✓':'';rWall()};
+  wEl.appendChild(d);$('wcustom').value='';
+  if(cnt<4)d.click();else toast("Ajouté au catalogue — décoche un mot pour l'activer");}
+function rWall(){
+  const c1=$('c1').value,c2=$('c2').value,c3=$('c3').value;
+  const nick=$('nick').value||'—',slog=$('slog').value;
+  $('slogc').textContent=slog.length;
+  const card=$('wpcard');card.style.background=c1;
+  const onLight=ratio(c1,'#FFFFFF')>=2.4;
+  card.style.color=onLight?'#FFFFFF':'#111317';
+  $('wpname').textContent=nick.toUpperCase();
+  $('wptagline').textContent=($('tagline').value||'').toUpperCase();
+  $('wpslog').textContent=slog;$('wpslog').style.display=slog?'':'none';
+  /* tuile beige — géo */
+  $('wpville').textContent=($('ville').value||'—').toUpperCase();
+  $('wpville').style.color=c1;
+  $('wpbar').textContent=(($('quartier').value||'')+' · QC').toUpperCase();
+  $('wpbar').style.background=c1;
+  $('wpbar').style.color=ratio(c1,'#FFFFFF')>=2.4?'#EDE6D6':'#16181D';
+  $('wpcode').textContent=$('rtag').value||$('prov').value;
+  $('wpdev').textContent=(($('dev1').value||'')+' · '+($('dev2').value||'')).toUpperCase();
+  $('wpfl').textContent=(($('fla').value||'')+' → '+($('flb').value||'')).toUpperCase();
+  $('wpfl').style.color=c1;
+  /* initiales + vertical */
+  $('wpinit').textContent=($('init').value||'—').toUpperCase();
+  $('wpinit').style.color=c3;
+  $('wpvert').textContent=($('vword').value||'').toUpperCase();
+  /* contraste */
+  const r=ratio(c1,'#111317');
+  const cm=$('cm');cm.className='cmeter '+(r>=2.4?'ok':'bad');
+  $('cmv').textContent=r.toFixed(2);
+  $('cmb').textContent=r>=2.4?'✓ OK':'⚠ ÉCLAIRCIE AUTO';
+  /* tuiles-mots */
+  const wp=$('wpwords');wp.innerHTML='';let k=0;
+  WORDS.forEach((w,i)=>{if(!wstate[i])return;
+    const dark=(k%2===1);k++;
+    const bg=dark?'#16181D':c1;
+    const col=dark?c3:(ratio(c1,'#FFFFFF')>=2.4?'#FFFFFF':'#16181D');
+    wp.insertAdjacentHTML('beforeend',`<span class="wtile" style="background:${bg};color:${col}">${w}</span>`)});
+  if(!k)wp.innerHTML='<span class="wtile" style="background:#16181D;color:#3B414D">— aucune tuile —</span>';
+  $('wptick').textContent='★ '+($('tick').value||slog).toUpperCase()+' ★';
+  $('wpstats').textContent=`13 équipes · ${$('nbath').value||'—'} athlètes · ${($('ville').value||'').charAt(0)+($('ville').value||'').slice(1).toLowerCase()}`;
+}
+rWall();
+
+/* ============ S3 — campus : cartes manuelles + suggestions ============ */
+const SUGG=['Installations','Résidences & hébergement','Encadrement sport-études','Plateaux partenaires','Vie étudiante','Cafétéria','Clinique physio','Salle vidéo & tactique','Salle de musculation','Bibliothèque'];
+const cstate={cards:[{t:'Installations Phénix',x:'Gymnase double, salle de musculation dédiée.'}]};
+const sEl=$('sugg');
+SUGG.forEach(t=>{
+  const d=document.createElement('span');d.className='uchip';d.textContent=t;
+  d.onclick=()=>{if(cstate.cards.length>=5){toast('Maximum 5 cartes');return}
+    cstate.cards.push({t:t,x:''});rCarou();rCampus();toast('Carte « '+t+' » créée — ajoute photo + description')};
+  sEl.appendChild(d);
+});
+function addCard(){
+  if(cstate.cards.length>=5){toast('Maximum 5 cartes');return}
+  cstate.cards.push({t:'',x:''});rCarou();rCampus();
+}
+function rCarou(){
+  const el=$('carou');el.innerHTML='';
+  cstate.cards.forEach((c,i)=>{
+    const d=document.createElement('div');d.style.cssText='border:1px solid var(--line);border-radius:11px;padding:12px;margin-bottom:10px';
+    d.innerHTML=`
+      <div class="drop" style="margin-bottom:8px" onclick="toast('Upload photo (câblage Bloc 2)')"><b>Photo ${i+1}</b>16:9 · JPG/PNG · aucun mineur identifiable</div>
+      <div class="nrow" style="grid-template-columns:1fr 1.6fr auto">
+        <input class="ti" maxlength="24" placeholder="Titre ≤ 24" value="${c.t}">
+        <input class="ti" maxlength="90" placeholder="Description ≤ 90" value="${c.x}">
+        <button class="xbtn" title="Retirer">✕</button>
+      </div>`;
+    const inputs=d.querySelectorAll('input');
+    inputs[0].oninput=e=>{c.t=e.target.value;rCampus()};
+    inputs[1].oninput=e=>{c.x=e.target.value;rCampus()};
+    d.querySelector('.xbtn').onclick=()=>{cstate.cards.splice(i,1);rCarou();rCampus()};
+    el.appendChild(d);
+  });
+}
+function rCampus(){
+  const out=$('out');out.innerHTML='';
+  cstate.cards.forEach(c=>{if(c.t)out.insertAdjacentHTML('beforeend',
+    `<div class="fact" style="display:flex;flex-direction:column;justify-content:flex-end;background:linear-gradient(180deg,#1E222B,#14171D);min-height:96px"><b style="font-family:'Anton';letter-spacing:.03em;text-transform:uppercase;font-size:16px">${c.t}</b><span>${c.x||'…'}</span></div>`)});
+  if($('yt').value)out.insertAdjacentHTML('beforeend',`<div class="fact"><div class="fi">▶</div><div><b>Vidéo du campus</b><span>Bande vidéo en fin de section</span></div></div>`);
+  if(!out.children.length)out.innerHTML='<div class="empty">Crée des cartes à gauche (ou clique une suggestion) — elles apparaissent ici, déjà designées. Rien de créé = jamais de trou.</div>';
+  const n=cstate.cards.filter(c=>c.t).length;
+  $('tc').textContent=n;
+  $('tt').textContent=Math.round(n*25)+' s';
+}
+const FICHE=[['Langue','Francophone'],['Statut','Privé'],['Région','Montréal']];
+const fEl=$('fiche');
+FICHE.forEach(([k,v])=>{
+  const s=document.createElement('span');s.className='achip';
+  s.innerHTML=`<b>✓</b>${k} : ${v}`;
+  fEl.appendChild(s);
+});
+rCarou();rCampus();
+
+/* ============ S4 — à propos ============ */
+function rAbout(){$('pvabt').textContent=$('abt').value||'—';$('pvabx').textContent=$('abx').value;$('abc').textContent=$('abx').value.length}
+rAbout();
+
+/* ============ S5 — programmes ============ */
+const DEC=['Sciences de la nature','Sciences humaines','Sciences, lettres et arts','Soins infirmiers','Techniques policières','Techniques de l\'informatique','Techniques d\'éducation spécialisée','Techniques de comptabilité et gestion','Techniques de physiothérapie','Arts, lettres et communication','Administration générale','Génie mécanique'];
+const pstate=DEC.map(n=>({n,on:false,star:false,manual:false}));
+[0,1,5].forEach(i=>{pstate[i].on=true});pstate[0].star=true;pstate[5].star=true;
+function addProg(){const v=$('pman').value.trim();if(!v)return;pstate.push({n:v,on:true,star:false,manual:true});$('pman').value='';rProgs()}
+function rProgs(){
+  const q=($('psearch').value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+  const el=$('plist');el.innerHTML='';
+  pstate.forEach(p=>{
+    const norm=p.n.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+    if(q&&!norm.includes(q))return;
+    const d=document.createElement('div');d.className='prog'+(p.on?' on':'');
+    d.innerHTML=`<span class="box">${p.on?'✓':''}</span><span>${p.n}${p.manual?' <i style="color:#5A616D;font-size:11px">(manuel)</i>':''}</span><button class="star ${p.star?'on':''}" title="En vedette">★</button><button class="xbtn" style="width:30px;height:30px;border-radius:8px" title="Retirer de la liste">✕</button>`;
+    d.onclick=()=>{p.on=!p.on;if(!p.on)p.star=false;rProgs()};
+    d.querySelector('.star').onclick=e=>{e.stopPropagation();if(!p.on)return;
+      if(!p.star&&pstate.filter(x=>x.star).length>=4){toast('Maximum 4 en vedette');return}
+      p.star=!p.star;rProgs()};
+    d.querySelector('.xbtn').onclick=e=>{e.stopPropagation();pstate.splice(pstate.indexOf(p),1);rProgs()};
+    el.appendChild(d);
+  });
+  const v=$('pvved');v.innerHTML='';
+  pstate.filter(p=>p.star).forEach(p=>v.insertAdjacentHTML('beforeend',`<span class="vchip"><i>★</i>${p.n}</span>`));
+  if(!v.children.length)v.innerHTML='<div class="empty" style="width:100%">Étoile un programme coché → il monte « EN VEDETTE ».</div>';
+  $('pvpcount').textContent=pstate.filter(p=>p.on).length;
+}
+rProgs();
+
+/* ============ S6 — parcours ============ */
+const ENC=['Alliance Sport-Études','Tuteurs dédiés','Horaires adaptés','Suivi académique personnalisé','Conciliation examens-compétitions'];
+const estate={};
+const eEl=$('enc');
+ENC.forEach((t,i)=>{
+  const d=document.createElement('div');d.className='ck';d.innerHTML=`<span class="box"></span><span>${t}</span>`;
+  d.onclick=()=>{estate[i]=!estate[i];d.classList.toggle('on',estate[i]);d.querySelector('.box').textContent=estate[i]?'✓':''};
+  eEl.appendChild(d);
+});
+eEl.children[0].click();eEl.children[2].click();
+const UNIS=['Université de Montréal','Université Laval','McGill','Concordia','UQAM','Sherbrooke','UQTR','UQAC','Bishop\'s','ÉTS'];
+const ustate={};
+const uEl=$('unis');
+UNIS.forEach((u,i)=>{
+  const d=document.createElement('span');d.className='uchip';d.textContent=u;
+  d.onclick=()=>{ustate[i]=!ustate[i];d.classList.toggle('on',ustate[i]);rParc()};
+  uEl.appendChild(d);
+});
+[0,1,2].forEach(i=>uEl.children[i].click());
+function addUni(){const v=$('ucustom').value.trim();if(!v)return;
+  UNIS.push(v);const i=UNIS.length-1;ustate[i]=true;
+  const d=document.createElement('span');d.className='uchip on';d.textContent=v;
+  d.onclick=()=>{ustate[i]=!ustate[i];d.classList.toggle('on',ustate[i]);rParc()};
+  uEl.appendChild(d);$('ucustom').value='';rParc();}
+function rParc(){
+  $('pvroute').textContent=($('nick').value||'ÉCOLE').toUpperCase();
+  $('pvus').textContent=$('pus').value||'—';
+  $('pvusa').textContent=$('pusa').value||'—';
+  $('pvdip').textContent=($('pdip').value||'—')+'%';
+  $('pfreec').textContent=$('pfree').value.length;
+  $('pvfree').textContent=$('pfree').value?'« '+$('pfree').value+' »':'';
+  const pv=$('pvunis');pv.innerHTML='';
+  UNIS.forEach((u,i)=>{if(ustate[i])pv.insertAdjacentHTML('beforeend',`<span class="upill">${u}</span>`)});
+}
+rParc();
+
+/* ============ S7 — news ============ */
+const nstate=[{t:'Les Phénix champions du Bol d\'Or',u:'https://rds.ca/article'}];
+function addNews(){if(nstate.length>=5){toast('Maximum 5 nouvelles');return}nstate.push({t:'',u:''});rNews()}
+function rNews(){
+  const el=$('news');el.innerHTML='';
+  nstate.forEach((n,i)=>{
+    const d=document.createElement('div');d.className='nrow';
+    d.innerHTML=`<input class="ti" maxlength="80" placeholder="Titre" value="${n.t}"><input class="ti" placeholder="Lien https://…" value="${n.u}"><button class="xbtn">✕</button>`;
+    const [ti,ui]=d.querySelectorAll('input');
+    ti.oninput=e=>{n.t=e.target.value;rNewsPv()};ui.oninput=e=>{n.u=e.target.value;rNewsPv()};
+    d.querySelector('.xbtn').onclick=()=>{nstate.splice(i,1);rNews()};
+    el.appendChild(d);
+  });
+  rNewsPv();
+}
+function rNewsPv(){
+  const pv=$('pvnews');pv.innerHTML='';
+  nstate.filter(n=>n.t).forEach(n=>{
+    let dom='—';try{dom=new URL(n.u).hostname.replace('www.','')}catch(e){}
+    pv.insertAdjacentHTML('beforeend',`<div class="fact" style="display:block"><b>${n.t}</b><span class="dom">${dom}</span></div>`);
+  });
+  if(!pv.children.length)pv.innerHTML='<div class="empty">Tes nouvelles apparaissent ici — titre + source dérivée du lien.</div>';
+}
+rNews();
+</script>
+</body>
+</html>
