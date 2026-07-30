@@ -10,6 +10,39 @@ import type {
   TeamData, TeamEvent, TeamContent, Commit, Pennant, TeamNeed, ConnectedAthlete,
 } from "@/components/team-page/content";
 import type { SportKey } from "./sportSlots";
+import { genreCourt } from "../schoolPage/dbToProgramPage";
+
+/** Titre affiché d'une équipe.
+ *
+ *  `teams.name` porte le nom de l'ÉTABLISSEMENT pour toutes les équipes issues
+ *  du pont RSEQ (« André-Grasset » sur les 7 équipes de Grasset) : tel quel, le
+ *  hero d'une équipe de basketball annonce « André-Grasset ». Quand le nom de
+ *  l'équipe est celui de son école, on dérive donc « {sport} {genre} » des
+ *  colonnes réelles — même normalisation du genre que « L'affiche »
+ *  (`genreCourt`), inconnu → mixte, jamais deviné.
+ *
+ *  Sinon `teams.name` GAGNE : un coach qui a saisi un vrai nom d'équipe n'est
+ *  jamais écrasé. Le saut de ligne suit la convention des fixtures
+ *  (« Football\nmasculin ») — le hero est dessiné pour deux lignes. */
+export function titreEquipe(
+  teamName: string,
+  schoolName: string,
+  sportNom: string,
+  gender: string | null,
+): string {
+  // `teams.name` omet le préfixe de type que porte `schools.name`
+  // (« André-Grasset » contre « Collège André-Grasset ») : on le retire des
+  // deux côtés avant de comparer, sinon aucune équipe ne serait détectée.
+  const sansType = (v: string) =>
+    (v ?? "").replace(/^(Cégep|Collège|Campus|Centre)\s+(de\s+|du\s+|d'|des\s+)?/i, "").trim();
+  const nom = sansType(teamName);
+  const ecole = sansType(schoolName);
+  const memeNom = !!nom && !!ecole && nom.localeCompare(ecole, "fr", { sensitivity: "base" }) === 0;
+  if (!memeNom || !sportNom.trim()) return teamName;
+  const court = genreCourt(gender);
+  const mot = court === "M" ? "masculin" : court === "F" ? "féminin" : "mixte";
+  return `${sportNom.trim()}\n${mot}`;
+}
 
 export interface TeamRow {
   id: string; name: string; division: string | null; gender: string | null;
@@ -201,7 +234,7 @@ export function buildTeamData(i: BuildTeamDataInput): TeamData {
     // Sport sans layout Nexus : la clé ne résout aucun terrain et le widget
     // besoins s'efface (garde dans BesoinsWidget) — le reste de la page vit.
     sportKey: (i.sportKey ?? "__none__") as TeamData["sportKey"],
-    nom: i.team.name,
+    nom: titreEquipe(i.team.name, i.school.name, i.sportNom, i.team.gender),
     nickname: i.school.nickname,
     schoolName: i.school.name,
     schoolId: i.team.school_id,

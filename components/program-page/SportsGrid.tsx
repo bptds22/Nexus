@@ -4,10 +4,11 @@
 // S2 — SPORTS « L'affiche » : liste éditoriale de rangées, AUCUNE icône.
 // Chaque rangée = nom (Anton) + pills dérivés de equipes[] (divisions / genre /
 // nb). SINGLE (1 équipe) → clic = route directe (chevron →). MULTI (2+) → clic =
-// tiroir .teams de chips (chevron ›, rotate à l'ouverture). Routes équipe =
-// placeholders (câblage Bloc 2). 0 sport → section #sports absente.
+// tiroir .teams de chips (chevron ›, rotate à l'ouverture). 0 sport → section
+// #sports absente.
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import GhostLayer from "./GhostLayer";
 import type { Sport, SportTeam } from "./content";
 
@@ -40,6 +41,7 @@ function genreAgg(equipes: SportTeam[]): string {
 
 export default function SportsGrid({ sports }: { sports: Sport[] }) {
   const [open, setOpen] = React.useState<Set<number>>(new Set());
+  const router = useRouter();
 
   if (!sports || sports.length === 0) return null; // 0 sport → pas de section
 
@@ -51,8 +53,9 @@ export default function SportsGrid({ sports }: { sports: Sport[] }) {
       return next;
     });
 
-  // Route page équipe — placeholder (câblage Bloc 2 : router.push(url)).
-  const goTeam = (_url: string) => { /* Bloc 2 */ };
+  // Route page équipe. Une équipe sans route (chaîne vide) n'est pas cliquable :
+  // le clic ne fait rien plutôt que d'emmener l'athlète sur une page fausse.
+  const goTeam = (url: string) => { if (url) router.push(url); };
 
   return (
     <section id="sports">

@@ -768,7 +768,7 @@ export default function RechercheMobile() {
             <div className="shFoot">
               {courant.c.riche ? (
                 <>
-                  <a className="btn primary" href={`/page-test?school=${courant.c.id}`} target="_blank" rel="noopener noreferrer">
+                  <a className="btn primary" href={`/college/${courant.c.id}`} target="_blank" rel="noopener noreferrer">
                     Accéder à la page <ArrowRight size={17} aria-hidden />
                   </a>
                   <button

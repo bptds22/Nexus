@@ -560,7 +560,7 @@ function Apercu({
 
       <div className="pcta">
         {c.riche ? (
-          <a className="btn page" href={`/page-test?school=${c.id}`} target="_blank" rel="noopener noreferrer">Accéder à la page →</a>
+          <a className="btn page" href={`/college/${c.id}`} target="_blank" rel="noopener noreferrer">Accéder à la page →</a>
         ) : (
           <button className="btn nopage" disabled>Page à venir — cible-le.</button>
         )}

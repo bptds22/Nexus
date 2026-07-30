@@ -407,6 +407,9 @@ export default function MorePanel({
     return [
       {
         items: [
+          // « Trouve ton cégep » n'a aucun onglet dans ATHLETE_TABS : le panel
+          // Plus est son SEUL point d'entrée en Capacitor. En tête de liste.
+          { key: "recherche", label: "Trouve ton cégep", href: "/athlete/recherche", icon: Icons.cegep },
           { key: "notifications", label: "Notifications", href: "/athlete/notifications", icon: Icons.bell, badge: actBadge },
         ],
       },

@@ -11,6 +11,13 @@
 import type { SchoolProgramIdentity } from "@/components/program-wall/slots";
 import type { ProgramPageContent } from "@/components/program-page/content";
 
+/** Identifiants RÉELS (public.schools) des deux collèges couverts par ces
+ *  fixtures. Ils servent à construire les routes publiques
+ *  `/college/<school_id>/<team_id>` de « L'affiche ». Ce ne sont pas des
+ *  identifiants de fixture : `SchoolProgramIdentity.id` reste un slug. */
+const GRASSET_ID = "05841265-fd61-466e-b431-2caa7ec06de9";
+const MOMO_ID = "ee2d611c-d140-417c-bbaf-d6353a7a1229";
+
 export const schoolPrograms: SchoolProgramIdentity[] = [
   {
     id: "andre-grasset",
@@ -97,26 +104,34 @@ export const programPageContent: Record<string, ProgramPageContent> = {
       { title: "Installations Phénix", text: "Gymnase double, salle de musculation dédiée aux équipes, terrain extérieur." },
       { title: "Encadrement sport-études", text: "Horaires adaptés, tuteurs, suivi académique pour chaque étudiant-athlète." },
     ],
-    // Sports « L'affiche » — vraies données Grasset (MOCK ; url "#" = câblage Bloc 2).
+    // Sports « L'affiche » — vraies données Grasset (MOCK).
+    // url = `/college/<school_id>/<team_id>` avec des uuid RÉELS lus en base.
+    // Une entrée n'est câblée que si une équipe DB correspond EXACTEMENT
+    // (sport + division + genre) ; sinon "" = rangée non cliquable, jamais une
+    // correspondance approchée. Les quasi-correspondances sont listées dans le
+    // rapport du chantier, pas devinées ici.
     sports: [
-      { nom: "Football", equipes: [{ nom: "Football", division: "D1", genre: "M", url: "#" }] },
+      { nom: "Football", equipes: [{ nom: "Football", division: "D1", genre: "M", url: `/college/${GRASSET_ID}/2ab40855-bf1a-4fca-be9d-3f6a4f1cc7f3` }] },
       { nom: "Soccer", equipes: [
-        { nom: "Soccer intérieur", division: "D2", genre: "M&F", url: "#" },
-        { nom: "Soccer extérieur", division: "D3", genre: "F", url: "#" },
+        // DB : « Soccer intérieur » existe en M et en F, division NULL — aucune
+        // équipe unique ne correspond à cette entrée M&F.
+        { nom: "Soccer intérieur", division: "D2", genre: "M&F", url: "" },
+        { nom: "Soccer extérieur", division: "D3", genre: "F", url: "" },
       ] },
       { nom: "Flag football", equipes: [
-        { nom: "Flag féminin", division: "D2", genre: "F", url: "#" },
-        { nom: "Flag masculin", division: "D3", genre: "M", url: "#" },
+        { nom: "Flag féminin", division: "D2", genre: "F", url: `/college/${GRASSET_ID}/cce28a88-bb5e-47e6-8991-103f09e9cea5` },
+        { nom: "Flag masculin", division: "D3", genre: "M", url: `/college/${GRASSET_ID}/73bb10ab-839c-46f6-b5c6-90cfb88bf76b` },
       ] },
       { nom: "Volleyball", equipes: [
-        { nom: "Volleyball masculin", division: "D3", genre: "M", url: "#" },
-        { nom: "Volleyball féminin", division: "D3", genre: "F", url: "#" },
+        { nom: "Volleyball masculin", division: "D3", genre: "M", url: "" }, // aucune équipe masculine en base
+        { nom: "Volleyball féminin", division: "D3", genre: "F", url: `/college/${GRASSET_ID}/b19df231-ab99-44af-aced-9dcc0860d558` },
       ] },
-      { nom: "Hockey", equipes: [{ nom: "Hockey", division: "D2", genre: "M", url: "#" }] },
-      { nom: "Basketball", equipes: [{ nom: "Basketball", division: "D3", genre: "M", url: "#" }] },
-      { nom: "Cross-country", equipes: [{ nom: "Cross-country", division: null, genre: "Mixte", url: "#" }] },
-      { nom: "Tennis", equipes: [{ nom: "Tennis", division: null, genre: "Mixte", url: "#" }] },
-      { nom: "Ultimate", equipes: [{ nom: "Ultimate", division: null, genre: "Mixte", url: "#" }] },
+      { nom: "Hockey", equipes: [{ nom: "Hockey", division: "D2", genre: "M", url: "" }] },
+      { nom: "Basketball", equipes: [{ nom: "Basketball", division: "D3", genre: "M", url: "" }] },
+      { nom: "Cross-country", equipes: [{ nom: "Cross-country", division: null, genre: "Mixte", url: "" }] },
+      { nom: "Tennis", equipes: [{ nom: "Tennis", division: null, genre: "Mixte", url: "" }] },
+      // DB : le sport s'appelle « Ultimate frisbee », même équipe.
+      { nom: "Ultimate", equipes: [{ nom: "Ultimate", division: null, genre: "Mixte", url: `/college/${GRASSET_ID}/113c4f7e-d86e-4ad1-9d37-f68806865e19` }] },
     ],
     sellTitle: "Plus qu'un cégep",
     sellText:
@@ -175,27 +190,30 @@ export const programPageContent: Record<string, ProgramPageContent> = {
       { title: "Complexe sportif", text: "Trois gymnases, piscine, salle de musculation et terrains extérieurs." },
       { title: "Encadrement sport-études", text: "Horaires adaptés, tuteurs, suivi académique pour chaque étudiant-athlète." },
     ],
-    // Sports « L'affiche » — MOCK Montmorency (Bloc 2 = vraies équipes DB).
+    // Sports « L'affiche » — MOCK Montmorency. Même règle que Grasset :
+    // uuid réel sur correspondance EXACTE sport + division + genre, sinon "".
     sports: [
       { nom: "Basketball", equipes: [
-        { nom: "Basketball masculin", division: "D1", genre: "M", url: "#" },
-        { nom: "Basketball féminin", division: "D1", genre: "F", url: "#" },
+        { nom: "Basketball masculin", division: "D1", genre: "M", url: `/college/${MOMO_ID}/3953215b-c804-44b7-9b2b-5840bfd7ff4a` },
+        { nom: "Basketball féminin", division: "D1", genre: "F", url: `/college/${MOMO_ID}/5c0786b0-04bd-46e6-931b-ec9d6f1cb6ae` },
       ] },
       { nom: "Soccer", equipes: [
-        { nom: "Soccer masculin", division: "D1", genre: "M", url: "#" },
-        { nom: "Soccer féminin", division: "D1", genre: "F", url: "#" },
+        { nom: "Soccer masculin", division: "D1", genre: "M", url: `/college/${MOMO_ID}/c82c1e5b-49fc-4d54-8b29-f45dab8febf8` },
+        { nom: "Soccer féminin", division: "D1", genre: "F", url: `/college/${MOMO_ID}/48d24c96-974f-42bb-8dab-c7b9f2a89bbc` },
       ] },
       { nom: "Volleyball", equipes: [
-        { nom: "Volleyball masculin", division: "D1", genre: "M", url: "#" },
-        { nom: "Volleyball féminin", division: "D1", genre: "F", url: "#" },
+        // DB : Volleyball est en D2, pas en D1 — pas de correspondance exacte.
+        { nom: "Volleyball masculin", division: "D1", genre: "M", url: "" },
+        { nom: "Volleyball féminin", division: "D1", genre: "F", url: "" },
       ] },
-      { nom: "Football", equipes: [{ nom: "Football", division: "D2", genre: "M", url: "#" }] },
-      { nom: "Cross-country", equipes: [{ nom: "Cross-country", division: null, genre: "Mixte", url: "#" }] },
-      { nom: "Badminton", equipes: [{ nom: "Badminton", division: "D1", genre: "Mixte", url: "#" }] },
-      { nom: "Natation", equipes: [{ nom: "Natation", division: null, genre: "Mixte", url: "#" }] },
-      { nom: "Cheerleading", equipes: [{ nom: "Cheerleading", division: null, genre: "Mixte", url: "#" }] },
-      { nom: "Hockey", equipes: [{ nom: "Hockey", division: "D2", genre: "M", url: "#" }] },
-      { nom: "Flag football", equipes: [{ nom: "Flag football", division: "D2", genre: "F", url: "#" }] },
+      { nom: "Football", equipes: [{ nom: "Football", division: "D2", genre: "M", url: `/college/${MOMO_ID}/2132b681-1c73-4e88-ab22-92c7d40cc891` }] },
+      { nom: "Cross-country", equipes: [{ nom: "Cross-country", division: null, genre: "Mixte", url: "" }] },
+      // DB : Badminton est en D3, pas en D1.
+      { nom: "Badminton", equipes: [{ nom: "Badminton", division: "D1", genre: "Mixte", url: "" }] },
+      { nom: "Natation", equipes: [{ nom: "Natation", division: null, genre: "Mixte", url: "" }] },
+      { nom: "Cheerleading", equipes: [{ nom: "Cheerleading", division: null, genre: "Mixte", url: "" }] },
+      { nom: "Hockey", equipes: [{ nom: "Hockey", division: "D2", genre: "M", url: "" }] },
+      { nom: "Flag football", equipes: [{ nom: "Flag football", division: "D2", genre: "F", url: `/college/${MOMO_ID}/ed2f5fc1-6cf9-4beb-a4d7-76316bbb6475` }] },
     ],
     sellTitle: "Plus qu'un cégep",
     sellText:

@@ -62,7 +62,12 @@ async function loadViewer(
 
 export type TeamRenderResult =
   | { configured: true; team: TeamData; teamName: string }
-  | { configured: false; teamName: string | null };
+  // Équipe réelle jamais configurée. `configured` reste FAUX — /team-test s'en
+  // sert pour retomber sur son fixture, comportement inchangé. `degraded` est
+  // additif : la route publique /college/[école]/[équipe] s'en sert pour rendre
+  // CETTE équipe (son sport, sa division, son genre, son école) plutôt que
+  // d'emprunter l'identité d'une autre.
+  | { configured: false; teamName: string | null; degraded?: TeamData };
 
 export async function loadTeamPageForRender(teamId: string): Promise<TeamRenderResult> {
   if (!UUID.test(teamId)) return { configured: false, teamName: null };
@@ -76,8 +81,12 @@ export async function loadTeamPageForRender(teamId: string): Promise<TeamRenderR
   const team = teamRow as TeamRow | null;
   if (!team) return { configured: false, teamName: null };
 
+  // Pas de sortie anticipée quand la page n'est jamais configurée : on charge
+  // quand même l'identité réelle (sport, école, calendrier, roster) pour bâtir
+  // une page DÉGRADÉE. buildTeamData accepte `content: null` — chaque champ
+  // éditorial y passe par `i.content?.x`, donc les sections vides s'effacent
+  // d'elles-mêmes sans logique parallèle.
   const page = await loadTeamPage(svc, team.id);
-  if (!page.content) return { configured: false, teamName: team.name };
 
   const [sport, school, schoolPage, positions, games, roster, coaches, commits, viewer] = await Promise.all([
     svc.from("sports").select("nom").eq("id", team.sport_id).maybeSingle(),
@@ -143,7 +152,7 @@ export async function loadTeamPageForRender(teamId: string): Promise<TeamRenderR
   // Compte DÉSIGNÉ dans l'éditeur : son nom est la source de vérité et prime
   // sur le staff. Lu en service-role (une seule ligne, pas de PII exposée).
   let designatedName: string | null = null;
-  if (page.content.headcoach_user_id) {
+  if (page.content?.headcoach_user_id) {
     const { data: du } = await svc
       .from("users").select("first_name, last_name")
       .eq("id", page.content.headcoach_user_id).maybeSingle();
@@ -151,7 +160,7 @@ export async function loadTeamPageForRender(teamId: string): Promise<TeamRenderR
   }
   const headCoachName = resolveHeadCoachName({
     designatedName,
-    manualName: page.content.headcoach_name,
+    manualName: page.content?.headcoach_name ?? "",
     staffName: nameOf(headRow?.users ?? null),
   });
 
@@ -166,23 +175,25 @@ export async function loadTeamPageForRender(teamId: string): Promise<TeamRenderR
     titre: p.titre, annee: p.annee ?? 0, type: p.type,
   }));
 
-  return {
-    configured: true,
-    teamName: team.name,
-    team: buildTeamData({
-      team, sportNom, sportKey, school: identity,
-      content: page.content,
-      pennants,
-      camps: page.camps,
-      needs,
-      games: (games.data ?? []) as GameRow[],
-      roster: rosterRows,
-      commitRows: (commits.data ?? []) as CommitRow[],
-      headCoachName,
-      staff,
-      heroUrl: asset(page.content.hero_image_path),
-      coachPhotoUrl: asset(page.content.headcoach_photo_path),
-      viewer,
-    }),
-  };
+  const built = buildTeamData({
+    team, sportNom, sportKey, school: identity,
+    content: page.content,
+    pennants,
+    camps: page.camps,
+    needs,
+    games: (games.data ?? []) as GameRow[],
+    roster: rosterRows,
+    commitRows: (commits.data ?? []) as CommitRow[],
+    headCoachName,
+    staff,
+    heroUrl: asset(page.content?.hero_image_path ?? null),
+    coachPhotoUrl: asset(page.content?.headcoach_photo_path ?? null),
+    viewer,
+  });
+
+  // Jamais configurée → `configured` reste faux (contrat de /team-test), mais
+  // l'équipe RÉELLE part avec la réponse pour la route publique.
+  if (!page.content) return { configured: false, teamName: team.name, degraded: built };
+
+  return { configured: true, teamName: team.name, team: built };
 }
