@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Nexus — Recherche cégep MOBILE v4 (corrections)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+:root{
+  --bg:#111317; --card:#1A1D24; --red:#E63946; --green:#22C55E;
+  --soft:#C9CED8; --mut:#9BA3B0; --line:rgba(255,255,255,.08); --line2:rgba(255,255,255,.14);
+  --gray-pin:#6B7280; --glass:rgba(26,29,36,.94);
+  /* ── zones sûres simulées (iPhone 14/15) ── */
+  --sat:54px;                 /* env(safe-area-inset-top)  */
+  --sab:34px;                 /* env(safe-area-inset-bottom) */
+  /* ── tab bar FLOTTANT : hauteur réelle + marge + safe-area ── */
+  --tabh:60px; --tabgap:16px;
+  --tabzone:calc(var(--tabh) + var(--tabgap) + var(--sab));   /* 110px */
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{background:#07080A;font-family:'Outfit',sans-serif;color:#fff}
+body{display:grid;place-items:center;min-height:100vh;padding:22px 0;gap:12px}
+.stagelabel{font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:.14em;color:var(--mut);text-align:center;line-height:1.7}
+.stagelabel b{color:var(--red);font-weight:400}
+.frame{width:390px;height:844px;position:relative;overflow:hidden;background:var(--bg);
+  border-radius:26px;border:1px solid rgba(255,255,255,.09)}
+
+/* ══ barre d'état simulée — pour VOIR la safe-area ══ */
+.statusbar{position:absolute;left:0;right:0;top:0;height:var(--sat);z-index:90;pointer-events:none;
+  display:flex;align-items:center;justify-content:space-between;padding:12px 26px 0;
+  font-family:'Outfit',sans-serif;font-size:15px;font-weight:600;color:#fff}
+.statusbar .ic{display:flex;gap:6px;align-items:center}
+.statusbar svg{width:17px;height:12px;fill:#fff}
+.statusbar .bat{width:25px;height:13px;border:1.4px solid rgba(255,255,255,.55);border-radius:4px;position:relative}
+.statusbar .bat::after{content:'';position:absolute;left:2px;top:2px;bottom:2px;width:56%;background:#fff;border-radius:1.5px}
+
+/* ══ CHROME ══ */
+.chrome{position:absolute;left:0;right:0;top:0;z-index:40;padding:0 16px}
+.chrome.solid{background:var(--bg);border-bottom:1px solid var(--line);padding-top:calc(var(--sat) + 8px)}
+.chrome.float{padding-top:calc(var(--sat) + 8px);pointer-events:none;
+  background:linear-gradient(180deg,rgba(17,19,23,.94) 0%,rgba(17,19,23,.62) 58%,rgba(17,19,23,0) 100%)}
+.chrome.float>*{pointer-events:auto}
+
+.titlerow{margin-bottom:11px}
+.kicker{font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:.28em;color:var(--red);margin-bottom:2px}
+.titlerow h1{font-family:'Anton',sans-serif;font-size:26px;line-height:1;text-transform:uppercase;letter-spacing:.005em}
+
+.searchrow{position:relative;margin-bottom:9px}
+.searchrow>svg{position:absolute;left:14px;top:50%;transform:translateY(-50%);width:17px;height:17px;stroke:var(--mut);fill:none;stroke-width:2}
+.searchrow input{width:100%;height:46px;background:var(--card);border:1px solid var(--line2);border-radius:23px;
+  padding:0 40px 0 40px;color:#fff;font-size:15px;font-weight:500;outline:none;font-family:'Outfit',sans-serif}
+.searchrow input::placeholder{color:var(--mut)}
+.searchrow .clr{position:absolute;right:12px;top:50%;transform:translateY(-50%);width:24px;height:24px;
+  border:0;background:transparent;cursor:pointer;display:none;place-items:center}
+.searchrow .clr.on{display:grid}
+.searchrow .clr svg{width:14px;height:14px;stroke:var(--mut);fill:none;stroke-width:2.4}
+.float .searchrow input{background:var(--glass);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  box-shadow:0 6px 20px rgba(0,0,0,.5)}
+
+/* ── UNE SEULE rangée de pilles, scroll horizontal ── */
+.chips{display:flex;gap:7px;overflow-x:auto;scrollbar-width:none;margin:0 -16px;padding:0 16px 11px}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:0 0 auto;height:36px;padding:0 13px;border-radius:18px;background:var(--card);border:1px solid var(--line);
+  color:var(--soft);font-size:13.5px;font-weight:600;display:flex;align-items:center;gap:6px;cursor:pointer;
+  white-space:nowrap;font-family:'Outfit',sans-serif;transition:background .15s,border-color .15s}
+.float .chip{background:var(--glass);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border-color:var(--line2);box-shadow:0 4px 14px rgba(0,0,0,.45)}
+.chip svg{width:13px;height:13px;stroke:var(--mut);fill:none;stroke-width:2;flex:0 0 auto;transition:transform .2s}
+.chip .n{min-width:18px;height:18px;padding:0 5px;border-radius:5px;background:var(--red);color:#fff;
+  font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:.04em;display:grid;place-items:center}
+.chip.has{border-color:rgba(230,57,70,.6);color:#fff}
+.chip.live{background:rgba(230,57,70,.18);border-color:var(--red);color:#fff}
+.chip.live svg{transform:rotate(180deg);stroke:#fff}
+.chip.pourmoi{border-color:rgba(34,197,94,.45);color:#8FE3AC}
+.chip.pourmoi svg{stroke:var(--green)}
+.chip.pourmoi.has{background:rgba(34,197,94,.16);border-color:var(--green);color:#fff}
+
+/* ── ligne de compte ── */
+.countline{position:absolute;left:0;right:0;z-index:35;background:var(--bg);border-bottom:1px solid var(--line);
+  padding:11px 16px;font-size:14px;color:var(--mut)}
+.countline b{color:#fff;font-weight:700}
+
+/* ══ ÉCRANS — liste XOR carte, jamais les deux ══ */
+.screen{position:absolute;inset:0;display:none}
+.screen.on{display:block}
+#listeScroll{position:absolute;left:0;right:0;overflow-y:auto;scrollbar-width:none;padding:10px 16px 0}
+#listeScroll::-webkit-scrollbar{display:none}
+#listeScroll .pad{height:calc(var(--tabzone) + 56px)}
+
+#map{position:absolute;inset:0}
+.leaflet-tile-pane{filter:brightness(1.55) contrast(1.18) saturate(1.05)}
+.leaflet-container{background:#0b0d10;font-family:'Outfit',sans-serif}
+.leaflet-control-zoom{display:none!important}
+.leaflet-control-attribution{background:rgba(17,19,23,.75)!important;color:var(--mut)!important;
+  font-size:11px!important;border-radius:6px 0 0 0;padding:2px 6px!important}
+.leaflet-bottom.leaflet-right{bottom:calc(var(--tabzone) - 8px)!important;transition:bottom .3s cubic-bezier(.32,.72,0,1)}
+.pin{width:20px;height:20px;border-radius:50%;border:2px solid #111317;display:grid;place-items:center;
+  position:relative;box-shadow:0 1px 6px rgba(0,0,0,.6)}
+.pin.base{background:var(--gray-pin)}
+.pin.rich,.pin.target{background:var(--red)}
+.pin.halo::after{content:'';position:absolute;inset:-7px;border-radius:50%;
+  border:2px solid rgba(230,57,70,.6);animation:halo 1.9s ease-out infinite}
+@keyframes halo{0%{transform:scale(.72);opacity:.9}100%{transform:scale(1.5);opacity:0}}
+.pin.sel{box-shadow:0 0 0 3px rgba(255,255,255,.92),0 2px 10px rgba(0,0,0,.6)}
+.pin svg{width:11px;height:11px;fill:#fff;position:relative;z-index:2}
+.fab{position:absolute;right:14px;width:44px;height:44px;border-radius:22px;background:var(--glass);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--line2);
+  display:grid;place-items:center;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.5);z-index:38;
+  transition:bottom .3s cubic-bezier(.32,.72,0,1)}
+.fab svg{width:20px;height:20px;stroke:var(--soft);fill:none;stroke-width:1.9}
+
+/* ══ CARTE RÉSULTAT (partagée liste ↔ sheet) ══ */
+.row{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);
+  border-radius:16px;padding:12px;margin-bottom:9px;cursor:pointer}
+.row.sel{border-color:var(--red);background:rgba(230,57,70,.09)}
+.crest{flex:0 0 auto;width:46px;height:46px;border-radius:12px;display:grid;place-items:center;
+  font-family:'Anton',sans-serif;font-size:15px;color:var(--soft);background:#252A33;border:1px solid var(--line2)}
+.rowmid{flex:1;min-width:0}
+.rowname{font-size:16px;font-weight:700;line-height:1.2;margin-bottom:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rowmeta{font-size:13.5px;color:var(--mut);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rowright{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:6px}
+.heart{width:40px;height:40px;border-radius:20px;border:1px solid var(--line2);background:transparent;
+  display:grid;place-items:center;cursor:pointer}
+.heart svg{width:19px;height:19px;stroke:var(--mut);fill:none;stroke-width:1.8}
+.heart.on{border-color:rgba(230,57,70,.55)}
+.heart.on svg{stroke:var(--red);fill:var(--red)}
+.fit{display:inline-flex;align-items:center;gap:4px;height:18px;padding:0 6px;border-radius:5px;
+  background:rgba(34,197,94,.14);border:1px solid rgba(34,197,94,.32);
+  font-family:'Bebas Neue',sans-serif;font-size:11px;letter-spacing:.08em;color:var(--green)}
+.empty{text-align:center;padding:40px 20px;color:var(--mut);font-size:14px}
+.empty b{display:block;font-family:'Anton',sans-serif;font-size:17px;color:var(--soft);margin-bottom:7px;text-transform:uppercase}
+
+/* ══ TOGGLE FLOTTANT liste ↔ carte ══ */
+.vtoggle{position:absolute;left:50%;transform:translateX(-50%);height:42px;padding:0 18px;border-radius:21px;
+  background:var(--glass);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--line2);
+  display:flex;align-items:center;gap:8px;cursor:pointer;z-index:46;box-shadow:0 8px 26px rgba(0,0,0,.6);
+  font-size:14px;font-weight:600;color:#fff;white-space:nowrap;font-family:'Outfit',sans-serif;
+  transition:bottom .3s cubic-bezier(.32,.72,0,1),opacity .18s}
+.vtoggle svg{width:16px;height:16px;stroke:#fff;fill:none;stroke-width:2}
+.vtoggle.hide{opacity:0;pointer-events:none}
+
+/* ══ TAB BAR FLOTTANT (pastille) ══ */
+.tabbar{position:absolute;left:14px;right:14px;bottom:calc(var(--tabgap) + var(--sab));height:var(--tabh);
+  background:rgba(26,29,36,.97);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+  border:1px solid var(--line2);border-radius:30px;display:flex;z-index:50;
+  box-shadow:0 10px 30px rgba(0,0,0,.6);transition:opacity .22s,transform .22s}
+.tabbar.hide{opacity:0;transform:translateY(14px);pointer-events:none}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;position:relative}
+.tab svg{width:21px;height:21px;stroke:var(--mut);fill:none;stroke-width:1.7}
+.tab span{font-size:11.5px;font-weight:500;color:var(--mut)}
+.tab.on svg{stroke:var(--red)}.tab.on span{color:#fff;font-weight:600}
+.tab .dot{position:absolute;top:9px;right:calc(50% - 16px);width:7px;height:7px;border-radius:4px;background:var(--red)}
+
+/* ══ SHEET — passe AU-DESSUS du tab bar ══ */
+.backdrop{position:absolute;inset:0;background:rgba(0,0,0,.62);opacity:0;pointer-events:none;transition:opacity .22s;z-index:52}
+.backdrop.on{opacity:1;pointer-events:auto}
+#sheet{position:absolute;left:0;right:0;bottom:var(--tabzone);background:var(--card);
+  border-top:1px solid var(--line2);border-radius:20px 20px 0 0;z-index:60;
+  display:flex;flex-direction:column;box-shadow:0 -16px 48px rgba(0,0,0,.7);height:96px;
+  transition:height .3s cubic-bezier(.32,.72,0,1),bottom .3s cubic-bezier(.32,.72,0,1),transform .3s cubic-bezier(.32,.72,0,1)}
+#sheet.low{bottom:var(--tabzone)}
+#sheet.tall{bottom:0}
+#sheet.hidden{transform:translateY(115%)}
+#sheet.dragging{transition:none}
+.grab{flex:0 0 auto;padding:10px 0 6px;display:grid;place-items:center;cursor:grab;touch-action:none}
+.grab i{width:40px;height:4px;border-radius:2px;background:rgba(255,255,255,.24);display:block}
+.shHead{flex:0 0 auto;display:flex;align-items:center;gap:10px;padding:0 16px 12px;border-bottom:1px solid var(--line)}
+.shHead .kick{flex:1;font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:.12em;color:#fff;min-width:0}
+.shHead .sub{font-size:13px;color:var(--mut);font-weight:500;white-space:nowrap}
+.txtbtn{border:0;background:transparent;font-size:13.5px;font-weight:600;cursor:pointer;padding:5px 2px;
+  white-space:nowrap;font-family:'Outfit',sans-serif}
+.txtbtn.red{color:var(--red)}.txtbtn.soft{color:var(--soft)}
+.iconbtn{width:34px;height:34px;border-radius:17px;border:1px solid var(--line2);background:rgba(255,255,255,.05);
+  display:grid;place-items:center;cursor:pointer;flex:0 0 auto}
+.iconbtn svg{width:15px;height:15px;stroke:var(--soft);fill:none;stroke-width:2.1}
+.shBody{flex:1;overflow-y:auto;scrollbar-width:none}
+.shBody::-webkit-scrollbar{display:none}
+/* le pied du sheet réserve TOUJOURS la safe-area basse */
+.shFoot{flex:0 0 auto;padding:11px 16px calc(12px + var(--sab));border-top:1px solid var(--line);
+  background:var(--card);display:flex;flex-direction:column;gap:8px}
+
+.optwrap{padding:10px 16px 4px}
+.kicker2{font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:.15em;color:var(--mut);margin-bottom:8px}
+.selgroup{margin-bottom:12px}
+.selitem{display:flex;align-items:center;justify-content:space-between;gap:10px;height:44px;padding:0 12px;
+  background:rgba(230,57,70,.10);border:1px solid rgba(230,57,70,.34);border-radius:11px;margin-bottom:6px;
+  font-size:14px;font-weight:500}
+.selitem button{border:0;background:transparent;cursor:pointer;width:28px;height:28px;display:grid;place-items:center}
+.selitem button svg{width:14px;height:14px;stroke:var(--soft);fill:none;stroke-width:2.3}
+.opt{display:flex;align-items:center;justify-content:space-between;height:50px;border-bottom:1px solid var(--line);
+  cursor:pointer;font-size:14.5px;font-weight:500;color:var(--soft)}
+.opt:last-child{border-bottom:0}
+.box{width:21px;height:21px;border-radius:6px;border:1.5px solid var(--line2);display:grid;place-items:center}
+.opt.on{color:#fff}.opt.on .box{background:var(--red);border-color:var(--red)}
+.box svg{width:12px;height:12px;stroke:#fff;stroke-width:3;fill:none;display:none}
+.opt.on .box svg{display:block}
+.livesep{display:flex;align-items:center;gap:10px;padding:16px 16px 10px}
+.livesep .l{flex:1;height:1px;background:var(--line)}
+.livesep span{font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:.13em;color:var(--green)}
+.rows{padding:2px 16px 18px}
+
+.pvHead{display:flex;align-items:flex-start;gap:12px;padding:0 16px 13px}
+.pvHead .crest{width:52px;height:52px;font-size:17px}
+.pvTitle{flex:1;min-width:0}
+.pvTitle h2{font-family:'Anton',sans-serif;font-size:19px;line-height:1.12;text-transform:uppercase;margin-bottom:5px}
+.pvTitle p{font-size:13.5px;color:var(--mut)}
+.pvBody{padding:14px 16px 18px}
+.compat{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:16px}
+.cchip{padding:7px 11px;border-radius:9px;font-size:13.5px;font-weight:500;
+  background:rgba(255,255,255,.05);border:1px solid var(--line);color:var(--soft)}
+.cchip.ok{background:rgba(34,197,94,.11);border-color:rgba(34,197,94,.32);color:#A7E9BF}
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
+.kpi{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:12px;padding:11px 8px;text-align:center}
+.kpi b{display:block;font-family:'Anton',sans-serif;font-size:22px;line-height:1;margin-bottom:5px}
+.kpi span{font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:.09em;color:var(--mut)}
+.acc{border:1px solid var(--line);border-radius:12px;margin-bottom:8px;overflow:hidden;background:rgba(255,255,255,.03)}
+.accHead{height:50px;padding:0 14px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;
+  font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:.10em;color:#fff}
+.accHead svg{width:16px;height:16px;stroke:var(--mut);fill:none;stroke-width:2;transition:transform .2s}
+.acc.open .accHead svg{transform:rotate(180deg)}
+.accBody{display:none;padding:2px 14px 11px;border-top:1px solid var(--line)}
+.acc.open .accBody{display:block}
+.line{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;font-size:14px;
+  border-bottom:1px solid rgba(255,255,255,.05)}
+.line:last-child{border-bottom:0}
+.line span{color:var(--mut);font-size:13px;white-space:nowrap}
+.tag{font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:.08em;padding:2px 7px;border-radius:5px;
+  background:rgba(34,197,94,.13);border:1px solid rgba(34,197,94,.32);color:var(--green)}
+.btn{height:50px;border-radius:13px;border:1px solid transparent;font-size:15px;font-weight:600;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:8px;font-family:'Outfit',sans-serif}
+.btn svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.9}
+.btn.primary{background:var(--red);color:#fff}
+.btn.ghost{background:transparent;border-color:var(--line2);color:var(--soft)}
+.btn.ghost.on{border-color:rgba(230,57,70,.55);color:#fff}
+.btn.ghost.on svg{stroke:var(--red);fill:var(--red)}
+.btn.dead{background:rgba(255,255,255,.04);border-color:var(--line);color:var(--mut);cursor:default;font-weight:500}
+</style>
+</head>
+<body>
+
+<div class="stagelabel">NEXUS — /ATHLETE/RECHERCHE — 390×844 — <b>v4 CORRECTIONS</b><br>safe-areas · tab bar flottant réservé · liste XOR carte · filtres 1 rangée</div>
+
+<div class="frame">
+
+  <!-- barre d'état simulée : montre la safe-area haute -->
+  <div class="statusbar">
+    <span>9:41</span>
+    <span class="ic">
+      <svg viewBox="0 0 20 14"><rect x="0" y="9" width="3" height="5" rx="1"/><rect x="5" y="6" width="3" height="8" rx="1"/><rect x="10" y="3" width="3" height="11" rx="1" opacity=".45"/><rect x="15" y="0" width="3" height="14" rx="1" opacity=".45"/></svg>
+      <svg viewBox="0 0 18 14"><path d="M9 12.6 6.4 9.9a3.7 3.7 0 0 1 5.2 0zM9 8.2c-1.6 0-3.1.6-4.2 1.7L3 8.1A8.7 8.7 0 0 1 9 5.7c2.3 0 4.4.9 6 2.4l-1.8 1.8A6 6 0 0 0 9 8.2M9 3.3c-2.9 0-5.6 1.1-7.6 3.1L0 5A12.7 12.7 0 0 1 9 1.3c3.5 0 6.7 1.4 9 3.7L16.6 6.4A10.6 10.6 0 0 0 9 3.3"/></svg>
+      <span class="bat"></span>
+    </span>
+  </div>
+
+  <!-- ═══ ÉCRAN LISTE ═══ -->
+  <section class="screen on" id="listeScreen">
+    <div class="chrome solid" id="chromeListe">
+      <div class="titlerow">
+        <div class="kicker">SOIS LE NEX</div>
+        <h1>Trouve ton cégep</h1>
+      </div>
+      <div class="searchrow">
+        <svg viewBox="0 0 24 24" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <input class="q" type="search" placeholder="Collège, ville, programme…">
+        <button class="clr"><svg viewBox="0 0 24 24" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+      </div>
+      <div class="chips" data-chips></div>
+    </div>
+    <div class="countline" id="countline"></div>
+    <div id="listeScroll"></div>
+  </section>
+
+  <!-- ═══ ÉCRAN CARTE ═══ -->
+  <section class="screen" id="carteScreen">
+    <div id="map"></div>
+    <div class="chrome float">
+      <div class="searchrow">
+        <svg viewBox="0 0 24 24" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <input class="q" type="search" placeholder="Collège, ville, programme…">
+        <button class="clr"><svg viewBox="0 0 24 24" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+      </div>
+      <div class="chips" data-chips></div>
+    </div>
+    <div class="fab" id="fabRecenter">
+      <svg viewBox="0 0 24 24" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="8.4"/></svg>
+    </div>
+  </section>
+
+  <div class="vtoggle" id="vtoggle">
+    <svg viewBox="0 0 24 24" stroke-linejoin="round"><path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3z"/><path d="M9 3v15M15 6v15"/></svg>
+    <span>Carte</span>
+  </div>
+
+  <!-- ═══ TAB BAR FLOTTANT — 5 onglets, pastille ═══ -->
+  <nav class="tabbar" id="tabbar">
+    <div class="tab"><svg viewBox="0 0 24 24" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.6"/><rect x="14" y="3" width="7" height="7" rx="1.6"/><rect x="3" y="14" width="7" height="7" rx="1.6"/><rect x="14" y="14" width="7" height="7" rx="1.6"/></svg><span>Accueil</span></div>
+    <div class="tab on"><svg viewBox="0 0 24 24" stroke-linejoin="round"><path d="M4 21V4M4 5h11l-1.4 3.6L15 12H4"/></svg><span>Parcours</span></div>
+    <div class="tab"><svg viewBox="0 0 24 24" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg><span>Profil</span></div>
+    <div class="tab"><svg viewBox="0 0 24 24" stroke-linejoin="round"><rect x="2.5" y="5" width="19" height="14" rx="2.4"/><path d="m3 7 9 6 9-6"/></svg><span>Messages</span></div>
+    <div class="tab"><span class="dot"></span><svg viewBox="0 0 24 24" stroke-linecap="round"><circle cx="5.5" cy="12" r="1.4" fill="currentColor"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/><circle cx="18.5" cy="12" r="1.4" fill="currentColor"/></svg><span>Plus</span></div>
+  </nav>
+
+  <div class="backdrop" id="backdrop"></div>
+
+  <div id="sheet" class="hidden low">
+    <div class="grab" id="grab"><i></i></div>
+    <div class="shHead" id="shHead"></div>
+    <div class="shBody" id="shBody"></div>
+    <div class="shFoot" id="shFoot" style="display:none"></div>
+  </div>
+
+</div>
+
+<script>
+const SCHOOLS=[
+ {id:'ag',ini:'AG',nom:'Collège André-Grasset',ville:'Montréal',region:'Montréal',type:'Privé',langue:'FR',riche:true,lat:45.5539,lng:-73.6300,km:5,sports:13,progs:14,
+  fit:true,compat:[['Poste en demande — QB',1],['Programme visé — Sciences de la nature',1],['~5 km',1],['Français',1]],
+  equipes:[['Football · D1 · M','Poste en demande'],['Hockey · D2 · M',''],['Basketball · D3 · M',''],['Volleyball · D3 · F','']],
+  progsList:['Sciences de la nature','Sciences humaines','Arts, lettres et communication','Histoire et civilisation']},
+ {id:'vm',ini:'VM',nom:'Cégep du Vieux Montréal',ville:'Montréal',region:'Montréal',type:'Public',langue:'FR',riche:true,lat:45.5155,lng:-73.5636,km:6,sports:11,progs:24,
+  fit:true,compat:[['Poste en demande — QB',1],['Programme visé — Sciences de la nature',1],['~6 km',1],['Français',1]],
+  equipes:[['Football · D1 · M','Poste en demande'],['Basketball · D2 · M',''],['Volleyball · D1 · F','']],
+  progsList:['Sciences de la nature','Sciences humaines','Techniques policières']},
+ {id:'ahu',ini:'AH',nom:'Collège Ahuntsic',ville:'Montréal',region:'Montréal',type:'Public',langue:'FR',riche:true,lat:45.5539,lng:-73.6636,km:11,sports:9,progs:19,
+  fit:true,compat:[['Poste en demande — QB',1],['Programme visé — Sciences de la nature',1],['~11 km',1],['Français',1]],
+  equipes:[['Football · D1 · M','Poste en demande'],['Hockey · D2 · M','']],progsList:['Sciences de la nature','Génie civil']},
+ {id:'and',ini:'AL',nom:'Cégep André-Laurendeau',ville:'Montréal',region:'Montréal',type:'Public',langue:'FR',riche:false,lat:45.4442,lng:-73.6014,km:13,sports:6,progs:14,
+  fit:false,compat:[['~13 km',1],['Français',1],['Poste non listé',0],['Programme visé absent',0]],
+  equipes:[['Basketball · D2 · M',''],['Volleyball · D2 · F','']],progsList:['Sciences humaines','Soins infirmiers']},
+ {id:'sh',ini:'SH',nom:'Cégep de Saint-Hyacinthe',ville:'Saint-Hyacinthe',region:'Montérégie',type:'Public',langue:'FR',riche:false,lat:45.6266,lng:-72.9569,km:56,sports:7,progs:16,
+  fit:false,compat:[['~56 km',1],['Français',1],['Poste non listé',0],['Programme visé absent',0]],
+  equipes:[['Soccer · D2 · F',''],['Volleyball · D2 · M','']],progsList:['Sciences humaines','Soins infirmiers']},
+ {id:'sjr',ini:'SJ',nom:'Cégep de Saint-Jean-sur-Richelieu',ville:'Saint-Jean-sur-Richelieu',region:'Montérégie',type:'Public',langue:'FR',riche:false,lat:45.3168,lng:-73.2620,km:41,sports:8,progs:18,
+  fit:false,compat:[['~41 km',1],['Français',1],['Poste non listé',0],['Programme visé absent',0]],
+  equipes:[['Football · D3 · M',''],['Basketball · D2 · F','']],progsList:['Sciences de la nature','Sciences humaines']},
+ {id:'sje',ini:'SJ',nom:'Cégep de Saint-Jérôme',ville:'Saint-Jérôme',region:'Laurentides',type:'Public',langue:'FR',riche:false,lat:45.7756,lng:-74.0035,km:48,sports:6,progs:15,
+  fit:false,compat:[['~48 km',1],['Français',1],['Poste non listé',0],['Programme visé absent',0]],
+  equipes:[['Hockey · D2 · M',''],['Soccer · D3 · F','']],progsList:['Sciences humaines','Génie civil']},
+ {id:'edm',ini:'ÉM',nom:'Cégep Édouard-Montpetit',ville:'Longueuil',region:'Montérégie',type:'Public',langue:'FR',riche:true,lat:45.5303,lng:-73.4894,km:14,sports:9,progs:20,
+  fit:true,compat:[['Poste en demande — QB',1],['~14 km',1],['Français',1],['Programme visé absent',0]],
+  equipes:[['Football · D1 · M','Poste en demande'],['Volleyball · D1 · F','']],progsList:['Sciences humaines','Soins infirmiers']},
+ {id:'mont',ini:'MO',nom:'Collège Montmorency',ville:'Laval',region:'Laval',type:'Public',langue:'FR',riche:true,lat:45.5647,lng:-73.7414,km:18,sports:10,progs:21,
+  fit:false,compat:[['~18 km',1],['Français',1],['Poste non listé',0],['Programme visé absent',0]],
+  equipes:[['Football · D1 · M',''],['Soccer · D1 · F','']],progsList:['Sciences humaines','Techniques policières']},
+ {id:'ja',ini:'JA',nom:'John Abbott College',ville:'Sainte-Anne-de-Bellevue',region:'Montréal',type:'Public',langue:'ANG',riche:true,lat:45.4045,lng:-73.9376,km:31,sports:12,progs:22,
+  fit:false,compat:[['~31 km',1],['Poste non listé',0],['Programme visé absent',0],['Anglais',0]],
+  equipes:[['Football · D1 · M',''],['Hockey · D1 · M','']],progsList:['Sciences de la nature','Sciences humaines']}
+];
+const FILTERS={
+ sport:{label:'Sport',opts:['Football','Basketball','Volleyball','Soccer','Hockey','Cheerleading']},
+ programme:{label:'Programme',opts:['Sciences de la nature','Sciences humaines','Techniques policières','Génie civil','Arts, lettres et communication','Soins infirmiers']},
+ region:{label:'Région',opts:['Montréal','Laval','Montérégie','Lanaudière','Laurentides','Capitale-Nationale']},
+ langue:{label:'Langue',opts:['Français','Anglais']},
+ type:{label:'Type',opts:['Public','Privé']}
+};
+const S={sel:{sport:[],programme:[],region:[],langue:[],type:[]},pourMoi:false,q:'',view:'liste',
+  targets:new Set(),current:null,mode:'list',snap:'peek',fkey:null};
+
+const I={
+ chev:'<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>',
+ chevUp:'<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>',
+ x:'<svg viewBox="0 0 24 24" fill="none" stroke-width="2.3" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>',
+ back:'<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>',
+ check:'<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="m4 12 5 5L20 6"/></svg>',
+ heart:'<svg viewBox="0 0 24 24" stroke-linejoin="round"><path d="M19 5.6a5 5 0 0 0-7 0l-1 1-1-1a5 5 0 1 0-7 7l8 8 8-8a5 5 0 0 0 0-7z"/></svg>',
+ spark:'<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/></svg>',
+ arrow:'<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
+ star:'<svg viewBox="0 0 24 24"><path d="M12 2.6l2.7 6.2 6.7.6-5 4.4 1.5 6.6L12 16.9 6.1 20.4l1.5-6.6-5-4.4 6.7-.6z"/></svg>',
+ list:'<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>',
+ mapi:'<svg viewBox="0 0 24 24" fill="none" stroke-linejoin="round"><path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3z"/><path d="M9 3v15M15 6v15"/></svg>'
+};
+
+function match(s){
+ const q=S.q.trim().toLowerCase();
+ if(q&&!(s.nom.toLowerCase().includes(q)||s.ville.toLowerCase().includes(q)||s.progsList.some(p=>p.toLowerCase().includes(q))))return false;
+ if(S.pourMoi&&!s.fit)return false;
+ const f=S.sel;
+ if(f.region.length&&!f.region.includes(s.region))return false;
+ if(f.type.length&&!f.type.includes(s.type))return false;
+ if(f.langue.length&&!f.langue.includes(s.langue==='FR'?'Français':'Anglais'))return false;
+ if(f.sport.length&&!f.sport.some(sp=>s.equipes.some(e=>e[0].startsWith(sp))))return false;
+ if(f.programme.length&&!f.programme.some(p=>s.progsList.includes(p)))return false;
+ return true;
+}
+const results=()=>SCHOOLS.filter(match).sort((a,b)=>(b.fit-a.fit)||(a.km-b.km));
+const nSel=()=>Object.values(S.sel).reduce((a,v)=>a+v.length,0)+(S.pourMoi?1:0);
+
+/* ── chrome dynamique : mesurer et positionner countline + liste ── */
+function layout(){
+ const ch=document.getElementById('chromeListe').offsetHeight;
+ const cl=document.getElementById('countline');
+ cl.style.top=ch+'px';
+ document.getElementById('listeScroll').style.top=(ch+cl.offsetHeight)+'px';
+ document.getElementById('listeScroll').style.bottom='0';
+}
+
+function renderChips(){
+ let h=`<button class="chip pourmoi ${S.pourMoi?'has':''}" data-pourmoi>${I.spark}Pour moi</button>`;
+ for(const[k,f]of Object.entries(FILTERS)){
+  const n=S.sel[k].length,live=(S.mode==='filter'&&S.fkey===k);
+  h+=`<button class="chip ${n?'has':''} ${live?'live':''}" data-f="${k}">${f.label}${n?`<span class="n">${n}</span>`:''}${I.chev}</button>`;
+ }
+ if(nSel())h+=`<button class="chip" data-clearall>${I.x}Tout effacer</button>`;
+ document.querySelectorAll('[data-chips]').forEach(el=>{
+  el.innerHTML=h;
+  el.querySelector('[data-pourmoi]').onclick=()=>{S.pourMoi=!S.pourMoi;refresh()};
+  el.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>
+    (S.mode==='filter'&&S.fkey===b.dataset.f)?(S.view==='carte'?showList():closeSheet()):showFilter(b.dataset.f));
+  const ca=el.querySelector('[data-clearall]');
+  if(ca)ca.onclick=()=>{S.sel={sport:[],programme:[],region:[],langue:[],type:[]};S.pourMoi=false;refresh()};
+ });
+ layout();
+}
+document.querySelectorAll('.q').forEach(i=>i.oninput=e=>{
+ S.q=e.target.value;
+ document.querySelectorAll('.q').forEach(o=>{if(o!==e.target)o.value=S.q});
+ document.querySelectorAll('.clr').forEach(c=>c.classList.toggle('on',!!S.q));
+ refresh();
+});
+document.querySelectorAll('.clr').forEach(c=>c.onclick=()=>{
+ S.q='';document.querySelectorAll('.q').forEach(o=>o.value='');
+ document.querySelectorAll('.clr').forEach(x=>x.classList.remove('on'));refresh();
+});
+
+const rowHtml=s=>`<article class="row ${S.current&&S.current.id===s.id?'sel':''}" data-id="${s.id}">
+   <div class="crest">${s.ini}</div>
+   <div class="rowmid"><div class="rowname">${s.nom}</div>
+     <div class="rowmeta">${s.ville} · ${s.type} · ${s.langue}</div></div>
+   <div class="rowright"><button class="heart ${S.targets.has(s.id)?'on':''}" data-h="${s.id}">${I.heart}</button>
+     ${s.fit?'<span class="fit">FIT</span>':''}</div></article>`;
+function wireRows(scope){
+ scope.querySelectorAll('.row').forEach(a=>a.onclick=e=>{if(e.target.closest('[data-h]'))return;showPreview(a.dataset.id)});
+ scope.querySelectorAll('[data-h]').forEach(b=>b.onclick=e=>{e.stopPropagation();toggleTarget(b.dataset.h)});
+}
+function renderListScreen(){
+ const r=results();
+ document.getElementById('countline').innerHTML=
+   `<b>${r.length} collège${r.length>1?'s':''}</b> · fits d'abord`;
+ const el=document.getElementById('listeScroll');
+ el.innerHTML=(r.length?r.map(rowHtml).join(''):`<div class="empty"><b>Aucun cégep</b>Retire un filtre ou élargis ta recherche.</div>`)
+   +`<div class="pad"></div>`;
+ wireRows(el);layout();
+}
+
+let map,layer;
+function pinHtml(s){
+ const t=S.targets.has(s.id),sel=S.current&&S.current.id===s.id;
+ return `<div class="${(t?`pin target ${s.riche?'halo':''}`:(s.riche?'pin rich halo':'pin base'))+(sel?' sel':'')}">${t?I.star:''}</div>`;
+}
+function renderMap(){
+ if(!map){
+  map=L.map('map',{zoomControl:false}).setView([45.52,-73.62],9);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+   {attribution:'&copy; OSM &copy; CARTO',maxZoom:19,subdomains:'abcd'}).addTo(map);
+  layer=L.layerGroup().addTo(map);
+ }
+ layer.clearLayers();
+ results().forEach(s=>{
+  L.marker([s.lat,s.lng],{icon:L.divIcon({html:pinHtml(s),className:'',iconSize:[20,20],iconAnchor:[10,10]})})
+   .addTo(layer).on('click',()=>{showPreview(s.id);map.panTo([s.lat-0.05,s.lng],{animate:true})});
+ });
+ setTimeout(()=>map.invalidateSize(),80);
+}
+document.getElementById('fabRecenter').onclick=()=>{
+ const r=results();if(!r.length)return;
+ map.fitBounds(L.latLngBounds(r.map(s=>[s.lat,s.lng])),{padding:[70,70],maxZoom:11});
+};
+
+const sheet=document.getElementById('sheet'),backdrop=document.getElementById('backdrop'),
+      vtoggle=document.getElementById('vtoggle'),fab=document.getElementById('fabRecenter'),
+      tabbar=document.getElementById('tabbar'),
+      shHead=document.getElementById('shHead'),shBody=document.getElementById('shBody'),shFoot=document.getElementById('shFoot');
+const FRAME=844,TABZONE=110;
+const SNAPS={peek:96,mid:Math.round(FRAME*.54),full:Math.round(FRAME*.88)};
+
+function applySnap(){
+ const open=!sheet.classList.contains('hidden');
+ const tall=open&&S.snap!=='peek';
+ sheet.style.height=SNAPS[S.snap]+'px';
+ sheet.classList.toggle('tall',tall);
+ sheet.classList.toggle('low',!tall);
+ /* le tab bar s'efface dès que le sheet dépasse peek — sinon il coupe le contenu */
+ tabbar.classList.toggle('hide',tall);
+ const base=open?SNAPS[S.snap]+(tall?0:TABZONE):TABZONE;
+ vtoggle.style.bottom=(base+14)+'px';
+ fab.style.bottom=(base+70)+'px';
+ vtoggle.classList.toggle('hide',S.view==='carte'&&(!open||S.snap!=='peek'));
+ backdrop.classList.toggle('on',S.view==='liste'&&open);
+ document.querySelectorAll('.leaflet-bottom.leaflet-right').forEach(e=>e.style.bottom=(base-8)+'px');
+}
+const setSnap=v=>{S.snap=v;applySnap()};
+
+function showList(){
+ S.mode='list';S.fkey=null;S.current=null;
+ const r=results();
+ shHead.innerHTML=`<span class="kick">${r.length} collège${r.length>1?'s':''}</span>
+   <span class="sub">${S.pourMoi?'Pour moi':"fits d'abord"}</span>
+   <span class="iconbtn">${S.snap==='peek'?I.chevUp:I.chev}</span>`;
+ shBody.innerHTML=`<div class="rows">${r.length?r.map(rowHtml).join(''):'<div class="empty"><b>Aucun cégep</b>Retire un filtre.</div>'}</div>`;
+ shFoot.style.display='none';
+ wireRows(shBody);
+ shHead.onclick=()=>setSnap(S.snap==='peek'?'mid':'peek');
+ if(S.view==='carte')sheet.classList.remove('hidden');else sheet.classList.add('hidden');
+ renderChips();renderListScreen();applySnap();
+}
+function showFilter(k){
+ S.mode='filter';S.fkey=k;S.current=null;
+ sheet.classList.remove('hidden');
+ if(S.snap==='peek')setSnap('mid');
+ renderFilter();renderChips();
+}
+function renderFilter(){
+ const k=S.fkey,d=S.sel[k],r=results();
+ shHead.innerHTML=`<span class="kick">${FILTERS[k].label}</span>
+   ${d.length?`<button class="txtbtn red" id="fClear">Effacer (${d.length})</button>`:''}
+   <button class="txtbtn soft" id="fDone">Terminé</button>`;
+ shBody.innerHTML=`
+  <div class="optwrap">
+   ${d.length?`<div class="selgroup"><div class="kicker2">Sélectionnés (${d.length})</div>
+     ${d.map(v=>`<div class="selitem">${v}<button data-rm="${v}">${I.x}</button></div>`).join('')}</div>`:''}
+   ${FILTERS[k].opts.map(o=>`<div class="opt ${d.includes(o)?'on':''}" data-o="${o}">${o}<span class="box">${I.check}</span></div>`).join('')}
+  </div>
+  <div class="livesep"><span class="l"></span><span>${r.length} résultat${r.length>1?'s':''}</span><span class="l"></span></div>
+  <div class="rows">${r.length?r.map(rowHtml).join(''):'<div class="empty"><b>Aucun cégep</b>Retire un critère.</div>'}</div>`;
+ shFoot.style.display='none';
+ shBody.querySelectorAll('[data-o]').forEach(el=>el.onclick=()=>{
+   const v=el.dataset.o,i=S.sel[k].indexOf(v);i<0?S.sel[k].push(v):S.sel[k].splice(i,1);
+   renderFilter();renderChips();renderListScreen();if(S.view==='carte')renderMap()});
+ shBody.querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>{
+   S.sel[k].splice(S.sel[k].indexOf(b.dataset.rm),1);
+   renderFilter();renderChips();renderListScreen();if(S.view==='carte')renderMap()});
+ wireRows(shBody);
+ const c=document.getElementById('fClear');
+ if(c)c.onclick=()=>{S.sel[k]=[];renderFilter();renderChips();renderListScreen();if(S.view==='carte')renderMap()};
+ document.getElementById('fDone').onclick=()=>S.view==='carte'?showList():closeSheet();
+ shHead.onclick=e=>{if(!e.target.closest('.txtbtn'))setSnap(S.snap==='full'?'mid':'full')};
+ applySnap();
+}
+function showPreview(id){
+ S.current=SCHOOLS.find(x=>x.id===id);S.mode='preview';S.fkey=null;
+ sheet.classList.remove('hidden');setSnap('mid');
+ renderPreview();renderChips();renderListScreen();if(S.view==='carte')renderMap();
+}
+function renderPreview(){
+ const s=S.current,t=S.targets.has(s.id);
+ shHead.innerHTML=`<span class="iconbtn" id="pvBack">${S.view==='carte'?I.back:I.x}</span>
+   <span class="kick">${S.view==='carte'?'Retour aux résultats':'Aperçu'}</span>
+   <button class="heart ${t?'on':''}" id="pvHeart">${I.heart}</button>`;
+ shBody.innerHTML=`
+  <div class="pvHead"><div class="crest">${s.ini}</div>
+    <div class="pvTitle"><h2>${s.nom}</h2><p>${s.ville} · ${s.type} · ${s.langue==='FR'?'Francophone':'Anglophone'}</p></div></div>
+  <div class="pvBody">
+   <div class="kicker2">Compatibilité</div>
+   <div class="compat">${s.compat.map(([t2,ok])=>`<span class="cchip ${ok?'ok':''}">${t2}</span>`).join('')}</div>
+   <div class="kpis">
+     <div class="kpi"><b>${s.sports}</b><span>Sports</span></div>
+     <div class="kpi"><b>${s.progs}</b><span>Programmes</span></div>
+     <div class="kpi"><b>~${s.km}</b><span>km · approx.</span></div></div>
+   <div class="acc" data-acc><div class="accHead">Équipes (${s.equipes.length})${I.chev}</div>
+     <div class="accBody">${s.equipes.map(([n,tg])=>`<div class="line">${n}${tg?`<span class="tag">${tg}</span>`:'<span></span>'}</div>`).join('')}</div></div>
+   <div class="acc" data-acc><div class="accHead">Programmes (${s.progsList.length})${I.chev}</div>
+     <div class="accBody">${s.progsList.map(p=>`<div class="line">${p}<span></span></div>`).join('')}</div></div>
+  </div>`;
+ shFoot.style.display='flex';
+ shFoot.innerHTML=(s.riche?`<button class="btn primary">Accéder à la page ${I.arrow}</button>`
+                          :`<button class="btn dead">Page à venir — cible-le.</button>`)+
+  `<button class="btn ghost ${t?'on':''}" id="pvAdd">${I.heart}${t?'Dans mes cibles':'Ajouter à mes cibles'}</button>`;
+ document.getElementById('pvAdd').onclick=()=>toggleTarget(s.id);
+ document.getElementById('pvHeart').onclick=()=>toggleTarget(s.id);
+ document.getElementById('pvBack').onclick=()=>S.view==='carte'?showList():closeSheet();
+ shHead.onclick=e=>{if(!e.target.closest('.iconbtn')&&!e.target.closest('.heart'))setSnap(S.snap==='full'?'mid':'full')};
+ shBody.querySelectorAll('[data-acc]').forEach(a=>{
+  a.querySelector('.accHead').onclick=()=>{a.classList.toggle('open');if(S.snap!=='full')setSnap('full')}});
+ applySnap();
+}
+function closeSheet(){
+ S.mode='list';S.fkey=null;S.current=null;S.snap='peek';
+ sheet.classList.add('hidden');renderChips();renderListScreen();applySnap();
+}
+backdrop.onclick=closeSheet;
+
+function toggleTarget(id){
+ S.targets.has(id)?S.targets.delete(id):S.targets.add(id);
+ renderListScreen();if(S.view==='carte')renderMap();
+ if(S.mode==='preview')renderPreview();else if(S.mode==='filter')renderFilter();else if(S.view==='carte')showList();
+}
+
+(function(){
+ const grab=document.getElementById('grab');let y0=0,h0=0,drag=false;
+ grab.addEventListener('pointerdown',e=>{drag=true;y0=e.clientY;h0=sheet.offsetHeight;
+   sheet.classList.add('dragging');grab.setPointerCapture(e.pointerId)});
+ grab.addEventListener('pointermove',e=>{if(!drag)return;
+   sheet.style.height=Math.min(SNAPS.full,Math.max(SNAPS.peek,h0+(y0-e.clientY)))+'px'});
+ grab.addEventListener('pointerup',()=>{if(!drag)return;drag=false;sheet.classList.remove('dragging');
+   const h=sheet.offsetHeight;
+   const pool=(S.view==='liste')?['mid','full']:['peek','mid','full'];
+   S.snap=pool.reduce((a,b)=>Math.abs(SNAPS[b]-h)<Math.abs(SNAPS[a]-h)?b:a);applySnap()});
+})();
+
+vtoggle.onclick=()=>{
+ S.view=S.view==='liste'?'carte':'liste';
+ document.getElementById('listeScreen').classList.toggle('on',S.view==='liste');
+ document.getElementById('carteScreen').classList.toggle('on',S.view==='carte');
+ vtoggle.innerHTML=(S.view==='liste'?I.mapi:I.list)+`<span>${S.view==='liste'?'Carte':'Liste'}</span>`;
+ if(S.view==='carte'){S.snap='peek';renderMap();showList()}
+ else{closeSheet()}
+};
+
+function refresh(){
+ renderChips();renderListScreen();if(S.view==='carte')renderMap();
+ if(S.mode==='filter')renderFilter();else if(S.mode==='list'&&S.view==='carte')showList();
+ applySnap();
+}
+renderChips();renderListScreen();applySnap();
+window.addEventListener('resize',layout);
+</script>
+</body>
+</html>

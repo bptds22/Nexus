@@ -64,6 +64,7 @@ export const MOBILE_EXCLUDED_PAGES = [
   '/team-test',
   '/wall-test',
   '/recherche-test',
+  '/recherche-mobile-test',
 ] as const;
 
 /**

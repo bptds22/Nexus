@@ -55,14 +55,32 @@ function iconeCible(taille: number): string {
 
 export default function MapPane({
   points, selectedId, hoveredId, focus, onSelect,
+  zoomControl = true, attributionCompact = false, resizeToken, className = "mapcanvas",
 }: {
   points: MapPoint[];
   selectedId: string | null;
   hoveredId: string | null;
   focus: MapFocus | null;
   onSelect: (id: string) => void;
+  /* ── props ADDITIVES (mobile) — défauts = comportement web actuel, à l'octet.
+     Le web (CegepSearch.tsx) ne les passe pas et ne bouge pas d'un pixel. ── */
+  /** Contrôles +/− de Leaflet. Mobile plein écran → false (on pince pour zoomer). */
+  zoomControl?: boolean;
+  /** Attribution en encart court (préfixe Leaflet retiré + classe `cs-attr-compact`
+   *  sur le conteneur, que l'appelant stylise pour la faire remonter avec sa sheet). */
+  attributionCompact?: boolean;
+  /** Toute NOUVELLE valeur déclenche un invalidateSize(). Indispensable quand la
+   *  carte est montée dans un conteneur masqué puis révélé (bascule liste↔carte) :
+   *  Leaflet a alors mesuré 0×0 et ne se corrige jamais tout seul. */
+  resizeToken?: number;
+  /** Classe du conteneur. Défaut `mapcanvas` = ce que le CSS `.cs` cible déjà. */
+  className?: string;
 }) {
   const hostRef = React.useRef<HTMLDivElement>(null);
+  // Options lues À LA CRÉATION de la carte (l'effet de montage est en deps []).
+  // Passées par ref pour ne pas dépendre d'une closure périmée.
+  const optsRef = React.useRef({ zoomControl, attributionCompact });
+  optsRef.current = { zoomControl, attributionCompact };
   const mapRef = React.useRef<LeafletMap | null>(null);
   const tileRef = React.useRef<TileLayer | null>(null);
   const layersRef = React.useRef<Map<string, Layer>>(new Map());
@@ -83,8 +101,15 @@ export default function MapPane({
     (async () => {
       const L = await import("leaflet");
       if (annule || !hostRef.current || mapRef.current) return;
-      const map = L.map(hostRef.current, { zoomControl: true, attributionControl: true })
+      const { zoomControl: zc, attributionCompact: ac } = optsRef.current;
+      const map = L.map(hostRef.current, { zoomControl: zc, attributionControl: true })
         .setView([46.8, -71.9], 6);
+      // Encart compact : on garde l'attribution (obligation OSM/CARTO) mais on
+      // retire le préfixe « Leaflet » et on marque le conteneur pour le CSS.
+      if (ac) {
+        map.attributionControl.setPrefix(false);
+        hostRef.current.classList.add("cs-attr-compact");
+      }
       mapRef.current = map;
       setPret(true);
     })();
@@ -198,5 +223,15 @@ export default function MapPane({
     return () => { annule = true; };
   }, [focus, pret]);
 
-  return <div className="mapcanvas" ref={hostRef} aria-label="Carte des cégeps" />;
+  // Re-mesure après un changement de taille du conteneur (bascule liste↔carte,
+  // sheet qui monte). Sans ça la carte reste sur ses dimensions de montage.
+  React.useEffect(() => {
+    if (resizeToken === undefined || !pret) return;
+    const map = mapRef.current;
+    if (!map) return;
+    const t = window.setTimeout(() => map.invalidateSize(), 0);
+    return () => window.clearTimeout(t);
+  }, [resizeToken, pret]);
+
+  return <div className={className} ref={hostRef} aria-label="Carte des cégeps" />;
 }
