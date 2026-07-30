@@ -238,7 +238,10 @@ export default function TransfertAthletesMobile() {
                 <AthletePhotoFill photoUrl={a.photo ?? undefined} firstName={a.firstName} lastName={a.lastName} initialsFontSize={15} />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-[15px] font-bold text-white truncate">{a.firstName} {a.lastName}</p>
+                <div className="flex items-center gap-1.5">
+                  <p className="text-[15px] font-bold text-white truncate">{a.firstName} {a.lastName}</p>
+                  {a.isPending && <span className="shrink-0 rounded-full bg-[#F59E0B]/15 border border-[#F59E0B]/30 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#F59E0B]">En attente</span>}
+                </div>
                 <p className="text-[12px] text-[#6b7280] truncate">{[a.sport, a.position].filter(Boolean).join(" · ") || "—"}</p>
               </div>
             </button>

@@ -44,6 +44,8 @@ export interface TransferAthlete {
   photo?: string | null;
   sport?: string | null;
   position?: string | null;
+  /** #EN_ATTENTE : athlète en attente de consentement → liseré « En attente ». */
+  isPending?: boolean;
 }
 
 /**
@@ -105,10 +107,13 @@ export async function loadSchoolCoaches(
       .from("athletes")
       .select("coach_id")
       .eq("school_id", schoolId)
-      .eq("status", "ACTIF"),
+      // #EN_ATTENTE : un athlète en attente de consentement reste gérable /
+      // transférable (décision BP « EN_ATTENTE dans tous les pickers »). Le
+      // compte par coach doit matcher la liste source, donc même filtre.
+      .in("status", ["ACTIF", "EN_ATTENTE"]),
   ]);
 
-  // coach_id (or null) → active athlete count
+  // coach_id (or null) → athlete count (ACTIF + EN_ATTENTE)
   const counts = new Map<string | null, number>();
   (athRows ?? []).forEach((a) => {
     const cid = (a as { coach_id: string | null }).coach_id;
@@ -157,10 +162,12 @@ export async function loadAthletesForCoach(
   let query = supabase
     .from("athletes")
     .select(
-      "id, first_name, last_name, photo_url, sports!sport_id(nom), positions!position_id(abreviation)",
+      "id, first_name, last_name, photo_url, status, sports!sport_id(nom), positions!position_id(abreviation)",
     )
     .eq("school_id", schoolId)
-    .eq("status", "ACTIF");
+    // #EN_ATTENTE inclus (badgé) — la règle d'action (RLS d'update) reste
+    // owner/team/directeur ; seul le statut s'élargit, comme les autres pickers.
+    .in("status", ["ACTIF", "EN_ATTENTE"]);
 
   if (coachId === UNASSIGNED_COACH_ID) query = query.is("coach_id", null);
   else query = query.eq("coach_id", coachId);
@@ -173,6 +180,7 @@ export async function loadAthletesForCoach(
       first_name: string;
       last_name: string;
       photo_url: string | null;
+      status: string | null;
       sports: { nom?: string } | { nom?: string }[] | null;
       positions: { abreviation?: string } | { abreviation?: string }[] | null;
     };
@@ -185,6 +193,7 @@ export async function loadAthletesForCoach(
       photo: row.photo_url,
       sport: sport?.nom ?? null,
       position: pos?.abreviation ?? null,
+      isPending: row.status === "EN_ATTENTE",
     };
   });
 }

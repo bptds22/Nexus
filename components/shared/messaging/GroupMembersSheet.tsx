@@ -28,7 +28,12 @@ export function buildGroupMembers(
   initials: Record<string, string>,
   meId: string | undefined,
 ): GroupMember[] {
-  return Object.keys(names)
+  // On itère sur `roles` (= les participants réellement visibles par la RLS),
+  // PAS sur `names` : le nom est best-effort (la RLS `users` peut cacher la
+  // ligne d'un athlète au staff → nom résolu via `athletes` en amont, sinon
+  // « Membre »). Bâtir depuis `names` faisait disparaître tout membre non
+  // résolu — c'est ce qui masquait les athlètes côté coach.
+  return Object.keys(roles)
     .map((id) => ({
       id,
       name: names[id] || "Membre",

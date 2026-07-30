@@ -80,20 +80,43 @@ export function useGroupThreadMeta(
       // Rôle du viewer : sa ligne participant, sinon le défaut du portail.
       const viewerRole: GroupMemberRole = roles[meId] ?? portalDefault;
 
-      // Noms résolus via users(first_name, last_name) sur les user_id visibles.
+      // Noms des membres. ATTENTION à l'asymétrie de la RLS `users` :
+      //   • le STAFF est lisible par tous (staff ET athlètes) → noms via users ;
+      //   • la ligne `users` d'un ATHLÈTE est CACHÉE au staff → on résout son
+      //     nom via `athletes` (first_name/last_name, lisible par le coach via
+      //     son autorité équipe/école). Sans ça l'athlète était bien participant
+      //     mais absent de la liste côté coach (bug « seuls les coachs »).
       const names: Record<string, string> = {};
       const initials: Record<string, string> = {};
-      const ids = rows.map((r) => r.user_id);
-      if (ids.length > 0) {
+      const applyName = (uid: string, f: string, l: string) => {
+        names[uid] = `${f} ${l}`.trim() || "Membre";
+        initials[uid] = `${f[0] || ""}${l[0] || ""}`.toUpperCase() || "?";
+      };
+
+      const staffIds = rows.filter((r) => r.member_role === "STAFF").map((r) => r.user_id);
+      const athleteRows = rows.filter((r) => r.member_role === "ATHLETE");
+      const athleteIds = athleteRows.map((r) => r.athlete_id).filter(Boolean) as string[];
+
+      if (staffIds.length > 0) {
         const { data: users } = await supabase
           .from("users")
           .select("id, first_name, last_name")
-          .in("id", ids);
+          .in("id", staffIds);
         for (const u of (users ?? []) as { id: string; first_name: string | null; last_name: string | null }[]) {
-          const f = (u.first_name || "").trim();
-          const l = (u.last_name || "").trim();
-          names[u.id] = `${f} ${l}`.trim() || "Membre";
-          initials[u.id] = `${f[0] || ""}${l[0] || ""}`.toUpperCase() || "?";
+          applyName(u.id, (u.first_name || "").trim(), (u.last_name || "").trim());
+        }
+      }
+      if (athleteIds.length > 0) {
+        const { data: aths } = await supabase
+          .from("athletes")
+          .select("id, first_name, last_name")
+          .in("id", athleteIds);
+        const byId = new Map(
+          ((aths ?? []) as { id: string; first_name: string | null; last_name: string | null }[]).map((a) => [a.id, a]),
+        );
+        for (const r of athleteRows) {
+          const a = r.athlete_id ? byId.get(r.athlete_id) : null;
+          applyName(r.user_id, (a?.first_name || "").trim(), (a?.last_name || "").trim());
         }
       }
 
