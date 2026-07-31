@@ -80,6 +80,20 @@ const DYNAMIC_ROUTES: DynamicRoute[] = [
     paramKey: 'id',
     toPlaceholder: () => '/recruteur/listes/placeholder/',
   },
+  // college/[schoolId]/[teamId] — AVANT la route école (2 segments = plus
+  // spécifique). Le segment école est NON-CAPTURANT : match[1] = teamId (le
+  // seul param dont TeamPageMobile a besoin). placeholder à deux niveaux.
+  {
+    pattern: /^\/college\/(?:[^/]+)\/([^/]+)\/?$/,
+    paramKey: 'teamId',
+    toPlaceholder: () => '/college/placeholder/placeholder/',
+  },
+  // college/[schoolId] — 1 segment ancré `$` : ne matche PAS /college/a/b.
+  {
+    pattern: /^\/college\/([^/]+)\/?$/,
+    paramKey: 'schoolId',
+    toPlaceholder: () => '/college/placeholder/',
+  },
 ];
 
 export interface MatchedDynamicRoute {

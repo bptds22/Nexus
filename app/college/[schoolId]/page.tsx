@@ -3,28 +3,33 @@
 // Page école PUBLIQUE. C'est la destination du bouton « Accéder à la page »
 // de la recherche cégep, et le parent des pages équipe.
 //
-// PUBLIQUE au sens strict : aucune garde de rôle, aucune redirection de login,
-// aucun guard Capacitor — un athlète non connecté, un parent, un recruteur ou
-// un moteur d'indexation voient la même page. Elle n'est donc PAS dans
-// MOBILE_EXCLUDED_PAGES.
+// PUBLIQUE au sens strict : aucune garde de rôle, aucune redirection de login —
+// un athlète non connecté, un parent, un recruteur ou un moteur d'indexation
+// voient la même page.
+//
+// DEUX rendus, un seul composant <ProgramPage> :
+//   • WEB  → SSR service-role (SEO public, indexation). Corps inchangé ci-dessous.
+//   • MOBILE (bundle Capacitor, output:export) → rendu NATIF client
+//     <ProgramPageMobile> : lecture Supabase clé anon + RLS, generateStaticParams
+//     sentinelle « placeholder » remplie par useParams au runtime. Plus de
+//     navigateur in-app : la page vit DANS l'app.
 //
 // Différence avec /page-test : cette route n'a AUCUN décor de démonstration —
 // pas de hero de route, pas de doublon Grasset+Montmorency. Une école, une page.
 //
-// Trois cas de chargement :
+// Trois cas de chargement (WEB) :
 //   1. école configurée      → rendu depuis la DB
 //   2. école existante, page jamais configurée → page DÉGRADÉE de CETTE école
-//      (nom, ville, région, équipes, compte d'équipes ; tout le reste absent)
 //   3. école introuvable     → notFound()
-//
-// AUCUN fixture ici. 68 collèges sur 69 sont dans le cas 2 : leur servir le
-// contenu de Grasset était un mensonge sur une route publique. Le fixture reste
-// le repli de /page-test, qui est un banc d'essai, pas une page publiée.
 
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import ProgramPage from "@/components/program-page/ProgramPage";
+import ProgramPageMobile from "@/components/program-page/ProgramPageMobile";
 import { loadSchoolPageForRender } from "@/lib/queries/schoolPage/loadForRender";
+
+const IS_CAPACITOR = process.env.CAPACITOR_BUILD === "true";
 
 // Le mur utilise Permanent Marker et Playfair Display, que le layout racine ne
 // charge pas (il ne porte qu'Outfit / Anton / Bebas / Barlow Condensed).
@@ -39,9 +44,17 @@ const FONTS = (
   </>
 );
 
+// Sentinelle static-export (build mobile uniquement) : ProgramPageMobile lit le
+// vrai schoolId via useParams au runtime. En web (non-export) → [] = SSR pur.
+export function generateStaticParams() {
+  return IS_CAPACITOR ? [{ schoolId: "placeholder" }] : [];
+}
+
 export async function generateMetadata(
   { params }: { params: Promise<{ schoolId: string }> },
 ): Promise<Metadata> {
+  // Mobile : pas d'appel service-role au build (le titre natif est générique).
+  if (IS_CAPACITOR) return { title: "Collège | Nexus" };
   const { schoolId } = await params;
   const res = await loadSchoolPageForRender(schoolId);
   const nom = res.schoolName;
@@ -51,6 +64,16 @@ export async function generateMetadata(
 export default async function CollegePage(
   { params }: { params: Promise<{ schoolId: string }> },
 ) {
+  // MOBILE (bundle Capacitor) : rendu natif, lecture anon + RLS côté client.
+  if (IS_CAPACITOR) {
+    return (
+      <Suspense fallback={null}>
+        <ProgramPageMobile />
+      </Suspense>
+    );
+  }
+
+  // WEB : SSR service-role (inchangé — SEO public).
   const { schoolId } = await params;
   const res = await loadSchoolPageForRender(schoolId);
 

@@ -68,11 +68,14 @@ export default function StatRows({
           <span className="big" data-count={stats.teams}>0</span>
           <span className="lab">{stats.teamsLabel}</span>
         </div>
-        <div className="trow tr-red rv">
-          <span className="big" data-count={stats.athletes} data-suffix="+">0</span>
-          <span className="lab">{stats.athletesLabel}</span>
-          <span className="man">saisie collège</span>
-        </div>
+        {/* §5 : rangée rendue UNIQUEMENT si un nombre réel existe — jamais
+            « 0+ » (faux). Valeur = le nombre ; label fixe « ÉTUDIANTS-ATHLÈTES ». */}
+        {stats.athletes > 0 && (
+          <div className="trow tr-red rv">
+            <span className="big" data-count={stats.athletes} data-suffix="+">0</span>
+            <span className="lab">{stats.athletesLabel}</span>
+          </div>
+        )}
         <div className="trow tr-cream rv">
           <span className="big" style={{ fontSize: "clamp(38px,4.6vw,64px)" }}>{city.toUpperCase()}</span>
           <span className="lab">{stats.region}</span>

@@ -18,10 +18,11 @@
 
 import * as React from "react";
 import dynamic from "next/dynamic";
-import { Heart, Search, X, Check, ChevronDown, ChevronUp, ArrowLeft, ArrowRight, Sparkles, Map as MapIcon, List, Crosshair } from "lucide-react";
+import { Heart, Search, X, Check, ChevronDown, ArrowRight, Sparkles, Map as MapIcon, List } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { loadSearchData, type SearchData, type CegepRow } from "@/lib/queries/cegepSearch/searchData";
 import { norm, regionCentroid, scoreCegep } from "@/lib/queries/cegepSearch/scoring";
+import Link from "next/link";
 import type { MapFocus } from "./MapPane";
 
 // Leaflet touche `window` à l'import → jamais au SSR (même garde que le web).
@@ -42,8 +43,18 @@ const initialesDe = (nom: string) =>
   nom.replace(/^(Cégep|Collège|Campus|Centre)\s+(de\s+|du\s+|d'|des\s+)?/i, "")
     .split(/[\s-]+/).filter(Boolean).slice(0, 2).map((m) => m[0]).join("").toUpperCase();
 
-type Snap = "peek" | "mid" | "full";
 type Mode = "list" | "filter" | "preview";
+
+/** Haptique légère — pattern PROUVÉ des écrans mobiles (RecruteurRechercheMobile
+ *  etc.) : import dynamique + try/catch, SANS guard `isNativePlatform` (qui
+ *  no-oppait en silence si false) et SANS `void` qui avalait l'erreur. Sur web,
+ *  Haptics.impact no-op proprement (le catch couvre tout). */
+async function tap(): Promise<void> {
+  try {
+    const { Haptics, ImpactStyle } = await import("@capacitor/haptics");
+    await Haptics.impact({ style: ImpactStyle.Light });
+  } catch { /* no-op */ }
+}
 type FKey = "sport" | "programme" | "region" | "langue" | "type";
 
 /** Ordre des pilles imposé par le ticket : Pour moi · Sport · Programme ·
@@ -82,7 +93,6 @@ export default function RechercheMobile() {
   const [view, setView] = React.useState<"liste" | "carte">("liste");
   const [open, setOpen] = React.useState(false);
   const [mode, setMode] = React.useState<Mode>("list");
-  const [snap, setSnap] = React.useState<Snap>("peek");
   const [fkey, setFkey] = React.useState<FKey | null>(null);
   const [currentId, setCurrentId] = React.useState<string | null>(null);
   const [accEquipes, setAccEquipes] = React.useState(false);
@@ -95,8 +105,9 @@ export default function RechercheMobile() {
   const [dragH, setDragH] = React.useState<number | null>(null);
 
   // ── carte ──
-  const [focus, setFocus] = React.useState<MapFocus | null>(null);
-  const focusToken = React.useRef(0);
+  // focus reste null : l'auto-recadrage vivait dans le FAB « localisation »
+  // retiré (P2). MapPane accepte focus=null sans rien faire.
+  const [focus] = React.useState<MapFocus | null>(null);
   const [resizeToken, setResizeToken] = React.useState(0);
 
   /* ── chargement : identique au web (données + cibles de l'athlète) ── */
@@ -140,7 +151,7 @@ export default function RechercheMobile() {
   /* ── correction 5 : la sheet passe AU-DESSUS du tab bar, et dès qu'elle
      dépasse peek le tab bar s'efface. On ne touche pas MobileTabBar (portalé
      sur document.body) : on marque le body et une règle scopée l'escamote. ── */
-  const tall = open && snap !== "peek";
+  const tall = open;
   React.useEffect(() => {
     document.body.classList.toggle("nx-rm-sheet-tall", tall);
   }, [tall]);
@@ -177,10 +188,16 @@ export default function RechercheMobile() {
         if (pourMoi) {
           const v = data.viewer;
           if (!v) return false;
-          const posteOk = data.postesEnDemande.has(c.id);
-          const offerts = c.programmes.map(norm);
-          const progOk = v.programmesVises.some((p) => offerts.some((o) => o.includes(norm(p)) || norm(p).includes(o)));
-          if (!posteOk && !progOk) return false;
+          // Programme = ÉLIMINATOIRE : si l'athlète a déclaré des programmes et
+          // qu'aucun n'est offert, le collège est exclu — on ne peut pas y
+          // étudier. Poste = BONUS de TRI seulement (il pèse déjà 3 dans
+          // scoreCegep → il fait remonter, il n'ouvre pas la porte à lui seul) :
+          // PAS dans ce filtre. Langue/réseau : cases « ouvert à », jamais un
+          // refus → pas de filtre. Distance exclue (barycentre régional).
+          if (v.programmesVises.length > 0) {
+            const offerts = c.programmes.map(norm);
+            if (!v.programmesVises.some((p) => offerts.some((o) => o.includes(norm(p)) || norm(p).includes(o)))) return false;
+          }
         }
         return true;
       })
@@ -194,7 +211,6 @@ export default function RechercheMobile() {
       .sort((a, b) => (b.fit.score - a.fit.score) || a.c.name.localeCompare(b.c.name, "fr"));
   }, [data, q, sports, regions, langues, reseaux, progs, pourMoi, origine]);
 
-  const estFit = (f: { score: number; raisons: string[] }) => f.score > 0 && f.raisons.length > 0;
 
   const points = React.useMemo(
     () => resultats.filter((r) => r.c.lat != null && r.c.lng != null).map((r) => ({
@@ -209,11 +225,6 @@ export default function RechercheMobile() {
     [resultats, currentId],
   );
 
-  const viser = React.useCallback((type: MapFocus["type"], ids: string[]) => {
-    focusToken.current += 1;
-    setFocus({ token: focusToken.current, type, ids });
-  }, []);
-
   /* ── ♥ : optimiste, idempotent (23505 avalé), rollback en cas d'échec.
      Même table et même sémantique que le web → « Mes cibles » de Mon parcours
      lit exactement les mêmes lignes. ── */
@@ -221,6 +232,7 @@ export default function RechercheMobile() {
     const v = data?.viewer;
     if (!v || busyCible) return;
     const dedans = cibles.has(schoolId);
+    void tap(); // haptique : toggle du ♥ (ajout/retrait d'une cible)
     setBusyCible(schoolId);
     setCibles((prev) => { const n = new Set(prev); if (dedans) n.delete(schoolId); else n.add(schoolId); return n; });
     try {
@@ -281,86 +293,83 @@ export default function RechercheMobile() {
   };
   const nSel = sports.length + progs.length + regions.length + langues.length + reseaux.length + (pourMoi ? 1 : 0);
 
-  /* ── snaps : dérivés du viewport réel (peek 96 · mid 54% · full 88%) ── */
-  const SNAPS = React.useMemo(() => ({
-    peek: 96,
-    mid: Math.round((vh || 800) * 0.54),
-    full: Math.round((vh || 800) * 0.88),
-  }), [vh]);
+  /* ── UNE seule hauteur ouverte : 76% du viewport. Snaps peek/mid/full
+     SUPPRIMÉS. La sheet n'existe QUE pour un filtre ou un aperçu — ouverte à
+     76% ou fermée, rien entre les deux. ── */
+  const OPEN_H = React.useMemo(() => Math.round((vh || 800) * 0.76), [vh]);
 
   /* ── navigation de la sheet ── */
-  const showList = React.useCallback(() => {
-    setMode("list"); setFkey(null); setCurrentId(null);
-    setOpen(view === "carte");
-    setSnap("peek");
-  }, [view]);
-
   const showFilter = (k: FKey) => {
+    void tap(); // haptique : ouverture du sheet filtre
     setMode("filter"); setFkey(k); setCurrentId(null);
     setProgQ("");
     setOpen(true);
-    setSnap((s) => (s === "peek" ? "mid" : s));
   };
 
   const showPreview = (id: string) => {
+    void tap(); // haptique : tap d'un pin OU d'une carte résultat + ouverture sheet
     setCurrentId(id); setMode("preview"); setFkey(null);
     setAccEquipes(false); setAccProgs(false);
-    setOpen(true); setSnap("mid");
+    setOpen(true);
   };
 
   const closeSheet = React.useCallback(() => {
-    setMode("list"); setFkey(null); setCurrentId(null); setSnap("peek");
+    void tap(); // haptique : fermeture du sheet
+    setMode("list"); setFkey(null); setCurrentId(null);
     setOpen(false);
   }, []);
 
-  /* ── bascule liste ↔ carte : jamais les deux montés (correction 3) ── */
+  /* ── bascule liste ↔ carte : jamais les deux montés. Toute sheet ouverte se
+     ferme à la bascule (sans re-tap haptique inutile). ── */
   const basculer = () => {
     const next = view === "liste" ? "carte" : "liste";
     setView(next);
-    if (next === "carte") {
-      setMode("list"); setFkey(null); setCurrentId(null);
-      setSnap("peek"); setOpen(true);
-      // Leaflet a mesuré 0×0 tant que l'écran était masqué → re-mesure.
-      setResizeToken((t) => t + 1);
-    } else {
-      closeSheet();
-    }
+    setMode("list"); setFkey(null); setCurrentId(null); setOpen(false);
+    if (next === "carte") setResizeToken((t) => t + 1); // Leaflet re-mesure
   };
 
-  // Toute variation de la géométrie de la sheet change la taille utile de la
-  // carte : on redemande un invalidateSize.
   React.useEffect(() => {
     if (view === "carte") setResizeToken((t) => t + 1);
-  }, [view, snap, open]);
+  }, [view, open]);
 
-  /* ── poignée draggable, snap au plus proche ── */
-  const dragRef = React.useRef<{ y0: number; h0: number } | null>(null);
-  const onGrabDown = (e: React.PointerEvent) => {
-    dragRef.current = { y0: e.clientY, h0: SNAPS[snap] };
-    setDragH(SNAPS[snap]);
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+  /* ── DRAG — événements TACTILES (touchstart/move/end), PAS pointer events.
+     Choix WKWebView : les pointer events peuvent être préemptés par le gesture
+     recognizer de la WebView (pointercancel intempestif en plein drag) ; les
+     touch events + touch-action:none donnent un contrôle déterministe. La zone
+     de saisie est TOUTE l'en-tête (.shHead), pas la poignée de 40px. Un touch
+     démarrant sur un bouton/lien/champ ne lance PAS de drag. Seuil de
+     fermeture : glissé sous 75% de la hauteur ouverte (~25% vers le bas). ── */
+  const dragRef = React.useRef<{ y0: number } | null>(null);
+  const onGrabStart = (e: React.TouchEvent) => {
+    if ((e.target as HTMLElement).closest("button, a, .heart, input")) return;
+    dragRef.current = { y0: e.touches[0].clientY };
+    setDragH(OPEN_H);
   };
-  const onGrabMove = (e: React.PointerEvent) => {
+  const onGrabMove = (e: React.TouchEvent) => {
     const d = dragRef.current;
     if (!d) return;
-    setDragH(Math.min(SNAPS.full, Math.max(SNAPS.peek, d.h0 + (d.y0 - e.clientY))));
+    const dy = d.y0 - e.touches[0].clientY; // < 0 si on descend
+    setDragH(Math.max(0, Math.min(OPEN_H, OPEN_H + dy)));
   };
-  const onGrabUp = () => {
+  const onGrabEnd = () => {
     const h = dragH;
     dragRef.current = null;
     setDragH(null);
     if (h == null) return;
-    // En vue liste la sheet n'a pas d'état « peek » : elle est ouverte ou fermée.
-    const pool: Snap[] = view === "liste" ? ["mid", "full"] : ["peek", "mid", "full"];
-    setSnap(pool.reduce((a, b) => (Math.abs(SNAPS[b] - h) < Math.abs(SNAPS[a] - h) ? b : a)));
+    if (h < OPEN_H * 0.75) closeSheet(); // glissé bas → fermeture
   };
 
   /* ── géométrie : tout ce qui flotte réserve --tabzone ── */
-  const sheetH = dragH ?? (open ? SNAPS[snap] : 0);
-  const base = open ? sheetH + (tall ? 0 : 0) : 0; // la sheet est déjà décalée de --tabzone via `bottom`
-  const flotteBottom = `calc(var(--tabzone) + ${base}px + 14px)`;
+  // La sheet est à bottom:0 (jamais coupée par le tab bar) → le toggle
+  // liste/carte flotte juste au-dessus du tab bar, sans offset de sheet.
+  const flotteBottom = `calc(var(--tabzone) + 14px)`;
 
   const viewer = data?.viewer ?? null;
+  // « Pour moi » n'a de sens que si l'athlète a déclaré un programme visé OU un
+  // poste. Langue/réseau ne comptent pas (cases « ouvert à » : false/null = pas
+  // de préférence). Sinon la pilule est désactivée avec une explication —
+  // plutôt qu'un filtre qui vide l'écran sur une préférence jamais exprimée.
+  const pourMoiDispo = !!viewer && (viewer.programmesVises.length > 0 || !!viewer.positionId);
 
   /* ── compatibilité : les raisons POSITIVES viennent de scoreCegep (source
      unique) ; les manques sont l'exact complément des mêmes prédicats. Rien
@@ -394,7 +403,7 @@ export default function RechercheMobile() {
   const rows = () => (
     resultats.length === 0 ? (
       <div className="empty"><b>Aucun cégep</b>Retire un filtre ou élargis ta recherche.</div>
-    ) : resultats.map(({ c, fit }) => (
+    ) : resultats.map(({ c }) => (
       <article
         key={c.id}
         className={"row" + (currentId === c.id ? " sel" : "")}
@@ -420,7 +429,6 @@ export default function RechercheMobile() {
               <Heart size={19} fill={cibles.has(c.id) ? "currentColor" : "none"} aria-hidden />
             </button>
           )}
-          {viewer && estFit(fit) && <span className="fit">FIT</span>}
         </div>
       </article>
     ))
@@ -430,10 +438,15 @@ export default function RechercheMobile() {
     <div className="chips">
       {viewer && (
         <button
-          className={"chip pourmoi" + (pourMoi ? " has" : "")}
-          onClick={() => setPourMoi((p) => !p)}
+          className={"chip pourmoi" + (pourMoi ? " has" : "") + (pourMoiDispo ? "" : " off")}
+          onClick={pourMoiDispo ? () => { void tap(); setPourMoi((p) => !p); } : undefined}
+          disabled={!pourMoiDispo}
+          title={pourMoiDispo ? undefined : "Ajoute un programme visé ou ton poste à ton profil pour activer Pour moi"}
         >
-          <Sparkles size={13} aria-hidden />Pour moi
+          {/* ALLUMÉE → coche pleine à gauche ; ÉTEINTE → Sparkles neutre.
+              DÉSACTIVÉE (profil vide) → libellé qui dit pourquoi. */}
+          {pourMoi ? <Check size={13} aria-hidden /> : <Sparkles size={13} aria-hidden />}
+          {pourMoiDispo ? "Pour moi" : "Pour moi · profil à compléter"}
         </button>
       )}
       {FKEYS.map(({ k, label }) => {
@@ -443,7 +456,7 @@ export default function RechercheMobile() {
           <button
             key={k}
             className={"chip" + (n ? " has" : "") + (live ? " live" : "")}
-            onClick={() => (live ? (view === "carte" ? showList() : closeSheet()) : showFilter(k))}
+            onClick={() => (live ? closeSheet() : showFilter(k))}
           >
             {label}
             {n > 0 && <span className="n">{n}</span>}
@@ -522,22 +535,20 @@ export default function RechercheMobile() {
             <div className="chrome float">
               {barreRecherche}
               {chips}
+              {/* Compteur = pastille glass NON CLIQUABLE, sous les pilules
+                  (au repos la carte n'a PLUS de sheet peek). */}
+              <div className="mapcount" aria-live="polite">
+                {resultats.length} collège{resultats.length > 1 ? "s" : ""}
+                {viewer ? " · fits d'abord" : " · A → Z"}
+              </div>
             </div>
           </div>
-          <button
-            className="fab"
-            style={{ bottom: `calc(var(--tabzone) + ${base}px + 70px)` }}
-            onClick={() => { if (points.length) viser("bounds", points.map((p) => p.id)); }}
-            aria-label="Recadrer la carte"
-          >
-            <Crosshair size={20} aria-hidden />
-          </button>
         </section>
       )}
 
       {/* ═══ TOGGLE LISTE ↔ CARTE ═══ */}
       <button
-        className={"vtoggle" + (view === "carte" && (!open || snap !== "peek") ? " hide" : "")}
+        className={"vtoggle" + (open ? " hide" : "")}
         style={{ bottom: flotteBottom }}
         onClick={basculer}
       >
@@ -545,48 +556,42 @@ export default function RechercheMobile() {
         <span>{view === "liste" ? "Carte" : "Liste"}</span>
       </button>
 
-      {/* ═══ BACKDROP (vue liste seulement) ═══ */}
+      {/* ═══ BACKDROP — tap hors du sheet = fermeture, DANS LES DEUX VUES
+             (avant : liste seulement → en carte on ne pouvait pas fermer au
+             tap, ce qui cassait le réflexe iOS). ═══ */}
       <div
-        className={"backdrop" + (view === "liste" && open ? " on" : "")}
+        className={"backdrop" + (open ? " on" : "")}
         onClick={closeSheet}
       />
 
-      {/* ═══ SHEET ═══ */}
+      {/* ═══ SHEET — monté UNIQUEMENT quand ouvert (ou en cours de drag) :
+             DÉMONTÉ au repos → aucune bande arrondie résiduelle (le shadow +
+             border-radius d'une sheet fermée dépassait). Une seule hauteur
+             (76%), pour FILTRE ou APERÇU. À bottom:0, jamais coupée par le tab
+             bar. Fermeture : glisser bas (drag TACTILE sur toute l'en-tête), tap
+             hors du sheet (backdrop, carte comprise) ou ✕. En-tête inerte. ═══ */}
+      {(open || dragH != null) && (
       <div
         className={"sheet" + (open ? "" : " hidden") + (tall ? " tall" : " low") + (dragH != null ? " dragging" : "")}
-        style={{ height: sheetH || SNAPS.peek }}
+        style={{ height: dragH ?? OPEN_H }}
       >
         <div
           className="grab"
-          onPointerDown={onGrabDown}
-          onPointerMove={onGrabMove}
-          onPointerUp={onGrabUp}
-          onPointerCancel={onGrabUp}
+          onTouchStart={onGrabStart}
+          onTouchMove={onGrabMove}
+          onTouchEnd={onGrabEnd}
+          onTouchCancel={onGrabEnd}
         ><i /></div>
-
-        {/* ── mode LISTE ── */}
-        {mode === "list" && (
-          <>
-            <div className="shHead" onClick={() => setSnap(snap === "peek" ? "mid" : "peek")}>
-              <span className="kick">{resultats.length} collège{resultats.length > 1 ? "s" : ""}</span>
-              <span className="sub">{pourMoi ? "Pour moi" : viewer ? "fits d'abord" : "A → Z"}</span>
-              <span className="iconbtn">
-                {snap === "peek" ? <ChevronUp size={15} aria-hidden /> : <ChevronDown size={15} aria-hidden />}
-              </span>
-            </div>
-            <div className="shBody"><div className="rows">{rows()}</div></div>
-          </>
-        )}
 
         {/* ── mode FILTRE ── */}
         {mode === "filter" && fkey && (
           <>
             <div
               className="shHead"
-              onClick={(e) => {
-                if ((e.target as HTMLElement).closest(".txtbtn")) return;
-                setSnap(snap === "full" ? "mid" : "full");
-              }}
+              onTouchStart={onGrabStart}
+              onTouchMove={onGrabMove}
+              onTouchEnd={onGrabEnd}
+              onTouchCancel={onGrabEnd}
             >
               <span className="kick">{FKEYS.find((f) => f.k === fkey)?.label}</span>
               {selDe(fkey).length > 0 && (
@@ -594,7 +599,7 @@ export default function RechercheMobile() {
                   Effacer ({selDe(fkey).length})
                 </button>
               )}
-              <button className="txtbtn soft" onClick={() => (view === "carte" ? showList() : closeSheet())}>
+              <button className="txtbtn soft" onClick={closeSheet}>
                 Terminé
               </button>
             </div>
@@ -660,19 +665,19 @@ export default function RechercheMobile() {
           <>
             <div
               className="shHead"
-              onClick={(e) => {
-                if ((e.target as HTMLElement).closest(".iconbtn, .heart")) return;
-                setSnap(snap === "full" ? "mid" : "full");
-              }}
+              onTouchStart={onGrabStart}
+              onTouchMove={onGrabMove}
+              onTouchEnd={onGrabEnd}
+              onTouchCancel={onGrabEnd}
             >
               <button
                 className="iconbtn"
-                onClick={() => (view === "carte" ? showList() : closeSheet())}
-                aria-label={view === "carte" ? "Retour aux résultats" : "Fermer"}
+                onClick={closeSheet}
+                aria-label="Fermer"
               >
-                {view === "carte" ? <ArrowLeft size={15} aria-hidden /> : <X size={15} aria-hidden />}
+                <X size={15} aria-hidden />
               </button>
-              <span className="kick">{view === "carte" ? "Retour aux résultats" : "Aperçu"}</span>
+              <span className="kick">Aperçu</span>
               {viewer && (
                 <button
                   className={"heart" + (cibles.has(courant.c.id) ? " on" : "")}
@@ -727,7 +732,7 @@ export default function RechercheMobile() {
 
                 {courant.c.teams.length > 0 && (
                   <div className={"acc" + (accEquipes ? " open" : "")}>
-                    <div className="accHead" onClick={() => { setAccEquipes((o) => !o); if (snap !== "full") setSnap("full"); }}>
+                    <div className="accHead" onClick={() => setAccEquipes((o) => !o)}>
                       Équipes ({courant.c.teams.length})<ChevronDown size={16} aria-hidden />
                     </div>
                     <div className="accBody">
@@ -749,7 +754,7 @@ export default function RechercheMobile() {
 
                 {courant.c.programmes.length > 0 && (
                   <div className={"acc" + (accProgs ? " open" : "")}>
-                    <div className="accHead" onClick={() => { setAccProgs((o) => !o); if (snap !== "full") setSnap("full"); }}>
+                    <div className="accHead" onClick={() => setAccProgs((o) => !o)}>
                       Programmes ({courant.c.programmes.length})<ChevronDown size={16} aria-hidden />
                     </div>
                     <div className="accBody">
@@ -768,9 +773,11 @@ export default function RechercheMobile() {
             <div className="shFoot">
               {courant.c.riche ? (
                 <>
-                  <a className="btn primary" href={`/college/${courant.c.id}`} target="_blank" rel="noopener noreferrer">
+                  {/* Route NATIVE (bundle Capacitor) → navigation INTERNE
+                      (client-side), l'athlète ne quitte pas l'app. Idem web. */}
+                  <Link className="btn primary" href={`/college/${courant.c.id}`}>
                     Accéder à la page <ArrowRight size={17} aria-hidden />
-                  </a>
+                  </Link>
                   <button
                     className={"btn ghost" + (cibles.has(courant.c.id) ? " on" : "")}
                     onClick={() => toggleCible(courant.c.id)}
@@ -800,6 +807,7 @@ export default function RechercheMobile() {
           </>
         )}
       </div>
+      )}
     </div>
   );
 }
@@ -861,6 +869,11 @@ body.nx-rm-sheet-tall nav[aria-label="Navigation principale"]{
 .rm .chips::-webkit-scrollbar{display:none}
 .rm .chip{flex:0 0 auto;height:36px;padding:0 13px;border-radius:18px;background:var(--card);border:1px solid var(--line);
   color:var(--soft);font-size:13.5px;font-weight:600;display:flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap}
+/* Compteur carte : pastille glass NON cliquable, même famille que les pilules. */
+.rm .mapcount{align-self:flex-start;height:30px;padding:0 12px;border-radius:15px;display:inline-flex;
+  align-items:center;font-size:12px;font-weight:600;color:var(--soft);white-space:nowrap;
+  background:var(--glass);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border:1px solid var(--line2);pointer-events:none}
 .rm .float .chip{background:var(--glass);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
   border-color:var(--line2);box-shadow:0 4px 14px rgba(0,0,0,.45)}
 .rm .chip svg{stroke:var(--mut);flex:0 0 auto;transition:transform .2s}
@@ -869,9 +882,15 @@ body.nx-rm-sheet-tall nav[aria-label="Navigation principale"]{
 .rm .chip.has{border-color:rgba(230,57,70,.6);color:#fff}
 .rm .chip.live{background:rgba(230,57,70,.18);border-color:var(--red);color:#fff}
 .rm .chip.live svg{transform:rotate(180deg);stroke:#fff}
-.rm .chip.pourmoi{border-color:rgba(34,197,94,.45);color:#8FE3AC}
-.rm .chip.pourmoi svg{stroke:var(--green)}
+/* ÉTEINTE = identique aux autres pilules (fond carte, bordure neutre, texte
+   soft, icône soft) — AUCUN vert. Pas d'override ici : la base .chip suffit.
+   ALLUMÉE = fond vert translucide + bordure verte + texte ET coche blancs →
+   l'état est évident au premier coup d'œil. */
 .rm .chip.pourmoi.has{background:rgba(34,197,94,.16);border-color:var(--green);color:#fff}
+.rm .chip.pourmoi.has svg{stroke:#fff}
+/* DÉSACTIVÉE (profil sans aucun des 4 critères) : grisée, non tapable. */
+.rm .chip.off{opacity:.45;color:var(--mut);border-color:var(--line);cursor:not-allowed}
+.rm .chip.off svg{stroke:var(--mut)}
 
 .rm .countline{background:var(--bg);border-bottom:1px solid var(--line);border-top:1px solid var(--line);
   padding:11px 16px;font-size:14px;color:var(--mut)}
@@ -882,16 +901,25 @@ body.nx-rm-sheet-tall nav[aria-label="Navigation principale"]{
 .rm .listscroll{position:absolute;left:0;right:0;bottom:0;overflow-y:auto;scrollbar-width:none;padding:10px 16px 0}
 .rm .listscroll::-webkit-scrollbar{display:none}
 /* correction 6 — espaceur de fin = la zone du tab bar, jamais un vide arbitraire */
-.rm .listscroll .pad{height:calc(var(--tabzone) + 56px)}
-.rm .maphost{position:absolute;inset:0}
-.rm .rm-map{position:absolute;inset:0;z-index:1}
-.rm .leaflet-container{background:#12151B;font-family:inherit}
+/* +88 : réserve la hauteur de la pastille flottante « Carte » (vtoggle) pour
+   qu'elle ne recouvre plus le texte de la dernière carte résultat. */
+.rm .listscroll .pad{height:calc(var(--tabzone) + 88px)}
+/* Fond sombre posé sur TOUTES les couches carte (pas seulement le conteneur
+   Leaflet) : au pan/zoom et pendant le momentum WKWebView, un pane de tuiles ou
+   le fond WebView (#111317, grisâtre) transparaissait entre les tuiles. Avec
+   #0B0D10 sur maphost + rm-map, aucune couche ne peut virer au gris. */
+.rm .maphost{position:absolute;inset:0;background:#0B0D10}
+.rm .rm-map{position:absolute;inset:0;z-index:1;background:#0B0D10}
+.rm .leaflet-pane,.rm .leaflet-tile-pane{background:#0B0D10}
+.rm .leaflet-container{background:#0B0D10;font-family:inherit}
 .rm .cs-tile-dark .leaflet-tile{filter:brightness(1.55) contrast(1.18) saturate(1.05)}
-.rm .pin-cible-wrap{transition:transform .12s;transform-origin:center}
+/* Racine du marqueur : AUCUN transform (Leaflet y met translate3d pour la
+   position — un transform CSS ici fait dériver le pin au zoom). Mobile = pins
+   fixes 20px, pas de scale de sélection : rien à animer. */
+.rm .pin-cible-wrap .pd{display:block;transform-origin:center}
 /* sélection = anneau blanc SEUL. Aucun changement de taille : la famille de
    pins reste stricte à 20px. (Le scale(1.55) du web est une dette, pas un
    modèle — ne pas le recopier ici.) */
-.rm .pin-cible-wrap.sel{transform:scale(1)}
 .rm .pin-rich{filter:drop-shadow(0 0 4px rgba(230,57,70,.9));animation:rmpulse 2.4s ease-in-out infinite}
 @keyframes rmpulse{0%,100%{filter:drop-shadow(0 0 3px rgba(230,57,70,.65))}50%{filter:drop-shadow(0 0 9px rgba(230,57,70,1))}}
 @media(prefers-reduced-motion:reduce){.rm .pin-rich{animation:none}}
@@ -901,10 +929,6 @@ body.nx-rm-sheet-tall nav[aria-label="Navigation principale"]{
 .rm .cs-attr-compact .leaflet-bottom.leaflet-right{bottom:calc(var(--tabzone) - 8px);
   transition:bottom .3s cubic-bezier(.32,.72,0,1)}
 
-.rm .fab{position:absolute;right:14px;width:44px;height:44px;border-radius:22px;background:var(--glass);
-  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--line2);
-  display:grid;place-items:center;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.5);z-index:38;color:var(--soft);
-  transition:bottom .3s cubic-bezier(.32,.72,0,1)}
 
 /* ══ CARTE RÉSULTAT (partagée liste ↔ sheet) ══ */
 .rm .row{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);
@@ -920,9 +944,6 @@ body.nx-rm-sheet-tall nav[aria-label="Navigation principale"]{
   display:grid;place-items:center;cursor:pointer;color:var(--mut);flex:0 0 auto}
 .rm .heart.on{border-color:rgba(230,57,70,.55);color:var(--red)}
 .rm .heart:disabled{opacity:.5}
-.rm .fit{display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:5px;
-  background:rgba(34,197,94,.14);border:1px solid rgba(34,197,94,.32);
-  font-family:var(--font-bebas),sans-serif;font-size:12px;letter-spacing:.08em;color:var(--green)}
 .rm .empty{text-align:center;padding:40px 20px;color:var(--mut);font-size:14px}
 .rm .empty b{display:block;font-family:var(--font-anton),sans-serif;font-size:17px;color:var(--soft);
   margin-bottom:7px;text-transform:uppercase}
@@ -950,7 +971,9 @@ body.nx-rm-sheet-tall nav[aria-label="Navigation principale"]{
 .rm .sheet.dragging{transition:none}
 .rm .grab{flex:0 0 auto;padding:10px 0 6px;display:grid;place-items:center;cursor:grab;touch-action:none}
 .rm .grab i{width:40px;height:4px;border-radius:2px;background:rgba(255,255,255,.24);display:block}
-.rm .shHead{flex:0 0 auto;display:flex;align-items:center;gap:10px;padding:0 16px 12px;border-bottom:1px solid var(--line)}
+/* Toute l'en-tête est la zone de drag (pas la poignée seule) → touch-action:none
+   pour que la WebView ne préempte pas le geste ; cursor:grab en repli desktop. */
+.rm .shHead{flex:0 0 auto;display:flex;align-items:center;gap:10px;padding:0 16px 12px;border-bottom:1px solid var(--line);touch-action:none;cursor:grab}
 .rm .shHead .kick{flex:1;font-family:var(--font-bebas),sans-serif;font-size:15px;letter-spacing:.12em;color:#fff;min-width:0}
 .rm .shHead .sub{font-size:13px;color:var(--mut);font-weight:500;white-space:nowrap}
 .rm .txtbtn{border:0;background:transparent;font-size:13.5px;font-weight:600;cursor:pointer;padding:5px 2px;white-space:nowrap}

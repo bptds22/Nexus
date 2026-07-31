@@ -3,27 +3,32 @@
 // Page équipe PUBLIQUE, enfant de la page école. Destination des rangées et des
 // chips de « L'affiche » (SportsGrid).
 //
-// PUBLIQUE au sens strict : aucune garde de rôle, aucune redirection de login,
-// aucun guard Capacitor, absente de MOBILE_EXCLUDED_PAGES. Le widget « match
-// parfait » se réveille tout seul si un athlète est connecté (loadViewer côté
-// loader), et reste absent sinon — la page ne casse pas.
+// PUBLIQUE au sens strict : aucune garde de rôle, aucune redirection de login.
+//
+// DEUX rendus, un seul composant <TeamPage> :
+//   • WEB  → SSR service-role (SEO public). Corps inchangé ci-dessous.
+//   • MOBILE (bundle Capacitor, output:export) → rendu NATIF client
+//     <TeamPageMobile> : lecture Supabase clé anon + RLS, generateStaticParams
+//     sentinelle « placeholder » remplie par useParams au runtime. La page vit
+//     DANS l'app (plus de navigateur in-app). Le widget « match parfait » se
+//     réveille si un athlète est connecté (loadViewer côté loader), sinon absent.
 //
 // Différence avec /team-test : aucun décor de démonstration, et l'équipe vient
 // du chemin, pas d'un `?team=`.
 //
-// Trois cas :
+// Trois cas (WEB) :
 //   1. équipe configurée   → rendu depuis la DB
 //   2. équipe existante, page jamais configurée → page DÉGRADÉE de CETTE équipe
-//      (son sport, sa division, son genre, son école, son calendrier réel)
 //   3. équipe introuvable  → notFound()
-//
-// AUCUN fixture ici : une équipe non configurée s'affichait sous l'identité de
-// « Flag football féminin » de Grasset. Le fixture reste le repli de /team-test.
 
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import TeamPage from "@/components/team-page/TeamPage";
+import TeamPageMobile from "@/components/team-page/TeamPageMobile";
 import { loadTeamPageForRender } from "@/lib/queries/teamPage/loadForRender";
+
+const IS_CAPACITOR = process.env.CAPACITOR_BUILD === "true";
 
 const FONTS = (
   <>
@@ -36,9 +41,16 @@ const FONTS = (
   </>
 );
 
+// Sentinelle static-export (build mobile uniquement). Segment parent [schoolId]
+// inclus : une route dynamique imbriquée doit fournir tous ses params. Web → [].
+export function generateStaticParams() {
+  return IS_CAPACITOR ? [{ schoolId: "placeholder", teamId: "placeholder" }] : [];
+}
+
 export async function generateMetadata(
   { params }: { params: Promise<{ teamId: string }> },
 ): Promise<Metadata> {
+  if (IS_CAPACITOR) return { title: "Équipe | Nexus" };
   const { teamId } = await params;
   const res = await loadTeamPageForRender(teamId);
   return res.teamName ? { title: `${res.teamName} | Nexus` } : { title: "Équipe | Nexus" };
@@ -47,6 +59,16 @@ export async function generateMetadata(
 export default async function CollegeTeamPage(
   { params }: { params: Promise<{ teamId: string }> },
 ) {
+  // MOBILE (bundle Capacitor) : rendu natif, lecture anon + RLS côté client.
+  if (IS_CAPACITOR) {
+    return (
+      <Suspense fallback={null}>
+        <TeamPageMobile />
+      </Suspense>
+    );
+  }
+
+  // WEB : SSR service-role (inchangé — SEO public).
   const { teamId } = await params;
   const res = await loadTeamPageForRender(teamId);
 

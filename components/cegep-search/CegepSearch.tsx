@@ -18,6 +18,7 @@ import { Heart } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { loadSearchData, type SearchData, type CegepRow } from "@/lib/queries/cegepSearch/searchData";
 import { norm, regionCentroid, scoreCegep } from "@/lib/queries/cegepSearch/scoring";
+import Link from "next/link";
 import type { MapFocus } from "./MapPane";
 
 
@@ -232,10 +233,15 @@ export default function CegepSearch() {
         if (pourMoi) {
           const v = data.viewer;
           if (!v) return false;
-          const posteOk = data.postesEnDemande.has(c.id);
-          const offerts = c.programmes.map(norm);
-          const progOk = v.programmesVises.some((p) => offerts.some((o) => o.includes(norm(p)) || norm(p).includes(o)));
-          if (!posteOk && !progOk) return false;
+          // Définition UNIQUE (identique à RechercheMobile). Programme =
+          // ÉLIMINATOIRE : déclaré et non offert → exclu (on ne peut pas y
+          // étudier). Poste = BONUS de TRI seulement (pèse déjà 3 dans
+          // scoreCegep) : il fait remonter, il n'ouvre pas la porte → PAS dans
+          // le filtre. Langue/réseau : cases « ouvert à », jamais un refus.
+          if (v.programmesVises.length > 0) {
+            const offerts = c.programmes.map(norm);
+            if (!v.programmesVises.some((p) => offerts.some((o) => o.includes(norm(p)) || norm(p).includes(o)))) return false;
+          }
         }
         return true;
       })
@@ -317,6 +323,9 @@ export default function CegepSearch() {
   if (!data) return <div className="cs" ref={rootRef}><div className="cs-load">Chargement des cégeps…</div></div>;
 
   const viewer = data.viewer;
+  // « Pour moi » n'a de sens qu'avec un programme visé OU un poste déclaré
+  // (même règle que RechercheMobile) — sinon la pilule est désactivée.
+  const pourMoiDispo = !!viewer && (viewer.programmesVises.length > 0 || !!viewer.positionId);
   const nbFiltres = sports.length + progs.length + regions.length + langues.length + reseaux.length;
   const selection = resultats.find((r) => r.c.id === selectedId) ?? null;
   const catalogueFiltre = data.catalogueProgrammes.filter((p) => !progQ || norm(p).includes(norm(progQ)));
@@ -381,8 +390,12 @@ export default function CegepSearch() {
         </FiltreBtn>
 
         {viewer && (
-          <span className={"fbtn fire" + (pourMoi ? " on" : "")} onClick={() => setPourMoi((p) => !p)}>
-            <span className="lbl">Pour moi</span>
+          <span
+            className={"fbtn fire" + (pourMoi ? " on" : "") + (pourMoiDispo ? "" : " off")}
+            onClick={pourMoiDispo ? () => setPourMoi((p) => !p) : undefined}
+            title={pourMoiDispo ? undefined : "Ajoute un programme visé ou ton poste à ton profil pour activer Pour moi"}
+          >
+            <span className="lbl">{pourMoiDispo ? "Pour moi" : "Pour moi · profil à compléter"}</span>
           </span>
         )}
         {nbFiltres > 0 && (
@@ -559,8 +572,10 @@ function Apercu({
       {cible && <div className="pcible">Ce collège est dans tes cibles.</div>}
 
       <div className="pcta">
+        {/* Page collège = route NATIVE (bundle Capacitor) → navigation INTERNE
+            (client-side), l'athlète ne quitte pas l'app. Idem web. */}
         {c.riche ? (
-          <a className="btn page" href={`/college/${c.id}`} target="_blank" rel="noopener noreferrer">Accéder à la page →</a>
+          <Link className="btn page" href={`/college/${c.id}`}>Accéder à la page →</Link>
         ) : (
           <button className="btn nopage" disabled>Page à venir — cible-le.</button>
         )}
@@ -604,6 +619,7 @@ background:var(--bg);color:var(--txt);font-family:var(--f-body);height:var(--cs-
 .cs .fbtn.on{border-color:var(--nexus);color:#fff;background:#2A1A1E}
 .cs .fbtn .n{background:var(--nexus);color:#fff;font-size:12px;font-weight:800;min-width:20px;height:20px;border-radius:99px;display:inline-flex;align-items:center;justify-content:center;padding:0 6px}
 .cs .fbtn .car{font-size:12px;color:var(--mut);line-height:1}
+.cs .fbtn.off{opacity:.45;cursor:not-allowed;color:var(--mut);border-color:var(--line2)}
 .cs .fbtn.fire{border-color:#2A6B48;color:var(--ok)}
 .cs .fbtn.fire.on{border-color:var(--ok);background:#12241A;color:#fff}
 .cs .dd{position:absolute;top:112%;left:0;z-index:1000;background:#20242D;border:1px solid var(--line2);border-radius:13px;padding:10px;min-width:250px;max-width:340px;box-shadow:0 18px 46px #000B;display:block;cursor:default}
@@ -659,15 +675,18 @@ background:var(--bg);color:var(--txt);font-family:var(--f-body);height:var(--cs-
 /* ── carte ── */
 .cs .maparea{position:relative;min-height:0;background:#12151B}
 .cs .mapcanvas{position:absolute;inset:0;z-index:1}
-.cs .leaflet-container{background:#12151B;font-family:var(--f-body)}
+.cs .leaflet-container{background:#0B0D10;font-family:var(--f-body)}
 /* Tuiles Dark Matter rehaussées (A/B tranché le 28 juillet) : sans ce filtre,
    routes et quartiers sont quasi invisibles ; avec, ils se lisent et le fond
    reste sombre. La classe est posée sur la couche dans MapPane. */
 .cs .cs-tile-dark .leaflet-tile{filter:brightness(1.55) contrast(1.18) saturate(1.05)}
 /* marqueur « dans mes cibles » : même cercle, un glyphe blanc dedans */
-.cs .pin-cible-wrap{transition:transform .12s;transform-origin:center}
-.cs .pin-cible-wrap.hov{transform:scale(1.25)}
-.cs .pin-cible-wrap.sel{transform:scale(1.55)}
+/* Le scale de sélection vit sur l'enfant .pd, JAMAIS sur la racine du marqueur
+   (Leaflet y met translate3d pour la position — un transform CSS y ferait
+   dériver/sauter le pin au zoom). */
+.cs .pin-cible-wrap .pd{display:block;transition:transform .12s;transform-origin:center}
+.cs .pin-cible-wrap.hov .pd{transform:scale(1.25)}
+.cs .pin-cible-wrap.sel .pd{transform:scale(1.55)}
 .cs .zoomnote{position:absolute;top:14px;left:50%;transform:translateX(-50%);z-index:600;font-size:12px;color:var(--txt);background:#111317F0;border:1px solid var(--line2);padding:7px 15px;border-radius:99px;white-space:nowrap}
 /* pins — une seule famille de cercles, trois habits */
 .cs .pin-rich{filter:drop-shadow(0 0 4px rgba(230,57,70,.9));animation:cspulse 2.4s ease-in-out infinite}

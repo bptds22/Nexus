@@ -131,7 +131,9 @@ export function dbToProgramPage(
 
   const content: ProgramPageContent = {
     ticker: [{ text: nn(c.ticker_text, nn(c.slogan, school.name)) }],
-    stats: { teams: nbEquipes, teamsLabel: "ÉQUIPES", athletes: 0, athletesLabel: nn(c.nb_athletes, ""), region: cityTitle(nn(c.ville, school.city || "")) },
+    // §5 : le NOMBRE d'athlètes va dans la VALEUR (athletes), pas dans le label.
+    // Label fixe. 0/absent → StatRows n'affiche pas la rangée (jamais « 0+ »).
+    stats: { teams: nbEquipes, teamsLabel: "ÉQUIPES", athletes: Number(c.nb_athletes) || 0, athletesLabel: "ÉTUDIANTS-ATHLÈTES", region: cityTitle(nn(c.ville, school.city || "")) },
     sports: affiche,
     language: "FR", schoolType: "PRIVÉ", region: cityTitle(nn(c.ville, school.city || "")),
     address: "", mapQuery: `${school.name}, ${school.city || "Québec"}`,

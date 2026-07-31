@@ -43,13 +43,15 @@ const COULEUR_SOBRE = "#5A616D";
  *  Tracé volontairement simple : à ~7 px de haut, tout détail devient bouillie. */
 const ETOILE = "M10 6.2l1.15 2.5 2.7.33-2 1.85.53 2.68L10 12.27l-2.38 1.29.53-2.68-2-1.85 2.7-.33z";
 
-function iconeCible(taille: number): string {
-  // Le cercle reprend exactement la géométrie d'un circleMarker (r + anneau
-  // blanc) : à distance, la famille est identique — seul le glyphe distingue.
+/** UN seul dessin de pin, taille ÉCRAN fixe (20px) à tous les zooms. Tous les
+ *  pins sont des L.divIcon (pane marqueurs) — jamais de circleMarker/circle,
+ *  dont le pane SVG scale pendant l'animation de zoom. Cercle + anneau blanc
+ *  identique pour les 3 états ; l'étoile ne s'ajoute que pour « dans mes cibles ». */
+function iconePin(taille: number, fill: string, etoile: boolean): string {
   const r = taille / 2;
   return `<svg width="${taille}" height="${taille}" viewBox="0 0 20 20" aria-hidden>
-    <circle cx="10" cy="10" r="${r > 10 ? 7.6 : 7.2}" fill="#E63946" stroke="#ffffff" stroke-width="2.4"/>
-    <path d="${ETOILE}" fill="#ffffff"/>
+    <circle cx="10" cy="10" r="${r > 10 ? 7.6 : 7.2}" fill="${fill}" stroke="#ffffff" stroke-width="2.4"/>
+    ${etoile ? `<path d="${ETOILE}" fill="#ffffff"/>` : ""}
   </svg>`;
 }
 
@@ -135,6 +137,11 @@ export default function MapPane({
         maxZoom: 19,
         subdomains: "abcd",
         className: "cs-tile-dark",
+        // Anti-flash gris au pan/zoom : garder plus de tuiles hors écran en
+        // mémoire (keepBuffer) et rendre pendant le geste (updateWhenIdle:false)
+        // plutôt qu'à l'arrêt seulement → moins de fond de conteneur visible.
+        keepBuffer: 4,
+        updateWhenIdle: false,
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
       }).addTo(map);
       tileRef.current.bringToBack();
@@ -153,24 +160,25 @@ export default function MapPane({
       layersRef.current.clear();
 
       for (const p of points) {
-        const layer: Layer = p.cible
-          ? L.marker([p.lat, p.lng], {
-              icon: L.divIcon({
-                className: "pin-cible-wrap",
-                html: iconeCible(20),
-                iconSize: [20, 20],
-                iconAnchor: [10, 10],
-              }),
-              zIndexOffset: 1000,
-            })
-          : L.circleMarker([p.lat, p.lng], {
-              radius: 6.5,
-              color: "#ffffff",
-              weight: 2.5,
-              fillColor: p.riche ? "#E63946" : COULEUR_SOBRE,
-              fillOpacity: 1,
-              className: p.riche ? "pin-rich" : "pin-sober",
-            });
+        // Tous les états sont des divIcon 20px (taille écran fixe). La classe
+        // porte l'état : `pin-cible-wrap` (base + sélection), + `pin-rich`
+        // (halo pulsé) ou `pin-sober`. La couleur/étoile sont dans le SVG.
+        const fill = p.cible || p.riche ? "#E63946" : COULEUR_SOBRE;
+        const cls = "pin-cible-wrap " + (p.cible ? "pin-cible" : p.riche ? "pin-rich" : "pin-sober");
+        const layer: Layer = L.marker([p.lat, p.lng], {
+          icon: L.divIcon({
+            className: cls,
+            // Le SVG est enveloppé dans `.pd` : tout transform (scale de
+            // sélection web, transition) vit sur CET enfant, JAMAIS sur la
+            // racine du marqueur — que Leaflet positionne via translate3d.
+            // Sans ça, une transition:transform sur la racine interpole la
+            // position à chaque frame du zoom → le pin dérive puis saute.
+            html: `<span class="pd">${iconePin(20, fill, p.cible)}</span>`,
+            iconSize: [20, 20],
+            iconAnchor: [10, 10],
+          }),
+          zIndexOffset: p.cible ? 1000 : 0,
+        });
         layer.addTo(map);
         layer.bindTooltip(p.nom, { direction: "right", offset: [10, 0], opacity: 0.95 });
         layer.on("click", () => onSelect(p.id));
@@ -180,26 +188,26 @@ export default function MapPane({
     return () => { annule = true; };
   }, [points, pret, onSelect]);
 
-  // Sélection / survol : les cercles grossissent par leur rayon, les marqueurs
-  // à glyphe par une classe CSS — même perception, deux natures techniques.
+  // Sélection / survol : tous les pins sont des marqueurs divIcon → on bascule
+  // les classes `sel`/`hov` sur l'élément (le CSS décide de l'effet — le web
+  // grossit, le mobile garde l'anneau blanc sans scale). La taille de base ne
+  // change jamais avec le zoom (pane marqueurs). La classe de base est
+  // préservée (classList.toggle, pas de réécriture).
   React.useEffect(() => {
     layersRef.current.forEach((layer, id) => {
       const sel = id === selectedId;
       const hov = id === hoveredId;
-      const c = layer as unknown as {
-        setRadius?: (r: number) => void;
-        setStyle?: (s: Record<string, unknown>) => void;
+      const m = layer as unknown as {
         getElement?: () => HTMLElement | undefined;
-        bringToFront?: () => void;
+        setZIndexOffset?: (z: number) => void;
       };
-      if (typeof c.setRadius === "function") {
-        c.setRadius(sel ? 11 : hov ? 9 : 6.5);
-        c.setStyle?.({ weight: sel ? 3.5 : hov ? 3 : 2.5 });
-      } else {
-        const el = c.getElement?.();
-        if (el) el.className = "pin-cible-wrap" + (sel ? " sel" : hov ? " hov" : "");
+      const el = m.getElement?.();
+      if (el) {
+        el.classList.toggle("sel", sel);
+        el.classList.toggle("hov", hov && !sel);
       }
-      if (sel || hov) c.bringToFront?.();
+      const cible = pointsRef.current.find((p) => p.id === id)?.cible;
+      m.setZIndexOffset?.(sel ? 1200 : hov ? 1100 : cible ? 1000 : 0);
     });
   }, [selectedId, hoveredId, points]);
 
