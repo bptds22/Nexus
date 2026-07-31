@@ -35,7 +35,7 @@ import {
   type GameRow, type CommitRow, type TeamRow, type SchoolIdentity,
 } from "@/lib/queries/teamPage/dbToTeamPage";
 import {
-  SPORT_CONFIGS, resolveFacette, countNoYear, matchState, parseEventDate, isPast, todayISO,
+  SPORT_CONFIGS, resolveFacette, countNoYear, matchState, parseEventDate, isPast, todayISO, coachPhotoStyle,
   type TeamData, type TeamEvent, type Pennant, type ConnectedAthlete, type SportConfig,
 } from "@/components/team-page/content";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -567,8 +567,11 @@ function PresentationMobile({ team }: { team: TeamData }) {
             <div className="coach">
               <div className="cphoto">
                 {hc.photoUrl ? (
+                  // Même cadrage que sur le web, alors que le cadre diffère
+                  // (portrait 88×106 ici, 16:10 là-bas) : c'est tout l'intérêt
+                  // de stocker un point focal plutôt qu'un recadrage figé.
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={hc.photoUrl} alt="" />
+                  <img src={hc.photoUrl} alt="" style={coachPhotoStyle(hc)} />
                 ) : (
                   <span className="cph-tag">Photo</span>
                 )}

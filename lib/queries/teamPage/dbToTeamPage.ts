@@ -177,6 +177,7 @@ export interface BuildTeamDataInput {
     use_school_socials: boolean; socials: { type: string; url: string }[];
     presentation_text: string; championships: number | null; staff_since: number | null;
     headcoach_photo_path: string | null; headcoach_bio: string;
+    headcoach_focal_x?: number; headcoach_focal_y?: number; headcoach_zoom?: number;
     hidden_sections: string[];
   } | null;
   pennants: Pennant[];
@@ -219,7 +220,13 @@ export function buildTeamData(i: BuildTeamDataInput): TeamData {
         // l'éditeur. Une équipe sans entraîneur-chef déclaré affiche quand même
         // la photo et la bio — sinon le collège téléverse dans le vide.
         headCoach: (i.headCoachName || i.coachPhotoUrl || i.content?.headcoach_bio)
-          ? { nom: i.headCoachName, photoUrl: i.coachPhotoUrl, bio: i.content?.headcoach_bio ?? "" }
+          ? {
+              nom: i.headCoachName, photoUrl: i.coachPhotoUrl, bio: i.content?.headcoach_bio ?? "",
+              // 50/50 et non 50/25 : la vignette était en `cover` sans
+              // `object-position`, donc centrée. Le défaut reproduit l'existant.
+              focal: `${i.content?.headcoach_focal_x ?? 50}% ${i.content?.headcoach_focal_y ?? 50}%`,
+              zoom: i.content?.headcoach_zoom ?? 100,
+            }
           : null,
         staff: i.staff,
         palmares: i.pennants,

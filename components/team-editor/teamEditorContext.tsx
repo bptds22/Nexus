@@ -86,7 +86,8 @@ export const DEFAULT_CONTENT: TeamContentState = {
   record_saison: "", playoff_result: "",
   use_school_socials: true, socials: [],
   presentation_text: "", championships: null, staff_since: null,
-  headcoach_photo_path: null, headcoach_bio: "",
+  headcoach_photo_path: null, headcoach_focal_x: 50, headcoach_focal_y: 50, headcoach_zoom: 100,
+  headcoach_bio: "",
   headcoach_user_id: null, headcoach_name: "",
   hidden_sections: [],
 };

@@ -10,6 +10,7 @@
 import * as React from "react";
 import { GhostWords, PlaybookDecor } from "@/components/shared/dna";
 import type { TeamData } from "./content";
+import { coachPhotoStyle } from "./content";
 
 export default function PresentationSection({ team }: { team: TeamData }) {
   const c = team.content;
@@ -86,8 +87,12 @@ export default function PresentationSection({ team }: { team: TeamData }) {
             <div className="coach">
               <div className="cphoto">
                 {hc.photoUrl ? (
+                  // Même modèle que le hero : point focal en `object-position`,
+                  // zoom en `scale` de même origine. Au zoom 100 (donc pour
+                  // toute photo déjà en ligne), `coachPhotoStyle` n'émet aucun
+                  // transform — le rendu est celui d'avant, à l'identique.
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={hc.photoUrl} alt="" />
+                  <img src={hc.photoUrl} alt="" style={coachPhotoStyle(hc)} />
                 ) : (
                   <span className="cph-tag">Photo</span>
                 )}

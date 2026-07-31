@@ -28,6 +28,12 @@ export interface TeamContentState {
   championships: number | null;
   staff_since: number | null;
   headcoach_photo_path: string | null;
+  /** Cadrage de la photo du coach — même modèle que le hero. Défauts 50/50/100
+   *  et non 50/25/100 : la vignette était en `object-fit: cover` sans
+   *  `object-position`, donc centrée par le navigateur. */
+  headcoach_focal_x: number;
+  headcoach_focal_y: number;
+  headcoach_zoom: number;
   headcoach_bio: string;
   /** Compte COACH désigné (éditorial — n'accorde aucun droit). */
   headcoach_user_id: string | null;
@@ -50,7 +56,7 @@ export interface EditorNeed {
 }
 
 const CONTENT_COLS =
-  "hero_image_path, hero_focal_x, hero_focal_y, hero_zoom, record_saison, playoff_result, use_school_socials, socials, presentation_text, championships, staff_since, headcoach_photo_path, headcoach_bio, headcoach_user_id, headcoach_name, hidden_sections";
+  "hero_image_path, hero_focal_x, hero_focal_y, hero_zoom, record_saison, playoff_result, use_school_socials, socials, presentation_text, championships, staff_since, headcoach_photo_path, headcoach_focal_x, headcoach_focal_y, headcoach_zoom, headcoach_bio, headcoach_user_id, headcoach_name, hidden_sections";
 
 const s = (v: unknown): string => (v == null ? "" : String(v));
 const arr = <T,>(v: unknown): T[] => (Array.isArray(v) ? (v as T[]) : []);
@@ -92,6 +98,9 @@ export async function loadTeamPage(
     championships: (row.championships as number | null) ?? null,
     staff_since: (row.staff_since as number | null) ?? null,
     headcoach_photo_path: (row.headcoach_photo_path as string | null) ?? null,
+    headcoach_focal_x: num(row.headcoach_focal_x, 50),
+    headcoach_focal_y: num(row.headcoach_focal_y, 50),
+    headcoach_zoom: num(row.headcoach_zoom, 100),
     headcoach_bio: s(row.headcoach_bio),
     headcoach_user_id: (row.headcoach_user_id as string | null) ?? null,
     headcoach_name: s(row.headcoach_name),

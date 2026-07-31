@@ -5,6 +5,7 @@
 // saison. Positions = abréviations public.positions (diagnostic). Fixture MOCK
 // pour la démo (Bloc 2 = requête DB). Aucune donnée inventée hors mock commenté.
 
+import type { CSSProperties } from "react";
 import type { SocialLink } from "@/components/marketing/SocialIcons";
 
 export type Level = "pri" | "hi" | "mid" | "full";
@@ -73,7 +74,30 @@ export interface ConnectedAthlete {
  *  table team_content + file de modération (comme sell_text école). Champ vide
  *  → l'élément est absent (jamais un trou). */
 export interface StaffMember { nom: string; role: string; }
-export interface HeadCoach { nom: string; photoUrl: string | null; bio: string; }
+export interface HeadCoach {
+  nom: string;
+  photoUrl: string | null;
+  bio: string;
+  /** Cadrage de la vignette, même modèle que le hero : `object-position` +
+   *  `scale`. Absents → 50% 50% / 1, soit exactement le `cover` nu d'avant. */
+  focal?: string | null;
+  zoom?: number | null;
+}
+
+/** Style de la vignette coach — web et mobile, même fonction, deux cadres.
+ *
+ *  Au zoom 100 on n'émet AUCUN transform : `scale(1)` serait certes l'identité
+ *  mathématique, mais il crée quand même un contexte d'empilement et promeut
+ *  l'image en couche composée. Ne rien émettre est la seule façon de garantir
+ *  que les photos déjà en ligne rendent au pixel près comme avant.
+ *  `object-position: 50% 50%` est, lui, exactement le défaut du navigateur. */
+export function coachPhotoStyle(hc: HeadCoach): CSSProperties {
+  const focal = hc.focal ?? "50% 50%";
+  const zoom = hc.zoom ?? 100;
+  return zoom === 100
+    ? { objectPosition: focal }
+    : { objectPosition: focal, transform: `scale(${zoom / 100})`, transformOrigin: focal };
+}
 /** Fanion de palmarès (bannière plafond de gym). Le TYPE pilote la COULEUR
  *  (même forme fanion, 3 habits) : championnat = Principale · coupe =
  *  Foncée/Claire · banniere = rectangle sombre liseré (« retirée au plafond »). */

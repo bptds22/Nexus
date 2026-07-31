@@ -8,6 +8,7 @@
 import * as React from "react";
 import RealPresentation from "@/components/team-page/PresentationSection";
 import TeamPreviewShell, { useDebounced } from "./PreviewShell";
+import CropControl from "./CropControl";
 import { previewTeam } from "./teamBridge";
 import { useTeamEditor } from "./teamEditorContext";
 import { VisibilityToggle, SectionHidden } from "./SectionVisibility";
@@ -33,6 +34,10 @@ export default function PresentationEditorSection() {
   const [since, setSince] = React.useState(initial.staff_since == null ? "" : String(initial.staff_since));
   const [bio, setBio] = React.useState(initial.headcoach_bio);
   const [photo, setPhoto] = React.useState(initial.headcoach_photo_path);
+  const [cfx, setCfx] = React.useState(initial.headcoach_focal_x);
+  const [cfy, setCfy] = React.useState(initial.headcoach_focal_y);
+  const [czoom, setCzoom] = React.useState(initial.headcoach_zoom);
+  const setCoachFocal = React.useCallback((x: number, y: number) => { setCfx(x); setCfy(y); }, []);
   const [hcUser, setHcUser] = React.useState(initial.headcoach_user_id ?? "");
   const [hcName, setHcName] = React.useState(initial.headcoach_name);
   const [pens, setPens] = React.useState<(EditorPennant & { uid: string })[]>(
@@ -48,11 +53,12 @@ export default function PresentationEditorSection() {
       staff_since: intOrNull(since),
       headcoach_bio: bio || null,
       headcoach_photo_path: photo,
+      headcoach_focal_x: cfx, headcoach_focal_y: cfy, headcoach_zoom: czoom,
       headcoach_user_id: hcUser || null,
       headcoach_name: hcName.trim() || null,
     });
     report("pennants", pens.map(({ id, titre, annee, type }) => ({ id, titre, annee, type })));
-  }, [lead, champs, since, bio, photo, hcUser, hcName, pens, report]);
+  }, [lead, champs, since, bio, photo, cfx, cfy, czoom, hcUser, hcName, pens, report]);
 
   const pickPhoto = () => {
     const input = document.createElement("input");
@@ -79,15 +85,17 @@ export default function PresentationEditorSection() {
   const designatedName = schoolCoaches.find((c) => c.id === hcUser)?.nom ?? "";
   const resolvedCoachName = designatedName || hcName.trim() || identity.headCoachName;
 
-  const debKey = useDebounced(JSON.stringify({ lead, champs, since, bio, photo, pens, resolvedCoachName }));
+  const coachUrl = assetUrl(photo);
+  const debKey = useDebounced(JSON.stringify({ lead, champs, since, bio, photo, cfx, cfy, czoom, pens, resolvedCoachName }));
   const preview = React.useMemo(() => {
-    const st = JSON.parse(debKey) as { lead: string; champs: string; since: string; bio: string; photo: string | null; pens: EditorPennant[]; resolvedCoachName: string };
+    const st = JSON.parse(debKey) as { lead: string; champs: string; since: string; bio: string; photo: string | null; cfx: number; cfy: number; czoom: number; pens: EditorPennant[]; resolvedCoachName: string };
     const team = previewTeam(identity, {
       content: {
         ...initial,
         presentation_text: st.lead,
         championships: intOrNull(st.champs), staff_since: intOrNull(st.since),
         headcoach_bio: st.bio, headcoach_photo_path: st.photo,
+        headcoach_focal_x: st.cfx, headcoach_focal_y: st.cfy, headcoach_zoom: st.czoom,
       },
       pennants: st.pens, camps: initialCamps, needs: initialNeeds, positions,
       games, commits, hiddenSections,
@@ -170,6 +178,12 @@ export default function PresentationEditorSection() {
               </div>
               <div className="drop" onClick={pickPhoto}>
                 <b>{photo ? "Photo du coach ✓ — remplacer" : "Photo du coach"}</b>portrait · JPG/PNG
+              </div>
+              <label className="fl">Cadrage — glisse le point sur le visage, ajuste le zoom</label>
+              <CropControl url={coachUrl} fx={cfx} fy={cfy} zoom={czoom} onFocal={setCoachFocal} onZoom={setCzoom} />
+              <div className="note">
+                La vignette n&apos;a pas le même cadre partout — <b>16:10 sur le web</b>, <b>portrait sur mobile</b>.
+                Le point focal reste au même endroit de la photo dans les deux.
               </div>
               <label className="fl">Bio courte (modérée)</label>
               <textarea className="ti" maxLength={200} value={bio} onChange={(e) => setBio(e.target.value)} />

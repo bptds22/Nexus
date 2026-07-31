@@ -8,6 +8,7 @@
 import * as React from "react";
 import TeamHero from "@/components/team-page/TeamHero";
 import TeamPreviewShell, { useDebounced } from "./PreviewShell";
+import CropControl from "./CropControl";
 import { previewTeam } from "./teamBridge";
 import { useTeamEditor, type CalendrierEtat } from "./teamEditorContext";
 
@@ -89,22 +90,9 @@ export default function HeroSection() {
     });
   }, [heroPath, fx, fy, zoom, rec, po, inherit, socials, report, cleanSocials]);
 
-  // ── cadrage : le point suit la souris dans la boîte, comme le mock ──
-  const cropRef = React.useRef<HTMLDivElement>(null);
-  const dragging = React.useRef(false);
-  const setFromEvent = React.useCallback((clientX: number, clientY: number) => {
-    const r = cropRef.current?.getBoundingClientRect();
-    if (!r) return;
-    setFx(Math.round(Math.min(100, Math.max(0, ((clientX - r.left) / r.width) * 100))));
-    setFy(Math.round(Math.min(100, Math.max(0, ((clientY - r.top) / r.height) * 100))));
-  }, []);
-  React.useEffect(() => {
-    const move = (e: MouseEvent) => { if (dragging.current) setFromEvent(e.clientX, e.clientY); };
-    const up = () => { dragging.current = false; };
-    window.addEventListener("mousemove", move);
-    window.addEventListener("mouseup", up);
-    return () => { window.removeEventListener("mousemove", move); window.removeEventListener("mouseup", up); };
-  }, [setFromEvent]);
+  // Le cadrage vit dans CropControl (partagé avec la photo du coach) — l'état
+  // reste ici, parce que c'est lui qu'on remonte au contexte.
+  const setFocal = React.useCallback((x: number, y: number) => { setFx(x); setFy(y); }, []);
 
   const pickPhoto = () => {
     const input = document.createElement("input");
@@ -155,30 +143,7 @@ export default function HeroSection() {
               Large · JPG/PNG · AUCUN mineur identifiable sans consentement (Loi 25)
             </div>
             <label className="fl">Cadrage — glisse le point sur le sujet, ajuste le zoom</label>
-            <div
-              className="crop" ref={cropRef}
-              onMouseDown={(e) => { dragging.current = true; setFromEvent(e.clientX, e.clientY); }}
-            >
-              {/* la photo vit dans une couche à part : le zoom l'agrandit autour
-                  du point focal, exactement comme le hero public le fera */}
-              {heroUrl && (
-                <div
-                  className="cropimg"
-                  style={{
-                    backgroundImage: `url(${heroUrl})`,
-                    backgroundPosition: `${fx}% ${fy}%`,
-                    transform: `scale(${zoom / 100})`,
-                    transformOrigin: `${fx}% ${fy}%`,
-                  }}
-                />
-              )}
-              <div className="grid9" />
-              <div className="dot" style={{ left: `${fx}%`, top: `${fy}%` }} />
-            </div>
-            <div className="zoomrow">
-              🔍 <input type="range" min={100} max={220} value={zoom} onChange={(e) => setZoom(+e.target.value)} />
-              <span>{zoom}%</span>
-            </div>
+            <CropControl url={heroUrl} fx={fx} fy={fy} zoom={zoom} onFocal={setFocal} onZoom={setZoom} />
             <div className="note">
               Stocké en <b>focal x/y % + zoom</b> — le hero recadre exactement là où t&apos;as pointé, à toutes les tailles.
             </div>
