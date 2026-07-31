@@ -138,14 +138,20 @@ export function buildEvents(
         scoreContre: played ? (home ? g.visitor_score : g.home_score) : null,
       };
     });
+  // Même filtre que saveCamps (titre obligatoire) : sans lui, l'aperçu de
+  // l'éditeur affichait une tuile dès qu'une date était posée, alors que la
+  // ligne n'aurait jamais été enregistrée.
   const campEvents: TeamEvent[] = camps
-    .filter((c) => c.event_date)
+    .filter((c) => c.titre.trim() && c.event_date)
     .map((c) => ({
       type: "camp" as const,
       date: c.event_date,
+      // Chacun chez soi : le titre ne se déguise plus en lieu quand le lieu
+      // est vide — et ne disparaît plus quand il est rempli.
+      titre: c.titre.trim(),
       domicile: true,
       heure: "",
-      lieu: c.lieu || c.titre,
+      lieu: c.lieu || "",
     }));
   return [...matches, ...campEvents].sort((a, b) => a.date.localeCompare(b.date));
 }

@@ -61,15 +61,19 @@ function EventCard({ e, today }: { e: TeamEvent; today: string }) {
   const d = parseEventDate(e.date);
 
   if (e.type === "camp") {
-    // Événement spécial : couleur primaire, texte crème. Date en gros + lieu (rien d'autre).
+    // Événement spécial : couleur primaire, texte crème. L'intitulé du collège
+    // prend la place du libellé générique — « Camp de sélection » n'est plus
+    // qu'un repli quand rien n'est saisi. Le lieu garde sa ligne et disparaît
+    // s'il est vide (plus de ligne fantôme).
+    const label = e.titre?.trim() || "Camp de sélection";
     return (
       <article className="ev camp">
-        <div className="ev-tag">Camp de sélection</div>
+        <div className="ev-tag" title={label}>{label}</div>
         <div className="ev-date">
           <span className="d">{d.day}</span>
           <span className="m">{d.mon}</span>
         </div>
-        <div className="ev-lieu">{e.lieu}</div>
+        {e.lieu ? <div className="ev-lieu">{e.lieu}</div> : null}
       </article>
     );
   }

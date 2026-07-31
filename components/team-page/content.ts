@@ -125,6 +125,9 @@ export interface TeamContent {
 export interface TeamEvent {
   type: "match" | "camp";
   date: string;               // ISO "YYYY-MM-DD" (comparaison lexicale, pas de fuseau)
+  /** Intitulé saisi par le collège (camps uniquement, ≤ 40 car. en base). Vide
+   *  ou absent → la tuile se replie sur « Camp de sélection ». */
+  titre?: string;
   adversaire?: string;
   domicile: boolean;
   heure: string;

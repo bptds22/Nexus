@@ -492,9 +492,12 @@ function EventCard({ e, today }: { e: TeamEvent; today: string }) {
   const d = parseEventDate(e.date);
 
   if (e.type === "camp") {
+    // Même arbitrage que sur le web : l'intitulé du collège d'abord, le libellé
+    // générique en repli. Voir .tpm .ev-tag pour la coupe à deux lignes.
+    const label = e.titre?.trim() || "Camp de sélection";
     return (
       <article className="ev camp">
-        <span className="ev-tag">Camp de sélection</span>
+        <span className="ev-tag" title={label}>{label}</span>
         <div className="ev-date"><span className="d">{d.day}</span><span className="m">{d.mon}</span></div>
         {e.lieu ? <div className="ev-meta">{e.lieu}</div> : null}
       </article>
@@ -825,7 +828,10 @@ const TPM_CSS = `
 /* camp = couleur primaire */
 .tpm .ev.camp{background:var(--red);border-color:var(--red)}
 .tpm .ev.camp *{color:#fff}
-.tpm .ev-tag{font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:.12em;margin-bottom:8px;display:block}
+/* Intitulé libre (≤40 car.) sur une tuile de 172px : deux lignes max, ellipse
+   au-delà. Bebas est condensé, donc ~2 lignes suffisent aux 40 caractères. */
+.tpm .ev-tag{font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:.12em;margin-bottom:8px;
+  line-height:1.22;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;overflow-wrap:anywhere}
 .tpm .ev.past{opacity:.55}
 
 /* ── Présentation ── */

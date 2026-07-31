@@ -245,7 +245,10 @@ export const TP_CSS = `
 .tp .ev.match.home .ev-meta{color:rgba(237,239,243,.66)}
 /* camp de sélection — événement spécial : couleur primaire école, texte crème */
 .tp .ev.camp{width:224px;background:linear-gradient(150deg, var(--red), var(--ink));color:var(--cream)}
-.tp .ev.camp .ev-tag{font-family:'Outfit';font-weight:800;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--cream);opacity:.92;margin-bottom:10px}
+/* L'intitulé est libre (≤40 car.) : deux lignes max, ellipse au-delà, et
+   overflow-wrap anywhere pour qu'un mot très long casse au lieu de déborder. */
+.tp .ev.camp .ev-tag{font-family:'Outfit';font-weight:800;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--cream);opacity:.92;margin-bottom:10px;
+  line-height:1.25;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;overflow-wrap:anywhere}
 .tp .ev.camp .ev-date .d{color:var(--cream)}
 .tp .ev.camp .ev-date .m{color:var(--cream);opacity:.85}
 .tp .ev.camp .ev-lieu{font-family:'Outfit';font-weight:700;font-size:15px;color:var(--cream);line-height:1.35;margin-top:2px}
