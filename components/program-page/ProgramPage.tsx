@@ -39,6 +39,7 @@ export default function ProgramPage({ school, content }: ProgramPageProps) {
     "--red": theme.red,
     "--red-deep": theme.redDeep,
     "--ink": theme.ink,
+    "--on-ink": theme.onInk, // texte lisible SUR la foncée (rangée « équipes »)
     "--char": theme.char,
     "--cream": theme.cream,
     "--kraft": theme.kraft,
@@ -201,7 +202,10 @@ export const PP_CSS = `
 .pp .trow{display:flex;align-items:baseline;gap:22px;padding:26px 8%;line-height:1}
 .pp .trow .big{font-family:'Anton';font-size:clamp(46px,5.6vw,78px)}
 .pp .trow .lab{font-family:'Bebas Neue';letter-spacing:.18em;font-size:clamp(14px,1.4vw,19px);opacity:.85}
-.pp .tr-ink{background:#191414;color:var(--p-ink)}
+/* Rangée « équipes » : la FONCÉE de l'école, pas un noir en dur. --on-ink est
+   choisi par deriveWallTheme (pickNeutralOn) donc le texte reste lisible même
+   si la « foncée » saisie est claire. */
+.pp .tr-ink{background:var(--ink);color:var(--on-ink)}
 .pp .tr-red{background:var(--red);color:#fff}
 .pp .tr-cream{background:#EFF1F4;color:var(--p-inv)}
 .pp .tr-cream .big{color:var(--red)}

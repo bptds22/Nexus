@@ -5,7 +5,7 @@
 // toggling one reflects the other. Vues / likes-count = mock (DB binding = Bloc 2).
 
 import * as React from "react";
-import { Heart, Eye, Check } from "lucide-react";
+import { Heart, Check } from "lucide-react";
 import GhostLayer from "./GhostLayer";
 import type { ProgramPageContent } from "./content";
 
@@ -40,13 +40,13 @@ export default function StatRows({
           </div>
 
           {/* Suivre + preuve sociale — moment plateforme (rouge Nexus).
-              1 240 vues / 86 athlètes = mock ; binding DB en Bloc 2. */}
+              La pastille « 1 240 vues » a été RETIRÉE : c'était un nombre en
+              dur sur une page publique. Aucune table ne compte les vues d'une
+              page école — les tables *_views existantes sont toutes indexées
+              sur athlete_id (profils d'athlètes), aucune sur school_id. La
+              pastille reviendra le jour où ce compteur existera vraiment.
+              `followers` ci-dessous, lui, vient de count_followers_by_school. */}
           <div className="hfollow rv">
-            <div className="hf-stats">
-              <span className="hf-chip">
-                <Eye className="ic eye" size={14} strokeWidth={2} aria-hidden />1 240<span className="u">vues</span>
-              </span>
-            </div>
             <button
               type="button"
               className={inTargets ? "hf-btn on" : "hf-btn"}

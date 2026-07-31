@@ -244,6 +244,11 @@ export interface WallTheme {
   tileGlyph: string;
   /** foam-finger recolor: hue-rotate(Δ from #A6192E) + saturate — rule #5 */
   foamFilter: string;
+  /** Texte garanti lisible SUR la foncée (--ink). Même plancher que `onC1` :
+   *  la claire de l'école si elle contraste assez, sinon l'encre sombre.
+   *  Une école dont la « foncée » est en fait claire garde donc un texte
+   *  lisible au lieu d'une rangée blanc-sur-blanc. */
+  onInk: string;
 }
 
 const REF_PRIMARY = "#A6192E"; // the foam PNG's native red — Δ reference hue
@@ -304,7 +309,14 @@ function foamFilterFor(p: Rgb): string {
   while (dh > 180) dh -= 360;
   while (dh < -180) dh += 360;
   const sat = ref.s > 0 ? cur.s / ref.s : 1;
-  return `hue-rotate(${Math.round(dh)}deg) saturate(${sat.toFixed(2)})`;
+  // LUMINOSITÉ — `hue-rotate` est une approximation matricielle qui ne touche
+  // PAS la clarté : le PNG source est un rouge sombre (L≈37%), donc une école
+  // à la primaire claire recevait un doigt brun/olive au lieu de sa couleur.
+  // Cas réel : or #d0a62d (L≈50%) → Δh ≈ +55° sur un rouge sombre = brun.
+  // On rattrape l'écart de clarté, borné pour ne pas cramer le lettrage crème
+  // (déjà proche du blanc) ni noircir le corps.
+  const lum = ref.l > 0 ? Math.min(1.6, Math.max(0.75, cur.l / ref.l)) : 1;
+  return `hue-rotate(${Math.round(dh)}deg) saturate(${sat.toFixed(2)}) brightness(${lum.toFixed(2)})`;
 }
 
 // NOTE: a deterministic colorize chain (grayscale→sepia→saturate→hue-rotate→
@@ -357,6 +369,9 @@ export function deriveWallTheme(
     c1OnCream,
     tileGlyph: toHex(darken(n, 0.38)), // claire × 0.62/canal
     foamFilter: foamFilterFor(p),
+    // Réutilise pickNeutralOn — le même choix que derivePlate fait pour sa
+    // plaque sombre. Pas de second plancher de contraste dans le projet.
+    onInk: pickNeutralOn(d, n, neutral),
   };
 }
 
