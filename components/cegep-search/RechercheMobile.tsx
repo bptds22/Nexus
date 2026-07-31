@@ -18,7 +18,7 @@
 
 import * as React from "react";
 import dynamic from "next/dynamic";
-import { Heart, Search, X, Check, ChevronDown, ArrowRight, Sparkles, Map as MapIcon, List } from "lucide-react";
+import { Heart, Search, X, Check, ChevronDown, ArrowRight, Sparkles, Info, Map as MapIcon, List } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { loadSearchData, type SearchData, type CegepRow } from "@/lib/queries/cegepSearch/searchData";
 import { norm, regionCentroid, scoreCegep } from "@/lib/queries/cegepSearch/scoring";
@@ -44,6 +44,10 @@ const initialesDe = (nom: string) =>
     .split(/[\s-]+/).filter(Boolean).slice(0, 2).map((m) => m[0]).join("").toUpperCase();
 
 type Mode = "list" | "filter" | "preview";
+
+/** Durée du glissement de la sheet (entrée ET sortie). Doit rester ALIGNÉE sur
+ *  la transition CSS `.rm .sheet` : c'est ce délai qui décide du démontage. */
+const SHEET_MS = 280;
 
 /** Haptique légère — pattern PROUVÉ des écrans mobiles (RecruteurRechercheMobile
  *  etc.) : import dynamique + try/catch, SANS guard `isNativePlatform` (qui
@@ -92,6 +96,16 @@ export default function RechercheMobile() {
   // ── écrans / sheet ──
   const [view, setView] = React.useState<"liste" | "carte">("liste");
   const [open, setOpen] = React.useState(false);
+  /* Montage/sortie de la sheet — voir le bloc ANIMATION plus bas. `open` est
+     l'intention (ouverte/fermée) ; `sheetMounted` est la présence dans le DOM
+     (elle survit à la fermeture le temps de la sortie) ; `sheetIn` est l'état
+     VISUEL (posée / hors écran), basculé une frame après le montage pour qu'il
+     y ait un état de départ à animer. */
+  const [sheetMounted, setSheetMounted] = React.useState(false);
+  const [sheetIn, setSheetIn] = React.useState(false);
+  /* Crédit de la carte replié derrière ⓘ (obligation ODbL/CARTO : masqué
+     visuellement, jamais retiré du DOM). */
+  const [attrOpen, setAttrOpen] = React.useState(false);
   const [mode, setMode] = React.useState<Mode>("list");
   const [fkey, setFkey] = React.useState<FKey | null>(null);
   const [currentId, setCurrentId] = React.useState<string | null>(null);
@@ -102,7 +116,10 @@ export default function RechercheMobile() {
   const headRef = React.useRef<HTMLDivElement>(null);
   const [headH, setHeadH] = React.useState(0);
   const [vh, setVh] = React.useState(0);
-  const [dragH, setDragH] = React.useState<number | null>(null);
+  /* Décalage du GLISSÉ, en px vers le bas (0 = posée). Le drag déplace la sheet
+     en `transform`, plus en `height` : c'est la même propriété que l'entrée et
+     la sortie, donc relâcher un glissé enchaîne sans saut. */
+  const [dragY, setDragY] = React.useState<number | null>(null);
 
   // ── carte ──
   // focus reste null : l'auto-recadrage vivait dans le FAB « localisation »
@@ -148,10 +165,54 @@ export default function RechercheMobile() {
     return () => ro.disconnect();
   }, [view]);
 
+  /* ── ANIMATION DE LA SHEET ────────────────────────────────────────────────
+     CAUSE du « surgissement » d'avant : la sheet est DÉMONTÉE au repos (Lot C).
+     Au montage il n'existe donc aucun état de départ à interpoler — le
+     navigateur peint directement l'état final, et `.sheet.hidden` (posée par la
+     classe) n'était jamais rendue puisque l'élément n'existait pas encore. La
+     transition portait en plus sur `height`, réglée en style inline : une
+     hauteur qui apparaît ne s'anime pas davantage.
+
+     CORRECTIF : on découple présence et apparence, en DEUX effets.
+     A) présence — `open` monte la sheet ; à la fermeture le démontage attend la
+        fin du glissement, et c'est là seulement qu'on vide mode/fkey/currentId
+        (sinon on verrait une sheet VIDE partir vers le bas).
+     B) apparence — une fois la sheet RÉELLEMENT dans le DOM (effet séparé, donc
+        après le commit du montage), on force la lecture du style de départ puis
+        on bascule `sheetIn` à la frame suivante.
+     Les deux effets doivent rester SÉPARÉS : programmer le rAF depuis l'effet A
+     le planifie avant que le montage soit peint — le navigateur fusionne alors
+     début et fin dans la même frame et n'anime rien. C'est exactement le bug
+     mesuré (transform inline déjà à translateY(0) à la première frame). ── */
+  const sheetRef = React.useRef<HTMLDivElement>(null);
+
+  // A — présence
+  React.useEffect(() => {
+    if (open) { setSheetMounted(true); return; }
+    setSheetIn(false);
+    const t = window.setTimeout(() => {
+      setSheetMounted(false);
+      setMode("list"); setFkey(null); setCurrentId(null);
+    }, SHEET_MS);
+    return () => window.clearTimeout(t);
+  }, [open]);
+
+  // B — apparence
+  React.useEffect(() => {
+    if (!sheetMounted || !open) return;
+    const el = sheetRef.current;
+    if (!el) return;
+    void el.offsetHeight; // vide le style de départ (translateY(100%)) dans le moteur
+    const r = requestAnimationFrame(() => setSheetIn(true));
+    return () => cancelAnimationFrame(r);
+  }, [sheetMounted, open]);
+
   /* ── correction 5 : la sheet passe AU-DESSUS du tab bar, et dès qu'elle
      dépasse peek le tab bar s'efface. On ne touche pas MobileTabBar (portalé
      sur document.body) : on marque le body et une règle scopée l'escamote. ── */
-  const tall = open;
+  /* Adossé au MONTAGE, pas à `open` : pendant la sortie la sheet est encore là,
+     et le tab bar ne doit pas réapparaître dessous à mi-glissement. */
+  const tall = sheetMounted;
   React.useEffect(() => {
     document.body.classList.toggle("nx-rm-sheet-tall", tall);
   }, [tall]);
@@ -301,6 +362,7 @@ export default function RechercheMobile() {
   /* ── navigation de la sheet ── */
   const showFilter = (k: FKey) => {
     void tap(); // haptique : ouverture du sheet filtre
+    setAttrOpen(false);
     setMode("filter"); setFkey(k); setCurrentId(null);
     setProgQ("");
     setOpen(true);
@@ -308,14 +370,17 @@ export default function RechercheMobile() {
 
   const showPreview = (id: string) => {
     void tap(); // haptique : tap d'un pin OU d'une carte résultat + ouverture sheet
+    setAttrOpen(false);
     setCurrentId(id); setMode("preview"); setFkey(null);
     setAccEquipes(false); setAccProgs(false);
     setOpen(true);
   };
 
+  /* Ne vide PLUS mode/fkey/currentId ici : la sheet reste à l'écran le temps de
+     sortir, elle doit donc garder son contenu. Le nettoyage se fait à la fin de
+     l'animation (effet ANIMATION DE LA SHEET). */
   const closeSheet = React.useCallback(() => {
     void tap(); // haptique : fermeture du sheet
-    setMode("list"); setFkey(null); setCurrentId(null);
     setOpen(false);
   }, []);
 
@@ -324,6 +389,7 @@ export default function RechercheMobile() {
   const basculer = () => {
     const next = view === "liste" ? "carte" : "liste";
     setView(next);
+    setAttrOpen(false);
     setMode("list"); setFkey(null); setCurrentId(null); setOpen(false);
     if (next === "carte") setResizeToken((t) => t + 1); // Leaflet re-mesure
   };
@@ -338,25 +404,28 @@ export default function RechercheMobile() {
      touch events + touch-action:none donnent un contrôle déterministe. La zone
      de saisie est TOUTE l'en-tête (.shHead), pas la poignée de 40px. Un touch
      démarrant sur un bouton/lien/champ ne lance PAS de drag. Seuil de
-     fermeture : glissé sous 75% de la hauteur ouverte (~25% vers le bas). ── */
+     fermeture : glissé de plus de 25% de la hauteur ouverte vers le bas.
+     Le glissé déplace la sheet en `transform` (comme l'entrée et la sortie) :
+     relâcher enchaîne donc sur la même propriété, sans saut. En deçà du seuil
+     elle revient se poser toute seule. ── */
   const dragRef = React.useRef<{ y0: number } | null>(null);
   const onGrabStart = (e: React.TouchEvent) => {
     if ((e.target as HTMLElement).closest("button, a, .heart, input")) return;
     dragRef.current = { y0: e.touches[0].clientY };
-    setDragH(OPEN_H);
+    setDragY(0);
   };
   const onGrabMove = (e: React.TouchEvent) => {
     const d = dragRef.current;
     if (!d) return;
-    const dy = d.y0 - e.touches[0].clientY; // < 0 si on descend
-    setDragH(Math.max(0, Math.min(OPEN_H, OPEN_H + dy)));
+    const dy = e.touches[0].clientY - d.y0; // > 0 si on descend
+    setDragY(Math.max(0, Math.min(OPEN_H, dy)));
   };
   const onGrabEnd = () => {
-    const h = dragH;
+    const y = dragY;
     dragRef.current = null;
-    setDragH(null);
-    if (h == null) return;
-    if (h < OPEN_H * 0.75) closeSheet(); // glissé bas → fermeture
+    setDragY(null);
+    if (y == null) return;
+    if (y > OPEN_H * 0.25) closeSheet(); // glissé bas → fermeture
   };
 
   /* ── géométrie : tout ce qui flotte réserve --tabzone ── */
@@ -543,6 +612,37 @@ export default function RechercheMobile() {
               </div>
             </div>
           </div>
+
+          {/* ═══ ATTRIBUTION — obligation de licence (ODbL pour OSM, conditions
+                 CARTO). Elle n'est PAS supprimée : le contrôle Leaflet reste
+                 dans le DOM (attributionControl:true, cf. MapPane) et n'est que
+                 masqué visuellement ; le crédit reste accessible ici, replié
+                 derrière un ⓘ — pattern Google Maps. Liens cliquables. ═══ */}
+          {attrOpen && (
+            <div className="attrcatch" onClick={() => setAttrOpen(false)} />
+          )}
+          <div className={"attrzone" + (open ? " hide" : "")} style={{ bottom: flotteBottom }}>
+            {attrOpen && (
+              <div className="attrpill" role="note">
+                ©{" "}
+                <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">
+                  OpenStreetMap
+                </a>{" "}
+                ©{" "}
+                <a href="https://carto.com/attributions" target="_blank" rel="noopener noreferrer">
+                  CARTO
+                </a>
+              </div>
+            )}
+            <button
+              className={"attrbtn" + (attrOpen ? " on" : "")}
+              onClick={() => { void tap(); setAttrOpen((a) => !a); }}
+              aria-label="Crédits de la carte"
+              aria-expanded={attrOpen}
+            >
+              <Info size={14} aria-hidden />
+            </button>
+          </div>
         </section>
       )}
 
@@ -559,8 +659,10 @@ export default function RechercheMobile() {
       {/* ═══ BACKDROP — tap hors du sheet = fermeture, DANS LES DEUX VUES
              (avant : liste seulement → en carte on ne pouvait pas fermer au
              tap, ce qui cassait le réflexe iOS). ═══ */}
+      {/* Le fondu suit le glissement : piloté par `sheetIn`, pas par `open` —
+          les deux partent et reviennent ensemble. */}
       <div
-        className={"backdrop" + (open ? " on" : "")}
+        className={"backdrop" + (open && sheetIn ? " on" : "")}
         onClick={closeSheet}
       />
 
@@ -570,10 +672,19 @@ export default function RechercheMobile() {
              (76%), pour FILTRE ou APERÇU. À bottom:0, jamais coupée par le tab
              bar. Fermeture : glisser bas (drag TACTILE sur toute l'en-tête), tap
              hors du sheet (backdrop, carte comprise) ou ✕. En-tête inerte. ═══ */}
-      {(open || dragH != null) && (
+      {sheetMounted && (
       <div
-        className={"sheet" + (open ? "" : " hidden") + (tall ? " tall" : " low") + (dragH != null ? " dragging" : "")}
-        style={{ height: dragH ?? OPEN_H }}
+        ref={sheetRef}
+        className={"sheet" + (tall ? " tall" : " low") + (dragY != null ? " dragging" : "")}
+        style={{
+          height: OPEN_H,
+          // UNE seule propriété animée, du montage au démontage : translateY.
+          // Hors écran tant que `sheetIn` est faux (état de DÉPART peint au
+          // montage), posée ensuite, suivie au doigt pendant un glissé.
+          transform: dragY != null
+            ? `translateY(${dragY}px)`
+            : (open && sheetIn ? "translateY(0)" : "translateY(100%)"),
+        }}
       >
         <div
           className="grab"
@@ -923,11 +1034,35 @@ body.nx-rm-sheet-tall nav[aria-label="Navigation principale"]{
 .rm .pin-rich{filter:drop-shadow(0 0 4px rgba(230,57,70,.9));animation:rmpulse 2.4s ease-in-out infinite}
 @keyframes rmpulse{0%,100%{filter:drop-shadow(0 0 3px rgba(230,57,70,.65))}50%{filter:drop-shadow(0 0 9px rgba(230,57,70,1))}}
 @media(prefers-reduced-motion:reduce){.rm .pin-rich{animation:none}}
-/* correction 7 — attribution en encart compact, qui remonte avec la sheet */
-.rm .cs-attr-compact .leaflet-control-attribution{background:rgba(17,19,23,.75);color:var(--mut);
-  font-size:12px;border-radius:6px 0 0 0;padding:2px 6px}
-.rm .cs-attr-compact .leaflet-bottom.leaflet-right{bottom:calc(var(--tabzone) - 8px);
-  transition:bottom .3s cubic-bezier(.32,.72,0,1)}
+/* ══ ATTRIBUTION ══
+   Le crédit reste une OBLIGATION de licence (ODbL pour OSM, conditions CARTO) :
+   le contrôle Leaflet n'est ni désactivé (attributionControl:true) ni retiré du
+   DOM — il est seulement masqué VISUELLEMENT, par la technique « visually
+   hidden » standard (1×1px, clip-path), donc toujours lu par un lecteur
+   d'écran. Le crédit visible pour l'humain, lui, vit dans la pastille ⓘ
+   ci-dessous, liens compris. Feuille scopée .rm : le web (CegepSearch) ne voit
+   rien d'ici et garde son bandeau. */
+.rm .cs-attr-compact .leaflet-control-attribution{position:absolute;width:1px;height:1px;
+  margin:-1px;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
+/* Zone ⓘ — même famille glass que le toggle liste/carte, coin bas-droit,
+   au-dessus de --tabzone. S'efface quand la sheet monte, comme le toggle. */
+.rm .attrzone{position:absolute;right:14px;z-index:46;display:flex;flex-direction:column;
+  align-items:flex-end;gap:8px;transition:bottom .3s cubic-bezier(.32,.72,0,1),opacity .18s}
+.rm .attrzone.hide{opacity:0;pointer-events:none}
+.rm .attrbtn{width:26px;height:26px;border-radius:13px;flex:0 0 auto;
+  background:var(--glass);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border:1px solid var(--line2);display:grid;place-items:center;cursor:pointer;
+  color:var(--soft);box-shadow:0 6px 18px rgba(0,0,0,.5)}
+.rm .attrbtn.on{color:#fff;border-color:rgba(255,255,255,.34)}
+.rm .attrbtn svg{stroke:currentColor;fill:none}
+.rm .attrpill{max-width:78vw;padding:7px 11px;border-radius:13px;
+  background:var(--glass);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border:1px solid var(--line2);box-shadow:0 8px 26px rgba(0,0,0,.6);
+  font-size:12px;line-height:1.5;color:var(--mut);white-space:nowrap}
+.rm .attrpill a{color:var(--soft);text-decoration:underline}
+/* Capteur plein écran : un tap AILLEURS replie la pastille (réflexe iOS).
+   Sous la zone ⓘ (46) pour que le ⓘ lui-même reste cliquable = re-tap. */
+.rm .attrcatch{position:absolute;inset:0;z-index:45}
 
 
 /* ══ CARTE RÉSULTAT (partagée liste ↔ sheet) ══ */
@@ -961,14 +1096,20 @@ body.nx-rm-sheet-tall nav[aria-label="Navigation principale"]{
 .rm .backdrop{position:absolute;inset:0;background:rgba(0,0,0,.62);opacity:0;pointer-events:none;
   transition:opacity .22s;z-index:52}
 .rm .backdrop.on{opacity:1;pointer-events:auto}
+/* La sheet glisse depuis le bas et repart de même : UNE seule propriété animée,
+   translateY, portée en style inline. La hauteur n'est plus animée — une
+   hauteur qui apparaît au montage n'a pas d'état de départ, c'était la cause du
+   surgissement. 280ms, courbe maison (cf. SHEET_MS côté TS : les deux doivent
+   rester alignés, c'est ce délai qui décide du démontage). */
 .rm .sheet{position:absolute;left:0;right:0;background:var(--card);border-top:1px solid var(--line2);
   border-radius:20px 20px 0 0;z-index:60;display:flex;flex-direction:column;box-shadow:0 -16px 48px rgba(0,0,0,.7);
-  transition:height .3s cubic-bezier(.32,.72,0,1),bottom .3s cubic-bezier(.32,.72,0,1),transform .3s cubic-bezier(.32,.72,0,1)}
+  will-change:transform;transition:transform .28s cubic-bezier(.32,.72,0,1)}
 /* à peek la sheet s'arrête AU-DESSUS du tab bar ; dès qu'elle dépasse, bottom:0 */
 .rm .sheet.low{bottom:var(--tabzone)}
 .rm .sheet.tall{bottom:0}
-.rm .sheet.hidden{transform:translateY(115%)}
+/* pendant le glissé la sheet SUIT le doigt : aucune interpolation */
 .rm .sheet.dragging{transition:none}
+@media(prefers-reduced-motion:reduce){.rm .sheet{transition:none}.rm .backdrop{transition:none}}
 .rm .grab{flex:0 0 auto;padding:10px 0 6px;display:grid;place-items:center;cursor:grab;touch-action:none}
 .rm .grab i{width:40px;height:4px;border-radius:2px;background:rgba(255,255,255,.24);display:block}
 /* Toute l'en-tête est la zone de drag (pas la poignée seule) → touch-action:none
