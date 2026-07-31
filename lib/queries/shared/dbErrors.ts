@@ -27,6 +27,18 @@ export function apresSuppression(e: unknown, quoi: string): Error {
  *  périmé affiche ainsi le vrai plafond, pas celui qu'il croit connaître. */
 const PLAFOND = /Maximum (\d+) lignes par (?:équipe|école) \(table (\w+)\)/;
 
+/** Refus produits par le MOTEUR (Postgres, PostgREST). Toujours en anglais.
+ *  Utile pour rattraper un refus RLS qui arriverait sans code SQL. */
+const REFUS_MOTEUR = /row.level security|permission denied|must be owner|insufficient privilege|not authorized/i;
+
+/** RÈGLE DU DÉPÔT — un RAISE EXCEPTION destiné à l'utilisateur commence par
+ *  « NEXUS: ». Ces messages-là passent tels quels (préfixe retiré) ; tout le
+ *  reste est du texte de moteur et n'atteint jamais l'écran.
+ *
+ *  Voir supabase/migrations/20260731200000_raise_marqueur_nexus.sql. Toute
+ *  fonction future qui veut parler à l'utilisateur doit porter ce préfixe. */
+const MARQUEUR = /^NEXUS:\s*/;
+
 const NOMS: Record<string, string> = {
   team_events: "événements",
   team_pennants: "fanions",
@@ -43,12 +55,18 @@ export function friendlyDbError(e: unknown): Error {
   const status = (e as { statusCode?: string })?.statusCode;
   const quoi = (e as ErreurApresSuppression)?.nexusApresSuppression;
 
+  // ORDRE IMPORTANT. Le plafond passe AVANT le marqueur : ses messages portent
+  // eux aussi « NEXUS: », mais ils nomment la table SQL et doivent être
+  // réécrits, pas laissés passer. Le marqueur vient ensuite, le refus de droits
+  // en dernier — sinon un 42501 de nos fonctions serait avalé par le générique.
   let clair: string;
   const plafond = PLAFOND.exec(msg);
-  if (code === "42501" || status === "403" || /row.level security/i.test(msg)) {
-    clair = "Ta session a expiré — reconnecte-toi pour enregistrer.";
-  } else if (plafond) {
+  if (plafond) {
     clair = `Maximum ${plafond[1]} ${NOMS[plafond[2]] ?? "éléments"} — retires-en un avant d'en ajouter un autre.`;
+  } else if (MARQUEUR.test(msg)) {
+    clair = msg.replace(MARQUEUR, "");
+  } else if (code === "42501" || status === "403" || REFUS_MOTEUR.test(msg)) {
+    clair = "Ta session a expiré — reconnecte-toi pour enregistrer.";
   } else {
     clair = msg;
   }
