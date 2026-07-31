@@ -9,7 +9,37 @@ import * as React from "react";
 import TeamHero from "@/components/team-page/TeamHero";
 import TeamPreviewShell, { useDebounced } from "./PreviewShell";
 import { previewTeam } from "./teamBridge";
-import { useTeamEditor } from "./teamEditorContext";
+import { useTeamEditor, type CalendrierEtat } from "./teamEditorContext";
+
+/** Pourquoi aucun record n'est pré-rempli. Trois causes distinctes que
+ *  l'éditeur annonçait toutes de la même façon (« Aucun match joué avec score
+ *  en DB »), ce qui donnait l'impression d'une panne alors que le plus souvent
+ *  la saison n'a simplement pas commencé. */
+function messageRecord(c: CalendrierEtat): string {
+  if (c.total === 0) {
+    return "Calendrier RSEQ pas encore lié à ton équipe — saisis ton record à la main.";
+  }
+  if (c.joues === 0) {
+    const quand = c.prochaine ? formatDateFr(c.prochaine) : null;
+    const saison = c.saison ? ` ${c.saison}` : "";
+    return quand
+      ? `Saison${saison} pas encore commencée — premier match le ${quand}. Ton record s'affichera après les premiers matchs.`
+      : `Saison${saison} pas encore commencée — ton record s'affichera après les premiers matchs.`;
+  }
+  // Des matchs sont joués mais aucun ne porte de score exploitable.
+  return "Aucun score publié par le RSEQ pour les matchs joués — saisis ton record.";
+}
+
+const MOIS_FR = ["janvier", "février", "mars", "avril", "mai", "juin",
+  "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
+
+/** « 2026-08-28 » → « 28 août 2026 ». Découpage de la chaîne ISO, jamais un
+ *  `new Date()` : celui-ci décale d'un jour selon le fuseau. */
+function formatDateFr(iso: string): string {
+  const [a, m, j] = iso.split("-");
+  const mois = MOIS_FR[Number(m) - 1];
+  return mois ? `${Number(j)} ${mois} ${a}` : iso;
+}
 import { useToast } from "@/components/page-editor/toast";
 import type { SocialPlatform } from "@/components/marketing/SocialIcons";
 
@@ -28,7 +58,7 @@ const newUid = () => Math.random().toString(36).slice(2);
 export default function HeroSection() {
   const toast = useToast();
   const {
-    identity, initial, report, uploadAsset, assetUrl, recordHint,
+    identity, initial, report, uploadAsset, assetUrl, recordHint, calendrier,
     pennantsPreview, campsPreview, needsPreview, positions, games, commits, hiddenSections,
   } = useHeroDeps();
 
@@ -165,7 +195,7 @@ export default function HeroSection() {
                     <b>RSEQ calcule : {recordHint}</b> (matchs joués en DB) — cliquer pour appliquer
                   </div>
                 ) : (
-                  <div className="note">Aucun match joué avec score en DB pour cette saison — saisis ton record.</div>
+                  <div className="note">{messageRecord(calendrier)}</div>
                 )}
               </div>
               <div>

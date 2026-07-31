@@ -9,7 +9,20 @@ import * as React from "react";
 import CalendarSection from "@/components/team-page/CalendarSection";
 import TeamPreviewShell, { useDebounced } from "./PreviewShell";
 import { previewTeam } from "./teamBridge";
-import { useTeamEditor } from "./teamEditorContext";
+import { useTeamEditor, type CalendrierEtat } from "./teamEditorContext";
+
+/** Même distinction que le bloc record du hero : « pas encore lié » et « pas
+ *  encore commencé » sont deux situations différentes, et une seule des deux
+ *  demande une action. */
+function messageCalendrier(c: CalendrierEtat): string {
+  if (c.total === 0) {
+    return "Calendrier RSEQ pas encore lié à ton équipe — les matchs apparaîtront ici automatiquement une fois le lien fait.";
+  }
+  const saison = c.saison ? ` ${c.saison}` : "";
+  return c.joues === 0
+    ? `Saison${saison} pas encore commencée — les matchs apparaîtront ici dès le début du calendrier.`
+    : `Aucun match de la saison${saison} à afficher pour l'instant.`;
+}
 import { VisibilityToggle, SectionHidden } from "./SectionVisibility";
 import { useToast } from "@/components/page-editor/toast";
 import type { EditorCamp } from "@/lib/queries/teamPage/teamPageData";
@@ -19,7 +32,7 @@ const newUid = () => Math.random().toString(36).slice(2);
 export default function CalendarCampsSection() {
   const toast = useToast();
   const ctx = useTeamEditor();
-  const { identity, initial, initialCamps, initialPennants, initialNeeds, positions, games, commits, report, assetUrl, hiddenSections } = ctx;
+  const { identity, initial, initialCamps, initialPennants, initialNeeds, positions, games, commits, calendrier, report, assetUrl, hiddenSections } = ctx;
   const hidden = hiddenSections.includes("camps");
 
   const [camps, setCamps] = React.useState<(EditorCamp & { uid: string })[]>(
@@ -76,7 +89,7 @@ export default function CalendarCampsSection() {
           <div className="panel aff" style={{ marginBottom: 14 }}>
             <div className="pt">MATCHS — RSEQ AUTOMATIQUE, RIEN À FAIRE</div>
             {rows.length === 0 ? (
-              <div className="empty">Aucun match RSEQ en base pour la saison {identity.season || "courante"}.</div>
+              <div className="empty">{messageCalendrier(calendrier)}</div>
             ) : rows.map((r, i) => (
               <div key={i} className="calrow">
                 <span className="d">{r.date}</span>

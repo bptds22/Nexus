@@ -25,6 +25,37 @@ import {
 } from "@/lib/queries/teamPage/sportSlots";
 import type { GameRow, CommitRow } from "@/lib/queries/teamPage/dbToTeamPage";
 
+/** Ce que la base sait du calendrier d'une équipe, indépendamment de la saison
+ *  inscrite sur l'équipe. `total` compte les matchs RSEQ rattachés à l'équipe
+ *  quelle que soit leur saison : à 0, c'est que le pont RSEQ n'a pas été fait —
+ *  ce n'est pas la même chose qu'une saison qui n'a pas commencé. */
+export interface CalendrierEtat {
+  total: number;
+  joues: number;
+  /** Date du prochain match non joué (ISO), toutes saisons. */
+  prochaine: string | null;
+  /** Saison réelle de ces matchs — peut différer de `teams.season`. */
+  saison: string | null;
+}
+
+function resumeCalendrier(
+  rows: { game_date: string | null; is_played: boolean | null; season: string | null }[],
+): CalendrierEtat {
+  const joues = rows.filter((r) => r.is_played === true).length;
+  const aVenir = rows
+    .filter((r) => r.is_played !== true && r.game_date)
+    .map((r) => r.game_date as string)
+    .sort();
+  return {
+    total: rows.length,
+    joues,
+    prochaine: aVenir[0] ?? null,
+    // Saison des matchs eux-mêmes : si l'équipe est restée sur l'an dernier,
+    // c'est cette valeur-là qu'il faut annoncer, pas `teams.season`.
+    saison: rows.find((r) => r.season)?.season ?? null,
+  };
+}
+
 export interface TeamIdentity {
   teamId: string;
   schoolId: string;
@@ -85,6 +116,10 @@ interface TeamEditorCtx {
   schoolCoaches: SchoolCoach[];
   /** AUTO — aperçus */
   games: GameRow[];
+  /** État du calendrier RSEQ pour CETTE équipe, toutes saisons confondues.
+   *  Sert à distinguer trois situations que l'éditeur confondait en un seul
+   *  message alarmant : équipe non pontée · saison à venir · saison en cours. */
+  calendrier: CalendrierEtat;
   commits: CommitRow[];
   recordHint: string | null;
   /** état éditeur */
@@ -116,6 +151,7 @@ interface LoadState {
   positions?: PositionRow[];
   schoolCoaches?: SchoolCoach[];
   games?: GameRow[];
+  calendrier?: CalendrierEtat;
   commits?: CommitRow[];
   recordHint?: string | null;
 }
@@ -153,7 +189,7 @@ export function TeamPageEditorProvider({ teamId, children }: { teamId: string; c
           return;
         }
 
-        const [page, sport, school, schoolPage, positions, games, coaches, commits, hint, coachAccounts] = await Promise.all([
+        const [page, sport, school, schoolPage, positions, games, coaches, commits, hint, coachAccounts, tousMatchs] = await Promise.all([
           loadTeamPage(client, team.id),
           client.from("sports").select("nom").eq("id", team.sport_id).maybeSingle(),
           client.from("schools").select("name").eq("id", team.school_id).maybeSingle(),
@@ -173,6 +209,14 @@ export function TeamPageEditorProvider({ teamId, children }: { teamId: string; c
           client.from("users").select("id, first_name, last_name")
             .eq("role", "COACH").eq("school_id", team.school_id)
             .order("last_name"),
+          // Calendrier RSEQ SANS filtre de saison : c'est le seul moyen de
+          // distinguer « équipe jamais pontée » (aucun match, quelle que soit
+          // la saison) de « saison pas encore commencée » (des matchs existent,
+          // aucun n'est joué). La requête scopée ci-dessus confond les deux.
+          client.from("games")
+            .select("game_date, is_played, season")
+            .or(`home_team_id.eq.${team.id},visitor_team_id.eq.${team.id}`)
+            .order("game_date"),
         ]);
         if (cancelled) return;
 
@@ -220,6 +264,9 @@ export function TeamPageEditorProvider({ teamId, children }: { teamId: string; c
             .map((c) => ({ id: c.id, nom: [c.first_name, c.last_name].filter(Boolean).join(" ").trim() }))
             .filter((c) => c.nom),
           games: (games.data ?? []) as GameRow[],
+          calendrier: resumeCalendrier(
+            (tousMatchs.data ?? []) as { game_date: string | null; is_played: boolean | null; season: string | null }[],
+          ),
           commits: (commits.data ?? []) as CommitRow[],
           recordHint: (hint.data as string | null) ?? null,
         });
@@ -319,6 +366,7 @@ export function TeamPageEditorProvider({ teamId, children }: { teamId: string; c
     positions: load.positions ?? [],
     schoolCoaches: load.schoolCoaches ?? [],
     games: load.games ?? [],
+    calendrier: load.calendrier ?? { total: 0, joues: 0, prochaine: null, saison: null },
     commits: load.commits ?? [],
     recordHint: load.recordHint ?? null,
     report, saveAll, dirty: dirtyKeys.length > 0, saving,
