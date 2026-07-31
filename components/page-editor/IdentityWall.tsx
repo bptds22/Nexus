@@ -37,7 +37,15 @@ export default function IdentityWall({
   nbath: string; setNbath: (v: string) => void;
 }) {
   const toast = useToast();
-  const { initial, report, uploadAsset, assetUrl, setPreviewColors } = useEditor();
+  // `school` est déjà pris plus bas par l'identité du mur (SchoolProgramIdentity).
+  const { initial, school: fiche, report, uploadAsset, assetUrl, setPreviewColors } = useEditor();
+  // La ville a-t-elle été SEEDÉE depuis `schools` (rien de saisi en base) ou
+  // vient-elle d'une saisie ? Pilote le bandeau du bloc Géo, qui ne doit
+  // annoncer que ce qui a réellement été pré-rempli.
+  const villePreremplie = React.useMemo(
+    () => !!initial.ville && initial.ville === (fiche.city || "").toUpperCase(),
+    [initial.ville, fiche.city],
+  );
   const [tagline, setTagline] = React.useState(initial.tagline);
   const [prov, setProv] = React.useState(initial.prov);
   const [tick, setTick] = React.useState(initial.tick);
@@ -216,8 +224,16 @@ export default function IdentityWall({
           </div>
 
           <div className="panel" style={{ marginBottom: 14 }}>
-            <div className="pt"><span className="n">3</span>GÉO — PRÉ-REMPLI PAR NEXUS, MODIFIABLE</div>
-            <div className="auto" style={{ marginBottom: 10 }}><span className="achip"><b>✓</b>Rempli depuis l'adresse de ton collège — corrige si ça sonne pas juste</span></div>
+            <div className="pt"><span className="n">3</span>GÉO — MODIFIABLE</div>
+            {/* Le bandeau ne s'affiche QUE si quelque chose a réellement été
+                pré-rempli, et ne nomme que ce champ-là. `schools` porte la
+                ville ; ni le secteur ni l'indicatif régional n'y existent, donc
+                ces deux champs restent vides et ne sont pas annoncés. */}
+            {villePreremplie && (
+              <div className="auto" style={{ marginBottom: 10 }}>
+                <span className="achip"><b>✓</b>Ville reprise de la fiche de ton collège — corrige si ça sonne pas juste</span>
+              </div>
+            )}
             <div className="row2">
               <div>
                 <label className="fl" style={{ marginTop: 0 }}>Ville</label>

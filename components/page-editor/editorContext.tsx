@@ -26,6 +26,21 @@ import {
 
 type Bucket = "school-logos" | "campus-photos";
 
+/** L'école connectée, telle qu'elle vit dans `public.schools`. Les sections
+ *  AUTO (fiche campus, « L'affiche ») s'en servent pour afficher les VRAIES
+ *  données de l'établissement au lieu d'une fixture. Aucune de ces valeurs
+ *  n'est éditable ni reportée : elles ne partent jamais en base. */
+export interface EditorSchool {
+  id: string;
+  name: string;
+  city: string | null;
+  region: string | null;
+  langue: string | null;
+  reseau: string | null;
+  address: string | null;
+  postal_code: string | null;
+}
+
 /* ── forme d'init consommée par les sections (neutre) ─────────────────────── */
 export interface EditorInitial {
   schoolName: string;
@@ -66,17 +81,24 @@ const g = (v: string | null | undefined): string => v ?? "";
 const numStr = (v: number | null | undefined): string => (v == null ? "" : String(v));
 
 function dbToEditor(
-  schoolName: string,
+  school: EditorSchool,
   c: Partial<SchoolPageState> | null,
   cards: EditorCard[],
   programs: EditorProgram[],
   news: EditorNews[],
 ): EditorInitial {
   return {
-    schoolName,
+    schoolName: school.name,
     nick: g(c?.nickname), slog: g(c?.slogan), tagline: g(c?.tagline),
     prov: c?.province || "Québec", tick: g(c?.ticker_text),
-    ville: g(c?.ville), quartier: g(c?.quartier), rtag: g(c?.code_regional),
+    // VILLE : pré-remplie depuis schools.city quand l'éditeur n'a rien de saisi
+    // — même repli que le rendu public (dbToProgramPage : nn(c.ville, city)).
+    // C'est un PRÉ-REMPLISSAGE de champ : rien ne part en base tant que
+    // l'utilisateur n'enregistre pas.
+    // QUARTIER et CODE RÉGIONAL restent vides : `schools` ne porte ni secteur
+    // ni indicatif téléphonique. Une valeur sans source reste absente.
+    ville: g(c?.ville) || (school.city || "").toUpperCase(),
+    quartier: g(c?.quartier), rtag: g(c?.code_regional),
     c1: c?.color_primary || "#A6192E", c2: c?.color_dark || "#5A0E1B", c3: c?.color_light || "#E8C7CD",
     init: g(c?.initiales), vword: g(c?.rail_word), dev1: g(c?.devise_1), dev2: g(c?.devise_2),
     fla: g(c?.arrow_avant), flb: g(c?.arrow_apres),
@@ -96,6 +118,8 @@ function dbToEditor(
 /* ── contexte ─────────────────────────────────────────────────────────────── */
 interface EditorCtx {
   schoolId: string; userId: string; schoolName: string;
+  /** Fiche `schools` de l'école connectée — lecture seule, sections AUTO. */
+  school: EditorSchool;
   initial: EditorInitial;
   client: SupabaseClient;
   assetUrl: (path: string | null | undefined, bucket: Bucket) => string | null;
@@ -127,7 +151,7 @@ export function SchoolPageEditorProvider({ children }: { children: React.ReactNo
   if (!clientRef.current) clientRef.current = createClient();
   const client = clientRef.current;
 
-  const [load, setLoad] = React.useState<{ loading: boolean; err?: string; initial?: EditorInitial; schoolName?: string }>({ loading: true });
+  const [load, setLoad] = React.useState<{ loading: boolean; err?: string; initial?: EditorInitial; school?: EditorSchool }>({ loading: true });
 
   React.useEffect(() => {
     if (userLoading) return;
@@ -137,13 +161,25 @@ export function SchoolPageEditorProvider({ children }: { children: React.ReactNo
     (async () => {
       try {
         const [sch, page] = await Promise.all([
-          client.from("schools").select("name").eq("id", schoolId).maybeSingle(),
+          client.from("schools")
+            .select("id, name, city, region, langue, reseau, address, postal_code")
+            .eq("id", schoolId).maybeSingle(),
           loadSchoolPage(client, schoolId),
         ]);
         if (cancelled) return;
         if (sch.error) throw sch.error;
-        const name = (sch.data?.name as string) || "Mon collège";
-        setLoad({ loading: false, schoolName: name, initial: dbToEditor(name, page.content, page.cards, page.programs, page.news) });
+        const row = (sch.data ?? {}) as Partial<EditorSchool>;
+        const school: EditorSchool = {
+          id: schoolId,
+          name: row.name || "Mon collège",
+          city: row.city ?? null,
+          region: row.region ?? null,
+          langue: row.langue ?? null,
+          reseau: row.reseau ?? null,
+          address: row.address ?? null,
+          postal_code: row.postal_code ?? null,
+        };
+        setLoad({ loading: false, school, initial: dbToEditor(school, page.content, page.cards, page.programs, page.news) });
       } catch (e) {
         if (!cancelled) setLoad({ loading: false, err: e instanceof Error ? e.message : "Erreur de chargement" });
       }
@@ -234,12 +270,13 @@ export function SchoolPageEditorProvider({ children }: { children: React.ReactNo
   if (load.loading) {
     return <div className="pe-load">Chargement de ta page…</div>;
   }
-  if (load.err || !load.initial || !schoolId || !user) {
+  if (load.err || !load.initial || !load.school || !schoolId || !user) {
     return <div className="pe-load pe-err">{load.err || "Chargement impossible."}</div>;
   }
 
   const value: EditorCtx = {
-    schoolId, userId: user.authUser.id, schoolName: load.schoolName || "Mon collège",
+    schoolId, userId: user.authUser.id, schoolName: load.school.name,
+    school: load.school,
     initial: load.initial, client, assetUrl, uploadAsset, report, saveAll,
     dirty: dirtyKeys.length > 0, saving,
     previewColors, setPreviewColors,

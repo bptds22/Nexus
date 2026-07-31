@@ -28,18 +28,31 @@ export function buildPreviewRootStyle(c1: string, c2: string, c3: string): React
 export const PREVIEW_ROOT_STYLE = buildPreviewRootStyle("#A6192E", "#5A0E1B", "#E8C7CD");
 
 /* ── S3 Campus → CampusSection (props: content) ─────────────────────────── */
+/** Ce que CampusSection lit RÉELLEMENT dans le contenu, hors cartes. Fourni par
+ *  l'éditeur depuis `schools` : sans ça l'aperçu affichait la fiche et la carte
+ *  de Grasset à tous les collèges. Absent → valeurs nulles, tuiles masquées. */
+export interface CampusFiche {
+  language: ProgramPageContent["language"];
+  schoolType: ProgramPageContent["schoolType"];
+  region: string | null;
+  mapQuery: string;
+}
+
 export function campusContent(
   cards: { t: string; x: string; image?: string | null }[], yt: string,
+  fiche?: CampusFiche,
 ): ProgramPageContent {
   const campusCards: CampusCard[] = cards
     .filter((c) => c.t)
     .map((c) => ({ type: "photo", image: c.image ?? null, titre: c.t, legende: c.x }));
   if (yt.trim()) campusCards.push({ type: "video", youtubeUrl: yt.trim() });
   // CampusSection ne lit que language/schoolType/region/mapQuery/campusCards ;
-  // le reste satisfait le type (fixture, non affiché).
+  // le reste satisfait le type (non affiché).
   return {
-    language: "FR", schoolType: "PRIVÉ", region: "Montréal",
-    address: "1001, boul. Crémazie Est, Montréal", mapQuery: "Collège André-Grasset, Montréal",
+    language: fiche?.language ?? null,
+    schoolType: fiche?.schoolType ?? null,
+    region: fiche?.region ?? null,
+    address: "", mapQuery: fiche?.mapQuery ?? "",
     campusCards,
     ticker: [], stats: { teams: 0, teamsLabel: "", athletes: 0, athletesLabel: "", region: "" },
     sports: [], housing: { type: "none" }, facts: [], videoUrl: null,

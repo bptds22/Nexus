@@ -50,7 +50,7 @@ export function genreCourt(gender: string | null): string {
 /** `schools.langue` → la valeur du contrat page. Toute valeur hors des trois
  *  connues (ou absente) rend null : la tuile LANGUE disparaît plutôt que
  *  d'affirmer une langue. Vérifié en base : FR 53 · EN 9 · BILINGUE 3 · null 4. */
-function langueDeSchool(v: string | null): ProgramPageContent["language"] {
+export function langueDeSchool(v: string | null): ProgramPageContent["language"] {
   const s = (v ?? "").trim().toUpperCase();
   return s === "FR" || s === "EN" || s === "BILINGUE" ? s : null;
 }
@@ -58,7 +58,7 @@ function langueDeSchool(v: string | null): ProgramPageContent["language"] {
 /** `schools.reseau` → la valeur du contrat page. La DB stocke PRIVE (sans
  *  accent) ; l'affichage veut PRIVÉ. Inconnu/absent → null, tuile absente.
  *  Vérifié en base : PUBLIC 54 · PRIVE 10 · null 5. */
-function reseauDeSchool(v: string | null): ProgramPageContent["schoolType"] {
+export function reseauDeSchool(v: string | null): ProgramPageContent["schoolType"] {
   const s = (v ?? "").trim().toUpperCase();
   return s === "PUBLIC" ? "PUBLIC" : s === "PRIVE" || s === "PRIVÉ" ? "PRIVÉ" : null;
 }

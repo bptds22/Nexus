@@ -3,13 +3,19 @@
 // components/page-editor/CampusSection.tsx — S3 « Campus » v3 (MANUEL)
 // Inputs à gauche (cartes + suggestions ; hébergement = une suggestion-carte,
 // plus de panneau dédié). Preview = le VRAI CampusSection (fiche + map +
-// carousel). Fiche/adresse/map = fixture.
+// carousel).
+//
+// FICHE ET ADRESSE : lues dans `schools` de l'école connectée, jamais devinées.
+// Elles affichaient les constantes Grasset de fixture.ts (« Francophone · Privé
+// · Montréal », « 1001, boul. Crémazie Est ») à TOUS les collèges. Même
+// normalisation que la page publique — langueDeSchool / reseauDeSchool.
 
 import * as React from "react";
 import RealCampusSection from "@/components/program-page/CampusSection";
 import PreviewShell, { useDebounced } from "./PreviewShell";
 import { campusContent } from "./pageBridge";
-import { SUGG, FICHE, ADDRESS } from "./fixture";
+import { SUGG } from "./fixture";
+import { langueDeSchool, reseauDeSchool } from "@/lib/queries/schoolPage/dbToProgramPage";
 import { useEditor } from "./editorContext";
 import { VisibilityToggle, SectionHidden } from "./SectionVisibility";
 import { useToast } from "./toast";
@@ -19,8 +25,23 @@ const newUid = () => Math.random().toString(36).slice(2);
 
 export default function CampusSection() {
   const toast = useToast();
-  const { initial, report, uploadAsset, assetUrl, hiddenSections } = useEditor();
+  const { initial, school, report, uploadAsset, assetUrl, hiddenSections } = useEditor();
   const hidden = hiddenSections.includes("campus");
+
+  // Fiche AUTO : uniquement les valeurs réellement présentes en base. Une tuile
+  // sans source n'est pas rendue ; les trois absentes → pas de fiche du tout.
+  const langue = langueDeSchool(school.langue);
+  const reseau = reseauDeSchool(school.reseau);
+  const region = school.region?.trim() ? school.region : null;
+  const fiche: [string, string][] = [
+    ...(langue ? [["Langue", langue === "EN" ? "Anglophone" : langue === "BILINGUE" ? "Bilingue" : "Francophone"] as [string, string]] : []),
+    ...(reseau ? [["Statut", reseau === "PRIVÉ" ? "Privé" : "Public"] as [string, string]] : []),
+    ...(region ? [["Région", region] as [string, string]] : []),
+  ];
+  // `schools.address` est renseignée pour 52 cégeps sur 69 ; sans elle, on
+  // n'affiche AUCUNE adresse plutôt que celle d'un autre collège.
+  const adresse = school.address?.trim() ? school.address.trim() : null;
+  const ligne2 = [school.city, school.postal_code].filter((v) => v && v.trim()).join(" ");
   const [cards, setCards] = React.useState<Card[]>(() => initial.cards.map((c) => ({ ...c, uid: c.id ?? newUid() })));
   const [yt, setYt] = React.useState(initial.yt);
 
@@ -64,8 +85,13 @@ export default function CampusSection() {
   const preview = React.useMemo(() => {
     const s = JSON.parse(debKey) as { cards: Card[]; yt: string };
     const resolved = s.cards.map((c) => ({ t: c.t, x: c.x, image: assetUrl(c.image_path, "campus-photos") }));
-    return <RealCampusSection content={campusContent(resolved, s.yt)} />;
-  }, [debKey, assetUrl]);
+    // L'aperçu rend le VRAI composant : il doit recevoir la fiche RÉELLE de
+    // l'école, sinon il affiche la carte et le statut d'un autre collège.
+    return <RealCampusSection content={campusContent(resolved, s.yt, {
+      language: langue, schoolType: reseau, region,
+      mapQuery: `${school.name}, ${school.city || "Québec"}`,
+    })} />;
+  }, [debKey, assetUrl, langue, reseau, region, school.name, school.city]);
 
   return (
     <section className="sec">
@@ -73,14 +99,23 @@ export default function CampusSection() {
       {hidden ? <SectionHidden sectionKey="campus" /> : (
       <div className="cols">
         <div>
+          {(fiche.length > 0 || adresse) && (
           <div className="panel" style={{ marginBottom: 14 }}>
             <div className="pt"><span className="n">0</span>FICHE — AUTOMATIQUE, RIEN À FAIRE</div>
-            <div className="auto">
-              {FICHE.map(([k, v]) => <span key={k} className="achip"><b>✓</b>{k} : {v}</span>)}
-            </div>
-            <div className="fact" style={{ padding: "11px 13px", display: "block", marginTop: 12 }}><b style={{ fontSize: 13 }}>{ADDRESS.line1}</b><span>{ADDRESS.line2}</span></div>
+            {fiche.length > 0 && (
+              <div className="auto">
+                {fiche.map(([k, v]) => <span key={k} className="achip"><b>✓</b>{k} : {v}</span>)}
+              </div>
+            )}
+            {adresse && (
+              <div className="fact" style={{ padding: "11px 13px", display: "block", marginTop: 12 }}>
+                <b style={{ fontSize: 13 }}>{adresse}</b>
+                {ligne2 && <span>{ligne2}</span>}
+              </div>
+            )}
             <div className="note" style={{ marginTop: 8 }}>Fiche + carte affichées dans l'aperçu → rendu réel. Une erreur ? → <a href="mailto:info@nexussports.ca" style={{ color: "var(--warn)", fontWeight: 700, textDecoration: "none" }}>info@nexussports.ca</a></div>
           </div>
+          )}
 
           <div className="panel" style={{ marginBottom: 14 }}>
             <div className="pt"><span className="n">1</span>LES CARTES DU CAMPUS (max 5 + 1 vidéo)</div>

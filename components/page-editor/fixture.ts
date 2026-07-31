@@ -26,11 +26,10 @@ export const HOUSING: HousingItem[] = [
   { v: "none", l: "Aucun hébergement offert" },
 ];
 
-// Fiche campus — seedée par Nexus, non éditable (correction via mailto).
-export const FICHE: [string, string][] = [
-  ["Langue", "Francophone"], ["Statut", "Privé"], ["Région", "Montréal"],
-];
-export const ADDRESS = { line1: "1001, boul. Crémazie Est", line2: "Montréal (Québec) H2M 1M3" };
+// FICHE et ADDRESS retirées : elles affichaient « Francophone · Privé ·
+// Montréal » et « 1001, boul. Crémazie Est » — la fiche de Grasset — à tous
+// les collèges. CampusSection lit désormais schools.langue/reseau/region/
+// address de l'école connectée.
 
 export const DEC = [
   "Sciences de la nature", "Sciences humaines", "Sciences, lettres et arts",
@@ -52,14 +51,10 @@ export const UNIS = [
 
 export const PROVINCES = ["Québec", "Ontario", "Canada"];
 
-// S2 — L'affiche : DÉRIVÉE des équipes (seed RSEQ). Statique/verrouillé ici.
-export interface AfficheRow { sport: string; pills: string[] }
-export const SPORTS_AFFICHE: AfficheRow[] = [
-  { sport: "FOOTBALL", pills: ["D1", "M", "1 ÉQUIPE"] },
-  { sport: "HOCKEY", pills: ["D2", "M", "1 ÉQUIPE"] },
-  { sport: "FLAG FOOTBALL", pills: ["D2 · D3", "F · M", "2 ÉQUIPES"] },
-  { sport: "VOLLEYBALL", pills: ["D3", "M · F", "2 ÉQUIPES"] },
-];
+// SPORTS_AFFICHE retirée : quatre rangées de Grasset affichées à tous les
+// collèges sous un bandeau « dérivé de tes équipes » qui ne dérivait rien.
+// SportsAffiche.tsx interroge maintenant `teams` et passe par sportsFromTeams,
+// la même fonction que la page publique.
 
 // S8 — Généré par Nexus (plateforme, runtime).
 export interface PlatformChip { ic: string; b: string; t: string }
