@@ -64,46 +64,7 @@ export const PLATFORM: PlatformChip[] = [
   { ic: "🎯", b: "Strip « Recrutés via Nexus »", t: "compteur plateforme" },
   { ic: "🧭", b: "Match programme visé", t: "profil de l'athlète" },
 ];
-
-/* ── Fixture Grasset (valeurs initiales du gabarit v2) ────────────────────── */
-export const GRASSET = {
-  schoolName: "Collège André-Grasset",
-  statEquipes: 13,
-  identity: {
-    nick: "PHÉNIX",
-    slog: "Phénix un jour, Phénix toujours",
-    tagline: "élite collégiale",
-    prov: "Québec",
-    tick: "",
-    ville: "MONTRÉAL",
-    quartier: "AHUNTSIC",
-    rtag: "514",
-    c1: "#A6192E", c2: "#5A0E1B", c3: "#E8C7CD",
-    init: "AG",
-    vword: "GRASSET",
-    dev1: "FIER", dev2: "FORT",
-    fla: "D'ICI", flb: "POUR ICI",
-    words: [0, 1, 2, 3] as number[],
-    nbath: "250+",
-  },
-  about: {
-    title: "Plus qu'un cégep",
-    text:
-      "Chez les Phénix, tu rejoins une famille qui gagne sur le terrain et en classe. Encadrement complet, installations pro, et une tradition d'excellence depuis 1927.",
-  },
-  campusCard: { t: "Installations Phénix", x: "Gymnase double, salle de musculation dédiée." },
-  // pfree (mot du programme) SUPPRIMÉ v3 : aucun slot sur la page. Bloc 2 :
-  // parcours_free_text ne va PAS au schéma.
-  parcours: {
-    pniv: "Division 1",
-    recrutes: 31,
-    pus: "11",
-    pdip: "90",
-    pusa: "3",
-    enc: [0, 2] as number[],
-    unis: [0, 1, 2] as number[],
-  },
-  news: [{ t: "Les Phénix champions du Bol d'Or", u: "https://rds.ca/article" }],
-  // programsStar SUPPRIMÉ v3 : ★ « en vedette » retiré (Bloc 2 : featured hors schéma).
-  programsOn: [0, 1, 5] as number[],
-};
+/* GRASSET (fixture v2 : nom, PHÉNIX, MONTRÉAL/AHUNTSIC, 514, #A6192E, AG,
+   250+ athlètes, 31 recrutés…) a été SUPPRIMÉE — plus aucun import, et une
+   école réelle en dur dans un fichier partagé finit toujours par s'afficher
+   chez une autre. Voir la règle en tête de pageBridge.ts. */

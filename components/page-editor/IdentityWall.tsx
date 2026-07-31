@@ -47,6 +47,12 @@ export default function IdentityWall({
     [initial.ville, fiche.city],
   );
   const [tagline, setTagline] = React.useState(initial.tagline);
+  // Surnom des EXEMPLES de champs. Le surnom saisi par le collège si présent —
+  // ainsi l'exemple parle de lui. Sinon un jeton manifestement structurel :
+  // aucun collège québécois ne s'appelle « TON SURNOM », donc personne ne peut
+  // se demander si c'est sa donnée. (Avant : « PHÉNIX » et « Phénix un jour »,
+  // le surnom de Grasset, affiché à tout le monde.)
+  const exSurnom = nick.trim() || "TON SURNOM";
   const [prov, setProv] = React.useState(initial.prov);
   const [tick, setTick] = React.useState(initial.tick);
   const [ville, setVille] = React.useState(initial.ville);
@@ -136,6 +142,7 @@ export default function IdentityWall({
   }, [nick, slog, tagline, prov, tick, ville, quartier, rtag, c1, c2, c3, init, vword, dev1, dev2, fla, flb, nbath, logoPath, JSON.stringify(selectedWords), report]);
 
   const wallInput: EditorIdentityState = {
+    schoolName: fiche.name,
     nick, slog, tagline, prov, tick, ville, quartier, rtag,
     c1, c2, c3, init, vword, dev1, dev2, fla, flb,
     words: selectedWords, nbath, logoUrl,
@@ -195,12 +202,12 @@ export default function IdentityWall({
 
           <div className="panel" style={{ marginBottom: 14 }}>
             <div className="pt"><span className="n">2</span>NAME-CARD — 5 CHAMPS (~40 s)</div>
-            <label className="fl">Surnom / nom des équipes (PHÉNIX, NOMADES…)</label>
+            <label className="fl">Surnom / nom des équipes</label>
             <input className="ti" maxLength={14} value={nick} onChange={(e) => setNick(e.target.value)} />
             <label className="fl">Slogan <span style={{ textTransform: "none", fontWeight: 400, color: "#5A616D" }}>(Entrée = 2e ligne, max 2)</span></label>
             <textarea
               className="ti" maxLength={40} rows={2} value={slog}
-              placeholder="Ex. « Phénix un jour,&#10;Phénix toujours »"
+              placeholder={`Ex. « ${exSurnom} un jour,\n${exSurnom} toujours »`}
               onChange={(e) => setSlog(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter" && slog.includes("\n")) e.preventDefault(); }}
               style={{ minHeight: 0, resize: "none" }}
@@ -219,7 +226,7 @@ export default function IdentityWall({
               </div>
             </div>
             <label className="fl">Ticker — le bandeau défilant en haut de ta page</label>
-            <input className="ti" maxLength={60} placeholder="Ex. « Fier programme des Phénix depuis 1927 »" value={tick} onChange={(e) => setTick(e.target.value)} />
+            <input className="ti" maxLength={60} placeholder={`Ex. « Fier programme des ${exSurnom} depuis 1970 »`} value={tick} onChange={(e) => setTick(e.target.value)} />
             <div className="note">Laisse vide → ton <b>slogan</b> défile à la place.</div>
           </div>
 

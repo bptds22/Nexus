@@ -24,7 +24,7 @@ const norm = (s: string) => s.normalize("NFD").replace(DIACRITICS, "").toLowerCa
 // restaurer=is_displayed=true. Optimiste + rollback sur erreur.
 export default function ProgramsSection() {
   const toast = useToast();
-  const { initial, client, schoolId, hiddenSections } = useEditor();
+  const { initial, client, school, schoolId, hiddenSections } = useEditor();
   const hidden = hiddenSections.includes("programs");
   const [progs, setProgs] = React.useState<Prog[]>(() =>
     initial.programs.map((p) => ({ id: p.id, n: p.name, on: p.is_displayed, manual: p.source === "manuel", code: p.code, type: p.type })),
@@ -65,8 +65,8 @@ export default function ProgramsSection() {
   const checked = progs.filter((p) => p.on).map((p) => p.n);
   const debKey = useDebounced(JSON.stringify(checked));
   const preview = React.useMemo(
-    () => <RealAcademicPlanche {...academicProps(JSON.parse(debKey))} />,
-    [debKey],
+    () => <RealAcademicPlanche {...academicProps(JSON.parse(debKey), school.name)} />,
+    [debKey, school.name],
   );
 
   return (

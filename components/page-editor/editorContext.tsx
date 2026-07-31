@@ -120,6 +120,10 @@ interface EditorCtx {
   schoolId: string; userId: string; schoolName: string;
   /** Fiche `schools` de l'école connectée — lecture seule, sections AUTO. */
   school: EditorSchool;
+  /** Athlètes recrutés par ce collège (count_recruited_by_school : pipeline
+   *  recruteur, stages ENGAGE et LETTRE_SIGNEE). MÊME source que la page
+   *  publique — l'aperçu du parcours ne doit jamais afficher un autre nombre. */
+  recrutedCount: number;
   initial: EditorInitial;
   client: SupabaseClient;
   assetUrl: (path: string | null | undefined, bucket: Bucket) => string | null;
@@ -151,7 +155,7 @@ export function SchoolPageEditorProvider({ children }: { children: React.ReactNo
   if (!clientRef.current) clientRef.current = createClient();
   const client = clientRef.current;
 
-  const [load, setLoad] = React.useState<{ loading: boolean; err?: string; initial?: EditorInitial; school?: EditorSchool }>({ loading: true });
+  const [load, setLoad] = React.useState<{ loading: boolean; err?: string; initial?: EditorInitial; school?: EditorSchool; recrutedCount?: number }>({ loading: true });
 
   React.useEffect(() => {
     if (userLoading) return;
@@ -160,11 +164,14 @@ export function SchoolPageEditorProvider({ children }: { children: React.ReactNo
     let cancelled = false;
     (async () => {
       try {
-        const [sch, page] = await Promise.all([
+        const [sch, page, rec] = await Promise.all([
           client.from("schools")
             .select("id, name, city, region, langue, reseau, address, postal_code")
             .eq("id", schoolId).maybeSingle(),
           loadSchoolPage(client, schoolId),
+          // MÊME RPC que loadSchoolPageForRender : l'aperçu du parcours affiche
+          // le nombre réel de recrutés, pas un exemple.
+          client.rpc("count_recruited_by_school", { p_school_id: schoolId } as unknown as undefined),
         ]);
         if (cancelled) return;
         if (sch.error) throw sch.error;
@@ -179,7 +186,11 @@ export function SchoolPageEditorProvider({ children }: { children: React.ReactNo
           address: row.address ?? null,
           postal_code: row.postal_code ?? null,
         };
-        setLoad({ loading: false, school, initial: dbToEditor(school, page.content, page.cards, page.programs, page.news) });
+        setLoad({
+          loading: false, school,
+          recrutedCount: (rec.data as number | null) ?? 0,
+          initial: dbToEditor(school, page.content, page.cards, page.programs, page.news),
+        });
       } catch (e) {
         if (!cancelled) setLoad({ loading: false, err: e instanceof Error ? e.message : "Erreur de chargement" });
       }
@@ -277,6 +288,7 @@ export function SchoolPageEditorProvider({ children }: { children: React.ReactNo
   const value: EditorCtx = {
     schoolId, userId: user.authUser.id, schoolName: load.school.name,
     school: load.school,
+    recrutedCount: load.recrutedCount ?? 0,
     initial: load.initial, client, assetUrl, uploadAsset, report, saveAll,
     dirty: dirtyKeys.length > 0, saving,
     previewColors, setPreviewColors,

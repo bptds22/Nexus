@@ -2,13 +2,29 @@
 //
 // Pont éditeur → props des VRAIS composants program-page (pattern wallBridge).
 // State local de l'éditeur → contrats de CampusSection / AboutSell /
-// AcademicPlanche / ParcoursRoute / NewsSection. Aucune écriture DB (Bloc 2).
+// AcademicPlanche / ParcoursRoute / NewsSection. Aucune écriture DB.
+//
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║ RÈGLE — CE FICHIER NE CONTIENT AUCUNE DONNÉE D'UNE ÉCOLE RÉELLE.         ║
+// ║                                                                          ║
+// ║ Pas de nom de collège, pas de surnom, pas d'adresse, pas de ville, pas   ║
+// ║ d'initiales, pas de couleur de marque, pas de statistique. TOUT ce qui    ║
+// ║ identifie un établissement arrive en PARAMÈTRE, depuis le contexte de     ║
+// ║ l'éditeur (`useEditor()` → `school` / `initial`).                        ║
+// ║                                                                          ║
+// ║ Une constante en dur ici finit toujours par s'afficher chez quelqu'un     ║
+// ║ d'autre. C'est arrivé TROIS fois, toutes avec les données de Grasset :    ║
+// ║   · la fiche campus  — « Francophone · Privé · Montréal », 1001 Crémazie ║
+// ║   · « L'affiche »    — 4 rangées de sports qui n'étaient pas les siens    ║
+// ║   · le parcours      — « le Phénix », « ANDRÉ-GRASSET », « AG », 12       ║
+// ║                                                                          ║
+// ║ Seul reste autorisé : ce qui est VRAI pour tous les collèges (libellés    ║
+// ║ génériques d'étapes, rampe de texte de la coquille Nexus).                ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
 
 import type * as React from "react";
 import { deriveWallTheme } from "@/components/program-wall/theme";
 import type { ProgramPageContent, NewsItem, CampusCard } from "@/components/program-page/content";
-
-export const SCHOOL_NAME = "Collège André-Grasset";
 
 /* rootStyle du shell .pp nx-dna — dérivé des 3 couleurs de l'éditeur (deriveWall
    Theme, mêmes vars que ProgramPage). Les couleurs choisies pilotent DONC les
@@ -24,8 +40,6 @@ export function buildPreviewRootStyle(c1: string, c2: string, c3: string): React
     "--dna-mark": t.red, "--dna-ink": "#EDEFF3",
   } as React.CSSProperties;
 }
-/** Défaut Grasset — repli quand le contexte n'a pas encore de couleurs. */
-export const PREVIEW_ROOT_STYLE = buildPreviewRootStyle("#A6192E", "#5A0E1B", "#E8C7CD");
 
 /* ── S3 Campus → CampusSection (props: content) ─────────────────────────── */
 /** Ce que CampusSection lit RÉELLEMENT dans le contenu, hors cartes. Fourni par
@@ -64,9 +78,12 @@ export function campusContent(
 }
 
 /* ── S5 Académique → AcademicPlanche ───────────────────────────────────── */
-export const MOCK_VISE = "Sciences de la nature"; // « vue athlète simulée »
-export function academicProps(programs: string[]) {
-  return { programs, viewerProgrammeVise: MOCK_VISE, schoolName: SCHOOL_NAME };
+/** Programme visé SIMULÉ, pour montrer au collège à quoi ressemble le board
+ *  « perfect match » vu par un athlète. Ce n'est pas une donnée d'école : c'est
+ *  un exemple de saisie côté ATHLÈTE, et l'aperçu l'annonce comme tel. */
+export const MOCK_VISE = "Sciences de la nature";
+export function academicProps(programs: string[], schoolName: string) {
+  return { programs, viewerProgrammeVise: MOCK_VISE, schoolName };
 }
 
 /* ── S6 Parcours → ParcoursRoute ───────────────────────────────────────── */
@@ -76,8 +93,17 @@ const numOrUndef = (s: string): number | undefined => {
 };
 export interface ParcoursInput {
   pniv: string; nbath: string; enc: string[];
-  recrutes: number; pus: string; pusa: string; pdip: string;
+  /** Compte RÉEL de count_recruited_by_school, remonté par le contexte.
+   *  Jamais une valeur d'exemple : c'est le même nombre que la page publique,
+   *  et à 0 la bande Nexus disparaît des deux côtés. */
+  recrutes: number;
+  pus: string; pusa: string; pdip: string;
   universities: string[]; initials: string; slogan: string;
+  /** Identité RÉELLE de l'école éditée — jamais une constante de ce fichier. */
+  schoolName: string;
+  /** Surnom saisi en S1 ; vide → le nom de l'école prend sa place, comme sur
+   *  la page publique (`nn(c.nickname, school.name)`). */
+  nickname: string;
 }
 export function parcoursProps(i: ParcoursInput) {
   const encText = i.enc.length ? i.enc.join(" · ") : "encadrement sport-études";
@@ -88,14 +114,18 @@ export function parcoursProps(i: ParcoursInput) {
     i.nbath.trim() ? `${i.nbath.trim()} étudiants-athlètes` : "",
     encText,
   ].filter(Boolean);
+  // L'étiquette de l'étape 2 reprend EXACTEMENT la formule publique
+  // (dbToProgramPage) : surnom si saisi, sinon nom de l'école.
+  const marque = (i.nickname.trim() || i.schoolName).toUpperCase();
   return {
-    schoolName: SCHOOL_NAME,
-    initials: i.initials || "AG",
+    schoolName: i.schoolName,
+    initials: i.initials,
     slogan: i.slogan || null,
     route: {
-      // stop1/stop3(sl,h4) = fixture ; stop2 COMPOSÉ depuis pniv+nbath+enc.
+      // stop1 et stop3 (sl/h4) sont GÉNÉRIQUES — vrais pour tout collège, et
+      // identiques mot pour mot à ce que rend la page publique.
       stop1: { sl: "AUJOURD'HUI · SECONDAIRE", h4: "Ton profil Nexus", p: "Stats, vidéos, bulletins — tout ce que les coachs veulent voir." },
-      stop2: { sl: "2027–2029 · ANDRÉ-GRASSET", h4: "Tu portes le rouge", p: `${stop2parts.join(", ")}.` },
+      stop2: { sl: `2027–2029 · ${marque}`, h4: "Tu portes les couleurs", p: `${stop2parts.join(", ")}.` },
       stop3: {
         sl: "ENSUITE · U SPORTS", h4: "Tu montes encore",
         stats: [
@@ -107,8 +137,8 @@ export function parcoursProps(i: ParcoursInput) {
       },
     },
     universities: i.universities,
-    nexusStripText: "Des athlètes du secondaire ont rejoint le Phénix grâce à leur profil Nexus — vus, évalués, recrutés.",
-    nexusRecruitedCount: 12,
+    nexusStripText: `Des athlètes du secondaire ont rejoint ${i.schoolName} grâce à leur profil Nexus — vus, évalués, recrutés.`,
+    nexusRecruitedCount: i.recrutes,
   };
 }
 

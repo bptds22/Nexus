@@ -41,9 +41,9 @@ function ScaleToFit({ designWidth, children }: { designWidth: number; children: 
 }
 
 export default function ParcoursSection({
-  init, nbath, slog,
+  nick, init, nbath, slog,
 }: { nick: string; init: string; nbath: string; slog: string }) {
-  const { initial, report, hiddenSections } = useEditor();
+  const { initial, school, recrutedCount, report, hiddenSections } = useEditor();
   const hidden = hiddenSections.includes("parcours");
   // catalogue ENC + extras venus de la DB (encadrement libre déjà saisi ailleurs).
   const encCatalog = React.useMemo(
@@ -78,15 +78,19 @@ export default function ParcoursSection({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pniv, pus, pdip, pusa, JSON.stringify(selectedEnc), JSON.stringify(selectedUnis), report]);
 
-  // recrutés = AUTO (compteur runtime count_recruited_by_school) — cosmétique ici.
+  // Identité et compteur RÉELS : l'aperçu doit être ce que le public verra.
+  // `recrutedCount` vient de count_recruited_by_school, la RPC de la page
+  // publique — à 0, la bande Nexus disparaît ici comme là-bas.
   const props = parcoursProps({
     pniv, nbath,
     enc: selectedEnc,
-    recrutes: 0,
+    recrutes: recrutedCount,
     pus, pusa, pdip,
     universities: selectedUnis,
     initials: init,
     slogan: slog,
+    schoolName: school.name,
+    nickname: nick,
   });
   const debKey = useDebounced(JSON.stringify(props));
   const preview = React.useMemo(() => <RealParcoursRoute {...JSON.parse(debKey)} />, [debKey]);

@@ -9,6 +9,10 @@
 import type { SchoolProgramIdentity } from "@/components/program-wall/slots";
 
 export interface EditorIdentityState {
+  /** Nom canonique de l'école ÉDITÉE (schools.name), non modifiable dans
+   *  l'éditeur. Pilote le type-block du mur (« COLLÈGE » + le nom sur deux
+   *  lignes) et le mot du rail quand aucun override n'est saisi. */
+  schoolName: string;
   nick: string;
   slog: string;
   tagline: string;
@@ -39,7 +43,10 @@ export function editorToSchool(s: EditorIdentityState): SchoolProgramIdentity {
   const w = s.words;
   return {
     id: "editor-preview",
-    schoolName: "Collège André-Grasset",
+    // Nom RÉEL de l'école éditée. C'était « Collège André-Grasset » en dur :
+    // l'aperçu du mur annonçait Grasset à tous les collèges (4e fuite de la
+    // même famille — voir la règle en tête de pageBridge.ts).
+    schoolName: s.schoolName,
     mascot: s.nick || "—",
     colorPrimary: s.c1,
     colorDarker: s.c2,
