@@ -12,7 +12,18 @@ import type { SchoolPageState } from "./schoolPageData";
 const PROV_CODE: Record<string, string> = { Québec: "QC", Ontario: "ON", Canada: "CA" };
 const nn = (v: string | null | undefined, fb: string) => (v && v.trim() ? v : fb);
 
-export interface SchoolRow { id: string; name: string; city: string | null; region: string | null }
+/** Colonnes RÉELLES de public.schools consommées par la page.
+ *  `langue` (FR | EN | BILINGUE | null) et `reseau` (PUBLIC | PRIVE | null)
+ *  alimentent la fiche campus — avant, elles étaient écrites en dur (« FR » /
+ *  « PRIVÉ »), ce qui affichait « PRIVÉ » sur 54 des 69 cégeps. */
+export interface SchoolRow {
+  id: string;
+  name: string;
+  city: string | null;
+  region: string | null;
+  langue: string | null;
+  reseau: string | null;
+}
 
 /** Une équipe telle que lue dans public.teams (+ le nom de son sport). */
 export interface TeamRowForGrid {
@@ -34,6 +45,22 @@ export function genreCourt(gender: string | null): string {
   if (g.startsWith("mascul")) return "M";
   if (g.startsWith("fémin") || g.startsWith("femin")) return "F";
   return "Mixte";
+}
+
+/** `schools.langue` → la valeur du contrat page. Toute valeur hors des trois
+ *  connues (ou absente) rend null : la tuile LANGUE disparaît plutôt que
+ *  d'affirmer une langue. Vérifié en base : FR 53 · EN 9 · BILINGUE 3 · null 4. */
+function langueDeSchool(v: string | null): ProgramPageContent["language"] {
+  const s = (v ?? "").trim().toUpperCase();
+  return s === "FR" || s === "EN" || s === "BILINGUE" ? s : null;
+}
+
+/** `schools.reseau` → la valeur du contrat page. La DB stocke PRIVE (sans
+ *  accent) ; l'affichage veut PRIVÉ. Inconnu/absent → null, tuile absente.
+ *  Vérifié en base : PUBLIC 54 · PRIVE 10 · null 5. */
+function reseauDeSchool(v: string | null): ProgramPageContent["schoolType"] {
+  const s = (v ?? "").trim().toUpperCase();
+  return s === "PUBLIC" ? "PUBLIC" : s === "PRIVE" || s === "PRIVÉ" ? "PRIVÉ" : null;
 }
 
 /** Initiales dérivées du nom canonique (2 premiers mots, préfixe de type
@@ -135,7 +162,13 @@ export function dbToProgramPage(
     // Label fixe. 0/absent → StatRows n'affiche pas la rangée (jamais « 0+ »).
     stats: { teams: nbEquipes, teamsLabel: "ÉQUIPES", athletes: Number(c.nb_athletes) || 0, athletesLabel: "ÉTUDIANTS-ATHLÈTES", region: cityTitle(nn(c.ville, school.city || "")) },
     sports: affiche,
-    language: "FR", schoolType: "PRIVÉ", region: cityTitle(nn(c.ville, school.city || "")),
+    // FICHE CAMPUS — valeurs RÉELLES de public.schools, plus aucune constante.
+    // Une valeur absente rend `null` : la tuile n'est PAS rendue, jamais une
+    // langue ni un réseau devinés. La RÉGION est bien `schools.region` (peuplée
+    // sur 69/69 cégeps) et non plus une recopie de la ville.
+    language: langueDeSchool(school.langue),
+    schoolType: reseauDeSchool(school.reseau),
+    region: school.region?.trim() ? school.region : null,
     address: "", mapQuery: `${school.name}, ${school.city || "Québec"}`,
     housing: { type: "none" }, facts: [], videoUrl: c.campus_video_url?.trim() ? c.campus_video_url! : null,
     campusCards: [
@@ -175,13 +208,14 @@ function domainOf(url: string): string {
 }
 
 /** Sections dont le contenu vient EXCLUSIVEMENT de l'éditeur : une école qui ne
- *  l'a jamais ouvert n'a rien à y mettre. AboutSell, AcademicPlanche,
- *  ParcoursRoute et CampusSection ne s'effacent pas d'elles-mêmes (contrairement
- *  à SportsGrid et NewsSection) → on les masque par le mécanisme existant.
- *  « campus » y est inclus parce que ses trois tuiles (LANGUE / STATUT / RÉGION)
- *  sont des constantes du code, pas des données de l'école : les afficher
- *  reviendrait à AFFIRMER qu'un cégep public est privé. */
-const SECTIONS_SANS_SOURCE = ["campus", "about", "programs", "parcours", "news"];
+ *  l'a jamais ouvert n'a rien à y mettre. AboutSell, AcademicPlanche et
+ *  ParcoursRoute ne s'effacent pas d'elles-mêmes (contrairement à SportsGrid et
+ *  NewsSection) → on les masque par le mécanisme existant.
+ *  « campus » N'Y EST PLUS : ses trois tuiles lisent désormais public.schools
+ *  (langue / reseau / region), une source RÉELLE qui existe même sans éditeur.
+ *  Chaque tuile s'efface d'elle-même si sa colonne est nulle, et la fiche
+ *  entière disparaît si les trois le sont — plus besoin de masquer la section. */
+const SECTIONS_SANS_SOURCE = ["about", "programs", "parcours", "news"];
 
 /** Page d'une école RÉELLE mais jamais configurée (aucune ligne
  *  school_page_content). Tout ce qui s'affiche vient de `schools` et de

@@ -26,6 +26,7 @@ export default function CampusSection({
     caraRef.current?.scrollBy({ left: dir * 316, behavior: "smooth" });
 
   const cards = content.campusCards ?? [];
+  const langue = languageLabel(content.language);
   // Carte vidéo : clic → embed YouTube inline (lecture DANS la carte, aucune
   // redirection). `playing` null au SSR → rendu identique (non-régression) ;
   // l'iframe (style inline) n'apparaît qu'après clic, jamais dans le HTML SSR.
@@ -39,12 +40,18 @@ export default function CampusSection({
         <h2 className="sec-h">Le campus</h2>
         <div className="pbar" />
 
-        {/* fiche : les 3 réponses avant tout (inchangé) */}
-        <div className="fiche">
-          <div className="itile rv"><div className="il">LANGUE</div><div className="iv">{languageLabel(content.language)}</div></div>
-          <div className="itile hot rv"><div className="il">STATUT</div><div className="iv">{content.schoolType}</div></div>
-          <div className="itile rv"><div className="il">RÉGION</div><div className="iv">{content.region}</div></div>
-        </div>
+        {/* fiche : les 3 réponses avant tout. Chaque tuile lit une colonne RÉELLE
+            de public.schools (langue / reseau / region) ; une colonne nulle fait
+            disparaître SA tuile — plus de « FRANCOPHONE »/« PRIVÉ » en dur, qui
+            affirmaient du faux sur 54 des 69 cégeps. Les trois nulles → aucune
+            fiche. La grille est en auto-fit : elle se resserre d'elle-même. */}
+        {(langue || content.schoolType || content.region) && (
+          <div className="fiche">
+            {langue && <div className="itile rv"><div className="il">LANGUE</div><div className="iv">{langue}</div></div>}
+            {content.schoolType && <div className="itile hot rv"><div className="il">STATUT</div><div className="iv">{content.schoolType}</div></div>}
+            {content.region && <div className="itile rv"><div className="il">RÉGION</div><div className="iv">{content.region}</div></div>}
+          </div>
+        )}
 
         {/* map — pleine largeur, moins zoomée, sans mappin */}
         <div className="mapwrap rv">

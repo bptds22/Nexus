@@ -60,10 +60,14 @@ export interface ProgramPageContent {
   };
   /** S2 — sports grid */
   sports: Sport[];
-  /** Campus (v8.2 — moved before À propos) */
-  language: "FR" | "EN" | "BILINGUE";
-  schoolType: "PRIVÉ" | "PUBLIC";
-  region: string; // fiche RÉGION value
+  /** Campus (v8.2 — moved before À propos).
+   *  Les 3 valeurs de la fiche viennent de public.schools (langue / reseau /
+   *  region) et sont NULLABLES : `null` = donnée absente → la tuile n'est pas
+   *  rendue. On n'affiche jamais une langue ou un réseau devinés. Les trois
+   *  nulles → la fiche entière disparaît. */
+  language: "FR" | "EN" | "BILINGUE" | null;
+  schoolType: "PRIVÉ" | "PUBLIC" | null;
+  region: string | null; // fiche RÉGION value (schools.region)
   address: string; // mappin display
   mapQuery: string; // Google Maps keyless q
   housing: { type: "campus" | "partner" | "pension" | "none"; note?: string };
@@ -105,6 +109,7 @@ export interface ProgramPageContent {
   hiddenSections?: string[];
 }
 
-/** LANGUE tile display. */
-export const languageLabel = (l: ProgramPageContent["language"]): string =>
-  l === "EN" ? "ANGLOPHONE" : l === "BILINGUE" ? "BILINGUE" : "FRANCOPHONE";
+/** LANGUE tile display. `null` en entrée → `null` : l'appelant n'affiche pas la
+ *  tuile. Aucun repli « FRANCOPHONE » — c'était le défaut qui mentait. */
+export const languageLabel = (l: ProgramPageContent["language"]): string | null =>
+  l === "EN" ? "ANGLOPHONE" : l === "BILINGUE" ? "BILINGUE" : l === "FR" ? "FRANCOPHONE" : null;

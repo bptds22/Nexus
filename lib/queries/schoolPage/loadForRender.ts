@@ -24,7 +24,7 @@ export type RenderResult =
 
 export async function loadSchoolPageForRender(idOrSlug: string): Promise<RenderResult> {
   const svc = createServiceClient();
-  const q = svc.from("schools").select("id, name, city, region").limit(1);
+  const q = svc.from("schools").select("id, name, city, region, langue, reseau").limit(1);
   const { data: rows } = UUID.test(idOrSlug)
     ? await q.eq("id", idOrSlug)
     : await q.ilike("name", "%" + idOrSlug.replace(/-/g, "%") + "%");
