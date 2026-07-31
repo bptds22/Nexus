@@ -104,17 +104,37 @@ export default function CalendarCampsSection() {
 
           {hidden ? <SectionHidden sectionKey="camps" /> : (
             <div className="panel">
-              <div className="pt"><span className="n">1</span>CAMPS DE SÉLECTION &amp; ESSAIS (max {MAX_TEAM_EVENTS})</div>
+              <div className="pt"><span className="n">1</span>ÉVÉNEMENTS &amp; CAMPS (max {MAX_TEAM_EVENTS})</div>
+              {/* Pile verticale, pas une rangée. Les trois champs côte à côte ne
+                  tenaient pas dans la colonne de gauche : input[type=date] a un
+                  minimum incompressible d'environ 135px en Chrome, qu'il gardait
+                  en écrasant les deux champs texte à ~26px. */}
               {camps.map((c, i) => (
-                <div key={c.uid} className="nrow" style={{ gridTemplateColumns: "1.3fr .8fr 1fr auto" }}>
-                  <input className="ti" maxLength={40} placeholder="Titre" value={c.titre} onChange={(e) => patch(i, { titre: e.target.value })} />
-                  <input className="ti" type="date" value={c.event_date} onChange={(e) => patch(i, { event_date: e.target.value })} />
-                  <input className="ti" maxLength={40} placeholder="Lieu" value={c.lieu} onChange={(e) => patch(i, { lieu: e.target.value })} />
-                  <button className="xbtn" title="Retirer" onClick={() => setCamps((cs) => cs.filter((_, k) => k !== i))}>✕</button>
+                <div key={c.uid} className="evrow">
+                  <div className="evhead">
+                    <span>Événement {i + 1}</span>
+                    <button className="xbtn" title="Retirer" onClick={() => setCamps((cs) => cs.filter((_, k) => k !== i))}>✕</button>
+                  </div>
+                  <label className="fl">Titre — affiché sur la tuile</label>
+                  <input className="ti" maxLength={40} placeholder="Ex. Portes ouvertes du programme" value={c.titre} onChange={(e) => patch(i, { titre: e.target.value })} />
+                  <div className="evduo">
+                    <div>
+                      <label className="fl">Date</label>
+                      <input className="ti" type="date" value={c.event_date} onChange={(e) => patch(i, { event_date: e.target.value })} />
+                    </div>
+                    <div>
+                      <label className="fl">Lieu</label>
+                      <input className="ti" maxLength={40} placeholder="Ex. Stade des Anciens" value={c.lieu} onChange={(e) => patch(i, { lieu: e.target.value })} />
+                    </div>
+                  </div>
                 </div>
               ))}
-              <button className="addbtn" onClick={add}>+ Ajouter un camp / essai</button>
-              <div className="note">Le RSEQ n&apos;a pas tes camps — c&apos;est TON canal de recrutement : titre, date, lieu.</div>
+              <button className="addbtn" onClick={add}>+ Ajouter un événement</button>
+              <div className="note">
+                Le RSEQ ne connaît que tes matchs — le reste, c&apos;est TON canal :
+                camp de sélection, portes ouvertes, tournoi, visite du campus.
+                Un événement sans titre n&apos;est pas enregistré.
+              </div>
             </div>
           )}
         </div>

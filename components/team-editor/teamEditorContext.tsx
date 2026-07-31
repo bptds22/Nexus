@@ -92,26 +92,11 @@ export const DEFAULT_CONTENT: TeamContentState = {
   hidden_sections: [],
 };
 
-export function friendlyDbError(e: unknown): Error {
-  const msg = e instanceof Error ? e.message : String(e);
-  const code = (e as { code?: string; statusCode?: string })?.code;
-  const status = (e as { statusCode?: string })?.statusCode;
-  if (code === "42501" || status === "403" || /row.level security/i.test(msg)) {
-    return new Error("Ta session a expiré — reconnecte-toi pour enregistrer.");
-  }
-  // Plafond par équipe (_cap_rows_per_team, SQLSTATE P0001). Le message brut
-  // nomme la table SQL : « Maximum 8 lignes par équipe (table team_events) ».
-  // Normalement inatteignable — l'interface bloque avant — mais un onglet resté
-  // ouvert pendant qu'un autre remplit la liste y arrive.
-  const plafond = /Maximum (\d+) lignes par équipe \(table (\w+)\)/.exec(msg);
-  if (plafond) {
-    const quoi = plafond[2] === "team_events" ? "événements"
-      : plafond[2] === "team_pennants" ? "fanions"
-      : "éléments";
-    return new Error(`Maximum ${plafond[1]} ${quoi} par équipe — retires-en un avant d'en ajouter un autre.`);
-  }
-  return e instanceof Error ? e : new Error(msg);
-}
+/** Traduit une erreur RLS/permission, de plafond, ou de remplacement interrompu.
+ *  L'implémentation est partagée avec l'éditeur de page école — voir
+ *  lib/queries/shared/dbErrors.ts. Réexporté ici pour ne casser aucun import. */
+import { friendlyDbError } from "@/lib/queries/shared/dbErrors";
+export { friendlyDbError };
 
 interface TeamEditorCtx {
   identity: TeamIdentity;

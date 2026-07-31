@@ -12,6 +12,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Niveau, PennantType } from "@/components/team-page/content";
+import { apresSuppression } from "@/lib/queries/shared/dbErrors";
 
 /* ── formes éditeur ──────────────────────────────────────────────────────── */
 export interface TeamContentState {
@@ -153,7 +154,7 @@ export async function savePennants(
     .map((p, i) => ({ team_id: teamId, titre: p.titre.trim(), annee: p.annee, type: p.type, position: i }));
   if (!rows.length) return;
   const { error } = await supabase.from("team_pennants").insert(rows);
-  if (error) throw error;
+  if (error) throw apresSuppression(error, "Tes fanions");
 }
 
 /** Camps & essais (max MAX_TEAM_EVENTS) — même logique de réécriture. */
@@ -175,7 +176,7 @@ export async function saveCamps(
     }));
   if (!rows.length) return;
   const { error } = await supabase.from("team_events").insert(rows);
-  if (error) throw error;
+  if (error) throw apresSuppression(error, "Tes événements");
 }
 
 /** Besoins : matérialisation des slots du sport. On n'écrit QUE des slot_key

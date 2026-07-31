@@ -7,6 +7,7 @@
 // AUCUN service role ici (c'est l'éditeur réel de l'utilisateur).
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { apresSuppression } from "@/lib/queries/shared/dbErrors";
 
 /* ── forme éditeur (miroir des champs de l'éditeur v3) ─────────────────── */
 export interface EditorProgram { id?: string; name: string; code: string | null; type: "preuniversitaire" | "technique"; is_displayed: boolean; source: "seed" | "manuel" }
@@ -94,46 +95,54 @@ export async function savePageContent(
 /** Remplace toutes les cartes d'une école (delete + insert positionnés). Pas de
  *  DELETE de données « métier » — ce sont les cartes de l'école, réécrites par
  *  son propre gestionnaire. */
+/** Plafonds par école. DOIVENT rester égaux aux arguments des triggers
+ *  `trg_cap_campus_cards` et `trg_cap_news` (_cap_rows_per_school) — sinon la
+ *  base refuse ce que l'interface autorise, APRÈS avoir supprimé l'existant.
+ *  L'éditeur lit ces constantes, il ne les redéclare pas. */
+export const MAX_SCHOOL_CARDS = 5;
+export const MAX_SCHOOL_NEWS = 5;
+
 export async function saveCards(supabase: SupabaseClient, schoolId: string, cards: EditorCard[]): Promise<void> {
   const del = await supabase.from("school_campus_cards").delete().eq("school_id", schoolId);
   if (del.error) throw del.error;
   if (!cards.length) return;
-  const rows = cards.map((c, i) => ({ school_id: schoolId, titre: c.titre, legende: c.legende, image_path: c.image_path, position: i }));
+  const rows = cards.slice(0, MAX_SCHOOL_CARDS)
+    .map((c, i) => ({ school_id: schoolId, titre: c.titre, legende: c.legende, image_path: c.image_path, position: i }));
   const { error } = await supabase.from("school_campus_cards").insert(rows);
-  if (error) throw error;
+  if (error) throw apresSuppression(error, "Tes cartes campus");
 }
 
 export async function saveNews(supabase: SupabaseClient, schoolId: string, news: EditorNews[]): Promise<void> {
   const del = await supabase.from("school_news").delete().eq("school_id", schoolId);
   if (del.error) throw del.error;
-  const rows = news.filter((n) => n.titre).map((n, i) => ({ school_id: schoolId, titre: n.titre, url: n.url || null, position: i }));
+  const rows = news.filter((n) => n.titre).slice(0, MAX_SCHOOL_NEWS)
+    .map((n, i) => ({ school_id: schoolId, titre: n.titre, url: n.url || null, position: i }));
   if (!rows.length) return;
   const { error } = await supabase.from("school_news").insert(rows);
-  if (error) throw error;
+  if (error) throw apresSuppression(error, "Tes nouvelles");
 }
 
-/** S5 programmes : is_displayed togglé + ajouts manuels + retraits. On UPDATE
- *  is_displayed des seedés, INSERT les manuels, DELETE les retirés (manuels ou
- *  seedés retirés de la liste par le collège). */
-export async function savePrograms(supabase: SupabaseClient, schoolId: string, progs: EditorProgram[]): Promise<void> {
-  const keep = new Set(progs.filter((p) => p.id).map((p) => p.id));
-  // retirés = présents en DB, absents de la liste éditeur
-  const existing = await supabase.from("school_programs").select("id").eq("school_id", schoolId);
-  if (existing.error) throw existing.error;
-  const toDelete = (existing.data ?? []).map((r) => r.id).filter((id) => !keep.has(id));
-  if (toDelete.length) {
-    const d = await supabase.from("school_programs").delete().in("id", toDelete);
-    if (d.error) throw d.error;
-  }
-  // update is_displayed des existants
-  for (const p of progs.filter((x) => x.id)) {
-    const u = await supabase.from("school_programs").update({ is_displayed: p.is_displayed }).eq("id", p.id!);
-    if (u.error) throw u.error;
-  }
-  // insert des nouveaux (manuels)
-  const news = progs.filter((p) => !p.id).map((p, i) => ({ school_id: schoolId, name: p.name, code: p.code, type: p.type, is_displayed: p.is_displayed, source: "manuel" as const, position: i }));
-  if (news.length) {
-    const { error } = await supabase.from("school_programs").insert(news);
-    if (error) throw error;
-  }
+/** S5 programmes : retraits + is_displayed togglé + ajouts manuels, en UNE
+ *  transaction côté base (replace_school_programs, SECURITY INVOKER).
+ *
+ *  L'ancien chemin faisait DELETE, puis N UPDATE un par un, puis INSERT — N+2
+ *  allers-retours sans transaction commune. Un échec au milieu laissait l'école
+ *  amputée, et jusqu'à 42 lignes saisies à la main pouvaient disparaître. C'est
+ *  aussi la raison pour laquelle cette fonction ne marque PAS ses erreurs avec
+ *  `apresSuppression` : ici, un échec ne supprime rien.
+ *
+ *  `autoriserVide` : voir saveAll côté éditeur. Une liste vide n'est acceptée
+ *  que si l'utilisateur a vraiment retiré ses programmes — jamais parce que le
+ *  client n'a rien chargé. */
+export async function savePrograms(
+  supabase: SupabaseClient, schoolId: string, progs: EditorProgram[], autoriserVide = false,
+): Promise<void> {
+  const { error } = await supabase.rpc("replace_school_programs", {
+    p_school_id: schoolId,
+    p_rows: progs.map((p) => ({
+      id: p.id ?? null, name: p.name, code: p.code, type: p.type, is_displayed: p.is_displayed,
+    })),
+    p_autoriser_vide: autoriserVide,
+  } as unknown as undefined);
+  if (error) throw error;
 }

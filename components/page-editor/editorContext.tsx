@@ -65,17 +65,11 @@ export interface EditorInitial {
   hiddenSections: string[];
 }
 
-/** Traduit une erreur RLS/permission (session périmée, mauvais scoping école)
- *  en message actionnable. Sinon renvoie l'erreur telle quelle. */
-export function friendlyDbError(e: unknown): Error {
-  const msg = e instanceof Error ? e.message : String(e);
-  const code = (e as { code?: string; statusCode?: string })?.code;
-  const status = (e as { statusCode?: string })?.statusCode;
-  if (code === "42501" || status === "403" || /row.level security/i.test(msg)) {
-    return new Error("Ta session a expiré — reconnecte-toi pour enregistrer.");
-  }
-  return e instanceof Error ? e : new Error(msg);
-}
+/** Traduit une erreur RLS/permission, de plafond, ou de remplacement interrompu.
+ *  L'implémentation est partagée avec l'éditeur d'équipe — voir
+ *  lib/queries/shared/dbErrors.ts. Réexporté ici pour ne casser aucun import. */
+import { friendlyDbError } from "@/lib/queries/shared/dbErrors";
+export { friendlyDbError };
 
 const g = (v: string | null | undefined): string => v ?? "";
 const numStr = (v: number | null | undefined): string => (v == null ? "" : String(v));
@@ -253,7 +247,17 @@ export function SchoolPageEditorProvider({ children }: { children: React.ReactNo
       }
       if (Object.keys(patch).length) await savePageContent(client, schoolId, patch, user.authUser.id);
       if (dataRef.current["cards"]) await saveCards(client, schoolId, dataRef.current["cards"] as EditorCard[]);
-      if (dataRef.current["programs"]) await savePrograms(client, schoolId, dataRef.current["programs"] as EditorProgram[]);
+      if (dataRef.current["programs"]) {
+        // Une liste vide n'a pas le même sens selon d'où elle vient. La baseline
+        // est figée au 1er report, c'est-à-dire à l'état sorti de la base : si
+        // elle n'était PAS vide et que la liste l'est devenue, c'est que
+        // l'utilisateur a retiré ses programmes — un effacement délibéré.
+        // Un chargement raté, lui, ne reporte rien du tout (load.initial reste
+        // indéfini, les sections ne montent pas), donc on n'arrive même pas ici.
+        const base = baselineRef.current["programs"];
+        const videDelibere = base !== undefined && base !== "[]";
+        await savePrograms(client, schoolId, dataRef.current["programs"] as EditorProgram[], videDelibere);
+      }
       if (dataRef.current["news"]) await saveNews(client, schoolId, dataRef.current["news"] as EditorNews[]);
       for (const k of Object.keys(dataRef.current)) baselineRef.current[k] = JSON.stringify(dataRef.current[k]);
       setDirtyKeys([]);

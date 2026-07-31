@@ -8,6 +8,7 @@ import RealNewsSection from "@/components/program-page/NewsSection";
 import PreviewShell, { useDebounced } from "./PreviewShell";
 import { newsItems } from "./pageBridge";
 import { useEditor } from "./editorContext";
+import { MAX_SCHOOL_NEWS } from "@/lib/queries/schoolPage/schoolPageData";
 import { VisibilityToggle, SectionHidden } from "./SectionVisibility";
 import { useToast } from "./toast";
 
@@ -24,7 +25,7 @@ export default function NewsSection() {
   }, [news, report]);
 
   const addNews = () => {
-    if (news.length >= 5) { toast("Maximum 5 nouvelles"); return; }
+    if (news.length >= MAX_SCHOOL_NEWS) { toast(`Maximum ${MAX_SCHOOL_NEWS} nouvelles`); return; }
     setNews((n) => [...n, { uid: newUid(), t: "", u: "" }]);
   };
 
@@ -43,7 +44,7 @@ export default function NewsSection() {
       {hidden ? <SectionHidden sectionKey="news" /> : (
       <div className="cols">
         <div className="panel">
-          <div className="pt"><span className="n">1</span>TES NOUVELLES — TITRE + LIEN (max 5)</div>
+          <div className="pt"><span className="n">1</span>TES NOUVELLES — TITRE + LIEN (max {MAX_SCHOOL_NEWS})</div>
           <div>
             {news.map((n, i) => (
               <div className="nrow" key={n.uid}>

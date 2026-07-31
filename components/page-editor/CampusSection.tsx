@@ -17,6 +17,7 @@ import { campusContent } from "./pageBridge";
 import { SUGG } from "./fixture";
 import { langueDeSchool, reseauDeSchool } from "@/lib/queries/schoolPage/dbToProgramPage";
 import { useEditor } from "./editorContext";
+import { MAX_SCHOOL_CARDS } from "@/lib/queries/schoolPage/schoolPageData";
 import { VisibilityToggle, SectionHidden } from "./SectionVisibility";
 import { useToast } from "./toast";
 
@@ -67,11 +68,11 @@ export default function CampusSection() {
   };
 
   const addCard = () => {
-    if (cards.length >= 5) { toast("Maximum 5 cartes"); return; }
+    if (cards.length >= MAX_SCHOOL_CARDS) { toast(`Maximum ${MAX_SCHOOL_CARDS} cartes`); return; }
     setCards((c) => [...c, { uid: newUid(), t: "", x: "", image_path: null }]);
   };
   const addSugg = (t: string) => {
-    if (cards.length >= 5) { toast("Maximum 5 cartes"); return; }
+    if (cards.length >= MAX_SCHOOL_CARDS) { toast(`Maximum ${MAX_SCHOOL_CARDS} cartes`); return; }
     setCards((c) => [...c, { uid: newUid(), t, x: "", image_path: null }]);
     toast("Carte « " + t + " » créée — ajoute photo + description");
   };
@@ -118,7 +119,7 @@ export default function CampusSection() {
           )}
 
           <div className="panel" style={{ marginBottom: 14 }}>
-            <div className="pt"><span className="n">1</span>LES CARTES DU CAMPUS (max 5 + 1 vidéo)</div>
+            <div className="pt"><span className="n">1</span>LES CARTES DU CAMPUS (max {MAX_SCHOOL_CARDS} + 1 vidéo)</div>
             <div>
               {cards.map((c, i) => (
                 <div key={c.uid} style={{ border: "1px solid var(--line)", borderRadius: 11, padding: 12, marginBottom: 10 }}>

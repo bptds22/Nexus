@@ -155,6 +155,18 @@ const TE_CSS = `
 .te textarea.ti{resize:vertical;min-height:84px}
 .te .cnt{font-size:10.5px;color:var(--mut);text-align:right;margin-top:3px}
 .te .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+/* Bloc « un événement » — pile verticale. La rangée à trois champs ne tenait
+   pas dans la colonne de gauche (~286px de panneau) : input[type=date] refuse
+   de descendre sous ~135px en Chrome, et comme .ti est en width:100% les deux
+   champs texte encaissaient toute la perte, à ~26px chacun. */
+.te .evrow{border:1.5px solid var(--line);border-radius:12px;padding:12px 12px 14px;margin-bottom:10px}
+.te .evhead{display:flex;align-items:center;justify-content:space-between;gap:8px;
+  font-family:'Bebas Neue';letter-spacing:.16em;font-size:12px;color:var(--mut)}
+.te .evhead .xbtn{height:28px;width:32px;font-size:13px;line-height:1}
+.te .evrow label.fl{margin-top:10px}
+/* Date + lieu côte à côte quand la place le permet, empilés sinon. Le 140px
+   couvre le minimum incompressible du sélecteur de date. */
+.te .evduo{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
 .te select.ti{appearance:none}
 .te .auto{display:flex;gap:8px;flex-wrap:wrap}
 .te .achip{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:#B9BFC9;background:var(--card2);border:1px solid var(--line);padding:7px 12px;border-radius:99px}
