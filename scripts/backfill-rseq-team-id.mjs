@@ -105,13 +105,39 @@ if (DRY) { console.log(`\n[--dry] rien écrit. sample assign:`, JSON.stringify(a
 if (dupTid.length) { console.error("ABORT: team_id dupliqués -> violerait l'index UNIQUE. Aucun write."); process.exit(1); }
 
 // UPDATE réel via RPC _backfill_rseq_team_id(pairs jsonb) — vrai UPDATE avec
-// garde `rseq_team_id IS NULL` côté SQL (zéro écrasement). Le RPC doit exister.
+// garde `rseq_team_id IS NULL` côté SQL (zéro écrasement).
+//
+// 2026-07-31 : ce RPC était un helper TEMPORAIRE de la Phase 4A ; il n'existe
+// plus en base (vérifié : 0 ligne dans pg_proc). Le recréer serait du DDL.
+// On ajoute donc un REPLI côté client qui refait exactement le même UPDATE,
+// garde comprise (.is("rseq_team_id", null)), ligne par ligne. La logique
+// d'APPARIEMENT au-dessus n'est PAS touchée. L'index UNIQUE partiel
+// teams_rseq_team_id_uidx reste le garde-fou ultime contre un doublon.
 let done = 0, updated = 0;
-for (let i = 0; i < assign.length; i += CHUNK) {
-  const chunk = assign.slice(i, i + CHUNK);
-  const { data, error } = await supabase.rpc("_backfill_rseq_team_id", { pairs: chunk });
-  if (error) { console.error(`CHUNK ${Math.floor(i/CHUNK)+1}: ERREUR="${error.message}" — STOP`); process.exit(1); }
-  done += chunk.length; updated += (data ?? 0);
-  console.log(`CHUNK ${Math.floor(i/CHUNK)+1}: envoyées=${done}/${assign.length} maj=${updated}`);
+const { error: probe } = await supabase.rpc("_backfill_rseq_team_id", { pairs: [] });
+const rpcDispo = !probe;
+if (!rpcDispo) console.log(`  repli : RPC absent — écriture client, même garde IS NULL`);
+
+if (rpcDispo) {
+  for (let i = 0; i < assign.length; i += CHUNK) {
+    const chunk = assign.slice(i, i + CHUNK);
+    const { data, error } = await supabase.rpc("_backfill_rseq_team_id", { pairs: chunk });
+    if (error) { console.error(`CHUNK ${Math.floor(i/CHUNK)+1}: ERREUR="${error.message}" — STOP`); process.exit(1); }
+    done += chunk.length; updated += (data ?? 0);
+    console.log(`CHUNK ${Math.floor(i/CHUNK)+1}: envoyées=${done}/${assign.length} maj=${updated}`);
+  }
+} else {
+  for (const a of assign) {
+    const { data, error } = await supabase
+      .from("teams")
+      .update({ rseq_team_id: a.team_id })
+      .eq("id", a.id)
+      .is("rseq_team_id", null)
+      .select("id");
+    done++;
+    if (error) { console.error(`  ÉCHEC ${a.id}: ${error.message} — STOP`); process.exit(1); }
+    updated += (data ?? []).length;
+    if (done % 25 === 0 || done === assign.length) console.log(`  envoyées=${done}/${assign.length} maj=${updated}`);
+  }
 }
 console.log(`\nDONE — ${updated} teams pontées à leur RSEQ TeamId (sur ${assign.length} assignables).`);
