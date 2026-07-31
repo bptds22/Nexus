@@ -2,7 +2,7 @@
 
 // components/team-editor/CalendarCampsSection.tsx — S3 « Calendrier & camps »
 // Matchs = AUTO (public.games, scores des matchs joués inclus) : lecture seule.
-// Camps & essais = MANUEL (max 3) : c'est le canal de recrutement du collège,
+// Camps & essais = MANUEL (max MAX_TEAM_EVENTS) : canal de recrutement du collège,
 // le RSEQ ne les connaît pas. Aperçu = le VRAI CalendarSection.
 
 import * as React from "react";
@@ -25,7 +25,7 @@ function messageCalendrier(c: CalendrierEtat): string {
 }
 import { VisibilityToggle, SectionHidden } from "./SectionVisibility";
 import { useToast } from "@/components/page-editor/toast";
-import type { EditorCamp } from "@/lib/queries/teamPage/teamPageData";
+import { MAX_TEAM_EVENTS, type EditorCamp } from "@/lib/queries/teamPage/teamPageData";
 
 const newUid = () => Math.random().toString(36).slice(2);
 
@@ -44,7 +44,7 @@ export default function CalendarCampsSection() {
   }, [camps, report]);
 
   const add = () => {
-    if (camps.length >= 3) { toast("Maximum 3 camps"); return; }
+    if (camps.length >= MAX_TEAM_EVENTS) { toast(`Maximum ${MAX_TEAM_EVENTS} événements`); return; }
     setCamps((c) => [...c, { uid: newUid(), titre: "", event_date: "", lieu: "" }]);
   };
   const patch = (i: number, p: Partial<EditorCamp>) =>
@@ -104,7 +104,7 @@ export default function CalendarCampsSection() {
 
           {hidden ? <SectionHidden sectionKey="camps" /> : (
             <div className="panel">
-              <div className="pt"><span className="n">1</span>CAMPS DE SÉLECTION &amp; ESSAIS (max 3)</div>
+              <div className="pt"><span className="n">1</span>CAMPS DE SÉLECTION &amp; ESSAIS (max {MAX_TEAM_EVENTS})</div>
               {camps.map((c, i) => (
                 <div key={c.uid} className="nrow" style={{ gridTemplateColumns: "1.3fr .8fr 1fr auto" }}>
                   <input className="ti" maxLength={40} placeholder="Titre" value={c.titre} onChange={(e) => patch(i, { titre: e.target.value })} />

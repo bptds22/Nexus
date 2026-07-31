@@ -156,13 +156,19 @@ export async function savePennants(
   if (error) throw error;
 }
 
-/** Camps & essais (max 3) — même logique de réécriture. */
+/** Camps & essais (max MAX_TEAM_EVENTS) — même logique de réécriture. */
+/** Plafond d'événements par équipe. DOIT rester égal à l'argument du trigger
+ *  `trg_cap_team_events` (_cap_rows_per_team) — sinon la base refuse ce que
+ *  l'interface autorise. L'éditeur lit cette constante, il ne la redéclare pas.
+ *  Voir supabase/migrations/20260731160000_team_events_cap_8.sql. */
+export const MAX_TEAM_EVENTS = 8;
+
 export async function saveCamps(
   supabase: SupabaseClient, teamId: string, camps: EditorCamp[],
 ): Promise<void> {
   const del = await supabase.from("team_events").delete().eq("team_id", teamId);
   if (del.error) throw del.error;
-  const rows = camps.filter((c) => c.titre.trim()).slice(0, 3)
+  const rows = camps.filter((c) => c.titre.trim()).slice(0, MAX_TEAM_EVENTS)
     .map((c, i) => ({
       team_id: teamId, titre: c.titre.trim(),
       event_date: c.event_date || null, lieu: c.lieu || null, position: i,
