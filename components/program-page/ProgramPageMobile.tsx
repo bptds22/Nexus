@@ -181,6 +181,11 @@ function hexToRgb(hex: string): [number, number, number] {
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 }
 
+/** Les cinq écrans de la page école. */
+type TabKey = "apercu" | "sports" | "campus" | "etudes" | "parcours" | "news";
+/** Onglet à restaurer au retour d'une page équipe. Posé par « L'affiche ». */
+const TAB_RETOUR_KEY = "__nx_school_tab";
+
 const DIV_ORDER = ["D1", "D2", "D3"];
 
 /* Helpers COPIÉS de SportsGrid.tsx (module-local là-bas, non exportés). Le
@@ -233,6 +238,7 @@ function ProgramBodyMobile({ school, content }: { school: SchoolProgramIdentity;
      partagent donc aussi le même retour haptique, posé une seule fois ici. */
   const toggleTargetsTap = React.useCallback(() => { void tap(); toggleTargets(); }, [toggleTargets]);
 
+
   /* Retour — page ÉCOLE : l'écran précédent. La chaîne d'arrivée depuis la
      recherche est un `router.replace` vers le shell placeholder (app/page.tsx),
      donc l'entrée /college/<uuid> ne reste PAS dans l'historique : back renvoie
@@ -240,6 +246,76 @@ function ProgramBodyMobile({ school, content }: { school: SchoolProgramIdentity;
   const retour = React.useCallback(() => { void tap(); router.back(); }, [router]);
   // Sections masquées par l'école → la page les SAUTE (aucun trou).
   const hidden = content.hiddenSections ?? [];
+
+  /* ── ONGLETS ───────────────────────────────────────────────────────────────
+     Sept sections empilées faisaient un tunnel de ~4000px : aucun repère,
+     aucune fin visible. Elles sont regroupées en CINQ écrans qui s'échangent.
+     Ce sont bien des onglets qui REMPLACENT le contenu, pas des ancres : la
+     navigation par ancres ne fonctionne pas en WebView — c'est elle qui bloquait
+     le scroll dans campus, et le Lot B l'avait déjà retirée pour cette raison.
+
+     Un onglet n'existe que s'il lui reste quelque chose à montrer. Quand il
+     regroupe deux sections, il survit tant qu'UNE des deux tient. */
+  const onglets = React.useMemo(() => {
+    const about = !hidden.includes("about");
+    const programs = !hidden.includes("programs");
+    const parcours = !hidden.includes("parcours");
+    const news = !hidden.includes("news") && (content.news?.length ?? 0) > 0;
+    const l: { k: TabKey; label: string }[] = [];
+    l.push({ k: "apercu", label: "Aperçu" });                       // StatRows + CTA : toujours là
+    if (content.sports.length > 0) l.push({ k: "sports", label: "Sports" });
+    if (!hidden.includes("campus")) l.push({ k: "campus", label: "Campus" });
+    if (about || programs) l.push({ k: "etudes", label: "Études" });
+    if (parcours) l.push({ k: "parcours", label: "Parcours" });
+    if (news) l.push({ k: "news", label: "Actualités" });
+    return l;
+  }, [hidden, content.sports.length, content.news]);
+
+  /* Retour depuis une page équipe → on retombe sur SPORTS, l'onglet d'où l'on
+     est parti. Repartir d'« Aperçu » ferait perdre le fil : l'athlète était en
+     train de comparer des équipes. La clé est posée par « L'affiche » avant de
+     naviguer, et consommée une seule fois. */
+  const [tab, setTab] = React.useState<TabKey>(() => {
+    try {
+      const v = sessionStorage.getItem(TAB_RETOUR_KEY) as TabKey | null;
+      if (v) { sessionStorage.removeItem(TAB_RETOUR_KEY); return v; }
+    } catch { /* no-op */ }
+    return "apercu";
+  });
+  // Un onglet devenu indisponible (données qui changent) ne doit pas laisser un
+  // écran vide : on retombe sur le premier disponible.
+  const actif: TabKey = onglets.some((o) => o.k === tab) ? tab : (onglets[0]?.k ?? "apercu");
+
+  /* Le scroll repart en haut du CONTENU à chaque changement — c'est-à-dire la
+     rangée d'onglets calée sous le bouton retour, pas le sommet du document.
+
+     Remettre scrollTop à 0 renverrait au haut du MUR, qui fait ~620px : on
+     rejouerait le même défilement à chaque onglet, et les écrans courts ne
+     seraient courts que sur le papier. Le mur reste en tête du document, on y
+     remonte en scrollant — il n'est simplement pas réimposé cinq fois.
+
+     Au PREMIER rendu on ne bouge pas : l'athlète doit voir le mur en arrivant. */
+  const rootRef = React.useRef<HTMLElement>(null);
+  const tabsRef = React.useRef<HTMLDivElement>(null);
+  const premierRendu = React.useRef(true);
+  React.useEffect(() => {
+    if (premierRendu.current) { premierRendu.current = false; return; }
+    const sc = rootRef.current, tr = tabsRef.current;
+    if (!sc) return;
+    // 52px = la bande du bouton retour, sous laquelle les onglets se collent.
+    sc.scrollTop = tr ? Math.max(0, tr.offsetTop - 52) : 0;
+  }, [actif]);
+
+  /* Auto-centrage de l'onglet actif. À six onglets, « Actualités » sort du champ
+     sur 390px : sans ça, on l'active et on ne voit plus lequel est actif — la
+     rangée reste figée sur les premiers. Vaut aussi pour l'onglet restauré au
+     retour d'une page équipe, qui n'est pas choisi au doigt. */
+  React.useEffect(() => {
+    const tr = tabsRef.current;
+    const btn = tr?.querySelector<HTMLElement>(".tabbtn.on");
+    if (!tr || !btn) return;
+    tr.scrollTo({ left: Math.max(0, btn.offsetLeft - (tr.clientWidth - btn.offsetWidth) / 2), behavior: "smooth" });
+  }, [actif]);
 
   const rootStyle = {
     "--red": theme.red,
@@ -291,7 +367,7 @@ function ProgramBodyMobile({ school, content }: { school: SchoolProgramIdentity;
   } as React.CSSProperties;
 
   return (
-    <main className="ppm" style={rootStyle}>
+    <main className="ppm" style={rootStyle} ref={rootRef}>
       <style dangerouslySetInnerHTML={{ __html: WALL_CSS + PPM_CSS }} />
 
       {/* ═══ RETOUR ═══
@@ -318,38 +394,63 @@ function ProgramBodyMobile({ school, content }: { school: SchoolProgramIdentity;
       />
       <div className="liser" />
 
-      <ApercuMobile
-        school={school}
-        stats={content.stats}
-        inTargets={inTargets}
-        followers={followers}
-        onToggleTargets={toggleTargetsTap}
-      />
-
-      <SportsMobile sports={content.sports} router={router} school={school} />
-
-      {!hidden.includes("campus") && <CampusMobile content={content} />}
-
-      {!hidden.includes("about") && <AproposMobile title={content.sellTitle} sellText={content.sellText} />}
-
-      {!hidden.includes("programs") && (
-        <AcademiqueMobile
-          programs={content.programsList}
-          viewerProgrammeVise={content.viewerProgrammeVise}
-          schoolName={school.schoolName}
-        />
+      {/* Rangée d'onglets — sticky SOUS le mur, défilement horizontal si les
+          libellés ne tiennent pas sur 390px. */}
+      {onglets.length > 1 && (
+        <div className="tabsrow" role="tablist" ref={tabsRef}>
+          {onglets.map((o) => (
+            <button
+              key={o.k}
+              type="button"
+              role="tab"
+              aria-selected={o.k === actif}
+              className={"tabbtn" + (o.k === actif ? " on" : "")}
+              onClick={() => { if (o.k !== actif) { void tap(); setTab(o.k); } }}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
       )}
 
-      {!hidden.includes("parcours") && <ParcoursMobile school={school} content={content} />}
+      {actif === "apercu" && (
+        <>
+          <ApercuMobile
+            school={school}
+            stats={content.stats}
+            inTargets={inTargets}
+            followers={followers}
+            onToggleTargets={toggleTargetsTap}
+          />
+          <CtaMobile
+            ctaTitle={content.ctaTitle}
+            notifyName={content.ctaNotifyName}
+            inTargets={inTargets}
+            onToggleTargets={toggleTargetsTap}
+          />
+        </>
+      )}
 
-      {!hidden.includes("news") && <NewsMobile news={content.news} />}
+      {actif === "sports" && <SportsMobile sports={content.sports} router={router} school={school} />}
 
-      <CtaMobile
-        ctaTitle={content.ctaTitle}
-        notifyName={content.ctaNotifyName}
-        inTargets={inTargets}
-        onToggleTargets={toggleTargetsTap}
-      />
+      {actif === "campus" && !hidden.includes("campus") && <CampusMobile content={content} />}
+
+      {actif === "etudes" && (
+        <>
+          {!hidden.includes("about") && <AproposMobile title={content.sellTitle} sellText={content.sellText} />}
+          {!hidden.includes("programs") && (
+            <AcademiqueMobile
+              programs={content.programsList}
+              viewerProgrammeVise={content.viewerProgrammeVise}
+              schoolName={school.schoolName}
+            />
+          )}
+        </>
+      )}
+
+      {actif === "parcours" && !hidden.includes("parcours") && <ParcoursMobile school={school} content={content} />}
+
+      {actif === "news" && !hidden.includes("news") && <NewsMobile news={content.news} />}
 
       <div className="pfoot">Propulsé par Nexus</div>
       {/* Rien n'est coupé par le tab bar flottant. */}
@@ -443,7 +544,10 @@ function SportsMobile({ sports, router, school }: { sports: Sport[]; router: Ret
     // retour pousse une nouvelle entrée et les deux pages se renvoient l'une à
     // l'autre indéfiniment (mesuré : école → équipe → retour → école → retour
     // → équipe). Voir FROM_SCHOOL_KEY côté TeamPageMobile.
-    try { sessionStorage.setItem("__nx_team_from_school", school.id); } catch { /* no-op */ }
+    try {
+      sessionStorage.setItem("__nx_team_from_school", school.id);
+      sessionStorage.setItem(TAB_RETOUR_KEY, "sports"); // on repartira d'ici
+    } catch { /* no-op */ }
     const matched = IS_CAPACITOR ? matchDynamicRoute(url) : null;
     if (matched) {
       try { sessionStorage.setItem(`${SESSION_KEY_PREFIX}${matched.paramKey}`, matched.realId); } catch { /* no-op */ }
@@ -843,9 +947,24 @@ const PPM_CSS = `
 .ppm *{box-sizing:border-box}
 .ppm .tabspacer{height:var(--tabzone, env(safe-area-inset-bottom))}
 .ppm .liser{height:3px;background:var(--red)}
+/* ── ONGLETS — sticky SOUS le mur, au-dessous de la bande du bouton retour
+   (52px) pour que les deux ne se superposent pas. Fond OPAQUE : le contenu
+   passe dessous proprement au lieu de transparaître derrière une barre. ── */
+.ppm .tabsrow{position:sticky;top:52px;z-index:26;display:flex;gap:6px;
+  padding:10px 14px;background:var(--bg);border-bottom:1px solid var(--line);
+  overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.ppm .tabsrow::-webkit-scrollbar{display:none}
+.ppm .tabbtn{flex:0 0 auto;height:34px;padding:0 15px;border-radius:17px;cursor:pointer;
+  background:rgba(255,255,255,.05);border:1px solid var(--line-card);color:var(--p-mut);
+  font-family:'Outfit',sans-serif;font-size:14px;font-weight:600;white-space:nowrap}
+/* L'onglet actif porte la couleur de l'école, planchérée pour rester lisible. */
+.ppm .tabbtn.on{background:var(--red-tint-bg);border-color:var(--red-tint-bd);color:var(--red-shell)}
 /* ── RETOUR — pastille glass, même famille que les chips de la recherche ── */
+/* Fond opaque : au repos la bande est au-dessus du mur, sur le fond de page —
+   invisible ; une fois collée en haut, elle masque proprement ce qui défile
+   dessous au lieu de le laisser transparaître autour de la pastille. */
 .ppm .backbar{position:sticky;top:0;z-index:30;height:52px;display:flex;align-items:center;
-  padding:0 14px;pointer-events:none}
+  padding:0 14px;background:var(--bg)}
 .ppm .backbtn{pointer-events:auto;display:inline-flex;align-items:center;gap:7px;height:36px;
   padding:0 14px 0 11px;border-radius:18px;cursor:pointer;
   background:rgba(26,29,36,.94);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
