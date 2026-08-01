@@ -27,7 +27,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { ArrowDown, ArrowRight, Check, ChevronLeft, ChevronRight, Eye, Heart, MapPin, Play, Plus } from "lucide-react";
+import { ArrowDown, ArrowRight, Check, ChevronLeft, ChevronRight, Heart, MapPin, Play, Plus } from "lucide-react";
 import { useDynamicParam } from "@/lib/platform/useDynamicParam";
 import { matchDynamicRoute, SESSION_KEY_PREFIX } from "@/lib/platform/mobileRoutes";
 import { openExternal } from "@/components/shared/settings";
@@ -37,6 +37,11 @@ import { useSchoolTargets } from "@/lib/queries/schoolPage/useSchoolTargets";
 import { deriveWallTheme } from "@/components/program-wall/theme";
 import ProgramWallMobile, { WALL_CSS } from "./ProgramWallMobile";
 import { matchPrograms, norm } from "./matchPrograms";
+// Décision YouTube partagée avec VideoEmbed, pas rejouée : sous capacitor://
+// l'iframe YouTube est refusée (origin non reconnue → « lecture intégrée
+// désactivée »). Sur device on n'iframe donc PAS — vignette cliquable qui ouvre
+// le navigateur in-app (SFSafariViewController = vrai contexte https).
+import { getYouTubeId, openVideoExternal } from "@/components/ui/VideoEmbed";
 import {
   dbToProgramPage, degradedProgramPage,
   type SchoolRow, type TeamRowForGrid,
@@ -165,6 +170,14 @@ export default function ProgramPageMobile() {
    LE RENDU MOBILE
    ═══════════════════════════════════════════════════════════════════════════ */
 
+/** hex → composantes, pour composer des rgba() en JS (aucun color-mix). Jumeau
+ *  de celui de TeamPage.tsx, module-local là-bas comme ici. */
+function hexToRgb(hex: string): [number, number, number] {
+  const h = hex.replace("#", "");
+  const n = parseInt(h.length === 3 ? h.split("").map((c) => c + c).join("") : h, 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+
 const DIV_ORDER = ["D1", "D2", "D3"];
 
 /* Helpers COPIÉS de SportsGrid.tsx (module-local là-bas, non exportés). Le
@@ -208,6 +221,7 @@ function topDivision(sports: Sport[]): string | null {
 function ProgramBodyMobile({ school, content }: { school: SchoolProgramIdentity; content: ProgramPageContent }) {
   const router = useRouter();
   const theme = deriveWallTheme(school.colorPrimary, school.colorDarker, school.colorNeutral);
+  const [tr, tg, tb] = hexToRgb(theme.red);
 
   // S1 follow + CTA partagent UN seul état cible — source unique (identique au
   // web : useSchoolTargets, RLS « Athletes manage own targets »).
@@ -228,6 +242,14 @@ function ProgramBodyMobile({ school, content }: { school: SchoolProgramIdentity;
     "--beige": theme.beige,
     "--pop": "cubic-bezier(0.34,1.56,0.64,1)",
     "--nx-red": "#E63946",
+    // RÈGLE COULEUR — tout accent éditorial suit l'ÉCOLE. `--red-shell` = la
+    // primaire rendue lisible sur la coquille sombre (accentOnShell, plancher
+    // partagé) ; `--on-c1` = l'encre lisible SUR un aplat de primaire ; les
+    // teintes rgba sont calculées en JS, jamais en color-mix.
+    "--red-shell": theme.c1OnShell,
+    "--on-c1": theme.onC1,
+    "--red-tint-bg": `rgba(${tr},${tg},${tb},0.16)`,
+    "--red-tint-bd": `rgba(${tr},${tg},${tb},0.45)`,
     "--green": "#22C55E",
     "--p-ink": "#EDEFF3",
     "--p-soft": "#C9CCD4",
@@ -238,11 +260,11 @@ function ProgramBodyMobile({ school, content }: { school: SchoolProgramIdentity;
     "--card": "#1A1D24",
     "--line": "#1E2129",
     "--line-card": "#262A33",
-    // --tabzone : conditionné à IS_CAPACITOR, PAS à la largeur de viewport.
-    // MobileTabBar fait `if (!IS_CAPACITOR) return null` → en mobile-web il n'y
-    // a AUCUN tab bar et réserver 88px y creuserait un vide. 88px = la constante
-    // du nav réel (bulle 64px + bottom 10px + marge).
-    "--tabzone": IS_CAPACITOR ? "calc(env(safe-area-inset-bottom) + 88px)" : "env(safe-area-inset-bottom)",
+    // --tabzone n'est PLUS posée ici. Elle était conditionnée à IS_CAPACITOR,
+    // donc réservait 88px même là où AUCUNE tab bar n'est montée — d'où le vide
+    // en bas de /college. C'est app/college/layout.tsx qui la pose maintenant
+    // sur <body>, d'après ce qui est RÉELLEMENT rendu (session valide ou non) ;
+    // on l'hérite, avec repli sur la seule safe-area au point d'usage.
     // APP-SHELL : sous .is-capacitor, <html>/<body> sont position:fixed +
     // overflow:hidden (globals.css §« App-shell scroll lock »). Le conteneur
     // scroll borné unique est le <main> de l'écran — sans ça la page est
@@ -333,11 +355,12 @@ function ApercuMobile({
           <div className="pbar" />
         </div>
         <div className="hfollow">
-          {/* « vues » : valeur du mock, reprise telle quelle du composant web
-              StatRows — aucune source DB à ce jour (cf. rapport). */}
-          <span className="hf-chip">
-            <Eye size={14} strokeWidth={1.9} aria-hidden />1 240<span className="u">vues</span>
-          </span>
+          {/* La pastille « 1 240 vues » a été RETIRÉE — parité avec le web
+              (StatRows) : c'était un nombre en dur sur une page publique.
+              Aucune table ne compte les vues d'une page école ; les tables
+              *_views existantes sont toutes indexées sur athlete_id. Le
+              compteur followers ci-dessous vient, lui, de
+              count_followers_by_school. */}
           <button type="button" className={inTargets ? "hf-btn on" : "hf-btn"} onClick={onToggleTargets}>
             {inTargets ? <Check size={16} strokeWidth={3} aria-hidden /> : <Heart size={16} fill="currentColor" aria-hidden />}
             <span className="t">{inTargets ? "Dans tes cibles" : "Rajouter dans mes cibles"}</span>
@@ -458,7 +481,6 @@ function CampusMobile({ content }: { content: ProgramPageContent }) {
   const caraRef = React.useRef<HTMLDivElement>(null);
   const scrollCara = (dir: number) => caraRef.current?.scrollBy({ left: dir * 246, behavior: "smooth" });
   const cards = content.campusCards ?? [];
-  const [playing, setPlaying] = React.useState<number | null>(null);
   const langue = languageLabel(content.language);
   const nTuiles = [langue, content.schoolType, content.region].filter(Boolean).length;
 
@@ -504,23 +526,13 @@ function CampusMobile({ content }: { content: ProgramPageContent }) {
           <div className="cara" ref={caraRef}>
             {cards.map((card, i) => {
               if ("type" in card && card.type === "video") {
-                const vid = card.youtubeUrl ? ytId(card.youtubeUrl) : null;
-                if (playing === i && vid) {
-                  return (
-                    <article className="ccard" key={i}>
-                      <iframe
-                        title="Vidéo du campus"
-                        src={`https://www.youtube.com/embed/${vid}?autoplay=1&rel=0`}
-                        loading="lazy"
-                        allow="autoplay; encrypted-media; picture-in-picture"
-                        allowFullScreen
-                        style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: 0, borderRadius: "inherit" }}
-                      />
-                    </article>
-                  );
-                }
+                const vid = card.youtubeUrl ? getYouTubeId(card.youtubeUrl) : null;
                 return (
-                  <article className="ccard" key={i} onClick={() => vid && setPlaying(i)}>
+                  <article
+                    className="ccard"
+                    key={i}
+                    onClick={() => { if (card.youtubeUrl) { void tap(); void openVideoExternal(card.youtubeUrl); } }}
+                  >
                     {vid ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img className="cimg" src={`https://img.youtube.com/vi/${vid}/hqdefault.jpg`} alt="Vidéo du campus" loading="lazy" />
@@ -556,11 +568,6 @@ function CampusMobile({ content }: { content: ProgramPageContent }) {
   );
 }
 
-/** Extrait un id YouTube d'une URL watch/share/embed (jumeau de CampusSection). */
-function ytId(url: string): string {
-  const m = url.match(/(?:v=|youtu\.be\/|embed\/)([\w-]{11})/);
-  return m ? m[1] : url;
-}
 
 /* ── #apropos ────────────────────────────────────────────────────────────── */
 
@@ -784,11 +791,12 @@ const PPM_CSS = `
   min-height:100vh;overflow-x:hidden;-webkit-tap-highlight-color:transparent;
   padding-top:calc(env(safe-area-inset-top) + 8px)}
 .ppm *{box-sizing:border-box}
-.ppm .tabspacer{height:var(--tabzone)}
+.ppm .tabspacer{height:var(--tabzone, env(safe-area-inset-bottom))}
 .ppm .liser{height:3px;background:var(--red)}
 
 .ppm section{position:relative;padding:34px 18px 30px;border-bottom:1px solid var(--line)}
-.ppm .kick{font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:.2em;color:var(--nx-red);margin-bottom:7px}
+/* kicker de section — couleur ÉCOLE, plancher de contraste mesuré. */
+.ppm .kick{font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:.2em;color:var(--red-shell);margin-bottom:7px}
 .ppm .sec-h{font-family:'Anton',sans-serif;font-size:27px;line-height:1.02;color:var(--p-ink);font-weight:400}
 .ppm .sec-h em{font-style:normal;color:var(--red)}
 .ppm .pbar{width:52px;height:4px;background:var(--red);margin:11px 0 18px}
@@ -798,9 +806,6 @@ const PPM_CSS = `
 .ppm .bigid .l1x{font-family:'Anton',sans-serif;font-size:31px;line-height:.96;color:var(--p-ink)}
 .ppm .bigid .l2x{font-family:'Anton',sans-serif;font-size:31px;line-height:.96;color:var(--red)}
 .ppm .hfollow{margin-top:16px}
-.ppm .hf-chip{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--p-mut);font-weight:600}
-.ppm .hf-chip svg{width:14px;height:14px;stroke:var(--p-mut);fill:none}
-.ppm .hf-chip .u{color:var(--p-faint);font-weight:500}
 .ppm .hf-btn{margin-top:10px;width:100%;height:48px;border-radius:12px;border:1px solid var(--line-card);
   background:var(--card);color:var(--p-ink);font-family:'Outfit',sans-serif;font-size:15px;font-weight:600;
   display:flex;align-items:center;justify-content:center;gap:9px;cursor:pointer}
@@ -831,7 +836,10 @@ const PPM_CSS = `
 .ppm .aPills{display:flex;flex-wrap:wrap;gap:5px;margin-top:9px}
 .ppm .pill{font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:.1em;padding:3px 8px;border-radius:5px;
   background:rgba(255,255,255,.05);border:1px solid var(--line-card);color:var(--p-mut)}
-.ppm .pill.div1{background:rgba(200,16,46,.16);border-color:rgba(200,16,46,.45);color:#F0A8B2}
+/* La pastille de division portait rgba(200,16,46) EN DUR — le rouge de Grasset :
+   elle ne se recolorait pour aucun autre collège. Teintes dérivées de la
+   primaire réelle, calculées en JS. */
+.ppm .pill.div1{background:var(--red-tint-bg);border-color:var(--red-tint-bd);color:var(--red-shell)}
 .ppm .pill.gen{color:var(--p-soft)}
 .ppm .teams{display:none;margin-top:11px;gap:6px;flex-direction:column}
 .ppm .aRow.open .teams{display:flex}

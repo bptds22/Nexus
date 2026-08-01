@@ -46,6 +46,13 @@ export default function ProgramPage({ school, content }: ProgramPageProps) {
     "--beige": theme.beige,
     "--pop": "cubic-bezier(0.34,1.56,0.64,1)",
     "--nx-red": "#E63946", // rouge Nexus — moments plateforme (Suivre / CTA)
+    // RÈGLE COULEUR : tout accent éditorial suit l'ÉCOLE. `--red-shell` est la
+    // primaire rendue lisible sur la coquille sombre (accentOnShell, même
+    // plancher que le reste du thème) — les kickers et accents de titre vivent
+    // sur #111317, où une primaire sombre disparaît. `--on-c1` est l'encre qui
+    // reste lisible SUR un aplat de primaire (pastilles, boutons pleins).
+    "--red-shell": theme.c1OnShell,
+    "--on-c1": theme.onC1,
     "--green": "#22C55E",
     // Rampe TEXTE de la coquille (préfixe --p-* : --ink/--char/--cream sont les
     // vars du THÈME ÉCOLE, pas du texte). 4 crans, aucun hex texte en dur.
@@ -190,7 +197,10 @@ export const PP_CSS = `
 .pp .pagewrap{max-width:1500px;margin:0 auto;position:relative}
 .pp section{position:relative;z-index:2;padding:72px 26px 64px;border-bottom:1px solid #1E2129;overflow:hidden}
 .pp .sec-in{max-width:1180px;margin:0 auto;position:relative}
-.pp .kick{font-family:'Bebas Neue';letter-spacing:.34em;font-size:14px;color:var(--red);filter:brightness(1.5)}
+/* kicker de section — couleur ÉCOLE, plancher de contraste mesuré (--red-shell).
+   L'ancien filter:brightness(1.5) éclaircissait à l'aveugle : il délavait les
+   primaires claires et ne sauvait pas les sombres. */
+.pp .kick{font-family:'Bebas Neue';letter-spacing:.34em;font-size:14px;color:var(--red-shell)}
 .pp .sec-h{font-family:'Anton';font-size:clamp(30px,3.6vw,46px);text-transform:uppercase;color:var(--p-ink);margin:6px 0 4px;line-height:1.02}
 .pp .sec-h em{font-style:normal;color:var(--red);filter:brightness(1.3)}
 .pp .lead{font-family:'Outfit';font-size:16px;line-height:1.65;color:var(--p-soft);max-width:640px}
@@ -212,12 +222,6 @@ export const PP_CSS = `
 /* S1 — Suivre (→ mes cibles) + preuve sociale : moment plateforme = rouge Nexus */
 .pp .hd-top{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;flex-wrap:wrap}
 .pp .hfollow{display:flex;flex-direction:column;align-items:flex-end;gap:10px;min-width:230px}
-.pp .hf-stats{display:flex;gap:8px}
-.pp .hf-chip{display:inline-flex;align-items:center;gap:7px;background:#1A1D24;border:1.5px solid #262A33;border-radius:11px;padding:9px 13px;font-family:'Outfit';font-weight:700;font-size:14px;color:var(--p-ink)}
-.pp .hf-chip .ic{font-size:14px;line-height:1}
-.pp .hf-chip .ic.eye{color:var(--p-mut)}
-.pp .hf-chip .ic.heart{color:var(--nx-red)}
-.pp .hf-chip .u{font-family:'Outfit';font-weight:500;font-size:12px;color:var(--p-mut);margin-left:1px}
 .pp .hf-btn{display:inline-flex;align-items:center;gap:9px;font-family:'Outfit';font-weight:700;font-size:15px;background:var(--nx-red);color:#fff;border:0;border-radius:12px;padding:13px 22px;cursor:pointer;transition:transform .28s var(--pop),background .2s;box-shadow:0 6px 20px -8px rgba(230,57,70,.7);white-space:nowrap}
 .pp .hf-btn:hover{transform:translateY(-2px)}
 .pp .hf-btn.on{background:#14161C;color:var(--p-ink);border:1.5px solid #2A2F3A;box-shadow:none}
@@ -228,7 +232,7 @@ export const PP_CSS = `
 .pp .tr-red .man{color:#fff;border-color:rgba(255,255,255,.5)}
 /* S2 — L'affiche (liste éditoriale, aucune icône) */
 .pp .pill{font-family:'Outfit';font-weight:700;font-size:12px;letter-spacing:.04em;padding:4px 10px;border-radius:99px;display:inline-flex;align-items:center;white-space:nowrap}
-.pp .pill.div1{background:var(--red);color:#fff}
+.pp .pill.div1{background:var(--red);color:var(--on-c1)}
 .pp .pill.div{background:transparent;color:var(--p-soft);border:1.5px solid #333844}
 .pp .pill.gen{background:#1D212A;color:var(--p-mut)}
 .pp .pill.cnt{background:#12151C;color:var(--p-ink);border:1px solid #262A33}
@@ -272,7 +276,7 @@ export const PP_CSS = `
 .pp .cara-kick{font-family:'Bebas Neue';letter-spacing:.24em;font-size:14px;color:var(--p-mut)}
 .pp .cara-nav{display:flex;gap:8px}
 .pp .cara-nav button{width:40px;height:40px;border-radius:50%;background:#1A1D24;border:1.5px solid #2A2F3A;color:var(--p-ink);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .2s var(--pop),border-color .2s}
-.pp .cara-nav button:hover{transform:translateY(-2px);border-color:var(--nx-red)}
+.pp .cara-nav button:hover{transform:translateY(-2px);border-color:var(--red-shell)}
 .pp .cara{display:flex;gap:16px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;padding-bottom:6px;scrollbar-width:none}
 .pp .cara::-webkit-scrollbar{display:none}
 .pp .ccard{flex:0 0 300px;scroll-snap-align:start;height:380px;border-radius:16px;position:relative;overflow:hidden;border:1.5px solid #262A33;cursor:pointer;transition:transform .3s var(--pop),box-shadow .3s}
@@ -306,7 +310,7 @@ export const PP_CSS = `
 .pp .match-empty{background:#12151C;border:1.5px dashed #2A2F3A;border-radius:14px;padding:22px 24px}
 .pp .match-empty p{font-family:'Outfit';font-size:14.5px;color:var(--p-soft);line-height:1.55;max-width:640px}
 .pp .match-empty p b{color:var(--p-ink)}
-.pp .me-cta{display:inline-flex;align-items:center;gap:8px;margin-top:14px;font-family:'Outfit';font-weight:700;font-size:14px;background:var(--nx-red);color:#fff;border:0;border-radius:10px;padding:11px 18px;cursor:pointer}
+.pp .me-cta{display:inline-flex;align-items:center;gap:8px;margin-top:14px;font-family:'Outfit';font-weight:700;font-size:14px;background:var(--red);color:var(--on-c1);border:0;border-radius:10px;padding:11px 18px;cursor:pointer}
 .pp .chalkline{border:0;border-top:1.4px dashed rgba(241,235,221,.2);margin:24px 0 18px}
 .pp .pl-t{font-family:'Bebas Neue';letter-spacing:.22em;font-size:14px;color:var(--p-mut);margin-bottom:12px}
 .pp .progs{display:flex;gap:9px;flex-wrap:wrap}
@@ -338,7 +342,10 @@ export const PP_CSS = `
 .pp .nstrip .t{flex:1;min-width:240px}
 .pp .nstrip .t b{font-family:'Outfit';font-weight:800;font-size:16px;color:var(--p-ink);display:block}
 .pp .nstrip .t span{font-family:'Outfit';font-size:14.5px;color:var(--p-soft)}
-.pp .nstrip .nn{font-family:'Anton';font-size:38px;color:var(--red)}
+/* « Recrutés via Nexus » = moment PLATEFORME : le compteur ET le X masqué
+   gardent le rouge Nexus. Annule C8, qui les avait passés en couleur école. */
+.pp .nstrip .nn{font-family:'Anton';font-size:38px;color:var(--nx-red)}
+.pp .nstrip .nxmask{--dna-mark:var(--nx-red)}
 /* News */
 .pp .news-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-top:28px}
 .pp .ncard{background:#1A1D24;border:1.5px solid #262A33;border-radius:14px;padding:22px 22px 20px;display:flex;flex-direction:column;gap:10px}

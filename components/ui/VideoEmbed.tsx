@@ -8,8 +8,10 @@ interface VideoEmbedProps {
   title?: string;
 }
 
-/** ID YouTube depuis une URL watch?v= ou youtu.be/… (null si pas YouTube). */
-function getYouTubeId(url: string): string | null {
+/** ID YouTube depuis une URL watch?v= ou youtu.be/… (null si pas YouTube).
+ *  EXPORTÉ : les cartes du carrousel campus (web ET mobile) ont leur propre
+ *  habillage mais doivent partager CETTE décision-ci, pas la rejouer. */
+export function getYouTubeId(url: string): string | null {
   try {
     const u = new URL(url);
     if (u.hostname.includes("youtube.com") && u.searchParams.get("v")) {
@@ -24,7 +26,8 @@ function getYouTubeId(url: string): string | null {
   return null;
 }
 
-function getEmbedUrl(url: string): string | null {
+/** EXPORTÉ — voir getYouTubeId. Porte l'atténuation nocookie + origin. */
+export function getEmbedUrl(url: string): string | null {
   const ytId = getYouTubeId(url);
   // Dégradé (option a) : ?origin déclaré pour le player web (inoffensif, aide
   // la validation d'origin côté YouTube). La garantie device reste l'option (c).
@@ -44,7 +47,7 @@ function getEmbedUrl(url: string): string | null {
 /** Ouvre l'URL dans le navigateur in-app (SFSafariViewController sur iOS) —
     contexte Safari réel avec origin https → YouTube joue (corrige Error 153
     sous capacitor://localhost). Fallback web : nouvel onglet. */
-async function openExternal(url: string) {
+export async function openVideoExternal(url: string) {
   try {
     const { Browser } = await import("@capacitor/browser");
     await Browser.open({ url });
@@ -68,7 +71,7 @@ export default function VideoEmbed({ url, title }: VideoEmbedProps) {
     return (
       <button
         type="button"
-        onClick={() => openExternal(url)}
+        onClick={() => openVideoExternal(url)}
         aria-label={title || "Lire la vidéo sur YouTube"}
         className="relative block w-full rounded-lg overflow-hidden bg-black"
         style={{ paddingBottom: "56.25%" }}

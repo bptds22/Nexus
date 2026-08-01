@@ -11,6 +11,7 @@
 import * as React from "react";
 import { DNA_CSS, GrainOverlay } from "@/components/shared/dna";
 import { useSchoolTargets } from "@/lib/queries/schoolPage/useSchoolTargets";
+import { accentOnShell } from "@/components/program-wall/theme";
 import TeamHero from "./TeamHero";
 import CalendarSection from "./CalendarSection";
 import PresentationSection from "./PresentationSection";
@@ -72,6 +73,9 @@ export default function TeamPage({ team }: { team: TeamData }) {
     "--p-mut-inv": "#6B7280", // méta foncée sur surface claire (tuiles calendrier)
     // ── moments PLATEFORME (rouge Nexus) — seul usage : le CTA cibles
     "--nx-red": "#E63946",
+    // Primaire rendue lisible sur la coquille sombre — même plancher que la
+    // page école (accentOnShell). Les kickers vivent sur #111317.
+    "--red-shell": accentOnShell(team.teamColor),
     "--nx-red-deep": "#B32330", // état actif du CTA cibles
     "--green": "#22C55E",       // engagés / match / complet (règle système)
     "--pop": "cubic-bezier(0.34,1.56,0.64,1)",
@@ -139,7 +143,7 @@ export const TP_CSS = `
 /* Accents de titre = la PRIMAIRE de l'équipe, pas sa version éclaircie : toute
    variante claire d'un rouge d'école converge vers le rouge Nexus (#D8394C en
    est à 15 unités RGB) et le titre se lit alors comme un élément plateforme. */
-.tp .kick{font-family:'Bebas Neue';letter-spacing:.34em;font-size:14px;color:var(--red)}
+.tp .kick{font-family:'Bebas Neue';letter-spacing:.34em;font-size:14px;color:var(--red-shell)}
 .tp .h2{font-family:'Anton';font-size:clamp(30px,3.6vw,46px);text-transform:uppercase;color:var(--p-ink);margin:6px 0 4px;line-height:1.02}
 .tp .h2 em{font-style:normal;color:var(--red)}
 .tp .lead{font-family:'Outfit';font-size:16px;line-height:1.65;color:var(--p-soft);max-width:640px}

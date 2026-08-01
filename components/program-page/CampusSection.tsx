@@ -12,6 +12,10 @@
 import * as React from "react";
 import GhostLayer from "./GhostLayer";
 import { languageLabel, type ProgramPageContent } from "./content";
+// Décision YouTube partagée avec VideoEmbed : ici (WEB) l'iframe reste inline,
+// mais via getEmbedUrl → youtube-nocookie + ?origin. Le device, lui, ne peut PAS
+// iframer (origin capacitor:// refusée) — c'est CampusMobile qui gère ce cas.
+import { getEmbedUrl, getYouTubeId } from "@/components/ui/VideoEmbed";
 
 export default function CampusSection({
   content,
@@ -77,13 +81,13 @@ export default function CampusSection({
             <div className="cara" ref={caraRef}>
               {cards.map((card, i) => {
                 if ("type" in card && card.type === "video") {
-                  const vid = card.youtubeUrl ? ytId(card.youtubeUrl) : null;
+                  const vid = card.youtubeUrl ? getYouTubeId(card.youtubeUrl) : null;
                   if (playing === i && vid) {
                     return (
                       <article className="ccard rv" key={i}>
                         <iframe
                           title="Vidéo du campus"
-                          src={`https://www.youtube.com/embed/${vid}?autoplay=1&rel=0`}
+                          src={`${getEmbedUrl(card.youtubeUrl!) ?? ""}&autoplay=1&rel=0`}
                           loading="lazy"
                           allow="autoplay; encrypted-media; picture-in-picture"
                           allowFullScreen
@@ -130,9 +134,3 @@ export default function CampusSection({
   );
 }
 
-/** Extract a YouTube id from a watch/share/embed URL (best-effort; Bloc 2 may
- *  store the raw id). Returns the input unchanged if no pattern matches. */
-function ytId(url: string): string {
-  const m = url.match(/(?:v=|youtu\.be\/|embed\/)([\w-]{11})/);
-  return m ? m[1] : url;
-}

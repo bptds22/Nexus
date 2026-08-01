@@ -28,6 +28,7 @@ import SocialIcons from "@/components/marketing/SocialIcons";
 import StarRating from "@/components/ui/StarRating";
 import TerrainStage from "./TerrainStage";
 import { useSchoolTargets } from "@/lib/queries/schoolPage/useSchoolTargets";
+import { accentOnShell } from "@/components/program-wall/theme";
 import { loadTeamPage } from "@/lib/queries/teamPage/teamPageData";
 import { sportKeyFromNom, defaultNeeds, mergeNeeds, toTeamNeeds, type PositionRow } from "@/lib/queries/teamPage/sportSlots";
 import {
@@ -328,6 +329,9 @@ function TeamBodyMobile({ team }: { team: TeamData }) {
     "--p-mut-inv": "#6B7280",
     "--nx-red": "#E63946",
     "--nx-red-deep": "#B32330",
+    // Primaire rendue lisible sur la coquille sombre — plancher partagé avec la
+    // page école (accentOnShell). Les kickers vivent sur #111317.
+    "--red-shell": accentOnShell(team.teamColor),
     "--green": "#22C55E",
     "--pop": "cubic-bezier(0.34,1.56,0.64,1)",
     // Teintes rgba calculées en JS → aucun color-mix.
@@ -336,9 +340,11 @@ function TeamBodyMobile({ team }: { team: TeamData }) {
     "--red-lt-55": `rgba(${lr},${lg},${lb},0.55)`,
     "--hero-focal": team.heroFocal ?? "50% 25%",
     "--hero-zoom": String(Math.max(100, team.heroZoom ?? 100) / 100),
-    // --tabzone : conditionné à IS_CAPACITOR, PAS à la largeur de viewport
-    // (MobileTabBar ne rend pas hors Capacitor). 88px = bulle 64px + bottom 10px.
-    "--tabzone": IS_CAPACITOR ? "calc(env(safe-area-inset-bottom) + 88px)" : "env(safe-area-inset-bottom)",
+    // --tabzone n'est PLUS posée ici. Elle était conditionnée à IS_CAPACITOR,
+    // donc réservait 88px même là où AUCUNE tab bar n'est montée — d'où le vide
+    // en bas de /college. C'est app/college/layout.tsx qui la pose maintenant
+    // sur <body>, d'après ce qui est RÉELLEMENT rendu (session valide ou non) ;
+    // on l'hérite, avec repli sur la seule safe-area au point d'usage.
     // APP-SHELL : sous .is-capacitor, <html>/<body> sont position:fixed +
     // overflow:hidden (globals.css §« App-shell scroll lock »). Le conteneur
     // scroll borné unique est le <main> de l'écran — sans ça la page est
@@ -754,10 +760,11 @@ const TPM_CSS = `
   padding-top:calc(env(safe-area-inset-top) + 8px);
   -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
 .tpm *{box-sizing:border-box}
-.tpm .tabspacer{height:var(--tabzone)}
+.tpm .tabspacer{height:var(--tabzone, env(safe-area-inset-bottom))}
 
 .tpm section{position:relative;padding:34px 18px 32px;border-bottom:1px solid var(--line)}
-.tpm .kick{font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:.2em;color:var(--nx-red);margin-bottom:7px}
+/* kicker de section — couleur ÉQUIPE, plancher de contraste mesuré. */
+.tpm .kick{font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:.2em;color:var(--red-shell);margin-bottom:7px}
 .tpm .h2,.tpm h2{font-family:'Anton',sans-serif;font-size:26px;line-height:1.04;color:var(--p-ink);font-weight:400}
 .tpm .h2 em,.tpm h2 em{font-style:normal;color:var(--red-lt)}
 .tpm .pbar{width:52px;height:4px;background:var(--red);margin:11px 0 18px}

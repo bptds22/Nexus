@@ -244,6 +244,12 @@ export interface WallTheme {
   tileGlyph: string;
   /** foam-finger recolor: hue-rotate(Δ from #A6192E) + saturate — rule #5 */
   foamFilter: string;
+  /** LA PRIMAIRE LISIBLE SUR LA COQUILLE SOMBRE (#111317).
+   *  Les kickers de section, les pastilles de division et les accents de titre
+   *  vivent sur ce fond-là, pas sur une tuile du mur. Une primaire pâle y
+   *  disparaît. Voir accentOnShell() : même plancher que le reste du fichier,
+   *  aucun seuil nouveau. */
+  c1OnShell: string;
   /** Texte garanti lisible SUR la foncée (--ink). Même plancher que `onC1` :
    *  la claire de l'école si elle contraste assez, sinon l'encre sombre.
    *  Une école dont la « foncée » est en fait claire garde donc un texte
@@ -333,6 +339,37 @@ function warmShade(n: Rgb, kr: number, kg: number, kb: number): string {
   return toHex({ r: n.r * kr, g: n.g * kg, b: n.b * kb });
 }
 
+/** Fond de la coquille Nexus — le #111317 de `.pp` / `.ppm` / `.tp` / `.tpm`.
+ *  C'est la surface sur laquelle vivent les kickers et les accents de titre. */
+export const SHELL_BG = "#111317";
+
+/**
+ * La couleur d'école rendue LISIBLE sur la coquille sombre.
+ *
+ * Renvoie la primaire telle quelle si elle passe déjà le plancher d'affichage ;
+ * sinon la version éclaircie la plus PROCHE qui le passe (pas de saut brutal
+ * vers le blanc). Réutilise strictement l'outillage existant du fichier —
+ * WALL_DISPLAY_MIN_CONTRAST, contrastRatio(), lighten() : aucun second plancher
+ * n'est introduit.
+ *
+ * Remplace le `filter:brightness(1.5)` qui traînait dans les CSS de page :
+ * celui-ci éclaircissait à l'aveugle, sans jamais mesurer le contraste, et
+ * délavait les primaires déjà claires au lieu de les rendre lisibles.
+ */
+export function accentOnShell(
+  primary: string,
+  minContrast: number = WALL_DISPLAY_MIN_CONTRAST,
+): string {
+  const surface = parseHex(SHELL_BG);
+  const p = parseHex(primary);
+  if (contrastRatio(p, surface) >= minContrast) return primary;
+  for (let f = 0.08; f <= 1; f += 0.08) {
+    const c = lighten(p, f);
+    if (contrastRatio(c, surface) >= minContrast) return toHex(c);
+  }
+  return "#FFFFFF"; // primaire quasi noire : dernier recours lisible
+}
+
 export function deriveWallTheme(
   primary: string,
   darker: string,
@@ -372,6 +409,7 @@ export function deriveWallTheme(
     // Réutilise pickNeutralOn — le même choix que derivePlate fait pour sa
     // plaque sombre. Pas de second plancher de contraste dans le projet.
     onInk: pickNeutralOn(d, n, neutral),
+    c1OnShell: accentOnShell(primary, minContrast),
   };
 }
 
