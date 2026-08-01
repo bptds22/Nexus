@@ -70,6 +70,10 @@ export interface ProgramPageContent {
   region: string | null; // fiche RÉGION value (schools.region)
   address: string; // mappin display
   mapQuery: string; // Google Maps keyless q
+  /** Coordonnée du campus pour la vignette carte. `null` = aucune coordonnée
+   *  DIGNE DE CONFIANCE (absente, ou `approx` = centre-ville) → on n'épingle
+   *  rien et l'appelant retombe sur le bouton « Ouvrir dans Plans ». */
+  mapPin?: { lat: number; lng: number } | null;
   housing: { type: "campus" | "partner" | "pension" | "none"; note?: string };
   /** installations shown as facts (mock 2 items) */
   facts: { title: string; text: string }[];

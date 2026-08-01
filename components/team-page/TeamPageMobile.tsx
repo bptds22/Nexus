@@ -21,8 +21,10 @@
 // service-role) reste dans app/college/[schoolId]/[teamId]/page.tsx.
 
 import * as React from "react";
-import { Check, ChevronLeft, ChevronRight, Heart } from "lucide-react";
+import { ArrowLeft, Check, ChevronLeft, ChevronRight, Heart } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useDynamicParam } from "@/lib/platform/useDynamicParam";
+import { matchDynamicRoute, SESSION_KEY_PREFIX } from "@/lib/platform/mobileRoutes";
 import { createClient } from "@/lib/supabase/client";
 import SocialIcons from "@/components/marketing/SocialIcons";
 import StarRating from "@/components/ui/StarRating";
@@ -40,6 +42,10 @@ import {
   type TeamData, type TeamEvent, type Pennant, type ConnectedAthlete, type SportConfig,
 } from "@/components/team-page/content";
 import type { SupabaseClient } from "@supabase/supabase-js";
+
+/** Fil d'Ariane posé par « L'affiche » de la page école — dit à la page équipe
+ *  qu'une page école la précède dans l'historique, donc qu'il faut DÉPILER. */
+const FROM_SCHOOL_KEY = "__nx_team_from_school";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -308,6 +314,37 @@ function TeamBodyMobile({ team }: { team: TeamData }) {
     else setLocalCible((c) => !c);
   }, [wired, targets]);
 
+  const router = useRouter();
+  /* Retour — destination TOUJOURS la page école de CETTE équipe, par deux
+     chemins selon d'où l'on vient :
+
+     · venu de la page école (fil d'Ariane posé par « L'affiche ») → on DÉPILE.
+       Empiler ici créerait une boucle : le retour de l'école, lui, dépile, et
+       les deux pages se renverraient l'une à l'autre. Mesuré avant correction.
+     · arrivé par un lien direct (notification, partage) → aucune école derrière,
+       on POUSSE la page école. Le chemin reste prévisible au lieu de sortir de
+       l'app. En static export ça passe par le registre : /college/<uuid>
+       n'existe pas, il faut le shell placeholder + le stash. */
+  const retour = React.useCallback(() => {
+    void tap();
+    let vientDeLEcole = false;
+    try {
+      vientDeLEcole = sessionStorage.getItem(FROM_SCHOOL_KEY) === team.schoolId;
+      if (vientDeLEcole) sessionStorage.removeItem(FROM_SCHOOL_KEY);
+    } catch { /* no-op */ }
+    if (vientDeLEcole) { router.back(); return; }
+
+    const url = team.schoolId ? `/college/${team.schoolId}` : null;
+    if (!url) { router.back(); return; } // fixtures sans schoolId : repli
+    const matched = IS_CAPACITOR ? matchDynamicRoute(url) : null;
+    if (matched) {
+      try { sessionStorage.setItem(`${SESSION_KEY_PREFIX}${matched.paramKey}`, matched.realId); } catch { /* no-op */ }
+      router.push(matched.placeholderPath);
+      return;
+    }
+    router.push(url);
+  }, [router, team.schoolId]);
+
   const rootStyle = {
     "--red": team.teamColor,
     "--red-lt": team.teamColorLt,
@@ -364,6 +401,19 @@ function TeamBodyMobile({ team }: { team: TeamData }) {
   return (
     <main className="tpm" style={rootStyle}>
       <style dangerouslySetInnerHTML={{ __html: TPM_CSS }} />
+
+      {/* ═══ RETOUR ═══
+          Destination EXPLICITE : la page école de CETTE équipe, pas router.back().
+          Arrivé par un lien direct (notification, partage), l'historique n'a pas
+          de page école derrière — un back sortirait de l'app ou remonterait sur
+          un écran sans rapport. Le chemin reste donc prévisible dans les deux cas.
+          Passe par le REGISTRE (matchDynamicRoute) : en static export
+          /college/<uuid> n'existe pas, il faut le shell placeholder + le stash. */}
+      <div className="backbar">
+        <button type="button" className="backbtn" onClick={retour} aria-label="Revenir à la page du collège">
+          <ArrowLeft size={16} strokeWidth={2.2} aria-hidden />{team.schoolName || "Le collège"}
+        </button>
+      </div>
 
       <HeroMobile team={team} cible={cible} onToggleCible={toggleCible} />
       <CalendrierMobile team={team} />
@@ -761,8 +811,23 @@ const TPM_CSS = `
   -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
 .tpm *{box-sizing:border-box}
 .tpm .tabspacer{height:var(--tabzone, env(safe-area-inset-bottom))}
+/* ── RETOUR — même pastille glass que la page école ── */
+.tpm .backbar{position:sticky;top:0;z-index:30;height:52px;display:flex;align-items:center;
+  padding:0 14px;pointer-events:none}
+.tpm .backbtn{pointer-events:auto;display:inline-flex;align-items:center;gap:7px;height:36px;
+  max-width:76%;padding:0 14px 0 11px;border-radius:18px;cursor:pointer;
+  background:rgba(26,29,36,.94);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border:1px solid var(--line-card);box-shadow:0 6px 18px rgba(0,0,0,.55);
+  font-family:'Outfit',sans-serif;font-size:14px;font-weight:600;color:var(--p-ink);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tpm .backbtn svg{stroke:currentColor;fill:none;flex:0 0 auto}
 
-.tpm section{position:relative;padding:34px 18px 32px;border-bottom:1px solid var(--line)}
+/* Le bouton retour est STICKY : sans marge, il retombe pile sur le kicker quand
+   on s'arrête en tête d'une section (mesuré : 89×18px recouverts sur 5 des 7).
+   Le haut de section réserve donc la bande du bouton — 44px (son bas) + 10px de
+   respiration = 54px. À garder ALIGNÉ sur .backbar/.backbtn si l'un des deux
+   change de gabarit. */
+.tpm section{position:relative;padding:54px 18px 32px;border-bottom:1px solid var(--line)}
 /* kicker de section — couleur ÉQUIPE, plancher de contraste mesuré. */
 .tpm .kick{font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:.2em;color:var(--red-shell);margin-bottom:7px}
 .tpm .h2,.tpm h2{font-family:'Anton',sans-serif;font-size:26px;line-height:1.04;color:var(--p-ink);font-weight:400}

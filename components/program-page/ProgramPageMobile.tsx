@@ -27,7 +27,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { ArrowDown, ArrowRight, Check, ChevronLeft, ChevronRight, Heart, MapPin, Play, Plus } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowRight, Check, ChevronLeft, ChevronRight, Heart, MapPin, Play, Plus } from "lucide-react";
 import { useDynamicParam } from "@/lib/platform/useDynamicParam";
 import { matchDynamicRoute, SESSION_KEY_PREFIX } from "@/lib/platform/mobileRoutes";
 import { openExternal } from "@/components/shared/settings";
@@ -42,6 +42,9 @@ import { matchPrograms, norm } from "./matchPrograms";
 // désactivée »). Sur device on n'iframe donc PAS — vignette cliquable qui ouvre
 // le navigateur in-app (SFSafariViewController = vrai contexte https).
 import { getYouTubeId, openVideoExternal } from "@/components/ui/VideoEmbed";
+import dynamic from "next/dynamic";
+// Leaflet touche `window` à l'import → jamais au SSR (même garde que la recherche).
+const MapPane = dynamic(() => import("@/components/cegep-search/MapPane"), { ssr: false });
 import {
   dbToProgramPage, degradedProgramPage,
   type SchoolRow, type TeamRowForGrid,
@@ -108,7 +111,7 @@ export default function ProgramPageMobile() {
       try {
         const supabase = createClient();
         const { data: rows } = await supabase
-          .from("schools").select("id, name, city, region, langue, reseau").eq("id", schoolId!).limit(1);
+          .from("schools").select("id, name, city, region, langue, reseau, lat, lng, geo_source").eq("id", schoolId!).limit(1);
         const school = (rows ?? [])[0] as SchoolRow | undefined;
         if (!school) { if (!cancelled) setSt({ state: "notfound" }); return; }
 
@@ -229,6 +232,12 @@ function ProgramBodyMobile({ school, content }: { school: SchoolProgramIdentity;
   /* Le ♥ de l'aperçu et le CTA de la bande partagent le MÊME état cible : ils
      partagent donc aussi le même retour haptique, posé une seule fois ici. */
   const toggleTargetsTap = React.useCallback(() => { void tap(); toggleTargets(); }, [toggleTargets]);
+
+  /* Retour — page ÉCOLE : l'écran précédent. La chaîne d'arrivée depuis la
+     recherche est un `router.replace` vers le shell placeholder (app/page.tsx),
+     donc l'entrée /college/<uuid> ne reste PAS dans l'historique : back renvoie
+     bien sur /athlete/recherche, pas sur un placeholder ni sur le catch-all. */
+  const retour = React.useCallback(() => { void tap(); router.back(); }, [router]);
   // Sections masquées par l'école → la page les SAUTE (aucun trou).
   const hidden = content.hiddenSections ?? [];
 
@@ -285,6 +294,22 @@ function ProgramBodyMobile({ school, content }: { school: SchoolProgramIdentity;
     <main className="ppm" style={rootStyle}>
       <style dangerouslySetInnerHTML={{ __html: WALL_CSS + PPM_CSS }} />
 
+      {/* ═══ RETOUR ═══
+          Le geste natif de retour iOS n'existe PAS ici : WKWebView pose
+          allowsBackForwardNavigationGestures à false par défaut et ni Capacitor
+          ni le projet ne l'activent (vérifié dans CAPBridgeViewController.swift,
+          qui règle bounces et allowsLinkPreview mais jamais les gestes). Sans ce
+          bouton, un athlète venu de la recherche est prisonnier de la page.
+
+          En FLUX, avant le mur, et sticky : au repos il ne recouvre donc rien de
+          la composition du mur — il la précède. Il reste ensuite accroché en haut
+          pendant le défilement, sinon l'affordance disparaît sur une page longue. */}
+      <div className="backbar">
+        <button type="button" className="backbtn" onClick={retour} aria-label="Revenir à l'écran précédent">
+          <ArrowLeft size={16} strokeWidth={2.2} aria-hidden />Retour
+        </button>
+      </div>
+
       {/* ═══ LE MUR (aucune menubar d'ancres) + liseré rouge 3px ═══ */}
       <ProgramWallMobile
         school={school}
@@ -301,7 +326,7 @@ function ProgramBodyMobile({ school, content }: { school: SchoolProgramIdentity;
         onToggleTargets={toggleTargetsTap}
       />
 
-      <SportsMobile sports={content.sports} router={router} />
+      <SportsMobile sports={content.sports} router={router} school={school} />
 
       {!hidden.includes("campus") && <CampusMobile content={content} />}
 
@@ -392,7 +417,7 @@ function ApercuMobile({
 
 /* ── #sports — L'affiche (mène à la page équipe, en natif) ───────────────── */
 
-function SportsMobile({ sports, router }: { sports: Sport[]; router: ReturnType<typeof useRouter> }) {
+function SportsMobile({ sports, router, school }: { sports: Sport[]; router: ReturnType<typeof useRouter>; school: SchoolProgramIdentity }) {
   const [open, setOpen] = React.useState<Set<number>>(new Set());
   if (!sports || sports.length === 0) return null; // 0 sport → pas de section
 
@@ -413,6 +438,12 @@ function SportsMobile({ sports, router }: { sports: Sport[]; router: ReturnType<
   const goTeam = (url: string) => {
     if (!url) return; // une équipe sans route n'est pas cliquable → aucun retour
     void tap(); // haptique : rangée de sport à équipe unique, ou chip d'équipe
+    // Fil d'Ariane : la page équipe saura qu'une page école la précède DANS
+    // l'historique, et pourra donc DÉPILER au lieu d'empiler. Sans ça, son
+    // retour pousse une nouvelle entrée et les deux pages se renvoient l'une à
+    // l'autre indéfiniment (mesuré : école → équipe → retour → école → retour
+    // → équipe). Voir FROM_SCHOOL_KEY côté TeamPageMobile.
+    try { sessionStorage.setItem("__nx_team_from_school", school.id); } catch { /* no-op */ }
     const matched = IS_CAPACITOR ? matchDynamicRoute(url) : null;
     if (matched) {
       try { sessionStorage.setItem(`${SESSION_KEY_PREFIX}${matched.paramKey}`, matched.realId); } catch { /* no-op */ }
@@ -479,9 +510,14 @@ function SportsMobile({ sports, router }: { sports: Sport[]; router: ReturnType<
 
 function CampusMobile({ content }: { content: ProgramPageContent }) {
   const caraRef = React.useRef<HTMLDivElement>(null);
-  const scrollCara = (dir: number) => caraRef.current?.scrollBy({ left: dir * 246, behavior: "smooth" });
+  const scrollCara = (dir: number) => caraRef.current?.scrollBy({ left: dir * 310, behavior: "smooth" });
   const cards = content.campusCards ?? [];
   const langue = languageLabel(content.language);
+  const pin = content.mapPin ?? null;
+  const ouvrirPlans = React.useCallback(() => {
+    void tap();
+    void openExternal(`https://www.google.com/maps?q=${encodeURIComponent(content.mapQuery)}`);
+  }, [content.mapQuery]);
   const nTuiles = [langue, content.schoolType, content.region].filter(Boolean).length;
 
   return (
@@ -501,18 +537,32 @@ function CampusMobile({ content }: { content: ProgramPageContent }) {
         </div>
       )}
 
-      {/* CARTE DU CAMPUS — l'iframe Google keyless ne peut pas s'afficher en
-          WKWebView (X-Frame-Options sur l'origine capacitor://). Bouton natif
-          → application de cartes du téléphone (pattern GestionEcoleMobile).
-          Aucune clé, aucune dépendance. Le WEB garde son iframe (branche SSR). */}
-      <button
-        type="button"
-        className="mapbtn"
-        onClick={() => openExternal(`https://www.google.com/maps?q=${encodeURIComponent(content.mapQuery)}`)}
-      >
-        <MapPin size={17} strokeWidth={1.9} aria-hidden />
-        Ouvrir dans Plans
-      </button>
+      {/* CARTE DU CAMPUS — VIGNETTE Leaflet (mêmes tuiles Carto sombres et même
+          filtre que la carte de recherche), un pin, aucun geste : ce n'est pas
+          une carte à explorer, et un scroll vertical la traverse sans être
+          capturé. Le tap ouvre l'app de cartes du téléphone.
+          L'iframe Google keyless est exclue en WKWebView (X-Frame-Options sur
+          l'origine capacitor://) ; le WEB garde la sienne (branche SSR).
+          SANS coordonnée digne de confiance (absente, ou `approx` = centre-ville)
+          → aucun pin, on retombe sur le bouton seul. Jamais un point faux. */}
+      {pin ? (
+        <div className="mapthumb" onClick={ouvrirPlans} role="button" tabIndex={0}
+          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") ouvrirPlans(); }}
+          aria-label="Ouvrir le campus dans l'application de cartes">
+          <MapPane
+            points={[{ id: "campus", nom: content.mapQuery, lat: pin.lat, lng: pin.lng, riche: true, cible: false }]}
+            selectedId={null} hoveredId={null} focus={null} onSelect={() => ouvrirPlans()}
+            zoomControl={false} attributionCompact interactive={false}
+            center={pin} zoom={15} className="ppm-map"
+          />
+          <span className="mapthumb-cta"><MapPin size={15} strokeWidth={2} aria-hidden />Ouvrir dans Plans</span>
+        </div>
+      ) : (
+        <button type="button" className="mapbtn" onClick={ouvrirPlans}>
+          <MapPin size={17} strokeWidth={1.9} aria-hidden />
+          Ouvrir dans Plans
+        </button>
+      )}
 
       {cards.length > 0 && (
         <>
@@ -793,8 +843,22 @@ const PPM_CSS = `
 .ppm *{box-sizing:border-box}
 .ppm .tabspacer{height:var(--tabzone, env(safe-area-inset-bottom))}
 .ppm .liser{height:3px;background:var(--red)}
+/* ── RETOUR — pastille glass, même famille que les chips de la recherche ── */
+.ppm .backbar{position:sticky;top:0;z-index:30;height:52px;display:flex;align-items:center;
+  padding:0 14px;pointer-events:none}
+.ppm .backbtn{pointer-events:auto;display:inline-flex;align-items:center;gap:7px;height:36px;
+  padding:0 14px 0 11px;border-radius:18px;cursor:pointer;
+  background:rgba(26,29,36,.94);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border:1px solid var(--line-card);box-shadow:0 6px 18px rgba(0,0,0,.55);
+  font-family:'Outfit',sans-serif;font-size:14px;font-weight:600;color:var(--p-ink)}
+.ppm .backbtn svg{stroke:currentColor;fill:none}
 
-.ppm section{position:relative;padding:34px 18px 30px;border-bottom:1px solid var(--line)}
+/* Le bouton retour est STICKY : sans marge, il retombe pile sur le kicker quand
+   on s'arrête en tête d'une section (mesuré : 89×18px recouverts sur 5 des 7).
+   Le haut de section réserve donc la bande du bouton — 44px (son bas) + 10px de
+   respiration = 54px. À garder ALIGNÉ sur .backbar/.backbtn si l'un des deux
+   change de gabarit. */
+.ppm section{position:relative;padding:54px 18px 30px;border-bottom:1px solid var(--line)}
 /* kicker de section — couleur ÉCOLE, plancher de contraste mesuré. */
 .ppm .kick{font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:.2em;color:var(--red-shell);margin-bottom:7px}
 .ppm .sec-h{font-family:'Anton',sans-serif;font-size:27px;line-height:1.02;color:var(--p-ink);font-weight:400}
@@ -859,6 +923,23 @@ const PPM_CSS = `
   color:var(--p-ink);font-family:'Outfit',sans-serif;font-size:15px;font-weight:600;
   display:flex;align-items:center;justify-content:center;gap:9px;cursor:pointer}
 .ppm .mapbtn svg{stroke:var(--red);fill:none}
+/* ── VIGNETTE CARTE — image de situation, pas un espace à explorer ── */
+.ppm .mapthumb{position:relative;height:180px;border-radius:13px;overflow:hidden;
+  border:1px solid var(--line-card);background:#0B0D10;cursor:pointer}
+.ppm .ppm-map{position:absolute;inset:0;background:#0B0D10}
+/* Aucun geste ne doit être capté : Leaflet est déjà coupé côté options, on
+   neutralise aussi la couche DOM pour que le scroll vertical passe au travers.
+   Le tap est repris par le conteneur .mapthumb. */
+.ppm .mapthumb .leaflet-container{pointer-events:none;background:#0B0D10;font-family:inherit}
+.ppm .mapthumb .cs-tile-dark .leaflet-tile{filter:brightness(1.55) contrast(1.18) saturate(1.05)}
+.ppm .mapthumb .leaflet-control-attribution{position:absolute;width:1px;height:1px;
+  margin:-1px;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
+.ppm .mapthumb-cta{position:absolute;right:10px;bottom:10px;z-index:500;
+  display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border-radius:16px;
+  background:rgba(26,29,36,.94);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border:1px solid var(--line-card);box-shadow:0 6px 18px rgba(0,0,0,.55);
+  font-size:13px;font-weight:600;color:var(--p-ink)}
+.ppm .mapthumb-cta svg{stroke:var(--red);fill:none}
 .ppm .cara-head{display:flex;align-items:center;justify-content:space-between;margin:18px 0 10px}
 .ppm .cara-kick{font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:.16em;color:var(--p-mut)}
 .ppm .cara-nav{display:flex;gap:6px}
@@ -867,14 +948,15 @@ const PPM_CSS = `
 .ppm .cara-nav button svg{stroke:currentColor;fill:none;stroke-width:2.2}
 .ppm .cara{display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;margin:0 -18px;padding:0 18px;scroll-snap-type:x mandatory}
 .ppm .cara::-webkit-scrollbar{display:none}
-.ppm .ccard{flex:0 0 auto;width:236px;height:158px;position:relative;border-radius:12px;overflow:hidden;
+.ppm .ccard{flex:0 0 auto;width:300px;height:200px;position:relative;border-radius:12px;overflow:hidden;
   border:1px solid var(--line-card);scroll-snap-align:start;cursor:pointer;background:#0C0E12}
 .ppm .ccard .ph{position:absolute;inset:0;background:linear-gradient(155deg,#2A2F38,#161A20)}
 .ppm .ccard .cimg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
 .ppm .ccard .grad{position:absolute;inset:0;background:linear-gradient(180deg,transparent 42%,rgba(11,12,14,.88) 100%)}
 .ppm .ccard .cc-cap{position:absolute;left:12px;right:12px;bottom:11px}
-.ppm .ccard .cc-cap .t{font-size:14px;font-weight:700;color:#fff;margin-bottom:3px}
-.ppm .ccard .cc-cap .c{font-size:13px;color:var(--p-soft)}
+.ppm .ccard .cc-cap .t{font-size:15px;font-weight:700;color:#fff;margin-bottom:4px;line-height:1.25}
+.ppm .ccard .cc-cap .c{font-size:13px;color:var(--p-soft);line-height:1.4;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .ppm .ccard .cc-play{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:44px;height:44px;
   border-radius:22px;background:rgba(200,16,46,.92);display:grid;place-items:center;color:#fff}
 

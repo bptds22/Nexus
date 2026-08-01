@@ -23,6 +23,11 @@ export interface SchoolRow {
   region: string | null;
   langue: string | null;
   reseau: string | null;
+  lat: number | null;
+  lng: number | null;
+  /** nominatim (bâtiment trouvé par son nom) · manuel (corrigé à la main) ·
+   *  approx (repli centre-ville / point voisin). */
+  geo_source: string | null;
 }
 
 /** Une équipe telle que lue dans public.teams (+ le nom de son sport). */
@@ -45,6 +50,22 @@ export function genreCourt(gender: string | null): string {
   if (g.startsWith("mascul")) return "M";
   if (g.startsWith("fémin") || g.startsWith("femin")) return "F";
   return "Mixte";
+}
+
+/** Coordonnée à ÉPINGLER sur la vignette carte — ou null.
+ *
+ *  `approx` est REFUSÉ : la migration qui l'a introduit le définit comme « repli
+ *  ville / point voisin du campus », pas comme le bâtiment. Poser un pin
+ *  « le campus est ici » sur un centre-ville, c'est afficher un point faux avec
+ *  l'aplomb d'un point juste. Ces écoles retombent sur le bouton « Ouvrir dans
+ *  Plans », qui lance une RECHERCHE par nom — donc juste, même sans coordonnée.
+ *  Elles repasseront à la carte le jour où leurs vraies adresses seront saisies
+ *  (backlog noté dans 20260728150110_schools_geo_source_approx.sql). */
+function pinDeSchool(s: SchoolRow): { lat: number; lng: number } | null {
+  if (s.lat == null || s.lng == null) return null;
+  const src = (s.geo_source ?? "").trim().toLowerCase();
+  if (src !== "nominatim" && src !== "manuel") return null;
+  return { lat: s.lat, lng: s.lng };
 }
 
 /** `schools.langue` → la valeur du contrat page. Toute valeur hors des trois
@@ -170,6 +191,7 @@ export function dbToProgramPage(
     schoolType: reseauDeSchool(school.reseau),
     region: school.region?.trim() ? school.region : null,
     address: "", mapQuery: `${school.name}, ${school.city || "Québec"}`,
+    mapPin: pinDeSchool(school),
     housing: { type: "none" }, facts: [], videoUrl: c.campus_video_url?.trim() ? c.campus_video_url! : null,
     campusCards: [
       ...cards.filter((cd) => cd.titre).map((cd) => ({ type: "photo" as const, image: assetUrl(cd.image_path, "campus-photos"), titre: cd.titre, legende: cd.legende })),

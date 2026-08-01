@@ -58,6 +58,7 @@ function iconePin(taille: number, fill: string, etoile: boolean): string {
 export default function MapPane({
   points, selectedId, hoveredId, focus, onSelect,
   zoomControl = true, attributionCompact = false, resizeToken, className = "mapcanvas",
+  interactive = true, center = null, zoom,
 }: {
   points: MapPoint[];
   selectedId: string | null;
@@ -77,12 +78,21 @@ export default function MapPane({
   resizeToken?: number;
   /** Classe du conteneur. Défaut `mapcanvas` = ce que le CSS `.cs` cible déjà. */
   className?: string;
+  /** false → VIGNETTE : aucun geste (drag / molette / pincement / double-tap /
+   *  clavier), aucun contrôle. La carte devient une image de situation, pas un
+   *  espace à explorer — et un scroll vertical qui la traverse n'est plus
+   *  capturé par Leaflet. Défaut true = comportement web actuel, à l'octet. */
+  interactive?: boolean;
+  /** Vue imposée au montage (vignette d'un seul lieu). Absent → la vue Québec
+   *  d'origine, pilotée ensuite par `focus`. */
+  center?: { lat: number; lng: number } | null;
+  zoom?: number;
 }) {
   const hostRef = React.useRef<HTMLDivElement>(null);
   // Options lues À LA CRÉATION de la carte (l'effet de montage est en deps []).
   // Passées par ref pour ne pas dépendre d'une closure périmée.
-  const optsRef = React.useRef({ zoomControl, attributionCompact });
-  optsRef.current = { zoomControl, attributionCompact };
+  const optsRef = React.useRef({ zoomControl, attributionCompact, interactive, center, zoom });
+  optsRef.current = { zoomControl, attributionCompact, interactive, center, zoom };
   const mapRef = React.useRef<LeafletMap | null>(null);
   const tileRef = React.useRef<TileLayer | null>(null);
   const layersRef = React.useRef<Map<string, Layer>>(new Map());
@@ -103,9 +113,17 @@ export default function MapPane({
     (async () => {
       const L = await import("leaflet");
       if (annule || !hostRef.current || mapRef.current) return;
-      const { zoomControl: zc, attributionCompact: ac } = optsRef.current;
-      const map = L.map(hostRef.current, { zoomControl: zc, attributionControl: true })
-        .setView([46.8, -71.9], 6);
+      const { zoomControl: zc, attributionCompact: ac, interactive: it, center: ct, zoom: zm } = optsRef.current;
+      // Vignette : on coupe TOUS les gestes à la création. `interactive` reste
+      // vrai par défaut → la carte de recherche ne change pas d'un pixel.
+      const map = L.map(hostRef.current, {
+        zoomControl: zc && it,
+        attributionControl: true,
+        ...(it ? {} : {
+          dragging: false, scrollWheelZoom: false, doubleClickZoom: false,
+          touchZoom: false, boxZoom: false, keyboard: false, tap: false,
+        }),
+      }).setView(ct ? [ct.lat, ct.lng] : [46.8, -71.9], ct ? (zm ?? 14) : 6);
       // Encart compact : on garde l'attribution (obligation OSM/CARTO) mais on
       // retire le préfixe « Leaflet » et on marque le conteneur pour le CSS.
       if (ac) {
