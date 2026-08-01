@@ -33,23 +33,10 @@ import type { WallTheme } from "@/components/program-wall/theme";
 const fit = (cap: number, span: number, len: number): string =>
   `${Math.min(cap, span / Math.max(1, len)).toFixed(2)}cqw`;
 
-/* ── Glyphes de décor, dessinés (aucun emoji, aucun caractère de symbole) ──── */
+/* ── Glyphes de décor ──────────────────────────────────────────────────────
+   La fleur de lys et les logos viennent de public/logos/ (assets figés depuis
+   f7cc2a5). Seule l'étoile reste dessinée : aucun PNG ne la porte. ── */
 
-function Lys({ className, style }: { className?: string; style?: React.CSSProperties }) {
-  return (
-    <svg className={className} style={style} viewBox="0 0 40 48" aria-hidden focusable="false">
-      {/* pétale central */}
-      <path d="M20 3c-3.2 5-4.6 9.6-4.6 13.6 0 3.6 1.5 7 4.6 10.2 3.1-3.2 4.6-6.6 4.6-10.2 0-4-1.4-8.6-4.6-13.6z" />
-      {/* pétale gauche — sortie en volute, pointe recourbée */}
-      <path d="M18.6 27.4C14 22.6 8.2 20 4.2 22.4 1 24.3 1.4 29 5.2 30.6c1.4.6 2.8.4 3.5-.5-2.1-.3-3.3-1.3-3.5-2.5-.3-1.4.7-2.4 2.4-2.3 3.2.2 7.6 1.7 11 3.9z" />
-      {/* pétale droit — miroir exact */}
-      <path d="M21.4 27.4C26 22.6 31.8 20 35.8 22.4 39 24.3 38.6 29 34.8 30.6c-1.4.6-2.8.4-3.5-.5 2.1-.3 3.3-1.3 3.5-2.5.3-1.4-.7-2.4-2.4-2.3-3.2.2-7.6 1.7-11 3.9z" />
-      {/* bandeau + hampe */}
-      <path d="M13.6 31.2h12.8v3.2H13.6z" />
-      <path d="M17.8 34.4h4.4v8.2c0 1.9 1.3 3.2 3.4 3.8H14.4c2.1-.6 3.4-1.9 3.4-3.8z" />
-    </svg>
-  );
-}
 
 function Etoile({ className, style }: { className?: string; style?: React.CSSProperties }) {
   return (
@@ -81,12 +68,19 @@ export default function ProgramWallMobile({ school, theme, division }: ProgramWa
       <div className="mosaic">
         {/* ── rangée de tête : NEXUS · ligue · province · damier ── */}
         <div className="t nex">
-          <b>
-            NE<i>X</i>US
-          </b>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logos/nexus-wordmark-white.png" alt="NEXUS" />
         </div>
         <div className="t rse">
-          <b className={school.league === "RSEQ" ? "lg-rseq" : "lg-alt"}>{school.league}</b>
+          {/* USPORTS : slots.ts pointe /logos/usports.png, qui N'EXISTE PAS dans
+              public/logos/. On ne fabrique pas l'image — repli sur le sigle en
+              toutes lettres, et dette signalée. RSEQ, lui, a son PNG. */}
+          {school.league === "RSEQ" ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={w.leagueLogo} alt="RSEQ" />
+          ) : (
+            <b className="lg-alt">{school.league}</b>
+          )}
         </div>
         <div className="t que">
           <b style={{ fontSize: fit(4.2, 27, provinceMot.length) }}>{provinceMot}</b>
@@ -132,7 +126,7 @@ export default function ProgramWallMobile({ school, theme, division }: ProgramWa
               {w.areaCode}
             </div>
           ) : null}
-          <Lys className="fly" />
+          <span className="fly lys" />
           <div className="arw">{w.arrowPhrase}</div>
         </div>
 
@@ -140,7 +134,7 @@ export default function ProgramWallMobile({ school, theme, division }: ProgramWa
         <div className="t fdl">
           <div className="g">
             {Array.from({ length: 12 }, (_, i) => (
-              <Lys key={i} />
+              <span key={i} className="lys" />
             ))}
           </div>
         </div>
@@ -149,24 +143,18 @@ export default function ProgramWallMobile({ school, theme, division }: ProgramWa
 
         {/* ── foam finger ── */}
         <div className="t ffg">
-          <svg viewBox="0 0 44 66" aria-hidden focusable="false">
-            <path
-              d="M17 4a4 4 0 0 1 8 0v26h3a5 5 0 0 1 5 5v3h3a4 4 0 0 1 4 4v9a11 11 0 0 1-11 11H18A13 13 0 0 1 5 49V36a4 4 0 0 1 8 0v-6a4 4 0 0 1 4-4z"
-              fill="var(--red)"
-              stroke="var(--cream)"
-              strokeWidth="2.4"
-              strokeLinejoin="round"
-            />
-            <text x="21" y="54" fontFamily="Anton, sans-serif" fontSize="12" fill="var(--cream)" textAnchor="middle">
-              #1
-            </text>
-          </svg>
+          {/* Reteinté par theme.foamFilter — hue-rotate + saturate + brightness,
+              dérivés de la primaire. Le terme de luminosité est indispensable :
+              hue-rotate seul laissait un doigt brun aux écoles à primaire claire
+              (le PNG source est un rouge sombre). Mécanisme identique au web. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logos/foam-red.png" alt="" style={{ filter: theme.foamFilter }} />
         </div>
         <div className="t ag">
           <b style={{ fontSize: fit(15, 30, w.initials.length) }}>{w.initials}</b>
         </div>
         <div className="t fdb">
-          <Lys />
+          <span className="lys" />
         </div>
 
         {/* ── ALLEZ · étoile · CANADA ── */}
@@ -258,12 +246,10 @@ export const WALL_CSS = `
 
 /* rangée de tête */
 .ppm .pw7 .nex{grid-area:nex;background:var(--red);display:flex;align-items:center;justify-content:center}
-.ppm .pw7 .nex b{font-family:'Anton',sans-serif;font-size:6.4cqw;color:var(--cream);letter-spacing:.02em}
-.ppm .pw7 .nex b i{font-style:normal;color:var(--ink)}
+.ppm .pw7 .nex img{width:62%;height:auto;display:block}
 .ppm .pw7 .rse{grid-area:rse;background:var(--cream)}
-.ppm .pw7 .rse b{font-family:'Anton',sans-serif;font-size:4.4cqw;letter-spacing:.01em}
-.ppm .pw7 .rse b.lg-rseq{color:#0B6FB8}
-.ppm .pw7 .rse b.lg-alt{color:var(--ink)}
+.ppm .pw7 .rse img{width:64%;height:auto;display:block}
+.ppm .pw7 .rse b.lg-alt{font-family:'Anton',sans-serif;font-size:4.4cqw;letter-spacing:.01em;color:var(--ink)}
 .ppm .pw7 .que{grid-area:que;background:var(--cream)}
 .ppm .pw7 .que b{font-family:'Playfair Display',serif;font-style:italic;font-weight:700;color:var(--ink)}
 .ppm .pw7 .dam{grid-area:dam;background:var(--ink);
@@ -295,7 +281,7 @@ export const WALL_CSS = `
 .ppm .pw7 .mtl .city{display:inline-block;margin-top:1.6cqw;background:var(--red);color:var(--cream);
   font-family:'Bebas Neue',sans-serif;font-size:2.6cqw;letter-spacing:.1em;padding:.5cqw 1.6cqw}
 .ppm .pw7 .mtl .area{font-family:'Anton',sans-serif;color:var(--ink);line-height:.92;margin-top:.8cqw}
-.ppm .pw7 .mtl .fly{position:absolute;left:3.4cqw;bottom:6.4cqw;width:6cqw;height:auto;fill:var(--kraft)}
+.ppm .pw7 .mtl .fly{position:absolute;left:3.4cqw;bottom:6.4cqw;width:6cqw;height:6cqw;color:var(--kraft)}
 .ppm .pw7 .mtl .arw{position:absolute;left:3.4cqw;bottom:2.2cqw;font-family:'Barlow Condensed',sans-serif;
   font-weight:800;font-style:italic;font-size:3cqw;color:var(--red);letter-spacing:.02em}
 
@@ -303,7 +289,13 @@ export const WALL_CSS = `
 .ppm .pw7 .fdl{grid-area:fdl;background:var(--ink);display:block}
 .ppm .pw7 .fdl .g{position:absolute;inset:0;display:grid;grid-template-columns:repeat(4,1fr);
   align-content:center;gap:1.4cqw;padding:1.6cqw;opacity:.5}
-.ppm .pw7 .fdl .g svg{width:3.4cqw;height:auto;margin:0 auto;display:block;fill:var(--kraft)}
+/* MASQUE : le PNG découpe, la couleur vient du background — c'est ainsi que la
+   fleur suit la teinte de chaque école sans PNG par collège. Même mécanisme que
+   .mask-fleur du mur web. */
+.ppm .pw7 .lys{display:block;background:currentColor;
+  -webkit-mask:url(/logos/fleur-de-lys.png) center/contain no-repeat;
+  mask:url(/logos/fleur-de-lys.png) center/contain no-repeat}
+.ppm .pw7 .fdl .g .lys{width:3.4cqw;height:3.4cqw;margin:0 auto;color:var(--kraft)}
 /* pointillés */
 .ppm .pw7 .rdt{grid-area:rdt;background:var(--red);
   background-image:radial-gradient(rgba(0,0,0,.30) 1.1cqw,transparent 1.2cqw);background-size:4.4cqw 4.4cqw}
@@ -312,13 +304,13 @@ export const WALL_CSS = `
   background-image:repeating-linear-gradient(115deg,var(--red) 0 2.4cqw,transparent 2.4cqw 6cqw)}
 /* foam finger */
 .ppm .pw7 .ffg{grid-area:ffg;background:var(--ink)}
-.ppm .pw7 .ffg svg{width:52%;height:auto}
+.ppm .pw7 .ffg img{width:56%;height:auto;display:block;transform:rotate(-15deg)}
 /* initiales */
 .ppm .pw7 .ag{grid-area:ag;background:var(--cream)}
 .ppm .pw7 .ag b{font-family:'Anton',sans-serif;color:var(--red);line-height:.86;letter-spacing:-.02em}
 /* grande fleur de lys */
 .ppm .pw7 .fdb{grid-area:fdb;background:var(--cream)}
-.ppm .pw7 .fdb svg{width:19cqw;height:auto;fill:var(--ink)}
+.ppm .pw7 .fdb .lys{width:19cqw;height:22cqw;color:var(--ink)}
 /* ALLEZ */
 .ppm .pw7 .alz{grid-area:alz;background:var(--red);display:block;padding:2.4cqw}
 .ppm .pw7 .alz b{position:absolute;left:2.4cqw;bottom:2.6cqw;font-family:'Bebas Neue',sans-serif;
