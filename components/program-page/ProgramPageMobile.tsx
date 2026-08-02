@@ -182,7 +182,7 @@ function hexToRgb(hex: string): [number, number, number] {
 }
 
 /** Les cinq écrans de la page école. */
-type TabKey = "apercu" | "sports" | "campus" | "etudes" | "parcours" | "news";
+type TabKey = "apercu" | "campus" | "etudes" | "parcours" | "news";
 /** Onglet à restaurer au retour d'une page équipe. Posé par « L'affiche ». */
 const TAB_RETOUR_KEY = "__nx_school_tab";
 
@@ -260,21 +260,25 @@ function ProgramBodyMobile({ school, content }: { school: SchoolProgramIdentity;
     const programs = !hidden.includes("programs");
     const parcours = !hidden.includes("parcours");
     const news = !hidden.includes("news") && (content.news?.length ?? 0) > 0;
+    const about = !hidden.includes("about");
     const l: { k: TabKey; label: string }[] = [];
-    l.push({ k: "apercu", label: "Aperçu" });                       // StatRows + À propos + CTA
-    if (content.sports.length > 0) l.push({ k: "sports", label: "Sports" });
-    if (!hidden.includes("campus")) l.push({ k: "campus", label: "Campus" });
-    // « À propos » a rejoint Aperçu : Études ne vaut plus que par #academique.
+    // L'onglet Sports a disparu : ses liens vers les pages équipe remontent en
+    // TÊTE d'Aperçu. Un athlète doit les voir tout de suite, pas après un
+    // détour par un onglet.
+    l.push({ k: "apercu", label: "Aperçu" });                       // #sports + #apercu + CTA
+    // « À propos » redescend dans Campus, EN TÊTE : il présente le lieu avant
+    // qu'on le regarde. Campus survit si l'un des deux tient.
+    if (about || !hidden.includes("campus")) l.push({ k: "campus", label: "Campus" });
     if (programs) l.push({ k: "etudes", label: "Études" });
     if (parcours) l.push({ k: "parcours", label: "Parcours" });
     if (news) l.push({ k: "news", label: "Actualités" });
     return l;
   }, [hidden, content.sports.length, content.news]);
 
-  /* Retour depuis une page équipe → on retombe sur SPORTS, l'onglet d'où l'on
-     est parti. Repartir d'« Aperçu » ferait perdre le fil : l'athlète était en
-     train de comparer des équipes. La clé est posée par « L'affiche » avant de
-     naviguer, et consommée une seule fois. */
+  /* Retour depuis une page équipe → on retombe sur l'onglet d'où l'on est
+     parti. L'onglet Sports n'existant plus, c'est APERÇU : c'est lui qui porte
+     désormais « L'affiche ». La clé est posée avant de naviguer, et consommée
+     une seule fois. */
   const [tab, setTab] = React.useState<TabKey>(() => {
     try {
       const v = sessionStorage.getItem(TAB_RETOUR_KEY) as TabKey | null;
@@ -375,6 +379,10 @@ function ProgramBodyMobile({ school, content }: { school: SchoolProgramIdentity;
     // crème (rail de ville, initiales, carte slogan, surnom) ; la surcouche
     // portée en a besoin ici. Même plancher, même valeur — rien de nouveau.
     "--c1-cream": theme.c1OnCream,
+    // `--on-ink` = l'encre lisible SUR la couleur foncée de l'école, choisie
+    // par pickNeutralOn() avec son plancher de contraste. Le médaillon Nexus
+    // s'en sert pour teinter son X.
+    "--on-ink": theme.onInk,
     "--red-tint-bg": `rgba(${tr},${tg},${tb},0.16)`,
     "--red-tint-bd": `rgba(${tr},${tg},${tb},0.45)`,
     "--green": "#22C55E",
@@ -474,6 +482,10 @@ function ProgramBodyMobile({ school, content }: { school: SchoolProgramIdentity;
       <div className="tabpane">
         {actif === "apercu" && (
           <>
+            {/* #sports EN PREMIER, juste sous la rangée d'onglets : ce sont les
+                liens vers les pages équipe, la première chose qu'un athlète
+                cherche sur une fiche école. */}
+            {content.sports.length > 0 && <SportsMobile sports={content.sports} router={router} school={school} />}
             <ApercuMobile
               school={school}
               stats={content.stats}
@@ -481,9 +493,6 @@ function ProgramBodyMobile({ school, content }: { school: SchoolProgramIdentity;
               followers={followers}
               onToggleTargets={toggleTargetsTap}
             />
-            {/* « À propos » est remonté d'Études vers Aperçu : seul, il faisait
-                un écran de 222px, et Aperçu manquait de matière de lecture. */}
-            {!hidden.includes("about") && <AproposMobile title={content.sellTitle} sellText={content.sellText} />}
             <CtaMobile
               ctaTitle={content.ctaTitle}
               notifyName={content.ctaNotifyName}
@@ -493,9 +502,14 @@ function ProgramBodyMobile({ school, content }: { school: SchoolProgramIdentity;
           </>
         )}
 
-        {actif === "sports" && <SportsMobile sports={content.sports} router={router} school={school} />}
-
-        {actif === "campus" && !hidden.includes("campus") && <CampusMobile content={content} couleurPin={theme.c1OnShell} />}
+        {actif === "campus" && (
+          <>
+            {/* « À propos » EN TÊTE de Campus : le texte de présentation situe
+                le lieu avant les tuiles, la carte et les photos. */}
+            {!hidden.includes("about") && <AproposMobile title={content.sellTitle} sellText={content.sellText} />}
+            {!hidden.includes("campus") && <CampusMobile content={content} couleurPin={theme.c1OnShell} />}
+          </>
+        )}
 
         {actif === "etudes" && !hidden.includes("programs") && (
           <AcademiqueMobile
@@ -604,7 +618,7 @@ function SportsMobile({ sports, router, school }: { sports: Sport[]; router: Ret
     // → équipe). Voir FROM_SCHOOL_KEY côté TeamPageMobile.
     try {
       sessionStorage.setItem("__nx_team_from_school", school.id);
-      sessionStorage.setItem(TAB_RETOUR_KEY, "sports"); // on repartira d'ici
+      sessionStorage.setItem(TAB_RETOUR_KEY, "apercu"); // Sports a fondu dans Aperçu
     } catch { /* no-op */ }
     const matched = IS_CAPACITOR ? matchDynamicRoute(url) : null;
     if (matched) {

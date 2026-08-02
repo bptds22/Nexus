@@ -175,9 +175,15 @@ export default function ProgramWallMobile({ school, theme, division }: ProgramWa
           </div>
         ) : null}
         <div className="roundwrap" style={{ left: "76%", top: "54%" }}>
-          <div className="roundel" style={{ transform: "rotate(8deg)" }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img className="xic" src="/logos/nexus-x.png" alt="" />
+          {/* Medaillon Nexus en couleur FONCEE de l'ecole (--ink), la ou celui
+              de la division porte la primaire assombrie. Le X n'est plus une
+              image filtree mais un MASQUE : sa couleur devient pilotable, et
+              c'est --on-ink qui la donne — l'encre que pickNeutralOn() choisit
+              deja pour ecrire sur le fonce, plancher de contraste compris. Un
+              filter grayscale/brightness ne pouvait pas respecter ce plancher,
+              il forcait un blanc quelle que soit la teinte dessous. */}
+          <div className="roundel nx" style={{ transform: "rotate(8deg)" }}>
+            <span className="xic" />
           </div>
         </div>
 
@@ -193,13 +199,11 @@ export default function ProgramWallMobile({ school, theme, division }: ProgramWa
           <img src="/logos/foam-red.png" alt="" style={{ filter: theme.foamFilter }} />
         </div>
 
-        {/* §3i — le slogan RESTE a la hauteur du mock (bottom 27.5%), sous le
-            hero. Remonte, il entrait dans la carte logo : 18 % masques sur une
-            ecole a slogan court, 45 % sur un slogan long, ou l'on ne lisait plus
-            que la fin de la phrase. La carte etant ancree a droite et le hero
-            occupant x 90-300, il faudrait la tenir sous 80px de large pour
-            degager — soit trois lignes serrees. Un slogan tronque est pire
-            qu'un slogan bas. */}
+        {/* Le slogan est cale dans le TIERS SUPERIEUR, au niveau de la tuile
+            QUEBEC. C'est la seule bande ou il est integralement lisible : plus
+            bas il entrait dans la carte logo (jusqu'a 45 % masques sur un
+            slogan long, ou l'on ne lisait que la fin de la phrase), plus haut
+            il recouvrait la pastille de retour et la rendait intouchable. */}
         {w.sloganLines ? (
           <div className="slogan-card">
             {w.sloganLines.map((l, i) => (
@@ -344,11 +348,14 @@ export const WALL_CSS = `
 .ppm .pw7 .roundel .d1{font-family:'Anton',sans-serif;font-size:4.2cqw;color:var(--cream);line-height:1}
 .ppm .pw7 .roundel .rs{font-family:'Bebas Neue',sans-serif;font-size:1.6cqw;letter-spacing:.26em;
   color:var(--cream);opacity:.85;margin-top:.3cqw}
-.ppm .pw7 .roundel .xic{width:5.6cqw;filter:grayscale(1) brightness(3.2)}
+.ppm .pw7 .roundel.nx{background:var(--ink)}
+.ppm .pw7 .roundel .xic{display:block;width:5.6cqw;height:5.6cqw;background:var(--on-ink);
+  -webkit-mask:url(/logos/nexus-x.png) center/contain no-repeat;
+  mask:url(/logos/nexus-x.png) center/contain no-repeat}
 /* Le foam DÉBORDE de la mosaïque : c'est un objet posé dessus, pas une tuile. */
 .ppm .pw7 .float{position:absolute;z-index:45;filter:drop-shadow(0 1.1cqw 2.4cqw rgba(0,0,0,.55))}
 .ppm .pw7 .float img{width:100%;display:block;transform:rotate(-15deg)}
-.ppm .pw7 .slogan-card{position:absolute;z-index:46;right:3%;bottom:27.5%;transform:rotate(7deg);
+.ppm .pw7 .slogan-card{position:absolute;z-index:46;right:3%;bottom:79%;transform:rotate(7deg);
   background:var(--cream);border-radius:1.3cqw;padding:2.2cqw 3.4cqw;box-shadow:0 1.7cqw 3.8cqw rgba(0,0,0,.5);
   font-family:'Permanent Marker',cursive;font-size:3.9cqw;color:var(--c1-cream);line-height:1.3;text-align:center}
 .ppm .pw7 .under-card{position:absolute;z-index:49;left:29%;top:51%;transform:rotate(-5deg);

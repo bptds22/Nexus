@@ -166,7 +166,12 @@ const ATHLETE_TABS: TabConfig[] = [
   { key: "dashboard", label: "Accueil", href: "/athlete/dashboard", icon: Icons.dashboard, activeMatch: "/athlete/dashboard" },
   { key: "parcours", label: "Parcours", href: "/athlete/mon-parcours", icon: Icons.flag, activeMatch: "/athlete/mon-parcours" },
   { key: "profil", label: "Profil", href: "/athlete/profil", icon: Icons.user, activeMatch: "/athlete/profil" },
-  { key: "visibilite", label: "Visibilité", href: "/athlete/visibilite", icon: Icons.eye, activeMatch: "/athlete/visibilite" },
+  // « Cégeps » remplace « Visibilité » : la recherche de cégep est le geste
+  // quotidien d'un athlète, la visibilité une consultation ponctuelle — celle-ci
+  // descend dans le panel Plus, elle n'est pas supprimée.
+  // L'onglet reste allumé sur une PAGE ÉCOLE (/college/*) : on y arrive depuis
+  // la recherche, on est toujours dans le même parcours.
+  { key: "cegeps", label: "Cégeps", href: "/athlete/recherche", icon: Icons.search, activeMatch: "/athlete/recherche|/college" },
 ];
 
 const TABS_BY_ROLE: Record<"recruteur" | "coach" | "athlete", TabConfig[]> = {
