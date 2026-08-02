@@ -307,8 +307,8 @@ function ProgramBodyMobile({ school, content }: { school: SchoolProgramIdentity;
      d'un élément `position:sticky` DÉJÀ COLLÉ renvoie sa position décalée, pas
      sa position de flux (mesuré : 668 au lieu de 566). Il se lit donc sur le
      liseré, qui précède la rangée et reste statique — moins la bande du bouton
-     retour et le padding haut de la racine, dont le `top:52px` du sticky est
-     compté à partir du bord intérieur.
+     retour (--bar-h) et le padding haut de la racine, dont le `top` du sticky
+     est compté à partir du bord intérieur.
 
      Au PREMIER rendu on ne bouge pas : l'athlète doit voir le mur en arrivant. */
   const rootRef = React.useRef<HTMLElement>(null);
@@ -320,9 +320,13 @@ function ProgramBodyMobile({ school, content }: { school: SchoolProgramIdentity;
     if (premierRendu.current) { premierRendu.current = false; return; }
     const sc = rootRef.current, li = liserRef.current;
     if (!sc || !li) return;
-    const padHaut = parseFloat(getComputedStyle(sc).paddingTop) || 0;
-    // 52px = la bande du bouton retour, sous laquelle la rangée se colle.
-    const cible = Math.max(0, li.offsetTop + li.offsetHeight - 52 - padHaut);
+    const cs = getComputedStyle(sc);
+    const padHaut = parseFloat(cs.paddingTop) || 0;
+    // La bande du bouton retour se lit sur --bar-h, la variable que .backbar et
+    // .tabswrap{top} consomment aussi : une seule source, jamais de réalignement
+    // manuel. Le repli ne sert que si la feuille n'est pas encore appliquée.
+    const barre = parseFloat(cs.getPropertyValue("--bar-h")) || 52;
+    const cible = Math.max(0, li.offsetTop + li.offsetHeight - barre - padHaut);
     if (sc.scrollTop > cible) sc.scrollTop = cible;
   }, [actif]);
 
@@ -986,47 +990,60 @@ function CtaMobile({
    kickers). Aucun texte d'UI sous 12px, aucun color-mix.
    ═══════════════════════════════════════════════════════════════════════════ */
 const PPM_CSS = `
-.ppm{background:var(--bg);color:var(--p-ink);font-family:'Outfit',sans-serif;
+/* ── GABARITS DE L'EN-TÊTE COLLANT ───────────────────────────────────────────
+   Ces quatre mesures étaient répétées en dur à cinq endroits, dont un en JS, et
+   un commentaire demandait de les réaligner à la main. Elles sont maintenant
+   déclarées ICI et nulle part ailleurs : .backbar, .tabswrap{top}, .tabsrow
+   {padding}, .tabbtn{height} et le plancher de .tabpane les consomment, et le
+   clamp de défilement relit --bar-h depuis le style calculé. Changer la hauteur
+   du bouton retour ou le gabarit d'une pastille ne demande plus qu'une ligne. */
+.ppm{--bar-h:52px;          /* bande du bouton retour */
+     --tab-h:34px;          /* pastille d'onglet */
+     --tab-pad:10px;        /* respiration verticale de la rangée */
+     --tab-filet:1px;       /* le border-bottom de .tabswrap */
+     --row-h:calc(var(--tab-h) + var(--tab-pad) * 2 + var(--tab-filet));
+     /* Mou volontaire : le plancher dépasse le strict nécessaire, pour que le
+        point d'accroche reste hors du bord quand la safe-area haute varie. */
+     --pane-mou:20px;
+     --pane-min:calc(100dvh - var(--bar-h) - var(--row-h) + var(--pane-mou));
+  background:var(--bg);color:var(--p-ink);font-family:'Outfit',sans-serif;
   min-height:100vh;overflow-x:hidden;-webkit-tap-highlight-color:transparent;
   padding-top:calc(env(safe-area-inset-top) + 8px)}
 .ppm *{box-sizing:border-box}
 .ppm .tabspacer{height:var(--tabzone, env(safe-area-inset-bottom))}
 .ppm .liser{height:3px;background:var(--red)}
-/* ── ONGLETS — la rangée est COLLANTE sous la bande du bouton retour (52px),
-   les deux s'empilant sans se recouvrir. Fond OPAQUE : le contenu passe dessous
-   proprement au lieu de transparaître derrière une barre.
+/* ── ONGLETS — la rangée est COLLANTE sous la bande du bouton retour
+   (--bar-h), les deux s'empilant sans se recouvrir. Fond OPAQUE : le contenu
+   passe dessous proprement au lieu de transparaître derrière une barre.
 
    Le sticky est porté par .tabswrap, pas par .tabsrow : la rangée elle-même
    défile HORIZONTALEMENT (overflow-x), et un même élément ne peut pas être à la
    fois le conteneur de défilement et l'élément collant de son parent. Le
    dégradé de bord vit donc sur l'enveloppe, hors du flux horizontal. ── */
-.ppm .tabswrap{position:sticky;top:52px;z-index:26;background:var(--bg);
-  border-bottom:1px solid var(--line)}
-.ppm .tabsrow{display:flex;gap:6px;padding:10px 14px;
+.ppm .tabswrap{position:sticky;top:var(--bar-h);z-index:26;background:var(--bg);
+  border-bottom:var(--tab-filet) solid var(--line)}
+.ppm .tabsrow{display:flex;gap:6px;padding:var(--tab-pad) 14px;
   overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
 .ppm .tabsrow::-webkit-scrollbar{display:none}
 /* Dégradé de bord droit — n'apparaît QUE s'il reste des onglets hors champ.
    --bg vaut #111317 ; le point transparent est écrit en rgba (aucun
    color-mix, contrainte Capacitor). */
-.ppm .tabswrap::after{content:"";position:absolute;right:0;top:0;bottom:1px;width:56px;
+.ppm .tabswrap::after{content:"";position:absolute;right:0;top:0;bottom:var(--tab-filet);width:56px;
   pointer-events:none;opacity:0;transition:opacity .18s ease;
   background:linear-gradient(90deg,rgba(17,19,23,0) 0%,rgba(17,19,23,.88) 58%,var(--bg) 100%)}
 .ppm .tabswrap.more::after{opacity:1}
 
 /* ── LA HAUTEUR QUI SUPPRIME LE SAUT ──────────────────────────────────────
-   Pour que la rangée d'onglets se colle à 52px, il faut pouvoir défiler
-   jusqu'à elle. Le contenu qui la SUIT doit donc mesurer au moins la hauteur
-   de fenêtre restante une fois la bande retour (52px) et la rangée elle-même
-   (10 + 34 + 10 + 1 = 55px) déduites. Sans ce plancher, un onglet court bride
-   le défilement et la rangée reste plantée au milieu de l'écran — c'était le
-   cas de Sports, Études et Actualités.
-   52 (bande retour) + 55 (10 + 34 + 10 + 1, la rangée) = 107, moins 20px de
-   mou : le point d'accroche mesuré est à 566px de défilement, et le plus court
-   des six onglets en offre 660 — 94px de marge, qui absorbent les variations de
-   safe-area haute sans jamais ramener la rangée au milieu de l'écran.
-   À garder ALIGNÉ sur .backbar (52px) et sur le gabarit de .tabbtn (34px). */
-.ppm .tabpane{min-height:calc(100dvh - 87px)}
-.ppm .tabbtn{flex:0 0 auto;height:34px;padding:0 15px;border-radius:17px;cursor:pointer;
+   Pour que la rangée d'onglets vienne se coller, il faut pouvoir défiler
+   jusqu'à elle. Le contenu qui la SUIT doit donc mesurer au moins la hauteur de
+   fenêtre restante une fois la bande retour et la rangée déduites — c'est tout
+   --pane-min, composé plus haut à partir des gabarits. Sans ce plancher, un
+   onglet court bride le défilement et la rangée reste plantée au milieu de
+   l'écran : c'était le cas de Sports, Études et Actualités.
+   Mesuré : point d'accroche à 566px de défilement, et le plus court des six
+   onglets en offre 660 — 94px de marge. */
+.ppm .tabpane{min-height:var(--pane-min)}
+.ppm .tabbtn{flex:0 0 auto;height:var(--tab-h);padding:0 15px;border-radius:17px;cursor:pointer;
   background:rgba(255,255,255,.05);border:1px solid var(--line-card);color:var(--p-mut);
   font-family:'Outfit',sans-serif;font-size:14px;font-weight:600;white-space:nowrap}
 /* L'onglet actif porte la couleur de l'école, planchérée pour rester lisible. */
@@ -1035,7 +1052,7 @@ const PPM_CSS = `
 /* Fond opaque : au repos la bande est au-dessus du mur, sur le fond de page —
    invisible ; une fois collée en haut, elle masque proprement ce qui défile
    dessous au lieu de le laisser transparaître autour de la pastille. */
-.ppm .backbar{position:sticky;top:0;z-index:30;height:52px;display:flex;align-items:center;
+.ppm .backbar{position:sticky;top:0;z-index:30;height:var(--bar-h);display:flex;align-items:center;
   padding:0 14px;background:var(--bg)}
 .ppm .backbtn{pointer-events:auto;display:inline-flex;align-items:center;gap:7px;height:36px;
   padding:0 14px 0 11px;border-radius:18px;cursor:pointer;
