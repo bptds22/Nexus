@@ -65,8 +65,11 @@ export default function ProgramWallMobile({ school, theme, division }: ProgramWa
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logos/nexus-wordmark-white.png" alt="NEXUS" />
         </div>
-        {/* §3k — rotation a trois : CANADA occupe desormais la place de RSEQ. */}
-        <div className="blk wblk f-ink" style={{ gridColumn: 3, gridRow: 1 }}>
+        {/* CANADA en colonne 4, QUÉBEC en 3 : la rangée de tête se lit
+            NEXUS · QUÉBEC · CANADA · damier. Vérifié — l'échange fait tomber à
+            ZÉRO les voisines claires de « Québec » et du bloc fleur, qui en
+            avaient une chacun. */}
+        <div className="blk wblk f-ink" style={{ gridColumn: 4, gridRow: 1 }}>
           <div className="anton canada">CANADA</div>
         </div>
         <div className="blk b-rseq" style={{ gridColumn: 2, gridRow: 6 }}>
@@ -79,7 +82,7 @@ export default function ProgramWallMobile({ school, theme, division }: ProgramWa
             <b className="lg-alt">{school.league}</b>
           )}
         </div>
-        <div className="blk wblk f-cream" style={{ gridColumn: 4, gridRow: 1 }}>
+        <div className="blk wblk f-cream" style={{ gridColumn: 3, gridRow: 1 }}>
           <div className="prov" style={{ fontSize: fit(3.8, 26, provinceMot.length) }}>{provinceMot}</div>
         </div>
         <div className="blk p-check-ink sunk" style={{ gridColumn: 5, gridRow: 1 }} />

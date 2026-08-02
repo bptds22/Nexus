@@ -26,8 +26,9 @@
 // La page école ne dépend d'AUCUNE table restreinte → rien à vider.
 
 import * as React from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { ArrowDown, ArrowLeft, ArrowRight, Check, ChevronLeft, ChevronRight, Heart, MapPin, Play, Plus } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowRight, Check, ChevronLeft, ChevronRight, MapPin, Play, Plus } from "lucide-react";
 import { useDynamicParam } from "@/lib/platform/useDynamicParam";
 import { matchDynamicRoute, SESSION_KEY_PREFIX } from "@/lib/platform/mobileRoutes";
 import { openExternal } from "@/components/shared/settings";
@@ -482,23 +483,13 @@ function ProgramBodyMobile({ school, content }: { school: SchoolProgramIdentity;
       <div className="tabpane">
         {actif === "apercu" && (
           <>
-            {/* #sports EN PREMIER, juste sous la rangée d'onglets : ce sont les
-                liens vers les pages équipe, la première chose qu'un athlète
-                cherche sur une fiche école. */}
+            {/* Le bloc d'identité D'ABORD — nom du collège, suivi, stats — puis
+                les liens vers les pages équipe : on situe l'école avant de
+                proposer ses équipes.
+                La bande CTA a disparu ; l'action de cible est portée par la
+                pilule flottante, visible sur les cinq onglets. */}
+            <ApercuMobile school={school} stats={content.stats} followers={followers} />
             {content.sports.length > 0 && <SportsMobile sports={content.sports} router={router} school={school} />}
-            <ApercuMobile
-              school={school}
-              stats={content.stats}
-              inTargets={inTargets}
-              followers={followers}
-              onToggleTargets={toggleTargetsTap}
-            />
-            <CtaMobile
-              ctaTitle={content.ctaTitle}
-              notifyName={content.ctaNotifyName}
-              inTargets={inTargets}
-              onToggleTargets={toggleTargetsTap}
-            />
           </>
         )}
 
@@ -525,22 +516,81 @@ function ProgramBodyMobile({ school, content }: { school: SchoolProgramIdentity;
 
       </div>
 
-      {/* Rien n'est coupé par le tab bar flottant. */}
+      {/* Ni le tab bar flottant ni la pilule de cible ne coupent le contenu :
+          --tabzone réserve les deux (voir app/college/layout.tsx). */}
       <div className="tabspacer" aria-hidden />
+      <PiluleCibles inTargets={inTargets} onToggle={toggleTargetsTap} />
     </main>
+  );
+}
+
+/* ── LA PILULE DE CIBLE ───────────────────────────────────────────────────
+   Portage du motif de barre d'action flottante du profil athlète
+   (AthleteRecruiterProfileBodyMobile.tsx:2587 ; AthleteEditWizardMobile s'en
+   déclare une copie verbatim). C'est l'action principale de la page école :
+   elle est visible sur les CINQ onglets, pas seulement sur Aperçu.
+
+   `createPortal` vers document.body n'est PAS cosmétique. Sans lui, l'élément
+   `position:fixed` s'ancrerait sur le premier ancêtre qui crée un bloc
+   conteneur — ici `.ppm`, le conteneur de défilement — au lieu du viewport, et
+   la pilule défilerait avec la page.
+
+   Classes Tailwind et non la feuille `.ppm` : portalée dans <body>, la pilule
+   est HORS de `.ppm`, aucun style scopé ne l'atteindrait.
+
+   Géométrie reprise telle quelle : z-30 sous la tab bar (z-40), mais
+   `bottom: safe-area + 80px` la place géométriquement AU-DESSUS — le haut de
+   la bulle est à safe-area + 74, soit 6px d'écart, jamais de recouvrement.
+
+   Variante SANS masquage au défilement, comme le wizard : la version du profil
+   se cache en `translateY(120px)`, ce qui suppose un écouteur de scroll et un
+   re-rendu par frame. BP la veut visible en permanence. */
+function PiluleCibles({ inTargets, onToggle }: { inTargets: boolean; onToggle: () => void }) {
+  const [monte, setMonte] = React.useState(false);
+  React.useEffect(() => { setMonte(true); }, []);
+  if (!monte || typeof document === "undefined") return null;
+  return createPortal(
+    <div
+      className="fixed left-0 right-0 z-30 px-3 py-2.5"
+      style={{
+        // Posée juste au-dessus de la tab bar, via la variable que
+        // app/college/layout.tsx pose sur <body> d'après ce qui est
+        // RÉELLEMENT monté. Sans tab bar (visiteur non connecté) elle
+        // descend au ras du home indicator au lieu de flotter dans le vide.
+        bottom: "var(--barre-zone, calc(env(safe-area-inset-bottom) + 80px))",
+        backgroundColor: "rgba(17,19,23,0.85)",
+        backdropFilter: "blur(20px) saturate(180%)",
+        WebkitBackdropFilter: "blur(20px) saturate(180%)",
+        borderTop: "0.5px solid rgba(255,255,255,0.08)",
+      }}
+    >
+      <button
+        type="button"
+        onClick={onToggle}
+        className={
+          "w-full flex items-center justify-center gap-2 text-white rounded-2xl px-4 py-3 " +
+          "font-head font-bold text-[13px] uppercase tracking-widest " +
+          (inTargets
+            ? "bg-[#22C55E] shadow-[0_0_20px_rgba(34,197,94,0.3)]"
+            : "bg-[#E63946] active:bg-[#D42B22] shadow-[0_0_20px_rgba(230,57,70,0.3)]")
+        }
+      >
+        {inTargets ? <Check size={16} strokeWidth={3} aria-hidden /> : <Plus size={16} strokeWidth={2.6} aria-hidden />}
+        {inTargets ? "Ajoutée à mes cibles" : "Ajouter à mes cibles"}
+      </button>
+    </div>,
+    document.body,
   );
 }
 
 /* ── #apercu — StatRows ──────────────────────────────────────────────────── */
 
 function ApercuMobile({
-  school, stats, inTargets, followers, onToggleTargets,
+  school, stats, followers,
 }: {
   school: SchoolProgramIdentity;
   stats: ProgramPageContent["stats"];
-  inTargets: boolean;
   followers: number;
-  onToggleTargets: () => void;
 }) {
   const first = school.schoolName.split(" ")[0];
   const body = school.schoolName.slice(first.length).trim();
@@ -559,10 +609,10 @@ function ApercuMobile({
               *_views existantes sont toutes indexées sur athlete_id. Le
               compteur followers ci-dessous vient, lui, de
               count_followers_by_school. */}
-          <button type="button" className={inTargets ? "hf-btn on" : "hf-btn"} onClick={onToggleTargets}>
-            {inTargets ? <Check size={16} strokeWidth={3} aria-hidden /> : <Heart size={16} fill="currentColor" aria-hidden />}
-            <span className="t">{inTargets ? "Dans tes cibles" : "Rajouter dans mes cibles"}</span>
-          </button>
+          {/* §3e — le bouton de suivi a été retiré : avec la pilule flottante
+              permanente, c'était le TROISIÈME contrôle pour la même action sur
+              le même écran. Le compteur ci-dessous reste : c'est de
+              l'information, pas une action. */}
           <div className="hf-note"><b>{`${followers} athlètes`}</b> suivent ce collège</div>
         </div>
       </div>
@@ -988,34 +1038,6 @@ function NewsMobile({ news }: { news?: ProgramPageContent["news"] }) {
 
 /* ── bande CTA ───────────────────────────────────────────────────────────── */
 
-function CtaMobile({
-  ctaTitle, notifyName, inTargets, onToggleTargets,
-}: {
-  ctaTitle: string;
-  notifyName: string;
-  inTargets: boolean;
-  onToggleTargets: () => void;
-}) {
-  return (
-    <section className="cta-band">
-      <div className="ghost" aria-hidden>SOIS LE NEX · SOIS LE NEX · SOIS LE NEX</div>
-      <h2>Montre ton intérêt pour<br /><em>{ctaTitle}</em></h2>
-      <p>C&apos;est la première étape de ton recrutement. Sois le <span>NEX</span>.</p>
-      <button type="button" className={inTargets ? "btn-xl on" : "btn-xl"} onClick={onToggleTargets}>
-        {inTargets ? <Check size={17} strokeWidth={3} aria-hidden /> : <Plus size={17} strokeWidth={2.6} aria-hidden />}
-        {inTargets ? "Ajoutée à mes cibles" : "Ajouter à mes cibles"}
-      </button>
-      <div className="cta-note">
-        {inTargets ? (
-          <>{notifyName} a été notifié · le programme est dans <b>Mon parcours → Mes cibles</b></>
-        ) : (
-          <>{notifyName} sera notifié de ton intérêt · retrouve tes cibles dans <b>Mon parcours</b></>
-        )}
-      </div>
-    </section>
-  );
-}
-
 /* ═══════════════════════════════════════════════════════════════════════════
    CSS scopé `.ppm` — portage verbatim du corps de page du mock v3.
    Polices : Outfit (corps), Anton (titres et KPIs), Bebas Neue (labels et
@@ -1135,12 +1157,6 @@ const PPM_CSS = `
 .ppm .bigid .l1x{font-family:'Anton',sans-serif;font-size:31px;line-height:.96;color:var(--p-ink)}
 .ppm .bigid .l2x{font-family:'Anton',sans-serif;font-size:31px;line-height:.96;color:var(--red)}
 .ppm .hfollow{margin-top:16px}
-.ppm .hf-btn{margin-top:10px;width:100%;height:48px;border-radius:12px;border:1px solid var(--line-card);
-  background:var(--card);color:var(--p-ink);font-family:'Outfit',sans-serif;font-size:15px;font-weight:600;
-  display:flex;align-items:center;justify-content:center;gap:9px;cursor:pointer}
-.ppm .hf-btn svg{width:16px;height:16px;stroke:currentColor}
-.ppm .hf-btn.on{background:rgba(34,197,94,.12);border-color:rgba(34,197,94,.42);color:#A7E9BF}
-.ppm .hf-btn.on svg{stroke:var(--green)}
 .ppm .hf-note{margin-top:9px;font-size:13px;color:var(--p-mut);text-align:center}
 .ppm .hf-note b{color:var(--p-soft)}
 .ppm .tstack{margin:0 -18px}
@@ -1303,32 +1319,4 @@ const PPM_CSS = `
 .ppm .n-link .ar{display:inline-flex;color:var(--red)}
 .ppm .n-link .ar svg{stroke:currentColor;fill:none;stroke-width:2.2}
 
-/* --- bande CTA --- */
-.ppm .cta-band{position:relative;overflow:hidden;text-align:center;padding:38px 18px 40px;border-bottom:0}
-.ppm .cta-band .ghost{position:absolute;left:-2%;top:12%;font-family:'Anton',sans-serif;
-  font-size:70px;color:rgba(255,255,255,.032);white-space:nowrap;pointer-events:none;line-height:1}
-.ppm .cta-band h2{position:relative;font-family:'Anton',sans-serif;font-size:26px;line-height:1.08;color:var(--p-ink);font-weight:400}
-.ppm .cta-band h2 em{font-style:normal;color:var(--red)}
-.ppm .cta-band p{position:relative;font-size:15px;color:var(--p-soft);margin:11px 0 18px;line-height:1.55}
-.ppm .cta-band p span{color:var(--nx-red);font-weight:800}
-/* Gabarit d'action primaire de la plateforme, transpose depuis « Contacter le
-   coach » (AthleteRecruiterProfileBodyMobile) : rayon 16, corps 13, capitales,
-   interlettrage .1em, halo. Les valeurs sont recopiees et non les classes — la
-   page ecole est stylee par cette feuille injectee, pas par Tailwind.
-   Le rouge plateforme est ici LEGITIME : c'est une action de cible, l'une des
-   exceptions de la regle « les accents suivent la couleur de l'ecole ». */
-.ppm .btn-xl{position:relative;width:100%;height:54px;border-radius:16px;border:0;
-  background:var(--nx-red);color:#fff;box-shadow:0 0 20px rgba(230,57,70,.3);
-  font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;
-  text-transform:uppercase;letter-spacing:.1em;cursor:pointer;
-  display:flex;align-items:center;justify-content:center;gap:8px}
-.ppm .btn-xl:active{background:#D42B22}
-.ppm .btn-xl svg{stroke:currentColor;fill:none}
-/* Etat actif : VERT, parce que c'est une confirmation et non une action. Seul
-   le gabarit change — le halo prend la geometrie de la reference, la teinte
-   reste celle du succes. */
-.ppm .btn-xl.on{background:var(--green);box-shadow:0 0 20px rgba(34,197,94,.3)}
-.ppm .btn-xl.on:active{background:var(--green)}
-.ppm .cta-note{position:relative;font-size:14px;color:var(--p-mut);margin-top:14px;line-height:1.5}
-.ppm .cta-note b{color:var(--p-soft)}
 `;

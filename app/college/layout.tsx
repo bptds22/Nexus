@@ -44,11 +44,17 @@ const ROLE_TO_TAB: Record<string, TabRole> = {
   ATHLETE: "athlete",
 };
 
-/** Hauteur réservée quand la tab bar EST montée — bulle 64px + bottom 10px
- *  + marge, la constante servie par app/athlete/layout.tsx. */
-const TABZONE_WITH_BAR = "calc(env(safe-area-inset-bottom) + 88px)";
-/** Sans tab bar : juste le home indicator. Aucun vide. */
-const TABZONE_BARE = "env(safe-area-inset-bottom)";
+/** ESPACE OCCUPÉ PAR LA TAB BAR, mesuré depuis le bas du viewport : la bulle
+ *  est à bottom:10 et fait 64 de haut, soit 74, plus 6px d'écart = 80. C'est
+ *  aussi le `bottom` de la pilule de cible, qui se pose juste au-dessus —
+ *  d'où une variable partagée plutôt que deux constantes à réaligner. */
+const BARRE_AVEC = "calc(env(safe-area-inset-bottom) + 80px)";
+/** Sans tab bar : juste le home indicator. La pilule descend d'autant. */
+const BARRE_SANS = "env(safe-area-inset-bottom)";
+/** La pilule de cible : 65px mesurés + 10px de respiration. Elle FLOTTE
+ *  au-dessus du contenu — sans cette réserve elle masquerait la fin de chaque
+ *  onglet. */
+const PILULE = "75px";
 
 export default function CollegeLayout({ children }: { children: React.ReactNode }) {
   const [role, setRole] = useState<TabRole | null>(null);
@@ -79,8 +85,14 @@ export default function CollegeLayout({ children }: { children: React.ReactNode 
   // ne jamais laisser une réservation derrière soi.
   useEffect(() => {
     if (!IS_CAPACITOR) return;
-    document.body.style.setProperty("--tabzone", role ? TABZONE_WITH_BAR : TABZONE_BARE);
-    return () => { document.body.style.removeProperty("--tabzone"); };
+    const barre = role ? BARRE_AVEC : BARRE_SANS;
+    document.body.style.setProperty("--barre-zone", barre);
+    // --tabzone = la réserve TOTALE en bas de page : la tab bar plus la pilule.
+    document.body.style.setProperty("--tabzone", `calc(${barre} + ${PILULE})`);
+    return () => {
+      document.body.style.removeProperty("--tabzone");
+      document.body.style.removeProperty("--barre-zone");
+    };
   }, [role]);
 
   return (
