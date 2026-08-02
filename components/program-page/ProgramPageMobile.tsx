@@ -1139,7 +1139,12 @@ const PPM_CSS = `
 /* --- #campus --- */
 .ppm .fiche{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:16px}
 .ppm .itile{background:var(--card);border:1px solid var(--line-card);border-radius:11px;padding:11px 8px;text-align:center}
-.ppm .itile.hot{border-color:rgba(200,16,46,.45);background:rgba(200,16,46,.10)}
+/* La pastille de statut suit la couleur de l'ÉCOLE, comme tout accent
+   éditorial. Elle portait rgba(200,16,46,…) — le rouge d'André-Grasset en
+   dur, qui s'affichait tel quel sur une page or et marine. Les deux teintes
+   sont celles, déjà calculées en JS depuis theme.red, que porte l'onglet
+   actif : une seule source, aucun color-mix. */
+.ppm .itile.hot{border-color:var(--red-tint-bd);background:var(--red-tint-bg)}
 .ppm .itile .il{font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:.13em;color:var(--p-mut);margin-bottom:5px}
 .ppm .itile .iv{font-family:'Anton',sans-serif;font-size:14px;color:var(--p-ink);line-height:1.1}
 .ppm .mapbtn{width:100%;height:50px;border-radius:13px;border:1px solid var(--line-card);background:var(--card);
