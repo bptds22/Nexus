@@ -1024,7 +1024,7 @@ const PPM_CSS = `
      /* Mou volontaire : le plancher dépasse le strict nécessaire, pour que le
         point d'accroche reste hors du bord quand la safe-area haute varie. */
      --pane-mou:20px;
-     --pane-min:calc(100dvh - var(--row-h) + var(--pane-mou));
+--pane-min:calc(100dvh - var(--row-h) + var(--pane-mou));
   background:var(--bg);color:var(--p-ink);font-family:'Outfit',sans-serif;
   min-height:100vh;overflow-x:hidden;-webkit-tap-highlight-color:transparent;
   padding-top:calc(env(safe-area-inset-top) + 8px)}
@@ -1284,11 +1284,24 @@ const PPM_CSS = `
 .ppm .cta-band h2 em{font-style:normal;color:var(--red)}
 .ppm .cta-band p{position:relative;font-size:15px;color:var(--p-soft);margin:11px 0 18px;line-height:1.55}
 .ppm .cta-band p span{color:var(--nx-red);font-weight:800}
-.ppm .btn-xl{position:relative;width:100%;height:54px;border-radius:13px;border:0;background:var(--nx-red);color:#fff;
-  font-family:'Outfit',sans-serif;font-size:16px;font-weight:700;cursor:pointer;
-  display:flex;align-items:center;justify-content:center;gap:9px}
+/* Gabarit d'action primaire de la plateforme, transpose depuis « Contacter le
+   coach » (AthleteRecruiterProfileBodyMobile) : rayon 16, corps 13, capitales,
+   interlettrage .1em, halo. Les valeurs sont recopiees et non les classes — la
+   page ecole est stylee par cette feuille injectee, pas par Tailwind.
+   Le rouge plateforme est ici LEGITIME : c'est une action de cible, l'une des
+   exceptions de la regle « les accents suivent la couleur de l'ecole ». */
+.ppm .btn-xl{position:relative;width:100%;height:54px;border-radius:16px;border:0;
+  background:var(--nx-red);color:#fff;box-shadow:0 0 20px rgba(230,57,70,.3);
+  font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.1em;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:8px}
+.ppm .btn-xl:active{background:#D42B22}
 .ppm .btn-xl svg{stroke:currentColor;fill:none}
-.ppm .btn-xl.on{background:var(--green);box-shadow:0 14px 34px rgba(34,197,94,.3)}
+/* Etat actif : VERT, parce que c'est une confirmation et non une action. Seul
+   le gabarit change — le halo prend la geometrie de la reference, la teinte
+   reste celle du succes. */
+.ppm .btn-xl.on{background:var(--green);box-shadow:0 0 20px rgba(34,197,94,.3)}
+.ppm .btn-xl.on:active{background:var(--green)}
 .ppm .cta-note{position:relative;font-size:14px;color:var(--p-mut);margin-top:14px;line-height:1.5}
 .ppm .cta-note b{color:var(--p-soft)}
 `;
