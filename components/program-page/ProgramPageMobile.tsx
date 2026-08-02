@@ -257,15 +257,15 @@ function ProgramBodyMobile({ school, content }: { school: SchoolProgramIdentity;
      Un onglet n'existe que s'il lui reste quelque chose à montrer. Quand il
      regroupe deux sections, il survit tant qu'UNE des deux tient. */
   const onglets = React.useMemo(() => {
-    const about = !hidden.includes("about");
     const programs = !hidden.includes("programs");
     const parcours = !hidden.includes("parcours");
     const news = !hidden.includes("news") && (content.news?.length ?? 0) > 0;
     const l: { k: TabKey; label: string }[] = [];
-    l.push({ k: "apercu", label: "Aperçu" });                       // StatRows + CTA : toujours là
+    l.push({ k: "apercu", label: "Aperçu" });                       // StatRows + À propos + CTA
     if (content.sports.length > 0) l.push({ k: "sports", label: "Sports" });
     if (!hidden.includes("campus")) l.push({ k: "campus", label: "Campus" });
-    if (about || programs) l.push({ k: "etudes", label: "Études" });
+    // « À propos » a rejoint Aperçu : Études ne vaut plus que par #academique.
+    if (programs) l.push({ k: "etudes", label: "Études" });
     if (parcours) l.push({ k: "parcours", label: "Parcours" });
     if (news) l.push({ k: "news", label: "Actualités" });
     return l;
@@ -468,6 +468,9 @@ function ProgramBodyMobile({ school, content }: { school: SchoolProgramIdentity;
               followers={followers}
               onToggleTargets={toggleTargetsTap}
             />
+            {/* « À propos » est remonté d'Études vers Aperçu : seul, il faisait
+                un écran de 222px, et Aperçu manquait de matière de lecture. */}
+            {!hidden.includes("about") && <AproposMobile title={content.sellTitle} sellText={content.sellText} />}
             <CtaMobile
               ctaTitle={content.ctaTitle}
               notifyName={content.ctaNotifyName}
@@ -481,17 +484,12 @@ function ProgramBodyMobile({ school, content }: { school: SchoolProgramIdentity;
 
         {actif === "campus" && !hidden.includes("campus") && <CampusMobile content={content} />}
 
-        {actif === "etudes" && (
-          <>
-            {!hidden.includes("about") && <AproposMobile title={content.sellTitle} sellText={content.sellText} />}
-            {!hidden.includes("programs") && (
-              <AcademiqueMobile
-                programs={content.programsList}
-                viewerProgrammeVise={content.viewerProgrammeVise}
-                schoolName={school.schoolName}
-              />
-            )}
-          </>
+        {actif === "etudes" && !hidden.includes("programs") && (
+          <AcademiqueMobile
+            programs={content.programsList}
+            viewerProgrammeVise={content.viewerProgrammeVise}
+            schoolName={school.schoolName}
+          />
         )}
 
         {actif === "parcours" && !hidden.includes("parcours") && <ParcoursMobile school={school} content={content} />}
