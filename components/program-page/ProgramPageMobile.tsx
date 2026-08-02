@@ -333,6 +333,11 @@ function ProgramBodyMobile({ school, content }: { school: SchoolProgramIdentity;
     // teintes rgba sont calculées en JS, jamais en color-mix.
     "--red-shell": theme.c1OnShell,
     "--on-c1": theme.onC1,
+    // `--c1-cream` = la primaire rendue lisible SUR une surface claire. Le mur
+    // web s'en sert pour tout ce qui écrit en couleur d'école sur une tuile
+    // crème (rail de ville, initiales, carte slogan, surnom) ; la surcouche
+    // portée en a besoin ici. Même plancher, même valeur — rien de nouveau.
+    "--c1-cream": theme.c1OnCream,
     "--red-tint-bg": `rgba(${tr},${tg},${tb},0.16)`,
     "--red-tint-bd": `rgba(${tr},${tg},${tb},0.45)`,
     "--green": "#22C55E",
