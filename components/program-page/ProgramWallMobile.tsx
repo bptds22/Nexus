@@ -65,7 +65,11 @@ export default function ProgramWallMobile({ school, theme, division }: ProgramWa
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logos/nexus-wordmark-white.png" alt="NEXUS" />
         </div>
-        <div className="blk b-rseq" style={{ gridColumn: 3, gridRow: 1 }}>
+        {/* §3k — rotation a trois : CANADA occupe desormais la place de RSEQ. */}
+        <div className="blk wblk f-ink" style={{ gridColumn: 3, gridRow: 1 }}>
+          <div className="anton canada">CANADA</div>
+        </div>
+        <div className="blk b-rseq" style={{ gridColumn: 2, gridRow: 6 }}>
           {/* USPORTS : slots.ts pointe /logos/usports.png, qui N'EXISTE PAS.
               On ne fabrique pas l'image — repli sur le sigle, dette signalée. */}
           {school.league === "RSEQ" ? (
@@ -94,7 +98,9 @@ export default function ProgramWallMobile({ school, theme, division }: ProgramWa
           <div className="kw arw" style={{ fontSize: fit(3.7, 46, w.arrowPhrase.length) }}>{w.arrowPhrase}</div>
         </div>
         <div className="blk p-fleurs sunk" style={{ gridColumn: 3, gridRow: 2 }} />
-        <div className="blk b-type f-red raise grunge" style={{ gridColumn: "4/6", gridRow: "2/4" }}>
+        {/* §3j — le bloc or a motif et la grande fleur de lys ont echange.
+            Memes colonnes, meme gabarit 2x2 : l'echange est exact. */}
+        <div className="blk b-type f-red raise grunge" style={{ gridColumn: "4/6", gridRow: "5/7" }}>
           <div className="l1">{w.typeL1}</div>
           <div className="l2 anton" style={{ fontSize: fit(5.2, 46, ligneLaPlusLongue) }}>
             {w.typeL2Lines.map((l, i) => (
@@ -122,24 +128,20 @@ export default function ProgramWallMobile({ school, theme, division }: ProgramWa
         <div className="blk wblk f-ink grunge" style={{ gridColumn: 1, gridRow: 5 }}>
           <div className="bebas line-behind ens" style={{ fontSize: fit(3.2, 26, w.ensembleWord.length) }}>{w.ensembleWord}</div>
         </div>
-        {/* §2d : CANADA et les initiales ont échangé leur place. CANADA était
-            en r6c3, les initiales en r5c2. */}
-        <div className="blk wblk f-ink" style={{ gridColumn: 2, gridRow: 5 }}>
-          <div className="anton canada">CANADA</div>
+        {/* §3k — l'etoile prend la place qu'occupait CANADA. */}
+        <div className="blk f-ink icw grunge etoile" style={{ gridColumn: 2, gridRow: 5 }}>
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden focusable="false"><path d="M12 2.5l2.7 5.9 6.4.7-4.8 4.3 1.3 6.3L12 16.9 6.4 19.7l1.3-6.3L2.9 9.1l6.4-.7L12 2.5Z" /></svg>
         </div>
         <div className="blk p-chev" style={{ gridColumn: 3, gridRow: 5 }} />
         {/* Grande fleur de lys — masque PNG, couleur du thème : elle suit la
             teinte de chaque école sans PNG par collège. */}
-        <div className="blk f-cream raise" style={{ gridColumn: "4/6", gridRow: "5/7" }}>
+        <div className="blk f-cream raise" style={{ gridColumn: "4/6", gridRow: "2/4" }}>
           <div className="mask-fleur lys-geante" />
         </div>
 
         {/* ══ RANGÉE 6 ══ */}
         <div className="blk wblk f-red" style={{ gridColumn: 1, gridRow: 6 }}>
           <div className="bebas underlined alz" style={{ fontSize: fit(3.9, 25, w.allezWord.length) }}>{w.allezWord}</div>
-        </div>
-        <div className="blk f-ink icw grunge etoile" style={{ gridColumn: 2, gridRow: 6 }}>
-          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden focusable="false"><path d="M12 2.5l2.7 5.9 6.4.7-4.8 4.3 1.3 6.3L12 16.9 6.4 19.7l1.3-6.3L2.9 9.1l6.4-.7L12 2.5Z" /></svg>
         </div>
         <div className="blk wblk f-cream" style={{ gridColumn: 3, gridRow: 6 }}>
           <div className="anton init" style={{ fontSize: fit(17, 36, w.initials.length) }}>{w.initials}</div>
@@ -165,7 +167,7 @@ export default function ProgramWallMobile({ school, theme, division }: ProgramWa
 
         {/* Médaillons. Le D1 n'existe que si la table teams porte une division. */}
         {division ? (
-          <div className="roundwrap" style={{ left: "5%", top: "10.5%" }}>
+          <div className="roundwrap" style={{ left: "1%", top: "10.5%" }}>
             <div className="roundel" style={{ transform: "rotate(-7deg)" }}>
               <div className="d1">{division}</div>
               <div className="rs">DIVISION</div>
@@ -191,6 +193,13 @@ export default function ProgramWallMobile({ school, theme, division }: ProgramWa
           <img src="/logos/foam-red.png" alt="" style={{ filter: theme.foamFilter }} />
         </div>
 
+        {/* §3i — le slogan RESTE a la hauteur du mock (bottom 27.5%), sous le
+            hero. Remonte, il entrait dans la carte logo : 18 % masques sur une
+            ecole a slogan court, 45 % sur un slogan long, ou l'on ne lisait plus
+            que la fin de la phrase. La carte etant ancree a droite et le hero
+            occupant x 90-300, il faudrait la tenir sous 80px de large pour
+            degager — soit trois lignes serrees. Un slogan tronque est pire
+            qu'un slogan bas. */}
         {w.sloganLines ? (
           <div className="slogan-card">
             {w.sloganLines.map((l, i) => (
