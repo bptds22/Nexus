@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "dev:web": "cross-env NEXT_DIST_DIR=.next-web next dev -p 3000",
+    "prebuild": "node scripts/check-css-literals.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
