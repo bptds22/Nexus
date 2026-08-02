@@ -16,11 +16,18 @@ export const metadata = {
 export default function EditeurTest() {
   // URL-only web (dev/test) — jamais dans le bundle mobile.
   // Décor de développement : jamais dans le bundle mobile, et jamais servi
-  // par un déploiement de production. Sans la seconde garde, ces routes
-  // étaient rendues sur le web public — fixtures comprises.
+  // par un déploiement de PRODUCTION. Les prévisualisations restent
+  // utilisables — c'est précisément là que ces routes servent.
+  //
+  // La garde ne teste PAS `VERCEL_ENV === "production"` : la production du
+  // projet est Coolify / OVHcloud (cf. CLAUDE.md), où VERCEL_ENV n'existe
+  // pas — la garde s'y évaporerait en silence. On bloque donc toute
+  // production, et on EXEMPTE explicitement l'aperçu Vercel, qui est le
+  // seul environnement de production-au-sens-build à devoir rester ouvert.
   if (
     process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true" ||
-    process.env.NODE_ENV === "production"
+    (process.env.VERCEL_ENV !== "preview" &&
+      process.env.NODE_ENV === "production")
   ) {
     notFound();
   }
