@@ -499,9 +499,14 @@ function ProgramBodyMobile({ school, content }: { school: SchoolProgramIdentity;
         {actif === "parcours" && !hidden.includes("parcours") && <ParcoursMobile school={school} content={content} />}
 
         {actif === "news" && !hidden.includes("news") && <NewsMobile news={content.news} />}
+
+        {/* Le pied vit DANS le panneau, et pas à côté : c'est la seule position
+            d'où `margin-top:auto` peut le pousser en bas de l'écran quand
+            l'onglet est court. Sinon le vide du plancher s'ouvre AVANT lui et
+            se lit comme un bug. */}
+        <div className="pfoot">Propulsé par Nexus</div>
       </div>
 
-      <div className="pfoot">Propulsé par Nexus</div>
       {/* Rien n'est coupé par le tab bar flottant. */}
       <div className="tabspacer" aria-hidden />
     </main>
@@ -1041,8 +1046,14 @@ const PPM_CSS = `
    onglet court bride le défilement et la rangée reste plantée au milieu de
    l'écran : c'était le cas de Sports, Études et Actualités.
    Mesuré : point d'accroche à 566px de défilement, et le plus court des six
-   onglets en offre 660 — 94px de marge. */
-.ppm .tabpane{min-height:var(--pane-min)}
+   onglets en offre 660 — 94px de marge.
+
+   Colonne flex pour que .pfoot puisse être poussé en bas : le plancher fait
+   sa hauteur, mais le vide qu'il laisse sur un onglet court passe SOUS le pied
+   au lieu de s'ouvrir au-dessus. Les sections ne rétrécissent pas — le panneau
+   a une hauteur MINIMALE, il grandit avec son contenu. */
+.ppm .tabpane{min-height:var(--pane-min);display:flex;flex-direction:column}
+.ppm .tabpane .pfoot{margin-top:auto}
 .ppm .tabbtn{flex:0 0 auto;height:var(--tab-h);padding:0 15px;border-radius:17px;cursor:pointer;
   background:rgba(255,255,255,.05);border:1px solid var(--line-card);color:var(--p-mut);
   font-family:'Outfit',sans-serif;font-size:14px;font-weight:600;white-space:nowrap}
