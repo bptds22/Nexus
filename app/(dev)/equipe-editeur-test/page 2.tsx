@@ -30,15 +30,7 @@ export default async function EquipeEditeurTest({
   searchParams?: Promise<{ team?: string }>;
 }) {
   // URL-only web (dev/test) — jamais dans le bundle mobile.
-  // Décor de développement : jamais dans le bundle mobile, et jamais servi
-  // par un déploiement de production. Sans la seconde garde, ces routes
-  // étaient rendues sur le web public — fixtures comprises.
-  if (
-    process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true" ||
-    process.env.NODE_ENV === "production"
-  ) {
-    notFound();
-  }
+  if (process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true") notFound();
   const teamId = (await searchParams)?.team ?? "";
 
   return (
