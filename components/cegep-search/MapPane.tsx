@@ -36,7 +36,14 @@ const LEAFLET_CSS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
 
 // Fond figé après A/B : Carto Dark Matter rehaussé par filtre CSS
 // (cf. `.cs .cs-tile-dark .leaflet-tile`), pins sobres en gris moyen.
-const TUILES_URL = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
+/* Deux fonds de carte Carto (données OSM, aucune clé). `dark_all` reste le
+   défaut : c'est celui de la recherche, sur coquille sombre. `voyager` est le
+   fond CLAIR, pour une vignette de situation où l'on doit lire les rues et
+   les noms de quartier sans forcer. */
+const TUILES = {
+  sombre: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+  clair: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
+} as const;
 const COULEUR_SOBRE = "#5A616D";
 
 /** Étoile blanche dessinée DANS le cercle rouge (choix figé après A/B).
@@ -58,7 +65,7 @@ function iconePin(taille: number, fill: string, etoile: boolean): string {
 export default function MapPane({
   points, selectedId, hoveredId, focus, onSelect,
   zoomControl = true, attributionCompact = false, resizeToken, className = "mapcanvas",
-  interactive = true, center = null, zoom,
+  interactive = true, center = null, zoom, fond = "sombre", couleurPin,
 }: {
   points: MapPoint[];
   selectedId: string | null;
@@ -87,17 +94,26 @@ export default function MapPane({
    *  d'origine, pilotée ensuite par `focus`. */
   center?: { lat: number; lng: number } | null;
   zoom?: number;
+  /** Fond de carte. Défaut `sombre` = la recherche, inchangée à l'octet. */
+  fond?: keyof typeof TUILES;
+  /** Couleur de remplissage des pins mis en avant. Absente → le rouge
+   *  plateforme, qui est le code de la RECHERCHE (cible / résultat riche).
+   *  Une fiche école passe sa propre couleur : le point n'y est ni une cible
+   *  ni un résultat, c'est l'école qu'on regarde. */
+  couleurPin?: string;
 }) {
   const hostRef = React.useRef<HTMLDivElement>(null);
   // Options lues À LA CRÉATION de la carte (l'effet de montage est en deps []).
   // Passées par ref pour ne pas dépendre d'une closure périmée.
-  const optsRef = React.useRef({ zoomControl, attributionCompact, interactive, center, zoom });
-  optsRef.current = { zoomControl, attributionCompact, interactive, center, zoom };
+  const optsRef = React.useRef({ zoomControl, attributionCompact, interactive, center, zoom, fond });
+  optsRef.current = { zoomControl, attributionCompact, interactive, center, zoom, fond };
   const mapRef = React.useRef<LeafletMap | null>(null);
   const tileRef = React.useRef<TileLayer | null>(null);
   const layersRef = React.useRef<Map<string, Layer>>(new Map());
   const pointsRef = React.useRef<MapPoint[]>(points);
   pointsRef.current = points;
+  const couleurPinRef = React.useRef<string | undefined>(couleurPin);
+  couleurPinRef.current = couleurPin;
   const [pret, setPret] = React.useState(false);
 
   React.useEffect(() => {
@@ -151,7 +167,7 @@ export default function MapPane({
       const L = await import("leaflet");
       if (annule) return;
       tileRef.current?.remove();
-      tileRef.current = L.tileLayer(TUILES_URL, {
+      tileRef.current = L.tileLayer(TUILES[optsRef.current.fond] ?? TUILES.sombre, {
         maxZoom: 19,
         subdomains: "abcd",
         className: "cs-tile-dark",
@@ -181,7 +197,7 @@ export default function MapPane({
         // Tous les états sont des divIcon 20px (taille écran fixe). La classe
         // porte l'état : `pin-cible-wrap` (base + sélection), + `pin-rich`
         // (halo pulsé) ou `pin-sober`. La couleur/étoile sont dans le SVG.
-        const fill = p.cible || p.riche ? "#E63946" : COULEUR_SOBRE;
+        const fill = p.cible || p.riche ? (couleurPinRef.current ?? "#E63946") : COULEUR_SOBRE;
         const cls = "pin-cible-wrap " + (p.cible ? "pin-cible" : p.riche ? "pin-rich" : "pin-sober");
         const layer: Layer = L.marker([p.lat, p.lng], {
           icon: L.divIcon({

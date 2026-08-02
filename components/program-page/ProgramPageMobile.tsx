@@ -13,7 +13,7 @@
 //     la nav par ancres est la cause du scroll bloqué en WebView.
 // Ordre des sections = celui du web, sans exception :
 //   #apercu → #sports → #campus → #apropos → #académique → #parcours → #news
-//   → bande CTA → pfoot.
+//   → bande CTA.
 //
 // La COUCHE DE CHARGEMENT ci-dessous est inchangée (RLS déjà vérifiée sous JWT
 // athlète) : createClient() côté client (clé anon) → RLS appliquée, comme les
@@ -486,7 +486,7 @@ function ProgramBodyMobile({ school, content }: { school: SchoolProgramIdentity;
 
         {actif === "sports" && <SportsMobile sports={content.sports} router={router} school={school} />}
 
-        {actif === "campus" && !hidden.includes("campus") && <CampusMobile content={content} />}
+        {actif === "campus" && !hidden.includes("campus") && <CampusMobile content={content} couleurPin={theme.c1OnShell} />}
 
         {actif === "etudes" && !hidden.includes("programs") && (
           <AcademiqueMobile
@@ -500,11 +500,6 @@ function ProgramBodyMobile({ school, content }: { school: SchoolProgramIdentity;
 
         {actif === "news" && !hidden.includes("news") && <NewsMobile news={content.news} />}
 
-        {/* Le pied vit DANS le panneau, et pas à côté : c'est la seule position
-            d'où `margin-top:auto` peut le pousser en bas de l'écran quand
-            l'onglet est court. Sinon le vide du plancher s'ouvre AVANT lui et
-            se lit comme un bug. */}
-        <div className="pfoot">Propulsé par Nexus</div>
       </div>
 
       {/* Rien n'est coupé par le tab bar flottant. */}
@@ -666,7 +661,10 @@ function SportsMobile({ sports, router, school }: { sports: Sport[]; router: Ret
 
 /* ── #campus ─────────────────────────────────────────────────────────────── */
 
-function CampusMobile({ content }: { content: ProgramPageContent }) {
+/** `couleurPin` : la primaire de l'école planchérée pour la coquille sombre.
+ *  Elle descend d'ici plutôt que d'être relue — le thème est dérivé une
+ *  seule fois, dans ProgramBodyMobile. */
+function CampusMobile({ content, couleurPin }: { content: ProgramPageContent; couleurPin: string }) {
   const caraRef = React.useRef<HTMLDivElement>(null);
   const scrollCara = (dir: number) => caraRef.current?.scrollBy({ left: dir * 310, behavior: "smooth" });
   const cards = content.campusCards ?? [];
@@ -711,7 +709,13 @@ function CampusMobile({ content }: { content: ProgramPageContent }) {
             points={[{ id: "campus", nom: content.mapQuery, lat: pin.lat, lng: pin.lng, riche: true, cible: false }]}
             selectedId={null} hoveredId={null} focus={null} onSelect={() => ouvrirPlans()}
             zoomControl={false} attributionCompact interactive={false}
-            center={pin} zoom={15} className="ppm-map"
+            /* Fond CLAIR (Carto voyager) : le fond sombre plus le filtre de
+               rehaussement rendaient la vignette quasi noire. Zoom 12 et non
+               15 : on situe la VILLE, pas la rue. Pin en couleur d'école — le
+               point n'est ni une cible ni un résultat de recherche, c'est
+               l'école qu'on regarde. */
+            center={pin} zoom={12} className="ppm-map"
+            fond="clair" couleurPin={couleurPin}
           />
           <span className="mapthumb-cta"><MapPin size={15} strokeWidth={2} aria-hidden />Ouvrir dans Plans</span>
         </div>
@@ -1046,14 +1050,14 @@ const PPM_CSS = `
    onglet court bride le défilement et la rangée reste plantée au milieu de
    l'écran : c'était le cas de Sports, Études et Actualités.
    Mesuré : point d'accroche à 566px de défilement, et le plus court des six
-   onglets en offre 660 — 94px de marge.
+   onglets en offre 660 — 94px de marge. Le mur ayant perdu une rangée, ces
+   deux valeurs baissent d'autant, mais PAS la marge : elle vaut
+   padding-haut + tabzone + --pane-mou, indépendante de la hauteur du mur.
 
-   Colonne flex pour que .pfoot puisse être poussé en bas : le plancher fait
-   sa hauteur, mais le vide qu'il laisse sur un onglet court passe SOUS le pied
-   au lieu de s'ouvrir au-dessus. Les sections ne rétrécissent pas — le panneau
-   a une hauteur MINIMALE, il grandit avec son contenu. */
-.ppm .tabpane{min-height:var(--pane-min);display:flex;flex-direction:column}
-.ppm .tabpane .pfoot{margin-top:auto}
+   La colonne flex servait à pousser « Propulsé par Nexus » en bas. Le pied
+   étant retiré, il ne reste que le plancher — et le vide d'un onglet court
+   n'est donc plus refoulé sous quoi que ce soit : il termine le défilement. */
+.ppm .tabpane{min-height:var(--pane-min)}
 .ppm .tabbtn{flex:0 0 auto;height:var(--tab-h);padding:0 15px;border-radius:17px;cursor:pointer;
   background:rgba(255,255,255,.05);border:1px solid var(--line-card);color:var(--p-mut);
   font-family:'Outfit',sans-serif;font-size:14px;font-weight:600;white-space:nowrap}
@@ -1150,7 +1154,8 @@ const PPM_CSS = `
    neutralise aussi la couche DOM pour que le scroll vertical passe au travers.
    Le tap est repris par le conteneur .mapthumb. */
 .ppm .mapthumb .leaflet-container{pointer-events:none;background:#0B0D10;font-family:inherit}
-.ppm .mapthumb .cs-tile-dark .leaflet-tile{filter:brightness(1.55) contrast(1.18) saturate(1.05)}
+/* Aucun filtre sur les tuiles : le fond est clair, il n'y a plus rien à
+   rehausser. Le rehaussement servait à sauver un fond sombre illisible. */
 .ppm .mapthumb .leaflet-control-attribution{position:absolute;width:1px;height:1px;
   margin:-1px;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
 .ppm .mapthumb-cta{position:absolute;right:10px;bottom:10px;z-index:500;
@@ -1167,7 +1172,9 @@ const PPM_CSS = `
 .ppm .cara-nav button svg{stroke:currentColor;fill:none;stroke-width:2.2}
 .ppm .cara{display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;margin:0 -18px;padding:0 18px;scroll-snap-type:x mandatory}
 .ppm .cara::-webkit-scrollbar{display:none}
-.ppm .ccard{flex:0 0 auto;width:300px;height:200px;position:relative;border-radius:12px;overflow:hidden;
+/* 260 et non 200 : mesuré, la légende ne déborde pas (41px de texte pour 260
+   de tuile) et les 60px supplémentaires vont entièrement à l'image. */
+.ppm .ccard{flex:0 0 auto;width:300px;height:260px;position:relative;border-radius:12px;overflow:hidden;
   border:1px solid var(--line-card);scroll-snap-align:start;cursor:pointer;background:#0C0E12}
 .ppm .ccard .ph{position:absolute;inset:0;background:linear-gradient(155deg,#2A2F38,#161A20)}
 .ppm .ccard .cimg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
@@ -1264,5 +1271,4 @@ const PPM_CSS = `
 .ppm .btn-xl.on{background:var(--green);box-shadow:0 14px 34px rgba(34,197,94,.3)}
 .ppm .cta-note{position:relative;font-size:14px;color:var(--p-mut);margin-top:14px;line-height:1.5}
 .ppm .cta-note b{color:var(--p-soft)}
-.ppm .pfoot{text-align:center;font-size:12px;color:var(--p-faint);padding:18px 18px 30px}
 `;
