@@ -307,8 +307,9 @@ function ProgramBodyMobile({ school, content }: { school: SchoolProgramIdentity;
      d'un élément `position:sticky` DÉJÀ COLLÉ renvoie sa position décalée, pas
      sa position de flux (mesuré : 668 au lieu de 566). Il se lit donc sur le
      liseré, qui précède la rangée et reste statique — moins la bande du bouton
-     retour (--bar-h) et le padding haut de la racine, dont le `top` du sticky
-     est compté à partir du bord intérieur.
+     le padding haut de la racine, dont le `top` du sticky est compté à partir
+     du bord intérieur. Il n'y a plus de bande à défalquer : la rangée se colle
+     à 0.
 
      Au PREMIER rendu on ne bouge pas : l'athlète doit voir le mur en arrivant. */
   const rootRef = React.useRef<HTMLElement>(null);
@@ -322,11 +323,7 @@ function ProgramBodyMobile({ school, content }: { school: SchoolProgramIdentity;
     if (!sc || !li) return;
     const cs = getComputedStyle(sc);
     const padHaut = parseFloat(cs.paddingTop) || 0;
-    // La bande du bouton retour se lit sur --bar-h, la variable que .backbar et
-    // .tabswrap{top} consomment aussi : une seule source, jamais de réalignement
-    // manuel. Le repli ne sert que si la feuille n'est pas encore appliquée.
-    const barre = parseFloat(cs.getPropertyValue("--bar-h")) || 52;
-    const cible = Math.max(0, li.offsetTop + li.offsetHeight - barre - padHaut);
+    const cible = Math.max(0, li.offsetTop + li.offsetHeight - padHaut);
     if (sc.scrollTop > cible) sc.scrollTop = cible;
   }, [actif]);
 
@@ -422,12 +419,24 @@ function ProgramBodyMobile({ school, content }: { school: SchoolProgramIdentity;
           qui règle bounces et allowsLinkPreview mais jamais les gestes). Sans ce
           bouton, un athlète venu de la recherche est prisonnier de la page.
 
-          En FLUX, avant le mur, et sticky : au repos il ne recouvre donc rien de
-          la composition du mur — il la précède. Il reste ensuite accroché en haut
-          pendant le défilement, sinon l'affordance disparaît sur une page longue. */}
-      <div className="backbar">
+          Pastille FLOTTANTE, posée SUR le mur : plus de bande pleine largeur,
+          donc plus de bandeau noir au-dessus de la composition — le mur commence
+          au ras de la safe-area. L'enveloppe a une hauteur NULLE et ne prend
+          aucune place dans le flux ; elle sert uniquement de bloc conteneur à la
+          pastille, pour que celle-ci défile AVEC le contenu.
+
+          Elle n'est PAS collante : sur le mur, on remonte pour revenir. Une
+          pastille qui suivrait le défilement se poserait sur du contenu de
+          section, où elle n'a rien à faire.
+
+          FLÈCHE SEULE, en haut à DROITE. La rangée de tête est NEXUS · RSEQ ·
+          QUÉBEC · damier : le damier est sa seule tuile sans contenu, et il est
+          à droite. Mesuré : à gauche avec le libellé, la pastille masquait 64 %
+          du mot NEXUS ; à droite avec le libellé, 29 % du mot « Québec ». En
+          flèche seule sur le damier, elle ne masque RIEN. */}
+      <div className="backwrap">
         <button type="button" className="backbtn" onClick={retour} aria-label="Revenir à l'écran précédent">
-          <ArrowLeft size={16} strokeWidth={2.2} aria-hidden />Retour
+          <ArrowLeft size={18} strokeWidth={2.2} aria-hidden />
         </button>
       </div>
 
@@ -1002,19 +1011,20 @@ const PPM_CSS = `
 /* ── GABARITS DE L'EN-TÊTE COLLANT ───────────────────────────────────────────
    Ces quatre mesures étaient répétées en dur à cinq endroits, dont un en JS, et
    un commentaire demandait de les réaligner à la main. Elles sont maintenant
-   déclarées ICI et nulle part ailleurs : .backbar, .tabswrap{top}, .tabsrow
-   {padding}, .tabbtn{height} et le plancher de .tabpane les consomment, et le
-   clamp de défilement relit --bar-h depuis le style calculé. Changer la hauteur
-   du bouton retour ou le gabarit d'une pastille ne demande plus qu'une ligne. */
-.ppm{--bar-h:52px;          /* bande du bouton retour */
-     --tab-h:34px;          /* pastille d'onglet */
+   déclarées ICI et nulle part ailleurs : .tabswrap{top}, .tabsrow{padding},
+   .tabbtn{height} et le plancher de .tabpane les consomment.
+
+   --bar-h a DISPARU : le bouton retour n'est plus une bande dans le flux mais
+   une pastille flottante de hauteur nulle. Il n'y a donc plus rien au-dessus de
+   la rangée d'onglets, qui se colle à 0. */
+.ppm{--tab-h:34px;          /* pastille d'onglet */
      --tab-pad:10px;        /* respiration verticale de la rangée */
      --tab-filet:1px;       /* le border-bottom de .tabswrap */
      --row-h:calc(var(--tab-h) + var(--tab-pad) * 2 + var(--tab-filet));
      /* Mou volontaire : le plancher dépasse le strict nécessaire, pour que le
         point d'accroche reste hors du bord quand la safe-area haute varie. */
      --pane-mou:20px;
-     --pane-min:calc(100dvh - var(--bar-h) - var(--row-h) + var(--pane-mou));
+     --pane-min:calc(100dvh - var(--row-h) + var(--pane-mou));
   background:var(--bg);color:var(--p-ink);font-family:'Outfit',sans-serif;
   min-height:100vh;overflow-x:hidden;-webkit-tap-highlight-color:transparent;
   padding-top:calc(env(safe-area-inset-top) + 8px)}
@@ -1022,14 +1032,14 @@ const PPM_CSS = `
 .ppm .tabspacer{height:var(--tabzone, env(safe-area-inset-bottom))}
 .ppm .liser{height:3px;background:var(--red)}
 /* ── ONGLETS — la rangée est COLLANTE sous la bande du bouton retour
-   (--bar-h), les deux s'empilant sans se recouvrir. Fond OPAQUE : le contenu
-   passe dessous proprement au lieu de transparaître derrière une barre.
+   à 0 — plus rien au-dessus d'elle depuis que le bouton retour flotte. Fond
+   OPAQUE : le contenu passe dessous proprement au lieu de transparaître.
 
    Le sticky est porté par .tabswrap, pas par .tabsrow : la rangée elle-même
    défile HORIZONTALEMENT (overflow-x), et un même élément ne peut pas être à la
    fois le conteneur de défilement et l'élément collant de son parent. Le
    dégradé de bord vit donc sur l'enveloppe, hors du flux horizontal. ── */
-.ppm .tabswrap{position:sticky;top:var(--bar-h);z-index:26;background:var(--bg);
+.ppm .tabswrap{position:sticky;top:0;z-index:26;background:var(--bg);
   border-bottom:var(--tab-filet) solid var(--line)}
 .ppm .tabsrow{display:flex;gap:6px;padding:var(--tab-pad) 14px;
   overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
@@ -1063,25 +1073,30 @@ const PPM_CSS = `
   font-family:'Outfit',sans-serif;font-size:14px;font-weight:600;white-space:nowrap}
 /* L'onglet actif porte la couleur de l'école, planchérée pour rester lisible. */
 .ppm .tabbtn.on{background:var(--red-tint-bg);border-color:var(--red-tint-bd);color:var(--red-shell)}
-/* ── RETOUR — pastille glass, même famille que les chips de la recherche ── */
-/* Fond opaque : au repos la bande est au-dessus du mur, sur le fond de page —
-   invisible ; une fois collée en haut, elle masque proprement ce qui défile
-   dessous au lieu de le laisser transparaître autour de la pastille. */
-.ppm .backbar{position:sticky;top:0;z-index:30;height:var(--bar-h);display:flex;align-items:center;
-  padding:0 14px;background:var(--bg)}
-.ppm .backbtn{pointer-events:auto;display:inline-flex;align-items:center;gap:7px;height:36px;
-  padding:0 14px 0 11px;border-radius:18px;cursor:pointer;
+/* ── RETOUR — pastille glass, même famille que les chips de la recherche ──
+   Hauteur NULLE de l'enveloppe : elle ne pousse rien vers le bas, le mur démarre
+   au ras du padding de la racine (safe-area + 8px). La pastille est absolue par
+   rapport à elle, donc posée SUR le mur et emportée par le défilement. */
+.ppm .backwrap{position:relative;height:0;z-index:30}
+.ppm .backbtn{position:absolute;top:10px;right:14px;
+  pointer-events:auto;display:inline-flex;align-items:center;justify-content:center;
+  width:36px;height:36px;padding:0;border-radius:50%;cursor:pointer;
   background:rgba(26,29,36,.94);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
   border:1px solid var(--line-card);box-shadow:0 6px 18px rgba(0,0,0,.55);
   font-family:'Outfit',sans-serif;font-size:14px;font-weight:600;color:var(--p-ink)}
-.ppm .backbtn svg{stroke:currentColor;fill:none}
+/* La pastille fait 36px à l'œil, mais 48×48 au doigt : les 36 visuels passent
+   sous le plancher de 44pt des HIG d'Apple, et c'est la SEULE sortie de l'écran
+   — WKWebView désactive le geste de retour natif. La zone déborde par un
+   pseudo-élément, aucun ancêtre ne la rogne (.backwrap n'a pas d'overflow). */
+.ppm .backbtn::after{content:"";position:absolute;inset:-6px;border-radius:50%}
+.ppm .backbtn svg{stroke:currentColor;fill:none;position:relative}
 
 /* Le bouton retour est STICKY : sans marge, il retombe pile sur le kicker quand
    on s'arrête en tête d'une section (mesuré : 89×18px recouverts sur 5 des 7).
    Le haut de section réserve donc la bande du bouton — 44px (son bas) + 10px de
-   respiration = 54px. À garder ALIGNÉ sur .backbar/.backbtn si l'un des deux
-   change de gabarit. */
-.ppm section{position:relative;padding:54px 18px 30px;border-bottom:1px solid var(--line)}
+   respiration = 54px. Le bouton n'étant PLUS collant, il ne peut plus retomber
+   sur un kicker : le padding revient à ses 34px d'origine. */
+.ppm section{position:relative;padding:34px 18px 30px;border-bottom:1px solid var(--line)}
 /* kicker de section — couleur ÉCOLE, plancher de contraste mesuré. */
 .ppm .kick{font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:.2em;color:var(--red-shell);margin-bottom:7px}
 .ppm .sec-h{font-family:'Anton',sans-serif;font-size:27px;line-height:1.02;color:var(--p-ink);font-weight:400}
