@@ -1021,10 +1021,23 @@ const PPM_CSS = `
      --tab-pad:10px;        /* respiration verticale de la rangée */
      --tab-filet:1px;       /* le border-bottom de .tabswrap */
      --row-h:calc(var(--tab-h) + var(--tab-pad) * 2 + var(--tab-filet));
-     /* Mou volontaire : le plancher dépasse le strict nécessaire, pour que le
-        point d'accroche reste hors du bord quand la safe-area haute varie. */
-     --pane-mou:20px;
---pane-min:calc(100dvh - var(--row-h) + var(--pane-mou));
+     /* Marge résiduelle EXACTE : le plancher défalque maintenant tout ce qui
+        contribue déjà au défilement, si bien que la marge vaut --pane-mou et
+        rien d'autre, quels que soient l'écran et l'appareil. */
+     --pane-mou:16px;
+     /* PLANCHER MINIMAL. Pour que la rangée d'onglets atteigne sa position
+        collante il faut max_scroll >= point d'accroche, soit :
+          padHaut + murH + 3 + rowH + paneH + tabzone - 100dvh  >=  murH + 3
+          paneH >= 100dvh - rowH - tabzone - padHaut
+        Le calcul précédent était 100dvh - rowH + mou : il ignorait tabzone ET
+        padHaut, qui sont pourtant DÉJÀ du contenu défilable — le spacer de tab
+        bar après le panneau, et le padding de safe-area avant le mur. D'où un
+        plancher trop haut de 175px sur un iPhone à encoche avec tab bar, donc
+        175px de vide sous les onglets courts, pour rien.
+        Il ne peut pas descendre plus bas : en dessous, la rangée se décolle et
+        le saut revient. */
+     --pane-min:calc(100dvh - var(--row-h) - var(--tabzone, env(safe-area-inset-bottom))
+                     - env(safe-area-inset-top) - 8px + var(--pane-mou));
   background:var(--bg);color:var(--p-ink);font-family:'Outfit',sans-serif;
   min-height:100vh;overflow-x:hidden;-webkit-tap-highlight-color:transparent;
   padding-top:calc(env(safe-area-inset-top) + 8px)}
