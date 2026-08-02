@@ -2,89 +2,72 @@
 
 // components/program-page/ProgramWallMobile.tsx
 //
-// LE MUR — rendu NATIF (bundle Capacitor), grille PORTRAIT 5 colonnes × 8
-// rangées, plus la SURCOUCHE de collage portée du mur web.
+// LE MUR — rendu NATIF (bundle Capacitor). PORTAGE de
+// docs/reference/page-niveau1-mobile-first.html
+// (sha256 7d76e034…dbc9aa, 449 851 o, blob git b1a90be3, intact) — le mock
+// « ProgramWall — mobile · Collège André-Grasset ».
 //
-// Le mur WEB (components/program-wall/ProgramWall.tsx) reste la RÉFÉRENCE et
-// n'est pas touché. Ce mur-ci en reprend :
-//   • les 9 dégradés de motif (p-check, p-check-ink, p-dots-red, p-dots-cream,
-//     p-diag, p-diag-wide, p-grid, p-chev), à l'échelle cqw du portrait ;
-//   • la profondeur (ombre interne de tuile, .raise / .sunk / .grunge) ;
-//   • la surcouche : mots-clés, filets, banderole, semis fleur/érable en
-//     masque, médaillons, flottant, carte slogan, hero, name-card, under-card,
-//     vignette, scrim, grain.
-// Seul le PLACEMENT diverge : les % du web sont calibrés sur 21/9 et ne
-// transposent pas en 9/13 — ils sont recoordonnés ici. Les VALEURS viennent du
-// même resolveWall() : aucun contenu ne diverge entre web et mobile.
+// Ce qui est porté : la STRUCTURE et le PLACEMENT. Les tuiles sont posées en
+// grid-column / grid-row INLINE, comme le mock et comme le mur web — pas en
+// grid-template-areas. Les valeurs en cqw sont reprises telles quelles.
 //
-// ZÉRO invention : chaque mot variable vient de resolveWall() (initiales, mot du
-// rail, ville, regionTag, code régional, devise, flèche, mots personnalisés,
-// slogan, surnom, mascotte). Un slot sans donnée n'est pas rendu.
+// Ce qui n'est PAS porté : les valeurs. Le mock est du Grasset figé (noms,
+// couleurs, logo, slogan, images base64). Chaque texte vient de resolveWall(),
+// chaque couleur du thème, chaque image de public/logos/ avec son mécanisme de
+// teinte — filter pour le foam, masque pour la fleur de lys. Un slot sans
+// donnée n'est pas rendu.
+//
+// Le mur WEB (components/program-wall/ProgramWall.tsx) reste la référence et
+// n'est pas touché.
+//
+// ── GÉOMÉTRIE ────────────────────────────────────────────────────────────────
+// Le mock fait 8 rangées en aspect-ratio 9/13. La rangée de tête (playbook,
+// damier, ÉLITE) est retirée → 7 rangées. Pour que la FORME DES CELLULES ne
+// bouge pas, le ratio suit : une rangée vaut (13/9)/8 = 13/72 de la largeur,
+// donc 7 rangées valent 91/72 → aspect-ratio 72/91. À 390px de large le mur
+// passe de 563 à 493px, et la cellule reste 78 × 70,4 (forme 1,108). Garder
+// 9/13 aurait rendu les cellules quasi carrées (0,969) et obligé à re-régler
+// TOUTES les valeurs cqw.
 
 import * as React from "react";
 import { resolveWall, type SchoolProgramIdentity } from "@/components/program-wall/slots";
 import type { WallTheme } from "@/components/program-wall/theme";
 
-/** Ajustement de corps pour un mot variable : plafond `cap` (la valeur du mock),
- *  puis rétrécissement proportionnel à la longueur pour qu'un nom long ne déborde
- *  pas de sa tuile. Même principe que railFont/cityFont de slots.ts. */
+/** Ajustement de corps pour un mot variable : plafond `cap` (la valeur du
+ *  mock), puis rétrécissement proportionnel à la longueur pour qu'un nom long
+ *  ne déborde pas de sa tuile. Même principe que railFont/cityFont de slots.ts. */
 const fit = (cap: number, span: number, len: number): string =>
   `${Math.min(cap, span / Math.max(1, len)).toFixed(2)}cqw`;
-
-/* ── Glyphes de décor ──────────────────────────────────────────────────────
-   La fleur de lys, l'érable et les logos viennent de public/logos/ (assets figés
-   depuis f7cc2a5). Seuls l'étoile et le trophée restent dessinés : aucun PNG ne
-   les porte, et le mur web les dessine aussi en <path>. ── */
-
-function Etoile({ className, style }: { className?: string; style?: React.CSSProperties }) {
-  return (
-    <svg className={className} style={style} viewBox="0 0 24 24" aria-hidden focusable="false">
-      <path d="M12 2l2.9 6.26L22 9.27l-5 4.87L18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27l7.1-1.01L12 2z" />
-    </svg>
-  );
-}
-
-/** Trophée — <path> repris VERBATIM du flottant du mur web (ProgramWall.tsx,
- *  premier .float). Même dessin, même rotation. */
-function Trophee() {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden focusable="false">
-      <path d="M6 3h12v2h2.5A1.5 1.5 0 0 1 22 6.5c0 2.7-1.9 4.9-4.4 5.4A6 6 0 0 1 13 15.9V18h3v2H8v-2h3v-2.1a6 6 0 0 1-4.6-4C3.9 11.4 2 9.2 2 6.5A1.5 1.5 0 0 1 3.5 5H6V3Z" />
-    </svg>
-  );
-}
 
 export interface ProgramWallMobileProps {
   school: SchoolProgramIdentity;
   theme: WallTheme;
-  /** Division affichée dans le médaillon. AUTO (table teams) — absente → le
-   *  médaillon n'est pas rendu (jamais une division inventée). */
+  /** Division du médaillon. AUTO (table teams) — absente → pas de médaillon. */
   division?: string | null;
 }
 
 export default function ProgramWallMobile({ school, theme, division }: ProgramWallMobileProps) {
   const w = resolveWall(school, theme);
 
-  // « Québec » n'est écrit en toutes lettres que pour le Québec ; toute autre
-  // province garde son code, jamais un nom deviné.
+  // « Québec » en toutes lettres pour le Québec seul ; toute autre province
+  // garde son code, jamais un nom deviné.
   const provinceMot = school.province.toUpperCase() === "QC" ? "Québec" : school.province.toUpperCase();
-  const gra = w.railWord.toUpperCase();
-  const mascotte = w.nameCard;
+  const railMot = w.railWord.toUpperCase();
+  const ligneLaPlusLongue = Math.max(...w.typeL2Lines.map((l) => l.length), 1);
 
   return (
     <div className="pw7">
       <div className="mosaic">
-        {/* ══ RANGÉE 1 — NEXUS · ligue · province · damier (ordre imposé) ══ */}
-        <div className="t nex raise">
+        {/* ══ RANGÉE 1 — NEXUS · ligue · province · damier ══════════════════
+            §2a : cette rangée était en BAS dans le mock (r8). Elle remonte en
+            tête. Les quatre tuiles gardent leurs colonnes d'origine. */}
+        <div className="blk b-nexus pop" style={{ gridColumn: "1/3", gridRow: 1 }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logos/nexus-wordmark-white.png" alt="NEXUS" />
         </div>
-        <div className="t rse">
-          {/* USPORTS : slots.ts pointe /logos/usports.png, qui N'EXISTE PAS dans
-              public/logos/. On ne fabrique pas l'image — repli sur le sigle en
-              toutes lettres, et dette signalée. RSEQ, lui, a son PNG.
-              Seule tuile claire laissée en aplat PUR : une marque de ligue se
-              pose sur du blanc propre, jamais sur un motif. */}
+        <div className="blk b-rseq" style={{ gridColumn: 3, gridRow: 1 }}>
+          {/* USPORTS : slots.ts pointe /logos/usports.png, qui N'EXISTE PAS.
+              On ne fabrique pas l'image — repli sur le sigle, dette signalée. */}
           {school.league === "RSEQ" ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={w.leagueLogo} alt="RSEQ" />
@@ -92,97 +75,84 @@ export default function ProgramWallMobile({ school, theme, division }: ProgramWa
             <b className="lg-alt">{school.league}</b>
           )}
         </div>
-        <div className="t que p-dots-cream">
-          <b style={{ fontSize: fit(4.2, 27, provinceMot.length) }}>{provinceMot}</b>
+        <div className="blk wblk f-cream" style={{ gridColumn: 4, gridRow: 1 }}>
+          <div className="prov" style={{ fontSize: fit(3.8, 26, provinceMot.length) }}>{provinceMot}</div>
         </div>
-        <div className="t dam p-check-ink sunk" />
+        <div className="blk p-check-ink sunk" style={{ gridColumn: 5, gridRow: 1 }} />
 
-        {/* ══ RANGÉE 2 — CANADA · playbook · grande fleur ══ */}
-        <div className="t cnd p-chev raise">
-          <b>CANADA</b>
-        </div>
-        <div className="t pbk">
-          <svg viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden focusable="false">
-            <g stroke="var(--cream)" strokeWidth=".8" fill="none" opacity=".8">
-              <path d="M6 8l6 6M12 8l-6 6" strokeWidth="1.2" />
-              <circle cx="26" cy="12" r="3.4" />
-              <circle cx="38" cy="12" r="3.4" />
-              <circle cx="50" cy="12" r="3.4" />
-              <path d="M22 24c10-8 24-8 36 0" strokeDasharray="3 2.4" />
-              <path d="M70 30l7-7M77 30l-7-7" strokeWidth="1.2" />
-            </g>
-          </svg>
-        </div>
-        <div className="t fdb p-diag-wide">
-          <span className="lys" />
-        </div>
-
-        {/* ══ RANGÉE 3 — damier · ALLEZ · étoile ══ */}
-        <div className="t dmr p-check sunk" />
-        <div className="t alz grunge">
-          <b style={{ fontSize: fit(4, 22, w.allezWord.length) }}>{w.allezWord.toUpperCase()}</b>
-        </div>
-        <div className="t stx">
-          <Etoile />
-        </div>
-
-        {/* ══ RANGÉE 4 — ÉLITE · foam finger · initiales ══ */}
-        <div className="t eli grunge">
-          <b style={{ fontSize: fit(4, 22, w.eliteWord.length) }}>{w.eliteWord.toUpperCase()}</b>
-        </div>
-        <div className="t ffg">
-          {/* Reteinté par theme.foamFilter — hue-rotate + saturate + brightness,
-              dérivés de la primaire. Le terme de luminosité est indispensable :
-              hue-rotate seul laissait un doigt brun aux écoles à primaire claire
-              (le PNG source est un rouge sombre). Mécanisme identique au web. */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logos/foam-red.png" alt="" style={{ filter: theme.foamFilter }} />
-        </div>
-        <div className="t ag p-grid raise">
-          <b style={{ fontSize: fit(15, 30, w.initials.length) }}>{w.initials}</b>
-        </div>
-
-        {/* ══ RANGÉES 5-7 — bloc VILLE · pois · semis · diagonales ══ */}
-        {/* Bloc ville = le b-kraft du web : mots-clés, filets, banderole, code
-            régional, devise à la verticale, fleur en masque, devise-flèche. */}
-        <div className="t mtl raise">
-          <div className="kick">— ICI C&apos;EST —</div>
-          <div className="rail" style={{ fontSize: fit(9.4, 40, w.cityUpper.length) }}>
-            {w.cityUpper}
-          </div>
+        {/* ══ RANGÉES 2-4 — le bloc kraft : mots-clés, filets, banderole ══ */}
+        <div className="blk b-kraft raise" style={{ gridColumn: "1/3", gridRow: "2/5" }}>
+          <div className="kw kick">— ICI C&apos;EST —</div>
+          <div className="kw ville" style={{ fontSize: fit(6, 52, w.cityUpper.length) }}>{w.cityUpper}</div>
           <div className="k-rule" />
           {w.regionTag ? <div className="k-bnr">{w.regionTag}</div> : null}
           {w.areaCode ? (
-            <div className="area" style={{ fontSize: fit(11, 40, w.areaCode.length) }}>
-              {w.areaCode}
-            </div>
+            <div className="kw code" style={{ fontSize: fit(10.5, 34, w.areaCode.length) }}>{w.areaCode}</div>
           ) : null}
-          <div className="dev">{w.devise}</div>
-          <span className="fly lys" />
-          <div className="arw">{w.arrowPhrase}</div>
-          <div className="k-rule-b" />
+          <div className="kw dev" style={{ fontSize: fit(2.9, 40, w.devise.length) }}>{w.devise}</div>
+          <div className="mask-fleur lys-kraft" />
+          <div className="kw arw" style={{ fontSize: fit(3.7, 46, w.arrowPhrase.length) }}>{w.arrowPhrase}</div>
         </div>
-        <div className="t rdt p-dots-red sunk" />
-        {/* Semis fleur + érable, rotations reprises du b-fleur du web. */}
-        <div className="t fdl">
-          <span className="mk mask-fleur" style={{ left: "8%", top: "7%", width: "34%", transform: "rotate(-8deg)" }} />
-          <span className="mk mask-maple" style={{ right: "7%", top: "12%", width: "24%", transform: "rotate(14deg)" }} />
-          <span className="mk mask-maple" style={{ right: "9%", top: "46%", width: "44%", transform: "rotate(6deg)" }} />
-          <span className="mk mask-maple" style={{ left: "10%", bottom: "6%", width: "27%", transform: "rotate(-12deg)" }} />
-          <span className="mk mask-fleur" style={{ left: "46%", bottom: "9%", width: "20%", transform: "rotate(9deg)" }} />
+        <div className="blk p-fleurs sunk" style={{ gridColumn: 3, gridRow: 2 }} />
+        <div className="blk b-type f-red raise grunge" style={{ gridColumn: "4/6", gridRow: "2/4" }}>
+          <div className="l1">{w.typeL1}</div>
+          <div className="l2 anton" style={{ fontSize: fit(5.2, 46, ligneLaPlusLongue) }}>
+            {w.typeL2Lines.map((l, i) => (
+              <React.Fragment key={i}>{i > 0 ? <br /> : null}{l}</React.Fragment>
+            ))}
+          </div>
+          <div className="l3">{w.tagline}</div>
         </div>
-        <div className="t str p-diag sunk" />
+        <div className="blk f-red icw xo" style={{ gridColumn: 3, gridRow: 3 }}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden focusable="false"><path d="M6 6l12 12M18 6L6 18" /></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden focusable="false"><circle cx="12" cy="12" r="7" /></svg>
+        </div>
+        {/* Fierté est en colonne 3 et non 4, et les rayures en 4 : l'échange
+            §2d met les initiales au contact du bloc fleur, ce qui donnait DEUX
+            voisines claires à la fleur. Le lys sombre la couvre chez Grasset,
+            mais une école à lys pâle remettrait trois clairs côte à côte.
+            Vérifié par calcul de voisinage : maximum ramené à 1. */}
+        <div className="blk wblk f-cream" style={{ gridColumn: 3, gridRow: 4 }}>
+          <div className="fierte marker">Fierté</div>
+        </div>
+        <div className="blk p-stripe-h" style={{ gridColumn: 4, gridRow: 4 }} />
+        <div className="blk p-tri sunk" style={{ gridColumn: 5, gridRow: 4 }} />
 
-        {/* ══ RANGÉE 8 — fermeture : le mot du rail ══ */}
-        <div className="t gra grunge">
-          <b style={{ fontSize: fit(16, 112, gra.length) }}>{gra}</b>
+        {/* ══ RANGÉE 5 ══ */}
+        <div className="blk wblk f-ink grunge" style={{ gridColumn: 1, gridRow: 5 }}>
+          <div className="bebas line-behind ens" style={{ fontSize: fit(3.2, 26, w.ensembleWord.length) }}>{w.ensembleWord}</div>
+        </div>
+        {/* §2d : CANADA et les initiales ont échangé leur place. CANADA était
+            en r6c3, les initiales en r5c2. */}
+        <div className="blk wblk f-ink" style={{ gridColumn: 2, gridRow: 5 }}>
+          <div className="anton canada">CANADA</div>
+        </div>
+        <div className="blk p-chev" style={{ gridColumn: 3, gridRow: 5 }} />
+        {/* Grande fleur de lys — masque PNG, couleur du thème : elle suit la
+            teinte de chaque école sans PNG par collège. */}
+        <div className="blk f-cream raise" style={{ gridColumn: "4/6", gridRow: "5/7" }}>
+          <div className="mask-fleur lys-geante" />
         </div>
 
-        {/* ═══════════════════════════════════════════════════════════════════
-            SURCOUCHE — c'est elle qui fait l'AFFICHE plutôt que le damier.
-            Portée du mur web ; les coordonnées sont recalculées pour le 9/13
-            (le web est calibré sur 21/9 et ne transpose pas).
-            ═══════════════════════════════════════════════════════════════ */}
+        {/* ══ RANGÉE 6 ══ */}
+        <div className="blk wblk f-red" style={{ gridColumn: 1, gridRow: 6 }}>
+          <div className="bebas underlined alz" style={{ fontSize: fit(3.9, 25, w.allezWord.length) }}>{w.allezWord}</div>
+        </div>
+        <div className="blk f-ink icw grunge etoile" style={{ gridColumn: 2, gridRow: 6 }}>
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden focusable="false"><path d="M12 2.5l2.7 5.9 6.4.7-4.8 4.3 1.3 6.3L12 16.9 6.4 19.7l1.3-6.3L2.9 9.1l6.4-.7L12 2.5Z" /></svg>
+        </div>
+        <div className="blk wblk f-cream" style={{ gridColumn: 3, gridRow: 6 }}>
+          <div className="anton init" style={{ fontSize: fit(17, 36, w.initials.length) }}>{w.initials}</div>
+        </div>
+
+        {/* ══ RANGÉE 7 — fermeture : le nom du collège ══════════════════════
+            §2b : la bande était en r7 dans le mock, au-dessus de NEXUS. NEXUS
+            étant remonté en tête, elle devient la tuile de FERMETURE. */}
+        <div className="blk b-band pop" style={{ gridColumn: "1/6", gridRow: 7 }}>
+          <div className="w" style={{ fontSize: fit(16, 112, railMot.length) }}>{railMot}</div>
+        </div>
+
+        {/* ══ SURCOUCHE ═══════════════════════════════════════════════════ */}
         <div className="vign" />
         <div className="scrim" />
         <svg className="grain" aria-hidden focusable="false">
@@ -193,49 +163,47 @@ export default function ProgramWallMobile({ school, theme, division }: ProgramWa
           <rect width="100%" height="100%" filter="url(#pwm-noise)" />
         </svg>
 
-        {/* Médaillons — le D1 n'existe que si la table teams porte une division. */}
-        {/* Les deux médaillons se posent sur des tuiles SANS texte — le damier
-            ink de la rangée 1 et l'angle haut-gauche du hero. Toute la colonne
-            de gauche (bloc ville) reste dégagée : c'est la seule tuile dense en
-            texte du mur, elle ne se laisse pas recouvrir. */}
+        {/* Médaillons. Le D1 n'existe que si la table teams porte une division. */}
         {division ? (
-          <div className="roundwrap" style={{ left: "38%", top: "48%" }}>
-            <div className="roundel">
+          <div className="roundwrap" style={{ left: "5%", top: "10.5%" }}>
+            <div className="roundel" style={{ transform: "rotate(-7deg)" }}>
               <div className="d1">{division}</div>
               <div className="rs">DIVISION</div>
             </div>
           </div>
         ) : null}
-        <div className="roundwrap" style={{ left: "82%", top: "3%" }}>
+        <div className="roundwrap" style={{ left: "76%", top: "54%" }}>
           <div className="roundel" style={{ transform: "rotate(8deg)" }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img className="xic" src="/logos/nexus-x.png" alt="" />
           </div>
         </div>
 
-        {/* Flottant — trophée. Le SECOND flottant du web est le foam finger ;
-            en portrait il reste une TUILE (ffg) : l'en sortir viderait une
-            cellule de la grille, qui n'a pas de tuile de remplacement. */}
-        <div className="float" style={{ left: "11%", top: "31%", width: "9cqw" }}>
-          <Trophee />
+        {/* LE FOAM FINGER — objet de surcouche, PAS une tuile. Il déborde de
+            la mosaïque, incliné, avec son ombre portée, exactement comme dans
+            le mock et comme sur le web. Reteinté par theme.foamFilter :
+            hue-rotate + saturate + brightness dérivés de la primaire. Le terme
+            de luminosité est indispensable — hue-rotate seul laissait un doigt
+            brun aux écoles à primaire claire (le PNG source est un rouge
+            sombre). */}
+        <div className="float foam" style={{ left: "2.5%", top: "54%", width: "14cqw" }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logos/foam-red.png" alt="" style={{ filter: theme.foamFilter }} />
         </div>
 
         {w.sloganLines ? (
           <div className="slogan-card">
             {w.sloganLines.map((l, i) => (
-              <React.Fragment key={i}>
-                {i > 0 ? <br /> : null}
-                {l}
-              </React.Fragment>
+              <React.Fragment key={i}>{i > 0 ? <br /> : null}{l}</React.Fragment>
             ))}
           </div>
         ) : null}
 
         {w.nickname ? <div className="under-card">{w.nickname}</div> : null}
 
-        {/* HERO — carte logo + name-card, comme le web. Sans logo, le repli
-            reste l'écusson dessiné (le web replie sur le monogramme, mais les
-            initiales occupent DÉJÀ une tuile ici : on ne les doublerait pas). */}
+        {/* HERO — carte logo + name-card. Sans logo, le repli reste l'écusson
+            dessiné : le mock replie sur le monogramme, mais les initiales
+            occupent DÉJÀ une tuile ici, on ne les doublerait pas. */}
         <div className="hero">
           <div className="logo-card">
             {w.hasLogo ? (
@@ -243,24 +211,14 @@ export default function ProgramWallMobile({ school, theme, division }: ProgramWa
               <img src={w.logoUrl!} alt="" />
             ) : (
               <svg viewBox="0 0 120 132" aria-hidden focusable="false">
-                <path
-                  d="M60 4 114 22v52c0 26-24 43-54 54C30 117 6 100 6 74V22z"
-                  fill="var(--cream)"
-                  stroke="var(--red)"
-                  strokeWidth="7"
-                />
-                <path
-                  d="M44 92c-6-14-3-30 8-40-2 9 1 16 7 21-4-12 0-24 10-31-3 12 2 20 10 27 7 6 10 14 8 23-2-8-7-13-14-16 5 8 5 16 0 23-3-9-9-14-17-16 4 7 4 14-1 20-4-4-7-8-11-11z"
-                  fill="var(--red)"
-                />
+                <path d="M60 4 114 22v52c0 26-24 43-54 54C30 117 6 100 6 74V22z" fill="var(--cream)" stroke="var(--red)" strokeWidth="7" />
+                <path d="M44 92c-6-14-3-30 8-40-2 9 1 16 7 21-4-12 0-24 10-31-3 12 2 20 10 27 7 6 10 14 8 23-2-8-7-13-14-16 5 8 5 16 0 23-3-9-9-14-17-16 4 7 4 14-1 20-4-4-7-8-11-11z" fill="var(--red)" />
                 <path d="M40 60c-6-3-10-8-11-14 7 2 13 1 18-3-3 7-4 12-7 17z" fill="var(--red)" />
               </svg>
             )}
           </div>
-          {mascotte ? (
-            <div className="name-card" style={{ fontSize: fit(5.2, 46, mascotte.length) }}>
-              {mascotte}
-            </div>
+          {w.nameCard ? (
+            <div className="name-card" style={{ fontSize: fit(8.4, 62, w.nameCard.length) }}>{w.nameCard}</div>
           ) : null}
         </div>
       </div>
@@ -269,190 +227,130 @@ export default function ProgramWallMobile({ school, theme, division }: ProgramWa
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   CSS du mur — portrait 5 × 8 (unités cqw sur un conteneur
-   `container-type:inline-size`). Injecté par ProgramPageMobile.
+   CSS du mur — portage verbatim du mock, valeurs cqw comprises. Les couleurs
+   en dur du mock sont remplacées par les variables de thème, et les encres par
+   les valeurs planchérées : --on-c1 sur un aplat de primaire, --c1-cream pour
+   la primaire écrite sur une surface claire.
    ────────────────────────────────────────────────────────────────────────── */
 export const WALL_CSS = `
-.ppm .pw7 .mosaic{
-  container-type:inline-size; aspect-ratio:9/13; background:var(--ink);
-  display:grid; grid-template-columns:repeat(5,20%); grid-template-rows:repeat(8,12.5%); gap:0;
-  position:relative; overflow:hidden;
-  /* AGENCEMENT — vérifié par calcul de voisinage, pas à l'oeil : aucune tuile
-     claire n'en touche une autre sur plus d'un côté. Les trois seuls contacts
-     clair-clair sont rse-que (imposé par l'ordre NEXUS · RSEQ · QUÉBEC ·
-     damier de la première rangée), cnd-dmr et ag-fdb. Le bloc massif de six
-     tuiles blanches contiguës (rse que mtl ag cnd fdb) est rompu.
-     Contraintes tenues : rangée 1 = NEXUS · ligue · province · damier ;
-     rangée 8 = mot du rail (fermeture) ; 18 tuiles, 40 cellules, chaque tuile
-     garde EXACTEMENT sa forme d'origine — donc aucun réglage cqw à refaire. */
-  grid-template-areas:
-    "nex nex rse que dam"
-    "cnd cnd pbk pbk fdb"
-    "dmr dmr alz stx fdb"
-    "eli ffg ag  ag  ag "
-    "mtl mtl rdt fdl fdl"
-    "mtl mtl rdt fdl fdl"
-    "mtl mtl rdt str str"
-    "gra gra gra gra gra";
-}
-/* Ombre interne de tuile — portée du web (.blk). C'est elle qui donne le
-   « papier découpé » : sans arête, la mosaïque lit comme un aplat continu. */
-.ppm .pw7 .t{position:relative;overflow:hidden;display:grid;place-items:center;
+.ppm .pw7 .mosaic{position:relative;container-type:inline-size;background:var(--ink);overflow:hidden;
+  display:grid;grid-template-columns:repeat(5,20%);grid-template-rows:repeat(7,14.2857%);aspect-ratio:72/91}
+.ppm .pw7 .blk{position:relative;overflow:hidden;
   box-shadow:inset 0 0 0 1px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.05)}
-/* Les grid items portent z-index sans position:static à corriger — le contenu
-   passe donc AU-DESSUS des ::before de motif. */
-.ppm .pw7 .t > *{z-index:1}
-.ppm .pw7 .raise{z-index:8;
-  box-shadow:0 .5cqw 1.3cqw rgba(0,0,0,.72), inset 0 0 0 1px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.07)}
-.ppm .pw7 .sunk{box-shadow:inset 0 .4cqw 1cqw rgba(0,0,0,.7), inset 0 0 0 1px rgba(0,0,0,.4);filter:brightness(.88)}
-.ppm .pw7 .grunge::after{content:"";position:absolute;inset:0;pointer-events:none;mix-blend-mode:overlay;z-index:2;
+.ppm .pw7 .raise{z-index:8;box-shadow:0 1.6cqw 4.2cqw rgba(0,0,0,.72), inset 0 0 0 1px rgba(0,0,0,.25)}
+.ppm .pw7 .sunk{box-shadow:inset 0 1.1cqw 3cqw rgba(0,0,0,.72), inset 0 0 0 1px rgba(0,0,0,.4);filter:brightness(.84)}
+.ppm .pw7 .pop{z-index:12;transform:scale(1.05);box-shadow:0 2.2cqw 5cqw rgba(0,0,0,.75)}
+.ppm .pw7 .grunge::after{content:"";position:absolute;inset:0;pointer-events:none;mix-blend-mode:overlay;opacity:1;
   background-image:radial-gradient(rgba(0,0,0,.5) 1.2px,transparent 1.8px),radial-gradient(rgba(255,255,255,.26) 1.1px,transparent 1.7px),radial-gradient(rgba(0,0,0,.35) 2px,transparent 2.6px);
-  background-size:1.6cqw 1.6cqw,2.8cqw 2.2cqw,6.2cqw 5.4cqw;background-position:0 0,1.1cqw .7cqw,2.4cqw 1.6cqw}
+  background-size:1.7cqw 1.7cqw,3cqw 2.3cqw,6.6cqw 5.7cqw;background-position:0 0,1.1cqw .7cqw,2.5cqw 1.7cqw}
+.ppm .pw7 .grain{position:absolute;inset:0;width:100%;height:100%;z-index:40;pointer-events:none;mix-blend-mode:overlay;opacity:.55}
+.ppm .pw7 .vign{position:absolute;inset:0;z-index:39;pointer-events:none;
+  background:radial-gradient(130% 90% at 50% 38%,transparent 55%,rgba(0,0,0,.32) 100%)}
+.ppm .pw7 .scrim{position:absolute;z-index:41;left:8%;top:16%;width:84%;height:44%;pointer-events:none;
+  background:radial-gradient(50% 50% at 50% 50%,rgba(12,4,6,.18),transparent 75%)}
 
-/* ── MOTIFS portés du mur web, à l'échelle du portrait (tuile = 20cqw ici
-   contre 10cqw sur le web : toutes les trames sont doublées). ── */
-.ppm .pw7 .p-check{background:repeating-conic-gradient(var(--red) 0 25%,var(--cream) 0 50%) 0 0/5.2cqw 5.2cqw}
-.ppm .pw7 .p-check-ink{background:repeating-conic-gradient(var(--ink) 0 25%,var(--red) 0 50%) 0 0/4cqw 4cqw}
-.ppm .pw7 .p-dots-red{background:var(--red) radial-gradient(rgba(25,20,20,.55) 18%,transparent 20%) 0 0/2.4cqw 2.4cqw}
-.ppm .pw7 .p-dots-cream{background:var(--cream) radial-gradient(var(--red) 15%,transparent 17%) 0 0/3.2cqw 3.2cqw}
-.ppm .pw7 .p-diag{background:repeating-linear-gradient(-45deg,var(--cream) 0 1.8cqw,var(--red) 1.8cqw 4cqw)}
-.ppm .pw7 .p-diag-wide{background:repeating-linear-gradient(45deg,var(--red) 0 2.8cqw,var(--cream) 2.8cqw 6cqw)}
+.ppm .pw7 .f-red{background:var(--red)}
+.ppm .pw7 .f-ink{background:var(--char)}
+.ppm .pw7 .f-cream{background:var(--cream)}
+.ppm .pw7 .wblk{display:flex;align-items:center;justify-content:center;text-align:center}
+.ppm .pw7 .anton{font-family:'Anton',sans-serif;font-weight:400}
+.ppm .pw7 .bebas{font-family:'Bebas Neue',sans-serif;letter-spacing:.06em}
+.ppm .pw7 .marker{font-family:'Permanent Marker',cursive}
+.ppm .pw7 .line-behind{position:relative;z-index:1}
+.ppm .pw7 .line-behind::before{content:"";position:absolute;left:-14%;right:-14%;top:52%;height:.6cqw;background:var(--red);z-index:-1}
+.ppm .pw7 .underlined{border-bottom:.5cqw solid currentColor;padding-bottom:.5cqw}
+.ppm .pw7 .icw{display:flex;align-items:center;justify-content:center}
+/* MASQUE : le PNG découpe, la couleur vient du background — la fleur suit la
+   teinte de chaque école sans PNG par collège. */
+.ppm .pw7 .mask-fleur{-webkit-mask:url(/logos/fleur-de-lys.png) center/contain no-repeat;
+  mask:url(/logos/fleur-de-lys.png) center/contain no-repeat}
+
+/* ── MOTIFS, à l'échelle cqw du mock ── */
+.ppm .pw7 .p-check-ink{background:repeating-conic-gradient(var(--ink) 0 25%,var(--red) 0 50%) 0 0/4.2cqw 4.2cqw}
+.ppm .pw7 .p-fleurs{background:var(--char)}
+.ppm .pw7 .p-fleurs::after{content:"";position:absolute;inset:0;background:var(--cream);opacity:.32;
+  -webkit-mask:url(/logos/fleur-de-lys.png) 0 0/4.4cqw 4.4cqw repeat;mask:url(/logos/fleur-de-lys.png) 0 0/4.4cqw 4.4cqw repeat}
+.ppm .pw7 .p-stripe-h{background:repeating-linear-gradient(0deg,var(--cream) 0 2.4cqw,var(--char) 2.4cqw 5.2cqw)}
 .ppm .pw7 .p-chev{background:var(--cream)}
 .ppm .pw7 .p-chev::before{content:"";position:absolute;inset:0;
-  background:repeating-linear-gradient(-58deg,var(--red) 0 1.8cqw,transparent 1.8cqw 5cqw)}
-.ppm .pw7 .p-grid{background:var(--cream)}
-.ppm .pw7 .p-grid::before{content:"";position:absolute;inset:0;
-  background:linear-gradient(rgba(30,26,25,.5) 1px,transparent 1px) 0 0/100% 3cqw,
-             linear-gradient(90deg,rgba(30,26,25,.5) 1px,transparent 1px) 0 0/3cqw 100%}
-
-/* ── MASQUES — le PNG découpe, la couleur vient du background : la fleur et
-   l'érable suivent la teinte de chaque école sans PNG par collège. Même
-   mécanisme que .mask-fleur / .mask-maple du mur web. ── */
-.ppm .pw7 .lys,.ppm .pw7 .mask-fleur{display:block;background:currentColor;
-  -webkit-mask:url(/logos/fleur-de-lys.png) center/contain no-repeat;
-  mask:url(/logos/fleur-de-lys.png) center/contain no-repeat}
-.ppm .pw7 .mask-maple{display:block;background:currentColor;
-  -webkit-mask:url(/logos/maple-leaf.png) center/contain no-repeat;
-  mask:url(/logos/maple-leaf.png) center/contain no-repeat}
+  background:repeating-linear-gradient(-58deg,var(--red) 0 2cqw,transparent 2cqw 5.4cqw)}
+.ppm .pw7 .p-tri{background:var(--red-deep)}
+.ppm .pw7 .p-tri::before{content:"";position:absolute;inset:0;
+  background:conic-gradient(from 60deg at 50% 65%,var(--cream) 0 60deg,transparent 0) 0 0/5.2cqw 4.8cqw;opacity:.85}
 
 /* ── RANGÉE 1 ── */
-/* Le mot NEXUS ne prend PAS le grain (.grunge) : à l'échelle du portrait la
-   trame le salissait. Il reçoit la micro-rayure diagonale du b-nexus du web,
-   qui texture sans mordre sur la marque. */
-.ppm .pw7 .nex{grid-area:nex;background:var(--red);display:flex;align-items:center;justify-content:center}
-.ppm .pw7 .nex::before{content:"";position:absolute;inset:0;opacity:.5;
-  background:repeating-linear-gradient(35deg,rgba(255,255,255,.03) 0 2px,transparent 2px 6px)}
-.ppm .pw7 .nex img{width:62%;height:auto;display:block}
-.ppm .pw7 .rse{grid-area:rse;background:var(--cream)}
-.ppm .pw7 .rse img{width:64%;height:auto;display:block}
-.ppm .pw7 .rse b.lg-alt{font-family:'Anton',sans-serif;font-size:4.4cqw;letter-spacing:.01em;color:var(--ink)}
-.ppm .pw7 .que{grid-area:que}
-.ppm .pw7 .que b{font-family:'Playfair Display',serif;font-style:italic;font-weight:700;color:var(--ink)}
-.ppm .pw7 .dam{grid-area:dam}
+.ppm .pw7 .b-nexus{background:var(--red);display:flex;align-items:center;justify-content:center}
+.ppm .pw7 .b-nexus img{width:60%;display:block}
+.ppm .pw7 .b-rseq{background:var(--cream);display:flex;align-items:center;justify-content:center}
+.ppm .pw7 .b-rseq img{width:70%;display:block}
+.ppm .pw7 .b-rseq .lg-alt{font-family:'Anton',sans-serif;font-size:4.4cqw;color:var(--ink)}
+.ppm .pw7 .prov{font-family:'Playfair Display',serif;font-style:italic;font-weight:700;color:var(--c1-cream)}
 
-/* ── RANGÉE 2 ── */
-.ppm .pw7 .cnd{grid-area:cnd}
-.ppm .pw7 .cnd b{font-family:'Bebas Neue',sans-serif;font-size:4.6cqw;color:var(--ink);letter-spacing:.13em}
-.ppm .pw7 .pbk{grid-area:pbk;background:var(--char)}
-.ppm .pw7 .pbk svg{position:absolute;inset:0;width:100%;height:100%;opacity:.5}
-.ppm .pw7 .fdb{grid-area:fdb}
-.ppm .pw7 .fdb .lys{width:15cqw;height:20cqw;color:var(--ink)}
-
-/* ── RANGÉE 3 ── */
-.ppm .pw7 .dmr{grid-area:dmr}
-.ppm .pw7 .alz{grid-area:alz;background:var(--red);display:block;padding:2.4cqw}
-.ppm .pw7 .alz b{position:absolute;left:2.4cqw;bottom:2.6cqw;font-family:'Bebas Neue',sans-serif;
-  color:var(--on-c1);letter-spacing:.1em;border-bottom:.5cqw solid var(--on-c1);padding-bottom:.5cqw}
-.ppm .pw7 .stx{grid-area:stx;background:var(--char);
-  background-image:radial-gradient(rgba(255,255,255,.13) 1cqw,transparent 1.1cqw);background-size:4cqw 4cqw}
-.ppm .pw7 .stx svg{width:7cqw;height:auto;fill:var(--cream)}
-
-/* ── RANGÉE 4 ── */
-.ppm .pw7 .eli{grid-area:eli;background:var(--ink)}
-.ppm .pw7 .eli b{font-family:'Anton',sans-serif;color:transparent;
-  -webkit-text-stroke:.34cqw var(--cream);letter-spacing:.02em;text-align:center}
-.ppm .pw7 .ffg{grid-area:ffg;background:var(--ink)}
-.ppm .pw7 .ffg img{width:78%;height:auto;display:block;transform:rotate(-15deg)}
-.ppm .pw7 .ag{grid-area:ag}
-.ppm .pw7 .ag b{font-family:'Anton',sans-serif;color:var(--c1-cream);line-height:.86;letter-spacing:-.02em}
-
-/* ── RANGÉES 5-7 : bloc VILLE (= le b-kraft du web) ── */
-.ppm .pw7 .mtl{grid-area:mtl;background:var(--cream);display:block;padding:3cqw 3.4cqw}
-.ppm .pw7 .mtl .kick{font-family:'Bebas Neue',sans-serif;font-size:2.1cqw;letter-spacing:.26em;
-  color:var(--ink);opacity:.66}
-.ppm .pw7 .mtl .rail{margin-top:1.4cqw;font-family:'Anton',sans-serif;color:var(--c1-cream);
-  line-height:.9;letter-spacing:-.01em}
-.ppm .pw7 .mtl .k-rule{margin-top:1.4cqw;width:76%;height:.34cqw;background:var(--ink);opacity:.6}
-.ppm .pw7 .mtl .k-bnr{display:inline-block;margin-top:1.8cqw;background:var(--red);color:var(--on-c1);
-  font-family:'Bebas Neue',sans-serif;font-size:2.5cqw;letter-spacing:.08em;padding:.5cqw 1.6cqw;
+/* ── BLOC KRAFT ── */
+.ppm .pw7 .b-kraft{background:var(--kraft);color:var(--ink)}
+.ppm .pw7 .kw{position:absolute;white-space:nowrap;line-height:1}
+.ppm .pw7 .kw.kick{left:9%;top:5%;font-family:'Bebas Neue',sans-serif;font-size:2.7cqw;letter-spacing:.24em}
+.ppm .pw7 .kw.ville{left:8%;top:11%;font-family:'Anton',sans-serif;color:var(--c1-cream)}
+.ppm .pw7 .k-rule{position:absolute;left:9%;top:22%;width:58%;height:2px;background:var(--ink);opacity:.6}
+.ppm .pw7 .k-bnr{position:absolute;left:9%;top:26%;background:var(--red);color:var(--on-c1);
+  font-family:'Bebas Neue',sans-serif;font-size:2.4cqw;padding:.5cqw 1.8cqw;letter-spacing:.06em;
   transform:rotate(-2deg)}
-.ppm .pw7 .mtl .area{font-family:'Anton',sans-serif;color:var(--ink);line-height:.92;margin-top:1.6cqw;opacity:.92}
-/* Devise à la verticale — ancrée à GAUCHE comme sur le web. Avec
-   transform-origin:right top, rotate(90deg) renvoyait le début de la chaîne
-   au-dessus du bord de la tuile, qui le rognait (« FIE » perdu). */
-.ppm .pw7 .mtl .dev{position:absolute;left:34cqw;top:5cqw;transform:rotate(90deg);transform-origin:left top;
-  font-family:'Bebas Neue',sans-serif;font-size:2.2cqw;letter-spacing:.18em;color:var(--c1-cream);white-space:nowrap}
-.ppm .pw7 .mtl .fly{position:absolute;left:3.4cqw;bottom:8cqw;width:7cqw;height:7cqw;color:var(--kraft);
-  transform:rotate(-9deg)}
-.ppm .pw7 .mtl .arw{position:absolute;left:3.4cqw;bottom:3.6cqw;font-family:'Barlow Condensed',sans-serif;
-  font-weight:800;font-style:italic;font-size:3cqw;color:var(--c1-cream);letter-spacing:.02em}
-.ppm .pw7 .mtl .k-rule-b{position:absolute;left:3.4cqw;bottom:1.8cqw;width:80%;height:.34cqw;
-  background:var(--ink);opacity:.32}
-.ppm .pw7 .rdt{grid-area:rdt}
-.ppm .pw7 .fdl{grid-area:fdl;background:var(--ink);display:block;color:var(--kraft)}
-.ppm .pw7 .fdl .mk{position:absolute;aspect-ratio:1;opacity:.55}
-.ppm .pw7 .str{grid-area:str}
+.ppm .pw7 .kw.code{left:13%;top:36%;font-family:'Anton',sans-serif;opacity:.92}
+.ppm .pw7 .kw.dev{left:68%;top:37%;font-family:'Bebas Neue',sans-serif;letter-spacing:.18em;
+  color:var(--c1-cream);transform:rotate(90deg);transform-origin:left top}
+.ppm .pw7 .lys-kraft{position:absolute;left:12%;top:60%;width:26%;aspect-ratio:1;background:var(--beige)}
+.ppm .pw7 .kw.arw{left:13%;top:84%;font-family:'Barlow Condensed',sans-serif;font-style:italic;
+  font-weight:800;color:var(--c1-cream)}
 
-/* ── RANGÉE 8 : fermeture ── */
-.ppm .pw7 .gra{grid-area:gra;background:var(--char)}
-.ppm .pw7 .gra b{font-family:'Anton',sans-serif;color:transparent;
-  -webkit-text-stroke:.42cqw rgba(237,230,214,.42);letter-spacing:.02em;line-height:1;text-align:center}
+/* ── BLOC TYPE ── */
+.ppm .pw7 .b-type{display:flex;flex-direction:column;justify-content:center;padding:2.6cqw;gap:.7cqw}
+.ppm .pw7 .b-type .l1{font-family:'Bebas Neue',sans-serif;font-size:2.6cqw;letter-spacing:.32em;
+  color:var(--on-c1);opacity:.85}
+.ppm .pw7 .b-type .l2{line-height:.95;color:var(--on-c1);text-transform:uppercase}
+.ppm .pw7 .b-type .l3{font-family:'Playfair Display',serif;font-style:italic;font-size:2.5cqw;
+  color:var(--on-c1);opacity:.9;margin-top:.7cqw}
+.ppm .pw7 .xo{gap:1.9cqw}
+.ppm .pw7 .xo svg{width:32%;color:var(--on-c1)}
 
-/* ═══ SURCOUCHE ═══ */
-.ppm .pw7 .vign{position:absolute;inset:0;z-index:39;pointer-events:none;
-  background:radial-gradient(120% 100% at 50% 42%, transparent 58%, rgba(0,0,0,.3) 100%)}
-.ppm .pw7 .grain{position:absolute;inset:0;width:100%;height:100%;z-index:40;pointer-events:none;
-  mix-blend-mode:overlay;opacity:.5}
-.ppm .pw7 .scrim{position:absolute;z-index:41;left:26%;top:44%;width:52%;height:44%;pointer-events:none;
-  background:radial-gradient(55% 55% at 50% 48%, rgba(12,4,6,.18), transparent 75%)}
+/* ── TUILES DE MOT ── */
+.ppm .pw7 .fierte{font-size:3.4cqw;color:var(--c1-cream);transform:rotate(-3deg)}
+.ppm .pw7 .ens{color:var(--cream)}
+.ppm .pw7 .canada{font-size:3.4cqw;color:var(--cream);transform:rotate(-8deg)}
+.ppm .pw7 .alz{color:var(--on-c1)}
+.ppm .pw7 .etoile svg{width:38%;color:var(--cream)}
+.ppm .pw7 .init{color:var(--c1-cream);line-height:.8}
+.ppm .pw7 .lys-geante{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(-6deg);
+  width:150%;aspect-ratio:1;background:var(--char)}
 
-/* médaillons */
+/* ── FERMETURE ── */
+.ppm .pw7 .b-band{background:var(--char);display:flex;align-items:center;justify-content:center;overflow:hidden}
+.ppm .pw7 .b-band .w{font-family:'Anton',sans-serif;letter-spacing:.06em;color:transparent;
+  -webkit-text-stroke:.3cqw rgba(241,235,221,.4);text-transform:uppercase;white-space:nowrap}
+
+/* ── SURCOUCHE ── */
 .ppm .pw7 .roundwrap{position:absolute;z-index:45}
 .ppm .pw7 .roundel{width:13cqw;height:13cqw;border-radius:50%;background:var(--red-deep);
   border:.6cqw solid var(--cream);display:flex;flex-direction:column;align-items:center;justify-content:center;
-  box-shadow:0 1cqw 2.4cqw rgba(0,0,0,.5);transform:rotate(-7deg)}
-.ppm .pw7 .roundel .d1{font-family:'Anton',sans-serif;font-size:4.4cqw;color:var(--cream);line-height:1}
-.ppm .pw7 .roundel .rs{font-family:'Bebas Neue',sans-serif;font-size:1.7cqw;letter-spacing:.24em;
-  color:var(--cream);opacity:.85;margin-top:.2cqw}
+  box-shadow:0 1.1cqw 2.6cqw rgba(0,0,0,.45)}
+.ppm .pw7 .roundel .d1{font-family:'Anton',sans-serif;font-size:4.2cqw;color:var(--cream);line-height:1}
+.ppm .pw7 .roundel .rs{font-family:'Bebas Neue',sans-serif;font-size:1.6cqw;letter-spacing:.26em;
+  color:var(--cream);opacity:.85;margin-top:.3cqw}
 .ppm .pw7 .roundel .xic{width:5.6cqw;filter:grayscale(1) brightness(3.2)}
-
-/* flottant */
-.ppm .pw7 .float{position:absolute;z-index:45;filter:drop-shadow(0 1cqw 2.2cqw rgba(0,0,0,.55))}
-.ppm .pw7 .float svg{display:block;width:100%;height:auto;color:var(--cream);transform:rotate(-9deg)}
-
-/* carte slogan */
-.ppm .pw7 .slogan-card{position:absolute;z-index:46;left:57%;top:28%;transform:rotate(7deg);
-  background:var(--cream);border-radius:1.2cqw;padding:1.8cqw 2.6cqw;box-shadow:0 1.4cqw 3cqw rgba(0,0,0,.5);
-  font-family:'Permanent Marker',cursive;font-size:3.1cqw;color:var(--c1-cream);line-height:1.3;
-  text-align:center;white-space:nowrap}
-
-/* surnom */
-.ppm .pw7 .under-card{position:absolute;z-index:49;left:9%;top:45%;transform:rotate(-5deg);
-  background:var(--cream);color:var(--c1-cream);font-family:'Bebas Neue',sans-serif;font-size:2.7cqw;
-  letter-spacing:.08em;padding:.8cqw 2cqw;border-radius:.7cqw;box-shadow:0 .9cqw 2cqw rgba(0,0,0,.4);
-  white-space:nowrap}
-
-/* hero — carte logo + name-card */
-/* Hero — calé sur la MOITIÉ DROITE : il couvre les tuiles de motif (pois,
-   semis, diagonales) et laisse intact le bloc ville, seul texte dense du mur.
-   Le web le centre à 50% parce qu'en 21/9 il a de la place des deux côtés ;
-   en 9/13 le centrer mangeait le rail de la ville. */
-.ppm .pw7 .hero{position:absolute;z-index:50;left:66%;top:69%;transform:translate(-50%,-50%);width:42cqw}
-.ppm .pw7 .hero .logo-card{width:100%;background:var(--cream);border-radius:2.2cqw;padding:2.8cqw;
-  transform:rotate(-2deg);box-shadow:0 3.4cqw 6.6cqw rgba(0,0,0,.66), 0 .6cqw 1.8cqw rgba(0,0,0,.42)}
-.ppm .pw7 .hero .logo-card img,.ppm .pw7 .hero .logo-card svg{width:100%;height:auto;display:block}
-.ppm .pw7 .name-card{position:absolute;z-index:51;left:34%;bottom:-3.4cqw;transform:rotate(3deg);max-width:62cqw;
-  background:var(--red);color:var(--on-c1);font-family:'Anton',sans-serif;letter-spacing:.015em;
-  padding:.9cqw 2.6cqw 1.1cqw;border-radius:1cqw;border:.5cqw solid var(--cream);
-  box-shadow:0 2cqw 4cqw rgba(0,0,0,.55);white-space:nowrap}
+/* Le foam DÉBORDE de la mosaïque : c'est un objet posé dessus, pas une tuile. */
+.ppm .pw7 .float{position:absolute;z-index:45;filter:drop-shadow(0 1.1cqw 2.4cqw rgba(0,0,0,.55))}
+.ppm .pw7 .float img{width:100%;display:block;transform:rotate(-15deg)}
+.ppm .pw7 .slogan-card{position:absolute;z-index:46;right:3%;bottom:27.5%;transform:rotate(7deg);
+  background:var(--cream);border-radius:1.3cqw;padding:2.2cqw 3.4cqw;box-shadow:0 1.7cqw 3.8cqw rgba(0,0,0,.5);
+  font-family:'Permanent Marker',cursive;font-size:3.9cqw;color:var(--c1-cream);line-height:1.3;text-align:center}
+.ppm .pw7 .under-card{position:absolute;z-index:49;left:29%;top:51%;transform:rotate(-5deg);
+  background:var(--cream);color:var(--c1-cream);font-family:'Bebas Neue',sans-serif;font-size:3.4cqw;
+  letter-spacing:.08em;padding:1.1cqw 2.6cqw;border-radius:.9cqw;box-shadow:0 1.1cqw 2.6cqw rgba(0,0,0,.4)}
+.ppm .pw7 .hero{position:absolute;z-index:50;left:50%;top:41%;transform:translate(-50%,-50%)}
+.ppm .pw7 .logo-card{width:52cqw;background:var(--cream);border-radius:2.6cqw;padding:3.4cqw;
+  transform:rotate(-2deg);box-shadow:0 4.4cqw 9cqw rgba(0,0,0,.66)}
+.ppm .pw7 .logo-card img,.ppm .pw7 .logo-card svg{width:100%;display:block}
+.ppm .pw7 .name-card{position:absolute;z-index:51;left:57%;bottom:-5.2cqw;transform:rotate(3deg);
+  background:var(--red);color:var(--on-c1);font-family:'Anton',sans-serif;
+  padding:1.2cqw 4cqw 1.5cqw;border-radius:1.3cqw;border:.6cqw solid var(--cream);
+  box-shadow:0 2.6cqw 5.6cqw rgba(0,0,0,.55);white-space:nowrap}
 `;
