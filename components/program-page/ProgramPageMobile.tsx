@@ -286,25 +286,61 @@ function ProgramBodyMobile({ school, content }: { school: SchoolProgramIdentity;
   // écran vide : on retombe sur le premier disponible.
   const actif: TabKey = onglets.some((o) => o.k === tab) ? tab : (onglets[0]?.k ?? "apercu");
 
-  /* Le scroll repart en haut du CONTENU à chaque changement — c'est-à-dire la
-     rangée d'onglets calée sous le bouton retour, pas le sommet du document.
+  /* ── LA RANGÉE D'ONGLETS NE BOUGE PLUS ────────────────────────────────────
+     Avant : chaque changement d'onglet imposait `scrollTop = tabsrow.offsetTop
+     - 52`, soit 582px. Trois onglets sur six n'avaient pas assez de contenu à
+     faire défiler ; le navigateur BRIDAIT la valeur, et la rangée atterrissait
+     117 à 309px plus bas que sur les trois autres. Le saut ne venait pas de
+     l'animation, mais d'un scroll impossible à atteindre.
 
-     Remettre scrollTop à 0 renverrait au haut du MUR, qui fait ~620px : on
-     rejouerait le même défilement à chaque onglet, et les écrans courts ne
-     seraient courts que sur le papier. Le mur reste en tête du document, on y
-     remonte en scrollant — il n'est simplement pas réimposé cinq fois.
+     La correction est en CSS, pas ici : `.tabpane` porte une hauteur minimale
+     (voir PPM_CSS) qui garantit à CHAQUE onglet de quoi défiler jusqu'à la
+     position collante. Plus de bridage → position identique partout, et le
+     `position:sticky` de la rangée fait enfin son travail.
+
+     Il reste UNE chose à faire en JS, et une seule : revenir en haut du contenu
+     quand on quitte un onglet où l'on était descendu. Le clamp est
+     DESCENDANT UNIQUEMENT — si on est au-dessus (le mur à l'écran), on n'y
+     touche pas : l'athlète a choisi de regarder le mur.
+
+     ⚠ Le point d'accroche NE SE LIT PAS sur la rangée elle-même : `offsetTop`
+     d'un élément `position:sticky` DÉJÀ COLLÉ renvoie sa position décalée, pas
+     sa position de flux (mesuré : 668 au lieu de 566). Il se lit donc sur le
+     liseré, qui précède la rangée et reste statique — moins la bande du bouton
+     retour et le padding haut de la racine, dont le `top:52px` du sticky est
+     compté à partir du bord intérieur.
 
      Au PREMIER rendu on ne bouge pas : l'athlète doit voir le mur en arrivant. */
   const rootRef = React.useRef<HTMLElement>(null);
+  const liserRef = React.useRef<HTMLDivElement>(null);
+  const tabsWrapRef = React.useRef<HTMLDivElement>(null);
   const tabsRef = React.useRef<HTMLDivElement>(null);
   const premierRendu = React.useRef(true);
   React.useEffect(() => {
     if (premierRendu.current) { premierRendu.current = false; return; }
-    const sc = rootRef.current, tr = tabsRef.current;
-    if (!sc) return;
-    // 52px = la bande du bouton retour, sous laquelle les onglets se collent.
-    sc.scrollTop = tr ? Math.max(0, tr.offsetTop - 52) : 0;
+    const sc = rootRef.current, li = liserRef.current;
+    if (!sc || !li) return;
+    const padHaut = parseFloat(getComputedStyle(sc).paddingTop) || 0;
+    // 52px = la bande du bouton retour, sous laquelle la rangée se colle.
+    const cible = Math.max(0, li.offsetTop + li.offsetHeight - 52 - padHaut);
+    if (sc.scrollTop > cible) sc.scrollTop = cible;
   }, [actif]);
+
+  /* Dégradé de bord droit — à six onglets la rangée mesure 552px pour 390px de
+     champ : « Actualités » est hors écran et RIEN ne l'annonce. Le dégradé
+     n'apparaît que s'il reste effectivement du contenu à droite, et disparaît
+     en bout de course : c'est une affordance, pas une décoration. */
+  const [debordeADroite, setDebordeADroite] = React.useState(false);
+  React.useEffect(() => {
+    const tr = tabsRef.current;
+    if (!tr) return;
+    const relire = () => setDebordeADroite(tr.scrollLeft + tr.clientWidth < tr.scrollWidth - 2);
+    relire();
+    tr.addEventListener("scroll", relire, { passive: true });
+    const ro = new ResizeObserver(relire);
+    ro.observe(tr);
+    return () => { tr.removeEventListener("scroll", relire); ro.disconnect(); };
+  }, [onglets.length]);
 
   /* Auto-centrage de l'onglet actif. À six onglets, « Actualités » sort du champ
      sur 390px : sans ça, on l'active et on ne voit plus lequel est actif — la
@@ -397,65 +433,71 @@ function ProgramBodyMobile({ school, content }: { school: SchoolProgramIdentity;
         theme={theme}
         division={school.division?.trim() || topDivision(content.sports)}
       />
-      <div className="liser" />
+      <div className="liser" ref={liserRef} />
 
       {/* Rangée d'onglets — sticky SOUS le mur, défilement horizontal si les
           libellés ne tiennent pas sur 390px. */}
       {onglets.length > 1 && (
-        <div className="tabsrow" role="tablist" ref={tabsRef}>
-          {onglets.map((o) => (
-            <button
-              key={o.k}
-              type="button"
-              role="tab"
-              aria-selected={o.k === actif}
-              className={"tabbtn" + (o.k === actif ? " on" : "")}
-              onClick={() => { if (o.k !== actif) { void tap(); setTab(o.k); } }}
-            >
-              {o.label}
-            </button>
-          ))}
+        <div className={"tabswrap" + (debordeADroite ? " more" : "")} ref={tabsWrapRef}>
+          <div className="tabsrow" role="tablist" ref={tabsRef}>
+            {onglets.map((o) => (
+              <button
+                key={o.k}
+                type="button"
+                role="tab"
+                aria-selected={o.k === actif}
+                className={"tabbtn" + (o.k === actif ? " on" : "")}
+                onClick={() => { if (o.k !== actif) { void tap(); setTab(o.k); } }}
+              >
+                {o.label}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
-      {actif === "apercu" && (
-        <>
-          <ApercuMobile
-            school={school}
-            stats={content.stats}
-            inTargets={inTargets}
-            followers={followers}
-            onToggleTargets={toggleTargetsTap}
-          />
-          <CtaMobile
-            ctaTitle={content.ctaTitle}
-            notifyName={content.ctaNotifyName}
-            inTargets={inTargets}
-            onToggleTargets={toggleTargetsTap}
-          />
-        </>
-      )}
-
-      {actif === "sports" && <SportsMobile sports={content.sports} router={router} school={school} />}
-
-      {actif === "campus" && !hidden.includes("campus") && <CampusMobile content={content} />}
-
-      {actif === "etudes" && (
-        <>
-          {!hidden.includes("about") && <AproposMobile title={content.sellTitle} sellText={content.sellText} />}
-          {!hidden.includes("programs") && (
-            <AcademiqueMobile
-              programs={content.programsList}
-              viewerProgrammeVise={content.viewerProgrammeVise}
-              schoolName={school.schoolName}
+      {/* Le panneau porte la hauteur minimale qui rend la rangée d'onglets
+          réellement collante — voir .tabpane dans PPM_CSS. */}
+      <div className="tabpane">
+        {actif === "apercu" && (
+          <>
+            <ApercuMobile
+              school={school}
+              stats={content.stats}
+              inTargets={inTargets}
+              followers={followers}
+              onToggleTargets={toggleTargetsTap}
             />
-          )}
-        </>
-      )}
+            <CtaMobile
+              ctaTitle={content.ctaTitle}
+              notifyName={content.ctaNotifyName}
+              inTargets={inTargets}
+              onToggleTargets={toggleTargetsTap}
+            />
+          </>
+        )}
 
-      {actif === "parcours" && !hidden.includes("parcours") && <ParcoursMobile school={school} content={content} />}
+        {actif === "sports" && <SportsMobile sports={content.sports} router={router} school={school} />}
 
-      {actif === "news" && !hidden.includes("news") && <NewsMobile news={content.news} />}
+        {actif === "campus" && !hidden.includes("campus") && <CampusMobile content={content} />}
+
+        {actif === "etudes" && (
+          <>
+            {!hidden.includes("about") && <AproposMobile title={content.sellTitle} sellText={content.sellText} />}
+            {!hidden.includes("programs") && (
+              <AcademiqueMobile
+                programs={content.programsList}
+                viewerProgrammeVise={content.viewerProgrammeVise}
+                schoolName={school.schoolName}
+              />
+            )}
+          </>
+        )}
+
+        {actif === "parcours" && !hidden.includes("parcours") && <ParcoursMobile school={school} content={content} />}
+
+        {actif === "news" && !hidden.includes("news") && <NewsMobile news={content.news} />}
+      </div>
 
       <div className="pfoot">Propulsé par Nexus</div>
       {/* Rien n'est coupé par le tab bar flottant. */}
@@ -952,13 +994,40 @@ const PPM_CSS = `
 .ppm *{box-sizing:border-box}
 .ppm .tabspacer{height:var(--tabzone, env(safe-area-inset-bottom))}
 .ppm .liser{height:3px;background:var(--red)}
-/* ── ONGLETS — sticky SOUS le mur, au-dessous de la bande du bouton retour
-   (52px) pour que les deux ne se superposent pas. Fond OPAQUE : le contenu
-   passe dessous proprement au lieu de transparaître derrière une barre. ── */
-.ppm .tabsrow{position:sticky;top:52px;z-index:26;display:flex;gap:6px;
-  padding:10px 14px;background:var(--bg);border-bottom:1px solid var(--line);
+/* ── ONGLETS — la rangée est COLLANTE sous la bande du bouton retour (52px),
+   les deux s'empilant sans se recouvrir. Fond OPAQUE : le contenu passe dessous
+   proprement au lieu de transparaître derrière une barre.
+
+   Le sticky est porté par .tabswrap, pas par .tabsrow : la rangée elle-même
+   défile HORIZONTALEMENT (overflow-x), et un même élément ne peut pas être à la
+   fois le conteneur de défilement et l'élément collant de son parent. Le
+   dégradé de bord vit donc sur l'enveloppe, hors du flux horizontal. ── */
+.ppm .tabswrap{position:sticky;top:52px;z-index:26;background:var(--bg);
+  border-bottom:1px solid var(--line)}
+.ppm .tabsrow{display:flex;gap:6px;padding:10px 14px;
   overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
 .ppm .tabsrow::-webkit-scrollbar{display:none}
+/* Dégradé de bord droit — n'apparaît QUE s'il reste des onglets hors champ.
+   --bg vaut #111317 ; le point transparent est écrit en rgba (aucun
+   color-mix, contrainte Capacitor). */
+.ppm .tabswrap::after{content:"";position:absolute;right:0;top:0;bottom:1px;width:56px;
+  pointer-events:none;opacity:0;transition:opacity .18s ease;
+  background:linear-gradient(90deg,rgba(17,19,23,0) 0%,rgba(17,19,23,.88) 58%,var(--bg) 100%)}
+.ppm .tabswrap.more::after{opacity:1}
+
+/* ── LA HAUTEUR QUI SUPPRIME LE SAUT ──────────────────────────────────────
+   Pour que la rangée d'onglets se colle à 52px, il faut pouvoir défiler
+   jusqu'à elle. Le contenu qui la SUIT doit donc mesurer au moins la hauteur
+   de fenêtre restante une fois la bande retour (52px) et la rangée elle-même
+   (10 + 34 + 10 + 1 = 55px) déduites. Sans ce plancher, un onglet court bride
+   le défilement et la rangée reste plantée au milieu de l'écran — c'était le
+   cas de Sports, Études et Actualités.
+   52 (bande retour) + 55 (10 + 34 + 10 + 1, la rangée) = 107, moins 20px de
+   mou : le point d'accroche mesuré est à 566px de défilement, et le plus court
+   des six onglets en offre 660 — 94px de marge, qui absorbent les variations de
+   safe-area haute sans jamais ramener la rangée au milieu de l'écran.
+   À garder ALIGNÉ sur .backbar (52px) et sur le gabarit de .tabbtn (34px). */
+.ppm .tabpane{min-height:calc(100dvh - 87px)}
 .ppm .tabbtn{flex:0 0 auto;height:34px;padding:0 15px;border-radius:17px;cursor:pointer;
   background:rgba(255,255,255,.05);border:1px solid var(--line-card);color:var(--p-mut);
   font-family:'Outfit',sans-serif;font-size:14px;font-weight:600;white-space:nowrap}
