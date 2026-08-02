@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "check:css": "node scripts/check-css-literals.mjs",
     "build:mobile": "node scripts/build-mobile.mjs",
     "mobile:sync": "npm run build:mobile && npx cap sync",
     "mobile:android": "npm run mobile:sync && npx cap open android",
