@@ -53,6 +53,10 @@ export default function ProgramWallMobile({ school, theme, division }: ProgramWa
   // garde son code, jamais un nom deviné.
   const provinceMot = school.province.toUpperCase() === "QC" ? "Québec" : school.province.toUpperCase();
   const railMot = w.railWord.toUpperCase();
+  // Le corps de la name-card se calcule sur le MOT LE PLUS LONG et non sur la
+  // chaîne entière : « LES PATRIOTES » se replie en deux lignes au lieu de
+  // rétrécir jusqu'à l'illisible.
+  const motLePlusLong = Math.max(...w.nameCard.split(/\s+/).map((m) => m.length), 1);
   const ligneLaPlusLongue = Math.max(...w.typeL2Lines.map((l) => l.length), 1);
 
   return (
@@ -234,7 +238,7 @@ export default function ProgramWallMobile({ school, theme, division }: ProgramWa
             )}
           </div>
           {w.nameCard ? (
-            <div className="name-card" style={{ fontSize: fit(8.4, 62, w.nameCard.length) }}>{w.nameCard}</div>
+            <div className="name-card" style={{ fontSize: fit(8.4, 38, motLePlusLong) }}>{w.nameCard}</div>
           ) : null}
         </div>
       </div>
@@ -344,7 +348,10 @@ export const WALL_CSS = `
   -webkit-text-stroke:.3cqw rgba(241,235,221,.4);text-transform:uppercase;white-space:nowrap}
 
 /* ── SURCOUCHE ── */
-.ppm .pw7 .roundwrap{position:absolute;z-index:45}
+/* z-52 : AU-DESSUS du hero (50) et de la name-card (51). Ceinture par-dessus la
+   borne de largeur — même si un nom très long passait dessous, le médaillon
+   resterait lisible. */
+.ppm .pw7 .roundwrap{position:absolute;z-index:52}
 .ppm .pw7 .roundel{width:13cqw;height:13cqw;border-radius:50%;background:var(--red-deep);
   border:.6cqw solid var(--cream);display:flex;flex-direction:column;align-items:center;justify-content:center;
   box-shadow:0 1.1cqw 2.6cqw rgba(0,0,0,.45)}
@@ -371,5 +378,11 @@ export const WALL_CSS = `
 .ppm .pw7 .name-card{position:absolute;z-index:51;left:57%;bottom:-5.2cqw;transform:rotate(3deg);
   background:var(--red);color:var(--on-c1);font-family:'Anton',sans-serif;
   padding:1.2cqw 4cqw 1.5cqw;border-radius:1.3cqw;border:.6cqw solid var(--cream);
-  box-shadow:0 2.6cqw 5.6cqw rgba(0,0,0,.55);white-space:nowrap}
+  box-shadow:0 2.6cqw 5.6cqw rgba(0,0,0,.55);
+  /* BORNÉE. Avec nowrap et sans max-width, la plaque s'étendait vers la droite
+     sans limite à mesure que la mascotte s'allongeait, et recouvrait le
+     médaillon Nexus — fixe à left:76%. Mesuré : 22 % sur « CNDF », 69 % sur
+     « PHÉNIX », et 100 % sur un nom de treize lettres. Elle se replie
+     maintenant au lieu de déborder. */
+  max-width:26cqw;text-align:center;line-height:1.05}
 `;

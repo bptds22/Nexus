@@ -324,19 +324,40 @@ export const SPORT_CONFIGS = {
   baseball: {
     perspective: true,
     asset: "/terrains/baseball.jpg",
+    // TROIS FACETTES, découpées par ZONE. Les neuf postes du baseball sont tous
+    // défensifs et simultanés — il n'y a pas d'offense/défense à opposer comme
+    // au football. Ils ne tiennent simplement pas ensemble en portrait : à
+    // 354×430, neuf plaques de 96×80 recouvrent le terrain et se chevauchent
+    // quatre fois. Les left/top ne changent PAS, ils étaient justes ; c'est
+    // leur nombre simultané qui ne l'était pas.
     facettes: [
       {
-        key: "main", label: "",
+        key: "batterie", label: "Batterie",
         groups: [
-          { key: "cf", acro: "CF", label: "CHAMP CENTRE", positions: ["CF"], left: 50, top: 16 },
-          { key: "lf", acro: "LF", label: "CHAMP G", positions: ["LF"], left: 22, top: 26 },
-          { key: "rf", acro: "RF", label: "CHAMP D", positions: ["RF"], left: 78, top: 26 },
-          { key: "ss", acro: "SS", label: "ARRÊT-COURT", positions: ["SS"], left: 38, top: 40 },
-          { key: "2b", acro: "2B", label: "2E BUT", positions: ["2B"], left: 62, top: 40 },
-          { key: "3b", acro: "3B", label: "3E BUT", positions: ["3B"], left: 26, top: 56 },
-          { key: "1b", acro: "1B", label: "1ER BUT", positions: ["1B"], left: 74, top: 56 },
           { key: "p", acro: "P", label: "LANCEUR", positions: ["P"], left: 50, top: 62 },
           { key: "c", acro: "C", label: "RECEVEUR", positions: ["C"], left: 50, top: 88 },
+        ],
+      },
+      {
+        key: "avantchamp", label: "Avant-champ",
+        groups: [
+          // Les paires qui se touchaient sont les DIAGONALES — SS×3B et 2B×1B,
+          // séparées de 12 % en largeur et 16 % en hauteur, sous les deux
+          // seuils. Écarter les rangées horizontalement n'y changeait rien :
+          // c'est le pas VERTICAL qui manquait. 30/70 et 18/82 dégagent les
+          // paires latérales, top 40 → 64 dégage les diagonales (Δ24 ≥ 21).
+          { key: "ss", acro: "SS", label: "ARRÊT-COURT", positions: ["SS"], left: 30, top: 40 },
+          { key: "2b", acro: "2B", label: "2E BUT", positions: ["2B"], left: 70, top: 40 },
+          { key: "3b", acro: "3B", label: "3E BUT", positions: ["3B"], left: 18, top: 64 },
+          { key: "1b", acro: "1B", label: "1ER BUT", positions: ["1B"], left: 82, top: 64 },
+        ],
+      },
+      {
+        key: "champext", label: "Champ extérieur",
+        groups: [
+          { key: "cf", acro: "CF", label: "VOLTIGEUR CENTRE", positions: ["CF"], left: 50, top: 16 },
+          { key: "lf", acro: "LF", label: "VOLTIGEUR GAUCHE", positions: ["LF"], left: 22, top: 26 },
+          { key: "rf", acro: "RF", label: "VOLTIGEUR DROIT", positions: ["RF"], left: 78, top: 26 },
         ],
       },
     ],

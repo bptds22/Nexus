@@ -660,6 +660,54 @@ function PresentationMobile({ team }: { team: TeamData }) {
 
 /* ── BesoinsWidget — LE TERRAIN ──────────────────────────────────────────── */
 
+/* ── JEU DE POSITIONS PORTRAIT — football et flag SEULEMENT ────────────────
+   SPORT_CONFIGS est partagé avec la page WEB : on n'y touche pas. Cette table
+   ne fait que REMPLACER les left/top au rendu mobile, et uniquement pour les
+   deux sports dont la géométrie est incompatible avec le portrait.
+
+   Pourquoi ces deux-là et pas les autres : mesuré à 390px sur les 7 sports et
+   leurs 10 facettes. Hockey, soccer et volleyball n'ont AUCUN chevauchement ;
+   basketball et baseball en ont de petits (278 à 804px²) sur des postes
+   voisins par nature. Football et flag concentrent les pires (900 à 1148px²)
+   parce qu'ils alignent leurs postes sur une LIGNE DE MÊLÉE : des ancrages
+   séparés de 6 à 22 % qui font 40-60px en paysage et 18-26px en portrait,
+   alors qu'une plaque en fait 96.
+
+   Règle de non-collision, vérifiée contre les 16 chevauchements mesurés :
+   deux plaques se touchent si |Δleft| < 27 % ET |Δtop| < 21 % — soit 96px de
+   large sur 354, et 90px de haut sur 430. Chaque paire ci-dessous respecte
+   l'une des deux conditions au moins. L'ordre sémantique est conservé : la
+   ligne devant, le porteur au fond, les ailiers écartés. */
+const PORTRAIT: Record<string, Record<string, Record<string, { left: number; top: number }>>> = {
+  football: {
+    offense:      { WR: { left: 14, top: 30 }, OL: { left: 55, top: 26 }, QB: { left: 30, top: 55 }, RB: { left: 68, top: 78 } },
+    defense:      { S:  { left: 70, top: 16 }, DB: { left: 16, top: 30 }, LB: { left: 46, top: 44 }, DL: { left: 52, top: 72 } },
+    specialistes: { RET:{ left: 50, top: 14 }, LS: { left: 20, top: 42 }, K:  { left: 74, top: 62 }, P:  { left: 36, top: 84 } },
+  },
+  flag: {
+    offense: { WR: { left: 16, top: 28 }, C:  { left: 58, top: 24 }, QB: { left: 32, top: 54 }, RB: { left: 70, top: 78 } },
+    defense: { DB: { left: 18, top: 24 }, S:  { left: 74, top: 24 }, RU: { left: 46, top: 52 }, LB: { left: 24, top: 80 } },
+  },
+};
+
+/** Applique le jeu portrait si le sport en a un. Un slot dont l'acronyme a été
+ *  renommé par le coach ne matche plus la table et garde sa position paysage —
+ *  c'est volontaire : mieux vaut une plaque mal placée qu'une plaque déplacée
+ *  au hasard. */
+function enPortrait<T extends { acro: string; left: number; top: number }>(
+  sportKey: string | null, facetteKey: string, plaques: T[], groups: readonly { acro: string; label: string }[],
+): T[] {
+  const jeu = (sportKey && PORTRAIT[sportKey]?.[facetteKey]) || null;
+  if (!jeu) return plaques;
+  return plaques.map((p, i) => {
+    // l'acronyme rendu peut être une saisie du coach : on retombe sur celui du
+    // layout, à la même position dans l'ordre des groupes.
+    const cle = jeu[p.acro] ? p.acro : (groups[i]?.acro ?? p.acro);
+    const pos = jeu[cle];
+    return pos ? { ...p, left: pos.left, top: pos.top } : p;
+  });
+}
+
 function BesoinsMobile({ team, cible, onToggleCible }: { team: TeamData; cible: boolean; onToggleCible: () => void }) {
   const cfg: SportConfig | undefined = SPORT_CONFIGS[team.sportKey];
   const [fi, setFi] = React.useState(0);
@@ -671,7 +719,9 @@ function BesoinsMobile({ team, cible, onToggleCible }: { team: TeamData; cible: 
 
   // Besoins SAISIS prioritaires ; aucune ligne → moteur dérivé du roster.
   // Coordonnées left/top = SPORT_CONFIGS, jamais réinventées.
-  const { plaques } = resolveFacette(team, facette.groups, team.season);
+  const { plaques: plaquesPaysage } = resolveFacette(team, facette.groups, team.season);
+  // Le jeu portrait ne s'applique qu'au football et au flag — voir PORTRAIT.
+  const plaques = enPortrait(team.sportKey, facette.key, plaquesPaysage, facette.groups);
   const noYear = countNoYear(team.roster);
   const ms = matchState(team, team.season);
   const nextYear = team.season + 1;
@@ -952,7 +1002,13 @@ const TPM_CSS = `
 .tpm .toggle button.on{background:var(--red);color:#fff}
 
 /* LE TERRAIN — géométrie du web VERBATIM : décor incliné, plaques 2D à plat. */
-.tpm .stage{position:relative;height:360px;overflow:hidden;z-index:1;
+/* 430px, la hauteur du WEB. La scène est dimensionnée en POURCENTAGES du
+   conteneur (inset -26%/-20%, imgwrap 76%) tandis que les plaques sont en
+   PIXELS fixes : sur 390px de large au lieu de 800, le terrain rétrécit d'un
+   facteur ~2 et les plaques de ~1,4, si bien qu'elles occupaient 40 % de plus
+   de la surface et se chevauchaient. Rendre au terrain la hauteur du web rend
+   aux plaques leur place relative. */
+.tpm .stage{position:relative;height:430px;overflow:hidden;z-index:1;
   border:1px solid var(--line-card);border-radius:14px;background:#0B1410}
 .tpm .scene{position:absolute;inset:-26% -20% -4% -20%;perspective:840px;overflow:hidden}
 .tpm .scene .imgwrap{position:absolute;left:50%;bottom:-14%;width:76%;
@@ -972,11 +1028,20 @@ const TPM_CSS = `
 .tpm .tokens{position:absolute;inset:0}
 /* la plaque : 2D, à plat, jamais transformée */
 .tpm .tk{position:absolute;transform:translate(-50%,-50%)}
-.tpm .tk .pl{min-width:62px;padding:6px 8px;border-radius:8px;text-align:center;background:var(--cream);
-  border:1px solid rgba(0,0,0,.22);box-shadow:0 5px 14px rgba(0,0,0,.5)}
-.tpm .tk .pa{font-family:'Anton',sans-serif;font-size:15px;line-height:1;color:var(--p-inv)}
-.tpm .tk .po{font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:.07em;color:var(--p-mut-inv);
-  margin-top:3px;white-space:nowrap}
+/* Padding 9/14 et rapport acronyme/nom du web : l'acronyme porte la plaque à
+   distance, le nom en toutes lettres se lit dessous. Le mobile serrait les deux
+   à 15/12 dans 6px de padding — d'où des plaques denses et illisibles. */
+.tpm .tk .pl{min-width:66px;padding:9px 14px;border-radius:9px;text-align:center;background:var(--cream);
+  border:1px solid rgba(0,0,0,.22);box-shadow:0 8px 18px -6px rgba(0,0,0,.7)}
+.tpm .tk .pa{font-family:'Anton',sans-serif;font-size:19px;line-height:1;color:var(--p-inv)}
+/* Le nom se REPLIE au lieu de tenir sur une ligne : « LIGNE OFFENSIVE » faisait
+   134px de plaque, et les ancrages étant en POURCENTAGES du terrain, deux
+   plaques voisines se chevauchaient de 80px sur 354px de large. Replié, il tient
+   en 96px. C'est le seul levier qui ne touche pas aux positions, partagées avec
+   la page web. */
+.tpm .tk .pl{max-width:96px}
+.tpm .tk .po{font-family:'Outfit',sans-serif;font-weight:700;font-size:11px;letter-spacing:.04em;
+  text-transform:uppercase;color:var(--p-mut-inv);margin-top:4px;white-space:normal;line-height:1.15}
 .tpm .tk .pn{font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:.08em;margin-top:4px;display:block;
   color:var(--p-mut-inv)}
 /* états de besoin — Complet / Besoin moyen / Besoin élevé / Urgent */
