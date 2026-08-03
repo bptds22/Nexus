@@ -62,18 +62,29 @@ export default function ProgramWallMobile({ school, theme, division }: ProgramWa
   return (
     <div className="pw7">
       <div className="mosaic">
-        {/* ══ RANGÉE 1 — NEXUS · ligue · province · damier ══════════════════
+        {/* ══ RANGÉE 1 — damier · province · CANADA · NEXUS ═════════════════
             §2a : cette rangée était en BAS dans le mock (r8). Elle remonte en
-            tête. Les quatre tuiles gardent leurs colonnes d'origine. */}
-        <div className="blk b-nexus pop" style={{ gridColumn: "1/3", gridRow: 1 }}>
+            tête.
+
+            MIROIR EXACT de l'ordre précédent (NEXUS · QUÉBEC · CANADA · damier).
+            Le damier passe en c1 parce que c'est la SEULE tuile de la rangée
+            sans contenu : la pastille de retour vient s'y poser à gauche
+            (.ppm .backbtn, left:14px → x 14-50 dans la colonne x 0-78), là où
+            elle masquait 64 % du mot NEXUS avant.
+
+            Voisinage revérifié après l'échange — « claire » = tuile en aplat
+            de --cream (QUÉBEC, Fierté, lys géante, initiales, RSEQ) :
+              · QUÉBEC (c2) → damier en c1 et CANADA en c3 sont foncées, le
+                kraft en dessous n'est pas un aplat crème : 0 voisine claire ;
+              · lys géante (c4-5, r2-3) → au-dessus, NEXUS est un aplat de
+                primaire, pas une claire : 0 ;
+              · initiales ⇄ RSEQ restent le seul contact clair-clair : 1 chacune.
+            Maximum inchangé à 1 — aucune claire n'en touche plus d'une. */}
+        <div className="blk b-nexus pop" style={{ gridColumn: "4/6", gridRow: 1 }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logos/nexus-wordmark-white.png" alt="NEXUS" />
         </div>
-        {/* CANADA en colonne 4, QUÉBEC en 3 : la rangée de tête se lit
-            NEXUS · QUÉBEC · CANADA · damier. Vérifié — l'échange fait tomber à
-            ZÉRO les voisines claires de « Québec » et du bloc fleur, qui en
-            avaient une chacun. */}
-        <div className="blk wblk f-ink" style={{ gridColumn: 4, gridRow: 1 }}>
+        <div className="blk wblk f-ink" style={{ gridColumn: 3, gridRow: 1 }}>
           <div className="anton canada">CANADA</div>
         </div>
         <div className="blk b-rseq" style={{ gridColumn: 2, gridRow: 6 }}>
@@ -86,10 +97,12 @@ export default function ProgramWallMobile({ school, theme, division }: ProgramWa
             <b className="lg-alt">{school.league}</b>
           )}
         </div>
-        <div className="blk wblk f-cream" style={{ gridColumn: 3, gridRow: 1 }}>
+        <div className="blk wblk f-cream" style={{ gridColumn: 2, gridRow: 1 }}>
           <div className="prov" style={{ fontSize: fit(3.8, 26, provinceMot.length) }}>{provinceMot}</div>
         </div>
-        <div className="blk p-check-ink sunk" style={{ gridColumn: 5, gridRow: 1 }} />
+        {/* Le damier — tuile SANS contenu, d'où le choix de lui donner la
+            colonne 1 : elle accueille la pastille de retour sans rien masquer. */}
+        <div className="blk p-check-ink sunk" style={{ gridColumn: 1, gridRow: 1 }} />
 
         {/* ══ RANGÉES 2-4 — le bloc kraft : mots-clés, filets, banderole ══ */}
         <div className="blk b-kraft raise" style={{ gridColumn: "1/3", gridRow: "2/5" }}>

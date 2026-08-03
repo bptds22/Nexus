@@ -438,11 +438,12 @@ function ProgramBodyMobile({ school, content }: { school: SchoolProgramIdentity;
           pastille qui suivrait le défilement se poserait sur du contenu de
           section, où elle n'a rien à faire.
 
-          FLÈCHE SEULE, en haut à DROITE. La rangée de tête est NEXUS · RSEQ ·
-          QUÉBEC · damier : le damier est sa seule tuile sans contenu, et il est
-          à droite. Mesuré : à gauche avec le libellé, la pastille masquait 64 %
-          du mot NEXUS ; à droite avec le libellé, 29 % du mot « Québec ». En
-          flèche seule sur le damier, elle ne masque RIEN. */}
+          FLÈCHE SEULE, en haut à GAUCHE. La pastille suit le damier, seule
+          tuile sans contenu de la rangée de tête — et depuis le miroir de cette
+          rangée (damier · QUÉBEC · CANADA · NEXUS) le damier est à GAUCHE.
+          Mesuré à 390px : colonne de 78px, la pastille occupe x 14-50 (x 8-56
+          avec sa zone tactile), donc entièrement dans le damier. Elle ne masque
+          RIEN. Le libellé reste proscrit : il déborderait sur « Québec ». */}
       <div className="backwrap">
         <button type="button" className="backbtn" onClick={retour} aria-label="Revenir à l'écran précédent">
           <ArrowLeft size={18} strokeWidth={2.2} aria-hidden />
@@ -544,31 +545,41 @@ function ProgramBodyMobile({ school, content }: { school: SchoolProgramIdentity;
 
    Variante SANS masquage au défilement, comme le wizard : la version du profil
    se cache en `translateY(120px)`, ce qui suppose un écouteur de scroll et un
-   re-rendu par frame. BP la veut visible en permanence. */
+   re-rendu par frame. BP la veut visible en permanence.
+
+   SANS BANDE. L'enveloppe ne porte plus ni aplat, ni backdrop-filter, ni filet :
+   la pilule flotte seule et le contenu défile derrière elle, à nu. Réglage
+   IDENTIQUE à celui de la page équipe (TeamPageMobile) — l'athlète enchaîne les
+   deux écrans, une pilule posée sur une bande ici et nue là-bas se lirait comme
+   deux composants différents.
+   La pilule reste lisible par elle-même : son aplat est opaque et son libellé
+   blanc dessus (#E63946 → 4,3:1 ; #22C55E → 2,3:1, inchangés). Ce qui se perd
+   est la SÉPARATION quand du clair défile dessous — sur cette page, la
+   mosaïque du mur (tuiles crème, plaque du logo, fanions) et les cartes campus.
+
+   `pointer-events` : l'enveloppe fait toute la largeur et n'a plus rien de
+   visible. Sans `pointer-events-none` elle avalerait les taps sur le contenu
+   dans ses gouttières px-3/py-2.5 ; le bouton les rétablit pour lui-même. */
 function PiluleCibles({ inTargets, onToggle }: { inTargets: boolean; onToggle: () => void }) {
   const [monte, setMonte] = React.useState(false);
   React.useEffect(() => { setMonte(true); }, []);
   if (!monte || typeof document === "undefined") return null;
   return createPortal(
     <div
-      className="fixed left-0 right-0 z-30 px-3 py-2.5"
+      className="fixed left-0 right-0 z-30 px-3 py-2.5 pointer-events-none"
       style={{
         // Posée juste au-dessus de la tab bar, via la variable que
         // app/college/layout.tsx pose sur <body> d'après ce qui est
         // RÉELLEMENT monté. Sans tab bar (visiteur non connecté) elle
         // descend au ras du home indicator au lieu de flotter dans le vide.
         bottom: "var(--barre-zone, calc(env(safe-area-inset-bottom) + 80px))",
-        backgroundColor: "rgba(17,19,23,0.85)",
-        backdropFilter: "blur(20px) saturate(180%)",
-        WebkitBackdropFilter: "blur(20px) saturate(180%)",
-        borderTop: "0.5px solid rgba(255,255,255,0.08)",
       }}
     >
       <button
         type="button"
         onClick={onToggle}
         className={
-          "w-full flex items-center justify-center gap-2 text-white rounded-2xl px-4 py-3 " +
+          "pointer-events-auto w-full flex items-center justify-center gap-2 text-white rounded-2xl px-4 py-3 " +
           "font-head font-bold text-[13px] uppercase tracking-widest " +
           (inTargets
             ? "bg-[#22C55E] shadow-[0_0_20px_rgba(34,197,94,0.3)]"
@@ -1127,7 +1138,7 @@ const PPM_CSS = `
    au ras du padding de la racine (safe-area + 8px). La pastille est absolue par
    rapport à elle, donc posée SUR le mur et emportée par le défilement. */
 .ppm .backwrap{position:relative;height:0;z-index:30}
-.ppm .backbtn{position:absolute;top:10px;right:14px;
+.ppm .backbtn{position:absolute;top:10px;left:14px;
   pointer-events:auto;display:inline-flex;align-items:center;justify-content:center;
   width:36px;height:36px;padding:0;border-radius:50%;cursor:pointer;
   background:rgba(26,29,36,.94);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);

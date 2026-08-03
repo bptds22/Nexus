@@ -25,6 +25,8 @@ export interface CegepRow {
   reseau: string | null;      // PUBLIC | PRIVE | null
   lat: number | null;
   lng: number | null;
+  /** Logo DÉPOSÉ par le coach (school_page_content.logo_path), sinon null →
+   *  monogramme. Jamais l'image RSEQ scrapée. Voir logoDeLEcole(). */
   logoUrl: string | null;
   /** Page « Ma page » réellement configurée (pas une ligne seedée vide). */
   riche: boolean;
@@ -61,10 +63,34 @@ export interface SearchData {
 
 const s = (v: unknown): string => (v == null ? "" : String(v));
 
+/** Le logo d'un cégep : `school_page_content.logo_path`, et RIEN D'AUTRE.
+ *
+ *  C'est le fichier que le coach a lui-même déposé dans le bucket
+ *  `school-logos` en configurant sa page — le logo que l'école revendique, et
+ *  déjà celui qu'affichent la page école et la page équipe (loadForRender,
+ *  teamEditorContext, dbToProgramPage). Absent → null, et la carte retombe sur
+ *  le monogramme, exactement comme avant.
+ *
+ *  `schools.logo_url` N'EST PAS un repli, sciemment. C'est une image SCRAPÉE du
+ *  RSEQ (rseq.ca/ImageGen.ashx…) : l'école ne l'a pas choisie, l'URL dépend d'un
+ *  tiers, et 50 des 61 cégeps en ont une. La brancher en repli ferait apparaître
+ *  50 logos scrapés sur des cartes qui n'en ont jamais montré. La colonne reste
+ *  écrite et affichée par l'admin école (app/admin/schools/[id]) — elle n'est
+ *  simplement pas une source pour la recherche PUBLIQUE. Pour l'y rebrancher un
+ *  jour : remettre logo_url dans le select ci-dessous et le rendre ici en repli. */
+function logoDeLEcole(supabase: SupabaseClient, logoPath: string | null | undefined): string | null {
+  const chemin = logoPath?.trim();
+  if (!chemin) return null;
+  return supabase.storage.from("school-logos").getPublicUrl(chemin).data.publicUrl;
+}
+
 export async function loadSearchData(supabase: SupabaseClient): Promise<SearchData> {
   const [schools, teams, programs, pageContent, cards] = await Promise.all([
     supabase.from("schools")
-      .select("id, name, city, region, langue, reseau, lat, lng, logo_url")
+      // logo_url N'EST PAS lu : un champ chargé et jamais rendu est exactement
+      // le piège qui a fait croire que la recherche affichait un logo. Voir
+      // logoDeLEcole().
+      .select("id, name, city, region, langue, reseau, lat, lng")
       .eq("type", "CEGEP"),
     supabase.from("teams").select("school_id, division, gender, sports:sport_id(nom)"),
     supabase.from("school_programs").select("school_id, name").eq("is_displayed", true),
@@ -118,7 +144,7 @@ export async function loadSearchData(supabase: SupabaseClient): Promise<SearchDa
         reseau: (r.reseau as string | null) || null,
         lat: (r.lat as number | null) ?? null,
         lng: (r.lng as number | null) ?? null,
-        logoUrl: (r.logo_url as string | null) ?? null,
+        logoUrl: logoDeLEcole(supabase, c?.logo_path),
         riche,
         nickname: c?.nickname?.trim() || null,
         couleur: riche ? (c?.color_primary ?? null) : null,

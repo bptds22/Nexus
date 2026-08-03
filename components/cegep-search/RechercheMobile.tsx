@@ -43,6 +43,43 @@ const initialesDe = (nom: string) =>
   nom.replace(/^(Cégep|Collège|Campus|Centre)\s+(de\s+|du\s+|d'|des\s+)?/i, "")
     .split(/[\s-]+/).filter(Boolean).slice(0, 2).map((m) => m[0]).join("").toUpperCase();
 
+/* ── L'ÉCUSSON — logo déposé, sinon monogramme ─────────────────────────────
+   La source est décidée une seule fois, en amont (searchData.ts, logoDeLEcole) :
+   UNIQUEMENT le logo que le coach a déposé. L'image RSEQ scrapée n'est pas un
+   repli — 50 des 61 cégeps en ont une, et les brancher ferait apparaître 50
+   logos de tiers sur des cartes qui n'en ont jamais montré. Ici on ne fait que
+   RENDRE, avec le repli — le monogramme.
+
+   `onError` n'est pas décoratif : le logo est servi par le storage Supabase,
+   qui peut 404 (fichier remplacé, bucket réorganisé) ou être coupé hors réseau.
+   Une image morte laisse un cadre vide ; le monogramme, lui, est exactement ce
+   que la carte montrait avant. Le rendu dégrade donc toujours vers l'état
+   connu, jamais vers un trou.
+
+   Le même composant sert la carte de résultat ET l'en-tête d'aperçu de la
+   sheet : `.rm .pvHead .crest` ne fait que redimensionner, la structure ne
+   diverge pas. */
+function Crest({ c }: { c: CegepRow }) {
+  const [imageKo, setImageKo] = React.useState(false);
+  // Les cartes sont recyclées d'un rendu à l'autre : sans ça, une école dont le
+  // logo a échoué contaminerait la suivante qui réutilise le même nœud.
+  React.useEffect(() => { setImageKo(false); }, [c.logoUrl]);
+
+  if (c.logoUrl && !imageKo) {
+    return (
+      <div className="crest logo">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={c.logoUrl} alt="" onError={() => setImageKo(true)} />
+      </div>
+    );
+  }
+  return (
+    <div className="crest" style={c.riche && c.couleur ? { background: c.couleur } : undefined}>
+      {initialesDe(c.name)}
+    </div>
+  );
+}
+
 type Mode = "list" | "filter" | "preview";
 
 /** Durée du glissement de la sheet (entrée ET sortie). Doit rester ALIGNÉE sur
@@ -478,9 +515,7 @@ export default function RechercheMobile() {
         className={"row" + (currentId === c.id ? " sel" : "")}
         onClick={() => showPreview(c.id)}
       >
-        <div className="crest" style={c.riche && c.couleur ? { background: c.couleur } : undefined}>
-          {initialesDe(c.name)}
-        </div>
+        <Crest c={c} />
         <div className="rowmid">
           <div className="rowname">{c.name}</div>
           <div className="rowmeta">
@@ -803,9 +838,7 @@ export default function RechercheMobile() {
 
             <div className="shBody">
               <div className="pvHead">
-                <div className="crest" style={courant.c.riche && courant.c.couleur ? { background: courant.c.couleur } : undefined}>
-                  {initialesDe(courant.c.name)}
-                </div>
+                <Crest c={courant.c} />
                 <div className="pvTitle">
                   <h2>{courant.c.name}{courant.c.nickname ? ` — ${courant.c.nickname}` : ""}</h2>
                   <p>{[
@@ -1071,6 +1104,11 @@ body.nx-rm-sheet-tall nav[aria-label="Navigation principale"]{
 .rm .row.sel{border-color:var(--red);background:rgba(230,57,70,.09)}
 .rm .crest{flex:0 0 auto;width:46px;height:46px;border-radius:12px;display:grid;place-items:center;
   font-family:var(--font-anton),sans-serif;font-size:15px;color:var(--soft);background:#252A33;border:1px solid var(--line2)}
+/* Plaque CLAIRE sous le logo, et rien d'autre. Les écussons d'école sont des
+   PNG transparents dessinés pour du papier : sur le #252A33 de la carte, les
+   tracés foncés s'effacent. Le padding empêche le logo de toucher le bord. */
+.rm .crest.logo{background:#F1EBDD;border-color:rgba(0,0,0,.20);padding:5px}
+.rm .crest.logo img{width:100%;height:100%;object-fit:contain;display:block}
 .rm .rowmid{flex:1;min-width:0}
 .rm .rowname{font-size:16px;font-weight:700;line-height:1.2;margin-bottom:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rm .rowmeta{font-size:13.5px;color:var(--mut);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

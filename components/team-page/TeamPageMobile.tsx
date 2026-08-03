@@ -21,6 +21,7 @@
 // service-role) reste dans app/college/[schoolId]/[teamId]/page.tsx.
 
 import * as React from "react";
+import { createPortal } from "react-dom";
 import { ArrowLeft, Check, ChevronLeft, ChevronRight, Heart } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useDynamicParam } from "@/lib/platform/useDynamicParam";
@@ -30,7 +31,7 @@ import SocialIcons from "@/components/marketing/SocialIcons";
 import StarRating from "@/components/ui/StarRating";
 import TerrainStage from "./TerrainStage";
 import { useSchoolTargets } from "@/lib/queries/schoolPage/useSchoolTargets";
-import { accentOnShell } from "@/components/program-wall/theme";
+import { accentOnShell, deriveWallTheme } from "@/components/program-wall/theme";
 import { loadTeamPage } from "@/lib/queries/teamPage/teamPageData";
 import { sportKeyFromNom, defaultNeeds, mergeNeeds, toTeamNeeds, type PositionRow } from "@/lib/queries/teamPage/sportSlots";
 import {
@@ -301,6 +302,15 @@ function hexToRgb(hex: string): [number, number, number] {
 function TeamBodyMobile({ team }: { team: TeamData }) {
   const [r, g, b] = hexToRgb(team.teamColor);
   const [lr, lg, lb] = hexToRgb(team.teamColorLt);
+  // Les DEUX encres planchérées du mur, dérivées des mêmes trois couleurs
+  // d'école. Aucun second plancher n'est introduit : deriveWallTheme applique
+  // pickAccentOn/pickNeutralOn, exactement ce que le mur utilise déjà.
+  //   · onC1     — ce qui se lit SUR un aplat de primaire (crème si lisible,
+  //                sinon l'encre foncée de l'école) → glyphe des pastilles soc.
+  //   · c1OnCream — la primaire écrite SUR le crème (repli variante profonde)
+  //                → le monogramme sur sa plaque claire.
+  const wall = deriveWallTheme(team.teamColor, team.teamColorDark, team.teamColorNeutral);
+  const [or_, og, ob] = hexToRgb(wall.onC1);
 
   // Cibles — un seul état partagé hero ⇄ box besoins. La cible est au niveau
   // ÉCOLE (arbitrage D-1) : depuis une page équipe on cible le CÉGEP, via le
@@ -375,6 +385,13 @@ function TeamBodyMobile({ team }: { team: TeamData }) {
     "--red-tint-bg": `rgba(${r},${g},${b},0.15)`,
     "--red-tint-bd": `rgba(${r},${g},${b},0.38)`,
     "--red-lt-55": `rgba(${lr},${lg},${lb},0.55)`,
+    // Encres planchérées du hero — voir wall ci-dessus. Le filet à 38 % sert de
+    // liseré aux pastilles sociales : il est CLAIR quand la primaire est foncée
+    // et FONCÉ quand elle est claire, donc la pastille se détache aussi bien sur
+    // une photo noire que sur une photo blanche.
+    "--on-c1": wall.onC1,
+    "--on-c1-38": `rgba(${or_},${og},${ob},0.38)`,
+    "--c1-cream": wall.c1OnCream,
     "--hero-focal": team.heroFocal ?? "50% 25%",
     "--hero-zoom": String(Math.max(100, team.heroZoom ?? 100) / 100),
     // --tabzone n'est PLUS posée ici. Elle était conditionnée à IS_CAPACITOR,
@@ -415,7 +432,7 @@ function TeamBodyMobile({ team }: { team: TeamData }) {
         </button>
       </div>
 
-      <HeroMobile team={team} cible={cible} onToggleCible={toggleCible} />
+      <HeroMobile team={team} />
       <CalendrierMobile team={team} />
       <PresentationMobile team={team} />
       {!(team.hiddenSections ?? []).includes("besoins") && (
@@ -424,13 +441,14 @@ function TeamBodyMobile({ team }: { team: TeamData }) {
       <EngageesMobile team={team} />
       {/* Rien n'est coupé par le tab bar flottant. */}
       <div className="tabspacer" aria-hidden />
+      <PiluleCibles cible={cible} onToggle={toggleCible} />
     </main>
   );
 }
 
 /* ── TeamHero ────────────────────────────────────────────────────────────── */
 
-function HeroMobile({ team, cible, onToggleCible }: { team: TeamData; cible: boolean; onToggleCible: () => void }) {
+function HeroMobile({ team }: { team: TeamData }) {
   const [imgOk, setImgOk] = React.useState(true);
   const hasPhoto = !!team.heroImage && imgOk;
   const nameLines = team.nom.split("\n");
@@ -452,7 +470,7 @@ function HeroMobile({ team, cible, onToggleCible }: { team: TeamData; cible: boo
         <div className="logo">{team.schoolInitial}</div>
       )}
       {team.socials.length > 0 && (
-        <div className="soc"><SocialIcons links={team.socials} size={21} /></div>
+        <div className="soc"><SocialIcons links={team.socials} size={19} /></div>
       )}
 
       <div className="pnl">
@@ -482,14 +500,67 @@ function HeroMobile({ team, cible, onToggleCible }: { team: TeamData; cible: boo
             <div className="stat pers"><div className="v">{team.coachName}</div><div className="l">Entraîneur-chef</div></div>
           ) : null}
         </div>
-        <CiblesBtn cible={cible} onToggle={onToggleCible} />
+        {/* Le bouton de cible a QUITTÉ le hero : la pilule flottante porte la
+            même action et reste visible partout. Deux contrôles pour la même
+            chose sur un écran suggèrent deux actions — c'est l'arbitrage déjà
+            rendu pour .hf-btn sur la page école. */}
       </div>
     </div>
   );
 }
 
-/* Le ♥ du hero et celui de la box besoins sont le MÊME bouton (même état cible) :
-   le retour haptique est donc posé une seule fois, ici. */
+/* ── LA PILULE DE CIBLE ───────────────────────────────────────────────────
+   Portalée dans <body>, ancrée sur --barre-zone, état actif vert.
+
+   `createPortal` est structurel : `.tpm` est le conteneur de défilement, un
+   `position:fixed` posé dedans s'y ancrerait au lieu du viewport.
+
+   SANS BANDE. L'enveloppe ne porte plus ni aplat, ni backdrop-filter, ni filet :
+   la pilule flotte seule et le contenu défile derrière elle, à nu. Elle reste
+   lisible par elle-même — son aplat est OPAQUE et son libellé est blanc dessus
+   (#E63946 → 4,3:1 ; #22C55E → 2,3:1, inchangé par cette modification).
+   Ce qui est perdu, c'est la SÉPARATION : la page équipe fait défiler du crème
+   sous la pilule (tuiles « extérieur » du calendrier, plaques du terrain,
+   bannières du palmarès), et le halo coloré de la pilule s'y voit mal.
+   La page école (ProgramPageMobile) porte le MÊME réglage : l'athlète enchaîne
+   les deux écrans, les deux pilules doivent se lire comme un seul composant.
+
+   `pointer-events` : l'enveloppe fait toute la largeur et n'a plus rien de
+   visible. Sans `pointer-events-none` elle avalerait les taps sur le contenu
+   dans ses gouttières px-3/py-2.5 ; le bouton les rétablit pour lui-même.
+
+   LIBELLÉ — « Ajouter le COLLÈGE à mes cibles », et non « cette équipe » :
+   l'action écrit sur athlete_targets(school_id). Cibler depuis une page équipe
+   cible le cégep, pas l'équipe. Le libellé doit dire ce que le geste fait. */
+function PiluleCibles({ cible, onToggle }: { cible: boolean; onToggle: () => void }) {
+  const [monte, setMonte] = React.useState(false);
+  React.useEffect(() => { setMonte(true); }, []);
+  if (!monte || typeof document === "undefined") return null;
+  return createPortal(
+    <div
+      className="fixed left-0 right-0 z-30 px-3 py-2.5 pointer-events-none"
+      style={{ bottom: "var(--barre-zone, calc(env(safe-area-inset-bottom) + 80px))" }}
+    >
+      <button
+        type="button"
+        onClick={() => { void tap(); onToggle(); }}
+        className={
+          "pointer-events-auto w-full flex items-center justify-center gap-2 text-white rounded-2xl px-4 py-3 " +
+          "font-head font-bold text-[13px] uppercase tracking-widest " +
+          (cible
+            ? "bg-[#22C55E] shadow-[0_0_20px_rgba(34,197,94,0.3)]"
+            : "bg-[#E63946] active:bg-[#D42B22] shadow-[0_0_20px_rgba(230,57,70,0.3)]")
+        }
+      >
+        <Heart size={16} fill="currentColor" aria-hidden />
+        {cible ? "Collège dans tes cibles" : "Ajouter le collège à mes cibles"}
+      </button>
+    </div>,
+    document.body,
+  );
+}
+
+/* Le ♥ de la box besoins garde son bouton : le retour haptique est posé ici. */
 function CiblesBtn({ cible, onToggle, small }: { cible: boolean; onToggle: () => void; small?: boolean }) {
   return (
     <button
@@ -674,10 +745,14 @@ function PresentationMobile({ team }: { team: TeamData }) {
    alors qu'une plaque en fait 96.
 
    Règle de non-collision, vérifiée contre les 16 chevauchements mesurés :
-   deux plaques se touchent si |Δleft| < 27 % ET |Δtop| < 21 % — soit 96px de
-   large sur 354, et 90px de haut sur 430. Chaque paire ci-dessous respecte
-   l'une des deux conditions au moins. L'ordre sémantique est conservé : la
-   ligne devant, le porteur au fond, les ailiers écartés. */
+   deux plaques se touchent si |Δleft| < SEUIL ET |Δtop| < 21 % — 90px de haut
+   sur 430 pour le vertical, et 96px de large sur la largeur du terrain pour
+   l'horizontal. Ce seuil horizontal valait 27 % quand le terrain était encadré
+   (354px) ; depuis qu'il est bord à bord (390px) il vaut 24,6 %, donc il se
+   DÉTEND. Les positions ci-dessous ont été posées contre les 27 % et restent
+   donc valides — chaque paire respecte l'une des deux conditions au moins.
+   L'ordre sémantique est conservé : la ligne devant, le porteur au fond, les
+   ailiers écartés. */
 const PORTRAIT: Record<string, Record<string, Record<string, { left: number; top: number }>>> = {
   football: {
     offense:      { WR: { left: 14, top: 30 }, OL: { left: 55, top: 26 }, QB: { left: 30, top: 55 }, RB: { left: 68, top: 78 } },
@@ -888,21 +963,76 @@ const TPM_CSS = `
 .tpm .hero{position:relative;min-height:430px;overflow:hidden;background:var(--bg);display:flex;flex-direction:column}
 .tpm .hero-fallback{position:absolute;inset:0;
   background:linear-gradient(160deg,var(--red) 0%,var(--ink) 58%,#0B0C0E 100%)}
-.tpm .hero-bg{position:absolute;left:0;top:0;width:100%;height:270px;object-fit:cover;
+/* La photo monte à 380px et le bloc d'info se pose DESSUS par le bas — plus de
+   bandeau opaque séparé. Le dégradé remonte de la base de la photo vers le
+   contenu, exactement le principe de .hero-fade du mur : le texte devient
+   lisible par le fondu, pas par un aplat posé dessous. */
+.tpm .hero-bg{position:absolute;left:0;top:0;width:100%;height:380px;object-fit:cover;
   object-position:var(--hero-focal);transform:scale(var(--hero-zoom));transform-origin:var(--hero-focal)}
-.tpm .hero-ph{position:absolute;left:0;top:0;width:100%;height:270px;
+.tpm .hero-ph{position:absolute;left:0;top:0;width:100%;height:380px;
   background:linear-gradient(150deg,#2A2F38,#14171E)}
-.tpm .hero-fade{position:absolute;left:0;right:0;top:120px;height:180px;
-  background:linear-gradient(180deg,transparent,#0B0C0E)}
-.tpm .accent{position:absolute;left:0;right:0;top:266px;height:4px;
+.tpm .hero-fade{position:absolute;left:0;right:0;top:140px;height:250px;
+  background:linear-gradient(180deg,transparent 0%,rgba(17,19,23,.55) 46%,var(--bg) 100%)}
+/* Le filet d'accent finit le hero au lieu de marquer une frontière photo/panneau
+   qui n'existe plus. */
+.tpm .accent{position:absolute;left:0;right:0;top:auto;bottom:0;height:4px;
   background:linear-gradient(90deg,var(--red) 0 46%,#fff 46% 100%)}
-.tpm .logo{position:absolute;left:18px;top:18px;width:52px;height:52px;border-radius:12px;background:var(--cream);
-  display:grid;place-items:center;font-family:'Anton',sans-serif;font-size:19px;color:var(--red);z-index:4}
-.tpm .logo-img{position:absolute;left:18px;top:18px;width:56px;height:56px;object-fit:contain;z-index:4;
-  filter:drop-shadow(0 6px 14px rgba(0,0,0,.55))}
-.tpm .soc{position:absolute;right:18px;top:26px;display:flex;gap:14px;z-index:4}
-.tpm .soc svg{width:21px;height:21px;opacity:.85}
-.tpm .pnl{position:relative;margin-top:270px;padding:22px 18px 26px}
+/* ── LOGO ET ICÔNES SOCIALES — PLAQUES OPAQUES ─────────────────────────────
+   Le hero pose ces éléments sur une PHOTO ARBITRAIRE, déposée par le coach. Ni
+   l'ombre portée du logo ni l'opacité .85 des icônes ne tiennent cette promesse :
+   une ombre ne sépare que d'un fond clair, et une icône nue à 85 % disparaît
+   dans n'importe quel aplat de sa propre valeur. Les icônes n'avaient d'ailleurs
+   NI fond NI ombre — c'était le vrai trou.
+   La seule solution qui tienne sur photo blanche COMME sur photo noire est une
+   plaque OPAQUE : ce qui est écrit dessus ne dépend plus du tout de la photo.
+   Restait à choisir l'encre — c'est le plancher du mur qui la donne, sans qu'un
+   second plancher soit introduit ici. */
+/* Le logo et son repli monogramme partagent la MÊME plaque : même gabarit, même
+   rayon, même liseré. La plaque est crème (l'écusson d'école est dessiné pour
+   du clair), et c'est ce crème qui la détache d'une photo noire — 13,5:1 pour
+   le crème rouge #E8C7CD des 60 écoles, 21:1 pour le blanc de CNDF.
+   Sur une photo BLANCHE le crème ne peut rien : 1,56:1 pour #E8C7CD, et
+   exactement 1,00:1 pour CNDF, dont la couleur claire est littéralement
+   #ffffff — la plaque y est invisible. C'est donc le RELIEF qui doit porter, et
+   pas une ombre douce seule : liseré interne à 28 %, ombre de CONTACT courte
+   (2/6px) qui dessine l'arête, puis ombre portée large. */
+.tpm .logo,
+.tpm .logo-img{position:absolute;left:18px;top:18px;width:56px;height:56px;border-radius:13px;z-index:4;
+  background:var(--cream);
+  box-shadow:0 2px 6px rgba(0,0,0,.38),0 8px 20px rgba(0,0,0,.5),inset 0 0 0 1px rgba(0,0,0,.28)}
+/* --c1-cream et non --red : la primaire n'est gardée que si elle se lit sur le
+   crème, sinon c'est sa variante profonde. Une école à primaire pâle avait un
+   monogramme quasi invisible sur sa propre plaque. */
+.tpm .logo{display:grid;place-items:center;font-family:'Anton',sans-serif;font-size:19px;color:var(--c1-cream)}
+.tpm .logo-img{object-fit:contain;padding:7px}
+.tpm .soc{position:absolute;right:18px;top:26px;display:flex;gap:9px;z-index:4}
+/* La pastille : halo OPAQUE en couleur d'équipe, glyphe à --on-c1. Le glyphe est
+   donc l'encre foncée de l'école sur une primaire claire (le « icône sombre »
+   attendu) et bascule sur le crème sur une primaire foncée, où une icône sombre
+   serait illisible. Une seule règle couvre les deux cas.
+   Mesuré sur les DEUX jeux de couleurs en production, qui sont justement les
+   deux extrêmes :
+     · #A6192E (60 écoles, primaire foncée) → glyphe crème, 4,82:1 sur le halo ;
+       halo 7,50:1 sur photo blanche, 2,80:1 sur photo noire.
+     · #d0a62d (CNDF, primaire claire)      → glyphe #10131A, 8,12:1 sur le halo ;
+       halo 9,17:1 sur photo noire, 2,29:1 sur photo blanche.
+   Là où le halo faiblit, le liseré à 38 % est de la valeur OPPOSÉE — crème sur
+   la primaire foncée (le cas photo noire), encre sur la primaire claire (le cas
+   photo blanche). Les deux extrêmes sont donc couverts par construction, pas
+   par chance.
+   Spécificité (0,2,1) : elle passe DEVANT le .nx-social-icon:hover de
+   globals.css (0,2,0). Volontaire — au doigt le hover reste collé après le tap, et la
+   couleur de marque qu'il applique (rose IG, bleu FB…) n'a aucun contraste
+   garanti sur le halo. */
+.tpm .soc .nx-social-icon{position:relative;width:36px;height:36px;border-radius:18px;
+  display:grid;place-items:center;background:var(--red);color:var(--on-c1);
+  box-shadow:0 4px 12px rgba(0,0,0,.5),inset 0 0 0 1px var(--on-c1-38)}
+/* 36px à l'œil, 44px au doigt — le plancher des HIG, atteint par un
+   pseudo-élément comme la pastille de retour de la page école. */
+.tpm .soc .nx-social-icon::after{content:"";position:absolute;inset:-4px;border-radius:50%}
+.tpm .soc svg{width:19px;height:19px;opacity:1}
+/* 250 et non 380 : le panneau chevauche les 130 derniers pixels de la photo. */
+.tpm .pnl{position:relative;z-index:3;margin-top:250px;padding:22px 18px 30px}
 .tpm .eyebrow{font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:.16em;color:var(--red-lt);margin-bottom:8px}
 .tpm .name{font-family:'Anton',sans-serif;font-size:44px;line-height:.92;color:var(--p-ink);text-transform:uppercase}
 .tpm .meta{display:flex;gap:7px;margin-top:13px;flex-wrap:wrap}
@@ -959,9 +1089,11 @@ const TPM_CSS = `
 /* ── Présentation ── */
 .tpm .p-cols{display:grid;grid-template-columns:1fr;gap:34px}
 .tpm .lead{font-size:15.5px;line-height:1.6;color:var(--p-soft);margin-bottom:18px}
-.tpm .p-stats{display:flex;gap:22px;margin-bottom:20px}
+/* Les stats et les fanions flottaient loin l'un de l'autre : ils décrivent le
+   même palmarès, ils se suivent maintenant. */
+.tpm .p-stats{display:flex;gap:22px;margin-bottom:12px}
 .tpm .p-stats .stat .v{font-size:28px;color:var(--red-lt)}
-.tpm .pen-string{height:2px;background:repeating-linear-gradient(90deg,var(--line-card) 0 6px,transparent 6px 11px);margin-bottom:0}
+.tpm .pen-string{height:2px;background:repeating-linear-gradient(90deg,var(--line-card) 0 6px,transparent 6px 11px);margin:0 0 10px}
 .tpm .pen-row{display:flex;gap:9px;overflow-x:auto;scrollbar-width:none;padding-top:0}
 .tpm .pen-row::-webkit-scrollbar{display:none}
 .tpm .pennant{flex:0 0 auto;width:88px;padding:12px 6px 26px;text-align:center;
@@ -973,8 +1105,11 @@ const TPM_CSS = `
 .tpm .pennant.banniere .pen-t{color:var(--cream)}
 .tpm .pen-y{font-family:'Anton',sans-serif;font-size:16px;color:#fff;margin-top:5px}
 .tpm .pennant.banniere .pen-y{color:var(--cream)}
-.tpm .coach{display:flex;gap:13px;align-items:flex-start;margin-bottom:16px}
-.tpm .cphoto{flex:0 0 auto;width:88px;height:106px;border-radius:10px;background:linear-gradient(160deg,#262B34,#14171E);
+.tpm .coach{display:flex;gap:15px;align-items:flex-start;margin-bottom:14px}
+/* 132×168 et non 88×106 : à la taille d'une vignette, le point focal stocké
+   (headcoach_focal_x/y, headcoach_zoom) ne servait à rien — il n'y avait pas
+   assez de surface pour que le cadrage se voie. */
+.tpm .cphoto{flex:0 0 auto;width:132px;height:168px;border-radius:12px;background:linear-gradient(160deg,#262B34,#14171E);
   border:1px solid var(--line-card);display:grid;place-items:center;overflow:hidden}
 .tpm .cphoto img{width:100%;height:100%;object-fit:cover}
 .tpm .cph-tag{font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:.14em;color:var(--p-mut)}
@@ -1008,8 +1143,20 @@ const TPM_CSS = `
    facteur ~2 et les plaques de ~1,4, si bien qu'elles occupaient 40 % de plus
    de la surface et se chevauchaient. Rendre au terrain la hauteur du web rend
    aux plaques leur place relative. */
-.tpm .stage{position:relative;height:430px;overflow:hidden;z-index:1;
-  border:1px solid var(--line-card);border-radius:14px;background:#0B1410}
+/* SANS CADRE et BORD À BORD. Le cadre (bordure + rayon 14px + aplat #0B1410)
+   dessinait une carte là où le web n'en a jamais eu une (.tp .stage n'a ni
+   bordure ni fond) : le terrain se pose maintenant directement sur --bg.
+   margin 0 -18px annule le padding de section, donc 390px au lieu de 354.
+   La .scene est dimensionnée en POURCENTAGES et grossit avec ; les plaques sont
+   en PIXELS et ne bougent pas — c'est exactement l'effet voulu, la place
+   relative des plaques augmente sans qu'aucune ne grossisse.
+   Non-collision revérifiée à 390px : le seuil horizontal se DÉTEND de 96/354
+   = 27 % à 96/390 = 24,6 % (le vertical reste 90/430 = 20,9 %). Les 30 paires
+   des 5 facettes de football et flag passent, zéro chevauchement, et la marge
+   du cas le pire AUGMENTE : ×1,11 avant (DB↔LB en défense) contre ×1,19 après
+   (WR↔QB en offense, Δleft 16 % sous le seuil mais Δtop 25 % au-dessus).
+   Aucune plaque n'est rognée par un bord. */
+.tpm .stage{position:relative;height:430px;overflow:hidden;z-index:1;margin:0 -18px}
 .tpm .scene{position:absolute;inset:-26% -20% -4% -20%;perspective:840px;overflow:hidden}
 .tpm .scene .imgwrap{position:absolute;left:50%;bottom:-14%;width:76%;
   transform:translateX(-50%) rotateX(44deg);transform-origin:50% 100%}
