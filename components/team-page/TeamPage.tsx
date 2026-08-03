@@ -11,13 +11,13 @@
 import * as React from "react";
 import { DNA_CSS, GrainOverlay } from "@/components/shared/dna";
 import { useSchoolTargets } from "@/lib/queries/schoolPage/useSchoolTargets";
-import { accentOnShell, deriveWallTheme } from "@/components/program-wall/theme";
+import { accentOnShell } from "@/components/program-wall/theme";
 import TeamHero from "./TeamHero";
 import CalendarSection from "./CalendarSection";
 import PresentationSection from "./PresentationSection";
 import BesoinsWidget from "./BesoinsWidget";
 import DejaEngageesSection from "./DejaEngageesSection";
-import { PITCH, type TeamData } from "./content";
+import type { TeamData } from "./content";
 
 function hexToRgb(hex: string): [number, number, number] {
   const h = hex.replace("#", "");
@@ -48,7 +48,6 @@ export default function TeamPage({ team }: { team: TeamData }) {
   // Thème ÉQUIPE — les 4 couleurs de la fixture, verbatim. La primaire éclaircie
   // (--red-lt) est STOCKÉE : tous les accents clairs la lisent directement.
   // Aucun filter:brightness() sur cette page (rendu trop cru — décision produit).
-  const wallInk = deriveWallTheme(team.teamColor, team.teamColorDark, team.teamColorNeutral);
   const rootStyle = {
     "--red": team.teamColor,          // PRIMAIRE
     "--red-lt": team.teamColorLt,     // PRIMAIRE ÉCLAIRCIE — accents/texte clair
@@ -77,24 +76,6 @@ export default function TeamPage({ team }: { team: TeamData }) {
     // Primaire rendue lisible sur la coquille sombre — même plancher que la
     // page école (accentOnShell). Les kickers vivent sur #111317.
     "--red-shell": accentOnShell(team.teamColor),
-    // Les encres planchérées du mur, dérivées des mêmes trois couleurs d'école.
-    // Le WEB ne les posait pas — elles n'existaient que sur la page mobile — et
-    // le terrain dessiné en a besoin des deux côtés. Aucun second plancher n'est
-    // introduit : deriveWallTheme applique pickAccentOn / pickNeutralOn, ce que
-    // le mur fait déjà. Variables et non props : le SVG est du CSS de bout en
-    // bout, une prop aurait obligé à traverser BesoinsWidget pour rien.
-    "--on-c1": wallInk.onC1,        // se lit SUR un aplat de primaire
-    "--c1-cream": wallInk.c1OnCream, // la primaire écrite SUR du clair
-    "--pitch": PITCH,                // surface du terrain dessiné
-    // ── L'ÉCHELLE DES BESOINS — vocabulaire PLATEFORME ────────────────────
-    // L'école possède le TERRAIN, la plateforme possède l'ÉCHELLE : ces trois
-    // valeurs ne suivent JAMAIS la couleur du collège. Démonstration chiffrée
-    // en tête de TerrainStage.tsx. Le quatrième niveau (complet) est éteint et
-    // réutilise --plaque-off-mut.
-    "--lvl-pri": "#E63946",  // urgent  — rouge Nexus, seul état rempli
-    "--lvl-hi": "#F59E0B",   // élevé   — ambre, bordure épaisse
-    "--lvl-mid": "#5C6575",  // moyen   — neutre, bordure fine
-
     "--nx-red-deep": "#B32330", // état actif du CTA cibles
     "--green": "#22C55E",       // engagés / match / complet (règle système)
     "--pop": "cubic-bezier(0.34,1.56,0.64,1)",
@@ -329,81 +310,46 @@ export const TP_CSS = `
 .tp .toggle{position:relative;z-index:2;display:inline-flex;background:var(--card);border:1.5px solid var(--line-card);border-radius:12px;padding:4px;gap:4px;margin:16px 0 22px}
 .tp .toggle button{font-family:'Outfit';font-weight:700;font-size:15px;letter-spacing:.02em;color:var(--p-mut);background:transparent;border:0;border-radius:9px;padding:12px 26px;cursor:pointer;transition:color .2s,background .2s}
 .tp .toggle button.on{background:var(--red);color:var(--cream)}
-/* ── SCÈNE TERRAIN — décor DESSINÉ (SVG), plaques 2D plates par-dessus ──────
-   La photo a disparu des deux pages équipe (voir TerrainStage) : plus de filtre
-   de luminance, plus de recadrage baseball, plus de repli .ph. Disparaissent
-   avec elle .tint, .fade et .glow — trois voiles qui n'existaient QUE pour
-   fondre une photo sombre dans le panneau. Sur une surface crème posée en carte,
-   ils mangeaient les bords au lieu de les dessiner. */
-.tp .stage{position:relative;height:430px;overflow:hidden;z-index:1;
-  background:var(--pitch);border-radius:16px;box-shadow:0 14px 38px -14px rgba(0,0,0,.75)}
+/* ── SCÈNE TERRAIN (photo inclinée sur .scene, plaques 2D plates) ── */
+.tp .stage{position:relative;height:430px;overflow:hidden;z-index:1}
 .tp .scene{position:absolute;inset:-26% -20% -4% -20%;perspective:840px;overflow:hidden}
 .tp .scene .imgwrap{position:absolute;left:50%;bottom:-14%;width:76%;transform:translateX(-50%) rotateX(44deg);transform-origin:50% 100%}
-/* MODE PLAT (baseball seulement) — la scène cesse de déborder et le tracé couvre
-   exactement le .stage, si bien que le viewBox en centièmes du losange partage le
-   repère des plaques. Valeurs réécrites : c'était du code mort, aucun sport
-   n'était en perspective:false. */
-.tp .scene.flat{inset:0;perspective:none}
-.tp .scene.flat .imgwrap{position:absolute;left:0;top:0;bottom:0;width:100%;height:100%;transform:none}
-.tp .scene .imgwrap svg{display:block;width:100%;height:auto}
-.tp .scene .imgwrap svg.flat{height:100%}
+.tp .scene.flat .imgwrap{position:absolute;left:50%;top:4%;bottom:auto;width:62%;transform:translateX(-50%)}
+.tp .scene img{display:block;width:100%;filter:saturate(.66) brightness(.92) contrast(1.05)}
+/* baseball : photo sombre/délavée → éclaircir + resserrer sur le losange (§1) */
+.tp .scene img.baseball{filter:saturate(.92) brightness(1.28) contrast(1.14);transform:scale(1.34) translateY(2%);transform-origin:50% 42%}
+.tp .scene .imgwrap .ph{display:block;width:100%;aspect-ratio:16/9;background:radial-gradient(130% 100% at 50% 24%, #444d5e, #262d3a 72%)}
 .tp .scene .imgwrap .court{display:block;width:100%;aspect-ratio:16/9}
-.tp .scene .imgwrap .court.flat{aspect-ratio:auto}
+.tp .scene .tint{position:absolute;inset:0;background:linear-gradient(180deg, rgba(17,19,23,.35), rgba(17,19,23,.08) 45%, rgba(17,19,23,.4)),radial-gradient(70% 55% at 50% 40%, transparent 35%, rgba(17,19,23,.55) 100%)}
+.tp .fade{position:absolute;inset:0;pointer-events:none;background:radial-gradient(66% 56% at 50% 46%, transparent 20%, #111317 95%),linear-gradient(#111317, transparent 14% 86%, #111317),linear-gradient(90deg,#111317, transparent 12% 88%, #111317)}
+.tp .glow{position:absolute;inset:0;pointer-events:none;background:radial-gradient(44% 28% at 50% 36%, rgba(255,255,255,.06), transparent 70%)}
 .tp .tokens{position:absolute;inset:0}
 .tp .tk{position:absolute;transform:translate(-50%,-50%);transition:transform .2s var(--pop)}
 .tp .tk:hover{transform:translate(-50%,-50%) scale(1.06);z-index:9}
-.tp .tk .pl{background:var(--pitch);border:1.5px solid var(--ink);border-radius:9px;padding:10px 18px;
-  text-align:center;box-shadow:0 12px 24px -10px rgba(0,0,0,.6)}
-.tp .tk .pa{font-family:'Anton';font-size:24px;line-height:1;letter-spacing:.02em;color:var(--p-inv);white-space:nowrap}
+.tp .tk .pl{background:#fff;border-radius:9px;padding:10px 18px;text-align:center;box-shadow:0 12px 24px -8px rgba(0,0,0,.8)}
+.tp .tk .pa{font-family:'Anton';font-size:24px;line-height:1;letter-spacing:.02em;color:var(--red);white-space:nowrap}
 .tp .tk .po{font-family:'Outfit';font-weight:800;font-size:17px;color:var(--p-inv);line-height:1;white-space:nowrap}
 /* avec initiales : le nom du groupe passe en sous-titre (l'acronyme porte la plaque) */
 .tp .tk .pa+.po{font-size:12.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;margin-top:4px}
 .tp .tk .pn{font-family:'Outfit';font-weight:700;font-size:12px;letter-spacing:.07em;text-transform:uppercase;margin-top:3px;white-space:nowrap}
-
-/* ── LES QUATRE ÉTATS — ÉCHELLE DE PLATEFORME ───────────────────────────────
-   L'ÉCOLE POSSÈDE LE TERRAIN. LA PLATEFORME POSSÈDE L'ÉCHELLE.
-   Le terrain au-dessus (papier, tracé, verges, filigrane) est aux couleurs du
-   collège. Ces quatre plaques et la légende ne le sont PAS, et ne doivent
-   jamais le devenir : elles servent à comparer deux collèges, et une unité de
-   comparaison ne change pas d'un collège à l'autre.
-   Mesuré avant d'être tranché : teintée par l'école, l'échelle perdait toujours
-   une distinction — aplat urgent à 2,03:1 sur le papier pour une primaire
-   claire, bordures élevé/moyen à 1,85:1 pour une primaire foncée. Les deux
-   défauts sont anti-corrélés, aucune couleur ne les évite tous les deux.
-   Démonstration complète en tête de TerrainStage.tsx.
-   Lecture sous deutéranopie, vérifiée : ÉLEVÉ et MOYEN restent séparés à
-   4,41:1 par leurs anneaux (c'est le meilleur couple testé — assombrir l'ambre
-   le rapprochait du gris ardoise). URGENT, lui, ne tient PAS par son aplat
-   (1,68:1 sur le papier une fois la teinte retirée) : il tient par l'inversion
-   d'encre, seul état à porter du texte CLAIR sur un bloc plein. C'est cette
-   inversion qui est l'identité d'« urgent », pas le rouge.
-   L'anneau ambre ne fait que 1,91:1 sur le crème : il est doublé d'un halo, le
-   même dispositif que portait l'échelle web d'origine. Le rgba est écrit en
-   clair — c'est la même constante que --lvl-hi, pas une couleur d'école.
-   ⛔ Ne jamais écrire --red, --c1-cream ou --ink dans ce bloc. */
+/* ── ÉCHELLE DES NIVEAUX — lisible en une demi-seconde, de loin ──────────────
+   COMPLET = éteint · MOYEN = neutre clair · ÉLEVÉ = ambre · URGENT = rouge
+   Nexus (bordure épaisse + halo). C'est une échelle de PLATEFORME : elle ne
+   suit pas la couleur de l'école, sinon deux collèges ne se comparent plus. */
 .tp .tk.pri{z-index:6}
-.tp .tk.pri .pl{background:var(--lvl-pri);border-color:var(--lvl-pri);box-shadow:0 14px 28px -10px rgba(0,0,0,.65)}
-.tp .tk.pri .pa,.tp .tk.pri .pn{color:#fff}
-.tp .tk.pri .po{color:rgba(255,255,255,.88)}
-.tp .tk.hi .pl{background:var(--pitch);border-color:var(--lvl-hi);border-width:2.5px;box-shadow:0 0 14px -4px rgba(245,158,11,.45)}
-.tp .tk.hi .pn{color:var(--gold-ink);font-weight:800}
-.tp .tk.mid .pl{background:var(--pitch);border-color:var(--lvl-mid)}
+.tp .tk.pri .pl{box-shadow:0 0 0 3px var(--nx-red),0 0 22px -2px rgba(230,57,70,.55),0 12px 24px -8px rgba(0,0,0,.8)}
+.tp .tk.pri .pa{color:var(--nx-red)}
+.tp .tk.pri .pn{color:var(--nx-red);font-weight:800;letter-spacing:.09em}
+.tp .tk.hi .pl{box-shadow:0 0 0 2.5px #F59E0B,0 0 14px -4px rgba(245,158,11,.45),0 12px 24px -8px rgba(0,0,0,.8)}
+.tp .tk.hi .pa{color:#B4770B}
+.tp .tk.hi .pn{color:#B4770B;font-weight:800}
+.tp .tk.mid .pl{box-shadow:0 0 0 1.5px #B6BCC7,0 12px 24px -8px rgba(0,0,0,.8)}
+.tp .tk.mid .pa{color:var(--p-inv)}
 .tp .tk.mid .pn{color:var(--p-mut-inv)}
-.tp .tk.full .pl{background:transparent;border-color:var(--plaque-off-mut);box-shadow:none;opacity:.55}
-.tp .tk.full .pa,.tp .tk.full .po{color:var(--p-ink)}
-.tp .tk.full .pn{color:var(--p-soft)}
-
-/* ── LA LÉGENDE ─────────────────────────────────────────────────────────────
-   Sous la carte, jamais dedans : elle explique l'échelle, elle n'est pas le
-   terrain. Chaque pastille reprend le traitement exact de sa plaque. */
-.tp .tlegend{display:flex;flex-wrap:wrap;gap:10px 22px;margin:16px 0 0;padding:0;list-style:none}
-.tp .tlegend li{display:inline-flex;align-items:center;gap:9px;
-  font-family:'Outfit';font-weight:700;font-size:13px;letter-spacing:.04em;color:var(--p-mut)}
-.tp .tlegend .lg-dot{width:15px;height:15px;border-radius:5px;flex:0 0 auto;
-  background:var(--pitch);border:1.5px solid var(--lvl-mid)}
-.tp .tlegend li.pri .lg-dot{background:var(--lvl-pri);border-color:var(--lvl-pri)}
-.tp .tlegend li.hi .lg-dot{background:var(--pitch);border-color:var(--lvl-hi);border-width:2.5px}
-.tp .tlegend li.full .lg-dot{background:transparent;border-color:var(--plaque-off-mut);opacity:.55}
+.tp .tk.full .pl{background:var(--plaque-off);box-shadow:0 8px 18px -8px rgba(0,0,0,.8);opacity:.82}
+.tp .tk.full .po{color:var(--plaque-off-ink)}
+.tp .tk.full .pa{color:var(--plaque-off-ink)}
+.tp .tk.full .pn{color:var(--plaque-off-mut)}
 /* warning « sans année » — texte discret sous le terrain (§A1) */
 .tp .noyear{position:relative;z-index:1;margin-top:10px;font-family:'Outfit';font-weight:500;font-size:14.5px;color:var(--p-mut)}
 /* BOX UNIQUE besoins (§A2) — double état, plus grande. Bordure verte = match,

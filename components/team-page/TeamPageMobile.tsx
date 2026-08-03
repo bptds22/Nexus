@@ -9,12 +9,15 @@
 // docs/reference/page-equipe-mobile-v3.html, dans l'ordre :
 //   TeamHero → Calendrier → Présentation → BesoinsWidget (terrain) → Déjà engagées.
 //
-// LE TERRAIN garde la géométrie du web, VERBATIM : .scene{perspective:840px},
-// .imgwrap{rotateX(44deg); transform-origin:50% 100%}, plaques 2D À PLAT
-// par-dessus. Les coordonnées left/top viennent de SPORT_CONFIGS via
+// LE TERRAIN est un PLAN 2D, partagé verbatim avec le web : le tracé remplit le
+// cadre et les plaques se posent dessus dans le MÊME repère en pourcentages. La
+// bascule rotateX(44deg) a été retirée — elle tassait le terrain sur le dernier
+// tiers pendant que les plaques restaient hautes.
+// Les coordonnées left/top viennent de SPORT_CONFIGS via
 // resolveFacette() — jamais réinventées. Le décor lui-même est rendu par
-// <TerrainStage> (même composant que le web : terrain DESSINÉ en SVG, surface
-// crème et tracé à la couleur de l'école) ; seule son habillage CSS est mobile.
+// <TerrainStageMobile> — composant PROPRE au natif, distinct du <TerrainStage>
+// du web. Le web garde sa photo en perspective, qui marche à sa largeur ; le
+// mobile a son plan 2D dessiné. Voir l'en-tête de TerrainStageMobile.tsx.
 //
 // La COUCHE DE CHARGEMENT ci-dessous est inchangée : createClient() côté client
 // (clé anon) → RLS appliquée, comme les écrans *Mobile*. La version web (SSR
@@ -29,7 +32,7 @@ import { matchDynamicRoute, SESSION_KEY_PREFIX } from "@/lib/platform/mobileRout
 import { createClient } from "@/lib/supabase/client";
 import SocialIcons from "@/components/marketing/SocialIcons";
 import StarRating from "@/components/ui/StarRating";
-import TerrainStage from "./TerrainStage";
+import TerrainStageMobile from "./TerrainStageMobile";
 import { useSchoolTargets } from "@/lib/queries/schoolPage/useSchoolTargets";
 import { accentOnShell, deriveWallTheme } from "@/components/program-wall/theme";
 import { loadTeamPage } from "@/lib/queries/teamPage/teamPageData";
@@ -39,7 +42,7 @@ import {
   type GameRow, type CommitRow, type TeamRow, type SchoolIdentity,
 } from "@/lib/queries/teamPage/dbToTeamPage";
 import {
-  SPORT_CONFIGS, resolveFacette, countNoYear, matchState, parseEventDate, isPast, todayISO, coachPhotoStyle, PITCH,
+  SPORT_CONFIGS, resolveFacette, countNoYear, matchState, parseEventDate, isPast, todayISO, coachPhotoStyle, PITCH, PITCH_LINE, PITCH_INK,
   type TeamData, type TeamEvent, type Pennant, type ConnectedAthlete, type SportConfig,
 } from "@/components/team-page/content";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -398,10 +401,14 @@ function TeamBodyMobile({ team }: { team: TeamData }) {
     // --pitch est un papier neutre sur lequel la couleur d'école vient TRACER.
     // Une seule valeur, un seul endroit : rien n'est écrit en dur dans le SVG.
     "--pitch": PITCH,
+    // Le terrain est NEUTRE : il ne prend plus les couleurs de l'école. Le reste
+    // de la page les porte déjà. Voir le bloc palette de content.ts.
+    "--pitch-line": PITCH_LINE,
+    "--pitch-ink": PITCH_INK,
     // ── L'ÉCHELLE DES BESOINS — vocabulaire PLATEFORME ────────────────────
     // L'école possède le TERRAIN, la plateforme possède l'ÉCHELLE : ces trois
     // valeurs ne suivent JAMAIS la couleur du collège. Démonstration chiffrée
-    // en tête de TerrainStage.tsx. Le quatrième niveau (complet) est éteint et
+    // en tête de TerrainStageMobile.tsx. Le quatrième niveau (complet) est éteint et
     // réutilise --plaque-off-mut.
     "--lvl-pri": "#E63946",  // urgent  — rouge Nexus, seul état rempli
     "--lvl-hi": "#F59E0B",   // élevé   — ambre, bordure épaisse
@@ -745,37 +752,98 @@ function PresentationMobile({ team }: { team: TeamData }) {
 
 /* ── BesoinsWidget — LE TERRAIN ──────────────────────────────────────────── */
 
-/* ── JEU DE POSITIONS PORTRAIT — football et flag SEULEMENT ────────────────
-   SPORT_CONFIGS est partagé avec la page WEB : on n'y touche pas. Cette table
-   ne fait que REMPLACER les left/top au rendu mobile, et uniquement pour les
-   deux sports dont la géométrie est incompatible avec le portrait.
+/* ── LES POSITIONS DE PLAQUE — LES 7 SPORTS ────────────────────────────────
 
-   Pourquoi ces deux-là et pas les autres : mesuré à 390px sur les 7 sports et
-   leurs 10 facettes. Hockey, soccer et volleyball n'ont AUCUN chevauchement ;
-   basketball et baseball en ont de petits (278 à 804px²) sur des postes
-   voisins par nature. Football et flag concentrent les pires (900 à 1148px²)
-   parce qu'ils alignent leurs postes sur une LIGNE DE MÊLÉE : des ancrages
-   séparés de 6 à 22 % qui font 40-60px en paysage et 18-26px en portrait,
-   alors qu'une plaque en fait 96.
+   ╔═══════════════════════════════════════════════════════════════════════╗
+   ║  LE SENS EST PARTAGÉ. LE PLACEMENT EST UNE CONTRAINTE D'ÉCRAN.        ║
+   ╚═══════════════════════════════════════════════════════════════════════╝
 
-   Règle de non-collision, vérifiée contre les 16 chevauchements mesurés :
-   deux plaques se touchent si |Δleft| < SEUIL ET |Δtop| < 21 % — 90px de haut
-   sur 430 pour le vertical, et 96px de large sur la largeur du terrain pour
-   l'horizontal. Ce seuil horizontal valait 27 % quand le terrain était encadré
-   (354px) ; depuis qu'il est bord à bord (390px) il vaut 24,6 %, donc il se
-   DÉTEND. Les positions ci-dessous ont été posées contre les 27 % et restent
-   donc valides — chaque paire respecte l'une des deux conditions au moins.
-   L'ordre sémantique est conservé : la ligne devant, le porteur au fond, les
-   ailiers écartés. */
+   Web et mobile placent les plaques DIFFÉREMMENT, et c'est voulu. Ne pas
+   « aligner » : leurs contraintes sont opposées.
+     · le WEB dispose de plus de mille pixels de large. Son seuil de
+       non-collision tombe autour de 13 %, si bien qu'il peut respecter le
+       placement RÉEL des postes — les left/top de SPORT_CONFIGS, tels quels.
+     · le MOBILE n'a que 354px. Une plaque y occupe 31,6 % de la largeur : la
+       trame 3 × 3 ci-dessous est la seule qui tienne sans chevauchement.
+   Imposer la trame au web lui ferait perdre son placement réel sans rien
+   donner au mobile. Imposer le placement réel au mobile y ramènerait les
+   chevauchements. Les deux ont raison chez eux.
+
+   CE QUI RESTE PARTAGÉ, et qui ne doit JAMAIS diverger : les quatre états, les
+   couleurs de l'échelle de plateforme, et les libellés (LEVEL_LABEL). Un
+   athlète qui passe du téléphone au navigateur doit lire le même système —
+   « urgent » y veut dire la même chose, s'y écrit pareil et s'y colore pareil.
+   Seule la GÉOMÉTRIE s'adapte à la place disponible.
+
+   SPORT_CONFIGS reste donc la source du web et n'est pas touchée ; cette table
+   ne fait que REMPLACER les left/top au rendu mobile.
+
+   POURQUOI ELLE COUVRE MAINTENANT LES 7 SPORTS. Elle n'existait que pour
+   football et flag, et une mesure des 12 sports-facettes a montré que
+   basketball (3), volleyball (3) et soccer (1) chevauchaient depuis toujours —
+   la perspective en masquait la moitié, le passage à plat les a exposés. Puis
+   le plancher typographique de 15,6px a fait grandir la plaque, ce qui
+   invalidait aussi les positions de football et flag. Tout est donc re-solvé
+   d'un coup, contre les seuils courants.
+
+   RÈGLE DE NON-COLLISION. Deux plaques se touchent si |Δleft| < 31,6 % ET
+   |Δtop| < 23,3 % — soit 112px de large sur 354, et 100px de haut sur 430.
+   Chaque paire ci-dessous respecte au moins l'une des deux conditions.
+
+   LA TRAME. Trois colonnes (17 / 50 / 83, écart 33 %) et TROIS rangées
+   (16 / 50 / 84, écart 34 %). Quatre rangées auraient tenu sur le papier — 24 %
+   d'écart passe tout juste les 23,3 % — mais la capture montrait deux plaques
+   BORD À BORD, sans un pixel d'intervalle : le seuil dit « ne se recouvrent
+   pas », il ne dit pas « respirent ». À 34 %, l'intervalle vaut 46px.
+   Les centres restent dans [16,84] × [13,87] : le cadre a `overflow:hidden`,
+   une plaque qui déborde est ROGNÉE, pas simplement à cheval.
+   Les écarts à la trame (l'avant-champ du baseball, le gardien de soccer) sont
+   vérifiés un à un.
+
+   L'ORDRE SÉMANTIQUE PRIME. Plus haut = plus loin dans le terrain : la ligne
+   devant, le porteur au fond, les ailiers écartés, le gardien au fond de sa
+   zone. */
 const PORTRAIT: Record<string, Record<string, Record<string, { left: number; top: number }>>> = {
   football: {
-    offense:      { WR: { left: 14, top: 30 }, OL: { left: 55, top: 26 }, QB: { left: 30, top: 55 }, RB: { left: 68, top: 78 } },
-    defense:      { S:  { left: 70, top: 16 }, DB: { left: 16, top: 30 }, LB: { left: 46, top: 44 }, DL: { left: 52, top: 72 } },
-    specialistes: { RET:{ left: 50, top: 14 }, LS: { left: 20, top: 42 }, K:  { left: 74, top: 62 }, P:  { left: 36, top: 84 } },
+    offense:      { WR: { left: 17, top: 16 }, OL: { left: 50, top: 16 }, QB: { left: 50, top: 50 }, RB: { left: 83, top: 84 } },
+    defense:      { S:  { left: 83, top: 16 }, DB: { left: 17, top: 16 }, LB: { left: 50, top: 50 }, DL: { left: 50, top: 84 } },
+    specialistes: { RET:{ left: 50, top: 16 }, LS: { left: 17, top: 50 }, K:  { left: 83, top: 50 }, P:  { left: 50, top: 84 } },
   },
   flag: {
-    offense: { WR: { left: 16, top: 28 }, C:  { left: 58, top: 24 }, QB: { left: 32, top: 54 }, RB: { left: 70, top: 78 } },
-    defense: { DB: { left: 18, top: 24 }, S:  { left: 74, top: 24 }, RU: { left: 46, top: 52 }, LB: { left: 24, top: 80 } },
+    offense: { WR: { left: 17, top: 16 }, C:  { left: 50, top: 16 }, QB: { left: 50, top: 50 }, RB: { left: 83, top: 84 } },
+    defense: { DB: { left: 17, top: 16 }, S:  { left: 83, top: 16 }, RU: { left: 50, top: 50 }, LB: { left: 17, top: 84 } },
+  },
+  // Panier en HAUT : le pivot dessous, le meneur au sommet de la raquette.
+  basketball: {
+    main: { C: { left: 50, top: 16 }, PF: { left: 17, top: 50 }, SF: { left: 83, top: 50 },
+            SG: { left: 17, top: 84 }, PG: { left: 50, top: 84 } },
+  },
+  // But adverse en haut : trio devant, défense derrière, gardien au fond.
+  hockey: {
+    main: { AG: { left: 17, top: 16 }, C: { left: 50, top: 16 }, AD: { left: 83, top: 16 },
+            DG: { left: 17, top: 50 }, DD: { left: 83, top: 50 }, G: { left: 50, top: 84 } },
+  },
+  // Quatre lignes dans une colonne de trois rangées : impossible sans écart.
+  // Le GARDIEN sort donc de la colonne — ce qu'il fait aussi sur le terrain.
+  // top:86 et non 88 : à 88 le bas de la plaque arrivait à 99,6 % et le coin
+  // arrondi de la carte (rayon 16px) la rognait. Vu à la capture.
+  soccer: {
+    main: { ATT: { left: 50, top: 15 }, MIL: { left: 50, top: 42 },
+            DEF: { left: 50, top: 69 }, GK: { left: 17, top: 86 } },
+  },
+  // Filet en haut : la ligne avant sur une rangée, passeur et libéro derrière.
+  volleyball: {
+    main: { OH: { left: 17, top: 16 }, MB: { left: 50, top: 16 }, OPP: { left: 83, top: 16 },
+            L: { left: 17, top: 50 }, P: { left: 83, top: 50 } },
+  },
+  // Hors trame, vérifié à la main : SS et 2B à 40 % d'écart, ce qui les garde de
+  // part et d'autre du deuxième but. LF et RF descendent à 26 pour rester sous
+  // la clôture, dont le sommet est à 7.
+  baseball: {
+    batterie:   { P: { left: 50, top: 50 }, C: { left: 50, top: 84 } },
+    avantchamp: { SS: { left: 30, top: 42 }, "2B": { left: 70, top: 42 },
+                  "3B": { left: 17, top: 76 }, "1B": { left: 83, top: 76 } },
+    champext:   { LF: { left: 17, top: 26 }, CF: { left: 50, top: 16 }, RF: { left: 83, top: 26 } },
   },
 };
 
@@ -858,10 +926,10 @@ function BesoinsMobile({ team, cible, onToggleCible }: { team: TeamData; cible: 
         </div>
       )}
 
-      {/* Décor incliné (.scene / .imgwrap), plaques 2D À PLAT par-dessus.
+      {/* Décor à plat (.scene / .imgwrap), plaques posées dessus.
           Le retour au tap d'une plaque passe par une DÉLÉGATION sur ce conteneur
-          plutôt que par un handler dans TerrainStage : ce composant est partagé
-          avec la page équipe WEB. `.tpm .stage` reste un sélecteur descendant,
+          plutôt que par un handler dans TerrainStageMobile : le composant reste
+          purement présentationnel. `.tpm .stage` demeure un sélecteur descendant,
           la classe ajoutée ici ne s'interpose pas.
 
           `key={facette.key}` : le fondu des plaques au changement de facette est
@@ -873,8 +941,7 @@ function BesoinsMobile({ team, cible, onToggleCible }: { team: TeamData; cible: 
         key={facette.key}
         onClick={(e) => { if ((e.target as HTMLElement).closest(".tk")) void tap(); }}
       >
-        <TerrainStage
-          perspective={cfg.perspective}
+        <TerrainStageMobile
           sportKey={team.sportKey}
           plaques={plaques}
           watermark={team.nickname || team.schoolName}
@@ -990,7 +1057,7 @@ const TPM_CSS = `
    coût est VERTICAL. Détail dans chaque règle. */
 /* kicker de section — couleur ÉQUIPE, plancher de contraste mesuré.
    15px : « RECRUTEMENT · RENTRÉE 2027 », la plus longue, fait ~242px sur 354. */
-.tpm .kick{font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:.2em;color:var(--red-shell);margin-bottom:7px}
+.tpm .kick{font-family:'Bebas Neue',sans-serif;font-size:15.6px;letter-spacing:.2em;color:var(--red-shell);margin-bottom:7px}
 .tpm .h2,.tpm h2{font-family:'Anton',sans-serif;font-size:32.5px;line-height:1.04;color:var(--p-ink);font-weight:400}
 .tpm .h2 em,.tpm h2 em{font-style:normal;color:var(--red-lt)}
 .tpm .pbar{width:52px;height:4px;background:var(--red);margin:11px 0 18px}
@@ -1089,12 +1156,12 @@ const TPM_CSS = `
    Desfosses Simard », se replie aux espaces ET au trait d'union : le plus large
    segment indivisible fait ~175px sur 354. */
 .tpm .stat.pers .v{font-family:'Outfit',sans-serif;font-weight:700;font-size:22px;line-height:1.15}
-.tpm .stat .l{font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:.12em;color:var(--p-mut);margin-top:5px}
+.tpm .stat .l{font-family:'Bebas Neue',sans-serif;font-size:15.6px;letter-spacing:.12em;color:var(--p-mut);margin-top:5px}
 /* ENTRAÎNEUR-CHEF à +25 % (12 → 15), et LUI SEUL. .stat .l est partagé avec
    les libellés de fiche (Record, Résultat) et ceux de la présentation
    (Championnats, Staff en place), qui ne sont pas au ticket — la règle est donc
    portée par .pers, qui n'existe que sur la vignette du coach. */
-.tpm .stat.pers .l{font-size:15px}
+.tpm .stat.pers .l{font-size:15.6px}
 .tpm .cibles{margin-top:22px;width:100%;height:50px;border-radius:12px;border:1px solid var(--line-card);
   background:var(--card);color:var(--p-ink);font-family:'Outfit',sans-serif;font-size:15px;font-weight:600;
   display:flex;align-items:center;justify-content:center;gap:9px;cursor:pointer}
@@ -1181,7 +1248,7 @@ const TPM_CSS = `
 .tpm .cph-tag{font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:.14em;color:var(--p-mut)}
 .tpm .cinfo{flex:1;min-width:0}
 .tpm .cname{font-family:'Anton',sans-serif;font-size:19px;color:var(--p-ink);line-height:1.05}
-.tpm .crole{font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:.13em;color:var(--red-lt);margin:5px 0 8px}
+.tpm .crole{font-family:'Bebas Neue',sans-serif;font-size:15.6px;letter-spacing:.13em;color:var(--red-lt);margin:5px 0 8px}
 .tpm .cbio{font-size:13.5px;line-height:1.5;color:var(--p-mut)}
 .tpm .sList{display:flex;flex-direction:column}
 .tpm .sRow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;
@@ -1203,14 +1270,13 @@ const TPM_CSS = `
 .tpm .toggle button.on{background:var(--red);color:#fff}
 
 /* LE TERRAIN — géométrie du web VERBATIM : décor incliné, plaques 2D à plat. */
-/* 430px, la hauteur du WEB. La scène est dimensionnée en POURCENTAGES du
-   conteneur (inset -26%/-20%, imgwrap 76%) tandis que les plaques sont en
-   PIXELS fixes : sur 390px de large au lieu de 800, le terrain rétrécit d'un
-   facteur ~2 et les plaques de ~1,4, si bien qu'elles occupaient 40 % de plus
-   de la surface et se chevauchaient. Rendre au terrain la hauteur du web rend
-   aux plaques leur place relative. */
+/* 430px de haut, 354 de large. Ce rapport ne bouge PAS avec le passage à plat :
+   les seuils de non-collision mesurés (96/354 = 27,1 % et 90/430 = 20,9 %) n'ont
+   de sens que si les deux dimensions restent fixes. Détail en tête de
+   TerrainStageMobile. */
 /* ── LE TERRAIN — SURFACE CRÈME, TRACÉ AUX COULEURS DE L'ÉCOLE ─────────────
-   La photo a disparu (voir TerrainStage) : plus de filtre de luminance, plus de
+   La photo a disparu du MOBILE (voir TerrainStageMobile) : plus de filtre de
+   luminance, plus de
    recadrage baseball, plus de voile .tint qui n'existait que pour rendre une
    photo lisible sous des plaques claires.
 
@@ -1225,20 +1291,21 @@ const TPM_CSS = `
    défense). Zéro chevauchement, aucune plaque rognée. */
 .tpm .stage{position:relative;height:430px;overflow:hidden;z-index:1;
   background:var(--pitch);border-radius:16px;box-shadow:0 10px 30px -12px rgba(0,0,0,.7)}
-.tpm .scene{position:absolute;inset:-26% -20% -4% -20%;perspective:840px;overflow:hidden}
-.tpm .scene .imgwrap{position:absolute;left:50%;bottom:-14%;width:76%;
-  transform:translateX(-50%) rotateX(44deg);transform-origin:50% 100%}
-/* MODE PLAT (baseball seulement). La scène cesse de déborder et le tracé couvre
-   EXACTEMENT le .stage : le viewBox du losange est en centièmes, donc x=50 tombe
-   à 50 % de la largeur et y=88 à 88 % de la hauteur — le dessin partage le repère
-   des plaques au lieu de le subir. C'était du code mort jusqu'ici (les 7 sports
-   étaient en perspective), d'où ces valeurs entièrement réécrites. */
-.tpm .scene.flat{inset:0;perspective:none}
-.tpm .scene.flat .imgwrap{left:0;top:0;bottom:0;width:100%;height:100%;transform:none}
-.tpm .scene .imgwrap svg{width:100%;height:auto;display:block}
-.tpm .scene .imgwrap svg.flat{height:100%}
-.tpm .scene .imgwrap .court{display:block;width:100%;aspect-ratio:16/9}
-.tpm .scene .imgwrap .court.flat{aspect-ratio:auto}
+/* PLAN 2D. La perspective (perspective:840px + rotateX(44deg) sur .imgwrap)
+   a été retirée : elle tassait le tracé sur le dernier tiers du cadre alors que
+   les plaques, non transformées, restaient réparties sur toute la hauteur — des
+   plaques flottant au-dessus d'un terrain écrasé. La scène couvre maintenant
+   exactement le .stage et le SVG la remplit, si bien que le viewBox en
+   centièmes partage le repère des plaques. */
+.tpm .scene{position:absolute;inset:0;overflow:hidden}
+.tpm .scene .imgwrap{position:absolute;inset:0}
+.tpm .scene .imgwrap svg,.tpm .scene .imgwrap .court{display:block;width:100%;height:100%}
+/* vector-effect posé en CSS et non sur le <g> : Chrome ne l'hérite PAS d'un
+   groupe, si bien que l'étirement du viewBox (100×100 → 354×430) multipliait
+   l'épaisseur des traits HORIZONTAUX par 4,3 et celle des VERTICAUX par 3,54 —
+   des lignes de but quatre fois plus grasses que les lignes de touche. Mesuré à
+   la capture. En CSS, la règle atteint chaque forme. */
+.tpm .scene .court *{vector-effect:non-scaling-stroke}
 .tpm .tokens{position:absolute;inset:0}
 /* Fondu au changement de facette — même courbe que le sheet de la recherche.
    Seules les PLAQUES fondent : d'une facette à l'autre le décor est identique
@@ -1247,6 +1314,17 @@ const TPM_CSS = `
 .tpm .stagewrap .tokens{animation:tpm-fondu .18s cubic-bezier(.32,.72,0,1)}
 @keyframes tpm-fondu{from{opacity:0}to{opacity:1}}
 @media(prefers-reduced-motion:reduce){.tpm .stagewrap .tokens{animation:none}}
+/* ── PLANCHER TYPOGRAPHIQUE : 15,6px ───────────────────────────────────────
+   Référence = le sous-titre d'une tuile de calendrier (.ev-meta, « heure · lieu »).
+   Tout ce qui passait dessous y remonte : libellés de plaque (.po, .pn),
+   légende, libellés de stat du hero ET de la présentation, rôle de
+   l'entraîneur, kickers de section. Ce qui était déjà au-dessus ne bouge pas —
+   acronymes de plaque (19px), valeurs de stat, noms.
+   CONSÉQUENCE MESURÉE : la plaque grandit. Sa largeur maximale passe de 96 à
+   112px (« OFFENSIVE » fait 87px à 15,6px et ne tenait plus dans 96 moins le
+   padding), sa hauteur d'environ 90 à 100px. Les seuils de non-collision
+   suivent — 112/354 = 31,6 % et 100/430 = 23,3 % — et c'est ce qui a rendu
+   nécessaire la refonte complète de la table PORTRAIT ci-dessus. */
 /* la plaque : 2D, à plat, jamais transformée */
 .tpm .tk{position:absolute;transform:translate(-50%,-50%)}
 /* Padding 9/14 et rapport acronyme/nom du web : l'acronyme porte la plaque à
@@ -1255,12 +1333,12 @@ const TPM_CSS = `
    134px de plaque, et les ancrages étant en POURCENTAGES du terrain, deux
    plaques voisines se chevauchaient de 80px sur 354px de large. Replié, il tient
    en 96px — c'est le seul levier qui ne touche pas aux positions. */
-.tpm .tk .pl{min-width:66px;max-width:96px;padding:9px 14px;border-radius:9px;text-align:center;
+.tpm .tk .pl{min-width:66px;max-width:112px;padding:9px 10px;border-radius:9px;text-align:center;
   background:var(--pitch);border:1.5px solid var(--ink);box-shadow:0 8px 18px -6px rgba(0,0,0,.45)}
 .tpm .tk .pa{font-family:'Anton',sans-serif;font-size:19px;line-height:1;color:var(--p-inv)}
-.tpm .tk .po{font-family:'Outfit',sans-serif;font-weight:700;font-size:11px;letter-spacing:.04em;
+.tpm .tk .po{font-family:'Outfit',sans-serif;font-weight:700;font-size:15.6px;letter-spacing:.04em;
   text-transform:uppercase;color:var(--p-mut-inv);margin-top:4px;white-space:normal;line-height:1.15}
-.tpm .tk .pn{font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:.08em;margin-top:4px;display:block;
+.tpm .tk .pn{font-family:'Bebas Neue',sans-serif;font-size:15.6px;letter-spacing:.08em;margin-top:4px;display:block;
   color:var(--p-mut-inv)}
 
 /* ── LES QUATRE ÉTATS — ÉCHELLE DE PLATEFORME ───────────────────────────────
@@ -1273,7 +1351,7 @@ const TPM_CSS = `
    une distinction — aplat urgent à 2,03:1 sur le papier pour une primaire
    claire, bordures élevé/moyen à 1,85:1 pour une primaire foncée. Les deux
    défauts sont anti-corrélés, aucune couleur ne les évite tous les deux.
-   Démonstration complète en tête de TerrainStage.tsx.
+   Démonstration complète en tête de TerrainStageMobile.tsx.
    Lecture sous deutéranopie, vérifiée : ÉLEVÉ et MOYEN restent séparés à
    4,41:1 par leurs anneaux (c'est le meilleur couple testé — assombrir l'ambre
    le rapprochait du gris ardoise). URGENT, lui, ne tient PAS par son aplat
@@ -1293,8 +1371,11 @@ const TPM_CSS = `
 .tpm .tk.mid .pl{background:var(--pitch);border-color:var(--lvl-mid)}
 .tpm .tk.mid .pn{color:var(--p-mut-inv)}
 .tpm .tk.full .pl{background:transparent;border-color:var(--plaque-off-mut);box-shadow:none;opacity:.55}
-.tpm .tk.full .pa{color:var(--p-ink)}
-.tpm .tk.full .po,.tpm .tk.full .pn{color:var(--p-soft)}
+/* L'encre du COMPLET est FONCÉE. La plaque est transparente : son texte se pose
+   donc sur la SURFACE PÂLE du terrain, pas sur le fond sombre de la page. En
+   --p-ink (quasi blanc) elle était strictement invisible — vu à la capture. */
+.tpm .tk.full .pa{color:var(--p-inv)}
+.tpm .tk.full .po,.tpm .tk.full .pn{color:var(--p-mut-inv)}
 
 /* ── LA LÉGENDE ────────────────────────────────────────────────────────────
    Sous le terrain, hors de la carte crème : elle explique l'échelle, elle n'est
@@ -1302,7 +1383,7 @@ const TPM_CSS = `
    correspondante, sinon la légende ment. */
 .tpm .tlegend{display:flex;flex-wrap:wrap;gap:8px 16px;margin:14px 0 0;padding:0;list-style:none}
 .tpm .tlegend li{display:inline-flex;align-items:center;gap:7px;
-  font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:.08em;color:var(--p-mut)}
+  font-family:'Bebas Neue',sans-serif;font-size:15.6px;letter-spacing:.08em;color:var(--p-mut)}
 .tpm .tlegend .lg-dot{width:13px;height:13px;border-radius:4px;flex:0 0 auto;
   background:var(--pitch);border:1.5px solid var(--lvl-mid)}
 .tpm .tlegend li.pri .lg-dot{background:var(--lvl-pri);border-color:var(--lvl-pri)}

@@ -76,15 +76,7 @@ export default function BesoinsWidget({
         </div>
       )}
 
-      {/* Le décor est dessiné, plus photographié : `asset`/`court` ont disparu.
-          Le filigrane prend le surnom quand il existe (court par nature), sinon
-          le nom du collège — TerrainStage le tronque de toute façon. */}
-      <TerrainStage
-        perspective={cfg.perspective}
-        sportKey={team.sportKey}
-        plaques={plaques}
-        watermark={team.nickname || team.schoolName}
-      />
+      <TerrainStage asset={cfg.asset} perspective={cfg.perspective} court={cfg.court} sportKey={team.sportKey} plaques={plaques} />
 
       {/* warning « sans année » — petit texte discret sous le terrain (§A1) */}
       {noYear > 0 && (

@@ -8,14 +8,22 @@
 import type { CSSProperties } from "react";
 import type { SocialLink } from "@/components/marketing/SocialIcons";
 
-/** Surface du terrain dessiné — un papier neutre, posé une seule fois et servi
- *  aux DEUX pages équipe (mobile et web) via la variable --pitch.
- *
- *  Pourquoi pas --cream : le crème est la couleur claire de l'ÉCOLE. Les 60
- *  collèges par défaut portent #E8C7CD (rosé) et CNDF porte #ffffff — un terrain
- *  rose ou d'un blanc clinique n'est pas un terrain. Le papier reste neutre, et
- *  c'est la couleur de l'école qui vient TRACER dessus (--c1-cream). */
-export const PITCH = "#F5F1E8";
+/* ── LA PALETTE DU TERRAIN — NEUTRE, ET C'EST DÉLIBÉRÉ ──────────────────────
+ * Le terrain ne prend PLUS les couleurs de l'école. Le reste de la page les
+ * porte déjà — hero, kickers, fanions, filet d'accent — et un tracé teinté par
+ * chaque collège produisait soit un terrain rosé, soit un terrain doré, jamais
+ * un terrain. On assume la neutralité, comme les schémas de diffusion.
+ * Trois constantes, servies aux DEUX pages équipe par --pitch / --pitch-line /
+ * --pitch-ink : rien n'est écrit en dur dans le SVG. */
+
+/** Surface : gris très pâle et FROID — surtout pas un crème jauni. */
+export const PITCH = "#EDEFF2";
+/** Tracé : le rouge Nexus ramené à 55 % vers la surface. Le rouge pur (#E63946)
+ *  faisait 3,7:1 et hurlait sur un schéma ; à 2,12:1 la ligne se lit sans
+ *  s'imposer, ce que le ticket appelle « discret, pas saturé ». */
+export const PITCH_LINE = "#E98B93";
+/** Numéros de verges et filigrane : gris moyen, 2,29:1 sur la surface. */
+export const PITCH_INK = "#98A0AC";
 
 export type Level = "pri" | "hi" | "mid" | "full";
 // Libellés PUBLICS des 4 niveaux — alignés 1:1 sur l'éditeur « Page équipe »
@@ -64,13 +72,14 @@ export interface FacetteDef {
 }
 export interface SportConfig {
   facettes: FacetteDef[];    // 1+ ; toggle si >1
-  /** false → .scene.flat, sans bascule 3D. Réservé au BASEBALL : sa surface
-   *  n'est pas un rectangle, et rotateX écrase justement le champ extérieur,
-   *  là où sont les voltigeurs — voir BaseballPitch dans TerrainStage. */
-  perspective: boolean;
-  // `asset` et `court` ont été RETIRÉS : le décor n'est plus une photo mais un
-  // tracé SVG choisi sur sportKey (TerrainStage). Les /terrains/*.jpg restent
-  // sur disque, plus rien ne les lit — pas de champ chargé et jamais rendu.
+  /* Ces trois champs servent la page WEB, et elle seule. Ils avaient été
+     retirés quand le terrain dessiné a remplacé la photo des DEUX côtés ; le
+     web est revenu à sa photo en perspective, ils sont donc rétablis à
+     l'identique. Le rendu MOBILE (TerrainStageMobile) ne les lit pas : son
+     terrain est un plan 2D dessiné, choisi sur sportKey. */
+  perspective: boolean;      // true → .scene ; false → .scene.flat
+  asset: string | null;      // /terrains/x.jpg (PLACEHOLDER) ou null → court SVG
+  court?: "basketball" | "soccer" | "volleyball"; // terrain dessiné (aucune photo spec)
   cardsOnly?: boolean;       // true → pas de TerrainStage, cards seulement
 }
 
@@ -242,6 +251,7 @@ export interface TeamNeed {
 export const SPORT_CONFIGS = {
   football: {
     perspective: true,
+    asset: "/terrains/football.jpg",
     facettes: [
       {
         key: "offense", label: "Offense",
@@ -276,7 +286,8 @@ export const SPORT_CONFIGS = {
     ],
   },
   flag: {
-    perspective: true, // flag = terrain de football, comme il partageait déjà sa photo
+    perspective: true, // §4 : réutilise football.jpg (sans watermark) — flag = terrain football
+    asset: "/terrains/football.jpg",
     facettes: [
       {
         key: "offense", label: "Offense",
@@ -300,6 +311,8 @@ export const SPORT_CONFIGS = {
   },
   basketball: {
     perspective: true,
+    asset: "/terrains/basketball.jpg", // photo déposée BP (PLACEHOLDER) ; court = fallback si 404
+    court: "basketball",
     facettes: [
       {
         key: "main", label: "",
@@ -315,6 +328,7 @@ export const SPORT_CONFIGS = {
   },
   hockey: {
     perspective: true,
+    asset: "/terrains/hockey.jpg",
     facettes: [
       {
         key: "main", label: "",
@@ -330,7 +344,8 @@ export const SPORT_CONFIGS = {
     ],
   },
   baseball: {
-    perspective: false, // à PLAT — losange, voir BaseballPitch
+    perspective: true,
+    asset: "/terrains/baseball.jpg",
     // TROIS FACETTES, découpées par ZONE. Les neuf postes du baseball sont tous
     // défensifs et simultanés — il n'y a pas d'offense/défense à opposer comme
     // au football. Ils ne tiennent simplement pas ensemble en portrait : à
@@ -373,6 +388,8 @@ export const SPORT_CONFIGS = {
   // 4 lignes (pas de coords spec ; individuel §6 serait illisible sur une pelouse).
   soccer: {
     perspective: true,
+    asset: "/terrains/soccer.jpg", // photo déposée BP (PLACEHOLDER) ; court = fallback si 404
+    court: "soccer",
     facettes: [
       {
         key: "main", label: "",
@@ -389,6 +406,8 @@ export const SPORT_CONFIGS = {
   // condensée en 5 plaques (filet en haut ; avant / arrière).
   volleyball: {
     perspective: true,
+    asset: "/terrains/volleyball.jpg", // photo déposée BP (PLACEHOLDER) ; court = fallback si 404
+    court: "volleyball",
     facettes: [
       {
         key: "main", label: "",
