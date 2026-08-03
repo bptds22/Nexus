@@ -114,7 +114,9 @@ export default function TerrainStageMobile({
    des lignes de touche. Une plaque proche du bord chevauche donc la ligne — un
    joueur près de la touche, pas une plaque hors terrain.
 
-   Aucune couleur en dur : surface --pitch, tracé --c1-cream.
+   Aucune couleur en dur : surface --pitch, tracé --pitch-line, encre
+   --pitch-ink. Le tracé est BLANC translucide et jamais rouge — le rouge est
+   réservé à l'échelle des besoins (voir le bloc palette de content.ts).
    ═══════════════════════════════════════════════════════════════════════════ */
 
 const TRAIT = "var(--pitch-line)";
@@ -125,12 +127,16 @@ const ENCRE = "var(--pitch-ink)";
  *  alors les lignes horizontales 4× plus que les verticales. */
 const LIGNE = { fill: "none", stroke: TRAIT, strokeWidth: 1.2 } as const;
 
-/* Le filigrane est posé à y=96 pour TOUS les sports, et ce n'est pas un réglage
- * esthétique : la rangée de plaques la plus basse est à 84 %, demi-hauteur
- * 11,6 %, donc rien ne descend sous 95,6 %. C'est la seule bande libre commune
- * aux sept terrains. Placé « dans la zone des buts » comme le voulait la spec,
- * il passait sous une plaque au hockey, au soccer et au baseball — vu à la
- * capture, à chaque fois. */
+/* Le filigrane est posé à y=99, taille 3,4, pour TOUS les sports. Ce n'est pas
+ * un réglage esthétique mais une contrainte géométrique :
+ *   · la rangée de plaques la plus basse est à 84 %, demi-hauteur 11,6 % → rien
+ *     ne descend sous 95,6 % ;
+ *   · une ligne de base à 99 place le HAUT des capitales vers 96,5 — au-dessous.
+ * À y=96 le texte remontait à 92,9 et passait DERRIÈRE la plaque : invisible
+ * sous une plaque pleine, et parasite sous une plaque fantôme, où il
+ * transparaissait au milieu du libellé. Vu à la capture sur « P · BOTTEUR DÉG. ».
+ * Le seul cas plus bas est le gardien de soccer (86 %, bas à 97,6) : il est en
+ * colonne 17, le filigrane est centré en 50, aucun recouvrement horizontal. */
 function Filigrane({ texte, x, y, taille }: { texte: string; x: number; y: number; taille: number }) {
   return (
     <text
@@ -138,6 +144,7 @@ function Filigrane({ texte, x, y, taille }: { texte: string; x: number; y: numbe
       y={y}
       textAnchor="middle"
       fill={ENCRE}
+      opacity={0.38}
       fontFamily="'Anton', sans-serif"
       fontSize={taille}
       letterSpacing={taille * 0.14}
@@ -209,7 +216,7 @@ function FootballPitch({ nom }: { nom: string }) {
           premier coup d'œil par ses verges tous les 10, sa ligne de 50 épaissie
           et ses deux zones de but. Les chiffres n'ajoutaient rien qu'ils ne
           disaient déjà. --pitch-ink sert encore au filigrane. */}
-      {nom ? <Filigrane texte={nom} x={50} y={96} taille={4.2} /> : null}
+      {nom ? <Filigrane texte={nom} x={50} y={99} taille={3.4} /> : null}
     </Cadre>
   );
 }
@@ -226,7 +233,7 @@ function SoccerPitch({ nom }: { nom: string }) {
         <rect x="26" y="80" width="48" height="16" />
       </g>
       <circle cx="50" cy="50" r="1.1" fill={TRAIT} />
-      {nom ? <Filigrane texte={nom} x={50} y={96} taille={4.2} /> : null}
+      {nom ? <Filigrane texte={nom} x={50} y={99} taille={3.4} /> : null}
     </Cadre>
   );
 }
@@ -241,7 +248,7 @@ function VolleyPitch({ nom }: { nom: string }) {
       </g>
       <line x1="4" y1="10" x2="96" y2="10" stroke={TRAIT} strokeWidth="2.6" />
       <line x1="4" y1="5" x2="96" y2="5" stroke={TRAIT} strokeWidth="1" strokeDasharray="2 2" />
-      {nom ? <Filigrane texte={nom} x={50} y={96} taille={4.2} /> : null}
+      {nom ? <Filigrane texte={nom} x={50} y={99} taille={3.4} /> : null}
     </Cadre>
   );
 }
@@ -256,7 +263,7 @@ function BasketPitch({ nom }: { nom: string }) {
         <ellipse cx="50" cy="38" rx="13" ry="9" />
         <path d="M14 4 L14 26 A40 34 0 0 0 86 26 L86 4" />
       </g>
-      {nom ? <Filigrane texte={nom} x={50} y={96} taille={4.2} /> : null}
+      {nom ? <Filigrane texte={nom} x={50} y={99} taille={3.4} /> : null}
     </Cadre>
   );
 }
@@ -277,7 +284,7 @@ function HockeyPitch({ nom }: { nom: string }) {
         <path d="M42 87 A9 6 0 0 0 58 87" />
       </g>
       {/* y=92 et non 95 : à 95 le filigrane passait sous le coin arrondi. */}
-      {nom ? <Filigrane texte={nom} x={50} y={96} taille={4.2} /> : null}
+      {nom ? <Filigrane texte={nom} x={50} y={99} taille={3.4} /> : null}
     </Cadre>
   );
 }
@@ -308,7 +315,7 @@ function BaseballPitch({ nom }: { nom: string }) {
       </g>
       {/* y=20 : au-dessus des plaques d'avant-champ (dont le haut est à 29 %) et
           sous celle du voltigeur de centre. La seule bande libre. */}
-      {nom ? <Filigrane texte={nom} x={50} y={96} taille={4.2} /> : null}
+      {nom ? <Filigrane texte={nom} x={50} y={99} taille={3.4} /> : null}
     </Cadre>
   );
 }

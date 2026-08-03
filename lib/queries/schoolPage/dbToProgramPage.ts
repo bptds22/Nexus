@@ -94,6 +94,33 @@ function initialesDuNom(nom: string): string {
     .map((m) => m[0]).join("").toUpperCase();
 }
 
+/** LE LIBELLÉ D'UNE ÉQUIPE — règle unique, partagée par « L'affiche » et par le
+ *  titre de la page équipe.
+ *
+ *  Elle DÉRIVE toujours : sport + genre, jamais `teams.name`. Ce champ vient du
+ *  RSEQ et porte le nom de l'ÉTABLISSEMENT — « Notre-Dame », « Sainte-Foy »,
+ *  « Limoilou » — parfois suffixé d'un rang (« Jonquière 2 »). Il ne nomme pas
+ *  l'équipe, il nomme l'école, et il ne peut donc pas titrer une page équipe :
+ *  le kicker juste au-dessus porte déjà l'école.
+ *
+ *  `sep` vaut " " pour L'affiche (une ligne dans une liste) et "\n" pour le
+ *  hero, qui est dessiné pour deux lignes.
+ *
+ *  Sport absent (sport_id orphelin) → on rend `repli`, seule information encore
+ *  disponible. C'est le SEUL cas où `teams.name` ressort. */
+export function libelleSportGenre(
+  sportNom: string,
+  gender: string | null,
+  sep = " ",
+  repli = "",
+): string {
+  const sport = (sportNom ?? "").trim();
+  if (!sport) return repli;
+  const court = genreCourt(gender);
+  const mot = court === "M" ? "masculin" : court === "F" ? "féminin" : "mixte";
+  return `${sport}${sep}${mot}`;
+}
+
 /** Groupe les équipes d'une école par sport et construit « L'affiche ».
  *  Le libellé d'une équipe est DÉRIVÉ (sport + genre) : `teams.name` porte le
  *  nom de l'établissement, il ne distingue pas les équipes entre elles.
@@ -103,13 +130,11 @@ export function sportsFromTeams(schoolId: string, teams: TeamRowForGrid[]): Spor
   for (const t of teams) {
     const sport = (t.sport ?? "").trim();
     if (!sport) continue; // sport_id orphelin → l'équipe n'est pas affichable
-    const court = genreCourt(t.gender);
-    const mot = court === "M" ? "masculin" : court === "F" ? "féminin" : "mixte";
     const entry = parSport.get(sport) ?? { nom: sport, equipes: [] };
     entry.equipes.push({
-      nom: `${sport} ${mot}`,
+      nom: libelleSportGenre(sport, t.gender),
       division: t.division && t.division.trim() ? t.division : null,
-      genre: court,
+      genre: genreCourt(t.gender),
       url: `/college/${schoolId}/${t.id}`,
     });
     parSport.set(sport, entry);

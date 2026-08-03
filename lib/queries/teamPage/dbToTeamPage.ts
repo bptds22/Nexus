@@ -10,7 +10,7 @@ import type {
   TeamData, TeamEvent, TeamContent, Commit, Pennant, TeamNeed, ConnectedAthlete,
 } from "@/components/team-page/content";
 import type { SportKey } from "./sportSlots";
-import { genreCourt } from "../schoolPage/dbToProgramPage";
+import { genreCourt, libelleSportGenre } from "../schoolPage/dbToProgramPage";
 
 /** Titre affiché d'une équipe.
  *
@@ -26,22 +26,34 @@ import { genreCourt } from "../schoolPage/dbToProgramPage";
  *  (« Football\nmasculin ») — le hero est dessiné pour deux lignes. */
 export function titreEquipe(
   teamName: string,
-  schoolName: string,
+  _schoolName: string,
   sportNom: string,
   gender: string | null,
 ): string {
-  // `teams.name` omet le préfixe de type que porte `schools.name`
-  // (« André-Grasset » contre « Collège André-Grasset ») : on le retire des
-  // deux côtés avant de comparer, sinon aucune équipe ne serait détectée.
-  const sansType = (v: string) =>
-    (v ?? "").replace(/^(Cégep|Collège|Campus|Centre)\s+(de\s+|du\s+|d'|des\s+)?/i, "").trim();
-  const nom = sansType(teamName);
-  const ecole = sansType(schoolName);
-  const memeNom = !!nom && !!ecole && nom.localeCompare(ecole, "fr", { sensitivity: "base" }) === 0;
-  if (!memeNom || !sportNom.trim()) return teamName;
-  const court = genreCourt(gender);
-  const mot = court === "M" ? "masculin" : court === "F" ? "féminin" : "mixte";
-  return `${sportNom.trim()}\n${mot}`;
+  // Délègue à la règle UNIQUE (libelleSportGenre), la même que « L'affiche » de
+  // la page école. Le séparateur est un saut de ligne : le hero est dessiné
+  // pour deux lignes.
+  //
+  // POURQUOI LA GARDE A DISPARU. Cette fonction ne dérivait QUE si le nom
+  // d'équipe égalait celui de l'école ; sinon elle rendait `teams.name`. Or ce
+  // champ vient du RSEQ et porte le nom de l'ÉTABLISSEMENT dans tous les cas —
+  // il ne le porte simplement pas toujours à l'identique : tronqué
+  // (« Notre-Dame » pour Campus Notre-Dame-de-Foy), abrégé (« Abitibi-Témisc. »,
+  // « Ch.-St-Lambert ») ou numéroté (« Chicoutimi 2 »). La comparaison faisait
+  // donc ressortir un nom d'école en titre de page équipe dès qu'elle échouait,
+  // ce qui n'est jamais l'information attendue : le kicker au-dessus porte déjà
+  // l'école. « L'affiche », elle, dérivait sans condition depuis le début — deux
+  // règles pour la même question, et la page équipe avait la mauvaise.
+  //
+  // Conséquence mesurée : 40 groupes (école, sport, genre) comptent plus d'une
+  // équipe, soit 83 équipes qui partagent désormais leur titre. Elles restent
+  // distinguées par la DIVISION, que le hero affiche en pastille juste sous le
+  // titre — « Basketball masculin » + « D2 ». C'est déjà ainsi que L'affiche les
+  // sépare.
+  //
+  // `_schoolName` n'est plus lu. Le paramètre est conservé pour ne pas toucher
+  // aux appelants, dont le loader SSR du web.
+  return libelleSportGenre(sportNom, gender, "\n", teamName);
 }
 
 export interface TeamRow {

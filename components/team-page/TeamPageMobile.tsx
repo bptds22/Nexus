@@ -600,6 +600,15 @@ function CiblesBtn({ cible, onToggle, small }: { cible: boolean; onToggle: () =>
 function CalendrierMobile({ team }: { team: TeamData }) {
   const events = team.events ?? [];
   const caraRef = React.useRef<HTMLDivElement>(null);
+  // `bout` = on a atteint la fin du défilement. Il pilote le retrait du masque
+  // de bord : estomper la dernière tuile alors que rien ne suit dirait le
+  // contraire de ce que l'effet signifie. Marge de 2px pour absorber les
+  // arrondis sous-pixel du défilement tactile.
+  const [bout, setBout] = React.useState(false);
+  const onScroll = React.useCallback(() => {
+    const el = caraRef.current;
+    if (el) setBout(el.scrollLeft + el.clientWidth >= el.scrollWidth - 2);
+  }, []);
   const today = todayISO();
   const firstUpcoming = events.findIndex((e) => !isPast(e, today));
 
@@ -610,6 +619,11 @@ function CalendrierMobile({ team }: { team: TeamData }) {
     const card = el.children[firstUpcoming] as HTMLElement | undefined;
     if (card) el.scrollTo({ left: Math.max(0, card.offsetLeft - 8), behavior: "auto" });
   }, [firstUpcoming, team.id]);
+
+  // Cas d'une saison courte : les tuiles tiennent dans le cadre, il n'y a rien
+  // à annoncer. Sans cette mesure au montage, le masque estompait la dernière
+  // tuile d'un calendrier pourtant entièrement visible.
+  React.useEffect(() => { onScroll(); }, [onScroll, team.id]);
 
   if (events.length === 0) return null; // pas d'événement → pas de section
 
@@ -629,7 +643,7 @@ function CalendrierMobile({ team }: { team: TeamData }) {
           <button type="button" onClick={() => scroll(1)} aria-label="Suivant"><ChevronRight size={16} aria-hidden /></button>
         </div>
       </div>
-      <div className="cal-row" ref={caraRef}>
+      <div className={"cal-row" + (bout ? " bout" : "")} ref={caraRef} onScroll={onScroll}>
         {events.map((e, i) => <EventCard key={i} e={e} today={today} />)}
       </div>
     </section>
@@ -1074,8 +1088,21 @@ const TPM_CSS = `
   object-position:var(--hero-focal);transform:scale(var(--hero-zoom));transform-origin:var(--hero-focal)}
 .tpm .hero-ph{position:absolute;left:0;top:0;width:100%;height:380px;
   background:linear-gradient(150deg,#2A2F38,#14171E)}
-.tpm .hero-fade{position:absolute;left:0;right:0;top:140px;height:250px;
-  background:linear-gradient(180deg,transparent 0%,rgba(17,19,23,.55) 46%,var(--bg) 100%)}
+/* FONDU PORTÉ DU WEB (.tp .hero-fade, breakpoint ≤980px). Trois écarts avec la
+   version mobile d'origine, tous corrigés ici :
+     · le web couvre TOUT le hero (inset:0) ; le mobile n'en fondait qu'une
+       bande de 250px à partir de 140 — au-dessus, la photo restait crue et
+       tranchait net sur le fond de page ;
+     · le web tient un aplat à 95 % en bas, pas un opaque total : le bas de
+       photo reste perceptible sous le texte au lieu d'être coupé ;
+     · le web ajoute un SECOND dégradé, horizontal, qui assombrit le bord
+       gauche à 35 % — c'est lui qui pose le logo et le kicker sur une base
+       lisible quelle que soit la photo.
+   Les arrêts sont repris tels quels : 0/34/68 % en vertical, 0→60 % en
+   horizontal. */
+.tpm .hero-fade{position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(0deg, rgba(17,19,23,.95) 0%, rgba(17,19,23,.55) 34%, transparent 68%),
+             linear-gradient(90deg, rgba(17,19,23,.35), transparent 60%)}
 /* Le filet d'accent finit le hero au lieu de marquer une frontière photo/panneau
    qui n'existe plus. */
 .tpm .accent{position:absolute;left:0;right:0;top:auto;bottom:0;height:4px;
@@ -1176,8 +1203,23 @@ const TPM_CSS = `
 .tpm .cara-nav button{width:32px;height:32px;border-radius:16px;border:1px solid var(--line-card);
   background:var(--card);color:var(--p-soft);display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
 .tpm .cara-nav button svg{stroke:currentColor;fill:none;stroke-width:2.2}
+/* DÉGRADÉ DE BORD DROIT — les tuiles s'estompent vers la sortie du cadre, ce
+   qui dit qu'il y en a d'autres. Porté du web.
+   Un mask-image sur le conteneur de défilement plutôt qu'un voile posé
+   par-dessus : le voile aurait dû être opaque, donc teinté du fond, et il
+   aurait tranché sur les tuiles claires « extérieur ». Le masque fond la tuile
+   elle-même, quelle que soit sa couleur.
+   56px de fondu sur une tuile de 172 : les deux tiers de la tuile partiellement
+   visible restent pleinement lisibles.
+   La classe .bout retire le masque quand on a atteint la fin — sinon la
+   DERNIÈRE tuile resterait estompée alors qu'il n'y a plus rien après, ce qui
+   dirait exactement le contraire de ce que l'effet doit dire. */
 .tpm .cal-row{display:flex;gap:9px;overflow-x:auto;scrollbar-width:none;margin:0 -18px;padding:0 18px;
-  scroll-snap-type:x mandatory}
+  scroll-snap-type:x mandatory;
+  -webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 56px),transparent 100%);
+  mask-image:linear-gradient(90deg,#000 calc(100% - 56px),transparent 100%)}
+.tpm .cal-row.bout{-webkit-mask-image:none;mask-image:none}
+@media(prefers-reduced-motion:reduce){.tpm .cal-row{transition:none}}
 .tpm .cal-row::-webkit-scrollbar{display:none}
 .tpm .ev{flex:0 0 auto;width:172px;border-radius:13px;padding:13px;scroll-snap-align:start;
   border:1px solid var(--line-card);position:relative}
@@ -1289,8 +1331,12 @@ const TPM_CSS = `
    de 24,6 % (390px) à 27,1 % (354px). Revérifié — les 30 paires des 5 facettes
    de football et flag passent encore, marge du pire cas ×1,11 (DB↔LB en
    défense). Zéro chevauchement, aucune plaque rognée. */
+/* Filet de bord INDISPENSABLE : l'ardoise du terrain (#1A1D24) ne fait que
+   1,10:1 contre le fond de page (#111317). Sans lui, la carte n'a pas de
+   contour — elle ne se lit plus comme un objet posé mais comme une tache. */
 .tpm .stage{position:relative;height:430px;overflow:hidden;z-index:1;
-  background:var(--pitch);border-radius:16px;box-shadow:0 10px 30px -12px rgba(0,0,0,.7)}
+  background:var(--pitch);border-radius:16px;border:1px solid var(--line-card);
+  box-shadow:0 10px 30px -12px rgba(0,0,0,.7)}
 /* PLAN 2D. La perspective (perspective:840px + rotateX(44deg) sur .imgwrap)
    a été retirée : elle tassait le tracé sur le dernier tiers du cadre alors que
    les plaques, non transformées, restaient réparties sur toute la hauteur — des
@@ -1333,13 +1379,16 @@ const TPM_CSS = `
    134px de plaque, et les ancrages étant en POURCENTAGES du terrain, deux
    plaques voisines se chevauchaient de 80px sur 354px de large. Replié, il tient
    en 96px — c'est le seul levier qui ne touche pas aux positions. */
+/* ENCRE INVERSÉE. La plaque repose sur l'ardoise, plus sur du papier pâle :
+   l'acronyme en --p-inv (#15171B) tombait à 1,06:1, strictement invisible.
+   Toute la rampe de texte passe donc du côté clair. */
 .tpm .tk .pl{min-width:66px;max-width:112px;padding:9px 10px;border-radius:9px;text-align:center;
-  background:var(--pitch);border:1.5px solid var(--ink);box-shadow:0 8px 18px -6px rgba(0,0,0,.45)}
-.tpm .tk .pa{font-family:'Anton',sans-serif;font-size:19px;line-height:1;color:var(--p-inv)}
+  background:var(--pitch);border:1.5px solid var(--lvl-mid);box-shadow:0 8px 18px -6px rgba(0,0,0,.6)}
+.tpm .tk .pa{font-family:'Anton',sans-serif;font-size:19px;line-height:1;color:var(--p-ink)}
 .tpm .tk .po{font-family:'Outfit',sans-serif;font-weight:700;font-size:15.6px;letter-spacing:.04em;
-  text-transform:uppercase;color:var(--p-mut-inv);margin-top:4px;white-space:normal;line-height:1.15}
+  text-transform:uppercase;color:var(--p-soft);margin-top:4px;white-space:normal;line-height:1.15}
 .tpm .tk .pn{font-family:'Bebas Neue',sans-serif;font-size:15.6px;letter-spacing:.08em;margin-top:4px;display:block;
-  color:var(--p-mut-inv)}
+  color:var(--p-mut)}
 
 /* ── LES QUATRE ÉTATS — ÉCHELLE DE PLATEFORME ───────────────────────────────
    L'ÉCOLE POSSÈDE LE TERRAIN. LA PLATEFORME POSSÈDE L'ÉCHELLE.
@@ -1363,19 +1412,20 @@ const TPM_CSS = `
    clair — c'est la même constante que --lvl-hi, pas une couleur d'école.
    ⛔ Ne jamais écrire --red, --c1-cream ou --ink dans ce bloc. */
 .tpm .tk.pri .pl{background:var(--lvl-pri);border-color:var(--lvl-pri);
-  box-shadow:0 10px 22px -6px rgba(0,0,0,.55)}
+  box-shadow:0 10px 22px -6px rgba(0,0,0,.6)}
 .tpm .tk.pri .pa,.tpm .tk.pri .pn{color:#fff}
 .tpm .tk.pri .po{color:rgba(255,255,255,.85)}
-.tpm .tk.hi .pl{background:var(--pitch);border-color:var(--lvl-hi);border-width:2px;box-shadow:0 0 12px -3px rgba(245,158,11,.45)}
-.tpm .tk.hi .pn{color:var(--gold-ink)}
+.tpm .tk.hi .pl{background:var(--pitch);border-color:var(--lvl-hi);border-width:2px;
+  box-shadow:0 0 12px -3px rgba(245,158,11,.45)}
+.tpm .tk.hi .pn{color:var(--lvl-hi)}
 .tpm .tk.mid .pl{background:var(--pitch);border-color:var(--lvl-mid)}
-.tpm .tk.mid .pn{color:var(--p-mut-inv)}
-.tpm .tk.full .pl{background:transparent;border-color:var(--plaque-off-mut);box-shadow:none;opacity:.55}
-/* L'encre du COMPLET est FONCÉE. La plaque est transparente : son texte se pose
-   donc sur la SURFACE PÂLE du terrain, pas sur le fond sombre de la page. En
-   --p-ink (quasi blanc) elle était strictement invisible — vu à la capture. */
-.tpm .tk.full .pa{color:var(--p-inv)}
-.tpm .tk.full .po,.tpm .tk.full .pn{color:var(--p-mut-inv)}
+.tpm .tk.mid .pn{color:var(--p-mut)}
+/* COMPLET inversé : la plaque est transparente, donc son texte se pose sur
+   l'ARDOISE. En encre foncée il devenait invisible — c'est le défaut
+   symétrique de celui qu'avait la surface pâle. Blanc translucide, 22 % pour
+   la bordure (2,05:1) et 42 % pour le texte (4,03:1). */
+.tpm .tk.full .pl{background:transparent;border-color:rgba(255,255,255,.22);box-shadow:none;opacity:1}
+.tpm .tk.full .pa,.tpm .tk.full .po,.tpm .tk.full .pn{color:rgba(255,255,255,.42)}
 
 /* ── LA LÉGENDE ────────────────────────────────────────────────────────────
    Sous le terrain, hors de la carte crème : elle explique l'échelle, elle n'est
@@ -1386,9 +1436,9 @@ const TPM_CSS = `
   font-family:'Bebas Neue',sans-serif;font-size:15.6px;letter-spacing:.08em;color:var(--p-mut)}
 .tpm .tlegend .lg-dot{width:13px;height:13px;border-radius:4px;flex:0 0 auto;
   background:var(--pitch);border:1.5px solid var(--lvl-mid)}
+.tpm .tlegend li.full .lg-dot{background:transparent;border-color:rgba(255,255,255,.22);opacity:1}
 .tpm .tlegend li.pri .lg-dot{background:var(--lvl-pri);border-color:var(--lvl-pri)}
 .tpm .tlegend li.hi .lg-dot{background:var(--pitch);border-color:var(--lvl-hi);border-width:2px}
-.tpm .tlegend li.full .lg-dot{background:transparent;border-color:var(--plaque-off-mut);opacity:.55}
 .tpm .noyear{margin-top:12px;font-size:13px;color:var(--p-mut)}
 
 /* la box UNIQUE (jamais une rangée de cards) */

@@ -8,22 +8,34 @@
 import type { CSSProperties } from "react";
 import type { SocialLink } from "@/components/marketing/SocialIcons";
 
-/* ── LA PALETTE DU TERRAIN — NEUTRE, ET C'EST DÉLIBÉRÉ ──────────────────────
- * Le terrain ne prend PLUS les couleurs de l'école. Le reste de la page les
- * porte déjà — hero, kickers, fanions, filet d'accent — et un tracé teinté par
- * chaque collège produisait soit un terrain rosé, soit un terrain doré, jamais
- * un terrain. On assume la neutralité, comme les schémas de diffusion.
- * Trois constantes, servies aux DEUX pages équipe par --pitch / --pitch-line /
- * --pitch-ink : rien n'est écrit en dur dans le SVG. */
+/* ── LA PALETTE DU TERRAIN — ARDOISE À TRACÉ BLANC ─────────────────────────
+ *
+ * ╔══════════════════════════════════════════════════════════════════════════╗
+ * ║  LE ROUGE EST LE VOCABULAIRE DE L'ÉCHELLE, ET RIEN D'AUTRE.              ║
+ * ╚══════════════════════════════════════════════════════════════════════════╝
+ *
+ * Le terrain était tracé en rouge désaturé sur surface pâle. Deux rouges
+ * cohabitaient donc à l'écran : celui des LIGNES, purement décoratif, et celui
+ * de l'échelle, qui veut dire « poste urgent ». Une ligne de but et un besoin
+ * critique n'ont aucune raison de partager une teinte — l'un décrit le décor,
+ * l'autre appelle l'athlète à agir.
+ * Le tracé passe donc au blanc translucide, et le rouge redevient exclusif à
+ * l'échelle Nexus. Aucune ligne de terrain ne peut plus être lue comme un
+ * signal. Ne JAMAIS réintroduire de rouge dans ces trois constantes.
+ *
+ * La surface passe aussi de pâle à sombre : une grande étendue claire dans une
+ * page sombre, couverte de plaques claires, faisait tout se ressembler. Sur
+ * ardoise, les plaques se détachent par leur propre valeur.
+ *
+ * Toujours AUCUNE couleur d'école : le terrain est neutre, le reste de la page
+ * porte déjà l'identité du collège. */
 
-/** Surface : gris très pâle et FROID — surtout pas un crème jauni. */
-export const PITCH = "#EDEFF2";
-/** Tracé : le rouge Nexus ramené à 55 % vers la surface. Le rouge pur (#E63946)
- *  faisait 3,7:1 et hurlait sur un schéma ; à 2,12:1 la ligne se lit sans
- *  s'imposer, ce que le ticket appelle « discret, pas saturé ». */
-export const PITCH_LINE = "#E98B93";
-/** Numéros de verges et filigrane : gris moyen, 2,29:1 sur la surface. */
-export const PITCH_INK = "#98A0AC";
+/** Surface : ardoise, la même valeur que les cartes de la coquille. */
+export const PITCH = "#1A1D24";
+/** Tracé : blanc à 35 % — 3,21:1 sur l'ardoise, lisible sans dominer. */
+export const PITCH_LINE = "rgba(255,255,255,0.35)";
+/** Filigrane et repères : gris moyen, posé à 38 % d'opacité au point d'usage. */
+export const PITCH_INK = "#6B7280";
 
 export type Level = "pri" | "hi" | "mid" | "full";
 // Libellés PUBLICS des 4 niveaux — alignés 1:1 sur l'éditeur « Page équipe »
