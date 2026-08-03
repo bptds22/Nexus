@@ -410,9 +410,17 @@ function TeamBodyMobile({ team }: { team: TeamData }) {
     // valeurs ne suivent JAMAIS la couleur du collège. Démonstration chiffrée
     // en tête de TerrainStageMobile.tsx. Le quatrième niveau (complet) est éteint et
     // réutilise --plaque-off-mut.
-    "--lvl-pri": "#E63946",  // urgent  — rouge Nexus, seul état rempli
-    "--lvl-hi": "#F59E0B",   // élevé   — ambre, bordure épaisse
-    "--lvl-mid": "#5C6575",  // moyen   — neutre, bordure fine
+    // Les quatre états se distinguent par la COULEUR, jamais par l'effacement :
+    // rouge = urgent · ambre = élevé · blanc = moyen · gris = fermé.
+    "--lvl-pri": "#E63946",  // urgent  — rouge Nexus, seul état à fond plein
+    "--lvl-hi": "#F59E0B",   // élevé   — ambre
+    "--lvl-mid": "#E6E9EF",  // moyen   — blanc
+    "--lvl-full": "#6B7280", // complet — gris, NET et non translucide
+    // Corps commun aux trois états non urgents. Une plaque est un OBJET posé
+    // sur le terrain : elle doit avoir un fond opaque, plus clair que l'ardoise
+    // (1,47:1) et distinct des lignes du terrain (2,18:1), sinon celles-ci la
+    // traversent et elle cesse d'exister.
+    "--plaque-corps": "#333A46",
     "--hero-focal": team.heroFocal ?? "50% 25%",
     "--hero-zoom": String(Math.max(100, team.heroZoom ?? 100) / 100),
     // --tabzone n'est PLUS posée ici. Elle était conditionnée à IS_CAPACITOR,
@@ -1383,7 +1391,7 @@ const TPM_CSS = `
    l'acronyme en --p-inv (#15171B) tombait à 1,06:1, strictement invisible.
    Toute la rampe de texte passe donc du côté clair. */
 .tpm .tk .pl{min-width:66px;max-width:112px;padding:9px 10px;border-radius:9px;text-align:center;
-  background:var(--pitch);border:1.5px solid var(--lvl-mid);box-shadow:0 8px 18px -6px rgba(0,0,0,.6)}
+  background:var(--plaque-corps);border:1.5px solid var(--lvl-mid);box-shadow:0 8px 18px -6px rgba(0,0,0,.6)}
 .tpm .tk .pa{font-family:'Anton',sans-serif;font-size:19px;line-height:1;color:var(--p-ink)}
 .tpm .tk .po{font-family:'Outfit',sans-serif;font-weight:700;font-size:15.6px;letter-spacing:.04em;
   text-transform:uppercase;color:var(--p-soft);margin-top:4px;white-space:normal;line-height:1.15}
@@ -1415,17 +1423,23 @@ const TPM_CSS = `
   box-shadow:0 10px 22px -6px rgba(0,0,0,.6)}
 .tpm .tk.pri .pa,.tpm .tk.pri .pn{color:#fff}
 .tpm .tk.pri .po{color:rgba(255,255,255,.85)}
-.tpm .tk.hi .pl{background:var(--pitch);border-color:var(--lvl-hi);border-width:2px;
-  box-shadow:0 0 12px -3px rgba(245,158,11,.45)}
+.tpm .tk.hi .pl{border-color:var(--lvl-hi);border-width:2px;
+  box-shadow:0 0 12px -3px rgba(245,158,11,.45),0 8px 18px -6px rgba(0,0,0,.6)}
 .tpm .tk.hi .pn{color:var(--lvl-hi)}
-.tpm .tk.mid .pl{background:var(--pitch);border-color:var(--lvl-mid)}
-.tpm .tk.mid .pn{color:var(--p-mut)}
-/* COMPLET inversé : la plaque est transparente, donc son texte se pose sur
-   l'ARDOISE. En encre foncée il devenait invisible — c'est le défaut
-   symétrique de celui qu'avait la surface pâle. Blanc translucide, 22 % pour
-   la bordure (2,05:1) et 42 % pour le texte (4,03:1). */
-.tpm .tk.full .pl{background:transparent;border-color:rgba(255,255,255,.22);box-shadow:none;opacity:1}
-.tpm .tk.full .pa,.tpm .tk.full .po,.tpm .tk.full .pn{color:rgba(255,255,255,.42)}
+.tpm .tk.mid .pl{border-color:var(--lvl-mid)}
+.tpm .tk.mid .pn{color:var(--lvl-mid)}
+/* COMPLET — VISIBLE et NEUTRE, pas invisible.
+   Il était à fond transparent, bordure et texte en blanc à basse opacité : les
+   lignes du terrain le traversaient et sa bordure composite (#4c4f54) ne se
+   séparait de celle de « besoin moyen » (#5C6575) que par 1,40:1 — les deux
+   états se ressemblaient. Ce qui le distingue n'est pas l'effacement mais
+   l'ABSENCE DE COULEUR : il garde le corps commun et prend le gris là où les
+   autres prennent rouge, ambre ou blanc. Bordure nette, jamais translucide.
+   Mesuré : bordure 3,02:1 sur le corps, et 3,98:1 contre celle de « moyen ». */
+.tpm .tk.full .pl{border-color:var(--lvl-full)}
+.tpm .tk.full .pa{color:var(--p-soft)}
+.tpm .tk.full .po{color:#9AA2AE}
+.tpm .tk.full .pn{color:#A8AEB9}
 
 /* ── LA LÉGENDE ────────────────────────────────────────────────────────────
    Sous le terrain, hors de la carte crème : elle explique l'échelle, elle n'est
@@ -1435,10 +1449,10 @@ const TPM_CSS = `
 .tpm .tlegend li{display:inline-flex;align-items:center;gap:7px;
   font-family:'Bebas Neue',sans-serif;font-size:15.6px;letter-spacing:.08em;color:var(--p-mut)}
 .tpm .tlegend .lg-dot{width:13px;height:13px;border-radius:4px;flex:0 0 auto;
-  background:var(--pitch);border:1.5px solid var(--lvl-mid)}
-.tpm .tlegend li.full .lg-dot{background:transparent;border-color:rgba(255,255,255,.22);opacity:1}
+  background:var(--plaque-corps);border:1.5px solid var(--lvl-mid)}
 .tpm .tlegend li.pri .lg-dot{background:var(--lvl-pri);border-color:var(--lvl-pri)}
-.tpm .tlegend li.hi .lg-dot{background:var(--pitch);border-color:var(--lvl-hi);border-width:2px}
+.tpm .tlegend li.hi .lg-dot{border-color:var(--lvl-hi);border-width:2px}
+.tpm .tlegend li.full .lg-dot{border-color:var(--lvl-full)}
 .tpm .noyear{margin-top:12px;font-size:13px;color:var(--p-mut)}
 
 /* la box UNIQUE (jamais une rangée de cards) */
