@@ -13,8 +13,8 @@
 // .imgwrap{rotateX(44deg); transform-origin:50% 100%}, plaques 2D À PLAT
 // par-dessus. Les coordonnées left/top viennent de SPORT_CONFIGS via
 // resolveFacette() — jamais réinventées. Le décor lui-même est rendu par
-// <TerrainStage> (même composant que le web : photo /terrains/*.jpg, repli
-// terrain dessiné) ; seule son habillage CSS est mobile.
+// <TerrainStage> (même composant que le web : terrain DESSINÉ en SVG, surface
+// crème et tracé à la couleur de l'école) ; seule son habillage CSS est mobile.
 //
 // La COUCHE DE CHARGEMENT ci-dessous est inchangée : createClient() côté client
 // (clé anon) → RLS appliquée, comme les écrans *Mobile*. La version web (SSR
@@ -39,7 +39,7 @@ import {
   type GameRow, type CommitRow, type TeamRow, type SchoolIdentity,
 } from "@/lib/queries/teamPage/dbToTeamPage";
 import {
-  SPORT_CONFIGS, resolveFacette, countNoYear, matchState, parseEventDate, isPast, todayISO, coachPhotoStyle,
+  SPORT_CONFIGS, resolveFacette, countNoYear, matchState, parseEventDate, isPast, todayISO, coachPhotoStyle, PITCH,
   type TeamData, type TeamEvent, type Pennant, type ConnectedAthlete, type SportConfig,
 } from "@/components/team-page/content";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -392,6 +392,20 @@ function TeamBodyMobile({ team }: { team: TeamData }) {
     "--on-c1": wall.onC1,
     "--on-c1-38": `rgba(${or_},${og},${ob},0.38)`,
     "--c1-cream": wall.c1OnCream,
+    // Surface du terrain dessiné. Volontairement DISTINCTE de --cream : le crème
+    // est la couleur claire de l'ÉCOLE (rose #E8C7CD pour 60 collèges, blanc pur
+    // pour CNDF), et un terrain rose ou d'un blanc clinique n'est pas un terrain.
+    // --pitch est un papier neutre sur lequel la couleur d'école vient TRACER.
+    // Une seule valeur, un seul endroit : rien n'est écrit en dur dans le SVG.
+    "--pitch": PITCH,
+    // ── L'ÉCHELLE DES BESOINS — vocabulaire PLATEFORME ────────────────────
+    // L'école possède le TERRAIN, la plateforme possède l'ÉCHELLE : ces trois
+    // valeurs ne suivent JAMAIS la couleur du collège. Démonstration chiffrée
+    // en tête de TerrainStage.tsx. Le quatrième niveau (complet) est éteint et
+    // réutilise --plaque-off-mut.
+    "--lvl-pri": "#E63946",  // urgent  — rouge Nexus, seul état rempli
+    "--lvl-hi": "#F59E0B",   // élevé   — ambre, bordure épaisse
+    "--lvl-mid": "#5C6575",  // moyen   — neutre, bordure fine
     "--hero-focal": team.heroFocal ?? "50% 25%",
     "--hero-zoom": String(Math.max(100, team.heroZoom ?? 100) / 100),
     // --tabzone n'est PLUS posée ici. Elle était conditionnée à IS_CAPACITOR,
@@ -847,15 +861,23 @@ function BesoinsMobile({ team, cible, onToggleCible }: { team: TeamData; cible: 
       {/* Décor incliné (.scene / .imgwrap), plaques 2D À PLAT par-dessus.
           Le retour au tap d'une plaque passe par une DÉLÉGATION sur ce conteneur
           plutôt que par un handler dans TerrainStage : ce composant est partagé
-          avec la page équipe WEB, qui ne doit pas bouger. Le conteneur est un
-          simple bloc, sans style : `.tpm .stage` reste un sélecteur descendant. */}
-      <div onClick={(e) => { if ((e.target as HTMLElement).closest(".tk")) void tap(); }}>
+          avec la page équipe WEB. `.tpm .stage` reste un sélecteur descendant,
+          la classe ajoutée ici ne s'interpose pas.
+
+          `key={facette.key}` : le fondu des plaques au changement de facette est
+          une animation CSS, et une animation ne rejoue que sur un nœud NEUF. Le
+          décor, lui, ne clignote pas — le tracé ne dépend que du sport, donc le
+          SVG remonté est rigoureusement identique. */}
+      <div
+        className="stagewrap"
+        key={facette.key}
+        onClick={(e) => { if ((e.target as HTMLElement).closest(".tk")) void tap(); }}
+      >
         <TerrainStage
-          asset={cfg.asset}
           perspective={cfg.perspective}
-          court={cfg.court}
           sportKey={team.sportKey}
           plaques={plaques}
+          watermark={team.nickname || team.schoolName}
         />
       </div>
 
@@ -953,9 +975,23 @@ const TPM_CSS = `
    respiration = 54px. À garder ALIGNÉ sur .backbar/.backbtn si l'un des deux
    change de gabarit. */
 .tpm section{position:relative;padding:54px 18px 32px;border-bottom:1px solid var(--line)}
-/* kicker de section — couleur ÉQUIPE, plancher de contraste mesuré. */
-.tpm .kick{font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:.2em;color:var(--red-shell);margin-bottom:7px}
-.tpm .h2,.tpm h2{font-family:'Anton',sans-serif;font-size:26px;line-height:1.04;color:var(--p-ink);font-weight:400}
+/* ── ÉCHELLE TYPOGRAPHIQUE — hero et calendrier à +25 % ────────────────────
+   Seuls les CORPS bougent. Graisses, couleurs, letter-spacing et line-height
+   sont laissés tels quels, donc la page garde sa couleur et son rythme.
+
+   Les kickers et les h2 grossissent pour TOUTES les sections, pas seulement le
+   calendrier : .kick et .h2/h2 sont les en-têtes communs des cinq sections.
+   Ne grossir que le calendrier aurait donné « Le calendrier » à 32,5px suivi de
+   « Plus qu'une équipe » et « On cherche du monde » restés à 26 — une page qui
+   se dégonfle en descendant. L'échelle est celle des en-têtes, pas d'une section.
+
+   Débordement vérifié à 390px sur les pires chaînes en base : aucun de ces
+   blocs n'a de white-space:nowrap, donc tout se replie et rien ne sort. Le
+   coût est VERTICAL. Détail dans chaque règle. */
+/* kicker de section — couleur ÉQUIPE, plancher de contraste mesuré.
+   15px : « RECRUTEMENT · RENTRÉE 2027 », la plus longue, fait ~242px sur 354. */
+.tpm .kick{font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:.2em;color:var(--red-shell);margin-bottom:7px}
+.tpm .h2,.tpm h2{font-family:'Anton',sans-serif;font-size:32.5px;line-height:1.04;color:var(--p-ink);font-weight:400}
 .tpm .h2 em,.tpm h2 em{font-style:normal;color:var(--red-lt)}
 .tpm .pbar{width:52px;height:4px;background:var(--red);margin:11px 0 18px}
 
@@ -1033,16 +1069,32 @@ const TPM_CSS = `
 .tpm .soc svg{width:19px;height:19px;opacity:1}
 /* 250 et non 380 : le panneau chevauche les 130 derniers pixels de la photo. */
 .tpm .pnl{position:relative;z-index:3;margin-top:250px;padding:22px 18px 30px}
-.tpm .eyebrow{font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:.16em;color:var(--red-lt);margin-bottom:8px}
-.tpm .name{font-family:'Anton',sans-serif;font-size:44px;line-height:.92;color:var(--p-ink);text-transform:uppercase}
+/* 15px : nickname + nom d'école font au pire ~52 caractères (« Centre d'études
+   collégiales de la Matapédie »), soit ~452px — le bloc se replie sur deux
+   lignes, comme il le faisait déjà à 12px (364px pour 354 disponibles). */
+.tpm .eyebrow{font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:.16em;color:var(--red-lt);margin-bottom:8px}
+/* 55px : le nom le plus long en base est « Séminaire de Sherbrooke ». Anton se
+   replie aux espaces et le mot le plus long, « SHERBROOKE », fait ~260px sur
+   354. Aucun nom d'équipe ne forme un mot indivisible plus large. */
+.tpm .name{font-family:'Anton',sans-serif;font-size:55px;line-height:.92;color:var(--p-ink);text-transform:uppercase}
 .tpm .meta{display:flex;gap:7px;margin-top:13px;flex-wrap:wrap}
-.tpm .chip{font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:.11em;padding:4px 11px;border-radius:6px}
+/* Padding proportionnel : 4/11 → 5/14. .meta est en flex-wrap, les deux chips
+   passent à la ligne plutôt que de déborder. */
+.tpm .chip{font-family:'Bebas Neue',sans-serif;font-size:16.25px;letter-spacing:.11em;padding:5px 14px;border-radius:6px}
 .tpm .chip.solid{background:var(--red);color:#fff}
 .tpm .chip.out{border:1px solid var(--line-card);color:var(--p-soft)}
 .tpm .stats{display:flex;gap:20px;margin-top:20px;flex-wrap:wrap}
 .tpm .stat .v{font-family:'Anton',sans-serif;font-size:25px;color:var(--p-ink);line-height:1}
-.tpm .stat.pers .v{font-family:'Outfit',sans-serif;font-weight:700;font-size:17px;line-height:1.15}
+/* Le nom du coach à +30 % (17 → 22). Le plus long en base, « Bruno-Philippe
+   Desfosses Simard », se replie aux espaces ET au trait d'union : le plus large
+   segment indivisible fait ~175px sur 354. */
+.tpm .stat.pers .v{font-family:'Outfit',sans-serif;font-weight:700;font-size:22px;line-height:1.15}
 .tpm .stat .l{font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:.12em;color:var(--p-mut);margin-top:5px}
+/* ENTRAÎNEUR-CHEF à +25 % (12 → 15), et LUI SEUL. .stat .l est partagé avec
+   les libellés de fiche (Record, Résultat) et ceux de la présentation
+   (Championnats, Staff en place), qui ne sont pas au ticket — la règle est donc
+   portée par .pers, qui n'existe que sur la vignette du coach. */
+.tpm .stat.pers .l{font-size:15px}
 .tpm .cibles{margin-top:22px;width:100%;height:50px;border-radius:12px;border:1px solid var(--line-card);
   background:var(--card);color:var(--p-ink);font-family:'Outfit',sans-serif;font-size:15px;font-weight:600;
   display:flex;align-items:center;justify-content:center;gap:9px;cursor:pointer}
@@ -1063,10 +1115,24 @@ const TPM_CSS = `
 .tpm .ev{flex:0 0 auto;width:172px;border-radius:13px;padding:13px;scroll-snap-align:start;
   border:1px solid var(--line-card);position:relative}
 .tpm .ev-date{display:flex;align-items:baseline;gap:5px;margin-bottom:9px}
-.tpm .ev-date .d{font-family:'Anton',sans-serif;font-size:26px;line-height:1}
-.tpm .ev-date .m{font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:.11em}
-.tpm .ev-vs{font-size:14px;font-weight:600;margin-bottom:5px;line-height:1.3}
-.tpm .ev-meta{font-size:13px}
+/* Date à +25 %, jour et mois ensemble : ~71px dans les 146px utiles d'une tuile
+   de 172. .ev-vs (l'adversaire) et .ev-score ne sont pas au ticket et restent. */
+.tpm .ev-date .d{font-family:'Anton',sans-serif;font-size:32.5px;line-height:1}
+.tpm .ev-date .m{font-family:'Bebas Neue',sans-serif;font-size:16.25px;letter-spacing:.11em}
+/* L'adversaire à +25 % lui aussi : sous une date à 32,5px, 14px décrochait.
+   overflow-wrap:anywhere répare un débordement PRÉEXISTANT que ce grossissement
+   aggravait. Les noms scrapés du RSEQ contiennent des suites d'acronymes séparées
+   par des virgules — « CDL,MONT,PTM,PSG,CGC,ABE », 24 caractères — et la virgule
+   n'est pas un point de coupe en CSS. Ce bloc faisait déjà ~185px dans les 146px
+   utiles d'une tuile, débordant sur la voisine ; il en ferait ~230 à 17,5px.
+   Même remède que .ev-tag, qui porte déjà cette propriété pour la même raison.
+   Les vrais mots longs (« Drummondville », « Internationale ») tiennent sans
+   coupe : ~134px au pire. */
+.tpm .ev-vs{font-size:17.5px;font-weight:600;margin-bottom:5px;line-height:1.3;overflow-wrap:anywhere}
+/* Détails (heure · lieu) à +20 %. « 19:00 · Stade Telus » frôle les 146px utiles
+   et se replie sur deux lignes ; les tuiles étant en flex, elles s'égalisent en
+   hauteur, la rangée grandit sans qu'aucune tuile ne déborde. */
+.tpm .ev-meta{font-size:15.6px}
 .tpm .ev-score{font-family:'Anton',sans-serif;font-size:19px;margin-top:3px}
 .tpm .ev-score.w{color:var(--green)}.tpm .ev-score.l{color:var(--nx-red)}
 /* DOMICILE = tuile foncée */
@@ -1143,65 +1209,105 @@ const TPM_CSS = `
    facteur ~2 et les plaques de ~1,4, si bien qu'elles occupaient 40 % de plus
    de la surface et se chevauchaient. Rendre au terrain la hauteur du web rend
    aux plaques leur place relative. */
-/* SANS CADRE et BORD À BORD. Le cadre (bordure + rayon 14px + aplat #0B1410)
-   dessinait une carte là où le web n'en a jamais eu une (.tp .stage n'a ni
-   bordure ni fond) : le terrain se pose maintenant directement sur --bg.
-   margin 0 -18px annule le padding de section, donc 390px au lieu de 354.
-   La .scene est dimensionnée en POURCENTAGES et grossit avec ; les plaques sont
-   en PIXELS et ne bougent pas — c'est exactement l'effet voulu, la place
-   relative des plaques augmente sans qu'aucune ne grossisse.
-   Non-collision revérifiée à 390px : le seuil horizontal se DÉTEND de 96/354
-   = 27 % à 96/390 = 24,6 % (le vertical reste 90/430 = 20,9 %). Les 30 paires
-   des 5 facettes de football et flag passent, zéro chevauchement, et la marge
-   du cas le pire AUGMENTE : ×1,11 avant (DB↔LB en défense) contre ×1,19 après
-   (WR↔QB en offense, Δleft 16 % sous le seuil mais Δtop 25 % au-dessus).
-   Aucune plaque n'est rognée par un bord. */
-.tpm .stage{position:relative;height:430px;overflow:hidden;z-index:1;margin:0 -18px}
+/* ── LE TERRAIN — SURFACE CRÈME, TRACÉ AUX COULEURS DE L'ÉCOLE ─────────────
+   La photo a disparu (voir TerrainStage) : plus de filtre de luminance, plus de
+   recadrage baseball, plus de voile .tint qui n'existait que pour rendre une
+   photo lisible sous des plaques claires.
+
+   ⚠ LE CADRE REVIENT, et il annule le bord-à-bord du lot précédent. Une surface
+   crème posée à nu et pleine largeur sur un fond #111317 devient une bande
+   éclatante qui coupe la page en deux ; le crème a besoin d'un bord pour se lire
+   comme un objet. Retour donc à la largeur du bloc de texte, rayon 16px et ombre
+   douce, comme le demande le ticket.
+   Conséquence sur les plaques : le seuil horizontal de non-collision se resserre
+   de 24,6 % (390px) à 27,1 % (354px). Revérifié — les 30 paires des 5 facettes
+   de football et flag passent encore, marge du pire cas ×1,11 (DB↔LB en
+   défense). Zéro chevauchement, aucune plaque rognée. */
+.tpm .stage{position:relative;height:430px;overflow:hidden;z-index:1;
+  background:var(--pitch);border-radius:16px;box-shadow:0 10px 30px -12px rgba(0,0,0,.7)}
 .tpm .scene{position:absolute;inset:-26% -20% -4% -20%;perspective:840px;overflow:hidden}
 .tpm .scene .imgwrap{position:absolute;left:50%;bottom:-14%;width:76%;
   transform:translateX(-50%) rotateX(44deg);transform-origin:50% 100%}
-.tpm .scene.flat .imgwrap{left:50%;top:4%;bottom:auto;width:62%;transform:translateX(-50%)}
-.tpm .scene .imgwrap img,.tpm .scene .imgwrap svg{width:100%;height:auto;display:block}
-.tpm .scene img{filter:saturate(.66) brightness(.92) contrast(1.05)}
-.tpm .scene img.baseball{filter:saturate(.92) brightness(1.28) contrast(1.14);
-  transform:scale(1.34) translateY(2%);transform-origin:50% 42%}
-.tpm .scene .imgwrap .ph{display:block;width:100%;aspect-ratio:16/9;
-  background:radial-gradient(130% 100% at 50% 24%, #444d5e, #262d3a 72%)}
+/* MODE PLAT (baseball seulement). La scène cesse de déborder et le tracé couvre
+   EXACTEMENT le .stage : le viewBox du losange est en centièmes, donc x=50 tombe
+   à 50 % de la largeur et y=88 à 88 % de la hauteur — le dessin partage le repère
+   des plaques au lieu de le subir. C'était du code mort jusqu'ici (les 7 sports
+   étaient en perspective), d'où ces valeurs entièrement réécrites. */
+.tpm .scene.flat{inset:0;perspective:none}
+.tpm .scene.flat .imgwrap{left:0;top:0;bottom:0;width:100%;height:100%;transform:none}
+.tpm .scene .imgwrap svg{width:100%;height:auto;display:block}
+.tpm .scene .imgwrap svg.flat{height:100%}
 .tpm .scene .imgwrap .court{display:block;width:100%;aspect-ratio:16/9}
-.tpm .scene .tint{position:absolute;inset:0;
-  background:linear-gradient(180deg, rgba(17,19,23,.35), rgba(17,19,23,.08) 45%, rgba(17,19,23,.4))}
-/* voiles desktop non portés (le mock n'en a pas) */
-.tpm .stage>.fade,.tpm .stage>.glow{display:none}
+.tpm .scene .imgwrap .court.flat{aspect-ratio:auto}
 .tpm .tokens{position:absolute;inset:0}
+/* Fondu au changement de facette — même courbe que le sheet de la recherche.
+   Seules les PLAQUES fondent : d'une facette à l'autre le décor est identique
+   (même sport, même tracé), le faire clignoter serait du bruit pur. Rejoué par
+   le key sur .stagewrap. */
+.tpm .stagewrap .tokens{animation:tpm-fondu .18s cubic-bezier(.32,.72,0,1)}
+@keyframes tpm-fondu{from{opacity:0}to{opacity:1}}
+@media(prefers-reduced-motion:reduce){.tpm .stagewrap .tokens{animation:none}}
 /* la plaque : 2D, à plat, jamais transformée */
 .tpm .tk{position:absolute;transform:translate(-50%,-50%)}
 /* Padding 9/14 et rapport acronyme/nom du web : l'acronyme porte la plaque à
-   distance, le nom en toutes lettres se lit dessous. Le mobile serrait les deux
-   à 15/12 dans 6px de padding — d'où des plaques denses et illisibles. */
-.tpm .tk .pl{min-width:66px;padding:9px 14px;border-radius:9px;text-align:center;background:var(--cream);
-  border:1px solid rgba(0,0,0,.22);box-shadow:0 8px 18px -6px rgba(0,0,0,.7)}
-.tpm .tk .pa{font-family:'Anton',sans-serif;font-size:19px;line-height:1;color:var(--p-inv)}
-/* Le nom se REPLIE au lieu de tenir sur une ligne : « LIGNE OFFENSIVE » faisait
+   distance, le nom en toutes lettres se lit dessous.
+   Le nom se REPLIE au lieu de tenir sur une ligne : « LIGNE OFFENSIVE » faisait
    134px de plaque, et les ancrages étant en POURCENTAGES du terrain, deux
    plaques voisines se chevauchaient de 80px sur 354px de large. Replié, il tient
-   en 96px. C'est le seul levier qui ne touche pas aux positions, partagées avec
-   la page web. */
-.tpm .tk .pl{max-width:96px}
+   en 96px — c'est le seul levier qui ne touche pas aux positions. */
+.tpm .tk .pl{min-width:66px;max-width:96px;padding:9px 14px;border-radius:9px;text-align:center;
+  background:var(--pitch);border:1.5px solid var(--ink);box-shadow:0 8px 18px -6px rgba(0,0,0,.45)}
+.tpm .tk .pa{font-family:'Anton',sans-serif;font-size:19px;line-height:1;color:var(--p-inv)}
 .tpm .tk .po{font-family:'Outfit',sans-serif;font-weight:700;font-size:11px;letter-spacing:.04em;
   text-transform:uppercase;color:var(--p-mut-inv);margin-top:4px;white-space:normal;line-height:1.15}
 .tpm .tk .pn{font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:.08em;margin-top:4px;display:block;
   color:var(--p-mut-inv)}
-/* états de besoin — Complet / Besoin moyen / Besoin élevé / Urgent */
-.tpm .tk.full .pl{background:var(--plaque-off);border-color:rgba(255,255,255,.08)}
-.tpm .tk.full .pa{color:var(--plaque-off-ink)}
-.tpm .tk.full .po,.tpm .tk.full .pn{color:var(--plaque-off-mut)}
-.tpm .tk.mid .pn{color:var(--gold-ink)}
-.tpm .tk.hi .pl{box-shadow:0 0 0 3px var(--red-lt-55),0 5px 14px rgba(0,0,0,.5)}
-.tpm .tk.hi .pn{color:var(--red)}
-.tpm .tk.pri .pl{background:var(--red);border-color:var(--ink)}
-.tpm .tk.pri .pa{color:#fff}
-.tpm .tk.pri .po{color:rgba(255,255,255,.82)}
-.tpm .tk.pri .pn{color:#fff}
+
+/* ── LES QUATRE ÉTATS — ÉCHELLE DE PLATEFORME ───────────────────────────────
+   L'ÉCOLE POSSÈDE LE TERRAIN. LA PLATEFORME POSSÈDE L'ÉCHELLE.
+   Le terrain au-dessus (papier, tracé, verges, filigrane) est aux couleurs du
+   collège. Ces quatre plaques et la légende ne le sont PAS, et ne doivent
+   jamais le devenir : elles servent à comparer deux collèges, et une unité de
+   comparaison ne change pas d'un collège à l'autre.
+   Mesuré avant d'être tranché : teintée par l'école, l'échelle perdait toujours
+   une distinction — aplat urgent à 2,03:1 sur le papier pour une primaire
+   claire, bordures élevé/moyen à 1,85:1 pour une primaire foncée. Les deux
+   défauts sont anti-corrélés, aucune couleur ne les évite tous les deux.
+   Démonstration complète en tête de TerrainStage.tsx.
+   Lecture sous deutéranopie, vérifiée : ÉLEVÉ et MOYEN restent séparés à
+   4,41:1 par leurs anneaux (c'est le meilleur couple testé — assombrir l'ambre
+   le rapprochait du gris ardoise). URGENT, lui, ne tient PAS par son aplat
+   (1,68:1 sur le papier une fois la teinte retirée) : il tient par l'inversion
+   d'encre, seul état à porter du texte CLAIR sur un bloc plein. C'est cette
+   inversion qui est l'identité d'« urgent », pas le rouge.
+   L'anneau ambre ne fait que 1,91:1 sur le crème : il est doublé d'un halo, le
+   même dispositif que portait l'échelle web d'origine. Le rgba est écrit en
+   clair — c'est la même constante que --lvl-hi, pas une couleur d'école.
+   ⛔ Ne jamais écrire --red, --c1-cream ou --ink dans ce bloc. */
+.tpm .tk.pri .pl{background:var(--lvl-pri);border-color:var(--lvl-pri);
+  box-shadow:0 10px 22px -6px rgba(0,0,0,.55)}
+.tpm .tk.pri .pa,.tpm .tk.pri .pn{color:#fff}
+.tpm .tk.pri .po{color:rgba(255,255,255,.85)}
+.tpm .tk.hi .pl{background:var(--pitch);border-color:var(--lvl-hi);border-width:2px;box-shadow:0 0 12px -3px rgba(245,158,11,.45)}
+.tpm .tk.hi .pn{color:var(--gold-ink)}
+.tpm .tk.mid .pl{background:var(--pitch);border-color:var(--lvl-mid)}
+.tpm .tk.mid .pn{color:var(--p-mut-inv)}
+.tpm .tk.full .pl{background:transparent;border-color:var(--plaque-off-mut);box-shadow:none;opacity:.55}
+.tpm .tk.full .pa{color:var(--p-ink)}
+.tpm .tk.full .po,.tpm .tk.full .pn{color:var(--p-soft)}
+
+/* ── LA LÉGENDE ────────────────────────────────────────────────────────────
+   Sous le terrain, hors de la carte crème : elle explique l'échelle, elle n'est
+   pas du terrain. Chaque pastille reprend EXACTEMENT le traitement de la plaque
+   correspondante, sinon la légende ment. */
+.tpm .tlegend{display:flex;flex-wrap:wrap;gap:8px 16px;margin:14px 0 0;padding:0;list-style:none}
+.tpm .tlegend li{display:inline-flex;align-items:center;gap:7px;
+  font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:.08em;color:var(--p-mut)}
+.tpm .tlegend .lg-dot{width:13px;height:13px;border-radius:4px;flex:0 0 auto;
+  background:var(--pitch);border:1.5px solid var(--lvl-mid)}
+.tpm .tlegend li.pri .lg-dot{background:var(--lvl-pri);border-color:var(--lvl-pri)}
+.tpm .tlegend li.hi .lg-dot{background:var(--pitch);border-color:var(--lvl-hi);border-width:2px}
+.tpm .tlegend li.full .lg-dot{background:transparent;border-color:var(--plaque-off-mut);opacity:.55}
 .tpm .noyear{margin-top:12px;font-size:13px;color:var(--p-mut)}
 
 /* la box UNIQUE (jamais une rangée de cards) */

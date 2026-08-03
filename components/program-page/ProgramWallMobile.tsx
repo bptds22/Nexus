@@ -62,29 +62,31 @@ export default function ProgramWallMobile({ school, theme, division }: ProgramWa
   return (
     <div className="pw7">
       <div className="mosaic">
-        {/* ══ RANGÉE 1 — damier · province · CANADA · NEXUS ═════════════════
+        {/* ══ RANGÉE 1 — damier · CANADA · province · NEXUS ═════════════════
             §2a : cette rangée était en BAS dans le mock (r8). Elle remonte en
             tête.
 
-            MIROIR EXACT de l'ordre précédent (NEXUS · QUÉBEC · CANADA · damier).
-            Le damier passe en c1 parce que c'est la SEULE tuile de la rangée
+            Le damier tient la c1 parce que c'est la SEULE tuile de la rangée
             sans contenu : la pastille de retour vient s'y poser à gauche
             (.ppm .backbtn, left:14px → x 14-50 dans la colonne x 0-78), là où
-            elle masquait 64 % du mot NEXUS avant.
+            elle masquait 64 % du mot NEXUS avant. Il ne bouge plus.
+
+            CANADA et QUÉBEC ont échangé (c2 ⇄ c3) : la province vient au
+            CONTACT de NEXUS, le mot canadien s'adosse au damier.
 
             Voisinage revérifié après l'échange — « claire » = tuile en aplat
             de --cream (QUÉBEC, Fierté, lys géante, initiales, RSEQ) :
-              · QUÉBEC (c2) → damier en c1 et CANADA en c3 sont foncées, le
-                kraft en dessous n'est pas un aplat crème : 0 voisine claire ;
-              · lys géante (c4-5, r2-3) → au-dessus, NEXUS est un aplat de
-                primaire, pas une claire : 0 ;
+              · QUÉBEC (c3) → CANADA en c2 est foncé, NEXUS en c4 est un aplat
+                de primaire, et p-fleurs en dessous est foncé : 0 voisine
+                claire, comme avant l'échange ;
+              · lys géante (c4-5, r2-3) → au-dessus, NEXUS : 0 ;
               · initiales ⇄ RSEQ restent le seul contact clair-clair : 1 chacune.
             Maximum inchangé à 1 — aucune claire n'en touche plus d'une. */}
         <div className="blk b-nexus pop" style={{ gridColumn: "4/6", gridRow: 1 }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logos/nexus-wordmark-white.png" alt="NEXUS" />
         </div>
-        <div className="blk wblk f-ink" style={{ gridColumn: 3, gridRow: 1 }}>
+        <div className="blk wblk f-ink" style={{ gridColumn: 2, gridRow: 1 }}>
           <div className="anton canada">CANADA</div>
         </div>
         <div className="blk b-rseq" style={{ gridColumn: 2, gridRow: 6 }}>
@@ -97,7 +99,7 @@ export default function ProgramWallMobile({ school, theme, division }: ProgramWa
             <b className="lg-alt">{school.league}</b>
           )}
         </div>
-        <div className="blk wblk f-cream" style={{ gridColumn: 2, gridRow: 1 }}>
+        <div className="blk wblk f-cream" style={{ gridColumn: 3, gridRow: 1 }}>
           <div className="prov" style={{ fontSize: fit(3.8, 26, provinceMot.length) }}>{provinceMot}</div>
         </div>
         {/* Le damier — tuile SANS contenu, d'où le choix de lui donner la

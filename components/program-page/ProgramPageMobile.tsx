@@ -440,7 +440,7 @@ function ProgramBodyMobile({ school, content }: { school: SchoolProgramIdentity;
 
           FLÈCHE SEULE, en haut à GAUCHE. La pastille suit le damier, seule
           tuile sans contenu de la rangée de tête — et depuis le miroir de cette
-          rangée (damier · QUÉBEC · CANADA · NEXUS) le damier est à GAUCHE.
+          rangée (damier · CANADA · QUÉBEC · NEXUS) le damier est à GAUCHE.
           Mesuré à 390px : colonne de 78px, la pastille occupe x 14-50 (x 8-56
           avec sa zone tactile), donc entièrement dans le damier. Elle ne masque
           RIEN. Le libellé reste proscrit : il déborderait sur « Québec ». */}
@@ -481,7 +481,12 @@ function ProgramBodyMobile({ school, content }: { school: SchoolProgramIdentity;
 
       {/* Le panneau porte la hauteur minimale qui rend la rangée d'onglets
           réellement collante — voir .tabpane dans PPM_CSS. */}
-      <div className="tabpane">
+      {/* `key={actif}` n'est pas décoratif : sans lui React GARDE le même nœud
+          d'un onglet à l'autre (seuls les enfants changent), et une animation CSS
+          posée dessus ne repartirait jamais. Le key force un nœud neuf, donc le
+          fondu est rejoué à chaque changement. Rien n'est perdu au passage — le
+          contenu de chaque onglet est déjà monté/démonté par les `&&` ci-dessous. */}
+      <div className="tabpane" key={actif}>
         {actif === "apercu" && (
           <>
             {/* Le bloc d'identité D'ABORD — nom du collège, suivi, stats — puis
@@ -1127,7 +1132,14 @@ const PPM_CSS = `
    La colonne flex servait à pousser « Propulsé par Nexus » en bas. Le pied
    étant retiré, il ne reste que le plancher — et le vide d'un onglet court
    n'est donc plus refoulé sous quoi que ce soit : il termine le défilement. */
-.ppm .tabpane{min-height:var(--pane-min)}
+/* Fondu au changement d'onglet — 180ms sur la courbe du sheet de la recherche
+   (cubic-bezier(.32,.72,0,1)), pour que les trois écrans que l'athlète enchaîne
+   partagent le même mouvement. Rejoué par le key={actif} posé sur le panneau.
+   L'animation joue aussi au premier montage : une entrée douce, pas un défaut. */
+.ppm .tabpane{min-height:var(--pane-min);animation:ppm-fondu .18s cubic-bezier(.32,.72,0,1)}
+@keyframes ppm-fondu{from{opacity:0}to{opacity:1}}
+/* Mouvement réduit : le contenu apparaît, il ne fond pas. */
+@media(prefers-reduced-motion:reduce){.ppm .tabpane{animation:none}}
 .ppm .tabbtn{flex:0 0 auto;height:var(--tab-h);padding:0 15px;border-radius:17px;cursor:pointer;
   background:rgba(255,255,255,.05);border:1px solid var(--line-card);color:var(--p-mut);
   font-family:'Outfit',sans-serif;font-size:14px;font-weight:600;white-space:nowrap}
