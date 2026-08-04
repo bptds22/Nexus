@@ -332,7 +332,7 @@ export default function CoachEquipeDetailMobile() {
                   {isAdmin && (
                     <button
                       type="button"
-                      onClick={() => setConfirmRemoveCoach({ id: c.id, name: c.name })}
+                      onClick={() => { void triggerHaptic("Light"); setConfirmRemoveCoach({ id: c.id, name: c.name }); }}
                       className="w-9 h-9 rounded-full flex items-center justify-center active:bg-white/[0.04]"
                       aria-label="Retirer"
                     >
@@ -428,7 +428,7 @@ export default function CoachEquipeDetailMobile() {
                     </div>
                     <button
                       type="button"
-                      onClick={() => setConfirmCancelInvite({ id: p.id, name: p.athleteName })}
+                      onClick={() => { void triggerHaptic("Light"); setConfirmCancelInvite({ id: p.id, name: p.athleteName }); }}
                       className="text-[12px] font-bold text-[#EF4444] active:opacity-60 px-2"
                     >
                       Annuler

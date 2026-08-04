@@ -10,6 +10,7 @@ import { useSubscription } from "@/lib/hooks/useSubscription";
 import UpgradeModal from "@/components/ui/UpgradeModal";
 import MorePanel from "./MorePanel";
 import { loadCoachTaskCounts } from "@/lib/coach/tasks";
+import { triggerHaptic } from "@/lib/haptics";
 
 /* ─────────────────────────────────────────────────────────────────
    MobileTabBar — bottom navigation bar for Capacitor mobile builds.
@@ -371,6 +372,12 @@ export default function MobileTabBar({ role }: MobileTabBarProps) {
   }
 
   function handleTabClick(e: React.MouseEvent, tab: TabConfig) {
+    /* Retour AVANT le test de verrou, et donc dans les deux cas : l'onglet
+       navigue, ou il ouvre la modale d'abonnement. Le doigt a touché quelque
+       chose, l'app doit le confirmer — un tap verrouillé qui ne répond pas se
+       lit comme un tap perdu. Impact léger : c'est de la navigation, pas une
+       action destructive. */
+    void triggerHaptic("Light");
     const locked = !meetsRequiredTier(tier, tab.requiredTier, isSchoolAdmin, tab.adminBypass);
     if (locked && tab.requiredTier) {
       e.preventDefault();
@@ -444,7 +451,7 @@ export default function MobileTabBar({ role }: MobileTabBarProps) {
         {/* "Plus" — ouvre le bottom sheet */}
         <button
           type="button"
-          onClick={() => setMoreOpen(true)}
+          onClick={() => { void triggerHaptic("Light"); setMoreOpen(true); }}
           className={`relative flex-1 flex flex-col items-center justify-center gap-1.5 pt-2.5 pb-2 min-h-[64px] ${moreOpen ? "text-[#E63946]" : "text-[#8a8d96]"} active:bg-white/[0.04] transition-colors`}
           aria-label="Plus d'options"
           aria-expanded={moreOpen}

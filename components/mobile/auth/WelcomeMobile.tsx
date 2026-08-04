@@ -111,7 +111,7 @@ export function WelcomeMobile({ onShowLogin, onShowSignup }: WelcomeMobileProps)
         {/* CTA primaire plein rouge. mt 36px = mt-9 */}
         <button
           type="button"
-          onClick={handleCreateAccount}
+          onClick={() => { void triggerHaptic("Light"); handleCreateAccount(); }}
           className="w-full h-14 mt-9 rounded-2xl bg-[#E63946] text-white font-head font-black uppercase tracking-widest active:scale-[0.97] active:bg-[#D42B22] transition-all"
           style={{
             fontSize: 14,

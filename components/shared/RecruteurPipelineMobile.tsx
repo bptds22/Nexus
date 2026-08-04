@@ -1121,7 +1121,7 @@ function PipelineDetailSheet({
                 </button>
                 <button
                   type="button"
-                  onClick={handleSendMessage}
+                  onClick={() => { void triggerHaptic("Light"); handleSendMessage(); }}
                   className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-[#1A1D24] text-white text-[13px] font-bold active:bg-white/5"
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -1133,7 +1133,7 @@ function PipelineDetailSheet({
                 {/* Iter 6.1e Fix 4 — État confirm = rouge plein + halo pulse */}
                 <button
                   type="button"
-                  onClick={handleRemove}
+                  onClick={() => { void triggerHaptic("Medium"); handleRemove(); }}
                   disabled={isFreeDemoMode}
                   className={`w-full flex items-center justify-center gap-2 py-3 rounded-2xl border text-[13px] font-bold transition-all ${
                     confirmRemove

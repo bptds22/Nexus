@@ -107,7 +107,7 @@ export function PasswordChangeSheet({ open, onClose }: { open: boolean; onClose:
         <div className="px-5 pb-3 pt-2 shrink-0">
           <button
             type="button"
-            onClick={handleSubmit}
+            onClick={() => { void triggerHaptic("Light"); handleSubmit(); }}
             disabled={!valid || saving}
             className={`w-full h-12 rounded-2xl text-[15px] font-semibold transition-colors ${
               valid && !saving ? "bg-[#E63946] text-white active:bg-[#D42B22]" : "bg-white/[0.06] text-[#6B7280] cursor-not-allowed"

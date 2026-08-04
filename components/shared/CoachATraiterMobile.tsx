@@ -643,7 +643,7 @@ function EvalSheet({
             <button
               type="button"
               disabled={!canSave}
-              onClick={handleSubmit}
+              onClick={() => { void triggerHaptic("Light"); handleSubmit(); }}
               className="flex-1 h-12 rounded-2xl bg-[#E63946] text-white text-[14px] font-bold active:bg-[#D42B22] disabled:opacity-40"
             >
               {saving ? "…" : "Enregistrer"}

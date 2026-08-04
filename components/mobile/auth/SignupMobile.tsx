@@ -644,7 +644,7 @@ export function SignupMobile({ onShowWelcome, onShowLogin }: SignupMobileProps) 
             <>
               <button
                 type="button"
-                onClick={handleSubmit}
+                onClick={() => { void triggerHaptic("Light"); handleSubmit(); }}
                 disabled={!canSubmit}
                 className={`w-full h-14 rounded-2xl font-head font-black text-[14px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${
                   canSubmit

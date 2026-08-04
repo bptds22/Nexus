@@ -265,7 +265,7 @@ function CoachDetailsSheet({
                         </button>
                         <button
                           type="button"
-                          onClick={handleSave}
+                          onClick={() => { void triggerHaptic("Light"); handleSave(); }}
                           disabled={!canSave}
                           className={`text-[14px] font-bold ${canSave ? "text-[#E63946]" : "text-white/30"}`}
                         >

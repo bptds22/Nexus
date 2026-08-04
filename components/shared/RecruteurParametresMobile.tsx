@@ -463,7 +463,7 @@ export function RecruteurParametresMobile() {
         <div className="px-4 pt-3">
           <button
             type="button"
-            onClick={savePrivacy}
+            onClick={() => { void triggerHaptic("Light"); savePrivacy(); }}
             disabled={savingPrivacy}
             className="w-full h-11 rounded-2xl bg-[#E63946] text-white text-[14px] font-semibold active:bg-[#D42B22] disabled:opacity-60"
           >

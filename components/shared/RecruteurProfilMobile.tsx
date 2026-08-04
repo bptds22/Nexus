@@ -479,7 +479,7 @@ export function RecruteurProfilMobile() {
         </p>
         <p className="text-[13px] text-[#9CA3AF] mt-0.5">{form.title || "Titre non défini"}</p>
         {avatarUrl && (
-          <button type="button" onClick={handleRemoveAvatar} className="mt-2 text-[12px] text-[#E63946] active:text-[#D42B22]">
+          <button type="button" onClick={() => { void triggerHaptic("Medium"); handleRemoveAvatar(); }} className="mt-2 text-[12px] text-[#E63946] active:text-[#D42B22]">
             Supprimer la photo
           </button>
         )}

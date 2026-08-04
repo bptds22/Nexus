@@ -1546,7 +1546,7 @@ function TargetCard({
         </div>
         <button
           type="button"
-          onClick={onRemove}
+          onClick={() => { void triggerHaptic("Medium"); onRemove(); }}
           disabled={busy}
           aria-label={`Retirer ${target.name}`}
           className="w-7 h-7 shrink-0 rounded-lg flex items-center justify-center text-white/40 active:text-[#E63946] active:bg-[#E63946]/10 disabled:opacity-40"

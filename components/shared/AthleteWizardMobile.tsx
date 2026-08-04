@@ -1540,7 +1540,7 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
                       className="flex-1 h-11 rounded-2xl border border-white/[0.10] text-[13px] font-bold text-white/70 active:bg-white/[0.04]">
                       Délier
                     </button>
-                    <button type="button" onClick={handleSendInvitation}
+                    <button type="button" onClick={() => { void triggerHaptic("Light"); handleSendInvitation(); }}
                       disabled={!invitationTeamId || isSubmittingInvitation}
                       className={`flex-1 h-11 rounded-2xl text-[13px] font-bold ${
                         invitationTeamId && !isSubmittingInvitation
@@ -2275,7 +2275,7 @@ function DistinctionDetailSheet({
         <div className="px-4 pt-2 pb-2 shrink-0 border-t border-white/[0.06] flex gap-3">
           <button
             type="button"
-            onClick={onRemove}
+            onClick={() => { void triggerHaptic("Medium"); onRemove(); }}
             className="flex-1 h-12 rounded-2xl border border-white/[0.10] text-[13px] font-bold uppercase tracking-widest text-white/70 active:bg-white/[0.04]"
           >
             Retirer

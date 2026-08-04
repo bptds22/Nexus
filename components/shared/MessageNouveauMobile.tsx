@@ -419,7 +419,7 @@ J'ai consulté le profil de ${a.firstName} ${a.lastName}${a.position ? ` (${a.po
           >
             <button
               type="button"
-              onClick={handleSend}
+              onClick={() => { void triggerHaptic("Light"); handleSend(); }}
               disabled={!canSend}
               className={`w-full h-14 rounded-2xl font-head font-black text-[14px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${
                 canSend

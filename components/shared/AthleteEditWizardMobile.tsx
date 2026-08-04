@@ -57,6 +57,7 @@ import {
 import { WizardPills } from "@/components/shared/wizard/WizardPills";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { GREEN, YELLOW, RED, PencilIcon, LockIcon } from "@/components/shared/wizard/modeIcons";
+import { triggerHaptic } from "@/lib/haptics";
 import {
   SUBJECTS, HONORS, CEGEP_REGIONS, PROGRAMME_TYPE_OPTIONS,
   programmeCegepArray, programmeCegepDecode,
@@ -434,7 +435,7 @@ function SuggestExpand({
         <button
           type="button"
           disabled={!canSubmit || submitting}
-          onClick={() => onSubmit(trimmed, message)}
+          onClick={() => { void triggerHaptic("Light"); onSubmit(trimmed, message); }}
           className="flex-1 h-11 rounded-2xl bg-[#EAB308] text-white text-[13px] font-bold uppercase tracking-wider active:bg-[#CA8A04] disabled:opacity-40"
         >
           {submitting ? "Envoi…" : "Soumettre la suggestion"}
@@ -1548,7 +1549,7 @@ function CustomChip({ label, onRemove }: { label: string; onRemove: () => void }
       <span className="truncate max-w-[160px]">{label}</span>
       <button
         type="button"
-        onClick={onRemove}
+        onClick={() => { void triggerHaptic("Medium"); onRemove(); }}
         aria-label={`Retirer ${label}`}
         className="w-5 h-5 inline-flex items-center justify-center rounded-full active:bg-[#E63946]/25"
       >

@@ -311,7 +311,7 @@ function AthleteNotesSheet({
                 />
                 <button
                   type="button"
-                  onClick={() => { if (canSubmit) { handleSubmit().catch(() => { toast.error({ message: "Échec" }); }); } }}
+                  onClick={() => { void triggerHaptic("Light"); if (canSubmit) { handleSubmit().catch(() => { toast.error({ message: "Échec" }); }); } }}
                   disabled={!canSubmit}
                   aria-label="Ajouter"
                   className={`w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${
@@ -417,7 +417,7 @@ function ListNotesPanel({ listId }: { listId: string }) {
           />
           <button
             type="button"
-            onClick={() => { if (canSubmit) { handleSubmit().catch(() => { toast.error({ message: "Échec" }); }); } }}
+            onClick={() => { void triggerHaptic("Light"); if (canSubmit) { handleSubmit().catch(() => { toast.error({ message: "Échec" }); }); } }}
             disabled={!canSubmit}
             aria-label="Ajouter"
             className={`w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${

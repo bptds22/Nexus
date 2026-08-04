@@ -348,7 +348,7 @@ export default function CoachEquipesMobile() {
                 </button>
                 <button
                   type="button"
-                  onClick={handleCreate}
+                  onClick={() => { void triggerHaptic("Light"); handleCreate(); }}
                   disabled={!formValid || saving}
                   className="flex-1 h-14 rounded-2xl bg-[#E63946] text-white text-[14px] font-black uppercase tracking-widest active:bg-[#D42B22] active:scale-[0.97] transition-all shadow-[0_8px_24px_rgba(230,57,70,0.35)] disabled:opacity-40 disabled:shadow-none disabled:active:scale-100"
                 >

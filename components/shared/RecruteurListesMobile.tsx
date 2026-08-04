@@ -102,7 +102,7 @@ function CreateListSheet({ open, onClose }: { open: boolean; onClose: () => void
               <span className="text-[15px] font-bold text-white">Nouvelle liste</span>
               <button
                 type="button"
-                onClick={handleSubmit}
+                onClick={() => { void triggerHaptic("Light"); handleSubmit(); }}
                 disabled={!canSubmit}
                 className={`text-[14px] font-bold ${canSubmit ? "text-[#E63946]" : "text-white/30"}`}
               >

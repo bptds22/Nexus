@@ -323,7 +323,7 @@ export function CoachProfilEditMobile() {
         >
           <button
             type="button"
-            onClick={handleSave}
+            onClick={() => { void triggerHaptic("Light"); handleSave(); }}
             disabled={saving}
             className="w-full h-12 rounded-2xl bg-[#E63946] text-white text-[15px] font-semibold active:bg-[#D42B22] disabled:opacity-60"
           >
