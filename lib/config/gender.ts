@@ -6,6 +6,8 @@
 // "Les deux") pass through unchanged. Shared so every surface — admin
 // Équipes tab, onboarding team pickers — renders gender identically.
 
+import { taRows } from "@/lib/queries/shared/embeds";
+
 export const GENDER_DISPLAY: Record<string, string> = {
   masculin: "Masculin",
   feminin: "Féminin",
@@ -47,17 +49,16 @@ export function normalizeTeamGender(raw: unknown): string | null {
 
 /** Genre d'équipe d'un athlète, lu depuis l'embed `team_athletes(teams!team_id(gender))`.
  *
- *  team_athletes est une jointure 1-N : un athlète PEUT appartenir à plusieurs
- *  équipes. On retient le genre de la 1re équipe qui en déclare un. Aucun athlète
- *  n'est aujourd'hui dans 2 équipes (prod ET local), donc le cas ne se pose pas —
- *  mais si ça change, un athlète Masculin+Mixte ne matchera que "Masculin".
+ *  Depuis l'ancrage unique strict (UNIQUE (athlete_id) sur team_athletes), un
+ *  athlète n'a qu'UNE équipe et PostgREST renvoie l'embed en OBJET, plus en
+ *  tableau. On passe par taRows() : la boucle ci-dessous reste valable pour les
+ *  deux formes, et le jour où la cardinalité rebascule, rien ne bouge ici.
  *
- *  Renvoie null si l'athlète n'a AUCUNE équipe — ce qui est le cas de la très
- *  grande majorité des athlètes (2/11 rattachés en prod). Ils sortent donc des
- *  résultats dès qu'un genre est sélectionné. */
+ *  Renvoie null si l'athlète n'a AUCUNE équipe — le cas de la très grande
+ *  majorité des athlètes. Ils sortent donc des résultats dès qu'un genre est
+ *  sélectionné. */
 export function firstTeamGender(rel: unknown): string | null {
-  if (!Array.isArray(rel)) return null;
-  for (const link of rel) {
+  for (const link of taRows(rel)) {
     const t = (link as Record<string, unknown>)?.teams;
     const team = Array.isArray(t) ? t[0] : t;
     const g = normalizeTeamGender((team as Record<string, unknown> | null)?.gender);

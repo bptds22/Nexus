@@ -395,10 +395,18 @@ function ListNotesPanel({ listId }: { listId: string }) {
         )}
       </div>
 
-      {/* Composer sticky bottom (au-dessus de la TabBar mobile) */}
+      {/* Composer sticky bottom (au-dessus de la TabBar mobile).
+          `--kbd-h` est ajouté À LA MAIN ici, alors que la règle globale de
+          globals.css suffit partout ailleurs : ce conteneur pose son `bottom`
+          en STYLE EN LIGNE, qui bat toute feuille. Sans cet ajout, la règle
+          serait écrasée et le champ de note resterait sous le clavier — c'est
+          précisément l'un des deux écrans signalés. */}
       <div
         className="sticky bottom-0 bg-[#111317] border-t border-white/[0.06] px-4 pt-3 space-y-2"
-        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 12px)", bottom: "calc(64px + env(safe-area-inset-bottom))" }}
+        style={{
+          paddingBottom: "calc(env(safe-area-inset-bottom) + 12px)",
+          bottom: "calc(64px + env(safe-area-inset-bottom) + var(--kbd-h, 0px))",
+        }}
       >
         {error && (
           <div className="px-3 py-2 rounded-2xl bg-[#EF4444]/10 border border-[#EF4444]/30">

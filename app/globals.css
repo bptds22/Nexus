@@ -1321,3 +1321,33 @@ body.light-mode .nx-partner-slot span {
 .nx-mobile-radius-card  { border-radius: 16px; }
 .nx-mobile-radius-sheet { border-top-left-radius: 16px; border-top-right-radius: 16px; }
 .nx-mobile-touch-min    { min-height: 44px; min-width: 44px; }
+
+/* ── LE CLAVIER NE MASQUE PLUS LES CHAMPS ──────────────────────────────────
+   `Keyboard.resize: None` (capacitor.config.ts) est un choix assumé : le resize
+   natif de la WKWebView est cassé sur iOS 26. Mais il a un corollaire — quand le
+   clavier monte, la WebView ne rétrécit PAS, donc tout ce qui est ancré au bas
+   de l'écran se retrouve SOUS le clavier. Vingt-six fichiers ont un conteneur
+   ancré en bas contenant une saisie ; les corriger un par un se serait re-cassé
+   au premier écran ajouté.
+
+   <KeyboardInset> publie la hauteur du clavier dans --kbd-h, et cette règle la
+   fait consommer par tous les ancrages du bas d'un coup. Le repli 0px vaut hors
+   Capacitor et quand le clavier est fermé : aucune position ne change alors.
+
+   PORTÉE VOLONTAIREMENT ÉTROITE — `.bottom-0` seulement :
+     · `.inset-0` (les voiles de fond) n'est pas visé : un backdrop doit rester
+       plein écran, pas se soulever ;
+     · la tab bar et la pilule de cibles posent leur `bottom` en STYLE EN LIGNE,
+       qui bat toute classe — elles ne bougent pas, et c'est voulu : la tab bar
+       n'a pas à suivre le clavier.
+   Un panneau sans champ de saisie qui se soulèverait parce qu'un clavier est
+   ouvert ailleurs est inoffensif — et de toute façon plus juste que l'inverse. */
+html.is-capacitor .fixed.bottom-0,
+html.is-capacitor .sticky.bottom-0 {
+  bottom: var(--kbd-h, 0px);
+  transition: bottom .22s cubic-bezier(.32,.72,0,1);
+}
+@media (prefers-reduced-motion: reduce) {
+  html.is-capacitor .fixed.bottom-0,
+  html.is-capacitor .sticky.bottom-0 { transition: none; }
+}
