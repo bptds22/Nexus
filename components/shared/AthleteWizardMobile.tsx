@@ -82,10 +82,11 @@ import {
 } from "@/lib/config/badges";
 import { POSITIONS } from "@/lib/sports-data";
 import {
-  autocompleteCivilUnclaimedByEmail,
+  autocompleteInvitableByEmail,
   type AthleteEmailAutocompleteResult,
   type AthleteEmailSuggestion,
 } from "@/lib/coach/athleteEmailAutocomplete";
+import { createAthleteInvitationLink } from "@/lib/queries/coach/createAthleteInvitation";
 import { loadAthleteRaw, buildFormFromRaw } from "@/app/coach/athletes/_data/loadAthleteFromSupabase";
 import {
   emptyAthleteForm,
@@ -254,6 +255,13 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [linkedToExisting, setLinkedToExisting] = useState<AthleteEmailSuggestion | null>(null);
   const [invitationTeamId, setInvitationTeamId] = useState<string | null>(null);
+  /* §2 — invitation APRÈS création. Le web remplace le formulaire par un écran
+     d'invitation quand une suggestion est liée ; ici la création va au bout et
+     la proposition arrive en modale, comme demandé. Le coach peut ENVOYER ou
+     PASSER — passer n'est pas un échec, la fiche existe déjà. */
+  const [inviteApres, setInviteApres] = useState<{ athleteId: string; email: string; prenom: string } | null>(null);
+  const [envoiInvite, setEnvoiInvite] = useState(false);
+  const [resultatInvite, setResultatInvite] = useState<{ ok: boolean; msg: string } | null>(null);
   const [isSubmittingInvitation, setIsSubmittingInvitation] = useState(false);
   const emailAutocompleteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -468,7 +476,21 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
     emailAutocompleteTimerRef.current = setTimeout(async () => {
       try {
         const supabase = createClient();
-        const result = await autocompleteCivilUnclaimedByEmail(supabase, newEmail);
+        // UNION des deux voies, comme le web : mes orphelins (sans compte,
+        // hasAccount=false → invitation par courriel) ET les civils sans coach
+        // AVEC compte (hasAccount=true → team_invitations in-app). Le mobile
+        // n'interrogeait que la seconde : il ne détectait donc JAMAIS ses
+        // propres orphelins, et un coach resaisissant un courriel qu'il avait
+        // lui-même créé ne voyait aucune suggestion.
+        //
+        // ⚠ CETTE DÉTECTION EST CONTOURNABLE, ET C'EST ASSUMÉ POUR L'INSTANT.
+        // Elle ne se déclenche que si le coach CLIQUE une suggestion. Taper le
+        // courriel en entier sans cliquer crée un doublon en silence : il
+        // n'existe AUCUNE contrainte d'unicité sur athletes.email — colonne
+        // `text` brut, pas de CITEXT, aucun index unique (vérifié en base). Le
+        // garde-fou serait un index unique, décidé dans un ticket séparé après
+        // comptage des doublons existants.
+        const result = await autocompleteInvitableByEmail(supabase, newEmail);
         setEmailAutocomplete(result);
         setShowSuggestions(result.status === "ok" && result.suggestions.length > 0);
       } catch (err) {
@@ -480,6 +502,38 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
   useEffect(() => () => {
     if (emailAutocompleteTimerRef.current) clearTimeout(emailAutocompleteTimerRef.current);
   }, []);
+
+  /* Envoi de l'invitation depuis la modale post-création. Aucun nouveau chemin :
+     createAthleteInvitationLink appelle la RPC create_athlete_invitation, qui
+     insère dans athlete_invitations ; le trigger BEFORE INSERT
+     notify_invitation_email part alors vers l'edge function send-invitation
+     (Resend). Le lien vaut ${NEXT_PUBLIC_APP_URL}/claim?token=… — bakée dans le
+     bundle mobile par scripts/build-mobile.mjs, donc valide depuis l'app — et
+     le jeton vit 30 jours (valeur réelle de la table, non modifiée).
+     Les messages d'erreur viennent du helper partagé : ils sont déjà mappés en
+     français et sans PII (ATHLETE_UNDER_14 ne révèle ni l'âge ni la date). */
+  const envoyerInvitation = useCallback(async () => {
+    if (!inviteApres || envoiInvite) return;
+    setEnvoiInvite(true);
+    setResultatInvite(null);
+    try {
+      const supabase = createClient();
+      const { error } = await createAthleteInvitationLink(supabase, inviteApres.athleteId, inviteApres.email);
+      if (error) { setResultatInvite({ ok: false, msg: error }); return; }
+      triggerHaptic("Medium");
+      setResultatInvite({ ok: true, msg: `Invitation envoyée à ${inviteApres.email}.` });
+    } finally {
+      setEnvoiInvite(false);
+    }
+  }, [inviteApres, envoiInvite]);
+
+  /* Fermeture — par « Passer » comme par « Terminer ». La modale ne doit JAMAIS
+     retenir le coach : le profil est créé, l'invitation est un bonus. */
+  const fermerInvitation = useCallback(() => {
+    setInviteApres(null);
+    setResultatInvite(null);
+    router.push("/coach/athletes");
+  }, [router]);
 
   const handleSelectSuggestion = useCallback((suggestion: AthleteEmailSuggestion) => {
     setForm((prev) => ({
@@ -815,6 +869,37 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
       return;
     }
 
+    /* ═══ BASCULE : UN ATHLÈTE LIÉ NE SE CRÉE PAS ═══════════════════════════
+       Le web applique ce principe par une bascule d'ÉCRAN : dès que
+       `linkedToExisting` est posé, create/page.tsx retourne l'écran d'invitation
+       au lieu du formulaire, si bien que saveAthleteCreate n'est jamais atteint.
+       Ici le formulaire reste affiché jusqu'au bout, donc la bascule se fait AU
+       SEUIL DE LA SOUMISSION — même principe, même garantie : on n'insère rien.
+
+       La fiche existe DÉJÀ ; ce que le coach demande n'est pas une création mais
+       un rattachement. Créer ici produirait exactement le doublon que la
+       détection cherche à éviter, avec deux fiches portant le même courriel —
+       et rien en base ne l'empêcherait, faute d'index unique sur athletes.email.
+
+       On réutilise l'athleteId de la SUGGESTION, jamais un nouvel id. La modale
+       route ensuite sur hasAccount : compte existant → invitation d'équipe
+       in-app ; orphelin → invitation par courriel.
+
+       Placé AVANT le hard-stop <14 : un athlète déjà en base a déjà passé ce
+       contrôle à sa création, et on n'insère rien ici. Le gate reste intégral
+       sur le seul chemin qui écrit. */
+    if (isCreate && linkedToExisting) {
+      setSaving(false);
+      setShowSummarySheet(false);
+      triggerHaptic("Medium");
+      setInviteApres({
+        athleteId: linkedToExisting.athleteId,
+        email: linkedToExisting.email,
+        prenom: linkedToExisting.firstName || "",
+      });
+      return;
+    }
+
     // Hard-stop <14 (Loi 25), CREATE only — ferme le contournement par saut de
     // slide (canProceed ne gate que l'avance). Garantit qu'aucune row <14
     // n'atteint saveAthleteCreate. L'edit n'est JAMAIS bloqué.
@@ -846,9 +931,20 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
     toast.success({ message: isCreate ? "Profil créé" : "Profil enregistré" });
     setSaving(false);
     setShowSummarySheet(false);
+
+    /* CHEMIN B — courriel NEUF : la fiche vient d'être créée, on propose
+       l'invitation au lieu de repartir en silence. C'était le trou principal
+       du mobile : le coach quittait en croyant l'athlète prévenu, alors que
+       rien n'était envoyé. Sans courriel il n'y a rien à envoyer — on sort
+       comme avant. */
+    const courrielSaisi = form.identity.email?.trim();
+    if (isCreate && savedId && courrielSaisi) {
+      setInviteApres({ athleteId: savedId, email: courrielSaisi, prenom: form.identity.firstName || "" });
+      return;
+    }
     router.push(isCreate ? "/coach/athletes" : `/coach/athletes/${savedId}`);
   }, [
-    isCreate, form, athleteId, recruitmentStatus, committedSchoolId, coach.schoolId,
+    isCreate, form, athleteId, recruitmentStatus, committedSchoolId, coach.schoolId, linkedToExisting,
     router, toast, missingRequiredAll,
   ]);
 
@@ -1226,6 +1322,69 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
         }}
         extra={<CoteChangeConfirmContent newCote={pendingCote.newCote} originalCote={pendingCote.originalCote} />}
       />
+      {/* ═══ INVITATION APRÈS CRÉATION ═══════════════════════════════════════
+          Libellés repris du web À L'IDENTIQUE (app/coach/athletes/create,
+          l.1739-1770) — un athlète ne doit pas lire deux formulations selon
+          l'appareil. Le sous-titre suit hasAccount quand une suggestion a été
+          liée ; à défaut c'est un profil neuf, donc « profil déjà créé ».
+          `pointer-events-auto` sur la carte : l'enveloppe laisse passer les taps
+          hors de la modale, et le voile ferme. */}
+      {inviteApres && (
+        <div className="fixed inset-0 z-[90] flex items-end" role="dialog" aria-modal="true">
+          <button
+            type="button"
+            aria-label="Fermer"
+            className="absolute inset-0 bg-black/70"
+            onClick={fermerInvitation}
+          />
+          <div
+            className="relative w-full bg-[#1A1D24] rounded-t-2xl border-t border-[#E63946]/30 px-5 pt-5"
+            style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 20px)" }}
+          >
+            <h2 className="font-head text-[22px] font-black text-white uppercase tracking-tight">
+              Inviter {inviteApres.prenom}
+            </h2>
+            <p className="text-[13px] text-[#6b7280] mt-1">
+              {linkedToExisting?.hasAccount
+                ? "Compte Nexus existant détecté"
+                : "Profil déjà créé — invitation par courriel"}
+            </p>
+
+            <p className="text-[14px] text-[#c0c4cc] mt-4 leading-relaxed">
+              {linkedToExisting?.hasAccount
+                ? "Tu dois attendre que cet athlète accepte ton invitation avant de pouvoir voir son profil et l'évaluer. Une fois qu'il accepte, il sera ajouté à ton équipe automatiquement."
+                : "Cet athlète a déjà un profil chez toi mais n'a pas encore réclamé son compte. En l'invitant, il recevra un courriel avec un lien pour créer son compte et récupérer son profil."}
+            </p>
+            <p className="text-[13px] text-[#9CA3AF] mt-2">{inviteApres.email}</p>
+
+            {resultatInvite && (
+              <p className={`text-[13px] font-semibold mt-3 ${resultatInvite.ok ? "text-[#22C55E]" : "text-[#EF4444]"}`}>
+                {resultatInvite.ok ? "✓ " : ""}{resultatInvite.msg}
+              </p>
+            )}
+
+            <div className="flex flex-col gap-2 mt-5">
+              {!resultatInvite?.ok && (
+                <button
+                  type="button"
+                  onClick={envoyerInvitation}
+                  disabled={envoiInvite}
+                  className="w-full h-12 rounded-2xl bg-[#E63946] text-white text-[15px] font-semibold active:bg-[#D42B22] disabled:opacity-60"
+                >
+                  {envoiInvite ? "Envoi…" : "Envoyer par courriel"}
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={fermerInvitation}
+                className="w-full h-12 rounded-2xl border border-white/[0.12] text-[#c0c4cc] text-[15px] font-semibold active:bg-white/[0.06]"
+              >
+                {resultatInvite?.ok ? "Terminer" : "Passer"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 
@@ -2402,6 +2561,8 @@ function CreateSummary({
             onChange={onTogglePartner} />
         </div>
       </div>
+
+
     </div>
   );
 }
