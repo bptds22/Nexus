@@ -31,6 +31,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
+import { taRows } from "@/lib/queries/shared/embeds";
 import { genderLabel } from "@/lib/config/gender";
 
 /* ── Types ─────────────────────────────────────────────────── */
@@ -218,7 +219,12 @@ export function useRecruitingCalendar(enabled: boolean = true) {
         const sportRel = pickOne<Record<string, string>>(a.sports);
         const posRel = pickOne<Record<string, string>>(a.positions);
         const schoolRel = pickOne<Record<string, string>>(a.schools);
-        const links = Array.isArray(a.team_athletes) ? a.team_athletes : [];
+        // taRows : depuis l'ancrage unique strict, PostgREST renvoie cet embed
+        // en OBJET (ou null). Un test Array.isArray excluant le vidait, et le
+        // calendrier perdait TOUS ses matchs sans lever la moindre erreur.
+        const links = taRows<Record<string, unknown>>(
+          a.team_athletes as Record<string, unknown> | Record<string, unknown>[] | null,
+        );
 
         const base = {
           athleteId: a.id as string,

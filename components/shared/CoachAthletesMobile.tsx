@@ -34,6 +34,7 @@ import { isValidationExpired } from "@/lib/utils/profileValidation";
 import { parseDistinctions } from "@/lib/config/badges";
 import { selectBestEvaluation } from "@/lib/evaluations/selectEvaluation";
 import { TEAM_GENDER_FILTER_OPTIONS, firstTeamGender } from "@/lib/config/gender";
+import { taRows } from "@/lib/queries/shared/embeds";
 import {
   lookupInvitableByEmail,
   type AthleteEmailSuggestion,
@@ -153,7 +154,12 @@ function mapCoachAthlete(a: Record<string, unknown>, favCounts: Record<string, n
   const stars = Math.round(starsRaw * 10) / 10;
   const distinctions = parseDistinctions(eval0?.distinctions);
 
-  const teamAthletes = Array.isArray(a.team_athletes) ? a.team_athletes : [];
+  // taRows : depuis l'ancrage unique strict, PostgREST renvoie cet embed en
+  // OBJET (ou null). Un test Array.isArray excluant le vidait — le roster
+  // affichait « sans équipe » pour TOUS les athlètes et perdait le genre.
+  const teamAthletes = taRows<Record<string, unknown>>(
+    a.team_athletes as Record<string, unknown> | Record<string, unknown>[] | null,
+  );
   const noTeam = teamAthletes.length === 0;
   const teamGender = firstTeamGender(teamAthletes);
 
