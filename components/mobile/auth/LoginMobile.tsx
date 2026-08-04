@@ -32,17 +32,8 @@ import { postLoginDispatch } from "@/lib/auth/postLoginDispatch";
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import { NexusLogoSvg } from "./NexusLogoSvg";
 import { SocialButtonsMobile } from "./SocialButtonsMobile";
+import { triggerHaptic } from "@/lib/haptics";
 
-async function triggerHaptic(intensity: "Light" | "Medium" = "Light") {
-  try {
-    const { Haptics, ImpactStyle, NotificationType } = await import("@capacitor/haptics");
-    if (intensity === "Medium") {
-      await Haptics.notification({ type: NotificationType.Success });
-    } else {
-      await Haptics.impact({ style: ImpactStyle.Light });
-    }
-  } catch { /* no-op */ }
-}
 
 interface LoginMobileProps {
   /** Retour Welcome ("Pas de compte ? Commencer"). */

@@ -64,6 +64,7 @@ import VerifyAlert from "@/components/coach/profile/VerifyAlert";
 import SuggestionsAlert, { type PendingSuggestion } from "@/components/coach/profile/SuggestionsAlert";
 import SuggestionSheet from "@/components/coach/SuggestionSheet";
 import type { CoachTaskSuggestion } from "@/lib/coach/tasks";
+import { triggerHaptic } from "@/lib/haptics";
 
 export type AthleteProfileViewerMode = "recruiter" | "preview" | "partner";
 /** Surface viewer — drives recruteur-only gates + coach-only additions.
@@ -95,13 +96,6 @@ const mobileSubtle = "bg-white/[0.02] rounded-2xl";
 const mobileRow = "flex items-center justify-between py-3 border-b border-white/[0.06] last:border-b-0";
 
 // Helper haptic (Fix 7 iter 3.1) — no-op silencieux si plugin manquant (web build)
-async function triggerHaptic(intensity: "Light" | "Medium" | "Heavy" = "Light") {
-  try {
-    const { Haptics, ImpactStyle } = await import("@capacitor/haptics");
-    const style = intensity === "Light" ? ImpactStyle.Light : intensity === "Medium" ? ImpactStyle.Medium : ImpactStyle.Heavy;
-    await Haptics.impact({ style });
-  } catch { /* haptics non disponible */ }
-}
 
 // Mapping pulse dot par stage pipeline (Fix 3 iter 3.6).
 // IDENTIFIE/CONTACTE = passifs (gris statique)

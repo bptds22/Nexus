@@ -34,6 +34,7 @@ import { SECTIONS_CONFIDENTIALITE } from "@/content/legal/confidentialite";
 import { SECTIONS_CONDITIONS } from "@/content/legal/conditions";
 import { SECTIONS_COLLECTE_DONNEES } from "@/content/legal/collecte-donnees";
 import type { Section } from "@/content/legal/types";
+import { triggerHaptic } from "@/lib/haptics";
 
 export type LegalDocKey = "confidentialite" | "conditions" | "collecte-donnees";
 
@@ -51,13 +52,6 @@ const TITLE_BY_KEY: Record<LegalDocKey, string> = {
   "collecte-donnees": "Collecte et traitement des données",
 };
 
-async function triggerHaptic(intensity: "Light" | "Medium" = "Light") {
-  try {
-    const { Haptics, ImpactStyle } = await import("@capacitor/haptics");
-    const style = intensity === "Light" ? ImpactStyle.Light : ImpactStyle.Medium;
-    await Haptics.impact({ style });
-  } catch { /* no-op */ }
-}
 
 interface LegalSheetMobileProps {
   /** Clé du document à afficher. null = sheet fermé. */

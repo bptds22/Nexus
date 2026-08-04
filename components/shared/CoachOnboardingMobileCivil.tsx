@@ -47,6 +47,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { ExistingTeamBanner } from "@/components/shared/teams/ExistingTeamBanner";
 import type { DetectedTeam } from "@/lib/queries/coach/detectExistingTeam";
 import { TeamCreateFormBlock, type TeamFormValues } from "@/components/shared/teams/TeamCreateFormBlock";
+import { triggerHaptic } from "@/lib/haptics";
 
 /* ── Constantes ──────────────────────────────────────────────── */
 
@@ -85,16 +86,6 @@ type CivilTeamRow = {
 
 /* ── Helpers (duplicats parité école) ─────────────────────────── */
 
-async function triggerHaptic(intensity: "Light" | "Medium" = "Light") {
-  try {
-    const { Haptics, ImpactStyle, NotificationType } = await import("@capacitor/haptics");
-    if (intensity === "Medium") {
-      await Haptics.notification({ type: NotificationType.Success });
-    } else {
-      await Haptics.impact({ style: ImpactStyle.Light });
-    }
-  } catch { /* no-op */ }
-}
 
 function stripAccents(s: string): string {
   return s.normalize("NFD").replace(/[̀-ͯ]/g, "");

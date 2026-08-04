@@ -17,14 +17,8 @@ import { useMobileToast } from "@/components/mobile/MobileToast";
 import { useFavoriteAthletes } from "@/lib/queries/recruiter/useFavoriteAthletes";
 import { useToggleListMember } from "@/lib/queries/recruiter/useToggleListMember";
 import { useDebouncedValue } from "@/lib/utils/useDebouncedValue";
+import { triggerHaptic } from "@/lib/haptics";
 
-async function triggerHaptic(intensity: "Light" | "Medium" = "Light") {
-  try {
-    const { Haptics, ImpactStyle } = await import("@capacitor/haptics");
-    const style = intensity === "Light" ? ImpactStyle.Light : ImpactStyle.Medium;
-    await Haptics.impact({ style });
-  } catch { /* no-op */ }
-}
 
 export interface AddAthleteToListSheetProps {
   open: boolean;

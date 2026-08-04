@@ -52,6 +52,7 @@ import {
 } from "@/lib/queries/schoolPage/dbToProgramPage";
 import type { SchoolProgramIdentity } from "@/components/program-wall/slots";
 import { languageLabel, type ProgramPageContent, type Sport, type SportTeam } from "./content";
+import { tap } from "@/lib/haptics";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -62,12 +63,6 @@ const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
  *  elle qui rend `lib/platform/haptics.ts` (0 importateur, 0 try/catch) muet.
  *  Copie locale ASSUMÉE : la consolidation des 3 systèmes est une dette notée,
  *  traitée en session dédiée sur arbre propre. */
-async function tap(): Promise<void> {
-  try {
-    const { Haptics, ImpactStyle } = await import("@capacitor/haptics");
-    await Haptics.impact({ style: ImpactStyle.Light });
-  } catch { /* no-op */ }
-}
 
 const FONTS = (
   <>

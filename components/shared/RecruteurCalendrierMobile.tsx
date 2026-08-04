@@ -44,14 +44,8 @@ import {
 import { RECRUITER_TIERS } from "@/lib/config/pricing";
 import StarRating from "@/components/ui/StarRating";
 import { MobilePicker, type PickerOption } from "@/components/mobile/MobilePicker";
+import { triggerHaptic } from "@/lib/haptics";
 
-async function triggerHaptic(intensity: "Light" | "Medium" = "Light") {
-  try {
-    const { Haptics, ImpactStyle } = await import("@capacitor/haptics");
-    const style = intensity === "Light" ? ImpactStyle.Light : ImpactStyle.Medium;
-    await Haptics.impact({ style });
-  } catch { /* no-op */ }
-}
 
 const SPORT_OPTIONS: PickerOption[] = [
   { value: "", label: "Tous les sports" },

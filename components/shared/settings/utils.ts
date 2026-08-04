@@ -8,16 +8,10 @@ import { createClient } from "@/lib/supabase/client";
 
 export const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
-export async function triggerHaptic(intensity: "Light" | "Medium" | "Heavy" = "Light") {
-  try {
-    const { Haptics, ImpactStyle } = await import("@capacitor/haptics");
-    const style =
-      intensity === "Heavy" ? ImpactStyle.Heavy :
-      intensity === "Medium" ? ImpactStyle.Medium :
-      ImpactStyle.Light;
-    await Haptics.impact({ style });
-  } catch { /* no-op */ }
-}
+/* Ré-export : ce module exposait sa PROPRE copie de triggerHaptic, que
+   21 fichiers importaient. On garde le nom et le chemin — les appelants
+   ne bougent pas — mais l'implémentation vient désormais du helper unique. */
+export { triggerHaptic } from "@/lib/haptics";
 
 export async function openExternal(url: string) {
   try {

@@ -33,6 +33,7 @@ import { createPortal } from "react-dom";
 import type { AthleteProfileRecruiterView } from "@/lib/types/models";
 import AthletePlayerCard from "@/components/shared/AthletePlayerCard";
 import DistinctionBadge from "@/components/shared/DistinctionBadge";
+import { triggerHaptic } from "@/lib/haptics";
 
 /* ── Constantes showcase ─────────────────────────────────────── */
 
@@ -71,18 +72,6 @@ const T_EXIT_DURATION    = 650;
 
 /* ── Haptic helper ───────────────────────────────────────────── */
 
-async function triggerHaptic(intensity: "Light" | "Medium" | "Success" = "Light") {
-  try {
-    const { Haptics, ImpactStyle, NotificationType } = await import("@capacitor/haptics");
-    if (intensity === "Success") {
-      await Haptics.notification({ type: NotificationType.Success });
-    } else if (intensity === "Medium") {
-      await Haptics.impact({ style: ImpactStyle.Medium });
-    } else {
-      await Haptics.impact({ style: ImpactStyle.Light });
-    }
-  } catch { /* haptics non disponibles (web preview) */ }
-}
 
 /* ── Gyro tilt hook (DeviceOrientation web API) ──────────────── */
 

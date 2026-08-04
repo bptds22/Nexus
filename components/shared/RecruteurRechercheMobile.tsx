@@ -42,6 +42,7 @@ import { useMobileToast } from "@/components/mobile/MobileToast";
 import { createClient } from "@/lib/supabase/client";
 
 import { TEAM_GENDER_FILTER_OPTIONS } from "@/lib/config/gender";
+import { triggerHaptic } from "@/lib/haptics";
 /* ── Constants ────────────────────────────────────────────── */
 
 const SPORTS: PickerOption[] = [
@@ -127,13 +128,6 @@ function statusPillFromStatus(status: string): StatusPill {
   }
 }
 
-async function triggerHaptic(intensity: "Light" | "Medium" = "Light") {
-  try {
-    const { Haptics, ImpactStyle } = await import("@capacitor/haptics");
-    const style = intensity === "Light" ? ImpactStyle.Light : ImpactStyle.Medium;
-    await Haptics.impact({ style });
-  } catch { /* no-op */ }
-}
 
 /* ── MobileSearchBar (pill + morph fullscreen) ────────────── */
 

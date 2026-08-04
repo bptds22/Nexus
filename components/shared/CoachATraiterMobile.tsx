@@ -42,7 +42,7 @@ import AthletePhoto from "@/components/shared/AthletePhoto";
 import { coteChanged } from "@/lib/utils/cote";
 import { ConfirmSheet } from "@/components/shared/settings";
 import CoteChangeConfirmContent from "@/components/shared/CoteChangeConfirmContent";
-import { hapticSuccess } from "@/lib/haptics";
+import { hapticSuccess, triggerHaptic } from "@/lib/haptics";
 
 /* ── Types ────────────────────────────────────────────────────── */
 
@@ -63,13 +63,6 @@ type FlatEntry =
 
 /* ── Helpers ──────────────────────────────────────────────────── */
 
-async function triggerHaptic(intensity: "Light" | "Medium" = "Light") {
-  try {
-    const { Haptics, ImpactStyle } = await import("@capacitor/haptics");
-    const style = intensity === "Light" ? ImpactStyle.Light : ImpactStyle.Medium;
-    await Haptics.impact({ style });
-  } catch { /* no-op */ }
-}
 
 function relativeTime(iso: string): string {
   if (!iso) return "";

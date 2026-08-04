@@ -20,14 +20,8 @@
 
 import { NexusLogoSvg } from "./NexusLogoSvg";
 import { SocialButtonsMobile } from "./SocialButtonsMobile";
+import { triggerHaptic } from "@/lib/haptics";
 
-async function triggerHaptic(intensity: "Light" | "Medium" = "Medium") {
-  try {
-    const { Haptics, ImpactStyle } = await import("@capacitor/haptics");
-    const style = intensity === "Light" ? ImpactStyle.Light : ImpactStyle.Medium;
-    await Haptics.impact({ style });
-  } catch { /* no-op */ }
-}
 
 async function setHasLaunched(): Promise<void> {
   try {

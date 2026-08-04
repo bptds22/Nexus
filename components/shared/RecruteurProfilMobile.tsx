@@ -28,14 +28,8 @@ import { MobilePicker, useMobilePicker } from "@/components/mobile/MobilePicker"
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import { useRecruiterProfile } from "@/lib/queries/recruiter/useRecruiterProfile";
 import { useDebouncedValue } from "@/lib/utils/useDebouncedValue";
+import { triggerHaptic } from "@/lib/haptics";
 
-async function triggerHaptic(intensity: "Light" | "Medium" = "Light") {
-  try {
-    const { Haptics, ImpactStyle } = await import("@capacitor/haptics");
-    const style = intensity === "Light" ? ImpactStyle.Light : ImpactStyle.Medium;
-    await Haptics.impact({ style });
-  } catch { /* no-op */ }
-}
 
 const TITLES = [
   "Entraîneur-chef",

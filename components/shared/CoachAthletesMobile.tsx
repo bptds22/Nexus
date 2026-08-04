@@ -40,6 +40,7 @@ import {
 } from "@/lib/coach/athleteEmailAutocomplete";
 import { createAthleteInvitationLink } from "@/lib/queries/coach/createAthleteInvitation";
 import { loadCoachTeams, inviteAthleteToTeam, type CoachTeamOption } from "@/lib/queries/coach/teamInvite";
+import { triggerHaptic } from "@/lib/haptics";
 
 /* ── Constants ────────────────────────────────────────────── */
 
@@ -122,13 +123,6 @@ export interface CoachAthlete {
 
 /* ── Helpers ──────────────────────────────────────────────── */
 
-async function triggerHaptic(intensity: "Light" | "Medium" = "Light") {
-  try {
-    const { Haptics, ImpactStyle } = await import("@capacitor/haptics");
-    const style = intensity === "Light" ? ImpactStyle.Light : ImpactStyle.Medium;
-    await Haptics.impact({ style });
-  } catch { /* no-op */ }
-}
 
 function mapCoachAthlete(a: Record<string, unknown>, favCounts: Record<string, number>): CoachAthlete {
   const posRaw = a.positions;

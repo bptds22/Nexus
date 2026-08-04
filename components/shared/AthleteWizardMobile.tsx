@@ -102,18 +102,9 @@ import { isUnder14 } from "@/lib/legal/ageGate";
 import { ConfirmSheet } from "@/components/shared/settings";
 import { Skeleton } from "@/components/ui/Skeleton";
 import CoteChangeConfirmContent from "@/components/shared/CoteChangeConfirmContent";
+import { triggerHaptic } from "@/lib/haptics";
 
 /* ── Haptics helper (matches onboarding shells) ─────────────── */
-async function triggerHaptic(intensity: "Light" | "Medium" = "Light") {
-  try {
-    const { Haptics, ImpactStyle, NotificationType } = await import("@capacitor/haptics");
-    if (intensity === "Medium") {
-      await Haptics.notification({ type: NotificationType.Success });
-    } else {
-      await Haptics.impact({ style: ImpactStyle.Light });
-    }
-  } catch { /* no-op */ }
-}
 
 /* ── Constantes ───────────────────────────────────────────────── */
 

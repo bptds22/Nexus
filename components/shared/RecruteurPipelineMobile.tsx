@@ -36,6 +36,7 @@ import { useRemoveFromPipeline } from "@/lib/queries/recruiter/useRemoveFromPipe
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import { MobilePicker } from "@/components/mobile/MobilePicker";
 import type { PipelineKanbanCard } from "@/app/recruteur/pipeline/_data/mockKanbanData";
+import { triggerHaptic } from "@/lib/haptics";
 
 /* ── Stages config (DB enum stage) ───────────────────────────── */
 
@@ -78,13 +79,6 @@ function statusGlobalColor(status: string): { dot: string; label: string; animat
   }
 }
 
-async function triggerHaptic(intensity: "Light" | "Medium" = "Light") {
-  try {
-    const { Haptics, ImpactStyle } = await import("@capacitor/haptics");
-    const style = intensity === "Light" ? ImpactStyle.Light : ImpactStyle.Medium;
-    await Haptics.impact({ style });
-  } catch { /* no-op */ }
-}
 
 /* ── PipelineHeader ──────────────────────────────────────────── */
 

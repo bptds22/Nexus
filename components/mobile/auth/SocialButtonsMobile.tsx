@@ -36,6 +36,7 @@ import { useMobileToast } from "@/components/mobile/MobileToast";
 import { createClient } from "@/lib/supabase/client";
 import { postLoginDispatch } from "@/lib/auth/postLoginDispatch";
 import { signInWithGoogle, signInWithApple } from "@/lib/auth/social";
+import { triggerHaptic } from "@/lib/haptics";
 import {
   needsSignupRole,
   claimSignupRole,
@@ -43,12 +44,6 @@ import {
   type ClaimableContext,
 } from "@/lib/auth/claimSignupRole";
 
-async function triggerHaptic() {
-  try {
-    const { Haptics, ImpactStyle } = await import("@capacitor/haptics");
-    await Haptics.impact({ style: ImpactStyle.Light });
-  } catch { /* no-op */ }
-}
 
 function GoogleLogo() {
   // 20×20 = taille de référence (G remplit ~85% du viewBox).

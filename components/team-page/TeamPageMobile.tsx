@@ -46,6 +46,7 @@ import {
   type TeamData, type TeamEvent, type Pennant, type ConnectedAthlete, type SportConfig,
 } from "@/components/team-page/content";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { tap } from "@/lib/haptics";
 
 /** Fil d'Ariane posé par « L'affiche » de la page école — dit à la page équipe
  *  qu'une page école la précède dans l'historique, donc qu'il faut DÉPILER. */
@@ -62,12 +63,6 @@ const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
  *  elle qui rend `lib/platform/haptics.ts` (0 importateur, 0 try/catch) muet.
  *  Copie locale ASSUMÉE : la consolidation des 3 systèmes est une dette notée,
  *  traitée en session dédiée sur arbre propre. */
-async function tap(): Promise<void> {
-  try {
-    const { Haptics, ImpactStyle } = await import("@capacitor/haptics");
-    await Haptics.impact({ style: ImpactStyle.Light });
-  } catch { /* no-op */ }
-}
 
 const FONTS = (
   <>

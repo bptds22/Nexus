@@ -49,6 +49,7 @@ import AthleteOnboardingWowMobile from "@/components/shared/AthleteOnboardingWow
 import { Skeleton } from "@/components/ui/Skeleton";
 import { loadAthleteRaw, mapToRecruiterView } from "@/app/coach/athletes/_data/loadAthleteFromSupabase";
 import type { AthleteProfileRecruiterView } from "@/lib/types/models";
+import { triggerHaptic } from "@/lib/haptics";
 
 /* ── Constantes (alignées sur desktop) ──────────────────────── */
 
@@ -95,16 +96,6 @@ type TeamCoachRow = {
 
 /* ── Helpers ────────────────────────────────────────────────── */
 
-async function triggerHaptic(intensity: "Light" | "Medium" = "Light") {
-  try {
-    const { Haptics, ImpactStyle, NotificationType } = await import("@capacitor/haptics");
-    if (intensity === "Medium") {
-      await Haptics.notification({ type: NotificationType.Success });
-    } else {
-      await Haptics.impact({ style: ImpactStyle.Light });
-    }
-  } catch { /* no-op */ }
-}
 
 function flatten<T>(rel: T | T[] | null | undefined): T | null {
   if (!rel) return null;

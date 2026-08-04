@@ -42,6 +42,7 @@ import { SearchSheet } from "@/components/mobile/SearchSheet";
 import { formatTeamLabel } from "@/lib/teams/teamLabel";
 import { ExistingTeamBanner } from "@/components/shared/teams/ExistingTeamBanner";
 import TeamCreateForm, { type TeamFormData } from "@/components/onboarding/TeamCreateForm";
+import { triggerHaptic } from "@/lib/haptics";
 
 /* ── Constantes ──────────────────────────────────────────────── */
 
@@ -70,16 +71,6 @@ type ScolaireTeamRow = {
 
 /* ── Helpers ─────────────────────────────────────────────────── */
 
-async function triggerHaptic(intensity: "Light" | "Medium" = "Light") {
-  try {
-    const { Haptics, ImpactStyle, NotificationType } = await import("@capacitor/haptics");
-    if (intensity === "Medium") {
-      await Haptics.notification({ type: NotificationType.Success });
-    } else {
-      await Haptics.impact({ style: ImpactStyle.Light });
-    }
-  } catch { /* no-op */ }
-}
 
 function stripAccents(s: string): string {
   return s.normalize("NFD").replace(/[̀-ͯ]/g, "");

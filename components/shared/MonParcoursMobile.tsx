@@ -12,6 +12,7 @@ import { useAthleteVisibilityPro, type CegepDetail } from "@/hooks/useAthleteVis
 import { MON_PARCOURS_COTE_COPY } from "@/lib/config/parcoursCoteCopy";
 import { parseDistinctions, BADGE_ORDER, type DistinctionEntry } from "@/lib/config/badges";
 import DistinctionBadge from "@/components/shared/DistinctionBadge";
+import { triggerHaptic } from "@/lib/haptics";
 
 /* ═══════════════════════════════════════════════════════════════
    MonParcoursMobile — Sprint B-1.
@@ -142,13 +143,6 @@ const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
    try/catch keeps the web build silent when the @capacitor/haptics
    plugin isn't available, same fallback semantics as the dynamic
    Share import below. */
-async function triggerHaptic(intensity: "Light" | "Medium" | "Heavy" = "Light") {
-  try {
-    const { Haptics, ImpactStyle } = await import("@capacitor/haptics");
-    const style = intensity === "Light" ? ImpactStyle.Light : intensity === "Medium" ? ImpactStyle.Medium : ImpactStyle.Heavy;
-    await Haptics.impact({ style });
-  } catch { /* haptics non disponible */ }
-}
 
 /* normalizeCoteKey — defensive cast of athletes.cote_globale_entraineur
    (numeric column, can be a DECIMAL like 2.5 or null) into an integer

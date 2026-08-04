@@ -19,6 +19,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import type { CoachTaskSuggestion } from "@/lib/coach/tasks";
+import { triggerHaptic } from "@/lib/haptics";
 
 /* ── champ label map + helper (réutilisé par les summary lines) ── */
 
@@ -71,13 +72,6 @@ export function relativeTime(iso: string): string {
   return new Date(iso).toLocaleDateString("fr-CA", { day: "numeric", month: "short" });
 }
 
-async function triggerHaptic(intensity: "Light" | "Medium" = "Light") {
-  try {
-    const { Haptics, ImpactStyle } = await import("@capacitor/haptics");
-    const style = intensity === "Light" ? ImpactStyle.Light : ImpactStyle.Medium;
-    await Haptics.impact({ style });
-  } catch { /* no-op */ }
-}
 
 export interface SuggestionSheetProps {
   open: boolean;

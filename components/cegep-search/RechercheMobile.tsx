@@ -24,6 +24,7 @@ import { loadSearchData, type SearchData, type CegepRow } from "@/lib/queries/ce
 import { norm, regionCentroid, scoreCegep } from "@/lib/queries/cegepSearch/scoring";
 import Link from "next/link";
 import type { MapFocus } from "./MapPane";
+import { tap } from "@/lib/haptics";
 
 // Leaflet touche `window` à l'import → jamais au SSR (même garde que le web).
 const MapPane = dynamic(() => import("./MapPane"), { ssr: false });
@@ -90,12 +91,6 @@ const SHEET_MS = 280;
  *  etc.) : import dynamique + try/catch, SANS guard `isNativePlatform` (qui
  *  no-oppait en silence si false) et SANS `void` qui avalait l'erreur. Sur web,
  *  Haptics.impact no-op proprement (le catch couvre tout). */
-async function tap(): Promise<void> {
-  try {
-    const { Haptics, ImpactStyle } = await import("@capacitor/haptics");
-    await Haptics.impact({ style: ImpactStyle.Light });
-  } catch { /* no-op */ }
-}
 type FKey = "sport" | "programme" | "region" | "langue" | "type";
 
 /** Ordre des pilles imposé par le ticket : Pour moi · Sport · Programme ·

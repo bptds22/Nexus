@@ -64,17 +64,8 @@ import {
 import { isAdult, isUnder14 } from "@/lib/legal/ageGate";
 import { LegalSheetMobile, type LegalDocKey } from "@/components/legal/LegalSheetMobile";
 import PartnerVisibilityConsentCard from "@/components/shared/PartnerVisibilityConsentCard";
+import { triggerHaptic } from "@/lib/haptics";
 
-async function triggerHaptic(intensity: "Light" | "Medium" = "Light") {
-  try {
-    const { Haptics, ImpactStyle, NotificationType } = await import("@capacitor/haptics");
-    if (intensity === "Medium") {
-      await Haptics.notification({ type: NotificationType.Success });
-    } else {
-      await Haptics.impact({ style: ImpactStyle.Light });
-    }
-  } catch { /* no-op */ }
-}
 
 const RELATION_OPTIONS: PickerOption[] = [
   { value: "Père", label: "Père" },

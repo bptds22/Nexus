@@ -19,14 +19,8 @@ import { EmptyState as SharedEmptyState } from "@/components/mobile/EmptyState";
 import { useRecruiterLists, type RecruiterListSummary } from "@/lib/queries/recruiter/useRecruiterLists";
 import { useCreateList } from "@/lib/queries/recruiter/useCreateList";
 import { useDeleteList } from "@/lib/queries/recruiter/useDeleteList";
+import { triggerHaptic } from "@/lib/haptics";
 
-async function triggerHaptic(intensity: "Light" | "Medium" = "Light") {
-  try {
-    const { Haptics, ImpactStyle } = await import("@capacitor/haptics");
-    const style = intensity === "Light" ? ImpactStyle.Light : ImpactStyle.Medium;
-    await Haptics.impact({ style });
-  } catch { /* no-op */ }
-}
 
 function formatRelativeDate(iso: string): string {
   try {

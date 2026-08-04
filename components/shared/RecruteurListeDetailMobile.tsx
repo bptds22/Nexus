@@ -25,14 +25,8 @@ import { useAddListNote } from "@/lib/queries/recruiter/useAddListNote";
 import { getStatusConfig, type RecruitmentStatus } from "@/lib/config/recruitmentStatuses";
 import { AddAthleteToListSheet } from "@/components/shared/AddAthleteToListSheet";
 import { formatRelativeDate } from "@/lib/utils/formatRelativeDate";
+import { triggerHaptic } from "@/lib/haptics";
 
-async function triggerHaptic(intensity: "Light" | "Medium" = "Light") {
-  try {
-    const { Haptics, ImpactStyle } = await import("@capacitor/haptics");
-    const style = intensity === "Light" ? ImpactStyle.Light : ImpactStyle.Medium;
-    await Haptics.impact({ style });
-  } catch { /* no-op */ }
-}
 
 /* ── ListAthleteCardMobile ─────────────────────────────────────
    Réplique le visuel PipelineCardMobile (canon 14.1 photo-gauche
