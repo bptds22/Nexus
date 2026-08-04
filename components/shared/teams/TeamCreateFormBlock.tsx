@@ -32,6 +32,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { MobilePicker, type PickerOption } from "@/components/mobile/MobilePicker";
+import { triggerHaptic } from "@/lib/haptics";
 import {
   AGE_OPTIONS, DIVISION_OPTIONS, GENDER_OPTIONS, SEASON_OPTIONS, AUTRE_VALUE,
 } from "@/lib/config/civilVocab";
@@ -185,7 +186,7 @@ export function TeamCreateFormBlock({
             <>
               <button
                 type="button"
-                onClick={() => setSportSheetOpen(true)}
+                onClick={() => { void triggerHaptic("Light"); setSportSheetOpen(true); }}
                 className={pickerBtnCls}
               >
                 <span className={`text-[15px] truncate ${selectedSportLabel ? "text-white" : "text-white/40"}`}>
@@ -227,7 +228,7 @@ export function TeamCreateFormBlock({
           <>
             <button
               type="button"
-              onClick={() => setAgeSheetOpen(true)}
+              onClick={() => { void triggerHaptic("Light"); setAgeSheetOpen(true); }}
               className={pickerBtnCls}
             >
               <span className={`text-[15px] truncate ${values.ageGroup ? "text-white" : "text-white/40"}`}>
@@ -277,7 +278,7 @@ export function TeamCreateFormBlock({
           <>
             <button
               type="button"
-              onClick={() => setDivSheetOpen(true)}
+              onClick={() => { void triggerHaptic("Light"); setDivSheetOpen(true); }}
               className={pickerBtnCls}
             >
               <span className={`text-[15px] truncate ${values.division ? "text-white" : "text-white/40"}`}>
@@ -330,7 +331,7 @@ export function TeamCreateFormBlock({
               <button
                 key={opt.value}
                 type="button"
-                onClick={() => update("gender", opt.value)}
+                onClick={() => { void triggerHaptic("Light"); update("gender", opt.value); }}
                 className={`flex-1 h-11 rounded-2xl text-[12px] font-bold uppercase tracking-wider transition-all ${
                   selected
                     ? "bg-[rgba(230,57,70,0.12)] border border-[#E63946] text-white"
@@ -368,7 +369,7 @@ export function TeamCreateFormBlock({
             <>
               <button
                 type="button"
-                onClick={() => setSeasonSheetOpen(true)}
+                onClick={() => { void triggerHaptic("Light"); setSeasonSheetOpen(true); }}
                 className={pickerBtnCls}
               >
                 <span className={`text-[15px] truncate ${values.season ? "text-white" : "text-white/40"}`}>

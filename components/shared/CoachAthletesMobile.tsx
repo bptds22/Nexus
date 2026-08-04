@@ -254,7 +254,7 @@ function MobileSearchBar({
             className="flex-1 min-w-0 bg-transparent text-[16px] text-white placeholder:text-[#6B7280] outline-none"
           />
           {search.length > 0 && (
-            <button type="button" onClick={() => onSearchChange("")} className="text-[#6B7280] active:text-white" aria-label="Effacer">
+            <button type="button" onClick={() => { void triggerHaptic("Light"); onSearchChange(""); }} className="text-[#6B7280] active:text-white" aria-label="Effacer">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                 <path d="M18 6L6 18" /><path d="M6 6l12 12" />
               </svg>
@@ -520,7 +520,7 @@ function ConfirmClaimSheet({
     <>
       <div
         className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm"
-        onClick={() => { if (!submitting) onCancel(); }}
+        onClick={() => { void triggerHaptic("Light"); if (!submitting) onCancel(); }}
         style={{ animation: "nx-coach-modal-fade 200ms ease-out forwards" }}
       />
       <div
@@ -779,7 +779,7 @@ function InviteByEmailSheet({
     <>
       <div
         className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm"
-        onClick={() => { if (!submitting) onClose(); }}
+        onClick={() => { void triggerHaptic("Light"); if (!submitting) onClose(); }}
         style={{ animation: "nx-modal-fade 200ms ease-out forwards" }}
       />
       <div
@@ -809,7 +809,7 @@ function InviteByEmailSheet({
                     <p className="text-[13px] text-[#9CA3AF] truncate">{match.sportName || "—"} · {match.email}</p>
                   </div>
                   <button
-                    type="button" onClick={handleInvite}
+                    type="button" onClick={() => { void triggerHaptic("Light"); handleInvite(); }}
                     disabled={submitting || (match.hasAccount && !teamId && teams.length !== 1)}
                     className="shrink-0 h-11 px-4 rounded-2xl bg-[#E63946] text-white text-[13px] font-bold active:bg-[#D42B22] disabled:opacity-40"
                   >

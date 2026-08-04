@@ -321,7 +321,7 @@ export function MaReputationMobile({ coachId, backHref }: Props) {
   return (
     <div
       className="min-h-screen w-full overflow-x-hidden bg-[#111317] text-white nx-mobile-pb-tabbar"
-      onClick={() => { if (openTooltip) setOpenTooltip(null); }}
+      onClick={() => { void triggerHaptic("Light"); if (openTooltip) setOpenTooltip(null); }}
     >
       {/* Sticky header */}
       <div

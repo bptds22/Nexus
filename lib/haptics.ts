@@ -34,16 +34,24 @@
    du défaut (certaines copies avaient "Medium") ne change aucun comportement.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/** Union de toutes les intensités que les copies locales acceptaient. */
+/** Union de toutes les intensités que les copies locales acceptaient, plus
+    "Selection" — ajoutée par P3, voir le commentaire sur son aiguillage. */
 export type HapticIntensity =
   | "Light"
   | "Medium"
   | "Heavy"
   | "Success"
   | "Warning"
-  | "Error";
+  | "Error"
+  | "Selection";
 
 const NOTIFS: readonly HapticIntensity[] = ["Success", "Warning", "Error"];
+
+/* "Selection" n'est NI un impact NI une notification : c'est la troisième API du
+   plugin, `selectionChanged()`. C'est le retour conçu pour les roues et les
+   sélecteurs défilants — un cran sec, répété à chaque valeur qui passe, sans le
+   « poids » d'un impact. Sans elle, P3 aurait dû traiter les roues comme des
+   boutons ordinaires, ce qui aurait donné un martèlement de taps. */
 
 /**
  * Retour haptique. Impact pour Light/Medium/Heavy, notification pour
@@ -52,6 +60,10 @@ const NOTIFS: readonly HapticIntensity[] = ["Success", "Warning", "Error"];
 export async function triggerHaptic(intensity: HapticIntensity = "Light"): Promise<void> {
   try {
     const { Haptics, ImpactStyle, NotificationType } = await import("@capacitor/haptics");
+    if (intensity === "Selection") {
+      await Haptics.selectionChanged();
+      return;
+    }
     if (NOTIFS.includes(intensity)) {
       await Haptics.notification({
         type: NotificationType[intensity as "Success" | "Warning" | "Error"],

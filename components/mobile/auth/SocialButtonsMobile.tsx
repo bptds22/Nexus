@@ -186,7 +186,7 @@ export function SocialButtonsMobile({ topMargin = 20, role, context }: SocialBut
           dans un conteneur 24×24 pour aligner l'axe vertical du texte. */}
       <button
         type="button"
-        onClick={() => handleProvider("google")}
+        onClick={() => { void triggerHaptic("Light"); handleProvider("google"); }}
         disabled={busy !== null}
         className="w-full h-14 mt-4 rounded-2xl bg-[#1A1D24] border border-white/[0.10] text-white font-semibold flex items-center justify-center gap-3 active:scale-[0.97] active:bg-[#22262e] transition-all disabled:opacity-60"
         style={{ fontSize: 15 }}
@@ -203,7 +203,7 @@ export function SocialButtonsMobile({ topMargin = 20, role, context }: SocialBut
           h-14 ≥ 44pt). Ne PAS repeindre en rouge Nexus (exigence App Review 4.8). */}
       <button
         type="button"
-        onClick={() => handleProvider("apple")}
+        onClick={() => { void triggerHaptic("Light"); handleProvider("apple"); }}
         disabled={busy !== null}
         className="w-full h-14 mt-3 rounded-2xl bg-black border border-white/[0.18] text-white font-semibold flex items-center justify-center gap-3 active:scale-[0.97] active:bg-[#111] transition-all disabled:opacity-60"
         style={{ fontSize: 15 }}

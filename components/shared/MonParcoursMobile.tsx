@@ -728,7 +728,7 @@ export default function MonParcoursMobile() {
                   <div className="flex flex-col items-center shrink-0" style={{ width: 28 }}>
                     <button
                       type="button"
-                      onClick={() => setPhase(step.phase)}
+                      onClick={() => { void triggerHaptic("Light"); setPhase(step.phase); }}
                       disabled={phaseSaving}
                       aria-label={`Marquer : ${step.label}`}
                       className={`relative flex items-center justify-center transition-all duration-300 active:scale-95 disabled:opacity-60 ${
@@ -1176,7 +1176,7 @@ export default function MonParcoursMobile() {
           <div className="px-5">
             <button
               type="button"
-              onClick={() => { setSearch(""); setPickerOpen(true); }}
+              onClick={() => { void triggerHaptic("Light"); setSearch(""); setPickerOpen(true); }}
               disabled={!athleteId}
               className="w-full rounded-2xl border-2 border-dashed border-[#2D3748] bg-[#1A1D24]/40 py-8 flex flex-col items-center gap-3 active:bg-[#1A1D24]/70 disabled:opacity-50"
             >
@@ -1222,7 +1222,7 @@ export default function MonParcoursMobile() {
               >
                 <button
                   type="button"
-                  onClick={() => { setSearch(""); setPickerOpen(true); }}
+                  onClick={() => { void triggerHaptic("Light"); setSearch(""); setPickerOpen(true); }}
                   disabled={!athleteId || busy}
                   className="w-full rounded-2xl border-2 border-dashed border-[#2D3748] bg-transparent flex flex-col items-center justify-center gap-2 py-8 active:bg-white/[0.03] disabled:opacity-50"
                 >
@@ -1404,7 +1404,7 @@ export default function MonParcoursMobile() {
                   >
                     <button
                       type="button"
-                      onClick={() => toggleManual(item.manualKey!)}
+                      onClick={() => { void triggerHaptic("Light"); toggleManual(item.manualKey!); }}
                       disabled={isBusy}
                       className="w-full text-left px-3.5 py-3 active:bg-white/[0.03] disabled:opacity-60 rounded-xl"
                     >

@@ -1088,7 +1088,7 @@ function PipelineDetailSheet({
                       <button
                         key={stage.lower}
                         type="button"
-                        onClick={() => handleStageChange(stage.key)}
+                        onClick={() => { void triggerHaptic("Light"); handleStageChange(stage.key); }}
                         disabled={isActive || isFreeDemoMode}
                         className={`py-3 rounded-2xl text-[11px] uppercase tracking-wider font-bold transition-colors ${
                           isActive
@@ -1109,7 +1109,7 @@ function PipelineDetailSheet({
               <div className="space-y-2 pt-2 border-t border-white/[0.06]">
                 <button
                   type="button"
-                  onClick={handleViewProfile}
+                  onClick={() => { void triggerHaptic("Light"); handleViewProfile(); }}
                   className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-[#1A1D24] text-white text-[13px] font-bold active:bg-white/5"
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

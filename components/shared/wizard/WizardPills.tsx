@@ -28,6 +28,7 @@
 ═══════════════════════════════════════════════════════════════ */
 
 import { useEffect, useRef } from "react";
+import { triggerHaptic } from "@/lib/haptics";
 
 export interface WizardPillsProps {
   /** Section labels in order (e.g. ["Identité", "Académique", …]). */
@@ -109,7 +110,7 @@ export function WizardPills({
                 key={i}
                 type="button"
                 ref={isCurrent ? activeChipRef : null}
-                onClick={() => onSelect(i)}
+                onClick={() => { void triggerHaptic("Light"); onSelect(i); }}
                 className={`${baseCls} ${chipCls}`}
                 style={chipStyle}
               >

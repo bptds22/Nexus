@@ -15,6 +15,7 @@ import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { createClient } from "@/lib/supabase/client";
 import AthletePhoto from "@/components/shared/AthletePhoto";
+import { triggerHaptic } from "@/lib/haptics";
 
 export interface AthleteCandidate {
   id: string;
@@ -185,7 +186,7 @@ export function TeamAddAthleteSheet({
                 <li key={a.id}>
                   <button
                     type="button"
-                    onClick={() => onPicked(a.id)}
+                    onClick={() => { void triggerHaptic("Light"); onPicked(a.id); }}
                     className="w-full flex items-center gap-3 p-3 bg-[#111317] rounded-2xl active:bg-[#22262e] transition-colors text-left"
                   >
                     {/* Canonical photo (athletes.photo_url) + initials

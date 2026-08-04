@@ -30,6 +30,7 @@ import {
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
+import { triggerHaptic } from "@/lib/haptics";
 
 export type ToastVariant = "success" | "error" | "warning" | "info";
 
@@ -226,8 +227,7 @@ function ToastRenderer({ toast, phase, expanded, onToggleExpand, onActionTap }: 
           <span
             role="button"
             tabIndex={0}
-            onClick={(e) => {
-              e.stopPropagation();
+            onClick={(e) => { void triggerHaptic("Light"); e.stopPropagation();
               e.preventDefault();
               toast.action!.onClick();
               onActionTap();

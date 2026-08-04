@@ -113,7 +113,7 @@ export function MobilePicker({ open, onClose, title, options, value, onChange }:
                 <button
                   key={`${opt.value}-${idx}`}
                   type="button"
-                  onClick={() => selectOption(opt.value)}
+                  onClick={() => { void triggerHaptic("Light"); selectOption(opt.value); }}
                   className="w-full flex items-center justify-between px-4 text-left active:bg-white/[0.04]"
                   style={{
                     height: 56,

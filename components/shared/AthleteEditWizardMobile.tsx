@@ -347,7 +347,7 @@ function SuggestExpand({
         <>
           <button
             type="button"
-            onClick={() => setWheelOpen(true)}
+            onClick={() => { void triggerHaptic("Light"); setWheelOpen(true); }}
             className="w-full flex items-center justify-between bg-[#111317] border border-white/[0.10] rounded-2xl px-4 py-3 active:bg-white/[0.04] text-left"
           >
             <span className={`text-[15px] ${proposed ? "text-white" : "text-white/40"}`}>
@@ -395,7 +395,7 @@ function SuggestExpand({
         <>
           <button
             type="button"
-            onClick={() => setPickerOpen(true)}
+            onClick={() => { void triggerHaptic("Light"); setPickerOpen(true); }}
             className="w-full flex items-center justify-between bg-[#111317] border border-white/[0.10] rounded-2xl px-4 py-3 active:bg-white/[0.04] text-left"
           >
             <span className={`text-[15px] ${proposed ? "text-white" : "text-white/40"}`}>
@@ -508,7 +508,7 @@ function SuggestRow({
     <div>
       <button
         type="button"
-        onClick={() => setExpanded(true)}
+        onClick={() => { void triggerHaptic("Light"); setExpanded(true); }}
         className="w-full flex items-center gap-3 px-4 py-3 text-left active:bg-white/[0.04]"
         style={{ borderBottom: isLast && !expanded ? undefined : "1px solid rgba(255,255,255,0.06)" }}
       >
@@ -1030,7 +1030,7 @@ export default function AthleteEditWizardMobile() {
       >
         <button
           type="button"
-          onClick={() => router.push("/athlete/profil/apercu")}
+          onClick={() => { void triggerHaptic("Light"); router.push("/athlete/profil/apercu"); }}
           className="w-full flex items-center justify-center gap-2 bg-[#E63946] text-white rounded-2xl px-4 py-3 font-head font-bold text-[13px] uppercase tracking-widest active:bg-[#D42B22] shadow-[0_0_20px_rgba(230,57,70,0.3)]"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -1530,7 +1530,7 @@ function CustomChipsField({
         />
         <button
           type="button"
-          onClick={addCustom}
+          onClick={() => { void triggerHaptic("Light"); addCustom(); }}
           disabled={!draft.trim()}
           className="shrink-0 px-3 py-2 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-colors bg-[#E63946] text-white active:bg-[#D42B22] disabled:opacity-40 disabled:bg-white/[0.06] disabled:text-white/40"
         >
@@ -1683,7 +1683,7 @@ function SportStep({
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-[13px] font-head font-bold tracking-[0.12em] uppercase text-[#9CA3AF]">Parcours d&apos;équipes</h3>
           {!phEditing && (
-            <button type="button" onClick={phStart} className="text-[12px] font-bold text-[#E63946]">
+            <button type="button" onClick={() => { void triggerHaptic("Light"); phStart(); }} className="text-[12px] font-bold text-[#E63946]">
               {phCurrent.length ? "Modifier" : "Ajouter"}
             </button>
           )}
@@ -1692,8 +1692,8 @@ function SportStep({
           <>
             <TeamHistoryEditor value={phDraft} onChange={setPhDraft} sports={sportsOptions} maxYear={phMaxYear} />
             <div className="flex items-center justify-end gap-3 mt-4 pt-3 border-t border-[#2D3748]/40">
-              <button type="button" onClick={() => setPhEditing(false)} className="text-[13px] font-bold text-[#9CA3AF]">Annuler</button>
-              <button type="button" onClick={phSave} disabled={phSaving || !phValid} className="px-4 py-2 bg-[#E63946] disabled:opacity-50 text-white text-[13px] font-bold rounded-lg">
+              <button type="button" onClick={() => { void triggerHaptic("Light"); setPhEditing(false); }} className="text-[13px] font-bold text-[#9CA3AF]">Annuler</button>
+              <button type="button" onClick={() => { void triggerHaptic("Light"); phSave(); }} disabled={phSaving || !phValid} className="px-4 py-2 bg-[#E63946] disabled:opacity-50 text-white text-[13px] font-bold rounded-lg">
                 {phSaving ? "…" : "Enregistrer"}
               </button>
             </div>
@@ -2117,7 +2117,7 @@ function StarSuggestRow({
       <div className={`w-full ${isLast ? "" : "border-b border-white/[0.06]"}`}>
         <button
           type="button"
-          onClick={() => { setDraft(currentValue); setExpanded(true); }}
+          onClick={() => { void triggerHaptic("Light"); setDraft(currentValue); setExpanded(true); }}
           className="w-full flex items-center justify-between gap-3 px-4 py-3 active:bg-white/[0.02]"
         >
           <span className="flex items-center gap-2 min-w-0 flex-1 text-left">
@@ -2151,7 +2151,7 @@ function StarSuggestRow({
         <span className="text-[14px] text-white font-semibold">{champ}</span>
         <button
           type="button"
-          onClick={() => setExpanded(false)}
+          onClick={() => { void triggerHaptic("Light"); setExpanded(false); }}
           className="text-[12px] text-white/45 active:text-white/70"
         >
           Annuler
@@ -2289,7 +2289,7 @@ function DistinctionsSuggestRow({
       <div className="w-full">
         <button
           type="button"
-          onClick={() => { setDraft(currentDistinctions); setExpanded(true); }}
+          onClick={() => { void triggerHaptic("Light"); setDraft(currentDistinctions); setExpanded(true); }}
           className="w-full flex items-start justify-between gap-3 px-4 py-3 active:bg-white/[0.02]"
         >
           <span className="flex items-center gap-2 min-w-0 flex-1 text-left">
@@ -2347,7 +2347,7 @@ function DistinctionsSuggestRow({
         <span className="text-[14px] text-white font-semibold">Distinctions</span>
         <button
           type="button"
-          onClick={() => setExpanded(false)}
+          onClick={() => { void triggerHaptic("Light"); setExpanded(false); }}
           className="text-[12px] text-white/45 active:text-white/70"
         >
           Annuler
@@ -2370,7 +2370,7 @@ function DistinctionsSuggestRow({
             >
               <button
                 type="button"
-                onClick={() => { if (!isDisabled) toggle(key); }}
+                onClick={() => { void triggerHaptic("Light"); if (!isDisabled) toggle(key); }}
                 disabled={isDisabled}
                 className="w-full flex items-center gap-3 px-3 py-2.5 text-left"
               >
@@ -2412,7 +2412,7 @@ function DistinctionsSuggestRow({
       <div className="mt-3 flex items-center justify-end gap-3 pb-2">
         <button
           type="button"
-          onClick={submit}
+          onClick={() => { void triggerHaptic("Light"); submit(); }}
           disabled={submitting}
           className="px-3 py-2 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-colors bg-[#EAB308] text-[#111317] active:bg-[#D4A20A] disabled:opacity-40 disabled:bg-white/[0.06] disabled:text-white/40"
         >

@@ -35,6 +35,7 @@
 
 import { useEffect, useState } from "react";
 import { labelCls, valueCls } from "./tokens";
+import { triggerHaptic } from "@/lib/haptics";
 
 /* ── DetailedTag — small uppercase grey pill rendered next to a
       field label when detailed=true on one of the rows. */
@@ -135,7 +136,7 @@ export function InlineEditRow({
           className="bg-transparent text-[15px] text-white font-semibold text-right outline-none flex-1 min-w-0"
         />
       ) : (
-        <button type="button" onClick={() => setEditing(true)}
+        <button type="button" onClick={() => { void triggerHaptic("Light"); setEditing(true); }}
           className={`${valueCls} ${showAdd ? "text-white/30 font-normal" : ""} text-right active:opacity-70 truncate min-w-0 flex-1`}>
           {value || (placeholder ? placeholder : "Ajouter")}
         </button>
@@ -323,7 +324,7 @@ export function TagInputRow({
           <span key={v}
             className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] font-bold bg-[#E63946]/15 text-[#E63946] border border-[#E63946]/30">
             {v}
-            <button type="button" onClick={() => onChange(values.filter((x) => x !== v))}
+            <button type="button" onClick={() => { void triggerHaptic("Light"); onChange(values.filter((x) => x !== v)); }}
               aria-label="Retirer" className="opacity-70 active:opacity-100">
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
                 <path d="M6 6l12 12" /><path d="M6 18l12-12" />
@@ -384,7 +385,7 @@ export function MediaUrlRow({
           className="w-full bg-transparent text-[14px] text-white font-semibold outline-none"
         />
       ) : (
-        <button type="button" onClick={() => setEditing(true)}
+        <button type="button" onClick={() => { void triggerHaptic("Light"); setEditing(true); }}
           className={`block w-full text-left text-[14px] font-semibold truncate active:opacity-70 ${value ? "text-white" : "text-white/30 font-normal"}`}>
           {value || (placeholder || "Ajouter un lien")}
         </button>

@@ -771,7 +771,7 @@ export function CoachOnboardingMobileSchool() {
                 carte, bordure rouge pointillée pour signaler l'ajout). */}
             <button
               type="button"
-              onClick={() => { setTeamSheetOpen(false); setCreateTeamOpen(true); }}
+              onClick={() => { void triggerHaptic("Light"); setTeamSheetOpen(false); setCreateTeamOpen(true); }}
               className="w-full text-left p-3 bg-[#1A1D24] border border-dashed border-[#E63946]/40 rounded-2xl active:bg-[#22262e] transition-colors"
             >
               <p className="text-[16px] font-semibold text-white">+ Créer mon équipe</p>
@@ -784,8 +784,7 @@ export function CoachOnboardingMobileSchool() {
                 équipe" = finish avec p_team_id NULL et aucune branche create. */}
             <button
               type="button"
-              onClick={() => {
-                setSelectedTeamId(null);
+              onClick={() => { void triggerHaptic("Light"); setSelectedTeamId(null);
                 setSelectedTeamName("");
                 setPendingCreateTeam(null);
                 setTeamSheetOpen(false);

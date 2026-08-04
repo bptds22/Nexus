@@ -587,11 +587,11 @@ export function RecruteurCalendrierMobile() {
                   </h2>
                   <div className="flex gap-2">
                     <button
-                      type="button" onClick={() => shiftMonth(-1)} disabled={atFirstMonth} aria-label="Mois précédent"
+                      type="button" onClick={() => { void triggerHaptic("Light"); shiftMonth(-1); }} disabled={atFirstMonth} aria-label="Mois précédent"
                       className="h-9 w-9 rounded-full border border-[#262A33] bg-[#1A1D24] text-[#B9BFC9] disabled:opacity-35"
                     >‹</button>
                     <button
-                      type="button" onClick={() => shiftMonth(1)} aria-label="Mois suivant"
+                      type="button" onClick={() => { void triggerHaptic("Light"); shiftMonth(1); }} aria-label="Mois suivant"
                       className="h-9 w-9 rounded-full border border-[#262A33] bg-[#1A1D24] text-[#B9BFC9]"
                     >›</button>
                   </div>
@@ -659,15 +659,15 @@ export function RecruteurCalendrierMobile() {
             <div className="fixed inset-0 z-40 flex flex-col justify-end">
               <div
                 className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-                onClick={() => setShowFilters(false)}
+                onClick={() => { void triggerHaptic("Light"); setShowFilters(false); }}
               />
               <div className="relative max-h-[85vh] overflow-y-auto rounded-t-[20px] border-t border-[#262A33] bg-[#111317] pb-[calc(env(safe-area-inset-bottom)+20px)]">
                 <div className="sticky top-0 flex items-center justify-between border-b border-[#1E2129] bg-[#111317] px-4 py-3.5">
-                  <button type="button" onClick={() => setFilters(EMPTY_FILTERS)} className="text-[14px] font-semibold text-[#8A909C]">
+                  <button type="button" onClick={() => { void triggerHaptic("Light"); setFilters(EMPTY_FILTERS); }} className="text-[14px] font-semibold text-[#8A909C]">
                     Réinitialiser
                   </button>
                   <span className="text-[15px] font-bold text-[#EDEFF3]">Filtres</span>
-                  <button type="button" onClick={() => setShowFilters(false)} className="text-[14px] font-bold text-[#E63946]">
+                  <button type="button" onClick={() => { void triggerHaptic("Light"); setShowFilters(false); }} className="text-[14px] font-bold text-[#E63946]">
                     OK
                   </button>
                 </div>
@@ -694,7 +694,7 @@ export function RecruteurCalendrierMobile() {
                   <div className="mb-2.5 text-[13px] font-bold uppercase tracking-[0.1em] text-[#5C6575]">Promotions</div>
                   <div className="flex flex-wrap gap-2">
                     {PROMOTION_OPTIONS.map((p) => (
-                      <Chip key={p} on={filters.promotions.includes(p)} onClick={() => set("promotions", toggleIn(filters.promotions, p))}>
+                      <Chip key={p} on={filters.promotions.includes(p)} onClick={() => { void triggerHaptic("Light"); set("promotions", toggleIn(filters.promotions, p)); }}>
                         {p}
                       </Chip>
                     ))}
@@ -706,7 +706,7 @@ export function RecruteurCalendrierMobile() {
                     <div className="mb-2.5 text-[13px] font-bold uppercase tracking-[0.1em] text-[#5C6575]">Mes listes</div>
                     <div className="flex flex-wrap gap-2">
                       {lists.map((l) => (
-                        <Chip key={l.id} on={filters.listIds.includes(l.id)} onClick={() => set("listIds", toggleIn(filters.listIds, l.id))}>
+                        <Chip key={l.id} on={filters.listIds.includes(l.id)} onClick={() => { void triggerHaptic("Light"); set("listIds", toggleIn(filters.listIds, l.id)); }}>
                           {l.name}
                         </Chip>
                       ))}
@@ -715,8 +715,8 @@ export function RecruteurCalendrierMobile() {
                 )}
 
                 <div className="flex flex-wrap gap-2 px-4 py-3.5">
-                  <Chip on={filters.verifiedOnly} onClick={() => set("verifiedOnly", !filters.verifiedOnly)}>✓ Vérifié</Chip>
-                  <Chip on={filters.withVideoOnly} onClick={() => set("withVideoOnly", !filters.withVideoOnly)}>🎬 Avec vidéo</Chip>
+                  <Chip on={filters.verifiedOnly} onClick={() => { void triggerHaptic("Light"); set("verifiedOnly", !filters.verifiedOnly); }}>✓ Vérifié</Chip>
+                  <Chip on={filters.withVideoOnly} onClick={() => { void triggerHaptic("Light"); set("withVideoOnly", !filters.withVideoOnly); }}>🎬 Avec vidéo</Chip>
                 </div>
               </div>
             </div>

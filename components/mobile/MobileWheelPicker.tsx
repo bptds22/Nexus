@@ -261,7 +261,10 @@ function WheelScroller({
     const idx = Math.round(scrollRef.current.scrollTop / ITEM_HEIGHT);
     const clamped = Math.max(0, Math.min(column.options.length - 1, idx));
     if (clamped !== prevIdxRef.current) {
-      triggerHaptic("Light");
+      // "Selection" et non "Light" : c'est un cran de roue, pas un tap. Un
+      // impact léger répété à chaque valeur qui défile martèle ; selectionChanged()
+      // est l'API prévue pour ça.
+      triggerHaptic("Selection");
       prevIdxRef.current = clamped;
       setActiveIdx(clamped);
     }

@@ -423,7 +423,7 @@ export default function MobileTabBar({ role }: MobileTabBarProps) {
             <Link
               key={tab.key}
               href={tab.href}
-              onClick={(e) => handleTabClick(e, tab)}
+              onClick={(e) => { void triggerHaptic("Light"); handleTabClick(e, tab); }}
               className={`relative flex-1 flex flex-col items-center justify-center gap-1.5 pt-2.5 pb-2 min-h-[64px] ${color} active:bg-white/[0.04] transition-colors`}
               aria-current={active ? "page" : undefined}
             >

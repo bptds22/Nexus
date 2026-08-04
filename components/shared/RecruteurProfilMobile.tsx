@@ -454,7 +454,7 @@ export function RecruteurProfilMobile() {
       <div className="flex flex-col items-center pt-6 pb-6 px-4">
         <button
           type="button"
-          onClick={() => fileInputRef.current?.click()}
+          onClick={() => { void triggerHaptic("Light"); fileInputRef.current?.click(); }}
           disabled={uploading}
           className="relative w-24 h-24 rounded-full overflow-hidden border-2 border-[#2D3748] active:scale-95 transition-transform"
           aria-label="Changer la photo"

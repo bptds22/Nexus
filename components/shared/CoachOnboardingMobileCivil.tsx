@@ -815,7 +815,7 @@ export function CoachOnboardingMobileCivil() {
         footer={
           <button
             type="button"
-            onClick={() => { setClubMode("create"); setClubSheetOpen(false); }}
+            onClick={() => { void triggerHaptic("Light"); setClubMode("create"); setClubSheetOpen(false); }}
             className="w-full h-11 rounded-2xl bg-[#E63946]/15 border border-[#E63946]/30 text-[14px] font-bold text-[#E63946] active:bg-[#E63946]/25"
           >
             + Créer un nouveau club
@@ -856,7 +856,7 @@ export function CoachOnboardingMobileCivil() {
         footer={
           <button
             type="button"
-            onClick={() => { setTeamMode("create"); setTeamSheetOpen(false); }}
+            onClick={() => { void triggerHaptic("Light"); setTeamMode("create"); setTeamSheetOpen(false); }}
             className="w-full h-11 rounded-2xl bg-[#E63946]/15 border border-[#E63946]/30 text-[14px] font-bold text-[#E63946] active:bg-[#E63946]/25"
           >
             + Créer une nouvelle équipe
@@ -1082,7 +1082,7 @@ function Slide2ClubTeam(p: Slide2Props) {
           )}
           <button
             type="button"
-            onClick={() => p.onClubModeChange("create")}
+            onClick={() => { void triggerHaptic("Light"); p.onClubModeChange("create"); }}
             className="text-[13px] font-bold text-[#E63946] mt-2 active:opacity-70"
           >
             + Créer un nouveau club
@@ -1125,7 +1125,7 @@ function Slide2ClubTeam(p: Slide2Props) {
           </div>
           <button
             type="button"
-            onClick={() => p.onClubModeChange("pick")}
+            onClick={() => { void triggerHaptic("Light"); p.onClubModeChange("pick"); }}
             className="text-[13px] font-bold text-[#9CA3AF] active:opacity-70"
           >
             ← Choisir un club existant
@@ -1158,7 +1158,7 @@ function Slide2ClubTeam(p: Slide2Props) {
               )}
               <button
                 type="button"
-                onClick={() => p.onTeamModeChange("create")}
+                onClick={() => { void triggerHaptic("Light"); p.onTeamModeChange("create"); }}
                 className="text-[13px] font-bold text-[#E63946] mt-2 active:opacity-70"
               >
                 + Créer une nouvelle équipe
@@ -1213,7 +1213,7 @@ function Slide2ClubTeam(p: Slide2Props) {
               {p.clubMode === "pick" && (
                 <button
                   type="button"
-                  onClick={() => p.onTeamModeChange("pick")}
+                  onClick={() => { void triggerHaptic("Light"); p.onTeamModeChange("pick"); }}
                   className="text-[13px] font-bold text-[#9CA3AF] active:opacity-70"
                 >
                   ← Choisir une équipe existante

@@ -1028,7 +1028,7 @@ export function AthleteOnboardingMobile() {
           Une erreur est survenue au chargement de ton profil.
         </p>
         <button
-          onClick={() => window.location.reload()}
+          onClick={() => { void triggerHaptic("Light"); window.location.reload(); }}
           className="px-5 h-11 bg-[#E63946] text-white font-bold uppercase tracking-widest text-[13px] rounded"
         >
           Réessayer
@@ -1384,8 +1384,7 @@ export function AthleteOnboardingMobile() {
         footer={
           <button
             type="button"
-            onClick={() => {
-              setSelectedTeamId(null);
+            onClick={() => { void triggerHaptic("Light"); setSelectedTeamId(null);
               setSelectedTeamName("");
               setScolaireTeamSheetOpen(false);
             }}
@@ -1436,8 +1435,7 @@ export function AthleteOnboardingMobile() {
         footer={
           <button
             type="button"
-            onClick={() => {
-              setSelectedClubId(null);
+            onClick={() => { void triggerHaptic("Light"); setSelectedClubId(null);
               setSelectedClubName("");
               setSelectedTeamId(null);
               setSelectedTeamName("");
@@ -1486,8 +1484,7 @@ export function AthleteOnboardingMobile() {
         footer={
           <button
             type="button"
-            onClick={() => {
-              setSelectedTeamId(null);
+            onClick={() => { void triggerHaptic("Light"); setSelectedTeamId(null);
               setSelectedTeamName("");
               setTeamSheetOpen(false);
             }}
@@ -1806,7 +1803,7 @@ function ContextPicker({ onPick }: { onPick: (c: "scolaire" | "ligue_civile") =>
       />
       <button
         type="button"
-        onClick={() => onPick("scolaire")}
+        onClick={() => { void triggerHaptic("Light"); onPick("scolaire"); }}
         className="w-full text-left p-4 bg-[#1A1D24] rounded-2xl border border-white/[0.06] active:bg-[#22262e] active:scale-[0.99] transition-all"
       >
         <p className="text-[16px] font-bold text-white">École / Cégep</p>
@@ -1816,7 +1813,7 @@ function ContextPicker({ onPick }: { onPick: (c: "scolaire" | "ligue_civile") =>
       </button>
       <button
         type="button"
-        onClick={() => onPick("ligue_civile")}
+        onClick={() => { void triggerHaptic("Light"); onPick("ligue_civile"); }}
         className="w-full text-left p-4 bg-[#1A1D24] rounded-2xl border border-white/[0.06] active:bg-[#22262e] active:scale-[0.99] transition-all"
       >
         <p className="text-[16px] font-bold text-white">Ligue civile / Club</p>

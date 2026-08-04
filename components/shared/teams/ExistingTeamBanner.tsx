@@ -25,6 +25,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { detectExistingTeam, type DetectedTeam } from "@/lib/queries/coach/detectExistingTeam";
+import { triggerHaptic } from "@/lib/haptics";
 
 export interface ExistingTeamBannerProps {
   supabase: SupabaseClient;
@@ -79,7 +80,7 @@ export function ExistingTeamBanner({
       </p>
       <button
         type="button"
-        onClick={() => onAdopt(match)}
+        onClick={() => { void triggerHaptic("Light"); onAdopt(match); }}
         disabled={adopting}
         className="mt-2 h-11 w-full rounded-2xl bg-[#F59E0B] text-[13px] font-bold uppercase tracking-wider text-[#111317] transition-opacity active:opacity-90 disabled:opacity-60"
       >

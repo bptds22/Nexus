@@ -152,7 +152,7 @@ export function RecruteurFavorisMobile() {
               {search && (
                 <button
                   type="button"
-                  onClick={() => setSearch("")}
+                  onClick={() => { void triggerHaptic("Light"); setSearch(""); }}
                   aria-label="Effacer"
                   className="absolute right-0 top-1/2 -translate-y-1/2 nx-mobile-touch-min flex items-center justify-center"
                 >

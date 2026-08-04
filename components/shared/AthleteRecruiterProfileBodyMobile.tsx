@@ -160,8 +160,8 @@ function ProfileToggle({ mode, onChange }: { mode: "simple" | "detailed"; onChan
     }`;
   return (
     <div className="flex items-center gap-1.5 bg-[#13151a] rounded-full p-1.5 w-fit">
-      <button type="button" onClick={() => onChange("simple")} className={pill(mode === "simple")}>Simplifié</button>
-      <button type="button" onClick={() => onChange("detailed")} className={pill(mode === "detailed")}>Détaillé</button>
+      <button type="button" onClick={() => { void triggerHaptic("Light"); onChange("simple"); }} className={pill(mode === "simple")}>Simplifié</button>
+      <button type="button" onClick={() => { void triggerHaptic("Light"); onChange("detailed"); }} className={pill(mode === "detailed")}>Détaillé</button>
     </div>
   );
 }
@@ -452,7 +452,7 @@ function TabBar({ activeTab, onChange }: { activeTab: TabKey; onChange: (k: TabK
             <button
               key={t.key}
               type="button"
-              onClick={() => onChange(t.key)}
+              onClick={() => { void triggerHaptic("Light"); onChange(t.key); }}
               className={`flex-1 h-12 flex items-center justify-center text-[12px] font-bold uppercase tracking-[0.12em] transition-colors ${
                 isActive ? "text-[#E63946]" : "text-[#6b7280] active:text-white"
               }`}
@@ -1851,7 +1851,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
             ) : (
               <button
                 type="button"
-                onClick={() => setShowUpgradeModal(true)}
+                onClick={() => { void triggerHaptic("Light"); setShowUpgradeModal(true); }}
                 className="inline-flex items-center gap-2 bg-[#E63946]/10 border border-[#E63946]/30 rounded-full px-4 py-2 text-[13px] font-bold uppercase tracking-wider text-[#E63946] active:bg-[#E63946]/20"
               >
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

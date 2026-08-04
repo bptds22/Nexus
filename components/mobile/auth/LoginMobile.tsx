@@ -220,7 +220,7 @@ export function LoginMobile({ onShowWelcome }: LoginMobileProps) {
               />
               <button
                 type="button"
-                onClick={() => setShowPwd((v) => !v)}
+                onClick={() => { void triggerHaptic("Light"); setShowPwd((v) => !v); }}
                 aria-label={showPwd ? "Masquer le mot de passe" : "Afficher le mot de passe"}
                 className="absolute right-0 top-1/2 -translate-y-1/2 text-[#9CA3AF] active:text-white p-1"
                 tabIndex={-1}

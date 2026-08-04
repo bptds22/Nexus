@@ -274,7 +274,7 @@ export default function CoachEquipesMobile() {
                 background: `rgba(0,0,0,${Math.max(0.2, 0.6 - dragOffset / 300)})`,
                 animation: "nx-modal-fade 200ms ease-out forwards",
               }}
-              onClick={() => !saving && setShowCreate(false)}
+              onClick={() => { void triggerHaptic("Light"); !saving && setShowCreate(false); }}
               aria-hidden
             />
             <div
@@ -341,7 +341,7 @@ export default function CoachEquipesMobile() {
               <div className="px-4 pt-3 pb-3 shrink-0 border-t border-white/[0.06] bg-[#1A1D24] flex gap-2">
                 <button
                   type="button"
-                  onClick={() => !saving && setShowCreate(false)}
+                  onClick={() => { void triggerHaptic("Light"); !saving && setShowCreate(false); }}
                   className="h-14 px-5 rounded-2xl bg-[#111317] border border-white/10 text-[13px] font-bold uppercase tracking-wider text-[#9CA3AF] active:bg-white/[0.04] transition-colors"
                 >
                   Annuler

@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import AthletePhotoFill from "@/components/shared/AthletePhotoFill";
 import { MobilePicker, type PickerOption } from "@/components/mobile/MobilePicker";
 import { useMobileToast } from "@/components/mobile/MobileToast";
+import { triggerHaptic } from "@/lib/haptics";
 import {
   loadSchoolCoaches,
   loadAthletesForCoach,
@@ -168,7 +169,7 @@ export default function TransfertAthletesMobile() {
         <label className="block text-[11px] font-bold tracking-wider uppercase text-[#6b7280] mt-4 mb-1.5">Source</label>
         <button
           type="button"
-          onClick={() => setSourcePickerOpen(true)}
+          onClick={() => { void triggerHaptic("Light"); setSourcePickerOpen(true); }}
           className="w-full flex items-center justify-between bg-[#1A1D24] border border-[#2D3748] rounded-lg px-4 py-3 text-left"
         >
           <span className={`text-[15px] ${sourceCoach ? "text-white font-semibold" : "text-[#6b7280]"}`}>
@@ -179,7 +180,7 @@ export default function TransfertAthletesMobile() {
 
         {sourceId && sourceAthletes.length > 0 && (
           <div className="flex items-center justify-between mt-3">
-            <button type="button" onClick={toggleSelectAll} className="text-[12px] font-bold text-[#9CA3AF]">
+            <button type="button" onClick={() => { void triggerHaptic("Light"); toggleSelectAll(); }} className="text-[12px] font-bold text-[#9CA3AF]">
               {selectedIds.size === sourceAthletes.length ? "Tout désélectionner" : "Tout sélectionner"}
             </button>
             {count > 0 && (
@@ -208,7 +209,7 @@ export default function TransfertAthletesMobile() {
             <button
               key={a.id}
               type="button"
-              onClick={() => toggleSelected(a.id)}
+              onClick={() => { void triggerHaptic("Light"); toggleSelected(a.id); }}
               className={`w-full flex items-center gap-3 text-left rounded-xl p-3 transition-all ${
                 selected ? "bg-[#E63946]/10 border border-[#E63946]" : "bg-[#1A1D24] border border-[#2D3748]"
               }`}
@@ -233,7 +234,7 @@ export default function TransfertAthletesMobile() {
         <label className="block text-[11px] font-bold tracking-wider uppercase text-[#6b7280] mb-1.5">Destination</label>
         <button
           type="button"
-          onClick={() => count > 0 && setDestPickerOpen(true)}
+          onClick={() => { void triggerHaptic("Light"); count > 0 && setDestPickerOpen(true); }}
           disabled={count === 0}
           className="w-full flex items-center justify-between bg-[#111317] border border-[#2D3748] rounded-lg px-4 py-3 text-left disabled:opacity-40"
         >
@@ -245,7 +246,7 @@ export default function TransfertAthletesMobile() {
         <button
           type="button"
           disabled={!canSubmit}
-          onClick={() => setShowConfirm(true)}
+          onClick={() => { void triggerHaptic("Light"); setShowConfirm(true); }}
           className="w-full mt-3 py-3.5 bg-[#E63946] text-white text-[14px] font-semibold uppercase tracking-wider rounded-lg disabled:opacity-40"
         >
           {actionVerb} {count > 0 ? `${count} athlète${count > 1 ? "s" : ""}` : "athlètes"}
@@ -273,7 +274,7 @@ export default function TransfertAthletesMobile() {
       {/* Confirmation modal */}
       {showConfirm && destCoach && (
         <div className="fixed inset-0 z-[90] flex items-center justify-center px-4">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => !submitting && setShowConfirm(false)} />
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => { void triggerHaptic("Light"); !submitting && setShowConfirm(false); }} />
           <div className="relative bg-[#1A1D24] border border-[#2D3748] rounded-xl p-6 max-w-sm w-full shadow-2xl">
             <h3 className="font-head text-[16px] font-black text-white uppercase tracking-tight">
               {actionVerb} {count} athlète{count > 1 ? "s" : ""}?
@@ -284,9 +285,9 @@ export default function TransfertAthletesMobile() {
               <span className="font-bold text-white">{destCoach.name}</span>?
             </p>
             <div className="flex items-center justify-end gap-3 mt-5">
-              <button type="button" onClick={() => setShowConfirm(false)} disabled={submitting}
+              <button type="button" onClick={() => { void triggerHaptic("Light"); setShowConfirm(false); }} disabled={submitting}
                 className="px-4 py-2 text-[13px] font-bold text-[#9CA3AF] disabled:opacity-40">Annuler</button>
-              <button type="button" onClick={handleTransfer} disabled={submitting}
+              <button type="button" onClick={() => { void triggerHaptic("Light"); handleTransfer(); }} disabled={submitting}
                 className="px-5 py-2 bg-[#E63946] text-white text-[13px] font-bold rounded-lg disabled:opacity-40">
                 {submitting ? "..." : "Confirmer"}
               </button>

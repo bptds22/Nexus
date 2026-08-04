@@ -25,6 +25,7 @@ import { norm, regionCentroid, scoreCegep } from "@/lib/queries/cegepSearch/scor
 import Link from "next/link";
 import type { MapFocus } from "./MapPane";
 import { tap } from "@/lib/haptics";
+import { triggerHaptic } from "@/lib/haptics";
 
 // Leaflet touche `window` à l'import → jamais au SSR (même garde que le web).
 const MapPane = dynamic(() => import("./MapPane"), { ssr: false });
@@ -508,7 +509,7 @@ export default function RechercheMobile() {
       <article
         key={c.id}
         className={"row" + (currentId === c.id ? " sel" : "")}
-        onClick={() => showPreview(c.id)}
+        onClick={() => { void triggerHaptic("Light"); showPreview(c.id); }}
       >
         <Crest c={c} />
         <div className="rowmid">
@@ -521,7 +522,7 @@ export default function RechercheMobile() {
           {viewer && (
             <button
               className={"heart" + (cibles.has(c.id) ? " on" : "")}
-              onClick={(e) => { e.stopPropagation(); toggleCible(c.id); }}
+              onClick={(e) => { void triggerHaptic("Light"); e.stopPropagation(); toggleCible(c.id); }}
               disabled={busyCible === c.id}
               aria-label={cibles.has(c.id) ? "Retirer de mes cibles" : "Ajouter à mes cibles"}
             >
@@ -555,7 +556,7 @@ export default function RechercheMobile() {
           <button
             key={k}
             className={"chip" + (n ? " has" : "") + (live ? " live" : "")}
-            onClick={() => (live ? closeSheet() : showFilter(k))}
+            onClick={() => { void triggerHaptic("Light"); (live ? closeSheet() : showFilter(k)); }}
           >
             {label}
             {n > 0 && <span className="n">{n}</span>}
@@ -579,7 +580,7 @@ export default function RechercheMobile() {
         placeholder="Collège, ville, programme…"
       />
       {q && (
-        <button className="clr" onClick={() => setQ("")} aria-label="Effacer la recherche">
+        <button className="clr" onClick={() => { void triggerHaptic("Light"); setQ(""); }} aria-label="Effacer la recherche">
           <X size={14} aria-hidden />
         </button>
       )}
@@ -649,7 +650,7 @@ export default function RechercheMobile() {
                  masqué visuellement ; le crédit reste accessible ici, replié
                  derrière un ⓘ — pattern Google Maps. Liens cliquables. ═══ */}
           {attrOpen && (
-            <div className="attrcatch" onClick={() => setAttrOpen(false)} />
+            <div className="attrcatch" onClick={() => { void triggerHaptic("Light"); setAttrOpen(false); }} />
           )}
           <div className={"attrzone" + (open ? " hide" : "")} style={{ bottom: flotteBottom }}>
             {attrOpen && (
@@ -680,7 +681,7 @@ export default function RechercheMobile() {
       <button
         className={"vtoggle" + (open ? " hide" : "")}
         style={{ bottom: flotteBottom }}
-        onClick={basculer}
+        onClick={() => { void triggerHaptic("Light"); basculer(); }}
       >
         {view === "liste" ? <MapIcon size={16} aria-hidden /> : <List size={16} aria-hidden />}
         <span>{view === "liste" ? "Carte" : "Liste"}</span>
@@ -736,7 +737,7 @@ export default function RechercheMobile() {
             >
               <span className="kick">{FKEYS.find((f) => f.k === fkey)?.label}</span>
               {selDe(fkey).length > 0 && (
-                <button className="txtbtn red" onClick={() => clearDe(fkey)}>
+                <button className="txtbtn red" onClick={() => { void triggerHaptic("Light"); clearDe(fkey); }}>
                   Effacer ({selDe(fkey).length})
                 </button>
               )}
@@ -754,7 +755,7 @@ export default function RechercheMobile() {
                       return (
                         <div key={v} className="selitem">
                           {o?.label ?? v}
-                          <button onClick={() => setSelDe(fkey, v)} aria-label="Retirer">
+                          <button onClick={() => { void triggerHaptic("Light"); setSelDe(fkey, v); }} aria-label="Retirer">
                             <X size={14} aria-hidden />
                           </button>
                         </div>
@@ -771,7 +772,7 @@ export default function RechercheMobile() {
                       placeholder={`${data?.catalogueProgrammes.length ?? 0} programmes…`}
                     />
                     {progQ && (
-                      <button className="clr" onClick={() => setProgQ("")} aria-label="Effacer">
+                      <button className="clr" onClick={() => { void triggerHaptic("Light"); setProgQ(""); }} aria-label="Effacer">
                         <X size={13} aria-hidden />
                       </button>
                     )}
@@ -781,7 +782,7 @@ export default function RechercheMobile() {
                   <div
                     key={o.v}
                     className={"opt" + (selDe(fkey).includes(o.v) ? " on" : "")}
-                    onClick={() => setSelDe(fkey, o.v)}
+                    onClick={() => { void triggerHaptic("Light"); setSelDe(fkey, o.v); }}
                   >
                     {o.label}
                     <span className="box"><Check size={12} aria-hidden /></span>
@@ -822,7 +823,7 @@ export default function RechercheMobile() {
               {viewer && (
                 <button
                   className={"heart" + (cibles.has(courant.c.id) ? " on" : "")}
-                  onClick={() => toggleCible(courant.c.id)}
+                  onClick={() => { void triggerHaptic("Light"); toggleCible(courant.c.id); }}
                   disabled={busyCible === courant.c.id}
                   aria-label={cibles.has(courant.c.id) ? "Retirer de mes cibles" : "Ajouter à mes cibles"}
                 >
@@ -871,7 +872,7 @@ export default function RechercheMobile() {
 
                 {courant.c.teams.length > 0 && (
                   <div className={"acc" + (accEquipes ? " open" : "")}>
-                    <div className="accHead" onClick={() => setAccEquipes((o) => !o)}>
+                    <div className="accHead" onClick={() => { void triggerHaptic("Light"); setAccEquipes((o) => !o); }}>
                       Équipes ({courant.c.teams.length})<ChevronDown size={16} aria-hidden />
                     </div>
                     <div className="accBody">
@@ -893,7 +894,7 @@ export default function RechercheMobile() {
 
                 {courant.c.programmes.length > 0 && (
                   <div className={"acc" + (accProgs ? " open" : "")}>
-                    <div className="accHead" onClick={() => setAccProgs((o) => !o)}>
+                    <div className="accHead" onClick={() => { void triggerHaptic("Light"); setAccProgs((o) => !o); }}>
                       Programmes ({courant.c.programmes.length})<ChevronDown size={16} aria-hidden />
                     </div>
                     <div className="accBody">
@@ -919,7 +920,7 @@ export default function RechercheMobile() {
                   </Link>
                   <button
                     className={"btn ghost" + (cibles.has(courant.c.id) ? " on" : "")}
-                    onClick={() => toggleCible(courant.c.id)}
+                    onClick={() => { void triggerHaptic("Light"); toggleCible(courant.c.id); }}
                     disabled={!viewer || busyCible === courant.c.id}
                   >
                     <Heart size={17} fill={cibles.has(courant.c.id) ? "currentColor" : "none"} aria-hidden />
@@ -930,7 +931,7 @@ export default function RechercheMobile() {
                 <>
                   <button
                     className={"btn primary" + (cibles.has(courant.c.id) ? " on" : "")}
-                    onClick={() => toggleCible(courant.c.id)}
+                    onClick={() => { void triggerHaptic("Light"); toggleCible(courant.c.id); }}
                     disabled={!viewer || busyCible === courant.c.id}
                   >
                     <Heart size={17} fill={cibles.has(courant.c.id) ? "currentColor" : "none"} aria-hidden />

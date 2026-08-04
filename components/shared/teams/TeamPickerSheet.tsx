@@ -26,6 +26,7 @@ import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { createClient } from "@/lib/supabase/client";
 import { formatTeamLabel } from "@/lib/teams/teamLabel";
+import { triggerHaptic } from "@/lib/haptics";
 
 export interface TeamPickerItem {
   id: string;
@@ -251,7 +252,7 @@ export function TeamPickerSheet({
                 <li key={t.id}>
                   <button
                     type="button"
-                    onClick={() => onPicked(t)}
+                    onClick={() => { void triggerHaptic("Light"); onPicked(t); }}
                     className="w-full flex items-center gap-3 p-3 bg-[#111317] rounded-2xl active:bg-[#22262e] transition-colors text-left"
                   >
                     <div className="w-10 h-10 rounded-xl bg-[#E63946]/15 border border-[#E63946]/30 flex items-center justify-center flex-shrink-0">

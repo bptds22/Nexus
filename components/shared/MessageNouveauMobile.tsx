@@ -349,7 +349,7 @@ J'ai consulté le profil de ${a.firstName} ${a.lastName}${a.position ? ` (${a.po
                   <li key={a.id}>
                     <button
                       type="button"
-                      onClick={() => handleSelect(a)}
+                      onClick={() => { void triggerHaptic("Light"); handleSelect(a); }}
                       className="w-full flex items-center gap-3 p-3 bg-[#1A1D24] rounded-2xl active:bg-[#22262e] transition-colors text-left"
                     >
                       <div className="relative w-12 h-12 rounded-full overflow-hidden flex-shrink-0 bg-[#2F3440]">

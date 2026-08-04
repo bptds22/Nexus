@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import SidebarUpgradeCard from "@/components/subscription/SidebarUpgradeCard";
 import { useMobileToast } from "@/components/mobile/MobileToast";
+import { triggerHaptic } from "@/lib/haptics";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 const PUBLIC_BASE = "https://nexussports.ca";
@@ -514,8 +515,7 @@ export default function MorePanel({
       <Link
         key={item.key}
         href={item.href}
-        onClick={(e) => {
-          if (locked && item.requiredTier) {
+        onClick={(e) => { void triggerHaptic("Light"); if (locked && item.requiredTier) {
             e.preventDefault();
             onLockedClick(item.requiredTier === "all_star" ? "rec_allstar" : "rec_pro", item.label);
             return;

@@ -1062,7 +1062,7 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
               return (
                 <button key={i} type="button"
                   ref={isCurrent ? activeChipRef : null}
-                  onClick={() => { if (reachable) { setDirection(i > slide ? 1 : -1); setSlide(i); } }}
+                  onClick={() => { void triggerHaptic("Light"); if (reachable) { setDirection(i > slide ? 1 : -1); setSlide(i); } }}
                   disabled={!reachable}
                   className={`px-4 py-2 rounded-full text-[12px] font-bold uppercase tracking-[0.14em] whitespace-nowrap transition-colors ${chipCls}`}>
                   {i + 1}. {label}
@@ -1508,7 +1508,7 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
             </div>
             {emailAutocomplete.suggestions.map((s) => (
               <button key={s.athleteId} type="button"
-                onClick={() => handleSelectSuggestion(s)}
+                onClick={() => { void triggerHaptic("Light"); handleSelectSuggestion(s); }}
                 className="w-full text-left px-4 py-3 active:bg-[#E63946]/10 border-b border-white/[0.06] last:border-b-0">
                 <p className="text-[14px] font-semibold text-white">{s.firstName} {s.lastName}</p>
                 <p className="text-[12px] text-white/55">{s.email}{s.sportName ? ` · ${s.sportName}` : ""}</p>
@@ -1536,7 +1536,7 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
                     placeholder="Choisir une équipe"
                     onTap={() => coach.teams.length > 1 ? setOpenInviteTeamPicker(true) : null} />
                   <div className="flex gap-2">
-                    <button type="button" onClick={() => setLinkedToExisting(null)}
+                    <button type="button" onClick={() => { void triggerHaptic("Light"); setLinkedToExisting(null); }}
                       className="flex-1 h-11 rounded-2xl border border-white/[0.10] text-[13px] font-bold text-white/70 active:bg-white/[0.04]">
                       Délier
                     </button>
@@ -1642,7 +1642,7 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
               const sel = d.strongSubjects.includes(s);
               return (
                 <button key={s} type="button"
-                  onClick={() => updateAcademic("strongSubjects", toggleArrayItem(d.strongSubjects, s))}
+                  onClick={() => { void triggerHaptic("Light"); updateAcademic("strongSubjects", toggleArrayItem(d.strongSubjects, s)); }}
                   className={`px-3 py-1.5 rounded-xl text-[12px] font-bold transition-colors ${
                     sel ? "bg-[#E63946]/15 text-[#E63946] border border-[#E63946]/30"
                         : "bg-transparent border border-white/[0.10] text-white/65"
@@ -1658,7 +1658,7 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
               const sel = d.cegepRegions.includes(r);
               return (
                 <button key={r} type="button"
-                  onClick={() => updateAcademic("cegepRegions", toggleArrayItem(d.cegepRegions, r))}
+                  onClick={() => { void triggerHaptic("Light"); updateAcademic("cegepRegions", toggleArrayItem(d.cegepRegions, r)); }}
                   className={`px-3 py-1.5 rounded-xl text-[12px] font-bold transition-colors ${
                     sel ? "bg-[#E63946]/15 text-[#E63946] border border-[#E63946]/30"
                         : "bg-transparent border border-white/[0.10] text-white/65"
@@ -1825,7 +1825,7 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
         <div className="flex items-center gap-1 bg-[#1A1D24] rounded-2xl p-1 w-fit">
           {(["simple", "detailed"] as const).map((opt) => (
             <button key={opt} type="button"
-              onClick={() => updateScouting("evalMode", opt)}
+              onClick={() => { void triggerHaptic("Light"); updateScouting("evalMode", opt); }}
               className={`px-4 py-2 rounded-xl text-[12px] font-bold uppercase tracking-[0.12em] transition-colors ${
                 sc.evalMode === opt ? "bg-[#E63946] text-white" : "text-white/55"
               }`}>
@@ -1859,7 +1859,7 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
               </p>
               <button
                 type="button"
-                onClick={() => updateScouting("evalMode", "detailed")}
+                onClick={() => { void triggerHaptic("Light"); updateScouting("evalMode", "detailed"); }}
                 className="mt-3 inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-[#E63946]/15 border border-[#E63946]/30 text-[#E63946] text-[12px] font-bold uppercase tracking-[0.12em] active:bg-[#E63946]/25"
               >
                 Modifier les critères
@@ -1950,8 +1950,7 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
                 <button
                   key={key}
                   type="button"
-                  onClick={() => {
-                    if (isDisabled) return;
+                  onClick={() => { void triggerHaptic("Light"); if (isDisabled) return;
                     if (isSelected) {
                       // Selected + detail-bearing → open popup to edit.
                       // Selected + non-detail → toggle off.
@@ -2229,7 +2228,7 @@ function DistinctionDetailSheet({
                     <button
                       key={s}
                       type="button"
-                      onClick={() => onChange(s)}
+                      onClick={() => { void triggerHaptic("Light"); onChange(s); }}
                       className={`px-3 py-1.5 rounded-xl text-[12px] font-bold transition-colors ${
                         sel
                           ? "bg-[#E63946]/15 text-[#E63946] border border-[#E63946]/30"
@@ -2400,7 +2399,7 @@ function SummarySheet({
               <div className="flex flex-wrap gap-1.5">
                 {missingRequired.map((f) => (
                   <button key={f} type="button"
-                    onClick={() => onJumpToSlide(missingFieldToSlide(f))}
+                    onClick={() => { void triggerHaptic("Light"); onJumpToSlide(missingFieldToSlide(f)); }}
                     className="px-3 py-1.5 rounded-full text-[12px] font-bold bg-[#E63946]/15 text-[#E63946] border border-[#E63946]/30 active:bg-[#E63946]/25">
                     {f}
                   </button>

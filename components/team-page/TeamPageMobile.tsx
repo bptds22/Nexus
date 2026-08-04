@@ -47,6 +47,7 @@ import {
 } from "@/components/team-page/content";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { tap } from "@/lib/haptics";
+import { triggerHaptic } from "@/lib/haptics";
 
 /** Fil d'Ariane posé par « L'affiche » de la page école — dit à la page équipe
  *  qu'une page école la précède dans l'historique, donc qu'il faut DÉPILER. */
@@ -642,8 +643,8 @@ function CalendrierMobile({ team }: { team: TeamData }) {
           <div className="pbar" />
         </div>
         <div className="cara-nav">
-          <button type="button" onClick={() => scroll(-1)} aria-label="Précédent"><ChevronLeft size={16} aria-hidden /></button>
-          <button type="button" onClick={() => scroll(1)} aria-label="Suivant"><ChevronRight size={16} aria-hidden /></button>
+          <button type="button" onClick={() => { void triggerHaptic("Light"); scroll(-1); }} aria-label="Précédent"><ChevronLeft size={16} aria-hidden /></button>
+          <button type="button" onClick={() => { void triggerHaptic("Light"); scroll(1); }} aria-label="Suivant"><ChevronRight size={16} aria-hidden /></button>
         </div>
       </div>
       <div className={"cal-row" + (bout ? " bout" : "")} ref={caraRef} onScroll={onScroll}>
@@ -914,7 +915,7 @@ function BesoinsMobile({ team, cible, onToggleCible }: { team: TeamData; cible: 
             <button
               type="button"
               className="commit"
-              onClick={() => document.getElementById("deja-engagees")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+              onClick={() => { void triggerHaptic("Light"); document.getElementById("deja-engagees")?.scrollIntoView({ behavior: "smooth", block: "start" }); }}
             >
               <Check size={13} strokeWidth={3} aria-hidden />
               {team.engagesCount} recrue{team.engagesCount > 1 ? "s" : ""} déjà engagée{team.engagesCount > 1 ? "s" : ""}

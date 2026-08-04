@@ -53,6 +53,7 @@ import {
 import type { SchoolProgramIdentity } from "@/components/program-wall/slots";
 import { languageLabel, type ProgramPageContent, type Sport, type SportTeam } from "./content";
 import { tap } from "@/lib/haptics";
+import { triggerHaptic } from "@/lib/haptics";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -727,7 +728,7 @@ function SportsMobile({ sports, router, school }: { sports: Sport[]; router: Ret
                     <div
                       key={j}
                       className="tchip"
-                      onClick={(e) => { e.stopPropagation(); goTeam(t.url); }}
+                      onClick={(e) => { void triggerHaptic("Light"); e.stopPropagation(); goTeam(t.url); }}
                     >
                       {t.nom}<small>{[t.division, t.genre].filter(Boolean).join(" · ")}</small>
                       <span className="ar"><ArrowRight size={15} aria-hidden /></span>
@@ -815,8 +816,8 @@ function CampusMobile({ content, couleurPin }: { content: ProgramPageContent; co
           <div className="cara-head">
             <div className="cara-kick">LE CAMPUS EN IMAGES</div>
             <div className="cara-nav">
-              <button type="button" onClick={() => scrollCara(-1)} aria-label="Précédent"><ChevronLeft size={16} aria-hidden /></button>
-              <button type="button" onClick={() => scrollCara(1)} aria-label="Suivant"><ChevronRight size={16} aria-hidden /></button>
+              <button type="button" onClick={() => { void triggerHaptic("Light"); scrollCara(-1); }} aria-label="Précédent"><ChevronLeft size={16} aria-hidden /></button>
+              <button type="button" onClick={() => { void triggerHaptic("Light"); scrollCara(1); }} aria-label="Suivant"><ChevronRight size={16} aria-hidden /></button>
             </div>
           </div>
           <div className="cara" ref={caraRef}>

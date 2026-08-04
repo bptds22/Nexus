@@ -38,6 +38,7 @@ import { DashboardActivityFeed } from "@/components/shared/dashboard/DashboardAc
 import { SectionDivider } from "@/components/shared/dashboard/SectionDivider";
 import { frenchDateUppercase } from "@/components/shared/dashboard/utils";
 import type { ActivityEvent } from "@/lib/types/activityEvents";
+import { triggerHaptic } from "@/lib/haptics";
 
 /* ── Checklist item shape — mirrors desktop's local ChecklistItem
       type (page.tsx). The `section` tag is display-only ; "coach"
@@ -66,7 +67,7 @@ function InlineBanner({
     <div className="px-4">
       <button
         type="button"
-        onClick={() => router.push(href)}
+        onClick={() => { void triggerHaptic("Light"); router.push(href); }}
         className="w-full text-left bg-[#1A1D24] rounded-2xl border border-white/[0.05] active:bg-white/[0.02] transition-colors flex items-center gap-3 px-4 py-3"
       >
         <div

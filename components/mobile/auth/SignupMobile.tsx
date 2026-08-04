@@ -790,7 +790,7 @@ function Step1Account(p: Step1Props) {
             />
             <button
               type="button"
-              onClick={() => p.setShowPwd(!p.showPwd)}
+              onClick={() => { void triggerHaptic("Light"); p.setShowPwd(!p.showPwd); }}
               aria-label={p.showPwd ? "Masquer" : "Afficher"}
               className="absolute right-0 top-1/2 -translate-y-1/2 text-[#9CA3AF] active:text-white p-1"
               tabIndex={-1}
@@ -830,7 +830,7 @@ function Step1Account(p: Step1Props) {
             />
             <button
               type="button"
-              onClick={() => p.setShowConfirmPwd(!p.showConfirmPwd)}
+              onClick={() => { void triggerHaptic("Light"); p.setShowConfirmPwd(!p.showConfirmPwd); }}
               aria-label={p.showConfirmPwd ? "Masquer" : "Afficher"}
               className="absolute right-0 top-1/2 -translate-y-1/2 text-[#9CA3AF] active:text-white p-1"
               tabIndex={-1}
@@ -1029,7 +1029,7 @@ function Step2You(p: Step2YouProps) {
           J&apos;ai lu et j&apos;accepte la{" "}
           <button
             type="button"
-            onClick={(e) => { e.preventDefault(); e.stopPropagation(); p.onOpenLegal("confidentialite"); }}
+            onClick={(e) => { void triggerHaptic("Light"); e.preventDefault(); e.stopPropagation(); p.onOpenLegal("confidentialite"); }}
             className="text-[#E63946] underline underline-offset-2"
           >
             Politique de confidentialité
@@ -1037,7 +1037,7 @@ function Step2You(p: Step2YouProps) {
           {" "}et les{" "}
           <button
             type="button"
-            onClick={(e) => { e.preventDefault(); e.stopPropagation(); p.onOpenLegal("conditions"); }}
+            onClick={(e) => { void triggerHaptic("Light"); e.preventDefault(); e.stopPropagation(); p.onOpenLegal("conditions"); }}
             className="text-[#E63946] underline underline-offset-2"
           >
             Conditions d&apos;utilisation
@@ -1053,7 +1053,7 @@ function Step2You(p: Step2YouProps) {
           J&apos;accepte la{" "}
           <button
             type="button"
-            onClick={(e) => { e.preventDefault(); e.stopPropagation(); p.onOpenLegal("collecte-donnees"); }}
+            onClick={(e) => { void triggerHaptic("Light"); e.preventDefault(); e.stopPropagation(); p.onOpenLegal("collecte-donnees"); }}
             className="text-[#E63946] underline underline-offset-2"
           >
             collecte et le traitement de mes données

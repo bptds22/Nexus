@@ -694,8 +694,7 @@ export function RecruiterOnboardingMobile() {
         footer={
           <button
             type="button"
-            onClick={() => {
-              setSelectedProgramId(null);
+            onClick={() => { void triggerHaptic("Light"); setSelectedProgramId(null);
               setSelectedProgramName("");
               setProgramSheetOpen(false);
             }}

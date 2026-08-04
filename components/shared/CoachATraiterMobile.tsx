@@ -567,7 +567,7 @@ function EvalSheet({
     <>
       <div
         className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm"
-        onClick={() => { if (!saving) onClose(); }}
+        onClick={() => { void triggerHaptic("Light"); if (!saving) onClose(); }}
         style={{ animation: "nx-at-fade 200ms ease-out forwards" }}
       />
       <div
