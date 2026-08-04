@@ -33,8 +33,11 @@ export interface TeamAddAthleteSheetProps {
   schoolId: string | null;
   /** Athlete ids already on the team — excluded from the candidate list. */
   excludeIds: string[];
-  /** Called when the coach picks a candidate. */
-  onPicked: (athleteId: string) => void;
+  /** Called when the coach picks a candidate. Le NOM accompagne l'id : quand
+   *  l'ajout est refusé (athlète déjà ancré ailleurs), l'appelant doit pouvoir
+   *  le nommer dans son message sans re-requêter — le candidat n'est par
+   *  définition pas dans la liste des athlètes de l'équipe. */
+  onPicked: (athleteId: string, athleteName: string) => void;
   /** Optional "create athlete" CTA — navigates to /coach/athletes/create. */
   onCreateNew?: () => void;
 }
@@ -185,7 +188,7 @@ export function TeamAddAthleteSheet({
                 <li key={a.id}>
                   <button
                     type="button"
-                    onClick={() => onPicked(a.id)}
+                    onClick={() => onPicked(a.id, a.name)}
                     className="w-full flex items-center gap-3 p-3 bg-[#111317] rounded-2xl active:bg-[#22262e] transition-colors text-left"
                   >
                     {/* Canonical photo (athletes.photo_url) + initials

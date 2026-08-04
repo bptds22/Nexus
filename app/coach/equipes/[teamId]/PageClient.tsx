@@ -14,6 +14,7 @@ import CoachAthleteRow from "@/components/coach/CoachAthleteRow";
 import AthletePhoto from "@/components/shared/AthletePhoto";
 import { AGE_OPTIONS, DIVISION_OPTIONS, SEASON_OPTIONS } from "@/lib/config/civilVocab";
 import CoachEquipeDetailMobile from "@/components/shared/CoachEquipeDetailMobile";
+import { inviteAthleteToTeam } from "@/lib/queries/coach/teamInvite";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 /* ═══════════════════════════════════════════════════════════════
@@ -138,6 +139,11 @@ function TeamDetailPageDesktop() {
 
   // Add athlete
   const [showAddAthlete, setShowAddAthlete] = useState(false);
+  /** Athlète refusé à l'ajout parce qu'il est déjà ancré ailleurs. Non-null
+   *  ouvre la boîte « invite-le plutôt » — jamais un déplacement d'office. */
+  const [blockedAthlete, setBlockedAthlete] = useState<
+    { id: string; name: string; currentTeam: string } | null
+  >(null);
   const [availableAthletes, setAvailableAthletes] = useState<AvailableAthlete[]>([]);
   const [athleteSearch, setAthleteSearch] = useState("");
 
@@ -455,28 +461,34 @@ function TeamDetailPageDesktop() {
     }
   }
 
-  // FIX 4 — « ajouter » devient « déplacer » quand l'athlète appartient déjà
-  // à une équipe DU MÊME SPORT. La contrainte UNIQUE (athlete_id, sport_id)
-  // rejetterait l'INSERT (23505) ; plutôt que d'afficher une erreur brute, on
-  // explicite le déplacement et on demande confirmation. Un athlète peut
-  // toujours être dans plusieurs équipes de sports DIFFÉRENTS — seul le même
-  // sport est exclusif.
+  // ANCRAGE UNIQUE STRICT — un coach n'arrache pas un athlète à son équipe.
+  //
+  // Avant, cet écran « déplaçait » : DELETE de l'ancienne ligne puis INSERT,
+  // sur simple confirm() du coach. Ce n'est plus permis. Un athlète n'a qu'UN
+  // rattachement (team_athletes_athlete_id_key), et le changer est une décision
+  // qui appartient à l'athlète — soit par la RPC apply_team_attachment (il agit
+  // lui-même, avec écran de confirmation imposé par le serveur), soit en
+  // acceptant une invitation. Un coach qui pourrait le faire de son côté
+  // court-circuiterait le consentement ET viderait l'alignement d'un confrère
+  // sans que personne ne le sache.
+  //
+  // Il reste donc deux issues :
+  //   • athlète sans équipe  → INSERT direct (le coach a le droit de garnir SON
+  //                            alignement), et toute erreur est AFFICHÉE ;
+  //   • athlète déjà ancré   → refus explicite + proposition d'invitation, que
+  //                            l'athlète acceptera (ou non) depuis son compte.
   async function addAthlete(athleteId: string, athleteName: string) {
     const supabase = createClient();
-    const sportId = team?.sportId || "";
-    if (!sportId) {
-      alert("Sport de l'équipe non résolu — recharge la page.");
-      return;
-    }
 
+    // Plus de filtre sur sport_id : l'unicité ne dépend plus du sport. Un
+    // athlète ancré en basketball bloque tout autant un ajout en football.
     const { data: existing, error: exErr } = await supabase
       .from("team_athletes")
-      .select("id, team_id, teams!team_id(name)")
+      .select("id, team_id, teams!team_id(name, schools!school_id(name))")
       .eq("athlete_id", athleteId)
-      .eq("sport_id", sportId)
       .maybeSingle();
     if (exErr) {
-      alert("Erreur: " + exErr.message);
+      alert("Impossible de vérifier l'équipe actuelle de cet athlète. Réessaie.");
       return;
     }
 
@@ -486,27 +498,46 @@ function TeamDetailPageDesktop() {
         showToast("Déjà dans cette équipe");
         return;
       }
-      const prevRel = existing.teams as { name?: string } | { name?: string }[] | null;
-      const prevName = (Array.isArray(prevRel) ? prevRel[0]?.name : prevRel?.name) || "son équipe actuelle";
-      const ok = confirm(
-        `${athleteName} joue déjà dans « ${prevName} » pour ce sport.\n\n` +
-        `Le déplacer vers « ${team?.name ?? "cette équipe"} » ? Il sera retiré de « ${prevName} ».`,
-      );
-      if (!ok) return;
-      const delRes = await supabase.from("team_athletes").delete().eq("id", existing.id as string);
-      if (delRes.error) {
-        alert("Erreur: " + delRes.error.message);
-        return;
-      }
+      const prevRel = existing.teams as Record<string, unknown> | Record<string, unknown>[] | null;
+      const prev = (Array.isArray(prevRel) ? prevRel[0] : prevRel) as
+        { name?: string; schools?: unknown } | null;
+      const schoolRel = prev?.schools;
+      const school = (Array.isArray(schoolRel) ? schoolRel[0] : schoolRel) as { name?: string } | null;
+      const prevLabel = [prev?.name, school?.name].filter(Boolean).join(" · ") || "une autre équipe";
+
+      setBlockedAthlete({ id: athleteId, name: athleteName, currentTeam: prevLabel });
+      return;
     }
 
     const insRes = await supabase.from("team_athletes").insert({ team_id: teamId, athlete_id: athleteId });
     if (insRes.error) {
-      alert("Erreur: " + insRes.error.message);
+      // Fin du silence : même une contrainte inattendue arrive à l'écran.
+      alert(
+        insRes.error.code === "23505"
+          ? `${athleteName} vient d'être rattaché à une autre équipe. Recharge la page.`
+          : "L'ajout a échoué. Réessaie dans un moment.",
+      );
       return;
     }
     setShowAddAthlete(false);
-    showToast(existing ? "Athlète déplacé" : "Athlète ajouté");
+    showToast("Athlète ajouté");
+    load();
+  }
+
+  /** Envoie une invitation à un athlète déjà ancré ailleurs. C'est LUI qui
+   *  tranche : à l'acceptation, le trigger applique la sémantique de transfert
+   *  complète (trace parcours + réancrage), exactement comme la RPC. */
+  async function inviteBlockedAthlete() {
+    if (!blockedAthlete) return;
+    const supabase = createClient();
+    const { error } = await inviteAthleteToTeam(supabase, blockedAthlete.id, teamId);
+    if (error) {
+      alert(error);
+      return;
+    }
+    setBlockedAthlete(null);
+    setShowAddAthlete(false);
+    showToast("Invitation envoyée");
     load();
   }
 
@@ -863,6 +894,45 @@ function TeamDetailPageDesktop() {
           <button type="button" onClick={saveTeamInfo} className="px-5 py-2 bg-[#E63946] hover:bg-[#D42B22] text-white text-[13px] font-bold rounded-lg transition-colors">Enregistrer</button>
         </div>
       </div>
+
+      {/* ── Athlète déjà ancré ailleurs : invitation, jamais déplacement ──── */}
+      {blockedAthlete && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/70" onClick={() => setBlockedAthlete(null)} />
+          <div className="relative mx-4 w-full max-w-md rounded-xl border border-[#2D3748] bg-[#1A1D24] p-6 shadow-2xl">
+            <h3 className="font-head text-lg font-black uppercase tracking-tight text-white">
+              Déjà dans une équipe
+            </h3>
+            <p className="mt-3 text-[14px] leading-relaxed text-[#9CA3AF]">
+              <span className="font-semibold text-white">{blockedAthlete.name}</span> fait
+              partie de <span className="font-semibold text-white">{blockedAthlete.currentTeam}</span>.
+              Un athlète n&apos;appartient qu&apos;à une seule équipe à la fois, et le
+              changement lui appartient — tu ne peux pas le retirer de l&apos;alignement
+              d&apos;un autre entraîneur.
+            </p>
+            <p className="mt-3 text-[13px] leading-relaxed text-[#6b7280]">
+              Envoie-lui une invitation : s&apos;il l&apos;accepte, il rejoint ton équipe et
+              son ancienne appartenance passe automatiquement dans son parcours.
+            </p>
+            <div className="mt-6 flex flex-col gap-2 sm:flex-row-reverse">
+              <button
+                type="button"
+                onClick={inviteBlockedAthlete}
+                className="flex-1 rounded-lg bg-[#E63946] px-4 py-3 text-[13px] font-head font-bold uppercase tracking-widest text-white transition hover:bg-[#D42B22]"
+              >
+                Envoyer une invitation
+              </button>
+              <button
+                type="button"
+                onClick={() => setBlockedAthlete(null)}
+                className="flex-1 rounded-lg border border-[#2D3748] px-4 py-3 text-[13px] font-head font-bold uppercase tracking-widest text-[#9CA3AF] transition hover:text-white"
+              >
+                Annuler
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Add Athlete Modal (école/cégep only) ────────────── */}
       {showAddAthlete && !isCivil && (
