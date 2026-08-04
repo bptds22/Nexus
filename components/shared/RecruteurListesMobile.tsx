@@ -57,7 +57,6 @@ function CreateListSheet({ open, onClose }: { open: boolean; onClose: () => void
     setSubmitError(null);
     try {
       await createMut.mutateAsync({ name, description: description || null });
-      triggerHaptic("Medium");
       toast.success({ message: "Liste créée" });
       onClose();
       // Iter 7.16 — scroll-to-top après création. Le tri DESC + optimistic en
@@ -71,7 +70,8 @@ function CreateListSheet({ open, onClose }: { open: boolean; onClose: () => void
       });
     } catch (e) {
       const err = e as { message?: string };
-      setSubmitError(err.message || "Erreur lors de la création.");
+      void triggerHaptic("Error");
+        setSubmitError(err.message || "Erreur lors de la création.");
     }
   };
 
@@ -320,7 +320,6 @@ function ListesInner() {
     setConfirmTarget(null);
     try {
       await deleteMut.mutateAsync(snapshot.id);
-      triggerHaptic("Medium");
       toast.success({ message: "Liste supprimée", detail: snapshot.name });
     } catch (e) {
       const err = e as { message?: string };

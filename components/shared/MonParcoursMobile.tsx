@@ -221,6 +221,11 @@ export default function MonParcoursMobile() {
   // Toast — same shape as the desktop (kind + message, auto-dismiss).
   const [toast, setToast] = useState<{ kind: "success" | "error"; message: string } | null>(null);
   const showToast = useCallback((kind: "success" | "error", message: string) => {
+    // Ce toast est PRIVÉ à l'écran — il ne passe pas par MobileToastProvider,
+    // qui porte la notification haptique pour le reste de l'app. Sans cette
+    // ligne, les 8 résultats annoncés ici seraient les seuls muets. On la pose
+    // sur la DÉFINITION, pas sur les 8 appels : un seul point à maintenir.
+    void triggerHaptic(kind === "success" ? "Success" : "Error");
     setToast({ kind, message });
     setTimeout(() => setToast(null), 4000);
   }, []);

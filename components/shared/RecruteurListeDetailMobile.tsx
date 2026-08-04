@@ -220,7 +220,8 @@ function AthleteNotesSheet({
       setContent("");
     } catch (e) {
       const err = e as { message?: string };
-      setError(err.message || "Erreur lors de l'ajout.");
+      void triggerHaptic("Error");
+        setError(err.message || "Erreur lors de l'ajout.");
     }
   };
 
@@ -356,7 +357,8 @@ function ListNotesPanel({ listId }: { listId: string }) {
       setContent("");
     } catch (e) {
       const err = e as { message?: string };
-      setError(err.message || "Erreur lors de l'ajout.");
+      void triggerHaptic("Error");
+        setError(err.message || "Erreur lors de l'ajout.");
     }
   };
 
@@ -724,7 +726,6 @@ function DetailInner({ listId }: { listId: string }) {
     // SEULEMENT après le succès confirmé.
     try {
       await deleteMut.mutateAsync(listId);
-      triggerHaptic("Medium");
       toast.success({ message: "Liste supprimée", detail: list?.name });
       setConfirmDeleteOpen(false);
       router.push("/recruteur/listes");

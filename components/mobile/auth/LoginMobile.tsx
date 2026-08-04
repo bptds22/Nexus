@@ -99,7 +99,6 @@ export function LoginMobile({ onShowWelcome }: LoginMobileProps) {
   }
 
   function handleForgotPassword() {
-    triggerHaptic("Light");
     toast.info({
       message: "Bientôt disponible",
       detail: "La réinitialisation par courriel arrive dans une prochaine mise à jour.",

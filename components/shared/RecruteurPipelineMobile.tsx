@@ -647,7 +647,6 @@ function PipelineMenuSheet({
                 <button
                   type="button"
                   onClick={() => {
-                    triggerHaptic("Light");
                     setSortBy("moved_at_desc"); setFilterSport(null); setFocusMode(false);
                     toast.info({ message: "Filtres réinitialisés" });
                   }}
@@ -766,7 +765,6 @@ function PipelineDetailSheet({
     if (!card) return;
     try {
       await updateStage.mutateAsync({ cardId: card.id, newStage });
-      triggerHaptic("Medium");
       toast.success({ message: `Déplacé vers ${STAGE_BY_LOWER[newStage.toLowerCase()]?.label || newStage}` });
       onClose();
     } catch {
@@ -819,7 +817,6 @@ function PipelineDetailSheet({
     if (!confirmRemove) { setConfirmRemove(true); return; }
     try {
       await removeFromPipeline.mutateAsync({ cardId: card.id });
-      triggerHaptic("Medium");
       toast.success({ message: "Athlète retiré du processus" });
       onClose();
     } catch {

@@ -263,7 +263,6 @@ export function RecruteurParametresMobile() {
 
   // Désactivation RÉVERSIBLE (conservation des données) — inchangée.
   async function handleDeactivate() {
-    triggerHaptic("Heavy");
     const supabase = createClient();
     const { error } = await supabase.rpc("deactivate_my_account", { p_revoke_consent: false });
     if (error) { toast.error({ message: "Échec désactivation", detail: error.message }); return; }
@@ -275,7 +274,6 @@ export function RecruteurParametresMobile() {
 
   // Suppression DÉFINITIVE — RPC delete_my_account via le helper partagé.
   async function handleDelete() {
-    triggerHaptic("Heavy");
     setDeleteSheetOpen(false);
     await deleteMyAccount({
       onError: (detail) => toast.error({ message: "Échec de la suppression", detail }),

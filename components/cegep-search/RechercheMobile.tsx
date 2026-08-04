@@ -340,6 +340,9 @@ export default function RechercheMobile() {
         if (error && error.code !== "23505") throw error;
       }
     } catch {
+      // Le ♥ a été rempli en optimiste et vient de se vider tout seul. Sans
+      // retour, l'athlète voit sa cible disparaître sans savoir pourquoi.
+      void triggerHaptic("Error");
       setCibles((prev) => { const n = new Set(prev); if (dedans) n.add(schoolId); else n.delete(schoolId); return n; });
     } finally { setBusyCible(null); }
   }, [cibles, data, busyCible, supabase]);

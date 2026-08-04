@@ -101,7 +101,6 @@ export default function CoachEquipesMobile() {
       setSaving(false);
       return;
     }
-    triggerHaptic("Medium");
     toast.success({ message: "Équipe créée" });
     qc.invalidateQueries({ queryKey: ["coach-teams"] });
     setShowCreate(false);
@@ -119,7 +118,6 @@ export default function CoachEquipesMobile() {
       toast.error({ message: (error as { message?: string }).message || "Impossible de rejoindre." });
       return;
     }
-    triggerHaptic("Medium");
     // Dit le rôle : revendiquer une équipe orpheline donne head_coach.
     toast.success({
       message: role === "head_coach" ? "Équipe revendiquée — tu en es responsable" : "Équipe rejointe",

@@ -922,7 +922,6 @@ export function CoachATraiterMobile() {
       toast.error({ message: "Erreur de vérification" });
       return;
     }
-    hapticSuccess(); // moment significatif, après confirmation DB
     toast.success({ message: "Athlète vérifié" });
     reload();
   }, [coachUserId, reload, toast]);

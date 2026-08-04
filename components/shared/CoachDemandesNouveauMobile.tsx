@@ -303,7 +303,6 @@ Je vous écris au sujet de ${selectedAthlete.firstName} ${selectedAthlete.lastNa
     // Catch the coach list cache so the new thread appears at the top.
     queryClient.invalidateQueries({ queryKey: ["conversations"] });
 
-    triggerHaptic("Medium");
     toast.success({ message: "Message envoyé" });
     router.replace(`/coach/demandes/${conversationId}`);
   }, [canSend, selectedAthlete, selectedRecruiter, coachUserId, messageBody, toast, queryClient, router]);

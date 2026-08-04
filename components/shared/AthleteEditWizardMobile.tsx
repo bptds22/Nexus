@@ -842,6 +842,7 @@ export default function AthleteEditWizardMobile() {
       await saveDirect("photo_url", publicUrl);
     } catch (err) {
       console.error("[AthleteEdit] photo upload error:", err);
+      void triggerHaptic("Error");
       setPhotoError("Échec du téléversement de la photo. Réessaie.");
     } finally {
       setPhotoUploading(false);

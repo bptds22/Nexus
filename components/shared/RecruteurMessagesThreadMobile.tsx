@@ -209,11 +209,13 @@ function CoachDetailsSheet({
         commentaire: editCommentaire,
         existingId: myReview?.id ?? null,
       });
-      triggerHaptic("Medium");
       toast.success({ message: myReview ? "Avis mis à jour" : "Avis envoyé" });
       setEditing(false);
     } catch (e) {
       const err = e as { code?: string; message?: string };
+      // Le succès de cet envoi passe par toast.success (donc vibre) ; l'échec
+      // n'écrit qu'un texte inline. Sans ceci, seule la réussite se sentirait.
+      void triggerHaptic("Error");
       setEditError(err.code === "23505" ? "Recharge et réessaie." : err.message || "Erreur lors de l'enregistrement.");
     }
   };

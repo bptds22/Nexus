@@ -267,7 +267,6 @@ J'ai consulté le profil de ${a.firstName} ${a.lastName}${a.position ? ` (${a.po
       status: "ACTIVE",
     }).eq("id", convId);
 
-    triggerHaptic("Medium");
     toast.success({ message: "Message envoyé" });
     // Navigation vers le thread créé.
     router.replace(`/recruteur/messages/${convId}`);

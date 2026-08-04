@@ -1007,7 +1007,6 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
       toast.error({ message: "Erreur de confirmation" });
       return;
     }
-    triggerHaptic("Medium");
     toast.success({ message: "Consentement parental confirmé" });
     coachReload();
   }, [id, coachReload, toast]);
@@ -1034,7 +1033,6 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
       toast.error({ message: "Erreur de vérification" });
       return;
     }
-    triggerHaptic("Medium");
     toast.success({ message: "Athlète vérifié" });
     coachReload();
   }, [id, coachReload, toast]);

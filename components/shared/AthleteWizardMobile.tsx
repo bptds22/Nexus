@@ -563,7 +563,6 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
         setIsSubmittingInvitation(false);
         return;
       }
-      triggerHaptic("Medium");
       toast.success({ message: `Invitation envoyée à ${linkedToExisting.firstName}` });
       router.push("/coach/athletes");
     } catch (err) {
@@ -622,7 +621,6 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
         toast.error({ message: "Erreur lors de la vérification", detail: error.message });
         return;
       }
-      triggerHaptic("Medium");
       toast.success({ message: "Athlète vérifié — délai réinitialisé" });
       // Reflète l'état localement → l'encart se masque immédiatement.
       setValidationState({ verified: true, last_profile_validation: nowIso });
@@ -918,7 +916,6 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
     }
     const savedId = result.id ?? athleteId ?? "";
 
-    triggerHaptic("Medium");
     toast.success({ message: isCreate ? "Profil créé" : "Profil enregistré" });
     setSaving(false);
     setShowSummarySheet(false);

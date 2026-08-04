@@ -141,7 +141,6 @@ export default function CoachEquipeDetailMobile() {
     const supabase = createClient();
     const { error } = await supabase.from("team_coaches").insert({ team_id: teamId, coach_id: coachId, role });
     if (error) { toast.error({ message: error.message }); return; }
-    triggerHaptic("Medium");
     toast.success({ message: "Entraîneur ajouté" });
     setShowAddCoach(false);
     invalidate();
@@ -193,7 +192,6 @@ export default function CoachEquipeDetailMobile() {
     }
     const { error } = await supabase.from("team_athletes").insert({ team_id: teamId, athlete_id: athleteId });
     if (error) { toast.error({ message: error.message }); return; }
-    triggerHaptic("Medium");
     toast.success({ message: previousRowId ? "Athlète déplacé" : "Athlète ajouté" });
     setConfirmMoveAthlete(null);
     setShowAddAthlete(false);
@@ -204,7 +202,6 @@ export default function CoachEquipeDetailMobile() {
     const supabase = createClient();
     const { error } = await supabase.from("team_athletes").delete().eq("id", rowId);
     if (error) { toast.error({ message: error.message }); return; }
-    triggerHaptic("Medium");
     toast.success({ message: "Athlète retiré" });
     setConfirmRemoveAthlete(null);
     invalidate();
@@ -214,7 +211,6 @@ export default function CoachEquipeDetailMobile() {
     const supabase = createClient();
     const { error } = await supabase.from("team_coaches").delete().eq("id", rowId);
     if (error) { toast.error({ message: error.message }); return; }
-    triggerHaptic("Medium");
     toast.success({ message: "Entraîneur retiré" });
     setConfirmRemoveCoach(null);
     invalidate();
@@ -227,7 +223,6 @@ export default function CoachEquipeDetailMobile() {
       .update({ status: "CANCELLED", responded_at: new Date().toISOString() })
       .eq("id", inviteId);
     if (error) { toast.error({ message: error.message }); return; }
-    triggerHaptic("Medium");
     toast.success({ message: "Invitation annulée" });
     setConfirmCancelInvite(null);
     invalidate();
@@ -457,7 +452,6 @@ export default function CoachEquipeDetailMobile() {
                 isFirst={false}
                 rightChevron={IS_CAPACITOR ? "none" : "external"}
                 onTap={() => {
-                  triggerHaptic("Light");
                   if (IS_CAPACITOR) {
                     // iOS (3.1.1) : pas d'ouverture du web (tunnel d'achat joignable).
                     toast.info({ message: "Disponible sur la version web", detail: "La modification se fait sur nexussports.ca." });

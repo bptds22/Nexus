@@ -361,7 +361,6 @@ export function AthleteParametresMobile() {
         avec handleRevokeConsent (retrait de consentement, réversible). ── */
 
   async function handleDelete() {
-    triggerHaptic("Heavy");
     setDeleteSheetOpen(false);
     await deleteMyAccount({
       onError: (detail) => toast.error({ message: "Échec de la suppression", detail }),
