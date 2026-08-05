@@ -50,6 +50,10 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { loadAthleteRaw, mapToRecruiterView } from "@/app/coach/athletes/_data/loadAthleteFromSupabase";
 import type { AthleteProfileRecruiterView } from "@/lib/types/models";
 import { triggerHaptic } from "@/lib/haptics";
+import { applyTeamAttachment, readStashedJoinCode, JOIN_CODE_STORAGE_KEY } from "@/lib/queries/athlete/teamAttachment";
+import { type TransferConfirmation } from "@/lib/queries/shared/attachmentErrors";
+import JoinCodeField from "@/components/athlete/JoinCodeField";
+import TransferConfirmDialog from "@/components/athlete/TransferConfirmDialog";
 
 /* ── Constantes (alignées sur desktop) ──────────────────────── */
 
@@ -181,6 +185,18 @@ export function AthleteOnboardingMobile() {
   const [userClearedCoach, setUserClearedCoach] = useState(false);
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
   const [selectedTeamName, setSelectedTeamName] = useState<string>("");
+
+  // ── Rattachement d'équipe (transfer portal, phase 2 — port 1:1 du web) ────
+  // `joinCodeUsed` n'est posé qu'après résolution RÉUSSIE : il part alors dans
+  // apply_team_attachment, qui consomme le quota du code. `joinCodePrefill` ne
+  // sert qu'à pré-remplir le champ avec le code rapporté de /join — sans cette
+  // distinction, un code mémorisé partirait avec l'équipe choisie au sheet et
+  // ferait lever JOIN_CODE_TEAM_MISMATCH. `transferAsk` n'est JAMAIS posé par
+  // l'UI : uniquement quand le serveur lève TRANSFER_REQUIRES_CONFIRMATION.
+  const [joinCodeUsed, setJoinCodeUsed] = useState<string | null>(null);
+  const [joinCodePrefill, setJoinCodePrefill] = useState("");
+  const [transferAsk, setTransferAsk] = useState<TransferConfirmation | null>(null);
+  useEffect(() => { setJoinCodePrefill(readStashedJoinCode()); }, []);
 
   // Carte (écran 3)
   const [primaryPosition, setPrimaryPosition] = useState<string>(""); // abreviation
@@ -926,16 +942,49 @@ export function AthleteOnboardingMobile() {
       athleteIdForTeam = inserted?.id ?? null;
     }
 
-    // team_athletes junction (scolaire OU civil)
+    // ── Rattachement d'équipe — via apply_team_attachment, plus d'INSERT ────
+    // L'ancien code faisait `insert(team_athletes)` et avalait le 23505. Tant
+    // que l'unicité était (athlete_id, sport_id), ce 23505 signifiait « déjà
+    // dans CETTE équipe ». Depuis l'ancrage unique strict il signifie aussi
+    // « déjà ancré AILLEURS » — et l'avaler faisait terminer l'onboarding sur
+    // l'écran WOW alors que l'athlète n'avait rejoint personne.
     if (selectedTeamId && athleteIdForTeam) {
-      const { error: taErr } = await supabase.from("team_athletes").insert({
-        team_id: selectedTeamId,
-        athlete_id: athleteIdForTeam,
+      const outcome = await applyTeamAttachment(supabase, {
+        teamId: selectedTeamId,
+        joinCode: joinCodeUsed,
+        confirmTransfer: false,        // c'est le SERVEUR qui décide
       });
-      if (taErr && taErr.code !== "23505") {
-        console.error("[OnboardingMobile] team_athletes:", taErr);
+
+      if (outcome.status === "needs_confirmation") {
+        // Le profil est déjà écrit, seul le rattachement attend. La modale
+        // reprend la main et rappellera finishOnboarding.
+        setTransferAsk(outcome.confirmation);
+        setSaving(false);
+        return;
+      }
+      if (outcome.status === "error") {
+        // Plus rien n'est avalé : on montre le message et on NE navigue PAS.
+        toast.error({ message: "Rattachement impossible", detail: outcome.message });
+        setSaving(false);
+        return;
       }
     }
+
+    await finishOnboarding(supabase, athleteIdForTeam);
+  }, [
+    canSubmit, userId, saving, primarySport, primaryPosition, primaryPositionId,
+    userContext, selectedClubId, selectedSchoolId, selectedCoachId,
+    firstName, lastName, photo, email, phone, gradYear, jerseyNumber,
+    existingAthleteId, selectedTeamId, joinCodeUsed, router, toast, queryClient,
+  ]);
+
+  /** Queue de fin d'onboarding, commune au chemin nominal et à la reprise
+   *  après confirmation de transfert. Ne touche plus au rattachement. */
+  const finishOnboarding = useCallback(async (
+    supabase: ReturnType<typeof createClient>,
+    athleteIdForTeam: string | null,
+  ) => {
+    if (!userId) return;
 
     // Profile completion
     const { data: freshAthlete } = await supabase
@@ -975,6 +1024,9 @@ export function AthleteOnboardingMobile() {
     // dans la MÊME session et déclenche registerPush() (sinon : seulement au prochain
     // cold start). Miroir de app/athlete/onboarding/page.tsx:1032.
     await queryClient.invalidateQueries({ queryKey: ["currentUser"] });
+    // Le code rapporté de /join a servi : on le retire pour qu'un onboarding
+    // ultérieur dans le même onglet ne le repropose pas.
+    try { sessionStorage.removeItem(JOIN_CODE_STORAGE_KEY); } catch { /* privé / quota */ }
     triggerHaptic("Medium");
 
     // Iter 7.50-b3 — au lieu de redirect immédiat, on bascule en phase
@@ -1000,12 +1052,37 @@ export function AthleteOnboardingMobile() {
     // Fallback : pas d'athlète à montrer, on redirect directement.
     setSaving(false);
     router.replace("/athlete/dashboard");
-  }, [
-    canSubmit, userId, saving, primarySport, primaryPosition, primaryPositionId,
-    userContext, selectedClubId, selectedSchoolId, selectedCoachId,
-    firstName, lastName, photo, email, phone, gradYear, jerseyNumber,
-    existingAthleteId, selectedTeamId, router, toast, queryClient,
-  ]);
+  }, [userId, router, queryClient, userContext]);
+
+  /** « Confirmer le transfert » → on refait l'appel avec le drapeau, puis on
+   *  termine l'onboarding (WOW compris). */
+  const confirmTransferAndFinish = useCallback(async () => {
+    if (!selectedTeamId) return;
+    setSaving(true);
+    const supabase = createClient();
+    const outcome = await applyTeamAttachment(supabase, {
+      teamId: selectedTeamId,
+      joinCode: joinCodeUsed,
+      confirmTransfer: true,
+    });
+    if (outcome.status === "error") {
+      setTransferAsk(null);
+      toast.error({ message: "Transfert impossible", detail: outcome.message });
+      setSaving(false);
+      return;
+    }
+    triggerHaptic("Medium");
+    setTransferAsk(null);
+    await finishOnboarding(supabase, existingAthleteId);
+  }, [selectedTeamId, joinCodeUsed, existingAthleteId, toast, finishOnboarding]);
+
+  /** « Garder mon équipe actuelle » → l'onboarding se termine sans changer
+   *  l'ancrage. Le profil est déjà écrit, rien n'est perdu. */
+  const keepCurrentTeamAndFinish = useCallback(async () => {
+    setTransferAsk(null);
+    setSaving(true);
+    await finishOnboarding(createClient(), existingAthleteId);
+  }, [existingAthleteId, finishOnboarding]);
 
   /* ── Handlers nav ────────────────────────────────────────── */
 
@@ -1117,6 +1194,17 @@ export function AthleteOnboardingMobile() {
         />
       )}
 
+      {/* Ouvert UNIQUEMENT sur TRANSFER_REQUIRES_CONFIRMATION renvoyé par la
+          base — l'UI ne décide jamais seule qu'il y a transfert. */}
+      {transferAsk && (
+        <TransferConfirmDialog
+          confirmation={transferAsk}
+          busy={saving}
+          onConfirm={confirmTransferAndFinish}
+          onCancel={keepCurrentTeamAndFinish}
+        />
+      )}
+
       {/* Header sticky : back + progress + title */}
       <div
         className="sticky top-0 z-30 bg-[#111317]/95 backdrop-blur-md border-b border-white/[0.06]"
@@ -1215,6 +1303,16 @@ export function AthleteOnboardingMobile() {
             clubSelectedCivil={!!selectedClubId}
             selectedTeamNameCivil={userContext === "ligue_civile" ? selectedTeamName : ""}
             onOpenTeam={() => setTeamSheetOpen(true)}
+            joinCodePrefill={joinCodePrefill}
+            onJoinCodeResolved={(v) => {
+              if (v) {
+                setJoinCodeUsed(v.code);
+                setSelectedTeamId(v.teamId);
+                setSelectedTeamName(v.teamName);
+              } else {
+                setJoinCodeUsed(null);
+              }
+            }}
           />
         )}
 
@@ -1595,6 +1693,10 @@ interface Step1Props {
   clubSelectedCivil: boolean;
   selectedTeamNameCivil: string;
   onOpenTeam: () => void;
+  // Transfer portal — code d'équipe (chemin /join + roue de secours quand le
+  // sheet ne trouve pas l'équipe). Vaut pour les DEUX contextes.
+  joinCodePrefill: string;
+  onJoinCodeResolved: (v: { code: string; teamId: string; teamName: string } | null) => void;
 }
 
 function Step1Content(p: Step1Props) {
@@ -1767,6 +1869,24 @@ function Step1Content(p: Step1Props) {
           )}
         </>
       )}
+
+      {/* Code d'équipe — arrivée depuis /join, et roue de secours quand le
+          sheet ne trouve pas l'équipe (pas dans l'école choisie, ou civile).
+          Le code résolu SUPPLANTE la sélection du sheet : c'est la source la
+          plus explicite. Rendu hors des deux branches → vaut pour les deux
+          contextes. */}
+      <div className="pt-3">
+        <JoinCodeField
+          initialCode={p.joinCodePrefill}
+          onResolved={(v) =>
+            p.onJoinCodeResolved(
+              v?.team.teamId
+                ? { code: v.code, teamId: v.team.teamId, teamName: v.team.teamName ?? "" }
+                : null,
+            )
+          }
+        />
+      </div>
     </div>
   );
 }
