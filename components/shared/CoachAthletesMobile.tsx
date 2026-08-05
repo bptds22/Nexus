@@ -800,6 +800,10 @@ function InviteByEmailSheet({
           <p className="text-[13px] text-[#9CA3AF] mt-1 mb-4">Le courriel d&apos;un athlète à inviter.</p>
           <input
             type="email" inputMode="email" autoCapitalize="off" autoCorrect="off" spellCheck={false}
+            /* autoComplete="off" : ce champ attend le courriel d'un ATHLÈTE.
+               Sans lui, iOS propose une adresse du carnet de l'appareil — celle
+               du coach le plus souvent. Seul écart qui restait avec le web. */
+            autoComplete="off"
             value={email} onChange={(e) => setEmail(e.target.value)} placeholder="athlete@exemple.ca"
             className="w-full bg-[#111317] border border-white/10 rounded-xl px-4 py-3 text-[16px] text-white placeholder:text-white/35 outline-none focus:border-[#E63946]/50"
           />

@@ -161,8 +161,13 @@ export default function TransfertAthletesMobile() {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header + source picker */}
-      <div className="px-5 pt-5 pb-3 shrink-0">
+      {/* Header + source picker.
+          nx-safe-top (globals.css) = env(safe-area-inset-top) + 12px. Le layout
+          coach ne réserve RIEN en haut — c'est écrit dans app/coach/layout.tsx :
+          « Pas de padding-top : les headers sticky portent déjà
+          env(safe-area-inset-top) ». Cet écran ne le portait pas, d'où le titre
+          sous l'heure système. */}
+      <div className="px-5 pb-3 shrink-0 nx-safe-top">
         <h1 className="font-head text-[22px] font-black text-white uppercase tracking-tight">Gestion des athlètes</h1>
         <p className="text-[13px] text-[#9CA3AF] mt-1">Assigne des athlètes à un entraîneur de ton école.</p>
 
@@ -194,14 +199,24 @@ export default function TransfertAthletesMobile() {
 
       {/* Athlete list (scrollable) */}
       <div className="flex-1 overflow-y-auto px-5 pb-4 space-y-2">
-        {!sourceId && <div className="py-16 text-center text-[13px] text-[#6b7280]">Sélectionne un entraîneur</div>}
+        {/* États vides CENTRÉS dans la bande (h-full), plus collés en haut avec
+            py-16. C'est ce qui donnait l'impression d'un contenu tassé sous
+            l'en-tête suivi d'un grand vide : la bande faisait toute la hauteur,
+            mais son seul contenu était posé à son sommet. */}
+        {!sourceId && (
+          <div className="h-full flex items-center justify-center text-center text-[13px] text-[#6b7280]">
+            Sélectionne un entraîneur
+          </div>
+        )}
         {sourceId && loadingAthletes && (
-          <div className="py-16 flex justify-center">
+          <div className="h-full flex items-center justify-center">
             <div className="w-6 h-6 border-2 border-[#E63946] border-t-transparent rounded-full animate-spin" />
           </div>
         )}
         {sourceId && !loadingAthletes && sourceAthletes.length === 0 && (
-          <div className="py-16 text-center text-[13px] text-[#6b7280]">Aucun athlète</div>
+          <div className="h-full flex items-center justify-center text-center text-[13px] text-[#6b7280]">
+            Aucun athlète
+          </div>
         )}
         {sourceId && !loadingAthletes && sourceAthletes.map((a) => {
           const selected = selectedIds.has(a.id);
@@ -230,7 +245,20 @@ export default function TransfertAthletesMobile() {
       </div>
 
       {/* Sticky destination + CTA */}
-      <div className="shrink-0 border-t border-[#2D3748] bg-[#1A1D24] px-5 pt-3 pb-4">
+      {/* Pied collant — RÉSERVE DE LA TAB BAR.
+          app/coach/layout.tsx pose bien paddingBottom 88px + safe-area sur
+          <main>, mais AnimatedRoute enveloppe la page dans un motion.div en
+          `position:absolute; inset:0`. Un absolu se cale sur la PADDING-BOX de
+          l'ancêtre positionné : il fait donc 100dvh pleins et IGNORE cette
+          réserve. Le pied atterrissait sous la tab bar. Les autres écrans y
+          échappent parce qu'ils défilent en flux normal ; celui-ci est le seul
+          en colonne pleine hauteur avec un pied ancré.
+          var(--tabzone, …) : --tabzone n'existe que sous le layout collège ;
+          ailleurs on retombe sur la valeur littérale du layout coach. */}
+      <div
+        className="shrink-0 border-t border-[#2D3748] bg-[#1A1D24] px-5 pt-3"
+        style={{ paddingBottom: "calc(var(--tabzone, calc(env(safe-area-inset-bottom) + 88px)) + 12px)" }}
+      >
         <label className="block text-[11px] font-bold tracking-wider uppercase text-[#6b7280] mb-1.5">Destination</label>
         <button
           type="button"

@@ -145,6 +145,54 @@ export function InlineEditRow({
   );
 }
 
+/* ── EmailEditRow — champ courriel TOUJOURS ouvert. ────────────────────────
+   POURQUOI IL NE RÉUTILISE PAS InlineEditRow
+   InlineEditRow ne notifie qu'au COMMIT (blur ou Entrée). C'est le bon contrat
+   pour un nom ou une taille, mais il tue l'autocomplétion : la recherche
+   d'athlètes existants est debouncée sur la frappe, et avec onSave elle ne
+   partait qu'une fois le champ quitté — donc après que la ligne se soit
+   repliée en bouton. Les suggestions apparaissaient sous un champ disparu.
+   Le web n'a jamais eu ce problème : il utilise un <input> permanent avec
+   onChange (app/coach/athletes/create/page.tsx). Cette ligne aligne le mobile.
+
+   Et au repos, InlineEditRow rend un <button> typographiquement IDENTIQUE à
+   PickerRow et aux lignes en lecture seule — rien n'indique qu'on peut y
+   taper. Ici l'input est toujours monté : bordure, placeholder, caret.
+
+   autoComplete="off" (+ autoCapitalize/autoCorrect/spellCheck) : le coach
+   saisit le courriel de L'ATHLÈTE. Sans ça, iOS propose une adresse du
+   carnet de l'appareil — celle du coach, ou pire une sans rapport. Le web
+   pose déjà autoComplete="off" ici ; le mobile ne le posait pas. */
+export function EmailEditRow({
+  label, value, onChange, placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+}) {
+  return (
+    <div className="px-4 py-3 border-b border-white/[0.06] last:border-0">
+      <span className={labelCls}>{label}</span>
+      <input
+        type="email"
+        inputMode="email"
+        autoComplete="off"
+        autoCapitalize="off"
+        autoCorrect="off"
+        spellCheck={false}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        aria-label={label}
+        /* 16px minimum : en dessous, iOS zoome sur le focus et casse la mise
+           en page du wizard. Même valeur que l'input d'InviteByEmailSheet. */
+        className="mt-2 w-full bg-[#111317] border border-white/10 rounded-xl px-4 py-3 text-[16px] text-white placeholder:text-white/35 outline-none focus:border-[#E63946]/50"
+      />
+    </div>
+  );
+}
+
 /* ── PickerRow — read-only label + value, fires onTap. Parent opens
       the actual MobilePicker / SearchSheet. */
 export function PickerRow({

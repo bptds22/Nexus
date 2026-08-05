@@ -60,18 +60,7 @@ import { isValidationDue, isValidationExpired, formatDeadlineFr } from "@/lib/ut
 import { SESSION_KEY_PREFIX } from "@/lib/platform/mobileRoutes";
 import PartnerVisibilityConsentCard from "@/components/shared/PartnerVisibilityConsentCard";
 import DistinctionBadge from "@/components/shared/DistinctionBadge";
-import {
-  Card,
-  InlineEditRow,
-  PickerRow,
-  DateRow,
-  ReadOnlyRow,
-  ToggleRow,
-  ChipsBlock,
-  TagInputRow,
-  MediaUrlRow,
-  DetailedTag,
-} from "@/components/shared/wizard/rows";
+import { Card, ChipsBlock, DateRow, DetailedTag, EmailEditRow, InlineEditRow, MediaUrlRow, PickerRow, ReadOnlyRow, TagInputRow, ToggleRow } from "@/components/shared/wizard/rows";
 import { labelCls, valueCls } from "@/components/shared/wizard/tokens";
 import { StarRow } from "@/components/shared/wizard/stars";
 import { useKeyboardHeight } from "@/lib/hooks/useKeyboardHeight";
@@ -523,8 +512,11 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
   const fermerInvitation = useCallback(() => {
     setInviteApres(null);
     setResultatInvite(null);
-    router.push("/coach/athletes");
-  }, [router]);
+    // Même destination que la sortie normale de la sauvegarde : la liste après
+    // une création, la fiche après une édition. Renvoyer un coach qui vient
+    // d'éditer vers la liste lui ferait perdre le contexte où il était.
+    router.push(isCreate || !athleteId ? "/coach/athletes" : `/coach/athletes/${athleteId}`);
+  }, [router, isCreate, athleteId]);
 
   const handleSelectSuggestion = useCallback((suggestion: AthleteEmailSuggestion) => {
     setForm((prev) => ({
@@ -926,7 +918,18 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
        rien n'était envoyé. Sans courriel il n'y a rien à envoyer — on sort
        comme avant. */
     const courrielSaisi = form.identity.email?.trim();
-    if (isCreate && savedId && courrielSaisi) {
+    const courrielAvant = baselineFormRef.current?.identity.email?.trim() ?? "";
+
+    /* CHEMIN C — ÉDITION, courriel AJOUTÉ APRÈS COUP.
+       Un athlète créé sans courriel est un fantôme : aucune invitation n'a pu
+       partir, et il n'existait aucune façon de réparer ça sur mobile. Le coach
+       ajoute le courriel plus tard, on lui propose la MÊME modale.
+
+       Condition stricte « vide → rempli », pas « a changé » : corriger une
+       coquille dans un courriel déjà invité ne doit PAS relancer une modale
+       d'invitation à chaque sauvegarde. */
+    const proposerInvitation = isCreate ? !!courrielSaisi : !!courrielSaisi && !courrielAvant;
+    if (savedId && proposerInvitation) {
       setInviteApres({ athleteId: savedId, email: courrielSaisi, prenom: form.identity.firstName || "" });
       return;
     }
@@ -1489,15 +1492,23 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
             onTap={() => setOpenGenderPicker(true)} required />
         </Card>
 
-        {/* CREATE-only email + orphan autocomplete (essential card) */}
-        {isCreate && (
-          <Card>
-            <InlineEditRow label="Courriel" value={d.email}
-              onSave={(v) => handleEmailChange(v)}
-              placeholder="athlete@email.com"
-              type="email" />
-          </Card>
-        )}
+        {/* Courriel — CRÉATION ET ÉDITION.
+            Il était create-only, ce qui rendait un athlète créé sans courriel
+            définitivement injoignable : aucune surface mobile ne permettait
+            d'en ajouter un plus tard, donc aucune invitation ne pouvait
+            jamais partir. Le web l'a toujours eu en édition
+            (app/coach/athletes/[id]/modifier/PageClient.tsx).
+
+            L'AUTOCOMPLÉTION RESTE CRÉATION SEULE : chercher un athlète
+            existant portant ce courriel n'a de sens que si on est en train
+            d'en créer un. En édition la fiche EXISTE — proposer de la « lier »
+            à une autre serait absurde, et `linkedToExisting` bloque la
+            soumission. On écrit donc directement dans le formulaire. */}
+        <Card>
+          <EmailEditRow label="Courriel de l'athlète" value={d.email}
+            onChange={isCreate ? handleEmailChange : (v) => updateIdentity("email", v)}
+            placeholder="athlete@email.com" />
+        </Card>
         {isCreate && showSuggestions && emailAutocomplete?.suggestions && emailAutocomplete.suggestions.length > 0 && (
           <div className="rounded-2xl bg-[#1A1D24] border border-[#E63946]/30 overflow-hidden">
             <div className="px-4 py-2 text-[11px] text-white/55 border-b border-white/[0.08]">
