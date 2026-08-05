@@ -38,9 +38,19 @@ export interface TransferConfirmation {
   previous_school_name: string | null;
   previous_sport: string | null;
   previous_season: string | null;
+  previous_age_group: string | null;
+  previous_division: string | null;
+  previous_gender: string | null;
+  previous_league: string | null;
   target_team_id: string;
   target_team_name: string | null;
   target_school_name: string | null;
+  target_sport: string | null;
+  target_season: string | null;
+  target_age_group: string | null;
+  target_division: string | null;
+  target_gender: string | null;
+  target_league: string | null;
 }
 
 const MESSAGES: Record<AttachmentSentinel, string> = {

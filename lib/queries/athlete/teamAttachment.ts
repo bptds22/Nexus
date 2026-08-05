@@ -58,8 +58,15 @@ export interface ResolvedJoinTeam {
   schoolId: string | null;
   schoolName: string | null;
   schoolLogoUrl: string | null;
+  /** SECONDAIRE | CEGEP | LIGUE_CIVILE — décide du contexte d'onboarding
+   *  (scolaire vs ligue civile) sans aller-retour supplémentaire sur `schools`. */
+  schoolType: string | null;
   sportName: string | null;
   season: string | null;
+  ageGroup: string | null;
+  division: string | null;
+  gender: string | null;
+  league: string | null;
   isValid: boolean;
 }
 
@@ -143,8 +150,13 @@ export async function resolveTeamJoinToken(
     schoolId: (row.school_id as string) ?? null,
     schoolName: (row.school_name as string) ?? null,
     schoolLogoUrl: (row.school_logo_url as string) ?? null,
+    schoolType: (row.school_type as string) ?? null,
     sportName: (row.sport_name as string) ?? null,
     season: (row.season as string) ?? null,
+    ageGroup: (row.age_group as string) ?? null,
+    division: (row.division as string) ?? null,
+    gender: (row.gender as string) ?? null,
+    league: (row.league as string) ?? null,
     isValid: row.is_valid === true,
   };
 }

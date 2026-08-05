@@ -23,13 +23,15 @@ import TransferConfirmDialog from "@/components/athlete/TransferConfirmDialog";
 import { applyTeamAttachment } from "@/lib/queries/athlete/teamAttachment";
 import { type TransferConfirmation } from "@/lib/queries/shared/attachmentErrors";
 import { taRows } from "@/lib/queries/shared/embeds";
+import { teamDetails } from "@/lib/config/teamLabel";
 
 interface CurrentAnchor {
   teamId: string | null;
   teamName: string;
-  schoolName: string;
-  sportName: string;
-  season: string;
+  /** Nom de l'école OU du club — même table `schools`. */
+  orgName: string;
+  /** Détails déjà mis en forme par teamDetails(). */
+  details: string;
 }
 
 interface TeamOption {
@@ -37,6 +39,19 @@ interface TeamOption {
   name: string;
   season: string | null;
   sport: string;
+  // Détails discriminants : sans eux, deux « Dragons » de la même école sont
+  // indistinguables dans la liste (cf. lib/config/teamLabel.ts).
+  //
+  // OPTIONNELS À DESSEIN. Une équipe issue du picker les porte toujours (la
+  // requête `teams` les sélectionne). Une équipe issue d'un CODE ne les a pas :
+  // resolve_team_join_token ne les retourne pas encore, et `teams` n'est pas
+  // lisible en anon. teamDetails() omet proprement ce qui manque, donc la
+  // carte du code affiche moins de détails que la liste — sans planter.
+  // Le GATE proposé au rapport supprime cet écart.
+  age_group?: string | null;
+  division?: string | null;
+  gender?: string | null;
+  league?: string | null;
 }
 
 const label = "block text-[12px] font-bold tracking-[0.25em] uppercase text-[#6B7280] mb-1.5";
@@ -64,7 +79,7 @@ export default function MonEquipeSection({ onToast }: { onToast?: (m: string) =>
 
     const { data } = await supabase
       .from("athletes")
-      .select("id, team_athletes(team_id, teams!team_id(name, season, sports!sport_id(nom), schools!school_id(name)))")
+      .select("id, team_athletes(team_id, teams!team_id(name, season, age_group, division, gender, league, sports!sport_id(nom), schools!school_id(name)))")
       .eq("user_id", auth.user.id)
       .maybeSingle();
 
@@ -81,9 +96,15 @@ export default function MonEquipeSection({ onToast }: { onToast?: (m: string) =>
         ? {
             teamId: (ta?.team_id as string) ?? null,
             teamName: (team.name as string) || "",
-            schoolName: one<{ name?: string }>(team.schools)?.name || "",
-            sportName: one<{ nom?: string }>(team.sports)?.nom || "",
-            season: (team.season as string) || "",
+            orgName: one<{ name?: string }>(team.schools)?.name || "",
+            details: teamDetails({
+              sport: one<{ nom?: string }>(team.sports)?.nom ?? null,
+              age_group: (team.age_group as string) ?? null,
+              division: (team.division as string) ?? null,
+              gender: (team.gender as string) ?? null,
+              season: (team.season as string) ?? null,
+              league: (team.league as string) ?? null,
+            }),
           }
         : null,
     );
@@ -100,7 +121,7 @@ export default function MonEquipeSection({ onToast }: { onToast?: (m: string) =>
       setTeamsLoading(true);
       const { data } = await createClient()
         .from("teams")
-        .select("id, name, season, sports!sport_id(nom)")
+        .select("id, name, season, age_group, division, gender, league, sports!sport_id(nom)")
         .eq("school_id", schoolId)
         .eq("is_active", true)
         .order("season", { ascending: false })
@@ -114,6 +135,10 @@ export default function MonEquipeSection({ onToast }: { onToast?: (m: string) =>
             name: (t.name as string) || "",
             season: (t.season as string) ?? null,
             sport: ((sp as { nom?: string } | null)?.nom) || "",
+            age_group: (t.age_group as string) ?? null,
+            division: (t.division as string) ?? null,
+            gender: (t.gender as string) ?? null,
+            league: (t.league as string) ?? null,
           };
         }),
       );
@@ -175,7 +200,7 @@ export default function MonEquipeSection({ onToast }: { onToast?: (m: string) =>
           <>
             <div className="text-[17px] font-semibold text-white">{anchor.teamName}</div>
             <div className="mt-1 text-[13px] text-[#9CA3AF]">
-              {[anchor.schoolName, anchor.sportName, anchor.season].filter(Boolean).join(" · ")}
+              {[anchor.orgName, anchor.details].filter(Boolean).join(" · ")}
             </div>
             <p className="mt-3 text-[12px] leading-relaxed text-[#6b7280]">
               Tu ne peux faire partie que d&apos;une équipe à la fois. En rejoignant
@@ -229,11 +254,15 @@ export default function MonEquipeSection({ onToast }: { onToast?: (m: string) =>
           <div className="h-px flex-1 bg-[#2D3748]" />
         </div>
 
-        <label className={label}>Ton école</label>
+        {/* Vocabulaire neutre : `schools` héberge AUSSI les clubs civils
+            (type LIGUE_CIVILE), et SchoolSelect charge la table sans filtre de
+            type — un athlète de ligue civile trouve donc son club ici et ne
+            doit jamais lire le mot « école » tout court. */}
+        <label className={label}>Ton école ou ton club</label>
         <SchoolSelect
           value={schoolId}
           onChange={(id) => { setSchoolId(id); setPickedTeam(null); setJoinCode(null); setDone(""); }}
-          placeholder="Chercher mon école…"
+          placeholder="Cherche ton école ou ton club…"
         />
 
         {schoolId ? (
@@ -243,7 +272,7 @@ export default function MonEquipeSection({ onToast }: { onToast?: (m: string) =>
               <p className="text-[13px] text-[#6b7280]">Chargement…</p>
             ) : teams.length === 0 ? (
               <p className="text-[13px] text-[#6b7280]">
-                Aucune équipe active pour cette école. Demande un code à ton entraîneur.
+                Aucune équipe active ici. Demande un code à ton entraîneur.
               </p>
             ) : (
               <ul className="max-h-64 space-y-2 overflow-y-auto">
@@ -266,7 +295,7 @@ export default function MonEquipeSection({ onToast }: { onToast?: (m: string) =>
                       >
                         <div className="text-[14px] font-semibold text-white">{t.name}</div>
                         <div className="text-[12px] text-[#6b7280]">
-                          {[t.sport, t.season].filter(Boolean).join(" · ")}
+                          {teamDetails(t)}
                           {current ? " · équipe actuelle" : ""}
                         </div>
                       </button>

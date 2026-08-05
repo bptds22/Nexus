@@ -21,6 +21,7 @@ import {
   isPlausibleJoinCode,
   type ResolvedJoinTeam,
 } from "@/lib/queries/athlete/teamAttachment";
+import { teamDetails } from "@/lib/config/teamLabel";
 
 interface Props {
   /** Code pré-rempli (arrivée depuis /join). */
@@ -96,7 +97,10 @@ export default function JoinCodeField({ initialCode = "", onResolved }: Props) {
           <div className="min-w-0 flex-1">
             <div className="truncate text-[15px] font-semibold text-white">{team.teamName}</div>
             <div className="truncate text-[12px] text-[#9CA3AF]">
-              {[team.schoolName, team.sportName, team.season].filter(Boolean).join(" · ")}
+              {[team.schoolName, teamDetails({
+                sport: team.sportName, age_group: team.ageGroup, division: team.division,
+                gender: team.gender, season: team.season, league: team.league,
+              })].filter(Boolean).join(" · ")}
             </div>
           </div>
           <button

@@ -13,6 +13,7 @@
 ═══════════════════════════════════════════════════════════════ */
 
 import { transferConfirmationText, type TransferConfirmation } from "@/lib/queries/shared/attachmentErrors";
+import { teamDetails } from "@/lib/config/teamLabel";
 
 interface Props {
   confirmation: TransferConfirmation;
@@ -27,10 +28,27 @@ interface Props {
 export default function TransferConfirmDialog({
   confirmation, cancelLabel = "Garder mon équipe actuelle", busy = false, onConfirm, onCancel,
 }: Props) {
-  const from = [confirmation.previous_team_name, confirmation.previous_school_name]
-    .filter(Boolean).join(" · ") || "Ton équipe actuelle";
-  const to = [confirmation.target_team_name, confirmation.target_school_name]
-    .filter(Boolean).join(" · ") || "La nouvelle équipe";
+  // Nom SEUL sur la première ligne, détails complets en dessous : « Dragons »
+  // → « Dragons » ne dit rien à l'athlète ; « Juvénile · D1 · Masculin » →
+  // « Juvénile · D2 · Féminin » lui dit exactement ce qui change.
+  const fromName = confirmation.previous_team_name || "Ton équipe actuelle";
+  const toName = confirmation.target_team_name || "La nouvelle équipe";
+  const fromDetails = [
+    confirmation.previous_school_name,
+    teamDetails({
+      sport: confirmation.previous_sport, age_group: confirmation.previous_age_group,
+      division: confirmation.previous_division, gender: confirmation.previous_gender,
+      season: confirmation.previous_season, league: confirmation.previous_league,
+    }),
+  ].filter(Boolean).join(" · ");
+  const toDetails = [
+    confirmation.target_school_name,
+    teamDetails({
+      sport: confirmation.target_sport, age_group: confirmation.target_age_group,
+      division: confirmation.target_division, gender: confirmation.target_gender,
+      season: confirmation.target_season, league: confirmation.target_league,
+    }),
+  ].filter(Boolean).join(" · ");
 
   return (
     <div
@@ -52,8 +70,8 @@ export default function TransferConfirmDialog({
         </p>
 
         <div className="mt-5 space-y-2">
-          <Row label="Tu quittes" value={from} tone="leave" />
-          <Row label="Tu rejoins" value={to} tone="join" />
+          <Row label="Tu quittes" name={fromName} details={fromDetails} tone="leave" />
+          <Row label="Tu rejoins" name={toName} details={toDetails} tone="join" />
         </div>
 
         <p className="mt-4 text-[12px] leading-relaxed text-[#6b7280]">
@@ -84,13 +102,16 @@ export default function TransferConfirmDialog({
   );
 }
 
-function Row({ label, value, tone }: { label: string; value: string; tone: "leave" | "join" }) {
+function Row({ label, name, details, tone }: {
+  label: string; name: string; details: string; tone: "leave" | "join";
+}) {
   return (
     <div className="rounded-xl border border-white/5 bg-[#111317] px-4 py-3">
       <div className="text-[11px] font-bold uppercase tracking-wider text-[#6b7280]">{label}</div>
       <div className={`mt-0.5 text-[14px] font-semibold ${tone === "join" ? "text-white" : "text-[#9CA3AF]"}`}>
-        {value}
+        {name}
       </div>
+      {details ? <div className="mt-0.5 text-[12px] text-[#6b7280]">{details}</div> : null}
     </div>
   );
 }

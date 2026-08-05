@@ -21,6 +21,8 @@ import { SUBJECTS, HONORS, CEGEP_REGIONS, programmeCegepArray } from "@/lib/conf
 import { applyTeamAttachment, readStashedJoinCode, JOIN_CODE_STORAGE_KEY } from "@/lib/queries/athlete/teamAttachment";
 import { type TransferConfirmation } from "@/lib/queries/shared/attachmentErrors";
 import JoinCodeField from "@/components/athlete/JoinCodeField";
+import { type ResolvedJoinTeam } from "@/lib/queries/athlete/teamAttachment";
+import { teamDetails } from "@/lib/config/teamLabel";
 import TransferConfirmDialog from "@/components/athlete/TransferConfirmDialog";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
@@ -662,6 +664,74 @@ function AthleteOnboardingDesktop() {
   const [joinCodePrefill, setJoinCodePrefill] = useState("");
   useEffect(() => { setJoinCodePrefill(readStashedJoinCode()); }, []);
 
+  // ── CODE-FIRST ────────────────────────────────────────────────────────────
+  // Quand un code est résolu, il PILOTE le formulaire au lieu de le subir.
+  // Le bug qu'on corrige : l'athlète choisissait école X + Football à la main,
+  // puis entrait un code d'une équipe de Basketball à l'école Y — la RPC
+  // l'ancrait chez Y pendant que son profil disait Football chez X. Rien
+  // n'était incohérent pour la base, tout l'était pour un recruteur.
+  const [codeLock, setCodeLock] = useState<{
+    code: string; teamId: string; teamName: string;
+    schoolId: string; schoolName: string; schoolType: string;
+    sportName: string; details: string;
+  } | null>(null);
+
+  /** Adopte un code résolu : dérive l'organisation, le contexte et le sport.
+   *
+   *  LES DEUX CONTEXTES NE REMPLISSENT PAS LES MÊMES CHAMPS — c'est le piège
+   *  de cette fonction. Le scolaire renseigne selectedSchoolId (+ coach),
+   *  le civil renseigne selectedClubId. Laisser l'autre paire posée
+   *  produirait un athlète à la fois scolaire et civil : on efface donc
+   *  explicitement la branche non retenue. */
+  function applyCodeLock(v: { code: string; team: ResolvedJoinTeam } | null) {
+    const t = v?.team;
+    if (!v || !t?.teamId || !t.schoolId) { releaseCodeLock(); return; }
+
+    const isCivil = t.schoolType === "LIGUE_CIVILE";
+    setCodeLock({
+      code: v.code,
+      teamId: t.teamId,
+      teamName: t.teamName ?? "",
+      schoolId: t.schoolId,
+      schoolName: t.schoolName ?? "",
+      schoolType: t.schoolType ?? "",
+      sportName: t.sportName ?? "",
+      details: teamDetails({
+        sport: t.sportName, age_group: t.ageGroup, division: t.division,
+        gender: t.gender, season: t.season, league: t.league,
+      }),
+    });
+    setJoinCodeUsed(v.code);
+    setSelectedTeamId(t.teamId);
+    setSelectedTeamName(t.teamName ?? "");
+    setUserContext(isCivil ? "ligue_civile" : "scolaire");
+
+    if (isCivil) {
+      setSelectedClubId(t.schoolId);
+      setSelectedClubName(t.schoolName ?? "");
+      setSelectedSchoolId("");
+      setSelectedSchoolName("");
+      setSelectedCoachId(null);     // le coach est une notion scolaire ici
+    } else {
+      setSelectedSchoolId(t.schoolId);
+      setSelectedSchoolName(t.schoolName ?? "");
+      setSelectedClubId(null);
+      setSelectedClubName("");
+    }
+    if (t.sportName) { setPrimarySport(t.sportName); setPrimaryPosition(""); }
+    setAttachError("");
+  }
+
+  /** « Changer » : délie le code et déverrouille tout. On NE remet PAS l'école
+   *  et le sport à zéro — l'athlète vient de les voir, ils restent un point de
+   *  départ raisonnable ; seul le verrou saute. */
+  function releaseCodeLock() {
+    setCodeLock(null);
+    setJoinCodeUsed(null);
+    setSelectedTeamId(null);
+    setSelectedTeamName("");
+  }
+
   // Phase 2 athlete claim: if a coach-created orphan athlete row
   // matches this signup's email, we surface the modal at mount and
   // route into the existing UPDATE path (via existingAthleteId) on
@@ -1249,6 +1319,25 @@ function AthleteOnboardingDesktop() {
       .eq("id", userId)
       .single();
 
+    // ── Garde-fou de cohérence code ↔ profil ────────────────────────────────
+    // Dernier rempart, côté données et non côté UI : tant qu'un code est actif,
+    // le sport et l'équipe DOIVENT être ceux de ce code. Les verrous visuels
+    // rendent l'écart improbable ; ceci le rend impossible — y compris si un
+    // effet, un resume d'onboarding ou un state périmé repose primarySport
+    // dans le dos de l'utilisateur.
+    if (codeLock && (primarySport !== codeLock.sportName || selectedTeamId !== codeLock.teamId)) {
+      console.error("[Onboarding] incohérence code/profil", {
+        codeSport: codeLock.sportName, profilSport: primarySport,
+        codeTeam: codeLock.teamId, profilTeam: selectedTeamId,
+      });
+      setAttachError(
+        `Ton code correspond à ${codeLock.teamName} (${codeLock.sportName}). ` +
+        `Utilise « Changer » à la première étape si tu veux une autre équipe.`,
+      );
+      setSaving(false);
+      return;
+    }
+
     if (userRoleCheck?.role !== "ATHLETE") {
       console.error("[Athlete onboarding] non-athlete attempted to submit, role:", userRoleCheck?.role);
       alert("Erreur : ton compte n'est pas configuré comme athlète. Contacte le support.");
@@ -1550,6 +1639,50 @@ function AthleteOnboardingDesktop() {
           <div className={cardCls}>
             <h2 className="font-head text-xl font-black text-white uppercase tracking-tight mb-1">Identité</h2>
             <p className="text-[14px] text-[#6b7280] mb-6">Tes informations personnelles de base</p>
+
+            {/* ── VOIE RAPIDE : le code d'équipe, EN TÊTE ────────────────────
+                Il vivait à l'étape 4, après le choix école/coach/sport — donc
+                après que l'athlète ait pu se tromper. Ici, il pilote : école,
+                contexte et sport en sont dérivés et verrouillés. */}
+            <div className="mb-6 rounded-xl border border-[#E63946]/25 bg-[#E63946]/[0.06] p-4">
+              {codeLock ? (
+                <div className="flex items-start gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-[#6b7280]">
+                      Code {codeLock.code}
+                    </p>
+                    <p className="mt-1 truncate text-[15px] font-semibold text-white">
+                      {codeLock.teamName}
+                    </p>
+                    <p className="truncate text-[12px] text-[#9CA3AF]">
+                      {[codeLock.schoolName, codeLock.details].filter(Boolean).join(" · ")}
+                    </p>
+                    <p className="mt-2 text-[12px] leading-relaxed text-[#6b7280]">
+                      Ton {codeLock.schoolType === "LIGUE_CIVILE" ? "club" : "école"} et ton
+                      sport sont remplis à partir de ce code — tu n&apos;as pas à les chercher.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={releaseCodeLock}
+                    className="shrink-0 text-[12px] font-semibold text-[#9CA3AF] underline"
+                  >
+                    Changer
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <p className="mb-2 text-[13px] font-semibold text-white">
+                    Ton entraîneur t&apos;a donné un code ?
+                  </p>
+                  <p className="mb-3 text-[12px] leading-relaxed text-[#9CA3AF]">
+                    Entre-le : ton équipe, ton école ou ton club et ton sport se
+                    remplissent tout seuls.
+                  </p>
+                  <JoinCodeField initialCode={joinCodePrefill} onResolved={applyCodeLock} />
+                </>
+              )}
+            </div>
 
             {/* Photo */}
             <div className="flex items-center gap-5 mb-6">
@@ -1893,7 +2026,20 @@ function AthleteOnboardingDesktop() {
                   Step 1 where it is REQUIRED (canProceed step 1). No dead-end
                   possible (civil can't advance without a sport), so a plain
                   hide suffices — no safety net. Scolaire keeps it here. */}
-              {userContext !== "ligue_civile" && (
+              {/* Sport VERROUILLÉ quand un code est actif : il vient de
+                  l'équipe. Le laisser modifiable rouvrirait exactement
+                  l'incohérence qu'on corrige (profil Football, équipe de
+                  Basketball). Le déverrouillage passe par « Changer » à
+                  l'étape 1 — un seul endroit, pas deux. */}
+              {codeLock ? (
+                <div>
+                  <label className={labelCls}>Sport principal</label>
+                  <div className="flex items-center gap-2 rounded-lg border border-[#2D3748] bg-[#111317] px-4 py-2.5">
+                    <span className="text-[14px] font-semibold text-white">{codeLock.sportName}</span>
+                    <span className="text-[12px] text-[#6b7280]">— défini par ton code d&apos;équipe</span>
+                  </div>
+                </div>
+              ) : userContext !== "ligue_civile" && (
                 <div>
                   <label className={labelCls}>Sport principal <span className="text-[#EF4444]">*</span></label>
                   <div className="grid grid-cols-4 gap-2">
@@ -1925,10 +2071,32 @@ function AthleteOnboardingDesktop() {
                 (optional). Filtered by selectedSchoolId + primarySport.
                 Civil athletes pick their team in step 1 via the
                 CivilTeamPicker; this block is school-context only. */}
-            {userContext === "scolaire" && selectedSchoolId && primarySport && (
+            {/* Équipe DÉJÀ décidée par le code : on la confirme, on ne la
+                repropose pas. Le picker resterait une invitation à se
+                contredire. */}
+            {codeLock ? (
+              <div className="mt-5 mb-5">
+                <label className={labelCls}>Ton équipe</label>
+                <div className="flex items-start gap-3 rounded-xl border border-[#22C55E]/30 bg-[#22C55E]/10 p-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-[15px] font-semibold text-white">{codeLock.teamName}</div>
+                    <div className="truncate text-[12px] text-[#9CA3AF]">
+                      {[codeLock.schoolName, codeLock.details].filter(Boolean).join(" · ")}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={releaseCodeLock}
+                    className="shrink-0 text-[12px] font-semibold text-[#9CA3AF] underline"
+                  >
+                    Changer
+                  </button>
+                </div>
+              </div>
+            ) : userContext === "scolaire" && selectedSchoolId && primarySport && (
               <div className="mt-5 mb-5">
                 <label className={labelCls}>Ton équipe (optionnel)</label>
-                <p className="text-[12px] text-[#6b7280] mb-3">Sélectionne ton équipe actuelle à {selectedSchoolName || "ton école"}. Si elle n&apos;apparaît pas, tu pourras l&apos;associer plus tard.</p>
+                <p className="text-[12px] text-[#6b7280] mb-3">Sélectionne ton équipe actuelle à {selectedSchoolName || "ton école ou ton club"}. Si elle n&apos;apparaît pas, tu pourras l&apos;associer plus tard.</p>
                 <SchoolTeamPicker
                   schoolId={selectedSchoolId}
                   sportName={primarySport}
@@ -1939,25 +2107,6 @@ function AthleteOnboardingDesktop() {
                 />
               </div>
             )}
-
-            {/* Code d'équipe — chemin /join, et roue de secours quand le
-                picker ne trouve pas l'équipe (elle n'est pas dans l'école
-                sélectionnée, ou elle est civile). Le code résolu SUPPLANTE
-                la sélection du picker : c'est la source la plus explicite. */}
-            <div className="mt-5 mb-5">
-              <JoinCodeField
-                initialCode={joinCodePrefill}
-                onResolved={(v) => {
-                  if (v?.team.teamId) {
-                    setJoinCodeUsed(v.code);
-                    setSelectedTeamId(v.team.teamId);
-                    setSelectedTeamName(v.team.teamName ?? "");
-                  } else {
-                    setJoinCodeUsed(null);
-                  }
-                }}
-              />
-            </div>
 
             <div className={sectionTitle}><div className="w-0.5 h-4 bg-[#E63946] rounded-full" />Liens vidéo</div>
             <div className="space-y-3">

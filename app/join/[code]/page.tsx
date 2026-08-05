@@ -34,6 +34,7 @@ import {
   type ResolvedJoinTeam,
 } from "@/lib/queries/athlete/teamAttachment";
 import { APP_STORE_URL, PLAY_STORE_URL, detectDevice, type DeviceKind } from "@/lib/config/appStores";
+import { teamDetails } from "@/lib/config/teamLabel";
 
 type State =
   | { phase: "loading" }
@@ -136,7 +137,12 @@ function InvalidCard() {
 }
 
 function ValidCard({ team, code, device }: { team: ResolvedJoinTeam; code: string; device: DeviceKind }) {
-  const meta = [team.schoolName, team.sportName, team.season].filter(Boolean).join(" · ");
+  // Détails complets depuis resolve (migration 20260805120000) : sans eux,
+  // deux équipes homonymes de la même école étaient indistinguables ici.
+  const meta = [team.schoolName, teamDetails({
+    sport: team.sportName, age_group: team.ageGroup, division: team.division,
+    gender: team.gender, season: team.season, league: team.league,
+  })].filter(Boolean).join(" · ");
 
   return (
     <>
