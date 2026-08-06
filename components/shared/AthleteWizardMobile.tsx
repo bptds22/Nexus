@@ -71,7 +71,7 @@ import {
 } from "@/lib/config/badges";
 import { POSITIONS } from "@/lib/sports-data";
 import {
-  autocompleteInvitableByEmail,
+  lookupInvitableByEmail,
   type AthleteEmailAutocompleteResult,
   type AthleteEmailSuggestion,
 } from "@/lib/coach/athleteEmailAutocomplete";
@@ -92,6 +92,7 @@ import { ConfirmSheet } from "@/components/shared/settings";
 import { Skeleton } from "@/components/ui/Skeleton";
 import CoteChangeConfirmContent from "@/components/shared/CoteChangeConfirmContent";
 import { triggerHaptic } from "@/lib/haptics";
+import { inviteAnchoredAthlete } from "@/lib/queries/coach/inviteAnchoredAthlete";
 
 /* ── Haptics helper (matches onboarding shells) ─────────────── */
 
@@ -244,6 +245,20 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
   const [resultatInvite, setResultatInvite] = useState<{ ok: boolean; msg: string } | null>(null);
   const [isSubmittingInvitation, setIsSubmittingInvitation] = useState(false);
   const emailAutocompleteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  /* ── ANCRÉ AILLEURS — la sortie du cul-de-sac ───────────────────────────
+     Vrai quand la recherche a répondu « un athlète existe à ce courriel, mais
+     tu ne peux pas l'inviter d'ici » : le drapeau arrive SEUL, sans nom ni
+     identifiant (choix Loi 25 assumé côté base). On ne peut donc pas afficher
+     de suggestion, seulement proposer une action.
+     Le transfert passe par une RPC serveur qui résout le courriel elle-même —
+     jamais par un INSERT direct, et JAMAIS par athlete_invitations : cet
+     athlète a déjà un compte, il n'a rien à réclamer. */
+  const [ancreAilleurs, setAncreAilleurs] = useState(false);
+  const [equipeTransfert, setEquipeTransfert] = useState<string | null>(null);
+  const [openTransfertTeamPicker, setOpenTransfertTeamPicker] = useState(false);
+  const [envoiAncre, setEnvoiAncre] = useState(false);
+  const [resultatAncre, setResultatAncre] = useState<{ ok: boolean; msg: string } | null>(null);
 
   /* ── Picker / sheet open state ───────────────────────────── */
   const [openSportPicker, setOpenSportPicker] = useState(false);
@@ -451,6 +466,8 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
     if (newEmail.trim().length < 4) {
       setEmailAutocomplete(null);
       setShowSuggestions(false);
+      setAncreAilleurs(false);
+      setResultatAncre(null);
       return;
     }
     emailAutocompleteTimerRef.current = setTimeout(async () => {
@@ -470,9 +487,18 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
         // `text` brut, pas de CITEXT, aucun index unique (vérifié en base). Le
         // garde-fou serait un index unique, décidé dans un ticket séparé après
         // comptage des doublons existants.
-        const result = await autocompleteInvitableByEmail(supabase, newEmail);
-        setEmailAutocomplete(result);
+        // On passe par lookupInvitableByEmail — LA MÊME recherche que le
+        // dialogue d'invitation du roster — au lieu de la variante du wizard.
+        // Deux raisons : elle couvre une population de PLUS (les comptes sans
+        // coach, scolaires comme civils, là où l'ancienne se limitait aux
+        // civils), et surtout elle rend le drapeau `existsNotInvitable`.
+        // Sans ce drapeau, un courriel appartenant à un athlète ANCRÉ AILLEURS
+        // ne produisait RIEN : ni suggestion, ni avertissement. Le coach allait
+        // au bout et créait un doublon. C'était le cul-de-sac.
+        const result = await lookupInvitableByEmail(supabase, newEmail);
+        setEmailAutocomplete({ status: result.status, suggestions: result.suggestions });
         setShowSuggestions(result.status === "ok" && result.suggestions.length > 0);
+        setAncreAilleurs(result.existsNotInvitable && result.suggestions.length === 0);
       } catch (err) {
         console.error("[EmailAutocomplete] lookup error:", err);
       }
@@ -517,6 +543,26 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
     // d'éditer vers la liste lui ferait perdre le contexte où il était.
     router.push(isCreate || !athleteId ? "/coach/athletes" : `/coach/athletes/${athleteId}`);
   }, [router, isCreate, athleteId]);
+
+  /* Transfert proposé à un athlète ancré ailleurs. Le courriel part tel quel
+     vers la RPC, qui le résout côté serveur : le client n'obtient jamais
+     l'identifiant de l'athlète, donc le coach n'apprend rien de plus qu'avant.
+     Une invitation déjà pendante n'est PAS une erreur — la RPC répond
+     ALREADY_PENDING et on l'affiche sur un ton neutre. */
+  const envoyerTransfert = useCallback(async () => {
+    const courriel = form.identity.email?.trim();
+    if (!courriel || !equipeTransfert || envoiAncre) return;
+    setEnvoiAncre(true);
+    setResultatAncre(null);
+    try {
+      const supabase = createClient();
+      const r = await inviteAnchoredAthlete(supabase, courriel, equipeTransfert);
+      if (r.ok) void triggerHaptic("Success");
+      setResultatAncre({ ok: r.ok, msg: r.message || "Invitation envoyée — il devra l'accepter." });
+    } finally {
+      setEnvoiAncre(false);
+    }
+  }, [form.identity.email, equipeTransfert, envoiAncre]);
 
   const handleSelectSuggestion = useCallback((suggestion: AthleteEmailSuggestion) => {
     setForm((prev) => ({
@@ -869,6 +915,22 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
        Placé AVANT le hard-stop <14 : un athlète déjà en base a déjà passé ce
        contrôle à sa création, et on n'insère rien ici. Le gate reste intégral
        sur le seul chemin qui écrit. */
+    /* ANCRÉ AILLEURS → ON NE CRÉE RIEN.
+       Même principe que la bascule `linkedToExisting` juste dessous, pour une
+       raison plus forte encore : ici la fiche existe ET appartient à un autre
+       coach. Créer produirait un doublon que rien en base n'empêche (aucun
+       index unique sur athletes.email). La seule action légitime est
+       l'invitation, proposée dans le bloc de l'écran 1. */
+    if (isCreate && ancreAilleurs) {
+      setSaving(false);
+      setShowSummarySheet(false);
+      toast.error({
+        message: "Cet athlète existe déjà",
+        detail: "Invite-le à rejoindre ton équipe depuis le champ courriel.",
+      });
+      return;
+    }
+
     if (isCreate && linkedToExisting) {
       setSaving(false);
       setShowSummarySheet(false);
@@ -936,7 +998,7 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
     router.push(isCreate ? "/coach/athletes" : `/coach/athletes/${savedId}`);
   }, [
     isCreate, form, athleteId, recruitmentStatus, committedSchoolId, coach.schoolId, linkedToExisting,
-    router, toast, missingRequiredAll,
+    ancreAilleurs, router, toast, missingRequiredAll,
   ]);
 
   /* ── Chip-row navigation hooks (top-level, never below an
@@ -1224,6 +1286,22 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
         searchValue={teamSearch} onSearchChange={setTeamSearch}
         items={visibleTeams} keyOf={(t) => t.id}
         onSelect={(t) => setInvitationTeamId(t.id)}
+        renderItem={(t, onTap) => (
+          <button type="button" onClick={onTap}
+            className="w-full text-left p-3 bg-[#1A1D24] rounded-2xl active:bg-[#22262e] transition-colors">
+            <p className="text-[16px] font-semibold text-white truncate">{t.name}</p>
+            {t.level && <p className="text-[13px] text-white/55 truncate">{t.level}</p>}
+          </button>
+        )} />
+
+      {/* Sélecteur d'équipe du TRANSFERT — distinct de celui de l'invitation
+          ci-dessus : ce sont deux actions différentes sur deux tables
+          différentes, on ne partage pas leur état. */}
+      <SearchSheet<CoachTeam> open={openTransfertTeamPicker} onClose={() => setOpenTransfertTeamPicker(false)}
+        title="L'inviter sur quelle équipe ?" searchPlaceholder="Rechercher…"
+        searchValue={teamSearch} onSearchChange={setTeamSearch}
+        items={visibleTeams} keyOf={(t) => t.id}
+        onSelect={(t) => setEquipeTransfert(t.id)}
         renderItem={(t, onTap) => (
           <button type="button" onClick={onTap}
             className="w-full text-left p-3 bg-[#1A1D24] rounded-2xl active:bg-[#22262e] transition-colors">
@@ -1522,6 +1600,51 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
                 <p className="text-[12px] text-white/55">{s.email}{s.sportName ? ` · ${s.sportName}` : ""}</p>
               </button>
             ))}
+          </div>
+        )}
+        {/* ANCRÉ AILLEURS — un athlète existe à ce courriel, mais il appartient
+            déjà à quelqu'un d'autre. On ne peut ni le nommer (le drapeau arrive
+            sans identité) ni le créer (ce serait le doublon). On propose donc la
+            seule chose honnête : lui demander s'il veut venir. */}
+        {isCreate && ancreAilleurs && (
+          <div className="p-4 rounded-2xl bg-[#1A1D24] border border-[#F59E0B]/30">
+            <p className="text-[13px] font-semibold text-white">
+              Un athlète utilise déjà ce courriel
+            </p>
+            <p className="text-[12px] text-white/60 mt-1 leading-relaxed">
+              Il fait partie d&apos;une autre équipe. Tu ne peux pas créer sa fiche —
+              elle existe déjà. Tu peux l&apos;inviter à rejoindre la tienne :
+              <span className="text-white/80"> c&apos;est lui qui décidera.</span>
+            </p>
+            {coach.teams.length > 0 ? (
+              <div className="mt-3 flex flex-col gap-2">
+                <PickerRow inline label=""
+                  value={equipeTransfert
+                    ? coach.teams.find((t) => t.id === equipeTransfert)?.name ?? "Équipe sélectionnée"
+                    : ""}
+                  placeholder="Choisir une équipe"
+                  onTap={() => {
+                    void triggerHaptic("Light");
+                    if (coach.teams.length === 1) setEquipeTransfert(coach.teams[0].id);
+                    else setOpenTransfertTeamPicker(true);
+                  }} />
+                <button type="button"
+                  disabled={!equipeTransfert || envoiAncre || resultatAncre?.ok}
+                  onClick={() => { void triggerHaptic("Light"); void envoyerTransfert(); }}
+                  className="h-11 rounded-2xl bg-[#E63946] text-[13px] font-bold text-white active:bg-[#D42B22] disabled:opacity-40">
+                  {envoiAncre ? "Envoi…" : "Inviter à rejoindre mon équipe"}
+                </button>
+              </div>
+            ) : (
+              <p className="text-[12px] text-[#F59E0B] mt-3">
+                Aucune équipe — crées-en une dans « Mes équipes ».
+              </p>
+            )}
+            {resultatAncre && (
+              <p className={`text-[12px] font-semibold mt-3 ${resultatAncre.ok ? "text-[#22C55E]" : "text-[#EF4444]"}`}>
+                {resultatAncre.ok ? "✓ " : ""}{resultatAncre.msg}
+              </p>
+            )}
           </div>
         )}
         {isCreate && linkedToExisting && (
