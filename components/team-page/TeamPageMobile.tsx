@@ -30,6 +30,7 @@ import { useRouter } from "next/navigation";
 import { useDynamicParam } from "@/lib/platform/useDynamicParam";
 import { matchDynamicRoute, SESSION_KEY_PREFIX } from "@/lib/platform/mobileRoutes";
 import { createClient } from "@/lib/supabase/client";
+import { loadViewerClient } from "@/lib/queries/teamPage/loadViewerClient";
 import SocialIcons from "@/components/marketing/SocialIcons";
 import StarRating from "@/components/ui/StarRating";
 import TerrainStageMobile from "./TerrainStageMobile";
@@ -77,38 +78,6 @@ const FONTS = (
 );
 
 /** Pluriel « suffisant » pour un libellé de poste (jumeau du loader serveur). */
-function pluriel(nom: string): string {
-  return /[sxz]$/i.test(nom) ? nom.toLowerCase() : nom.toLowerCase() + "s";
-}
-
-/** L'ATHLÈTE CONNECTÉ (client anon) — déclenche le « match parfait ». Lit sa
- *  PROPRE ligne athletes (RLS « athletes can read own profile »). Pas connecté /
- *  pas un athlète → null, la box disparaît. Ne jette jamais. */
-async function loadViewerClient(supabase: SupabaseClient): Promise<ConnectedAthlete | null> {
-  try {
-    const { data: auth } = await supabase.auth.getUser();
-    if (!auth?.user) return null;
-    const { data } = await supabase
-      .from("athletes")
-      .select("sports:sport_id(nom), positions:position_id(nom, abreviation)")
-      .eq("user_id", auth.user.id)
-      .maybeSingle();
-    const row = data as unknown as {
-      sports: { nom: string } | null;
-      positions: { nom: string; abreviation: string | null } | null;
-    } | null;
-    if (!row?.sports?.nom || !row.positions?.abreviation) return null;
-    return {
-      sport: row.sports.nom,
-      pos: row.positions.abreviation.toUpperCase(),
-      pos2: null,
-      posLabel: row.positions.nom,
-      posLabelPlural: pluriel(row.positions.nom),
-    };
-  } catch {
-    return null;
-  }
-}
 
 type TeamLoad =
   | { configured: true; team: TeamData }

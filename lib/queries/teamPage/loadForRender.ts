@@ -8,57 +8,34 @@ import "server-only";
 // JAMAIS. Jumeau de schoolPage/loadForRender.
 
 import { createServiceClient } from "@/lib/supabase/service";
-import { createClient } from "@/lib/supabase/server";
 import { loadTeamPage } from "./teamPageData";
 import { sportKeyFromNom, defaultNeeds, mergeNeeds, toTeamNeeds, type PositionRow } from "./sportSlots";
 import {
   buildTeamData, resolveHeadCoachName,
   type GameRow, type CommitRow, type TeamRow, type SchoolIdentity,
 } from "./dbToTeamPage";
-import type { TeamData, Pennant, ConnectedAthlete } from "@/components/team-page/content";
+import type { TeamData, Pennant } from "@/components/team-page/content";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-/** Pluriel français « suffisant » pour un libellé de poste : les noms de
- *  positions sont des groupes nominaux simples (« Quart-arrière », « Receveur
- *  éloigné »). Terminaison en s/x/z → invariable. */
-function pluriel(nom: string): string {
-  return /[sxz]$/i.test(nom) ? nom.toLowerCase() : nom.toLowerCase() + "s";
-}
-
-/** L'ATHLÈTE CONNECTÉ, s'il y en a un — c'est lui qui déclenche le « match
- *  parfait ». Session lue via les cookies (client serveur), profil athlète lu en
- *  service-role. Aucun visiteur connecté / pas un athlète → null, et la box
- *  disparaît (comportement du widget). Ne jette jamais : une page publique ne
- *  casse pas parce que la session est absente. */
-async function loadViewer(
-  svc: ReturnType<typeof createServiceClient>,
-): Promise<ConnectedAthlete | null> {
-  try {
-    const sb = await createClient();
-    const { data: auth } = await sb.auth.getUser();
-    if (!auth?.user) return null;
-    const { data } = await svc
-      .from("athletes")
-      .select("sports:sport_id(nom), positions:position_id(nom, abreviation)")
-      .eq("user_id", auth.user.id)
-      .maybeSingle();
-    const row = data as unknown as {
-      sports: { nom: string } | null;
-      positions: { nom: string; abreviation: string | null } | null;
-    } | null;
-    if (!row?.sports?.nom || !row.positions?.abreviation) return null;
-    return {
-      sport: row.sports.nom,
-      pos: row.positions.abreviation.toUpperCase(),
-      pos2: null, // athletes n'a plus de position secondaire (migration remove_sport_secondaire)
-      posLabel: row.positions.nom,
-      posLabelPlural: pluriel(row.positions.nom),
-    };
-  } catch {
-    return null;
-  }
-}
+// ⚠ LE VIEWER N'EST PLUS LU ICI — ET NE DOIT PAS Y REVENIR.
+//
+// Ce loader contenait une lecture de la session du visiteur, via
+// createClient() → cookies(). La route publique /college/[schoolId]/[teamId]
+// exporte un generateStaticParams (le bundle Capacitor en depend), donc Next
+// la classe SSG : son rendu est STATIQUE, et un rendu statique ne peut pas
+// lire de cookie. Toutes les equipes rendaient 500 en production web —
+// « Page changed from static to dynamic at runtime, reason: cookies ».
+//
+// Aucune declaration de rendu ne sauvait les deux plateformes : Next exige un
+// LITTERAL pour `export const dynamic` (le ternaire sur IS_CAPACITOR est
+// refuse au build), et le seul litteral qui regle le web, 'force-dynamic',
+// est refuse par output:'export'. Les deux formes ont ete eprouvees.
+//
+// La lecture vit maintenant dans lib/queries/teamPage/loadViewerClient.ts,
+// cote client, partagee par le web (TeamPageWithViewer) et le mobile
+// (TeamPageMobile). Ce loader reste 100 % service-role et sans lecture de
+// session : c'est ce qui lui permet de rendre en statique.
 
 export type TeamRenderResult =
   | { configured: true; team: TeamData; teamName: string }
@@ -88,7 +65,7 @@ export async function loadTeamPageForRender(teamId: string): Promise<TeamRenderR
   // d'elles-mêmes sans logique parallèle.
   const page = await loadTeamPage(svc, team.id);
 
-  const [sport, school, schoolPage, positions, games, roster, coaches, commits, viewer] = await Promise.all([
+  const [sport, school, schoolPage, positions, games, roster, coaches, commits] = await Promise.all([
     svc.from("sports").select("nom").eq("id", team.sport_id).maybeSingle(),
     svc.from("schools").select("name").eq("id", team.school_id).maybeSingle(),
     svc.from("school_page_content")
@@ -105,7 +82,6 @@ export async function loadTeamPageForRender(teamId: string): Promise<TeamRenderR
       .eq("team_id", team.id),
     svc.from("team_coaches").select("role, users:coach_id(first_name, last_name)").eq("team_id", team.id),
     svc.rpc("list_team_commits", { p_team_id: team.id } as unknown as undefined),
-    loadViewer(svc),
   ]);
 
   // Les types Supabase générés ne couvrent pas toutes les tables du projet
@@ -188,7 +164,8 @@ export async function loadTeamPageForRender(teamId: string): Promise<TeamRenderR
     staff,
     heroUrl: asset(page.content?.hero_image_path ?? null),
     coachPhotoUrl: asset(page.content?.headcoach_photo_path ?? null),
-    viewer,
+    // viewer : pose cote client par TeamPageWithViewer / TeamPageMobile.
+    viewer: null,
   });
 
   // Jamais configurée → `configured` reste faux (contrat de /team-test), mais
