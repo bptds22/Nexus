@@ -63,6 +63,8 @@ export const BRUNO: Contact = {
   vcardHref: "/carte/bruno-philippe-desfosses.vcf",
   vcardDownloadName: "Bruno-Philippe.vcf",
   appStore: "https://apps.apple.com/ca/app/nexus/id6785596805",
-  // playStore: non publié sur Google Play pour l'instant → badge masqué.
-  // Renseigner l'URL ici pour réafficher le badge Play (aucun autre changement requis).
+  // Fiche Play en ligne → badge réaffiché (app/carte/page.tsx:219 le rend
+  // sous condition, aucun autre changement requis). Source de vérité partagée
+  // par le reste de l'app : lib/config/appStores.ts.
+  playStore: "https://play.google.com/store/apps/details?id=ca.nexussports.app",
 };

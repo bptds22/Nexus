@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { relativeTimeFr } from "@/lib/utils/relativeTime";
 import { formatTeamLabel } from "@/lib/teams/teamLabel";
-import { attachmentSentinel } from "@/lib/queries/shared/attachmentErrors";
+import { attachmentMessageFr } from "@/lib/queries/shared/attachmentErrors";
 
 /* ═══════════════════════════════════════════════════════════════
    PendingInvitations — Flow A athlete-side panel.
@@ -184,7 +184,7 @@ export default function PendingInvitations({
          dans _apply_team_attachment_core, donc il se déclenche À L'ACCEPTATION.
          L'écriture ayant échoué, l'invitation reste PENDING et la ligne reste
          affichée — on pose l'erreur SUR elle, sans la retirer. */
-      setErreurs((prev) => ({ ...prev, [invitationId]: attachmentSentinel(error.message) }));
+      setErreurs((prev) => ({ ...prev, [invitationId]: attachmentMessageFr(error.message) }));
       return;
     }
     setErreurs((prev) => {

@@ -19,7 +19,7 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { attachmentSentinel, attachmentReussi } from "@/lib/queries/shared/attachmentErrors";
+import { attachmentMessageFr, attachmentReussi } from "@/lib/queries/shared/attachmentErrors";
 
 export interface InviteAnchoredResult {
   /** true = invitation créée, ou déjà en attente (idempotent côté UI). */
@@ -44,7 +44,7 @@ export async function inviteAnchoredAthlete(
     console.error("[invite_anchored_athlete_to_team]", error);
     // La RPC retourne ses refus en valeur, pas en exception : une erreur ici
     // est réseau/RLS, donc le repli générique du traducteur.
-    return { ok: false, message: attachmentSentinel(error.message), dejaEnvoyee: false };
+    return { ok: false, message: attachmentMessageFr(error.message), dejaEnvoyee: false };
   }
 
   const sentinelle = typeof data === "string" ? data : null;
@@ -53,10 +53,10 @@ export async function inviteAnchoredAthlete(
   return {
     ok: attachmentReussi(sentinelle),
     message: dejaEnvoyee
-      ? attachmentSentinel(sentinelle)
+      ? attachmentMessageFr(sentinelle)
       : sentinelle === "OK"
         ? ""
-        : attachmentSentinel(sentinelle),
+        : attachmentMessageFr(sentinelle),
     dejaEnvoyee,
   };
 }

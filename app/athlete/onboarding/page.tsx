@@ -18,6 +18,12 @@ import PartnerVisibilityConsentCard from "@/components/shared/PartnerVisibilityC
 import ClaimProfileModal, { type OrphanProfile } from "@/components/auth/ClaimProfileModal";
 import { AthleteOnboardingMobile } from "@/components/shared/AthleteOnboardingMobile";
 import { SUBJECTS, HONORS, CEGEP_REGIONS, programmeCegepArray } from "@/lib/config/academicOptions";
+import { applyTeamAttachment, readStashedJoinCode, JOIN_CODE_STORAGE_KEY } from "@/lib/queries/athlete/teamAttachment";
+import { type TransferConfirmation } from "@/lib/queries/shared/attachmentErrors";
+import JoinCodeField from "@/components/athlete/JoinCodeField";
+import { type ResolvedJoinTeam } from "@/lib/queries/athlete/teamAttachment";
+import { teamDetails } from "@/lib/config/teamLabel";
+import TransferConfirmDialog from "@/components/athlete/TransferConfirmDialog";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -644,6 +650,88 @@ function AthleteOnboardingDesktop() {
   const [userId, setUserId] = useState<string | null>(null);
   const [existingAthleteId, setExistingAthleteId] = useState<string | null>(null);
 
+  // ── Rattachement d'équipe (transfer portal, phase 2) ──────────────────────
+  // `joinCodeUsed` est non-null quand l'athlète est arrivé par /join ou a saisi
+  // un code : il part alors dans apply_team_attachment, qui consomme le quota.
+  // `transferAsk` n'est JAMAIS posé par l'UI — uniquement quand le serveur a
+  // levé TRANSFER_REQUIRES_CONFIRMATION.
+  const [joinCodeUsed, setJoinCodeUsed] = useState<string | null>(null);
+  const [transferAsk, setTransferAsk] = useState<TransferConfirmation | null>(null);
+  const [attachError, setAttachError] = useState("");
+  // Pré-remplissage seulement : le code rapporté de /join n'est ADOPTÉ
+  // (joinCodeUsed) qu'après résolution réussie. Sans cette distinction, un code
+  // mémorisé partirait avec l'équipe choisie au picker → JOIN_CODE_TEAM_MISMATCH.
+  const [joinCodePrefill, setJoinCodePrefill] = useState("");
+  useEffect(() => { setJoinCodePrefill(readStashedJoinCode()); }, []);
+
+  // ── CODE-FIRST ────────────────────────────────────────────────────────────
+  // Quand un code est résolu, il PILOTE le formulaire au lieu de le subir.
+  // Le bug qu'on corrige : l'athlète choisissait école X + Football à la main,
+  // puis entrait un code d'une équipe de Basketball à l'école Y — la RPC
+  // l'ancrait chez Y pendant que son profil disait Football chez X. Rien
+  // n'était incohérent pour la base, tout l'était pour un recruteur.
+  const [codeLock, setCodeLock] = useState<{
+    code: string; teamId: string; teamName: string;
+    schoolId: string; schoolName: string; schoolType: string;
+    sportName: string; details: string;
+  } | null>(null);
+
+  /** Adopte un code résolu : dérive l'organisation, le contexte et le sport.
+   *
+   *  LES DEUX CONTEXTES NE REMPLISSENT PAS LES MÊMES CHAMPS — c'est le piège
+   *  de cette fonction. Le scolaire renseigne selectedSchoolId (+ coach),
+   *  le civil renseigne selectedClubId. Laisser l'autre paire posée
+   *  produirait un athlète à la fois scolaire et civil : on efface donc
+   *  explicitement la branche non retenue. */
+  function applyCodeLock(v: { code: string; team: ResolvedJoinTeam } | null) {
+    const t = v?.team;
+    if (!v || !t?.teamId || !t.schoolId) { releaseCodeLock(); return; }
+
+    const isCivil = t.schoolType === "LIGUE_CIVILE";
+    setCodeLock({
+      code: v.code,
+      teamId: t.teamId,
+      teamName: t.teamName ?? "",
+      schoolId: t.schoolId,
+      schoolName: t.schoolName ?? "",
+      schoolType: t.schoolType ?? "",
+      sportName: t.sportName ?? "",
+      details: teamDetails({
+        sport: t.sportName, age_group: t.ageGroup, division: t.division,
+        gender: t.gender, season: t.season, league: t.league,
+      }),
+    });
+    setJoinCodeUsed(v.code);
+    setSelectedTeamId(t.teamId);
+    setSelectedTeamName(t.teamName ?? "");
+    setUserContext(isCivil ? "ligue_civile" : "scolaire");
+
+    if (isCivil) {
+      setSelectedClubId(t.schoolId);
+      setSelectedClubName(t.schoolName ?? "");
+      setSelectedSchoolId("");
+      setSelectedSchoolName("");
+      setSelectedCoachId(null);     // le coach est une notion scolaire ici
+    } else {
+      setSelectedSchoolId(t.schoolId);
+      setSelectedSchoolName(t.schoolName ?? "");
+      setSelectedClubId(null);
+      setSelectedClubName("");
+    }
+    if (t.sportName) { setPrimarySport(t.sportName); setPrimaryPosition(""); }
+    setAttachError("");
+  }
+
+  /** « Changer » : délie le code et déverrouille tout. On NE remet PAS l'école
+   *  et le sport à zéro — l'athlète vient de les voir, ils restent un point de
+   *  départ raisonnable ; seul le verrou saute. */
+  function releaseCodeLock() {
+    setCodeLock(null);
+    setJoinCodeUsed(null);
+    setSelectedTeamId(null);
+    setSelectedTeamName("");
+  }
+
   // Phase 2 athlete claim: if a coach-created orphan athlete row
   // matches this signup's email, we surface the modal at mount and
   // route into the existing UPDATE path (via existingAthleteId) on
@@ -1231,6 +1319,25 @@ function AthleteOnboardingDesktop() {
       .eq("id", userId)
       .single();
 
+    // ── Garde-fou de cohérence code ↔ profil ────────────────────────────────
+    // Dernier rempart, côté données et non côté UI : tant qu'un code est actif,
+    // le sport et l'équipe DOIVENT être ceux de ce code. Les verrous visuels
+    // rendent l'écart improbable ; ceci le rend impossible — y compris si un
+    // effet, un resume d'onboarding ou un state périmé repose primarySport
+    // dans le dos de l'utilisateur.
+    if (codeLock && (primarySport !== codeLock.sportName || selectedTeamId !== codeLock.teamId)) {
+      console.error("[Onboarding] incohérence code/profil", {
+        codeSport: codeLock.sportName, profilSport: primarySport,
+        codeTeam: codeLock.teamId, profilTeam: selectedTeamId,
+      });
+      setAttachError(
+        `Ton code correspond à ${codeLock.teamName} (${codeLock.sportName}). ` +
+        `Utilise « Changer » à la première étape si tu veux une autre équipe.`,
+      );
+      setSaving(false);
+      return;
+    }
+
     if (userRoleCheck?.role !== "ATHLETE") {
       console.error("[Athlete onboarding] non-athlete attempted to submit, role:", userRoleCheck?.role);
       alert("Erreur : ton compte n'est pas configuré comme athlète. Contacte le support.");
@@ -1318,24 +1425,50 @@ function AthleteOnboardingDesktop() {
       athleteIdForTeam = (inserted?.id as string) ?? null;
     }
 
-    // Phase 6.2: for civil athletes who picked a team, record the
-    // membership in the team_athletes junction (the new unified
-    // anchor). Idempotent — ignore unique-violation on rejoin.
+    // ── Rattachement d'équipe — via apply_team_attachment, plus d'INSERT ────
+    // L'ancien code faisait `insert(team_athletes)` et avalait le 23505. Tant
+    // que l'unicité était (athlete_id, sport_id), ce 23505 signifiait « déjà
+    // dans CETTE équipe ». Depuis l'ancrage unique strict il signifie aussi
+    // « déjà ancré AILLEURS » — et l'avaler faisait terminer l'onboarding en
+    // affichant un succès alors que l'athlète n'avait rejoint personne.
     //
-    // Phase 1 (school self-join): same junction INSERT for school
-    // athletes who picked a team via SchoolTeamPicker at step 4. The
-    // condition is unified — `selectedTeamId` is null whenever the
-    // athlete skipped or no picker was rendered (out-of-context),
-    // so this block silently no-ops for those paths.
+    // `selectedTeamId` est null quand l'athlète a passé l'étape ou qu'aucun
+    // picker n'a été rendu : le rattachement est alors simplement sauté, et
+    // l'onboarding se termine normalement (rester sans équipe est légitime).
     if (selectedTeamId && athleteIdForTeam) {
-      const { error: taErr } = await supabase.from("team_athletes").insert({
-        team_id: selectedTeamId,
-        athlete_id: athleteIdForTeam,
+      const outcome = await applyTeamAttachment(supabase, {
+        teamId: selectedTeamId,
+        joinCode: joinCodeUsed,
+        confirmTransfer: false,        // c'est le SERVEUR qui décide
       });
-      if (taErr && taErr.code !== "23505") {
-        console.error("[Onboarding] team_athletes insert failed:", taErr);
+
+      if (outcome.status === "needs_confirmation") {
+        // On s'arrête ici : le profil est déjà écrit, seul le rattachement
+        // attend. La modale reprend la main et rappellera finishOnboarding.
+        setTransferAsk(outcome.confirmation);
+        setSaving(false);
+        return;
+      }
+      if (outcome.status === "error") {
+        // Plus rien n'est avalé : on montre le message et on NE navigue PAS.
+        setAttachError(outcome.message);
+        setSaving(false);
+        return;
       }
     }
+
+    await finishOnboarding(supabase);
+    } catch (err) {
+      console.error("[Onboarding] unexpected error:", err);
+      setAttachError("Une erreur inattendue est survenue. Réessaie.");
+      setSaving(false);
+    }
+  }
+
+  /** Queue de fin d'onboarding, commune au chemin nominal et à la reprise
+   *  après confirmation de transfert. Ne touche plus au rattachement. */
+  async function finishOnboarding(supabase: ReturnType<typeof createClient>) {
+    if (!userId) return;
 
     // Update profile_completion in DB
     const { data: freshAthlete } = await supabase.from("athletes").select("*").eq("user_id", userId).single();
@@ -1367,12 +1500,38 @@ function AthleteOnboardingDesktop() {
     // dans CETTE session pour que PushRegistrar demande la permission push.
     // Await AVANT la nav : on lance le refetch avant de quitter l'onboarding.
     await queryClient.invalidateQueries({ queryKey: ["currentUser"] });
+    try { sessionStorage.removeItem(JOIN_CODE_STORAGE_KEY); } catch { /* privé / quota */ }
     setSaving(false);
     router.replace("/athlete/dashboard");
-    } catch (err) {
-      console.error("[Onboarding] unexpected error:", err);
+  }
+
+  /** « Confirmer le transfert » dans la modale → on refait l'appel, cette
+   *  fois avec le drapeau, puis on termine l'onboarding. */
+  async function confirmTransferAndFinish() {
+    if (!selectedTeamId) return;
+    setSaving(true);
+    const supabase = createClient();
+    const outcome = await applyTeamAttachment(supabase, {
+      teamId: selectedTeamId,
+      joinCode: joinCodeUsed,
+      confirmTransfer: true,
+    });
+    if (outcome.status === "error") {
+      setTransferAsk(null);
+      setAttachError(outcome.message);
       setSaving(false);
+      return;
     }
+    setTransferAsk(null);
+    await finishOnboarding(supabase);
+  }
+
+  /** « Garder mon équipe actuelle » → l'onboarding se termine sans changer
+   *  l'ancrage. Le profil est déjà écrit, rien n'est perdu. */
+  async function keepCurrentTeamAndFinish() {
+    setTransferAsk(null);
+    setSaving(true);
+    await finishOnboarding(createClient());
   }
 
   function toggleInArray(arr: string[], item: string, setter: (v: string[]) => void) {
@@ -1419,6 +1578,17 @@ function AthleteOnboardingDesktop() {
           orphan={orphanMatch}
           onClaim={handleClaimOrphan}
           onSkip={handleSkipClaim}
+        />
+      )}
+
+      {/* Ouvert UNIQUEMENT sur TRANSFER_REQUIRES_CONFIRMATION renvoyé par la
+          base — l'UI ne décide jamais seule qu'il y a transfert. */}
+      {transferAsk && (
+        <TransferConfirmDialog
+          confirmation={transferAsk}
+          busy={saving}
+          onConfirm={confirmTransferAndFinish}
+          onCancel={keepCurrentTeamAndFinish}
         />
       )}
 
@@ -1469,6 +1639,50 @@ function AthleteOnboardingDesktop() {
           <div className={cardCls}>
             <h2 className="font-head text-xl font-black text-white uppercase tracking-tight mb-1">Identité</h2>
             <p className="text-[14px] text-[#6b7280] mb-6">Tes informations personnelles de base</p>
+
+            {/* ── VOIE RAPIDE : le code d'équipe, EN TÊTE ────────────────────
+                Il vivait à l'étape 4, après le choix école/coach/sport — donc
+                après que l'athlète ait pu se tromper. Ici, il pilote : école,
+                contexte et sport en sont dérivés et verrouillés. */}
+            <div className="mb-6 rounded-xl border border-[#E63946]/25 bg-[#E63946]/[0.06] p-4">
+              {codeLock ? (
+                <div className="flex items-start gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-[#6b7280]">
+                      Code {codeLock.code}
+                    </p>
+                    <p className="mt-1 truncate text-[15px] font-semibold text-white">
+                      {codeLock.teamName}
+                    </p>
+                    <p className="truncate text-[12px] text-[#9CA3AF]">
+                      {[codeLock.schoolName, codeLock.details].filter(Boolean).join(" · ")}
+                    </p>
+                    <p className="mt-2 text-[12px] leading-relaxed text-[#6b7280]">
+                      Ton {codeLock.schoolType === "LIGUE_CIVILE" ? "club" : "école"} et ton
+                      sport sont remplis à partir de ce code — tu n&apos;as pas à les chercher.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={releaseCodeLock}
+                    className="shrink-0 text-[12px] font-semibold text-[#9CA3AF] underline"
+                  >
+                    Changer
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <p className="mb-2 text-[13px] font-semibold text-white">
+                    Ton entraîneur t&apos;a donné un code ?
+                  </p>
+                  <p className="mb-3 text-[12px] leading-relaxed text-[#9CA3AF]">
+                    Entre-le : ton équipe, ton école ou ton club et ton sport se
+                    remplissent tout seuls.
+                  </p>
+                  <JoinCodeField initialCode={joinCodePrefill} onResolved={applyCodeLock} />
+                </>
+              )}
+            </div>
 
             {/* Photo */}
             <div className="flex items-center gap-5 mb-6">
@@ -1812,7 +2026,20 @@ function AthleteOnboardingDesktop() {
                   Step 1 where it is REQUIRED (canProceed step 1). No dead-end
                   possible (civil can't advance without a sport), so a plain
                   hide suffices — no safety net. Scolaire keeps it here. */}
-              {userContext !== "ligue_civile" && (
+              {/* Sport VERROUILLÉ quand un code est actif : il vient de
+                  l'équipe. Le laisser modifiable rouvrirait exactement
+                  l'incohérence qu'on corrige (profil Football, équipe de
+                  Basketball). Le déverrouillage passe par « Changer » à
+                  l'étape 1 — un seul endroit, pas deux. */}
+              {codeLock ? (
+                <div>
+                  <label className={labelCls}>Sport principal</label>
+                  <div className="flex items-center gap-2 rounded-lg border border-[#2D3748] bg-[#111317] px-4 py-2.5">
+                    <span className="text-[14px] font-semibold text-white">{codeLock.sportName}</span>
+                    <span className="text-[12px] text-[#6b7280]">— défini par ton code d&apos;équipe</span>
+                  </div>
+                </div>
+              ) : userContext !== "ligue_civile" && (
                 <div>
                   <label className={labelCls}>Sport principal <span className="text-[#EF4444]">*</span></label>
                   <div className="grid grid-cols-4 gap-2">
@@ -1844,17 +2071,39 @@ function AthleteOnboardingDesktop() {
                 (optional). Filtered by selectedSchoolId + primarySport.
                 Civil athletes pick their team in step 1 via the
                 CivilTeamPicker; this block is school-context only. */}
-            {userContext === "scolaire" && selectedSchoolId && primarySport && (
+            {/* Équipe DÉJÀ décidée par le code : on la confirme, on ne la
+                repropose pas. Le picker resterait une invitation à se
+                contredire. */}
+            {codeLock ? (
+              <div className="mt-5 mb-5">
+                <label className={labelCls}>Ton équipe</label>
+                <div className="flex items-start gap-3 rounded-xl border border-[#22C55E]/30 bg-[#22C55E]/10 p-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-[15px] font-semibold text-white">{codeLock.teamName}</div>
+                    <div className="truncate text-[12px] text-[#9CA3AF]">
+                      {[codeLock.schoolName, codeLock.details].filter(Boolean).join(" · ")}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={releaseCodeLock}
+                    className="shrink-0 text-[12px] font-semibold text-[#9CA3AF] underline"
+                  >
+                    Changer
+                  </button>
+                </div>
+              </div>
+            ) : userContext === "scolaire" && selectedSchoolId && primarySport && (
               <div className="mt-5 mb-5">
                 <label className={labelCls}>Ton équipe (optionnel)</label>
-                <p className="text-[12px] text-[#6b7280] mb-3">Sélectionne ton équipe actuelle à {selectedSchoolName || "ton école"}. Si elle n&apos;apparaît pas, tu pourras l&apos;associer plus tard.</p>
+                <p className="text-[12px] text-[#6b7280] mb-3">Sélectionne ton équipe actuelle à {selectedSchoolName || "ton école ou ton club"}. Si elle n&apos;apparaît pas, tu pourras l&apos;associer plus tard.</p>
                 <SchoolTeamPicker
                   schoolId={selectedSchoolId}
                   sportName={primarySport}
                   selectedCoachId={selectedCoachId}
                   selectedTeamId={selectedTeamId}
-                  onSelect={(t) => { setSelectedTeamId(t.id); setSelectedTeamName(t.name); }}
-                  onContinueWithoutTeam={() => { setSelectedTeamId(null); setSelectedTeamName(""); }}
+                  onSelect={(t) => { setSelectedTeamId(t.id); setSelectedTeamName(t.name); setJoinCodeUsed(null); }}
+                  onContinueWithoutTeam={() => { setSelectedTeamId(null); setSelectedTeamName(""); setJoinCodeUsed(null); }}
                 />
               </div>
             )}
@@ -1893,6 +2142,19 @@ function AthleteOnboardingDesktop() {
             </button>
           )}
         </div>
+        )}
+
+        {/* Échec du rattachement — le profil EST enregistré, seul le lien à
+            l'équipe a échoué. On le dit, on ne navigue pas, et on ne recopie
+            jamais le message brut du moteur. */}
+        {attachError && (
+          <div className="rounded-xl border border-[#EF4444]/30 bg-[#EF4444]/10 px-4 py-3">
+            <p className="text-[13px] leading-relaxed text-[#EF4444]">{attachError}</p>
+            <p className="mt-1 text-[12px] text-[#9CA3AF]">
+              Ton profil est enregistré. Tu peux réessayer, ou continuer sans équipe
+              et l&apos;associer plus tard depuis tes paramètres.
+            </p>
+          </div>
         )}
       </div>
     </div>

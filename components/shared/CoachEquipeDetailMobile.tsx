@@ -41,6 +41,7 @@ import {
 import { TeamAddCoachSheet } from "@/components/shared/teams/TeamAddCoachSheet";
 import { TeamAddAthleteSheet } from "@/components/shared/teams/TeamAddAthleteSheet";
 import { useMobileToast } from "@/components/mobile/MobileToast";
+import { inviteAthleteToTeam } from "@/lib/queries/coach/teamInvite";
 import { relativeTimeFr } from "@/lib/utils/relativeTime";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
@@ -124,9 +125,11 @@ export default function CoachEquipeDetailMobile() {
   const [showAddCoach, setShowAddCoach] = useState(false);
   const [showAddAthlete, setShowAddAthlete] = useState(false);
   const [confirmRemoveAthlete, setConfirmRemoveAthlete] = useState<{ id: string; name: string } | null>(null);
-  // FIX 4 — déplacement inter-équipes d'un même sport (voir addAthleteToTeam).
-  const [confirmMoveAthlete, setConfirmMoveAthlete] = useState<
-    { athleteId: string; rowId: string; prevTeamName: string } | null
+  /** Athlète refusé à l'ajout parce qu'il est déjà ancré ailleurs. Remplace
+   *  l'ancien confirmMoveAthlete : on n'offre plus le déplacement d'office,
+   *  on propose l'invitation (voir addAthleteToTeam). */
+  const [blockedAthlete, setBlockedAthlete] = useState<
+    { id: string; name: string; currentTeam: string } | null
   >(null);
   const [confirmRemoveCoach, setConfirmRemoveCoach] = useState<{ id: string; name: string } | null>(null);
   const [confirmCancelInvite, setConfirmCancelInvite] = useState<{ id: string; name: string } | null>(null);
@@ -146,23 +149,27 @@ export default function CoachEquipeDetailMobile() {
     invalidate();
   }
 
-  // FIX 4 (parité desktop) — un athlète ne peut être que dans UNE équipe par
-  // sport (UNIQUE athlete_id, sport_id). S'il joue déjà dans une autre équipe
-  // du même sport, l'ajout devient un DÉPLACEMENT confirmé plutôt qu'une
-  // erreur 23505 brute. Les autres sports ne sont jamais touchés.
-  async function addAthleteToTeam(athleteId: string) {
+  // ANCRAGE UNIQUE STRICT (parité desktop) — un coach n'arrache pas un athlète
+  // à son équipe. Le « déplacement » d'office (DELETE puis INSERT sur simple
+  // confirmation du coach) est retiré : un athlète n'a qu'UN rattachement
+  // (team_athletes_athlete_id_key) et le changer lui appartient, via
+  // apply_team_attachment ou l'acceptation d'une invitation. Un coach qui
+  // pourrait le faire de son côté court-circuiterait le consentement et
+  // viderait l'alignement d'un confrère à son insu.
+  async function addAthleteToTeam(athleteId: string, athleteName: string) {
     if (!teamId) return;
     const supabase = createClient();
-    const sportId = team?.sportId || "";
-    if (!sportId) { toast.error({ message: "Sport de l'équipe non résolu." }); return; }
 
+    // Plus de filtre sport_id : l'unicité ne dépend plus du sport.
     const { data: existing, error: exErr } = await supabase
       .from("team_athletes")
-      .select("id, team_id, teams!team_id(name)")
+      .select("id, team_id, teams!team_id(name, schools!school_id(name))")
       .eq("athlete_id", athleteId)
-      .eq("sport_id", sportId)
       .maybeSingle();
-    if (exErr) { toast.error({ message: exErr.message }); return; }
+    if (exErr) {
+      toast.error({ message: "Impossible de vérifier son équipe actuelle. Réessaie." });
+      return;
+    }
 
     if (existing) {
       if (existing.team_id === teamId) {
@@ -170,31 +177,50 @@ export default function CoachEquipeDetailMobile() {
         toast.success({ message: "Déjà dans cette équipe" });
         return;
       }
-      const rel = existing.teams as { name?: string } | { name?: string }[] | null;
-      setConfirmMoveAthlete({
-        athleteId,
-        rowId: existing.id as string,
-        prevTeamName: (Array.isArray(rel) ? rel[0]?.name : rel?.name) || "son équipe actuelle",
+      const rel = existing.teams as Record<string, unknown> | Record<string, unknown>[] | null;
+      const prev = (Array.isArray(rel) ? rel[0] : rel) as { name?: string; schools?: unknown } | null;
+      const schoolRel = prev?.schools;
+      const school = (Array.isArray(schoolRel) ? schoolRel[0] : schoolRel) as { name?: string } | null;
+      setBlockedAthlete({
+        id: athleteId,
+        name: athleteName,
+        currentTeam: [prev?.name, school?.name].filter(Boolean).join(" · ") || "une autre équipe",
       });
       return;
     }
 
-    await commitAddAthlete(athleteId, null);
+    await commitAddAthlete(athleteId);
   }
 
-  // Retrait de l'ancienne ligne (si déplacement) puis insertion.
-  async function commitAddAthlete(athleteId: string, previousRowId: string | null) {
+  async function commitAddAthlete(athleteId: string) {
     if (!teamId) return;
     const supabase = createClient();
-    if (previousRowId) {
-      const delRes = await supabase.from("team_athletes").delete().eq("id", previousRowId);
-      if (delRes.error) { toast.error({ message: delRes.error.message }); return; }
-    }
     const { error } = await supabase.from("team_athletes").insert({ team_id: teamId, athlete_id: athleteId });
-    if (error) { toast.error({ message: error.message }); return; }
-    toast.success({ message: previousRowId ? "Athlète déplacé" : "Athlète ajouté" });
-    setConfirmMoveAthlete(null);
+    if (error) {
+      // Fin du silence : toute erreur remonte, y compris une contrainte
+      // inattendue (course avec un autre rattachement).
+      toast.error({
+        message: error.code === "23505"
+          ? "Cet athlète vient de rejoindre une autre équipe. Recharge la page."
+          : "L'ajout a échoué. Réessaie dans un moment.",
+      });
+      return;
+    }
+    triggerHaptic("Medium");
+    toast.success({ message: "Athlète ajouté" });
     setShowAddAthlete(false);
+    invalidate();
+  }
+
+  /** L'athlète déjà ancré est INVITÉ, pas déplacé : c'est lui qui tranche. */
+  async function inviteBlockedAthlete() {
+    if (!blockedAthlete || !teamId) return;
+    const { error } = await inviteAthleteToTeam(createClient(), blockedAthlete.id, teamId);
+    if (error) { toast.error({ message: error }); return; }
+    triggerHaptic("Medium");
+    setBlockedAthlete(null);
+    setShowAddAthlete(false);
+    toast.success({ message: "Invitation envoyée" });
     invalidate();
   }
 
@@ -484,18 +510,16 @@ export default function CoachEquipeDetailMobile() {
 
       {/* Confirm sheets */}
       <ConfirmSheet
-        open={!!confirmMoveAthlete}
-        onClose={() => setConfirmMoveAthlete(null)}
-        title="Déplacer cet athlète ?"
+        open={!!blockedAthlete}
+        onClose={() => setBlockedAthlete(null)}
+        title="Déjà dans une équipe"
         message={
-          confirmMoveAthlete
-            ? `Cet athlète joue déjà dans « ${confirmMoveAthlete.prevTeamName} » pour ce sport. Il en sera retiré et rattaché à « ${team.name || "cette équipe"} ». Ses équipes dans d'autres sports ne changent pas.`
+          blockedAthlete
+            ? `${blockedAthlete.name} fait partie de « ${blockedAthlete.currentTeam} ». Un athlète n'appartient qu'à une équipe à la fois, et le changement lui appartient. Envoie-lui une invitation : s'il l'accepte, il rejoint ${team.name || "ton équipe"} et son ancienne appartenance passe dans son parcours.`
             : ""
         }
-        confirmLabel="Déplacer"
-        onConfirm={() =>
-          confirmMoveAthlete && commitAddAthlete(confirmMoveAthlete.athleteId, confirmMoveAthlete.rowId)
-        }
+        confirmLabel="Envoyer une invitation"
+        onConfirm={inviteBlockedAthlete}
       />
       <ConfirmSheet
         open={!!confirmRemoveAthlete}
