@@ -240,6 +240,11 @@ export default function MorePanel({
             { key: "calendrier", label: "Calendrier", href: "/recruteur/calendrier", icon: Icons.calendar },
             { key: "listes", label: "Listes", href: "/recruteur/listes", icon: Icons.lists, requiredTier: "pro" },
             { key: "activites", label: "Activités", href: "/recruteur/activites", icon: Icons.activity, requiredTier: "pro", badge: actBadge },
+            // « Ma page » — l'editeur de la vitrine publique. L'ecran mobile ne
+            // fait que renvoyer au web (les deux editeurs sont desktop). PAS de
+            // requiredTier ici : meme raison que Calendrier et Listes ci-dessus
+            // — un verrou ouvrirait la modale et le renvoi ne serait jamais lu.
+            { key: "ma-page", label: "Ma page", href: "/recruteur/ma-page", icon: Icons.lists },
           ],
         },
         {

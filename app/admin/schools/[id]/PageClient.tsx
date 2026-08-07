@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { genderLabel } from "@/lib/config/gender";
 import { selectBestEvaluation } from "@/lib/evaluations/selectEvaluation";
 import { uploadImage } from "@/lib/upload/uploadImage";
+import PagesTab from "@/components/shared/pages/PagesTab";
 
 /* ═══════════════════════════════════════════════════════════════
    Admin School Detail — inline-editable header, stats bar, 4 tabs.
@@ -104,7 +105,7 @@ interface ActivityRow {
   metadata: Record<string, unknown>;
 }
 
-type Tab = "coachs" | "equipes" | "athletes" | "activite";
+type Tab = "coachs" | "equipes" | "athletes" | "activite" | "pages";
 
 export default function AdminSchoolDetailPage() {
   const params = useParams<{ id: string }>();
@@ -910,6 +911,7 @@ export default function AdminSchoolDetailPage() {
           ["equipes", "Équipes"],
           ["athletes", "Athlètes"],
           ["activite", "Activité"],
+          ["pages", "Pages"],
         ] as [Tab, string][]).map(([key, label]) => {
           const active = tab === key;
           return (
@@ -1042,6 +1044,17 @@ export default function AdminSchoolDetailPage() {
             </div>
           )}
         </section>
+      )}
+
+      {tab === "pages" && (
+        <PagesTab
+          schoolId={String(id)}
+          schoolName={String(school?.name ?? "")}
+          teams={teams.map((t) => ({
+            id: t.id, nom: t.nom, sport_name: t.sport_name,
+            division: t.division, gender: t.gender,
+          }))}
+        />
       )}
 
       {tab === "equipes" && (

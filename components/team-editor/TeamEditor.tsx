@@ -29,7 +29,10 @@ function Topbar() {
   };
   const onPreview = () => {
     if (dirty && !window.confirm("Modifications non enregistrées — l'aperçu montrera la dernière sauvegarde. Continuer ?")) return;
-    window.open(`/team-test?team=${identity.teamId}`, "_blank", "noopener");
+    // LA VRAIE page publique. /team-test vit dans app/(dev) et rend 404 des
+    // NODE_ENV=production, alors que l'editeur tourne maintenant dans le
+    // portail admin, qui fonctionne en production.
+    window.open(`/college/${identity.schoolId}/${identity.teamId}`, "_blank", "noopener");
   };
 
   const saved = !dirty;
