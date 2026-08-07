@@ -23,6 +23,7 @@ import {
 } from "@/lib/coach/athleteEmailAutocomplete";
 import { createAthleteInvitationLink } from "@/lib/queries/coach/createAthleteInvitation";
 import { loadCoachTeams, inviteAthleteToTeam, type CoachTeamOption } from "@/lib/queries/coach/teamInvite";
+import { inviteAnchoredAthlete } from "@/lib/queries/coach/inviteAnchoredAthlete";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -43,12 +44,19 @@ export default function InviteByEmailModal({
   const [result, setResult] = useState<{ ok: boolean; msg: string } | null>(null);
   const [teams, setTeams] = useState<CoachTeamOption[]>([]);
   const [teamId, setTeamId] = useState<string | null>(null);
+  /* ── ANCRÉ AILLEURS — la sortie du cul-de-sac.
+     Cet état rendait un message TERMINAL : « déjà rattaché … ne peut pas être
+     invité ici », sans action. C'était la dernière des quatre surfaces à ne pas
+     proposer le transfert (les deux wizards et la feuille mobile le font déjà).
+     Le coach peut maintenant PROPOSER ; c'est l'athlète qui décidera. */
+  const [transfertMsg, setTransfertMsg] = useState<string | null>(null);
+  const [transfertOk, setTransfertOk] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Charge les équipes du coach à l'ouverture (pour la branche compte).
   useEffect(() => {
     if (!open) {
-      setEmail(""); setMatch(null); setNotInvitable(false);
+      setEmail(""); setMatch(null); setNotInvitable(false); setTransfertMsg(null); setTransfertOk(false);
       setResult(null); setSubmitting(false); setLooking(false); setTeamId(null);
       return;
     }
@@ -62,7 +70,7 @@ export default function InviteByEmailModal({
   // Lookup unifié (3 états), match sur l'email EXACT tapé.
   useEffect(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
-    setMatch(null); setNotInvitable(false); setResult(null);
+    setMatch(null); setNotInvitable(false); setTransfertMsg(null); setTransfertOk(false); setResult(null);
     const e = email.trim().toLowerCase();
     if (!EMAIL_RE.test(e)) { setLooking(false); return; }
     setLooking(true);
@@ -73,13 +81,30 @@ export default function InviteByEmailModal({
         setMatch(exact);
         setNotInvitable(!exact && res.existsNotInvitable);
       } catch {
-        setNotInvitable(false);
+        setNotInvitable(false); setTransfertMsg(null); setTransfertOk(false);
       } finally {
         setLooking(false);
       }
     }, 300);
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
   }, [email]);
+
+  /* Transfert proposé à un athlète ancré ailleurs. DISTINCT de handleInvite :
+     celui-là part d'un athlète IDENTIFIÉ par une suggestion (athleteId connu) ;
+     ici on part d'un courriel OPAQUE — le drapeau `notInvitable` arrive seul,
+     sans nom ni identifiant (choix Loi 25). La RPC résout le courriel côté
+     serveur et ne rend qu'un code de statut, donc le coach n'apprend rien de
+     plus qu'avant. N'écrit QUE dans team_invitations. */
+  const handleTransfert = useCallback(async () => {
+    const e = email.trim().toLowerCase();
+    if (!e || !teamId || submitting) return;
+    setSubmitting(true);
+    setTransfertMsg(null);
+    const r = await inviteAnchoredAthlete(createClient(), e, teamId);
+    setSubmitting(false);
+    setTransfertOk(r.ok);
+    setTransfertMsg(r.message || "Invitation envoyée — il devra l'accepter.");
+  }, [email, teamId, submitting]);
 
   const handleInvite = useCallback(async () => {
     if (!match || submitting) return;
@@ -189,11 +214,55 @@ export default function InviteByEmailModal({
             </div>
           )}
 
-          {/* État 2 : existe mais NON-invitable (zéro PII) */}
+          {/* État 2 : existe mais ANCRÉ AILLEURS (zéro PII).
+              Le message terminal a disparu : le coach peut PROPOSER. */}
           {!looking && !match && notInvitable && !result && (
-            <p className="text-[13px] text-[#9CA3AF]">
-              Cet athlète est déjà rattaché à une équipe et ne peut pas être invité ici.
-            </p>
+            <div className="bg-[#111317] border border-[#F59E0B]/30 rounded-xl p-4 space-y-3">
+              <p className="text-[13px] text-[#9CA3AF] leading-relaxed">
+                Cet athlète est déjà rattaché à une autre équipe. Tu peux l&apos;inviter
+                à rejoindre la tienne — <span className="text-white">c&apos;est lui qui décidera.</span>
+              </p>
+              {teams.length === 0 ? (
+                <p className="text-[13px] text-[#F59E0B]">
+                  Aucune équipe — crées-en une dans « Mes équipes ».
+                </p>
+              ) : (
+                <>
+                  {teams.length > 1 && (
+                    <div>
+                      <label className={labelCls}>Inviter sur quelle équipe ?</label>
+                      <select
+                        value={teamId ?? ""}
+                        onChange={(e) => setTeamId(e.target.value || null)}
+                        className={`${inputCls} appearance-none`}
+                        title="Équipe d'accueil"
+                      >
+                        <option value="">Sélectionne une équipe</option>
+                        {teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                      </select>
+                    </div>
+                  )}
+                  {teams.length === 1 && (
+                    <p className="text-[13px] text-[#9CA3AF]">
+                      Équipe : <span className="text-white font-semibold">{teams[0].name}</span>
+                    </p>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => void handleTransfert()}
+                    disabled={submitting || !teamId || transfertOk}
+                    className="w-full px-4 py-2.5 bg-[#E63946] hover:bg-[#D42B22] text-white text-[13px] font-semibold rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {submitting ? "Envoi…" : "Inviter à rejoindre mon équipe"}
+                  </button>
+                </>
+              )}
+              {transfertMsg && (
+                <p className={`text-[13px] font-semibold ${transfertOk ? "text-[#22C55E]" : "text-[#EF4444]"}`}>
+                  {transfertOk ? "✓ " : ""}{transfertMsg}
+                </p>
+              )}
+            </div>
           )}
 
           {/* État 3 : inexistant */}

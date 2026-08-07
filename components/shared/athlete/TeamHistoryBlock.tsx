@@ -15,6 +15,7 @@
 
 import type { TeamHistoryEntry } from "@/lib/types/models";
 import { sortTeamHistory, isCurrentEntry } from "./teamHistory";
+import { teamWithOrg } from "@/lib/config/teamLabel";
 
 /** The athlete's real Nexus affiliation — display-only anchor card. */
 export interface TeamHistoryAnchor {
@@ -27,15 +28,35 @@ export interface TeamHistoryAnchor {
   label?: string;
 }
 
-/** Declared current entry sub-line: "Sport · Ligue · Division · depuis {an}". */
+/* ── LIBELLÉ ALIGNÉ SUR « MON ÉQUIPE » ────────────────────────────────────
+   Le nom d'équipe seul ne distingue RIEN : pour une équipe scolaire,
+   `teams.name` reprend souvent le nom de l'école (« Nexus » sous le club
+   « Nexus Civil », « Académie Saint-Louis » sous l'école du même nom). Le
+   parcours affichait donc ce qui ressemblait à un nom d'école.
+   « Mon Équipe » avait déjà résolu ça en passant par teamDetails(). On
+   emprunte le MÊME helper — une seule définition du libellé pour les deux
+   écrans, qui ne peuvent plus diverger.
+   teamWithOrg() préfixe du club ou de l'école quand school_name est connu :
+   c'est ce qui départage deux équipes homonymes de clubs différents.
+   Les entrées déclarées à la main n'ont ni season ni school_name ;
+   teamDetails() omet proprement ce qui manque. */
+function metaEquipe(e: TeamHistoryEntry): string {
+  return teamWithOrg(
+    { sport: e.sport, division: e.division, season: e.season, league: e.ligue },
+    e.school_name,
+  );
+}
+
+/** Declared current entry sub-line, suffixée de l'année de début. */
 function currentMeta(e: TeamHistoryEntry): string {
-  const parts = [e.sport, e.ligue, e.division].map((s) => (s ?? "").trim()).filter(Boolean);
+  const base = metaEquipe(e);
+  const parts = base ? [base] : [];
   if (e.year_start) parts.push(`depuis ${e.year_start}`);
   return parts.join(" · ");
 }
 
 function pastMeta(e: TeamHistoryEntry): string {
-  return [e.sport, e.ligue, e.division].map((s) => (s ?? "").trim()).filter(Boolean).join(" · ");
+  return metaEquipe(e);
 }
 
 function pastYears(e: TeamHistoryEntry): string {
