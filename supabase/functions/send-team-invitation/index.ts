@@ -48,15 +48,28 @@ Deno.serve(async (req) => {
   // encodeURIComponent par principe : l'alphabet des codes est déjà sûr en URL,
   // on ne parie pas dessus.
   //
-  // CHEMIN COMPLET, PAS DE LIEN COURT. Le portail de transfert est WEB SEULEMENT
-  // (le bundle Capacitor est un output:'export', donc sans redirections ni
-  // gestionnaires de route — voir next.config.ts). Autant que l'URL le dise, et
-  // ça évite une redirection de plus.
+  // CHEMIN COMPLET, PAS DE LIEN COURT. Le bundle Capacitor est un
+  // output:'export' — ni redirections ni gestionnaires de route (voir
+  // next.config.ts) — donc l'URL doit désigner la page finale elle-même.
+  //
+  // /athlete/transfert, PAS /athlete/parametres?tab=transfert. L'ancienne forme
+  // était doublement cassée : la page tenait son onglet dans un useState figé
+  // sur « compte » — `tab` n'était lu par PERSONNE, l'athlète atterrissait sur
+  // ses réglages de compte et devait trouver l'onglet lui-même — et sur mobile
+  // l'onglet n'existait pas du tout (bascule sur AthleteParametresMobile).
+  // Le transfert a maintenant sa propre route, identique sur les deux
+  // plateformes. Si ce lien change, il n'a plus qu'un seul endroit où pointer.
+  //
+  // `t` reste transporté mais n'est PAS encore lu par la page : le
+  // préremplissage depuis le jeton est un chantier à part. Le lien amène au bon
+  // écran ; l'athlète saisit son code. Ne pas retirer le paramètre en le
+  // croyant mort — c'est la page qui doit le brancher.
+  //
   // Ce lien ouvrira Safari, jamais l'application : un apple-app-site-association
   // est publié sur le domaine mais l'app ne le réclame pas — dette consignée
   // dans capacitor.config.ts. Ne pas « corriger » ce lien en supposant l'app.
   const transferUrl =
-    `${APP_URL}/athlete/parametres?tab=transfert&t=${encodeURIComponent(transfer_token)}`;
+    `${APP_URL}/athlete/transfert?t=${encodeURIComponent(transfer_token)}`;
 
   const { html, text } = buildBody(
     coachName,

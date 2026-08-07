@@ -1,9 +1,15 @@
 "use client";
 
 /* ═══════════════════════════════════════════════════════════════
-   MonEquipeSection — « Mon équipe » dans /athlete/parametres.
+   MonEquipeSection — « Mon équipe », monté par /athlete/transfert.
 
-   L'onglet Transfert. Deux chemins vers la même RPC :
+   Il a longtemps été un ONGLET de /athlete/parametres. Il n'en est plus un :
+   enfoui là, il n'existait pas sur mobile (cette route bascule sur
+   AthleteParametresMobile, qui ne l'a jamais porté). Il a désormais sa route
+   à lui, la même sur les deux plateformes, et c'est elle que vise le lien du
+   courriel d'invitation de transfert.
+
+   Deux chemins vers la même RPC :
      • le code d'équipe (JoinCodeField) — le plus court quand l'entraîneur en
        a donné un ;
      • le picker école → équipe, pour l'athlète qui cherche lui-même.

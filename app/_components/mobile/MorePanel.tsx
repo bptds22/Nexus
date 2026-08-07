@@ -416,6 +416,13 @@ export default function MorePanel({
           // C'est « Visibilité » qui descend ici, à la place qu'occupait la
           // recherche dans la barre.
           { key: "visibilite", label: "Visibilité", href: "/athlete/visibilite", icon: Icons.eye },
+          // Le transfert d'équipe n'existait PAS sur mobile : il vivait dans un
+          // onglet de /athlete/parametres, et cette route bascule sur
+          // AthleteParametresMobile, qui ne l'a jamais porté. Sorti des
+          // paramètres, il a maintenant sa route à lui — même composant
+          // (MonEquipeSection), même URL des deux côtés. Sous Visibilité, comme
+          // dans la barre latérale web.
+          { key: "transfert", label: "Mon équipe", href: "/athlete/transfert", icon: Icons.users },
           { key: "notifications", label: "Notifications", href: "/athlete/notifications", icon: Icons.bell, badge: actBadge },
         ],
       },
