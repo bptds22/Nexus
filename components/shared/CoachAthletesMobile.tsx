@@ -42,6 +42,7 @@ import {
 import { createAthleteInvitationLink } from "@/lib/queries/coach/createAthleteInvitation";
 import { loadCoachTeams, inviteAthleteToTeam, type CoachTeamOption } from "@/lib/queries/coach/teamInvite";
 import { triggerHaptic } from "@/lib/haptics";
+import { inviteAnchoredAthlete } from "@/lib/queries/coach/inviteAnchoredAthlete";
 
 /* ── Constants ────────────────────────────────────────────── */
 
@@ -726,6 +727,8 @@ function InviteByEmailSheet({
   const [notInvitable, setNotInvitable] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errMsg, setErrMsg] = useState<string | null>(null);
+  const [transfertMsg, setTransfertMsg] = useState<string | null>(null);
+  const [transfertOk, setTransfertOk] = useState(false);
   const [teams, setTeams] = useState<CoachTeamOption[]>([]);
   const [teamId, setTeamId] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -733,6 +736,7 @@ function InviteByEmailSheet({
   useEffect(() => {
     if (!open) {
       setEmail(""); setMatch(null); setNotInvitable(false); setErrMsg(null);
+      setTransfertMsg(null); setTransfertOk(false);
       setSubmitting(false); setLooking(false); setTeamId(null);
       return;
     }
@@ -746,6 +750,7 @@ function InviteByEmailSheet({
   useEffect(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
     setMatch(null); setNotInvitable(false); setErrMsg(null);
+    setTransfertMsg(null); setTransfertOk(false);
     const e = email.trim().toLowerCase();
     if (!INVITE_EMAIL_RE.test(e)) { setLooking(false); return; }
     setLooking(true);
@@ -759,6 +764,20 @@ function InviteByEmailSheet({
     }, 300);
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
   }, [email]);
+
+  /* Transfert : distinct de handleInvite. Celui-là part d'un athlète IDENTIFIÉ
+     par une suggestion (athleteId connu) ; celui-ci part d'un courriel opaque
+     et laisse le serveur faire la résolution. Deux chemins, une seule table
+     écrite dans les deux cas : team_invitations. */
+  const handleTransfert = useCallback(async () => {
+    const e = email.trim().toLowerCase();
+    if (!e || !teamId || submitting) return;
+    setSubmitting(true); setTransfertMsg(null);
+    const r = await inviteAnchoredAthlete(createClient(), e, teamId);
+    setSubmitting(false);
+    setTransfertOk(r.ok);
+    setTransfertMsg(r.message || "Invitation envoyée — il devra l'accepter.");
+  }, [email, teamId, submitting]);
 
   const handleInvite = useCallback(async () => {
     if (!match || submitting) return;
@@ -845,9 +864,47 @@ function InviteByEmailSheet({
               </div>
             )}
 
-            {/* État 2 : existe mais NON-invitable (zéro PII) */}
+            {/* État 2 : existe mais ANCRÉ AILLEURS (zéro PII).
+                C'était un cul-de-sac : on annonçait au coach qu'il ne pouvait
+                rien faire. Il peut maintenant PROPOSER — le transfert passe par
+                une RPC qui résout le courriel côté serveur, donc l'identité de
+                l'athlète n'est toujours pas révélée. Rien n'est écrit dans
+                athlete_invitations : cet athlète a un compte, il n'a rien à
+                réclamer. */}
             {!looking && !match && notInvitable && (
-              <p className="text-[13px] text-[#9CA3AF]">Cet athlète est déjà rattaché à une équipe et ne peut pas être invité ici.</p>
+              <div className="bg-[#111317] border border-[#F59E0B]/30 rounded-xl p-4 space-y-3">
+                <p className="text-[13px] text-[#9CA3AF] leading-relaxed">
+                  Cet athlète est déjà rattaché à une autre équipe. Tu peux l&apos;inviter
+                  à rejoindre la tienne — <span className="text-white">c&apos;est lui qui décidera.</span>
+                </p>
+                {teams.length === 0 ? (
+                  <p className="text-[13px] text-[#F59E0B]">Aucune équipe — crées-en une dans « Mes équipes ».</p>
+                ) : (
+                  <>
+                    {teams.length > 1 && (
+                      <select value={teamId ?? ""} onChange={(e) => setTeamId(e.target.value || null)}
+                        className="w-full bg-[#111317] border border-white/10 rounded-xl px-4 py-3 text-[16px] text-white outline-none focus:border-[#E63946]/50" title="Équipe">
+                        <option value="">Choisis une équipe</option>
+                        {teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                      </select>
+                    )}
+                    {teams.length === 1 && (
+                      <p className="text-[13px] text-[#9CA3AF]">Équipe : <span className="text-white font-semibold">{teams[0].name}</span></p>
+                    )}
+                    <button type="button"
+                      onClick={() => { void triggerHaptic("Light"); void handleTransfert(); }}
+                      disabled={submitting || !teamId || transfertOk}
+                      className="w-full h-11 rounded-2xl bg-[#E63946] text-white text-[13px] font-bold active:bg-[#D42B22] disabled:opacity-40">
+                      {submitting ? "…" : "Inviter à rejoindre mon équipe"}
+                    </button>
+                  </>
+                )}
+                {transfertMsg && (
+                  <p className={`text-[13px] font-semibold ${transfertOk ? "text-[#22C55E]" : "text-[#EF4444]"}`}>
+                    {transfertOk ? "✓ " : ""}{transfertMsg}
+                  </p>
+                )}
+              </div>
             )}
 
             {/* État 3 : inexistant */}

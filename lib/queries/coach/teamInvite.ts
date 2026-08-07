@@ -69,6 +69,30 @@ export async function inviteAthleteToTeam(
     status: "PENDING",
     expires_at: expiresAt,
   });
-  if (error) return { error: `Erreur lors de l'envoi : ${error.message}` };
+
+  /* ── REFUS QUI NE DOIT PLUS ÊTRE MUET ──────────────────────────────────
+     Le sélecteur d'équipes propose TOUTES les équipes actives de l'école,
+     alors que la policy d'insertion exige coach_manages_team() : un
+     attachement réel via team_coaches, ou un rôle de direction dans l'école.
+     Le sélecteur reste volontairement large — le restreindre couperait la
+     quasi-totalité des coachs, l'attachement coach↔équipe étant très
+     sous-peuplé (dette notée, elle se règle ailleurs).
+     Conséquence : un refus RLS est possible, et il remontait jusqu'ici sous
+     la forme du message brut de Postgres. On le nomme. */
+  if (error) {
+    const code = error.code ?? "";
+    const msg = error.message ?? "";
+    // 42501 = insufficient_privilege ; PostgREST formule aussi le refus RLS
+    // en texte quand la policy WITH CHECK échoue.
+    if (code === "42501" || msg.includes("row-level security")) {
+      return { error: "Tu n'encadres pas cette équipe — choisis-en une autre." };
+    }
+    // Index partiel uq_team_invitations_pending : une invitation est déjà en
+    // attente pour ce couple. Ce n'est pas une erreur, c'est un doublon.
+    if (code === "23505") {
+      return { error: "Invitation déjà envoyée — en attente de sa réponse." };
+    }
+    return { error: `Erreur lors de l'envoi : ${msg}` };
+  }
   return {};
 }

@@ -33,6 +33,14 @@ export const MOBILE_EXCLUDED_SEGMENTS = [
 
 export const MOBILE_EXCLUDED_DYNAMIC_ROUTES = [
   '/partenaires', // /partenaires/[id] profil public
+  // /join/[code] — atterrissage d'un lien de code d'équipe. WEB SEULEMENT, par
+  // conception : la page détecte l'appareil et propose les liens vers l'App
+  // Store / Google Play, précisément parce qu'elle ne peut pas ouvrir
+  // l'application (aucun lien universel n'est configuré, cf. capacitor.config).
+  // Sans cette exclusion, output:'export' échoue — la route est dynamique et
+  // n'a pas de generateStaticParams(), qu'elle ne peut pas avoir : les codes
+  // sont créés à l'exécution et ne sont pas énumérables à la compilation.
+  '/join',
 ] as const;
 
 export const MOBILE_EXCLUDED_PAGES = [
