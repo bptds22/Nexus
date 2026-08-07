@@ -342,7 +342,11 @@ export default function CreateAthletePage() {
         const result = await lookupInvitableByEmail(supabase, newEmail);
         setEmailAutocomplete({ status: result.status, suggestions: result.suggestions });
         setShowSuggestions(result.status === "ok" && result.suggestions.length > 0);
-        setAncreAilleurs(result.existsNotInvitable && result.suggestions.length === 0);
+        // existsExact, PAS existsNotInvitable : ce dernier est calculé sur
+        // PRÉFIXE et se levait dès 4 caractères — taper « bptd » suffisait à
+        // afficher la bannière, bloquer la création et proposer le bouton.
+        // Le préfixe reste pour les SUGGESTIONS ci-dessus, où il est utile.
+        setAncreAilleurs(result.existsExact && result.suggestions.length === 0);
       } catch (err) {
         console.error("[EmailAutocomplete] lookup error:", err);
       }

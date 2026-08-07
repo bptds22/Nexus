@@ -79,7 +79,11 @@ export default function InviteByEmailModal({
         const res = await lookupInvitableByEmail(createClient(), e);
         const exact = res.suggestions.find((s) => s.email.toLowerCase() === e) ?? null;
         setMatch(exact);
-        setNotInvitable(!exact && res.existsNotInvitable);
+        // existsExact : le bloc « déjà rattaché » et son bouton d'invitation
+        // n'apparaissent que sur un courriel COMPLET. Proposer d'inviter
+        // quelqu'un qu'on n'a pas fini d'identifier, c'est une invitation
+        // envoyée à la mauvaise personne.
+        setNotInvitable(!exact && res.existsExact);
       } catch {
         setNotInvitable(false); setTransfertMsg(null); setTransfertOk(false);
       } finally {

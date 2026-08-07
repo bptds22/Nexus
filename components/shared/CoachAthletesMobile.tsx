@@ -758,7 +758,10 @@ function InviteByEmailSheet({
       try {
         const res = await lookupInvitableByEmail(createClient(), e);
         const exact = res.suggestions.find((s) => s.email.toLowerCase() === e) ?? null;
-        setMatch(exact); setNotInvitable(!exact && res.existsNotInvitable);
+        setMatch(exact);
+        // existsExact : le bloc « déjà rattaché » et son bouton d'invitation
+        // n'apparaissent que sur un courriel COMPLET. Voir InviteByEmailModal.
+        setNotInvitable(!exact && res.existsExact);
       } catch { setNotInvitable(false); }
       finally { setLooking(false); }
     }, 300);
