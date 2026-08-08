@@ -1027,8 +1027,26 @@ export function CoachAthletesMobile() {
           team_athletes(team_id, teams!team_id(gender)),
           evaluations(cote_globale, rapport_entraineur, distinctions, updated_at)
         `)
+        // STATUTS VISIBLES DANS LE ROSTER — enum account_status :
+        // ACTIF · DESACTIVE · EN_ATTENTE · DIPLOME · SUPPRIME
+        //
+        // EN_ATTENTE DOIT PASSER. Un athlete invite, qui a accepte et qui est
+        // ancre sur l'equipe, restait invisible a son coach tant que son compte
+        // n'etait pas finalise : la fiche existait, le transfert refusait de le
+        // reinviter (« il y est deja »), mais l'onglet Joueurs ne le montrait
+        // pas. Le coach ne pouvait ni le suivre ni comprendre ou il etait passe.
+        //
+        // SUPPRIME reste EXCLU — compte efface (Loi 25). Il l'est deja deux fois
+        // plutot qu'une : ces lignes ont school_id NULL, donc le filtre d'ecole
+        // ci-dessus les ecarte aussi. Ne pas s'appuyer sur ce hasard : garder le
+        // filtre de statut explicite.
+        //
+        // DESACTIVE et DIPLOME restent EXCLUS, faute de decision produit — zero
+        // ligne de chacun en base aujourd'hui. Si un athlete diplome doit rester
+        // consultable par son ancien coach, c'est un choix a prendre, pas un
+        // oubli a corriger ici.
         .eq("school_id", coachRow.school_id)
-        .eq("status", "ACTIF");
+        .in("status", ["ACTIF", "EN_ATTENTE"]);
 
       if (!data || cancelled) { if (!cancelled) setLoading(false); return; }
 
