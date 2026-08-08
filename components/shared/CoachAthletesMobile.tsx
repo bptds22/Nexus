@@ -1030,11 +1030,29 @@ export function CoachAthletesMobile() {
         // STATUTS VISIBLES DANS LE ROSTER — enum account_status :
         // ACTIF · DESACTIVE · EN_ATTENTE · DIPLOME · SUPPRIME
         //
-        // EN_ATTENTE DOIT PASSER. Un athlete invite, qui a accepte et qui est
-        // ancre sur l'equipe, restait invisible a son coach tant que son compte
-        // n'etait pas finalise : la fiche existait, le transfert refusait de le
-        // reinviter (« il y est deja »), mais l'onglet Joueurs ne le montrait
-        // pas. Le coach ne pouvait ni le suivre ni comprendre ou il etait passe.
+        // ⚠ NE PAS AJOUTER EN_ATTENTE ICI. Ca a ete essaye, puis annule.
+        //
+        // Le nom trompe : EN_ATTENTE n'est PAS un etat du cycle de vie d'un
+        // athlete. Verifie en prod le 2026-08-08 :
+        //   · le defaut de la colonne est 'ACTIF' (NOT NULL) ;
+        //   · AUCUN chemin de creation ne pose EN_ATTENTE — ni saveAthlete,
+        //     ni l'onboarding web/mobile, ni aucune fonction SQL (aucune
+        //     n'insere meme dans public.athletes) ;
+        //   · RIEN ne promeut EN_ATTENTE -> ACTIF : pas de trigger, pas de RPC,
+        //     pas de code client. Accepter une invitation d'equipe ne touche
+        //     pas au statut (_apply_team_attachment_core ecrit school_id,
+        //     coach_id, parcours_equipes — jamais status).
+        //
+        // Dans les faits, EN_ATTENTE sert d'OUTIL DE MASQUAGE. Deux migrations
+        // du 13 juillet (20260713140000_masquer_test_android_recherche et
+        // 20260713150000_masquer_profil_demo_bptds22_recherche) l'ont pose a la
+        // main sur deux fiches de demo pour les sortir de la recherche
+        // recruteur — la policy RLS « recruiters read active athletes » exige
+        // status = 'ACTIF'. Ces migrations documentent l'exclusion du roster
+        // coach comme un effet de bord ASSUME.
+        //
+        // Elargir ce filtre a EN_ATTENTE ne debloque donc aucun athlete reel :
+        // ca ne fait que remettre ces deux fiches masquees dans les rosters.
         //
         // SUPPRIME reste EXCLU — compte efface (Loi 25). Il l'est deja deux fois
         // plutot qu'une : ces lignes ont school_id NULL, donc le filtre d'ecole
@@ -1046,7 +1064,7 @@ export function CoachAthletesMobile() {
         // consultable par son ancien coach, c'est un choix a prendre, pas un
         // oubli a corriger ici.
         .eq("school_id", coachRow.school_id)
-        .in("status", ["ACTIF", "EN_ATTENTE"]);
+        .eq("status", "ACTIF");
 
       if (!data || cancelled) { if (!cancelled) setLoading(false); return; }
 
