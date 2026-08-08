@@ -23,6 +23,12 @@ export interface CurrentUserProfile {
   /** users.onboarding_complete — nullable (DEFAULT false). Lu par PushRegistrar
       pour ne demander la permission push qu'une fois l'onboarding terminé. */
   onboarding_complete: boolean | null;
+  /** ÉLÉVATION PLATEFORME — le compte fondateur, indépendant de l'enum de rôle.
+   *  C'est EXACTEMENT le prédicat que teste can_edit_school_page côté base :
+   *  l'éditeur de page collège s'en sert pour ouvrir le mode admin. Ne pas le
+   *  remplacer par role='ADMIN' / is_admin() — ce sont d'autres prédicats, et
+   *  l'interface proposerait alors ce que la RLS refuse. */
+  is_platform_admin: boolean | null;
 }
 
 export interface CurrentUserData {
@@ -41,7 +47,7 @@ export function useCurrentUser() {
 
       const { data: profile, error: profileError } = await supabase
         .from("users")
-        .select("id, first_name, last_name, school_id, division, sport, onboarding_complete")
+        .select("id, first_name, last_name, school_id, division, sport, onboarding_complete, is_platform_admin")
         .eq("id", user.id)
         .single();
       if (profileError) throw profileError;

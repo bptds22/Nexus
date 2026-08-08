@@ -39,7 +39,10 @@ function Topbar() {
   // → mini-confirm pour rappeler que l'aperçu ne montre pas les modifs non sauvées.
   const onPreview = () => {
     if (dirty && !window.confirm("Modifications non enregistrées — l'aperçu montrera la dernière sauvegarde. Continuer ?")) return;
-    window.open(`/page-test?school=${schoolId}`, "_blank", "noopener");
+    // LA VRAIE page publique, pas /page-test : cette route-la vit dans app/(dev)
+    // et rend 404 des NODE_ENV=production. L'editeur, lui, tourne desormais dans
+    // le portail admin, qui fonctionne EN production — le lien y serait mort.
+    window.open(`/college/${schoolId}`, "_blank", "noopener");
   };
 
   const saved = !dirty;
@@ -88,7 +91,9 @@ function EditorBody() {
   );
 }
 
-export default function PageEditor() {
+/** `schoolIdParam` : le college de la fiche admin ouverte. Honore uniquement
+ *  pour un admin plateforme — voir SchoolPageEditorProvider. */
+export default function PageEditor({ schoolIdParam }: { schoolIdParam?: string }) {
   return (
     <div className="pe">
       <style dangerouslySetInnerHTML={{ __html: PE_CSS }} />
@@ -96,7 +101,7 @@ export default function PageEditor() {
           previews « vrai composant » (voir PreviewShell). */}
       <style dangerouslySetInnerHTML={{ __html: PREVIEW_CSS }} />
       <ToastProvider>
-        <SchoolPageEditorProvider>
+        <SchoolPageEditorProvider schoolIdParam={schoolIdParam}>
           <EditorBody />
         </SchoolPageEditorProvider>
       </ToastProvider>

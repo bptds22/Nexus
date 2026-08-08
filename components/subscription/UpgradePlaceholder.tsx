@@ -35,6 +35,7 @@ const FEATURE_DESCRIPTIONS: Record<string, string> = {
   cegep_management: "Supervise tes recruteurs, suis les recrues et gère ton CÉGEP.",
   custom_lists: "Crée des listes personnalisées pour organiser tes prospects par sport, position ou stratégie.",
   activity_feed: "Suis l'activité récente — qui a consulté tes athlètes, qui a envoyé des messages, et plus.",
+  public_page: "Modifie la page publique de ton établissement et celles de tes équipes — ce que les athlètes voient de toi.",
 };
 
 interface UpgradePlaceholderProps {
