@@ -20,7 +20,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import {
-  loadSchoolPage, savePageContent, saveCards, savePrograms, saveNews,
+  loadSchoolPage, savePageContent, saveCards, savePrograms, saveNews, villePreRemplie,
   type SchoolPageState, type EditorCard, type EditorProgram, type EditorNews,
 } from "@/lib/queries/schoolPage/schoolPageData";
 
@@ -91,7 +91,7 @@ function dbToEditor(
     // l'utilisateur n'enregistre pas.
     // QUARTIER et CODE RÉGIONAL restent vides : `schools` ne porte ni secteur
     // ni indicatif téléphonique. Une valeur sans source reste absente.
-    ville: g(c?.ville) || (school.city || "").toUpperCase(),
+    ville: g(c?.ville) || villePreRemplie(school.city),
     quartier: g(c?.quartier), rtag: g(c?.code_regional),
     c1: c?.color_primary || "#A6192E", c2: c?.color_dark || "#5A0E1B", c3: c?.color_light || "#E8C7CD",
     init: g(c?.initiales), vword: g(c?.rail_word), dev1: g(c?.devise_1), dev2: g(c?.devise_2),
@@ -167,6 +167,12 @@ export function SchoolPageEditorProvider(
   if (!clientRef.current) clientRef.current = createClient();
   const client = clientRef.current;
 
+  // Jetons de contenu des collections sous verrou optimiste. Posés au
+  // chargement, remplacés après chaque save réussi. Ils vivent dans un ref et
+  // JAMAIS dans l'état de formulaire : une frappe de l'utilisateur ne doit pas
+  // pouvoir les modifier, sinon le verrou ne protège plus rien.
+  const jetonsRef = React.useRef<{ cards: string }>({ cards: "" });
+
   const [load, setLoad] = React.useState<{ loading: boolean; err?: string; initial?: EditorInitial; school?: EditorSchool; recrutedCount?: number }>({ loading: true });
 
   React.useEffect(() => {
@@ -198,6 +204,7 @@ export function SchoolPageEditorProvider(
           address: row.address ?? null,
           postal_code: row.postal_code ?? null,
         };
+        jetonsRef.current.cards = page.jetons.cards;
         setLoad({
           loading: false, school,
           recrutedCount: (rec.data as number | null) ?? 0,
@@ -258,13 +265,34 @@ export function SchoolPageEditorProvider(
   const saveAll = React.useCallback(async () => {
     if (!schoolId || !user) return;
     setSaving(true);
+    // Nomme la section en cours. saveAll est SÉQUENTIEL : la première qui lève
+    // abandonne les suivantes, et sans ce repère l'utilisateur voit un message
+    // d'erreur sans savoir laquelle des quatre reprendre. Reprendre APRÈS un
+    // échec — avec la comptabilité baseline/dirty par section — est un chantier
+    // à part : la remise à zéro de la baseline en fin de fonction suppose un
+    // succès total, et la fausser marquerait « propre » du contenu non écrit.
+    let etape = "";
     try {
       const patch: Record<string, unknown> = {};
       for (const k of Object.keys(dataRef.current)) {
         if (k.startsWith("content.")) Object.assign(patch, dataRef.current[k] as Record<string, unknown>);
       }
+      etape = "tes textes et couleurs";
       if (Object.keys(patch).length) await savePageContent(client, schoolId, patch, user.authUser.id);
-      if (dataRef.current["cards"]) await saveCards(client, schoolId, dataRef.current["cards"] as EditorCard[]);
+      etape = "tes cartes campus";
+      if (dataRef.current["cards"]) {
+        // Même lecture du « vide délibéré » que pour les programmes : une liste
+        // vide venue d'un retrait réel de l'utilisateur, jamais d'un chargement
+        // raté (auquel cas les sections ne montent pas et on n'arrive pas ici).
+        const baseCards = baselineRef.current["cards"];
+        const videDelibereCards = baseCards !== undefined && baseCards !== "[]";
+        const res = await saveCards(
+          client, schoolId, dataRef.current["cards"] as EditorCard[],
+          jetonsRef.current.cards, videDelibereCards,
+        );
+        jetonsRef.current.cards = res.jeton;
+      }
+      etape = "tes programmes";
       if (dataRef.current["programs"]) {
         // Une liste vide n'a pas le même sens selon d'où elle vient. La baseline
         // est figée au 1er report, c'est-à-dire à l'état sorti de la base : si
@@ -276,11 +304,14 @@ export function SchoolPageEditorProvider(
         const videDelibere = base !== undefined && base !== "[]";
         await savePrograms(client, schoolId, dataRef.current["programs"] as EditorProgram[], videDelibere);
       }
+      etape = "tes nouvelles";
       if (dataRef.current["news"]) await saveNews(client, schoolId, dataRef.current["news"] as EditorNews[]);
       for (const k of Object.keys(dataRef.current)) baselineRef.current[k] = JSON.stringify(dataRef.current[k]);
       setDirtyKeys([]);
     } catch (e) {
-      throw friendlyDbError(e);
+      const err = friendlyDbError(e);
+      if (!etape) throw err;
+      throw new Error(`${err.message}\n\nL'enregistrement s'est arrêté sur : ${etape}. Les sections suivantes n'ont pas été enregistrées.`);
     } finally { setSaving(false); }
   }, [client, schoolId, user]);
 

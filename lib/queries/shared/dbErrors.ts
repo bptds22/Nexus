@@ -46,6 +46,41 @@ const NOMS: Record<string, string> = {
   school_news: "nouvelles",
 };
 
+/** Violations de contrainte CHECK (SQLSTATE 23514). Postgres renvoie un texte
+ *  ANGLAIS qui nomme la table et la contrainte SQL — illisible pour un
+ *  recruteur, et sans indication de ce qu'il faut corriger.
+ *
+ *  Ce n'est pas un détail cosmétique : c'est ce qui a fait survivre le bug de
+ *  `ville`. Le pré-remplissage envoyait 27 caractères pour une colonne plafonnée
+ *  à 18, la sauvegarde échouait en 23514, l'utilisateur lisait
+ *  « violates check constraint "school_page_content_ville_check" », n'y
+ *  comprenait rien, et s'en sortait en VIDANT le champ — ce qui explique le
+ *  `ville: ''` retrouvé en base. Personne n'a jamais su ce qui n'allait pas.
+ *
+ *  Toute contrainte nommée ici gagne un message précis ; les autres tombent sur
+ *  le générique, qui reste lisible et n'expose aucun identifiant SQL. */
+const CHECK_VIOLATION = /violates check constraint "([a-z0-9_]+)"/i;
+
+const CONTRAINTES: Record<string, string> = {
+  // Plafond miroir de MAX_VILLE (lib/queries/schoolPage/schoolPageData.ts).
+  school_page_content_ville_check:
+    "Le nom de ville dépasse 18 caractères — raccourcis-le (par exemple « ST-AUGUSTIN »).",
+  school_page_content_nickname_check: "Le surnom dépasse 14 caractères — raccourcis-le.",
+  school_page_content_slogan_check: "Le slogan dépasse 40 caractères — raccourcis-le.",
+  school_page_content_tagline_check: "L'accroche dépasse 20 caractères — raccourcis-la.",
+  school_page_content_initiales_check: "Les initiales dépassent 3 caractères.",
+  school_page_content_rail_word_check: "Le mot du rail dépasse 12 caractères — raccourcis-le.",
+  school_page_content_quartier_check: "Le quartier dépasse 18 caractères — raccourcis-le.",
+  school_page_content_code_regional_check: "L'indicatif régional dépasse 4 caractères.",
+  school_page_content_about_title_check: "Le titre « À propos » dépasse 40 caractères.",
+  school_page_content_sell_text_check: "Ton texte de présentation dépasse 280 caractères.",
+  school_page_content_ticker_text_check: "Le bandeau défilant dépasse 60 caractères.",
+  school_page_content_nb_athletes_check: "Le nombre d'athlètes dépasse 6 caractères.",
+  school_page_content_niveau_check: "Le niveau dépasse 30 caractères — raccourcis-le.",
+  school_page_content_wall_words_check: "Le mur accepte au maximum 4 mots.",
+  school_page_content_stat_diplomation_check: "Le taux de diplomation doit être compris entre 0 et 100.",
+};
+
 /** Traduit une erreur RLS/permission ou de plafond en message actionnable, et
  *  ajoute l'avertissement « ne recharge pas » quand des lignes ont déjà été
  *  supprimées. Sinon renvoie l'erreur telle quelle. */
@@ -65,6 +100,13 @@ export function friendlyDbError(e: unknown): Error {
     clair = `Maximum ${plafond[1]} ${NOMS[plafond[2]] ?? "éléments"} — retires-en un avant d'en ajouter un autre.`;
   } else if (MARQUEUR.test(msg)) {
     clair = msg.replace(MARQUEUR, "");
+  } else if (code === "23514" || CHECK_VIOLATION.test(msg)) {
+    // Contrainte CHECK : message précis si on connaît la contrainte, sinon un
+    // générique qui reste actionnable — mais JAMAIS le texte Postgres brut,
+    // qui nomme la table et l'identifiant SQL.
+    const nom = CHECK_VIOLATION.exec(msg)?.[1] ?? "";
+    clair = CONTRAINTES[nom]
+      ?? "Un des champs dépasse la longueur permise — raccourcis-le puis réessaie.";
   } else if (code === "42501" || status === "403" || REFUS_MOTEUR.test(msg)) {
     clair = "Ta session a expiré — reconnecte-toi pour enregistrer.";
   } else {

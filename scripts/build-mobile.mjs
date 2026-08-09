@@ -33,6 +33,15 @@ const HIDE_PATTERNS = [
   'app/admin/**/page.tsx',
   'app/partenaire/**/page.tsx',
   'app/parent/**/page.tsx',   // Portal parental (Lot 1a) — web only.
+  // Groupe (dev) : 7 pages de banc d'essai (editeur-test, wall-test, page-test,
+  // team-test, recherche-test, recherche-mobile-test, equipe-editeur-test).
+  // Elles partaient dans le bundle iOS — un groupe de route entre parentheses
+  // reste une route, et aucun motif ne les couvrait.
+  // ⚠ PARENTHESES ECHAPPEES, meme raison que les crochets plus bas : glob les
+  // lit comme un groupe d'alternance (extglob). Les deux formes ont ete
+  // verifiees a 7 fichiers avant d'ecrire cette ligne — ne pas la modifier
+  // sans re-tester le compte, un motif inerte ne dit rien.
+  'app/\\(dev\\)/**/page.tsx',
   // ⚠ CROCHETS ECHAPPES — glob lit `[id]` comme une CLASSE DE CARACTERES, pas
   // comme un nom de dossier. 'app/partenaires/[id]/page.tsx' matchait ZERO
   // fichier (il aurait matche app/partenaires/i/page.tsx ou …/d/…). Le motif

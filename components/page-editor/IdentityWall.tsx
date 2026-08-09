@@ -14,6 +14,7 @@ import { WORDS, PROVINCES } from "./fixture";
 import { editorToSchool, type EditorIdentityState } from "./wallBridge";
 import { useEditor } from "./editorContext";
 import { useToast } from "./toast";
+import { MAX_VILLE, villePreRemplie } from "@/lib/queries/schoolPage/schoolPageData";
 
 // Débounce par ÉGALITÉ DE CONTENU (value = clé string stable) : le timer ne se
 // relance que quand le contenu change → pas de boucle, et le VRAI mur (lourd :
@@ -42,8 +43,12 @@ export default function IdentityWall({
   // La ville a-t-elle été SEEDÉE depuis `schools` (rien de saisi en base) ou
   // vient-elle d'une saisie ? Pilote le bandeau du bloc Géo, qui ne doit
   // annoncer que ce qui a réellement été pré-rempli.
+  // MÊME helper que le pré-remplissage lui-même (dbToEditor) : la règle du seed
+  // ne doit exister qu'à un seul endroit. Recalculée ici en local, elle
+  // divergeait dès que le plafond entrait en jeu — une ville trop longue n'est
+  // plus pré-remplie du tout, donc le bandeau ne doit pas l'annoncer.
   const villePreremplie = React.useMemo(
-    () => !!initial.ville && initial.ville === (fiche.city || "").toUpperCase(),
+    () => !!initial.ville && initial.ville === villePreRemplie(fiche.city),
     [initial.ville, fiche.city],
   );
   const [tagline, setTagline] = React.useState(initial.tagline);
@@ -244,7 +249,7 @@ export default function IdentityWall({
             <div className="row2">
               <div>
                 <label className="fl" style={{ marginTop: 0 }}>Ville</label>
-                <input className="ti" maxLength={18} value={ville} onChange={upperOn(setVille)} style={{ textTransform: "uppercase" }} />
+                <input className="ti" maxLength={MAX_VILLE} value={ville} onChange={upperOn(setVille)} style={{ textTransform: "uppercase" }} />
               </div>
               <div>
                 <label className="fl" style={{ marginTop: 0 }}>Quartier / secteur</label>

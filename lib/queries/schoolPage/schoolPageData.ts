@@ -48,14 +48,21 @@ const arr = (v: unknown): string[] => (Array.isArray(v) ? (v as string[]) : []);
  *  → renvoie null pour content ; l'appelant applique ses valeurs par défaut. */
 export async function loadSchoolPage(
   supabase: SupabaseClient, schoolId: string,
-): Promise<{ content: Partial<SchoolPageState> | null; cards: EditorCard[]; programs: EditorProgram[]; news: EditorNews[] }> {
-  const [c, cards, progs, news] = await Promise.all([
+): Promise<{ content: Partial<SchoolPageState> | null; cards: EditorCard[]; programs: EditorProgram[]; news: EditorNews[]; jetons: { cards: string } }> {
+  const [c, cards, progs, news, sigCards] = await Promise.all([
     supabase.from("school_page_content").select(CONTENT_COLS).eq("school_id", schoolId).maybeSingle(),
     supabase.from("school_campus_cards").select("id, titre, legende, image_path, position").eq("school_id", schoolId).order("position"),
     supabase.from("school_programs").select("id, name, code, type, is_displayed, source, position").eq("school_id", schoolId).order("position"),
     supabase.from("school_news").select("id, titre, url, position").eq("school_id", schoolId).order("position"),
+    // Jeton de contenu des cartes : OPAQUE. Le client ne le calcule jamais, il
+    // le reçoit ici et le rend tel quel à saveCards. Voir replace_school_cards.
+    supabase.rpc("sig_school_cards", { p_school_id: schoolId }),
   ]);
   for (const r of [c, cards, progs, news]) if (r.error) throw r.error;
+  // Le jeton n'est PAS fatal : ce loader sert aussi les pages publiques, lues
+  // par des visiteurs `anon` à qui sig_school_cards est révoquée. Un jeton vide
+  // échoue FERMÉ — replace_school_cards refusera l'écriture — plutôt que de
+  // faire planter une page qui n'a jamais eu besoin de ce champ.
 
   const row = c.data as Record<string, unknown> | null;
   const content: Partial<SchoolPageState> | null = row && {
@@ -78,6 +85,7 @@ export async function loadSchoolPage(
     cards: (cards.data ?? []).map((c2) => ({ id: c2.id, titre: c2.titre ?? "", legende: c2.legende ?? "", image_path: c2.image_path ?? null })),
     programs: (progs.data ?? []) as EditorProgram[],
     news: (news.data ?? []).map((n) => ({ id: n.id, titre: n.titre ?? "", url: n.url ?? "" })),
+    jetons: { cards: (sigCards.data as string | null) ?? "" },
   };
 }
 
@@ -102,14 +110,62 @@ export async function savePageContent(
 export const MAX_SCHOOL_CARDS = 5;
 export const MAX_SCHOOL_NEWS = 5;
 
-export async function saveCards(supabase: SupabaseClient, schoolId: string, cards: EditorCard[]): Promise<void> {
-  const del = await supabase.from("school_campus_cards").delete().eq("school_id", schoolId);
-  if (del.error) throw del.error;
-  if (!cards.length) return;
-  const rows = cards.slice(0, MAX_SCHOOL_CARDS)
-    .map((c, i) => ({ school_id: schoolId, titre: c.titre, legende: c.legende, image_path: c.image_path, position: i }));
-  const { error } = await supabase.from("school_campus_cards").insert(rows);
-  if (error) throw apresSuppression(error, "Tes cartes campus");
+/** Plafond DB de `school_page_content.ville` — CHECK (char_length(ville) <= 18),
+ *  posé par 20260724193118_school_page_bloc2.sql. L'éditeur lit cette
+ *  constante (champ de saisie + pré-remplissage) ; il ne la redéclare pas. */
+export const MAX_VILLE = 18;
+
+/** Ville pré-remplie depuis `schools.city` quand la base n'a rien de saisi.
+ *
+ *  REPREND LA RÈGLE DU SEED, telle qu'elle est inscrite dans les données —
+ *  il n'existe aucun script de seed au dépôt, les 61 lignes ont été posées par
+ *  un SQL ad hoc jamais commité. Relevé sur la table : 57 lignes portent
+ *  `upper(city)` (villes de 4 à 15 car.), et les 4 villes trop longues (23 à
+ *  27 car.) ont été laissées VIDES. Le seed n'a jamais tronqué.
+ *
+ *  On garde ce choix plutôt que d'en inventer un second. Tronquer publierait
+ *  « SAINT-AUGUSTIN-DE- » sur une page publique : un nom de municipalité faux
+ *  est pire qu'un champ vide que le gestionnaire remplit lui-même
+ *  (« ST-AUGUSTIN »). Le champ reste éditable, borné par MAX_VILLE.
+ *
+ *  Sans ce garde, le pré-remplissage renvoyait 27 caractères et TOUTE
+ *  sauvegarde de la section identité échouait en 23514 — le `maxLength` du
+ *  champ ne protège que la frappe, pas une valeur injectée par le code. */
+export function villePreRemplie(city: string | null | undefined): string {
+  const v = (city || "").toUpperCase();
+  return v.length <= MAX_VILLE ? v : "";
+}
+
+/** Cartes campus : remplacement TRANSACTIONNEL sous verrou de jeton.
+ *
+ *  L'ancien chemin faisait DELETE de toutes les lignes de l'école puis INSERT
+ *  de l'état local — deux allers-retours sans transaction commune. Il perdait
+ *  les cartes ajoutées par le second gestionnaire du CÉGEP depuis le
+ *  chargement, et laissait la collection VIDE si l'insert était refusé.
+ *
+ *  `jeton` est celui reçu de loadSchoolPage, rendu tel quel. Si la section a
+ *  bougé entre-temps, la base refuse SANS RIEN ÉCRIRE et le message part à
+ *  l'écran via le marqueur « NEXUS: » (voir friendlyDbError).
+ *
+ *  Pas de `apresSuppression` ici : plus rien n'est supprimé en cas d'échec,
+ *  donc l'avertissement « ne recharge pas » serait faux et alarmant.
+ *
+ *  Renvoie le NOUVEAU jeton — sans lui, un second « Enregistrer » dans la même
+ *  session se heurterait à son propre changement. */
+export async function saveCards(
+  supabase: SupabaseClient, schoolId: string, cards: EditorCard[],
+  jeton: string, autoriserVide = false,
+): Promise<{ n: number; jeton: string }> {
+  const { data, error } = await supabase.rpc("replace_school_cards", {
+    p_school_id: schoolId,
+    p_rows: cards.slice(0, MAX_SCHOOL_CARDS).map((c) => ({
+      id: c.id ?? null, titre: c.titre, legende: c.legende, image_path: c.image_path,
+    })),
+    p_jeton: jeton,
+    p_autoriser_vide: autoriserVide,
+  });
+  if (error) throw error;
+  return data as { n: number; jeton: string };
 }
 
 export async function saveNews(supabase: SupabaseClient, schoolId: string, news: EditorNews[]): Promise<void> {
