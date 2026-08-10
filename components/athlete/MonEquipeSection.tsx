@@ -24,6 +24,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import SchoolSelect from "@/components/ui/SchoolSelect";
+import { SearchSheet } from "@/components/mobile/SearchSheet";
 import JoinCodeField from "@/components/athlete/JoinCodeField";
 import TransferConfirmDialog from "@/components/athlete/TransferConfirmDialog";
 import { applyTeamAttachment } from "@/lib/queries/athlete/teamAttachment";
@@ -62,6 +63,36 @@ interface TeamOption {
 
 const label = "block text-[12px] font-bold tracking-[0.25em] uppercase text-[#6B7280] mb-1.5";
 
+/* ── MOBILE : pickers en bottom-sheet ──────────────────────────────────────
+   Le web garde ses pickers INLINE, inchangés. Sur iOS ils sont inutilisables :
+   SchoolSelect ancre sa liste en `absolute top-full` (SchoolSelect.tsx:156),
+   donc sous le champ — c'est-à-dire SOUS le clavier, qui occupe le bas du
+   viewport. L'athlète tape à l'aveugle et ne peut rien sélectionner.
+
+   SearchSheet règle ça par construction : plein écran au-dessus du clavier,
+   input 16px (anti-zoom iOS), safe-area gérée. C'est le même composant que les
+   quatre pickers de l'onboarding mobile — aucune extraction, il est déjà
+   générique et découplé (components/mobile/SearchSheet.tsx).
+
+   Le guard vit ICI plutôt que dans un fichier MonEquipeSectionMobile : seul le
+   picker diverge, et la logique d'attachement/transfert en dessous est la
+   partie délicate — la dupliquer coûterait plus cher que ce ternaire. */
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
+
+/** Ligne d'organisation pour le sheet mobile.
+ *
+ *  TYPE LOCAL ET HONNÊTE, à ne PAS remplacer par le SchoolRow de SchoolSelect :
+ *  celui-ci déclare `type: "SECONDAIRE" | "CEGEP"` alors que sa requête charge
+ *  la table SANS filtre — elle ramène donc aussi des LIGUE_CIVILE. Le type ment.
+ *  Ici `type` est une string libre, parce que la valeur sert uniquement à
+ *  afficher un libellé, jamais à décider quoi que ce soit. */
+interface OrgOption {
+  id: string;
+  name: string;
+  city: string | null;
+  type: string | null;
+}
+
 export default function MonEquipeSection({ onToast }: { onToast?: (m: string) => void }) {
   const [anchor, setAnchor] = useState<CurrentAnchor | null>(null);
   const [loading, setLoading] = useState(true);
@@ -76,6 +107,15 @@ export default function MonEquipeSection({ onToast }: { onToast?: (m: string) =>
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [done, setDone] = useState("");
+
+  /* ── MOBILE : état des deux sheets. Inerte sur le web. ─────────────────── */
+  const [orgSheetOpen, setOrgSheetOpen] = useState(false);
+  const [orgSearch, setOrgSearch] = useState("");
+  const [orgName, setOrgName] = useState("");
+  const [orgs, setOrgs] = useState<OrgOption[]>([]);
+  const [orgsLoading, setOrgsLoading] = useState(false);
+  const [teamSheetOpen, setTeamSheetOpen] = useState(false);
+  const [teamSearch, setTeamSearch] = useState("");
 
   /* ── État courant ────────────────────────────────────────── */
   const load = useCallback(async () => {
@@ -152,6 +192,51 @@ export default function MonEquipeSection({ onToast }: { onToast?: (m: string) =>
     })();
     return () => { alive = false; };
   }, [schoolId]);
+
+  /* ── MOBILE : chargement des organisations, à l'ouverture du sheet ───────
+     SANS FILTRE DE TYPE, délibérément. `schools` héberge AUSSI les clubs
+     civils (type LIGUE_CIVILE) : filtrer sur SECONDAIRE — comme le fait
+     l'onboarding (AthleteOnboardingMobile:625) — ferait DISPARAÎTRE leur club
+     de l'écran de transfert. C'est le même choix que SchoolSelect côté web,
+     dont la requête ne filtre pas non plus. */
+  useEffect(() => {
+    if (!IS_CAPACITOR || !orgSheetOpen || orgs.length > 0) return;
+    let alive = true;
+    (async () => {
+      setOrgsLoading(true);
+      const { data } = await createClient()
+        .from("schools")
+        .select("id, name, city, type")
+        .order("name");
+      if (!alive) return;
+      setOrgs(
+        (data ?? []).map((s: Record<string, unknown>) => ({
+          id: s.id as string,
+          name: (s.name as string) || "",
+          city: (s.city as string) ?? null,
+          type: (s.type as string) ?? null,
+        })),
+      );
+      setOrgsLoading(false);
+    })();
+    return () => { alive = false; };
+  }, [orgSheetOpen, orgs.length]);
+
+  /* Filtrage client, comme SchoolSelect : la table tient en mémoire et la
+     recherche doit rester instantanée sous le doigt. */
+  const orgsVisibles = orgSearch.trim()
+    ? orgs.filter((o) => {
+        const q = orgSearch.trim().toLowerCase();
+        return o.name.toLowerCase().includes(q) || (o.city ?? "").toLowerCase().includes(q);
+      })
+    : orgs;
+
+  const teamsVisibles = teamSearch.trim()
+    ? teams.filter((t) => {
+        const q = teamSearch.trim().toLowerCase();
+        return t.name.toLowerCase().includes(q) || teamDetails(t).toLowerCase().includes(q);
+      })
+    : teams;
 
   /* ── Rattachement ────────────────────────────────────────── */
   async function attach(teamId: string, code: string | null, confirm: boolean) {
@@ -265,11 +350,27 @@ export default function MonEquipeSection({ onToast }: { onToast?: (m: string) =>
             type — un athlète de ligue civile trouve donc son club ici et ne
             doit jamais lire le mot « école » tout court. */}
         <label className={label}>Ton école ou ton club</label>
-        <SchoolSelect
-          value={schoolId}
-          onChange={(id) => { setSchoolId(id); setPickedTeam(null); setJoinCode(null); setDone(""); }}
-          placeholder="Cherche ton école ou ton club…"
-        />
+        {IS_CAPACITOR ? (
+          /* Mobile : bouton-champ qui ouvre le sheet. Même allure que le
+             picker inline pour que rien ne saute à l'œil d'une plateforme
+             à l'autre. */
+          <button
+            type="button"
+            onClick={() => setOrgSheetOpen(true)}
+            className="flex h-11 w-full items-center justify-between rounded-lg border border-[#2D3748] bg-[#111317] px-4 text-left transition active:bg-[#1A1D24]"
+          >
+            <span className={`truncate text-[14px] ${orgName ? "text-white" : "text-[#4a4d56]"}`}>
+              {orgName || "Cherche ton école ou ton club…"}
+            </span>
+            <span className="ml-2 shrink-0 text-[#6b7280]">▾</span>
+          </button>
+        ) : (
+          <SchoolSelect
+            value={schoolId}
+            onChange={(id) => { setSchoolId(id); setPickedTeam(null); setJoinCode(null); setDone(""); }}
+            placeholder="Cherche ton école ou ton club…"
+          />
+        )}
 
         {schoolId ? (
           <div className="mt-4">
@@ -280,6 +381,19 @@ export default function MonEquipeSection({ onToast }: { onToast?: (m: string) =>
               <p className="text-[13px] text-[#6b7280]">
                 Aucune équipe active ici. Demande un code à ton entraîneur.
               </p>
+            ) : IS_CAPACITOR ? (
+              /* Mobile : même traitement que l'organisation. La liste vivait
+                 sous le champ, donc sous le clavier dès qu'il s'ouvrait. */
+              <button
+                type="button"
+                onClick={() => setTeamSheetOpen(true)}
+                className="flex h-11 w-full items-center justify-between rounded-lg border border-[#2D3748] bg-[#111317] px-4 text-left transition active:bg-[#1A1D24]"
+              >
+                <span className={`truncate text-[14px] ${pickedTeam ? "text-white" : "text-[#4a4d56]"}`}>
+                  {pickedTeam ? pickedTeam.name : "Choisis ton équipe…"}
+                </span>
+                <span className="ml-2 shrink-0 text-[#6b7280]">▾</span>
+              </button>
             ) : (
               <ul className="max-h-64 space-y-2 overflow-y-auto">
                 {teams.map((t) => {
@@ -322,6 +436,85 @@ export default function MonEquipeSection({ onToast }: { onToast?: (m: string) =>
           {busy ? "En cours…" : anchor ? "Demander le transfert" : "Rejoindre cette équipe"}
         </button>
       </section>
+
+      {/* ── MOBILE : les deux sheets. `IS_CAPACITOR` est une constante de
+          build, donc ces blocs sont éliminés du bundle web. ─────────────── */}
+      {IS_CAPACITOR && (
+        <>
+          <SearchSheet<OrgOption>
+            open={orgSheetOpen}
+            onClose={() => setOrgSheetOpen(false)}
+            title="Mon école ou mon club"
+            searchPlaceholder="Rechercher…"
+            searchValue={orgSearch}
+            onSearchChange={setOrgSearch}
+            items={orgsVisibles}
+            loading={orgsLoading}
+            keyOf={(o) => o.id}
+            onSelect={(o) => {
+              // MÊME réinitialisation que le onChange de SchoolSelect côté web :
+              // changer d'organisation invalide l'équipe choisie ET le code.
+              setSchoolId(o.id);
+              setOrgName(o.name);
+              setPickedTeam(null);
+              setJoinCode(null);
+              setDone("");
+              setTeamSearch("");
+            }}
+            renderItem={(o, onTap) => (
+              <button
+                type="button"
+                onClick={onTap}
+                className="w-full rounded-2xl bg-[#1A1D24] p-3 text-left transition-colors active:bg-[#22262e]"
+              >
+                <p className="truncate text-[16px] font-semibold text-white">{o.name}</p>
+                {o.city && <p className="truncate text-[13px] text-white/55">{o.city}</p>}
+              </button>
+            )}
+          />
+
+          <SearchSheet<TeamOption>
+            open={teamSheetOpen}
+            onClose={() => setTeamSheetOpen(false)}
+            title="Mon équipe"
+            searchPlaceholder="Rechercher une équipe…"
+            searchValue={teamSearch}
+            onSearchChange={setTeamSearch}
+            items={teamsVisibles}
+            loading={teamsLoading}
+            keyOf={(t) => t.id}
+            onSelect={(t) => {
+              // L'équipe actuelle reste non sélectionnable : c'est déjà
+              // l'ancrage, la rejoindre n'aurait aucun sens.
+              if (anchor?.teamId === t.id) return;
+              setPickedTeam(t);
+              setJoinCode(null);
+              setDone("");
+            }}
+            renderItem={(t, onTap) => {
+              const courante = anchor?.teamId === t.id;
+              return (
+                <button
+                  type="button"
+                  onClick={courante ? undefined : onTap}
+                  disabled={courante}
+                  className={`w-full rounded-2xl p-3 text-left transition-colors ${
+                    courante
+                      ? "cursor-not-allowed bg-[#111317] opacity-50"
+                      : "bg-[#1A1D24] active:bg-[#22262e]"
+                  }`}
+                >
+                  <p className="truncate text-[16px] font-semibold text-white">{t.name}</p>
+                  <p className="truncate text-[13px] text-white/55">
+                    {teamDetails(t)}
+                    {courante ? " · équipe actuelle" : ""}
+                  </p>
+                </button>
+              );
+            }}
+          />
+        </>
+      )}
     </div>
   );
 }

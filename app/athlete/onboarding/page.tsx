@@ -603,7 +603,24 @@ function SchoolTeamPicker({
    (users.context) qu'au submit via la RPC one-shot set_initial_role_and_context
    — exactement comme le mobile. Rendu avec les primitives du flow web (carte
    #1A1D24 + bordure #2D3748), aucun nouveau design system. ────────────────── */
-function ContextPicker({ onPick }: { onPick: (c: "scolaire" | "ligue_civile") => void }) {
+/* ── LOT 2 — le code d'équipe MONTE à l'étape 0 ────────────────────────────
+   Il vivait à l'étape 1, donc APRÈS que l'athlète ait répondu « école ou
+   club ? ». Or le code porte déjà la réponse : resolve_team_join_token
+   retourne school_type, et applyCodeLock en dérive le contexte. Poser la
+   question puis la contredire une étape plus loin n'avait pas de sens.
+
+   `initialCode` vient de readStashedJoinCode(), lu au MONTAGE (:665) donc
+   toujours posé avant que l'étape 0 ne s'affiche — l'effet d'init qui appelle
+   setStep(0) attend Supabase, celui du stash n'attend rien.
+
+   PORT 1:1 — le même bloc existe dans components/shared/AthleteOnboardingMobile.tsx. */
+function ContextPicker({
+  onPick, initialCode, onCodeAdopted,
+}: {
+  onPick: (c: "scolaire" | "ligue_civile") => void;
+  initialCode: string;
+  onCodeAdopted: (v: { code: string; team: ResolvedJoinTeam } | null) => void;
+}) {
   const card =
     "w-full text-left p-4 bg-[#1A1D24] rounded-lg border border-[#2D3748] "
     + "hover:border-[#E63946] hover:bg-[#20242c] transition-colors";
@@ -615,6 +632,24 @@ function ContextPicker({ onPick }: { onPick: (c: "scolaire" | "ligue_civile") =>
           Choisis ton parcours — ça détermine comment tu relies ton équipe.
         </p>
       </div>
+
+      <div className="rounded-xl border border-[#E63946]/25 bg-[#E63946]/[0.06] p-4">
+        <p className="mb-2 text-[13px] font-semibold text-white">
+          Ton entraîneur t&apos;a donné un code ?
+        </p>
+        <p className="mb-3 text-[12px] leading-relaxed text-[#9CA3AF]">
+          Entre-le : ton équipe, ton école ou ton club et ton sport se
+          remplissent tout seuls — pas besoin de répondre à la question.
+        </p>
+        <JoinCodeField initialCode={initialCode} onResolved={onCodeAdopted} />
+      </div>
+
+      <div className="flex items-center gap-3 py-1">
+        <div className="h-px flex-1 bg-[#2D3748]" />
+        <span className="text-[11px] uppercase tracking-wider text-[#4a4d56]">ou</span>
+        <div className="h-px flex-1 bg-[#2D3748]" />
+      </div>
+
       <button type="button" onClick={() => onPick("scolaire")} className={card}>
         <p className="text-[16px] font-bold text-white">École / Cégep</p>
         <p className="text-[13px] text-[#9CA3AF] mt-0.5">
@@ -730,6 +765,20 @@ function AthleteOnboardingDesktop() {
     setJoinCodeUsed(null);
     setSelectedTeamId(null);
     setSelectedTeamName("");
+  }
+
+  /** « Changer » depuis l'étape 1 : délie le code ET rend la question
+   *  école/civil (lot 2). Le code ayant décidé du contexte sans que l'athlète
+   *  n'y réponde, le délier doit lui rendre ce choix.
+   *
+   *  Distinct de releaseCodeLock, qui est AUSSI appelée par applyCodeLock(null)
+   *  quand on vide le champ code — éjecter l'athlète à ce moment-là serait
+   *  absurde. Les champs déjà saisis sont conservés.
+   *
+   *  PORT 1:1 — cf. onReleaseCode dans AthleteOnboardingMobile. */
+  function changerDepuisEtape1() {
+    releaseCodeLock();
+    setStep(0);
   }
 
   // Phase 2 athlete claim: if a coach-created orphan athlete row
@@ -1630,6 +1679,16 @@ function AthleteOnboardingDesktop() {
                 setUserContext(c);
                 setStep(1);
               }}
+              initialCode={joinCodePrefill}
+              // applyCodeLock pose le contexte, l'organisation, l'équipe et le
+              // sport — mais PAS l'étape : c'est onPick qui avançait. On avance
+              // donc ici, et seulement sur un code réellement adopté (v non-null ;
+              // un code effacé rappelle avec null et doit laisser l'athlète à
+              // l'étape 0).
+              onCodeAdopted={(v) => {
+                applyCodeLock(v);
+                if (v) setStep(1);
+              }}
             />
           </div>
         )}
@@ -1664,7 +1723,7 @@ function AthleteOnboardingDesktop() {
                   </div>
                   <button
                     type="button"
-                    onClick={releaseCodeLock}
+                    onClick={changerDepuisEtape1}
                     className="shrink-0 text-[12px] font-semibold text-[#9CA3AF] underline"
                   >
                     Changer
@@ -2086,7 +2145,7 @@ function AthleteOnboardingDesktop() {
                   </div>
                   <button
                     type="button"
-                    onClick={releaseCodeLock}
+                    onClick={changerDepuisEtape1}
                     className="shrink-0 text-[12px] font-semibold text-[#9CA3AF] underline"
                   >
                     Changer
