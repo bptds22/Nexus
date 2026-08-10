@@ -171,7 +171,7 @@ export function SchoolPageEditorProvider(
   // chargement, remplacés après chaque save réussi. Ils vivent dans un ref et
   // JAMAIS dans l'état de formulaire : une frappe de l'utilisateur ne doit pas
   // pouvoir les modifier, sinon le verrou ne protège plus rien.
-  const jetonsRef = React.useRef<{ cards: string }>({ cards: "" });
+  const jetonsRef = React.useRef<{ cards: string; news: string }>({ cards: "", news: "" });
 
   const [load, setLoad] = React.useState<{ loading: boolean; err?: string; initial?: EditorInitial; school?: EditorSchool; recrutedCount?: number }>({ loading: true });
 
@@ -204,7 +204,7 @@ export function SchoolPageEditorProvider(
           address: row.address ?? null,
           postal_code: row.postal_code ?? null,
         };
-        jetonsRef.current.cards = page.jetons.cards;
+        jetonsRef.current = { cards: page.jetons.cards, news: page.jetons.news };
         setLoad({
           loading: false, school,
           recrutedCount: (rec.data as number | null) ?? 0,
@@ -305,7 +305,15 @@ export function SchoolPageEditorProvider(
         await savePrograms(client, schoolId, dataRef.current["programs"] as EditorProgram[], videDelibere);
       }
       etape = "tes nouvelles";
-      if (dataRef.current["news"]) await saveNews(client, schoolId, dataRef.current["news"] as EditorNews[]);
+      if (dataRef.current["news"]) {
+        const baseNews = baselineRef.current["news"];
+        const videDelibereNews = baseNews !== undefined && baseNews !== "[]";
+        const resNews = await saveNews(
+          client, schoolId, dataRef.current["news"] as EditorNews[],
+          jetonsRef.current.news, videDelibereNews,
+        );
+        jetonsRef.current.news = resNews.jeton;
+      }
       for (const k of Object.keys(dataRef.current)) baselineRef.current[k] = JSON.stringify(dataRef.current[k]);
       setDirtyKeys([]);
     } catch (e) {

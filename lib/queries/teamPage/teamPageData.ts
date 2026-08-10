@@ -12,7 +12,6 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Niveau, PennantType } from "@/components/team-page/content";
-import { apresSuppression } from "@/lib/queries/shared/dbErrors";
 
 /* ── formes éditeur ──────────────────────────────────────────────────────── */
 export interface TeamContentState {
@@ -68,6 +67,7 @@ export interface TeamPageLoad {
   pennants: EditorPennant[];
   camps: EditorCamp[];
   needs: EditorNeed[];
+  jetons: { pennants: string; events: string };
 }
 
 /** Charge tout le contenu d'une équipe. content NULL → l'appelant applique ses
@@ -75,13 +75,21 @@ export interface TeamPageLoad {
 export async function loadTeamPage(
   supabase: SupabaseClient, teamId: string,
 ): Promise<TeamPageLoad> {
-  const [c, pen, ev, nd] = await Promise.all([
+  const [c, pen, ev, nd, sigPen, sigEv] = await Promise.all([
     supabase.from("team_page_content").select(CONTENT_COLS).eq("team_id", teamId).maybeSingle(),
     supabase.from("team_pennants").select("id, titre, annee, type, position").eq("team_id", teamId).order("position"),
     supabase.from("team_events").select("id, titre, event_date, lieu, position").eq("team_id", teamId).order("position"),
     supabase.from("team_position_needs").select("id, slot_key, facette, acronym, label, position_ids, niveau, pitch, is_hidden").eq("team_id", teamId),
+    // Jetons de contenu : OPAQUES. Le client ne les calcule jamais, il les
+    // reçoit ici et les rend tels quels à savePennants / saveCamps.
+    supabase.rpc("sig_team_pennants", { p_team_id: teamId }),
+    supabase.rpc("sig_team_events", { p_team_id: teamId }),
   ]);
   for (const r of [c, pen, ev, nd]) if (r.error) throw r.error;
+  // Les jetons ne sont PAS fatals : ce loader sert aussi le rendu public, lu
+  // par des visiteurs `anon` à qui les fonctions sig_* sont révoquées. Un jeton
+  // vide échoue FERMÉ — la RPC refusera l'écriture — plutôt que de faire
+  // planter une page qui n'a jamais eu besoin de ce champ.
 
   const row = c.data as Record<string, unknown> | null;
   const content: TeamContentState | null = row && {
@@ -119,6 +127,10 @@ export async function loadTeamPage(
       id: e.id as string, titre: s(e.titre),
       event_date: s(e.event_date), lieu: s(e.lieu),
     })),
+    jetons: {
+      pennants: (sigPen.data as string | null) ?? "",
+      events: (sigEv.data as string | null) ?? "",
+    },
     needs: (nd.data ?? []).map((n) => ({
       id: n.id as string,
       slot_key: s(n.slot_key), facette: s(n.facette) || "main",
@@ -143,40 +155,52 @@ export async function saveTeamContent(
   if (error) throw error;
 }
 
-/** Fanions (max 8) — réécriture complète du palmarès DE CETTE ÉQUIPE par son
- *  propre gestionnaire. Aucune donnée tierce touchée. */
+/** Plafond de fanions par équipe. DOIT rester égal à l'argument du trigger
+ *  `trg_cap_team_pennants` (_cap_rows_per_team) — sinon la base refuse ce que
+ *  l'interface autorise. L'éditeur lit cette constante, il ne la redéclare pas. */
+export const MAX_TEAM_PENNANTS = 8;
+
+/** Fanions (max MAX_TEAM_PENNANTS) — remplacement TRANSACTIONNEL sous verrou de jeton.
+ *  Jumelle de saveCards. Pas de `apresSuppression` : plus rien n'est supprimé
+ *  en cas d'échec. Voir replace_team_pennants. */
 export async function savePennants(
   supabase: SupabaseClient, teamId: string, pennants: EditorPennant[],
-): Promise<void> {
-  const del = await supabase.from("team_pennants").delete().eq("team_id", teamId);
-  if (del.error) throw del.error;
-  const rows = pennants.filter((p) => p.titre.trim()).slice(0, 8)
-    .map((p, i) => ({ team_id: teamId, titre: p.titre.trim(), annee: p.annee, type: p.type, position: i }));
-  if (!rows.length) return;
-  const { error } = await supabase.from("team_pennants").insert(rows);
-  if (error) throw apresSuppression(error, "Tes fanions");
+  jeton: string, autoriserVide = false,
+): Promise<{ n: number; jeton: string }> {
+  const { data, error } = await supabase.rpc("replace_team_pennants", {
+    p_team_id: teamId,
+    p_rows: pennants.filter((p) => p.titre.trim()).slice(0, MAX_TEAM_PENNANTS)
+      .map((p) => ({ id: p.id ?? null, titre: p.titre.trim(),
+                     annee: p.annee == null ? "" : String(p.annee), type: p.type })),
+    p_jeton: jeton,
+    p_autoriser_vide: autoriserVide,
+  });
+  if (error) throw error;
+  return data as { n: number; jeton: string };
 }
 
-/** Camps & essais (max MAX_TEAM_EVENTS) — même logique de réécriture. */
 /** Plafond d'événements par équipe. DOIT rester égal à l'argument du trigger
  *  `trg_cap_team_events` (_cap_rows_per_team) — sinon la base refuse ce que
  *  l'interface autorise. L'éditeur lit cette constante, il ne la redéclare pas.
  *  Voir supabase/migrations/20260731160000_team_events_cap_8.sql. */
 export const MAX_TEAM_EVENTS = 8;
 
+/** Camps & essais (max MAX_TEAM_EVENTS) — remplacement TRANSACTIONNEL sous
+ *  verrou de jeton. Pas de `apresSuppression`. Voir replace_team_events. */
 export async function saveCamps(
   supabase: SupabaseClient, teamId: string, camps: EditorCamp[],
-): Promise<void> {
-  const del = await supabase.from("team_events").delete().eq("team_id", teamId);
-  if (del.error) throw del.error;
-  const rows = camps.filter((c) => c.titre.trim()).slice(0, MAX_TEAM_EVENTS)
-    .map((c, i) => ({
-      team_id: teamId, titre: c.titre.trim(),
-      event_date: c.event_date || null, lieu: c.lieu || null, position: i,
-    }));
-  if (!rows.length) return;
-  const { error } = await supabase.from("team_events").insert(rows);
-  if (error) throw apresSuppression(error, "Tes événements");
+  jeton: string, autoriserVide = false,
+): Promise<{ n: number; jeton: string }> {
+  const { data, error } = await supabase.rpc("replace_team_events", {
+    p_team_id: teamId,
+    p_rows: camps.filter((c) => c.titre.trim()).slice(0, MAX_TEAM_EVENTS)
+      .map((c) => ({ id: c.id ?? null, titre: c.titre.trim(),
+                     event_date: c.event_date || "", lieu: c.lieu || "" })),
+    p_jeton: jeton,
+    p_autoriser_vide: autoriserVide,
+  });
+  if (error) throw error;
+  return data as { n: number; jeton: string };
 }
 
 /** Besoins : matérialisation des slots du sport. On n'écrit QUE des slot_key

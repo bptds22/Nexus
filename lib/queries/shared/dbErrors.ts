@@ -79,6 +79,16 @@ const CONTRAINTES: Record<string, string> = {
   school_page_content_niveau_check: "Le niveau dépasse 30 caractères — raccourcis-le.",
   school_page_content_wall_words_check: "Le mur accepte au maximum 4 mots.",
   school_page_content_stat_diplomation_check: "Le taux de diplomation doit être compris entre 0 et 100.",
+  // Collections migrées vers les RPC transactionnelles (replace_school_news,
+  // replace_team_pennants, replace_team_events). Sans ces entrées, `annee` et
+  // `type` seraient annoncés comme des dépassements de longueur — ce qu'ils ne
+  // sont pas.
+  school_news_titre_check: "Le titre de la nouvelle dépasse 80 caractères — raccourcis-le.",
+  team_pennants_titre_check: "Le titre du fanion dépasse 30 caractères — raccourcis-le.",
+  team_pennants_annee_check: "L'année du fanion doit être comprise entre 1900 et 2100.",
+  team_pennants_type_check: "Type de fanion inconnu — choisis championnat, coupe ou bannière.",
+  team_events_titre_check: "Le titre de l'événement dépasse 40 caractères — raccourcis-le.",
+  team_events_lieu_check: "Le lieu de l'événement dépasse 40 caractères — raccourcis-le.",
 };
 
 /** Traduit une erreur RLS/permission ou de plafond en message actionnable, et

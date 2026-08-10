@@ -7,7 +7,6 @@
 // AUCUN service role ici (c'est l'éditeur réel de l'utilisateur).
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { apresSuppression } from "@/lib/queries/shared/dbErrors";
 
 /* ── forme éditeur (miroir des champs de l'éditeur v3) ─────────────────── */
 export interface EditorProgram { id?: string; name: string; code: string | null; type: "preuniversitaire" | "technique"; is_displayed: boolean; source: "seed" | "manuel" }
@@ -48,21 +47,22 @@ const arr = (v: unknown): string[] => (Array.isArray(v) ? (v as string[]) : []);
  *  → renvoie null pour content ; l'appelant applique ses valeurs par défaut. */
 export async function loadSchoolPage(
   supabase: SupabaseClient, schoolId: string,
-): Promise<{ content: Partial<SchoolPageState> | null; cards: EditorCard[]; programs: EditorProgram[]; news: EditorNews[]; jetons: { cards: string } }> {
-  const [c, cards, progs, news, sigCards] = await Promise.all([
+): Promise<{ content: Partial<SchoolPageState> | null; cards: EditorCard[]; programs: EditorProgram[]; news: EditorNews[]; jetons: { cards: string; news: string } }> {
+  const [c, cards, progs, news, sigCards, sigNews] = await Promise.all([
     supabase.from("school_page_content").select(CONTENT_COLS).eq("school_id", schoolId).maybeSingle(),
     supabase.from("school_campus_cards").select("id, titre, legende, image_path, position").eq("school_id", schoolId).order("position"),
     supabase.from("school_programs").select("id, name, code, type, is_displayed, source, position").eq("school_id", schoolId).order("position"),
     supabase.from("school_news").select("id, titre, url, position").eq("school_id", schoolId).order("position"),
-    // Jeton de contenu des cartes : OPAQUE. Le client ne le calcule jamais, il
-    // le reçoit ici et le rend tel quel à saveCards. Voir replace_school_cards.
+    // Jetons de contenu : OPAQUES. Le client ne les calcule jamais, il les
+    // reçoit ici et les rend tels quels à saveCards / saveNews.
     supabase.rpc("sig_school_cards", { p_school_id: schoolId }),
+    supabase.rpc("sig_school_news", { p_school_id: schoolId }),
   ]);
   for (const r of [c, cards, progs, news]) if (r.error) throw r.error;
-  // Le jeton n'est PAS fatal : ce loader sert aussi les pages publiques, lues
-  // par des visiteurs `anon` à qui sig_school_cards est révoquée. Un jeton vide
-  // échoue FERMÉ — replace_school_cards refusera l'écriture — plutôt que de
-  // faire planter une page qui n'a jamais eu besoin de ce champ.
+  // Les jetons ne sont PAS fatals : ce loader sert aussi les pages publiques,
+  // lues par des visiteurs `anon` à qui les fonctions sig_* sont révoquées. Un
+  // jeton vide échoue FERMÉ — la RPC refusera l'écriture — plutôt que de faire
+  // planter une page qui n'a jamais eu besoin de ce champ.
 
   const row = c.data as Record<string, unknown> | null;
   const content: Partial<SchoolPageState> | null = row && {
@@ -85,7 +85,10 @@ export async function loadSchoolPage(
     cards: (cards.data ?? []).map((c2) => ({ id: c2.id, titre: c2.titre ?? "", legende: c2.legende ?? "", image_path: c2.image_path ?? null })),
     programs: (progs.data ?? []) as EditorProgram[],
     news: (news.data ?? []).map((n) => ({ id: n.id, titre: n.titre ?? "", url: n.url ?? "" })),
-    jetons: { cards: (sigCards.data as string | null) ?? "" },
+    jetons: {
+      cards: (sigCards.data as string | null) ?? "",
+      news: (sigNews.data as string | null) ?? "",
+    },
   };
 }
 
@@ -168,14 +171,23 @@ export async function saveCards(
   return data as { n: number; jeton: string };
 }
 
-export async function saveNews(supabase: SupabaseClient, schoolId: string, news: EditorNews[]): Promise<void> {
-  const del = await supabase.from("school_news").delete().eq("school_id", schoolId);
-  if (del.error) throw del.error;
-  const rows = news.filter((n) => n.titre).slice(0, MAX_SCHOOL_NEWS)
-    .map((n, i) => ({ school_id: schoolId, titre: n.titre, url: n.url || null, position: i }));
-  if (!rows.length) return;
-  const { error } = await supabase.from("school_news").insert(rows);
-  if (error) throw apresSuppression(error, "Tes nouvelles");
+/** Nouvelles : remplacement TRANSACTIONNEL sous verrou de jeton. Jumelle de
+ *  saveCards — même patron, mêmes garanties. Voir replace_school_news.
+ *
+ *  Pas de `apresSuppression` ici : plus rien n'est supprimé en cas d'échec. */
+export async function saveNews(
+  supabase: SupabaseClient, schoolId: string, news: EditorNews[],
+  jeton: string, autoriserVide = false,
+): Promise<{ n: number; jeton: string }> {
+  const { data, error } = await supabase.rpc("replace_school_news", {
+    p_school_id: schoolId,
+    p_rows: news.filter((n) => n.titre).slice(0, MAX_SCHOOL_NEWS)
+      .map((n) => ({ id: n.id ?? null, titre: n.titre, url: n.url })),
+    p_jeton: jeton,
+    p_autoriser_vide: autoriserVide,
+  });
+  if (error) throw error;
+  return data as { n: number; jeton: string };
 }
 
 /** S5 programmes : retraits + is_displayed togglé + ajouts manuels, en UNE

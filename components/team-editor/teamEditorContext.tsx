@@ -155,6 +155,11 @@ interface LoadState {
 
 export function TeamPageEditorProvider({ teamId, children }: { teamId: string; children: React.ReactNode }) {
   const { data: user, isLoading: userLoading, error: userError } = useCurrentUser();
+  // Jetons de contenu des collections sous verrou optimiste. Posés au
+  // chargement, remplacés après chaque save réussi. Dans un ref et JAMAIS dans
+  // l'état de formulaire : une frappe ne doit pas pouvoir les modifier.
+  const jetonsRef = React.useRef<{ pennants: string; events: string }>({ pennants: "", events: "" });
+
   const clientRef = React.useRef<SupabaseClient | null>(null);
   if (!clientRef.current) clientRef.current = createClient();
   const client = clientRef.current;
@@ -261,6 +266,7 @@ export function TeamPageEditorProvider({ teamId, children }: { teamId: string; c
 
         const needs = sportKey ? mergeNeeds(defaultNeeds(sportKey, posRows), page.needs) : [];
 
+        jetonsRef.current = { pennants: page.jetons.pennants, events: page.jetons.events };
         setLoad({
           loading: false, identity,
           content: page.content ?? DEFAULT_CONTENT,
@@ -322,19 +328,40 @@ export function TeamPageEditorProvider({ teamId, children }: { teamId: string; c
   const saveAll = React.useCallback(async () => {
     if (!teamId2 || !user) return;
     setSaving(true);
+    // Nomme la section en cours — saveAll est SÉQUENTIEL, la première qui lève
+    // abandonne les suivantes. Même dispositif que l'éditeur de page école.
+    let etape = "";
     try {
       const patch: Record<string, unknown> = {};
       for (const k of Object.keys(dataRef.current)) {
         if (k.startsWith("content.")) Object.assign(patch, dataRef.current[k] as Record<string, unknown>);
       }
+      etape = "tes textes et ton hero";
       if (Object.keys(patch).length) await saveTeamContent(client, teamId2, patch, user.authUser.id);
-      if (dataRef.current["pennants"]) await savePennants(client, teamId2, dataRef.current["pennants"] as EditorPennant[]);
-      if (dataRef.current["camps"]) await saveCamps(client, teamId2, dataRef.current["camps"] as EditorCamp[]);
+      etape = "tes fanions";
+      if (dataRef.current["pennants"]) {
+        const base = baselineRef.current["pennants"];
+        const videDelibere = base !== undefined && base !== "[]";
+        const res = await savePennants(client, teamId2, dataRef.current["pennants"] as EditorPennant[],
+                                       jetonsRef.current.pennants, videDelibere);
+        jetonsRef.current.pennants = res.jeton;
+      }
+      etape = "tes événements";
+      if (dataRef.current["camps"]) {
+        const base = baselineRef.current["camps"];
+        const videDelibere = base !== undefined && base !== "[]";
+        const res = await saveCamps(client, teamId2, dataRef.current["camps"] as EditorCamp[],
+                                    jetonsRef.current.events, videDelibere);
+        jetonsRef.current.events = res.jeton;
+      }
+      etape = "tes besoins de position";
       if (dataRef.current["needs"]) await saveNeeds(client, teamId2, dataRef.current["needs"] as EditorNeed[], user.authUser.id);
       for (const k of Object.keys(dataRef.current)) baselineRef.current[k] = JSON.stringify(dataRef.current[k]);
       setDirtyKeys([]);
     } catch (e) {
-      throw friendlyDbError(e);
+      const err = friendlyDbError(e);
+      if (!etape) throw err;
+      throw new Error(`${err.message}\n\nL'enregistrement s'est arrêté sur : ${etape}. Les sections suivantes n'ont pas été enregistrées.`);
     } finally { setSaving(false); }
   }, [client, teamId2, user]);
 
