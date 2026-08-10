@@ -60,6 +60,8 @@ export interface MessageThreadShellProps<M> {
   getCreatedAt: (m: M) => string;
   getSenderId: (m: M) => string | undefined;
   getStatus?: (m: M) => "sending" | "sent" | "error" | undefined;
+  /** Optionnel : message rétracté → ligne système (tous types). Défaut false. */
+  getRetracted?: (m: M) => boolean;
 
   /** Bubble color when the message is from the current user. */
   meColor?: string;
@@ -76,6 +78,15 @@ export interface MessageThreadShellProps<M> {
   onSend: (content: string) => void;
   composerPlaceholder?: string;
 
+  /** Optionnel : override du rendu d'un message (fils MULTI-parties — groupe).
+   *  Quand fourni, remplace la MessageBubble par défaut : le parent gère
+   *  lui-même l'identité de l'expéditeur + les étiquettes d'audience. Les
+   *  fils 1-on-1 existants ne le passent pas → comportement inchangé. */
+  renderMessage?: (m: M, isMe: boolean) => ReactNode;
+  /** Optionnel : petite mention affichée sous le champ de saisie (ex. athlète
+   *  en groupe : « Ta réponse ne sera visible que par les entraîneurs »). */
+  composerNote?: ReactNode;
+
   /** Empty-state copy (when there are no messages yet). */
   emptyTitle?: string;
   emptyDescription?: string;
@@ -88,11 +99,12 @@ export interface MessageThreadShellProps<M> {
 export function MessageThreadShell<M>({
   messages, isLoading,
   currentUserId,
-  getId, getContent, getCreatedAt, getSenderId, getStatus,
+  getId, getContent, getCreatedAt, getSenderId, getStatus, getRetracted,
   meColor = "#0A84FF",
   otherColor = "#262628",
   headerCenter, onBack,
   onSend, composerPlaceholder = "Message…",
+  renderMessage, composerNote,
   emptyTitle = "Démarre la conversation",
   emptyDescription = "Pose une question pour commencer.",
   children,
@@ -216,6 +228,10 @@ export function MessageThreadShell<M>({
             {items.map((item, idx) =>
               item.type === "day" ? (
                 <DaySeparator key={`day-${idx}-${item.iso}`} iso={item.iso} />
+              ) : renderMessage ? (
+                <div key={getId(item.msg)}>
+                  {renderMessage(item.msg, getSenderId(item.msg) === currentUserId)}
+                </div>
               ) : (
                 <MessageBubble
                   key={getId(item.msg)}
@@ -225,6 +241,7 @@ export function MessageThreadShell<M>({
                   status={getStatus?.(item.msg)}
                   meColor={meColor}
                   otherColor={otherColor}
+                  retracted={getRetracted?.(item.msg) ?? false}
                 />
               )
             )}
@@ -275,6 +292,11 @@ export function MessageThreadShell<M>({
             </svg>
           </button>
         </div>
+        {composerNote && (
+          <div className="px-4 pb-2 -mt-1">
+            {composerNote}
+          </div>
+        )}
       </div>
 
       {/* Optional siblings — portaled bottom sheets etc. */}

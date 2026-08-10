@@ -296,13 +296,17 @@ export default function FavorisPage() {
 }
 
 function FavorisContent() {
+  // `tierLoading` inclus dans le garde `loading` plus bas : le Provider défaute
+  // tier→"free" (maxFavorites=10) avant le fetch — sans ça, un All Star (illimité)
+  // verrait « X / 10 » flasher au login. On attend le tier avant d'afficher le cap.
   // Le nom (comme la recherche et le profil) est réservé aux tiers payants.
   // Fail-closed : tant que le tier n'est pas résolu, `tier` vaut "free" côté
   // provider → on floute, puis on révèle. Jamais l'inverse.
-  const { maxFavorites, tier } = useSubscription();
+  const { maxFavorites, tier, loading: tierLoading } = useSubscription();
   const isFree = tier === "free";
   // Migration TanStack (iter 5.3a) — fetch + transformation déléguées
-  const { athletes, isLoading: loading } = useFavoriteAthletes();
+  const { athletes, isLoading: dataLoading } = useFavoriteAthletes();
+  const loading = dataLoading || tierLoading;
   const queryClient = useQueryClient();
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [search, setSearch] = useState("");

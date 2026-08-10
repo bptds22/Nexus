@@ -11,6 +11,13 @@
    IDENTIFIE / CONTACTE / EN_DISCUSSION / VISITE_PLANIFIEE / ENGAGE /
    LETTRE_SIGNEE. Le statut "retire" passe par useRemoveFromPipeline
    (DELETE de la row).
+
+   visit_at (iter #2) : CHEMIN D'ÉCRITURE UNIQUE de la date de visite côté
+   kanban. Même règle que persistPipelineStage (fiche athlète) — visit_at
+   n'est porté QUE par VISITE_PLANIFIEE ; tout autre stage l'efface (NULL),
+   sinon une date fantôme survivrait à un passage vers « Engagé ». Passer
+   `visitAtIso` permet de POSER/MODIFIER la date en restant sur ce même
+   stage. Le cache TanStack optimiste patch visit_at pour cohérence immédiate.
 ═══════════════════════════════════════════════════════════════ */
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -26,10 +33,11 @@ export function useUpdatePipelineStage() {
   const queryKey = ["pipeline", userId];
 
   return useMutation({
-    mutationFn: async ({ cardId, newStage }: { cardId: string; newStage: string }) => {
+    mutationFn: async ({ cardId, newStage, visitAtIso }: { cardId: string; newStage: string; visitAtIso?: string }) => {
       if (!userId) throw new Error("Not authenticated");
       const supabase = createClient();
       const now = new Date().toISOString();
+      const isVisit = newStage.toUpperCase() === "VISITE_PLANIFIEE";
 
       const { error } = await supabase
         .from("recruiter_pipeline")
@@ -37,16 +45,19 @@ export function useUpdatePipelineStage() {
           stage: newStage.toUpperCase(),
           moved_at: now,
           updated_at: now,
+          // Porté par VISITE_PLANIFIEE uniquement ; effacé partout ailleurs.
+          visit_at: isVisit ? (visitAtIso ?? null) : null,
         })
         .eq("athlete_id", cardId)
         .eq("recruiter_id", userId);
 
       if (error) throw error;
     },
-    onMutate: async ({ cardId, newStage }) => {
+    onMutate: async ({ cardId, newStage, visitAtIso }) => {
       await queryClient.cancelQueries({ queryKey });
       const previous = queryClient.getQueryData<PipelineData>(queryKey);
       const stageLower = newStage.toLowerCase();
+      const isVisit = stageLower === "visite_planifiee";
       const nowIso = new Date().toISOString();
       queryClient.setQueryData<PipelineData>(queryKey, (old) => {
         if (!old) return old;
@@ -60,6 +71,9 @@ export function useUpdatePipelineStage() {
                   moved_at: nowIso,
                   days_in_status: 0,
                   last_activity: "Mis à jour il y a 0 jours",
+                  // Même règle que le write : date portée par VISITE_PLANIFIEE
+                  // seulement, effacée sinon.
+                  visit_at: isVisit ? (visitAtIso ?? null) : null,
                 }
               : c
           ),

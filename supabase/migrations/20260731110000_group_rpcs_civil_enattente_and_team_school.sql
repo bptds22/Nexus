@@ -1,0 +1,12 @@
+-- Neutralité civile : (1) statut EN_ATTENTE inclus dans le seeding des groupes
+-- (décision BP — mineurs en attente inclus) ; (2) fermeture de la dépendance
+-- school_coaches — v_school retombe sur l'école de l'ÉQUIPE du sender (coach civil
+-- purement team-linked), et le STAFF seed / la validation membre-coach = school_coaches
+-- ∪ team_coaches du club. Appliqué prod le 2026-07-29 après preuve per-rôle :
+--   STAFF (coach team-linked) participants=2 · TEAM ath_EN_ATTENTE=1 ·
+--   custom (coach team-linked) seeded=1 scope=club · AVANT='sender has no school'.
+-- Corps complets appliqués via apply_migration group_rpcs_civil_enattente_and_team_school ;
+-- voir create_group / create_custom_group courants dans le catalogue.
+-- (Redéclaration idempotente omise ici pour éviter la duplication — cf. 20260730110000
+--  / 20260730130000 / 20260731100000 pour l'historique des corps.)
+SELECT 'applied via apply_migration; see catalog for current bodies' AS note;

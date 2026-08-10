@@ -991,8 +991,11 @@ function PipelinePageContent() {
   // Free users get a read-only "demo" experience: kanban renders
   // with their real pipeline data, drags revert on drop, save
   // actions show a tease toast instead of persisting.
-  const { tier } = useSubscription();
-  const isFreeDemoMode = tier === "free";
+  // `tierLoading` : le Provider défaute tier→"free" avant le fetch — sans ce
+  // garde, un All Star verrait le bandeau démo + les reverts de drag flasher au
+  // login. On n'active donc le mode démo QU'UNE FOIS le tier réellement chargé.
+  const { tier, loading: tierLoading } = useSubscription();
+  const isFreeDemoMode = !tierLoading && tier === "free";
 
   // Ex-mega useEffect fetchPipeline (200+ lignes) retiré en iter 5.3b — logique dans usePipelineCards.
 

@@ -16,6 +16,7 @@ import { createPortal } from "react-dom";
 import { createClient } from "@/lib/supabase/client";
 import AthletePhoto from "@/components/shared/AthletePhoto";
 import { triggerHaptic } from "@/lib/haptics";
+import { orgNounPossessif, type SchoolType } from "@/lib/utils/orgLabel";
 
 export interface AthleteCandidate {
   id: string;
@@ -51,6 +52,7 @@ export function TeamAddAthleteSheet({
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [dragOffset, setDragOffset] = useState(0);
+  const [orgType, setOrgType] = useState<SchoolType | null>(null);
 
   useEffect(() => { setMounted(true); }, []);
   useEffect(() => { if (!open) { setSearch(""); setDragOffset(0); } }, [open]);
@@ -61,6 +63,10 @@ export function TeamAddAthleteSheet({
     setLoading(true);
     (async () => {
       const supabase = createClient();
+      // Type de l'org (école vs club vs cégep) pour le vocabulaire type-aware.
+      supabase.from("schools").select("type").eq("id", schoolId).maybeSingle().then(({ data: s }) => {
+        if (!cancelled) setOrgType((s as { type?: SchoolType } | null)?.type ?? null);
+      });
       const { data } = await supabase
         .from("athletes")
         .select("id, first_name, last_name, photo_url, positions!position_id(abreviation)")
@@ -145,7 +151,7 @@ export function TeamAddAthleteSheet({
             Ajouter un athlète
           </h2>
           <p className="text-[12px] text-[#9CA3AF] text-center mt-1">
-            Choisis un athlète de ton école pour l&apos;ajouter à l&apos;équipe.
+            Choisis un athlète de {orgNounPossessif(orgType)} pour l&apos;ajouter à l&apos;équipe.
           </p>
         </div>
 

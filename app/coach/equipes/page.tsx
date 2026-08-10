@@ -418,7 +418,12 @@ function EquipesPageDesktop() {
         open={showPicker}
         onClose={() => setShowPicker(false)}
         schoolId={schoolId || null}
-        season={getCurrentSeason()}
+        /* PAS de filtre saison : c'est LA surface anti-doublon. Une équipe
+           existe indépendamment de la saison — filtrer par getCurrentSeason()
+           masquait les équipes créées pour une autre saison (le formulaire
+           laisse choisir 2025-2026 / 2026-2027) et les équipes scrapées,
+           donc le coach ne les voyait pas et en créait un doublon.
+           On surface TOUTES les équipes de l'école, toutes saisons. */
         /* Ne propose pas de « rejoindre » une équipe dont je suis déjà membre. */
         excludeTeamIds={teams.map((t) => t.id)}
         onPicked={(team) => { handlePickExisting(team); }}

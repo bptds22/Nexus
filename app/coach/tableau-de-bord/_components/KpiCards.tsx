@@ -13,7 +13,15 @@ const iconBox = "w-10 h-10 rounded-full bg-[#E63946]/15 flex items-center justif
 const redBar = <div className="absolute top-0 left-0 right-0 h-[2px] bg-[#E63946] scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />;
 const iconColor = "#E63946";
 
-export default function KpiCards({ data }: { data: KpiData }) {
+export default function KpiCards({
+  data,
+  isDirector = false,
+  activeTeams = 0,
+}: {
+  data: KpiData;
+  isDirector?: boolean;
+  activeTeams?: number;
+}) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
 
@@ -93,22 +101,42 @@ export default function KpiCards({ data }: { data: KpiData }) {
         </div>
       </div>
 
-      {/* ── Conversations actives ───────────────────────────── */}
-      <Link href="/coach/demandes" className={cardCls}>
-        {redBar}
-        <div className="flex items-center justify-between">
-          <span className={labelCls}>Conversations actives</span>
-          <div className="w-10 h-10 rounded-full bg-[#22C55E]/15 flex items-center justify-center">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2" strokeLinecap="round">
-              <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
-            </svg>
+      {/* ── 4th card: Équipes actives (directeur) OR Conversations actives ── */}
+      {isDirector ? (
+        <Link href="/coach/equipes" className={cardCls}>
+          {redBar}
+          <div className="flex items-center justify-between">
+            <span className={labelCls}>Équipes actives</span>
+            <div className={iconBox}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                <path d="M2 17l10 5 10-5" />
+                <path d="M2 12l10 5 10-5" />
+              </svg>
+            </div>
           </div>
-        </div>
-        <div>
-          <span className="text-[32px] font-head font-black text-white leading-none">{data.activeConversations}</span>
-          <p className="text-[13px] text-[#9CA3AF] mt-1">fils de discussion en cours</p>
-        </div>
-      </Link>
+          <div>
+            <span className="text-[32px] font-head font-black text-white leading-none">{activeTeams}</span>
+            <p className="text-[13px] text-[#9CA3AF] mt-1">équipes de l&apos;école</p>
+          </div>
+        </Link>
+      ) : (
+        <Link href="/coach/demandes" className={cardCls}>
+          {redBar}
+          <div className="flex items-center justify-between">
+            <span className={labelCls}>Conversations actives</span>
+            <div className="w-10 h-10 rounded-full bg-[#22C55E]/15 flex items-center justify-center">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2" strokeLinecap="round">
+                <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+              </svg>
+            </div>
+          </div>
+          <div>
+            <span className="text-[32px] font-head font-black text-white leading-none">{data.activeConversations}</span>
+            <p className="text-[13px] text-[#9CA3AF] mt-1">fils de discussion en cours</p>
+          </div>
+        </Link>
+      )}
     </div>
   );
 }

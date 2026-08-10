@@ -124,7 +124,7 @@ function generateVerb(item: CoachActivityItem): string {
 
 function getDestination(item: CoachActivityItem): string | null {
   if (item.actionType === "NEW_MESSAGE" && item.conversationId) {
-    return `/coach/demandes/${item.conversationId}`;
+    return `/coach/demandes?id=${item.conversationId}`;
   }
   if (item.actionType === "ADMIN_BROADCAST") {
     // Annonces : pas de cible cliquable pour l'instant.

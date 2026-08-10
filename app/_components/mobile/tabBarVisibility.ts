@@ -39,6 +39,13 @@ export function isTabBarHidden(role: TabBarRole, normalizedPath: string): boolea
     normalizedPath !== "/coach/demandes"
   ) return true;
 
+  // Athlète — drill-down messagerie (thread [id] + wizard nouveau).
+  if (
+    role === "athlete" &&
+    normalizedPath.startsWith("/athlete/messages/") &&
+    normalizedPath !== "/athlete/messages"
+  ) return true;
+
   // Coach — drill-downs plein écran paramètres / réputation / équipes.
   if (role === "coach" && normalizedPath.startsWith("/coach/parametres/")) return true;
   if (role === "coach" && normalizedPath.startsWith("/coach/reputation/")) return true;
@@ -68,6 +75,12 @@ export function isThreadRoute(role: TabBarRole, normalizedPath: string): boolean
     normalizedPath.startsWith("/coach/demandes/") &&
     normalizedPath !== "/coach/demandes" &&
     normalizedPath !== "/coach/demandes/nouveau"
+  ) return true;
+  if (
+    role === "athlete" &&
+    normalizedPath.startsWith("/athlete/messages/") &&
+    normalizedPath !== "/athlete/messages" &&
+    normalizedPath !== "/athlete/messages/nouveau"
   ) return true;
   return false;
 }

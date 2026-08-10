@@ -215,7 +215,7 @@ function RecruteurActivitesPageContent() {
           all.push({
             id: `msg-${m.id}`, type: "message_received", portal: "recruiter", timestamp: m.created_at, isRead: false,
             coachName: ctx?.coachName, athleteName: ctx?.athleteName, athletePosition: ctx?.athletePos, athleteId: ctx?.athleteId,
-            messagePreview: (m.content as string)?.slice(0, 80), ctaLabel: "Voir la conversation", ctaRoute: `/recruteur/messages/${m.conversation_id}`,
+            messagePreview: (m.content as string)?.slice(0, 80), ctaLabel: "Voir la conversation", ctaRoute: `/recruteur/messages?id=${m.conversation_id}`,
           });
         }
       }

@@ -15,6 +15,9 @@ export interface MessageRow {
   sender_id: string;
   content: string;
   created_at: string;
+  /** Non-null si rétracté par l'admin — le contenu vaut alors le marqueur
+      'Message retiré par Nexus' (overwrite serveur). Rendu en ligne système. */
+  retracted_at?: string | null;
   // état local pour optimistic update (pas en DB) — voir useSendMessage
   status?: "sending" | "sent" | "error";
 }
@@ -27,7 +30,7 @@ export function useMessages(conversationId: string | null) {
       const supabase = createClient();
       const { data, error } = await supabase
         .from("messages")
-        .select("id, conversation_id, sender_id, content, created_at")
+        .select("id, conversation_id, sender_id, content, created_at, retracted_at")
         .eq("conversation_id", conversationId)
         .order("created_at", { ascending: true });
       if (error) throw error;

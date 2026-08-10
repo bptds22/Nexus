@@ -70,6 +70,9 @@ export interface RosterAthlete {
   teamGender?: string | null;
   /** Primary coach owning this athlete (NULL = unclaimed in the school pool). */
   coach_id?: string | null;
+  /** Nom de l'évaluateur de la note affichée, SEULEMENT quand ce n'est pas le
+   *  coach connecté (attribution « Évalué par … », ex. le directeur). Vide sinon. */
+  evaluatedByName?: string;
 }
 
 /* ── Helper to build verification objects ───────────────────── */

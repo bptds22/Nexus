@@ -9,10 +9,12 @@ import {
   loadSchoolCoaches,
   loadAthletesForCoach,
   transferAthletes,
+  pickInitialSource,
   UNASSIGNED_COACH_ID,
   type SchoolCoachOption,
   type TransferAthlete,
 } from "@/lib/coach/transferAthletes";
+import { orgNounPossessif, type SchoolType } from "@/lib/utils/orgLabel";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -46,6 +48,7 @@ function MesTransfertsContent() {
 
   const [loading, setLoading] = useState(true);
   const [schoolId, setSchoolId] = useState<string | null>(null);
+  const [orgType, setOrgType] = useState<SchoolType | null>(null);
   const [coaches, setCoaches] = useState<SchoolCoachOption[]>([]);
 
   const [sourceId, setSourceId] = useState<string>("");
@@ -76,18 +79,33 @@ function MesTransfertsContent() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { router.replace("/auth"); return; }
 
+      const uid = session.user.id;
       const { data: me } = await supabase
         .from("users")
-        .select("school_id")
-        .eq("id", session.user.id)
+        .select("school_id, schools!school_id(type)")
+        .eq("id", uid)
         .maybeSingle();
 
       const sid = me?.school_id ?? null;
+      const schoolRel = (me as { schools?: unknown } | null)?.schools;
+      setOrgType(((Array.isArray(schoolRel) ? schoolRel[0] : schoolRel) as { type?: SchoolType } | null)?.type ?? null);
       setSchoolId(sid);
-      if (sid) await refreshCoaches(sid);
+      if (sid) {
+        const list = await loadSchoolCoaches(supabase, sid);
+        setCoaches(list);
+        // Auto-select a non-empty source so the panel isn't empty on load.
+        const auto = pickInitialSource(list, uid);
+        if (auto) {
+          setSourceId(auto);
+          setLoadingAthletes(true);
+          setSourceAthletes(await loadAthletesForCoach(supabase, sid, auto));
+          setLoadingAthletes(false);
+        }
+      }
       setLoading(false);
     })();
-  }, [router, refreshCoaches]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router]);
 
   // Load the selected source coach's athletes.
   const loadSource = useCallback(async (sid: string, coachId: string) => {
@@ -141,7 +159,7 @@ function MesTransfertsContent() {
 
     if (!res.success) {
       console.error("[Transfert] failed", res.error);
-      flashToast("error", "Impossible de déplacer ces athlètes.");
+      flashToast("error", res.error || "Impossible de déplacer ces athlètes.");
       setSubmitting(false);
       setShowConfirm(false);
       return;
@@ -177,10 +195,10 @@ function MesTransfertsContent() {
       <div className="max-w-6xl mx-auto px-6 py-10">
         <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] p-8 text-center">
           <h3 className="font-head text-[18px] font-black text-white uppercase tracking-tight">
-            Aucune école rattachée
+            Aucune organisation rattachée
           </h3>
           <p className="text-[13px] text-[#9CA3AF] mt-2">
-            Rejoins une école pour gérer l&apos;assignation des athlètes.
+            Rejoins une organisation pour gérer l&apos;assignation des athlètes.
           </p>
         </div>
       </div>
@@ -195,7 +213,7 @@ function MesTransfertsContent() {
           Gestion des athlètes
         </h1>
         <p className="text-[13px] text-[#9CA3AF] mt-1">
-          Assigne des athlètes à un entraîneur de ton école.
+          Assigne des athlètes à un entraîneur de {orgNounPossessif(orgType)}.
         </p>
       </div>
 
@@ -274,7 +292,10 @@ function MesTransfertsContent() {
                     <AthletePhotoFill photoUrl={a.photo ?? undefined} firstName={a.firstName} lastName={a.lastName} initialsFontSize={14} />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-[14px] font-bold text-white truncate">{a.firstName} {a.lastName}</p>
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-[14px] font-bold text-white truncate">{a.firstName} {a.lastName}</p>
+                      {a.isPending && <span className="shrink-0 rounded-full bg-[#F59E0B]/15 border border-[#F59E0B]/30 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#F59E0B]">En attente</span>}
+                    </div>
                     <p className="text-[12px] text-[#6b7280] truncate">
                       {[a.sport, a.position].filter(Boolean).join(" · ") || "—"}
                     </p>

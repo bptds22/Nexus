@@ -167,12 +167,11 @@ const ATHLETE_TABS: TabConfig[] = [
   { key: "dashboard", label: "Accueil", href: "/athlete/dashboard", icon: Icons.dashboard, activeMatch: "/athlete/dashboard" },
   { key: "parcours", label: "Parcours", href: "/athlete/mon-parcours", icon: Icons.flag, activeMatch: "/athlete/mon-parcours" },
   { key: "profil", label: "Profil", href: "/athlete/profil", icon: Icons.user, activeMatch: "/athlete/profil" },
-  // « Cégeps » remplace « Visibilité » : la recherche de cégep est le geste
-  // quotidien d'un athlète, la visibilité une consultation ponctuelle — celle-ci
-  // descend dans le panel Plus, elle n'est pas supprimée.
-  // L'onglet reste allumé sur une PAGE ÉCOLE (/college/*) : on y arrive depuis
-  // la recherche, on est toujours dans le même parcours.
-  { key: "cegeps", label: "Cégeps", href: "/athlete/recherche", icon: Icons.search, activeMatch: "/athlete/recherche|/college" },
+    // MESSAGES prend le slot. La messagerie est de l'engagement récurrent
+    // (non-lus, notifications à venir) ; la recherche cégep est épisodique et
+    // redescend dans le panel Plus, où « Ma visibilité » descend aussi.
+    // La barre reste à CINQ onglets.
+    { key: "messages", label: "Messages", href: "/athlete/messages", icon: Icons.envelope, activeMatch: "/athlete/messages" },
 ];
 
 const TABS_BY_ROLE: Record<"recruteur" | "coach" | "athlete", TabConfig[]> = {
@@ -192,7 +191,11 @@ export default function MobileTabBar({ role }: MobileTabBarProps) {
   // safe). Sans ça, les guards onboarding/messages se trompent d'écran.
   const normalizedPath = pathname.replace(/\/+$/, "") || "/";
   const router = useRouter();
-  const { tier, isSchoolAdmin } = useSubscription();
+  // `tierLoading` distingue « tier pas encore chargé » de « tier = free ».
+  // Le Provider défaute tier→"free" avant le fetch : sans ce flag, un All Star
+  // voit les cadenas (verrous) une fraction de seconde au login. On ne verrouille
+  // donc QU'UNE FOIS le tier réellement chargé — voir `locked` plus bas.
+  const { tier, isSchoolAdmin, loading: tierLoading } = useSubscription();
 
   const [moreOpen, setMoreOpen] = useState(false);
   const [upgradeModal, setUpgradeModal] = useState<{ tierId: string; lockedFeatureTitle: string } | null>(null);
@@ -296,8 +299,27 @@ export default function MobileTabBar({ role }: MobileTabBarProps) {
         // leurs athlètes — intentionnel : le badge doit matcher /coach/a-traiter.
         const counts = await loadCoachTaskCounts(supabase, user.id);
 
+        // Messages non lus (RECRUTEUR_COACH + ATHLETE_COACH + COACH_COACH) →
+        // badge VERT du tab Messages. Convs où le coach participe (coach_id OU
+        // coach_b_id), read_at IS NULL, sender != moi. Miroir de l'athlète.
+        let cMsgUnread = 0;
+        const { data: cConvs } = await supabase
+          .from("conversations")
+          .select("id")
+          .or(`coach_id.eq.${user.id},coach_b_id.eq.${user.id}`);
+        const cConvIds = (cConvs ?? []).map((c) => (c as { id: string }).id);
+        if (cConvIds.length > 0) {
+          const { count } = await supabase
+            .from("messages")
+            .select("*", { count: "exact", head: true })
+            .in("conversation_id", cConvIds)
+            .neq("sender_id", user.id)
+            .is("read_at", null);
+          cMsgUnread = count ?? 0;
+        }
+
         if (cancelled) return;
-        setMsgBadge(0);
+        setMsgBadge(cMsgUnread);
         setActBadge(actCount ?? 0);
         setATraiterBadge(counts.total);
         setMoreDotActive((actCount ?? 0) > 0);
@@ -318,6 +340,19 @@ export default function MobileTabBar({ role }: MobileTabBarProps) {
           setMoreDotActive(false);
           return;
         }
+        // Messages non lus (ATHLETE_COACH) → badge VERT du tab Messages.
+        const { data: aConvs } = await supabase.from("conversations").select("id").eq("conversation_type", "ATHLETE_COACH");
+        const aConvIds = (aConvs ?? []).map((c) => c.id as string);
+        let aMsgCount = 0;
+        if (aConvIds.length > 0) {
+          const { count } = await supabase
+            .from("messages")
+            .select("*", { count: "exact", head: true })
+            .in("conversation_id", aConvIds)
+            .neq("sender_id", user.id)
+            .is("read_at", null);
+          aMsgCount = count ?? 0;
+        }
         const [{ count: notifs }, { count: invs }, { count: suggs }] = await Promise.all([
           supabase.from("athlete_notifications").select("id", { count: "exact", head: true }).eq("athlete_id", athleteId).eq("read", false),
           supabase.from("team_invitations").select("id", { count: "exact", head: true }).eq("athlete_id", athleteId).eq("status", "PENDING"),
@@ -325,7 +360,7 @@ export default function MobileTabBar({ role }: MobileTabBarProps) {
         ]);
         if (cancelled) return;
         const notifsCount = (notifs ?? 0) + (invs ?? 0);
-        setMsgBadge(0);
+        setMsgBadge(aMsgCount);
         setActBadge(notifsCount); // affiché sur l'item "Notifications" du panel
         setMoreDotActive(notifsCount + (suggs ?? 0) > 0);
       }
@@ -372,13 +407,15 @@ export default function MobileTabBar({ role }: MobileTabBarProps) {
   }
 
   function handleTabClick(e: React.MouseEvent, tab: TabConfig) {
-    /* Retour AVANT le test de verrou, et donc dans les deux cas : l'onglet
-       navigue, ou il ouvre la modale d'abonnement. Le doigt a touché quelque
-       chose, l'app doit le confirmer — un tap verrouillé qui ne répond pas se
-       lit comme un tap perdu. Impact léger : c'est de la navigation, pas une
-       action destructive. */
-    void triggerHaptic("Light");
-    const locked = !meetsRequiredTier(tier, tab.requiredTier, isSchoolAdmin, tab.adminBypass);
+      /* Retour AVANT le test de verrou, et donc dans les deux cas : l'onglet
+         navigue, ou il ouvre la modale d'abonnement. Le doigt a touché quelque
+         chose, l'app doit le confirmer — un tap verrouillé qui ne répond pas se
+         lit comme un tap perdu. Impact léger : c'est de la navigation, pas une
+         action destructive. */
+      void triggerHaptic("Light");
+      /* `!tierLoading` : tant que le tier n'est pas chargé on ne verrouille pas,
+         sinon un onglet légitime clignoterait en verrouillé au montage. */
+      const locked = !tierLoading && !meetsRequiredTier(tier, tab.requiredTier, isSchoolAdmin, tab.adminBypass);
     if (locked && tab.requiredTier) {
       e.preventDefault();
       setUpgradeModal({
@@ -410,7 +447,8 @@ export default function MobileTabBar({ role }: MobileTabBarProps) {
         aria-label="Navigation principale"
       >
         {tabs.map((tab) => {
-          const locked = !meetsRequiredTier(tier, tab.requiredTier, isSchoolAdmin, tab.adminBypass);
+          // Pas de cadenas tant que le tier n'est pas chargé (évite le flash free).
+          const locked = !tierLoading && !meetsRequiredTier(tier, tab.requiredTier, isSchoolAdmin, tab.adminBypass);
           const active = isActive(tab);
           // Badge par tab key : messages (recruteur), a-traiter (coach).
           const tabBadgeCount =
@@ -418,6 +456,8 @@ export default function MobileTabBar({ role }: MobileTabBarProps) {
             : tab.key === "a-traiter" ? aTraiterBadge
             : 0;
           const showBadge = tabBadgeCount > 0 && !locked;
+          // Badge Messages VERT (#22C55E) pour athlète ET coach ; les autres rouges.
+          const badgeBg = (role === "athlete" || role === "coach") && tab.key === "messages" ? "bg-[#22C55E]" : "bg-[#E63946]";
           const color = active ? "text-[#E63946]" : locked ? "text-[#8a8d96]/60" : "text-[#8a8d96]";
           return (
             <Link
@@ -438,7 +478,7 @@ export default function MobileTabBar({ role }: MobileTabBarProps) {
                 {tab.icon}
                 {locked && tab.requiredTier && <LockIcon />}
                 {showBadge && (
-                  <span className="absolute -top-1.5 -right-2 inline-flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full bg-[#E63946] text-white text-[9px] font-black leading-none">
+                  <span className={`absolute -top-1.5 -right-2 inline-flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full ${badgeBg} text-white text-[9px] font-black leading-none`}>
                     {tabBadgeCount > 99 ? "99+" : tabBadgeCount}
                   </span>
                 )}
@@ -478,6 +518,7 @@ export default function MobileTabBar({ role }: MobileTabBarProps) {
         onClose={() => setMoreOpen(false)}
         role={role}
         tier={tier}
+        tierLoading={tierLoading}
         isSchoolAdmin={isSchoolAdmin}
         actBadge={actBadge}
         onLockedClick={(tierId, label) => setUpgradeModal({ tierId, lockedFeatureTitle: label })}

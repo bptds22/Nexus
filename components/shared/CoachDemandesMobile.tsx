@@ -37,6 +37,7 @@ import {
   type FilterOption,
 } from "@/components/shared/messaging/MessagesListShell";
 import { triggerHaptic, relativeTime } from "@/components/shared/messaging/utils";
+import { deriveTypeSegments, matchesTypeSegment } from "@/lib/messaging/typeSegments";
 
 /* ── useArchiveCoachConversation (TanStack + optimistic) ─────── */
 
@@ -74,12 +75,9 @@ function useArchiveCoachConversation() {
   });
 }
 
-/* ── Filter keyset (parité recruteur — 3 filtres simples) ──── */
+/* ── Status presets (the non-type portion of the filter sheet) ─── */
 
-type FilterKey = "tous" | "non_lu" | "sans_reponse" | "archive";
-
-const FILTER_OPTIONS: FilterOption<FilterKey>[] = [
-  { value: "tous",         label: "Tous" },
+const STATUS_FILTER_OPTIONS: FilterOption<string>[] = [
   { value: "non_lu",       label: "Non lu" },
   { value: "sans_reponse", label: "Sans réponse" },
   { value: "archive",      label: "Archivé" },
@@ -100,7 +98,7 @@ export function CoachDemandesMobile() {
   // States
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebouncedValue(search, 200);
-  const [filter, setFilter] = useState<FilterKey>("tous");
+  const [filter, setFilter] = useState<string>("tous");
   const [editMode, setEditMode] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
@@ -108,10 +106,30 @@ export function CoachDemandesMobile() {
   useEffect(() => { if (threads.length === 0) setEditMode(false); }, [threads.length]);
   useEffect(() => { if (!editMode) setSelected(new Set()); }, [editMode]);
 
+  // Type-driven segments — "Parents" auto-appears quand un fil PARENT_COACH
+  // existe (P2-ready). Le filtre sheet = segments de type (dont "Tous") +
+  // les presets de statut.
+  const typeSegments = useMemo(
+    () => deriveTypeSegments(threads.map((t) => t.conversationType), "coach"),
+    [threads],
+  );
+  const typeValues = useMemo(
+    () => new Set(typeSegments.filter((s) => s.value !== "all").map((s) => s.value)),
+    [typeSegments],
+  );
+  const filterOptions = useMemo<FilterOption<string>[]>(
+    () => [
+      ...typeSegments.map((s) => ({ value: s.value === "all" ? "tous" : s.value, label: s.label })),
+      ...STATUS_FILTER_OPTIONS,
+    ],
+    [typeSegments],
+  );
+
   // Filtre + recherche local
   const filtered = useMemo(() => {
     let list = [...threads];
-    if (filter === "non_lu") list = list.filter((t) => t.unreadCount > 0 && t.status !== "ARCHIVE");
+    if (typeValues.has(filter)) list = list.filter((t) => matchesTypeSegment(typeSegments, filter, t.conversationType) && t.status !== "ARCHIVE");
+    else if (filter === "non_lu") list = list.filter((t) => t.unreadCount > 0 && t.status !== "ARCHIVE");
     // "Sans réponse" : le dernier message vient du coach courant → on attend
     // la réponse du recruteur (def. (a)). Exclut les archivés.
     else if (filter === "sans_reponse") list = list.filter((t) => t.lastSenderId != null && t.lastSenderId === userId && t.status !== "ARCHIVE");
@@ -124,16 +142,22 @@ export function CoachDemandesMobile() {
         t.recruiterName.toLowerCase().includes(q) ||
         t.recruiterCegep.toLowerCase().includes(q) ||
         t.athleteName.toLowerCase().includes(q) ||
+        (t.targetLabel || "").toLowerCase().includes(q) ||
+        (t.groupName || "").toLowerCase().includes(q) ||
         t.lastMessage.toLowerCase().includes(q)
       );
     }
     return list;
-  }, [threads, filter, debouncedSearch, userId]);
+  }, [threads, filter, typeSegments, typeValues, debouncedSearch, userId]);
 
   // Handlers
   const handleTap = (thread: CoachThreadData) => {
     try { sessionStorage.setItem("lastCoachTab", "demandes"); } catch { /* no-op */ }
-    router.push(`/coach/demandes/${thread.id}`);
+    if (thread.isBroadcast && thread.broadcastId) {
+      router.push(`/coach/demandes/annonce?id=${thread.broadcastId}`);
+      return;
+    }
+    router.push(`/coach/demandes?id=${thread.id}`);
   };
 
   const handleToggleSelect = (id: string) => {
@@ -146,6 +170,7 @@ export function CoachDemandesMobile() {
   };
 
   const handleArchiveSwipe = (thread: CoachThreadData) => {
+    if (thread.isBroadcast) return; // Annonces aren't archivable (they fold N threads)
     const newStatus = thread.status === "ARCHIVE" ? "ACTIVE" : "ARCHIVE";
     archiveMut.mutate(
       { conversationId: thread.id, newStatus },
@@ -191,45 +216,100 @@ export function CoachDemandesMobile() {
     archive: { title: "Aucune conversation archivée",    sub: "Les conversations archivées apparaîtront ici." },
   }[emptyKind];
 
-  /* Recruiter-first row content. Avatar = recruiter photo/initials.
-     Primary line = recruiter name. Secondary = their CÉGEP. Context
-     = "Au sujet de {athlete}". Time + last message preview.
-     The shell handles selection circle, unread dot, swipe-archive
-     motion, and inset separator around this slot. */
+  /* Row content — un seul inbox, DEUX types :
+     - RECRUTEUR_COACH : contrepartie = recruteur (contenu identique à avant,
+       + une pastille RECRUTEUR rouge).
+     - ATHLETE_COACH   : contrepartie = athlète (avatar/nom athlète, position),
+       + une pastille ATHLÈTE verte.
+     La chrome (dot non-lu, swipe, edit, séparateur) reste au shell. */
   const renderRow = (t: CoachThreadData) => {
     const unread = t.unreadCount > 0;
+    // Annonce (broadcast) pseudo-thread — megaphone + purple, target + count.
+    if (t.isBroadcast) {
+      return (
+        <div className="flex items-center gap-3">
+          <div className="relative w-[52px] h-[52px] rounded-full overflow-hidden flex-shrink-0 bg-[#8B5CF6]/15 border border-[#8B5CF6]/30 flex items-center justify-center">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#A78BFA" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 11l18-5v12L3 14v-3z" /><path d="M11.6 16.8a3 3 0 11-5.8-1.6" />
+            </svg>
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-baseline justify-between gap-2">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <p className={`text-base truncate ${unread ? "font-bold text-white" : "font-semibold text-white/95"}`}>Annonce</p>
+                <span className="inline-flex items-center px-1.5 h-[17px] rounded-full text-[9px] font-black uppercase tracking-wider border flex-shrink-0 bg-[#8B5CF6]/15 border-[#8B5CF6]/30 text-[#A78BFA]">Diffusion</span>
+              </div>
+              <span className={`text-[13px] flex-shrink-0 ${unread ? "text-[#A78BFA] font-semibold" : "text-white/40"}`}>{relativeTime(t.lastMessageAt)}</span>
+            </div>
+            <p className="text-[15px] text-white/55 mt-0.5 truncate">{t.targetLabel} · Envoyé à {t.recipientCount}</p>
+            {t.lastMessage && <p className="text-[15px] text-white/40 mt-0.5 truncate">{t.lastMessage}</p>}
+          </div>
+        </div>
+      );
+    }
+    // Vrai groupe chat — UNE row : avatar de groupe générique (icône groupe,
+    // pas une photo d'athlète) + groupName + dernier message visible (RLS-
+    // filtré) + badge "GROUPE".
+    if (t.isGroup) {
+      return (
+        <div className="flex items-center gap-3">
+          <div className="relative w-[52px] h-[52px] rounded-full overflow-hidden flex-shrink-0 bg-[#0EA5E9]/15 border border-[#0EA5E9]/30 flex items-center justify-center">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
+            </svg>
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-baseline justify-between gap-2">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <p className={`text-base truncate ${unread ? "font-bold text-white" : "font-semibold text-white/95"}`}>{t.groupName || "Groupe"}</p>
+                <span className="inline-flex items-center px-1.5 h-[17px] rounded-full text-[9px] font-black uppercase tracking-wider border flex-shrink-0 bg-[#0EA5E9]/15 border-[#0EA5E9]/30 text-[#38BDF8]">Groupe</span>
+              </div>
+              <span className={`text-[13px] flex-shrink-0 ${unread ? "text-[#38BDF8] font-semibold" : "text-white/40"}`}>{relativeTime(t.lastMessageAt)}</span>
+            </div>
+            {t.lastMessage && <p className="text-[15px] text-white/40 mt-0.5 truncate">{t.lastMessage}</p>}
+          </div>
+        </div>
+      );
+    }
+    const isAth = t.conversationType === "ATHLETE_COACH";
+    const isCC = t.conversationType === "COACH_COACH";
+    const isParent = t.conversationType === "PARENT_COACH";
+    const typeBadge = (
+      <span className={`inline-flex items-center px-1.5 h-[17px] rounded-full text-[9px] font-black uppercase tracking-wider border flex-shrink-0 ${
+        isCC ? "bg-[#14B8A6]/15 border-[#14B8A6]/30 text-[#14B8A6]"
+          : isAth ? "bg-[#22C55E]/15 border-[#22C55E]/30 text-[#22C55E]"
+          : "bg-[#E63946]/15 border-[#E63946]/30 text-[#E63946]"
+      }`}>
+        {isCC ? (t.otherCoachIsDirector ? "Directeur" : "Coach") : isAth ? "Athlète" : isParent ? "Parent" : "Recruteur"}
+      </span>
+    );
+    const name = isCC ? t.otherCoachName : isAth ? t.athleteName : isParent ? t.parentName : t.recruiterName;
+    const initials = isCC ? t.otherCoachInitials : isAth ? t.athleteInitials : isParent ? t.parentInitials : t.recruiterInitials;
+    const photoUrl = isCC ? t.otherCoachPhotoUrl : isParent ? t.parentPhotoUrl : isAth ? t.athletePhotoUrl : t.recruiterPhotoUrl;
+    const subtitle = isCC || isParent
+      ? ""
+      : isAth
+        ? [t.athletePosition].filter(Boolean).join(" · ")
+        : t.recruiterCegep;
     return (
       <div className="flex items-center gap-3">
         <div className="relative w-[52px] h-[52px] rounded-full overflow-hidden flex-shrink-0 bg-[#2F3440]">
-          <AthletePhotoFill
-            photoUrl={t.recruiterPhotoUrl}
-            firstName={t.recruiterInitials[0] ?? ""}
-            lastName={t.recruiterInitials[1] ?? ""}
-            initialsFontSize={20}
-          />
+          <AthletePhotoFill photoUrl={photoUrl} firstName={initials[0] ?? ""} lastName={initials[1] ?? ""} initialsFontSize={20} />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-baseline justify-between gap-2">
-            <p className={`text-base truncate ${unread ? "font-bold text-white" : "font-semibold text-white/95"}`}>
-              {t.recruiterName}
-            </p>
+            <div className="flex items-center gap-1.5 min-w-0">
+              <p className={`text-base truncate ${unread ? "font-bold text-white" : "font-semibold text-white/95"}`}>{name}</p>
+              {typeBadge}
+            </div>
             <span className={`text-[13px] flex-shrink-0 ${unread ? "text-[#3B82F6] font-semibold" : "text-white/40"}`}>
               {relativeTime(t.lastMessageAt)}
             </span>
           </div>
-          {t.recruiterCegep && (
-            <p className="text-[15px] text-white/55 mt-0.5 truncate">
-              {t.recruiterCegep}
-            </p>
-          )}
-          <p className="text-[13px] text-white/45 mt-0.5 truncate">
-            Au sujet de {t.athleteName}
-          </p>
-          {t.lastMessage && (
-            <p className="text-[15px] text-white/40 mt-0.5 truncate">
-              {t.lastMessage}
-            </p>
-          )}
+          {subtitle && <p className="text-[15px] text-white/55 mt-0.5 truncate">{subtitle}</p>}
+          {isParent && <p className="text-[13px] text-white/45 mt-0.5 truncate">Parent de {t.athleteName}</p>}
+          {!isAth && !isCC && !isParent && <p className="text-[13px] text-white/45 mt-0.5 truncate">Au sujet de {t.athleteName}</p>}
+          {t.lastMessage && <p className="text-[15px] text-white/40 mt-0.5 truncate">{t.lastMessage}</p>}
         </div>
       </div>
     );
@@ -243,9 +323,9 @@ export function CoachDemandesMobile() {
       getUnread={(t) => t.unreadCount > 0}
       getStatus={(t) => (t.status === "ARCHIVE" ? "ARCHIVE" : "ACTIVE")}
       renderRowContent={renderRow}
-      filterOptions={FILTER_OPTIONS as unknown as FilterOption<string>[]}
+      filterOptions={filterOptions}
       filter={filter}
-      onFilterChange={(v) => setFilter(v as FilterKey)}
+      onFilterChange={setFilter}
       search={search}
       onSearchChange={setSearch}
       searchPlaceholder="Rechercher"

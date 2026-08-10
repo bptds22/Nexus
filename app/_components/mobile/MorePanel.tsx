@@ -72,8 +72,8 @@ const Icons = {
   calendar: <svg {...I_PROPS}><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>,
   activity: <svg {...I_PROPS}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></svg>,
   bell: <svg {...I_PROPS}><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 01-3.46 0" /></svg>,
-  // Reprise a l'identique de MobileTabBar : « Visibilite » descend de la barre
-  // vers ce panel, elle doit garder son icone.
+    // « Ma visibilité » et « Trouve ton cégep » vivent dans ce panel : la barre
+    // d'onglets est prise par Accueil / Parcours / Profil / Messages.
   eye: <svg {...I_PROPS}><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>,
   cegep: <svg {...I_PROPS}><path d="M22 10v6M2 10l10-5 10 5-10 5z" /><path d="M6 12v5c0 1.66 2.69 3 6 3s6-1.34 6-3v-5" /></svg>,
   recruteurs: <svg {...I_PROPS}><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" /></svg>,
@@ -167,6 +167,9 @@ interface MorePanelProps {
   onClose: () => void;
   role: "recruteur" | "coach" | "athlete";
   tier: "free" | "pro" | "all_star";
+  /** True tant que le tier n'est pas chargé. Empêche d'afficher les cadenas /
+   *  la carte d'upgrade en état « free » par défaut avant le fetch. */
+  tierLoading: boolean;
   isSchoolAdmin: boolean;
   /** Compteur affiché sur l'item correspondant : Activités (recruteur, coach)
    *  ou Notifications (athlete). */
@@ -179,6 +182,7 @@ export default function MorePanel({
   onClose,
   role,
   tier,
+  tierLoading,
   isSchoolAdmin,
   actBadge,
   onLockedClick,
@@ -416,18 +420,17 @@ export default function MorePanel({
     return [
       {
         items: [
-          // « Trouve ton cégep » a QUITTÉ ce panel : la recherche a désormais son
-          // propre onglet (« Cégeps ») dans ATHLETE_TABS, l'entrée faisait doublon.
-          // C'est « Visibilité » qui descend ici, à la place qu'occupait la
-          // recherche dans la barre.
-          { key: "visibilite", label: "Visibilité", href: "/athlete/visibilite", icon: Icons.eye },
-          // Le transfert d'équipe n'existait PAS sur mobile : il vivait dans un
-          // onglet de /athlete/parametres, et cette route bascule sur
-          // AthleteParametresMobile, qui ne l'a jamais porté. Sorti des
-          // paramètres, il a maintenant sa route à lui — même composant
-          // (MonEquipeSection), même URL des deux côtés. Sous Visibilité, comme
-          // dans la barre latérale web.
-          { key: "transfert", label: "Mon équipe", href: "/athlete/transfert", icon: Icons.users },
+            // « Trouve ton cégep » REVIENT dans ce panel : Messages a pris le
+            // slot d'onglet, la recherche cégep redescend donc ici. Une seule
+            // entrée de visibilité, libellée « Ma visibilité ».
+            { key: "recherche-cegep", label: "Trouve ton cégep", href: "/athlete/recherche", icon: Icons.cegep },
+            { key: "visibilite", label: "Ma visibilité", href: "/athlete/visibilite", icon: Icons.eye },
+            // Le transfert d'équipe n'existait PAS sur mobile : il vivait dans un
+            // onglet de /athlete/parametres, et cette route bascule sur
+            // AthleteParametresMobile, qui ne l'a jamais porté. Sorti des
+            // paramètres, il a maintenant sa route à lui — même composant
+            // (MonEquipeSection), même URL des deux côtés.
+            { key: "transfert", label: "Mon équipe", href: "/athlete/transfert", icon: Icons.users },
           { key: "notifications", label: "Notifications", href: "/athlete/notifications", icon: Icons.bell, badge: actBadge },
         ],
       },
@@ -447,7 +450,8 @@ export default function MorePanel({
   })();
 
   function renderItem(item: PanelItem) {
-    const locked = !meetsRequiredTier(tier, item.requiredTier, isSchoolAdmin, item.adminBypass);
+    // Pas de cadenas tant que le tier n'est pas chargé (évite le flash free).
+    const locked = !tierLoading && !meetsRequiredTier(tier, item.requiredTier, isSchoolAdmin, item.adminBypass);
     const lockTitle = item.requiredTier === "all_star"
       ? "Fonctionnalité Recruteur All Star"
       : "Fonctionnalité Recruteur Pro";
@@ -610,7 +614,7 @@ export default function MorePanel({
 
           {/* Upgrade prompt — recruteur uniquement (les autres rôles n'ont
               pas de tier gating actif dans la nav pour l'instant). */}
-          {role === "recruteur" && !hasProAccess && (
+          {role === "recruteur" && !tierLoading && !hasProAccess && (
             <div className="px-4 pt-3">
               <SidebarUpgradeCard />
             </div>

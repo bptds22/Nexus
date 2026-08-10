@@ -1,0 +1,487 @@
+Pager usage is off.
+Output format is unaligned.
+Field separator is "|".
+_deprecated_profile_views_2026_05|Athletes read own views|SELECT|PERMISSIVE|public|(athlete_id IN ( SELECT athletes.id
+   FROM athletes
+  WHERE (athletes.user_id = auth.uid())))|<null>
+_deprecated_profile_views_2026_05|Coaches read views for their athletes|SELECT|PERMISSIVE|public|(athlete_id IN ( SELECT athletes.id
+   FROM athletes
+  WHERE (athletes.coach_id = auth.uid())))|<null>
+_deprecated_profile_views_2026_05|Recruiters insert views|INSERT|PERMISSIVE|public|<null>|(recruiter_id = auth.uid())
+_deprecated_profile_views_2026_05|admins read all|SELECT|PERMISSIVE|public|is_admin()|<null>
+activities|admins insert activities|INSERT|PERMISSIVE|public|<null>|is_admin()
+admin_claims|admin_claims_admin_select|SELECT|PERMISSIVE|public|is_platform_admin(auth.uid())|<null>
+admin_claims|admin_claims_admin_update|UPDATE|PERMISSIVE|public|is_platform_admin(auth.uid())|is_platform_admin(auth.uid())
+admin_claims|admin_claims_user_insert_own|INSERT|PERMISSIVE|public|<null>|(user_id = auth.uid())
+admin_claims|admin_claims_user_select_own|SELECT|PERMISSIVE|public|(user_id = auth.uid())|<null>
+admin_transfer_requests|transfer_from_insert|INSERT|PERMISSIVE|public|<null>|(from_user_id = auth.uid())
+admin_transfer_requests|transfer_involved_read|SELECT|PERMISSIVE|public|((from_user_id = auth.uid()) OR (to_user_id = auth.uid()))|<null>
+app_settings|admins update settings|UPDATE|PERMISSIVE|public|is_admin()|<null>
+app_settings|anyone can read settings|SELECT|PERMISSIVE|public|true|<null>
+app_settings|super_admin insert settings|INSERT|PERMISSIVE|public|<null>|is_admin()
+athlete_invitations|Coaches read own athlete invitations|SELECT|PERMISSIVE|authenticated|((created_by = auth.uid()) OR is_admin())|<null>
+athlete_notifications|Athletes read own notifications|SELECT|PERMISSIVE|public|(athlete_id IN ( SELECT athletes.id
+   FROM athletes
+  WHERE (athletes.user_id = auth.uid())))|<null>
+athlete_notifications|Athletes update own notifications|UPDATE|PERMISSIVE|public|(athlete_id IN ( SELECT athletes.id
+   FROM athletes
+  WHERE (athletes.user_id = auth.uid())))|<null>
+athlete_notifications|admins insert notifications|INSERT|PERMISSIVE|public|<null>|is_admin()
+athlete_suggestions|Athletes can read own suggestions|SELECT|PERMISSIVE|public|(athlete_id IN ( SELECT athletes.id
+   FROM athletes
+  WHERE (athletes.user_id = auth.uid())))|<null>
+athlete_suggestions|Athletes insert own suggestions|INSERT|PERMISSIVE|public|<null>|(auth.uid() IS NOT NULL)
+athlete_suggestions|Authenticated users update suggestions|UPDATE|PERMISSIVE|public|(auth.uid() IS NOT NULL)|(auth.uid() IS NOT NULL)
+athlete_suggestions|Coaches can read suggestions for their claimed athletes|SELECT|PERMISSIVE|authenticated|(athlete_id IN ( SELECT athletes.id
+   FROM athletes
+  WHERE (athletes.coach_id = auth.uid())))|<null>
+athlete_suggestions|Coaches update suggestions for their claimed athletes|UPDATE|PERMISSIVE|authenticated|(athlete_id IN ( SELECT athletes.id
+   FROM athletes
+  WHERE (athletes.coach_id = auth.uid())))|<null>
+athlete_suggestions|admins read athlete_suggestions|SELECT|PERMISSIVE|public|is_admin()|<null>
+athlete_targets|Athletes manage own targets|ALL|PERMISSIVE|authenticated|(EXISTS ( SELECT 1
+   FROM athletes a
+  WHERE ((a.id = athlete_targets.athlete_id) AND (a.user_id = auth.uid()))))|(EXISTS ( SELECT 1
+   FROM athletes a
+  WHERE ((a.id = athlete_targets.athlete_id) AND (a.user_id = auth.uid()))))
+athletes|Approved partners read opted-in athletes|SELECT|PERMISSIVE|public|((partner_visibility_opt_in = true) AND is_approved_partner(auth.uid()))|<null>
+athletes|Coaches update own team athletes|UPDATE|PERMISSIVE|authenticated|coach_can_manage_athlete(id)|coach_can_manage_athlete(id)
+athletes|admins read all|SELECT|PERMISSIVE|public|is_admin()|<null>
+athletes|admins update all|UPDATE|PERMISSIVE|public|is_admin()|is_admin()
+athletes|athletes can claim own orphan match|UPDATE|PERMISSIVE|authenticated|((user_id IS NULL) AND (email IS NOT NULL) AND (lower(email) = lower(current_user_email())))|(user_id = auth.uid())
+athletes|athletes can insert own profile|INSERT|PERMISSIVE|public|<null>|(user_id = auth.uid())
+athletes|athletes can read own orphan match|SELECT|PERMISSIVE|authenticated|((user_id IS NULL) AND (email IS NOT NULL) AND (lower(email) = lower(current_user_email())))|<null>
+athletes|athletes can read own profile|SELECT|PERMISSIVE|public|(user_id = auth.uid())|<null>
+athletes|athletes can update own profile|UPDATE|PERMISSIVE|public|(user_id = auth.uid())|(user_id = auth.uid())
+athletes|athletes_insert|INSERT|PERMISSIVE|authenticated|<null>|((coach_id = auth.uid()) AND is_coach() AND (user_has_pro() OR ((get_user_tier() = 'free'::text) AND (count_coach_athletes() < 30))))
+athletes|coaches assign unclaimed school athletes|UPDATE|PERMISSIVE|authenticated|((coach_id IS NULL) AND (school_id = current_user_school_id()))|((school_id = current_user_school_id()) AND ((coach_id IS NULL) OR (EXISTS ( SELECT 1
+   FROM school_coaches sc
+  WHERE ((sc.coach_id = athletes.coach_id) AND (sc.school_id = current_user_school_id()))))))
+athletes|coaches can claim unclaimed school athletes|UPDATE|PERMISSIVE|public|((coach_id IS NULL) AND (school_id = current_user_school_id()))|(coach_id = auth.uid())
+athletes|coaches can update own athletes|UPDATE|PERMISSIVE|public|(coach_id = auth.uid())|<null>
+athletes|coaches read own athletes|SELECT|PERMISSIVE|authenticated|((coach_id = auth.uid()) OR (is_coach() AND (school_id = current_user_school_id())) OR (EXISTS ( SELECT 1
+   FROM school_coaches sc
+  WHERE ((sc.coach_id = auth.uid()) AND (sc.school_id = athletes.school_id)))))|<null>
+athletes|recruiters read active athletes|SELECT|PERMISSIVE|authenticated|((status = 'ACTIF'::account_status) AND is_recruiter())|<null>
+blackout_periods|blackout admin write|ALL|PERMISSIVE|public|is_platform_admin(auth.uid())|is_platform_admin(auth.uid())
+blackout_periods|blackout read|SELECT|PERMISSIVE|authenticated|true|<null>
+broadcasts|broadcast_sender_read|SELECT|PERMISSIVE|authenticated|(sender_id = auth.uid())|<null>
+cegep_email_domains|Anyone can read domains|SELECT|PERMISSIVE|public|true|<null>
+coach_career_preferences|coach_own_career_prefs|ALL|PERMISSIVE|public|(user_id = auth.uid())|<null>
+coach_notifications|Coaches can read own notifications|SELECT|PERMISSIVE|authenticated|(coach_id = auth.uid())|<null>
+coach_notifications|Coaches can update own notifications|UPDATE|PERMISSIVE|authenticated|(coach_id = auth.uid())|(coach_id = auth.uid())
+coach_reviews|coach_read_reviews|SELECT|PERMISSIVE|public|(coach_id = auth.uid())|<null>
+coach_reviews|recruiter_insert_reviews|INSERT|PERMISSIVE|public|<null>|(recruiter_id = auth.uid())
+coach_reviews|recruiter_read_reviews|SELECT|PERMISSIVE|public|(recruiter_id = auth.uid())|<null>
+coach_reviews|recruiter_update_reviews|UPDATE|PERMISSIVE|public|(recruiter_id = auth.uid())|<null>
+consent_audit_trail|admins read consent_audit_trail|SELECT|PERMISSIVE|public|is_admin()|<null>
+conversations|admins read conversations|SELECT|PERMISSIVE|public|is_admin()|<null>
+conversations|athlete_conversations_insert|INSERT|PERMISSIVE|authenticated|<null>|((conversation_type = 'ATHLETE_COACH'::conversation_type) AND (recruiter_id IS NULL) AND (EXISTS ( SELECT 1
+   FROM athletes a
+  WHERE ((a.id = conversations.athlete_id) AND (a.user_id = auth.uid())))) AND athlete_messageable_coach(coach_id))
+conversations|athlete_conversations_select|SELECT|PERMISSIVE|public|((conversation_type = 'ATHLETE_COACH'::conversation_type) AND (EXISTS ( SELECT 1
+   FROM athletes a
+  WHERE ((a.id = conversations.athlete_id) AND (a.user_id = auth.uid())))))|<null>
+conversations|athlete_conversations_update|UPDATE|PERMISSIVE|public|((conversation_type = 'ATHLETE_COACH'::conversation_type) AND (EXISTS ( SELECT 1
+   FROM athletes a
+  WHERE ((a.id = conversations.athlete_id) AND (a.user_id = auth.uid())))))|((conversation_type = 'ATHLETE_COACH'::conversation_type) AND (EXISTS ( SELECT 1
+   FROM athletes a
+  WHERE ((a.id = conversations.athlete_id) AND (a.user_id = auth.uid())))))
+conversations|athlete_ra_conversations_select|SELECT|PERMISSIVE|public|((conversation_type = 'RECRUTEUR_ATHLETE'::conversation_type) AND (EXISTS ( SELECT 1
+   FROM athletes a
+  WHERE ((a.id = conversations.athlete_id) AND (a.user_id = auth.uid())))))|<null>
+conversations|coach_athlete_conversations_insert|INSERT|PERMISSIVE|authenticated|<null>|((conversation_type = 'ATHLETE_COACH'::conversation_type) AND (recruiter_id IS NULL) AND (coach_id = auth.uid()) AND (EXISTS ( SELECT 1
+   FROM athletes a
+  WHERE ((a.id = conversations.athlete_id) AND athlete_messageable_coach(auth.uid(), a.user_id)))))
+conversations|coach_coach_conversations_insert|INSERT|PERMISSIVE|authenticated|<null>|((conversation_type = 'COACH_COACH'::conversation_type) AND (recruiter_id IS NULL) AND (parent_id IS NULL) AND (coach_id = auth.uid()) AND (coach_b_id IS NOT NULL) AND (coach_b_id <> auth.uid()) AND is_same_school_staff(auth.uid(), coach_b_id) AND ((athlete_id IS NULL) OR (EXISTS ( SELECT 1
+   FROM (athletes a
+     JOIN school_coaches sc ON ((sc.school_id = a.school_id)))
+  WHERE ((a.id = conversations.athlete_id) AND (sc.coach_id = auth.uid()) AND (sc.role = ANY (ARRAY['COACH'::coach_school_role, 'DIRECTEUR'::coach_school_role, 'DIRECTEUR_INTERIM'::coach_school_role])))))))
+conversations|coach_coach_conversations_select|SELECT|PERMISSIVE|public|((conversation_type = 'COACH_COACH'::conversation_type) AND ((coach_id = auth.uid()) OR (coach_b_id = auth.uid())))|<null>
+conversations|coach_coach_conversations_update|UPDATE|PERMISSIVE|public|((conversation_type = 'COACH_COACH'::conversation_type) AND ((coach_id = auth.uid()) OR (coach_b_id = auth.uid())))|((conversation_type = 'COACH_COACH'::conversation_type) AND ((coach_id = auth.uid()) OR (coach_b_id = auth.uid())))
+conversations|coach_conversations_insert|INSERT|PERMISSIVE|authenticated|<null>|((conversation_type <> ALL (ARRAY['COACH_COACH'::conversation_type, 'RECRUTEUR_COACH'::conversation_type, 'PARENT_COACH'::conversation_type])) AND (coach_id = auth.uid()) AND (EXISTS ( SELECT 1
+   FROM athletes a
+  WHERE ((a.id = conversations.athlete_id) AND (a.coach_id = auth.uid())))))
+conversations|coach_conversations_select|SELECT|PERMISSIVE|public|(coach_id = auth.uid())|<null>
+conversations|coach_conversations_update|UPDATE|PERMISSIVE|authenticated|(coach_id = auth.uid())|(coach_id = auth.uid())
+conversations|coach_initiate_parent_coach|INSERT|PERMISSIVE|authenticated|<null>|((conversation_type = 'PARENT_COACH'::conversation_type) AND (coach_id = auth.uid()) AND (recruiter_id IS NULL) AND (coach_b_id IS NULL) AND (parent_id IS NOT NULL) AND (athlete_id IS NOT NULL) AND is_parent_link(parent_id, athlete_id) AND coach_reaches_athlete(auth.uid(), athlete_id))
+conversations|coach_initiate_recruteur_coach|INSERT|PERMISSIVE|authenticated|<null>|((conversation_type = 'RECRUTEUR_COACH'::conversation_type) AND (coach_id = auth.uid()) AND (recruiter_id IS NOT NULL) AND (parent_id IS NULL) AND (coach_b_id IS NULL) AND (athlete_id IS NOT NULL) AND (EXISTS ( SELECT 1
+   FROM athletes a
+  WHERE ((a.id = conversations.athlete_id) AND (a.coach_id = auth.uid())))) AND user_is_recruiter(recruiter_id))
+conversations|conversations participants|SELECT|PERMISSIVE|public|((recruiter_id = auth.uid()) OR (coach_id = auth.uid()))|<null>
+conversations|conversations_insert|INSERT|PERMISSIVE|authenticated|<null>|((recruiter_id = auth.uid()) AND (conversation_type = 'RECRUTEUR_COACH'::conversation_type) AND user_has_pro())
+conversations|parent_conversations_select|SELECT|PERMISSIVE|authenticated|(parent_id = auth.uid())|<null>
+conversations|parent_conversations_update|UPDATE|PERMISSIVE|authenticated|(parent_id = auth.uid())|(parent_id = auth.uid())
+conversations|parent_initiate_parent_coach|INSERT|PERMISSIVE|authenticated|<null>|((conversation_type = 'PARENT_COACH'::conversation_type) AND (parent_id = auth.uid()) AND (recruiter_id IS NULL) AND (coach_b_id IS NULL) AND (coach_id IS NOT NULL) AND (athlete_id IS NOT NULL) AND is_parent_of(athlete_id) AND coach_reaches_athlete(coach_id, athlete_id))
+conversations|recruiter_conversations_delete|DELETE|PERMISSIVE|authenticated|(recruiter_id = auth.uid())|<null>
+conversations|recruiter_conversations_select|SELECT|PERMISSIVE|authenticated|(recruiter_id = auth.uid())|<null>
+conversations|recruiter_conversations_update|UPDATE|PERMISSIVE|authenticated|(recruiter_id = auth.uid())|(recruiter_id = auth.uid())
+conversations|recruteur_athlete_conversations_insert|INSERT|PERMISSIVE|authenticated|<null>|((conversation_type = 'RECRUTEUR_ATHLETE'::conversation_type) AND (recruiter_id = auth.uid()) AND (coach_id IS NULL) AND (parent_id IS NULL) AND (EXISTS ( SELECT 1
+   FROM recruiter_favorites f
+  WHERE ((f.recruiter_id = auth.uid()) AND (f.athlete_id = conversations.athlete_id)))) AND is_athlete_contactable(athlete_id))
+conversations|recruteur_athlete_conversations_select|SELECT|PERMISSIVE|public|((conversation_type = 'RECRUTEUR_ATHLETE'::conversation_type) AND (recruiter_id = auth.uid()))|<null>
+conversations|recruteur_athlete_conversations_update|UPDATE|PERMISSIVE|public|((conversation_type = 'RECRUTEUR_ATHLETE'::conversation_type) AND is_conversation_participant(id))|((conversation_type = 'RECRUTEUR_ATHLETE'::conversation_type) AND is_conversation_participant(id))
+custom_distinctions|Anyone can view custom distinctions|SELECT|PERMISSIVE|public|true|<null>
+custom_distinctions|Coaches can delete their custom distinctions|DELETE|PERMISSIVE|public|(auth.uid() = coach_id)|<null>
+custom_distinctions|Coaches can insert custom distinctions|INSERT|PERMISSIVE|public|<null>|(auth.uid() = coach_id)
+deletion_requests|deletion_requests own|SELECT|PERMISSIVE|public|(user_id = auth.uid())|<null>
+device_tokens|device_tokens_delete_own|DELETE|PERMISSIVE|public|(auth.uid() = user_id)|<null>
+device_tokens|device_tokens_select_own|SELECT|PERMISSIVE|public|(auth.uid() = user_id)|<null>
+evaluations|admins insert all|INSERT|PERMISSIVE|public|<null>|is_admin()
+evaluations|admins read all|SELECT|PERMISSIVE|public|is_admin()|<null>
+evaluations|admins update all|UPDATE|PERMISSIVE|public|is_admin()|is_admin()
+evaluations|authenticated read evaluations|SELECT|PERMISSIVE|authenticated|((coach_id = auth.uid()) OR is_director_of_athlete_school(athlete_id) OR (is_recruiter() AND athlete_is_active(athlete_id)) OR (EXISTS ( SELECT 1
+   FROM athletes a
+  WHERE ((a.id = evaluations.athlete_id) AND (a.user_id = auth.uid())))) OR is_admin())|<null>
+evaluations|evaluations coach|ALL|PERMISSIVE|public|(coach_id = auth.uid())|<null>
+games|Games readable by authenticated|SELECT|PERMISSIVE|authenticated|true|<null>
+invitations|Admins delete invitations|DELETE|PERMISSIVE|authenticated|is_admin()|<null>
+invitations|Users invite from their own school|INSERT|PERMISSIVE|authenticated|<null>|((invited_by = auth.uid()) AND (status = 'PENDING'::invitation_status) AND ((school_id IS NULL) OR (school_id = current_user_school_id())))
+invitations|Users read their own invitations|SELECT|PERMISSIVE|authenticated|((invited_by = auth.uid()) OR (consumed_by_user_id = auth.uid()) OR is_admin())|<null>
+invitations|Users revoke their own pending invitations|UPDATE|PERMISSIVE|authenticated|(((invited_by = auth.uid()) AND (status = 'PENDING'::invitation_status)) OR is_admin())|(((invited_by = auth.uid()) AND (status = 'REVOKED'::invitation_status)) OR is_admin())
+ligues|ligues public read|SELECT|PERMISSIVE|public|true|<null>
+loi25_incidents|admins manage loi25_incidents|ALL|PERMISSIVE|public|is_admin()|is_admin()
+loi25_portability_requests|admins manage loi25_portability|ALL|PERMISSIVE|public|is_admin()|is_admin()
+loi25_settings|admins manage loi25_settings|ALL|PERMISSIVE|public|is_admin()|is_admin()
+media_partners|Admins read all partners|SELECT|PERMISSIVE|authenticated|is_admin()|<null>
+media_partners|Admins update all partners|UPDATE|PERMISSIVE|authenticated|is_admin()|is_admin()
+media_partners|Partners read own profile|SELECT|PERMISSIVE|public|(user_id = auth.uid())|<null>
+media_partners|Partners update own profile|UPDATE|PERMISSIVE|public|(user_id = auth.uid())|((user_id = auth.uid()) AND partner_privileged_cols_unchanged(status, show_on_homepage))
+media_partners|Public read approved partners|SELECT|PERMISSIVE|public|(status = 'APPROVED'::text)|<null>
+message_retractions|message_retractions admin read|SELECT|PERMISSIVE|public|is_platform_admin(auth.uid())|<null>
+messages|admins read messages|SELECT|PERMISSIVE|public|is_admin()|<null>
+messages|athlete_messages_insert|INSERT|PERMISSIVE|authenticated|<null>|((sender_id = auth.uid()) AND (EXISTS ( SELECT 1
+   FROM (conversations c
+     JOIN athletes a ON ((a.id = c.athlete_id)))
+  WHERE ((c.id = messages.conversation_id) AND (c.conversation_type = 'ATHLETE_COACH'::conversation_type) AND (a.user_id = auth.uid())))))
+messages|athlete_messages_select|SELECT|PERMISSIVE|public|is_conversation_participant(conversation_id)|<null>
+messages|coach_coach_messages_insert|INSERT|PERMISSIVE|authenticated|<null>|((sender_id = auth.uid()) AND (EXISTS ( SELECT 1
+   FROM conversations c
+  WHERE ((c.id = messages.conversation_id) AND (c.conversation_type = 'COACH_COACH'::conversation_type) AND ((c.coach_id = auth.uid()) OR (c.coach_b_id = auth.uid()))))))
+messages|coach_coach_messages_select|SELECT|PERMISSIVE|authenticated|(EXISTS ( SELECT 1
+   FROM conversations c
+  WHERE ((c.id = messages.conversation_id) AND (c.conversation_type = 'COACH_COACH'::conversation_type) AND ((c.coach_id = auth.uid()) OR (c.coach_b_id = auth.uid())))))|<null>
+messages|coach_coach_messages_update|UPDATE|PERMISSIVE|authenticated|(EXISTS ( SELECT 1
+   FROM conversations c
+  WHERE ((c.id = messages.conversation_id) AND (c.conversation_type = 'COACH_COACH'::conversation_type) AND ((c.coach_id = auth.uid()) OR (c.coach_b_id = auth.uid())))))|(EXISTS ( SELECT 1
+   FROM conversations c
+  WHERE ((c.id = messages.conversation_id) AND (c.conversation_type = 'COACH_COACH'::conversation_type) AND ((c.coach_id = auth.uid()) OR (c.coach_b_id = auth.uid())))))
+messages|messages participants|SELECT|PERMISSIVE|public|(conversation_id IN ( SELECT conversations.id
+   FROM conversations
+  WHERE ((conversations.recruiter_id = auth.uid()) OR (conversations.coach_id = auth.uid()))))|<null>
+messages|messages_insert|INSERT|PERMISSIVE|authenticated|<null>|((sender_id = auth.uid()) AND ((( SELECT users.role
+   FROM users
+  WHERE (users.id = auth.uid())) = 'COACH'::user_role) OR ((( SELECT users.role
+   FROM users
+  WHERE (users.id = auth.uid())) = 'RECRUTEUR'::user_role) AND user_has_pro())) AND (EXISTS ( SELECT 1
+   FROM conversations
+  WHERE ((conversations.id = messages.conversation_id) AND ((conversations.recruiter_id = auth.uid()) OR (conversations.coach_id = auth.uid()))))))
+messages|messages_select|SELECT|PERMISSIVE|public|(conversation_id IN ( SELECT conversations.id
+   FROM conversations
+  WHERE ((conversations.recruiter_id = auth.uid()) OR (conversations.coach_id = auth.uid()))))|<null>
+messages|messages_update|UPDATE|PERMISSIVE|public|(conversation_id IN ( SELECT conversations.id
+   FROM conversations
+  WHERE ((conversations.recruiter_id = auth.uid()) OR (conversations.coach_id = auth.uid()))))|<null>
+messages|parent_messages_insert|INSERT|PERMISSIVE|authenticated|<null>|((sender_id = auth.uid()) AND (EXISTS ( SELECT 1
+   FROM conversations c
+  WHERE ((c.id = messages.conversation_id) AND (c.conversation_type = 'PARENT_COACH'::conversation_type) AND (c.parent_id = auth.uid())))))
+messages|parent_messages_select|SELECT|PERMISSIVE|authenticated|is_conversation_participant(conversation_id)|<null>
+messages|parent_messages_update|UPDATE|PERMISSIVE|authenticated|is_conversation_participant(conversation_id)|is_conversation_participant(conversation_id)
+messages|ra_athlete_messages_insert|INSERT|PERMISSIVE|authenticated|<null>|((sender_id = auth.uid()) AND (EXISTS ( SELECT 1
+   FROM (conversations c
+     JOIN athletes a ON ((a.id = c.athlete_id)))
+  WHERE ((c.id = messages.conversation_id) AND (c.conversation_type = 'RECRUTEUR_ATHLETE'::conversation_type) AND (a.user_id = auth.uid())))))
+messages|ra_athlete_messages_update|UPDATE|PERMISSIVE|authenticated|(EXISTS ( SELECT 1
+   FROM (conversations c
+     JOIN athletes a ON ((a.id = c.athlete_id)))
+  WHERE ((c.id = messages.conversation_id) AND (c.conversation_type = 'RECRUTEUR_ATHLETE'::conversation_type) AND (a.user_id = auth.uid()))))|(EXISTS ( SELECT 1
+   FROM (conversations c
+     JOIN athletes a ON ((a.id = c.athlete_id)))
+  WHERE ((c.id = messages.conversation_id) AND (c.conversation_type = 'RECRUTEUR_ATHLETE'::conversation_type) AND (a.user_id = auth.uid()))))
+messages|ra_messages_select|SELECT|PERMISSIVE|authenticated|is_conversation_participant(conversation_id)|<null>
+newsroom_events|Approved partners read eligible newsroom events|SELECT|PERMISSIVE|public|(is_approved_partner(auth.uid()) AND ((athlete_id IS NULL) OR is_partner_eligible_athlete(athlete_id)))|<null>
+newsroom_events|Platform admins read all newsroom events|SELECT|PERMISSIVE|public|is_platform_admin(auth.uid())|<null>
+notification_preferences|user_own_notif_prefs|ALL|PERMISSIVE|public|(user_id = auth.uid())|<null>
+parent_athletes|admins read parent_athletes|SELECT|PERMISSIVE|public|is_admin()|<null>
+parent_athletes|parent reads own link|SELECT|PERMISSIVE|public|(parent_user_id = auth.uid())|<null>
+parent_notifications|parent reads own notifications|SELECT|PERMISSIVE|public|(parent_user_id = auth.uid())|<null>
+parent_notifications|parent updates own notifications|UPDATE|PERMISSIVE|public|(parent_user_id = auth.uid())|(parent_user_id = auth.uid())
+parental_consents|admins read parental_consents|SELECT|PERMISSIVE|public|is_admin()|<null>
+parental_consents|parent reads linked child consent|SELECT|PERMISSIVE|public|is_parent_of(athlete_id)|<null>
+partner_card_downloads|Athletes read their own card downloads|SELECT|PERMISSIVE|public|(athlete_id IN ( SELECT athletes.id
+   FROM athletes
+  WHERE (athletes.user_id = auth.uid())))|<null>
+partner_card_downloads|Partners log own downloads|INSERT|PERMISSIVE|public|<null>|(partner_id IN ( SELECT media_partners.id
+   FROM media_partners
+  WHERE ((media_partners.user_id = auth.uid()) AND (media_partners.status = 'APPROVED'::text))))
+partner_card_downloads|Partners read own download history|SELECT|PERMISSIVE|public|(partner_id IN ( SELECT media_partners.id
+   FROM media_partners
+  WHERE (media_partners.user_id = auth.uid())))|<null>
+partner_profile_views|Athletes read their own profile views|SELECT|PERMISSIVE|public|(athlete_id IN ( SELECT athletes.id
+   FROM athletes
+  WHERE (athletes.user_id = auth.uid())))|<null>
+partner_profile_views|Partners log own views|INSERT|PERMISSIVE|public|<null>|(partner_id IN ( SELECT media_partners.id
+   FROM media_partners
+  WHERE ((media_partners.user_id = auth.uid()) AND (media_partners.status = 'APPROVED'::text))))
+partner_profile_views|Partners read own view history|SELECT|PERMISSIVE|public|(partner_id IN ( SELECT media_partners.id
+   FROM media_partners
+  WHERE (media_partners.user_id = auth.uid())))|<null>
+partner_profile_views|admins read partner_profile_views|SELECT|PERMISSIVE|public|is_admin()|<null>
+pipeline|pipeline own|ALL|PERMISSIVE|public|(recruiter_id = auth.uid())|<null>
+pipeline|recruiters can delete pipeline|DELETE|PERMISSIVE|public|(recruiter_id = auth.uid())|<null>
+pipeline|recruiters can insert pipeline|INSERT|PERMISSIVE|public|<null>|(recruiter_id = auth.uid())
+pipeline|recruiters can read own pipeline|SELECT|PERMISSIVE|public|(recruiter_id = auth.uid())|<null>
+pipeline|recruiters can update pipeline|UPDATE|PERMISSIVE|public|(recruiter_id = auth.uid())|<null>
+positions|admins delete all|DELETE|PERMISSIVE|public|is_admin()|<null>
+positions|admins insert all|INSERT|PERMISSIVE|public|<null>|is_admin()
+positions|admins read all|SELECT|PERMISSIVE|public|is_admin()|<null>
+positions|admins update all|UPDATE|PERMISSIVE|public|is_admin()|is_admin()
+positions|positions public read|SELECT|PERMISSIVE|public|true|<null>
+profile_changes|admins read all|SELECT|PERMISSIVE|public|is_admin()|<null>
+recruiter_activity_log|Coaches read activity for their claimed athletes|SELECT|PERMISSIVE|public|(athlete_id IN ( SELECT athletes.id
+   FROM athletes
+  WHERE (athletes.coach_id = auth.uid())))|<null>
+recruiter_activity_log|Recruiters see their own activity|ALL|PERMISSIVE|public|(recruiter_id = auth.uid())|(recruiter_id = auth.uid())
+recruiter_activity_log|admins insert recruiter_activity_log|INSERT|PERMISSIVE|public|<null>|is_admin()
+recruiter_activity_log|admins read recruiter_activity_log|SELECT|PERMISSIVE|public|is_admin()|<null>
+recruiter_activity_log|cegep admin read activity_log|SELECT|PERMISSIVE|authenticated|is_cegep_admin_over_recruiter(recruiter_id)|<null>
+recruiter_athlete_views|Coaches read views for their athletes|SELECT|PERMISSIVE|public|(athlete_id IN ( SELECT athletes.id
+   FROM athletes
+  WHERE (athletes.coach_id = auth.uid())))|<null>
+recruiter_athlete_views|Recruiters manage own views|ALL|PERMISSIVE|public|((auth.uid() = recruiter_id) AND (EXISTS ( SELECT 1
+   FROM users
+  WHERE ((users.id = auth.uid()) AND (users.role = 'RECRUTEUR'::user_role)))))|((auth.uid() = recruiter_id) AND (EXISTS ( SELECT 1
+   FROM users
+  WHERE ((users.id = auth.uid()) AND (users.role = 'RECRUTEUR'::user_role)))))
+recruiter_athlete_views|admins read recruiter_athlete_views|SELECT|PERMISSIVE|public|is_admin()|<null>
+recruiter_athlete_views|athletes read own views|SELECT|PERMISSIVE|public|(athlete_id IN ( SELECT athletes.id
+   FROM athletes
+  WHERE (athletes.user_id = auth.uid())))|<null>
+recruiter_athlete_views|cegep admin read athlete_views|SELECT|PERMISSIVE|authenticated|is_cegep_admin_over_recruiter(recruiter_id)|<null>
+recruiter_contact_notifications|rcn admin read|SELECT|PERMISSIVE|public|is_platform_admin(auth.uid())|<null>
+recruiter_contact_notifications|rcn coach read own|SELECT|PERMISSIVE|public|((notified_role = 'COACH'::text) AND (notified_ref = (auth.uid())::text))|<null>
+recruiter_favorites|Athletes read own favorites|SELECT|PERMISSIVE|public|(athlete_id IN ( SELECT athletes.id
+   FROM athletes
+  WHERE (athletes.user_id = auth.uid())))|<null>
+recruiter_favorites|Coaches read favorites for their athletes|SELECT|PERMISSIVE|public|(athlete_id IN ( SELECT athletes.id
+   FROM athletes
+  WHERE (athletes.coach_id = auth.uid())))|<null>
+recruiter_favorites|admins read all|SELECT|PERMISSIVE|public|is_admin()|<null>
+recruiter_favorites|cegep admin insert favorites|INSERT|PERMISSIVE|authenticated|<null>|is_cegep_admin_over_recruiter(recruiter_id)
+recruiter_favorites|cegep admin read favorites|SELECT|PERMISSIVE|authenticated|is_cegep_admin_over_recruiter(recruiter_id)|<null>
+recruiter_favorites|cegep admin update favorites|UPDATE|PERMISSIVE|authenticated|is_cegep_admin_over_recruiter(recruiter_id)|is_cegep_admin_over_recruiter(recruiter_id)
+recruiter_favorites|recruiter_favorites_delete|DELETE|PERMISSIVE|authenticated|(recruiter_id = auth.uid())|<null>
+recruiter_favorites|recruiter_favorites_insert|INSERT|PERMISSIVE|authenticated|<null>|((recruiter_id = auth.uid()) AND (EXISTS ( SELECT 1
+   FROM users
+  WHERE ((users.id = auth.uid()) AND (users.role = 'RECRUTEUR'::user_role)))) AND (user_has_pro() OR ((get_user_tier() = 'free'::text) AND (count_user_favorites() < 10))))
+recruiter_favorites|recruiter_favorites_select|SELECT|PERMISSIVE|authenticated|(recruiter_id = auth.uid())|<null>
+recruiter_favorites|recruiter_favorites_update|UPDATE|PERMISSIVE|authenticated|(recruiter_id = auth.uid())|(recruiter_id = auth.uid())
+recruiter_list_members|recruiter_list_members_delete|DELETE|PERMISSIVE|authenticated|(EXISTS ( SELECT 1
+   FROM recruiter_lists
+  WHERE ((recruiter_lists.id = recruiter_list_members.list_id) AND (recruiter_lists.recruiter_id = auth.uid()))))|<null>
+recruiter_list_members|recruiter_list_members_insert|INSERT|PERMISSIVE|authenticated|<null>|(user_has_pro() AND (EXISTS ( SELECT 1
+   FROM recruiter_lists
+  WHERE ((recruiter_lists.id = recruiter_list_members.list_id) AND (recruiter_lists.recruiter_id = auth.uid())))))
+recruiter_list_members|recruiter_list_members_select|SELECT|PERMISSIVE|authenticated|(EXISTS ( SELECT 1
+   FROM recruiter_lists
+  WHERE ((recruiter_lists.id = recruiter_list_members.list_id) AND (recruiter_lists.recruiter_id = auth.uid()))))|<null>
+recruiter_list_notes|Recruiters manage their own list notes|ALL|PERMISSIVE|public|(recruiter_id = auth.uid())|(recruiter_id = auth.uid())
+recruiter_lists|recruiter_lists_delete|DELETE|PERMISSIVE|authenticated|(recruiter_id = auth.uid())|<null>
+recruiter_lists|recruiter_lists_insert|INSERT|PERMISSIVE|authenticated|<null>|((recruiter_id = auth.uid()) AND user_has_pro())
+recruiter_lists|recruiter_lists_select|SELECT|PERMISSIVE|authenticated|(recruiter_id = auth.uid())|<null>
+recruiter_lists|recruiter_lists_update|UPDATE|PERMISSIVE|authenticated|(recruiter_id = auth.uid())|((recruiter_id = auth.uid()) AND user_has_pro())
+recruiter_notes|Recruiters manage own notes|ALL|PERMISSIVE|public|((auth.uid() = recruiter_id) AND (EXISTS ( SELECT 1
+   FROM users
+  WHERE ((users.id = auth.uid()) AND (users.role = 'RECRUTEUR'::user_role)))))|((auth.uid() = recruiter_id) AND (EXISTS ( SELECT 1
+   FROM users
+  WHERE ((users.id = auth.uid()) AND (users.role = 'RECRUTEUR'::user_role)))))
+recruiter_notes|cegep admin insert notes|INSERT|PERMISSIVE|authenticated|<null>|is_cegep_admin_over_recruiter(recruiter_id)
+recruiter_notes|cegep admin read notes|SELECT|PERMISSIVE|authenticated|is_cegep_admin_over_recruiter(recruiter_id)|<null>
+recruiter_pipeline|admins read all|SELECT|PERMISSIVE|public|is_admin()|<null>
+recruiter_pipeline|admins update all|UPDATE|PERMISSIVE|public|is_admin()|is_admin()
+recruiter_pipeline|cegep admin read pipeline|SELECT|PERMISSIVE|authenticated|is_cegep_admin_over_recruiter(recruiter_id)|<null>
+recruiter_pipeline|cegep admin update pipeline|UPDATE|PERMISSIVE|authenticated|is_cegep_admin_over_recruiter(recruiter_id)|is_cegep_admin_over_recruiter(recruiter_id)
+recruiter_pipeline|coaches read pipeline for own athletes|SELECT|PERMISSIVE|public|(athlete_id IN ( SELECT athletes.id
+   FROM athletes
+  WHERE (athletes.coach_id = auth.uid())))|<null>
+recruiter_pipeline|recruiter_pipeline_delete|DELETE|PERMISSIVE|authenticated|(recruiter_id = auth.uid())|<null>
+recruiter_pipeline|recruiter_pipeline_insert|INSERT|PERMISSIVE|public|<null>|((recruiter_id = auth.uid()) AND (EXISTS ( SELECT 1
+   FROM users
+  WHERE ((users.id = auth.uid()) AND (users.role = 'RECRUTEUR'::user_role)))) AND user_has_pro())
+recruiter_pipeline|recruiter_pipeline_select|SELECT|PERMISSIVE|authenticated|(recruiter_id = auth.uid())|<null>
+recruiter_pipeline|recruiter_pipeline_update|UPDATE|PERMISSIVE|public|((recruiter_id = auth.uid()) AND (EXISTS ( SELECT 1
+   FROM users
+  WHERE ((users.id = auth.uid()) AND (users.role = 'RECRUTEUR'::user_role)))))|((recruiter_id = auth.uid()) AND user_has_pro())
+recruiter_preferences|recruiter_preferences own|ALL|PERMISSIVE|public|(recruiter_id = auth.uid())|<null>
+reports|Authenticated users can submit athlete reports|INSERT|PERMISSIVE|authenticated|<null>|((reported_by_id = auth.uid()) AND (status = 'OUVERT'::text) AND (target_type = 'athlete'::text) AND (type = 'PROFIL'::text))
+reports|Users can read their own filed reports|SELECT|PERMISSIVE|authenticated|(reported_by_id = auth.uid())|<null>
+reports|admins delete all|DELETE|PERMISSIVE|public|is_admin()|<null>
+reports|admins read all|SELECT|PERMISSIVE|public|is_admin()|<null>
+reports|admins update all|UPDATE|PERMISSIVE|public|is_admin()|is_admin()
+school_campus_cards|campus_cards_read|SELECT|PERMISSIVE|authenticated|true|<null>
+school_campus_cards|campus_cards_write|ALL|PERMISSIVE|authenticated|can_edit_school_page(school_id)|can_edit_school_page(school_id)
+school_coaches|Coaches insert school_coaches|INSERT|PERMISSIVE|authenticated|<null>|((coach_id = auth.uid()) OR (EXISTS ( SELECT 1
+   FROM school_coaches sc_dir
+  WHERE ((sc_dir.coach_id = auth.uid()) AND (sc_dir.school_id = school_coaches.school_id) AND (sc_dir.role = ANY (ARRAY['DIRECTEUR'::coach_school_role, 'DIRECTEUR_INTERIM'::coach_school_role]))))))
+school_coaches|coach_read_own|SELECT|PERMISSIVE|public|(coach_id = auth.uid())|<null>
+school_coaches|coach_update_own|UPDATE|PERMISSIVE|public|(coach_id = auth.uid())|<null>
+school_coaches|coaches read school roster|SELECT|PERMISSIVE|authenticated|(school_id = current_user_school_id())|<null>
+school_news|news_read|SELECT|PERMISSIVE|authenticated|true|<null>
+school_news|news_write|ALL|PERMISSIVE|authenticated|can_edit_school_page(school_id)|can_edit_school_page(school_id)
+school_page_content|page_content_read|SELECT|PERMISSIVE|authenticated|true|<null>
+school_page_content|page_content_write|ALL|PERMISSIVE|authenticated|can_edit_school_page(school_id)|can_edit_school_page(school_id)
+school_programs|programs_read|SELECT|PERMISSIVE|authenticated|true|<null>
+school_programs|programs_write|ALL|PERMISSIVE|authenticated|can_edit_school_page(school_id)|can_edit_school_page(school_id)
+school_registry|Admin coaches can update their school|UPDATE|PERMISSIVE|public|(claimed_by = auth.uid())|<null>
+school_registry|School registry is publicly readable|SELECT|PERMISSIVE|public|true|<null>
+school_registry|school_registry public read|SELECT|PERMISSIVE|public|true|<null>
+schools|Coaches create civil schools|INSERT|PERMISSIVE|authenticated|<null>|((type = 'LIGUE_CIVILE'::text) AND (EXISTS ( SELECT 1
+   FROM users u
+  WHERE ((u.id = auth.uid()) AND (u.role = 'COACH'::user_role) AND (u.context = 'ligue_civile'::text)))))
+schools|admins insert all|INSERT|PERMISSIVE|public|<null>|is_admin()
+schools|admins read all|SELECT|PERMISSIVE|public|is_admin()|<null>
+schools|admins update all|UPDATE|PERMISSIVE|public|is_admin()|is_admin()
+schools|schools public read|SELECT|PERMISSIVE|public|true|<null>
+sports|admins insert all|INSERT|PERMISSIVE|public|<null>|is_admin()
+sports|admins read all|SELECT|PERMISSIVE|public|is_admin()|<null>
+sports|admins update all|UPDATE|PERMISSIVE|public|is_admin()|is_admin()
+sports|sports public read|SELECT|PERMISSIVE|public|true|<null>
+subscription_features_athlete|sub_features_athlete public read|SELECT|PERMISSIVE|public|true|<null>
+subscription_features_coach|sub_features_coach public read|SELECT|PERMISSIVE|public|true|<null>
+subscription_features_recruteur|sub_features_recruteur public read|SELECT|PERMISSIVE|public|true|<null>
+subscriptions|admins insert all|INSERT|PERMISSIVE|public|<null>|is_admin()
+subscriptions|admins read all|SELECT|PERMISSIVE|public|is_admin()|<null>
+subscriptions|admins update all|UPDATE|PERMISSIVE|public|is_admin()|is_admin()
+subscriptions|subscriptions own|SELECT|PERMISSIVE|public|(user_id = auth.uid())|<null>
+team_athletes|Athletes read own team rows|SELECT|PERMISSIVE|public|(EXISTS ( SELECT 1
+   FROM athletes a
+  WHERE ((a.id = team_athletes.athlete_id) AND (a.user_id = auth.uid()))))|<null>
+team_athletes|Athletes self-assign to school team|INSERT|PERMISSIVE|public|<null>|((EXISTS ( SELECT 1
+   FROM athletes a
+  WHERE ((a.id = team_athletes.athlete_id) AND (a.user_id = auth.uid())))) AND (EXISTS ( SELECT 1
+   FROM (teams t
+     JOIN athletes a ON ((a.id = team_athletes.athlete_id)))
+  WHERE ((t.id = team_athletes.team_id) AND (t.school_id = a.school_id)))))
+team_athletes|Coaches manage own team athletes|ALL|PERMISSIVE|public|(EXISTS ( SELECT 1
+   FROM team_coaches tc
+  WHERE ((tc.team_id = team_athletes.team_id) AND (tc.coach_id = auth.uid()))))|(EXISTS ( SELECT 1
+   FROM team_coaches tc
+  WHERE ((tc.team_id = team_athletes.team_id) AND (tc.coach_id = auth.uid()))))
+team_athletes|Directors manage school team athletes|ALL|PERMISSIVE|public|(EXISTS ( SELECT 1
+   FROM (teams t
+     JOIN school_coaches sc ON ((sc.school_id = t.school_id)))
+  WHERE ((t.id = team_athletes.team_id) AND (sc.coach_id = auth.uid()) AND (sc.role = ANY (ARRAY['DIRECTEUR'::coach_school_role, 'DIRECTEUR_INTERIM'::coach_school_role])))))|(EXISTS ( SELECT 1
+   FROM (teams t
+     JOIN school_coaches sc ON ((sc.school_id = t.school_id)))
+  WHERE ((t.id = team_athletes.team_id) AND (sc.coach_id = auth.uid()) AND (sc.role = ANY (ARRAY['DIRECTEUR'::coach_school_role, 'DIRECTEUR_INTERIM'::coach_school_role])))))
+team_athletes|Recruiters read own target team rows|SELECT|PERMISSIVE|authenticated|((EXISTS ( SELECT 1
+   FROM users u
+  WHERE ((u.id = auth.uid()) AND (u.role = 'RECRUTEUR'::user_role)))) AND (EXISTS ( SELECT 1
+   FROM athletes a
+  WHERE ((a.id = team_athletes.athlete_id) AND (a.status = 'ACTIF'::account_status)))) AND ((EXISTS ( SELECT 1
+   FROM recruiter_pipeline rp
+  WHERE ((rp.recruiter_id = auth.uid()) AND (rp.athlete_id = team_athletes.athlete_id)))) OR (EXISTS ( SELECT 1
+   FROM recruiter_favorites rf
+  WHERE ((rf.recruiter_id = auth.uid()) AND (rf.athlete_id = team_athletes.athlete_id)))) OR (EXISTS ( SELECT 1
+   FROM (recruiter_list_members rlm
+     JOIN recruiter_lists rl ON ((rl.id = rlm.list_id)))
+  WHERE ((rl.recruiter_id = auth.uid()) AND (rlm.athlete_id = team_athletes.athlete_id))))))|<null>
+team_athletes|Recruiters read verified team athletes|SELECT|PERMISSIVE|public|((EXISTS ( SELECT 1
+   FROM users u
+  WHERE ((u.id = auth.uid()) AND (u.role = 'RECRUTEUR'::user_role)))) AND (EXISTS ( SELECT 1
+   FROM athletes a
+  WHERE ((a.id = team_athletes.athlete_id) AND (a.verified = true) AND (a.status = 'ACTIF'::account_status)))))|<null>
+team_athletes|admins read all|SELECT|PERMISSIVE|public|is_admin()|<null>
+team_coaches|team_coaches readable when team is readable|SELECT|PERMISSIVE|authenticated|(EXISTS ( SELECT 1
+   FROM (teams t
+     JOIN schools s ON ((s.id = t.school_id)))
+  WHERE ((t.id = team_coaches.team_id) AND (s.type = ANY (ARRAY['SECONDAIRE'::text, 'LIGUE_CIVILE'::text])))))|<null>
+team_coaches|team_coaches scoped delete|DELETE|PERMISSIVE|authenticated|((coach_id = auth.uid()) OR is_director_of_team_school(team_id) OR is_admin())|<null>
+team_coaches|team_coaches scoped insert|INSERT|PERMISSIVE|authenticated|<null>|((coach_id = auth.uid()) OR is_director_of_team_school(team_id))
+team_coaches|team_coaches scoped select|SELECT|PERMISSIVE|public|((coach_id = auth.uid()) OR (team_id IN ( SELECT t.id
+   FROM teams t
+  WHERE (t.school_id IN ( SELECT users.school_id
+           FROM users
+          WHERE (users.id = auth.uid()))))) OR is_admin())|<null>
+team_coaches|team_coaches scoped update|UPDATE|PERMISSIVE|public|((team_id IN ( SELECT t.id
+   FROM teams t
+  WHERE (t.school_id IN ( SELECT users.school_id
+           FROM users
+          WHERE (users.id = auth.uid()))))) OR is_admin())|((team_id IN ( SELECT t.id
+   FROM teams t
+  WHERE (t.school_id IN ( SELECT users.school_id
+           FROM users
+          WHERE (users.id = auth.uid()))))) OR is_admin())
+team_events|team_events_read|SELECT|PERMISSIVE|authenticated|true|<null>
+team_events|team_events_write|ALL|PERMISSIVE|authenticated|can_edit_team_page(team_id)|can_edit_team_page(team_id)
+team_invitations|Admins manage all invitations|ALL|PERMISSIVE|authenticated|is_admin()|is_admin()
+team_invitations|Athletes select own invitations|SELECT|PERMISSIVE|authenticated|(athlete_id IN ( SELECT athletes.id
+   FROM athletes
+  WHERE (athletes.user_id = auth.uid())))|<null>
+team_invitations|Athletes update own invitations|UPDATE|PERMISSIVE|authenticated|(athlete_id IN ( SELECT athletes.id
+   FROM athletes
+  WHERE (athletes.user_id = auth.uid())))|((athlete_id IN ( SELECT athletes.id
+   FROM athletes
+  WHERE (athletes.user_id = auth.uid()))) AND (status = ANY (ARRAY['ACCEPTED'::text, 'REJECTED'::text])))
+team_invitations|Coaches cancel own invitations|UPDATE|PERMISSIVE|authenticated|((EXISTS ( SELECT 1
+   FROM team_coaches tc
+  WHERE ((tc.coach_id = auth.uid()) AND (tc.team_id = team_invitations.team_id)))) OR (EXISTS ( SELECT 1
+   FROM (school_coaches sc
+     JOIN teams t ON ((t.school_id = sc.school_id)))
+  WHERE ((sc.coach_id = auth.uid()) AND (t.id = team_invitations.team_id) AND (sc.role = ANY (ARRAY['DIRECTEUR'::coach_school_role, 'DIRECTEUR_INTERIM'::coach_school_role]))))))|((EXISTS ( SELECT 1
+   FROM team_coaches tc
+  WHERE ((tc.coach_id = auth.uid()) AND (tc.team_id = team_invitations.team_id)))) OR (EXISTS ( SELECT 1
+   FROM (school_coaches sc
+     JOIN teams t ON ((t.school_id = sc.school_id)))
+  WHERE ((sc.coach_id = auth.uid()) AND (t.id = team_invitations.team_id) AND (sc.role = ANY (ARRAY['DIRECTEUR'::coach_school_role, 'DIRECTEUR_INTERIM'::coach_school_role]))))))
+team_invitations|Coaches insert invitations on own teams|INSERT|PERMISSIVE|authenticated|<null>|((EXISTS ( SELECT 1
+   FROM team_coaches tc
+  WHERE ((tc.coach_id = auth.uid()) AND (tc.team_id = team_invitations.team_id)))) OR (EXISTS ( SELECT 1
+   FROM (school_coaches sc
+     JOIN teams t ON ((t.school_id = sc.school_id)))
+  WHERE ((sc.coach_id = auth.uid()) AND (t.id = team_invitations.team_id) AND (sc.role = ANY (ARRAY['DIRECTEUR'::coach_school_role, 'DIRECTEUR_INTERIM'::coach_school_role]))))))
+team_invitations|Coaches select invitations on own teams|SELECT|PERMISSIVE|authenticated|((EXISTS ( SELECT 1
+   FROM team_coaches tc
+  WHERE ((tc.coach_id = auth.uid()) AND (tc.team_id = team_invitations.team_id)))) OR (EXISTS ( SELECT 1
+   FROM (school_coaches sc
+     JOIN teams t ON ((t.school_id = sc.school_id)))
+  WHERE ((sc.coach_id = auth.uid()) AND (t.id = team_invitations.team_id) AND (sc.role = ANY (ARRAY['DIRECTEUR'::coach_school_role, 'DIRECTEUR_INTERIM'::coach_school_role]))))))|<null>
+team_page_content|team_page_content_read|SELECT|PERMISSIVE|authenticated|true|<null>
+team_page_content|team_page_content_write|ALL|PERMISSIVE|authenticated|can_edit_team_page(team_id)|can_edit_team_page(team_id)
+team_pennants|team_pennants_read|SELECT|PERMISSIVE|authenticated|true|<null>
+team_pennants|team_pennants_write|ALL|PERMISSIVE|authenticated|can_edit_team_page(team_id)|can_edit_team_page(team_id)
+team_position_needs|team_needs_read|SELECT|PERMISSIVE|authenticated|true|<null>
+team_position_needs|team_needs_write|ALL|PERMISSIVE|authenticated|can_edit_team_page(team_id)|can_edit_team_page(team_id)
+teams|Athletes see their teams|SELECT|PERMISSIVE|public|(school_id = current_user_school_id())|<null>
+teams|Civil league teams are publicly discoverable|SELECT|PERMISSIVE|authenticated|(EXISTS ( SELECT 1
+   FROM schools s
+  WHERE ((s.id = teams.school_id) AND (s.type = 'LIGUE_CIVILE'::text))))|<null>
+teams|Coaches create teams|INSERT|PERMISSIVE|public|<null>|(school_id = current_user_school_id())
+teams|Coaches delete teams|DELETE|PERMISSIVE|public|(school_id = current_user_school_id())|<null>
+teams|Coaches see their school teams|SELECT|PERMISSIVE|public|(school_id = current_user_school_id())|<null>
+teams|Coaches update teams|UPDATE|PERMISSIVE|public|(school_id = current_user_school_id())|<null>
+teams|Recruiters see teams|SELECT|PERMISSIVE|public|(EXISTS ( SELECT 1
+   FROM users
+  WHERE ((users.id = auth.uid()) AND (users.role = 'RECRUTEUR'::user_role))))|<null>
+teams|Secondary teams readable for onboarding|SELECT|PERMISSIVE|authenticated|(EXISTS ( SELECT 1
+   FROM schools s
+  WHERE ((s.id = teams.school_id) AND (s.type = 'SECONDAIRE'::text))))|<null>
+teams|admins read all|SELECT|PERMISSIVE|public|is_admin()|<null>
+users|Coaches lookup orphan athletes|SELECT|PERMISSIVE|authenticated|(is_coach() AND (role = 'ATHLETE'::user_role) AND (EXISTS ( SELECT 1
+   FROM athletes
+  WHERE ((athletes.user_id = users.id) AND (athletes.school_id IS NULL)))))|<null>
+users|Users read conversation participants|SELECT|PERMISSIVE|public|((id = auth.uid()) OR (id IN ( SELECT conversations.recruiter_id
+   FROM conversations
+  WHERE (conversations.coach_id = auth.uid()))) OR (id IN ( SELECT conversations.coach_id
+   FROM conversations
+  WHERE (conversations.recruiter_id = auth.uid()))))|<null>
+users|admins insert users|INSERT|PERMISSIVE|authenticated|<null>|is_admin()
+users|admins read all|SELECT|PERMISSIVE|public|is_admin()|<null>
+users|admins update all|UPDATE|PERMISSIVE|public|is_admin()|is_admin()
+users|authenticated read coaches|SELECT|PERMISSIVE|authenticated|(role = 'COACH'::user_role)|<null>
+users|cegep admin read school recruiters|SELECT|PERMISSIVE|authenticated|((role = 'RECRUTEUR'::user_role) AND (school_id = current_user_school_id()) AND is_cegep_admin())|<null>
+users|coach_reads_athlete_parent|SELECT|PERMISSIVE|authenticated|coach_reads_parent_user(id)|<null>
+users|coaches read recruiter directory|SELECT|PERMISSIVE|authenticated|((role = 'RECRUTEUR'::user_role) AND is_coach())|<null>
+users|users read coaches at their school|SELECT|PERMISSIVE|public|(role = 'COACH'::user_role)|<null>
+users|users read own|SELECT|PERMISSIVE|public|(id = auth.uid())|<null>
+users|users update own|UPDATE|PERMISSIVE|public|(id = auth.uid())|((id = auth.uid()) AND user_privileged_cols_unchanged(role, status, is_platform_admin, context, is_school_admin))

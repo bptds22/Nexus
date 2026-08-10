@@ -3,7 +3,11 @@
    7 threads across all status types.
 ───────────────────────────────────────────────────────────────── */
 
-export type ThreadStatus = "nouveau" | "repondu" | "reponse_recue" | "envoye" | "archive";
+// ThreadStatus + mapDbStatus now live in lib/messaging/threadStatus.ts so the
+// athlete inbox reuses the exact same status model. Re-exported here for the
+// coach page's existing imports.
+export { mapDbStatus, type ThreadStatus } from "@/lib/messaging/threadStatus";
+import type { ThreadStatus } from "@/lib/messaging/threadStatus";
 
 export interface RecruiterProfile {
   id: string;
@@ -64,11 +68,3 @@ export const STATUS_CONFIG: Record<ThreadStatus, { label: string; color: string;
   archive:       { label: "Archivé",         color: "#FFFFFF", bg: "bg-white/20",     textColor: "text-white/60" },
 };
 
-/* ── Helper: map DB status to ThreadStatus ─────────────────── */
-export function mapDbStatus(dbStatus: string | null, coachReplied?: boolean, recruiterReplied?: boolean): ThreadStatus {
-  const s = (dbStatus || "").toLowerCase();
-  if (s === "archived" || s === "archive") return "archive";
-  if (coachReplied && recruiterReplied) return "reponse_recue";
-  if (coachReplied) return "repondu";
-  return "nouveau";
-}

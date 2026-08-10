@@ -43,6 +43,10 @@ import { createAthleteInvitationLink } from "@/lib/queries/coach/createAthleteIn
 import { loadCoachTeams, inviteAthleteToTeam, type CoachTeamOption } from "@/lib/queries/coach/teamInvite";
 import { triggerHaptic } from "@/lib/haptics";
 import { inviteAnchoredAthlete } from "@/lib/queries/coach/inviteAnchoredAthlete";
+import { loadSchoolDirectorStatus } from "@/lib/queries/coach/useSchoolDirector";
+import { loadCoachAthleteScope } from "@/lib/queries/coach/getCoachAthletes";
+import { AthleteSectionHeader } from "@/components/shared/coach/AthleteSectionHeader";
+import { orgNounDe, orgNounPossessif, type SchoolType } from "@/lib/utils/orgLabel";
 
 /* ── Constants ────────────────────────────────────────────── */
 
@@ -107,6 +111,7 @@ export interface CoachAthlete {
   stars: number;
   isVerified: boolean;
   lastValidation: string | null;
+  isPending: boolean;
   jersey: string;
   recruitmentStatus: string;
   committedSchoolName: string | null;
@@ -115,6 +120,9 @@ export interface CoachAthlete {
   /** Genre de l'ÉQUIPE (teams.gender), jamais athletes.genre. null si sans équipe. */
   teamGender: string | null;
   coachId: string | null;
+  /** Nom de l'évaluateur quand la note affichée n'est pas l'éval du coach
+   *  connecté (attribution « Évalué par … »). Vide sinon. */
+  evaluatedByName: string;
   favoritesCount: number;
   hasVideo: boolean;
   gpa: number;
@@ -126,7 +134,7 @@ export interface CoachAthlete {
 /* ── Helpers ──────────────────────────────────────────────── */
 
 
-function mapCoachAthlete(a: Record<string, unknown>, favCounts: Record<string, number>): CoachAthlete {
+function mapCoachAthlete(a: Record<string, unknown>, favCounts: Record<string, number>, currentUserId?: string | null): CoachAthlete {
   const posRaw = a.positions;
   const pos = Array.isArray(posRaw) ? posRaw[0] : posRaw;
   const posObj = pos as { nom?: string; abreviation?: string } | null;
@@ -144,10 +152,23 @@ function mapCoachAthlete(a: Record<string, unknown>, favCounts: Record<string, n
 
   const evalsRaw = a.evaluations;
   const evals = Array.isArray(evalsRaw) ? evalsRaw : [];
-  const eval0 = selectBestEvaluation(evals) as { cote_globale?: number; distinctions?: unknown } | undefined;
-  const starsRaw = (eval0?.cote_globale ?? (a.cote_globale_entraineur as number) ?? 0) as number;
+  const eval0 = selectBestEvaluation(evals) as { cote_globale?: number; distinctions?: unknown; coach_id?: string; evaluator?: unknown } | undefined;
+  // Note = LA PLUS RÉCENTE. cote_globale_entraineur (last-write, toujours
+  // lisible) d'abord ; eval0 en repli. Aligne le mobile sur le web : la RLS
+  // evaluations ne renvoyant au coach que SA ligne, selectBestEvaluation seul
+  // affichait sa vieille note au lieu de la dernière (ex. celle du directeur).
+  const starsRaw = ((a.cote_globale_entraineur as number) ?? eval0?.cote_globale ?? 0) as number;
   const stars = Math.round(starsRaw * 10) / 10;
   const distinctions = parseDistinctions(eval0?.distinctions);
+  // Attribution : auteur de l'éval choisie (join users), seulement s'il diffère
+  // du coach connecté (ex. le directeur).
+  const evalCoachId = (eval0?.coach_id as string | null) ?? null;
+  const evaluatedByName = (() => {
+    const ev = eval0?.evaluator as { first_name?: string; last_name?: string } | Array<{ first_name?: string; last_name?: string }> | null | undefined;
+    const evObj = Array.isArray(ev) ? ev[0] : ev;
+    const name = evObj ? `${evObj.first_name || ""} ${evObj.last_name || ""}`.trim() : "";
+    return name && evalCoachId && currentUserId && evalCoachId !== currentUserId ? name : "";
+  })();
 
   // taRows : depuis l'ancrage unique strict, PostgREST renvoie cet embed en
   // OBJET (ou null). Un test Array.isArray excluant le vidait — le roster
@@ -177,6 +198,7 @@ function mapCoachAthlete(a: Record<string, unknown>, favCounts: Record<string, n
     stars,
     isVerified: !!a.verified,
     lastValidation: (a.last_profile_validation as string) || null,
+    isPending: (a.status as string) === "EN_ATTENTE",
     jersey: a.numero_jersey != null ? String(a.numero_jersey) : "",
     recruitmentStatus: (a.recruitment_status as string) || (a.statut_recrutement_override as string) || "OUVERT",
     committedSchoolName: committedSchool?.name || null,
@@ -184,6 +206,7 @@ function mapCoachAthlete(a: Record<string, unknown>, favCounts: Record<string, n
     noTeam,
     teamGender,
     coachId: (a.coach_id as string | null) ?? null,
+    evaluatedByName,
     favoritesCount: favCounts[id] || 0,
     hasVideo: !!a.video_faits_saillants_url,
     gpa: (a.moyenne_generale as number) || 0,
@@ -209,6 +232,7 @@ function cardData(a: CoachAthlete) {
     stars: a.stars,
     isVerified: a.isVerified,
     lastValidation: a.lastValidation,
+    isPending: a.isPending,
     isFavorited: false,
     jersey: a.jersey,
     recruitmentStatus: a.recruitmentStatus,
@@ -606,9 +630,14 @@ export function CoachAthleteRowMobile({ a, onTap }: { a: CoachAthlete; onTap: ()
         )}
       </motion.div>
       <div className="flex-1 min-w-0">
-        <p className="text-white font-bold text-[14px] truncate leading-tight">
-          {a.firstName} {a.lastName}
-        </p>
+        <div className="flex items-center gap-1.5 min-w-0">
+          <p className="text-white font-bold text-[14px] truncate leading-tight">
+            {a.firstName} {a.lastName}
+          </p>
+          {a.isPending && (
+            <span className="shrink-0 text-[9px] font-black uppercase tracking-wider text-[#F59E0B] bg-[#F59E0B]/15 border border-[#F59E0B]/30 rounded-full px-1.5 py-0.5">En attente</span>
+          )}
+        </div>
         <p className="text-[11px] text-[#9CA3AF] truncate mt-0.5">
           {a.position || a.sportName || "—"} · {a.noTeam ? "Ligue civile" : a.school || "—"}
         </p>
@@ -942,6 +971,9 @@ export function CoachAthletesMobile() {
   // Data state
   const [athletes, setAthletes] = useState<CoachAthlete[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string>("");
+  const [isDirector, setIsDirector] = useState(false);
+  // Type d'org du coach courant → vocabulaire type-aware (club vs école).
+  const [coachOrgType, setCoachOrgType] = useState<SchoolType | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshVersion, setRefreshVersion] = useState(0);
 
@@ -986,9 +1018,13 @@ export function CoachAthletesMobile() {
       if (!user || cancelled) { setLoading(false); return; }
       setCurrentUserId(user.id);
 
+      // Director oversight → second "Athlètes de l'école" section.
+      const dir = await loadSchoolDirectorStatus(supabase, user.id);
+      if (!cancelled) setIsDirector(dir.isDirector);
+
       const { data: coachRow, error: coachError } = await supabase
         .from("users")
-        .select("school_id")
+        .select("school_id, schools!school_id(type)")
         .eq("id", user.id)
         .single();
 
@@ -997,7 +1033,21 @@ export function CoachAthletesMobile() {
         return;
       }
 
-      const { data } = await supabase
+      const coachSchoolRel = (coachRow as { schools?: unknown }).schools;
+      if (!cancelled) setCoachOrgType(((Array.isArray(coachSchoolRel) ? coachSchoolRel[0] : coachSchoolRel) as { type?: SchoolType } | null)?.type ?? null);
+
+      // Périmètre canonique « mes athlètes » — source unique get_coach_athletes
+      // (owner ∪ team, +école si directeur ; ACTIF+EN_ATTENTE badgés). Plus de
+      // query parallèle ; le partitionnement se fait en mémoire sur ce périmètre.
+      // includePending: false — DÉCISION DU 2026-08-08, cf. le bloc de statuts
+      // plus bas. get_coach_athletes a p_include_pending DEFAULT true : appelé
+      // sans argument il ramènerait les EN_ATTENTE, que le revert du 08-08 a
+      // explicitement exclus du roster. Le périmètre reste canonique (owner ∪
+      // team ∪ école si directeur), seul le statut est resserré.
+      const { ids: scopeIds } = await loadCoachAthleteScope(supabase, { includePending: false });
+      if (!scopeIds.length) { if (!cancelled) setLoading(false); return; }
+
+      const athletesQuery = supabase
         .from("athletes")
         .select(`
           id,
@@ -1025,7 +1075,8 @@ export function CoachAthletesMobile() {
           schools!school_id(name, region),
           committed_school:schools!committed_school_id(name),
           team_athletes(team_id, teams!team_id(gender)),
-          evaluations(cote_globale, rapport_entraineur, distinctions, updated_at)
+          evaluations(cote_globale, rapport_entraineur, distinctions, updated_at, coach_id,
+            evaluator:users!evaluations_coach_id_fkey(first_name, last_name))
         `)
         // STATUTS VISIBLES DANS LE ROSTER — enum account_status :
         // ACTIF · DESACTIVE · EN_ATTENTE · DIPLOME · SUPPRIME
@@ -1063,8 +1114,12 @@ export function CoachAthletesMobile() {
         // ligne de chacun en base aujourd'hui. Si un athlete diplome doit rester
         // consultable par son ancien coach, c'est un choix a prendre, pas un
         // oubli a corriger ici.
-        .eq("school_id", coachRow.school_id)
+        .in("id", scopeIds)
+        // Ceinture et bretelles : le RPC filtre déjà, mais ce filtre explicite
+        // documente l'intention à l'endroit où on la lit.
         .eq("status", "ACTIF");
+
+      const { data } = await athletesQuery;
 
       if (!data || cancelled) { if (!cancelled) setLoading(false); return; }
 
@@ -1083,7 +1138,7 @@ export function CoachAthletesMobile() {
         }
       }
 
-      const mapped: CoachAthlete[] = data.map((a: Record<string, unknown>) => mapCoachAthlete(a, favCounts));
+      const mapped: CoachAthlete[] = data.map((a: Record<string, unknown>) => mapCoachAthlete(a, favCounts, user.id));
       if (cancelled) return;
       setAthletes(mapped);
       setLoading(false);
@@ -1128,10 +1183,16 @@ export function CoachAthletesMobile() {
     () => athletes.filter((a) => a.coachId == null),
     [athletes]
   );
+  // Director oversight: school athletes owned by OTHER coaches (unclaimed
+  // stay in the À réclamer tab, never double-listed).
+  const schoolAthletes = useMemo(
+    () => athletes.filter((a) => a.coachId !== currentUserId && a.coachId != null),
+    [athletes, currentUserId]
+  );
 
-  /* ── Filter pipeline (Roster tab) ── */
-  const filtered = useMemo(() => {
-    let list = [...myRoster];
+  /* ── Filter pipeline (Roster tab) — shared across both director sections ── */
+  const applyFilters = useCallback((source: CoachAthlete[]) => {
+    let list = [...source];
     if (search.trim().length >= 2) {
       const q = search.toLowerCase();
       list = list.filter((a) =>
@@ -1164,7 +1225,10 @@ export function CoachAthletesMobile() {
     }
 
     return list;
-  }, [myRoster, search, sport, genderFilter, position, region, promotion, verifiedOnly, withVideoOnly, minRating, withSportBadge, withAcademicBadge, minGpa, sortBy]);
+  }, [search, sport, genderFilter, position, region, promotion, verifiedOnly, withVideoOnly, minRating, withSportBadge, withAcademicBadge, minGpa, sortBy]);
+
+  const filtered = useMemo(() => applyFilters(myRoster), [applyFilters, myRoster]);
+  const filteredSchool = useMemo(() => applyFilters(schoolAthletes), [applyFilters, schoolAthletes]);
 
   const activeFiltersCount = [
     sport, genderFilter, position, promotion, region, minGpa,
@@ -1293,6 +1357,33 @@ export function CoachAthletesMobile() {
     }
   }, [loading, filtered.length, unclaimedAthletes.length, activeTab]);
 
+  /* Shared section body — reused by both director sections. Plain (no
+     per-card stagger) to avoid framer key collisions across two lists;
+     the non-director path keeps its animated grid/list untouched. */
+  const renderMobileSection = (list: CoachAthlete[]) =>
+    viewMode === "grid" ? (
+      <div className="grid grid-cols-2 gap-3 p-4">
+        {list.map((a) => (
+          <AthleteCardMobile
+            key={a.id}
+            a={cardData(a)}
+            isFree={false}
+            favDisabled
+            onToggleFav={() => { /* no-op coach roster */ }}
+            favoritesCount={a.favoritesCount}
+            profileHref={`/coach/athletes/${a.id}`}
+            layoutIdPrefix="coach-athlete-photo"
+          />
+        ))}
+      </div>
+    ) : (
+      <div className="space-y-2 p-4">
+        {list.map((a) => (
+          <CoachAthleteRowMobile key={a.id} a={a} onTap={() => router.push(`/coach/athletes/${a.id}`)} />
+        ))}
+      </div>
+    );
+
   /* ── Render ── */
   return (
     <div className="min-h-screen bg-[#111317] text-white nx-mobile-pb-tabbar">
@@ -1368,7 +1459,7 @@ export function CoachAthletesMobile() {
           {loading
             ? "Chargement…"
             : activeTab === "roster"
-              ? `${filtered.length} athlète${filtered.length !== 1 ? "s" : ""}`
+              ? (() => { const n = isDirector ? filtered.length + filteredSchool.length : filtered.length; return `${n} athlète${n !== 1 ? "s" : ""}`; })()
               : `${unclaimedAthletes.length} à réclamer`}
         </span>
       </div>
@@ -1380,7 +1471,30 @@ export function CoachAthletesMobile() {
             <SkeletonGrid />
           </motion.div>
         ) : activeTab === "roster" ? (
-          filtered.length === 0 ? (
+          isDirector ? (
+            <motion.div key="roster-director" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.22 }}>
+              {/* Mes athlètes */}
+              <div className="px-4 pt-2 pb-1">
+                <AthleteSectionHeader title="Mes athlètes" count={filtered.length} />
+              </div>
+              {filtered.length === 0 ? (
+                <p className="px-4 py-3 text-[13px] text-[#6b7280]">
+                  {myRoster.length === 0 ? "Tu n'as pas encore d'athlètes." : "Aucun de tes athlètes ne correspond aux filtres."}
+                </p>
+              ) : renderMobileSection(filtered)}
+              {/* Athlètes de l'école (supervision directeur) */}
+              {schoolAthletes.length > 0 && (
+                <>
+                  <div className="px-4 pt-4 pb-1">
+                    <AthleteSectionHeader title={`Athlètes ${orgNounDe(coachOrgType)}`} count={filteredSchool.length} director />
+                  </div>
+                  {filteredSchool.length === 0 ? (
+                    <p className="px-4 py-3 text-[13px] text-[#6b7280]">Aucun athlète {orgNounDe(coachOrgType)} ne correspond aux filtres.</p>
+                  ) : renderMobileSection(filteredSchool)}
+                </>
+              )}
+            </motion.div>
+          ) : filtered.length === 0 ? (
             <motion.div key="empty-roster" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="px-6 py-12 text-center">
               {myRoster.length === 0 && unclaimedAthletes.length > 0 ? (
                 <>
@@ -1394,7 +1508,7 @@ export function CoachAthletesMobile() {
                   </div>
                   <h3 className="font-head text-[16px] font-black text-white uppercase tracking-tight mb-2">Aucun athlète dans ton roster</h3>
                   <p className="text-[13px] text-[#9CA3AF] max-w-xs mx-auto leading-relaxed mb-4">
-                    Réclame des athlètes parmi ceux disponibles à ton école pour bâtir ton roster.
+                    Réclame des athlètes parmi ceux disponibles à {orgNounPossessif(coachOrgType)} pour bâtir ton roster.
                   </p>
                   <button
                     type="button"
@@ -1498,7 +1612,7 @@ export function CoachAthletesMobile() {
               />
               <h3 className="font-head text-[16px] font-black text-white uppercase tracking-tight">Aucun athlète non réclamé</h3>
               <p className="text-[13px] text-[#9CA3AF] mt-2 max-w-sm mx-auto">
-                Aucun athlète non réclamé à ton école pour l&apos;instant.
+                Aucun athlète non réclamé à {orgNounPossessif(coachOrgType)} pour l&apos;instant.
               </p>
             </motion.div>
           ) : (

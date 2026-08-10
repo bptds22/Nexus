@@ -15,6 +15,20 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 /** Sentinel used in the UI dropdowns for the coach_id IS NULL pool. */
 export const UNASSIGNED_COACH_ID = "__UNASSIGNED__";
 
+/**
+ * Pick a sensible initial SOURCE so the transfer panel isn't empty on load:
+ *   me (if I have athletes) → "Non assigné" pool (if it has any) →
+ *   first coach with athletes → "" (nothing to select).
+ */
+export function pickInitialSource(coaches: SchoolCoachOption[], selfId: string): string {
+  const me = coaches.find((c) => c.id === selfId);
+  if (me && me.athleteCount > 0) return me.id;
+  const pool = coaches.find((c) => c.id === UNASSIGNED_COACH_ID);
+  if (pool && pool.athleteCount > 0) return UNASSIGNED_COACH_ID;
+  const firstNonEmpty = coaches.find((c) => c.athleteCount > 0);
+  return firstNonEmpty ? firstNonEmpty.id : "";
+}
+
 export interface SchoolCoachOption {
   /** Coach user id, or UNASSIGNED_COACH_ID for the unclaimed pool. */
   id: string;
@@ -30,6 +44,8 @@ export interface TransferAthlete {
   photo?: string | null;
   sport?: string | null;
   position?: string | null;
+  /** #EN_ATTENTE : athlète en attente de consentement → liseré « En attente ». */
+  isPending?: boolean;
 }
 
 /**
@@ -47,12 +63,30 @@ export async function transferAthletes(
 
   const coachId = toCoachId === UNASSIGNED_COACH_ID ? null : toCoachId;
 
-  const { error } = await supabase
+  // `.select()` so we can count rows ACTUALLY updated. RLS
+  // ("Coaches update own team athletes" / own-athlete / claim-unclaimed)
+  // limits reassignment to the athlete's owner, its team coach, or a
+  // director — a denied row updates silently (no error, 0 rows). Without
+  // this check the caller reported a phantom success on athletes it
+  // couldn't move.
+  const { data, error } = await supabase
     .from("athletes")
     .update({ coach_id: coachId, updated_at: new Date().toISOString() })
-    .in("id", athleteIds);
+    .in("id", athleteIds)
+    .select("id");
 
   if (error) return { success: false, error: error.message };
+
+  const moved = (data ?? []).length;
+  if (moved < athleteIds.length) {
+    const blocked = athleteIds.length - moved;
+    return {
+      success: false,
+      error:
+        `${blocked} athlète${blocked > 1 ? "s" : ""} n'ont pas pu être transféré${blocked > 1 ? "s" : ""}. ` +
+        "Tu peux seulement réassigner tes propres athlètes, ceux de tes équipes, ou (en tant que directeur) tous ceux de l'école.",
+    };
+  }
   return { success: true };
 }
 
@@ -73,10 +107,13 @@ export async function loadSchoolCoaches(
       .from("athletes")
       .select("coach_id")
       .eq("school_id", schoolId)
-      .eq("status", "ACTIF"),
+      // #EN_ATTENTE : un athlète en attente de consentement reste gérable /
+      // transférable (décision BP « EN_ATTENTE dans tous les pickers »). Le
+      // compte par coach doit matcher la liste source, donc même filtre.
+      .in("status", ["ACTIF", "EN_ATTENTE"]),
   ]);
 
-  // coach_id (or null) → active athlete count
+  // coach_id (or null) → athlete count (ACTIF + EN_ATTENTE)
   const counts = new Map<string | null, number>();
   (athRows ?? []).forEach((a) => {
     const cid = (a as { coach_id: string | null }).coach_id;
@@ -125,10 +162,12 @@ export async function loadAthletesForCoach(
   let query = supabase
     .from("athletes")
     .select(
-      "id, first_name, last_name, photo_url, sports!sport_id(nom), positions!position_id(abreviation)",
+      "id, first_name, last_name, photo_url, status, sports!sport_id(nom), positions!position_id(abreviation)",
     )
     .eq("school_id", schoolId)
-    .eq("status", "ACTIF");
+    // #EN_ATTENTE inclus (badgé) — la règle d'action (RLS d'update) reste
+    // owner/team/directeur ; seul le statut s'élargit, comme les autres pickers.
+    .in("status", ["ACTIF", "EN_ATTENTE"]);
 
   if (coachId === UNASSIGNED_COACH_ID) query = query.is("coach_id", null);
   else query = query.eq("coach_id", coachId);
@@ -141,6 +180,7 @@ export async function loadAthletesForCoach(
       first_name: string;
       last_name: string;
       photo_url: string | null;
+      status: string | null;
       sports: { nom?: string } | { nom?: string }[] | null;
       positions: { abreviation?: string } | { abreviation?: string }[] | null;
     };
@@ -153,6 +193,7 @@ export async function loadAthletesForCoach(
       photo: row.photo_url,
       sport: sport?.nom ?? null,
       position: pos?.abreviation ?? null,
+      isPending: row.status === "EN_ATTENTE",
     };
   });
 }

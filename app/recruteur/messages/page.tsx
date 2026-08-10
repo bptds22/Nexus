@@ -1,12 +1,14 @@
 "use client";
 
 import FeatureGate from "@/components/subscription/FeatureGate";
-import { useState, useMemo } from "react";
+import { Suspense, useState, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import RecruteurMessagesThread from "./[id]/PageClient";
 import StarRating from "@/components/ui/StarRating";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
 import type { GlobalRecruitmentStatus } from "@/lib/types/models";
-import { useConversations } from "@/lib/queries/recruiter/useConversations";
+import { useConversations, type ThreadData } from "@/lib/queries/recruiter/useConversations";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import { RecruteurMessagesMobile } from "@/components/shared/RecruteurMessagesMobile";
 
@@ -17,24 +19,10 @@ const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
    Wired to Supabase: conversations + messages + users + athletes
 ═══════════════════════════════════════════════════════════════ */
 
-interface ThreadData {
-  id: string;
-  coachName: string;
-  coachInitials: string;
-  coachSchool: string;
-  coachId: string;
-  athleteName: string;
-  athleteInitials: string;
-  athleteId: string;
-  athletePosition: string;
-  athleteVerified: boolean;
-  athleteStars: number;
-  athleteRecruitmentStatus: string;
-  lastMessage: string;
-  lastMessageAt: string;
-  unreadCount: number;
-  status: string;
-}
+/* ThreadData n'est PAS redeclaree ici. Une copie locale existait, amputee de
+   coachPhotoUrl / athletePhotoUrl / lastSenderId : la liste voulait afficher
+   des avatars que son propre type ne portait pas. La forme canonique vit dans
+   useConversations, la ou les champs sont construits. */
 
 type FilterPreset = "tous" | "non_lu" | "sans_reponse" | "archive";
 
@@ -77,51 +65,68 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 function ThreadCard({ thread: t }: { thread: ThreadData }) {
+  // RECRUTEUR_ATHLETE is a DIRECT thread — the athlete IS the counterparty.
+  // No coach, no "about-athlete" context panel.
+  const isDirect = t.conversationType === "RECRUTEUR_ATHLETE";
+  const primaryName = isDirect ? t.athleteName : t.coachName;
+  const primaryInitials = isDirect ? t.athleteInitials : t.coachInitials;
+  const primarySub = isDirect ? t.athletePosition : t.coachSchool;
+  const primaryPhotoUrl = isDirect ? t.athletePhotoUrl : t.coachPhotoUrl;
   return (
     <Link
-      href={`/recruteur/messages/${t.id}`}
+      href={`/recruteur/messages?id=${t.id}`}
       className={`flex items-center gap-4 px-5 py-4 transition-colors hover:bg-[#252D3A] ${
         t.unreadCount > 0
           ? "bg-[#1E2430] border-l-[3px] border-l-[#E63946]"
           : "bg-[#1A1D24] border-l-[3px] border-l-transparent"
       }`}
     >
-      {/* Coach avatar */}
+      {/* Counterparty avatar + identity */}
       <div className="flex items-center gap-3 flex-1 min-w-0">
-        <div className="w-11 h-11 rounded-full bg-[#2D3748] flex items-center justify-center shrink-0">
-          <span className="text-[13px] font-bold text-[#9CA3AF]">{t.coachInitials}</span>
-        </div>
+        {primaryPhotoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={primaryPhotoUrl} alt="" className="w-11 h-11 rounded-full object-cover shrink-0" />
+        ) : (
+          <div className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 ${isDirect ? "bg-[#22C55E]/15 border border-[#22C55E]/30" : "bg-[#2D3748]"}`}>
+            <span className={`text-[13px] font-bold ${isDirect ? "text-[#22C55E]" : "text-[#9CA3AF]"}`}>{primaryInitials}</span>
+          </div>
+        )}
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <span className={`text-[15px] font-bold truncate ${t.unreadCount > 0 ? "text-white" : "text-[#e0e0e0]"}`}>
-              {t.coachName}
+              {primaryName}
             </span>
-            <span className="text-[12px] text-[#6b7280] shrink-0 hidden sm:inline">{t.coachSchool}</span>
+            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider shrink-0 ${isDirect ? "bg-[#22C55E]/15 border border-[#22C55E]/30 text-[#22C55E]" : "bg-[#3B82F6]/15 border border-[#3B82F6]/30 text-[#3B82F6]"}`}>
+              {isDirect ? "Athlète" : "Coach"}
+            </span>
+            {primarySub && <span className="text-[12px] text-[#6b7280] shrink-0 hidden sm:inline">{primarySub}</span>}
           </div>
           <p className="text-[13px] text-[#6b7280] truncate mt-0.5">{t.lastMessage}</p>
         </div>
       </div>
 
-      {/* Athlete context */}
-      <div className="hidden md:flex items-center gap-2 shrink-0 w-[260px]">
-        <div className="w-8 h-8 rounded-full bg-[#111317] border border-[#2D3748] flex items-center justify-center shrink-0">
-          <span className="text-[9px] font-bold text-[#6b7280]">{t.athleteInitials}</span>
-        </div>
-        <div className="min-w-0">
-          <span className="text-[13px] font-semibold text-[#9CA3AF] truncate block">{t.athleteName}</span>
-          <div className="flex items-center gap-1.5">
-            <span className="text-[11px] text-[#6b7280] font-bold uppercase">{t.athletePosition}</span>
-            {t.athleteVerified && (
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="#3B82F6" stroke="none">
-                <circle cx="12" cy="12" r="10" />
-                <path d="M9 12l2 2 4-4" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-              </svg>
-            )}
-            <StarRating rating={t.athleteStars} size="sm" />
+      {/* Athlete context — ONLY for about-athlete (RECRUTEUR_COACH) threads. */}
+      {!isDirect && (
+        <div className="hidden md:flex items-center gap-2 shrink-0 w-[260px]">
+          <div className="w-8 h-8 rounded-full bg-[#111317] border border-[#2D3748] flex items-center justify-center shrink-0">
+            <span className="text-[9px] font-bold text-[#6b7280]">{t.athleteInitials}</span>
           </div>
-          <RecruitmentStatusBadge status={t.athleteRecruitmentStatus as GlobalRecruitmentStatus} size="sm" />
+          <div className="min-w-0">
+            <span className="text-[13px] font-semibold text-[#9CA3AF] truncate block">{t.athleteName}</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[11px] text-[#6b7280] font-bold uppercase">{t.athletePosition}</span>
+              {t.athleteVerified && (
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="#3B82F6" stroke="none">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M9 12l2 2 4-4" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                </svg>
+              )}
+              <StarRating rating={t.athleteStars} size="sm" />
+            </div>
+            <RecruitmentStatusBadge status={t.athleteRecruitmentStatus as GlobalRecruitmentStatus} size="sm" />
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Timestamp + status */}
       <div className="flex flex-col items-end gap-1.5 shrink-0 w-[130px]">
@@ -135,6 +140,21 @@ function ThreadCard({ thread: t }: { thread: ThreadData }) {
 }
 
 export default function Page() {
+  return (
+    <Suspense fallback={null}>
+      <RecruteurMessagesRouter />
+    </Suspense>
+  );
+}
+
+// STRATÉGIE A — query-param routing : ?id=<uuid> → le fil, sinon l'inbox.
+function RecruteurMessagesRouter() {
+  const threadId = useSearchParams().get("id");
+  if (threadId) return <RecruteurMessagesThread />;
+  return <RecruteurMessagesDispatch />;
+}
+
+function RecruteurMessagesDispatch() {
   // Iter 7.8a — mobile early return AVANT le FeatureGate desktop : la mobile
   // gère son propre gating Free (blur + tease) en interne.
   if (IS_CAPACITOR) return <RecruteurMessagesMobile />;

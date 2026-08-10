@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import SchoolGate from "@/components/subscription/SchoolGate";
 import { createClient } from "@/lib/supabase/client";
+import { loadCoachAthleteScope } from "@/lib/queries/coach/getCoachAthletes";
 import { calculateProfileCompletion } from "@/lib/utils/calculateProfileCompletion";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -118,9 +119,12 @@ function CoachAnalyticsPage() {
         return;
       }
 
-      // 2. Get all athletes at this school — filter by athletes.school_id (authoritative),
-      //    not by coach_id. This catches athletes whose coach_id is NULL or whose coach
-      //    isn't in school_coaches.
+      // 2. Périmètre canonique — source unique get_coach_athletes (directeur →
+      //    école ∪ équipes ; ACTIF+EN_ATTENTE, DESACTIVE/DIPLOME exclus). Le
+      //    scope école captait déjà les coach_id NULL ; le RPC ajoute les
+      //    athlètes d'équipe et applique enfin le filtre statut.
+      const { ids: scopeIds } = await loadCoachAthleteScope(supabase);
+      if (!scopeIds.length) { setD(emptyData); setLoading(false); return; }
       const { data: athletes, error: athleteErr } = await supabase
         .from("athletes")
         // Every column calculateProfileCompletion needs, plus the evaluations join it looks at.
@@ -139,7 +143,7 @@ function CoachAnalyticsPage() {
           team_athletes(team_id),
           evaluations(leadership, discipline, coachabilite, intelligence_jeu, competitivite, esprit_equipe, resilience, attitude_mentalite, cote_globale, rapport_entraineur, distinctions, updated_at)
         `)
-        .eq("school_id", mySchoolId);
+        .in("id", scopeIds);
 
       const athleteList = athletes || [];
       const totalAthletes = athleteList.length;

@@ -44,6 +44,10 @@
 	<true/>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>NSCalendarsUsageDescription</key>
+	<string>Nexus ajoute les visites planifiées à ton calendrier.</string>
+	<key>NSCalendarsWriteOnlyAccessUsageDescription</key>
+	<string>Nexus ajoute les visites planifiées à ton calendrier.</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>

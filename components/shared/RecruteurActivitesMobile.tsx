@@ -124,7 +124,7 @@ function getDestination(item: ActivityListItem): string | null {
     return `/recruteur/listes/${item.listId}`;
   }
   if (item.actionType === "COACH_REPLY" && item.conversationId) {
-    return `/recruteur/messages/${item.conversationId}`;
+    return `/recruteur/messages?id=${item.conversationId}`;
   }
   if (item.actionType === "PIPELINE_CHANGED" && !item.athleteId) {
     return "/recruteur/pipeline";

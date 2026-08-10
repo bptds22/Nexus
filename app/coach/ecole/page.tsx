@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { loadCoachAthleteScope } from "@/lib/queries/coach/getCoachAthletes";
 import SchoolGate from "@/components/subscription/SchoolGate";
 import { useSubscription } from "@/lib/hooks/useSubscription";
 import KpiCard from "@/components/director/KpiCard";
@@ -124,11 +125,20 @@ function SchoolDashboardContent() {
         .eq("school_id", mySchool.school_id);
       const coachIds = schoolCoaches?.map(sc => sc.coach_id) || [];
 
-      // Get all athletes for these coaches
-      const { data: athletes } = await supabase
-        .from("athletes")
-        .select("id, first_name, last_name, sport_id, coach_id, profile_completion")
-        .in("coach_id", coachIds);
+      // Périmètre canonique — source unique get_coach_athletes (directeur →
+      // école ∪ équipes ; ACTIF+EN_ATTENTE, DESACTIVE/DIPLOME exclus). Remplace
+      // .in("coach_id", coachIds) qui ratait les athlètes d'équipe et les non
+      // réclamés (coach_id NULL) et ne filtrait aucun statut.
+      const { ids: scopeIds } = await loadCoachAthleteScope(supabase);
+      let athletes:
+        | { id: string; first_name: string | null; last_name: string | null; sport_id: string | null; coach_id: string | null; profile_completion: number | null }[]
+        | null = null;
+      if (scopeIds.length) {
+        ({ data: athletes } = await supabase
+          .from("athletes")
+          .select("id, first_name, last_name, sport_id, coach_id, profile_completion")
+          .in("id", scopeIds));
+      }
       const athleteList = athletes || [];
       const athleteIds = athleteList.map(a => a.id);
 

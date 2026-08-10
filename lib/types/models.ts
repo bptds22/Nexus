@@ -784,6 +784,16 @@ export interface AthleteProfileRecruiterView {
   traitRatings?: AthleteTraitRatings;
   overallRating: number;
   distinctions: DistinctionEntry[];
+  /** Auteur de l'éval AFFICHÉE (celle choisie par selectBestEvaluation, la
+   *  plus récente). Porte le coach_id de la ligne évaluée + son nom résolu via
+   *  users. Sert à l'attribution « Évalué par … » quand la note affichée n'est
+   *  PAS l'éval du coach courant (evaluatorCoachId !== coach connecté). */
+  evaluatorCoachId?: string | null;
+  /** `string | null` comme son frere evaluatorCoachId : les deux constructeurs
+   *  divergeaient (loadAthleteFromSupabase rend "", le profil mobile rend null)
+   *  et le type n'admettait que `undefined`. On elargit plutot que de caster —
+   *  les consommateurs testent la verite (`!!a.evaluatorName`), null passe. */
+  evaluatorName?: string | null;
 
   // Media
   highlightVideoUrl?: string;

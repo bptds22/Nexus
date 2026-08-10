@@ -114,7 +114,7 @@ function CoachActivitesDesktop() {
           const athleteId = (row.athlete_id as string) || "";
 
           const ctaRoute = dbType === "NEW_MESSAGE" && meta.conversation_id
-            ? `/coach/demandes/${meta.conversation_id as string}`
+            ? `/coach/demandes?id=${meta.conversation_id as string}`
             : `/coach/athletes/${athleteId}`;
 
           return {

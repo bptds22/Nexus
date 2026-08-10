@@ -94,6 +94,11 @@ export function RecruteurMessagesMobile() {
   const { data: threads = [], isLoading } = useConversations();
   const { tier, loading: tierLoading } = useSubscription();
   const isFree = tier === "free";
+  // Le verrou (overlay Pro) ne doit s'afficher QU'UNE FOIS le tier chargé : le
+  // Provider défaute tier→"free" avant le fetch, sinon un All Star voit le tease
+  // « réservé Pro » flasher au login. Tant que ça charge, le shell montre son
+  // skeleton (isLoading={loading}), pas l'overlay free.
+  const showFreeLock = !tierLoading && isFree;
   const archiveMut = useArchiveConversation();
   const { data: currentUser } = useCurrentUser();
   const userId = currentUser?.authUser.id;
@@ -137,7 +142,7 @@ export function RecruteurMessagesMobile() {
       return;
     }
     try { sessionStorage.setItem("lastRecruiterTab", "messages"); } catch { /* no-op */ }
-    router.push(`/recruteur/messages/${thread.id}`);
+    router.push(`/recruteur/messages?id=${thread.id}`);
   };
 
   const handleToggleSelect = (id: string) => {
@@ -208,13 +213,20 @@ export function RecruteurMessagesMobile() {
      and inset separator around this slot. */
   const renderRow = (t: ThreadData) => {
     const unread = t.unreadCount > 0;
+    // Règle contrepartie (#9) : l'avatar est TOUJOURS l'autre participant.
+    // RECRUTEUR_ATHLETE (direct) → l'athlète ; RECRUTEUR_COACH (à propos d'un
+    // athlète) → le COACH. Ça distingue un fil AVEC l'athlète d'un fil À PROPOS
+    // de lui — jamais l'athlète-du-contexte quand la contrepartie est le coach.
+    const isDirect = t.conversationType === "RECRUTEUR_ATHLETE";
+    const cpPhoto = isDirect ? t.athletePhotoUrl : t.coachPhotoUrl;
+    const cpInitials = isDirect ? t.athleteInitials : t.coachInitials;
     return (
       <div className="flex items-center gap-3">
         <div className="relative w-[52px] h-[52px] rounded-full overflow-hidden flex-shrink-0 bg-[#2F3440]">
           <AthletePhotoFill
-            photoUrl={null}
-            firstName={t.athleteInitials[0] ?? ""}
-            lastName={t.athleteInitials[1] ?? ""}
+            photoUrl={cpPhoto}
+            firstName={cpInitials[0] ?? ""}
+            lastName={cpInitials[1] ?? ""}
             initialsFontSize={20}
           />
         </div>
@@ -228,7 +240,9 @@ export function RecruteurMessagesMobile() {
             </span>
           </div>
           <p className="text-[15px] text-white/55 mt-0.5 truncate">
-            Coach {t.coachName}
+            {t.conversationType === "RECRUTEUR_ATHLETE"
+              ? (t.athletePosition ? `Athlète · ${t.athletePosition}` : "Athlète · message direct")
+              : `Coach ${t.coachName}`}
           </p>
           <p className="text-[15px] text-white/40 mt-0.5 truncate">
             {t.lastMessage || "Aucun message"}
@@ -287,12 +301,12 @@ export function RecruteurMessagesMobile() {
       onSwipeArchive={handleArchiveSwipe}
       title="Messages"
       onCreate={() => router.push("/recruteur/messages/nouveau")}
-      createDisabled={isFree}
+      createDisabled={showFreeLock}
       onCreateBlocked={() => toast.info({
         message: "Abonnement Pro requis",
         detail: "L'envoi de messages est réservé Pro.",
       })}
-      isLocked={isFree}
+      isLocked={showFreeLock}
       lockOverlay={lockTease}
       emptyTitle={emptyCopy.title}
       emptyDescription={emptyCopy.sub}
