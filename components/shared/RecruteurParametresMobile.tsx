@@ -6,10 +6,10 @@
    Pattern Réglages iPhone : rows iOS groupées, sections collapsées,
    toggles rouge. Colonnes DB exactes (DIAG 7.38 §B.2) :
 
-   - users.notification_preferences (JSONB : app_*, email_*, marketing_emails)
+   - users.privacy_preferences (JSONB : consentements datés, dont consent_marketing)
    - users.recruitment_preferences (JSONB : regions, graduation_years,
      positions, min_gpa, min_cote, alerts_enabled)
-   - users.privacy_preferences (JSONB : profile_visible, show_consultations,
+   - users.privacy_preferences (JSONB : show_consultations,
      show_full_name, consent_*)
 
    Sections :
@@ -26,7 +26,7 @@
    PasswordChangeSheet, ConfirmSheet, openExternal, triggerHaptic) a
    été extraite dans components/shared/settings/. Ce fichier compose
    les blocs partagés autour des sections SPÉCIFIQUES RECRUTEUR :
-   NOTIF_ROWS, recruteur-targeted copies, recruteur features dans les
+   recruteur-targeted copies, recruteur features dans les
    TierCards. Le rendu reste byte-identical au pré-extraction.
 
    ⚠️ Rules of Hooks : tous les hooks AVANT early return (canon 7.8d/7.25).
@@ -53,24 +53,8 @@ const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
 /* ── Shape des prefs notifications côté DB (DIAG 7.38) ────────── */
 
-const NOTIF_ROWS: { key: string; appKey: string; emailKey: string; label: string; sublabel: string }[] = [
-  { key: "newAthlete", appKey: "app_new_athlete", emailKey: "email_new_athlete",
-    label: "Nouvel athlète dans mon sport", sublabel: "Matche vos critères de recrutement" },
-  { key: "favoriteUpdate", appKey: "app_favorite_update", emailKey: "email_favorite_update",
-    label: "Mise à jour d'un favori", sublabel: "Profil, stats ou vidéo modifié" },
-  { key: "scoutingReport", appKey: "app_scouting_report", emailKey: "email_scouting_report",
-    label: "Rapport d'évaluation disponible", sublabel: "Nouvelle évaluation coach" },
-  { key: "profileVerified", appKey: "app_profile_verified", emailKey: "email_profile_verified",
-    label: "Profil vérifié", sublabel: "Un favori obtient le statut vérifié" },
-  { key: "coachReply", appKey: "app_coach_reply", emailKey: "email_coach_reply",
-    label: "Réponse d'un coach", sublabel: "À un de vos messages" },
-  { key: "lettreIntention", appKey: "app_lettre_intention", emailKey: "email_lettre_intention",
-    label: "Lettre d'intention signée", sublabel: "Un favori s'engage avec un CÉGEP" },
-];
 
-interface NotifPrefs { [k: string]: boolean | string }
 interface PrivacyPrefs {
-  profile_visible: boolean;
   show_consultations: boolean;
   show_full_name: boolean;
   consent_privacy_policy?: string | null;
@@ -86,22 +70,15 @@ export function RecruteurParametresMobile() {
   const { tier, refresh, isStripeManaged, periodEnd, billing, status, cancelAtPeriodEnd } = useSubscription();
 
   // Hooks AVANT toute condition (canon 7.8d).
-  const [notifs, setNotifs] = useState<NotifPrefs>({});
-  const [origNotifs, setOrigNotifs] = useState<NotifPrefs>({});
-  // Iter 7.41 §2 — master courriel UX. ON ⇒ chaque email_X = app_X.
-  // OFF ⇒ tous email_* = false. Marketing_emails reste indépendant.
-  const [masterEmail, setMasterEmail] = useState(false);
-  const [origMasterEmail, setOrigMasterEmail] = useState(false);
   const [privacy, setPrivacy] = useState<PrivacyPrefs>({
-    profile_visible: true, show_consultations: true, show_full_name: true,
+    show_consultations: true, show_full_name: true,
   });
   const [origPrivacy, setOrigPrivacy] = useState<PrivacyPrefs>({
-    profile_visible: true, show_consultations: true, show_full_name: true,
+    show_consultations: true, show_full_name: true,
   });
   const [consentDates, setConsentDates] = useState<{ privacy?: string; data?: string; marketing?: string | null }>({});
   const [signupDate, setSignupDate] = useState<string>("");
   const [loading, setLoading] = useState(true);
-  const [savingNotifs, setSavingNotifs] = useState(false);
   const [savingPrivacy, setSavingPrivacy] = useState(false);
   const [passwordSheetOpen, setPasswordSheetOpen] = useState(false);
   const [deactivateSheetOpen, setDeactivateSheetOpen] = useState(false);
@@ -120,32 +97,15 @@ export function RecruteurParametresMobile() {
       if (!user) { setLoading(false); return; }
       const { data } = await supabase
         .from("users")
-        .select("notification_preferences, privacy_preferences")
+        .select("privacy_preferences")
         .eq("id", user.id)
         .single();
       if (cancelled) return;
 
-      const n = (data?.notification_preferences as NotifPrefs) || {};
       // Defaults : app=true, email=false sauf coach_reply+lettre_intention (canon desktop NotifSection.tsx)
-      const seedNotif: NotifPrefs = {};
-      for (const row of NOTIF_ROWS) {
-        seedNotif[row.appKey] = n[row.appKey] !== false;
-        const emailDefaultTrue = row.key === "coachReply" || row.key === "lettreIntention";
-        seedNotif[row.emailKey] = emailDefaultTrue ? n[row.emailKey] !== false : !!n[row.emailKey];
-      }
-      seedNotif.marketing_emails = !!n.marketing_emails;
-      setNotifs(seedNotif);
-      setOrigNotifs(seedNotif);
-
-      // Iter 7.41 §2 — master email ON si AU MOINS UN email_* est true.
-      // Marketing exclu (toggle séparé).
-      const anyEmailOn = NOTIF_ROWS.some((r) => !!seedNotif[r.emailKey]);
-      setMasterEmail(anyEmailOn);
-      setOrigMasterEmail(anyEmailOn);
 
       const p = (data?.privacy_preferences as PrivacyPrefs) || {};
       const seedPriv: PrivacyPrefs = {
-        profile_visible: p.profile_visible !== false,
         show_consultations: p.show_consultations !== false,
         show_full_name: p.show_full_name !== false,
         consent_privacy_policy: p.consent_privacy_policy ?? null,
@@ -204,48 +164,20 @@ export function RecruteurParametresMobile() {
   useEffect(() => { refresh(); }, [refresh]);
 
   // Iter 7.41 §2 — dirty inclut le master courriel.
-  const notifsDirty = useMemo(
-    () => JSON.stringify(notifs) !== JSON.stringify(origNotifs) || masterEmail !== origMasterEmail,
-    [notifs, origNotifs, masterEmail, origMasterEmail],
-  );
   const privacyDirty = useMemo(() => {
-    return privacy.profile_visible !== origPrivacy.profile_visible
-        || privacy.show_consultations !== origPrivacy.show_consultations
+    return privacy.show_consultations !== origPrivacy.show_consultations
         || privacy.show_full_name !== origPrivacy.show_full_name;
   }, [privacy, origPrivacy]);
 
-  async function saveNotifs() {
-    if (!notifsDirty || savingNotifs) return;
-    triggerHaptic("Medium");
-    setSavingNotifs(true);
-    try {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      // Iter 7.41 §2 — dérive email_X à partir de master + app_X.
-      // master ON  ⇒ email_X = app_X (mirroring)
-      // master OFF ⇒ email_X = false (silence email global)
-      // marketing_emails reste indépendant.
-      const payload: NotifPrefs = { ...notifs };
-      for (const row of NOTIF_ROWS) {
-        payload[row.emailKey] = masterEmail ? !!notifs[row.appKey] : false;
-      }
-
-      const { error } = await supabase
-        .from("users")
-        .update({ notification_preferences: payload })
-        .eq("id", user.id);
-      if (error) { toast.error({ message: "Échec sauvegarde", detail: error.message }); return; }
-      setNotifs(payload);
-      setOrigNotifs(payload);
-      setOrigMasterEmail(masterEmail);
-      toast.success({ message: "Notifications mises à jour" });
-    } finally {
-      setSavingNotifs(false);
-    }
-  }
-
+  /* ⚠ DETTE CONNUE, NON CORRIGÉE ICI.
+     Cette fonction RECONSTRUIT privacy_preferences à partir des seules clés
+     qu'elle connaît, au lieu de fusionner avec la valeur stockée. Toute clé
+     posée ailleurs — consentements parentaux (consent_parental_profile,
+     _visibility, _partner_visibility), ou toute clé future — serait EFFACÉE à
+     la première sauvegarde depuis cet écran. Aucun dégât aujourd'hui : un
+     recruteur n'a pas de consentement parental. Mais le motif est faux, et les
+     écrans coach et athlète, eux, fusionnent explicitement (saveMarketing).
+     À corriger dans un lot dédié. */
   async function savePrivacy() {
     if (!privacyDirty || savingPrivacy) return;
     triggerHaptic("Medium");
@@ -255,7 +187,6 @@ export function RecruteurParametresMobile() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       const payload = {
-        profile_visible: privacy.profile_visible,
         show_consultations: privacy.show_consultations,
         show_full_name: privacy.show_full_name,
         consent_privacy_policy: privacy.consent_privacy_policy || new Date().toISOString(),
@@ -332,7 +263,6 @@ export function RecruteurParametresMobile() {
 
   // Désactivation RÉVERSIBLE (conservation des données) — inchangée.
   async function handleDeactivate() {
-    triggerHaptic("Heavy");
     const supabase = createClient();
     const { error } = await supabase.rpc("deactivate_my_account", { p_revoke_consent: false });
     if (error) { toast.error({ message: "Échec désactivation", detail: error.message }); return; }
@@ -344,7 +274,6 @@ export function RecruteurParametresMobile() {
 
   // Suppression DÉFINITIVE — RPC delete_my_account via le helper partagé.
   async function handleDelete() {
-    triggerHaptic("Heavy");
     setDeleteSheetOpen(false);
     await deleteMyAccount({
       onError: (detail) => toast.error({ message: "Échec de la suppression", detail }),
@@ -461,66 +390,62 @@ export function RecruteurParametresMobile() {
         </div>
       </div>
 
-      {/* NOTIFICATIONS — iter 7.41 §2 : 1 toggle par ligne pilotant app_*.
-          Le mirror courriel est régi par le master "Recevoir aussi par
-          courriel" en bas du groupe. Les clés JSONB (app_*, email_*) restent
-          IDENTIQUES — desktop intact. */}
-      <SectionLabel>Notifications</SectionLabel>
+      {/* COMMUNICATIONS — il ne reste QUE le consentement marketing.
+          Les six bascules de notification et le maître « recevoir aussi par
+          courriel » ont été retirés : elles écrivaient bien dans
+          users.notification_preferences, mais AUCUN émetteur ne lisait ces clés
+          — ni trigger, ni edge function. Vingt promesses en tout sur les trois
+          écrans, zéro notification correspondante. Une bascule qui ment est
+          pire qu'une absente. (Le push de messagerie, lui, part déjà — mais
+          sans consulter la moindre préférence : c'est une dette distincte.)
+
+          Le consentement marketing RESTE, et il est maintenant branché sur le
+          registre RÉEL : privacy_preferences.consent_marketing, un horodatage
+          ISO. Il était auparavant câblé sur notification_preferences
+          .marketing_emails, un booléen que rien ne lit et que rien ne date.
+          Accorder écrit la date, RETIRER écrit null — le retrait est aussi
+          simple que le consentement, ce qu'exige la Loi 25. La sauvegarde passe
+          par savePrivacy, qui écrivait déjà cette clé. */}
+      <SectionLabel>Communications</SectionLabel>
       <Group>
-        {NOTIF_ROWS.map((row, idx) => (
-          <ToggleRow
-            key={row.key}
-            isFirst={idx === 0}
-            label={row.label}
-            sublabel={row.sublabel}
-            checked={!!notifs[row.appKey]}
-            onChange={(v) => setNotifs((n) => ({ ...n, [row.appKey]: v }))}
-          />
-        ))}
-      </Group>
-      <Group className="mt-2">
-        <ToggleRow
-          label="Recevoir aussi par courriel"
-          sublabel="Les mêmes notifications, par courriel"
-          isFirst
-          checked={masterEmail}
-          onChange={setMasterEmail}
-        />
         <ToggleRow
           label="Emails marketing"
-          sublabel="Annonces produit et infolettre"
-          isFirst={false}
-          checked={!!notifs.marketing_emails}
-          onChange={(v) => setNotifs((n) => ({ ...n, marketing_emails: v }))}
+          sublabel={consentDates.marketing
+            ? `Consenti le ${consentDates.marketing} — désactive pour retirer`
+            : "Annonces produit et infolettre"}
+          isFirst
+          checked={!!privacy.consent_marketing}
+          onChange={(v) => setPrivacy((q) => ({
+            ...q,
+            consent_marketing: v ? new Date().toISOString() : null,
+          }))}
         />
       </Group>
-      {notifsDirty && (
-        <div className="px-4 pt-3">
-          <button
-            type="button"
-            onClick={saveNotifs}
-            disabled={savingNotifs}
-            className="w-full h-11 rounded-2xl bg-[#E63946] text-white text-[14px] font-semibold active:bg-[#D42B22] disabled:opacity-60"
-          >
-            {savingNotifs ? "Sauvegarde…" : "Enregistrer les notifications"}
-          </button>
-        </div>
-      )}
 
-      {/* CONFIDENTIALITÉ */}
+      {/* CONFIDENTIALITÉ — « Profil visible » a été RETIRÉ.
+          La bascule promettait de vous soustraire au répertoire des recruteurs.
+          Aucune policy ne la lit : `coaches read recruiter directory` vaut
+          `(role = 'RECRUTEUR' AND is_coach())`, sans condition, et aucune des
+          sept policies SELECT sur `users` ne mentionne profile_visible. Tout
+          coach voyait tout recruteur, bascule éteinte ou non. La brancher
+          demandait du DDL et risquait de vider le répertoire selon la valeur
+          par défaut. Promettre une confidentialité inexistante est pire que ne
+          rien promettre.
+          La clé `profile_visible` sort aussi de l'état et de la charge utile :
+          la valeur stockée sera abandonnée à la prochaine sauvegarde, ce qui
+          est sans effet puisque rien ne la lit.
+
+          ⚠ LES DEUX BASCULES QUI RESTENT SONT DANS LE MÊME CAS.
+          `show_consultations` et `show_full_name` ont chacune ZÉRO lecteur —
+          ni requête, ni policy, ni edge function. Elles sont conservées parce
+          que le ticket ne portait que sur « profil visible », mais elles
+          mentent de la même façon. À trancher séparément. */}
       <SectionLabel>Confidentialité</SectionLabel>
       <Group>
         <ToggleRow
-          label="Profil visible"
-          sublabel="Vous apparaissez dans la liste des recruteurs aux coachs"
-          isFirst
-          checked={privacy.profile_visible}
-          onChange={(v) => setPrivacy((p) => ({ ...p, profile_visible: v }))}
-        />
-        <ToggleRow
           label="Historique de consultations visible"
           sublabel="Les athlètes voient quand vous consultez leur profil"
-          isFirst={false}
+          isFirst
           checked={privacy.show_consultations}
           onChange={(v) => setPrivacy((p) => ({ ...p, show_consultations: v }))}
         />
@@ -536,7 +461,7 @@ export function RecruteurParametresMobile() {
         <div className="px-4 pt-3">
           <button
             type="button"
-            onClick={savePrivacy}
+            onClick={() => { void triggerHaptic("Light"); savePrivacy(); }}
             disabled={savingPrivacy}
             className="w-full h-11 rounded-2xl bg-[#E63946] text-white text-[14px] font-semibold active:bg-[#D42B22] disabled:opacity-60"
           >

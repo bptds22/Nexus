@@ -19,6 +19,7 @@
 ═══════════════════════════════════════════════════════════════ */
 
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
+import { selectBestEvaluation } from "@/lib/evaluations/selectEvaluation";
 import { createClient } from "@/lib/supabase/client";
 import { parseDistinctions } from "@/lib/config/badges";
 import { firstTeamGender } from "@/lib/config/gender";
@@ -122,7 +123,7 @@ export function useAthleteSearch(filters: AthleteSearchFilters) {
           committed_school:schools!committed_school_id(name),
           context,
           team_athletes(teams!team_id(gender)),
-          evaluations(distinctions)
+          evaluations(distinctions, updated_at)
         ` as unknown as "*")
         .eq("status", "ACTIF");
 
@@ -184,7 +185,7 @@ export function useAthleteSearch(filters: AthleteSearchFilters) {
         const posRel = Array.isArray(a.positions) ? a.positions[0] : a.positions;
         const schoolRel = Array.isArray(a.schools) ? a.schools[0] : a.schools;
         const committedSchoolRel = Array.isArray(a.committed_school) ? a.committed_school[0] : a.committed_school;
-        const evalRel = Array.isArray(a.evaluations) ? a.evaluations[0] : a.evaluations;
+        const evalRel = selectBestEvaluation(Array.isArray(a.evaluations) ? a.evaluations : a.evaluations ? [a.evaluations] : []);
         // #56 — parseDistinctions gère string[] (legacy) ET {badge,detail} (objet,
         // 10 rows en prod), filtre les badges inconnus. Plus de cast "as string[]".
         const distinctions = parseDistinctions((evalRel as Record<string, unknown> | null)?.distinctions);

@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Nexus — ProgramPageMobile v3 (portage 1:1)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;1,700&family=Permanent+Marker&family=Playfair+Display:ital,wght@1,500;1,700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ══ theme.ts — dérivé école (Grasset) ══ */
+.pp{
+  --red:#C8102E; --red-deep:#8E0B20; --ink:#17171A; --char:#232327;
+  --cream:#EDE6D6; --kraft:#DCD2BC; --beige:#E4DCC8;
+  /* fixes Nexus */
+  --pop:cubic-bezier(0.34,1.56,0.64,1); --nx-red:#E63946; --green:#22C55E;
+  --p-ink:#EDEFF3; --p-soft:#C9CCD4; --p-mut:#8A909C; --p-faint:#5A616D; --p-inv:#15171B;
+  --bg:#111317; --card:#1A1D24; --line:#1E2129; --line-card:#262A33;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{background:#07080A;font-family:'Outfit',sans-serif;color:#fff}
+body{display:grid;place-items:center;min-height:100vh;padding:24px 0;gap:14px}
+.stagelabel{font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:.14em;color:#8A909C;text-align:center;line-height:1.7}
+.stagelabel b{color:#E63946;font-weight:400}
+.frame{width:390px;height:844px;position:relative;overflow:hidden;background:#111317;
+  border-radius:26px;border:1px solid rgba(255,255,255,.09)}
+.scroll{position:absolute;inset:0;bottom:64px;overflow-y:auto;scrollbar-width:none}
+.scroll::-webkit-scrollbar{display:none}
+
+/* ═══════════════ LE MUR — portrait 5 col × 8 rangées ═══════════════ */
+.pw7 .mosaic{
+  container-type:inline-size; aspect-ratio:9/13; background:var(--ink);
+  display:grid; grid-template-columns:repeat(5,20%); grid-template-rows:repeat(8,12.5%); gap:0;
+  position:relative;
+  grid-template-areas:
+    "nex nex rse que dam"
+    "pbk pbk dmr dmr eli"
+    "mtl mtl fdl fdl rdt"
+    "mtl mtl fdl fdl rdt"
+    "mtl mtl str str rdt"
+    "ffg ag  ag  str fdb"
+    "alz stx cnd cnd fdb"
+    "gra gra gra gra gra";
+}
+.pw7 .t{position:relative;overflow:hidden;display:grid;place-items:center}
+
+/* --- rangée NEXUS·RSEQ·QUÉBEC remontée EN TÊTE --- */
+.pw7 .nex{grid-area:nex;background:var(--red);display:flex;align-items:center;justify-content:center}
+.pw7 .nex b{font-family:'Anton',sans-serif;font-size:6.4cqw;color:#fff;letter-spacing:.02em}
+.pw7 .nex b i{font-style:normal;color:var(--ink)}
+.pw7 .rse{grid-area:rse;background:var(--cream)}
+.pw7 .rse b{font-family:'Anton',sans-serif;font-size:4.4cqw;color:#0B6FB8;letter-spacing:.01em}
+.pw7 .que{grid-area:que;background:var(--cream)}
+.pw7 .que b{font-family:'Playfair Display',serif;font-style:italic;font-weight:700;font-size:4.2cqw;color:var(--ink)}
+.pw7 .dam{grid-area:dam;background:var(--ink);
+  background-image:linear-gradient(45deg,var(--red) 25%,transparent 25%,transparent 75%,var(--red) 75%),
+                   linear-gradient(45deg,var(--red) 25%,transparent 25%,transparent 75%,var(--red) 75%);
+  background-size:5cqw 5cqw;background-position:0 0,2.5cqw 2.5cqw}
+
+/* --- playbook X & O --- */
+.pw7 .pbk{grid-area:pbk;background:var(--char)}
+.pw7 .pbk svg{position:absolute;inset:0;width:100%;height:100%;opacity:.5}
+/* --- damier rouge/crème --- */
+.pw7 .dmr{grid-area:dmr;background:var(--cream);
+  background-image:linear-gradient(45deg,var(--red) 25%,transparent 25%,transparent 75%,var(--red) 75%),
+                   linear-gradient(45deg,var(--red) 25%,transparent 25%,transparent 75%,var(--red) 75%);
+  background-size:7cqw 7cqw;background-position:0 0,3.5cqw 3.5cqw}
+/* --- ÉLITE --- */
+.pw7 .eli{grid-area:eli;background:var(--ink)}
+.pw7 .eli b{font-family:'Anton',sans-serif;font-size:4cqw;color:transparent;
+  -webkit-text-stroke:.34cqw var(--cream);letter-spacing:.02em}
+
+/* --- carte MONTRÉAL --- */
+.pw7 .mtl{grid-area:mtl;background:var(--cream);display:block;padding:3cqw 3.4cqw}
+.pw7 .mtl .d1{position:absolute;top:-3cqw;left:3cqw;width:13cqw;height:13cqw;border-radius:50%;
+  background:var(--red-deep);display:grid;place-items:center;align-content:center;z-index:3}
+.pw7 .mtl .d1 b{font-family:'Anton',sans-serif;font-size:5cqw;color:#fff;line-height:1}
+.pw7 .mtl .d1 i{font-family:'Bebas Neue',sans-serif;font-style:normal;font-size:1.9cqw;color:#fff;letter-spacing:.14em}
+.pw7 .mtl .rail{margin-top:9cqw;font-family:'Anton',sans-serif;color:var(--red);
+  font-size:9.4cqw;line-height:.9;letter-spacing:-.01em;border-bottom:.5cqw solid var(--ink);padding-bottom:.6cqw}
+.pw7 .mtl .city{display:inline-block;margin-top:1.6cqw;background:var(--red);color:#fff;
+  font-family:'Bebas Neue',sans-serif;font-size:2.6cqw;letter-spacing:.1em;padding:.5cqw 1.6cqw}
+.pw7 .mtl .area{font-family:'Anton',sans-serif;font-size:14cqw;color:var(--ink);line-height:.92;margin-top:.8cqw}
+.pw7 .mtl .fly{position:absolute;left:3.4cqw;bottom:7cqw;font-size:6cqw;color:var(--kraft)}
+.pw7 .mtl .arw{position:absolute;left:3.4cqw;bottom:2.2cqw;font-family:'Barlow Condensed',sans-serif;
+  font-weight:800;font-style:italic;font-size:3cqw;color:var(--red);letter-spacing:.02em}
+
+/* --- motif fleur-de-lys --- */
+.pw7 .fdl{grid-area:fdl;background:var(--ink);display:block}
+.pw7 .fdl .g{position:absolute;inset:0;display:grid;grid-template-columns:repeat(4,1fr);
+  align-content:center;gap:1.4cqw;padding:1.6cqw;opacity:.5}
+.pw7 .fdl .g span{font-size:3.4cqw;color:var(--kraft);text-align:center;line-height:1}
+/* --- pointillés rouges --- */
+.pw7 .rdt{grid-area:rdt;background:var(--red);
+  background-image:radial-gradient(rgba(0,0,0,.30) 1.1cqw,transparent 1.2cqw);background-size:4.4cqw 4.4cqw}
+/* --- rayures --- */
+.pw7 .str{grid-area:str;background:var(--cream);
+  background-image:repeating-linear-gradient(115deg,var(--red) 0 2.4cqw,transparent 2.4cqw 6cqw)}
+/* --- foam finger --- */
+.pw7 .ffg{grid-area:ffg;background:var(--ink)}
+.pw7 .ffg svg{width:52%;height:auto}
+/* --- AG --- */
+.pw7 .ag{grid-area:ag;background:var(--cream)}
+.pw7 .ag b{font-family:'Anton',sans-serif;font-size:15cqw;color:var(--red);line-height:.86;letter-spacing:-.02em}
+/* --- grande fleur-de-lys noire --- */
+.pw7 .fdb{grid-area:fdb;background:var(--cream)}
+.pw7 .fdb span{font-size:19cqw;color:var(--ink);line-height:.8}
+/* --- ALLEZ --- */
+.pw7 .alz{grid-area:alz;background:var(--red);display:block;padding:2.4cqw}
+.pw7 .alz b{position:absolute;left:2.4cqw;bottom:2.6cqw;font-family:'Bebas Neue',sans-serif;
+  font-size:4cqw;color:#fff;letter-spacing:.1em;border-bottom:.5cqw solid #fff;padding-bottom:.5cqw}
+/* --- étoile --- */
+.pw7 .stx{grid-area:stx;background:var(--char);
+  background-image:radial-gradient(rgba(255,255,255,.13) 1cqw,transparent 1.1cqw);background-size:4cqw 4cqw}
+.pw7 .stx b{font-size:7cqw;color:var(--cream);line-height:1}
+/* --- CANADA --- */
+.pw7 .cnd{grid-area:cnd;background:var(--cream)}
+.pw7 .cnd b{font-family:'Bebas Neue',sans-serif;font-size:4.6cqw;color:var(--ink);letter-spacing:.13em}
+/* --- GRASSET (rangée de fermeture) --- */
+.pw7 .gra{grid-area:gra;background:var(--char)}
+.pw7 .gra b{font-family:'Anton',sans-serif;font-size:16cqw;color:transparent;
+  -webkit-text-stroke:.42cqw rgba(237,230,214,.42);letter-spacing:.02em;line-height:1}
+
+/* --- surcouche : écusson + stickers --- */
+.pw7 .shield{position:absolute;left:50%;top:34%;transform:translate(-50%,-50%);z-index:6;
+  width:44cqw;background:var(--cream);border-radius:2.6cqw;padding:3cqw;
+  box-shadow:0 3cqw 6cqw rgba(0,0,0,.45)}
+.pw7 .shield svg{width:100%;height:auto;display:block}
+.pw7 .stick{position:absolute;z-index:7;background:var(--red);color:var(--cream);
+  border:.7cqw solid var(--cream);border-radius:1.6cqw;padding:1.4cqw 3cqw;
+  font-family:'Anton',sans-serif;font-size:6cqw;letter-spacing:.02em;
+  box-shadow:0 2cqw 4cqw rgba(0,0,0,.45);transform:rotate(-2deg)}
+.pw7 .stick.ph{right:2cqw;top:42%}
+.pw7 .note{position:absolute;z-index:7;right:2cqw;top:56%;width:40cqw;background:var(--cream);
+  padding:2cqw 2.4cqw;transform:rotate(-3deg);box-shadow:0 2cqw 4cqw rgba(0,0,0,.4);
+  font-family:'Permanent Marker',cursive;font-size:3cqw;color:var(--red);line-height:1.35}
+
+/* ═══════════════ CORPS DE PAGE ═══════════════ */
+.pp{background:var(--bg)}
+.pp section{position:relative;padding:34px 18px 30px;border-bottom:1px solid var(--line)}
+.pp .kick{font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:.2em;color:var(--nx-red);margin-bottom:7px}
+.pp .sec-h{font-family:'Anton',sans-serif;font-size:27px;line-height:1.02;color:var(--p-ink);text-transform:none}
+.pp .sec-h em{font-style:normal;color:var(--red)}
+.pp .pbar{width:52px;height:4px;background:var(--red);margin:11px 0 18px}
+
+/* --- #apercu : StatRows --- */
+.pp .hd-top{margin-bottom:20px}
+.pp .bigid .l1x{font-family:'Anton',sans-serif;font-size:31px;line-height:.96;color:var(--p-ink)}
+.pp .bigid .l2x{font-family:'Anton',sans-serif;font-size:31px;line-height:.96;color:var(--red)}
+.pp .hfollow{margin-top:16px}
+.pp .hf-chip{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--p-mut);font-weight:600}
+.pp .hf-chip svg{width:14px;height:14px;stroke:var(--p-mut);fill:none;stroke-width:1.9}
+.pp .hf-chip .u{color:var(--p-faint);font-weight:500}
+.pp .hf-btn{margin-top:10px;width:100%;height:48px;border-radius:12px;border:1px solid var(--line-card);
+  background:var(--card);color:var(--p-ink);font-family:'Outfit',sans-serif;font-size:15px;font-weight:600;
+  display:flex;align-items:center;justify-content:center;gap:9px;cursor:pointer}
+.pp .hf-btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2}
+.pp .hf-btn.on{background:rgba(34,197,94,.12);border-color:rgba(34,197,94,.42);color:#A7E9BF}
+.pp .hf-btn.on svg{stroke:var(--green);fill:var(--green)}
+.pp .hf-note{margin-top:9px;font-size:13px;color:var(--p-mut);text-align:center}
+.pp .hf-note b{color:var(--p-soft)}
+.pp .tstack{margin:0 -18px}
+.pp .trow{display:flex;align-items:baseline;gap:11px;padding:15px 18px;position:relative}
+.pp .trow .big{font-family:'Anton',sans-serif;font-size:46px;line-height:.9}
+.pp .trow .lab{font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:.13em}
+.pp .trow .man{position:absolute;right:18px;top:16px;font-family:'Bebas Neue',sans-serif;
+  font-size:12px;letter-spacing:.1em;opacity:.55}
+.pp .tr-ink{background:var(--ink)}.pp .tr-ink .big{color:var(--cream)}.pp .tr-ink .lab{color:var(--kraft)}
+.pp .tr-red{background:var(--red)}.pp .tr-red .big,.pp .tr-red .lab,.pp .tr-red .man{color:#fff}
+.pp .tr-cream{background:var(--cream)}.pp .tr-cream .big{color:var(--ink);font-size:34px}
+.pp .tr-cream .lab{color:var(--red-deep)}
+
+/* --- #sports : L'affiche --- */
+.pp .aRow{border-top:1px solid var(--line-card);padding:16px 0;cursor:pointer}
+.pp .aRow:last-child{border-bottom:1px solid var(--line-card)}
+.pp .aTop{display:flex;align-items:center;gap:10px}
+.pp .aName{flex:1;font-family:'Anton',sans-serif;font-size:23px;color:var(--p-ink);line-height:1}
+.pp .aChev{font-family:'Anton',sans-serif;font-size:19px;color:var(--red)}
+.pp .aPills{display:flex;flex-wrap:wrap;gap:5px;margin-top:9px}
+.pp .pill{font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:.1em;padding:3px 8px;border-radius:5px;
+  background:rgba(255,255,255,.05);border:1px solid var(--line-card);color:var(--p-mut)}
+.pp .pill.div1{background:rgba(200,16,46,.16);border-color:rgba(200,16,46,.45);color:#F0A8B2}
+.pp .pill.gen{color:var(--p-soft)}
+.pp .teams{display:none;margin-top:11px;gap:6px;flex-direction:column}
+.pp .aRow.open .teams{display:flex}
+.pp .tchip{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line-card);
+  border-radius:10px;padding:10px 12px;font-size:14px;font-weight:600;color:var(--p-ink)}
+.pp .tchip small{flex:1;font-size:13px;font-weight:500;color:var(--p-mut)}
+.pp .tchip .ar{color:var(--red)}
+
+/* --- #campus --- */
+.pp .fiche{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:16px}
+.pp .itile{background:var(--card);border:1px solid var(--line-card);border-radius:11px;padding:11px 8px;text-align:center}
+.pp .itile.hot{border-color:rgba(200,16,46,.45);background:rgba(200,16,46,.10)}
+.pp .itile .il{font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:.13em;color:var(--p-mut);margin-bottom:5px}
+.pp .itile .iv{font-family:'Anton',sans-serif;font-size:14px;color:var(--p-ink);line-height:1.1}
+.pp .mapwrap{border:1px solid var(--line-card);border-radius:13px;overflow:hidden;height:190px;background:#0C0E12}
+.pp .mapwrap iframe{width:100%;height:100%;border:0;display:block;filter:grayscale(.28) contrast(1.05)}
+.pp .cara-head{display:flex;align-items:center;justify-content:space-between;margin:18px 0 10px}
+.pp .cara-kick{font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:.16em;color:var(--p-mut)}
+.pp .cara-nav{display:flex;gap:6px}
+.pp .cara-nav button{width:32px;height:32px;border-radius:16px;border:1px solid var(--line-card);
+  background:var(--card);color:var(--p-soft);font-size:15px;cursor:pointer}
+.pp .cara{display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;margin:0 -18px;padding:0 18px;scroll-snap-type:x mandatory}
+.pp .cara::-webkit-scrollbar{display:none}
+.pp .ccard{flex:0 0 auto;width:236px;height:158px;position:relative;border-radius:12px;overflow:hidden;
+  border:1px solid var(--line-card);scroll-snap-align:start;cursor:pointer}
+.pp .ccard .ph{position:absolute;inset:0;background:linear-gradient(155deg,#2A2F38,#161A20);display:grid;place-items:center}
+.pp .ccard .ph span{font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:.15em;color:var(--p-mut)}
+.pp .ccard .grad{position:absolute;inset:0;background:linear-gradient(180deg,transparent 42%,rgba(11,12,14,.88) 100%)}
+.pp .ccard .cc-cap{position:absolute;left:12px;right:12px;bottom:11px}
+.pp .ccard .cc-cap .t{font-size:14px;font-weight:700;color:#fff;margin-bottom:3px}
+.pp .ccard .cc-cap .c{font-size:13px;color:var(--p-soft)}
+.pp .ccard .cc-play{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:44px;height:44px;
+  border-radius:22px;background:rgba(200,16,46,.92);display:grid;place-items:center;color:#fff;font-size:15px}
+
+/* --- #apropos --- */
+.pp .sell{font-size:16px;line-height:1.62;color:var(--p-soft)}
+.pp .sell b{color:var(--p-ink);font-weight:700}
+.pp .sell .hl{color:var(--red);font-weight:700}
+
+/* --- #academique --- */
+.pp .planche{background:var(--card);border:1px solid var(--line-card);border-radius:14px;padding:16px 14px}
+.pp .match-head{margin-bottom:12px}
+.pp .mh-kick{font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:.16em;color:var(--p-mut)}
+.pp .mh-prog{font-family:'Anton',sans-serif;font-size:19px;color:var(--p-ink);margin:4px 0 3px}
+.pp .mh-tag{font-size:12px;color:var(--p-faint)}
+.pp .mcard{background:#12151C;border:1px solid var(--line-card);border-radius:11px;padding:12px;margin-bottom:8px}
+.pp .mcard.exact{border-color:rgba(34,197,94,.38);background:rgba(34,197,94,.07)}
+.pp .mbadge{font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:.1em;padding:2px 8px;border-radius:5px;
+  display:inline-block;margin-bottom:7px;background:rgba(255,255,255,.06);border:1px solid var(--line-card);color:var(--p-mut)}
+.pp .mbadge.exact{background:rgba(34,197,94,.14);border-color:rgba(34,197,94,.36);color:var(--green)}
+.pp .mcard b{display:block;font-size:15px;color:var(--p-ink);margin-bottom:4px}
+.pp .mcard .d{font-size:13px;color:var(--p-mut);line-height:1.5}
+.pp .chalkline{border:0;border-top:1px dashed rgba(255,255,255,.16);margin:16px 0 13px}
+.pp .pl-t{font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:.16em;color:var(--p-mut);margin-bottom:9px}
+.pp .psearch{width:100%;height:44px;border-radius:11px;border:1px solid var(--line-card);background:#12151C;
+  color:#fff;padding:0 13px;font-family:'Outfit',sans-serif;font-size:14px;outline:none;margin-bottom:11px}
+.pp .psearch::placeholder{color:var(--p-faint)}
+.pp .progs{display:flex;flex-wrap:wrap;gap:6px}
+.pp .prog{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;color:var(--p-soft);
+  background:rgba(255,255,255,.04);border:1px solid var(--line-card);border-radius:8px;padding:7px 10px}
+.pp .prog i{font-style:normal;color:var(--red);font-size:9px}
+.pp .prog.empty{color:var(--p-mut)}
+
+/* --- #parcours --- */
+.pp .route{position:relative;padding-left:44px}
+.pp .route::before{content:'';position:absolute;left:17px;top:12px;bottom:34px;width:2px;
+  background:repeating-linear-gradient(180deg,var(--red) 0 7px,transparent 7px 14px)}
+.pp .stop{position:relative;margin-bottom:24px}
+.pp .stop .dot{position:absolute;left:-44px;top:0;width:36px;height:36px;border-radius:18px;background:var(--red);
+  color:#fff;display:grid;place-items:center;font-family:'Anton',sans-serif;font-size:13px;letter-spacing:.02em}
+.pp .stop .sl{font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:.15em;color:var(--p-mut);margin-bottom:4px}
+.pp .stop h4{font-family:'Anton',sans-serif;font-size:19px;color:var(--p-ink);margin-bottom:5px;font-weight:400}
+.pp .stop p{font-size:14px;line-height:1.55;color:var(--p-soft)}
+.pp .nums{display:flex;gap:16px;margin:12px 0 10px;flex-wrap:wrap}
+.pp .nums>span{font-family:'Anton',sans-serif;font-size:27px;color:var(--red);line-height:1}
+.pp .nums small{display:block;font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:.11em;color:var(--p-mut);margin-top:4px}
+.pp .uni{display:flex;flex-wrap:wrap;gap:6px}
+.pp .uc{font-size:13px;font-weight:600;color:var(--p-soft);background:rgba(255,255,255,.05);
+  border:1px solid var(--line-card);border-radius:7px;padding:5px 9px}
+.pp .fin{stroke:var(--red);fill:none;margin-left:-44px}
+.pp .mknote{font-family:'Permanent Marker',cursive;font-size:19px;color:var(--red);
+  line-height:1.35;margin:18px 0 20px;white-space:pre-line}
+.pp .nstrip{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line-card);
+  border-radius:13px;padding:14px}
+.pp .nstrip .mk{width:36px;height:36px;border-radius:9px;background:var(--nx-red);display:grid;place-items:center;
+  font-family:'Anton',sans-serif;font-size:17px;color:#fff}
+.pp .nstrip .t{flex:1;min-width:0}
+.pp .nstrip .t b{display:block;font-size:14px;color:var(--p-ink);margin-bottom:2px}
+.pp .nstrip .t span{font-size:13px;color:var(--p-mut)}
+.pp .nstrip .nn{font-family:'Anton',sans-serif;font-size:30px;color:var(--nx-red);line-height:1}
+
+/* --- #news --- */
+.pp .news-grid{display:flex;flex-direction:column;gap:9px}
+.pp .ncard{background:var(--card);border:1px solid var(--line-card);border-radius:12px;padding:13px}
+.pp .n-src{font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:.13em;color:var(--red);display:block;margin-bottom:6px}
+.pp .n-title{display:block;font-size:15px;font-weight:600;color:var(--p-ink);line-height:1.4;margin-bottom:9px}
+.pp .n-link{font-size:13px;font-weight:600;color:var(--p-soft);text-decoration:none;display:inline-flex;gap:6px}
+.pp .n-link .ar{color:var(--red)}
+
+/* --- bande CTA --- */
+.pp .cta-band{position:relative;overflow:hidden;text-align:center;padding:38px 18px 40px;border-bottom:0}
+.pp .cta-band .ghost{position:absolute;left:-2%;top:12%;font-family:'Anton',sans-serif;
+  font-size:70px;color:rgba(255,255,255,.032);white-space:nowrap;pointer-events:none;line-height:1}
+.pp .cta-band h2{position:relative;font-family:'Anton',sans-serif;font-size:26px;line-height:1.08;color:var(--p-ink)}
+.pp .cta-band h2 em{font-style:normal;color:var(--red)}
+.pp .cta-band p{position:relative;font-size:14.5px;color:var(--p-soft);margin:11px 0 18px;line-height:1.55}
+.pp .cta-band p span{color:var(--nx-red);font-weight:800}
+.pp .btn-xl{position:relative;width:100%;height:54px;border-radius:13px;border:0;background:var(--nx-red);color:#fff;
+  font-family:'Outfit',sans-serif;font-size:16px;font-weight:700;cursor:pointer}
+.pp .btn-xl.on{background:var(--green);box-shadow:0 14px 34px rgba(34,197,94,.3)}
+.pp .cta-note{position:relative;font-family:'Outfit',sans-serif;font-size:14.5px;color:var(--p-mut);margin-top:14px;line-height:1.5}
+.pp .cta-note b{color:var(--p-soft)}
+.pp .pfoot{text-align:center;font-size:12px;color:var(--p-faint);padding:18px 18px 30px}
+
+/* --- tab bar athlète (existante) --- */
+.tabbar{position:absolute;left:0;right:0;bottom:0;height:64px;padding-bottom:env(safe-area-inset-bottom);
+  background:#15181E;border-top:1px solid #1E2129;display:flex;z-index:45}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+.tab svg{width:20px;height:20px;stroke:#8A909C;fill:none;stroke-width:1.7}
+.tab span{font-size:12px;font-weight:500;color:#8A909C}
+.tab.on svg{stroke:#E63946}.tab.on span{color:#fff;font-weight:600}
+</style>
+</head>
+<body>
+
+<div class="stagelabel">NEXUS — ProgramPageMobile — 390×844 — <b>v3 PORTAGE 1:1</b><br>ordre JSX exact · ticker et menubar retirés · mur portrait 5×8</div>
+
+<div class="frame">
+ <div class="scroll">
+  <div class="pp">
+
+   <!-- ═══════════ .frame → ProgramWall (menubar RETIRÉE) ═══════════ -->
+   <div class="pw7">
+    <div class="mosaic">
+
+     <!-- rangée remontée en tête -->
+     <div class="t nex"><b>NE<i>X</i>US</b></div>
+     <div class="t rse"><b>RSEQ</b></div>
+     <div class="t que"><b>Québec</b></div>
+     <div class="t dam"></div>
+
+     <div class="t pbk">
+       <svg viewBox="0 0 100 40" preserveAspectRatio="none">
+         <g stroke="#EDE6D6" stroke-width=".8" fill="none" opacity=".8">
+           <path d="M6 8l6 6M12 8l-6 6" stroke-width="1.2"/>
+           <circle cx="26" cy="12" r="3.4"/><circle cx="38" cy="12" r="3.4"/><circle cx="50" cy="12" r="3.4"/>
+           <path d="M22 24c10-8 24-8 36 0" stroke-dasharray="3 2.4"/>
+           <path d="M70 30l7-7M77 30l-7-7" stroke-width="1.2"/>
+         </g>
+       </svg>
+     </div>
+     <div class="t dmr"></div>
+     <div class="t eli"><b>ÉLITE</b></div>
+
+     <div class="t mtl">
+       <div class="d1"><b>D1</b><i>DIVISION</i></div>
+       <div class="rail">MONTRÉAL</div>
+       <div class="city">AHUNTSIC · QC</div>
+       <div class="area">514</div>
+       <div class="fly">⚜</div>
+       <div class="arw">D'ICI ➔ POUR ICI</div>
+     </div>
+     <div class="t fdl"><div class="g">
+       <span>⚜</span><span>⚜</span><span>⚜</span><span>⚜</span>
+       <span>⚜</span><span>⚜</span><span>⚜</span><span>⚜</span>
+       <span>⚜</span><span>⚜</span><span>⚜</span><span>⚜</span>
+     </div></div>
+     <div class="t rdt"></div>
+     <div class="t str"></div>
+
+     <div class="t ffg">
+       <svg viewBox="0 0 44 66">
+         <path d="M17 4a4 4 0 0 1 8 0v26h3a5 5 0 0 1 5 5v3h3a4 4 0 0 1 4 4v9a11 11 0 0 1-11 11H18A13 13 0 0 1 5 49V36a4 4 0 0 1 8 0v-6a4 4 0 0 1 4-4z"
+           fill="#C8102E" stroke="#EDE6D6" stroke-width="2.4" stroke-linejoin="round"/>
+         <text x="21" y="54" font-family="Anton" font-size="12" fill="#EDE6D6" text-anchor="middle">#1</text>
+       </svg>
+     </div>
+     <div class="t ag"><b>AG</b></div>
+     <div class="t fdb"><span>⚜</span></div>
+
+     <div class="t alz"><b>ALLEZ</b></div>
+     <div class="t stx"><b>★</b></div>
+     <div class="t cnd"><b>CANADA</b></div>
+
+     <div class="t gra"><b>GRASSET</b></div>
+
+     <!-- surcouche -->
+     <div class="shield">
+       <svg viewBox="0 0 120 132">
+         <path d="M60 4 114 22v52c0 26-24 43-54 54C30 117 6 100 6 74V22z" fill="#fff" stroke="#C8102E" stroke-width="7"/>
+         <path d="M44 92c-6-14-3-30 8-40-2 9 1 16 7 21-4-12 0-24 10-31-3 12 2 20 10 27 7 6 10 14 8 23-2-8-7-13-14-16 5 8 5 16 0 23-3-9-9-14-17-16 4 7 4 14-1 20-4-4-7-8-11-11z" fill="#C8102E"/>
+         <path d="M40 60c-6-3-10-8-11-14 7 2 13 1 18-3-3 7-4 12-7 17z" fill="#C8102E"/>
+       </svg>
+     </div>
+     <div class="stick ph">PHÉNIX</div>
+     <div class="note">PHÉNIX UN JOUR,<br>PHÉNIX TOUJOURS</div>
+    </div>
+   </div>
+
+   <!-- ═══════════ #apercu — StatRows ═══════════ -->
+   <section id="apercu" style="padding-bottom:0">
+     <div class="hd-top">
+       <div class="bigid">
+         <div class="l1x">Collège</div>
+         <div class="l2x">André-Grasset</div>
+         <div class="pbar"></div>
+       </div>
+       <div class="hfollow">
+         <span class="hf-chip">
+           <svg viewBox="0 0 24 24" stroke-linejoin="round"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+           1 240<span class="u">vues</span>
+         </span>
+         <button class="hf-btn" id="hfBtn">
+           <svg viewBox="0 0 24 24" stroke-linejoin="round"><path d="M19 5.6a5 5 0 0 0-7 0l-1 1-1-1a5 5 0 1 0-7 7l8 8 8-8a5 5 0 0 0 0-7z"/></svg>
+           <span class="t">Rajouter dans mes cibles</span>
+         </button>
+         <div class="hf-note"><b>86 athlètes</b> suivent ce collège</div>
+       </div>
+     </div>
+     <div class="tstack">
+       <div class="trow tr-ink"><span class="big">13</span><span class="lab">ÉQUIPES</span></div>
+       <div class="trow tr-red"><span class="big">250+</span><span class="lab">ATHLÈTES</span><span class="man">saisie collège</span></div>
+       <div class="trow tr-cream"><span class="big">MONTRÉAL</span><span class="lab">Ahuntsic</span></div>
+     </div>
+   </section>
+
+   <!-- ═══════════ #sports — L'affiche ═══════════ -->
+   <section id="sports">
+     <div class="kick">NOS ÉQUIPES</div>
+     <h2 class="sec-h">Choisis ton sport</h2>
+     <div class="pbar"></div>
+     <div class="aList">
+
+       <article class="aRow single"><div class="aTop"><span class="aName">Football</span><span class="aChev">→</span></div>
+         <div class="aPills"><span class="pill div1">D1</span><span class="pill gen">Masculin</span><span class="pill cnt">1 équipe</span></div></article>
+
+       <article class="aRow single"><div class="aTop"><span class="aName">Hockey</span><span class="aChev">→</span></div>
+         <div class="aPills"><span class="pill div">D2</span><span class="pill gen">Masculin</span><span class="pill cnt">1 équipe</span></div></article>
+
+       <article class="aRow single"><div class="aTop"><span class="aName">Basketball</span><span class="aChev">→</span></div>
+         <div class="aPills"><span class="pill div">D3</span><span class="pill gen">Masculin</span><span class="pill cnt">1 équipe</span></div></article>
+
+       <article class="aRow multi" data-multi><div class="aTop"><span class="aName">Flag football</span><span class="aChev">›</span></div>
+         <div class="aPills"><span class="pill div">D2</span><span class="pill div">D3</span><span class="pill gen">M &amp; F</span><span class="pill cnt">2 équipes</span></div>
+         <div class="teams">
+           <div class="tchip">Flag féminin<small>D2 · Féminin</small><span class="ar">→</span></div>
+           <div class="tchip">Flag masculin<small>D3 · Masculin</small><span class="ar">→</span></div>
+         </div></article>
+
+       <article class="aRow multi" data-multi><div class="aTop"><span class="aName">Soccer</span><span class="aChev">›</span></div>
+         <div class="aPills"><span class="pill div">D2</span><span class="pill div">D3</span><span class="pill gen">M &amp; F</span><span class="pill cnt">3 équipes</span></div>
+         <div class="teams">
+           <div class="tchip">Soccer intérieur M<small>D2 · Masculin</small><span class="ar">→</span></div>
+           <div class="tchip">Soccer intérieur F<small>D2 · Féminin</small><span class="ar">→</span></div>
+           <div class="tchip">Soccer extérieur F<small>D3 · Féminin</small><span class="ar">→</span></div>
+         </div></article>
+
+       <article class="aRow multi" data-multi><div class="aTop"><span class="aName">Volleyball</span><span class="aChev">›</span></div>
+         <div class="aPills"><span class="pill div">D3</span><span class="pill gen">M &amp; F</span><span class="pill cnt">2 équipes</span></div>
+         <div class="teams">
+           <div class="tchip">Volleyball masculin<small>D3 · Masculin</small><span class="ar">→</span></div>
+           <div class="tchip">Volleyball féminin<small>D3 · Féminin</small><span class="ar">→</span></div>
+         </div></article>
+
+       <article class="aRow single"><div class="aTop"><span class="aName">Cross-country</span><span class="aChev">→</span></div>
+         <div class="aPills"><span class="pill gen">Mixte</span><span class="pill cnt">1 équipe</span></div></article>
+
+       <article class="aRow single"><div class="aTop"><span class="aName">Tennis</span><span class="aChev">→</span></div>
+         <div class="aPills"><span class="pill gen">Mixte</span><span class="pill cnt">1 équipe</span></div></article>
+
+       <article class="aRow single"><div class="aTop"><span class="aName">Ultimate</span><span class="aChev">→</span></div>
+         <div class="aPills"><span class="pill gen">Mixte</span><span class="pill cnt">1 équipe</span></div></article>
+     </div>
+   </section>
+
+   <!-- ═══════════ #campus ═══════════ -->
+   <section id="campus">
+     <div class="kick">L'ESSENTIEL</div>
+     <h2 class="sec-h">Le campus</h2>
+     <div class="pbar"></div>
+
+     <div class="fiche">
+       <div class="itile"><div class="il">LANGUE</div><div class="iv">FRANCOPHONE</div></div>
+       <div class="itile hot"><div class="il">STATUT</div><div class="iv">PRIVÉ</div></div>
+       <div class="itile"><div class="il">RÉGION</div><div class="iv">Montréal</div></div>
+     </div>
+
+     <div class="mapwrap">
+       <iframe title="Carte du campus" loading="lazy"
+         src="https://www.google.com/maps?q=Coll%C3%A8ge%20Andr%C3%A9-Grasset%2C%20Montr%C3%A9al&z=12&output=embed"></iframe>
+     </div>
+
+     <div class="cara-head">
+       <div class="cara-kick">LE CAMPUS EN IMAGES</div>
+       <div class="cara-nav"><button data-nav="-1">‹</button><button data-nav="1">›</button></div>
+     </div>
+     <div class="cara" id="cara">
+       <article class="ccard"><div class="ph"><span>SLOT PHOTO</span></div><div class="grad"></div>
+         <div class="cc-cap"><div class="t">Le stade</div><div class="c">Terrain synthétique, gradins 2 500 places</div></div></article>
+       <article class="ccard"><div class="ph"><span>SLOT PHOTO</span></div><div class="grad"></div>
+         <div class="cc-cap"><div class="t">Le centre sportif</div><div class="c">Gymnase double et salle de musculation</div></div></article>
+       <article class="ccard"><div class="ph"><span>SLOT VIDÉO</span></div><div class="grad"></div>
+         <div class="cc-play">▶</div><div class="cc-cap"><div class="t">Vidéo du campus</div></div></article>
+     </div>
+   </section>
+
+   <!-- ═══════════ #apropos ═══════════ -->
+   <section id="apropos">
+     <div class="kick">À PROPOS</div>
+     <h2 class="sec-h">Le sport, sans lâcher les études</h2>
+     <div class="pbar"></div>
+     <p class="sell">Au Grasset, on ne te demande pas de choisir. <b>Treize équipes</b>, un encadrement académique serré, et un taux de réussite qui parle de lui-même. Nos athlètes s'entraînent le matin, étudient l'après-midi, et <span class="hl">sortent avec un DEC en main</span>.</p>
+   </section>
+
+   <!-- ═══════════ #academique ═══════════ -->
+   <section id="academique">
+     <div class="kick">LES ÉTUDES</div>
+     <h2 class="sec-h">Le diplôme d'abord</h2>
+     <div class="pbar"></div>
+
+     <div class="planche">
+       <div class="match-head">
+         <div class="mh-kick">TON PROFIL VISE</div>
+         <div class="mh-prog">Sciences de la nature</div>
+         <div class="mh-tag">depuis ton profil</div>
+       </div>
+       <div class="matches">
+         <div class="mcard exact">
+           <span class="mbadge exact">✓ Correspond à ta recherche</span>
+           <b>Sciences de la nature</b>
+           <div class="d">Offert ici — correspond à ton profil visé.</div>
+         </div>
+         <div class="mcard">
+           <span class="mbadge sim">Programme similaire</span>
+           <b>Sciences informatiques et mathématiques</b>
+           <div class="d">Programme apparenté offert ici.</div>
+         </div>
+       </div>
+       <hr class="chalkline">
+       <div class="pl-t">TOUS LES PROGRAMMES</div>
+       <input class="psearch" id="psearch" placeholder="🔍 Cherche ton programme… (ex. sciences, soins, informatique)">
+       <div class="progs" id="progs">
+         <span class="prog"><i>●</i>Sciences de la nature</span>
+         <span class="prog"><i>●</i>Sciences humaines</span>
+         <span class="prog"><i>●</i>Sciences informatiques et mathématiques</span>
+         <span class="prog"><i>●</i>Arts, lettres et communication</span>
+         <span class="prog"><i>●</i>Double DEC Sciences-Musique</span>
+         <span class="prog"><i>●</i>Histoire et civilisation</span>
+       </div>
+     </div>
+   </section>
+
+   <!-- ═══════════ #parcours ═══════════ -->
+   <section id="parcours">
+     <div class="kick">ANDRÉ-GRASSET</div>
+     <h2 class="sec-h">Ton <em>parcours</em></h2>
+     <div class="pbar"></div>
+
+     <div class="route">
+       <div class="stop"><div class="dot">TOI</div>
+         <div class="sl">SECONDAIRE 5</div><h4>Tu finis ton secondaire</h4>
+         <p>Ton profil Nexus est déjà rempli. Les recruteurs du collégial te voient.</p></div>
+
+       <div class="stop"><div class="dot">AG</div>
+         <div class="sl">COLLÉGIAL · 2 À 3 ANS</div><h4>Tu joues au Grasset</h4>
+         <p>Entraînement encadré, calendrier RSEQ, et un DEC qui ouvre les portes.</p></div>
+
+       <div class="stop"><div class="dot" style="font-size:14px">U.S.</div>
+         <div class="sl">UNIVERSITAIRE</div><h4>Tu continues ailleurs</h4>
+         <div class="nums">
+           <span>18<small>RECRUES U SPORTS</small></span>
+           <span>6<small>NCAA</small></span>
+         </div>
+         <div class="uni">
+           <span class="uc">Montréal</span><span class="uc">Laval</span><span class="uc">Concordia</span>
+           <span class="uc">McGill</span><span class="uc">Sherbrooke</span>
+         </div>
+       </div>
+       <svg class="fin" width="30" height="30" viewBox="0 0 24 24" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v15M6 12l6 7 6-7"/></svg>
+     </div>
+
+     <div class="mknote">« D'ici, pour ici.
+Pis après, partout. »</div>
+
+     <div class="nstrip">
+       <div class="mk">X</div>
+       <div class="t"><b>Recrutés via Nexus</b><span>athlètes placés depuis le lancement</span></div>
+       <div class="nn">24</div>
+     </div>
+   </section>
+
+   <!-- ═══════════ #news ═══════════ -->
+   <section id="news">
+     <div class="kick">ACTUALITÉS</div>
+     <h2 class="sec-h">Ce qui bouge au collège</h2>
+     <div class="pbar"></div>
+     <div class="news-grid">
+       <article class="ncard"><span class="n-src">RSEQ</span>
+         <span class="n-title">Le Phénix l'emporte 31-17 chez les Élans</span>
+         <a class="n-link" href="#">Lire l'article <span class="ar">→</span></a></article>
+       <article class="ncard"><span class="n-src">GRASSET.QC.CA</span>
+         <span class="n-title">Portes ouvertes — Sciences de la nature</span>
+         <a class="n-link" href="#">Lire l'article <span class="ar">→</span></a></article>
+     </div>
+   </section>
+
+   <!-- ═══════════ bande CTA ═══════════ -->
+   <section class="cta-band">
+     <div class="ghost">SOIS LE NEX ★ SOIS LE NEX ★ SOIS LE NEX</div>
+     <h2>Montre ton intérêt pour<br><em>le Collège André-Grasset</em></h2>
+     <p>C'est la première étape de ton recrutement. Sois le <span>NEX</span>.</p>
+     <button class="btn-xl" id="ctaBtn">⊕ Ajouter à mes cibles</button>
+     <div class="cta-note" id="ctaNote">Le Collège André-Grasset sera notifié de ton intérêt · retrouve tes cibles dans <b>Mon parcours</b></div>
+   </section>
+
+   <div class="pfoot">⚡ Propulsé par Nexus · données de démonstration</div>
+
+  </div>
+ </div>
+
+ <nav class="tabbar">
+   <div class="tab"><svg viewBox="0 0 24 24" stroke-linejoin="round"><path d="m3 10 9-7 9 7v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><span>Accueil</span></div>
+   <div class="tab"><svg viewBox="0 0 24 24" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m7 15 4-5 3 3 5-7"/></svg><span>Parcours</span></div>
+   <div class="tab on"><svg viewBox="0 0 24 24" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><span>Cégeps</span></div>
+   <div class="tab"><svg viewBox="0 0 24 24" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>Messages</span></div>
+   <div class="tab"><svg viewBox="0 0 24 24" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg><span>Profil</span></div>
+ </nav>
+</div>
+
+<script>
+/* state cibles partagé hero ↔ bande CTA (comme ProgramPage.tsx) */
+let inTargets=false;
+const hfBtn=document.getElementById('hfBtn'),ctaBtn=document.getElementById('ctaBtn'),ctaNote=document.getElementById('ctaNote');
+const NAME="Le Collège André-Grasset";
+function sync(){
+ hfBtn.classList.toggle('on',inTargets);
+ hfBtn.querySelector('.t').textContent=inTargets?'Dans tes cibles':'Rajouter dans mes cibles';
+ ctaBtn.classList.toggle('on',inTargets);
+ ctaBtn.textContent=inTargets?'✓ Ajoutée à mes cibles':'⊕ Ajouter à mes cibles';
+ ctaNote.innerHTML=inTargets
+  ? `✓ ${NAME} a été notifié · le programme est dans <b>Mon parcours → Mes cibles</b>`
+  : `${NAME} sera notifié de ton intérêt · retrouve tes cibles dans <b>Mon parcours</b>`;
+}
+hfBtn.onclick=ctaBtn.onclick=()=>{inTargets=!inTargets;sync()};
+sync();
+
+/* L'affiche — multi = drawer, single = goTeam (no-op Bloc 2) */
+document.querySelectorAll('[data-multi]').forEach(r=>r.onclick=()=>r.classList.toggle('open'));
+
+/* carrousel campus */
+const cara=document.getElementById('cara');
+document.querySelectorAll('[data-nav]').forEach(b=>b.onclick=()=>cara.scrollBy({left:246*(+b.dataset.nav),behavior:'smooth'}));
+
+/* recherche programmes — accent-insensible (norm()) */
+const norm=s=>s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+const progs=[...document.querySelectorAll('#progs .prog')];
+document.getElementById('psearch').oninput=e=>{
+ const q=norm(e.target.value.trim());let n=0;
+ progs.forEach(p=>{const hit=!q||norm(p.textContent).includes(q);p.style.display=hit?'':'none';if(hit)n++});
+ let empty=document.getElementById('pempty');
+ if(!n){if(!empty){empty=document.createElement('span');empty.id='pempty';empty.className='prog empty';
+   empty.textContent="Aucun programme trouvé — contacte le collège !";document.getElementById('progs').appendChild(empty)}}
+ else if(empty)empty.remove();
+};
+</script>
+</body>
+</html>

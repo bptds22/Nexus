@@ -36,6 +36,7 @@ import { useRemoveFromPipeline } from "@/lib/queries/recruiter/useRemoveFromPipe
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import { MobilePicker } from "@/components/mobile/MobilePicker";
 import type { PipelineKanbanCard } from "@/app/recruteur/pipeline/_data/mockKanbanData";
+import { triggerHaptic } from "@/lib/haptics";
 
 /* ── Stages config (DB enum stage) ───────────────────────────── */
 
@@ -78,13 +79,6 @@ function statusGlobalColor(status: string): { dot: string; label: string; animat
   }
 }
 
-async function triggerHaptic(intensity: "Light" | "Medium" = "Light") {
-  try {
-    const { Haptics, ImpactStyle } = await import("@capacitor/haptics");
-    const style = intensity === "Light" ? ImpactStyle.Light : ImpactStyle.Medium;
-    await Haptics.impact({ style });
-  } catch { /* no-op */ }
-}
 
 /* ── PipelineHeader ──────────────────────────────────────────── */
 
@@ -653,7 +647,6 @@ function PipelineMenuSheet({
                 <button
                   type="button"
                   onClick={() => {
-                    triggerHaptic("Light");
                     setSortBy("moved_at_desc"); setFilterSport(null); setFocusMode(false);
                     toast.info({ message: "Filtres réinitialisés" });
                   }}
@@ -772,7 +765,6 @@ function PipelineDetailSheet({
     if (!card) return;
     try {
       await updateStage.mutateAsync({ cardId: card.id, newStage });
-      triggerHaptic("Medium");
       toast.success({ message: `Déplacé vers ${STAGE_BY_LOWER[newStage.toLowerCase()]?.label || newStage}` });
       onClose();
     } catch {
@@ -825,7 +817,6 @@ function PipelineDetailSheet({
     if (!confirmRemove) { setConfirmRemove(true); return; }
     try {
       await removeFromPipeline.mutateAsync({ cardId: card.id });
-      triggerHaptic("Medium");
       toast.success({ message: "Athlète retiré du processus" });
       onClose();
     } catch {
@@ -1094,7 +1085,7 @@ function PipelineDetailSheet({
                       <button
                         key={stage.lower}
                         type="button"
-                        onClick={() => handleStageChange(stage.key)}
+                        onClick={() => { void triggerHaptic("Light"); handleStageChange(stage.key); }}
                         disabled={isActive || isFreeDemoMode}
                         className={`py-3 rounded-2xl text-[11px] uppercase tracking-wider font-bold transition-colors ${
                           isActive
@@ -1115,7 +1106,7 @@ function PipelineDetailSheet({
               <div className="space-y-2 pt-2 border-t border-white/[0.06]">
                 <button
                   type="button"
-                  onClick={handleViewProfile}
+                  onClick={() => { void triggerHaptic("Light"); handleViewProfile(); }}
                   className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-[#1A1D24] text-white text-[13px] font-bold active:bg-white/5"
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -1127,7 +1118,7 @@ function PipelineDetailSheet({
                 </button>
                 <button
                   type="button"
-                  onClick={handleSendMessage}
+                  onClick={() => { void triggerHaptic("Light"); handleSendMessage(); }}
                   className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-[#1A1D24] text-white text-[13px] font-bold active:bg-white/5"
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -1139,7 +1130,7 @@ function PipelineDetailSheet({
                 {/* Iter 6.1e Fix 4 — État confirm = rouge plein + halo pulse */}
                 <button
                   type="button"
-                  onClick={handleRemove}
+                  onClick={() => { void triggerHaptic("Medium"); handleRemove(); }}
                   disabled={isFreeDemoMode}
                   className={`w-full flex items-center justify-center gap-2 py-3 rounded-2xl border text-[13px] font-bold transition-all ${
                     confirmRemove

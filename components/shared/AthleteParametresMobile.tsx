@@ -35,7 +35,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import { useSubscription } from "@/lib/hooks/useSubscription";
 import { isMinor } from "@/lib/utils/age";
-import { PARTNER_MEDIA_COPY } from "@/lib/legal/partnerMediaCopy";
+import { PARTNER_MEDIA_COPY, partnerResponsibilityText } from "@/lib/legal/partnerMediaCopy";
 import { Skeleton } from "@/components/ui/Skeleton";
 import {
   triggerHaptic, tierStatus,
@@ -48,25 +48,9 @@ import { deleteMyAccount } from "@/lib/auth/deleteAccount";
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
 /* ── Athlete notification rows — additive keys on users.notification_preferences JSONB.
-   Same shape as coach + recruiter NOTIF_ROWS : app_X drives in-app, email_X is mirrored
+   Consentement marketing seulement — les bascules de notification ont été
    through the master "Recevoir aussi par courriel" toggle. The 7 athlete keys live in
    the SAME JSONB as the coach/recruiter keys — no migration needed, additive only. */
-const NOTIF_ROWS: { key: string; appKey: string; emailKey: string; label: string; sublabel: string }[] = [
-  { key: "profileViewed",      appKey: "app_profile_viewed",      emailKey: "email_profile_viewed",
-    label: "Profil consulté",      sublabel: "Un recruteur a consulté ton profil" },
-  { key: "newFavorite",        appKey: "app_new_favorite",        emailKey: "email_new_favorite",
-    label: "Ajouté aux favoris",   sublabel: "Un recruteur t'a ajouté en favori" },
-  { key: "suggestionApproved", appKey: "app_suggestion_approved", emailKey: "email_suggestion_approved",
-    label: "Suggestion approuvée", sublabel: "Ton coach a approuvé une de tes suggestions" },
-  { key: "suggestionRejected", appKey: "app_suggestion_rejected", emailKey: "email_suggestion_rejected",
-    label: "Suggestion rejetée",   sublabel: "Ton coach a rejeté une de tes suggestions" },
-  { key: "coachUpdate",        appKey: "app_coach_update",        emailKey: "email_coach_update",
-    label: "Mise à jour du coach", sublabel: "Ton coach a modifié ton profil" },
-  { key: "completionReminder", appKey: "app_completion_reminder", emailKey: "email_completion_reminder",
-    label: "Rappel de complétion", sublabel: "Hebdomadaire si profil < 80%" },
-  { key: "milestone",          appKey: "app_milestone",           emailKey: "email_milestone",
-    label: "Milestones",           sublabel: "Vues, favoris (par paliers)" },
-];
 
 interface NotifPrefs { [k: string]: boolean | string }
 
@@ -102,11 +86,32 @@ export function AthleteParametresMobile() {
   /* B2 — Notifications state (load → mutate → save back as whole JSONB).
      Seed mirrors coach pattern : app_X = true unless explicit false ; email_X = false unless explicit true.
      `origNotifs` snapshot drives the dirty-CTA. */
-  const [notifs, setNotifs] = useState<NotifPrefs>({});
-  const [origNotifs, setOrigNotifs] = useState<NotifPrefs>({});
-  const [masterEmail, setMasterEmail] = useState(false);
-  const [origMasterEmail, setOrigMasterEmail] = useState(false);
-  const [savingNotifs, setSavingNotifs] = useState(false);
+  // Consentement marketing — registre DATÉ (privacy_preferences.consent_marketing).
+  const [marketingOn, setMarketingOn] = useState(false);
+  const [origMarketingOn, setOrigMarketingOn] = useState(false);
+  const [savingMarketing, setSavingMarketing] = useState(false);
+
+  // Amorce du consentement marketing depuis le registre daté. Effet dédié
+  // plutôt qu'un branchement dans le chargeur de chaque écran : la source est
+  // la même partout (privacy_preferences.consent_marketing), la logique aussi.
+  const [marketingDate, setMarketingDate] = useState<string | null>(null);
+  useEffect(() => {
+    let annule = false;
+    (async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user || annule) return;
+      const { data } = await supabase
+        .from("users").select("privacy_preferences").eq("id", user.id).maybeSingle();
+      if (annule) return;
+      const iso = (data?.privacy_preferences as Record<string, unknown> | null)?.consent_marketing as string | null | undefined;
+      setMarketingOn(!!iso);
+      setOrigMarketingOn(!!iso);
+      setMarketingDate(iso ? new Date(iso).toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" }) : null);
+    })();
+    return () => { annule = true; };
+  }, []);
+
   const [portalBusy, setPortalBusy] = useState(false);
 
   /* ── Portail Stripe mobile (Lot 2 — handler partagé startMobilePortal :
@@ -215,17 +220,6 @@ export function AthleteParametresMobile() {
        keys survive the eventual write-back (merge-write discipline, mirrors the
        parcours_readiness pattern). Then overlay defaults for the 7 athlete keys. */
     const n = (userRow?.notification_preferences as NotifPrefs) || {};
-    const seedNotif: NotifPrefs = { ...n };
-    for (const r of NOTIF_ROWS) {
-      seedNotif[r.appKey] = n[r.appKey] !== false;
-      seedNotif[r.emailKey] = !!n[r.emailKey];
-    }
-    seedNotif.marketing_emails = !!n.marketing_emails;
-    setNotifs(seedNotif);
-    setOrigNotifs(seedNotif);
-    const anyEmailOn = NOTIF_ROWS.some((r) => !!seedNotif[r.emailKey]);
-    setMasterEmail(anyEmailOn);
-    setOrigMasterEmail(anyEmailOn);
 
     if (user.created_at) {
       setSignupDate(new Date(user.created_at).toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" }));
@@ -238,55 +232,35 @@ export function AthleteParametresMobile() {
 
   /* ── Notifications : dirty + save (mirrors recruiter L162-202 / coach L209-244) ── */
 
-  const notifsDirty = useMemo(
-    () => JSON.stringify(notifs) !== JSON.stringify(origNotifs) || masterEmail !== origMasterEmail,
-    [notifs, origNotifs, masterEmail, origMasterEmail],
-  );
-
-  async function saveNotifs() {
-    if (!notifsDirty || savingNotifs) return;
+  /* Le consentement marketing s'écrit par FUSION, jamais par remplacement :
+     privacy_preferences porte aussi les consentements parentaux
+     (consent_parental_profile, _visibility, _partner_visibility) et les dates
+     de politique. Écraser l'objet entier détruirait des preuves légales. On
+     relit donc la valeur courante et on n'y change qu'une clé. */
+  async function saveMarketing() {
+    if (marketingOn === origMarketingOn || savingMarketing) return;
     triggerHaptic("Medium");
-    setSavingNotifs(true);
+    setSavingMarketing(true);
     try {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-
-      /* master ON  ⇒ email_X = app_X (mirror per row)
-         master OFF ⇒ all athlete email_X = false (silence email channel)
-         marketing_emails stays independent.
-         `notifs` ALREADY contains the existing JSONB spread (seeded that way in
-         loadProfile), so writing it back IS a merge-write — other roles' keys survive. */
-      const payload: NotifPrefs = { ...notifs };
-      for (const r of NOTIF_ROWS) {
-        payload[r.emailKey] = masterEmail ? !!notifs[r.appKey] : false;
-      }
-
-      const { data, error } = await supabase
+      const { data: courant } = await supabase
+        .from("users").select("privacy_preferences").eq("id", user.id).maybeSingle();
+      const base = (courant?.privacy_preferences as Record<string, unknown>) || {};
+      const { error } = await supabase
         .from("users")
-        .update({ notification_preferences: payload })
-        .eq("id", user.id)
-        .select("id");
-
-      if (error) {
-        toast.error({ message: "Échec sauvegarde", detail: error.message });
-        return;
-      }
-      if (!data || data.length === 0) {
-        /* RLS-aware 0-row check — the "users update own row" policy should cover
-           this ; an empty array means the policy filtered us out silently. */
-        toast.error({ message: "Aucune ligne mise à jour (RLS ?)" });
-        return;
-      }
-
-      setNotifs(payload);
-      setOrigNotifs(payload);
-      setOrigMasterEmail(masterEmail);
-      toast.success({ message: "Notifications mises à jour" });
+        .update({ privacy_preferences: { ...base, consent_marketing: marketingOn ? new Date().toISOString() : null } })
+        .eq("id", user.id);
+      if (error) { toast.error({ message: "Échec sauvegarde", detail: error.message }); return; }
+      setOrigMarketingOn(marketingOn);
+      toast.success({ message: marketingOn ? "Consentement enregistré" : "Consentement retiré" });
     } finally {
-      setSavingNotifs(false);
+      setSavingMarketing(false);
     }
   }
+
+
 
   /* ── Confidentialité : partner opt-in + parental consent (atomic).
         Mirrors desktop page.tsx L571-661 — the minor-gating logic :
@@ -387,7 +361,6 @@ export function AthleteParametresMobile() {
         avec handleRevokeConsent (retrait de consentement, réversible). ── */
 
   async function handleDelete() {
-    triggerHaptic("Heavy");
     setDeleteSheetOpen(false);
     await deleteMyAccount({
       onError: (detail) => toast.error({ message: "Échec de la suppression", detail }),
@@ -519,44 +492,35 @@ export function AthleteParametresMobile() {
       </Group>
 
       {/* NOTIFICATIONS — 7 athlete ToggleRows + master email + marketing */}
-      <SectionLabel>Notifications</SectionLabel>
+      {/* COMMUNICATIONS — voir RecruteurParametresMobile pour le raisonnement
+          complet. En résumé : les six bascules de notification et le maître
+          « recevoir aussi par courriel » écrivaient dans
+          users.notification_preferences, qu'AUCUN émetteur ne lit. Retirées.
+          Le consentement marketing reste et pointe désormais sur le registre
+          daté, privacy_preferences.consent_marketing : accorder écrit la date,
+          retirer écrit null — le retrait doit être aussi simple que le
+          consentement (Loi 25). */}
+      <SectionLabel>Communications</SectionLabel>
       <Group>
-        {NOTIF_ROWS.map((row, idx) => (
-          <ToggleRow
-            key={row.key}
-            isFirst={idx === 0}
-            label={row.label}
-            sublabel={row.sublabel}
-            checked={!!notifs[row.appKey]}
-            onChange={(v) => setNotifs((n) => ({ ...n, [row.appKey]: v }))}
-          />
-        ))}
-      </Group>
-      <Group className="mt-2">
-        <ToggleRow
-          label="Recevoir aussi par courriel"
-          sublabel="Les mêmes notifications, par courriel"
-          isFirst
-          checked={masterEmail}
-          onChange={setMasterEmail}
-        />
         <ToggleRow
           label="Emails marketing"
-          sublabel="Annonces produit et infolettre"
-          isFirst={false}
-          checked={!!notifs.marketing_emails}
-          onChange={(v) => setNotifs((n) => ({ ...n, marketing_emails: v }))}
+          sublabel={marketingDate
+            ? `Consenti le ${marketingDate} — désactive pour retirer`
+            : "Annonces produit et infolettre"}
+          isFirst
+          checked={marketingOn}
+          onChange={setMarketingOn}
         />
       </Group>
-      {notifsDirty && (
+      {marketingOn !== origMarketingOn && (
         <div className="px-4 pt-3">
           <button
             type="button"
-            onClick={saveNotifs}
-            disabled={savingNotifs}
+            onClick={() => { void triggerHaptic("Light"); saveMarketing(); }}
+            disabled={savingMarketing}
             className="w-full h-11 rounded-2xl bg-[#E63946] text-white text-[14px] font-semibold active:bg-[#D42B22] disabled:opacity-60"
           >
-            {savingNotifs ? "Sauvegarde…" : "Enregistrer les notifications"}
+            {savingMarketing ? "Sauvegarde…" : "Enregistrer"}
           </button>
         </div>
       )}
@@ -644,10 +608,8 @@ export function AthleteParametresMobile() {
                     {PARTNER_MEDIA_COPY.bullets.map((b) => (
                       <li key={b}>{b}</li>
                     ))}
-                    <li>
-                      <span className="font-bold text-white">{PARTNER_MEDIA_COPY.responsibilityBullet}</span>
-                    </li>
                   </ul>
+                  <p className="pt-1">{partnerResponsibilityText("self")}</p>
                 </div>
               )}
             </Group>

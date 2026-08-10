@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { parseDistinctions } from "@/lib/config/badges";
+import { selectBestEvaluation } from "@/lib/evaluations/selectEvaluation";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
 import ErrorToast from "@/components/ui/ErrorToast";
 import FeatureGate from "@/components/subscription/FeatureGate";
@@ -222,7 +223,7 @@ function NouveauMessageContent() {
             positions!position_id(abreviation),
             schools!school_id(name, region),
             committed_school:schools!committed_school_id(name),
-            evaluations(distinctions),
+            evaluations(distinctions, updated_at),
             users!coach_id(id, first_name, last_name, avatar_url, email, phone, schools!school_id(region))
           )
         `)
@@ -246,7 +247,7 @@ function NouveauMessageContent() {
           const committedSchoolRel = a.committed_school;
           const committedSchoolObj = (Array.isArray(committedSchoolRel) ? committedSchoolRel[0] : committedSchoolRel) as { name?: string } | null;
           const evalRel = a.evaluations;
-          const eval0 = (Array.isArray(evalRel) ? evalRel[0] : evalRel) as { distinctions?: unknown } | null;
+          const eval0 = selectBestEvaluation(Array.isArray(evalRel) ? evalRel : evalRel ? [evalRel] : []) as { distinctions?: unknown } | null;
           // #56 — via parseDistinctions (gère objet {badge,detail} + legacy).
           const distinctions: string[] = parseDistinctions(eval0?.distinctions).map((d) => d.badge);
           const rawProg: unknown = a.programme_cegep_vise;
@@ -304,7 +305,7 @@ function NouveauMessageContent() {
                 positions!position_id(abreviation),
                 schools!school_id(name, region),
                 committed_school:schools!committed_school_id(name),
-                evaluations(distinctions),
+                evaluations(distinctions, updated_at),
                 users!coach_id(id, first_name, last_name, avatar_url, email, phone, schools!school_id(region))
               `)
               .eq("id", athleteId)
@@ -323,7 +324,7 @@ function NouveauMessageContent() {
               const directCommittedSchoolRel = (directAthlete as Record<string, unknown>)?.committed_school;
               const directCommittedSchoolObj = (Array.isArray(directCommittedSchoolRel) ? directCommittedSchoolRel[0] : directCommittedSchoolRel) as { name?: string } | null;
               const directEvalRel = (directAthlete as Record<string, unknown>)?.evaluations;
-              const directEval0 = (Array.isArray(directEvalRel) ? directEvalRel[0] : directEvalRel) as { distinctions?: unknown } | null;
+              const directEval0 = selectBestEvaluation(Array.isArray(directEvalRel) ? directEvalRel : directEvalRel ? [directEvalRel] : []) as { distinctions?: unknown } | null;
               // #56 — via parseDistinctions (gère objet {badge,detail} + legacy).
               const directDistinctions: string[] = parseDistinctions(directEval0?.distinctions).map((d) => d.badge);
               const directRawProg: unknown = (directAthlete as Record<string, unknown>)?.programme_cegep_vise;

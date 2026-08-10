@@ -23,7 +23,9 @@ export type GatedFeature =
   | "video_upload" | "who_viewed" | "bulk_message"
   | "unlimited_pipeline" | "unlimited_favorites" | "unlimited_profiles"
   | "school_management" | "cegep_management"
-  | "custom_lists" | "activity_feed";
+  | "custom_lists" | "activity_feed"
+  // « Ma page » — l'editeur de la page publique du CEGEP (recruteur).
+  | "public_page";
 
 interface FeatureGateProps {
   feature: GatedFeature;

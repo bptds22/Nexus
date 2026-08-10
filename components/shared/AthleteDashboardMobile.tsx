@@ -27,6 +27,7 @@
 ═══════════════════════════════════════════════════════════════ */
 
 import { useEffect, useMemo, useState } from "react";
+import { selectBestEvaluation } from "@/lib/evaluations/selectEvaluation";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
@@ -37,6 +38,7 @@ import { DashboardActivityFeed } from "@/components/shared/dashboard/DashboardAc
 import { SectionDivider } from "@/components/shared/dashboard/SectionDivider";
 import { frenchDateUppercase } from "@/components/shared/dashboard/utils";
 import type { ActivityEvent } from "@/lib/types/activityEvents";
+import { triggerHaptic } from "@/lib/haptics";
 
 /* ── Checklist item shape — mirrors desktop's local ChecklistItem
       type (page.tsx). The `section` tag is display-only ; "coach"
@@ -65,7 +67,7 @@ function InlineBanner({
     <div className="px-4">
       <button
         type="button"
-        onClick={() => router.push(href)}
+        onClick={() => { void triggerHaptic("Light"); router.push(href); }}
         className="w-full text-left bg-[#1A1D24] rounded-2xl border border-white/[0.05] active:bg-white/[0.02] transition-colors flex items-center gap-3 px-4 py-3"
       >
         <div
@@ -397,14 +399,16 @@ export default function AthleteDashboardMobile() {
       // evaluations embed shape, same 10-item builder + boosts.
       const { data: athleteFullRow } = await supabase
         .from("athletes")
-        .select("photo_url, first_name, last_name, date_naissance, telephone, taille_pieds, poids_lbs, sport_id, position_id, video_match_complet_url, video_faits_saillants_url, hudl_url, youtube_url, instagram_url, moyenne_generale, test_40_verges, saut_vertical, evaluations(vitesse_explosivite, force_puissance, leadership, rapport_entraineur)")
+        .select("photo_url, first_name, last_name, date_naissance, telephone, taille_pieds, poids_lbs, sport_id, position_id, video_match_complet_url, video_faits_saillants_url, hudl_url, youtube_url, instagram_url, moyenne_generale, test_40_verges, saut_vertical, evaluations(vitesse_explosivite, force_puissance, leadership, rapport_entraineur, updated_at)")
         .eq("id", athleteRow.id)
         .maybeSingle();
 
       if (athleteFullRow) {
-        const evalRow = Array.isArray(athleteFullRow.evaluations)
-          ? athleteFullRow.evaluations[0]
-          : athleteFullRow.evaluations;
+        const evalRow = selectBestEvaluation(
+          Array.isArray(athleteFullRow.evaluations)
+            ? athleteFullRow.evaluations
+            : athleteFullRow.evaluations ? [athleteFullRow.evaluations] : []
+        );
         const hasAnyTrait = evalRow && (
           (evalRow.vitesse_explosivite || 0) > 0 ||
           (evalRow.force_puissance || 0) > 0 ||

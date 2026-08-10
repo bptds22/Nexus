@@ -16,6 +16,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { createClient } from "@/lib/supabase/client";
+import { triggerHaptic } from "@/lib/haptics";
 
 export interface CoachCandidate {
   id: string;
@@ -141,7 +142,7 @@ export function TeamAddCoachSheet({
                 <button
                   key={o.v}
                   type="button"
-                  onClick={() => setRole(o.v)}
+                  onClick={() => { void triggerHaptic("Light"); setRole(o.v); }}
                   className={`flex-1 h-10 rounded-2xl text-[12px] font-bold uppercase tracking-wider transition-all ${
                     sel
                       ? "bg-[rgba(230,57,70,0.12)] border border-[#E63946] text-white"
@@ -197,7 +198,7 @@ export function TeamAddCoachSheet({
                   <li key={c.id}>
                     <button
                       type="button"
-                      onClick={() => onPicked(c.id, role)}
+                      onClick={() => { void triggerHaptic("Light"); onPicked(c.id, role); }}
                       className="w-full flex items-center gap-3 p-3 bg-[#111317] rounded-2xl active:bg-[#22262e] transition-colors text-left"
                     >
                       <div className="w-10 h-10 rounded-full bg-[#2D3748] flex items-center justify-center flex-shrink-0">

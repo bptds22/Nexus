@@ -9,6 +9,7 @@ import { createClient } from "@/lib/supabase/client";
 import { isMinor } from "@/lib/utils/age";
 import { deleteMyAccount } from "@/lib/auth/deleteAccount";
 import { AthleteParametresMobile } from "@/components/shared/AthleteParametresMobile";
+import { partnerResponsibilityText } from "@/lib/legal/partnerMediaCopy";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -17,6 +18,9 @@ const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
    Sub-nav pattern matching admin/coach/recruiter settings pages
 ═══════════════════════════════════════════════════════════════ */
 
+/* « equipe » a QUITTÉ les paramètres : le transfert d'équipe a désormais sa
+   propre route, /athlete/transfert, atteignable web ET mobile. Ici il était
+   invisible sur mobile (AthleteParametresMobile ne l'a jamais porté). */
 type SectionKey = "compte" | "abonnement" | "notifications" | "confidentialite";
 
 const SECTIONS: { key: SectionKey; label: string; icon: React.ReactNode }[] = [
@@ -365,6 +369,7 @@ function ParametresPageDesktop() {
           )}
 
           {/* ── ABONNEMENT ───────────────────────────────────── */}
+
           {section === "abonnement" && <SubscriptionManager role="ATHLETE" />}
 
           {/* ── NOTIFICATIONS ─────────────────────────────────── */}
@@ -406,7 +411,10 @@ function ParametresPageDesktop() {
                   <div>
                     <p className="text-[14px] font-bold text-white">Partenaires médias</p>
                     <p className="text-[13px] text-[#9CA3AF] leading-relaxed mt-1">
-                      Permettre aux partenaires médias approuvés (journalistes sportifs, pages spécialisées) de télécharger ma carte Nexus pour publication. Ma carte contient mon nom, ma photo, mon école et mon sport.
+                      Permettre aux partenaires médias approuvés (journalistes sportifs, pages spécialisées) de télécharger ma carte Nexus pour publication.
+                    </p>
+                    <p className="text-[13px] text-[#9CA3AF] leading-relaxed mt-2">
+                      {partnerResponsibilityText("self")}
                     </p>
                   </div>
 

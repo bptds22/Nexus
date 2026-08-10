@@ -68,8 +68,6 @@ export interface SaveCreateOptions {
 interface SportIds {
   sportId: string | null;
   positionId: string | null;
-  sportSecondaireId: string | null;
-  positionSecondaireId: string | null;
 }
 
 /** COTE AUTO-AVERAGE — DETAILED ALWAYS WINS.
@@ -102,8 +100,6 @@ export function computeCoteGlobale(form: AthleteFormData): number | null {
 async function resolveSportIds(supabase: SupabaseClient, form: AthleteFormData): Promise<SportIds> {
   let sportId: string | null = null;
   let positionId: string | null = null;
-  let sportSecondaireId: string | null = null;
-  let positionSecondaireId: string | null = null;
 
   if (form.sports.primarySport) {
     const { data } = await supabase
@@ -125,19 +121,7 @@ async function resolveSportIds(supabase: SupabaseClient, form: AthleteFormData):
       positionId = (posRow2 as { id?: string } | null)?.id ?? null;
     }
   }
-  if (form.sports.secondaryPosition && sportId) {
-    const { data } = await supabase
-      .from("positions").select("id")
-      .eq("abreviation", form.sports.secondaryPosition).eq("sport_id", sportId).maybeSingle();
-    positionSecondaireId = (data as { id?: string } | null)?.id ?? null;
-  }
-  if (form.sports.secondarySport && form.sports.secondarySport !== "Aucun") {
-    const { data } = await supabase
-      .from("sports").select("id")
-      .eq("nom", form.sports.secondarySport).maybeSingle();
-    sportSecondaireId = (data as { id?: string } | null)?.id ?? null;
-  }
-  return { sportId, positionId, sportSecondaireId, positionSecondaireId };
+  return { sportId, positionId };
 }
 
 function programmeCegepVise(form: AthleteFormData): string[] {
@@ -197,10 +181,10 @@ function buildSharedAthletesPayload(
     // Sport
     sport_id: ids.sportId,
     position_id: ids.positionId,
-    sport_secondaire_id: ids.sportSecondaireId,
-    position_secondaire_id: ids.positionSecondaireId,
     numero_jersey: form.sports.jerseyNumber ? parseInt(form.sports.jerseyNumber) : null,
     ouvert_entraineur_cegep: form.sports.openToCoaching,
+    // Parcours d'équipes (JSONB) — cap 10 (DB CHECK also enforces).
+    parcours_equipes: (form.sports.parcoursEquipes ?? []).slice(0, 10),
 
     // Eval mirror (athletes mirror — recruteur uses this for the card)
     cote_globale_entraineur: coteGlobale,
@@ -363,17 +347,52 @@ export async function saveAthleteEdit(
     .upsert(evalRecord, { onConflict: "coach_id,athlete_id" });
   if (evalRes.error) return { error: evalRes.error };
 
-  // team_athletes DELETE → INSERT (with joined_at — consistency fix)
-  await supabase.from("team_athletes").delete().eq("athlete_id", athleteId);
+  /* team_athletes — DÉPLACEMENT borné au sport, plus une purge globale.
+     FIX 4 : l'ancien `.delete().eq("athlete_id", …)` effaçait TOUTES les
+     appartenances de l'athlète, y compris celles d'autres sports, sans le
+     dire. Un athlète football + basket perdait son basket dès qu'un coach
+     ouvrait le wizard. On ne retire désormais que la ligne du sport visé,
+     ce que la contrainte UNIQUE (athlete_id, sport_id) exige de toute façon
+     avant de réinsérer. */
   const selectedTeamId = form.sports.selectedTeamId;
   if (selectedTeamId) {
+    const { data: teamRow, error: teamErr } = await supabase
+      .from("teams")
+      .select("sport_id")
+      .eq("id", selectedTeamId)
+      .single();
+    if (teamErr || !teamRow?.sport_id) {
+      return { error: teamErr ?? { message: "Sport de l'équipe introuvable." } };
+    }
+
+    const delRes = await supabase
+      .from("team_athletes")
+      .delete()
+      .eq("athlete_id", athleteId)
+      .eq("sport_id", teamRow.sport_id as string);
+    if (delRes.error) return { error: delRes.error };
+
     const taRes = await supabase.from("team_athletes").insert({
       team_id: selectedTeamId,
       athlete_id: athleteId,
       jersey_number: form.sports.jerseyNumber || null,
       joined_at: new Date().toISOString(),
     });
-    if (taRes.error) console.error("[saveAthleteEdit] team_athletes insert failed:", taRes.error);
+    // FIX 4 : remonté à l'appelant au lieu d'un console.error muet — un
+    // rattachement d'équipe raté laissait l'athlète invisible au calendrier
+    // sans que personne ne le sache.
+    if (taRes.error) return { error: taRes.error };
+  } else if (ids.sportId) {
+    /* Aucune équipe sélectionnée = RETRAIT, mais borné au sport principal
+       du formulaire. Sans cette borne on retomberait sur la purge globale
+       qu'on vient de supprimer. Le trigger reset_athlete_anchor_on_team_remove
+       s'applique normalement. */
+    const delRes = await supabase
+      .from("team_athletes")
+      .delete()
+      .eq("athlete_id", athleteId)
+      .eq("sport_id", ids.sportId);
+    if (delRes.error) return { error: delRes.error };
   }
 
   return { id: athleteId };

@@ -19,14 +19,8 @@ import { EmptyState as SharedEmptyState } from "@/components/mobile/EmptyState";
 import { useRecruiterLists, type RecruiterListSummary } from "@/lib/queries/recruiter/useRecruiterLists";
 import { useCreateList } from "@/lib/queries/recruiter/useCreateList";
 import { useDeleteList } from "@/lib/queries/recruiter/useDeleteList";
+import { triggerHaptic } from "@/lib/haptics";
 
-async function triggerHaptic(intensity: "Light" | "Medium" = "Light") {
-  try {
-    const { Haptics, ImpactStyle } = await import("@capacitor/haptics");
-    const style = intensity === "Light" ? ImpactStyle.Light : ImpactStyle.Medium;
-    await Haptics.impact({ style });
-  } catch { /* no-op */ }
-}
 
 function formatRelativeDate(iso: string): string {
   try {
@@ -63,7 +57,6 @@ function CreateListSheet({ open, onClose }: { open: boolean; onClose: () => void
     setSubmitError(null);
     try {
       await createMut.mutateAsync({ name, description: description || null });
-      triggerHaptic("Medium");
       toast.success({ message: "Liste créée" });
       onClose();
       // Iter 7.16 — scroll-to-top après création. Le tri DESC + optimistic en
@@ -77,7 +70,8 @@ function CreateListSheet({ open, onClose }: { open: boolean; onClose: () => void
       });
     } catch (e) {
       const err = e as { message?: string };
-      setSubmitError(err.message || "Erreur lors de la création.");
+      void triggerHaptic("Error");
+        setSubmitError(err.message || "Erreur lors de la création.");
     }
   };
 
@@ -108,7 +102,7 @@ function CreateListSheet({ open, onClose }: { open: boolean; onClose: () => void
               <span className="text-[15px] font-bold text-white">Nouvelle liste</span>
               <button
                 type="button"
-                onClick={handleSubmit}
+                onClick={() => { void triggerHaptic("Light"); handleSubmit(); }}
                 disabled={!canSubmit}
                 className={`text-[14px] font-bold ${canSubmit ? "text-[#E63946]" : "text-white/30"}`}
               >
@@ -326,7 +320,6 @@ function ListesInner() {
     setConfirmTarget(null);
     try {
       await deleteMut.mutateAsync(snapshot.id);
-      triggerHaptic("Medium");
       toast.success({ message: "Liste supprimée", detail: snapshot.name });
     } catch (e) {
       const err = e as { message?: string };

@@ -94,10 +94,37 @@ Follow these instructions exactly. Updated April 2026.
 - id, recruiter_id, athlete_id, viewed_at
 - RLS: recruiters manage own rows only
 
-### Key DB Identifiers (test environment)
-- Test athlete UUID: f35a5cdb-76ac-413f-8bce-26f4ee4f7a0f
-- Coach account: bpdesfosses@gmail.com / user ID: 51ec6dbe-ded9-4abb-a2e5-0b92d3409d87
-- School: Saint-Jean-Eudes (4f0e52ad-e9c7-4797-9b7b-92b25ed1307b)
+### Key DB Identifiers (cloud project `nrloizyemulbhujrqhgx` — verified 2026-08-03)
+
+**RULE — resolve canonical UUIDs at runtime by email lookup, never hardcode them**
+(`select id from public.users where email = '…'`). The IDs below are a map for
+reasoning and for reading query output, NOT constants to paste into code or
+tests. A stale ID fails silently: the `f35a5cdb-…` "test athlete" that sat here
+for months pointed at nothing on cloud, and every test written against it was
+green for the wrong reason.
+
+**Admin**
+- `bptds22@gmail.com` — user `f51384b5-a2c2-4827-9137-8aa8d29a1fe0`, role ADMIN
+  + `is_platform_admin`. **The only account `is_admin()` lets through.** Every
+  RPC gated on it (e.g. `create_team_join_token`, `revoke_team_join_token`)
+  works with this account and no other.
+- `bpdesfosses@gmail.com` / `51ec6dbe-…` is a COACH account, never an admin —
+  and it does not exist on the cloud DB at all (local-only leftover). Do not
+  use it as a fixture.
+
+**Athlete fixtures** (all four have a real auth user → usable with a genuine JWT)
+
+| athlete_id | user_id | who | state, and what it is good for |
+|---|---|---|---|
+| `1d06342e-a138-4a88-97ed-d8a9a102428f` | `2a046349-…` | Gabriel Mandziuk | no team — clean slate for a first attachment |
+| `d4cd6432-1c45-47bc-8498-071075e4ae7c` | `b79de13d-…` | Athlete Nexus | exactly 14 → sits ON the `< 14` Loi 25 boundary and passes it; anchored on Dragons Juvenile (SECONDAIRE) |
+| `fbf03493-03e7-4fc6-8f34-12a661440401` | `c6c679b1-…` | Test Android | anchored on a LIGUE_CIVILE team — the only shape where `reset_athlete_anchor_on_team_remove` actually writes |
+| `d1e8b894-5699-4e20-acf1-a89de2966989` | `1b4bdeca-…` | Test Nexus | no team, no dependants — use THIS one for destructive fixture edits (e.g. flipping `date_naissance`), and restore immediately |
+
+**Coach / school**
+- Coach accounts: `nexus.coachs@nexussports.ca` (`a0000000-…-0000000000a2`),
+  `nexus.coachc@nexussports.ca` (`a0000000-…-0000000000a3`)
+- School: Saint-Jean-Eudes (`4f0e52ad-e9c7-4797-9b7b-92b25ed1307b`)
 
 ### RLS Policies
 - athletes: coaches CRUD own, recruiters SELECT active athletes (status = 'ACTIF')

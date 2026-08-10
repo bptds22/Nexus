@@ -5,13 +5,10 @@
    parents that consume them (recruiter today ; coach Phase 2).
 ═══════════════════════════════════════════════════════════════ */
 
-export async function triggerHaptic(intensity: "Light" | "Medium" = "Light") {
-  try {
-    const { Haptics, ImpactStyle } = await import("@capacitor/haptics");
-    const style = intensity === "Light" ? ImpactStyle.Light : ImpactStyle.Medium;
-    await Haptics.impact({ style });
-  } catch { /* no-op */ }
-}
+/* Ré-export : ce module exposait sa PROPRE copie de triggerHaptic, que
+   21 fichiers importaient. On garde le nom et le chemin — les appelants
+   ne bougent pas — mais l'implémentation vient désormais du helper unique. */
+export { triggerHaptic } from "@/lib/haptics";
 
 /** Relative time for the thread list rows ("À l'instant", "12 min",
  *  "3 h", "Hier", weekday short name, then short date). */

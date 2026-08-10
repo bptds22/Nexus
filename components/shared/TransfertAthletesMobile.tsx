@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import AthletePhotoFill from "@/components/shared/AthletePhotoFill";
 import { MobilePicker, type PickerOption } from "@/components/mobile/MobilePicker";
 import { useMobileToast } from "@/components/mobile/MobileToast";
+import { triggerHaptic } from "@/lib/haptics";
 import {
   loadSchoolCoaches,
   loadAthletesForCoach,
@@ -160,15 +161,20 @@ export default function TransfertAthletesMobile() {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header + source picker */}
-      <div className="px-5 pt-5 pb-3 shrink-0">
+      {/* Header + source picker.
+          nx-safe-top (globals.css) = env(safe-area-inset-top) + 12px. Le layout
+          coach ne réserve RIEN en haut — c'est écrit dans app/coach/layout.tsx :
+          « Pas de padding-top : les headers sticky portent déjà
+          env(safe-area-inset-top) ». Cet écran ne le portait pas, d'où le titre
+          sous l'heure système. */}
+      <div className="px-5 pb-3 shrink-0 nx-safe-top">
         <h1 className="font-head text-[22px] font-black text-white uppercase tracking-tight">Gestion des athlètes</h1>
         <p className="text-[13px] text-[#9CA3AF] mt-1">Assigne des athlètes à un entraîneur de ton école.</p>
 
         <label className="block text-[11px] font-bold tracking-wider uppercase text-[#6b7280] mt-4 mb-1.5">Source</label>
         <button
           type="button"
-          onClick={() => setSourcePickerOpen(true)}
+          onClick={() => { void triggerHaptic("Light"); setSourcePickerOpen(true); }}
           className="w-full flex items-center justify-between bg-[#1A1D24] border border-[#2D3748] rounded-lg px-4 py-3 text-left"
         >
           <span className={`text-[15px] ${sourceCoach ? "text-white font-semibold" : "text-[#6b7280]"}`}>
@@ -179,7 +185,7 @@ export default function TransfertAthletesMobile() {
 
         {sourceId && sourceAthletes.length > 0 && (
           <div className="flex items-center justify-between mt-3">
-            <button type="button" onClick={toggleSelectAll} className="text-[12px] font-bold text-[#9CA3AF]">
+            <button type="button" onClick={() => { void triggerHaptic("Light"); toggleSelectAll(); }} className="text-[12px] font-bold text-[#9CA3AF]">
               {selectedIds.size === sourceAthletes.length ? "Tout désélectionner" : "Tout sélectionner"}
             </button>
             {count > 0 && (
@@ -193,14 +199,24 @@ export default function TransfertAthletesMobile() {
 
       {/* Athlete list (scrollable) */}
       <div className="flex-1 overflow-y-auto px-5 pb-4 space-y-2">
-        {!sourceId && <div className="py-16 text-center text-[13px] text-[#6b7280]">Sélectionne un entraîneur</div>}
+        {/* États vides CENTRÉS dans la bande (h-full), plus collés en haut avec
+            py-16. C'est ce qui donnait l'impression d'un contenu tassé sous
+            l'en-tête suivi d'un grand vide : la bande faisait toute la hauteur,
+            mais son seul contenu était posé à son sommet. */}
+        {!sourceId && (
+          <div className="h-full flex items-center justify-center text-center text-[13px] text-[#6b7280]">
+            Sélectionne un entraîneur
+          </div>
+        )}
         {sourceId && loadingAthletes && (
-          <div className="py-16 flex justify-center">
+          <div className="h-full flex items-center justify-center">
             <div className="w-6 h-6 border-2 border-[#E63946] border-t-transparent rounded-full animate-spin" />
           </div>
         )}
         {sourceId && !loadingAthletes && sourceAthletes.length === 0 && (
-          <div className="py-16 text-center text-[13px] text-[#6b7280]">Aucun athlète</div>
+          <div className="h-full flex items-center justify-center text-center text-[13px] text-[#6b7280]">
+            Aucun athlète
+          </div>
         )}
         {sourceId && !loadingAthletes && sourceAthletes.map((a) => {
           const selected = selectedIds.has(a.id);
@@ -208,7 +224,7 @@ export default function TransfertAthletesMobile() {
             <button
               key={a.id}
               type="button"
-              onClick={() => toggleSelected(a.id)}
+              onClick={() => { void triggerHaptic("Light"); toggleSelected(a.id); }}
               className={`w-full flex items-center gap-3 text-left rounded-xl p-3 transition-all ${
                 selected ? "bg-[#E63946]/10 border border-[#E63946]" : "bg-[#1A1D24] border border-[#2D3748]"
               }`}
@@ -229,11 +245,24 @@ export default function TransfertAthletesMobile() {
       </div>
 
       {/* Sticky destination + CTA */}
-      <div className="shrink-0 border-t border-[#2D3748] bg-[#1A1D24] px-5 pt-3 pb-4">
+      {/* Pied collant — RÉSERVE DE LA TAB BAR.
+          app/coach/layout.tsx pose bien paddingBottom 88px + safe-area sur
+          <main>, mais AnimatedRoute enveloppe la page dans un motion.div en
+          `position:absolute; inset:0`. Un absolu se cale sur la PADDING-BOX de
+          l'ancêtre positionné : il fait donc 100dvh pleins et IGNORE cette
+          réserve. Le pied atterrissait sous la tab bar. Les autres écrans y
+          échappent parce qu'ils défilent en flux normal ; celui-ci est le seul
+          en colonne pleine hauteur avec un pied ancré.
+          var(--tabzone, …) : --tabzone n'existe que sous le layout collège ;
+          ailleurs on retombe sur la valeur littérale du layout coach. */}
+      <div
+        className="shrink-0 border-t border-[#2D3748] bg-[#1A1D24] px-5 pt-3"
+        style={{ paddingBottom: "calc(var(--tabzone, calc(env(safe-area-inset-bottom) + 88px)) + 12px)" }}
+      >
         <label className="block text-[11px] font-bold tracking-wider uppercase text-[#6b7280] mb-1.5">Destination</label>
         <button
           type="button"
-          onClick={() => count > 0 && setDestPickerOpen(true)}
+          onClick={() => { void triggerHaptic("Light"); count > 0 && setDestPickerOpen(true); }}
           disabled={count === 0}
           className="w-full flex items-center justify-between bg-[#111317] border border-[#2D3748] rounded-lg px-4 py-3 text-left disabled:opacity-40"
         >
@@ -245,7 +274,7 @@ export default function TransfertAthletesMobile() {
         <button
           type="button"
           disabled={!canSubmit}
-          onClick={() => setShowConfirm(true)}
+          onClick={() => { void triggerHaptic("Light"); setShowConfirm(true); }}
           className="w-full mt-3 py-3.5 bg-[#E63946] text-white text-[14px] font-semibold uppercase tracking-wider rounded-lg disabled:opacity-40"
         >
           {actionVerb} {count > 0 ? `${count} athlète${count > 1 ? "s" : ""}` : "athlètes"}
@@ -273,7 +302,7 @@ export default function TransfertAthletesMobile() {
       {/* Confirmation modal */}
       {showConfirm && destCoach && (
         <div className="fixed inset-0 z-[90] flex items-center justify-center px-4">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => !submitting && setShowConfirm(false)} />
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => { void triggerHaptic("Light"); !submitting && setShowConfirm(false); }} />
           <div className="relative bg-[#1A1D24] border border-[#2D3748] rounded-xl p-6 max-w-sm w-full shadow-2xl">
             <h3 className="font-head text-[16px] font-black text-white uppercase tracking-tight">
               {actionVerb} {count} athlète{count > 1 ? "s" : ""}?
@@ -284,9 +313,9 @@ export default function TransfertAthletesMobile() {
               <span className="font-bold text-white">{destCoach.name}</span>?
             </p>
             <div className="flex items-center justify-end gap-3 mt-5">
-              <button type="button" onClick={() => setShowConfirm(false)} disabled={submitting}
+              <button type="button" onClick={() => { void triggerHaptic("Light"); setShowConfirm(false); }} disabled={submitting}
                 className="px-4 py-2 text-[13px] font-bold text-[#9CA3AF] disabled:opacity-40">Annuler</button>
-              <button type="button" onClick={handleTransfer} disabled={submitting}
+              <button type="button" onClick={() => { void triggerHaptic("Light"); handleTransfer(); }} disabled={submitting}
                 className="px-5 py-2 bg-[#E63946] text-white text-[13px] font-bold rounded-lg disabled:opacity-40">
                 {submitting ? "..." : "Confirmer"}
               </button>

@@ -237,14 +237,37 @@ export interface AthleteFormPhysical {
   sprint100m: string;
 }
 
+/** One declarative team-history row ("Parcours d'équipes", LinkedIn-style).
+ *  Stored as a JSONB array on athletes.parcours_equipes. year_end null/absent
+ *  = current team (red ring + "Actif"). Free text, no link to the teams table. */
+export interface TeamHistoryEntry {
+  team_name: string;
+  sport: string;
+  ligue: string;
+  division: string;
+  year_start: number;
+  /** null / absent = current (équipe actuelle). */
+  year_end: number | null;
+  /* ── Champs écrits par _apply_team_attachment_core, longtemps jetés au parse.
+     Les entrées SYSTÈME (source: 'system') les portent ; les entrées déclarées
+     à la main par l'athlète ne les ont pas. D'où l'optionnalité. */
+  /** Horodatage ISO du DÉPART de l'équipe. Seul champ qui ordonne réellement
+   *  le parcours : year_start/year_end viennent de teams.season, donc toutes
+   *  les entrées d'une même saison portent les mêmes années et ne peuvent pas
+   *  être départagées entre elles. */
+  left_at?: string | null;
+  /** Nom de l'école ou du club. Sert à distinguer deux équipes homonymes. */
+  school_name?: string | null;
+  /** « 2025-2026 » — alimente teamDetails(). */
+  season?: string | null;
+  /** 'system' = écrit par un transfert ; absent = déclaré par l'athlète. */
+  source?: string | null;
+}
+
 export interface AthleteFormSports {
   primarySport: string;
   primarySportDetail: string;
-  secondarySport: string;
-  secondarySportDetail: string;
   primaryPosition: string;
-  secondaryPosition: string;
-  secondarySportPosition: string;
   selectedTeamId: string;
   currentTeam: string;
   teamLevel: string;
@@ -258,6 +281,8 @@ export interface AthleteFormSports {
   secondaryLeague: string;
   recruitingLevel: string;
   openToCoaching: boolean;
+  /** Parcours d'équipes — declarative team history (JSONB array). */
+  parcoursEquipes: TeamHistoryEntry[];
 }
 
 export interface AthleteFormMedia {
@@ -715,8 +740,8 @@ export interface AthleteProfileRecruiterView {
   primarySport: string;
   primaryPosition: string;
   jerseyNumber: string;
-  secondarySport?: string;
-  secondaryPosition?: string;
+  /** Parcours d'équipes — declarative team history (LinkedIn-style). */
+  teamHistory?: TeamHistoryEntry[];
   teamName?: string;
   leagueName?: string;
   teamLevel?: string;
@@ -939,4 +964,26 @@ export interface PartnerCardDownload {
   athlete_id: string;
   format: CardDownloadFormat;
   downloaded_at: string;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SCHOOL PROGRAM IDENTITY — data contract for <ProgramWall>
+   Presentational hero "hype wall" for a school/CÉGEP program.
+   Source of truth everything else binds to. Nullable fields fall
+   back gracefully (see ProgramWall): logoUrl → initial crest,
+   slogan/established → motif tiles.
+══════════════════════════════════════════════════════════════ */
+
+export interface SchoolProgramIdentity {
+  id: string;
+  schoolName: string;
+  mascot: string;
+  city: string;
+  initial: string;
+  slogan: string | null; // nullable — many schools won't have one
+  established: string | null; // nullable — founding year, if known
+  league: "RSEQ" | "USPORTS";
+  colorPrimary: string; // hex "#RRGGBB", validated on ingest
+  colorSecondary: string; // hex "#RRGGBB", validated on ingest
+  logoUrl: string | null; // nullable — falls back to initial crest
 }

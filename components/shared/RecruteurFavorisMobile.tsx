@@ -19,14 +19,8 @@ import { useMobileToast } from "@/components/mobile/MobileToast";
 import { AthleteCardMobile } from "@/components/shared/RecruteurRechercheMobile";
 import { useDebouncedValue } from "@/lib/utils/useDebouncedValue";
 import { EmptyState as SharedEmptyState } from "@/components/mobile/EmptyState";
+import { triggerHaptic } from "@/lib/haptics";
 
-async function triggerHaptic(intensity: "Light" | "Medium" = "Light") {
-  try {
-    const { Haptics, ImpactStyle } = await import("@capacitor/haptics");
-    const style = intensity === "Light" ? ImpactStyle.Light : ImpactStyle.Medium;
-    await Haptics.impact({ style });
-  } catch { /* no-op */ }
-}
 
 export function RecruteurFavorisMobile() {
   const { athletes, isLoading } = useFavoriteAthletes();
@@ -158,7 +152,7 @@ export function RecruteurFavorisMobile() {
               {search && (
                 <button
                   type="button"
-                  onClick={() => setSearch("")}
+                  onClick={() => { void triggerHaptic("Light"); setSearch(""); }}
                   aria-label="Effacer"
                   className="absolute right-0 top-1/2 -translate-y-1/2 nx-mobile-touch-min flex items-center justify-center"
                 >

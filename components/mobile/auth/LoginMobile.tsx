@@ -32,17 +32,8 @@ import { postLoginDispatch } from "@/lib/auth/postLoginDispatch";
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import { NexusLogoSvg } from "./NexusLogoSvg";
 import { SocialButtonsMobile } from "./SocialButtonsMobile";
+import { triggerHaptic } from "@/lib/haptics";
 
-async function triggerHaptic(intensity: "Light" | "Medium" = "Light") {
-  try {
-    const { Haptics, ImpactStyle, NotificationType } = await import("@capacitor/haptics");
-    if (intensity === "Medium") {
-      await Haptics.notification({ type: NotificationType.Success });
-    } else {
-      await Haptics.impact({ style: ImpactStyle.Light });
-    }
-  } catch { /* no-op */ }
-}
 
 interface LoginMobileProps {
   /** Retour Welcome ("Pas de compte ? Commencer"). */
@@ -108,7 +99,6 @@ export function LoginMobile({ onShowWelcome }: LoginMobileProps) {
   }
 
   function handleForgotPassword() {
-    triggerHaptic("Light");
     toast.info({
       message: "Bientôt disponible",
       detail: "La réinitialisation par courriel arrive dans une prochaine mise à jour.",
@@ -229,7 +219,7 @@ export function LoginMobile({ onShowWelcome }: LoginMobileProps) {
               />
               <button
                 type="button"
-                onClick={() => setShowPwd((v) => !v)}
+                onClick={() => { void triggerHaptic("Light"); setShowPwd((v) => !v); }}
                 aria-label={showPwd ? "Masquer le mot de passe" : "Afficher le mot de passe"}
                 className="absolute right-0 top-1/2 -translate-y-1/2 text-[#9CA3AF] active:text-white p-1"
                 tabIndex={-1}

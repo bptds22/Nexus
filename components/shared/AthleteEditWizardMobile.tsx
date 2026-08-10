@@ -37,12 +37,16 @@
 ═══════════════════════════════════════════════════════════════ */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { selectBestEvaluation } from "@/lib/evaluations/selectEvaluation";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { uploadAvatar } from "@/lib/storage/uploadAvatar";
 import AthletePhotoHero from "@/components/shared/AthletePhotoHero";
-import type { AthleteSuggestion, AthleteTraitRatings } from "@/lib/types/models";
+import type { AthleteSuggestion, AthleteTraitRatings, TeamHistoryEntry } from "@/lib/types/models";
+import TeamHistoryBlock from "@/components/shared/athlete/TeamHistoryBlock";
+import TeamHistoryEditor from "@/components/shared/athlete/TeamHistoryEditor";
+import { parseTeamHistory, isTeamHistoryValid } from "@/components/shared/athlete/teamHistory";
 import { Card, InlineEditRow, PickerRow, ReadOnlyRow, DateRow, ToggleRow, ChipsBlock } from "@/components/shared/wizard/rows";
 import { StarRow } from "@/components/shared/wizard/stars";
 import { MobilePicker, type PickerOption } from "@/components/mobile/MobilePicker";
@@ -53,6 +57,7 @@ import {
 import { WizardPills } from "@/components/shared/wizard/WizardPills";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { GREEN, YELLOW, RED, PencilIcon, LockIcon } from "@/components/shared/wizard/modeIcons";
+import { triggerHaptic } from "@/lib/haptics";
 import {
   SUBJECTS, HONORS, CEGEP_REGIONS, PROGRAMME_TYPE_OPTIONS,
   programmeCegepArray, programmeCegepDecode,
@@ -97,14 +102,10 @@ interface LoadedAthlete {
   /* ── Sport (SUGGEST) — current values + ids for picker scoping ── */
   primarySport: string;                 // sports.nom via join (primary)
   primaryPosition: string;              // positions.nom via join (primary)
-  secondarySport: string;               // separate FK lookup (page.tsx :953-955)
-  secondaryPosition: string;            // separate FK lookup (page.tsx :957-959)
   jerseyNumber: string;                 // athletes.numero_jersey
-  /** FK ids needed to SCOPE the position pickers at row-render time.
-   *  Primary position picker → scoped by sportId. Secondary position
-   *  picker → scoped by sportSecondaireId (fallback sportId). */
+  parcoursEquipes: TeamHistoryEntry[];  // athletes.parcours_equipes (JSONB)
+  /** FK id needed to SCOPE the primary position picker at row-render time. */
   sportId: string | null;
-  sportSecondaireId: string | null;
   /* ── Physique (SUGGEST) — current values ── */
   heightDisplay: string;
   weightDisplay: string;
@@ -346,7 +347,7 @@ function SuggestExpand({
         <>
           <button
             type="button"
-            onClick={() => setWheelOpen(true)}
+            onClick={() => { void triggerHaptic("Light"); setWheelOpen(true); }}
             className="w-full flex items-center justify-between bg-[#111317] border border-white/[0.10] rounded-2xl px-4 py-3 active:bg-white/[0.04] text-left"
           >
             <span className={`text-[15px] ${proposed ? "text-white" : "text-white/40"}`}>
@@ -394,7 +395,7 @@ function SuggestExpand({
         <>
           <button
             type="button"
-            onClick={() => setPickerOpen(true)}
+            onClick={() => { void triggerHaptic("Light"); setPickerOpen(true); }}
             className="w-full flex items-center justify-between bg-[#111317] border border-white/[0.10] rounded-2xl px-4 py-3 active:bg-white/[0.04] text-left"
           >
             <span className={`text-[15px] ${proposed ? "text-white" : "text-white/40"}`}>
@@ -434,7 +435,7 @@ function SuggestExpand({
         <button
           type="button"
           disabled={!canSubmit || submitting}
-          onClick={() => onSubmit(trimmed, message)}
+          onClick={() => { void triggerHaptic("Light"); onSubmit(trimmed, message); }}
           className="flex-1 h-11 rounded-2xl bg-[#EAB308] text-white text-[13px] font-bold uppercase tracking-wider active:bg-[#CA8A04] disabled:opacity-40"
         >
           {submitting ? "Envoi…" : "Soumettre la suggestion"}
@@ -507,7 +508,7 @@ function SuggestRow({
     <div>
       <button
         type="button"
-        onClick={() => setExpanded(true)}
+        onClick={() => { void triggerHaptic("Light"); setExpanded(true); }}
         className="w-full flex items-center gap-3 px-4 py-3 text-left active:bg-white/[0.04]"
         style={{ borderBottom: isLast && !expanded ? undefined : "1px solid rgba(255,255,255,0.06)" }}
       >
@@ -620,7 +621,7 @@ export default function AthleteEditWizardMobile() {
         positions!position_id(nom, abreviation),
         schools!school_id(name, region, city, type),
         team_athletes(team_id, teams!team_id(name)),
-        evaluations(vitesse_explosivite, force_puissance, endurance_cardio, agilite_coordination, vision_du_jeu, sens_tactique, leadership, discipline, coachabilite, intelligence_jeu, competitivite, esprit_equipe, resilience, attitude_mentalite, cote_globale, rapport_entraineur, distinctions),
+        evaluations(vitesse_explosivite, force_puissance, endurance_cardio, agilite_coordination, vision_du_jeu, sens_tactique, leadership, discipline, coachabilite, intelligence_jeu, competitivite, esprit_equipe, resilience, attitude_mentalite, cote_globale, rapport_entraineur, distinctions, updated_at),
         users!athletes_coach_id_fkey(first_name, last_name)
       `)
       .eq("user_id", user.id)
@@ -630,18 +631,6 @@ export default function AthleteEditWizardMobile() {
     // ── Secondary sport / position NAME lookups (verbatim from
     //    page.tsx :953-959). Kept as separate queries to match the
     //    desktop's exact load pattern (Bug #8 — no joining away).
-    let secondarySportName = "";
-    let secondaryPositionName = "";
-    if (raw.sport_secondaire_id) {
-      const { data: ss } = await supabase
-        .from("sports").select("nom").eq("id", raw.sport_secondaire_id).maybeSingle();
-      secondarySportName = (ss?.nom as string) || "";
-    }
-    if (raw.position_secondaire_id) {
-      const { data: sp } = await supabase
-        .from("positions").select("nom").eq("id", raw.position_secondaire_id).maybeSingle();
-      secondaryPositionName = (sp?.nom as string) || "";
-    }
 
     // Civil / école derivation (verbatim from page.tsx :971-974).
     const schoolRel = Array.isArray(raw.schools) ? raw.schools[0] : raw.schools;
@@ -682,7 +671,7 @@ export default function AthleteEditWizardMobile() {
     //    simple mode (where a flat Cote globale is suggestable).
     //    coachRel comes from the users!athletes_coach_id_fkey join
     //    so the rapport quote can be attributed.
-    const evalRel = (Array.isArray(raw.evaluations) ? raw.evaluations[0] : raw.evaluations) as Record<string, unknown> | null | undefined;
+    const evalRel = selectBestEvaluation(Array.isArray(raw.evaluations) ? raw.evaluations : raw.evaluations ? [raw.evaluations] : []) as Record<string, unknown> | null | undefined;
     const coachRel = (Array.isArray(raw.users) ? raw.users[0] : raw.users) as { first_name?: string; last_name?: string } | null | undefined;
     const traitRatings: AthleteTraitRatings | undefined = evalRel ? {
       speed:           (evalRel.vitesse_explosivite  as number) || 0,
@@ -737,11 +726,9 @@ export default function AthleteEditWizardMobile() {
       // Sport (SUGGEST)
       primarySport,
       primaryPosition,
-      secondarySport: secondarySportName,
-      secondaryPosition: secondaryPositionName,
       jerseyNumber: raw.numero_jersey != null ? String(raw.numero_jersey) : "",
+      parcoursEquipes: parseTeamHistory(raw.parcours_equipes),
       sportId: (raw.sport_id as string) || null,
-      sportSecondaireId: (raw.sport_secondaire_id as string) || null,
       // Physique (SUGGEST)
       heightDisplay,
       weightDisplay,
@@ -830,7 +817,7 @@ export default function AthleteEditWizardMobile() {
         recruiter-side .filter / .map). */
   const saveDirect = useCallback(async (
     column: string,
-    value: string | string[] | boolean,
+    value: string | string[] | boolean | TeamHistoryEntry[],
   ) => {
     if (!a) return;
     const supabase = createClient();
@@ -855,6 +842,7 @@ export default function AthleteEditWizardMobile() {
       await saveDirect("photo_url", publicUrl);
     } catch (err) {
       console.error("[AthleteEdit] photo upload error:", err);
+      void triggerHaptic("Error");
       setPhotoError("Échec du téléversement de la photo. Réessaie.");
     } finally {
       setPhotoUploading(false);
@@ -993,6 +981,7 @@ export default function AthleteEditWizardMobile() {
             getPending={getPending}
             submitting={submitting}
             onSubmit={submitSuggestion}
+            saveDirect={saveDirect}
           />
         )}
 
@@ -1042,7 +1031,7 @@ export default function AthleteEditWizardMobile() {
       >
         <button
           type="button"
-          onClick={() => router.push("/athlete/profil/apercu")}
+          onClick={() => { void triggerHaptic("Light"); router.push("/athlete/profil/apercu"); }}
           className="w-full flex items-center justify-center gap-2 bg-[#E63946] text-white rounded-2xl px-4 py-3 font-head font-bold text-[13px] uppercase tracking-widest active:bg-[#D42B22] shadow-[0_0_20px_rgba(230,57,70,0.3)]"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -1542,7 +1531,7 @@ function CustomChipsField({
         />
         <button
           type="button"
-          onClick={addCustom}
+          onClick={() => { void triggerHaptic("Light"); addCustom(); }}
           disabled={!draft.trim()}
           className="shrink-0 px-3 py-2 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-colors bg-[#E63946] text-white active:bg-[#D42B22] disabled:opacity-40 disabled:bg-white/[0.06] disabled:text-white/40"
         >
@@ -1561,7 +1550,7 @@ function CustomChip({ label, onRemove }: { label: string; onRemove: () => void }
       <span className="truncate max-w-[160px]">{label}</span>
       <button
         type="button"
-        onClick={onRemove}
+        onClick={() => { void triggerHaptic("Medium"); onRemove(); }}
         aria-label={`Retirer ${label}`}
         className="w-5 h-5 inline-flex items-center justify-center rounded-full active:bg-[#E63946]/25"
       >
@@ -1589,7 +1578,7 @@ function CustomChip({ label, onRemove }: { label: string; onRemove: () => void }
    no secondary sport is set — mirrors page.tsx).
 ═══════════════════════════════════════════════════════════════ */
 function SportStep({
-  a, sportsOptions, positionsOptions, getPending, submitting, onSubmit,
+  a, sportsOptions, positionsOptions, getPending, submitting, onSubmit, saveDirect,
 }: {
   a: LoadedAthlete;
   sportsOptions: SportOption[];
@@ -1597,6 +1586,7 @@ function SportStep({
   getPending: (champ: string) => AthleteSuggestion | undefined;
   submitting: boolean;
   onSubmit: (champ: string, proposed: string, message: string, currentValue: string) => Promise<void>;
+  saveDirect: (column: string, value: string | string[] | boolean | TeamHistoryEntry[]) => Promise<void>;
 }) {
   /* The picker `value` field is the same string the trigger receives
      (the sport / position NAME), so we map each option to {value=nom,
@@ -1607,6 +1597,22 @@ function SportStep({
     () => sportsOptions.map((s) => ({ value: s.nom, label: s.nom })),
     [sportsOptions],
   );
+
+  // Parcours d'équipes — DIRECT write (distinct from the suggest-only rows).
+  const [phEditing, setPhEditing] = useState(false);
+  const [phDraft, setPhDraft] = useState<TeamHistoryEntry[]>([]);
+  const [phSaving, setPhSaving] = useState(false);
+  const phCurrent = a.parcoursEquipes ?? [];
+  const phMaxYear = new Date().getFullYear() + 1;
+  const phValid = isTeamHistoryValid(phDraft, phMaxYear);
+  const phStart = () => { setPhDraft(phCurrent); setPhEditing(true); };
+  const phSave = async () => {
+    if (!phValid) return;
+    setPhSaving(true);
+    await saveDirect("parcours_equipes", phDraft);
+    setPhSaving(false);
+    setPhEditing(false);
+  };
 
   // Primary position picker : scoped to the athlete's CURRENT primary
   // sport (athletes.sport_id). Secondary position picker : scoped to
@@ -1624,13 +1630,6 @@ function SportStep({
       .filter((p) => p.sport_id === a.sportId)
       .map((p) => ({ value: p.nom, label: p.abreviation ? `${p.abreviation} — ${p.nom}` : p.nom })),
     [positionsOptions, a.sportId],
-  );
-  const secondaryPositionScopeId = a.sportSecondaireId ?? a.sportId;
-  const secondaryPositionOptions: PickerOption[] = useMemo(
-    () => positionsOptions
-      .filter((p) => p.sport_id === secondaryPositionScopeId)
-      .map((p) => ({ value: p.nom, label: p.abreviation ? `${p.abreviation} — ${p.nom}` : p.nom })),
-    [positionsOptions, secondaryPositionScopeId],
   );
 
   return (
@@ -1666,26 +1665,6 @@ function SportStep({
           onSubmit={onSubmit}
         />
         <SuggestRow
-          label="Sport secondaire"
-          value={a.secondarySport}
-          champ="Sport secondaire"
-          pending={getPending("Sport secondaire")}
-          inputType="picker"
-          pickerOptions={sportPickerOptions}
-          submitting={submitting}
-          onSubmit={onSubmit}
-        />
-        <SuggestRow
-          label="Position sport secondaire"
-          value={a.secondaryPosition}
-          champ="Position secondaire"
-          pending={getPending("Position secondaire")}
-          inputType="picker"
-          pickerOptions={secondaryPositionOptions}
-          submitting={submitting}
-          onSubmit={onSubmit}
-        />
-        <SuggestRow
           label="Numéro"
           value={a.jerseyNumber}
           champ="Numéro"
@@ -1698,6 +1677,34 @@ function SportStep({
           isLast
         />
       </Card>
+
+      {/* Parcours d'équipes — édition directe (athlète-owned), distincte
+          des suggestions ci-dessus. */}
+      <div className="mt-4 rounded-2xl bg-[#1A1D24] border border-[#2D3748] p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-[13px] font-head font-bold tracking-[0.12em] uppercase text-[#9CA3AF]">Parcours d&apos;équipes</h3>
+          {!phEditing && (
+            <button type="button" onClick={() => { void triggerHaptic("Light"); phStart(); }} className="text-[12px] font-bold text-[#E63946]">
+              {phCurrent.length ? "Modifier" : "Ajouter"}
+            </button>
+          )}
+        </div>
+        {phEditing ? (
+          <>
+            <TeamHistoryEditor value={phDraft} onChange={setPhDraft} sports={sportsOptions} maxYear={phMaxYear} />
+            <div className="flex items-center justify-end gap-3 mt-4 pt-3 border-t border-[#2D3748]/40">
+              <button type="button" onClick={() => { void triggerHaptic("Light"); setPhEditing(false); }} className="text-[13px] font-bold text-[#9CA3AF]">Annuler</button>
+              <button type="button" onClick={() => { void triggerHaptic("Light"); phSave(); }} disabled={phSaving || !phValid} className="px-4 py-2 bg-[#E63946] disabled:opacity-50 text-white text-[13px] font-bold rounded-lg">
+                {phSaving ? "…" : "Enregistrer"}
+              </button>
+            </div>
+          </>
+        ) : phCurrent.length === 0 ? (
+          <p className="text-[13px] text-[#6b7280]">Aucun parcours ajouté.</p>
+        ) : (
+          <TeamHistoryBlock entries={phCurrent} headingClassName="hidden" />
+        )}
+      </div>
     </div>
   );
 }
@@ -2111,7 +2118,7 @@ function StarSuggestRow({
       <div className={`w-full ${isLast ? "" : "border-b border-white/[0.06]"}`}>
         <button
           type="button"
-          onClick={() => { setDraft(currentValue); setExpanded(true); }}
+          onClick={() => { void triggerHaptic("Light"); setDraft(currentValue); setExpanded(true); }}
           className="w-full flex items-center justify-between gap-3 px-4 py-3 active:bg-white/[0.02]"
         >
           <span className="flex items-center gap-2 min-w-0 flex-1 text-left">
@@ -2145,7 +2152,7 @@ function StarSuggestRow({
         <span className="text-[14px] text-white font-semibold">{champ}</span>
         <button
           type="button"
-          onClick={() => setExpanded(false)}
+          onClick={() => { void triggerHaptic("Light"); setExpanded(false); }}
           className="text-[12px] text-white/45 active:text-white/70"
         >
           Annuler
@@ -2283,7 +2290,7 @@ function DistinctionsSuggestRow({
       <div className="w-full">
         <button
           type="button"
-          onClick={() => { setDraft(currentDistinctions); setExpanded(true); }}
+          onClick={() => { void triggerHaptic("Light"); setDraft(currentDistinctions); setExpanded(true); }}
           className="w-full flex items-start justify-between gap-3 px-4 py-3 active:bg-white/[0.02]"
         >
           <span className="flex items-center gap-2 min-w-0 flex-1 text-left">
@@ -2341,7 +2348,7 @@ function DistinctionsSuggestRow({
         <span className="text-[14px] text-white font-semibold">Distinctions</span>
         <button
           type="button"
-          onClick={() => setExpanded(false)}
+          onClick={() => { void triggerHaptic("Light"); setExpanded(false); }}
           className="text-[12px] text-white/45 active:text-white/70"
         >
           Annuler
@@ -2364,7 +2371,7 @@ function DistinctionsSuggestRow({
             >
               <button
                 type="button"
-                onClick={() => { if (!isDisabled) toggle(key); }}
+                onClick={() => { void triggerHaptic("Light"); if (!isDisabled) toggle(key); }}
                 disabled={isDisabled}
                 className="w-full flex items-center gap-3 px-3 py-2.5 text-left"
               >
@@ -2406,7 +2413,7 @@ function DistinctionsSuggestRow({
       <div className="mt-3 flex items-center justify-end gap-3 pb-2">
         <button
           type="button"
-          onClick={submit}
+          onClick={() => { void triggerHaptic("Light"); submit(); }}
           disabled={submitting}
           className="px-3 py-2 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-colors bg-[#EAB308] text-[#111317] active:bg-[#D4A20A] disabled:opacity-40 disabled:bg-white/[0.06] disabled:text-white/40"
         >

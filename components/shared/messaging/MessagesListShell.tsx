@@ -345,7 +345,7 @@ export function MessagesListShell<T>({
               className="flex-1 bg-transparent text-[16px] text-white placeholder:text-white/40 outline-none"
             />
             {search && (
-              <button type="button" onClick={() => onSearchChange("")} className="text-white/60 active:text-white" aria-label="Effacer">
+              <button type="button" onClick={() => { void triggerHaptic("Light"); onSearchChange(""); }} className="text-white/60 active:text-white" aria-label="Effacer">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                   <path d="M18 6L6 18" /><path d="M6 6l12 12" />
                 </svg>

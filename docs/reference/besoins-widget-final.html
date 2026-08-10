@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NEXUS — Widget besoins (réf finale)</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Outfit:wght@400;500;600;700&display=swap');
+:root{
+  --bg:#0B0C0E; --panel:#111317; --line:#22262F;
+  --team:#A6192E; --team-lt:#D8394C;
+  --ink:#EDEFF3; --mut:#8A909C;
+  --gold:#C99A2E; --gold-lt:#E3BE6E; --green:#22C55E;
+  --pop:cubic-bezier(0.34,1.56,0.64,1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;padding:26px 16px 70px}
+.cap{max-width:1100px;margin:0 auto 14px;font-weight:700;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#6a6f78}
+
+.widget{max-width:1100px;margin:0 auto;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:36px 38px 34px}
+
+/* header */
+.top{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;flex-wrap:wrap;margin-bottom:8px}
+.kick{font-family:'Bebas Neue';letter-spacing:.3em;font-size:13px;color:var(--team-lt)}
+.h2{font-family:'Anton';font-size:clamp(28px,3.4vw,44px);text-transform:uppercase;line-height:1;margin-top:6px}
+.h2 em{font-style:normal;color:var(--team-lt)}
+.commit{font-weight:600;font-size:13px;color:var(--green);white-space:nowrap;padding-bottom:6px}
+
+/* toggle */
+.toggle{display:inline-flex;background:#0E1014;border:1px solid var(--line);border-radius:10px;padding:3px;gap:3px;margin:16px 0 22px}
+.toggle button{font-family:'Outfit';font-weight:700;font-size:12.5px;letter-spacing:.02em;color:var(--mut);background:transparent;border:0;border-radius:7px;padding:8px 18px;cursor:pointer;transition:color .2s,background .2s}
+.toggle button.on{background:var(--team);color:#fff}
+
+/* field */
+.field{position:relative;border-radius:10px;overflow:hidden;border:1px solid #262c38;background:
+  repeating-linear-gradient(0deg,#12161d 0 11.1%,#0f1319 11.1% 22.2%),#0f1319;
+  aspect-ratio:16/10.5}
+.gz{position:absolute;left:0;right:0;top:0;height:11%;background:var(--team);display:flex;align-items:center;justify-content:center}
+.gz span{font-family:'Anton';letter-spacing:.5em;font-size:13px;color:#fff;padding-left:.5em}
+.yl{position:absolute;left:0;right:0;height:1.5px;background:rgba(255,255,255,.11)}
+.yn{position:absolute;font-family:'Anton';font-size:11px;color:rgba(255,255,255,.22);letter-spacing:.06em}
+.hash{position:absolute;top:11%;bottom:0;width:8px;background:repeating-linear-gradient(0deg,rgba(255,255,255,.09) 0 2px,transparent 2px 14px)}
+
+/* lower-third tokens */
+.tok{position:absolute;transform:translate(-50%,-50%);display:flex;align-items:stretch;background:#171B22;border:1px solid #2A3140;border-left:0;border-radius:4px;overflow:hidden;box-shadow:0 8px 18px -10px rgba(0,0,0,.85);transition:transform .22s var(--pop),border-color .2s;cursor:default}
+.tok:hover{transform:translate(-50%,-50%) scale(1.05);z-index:5;border-color:#3a4356}
+.tok .bar{width:4px}
+.tok .tx{padding:6px 11px 7px}
+.tok .p{font-family:'Anton';font-size:14.5px;color:#fff;line-height:1}
+.tok .n{font-family:'Bebas Neue';letter-spacing:.1em;font-size:10px;line-height:1;margin-top:3px}
+.tok.pri .bar{background:var(--team-lt)} .tok.pri .n{color:var(--team-lt)}
+.tok.mid .bar{background:var(--gold)}    .tok.mid .n{color:var(--gold-lt)}
+.tok.full{opacity:.55}
+.tok.full .bar{background:#39404e}       .tok.full .n{color:#697180}
+
+/* need cards (Gators) */
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(196px,1fr));gap:13px;margin-top:22px}
+.card{background:#171B22;border:1px solid #262c38;border-radius:12px;padding:16px 16px 14px;position:relative;overflow:hidden;transition:transform .22s var(--pop),border-color .22s;box-shadow:0 4px 16px -12px rgba(0,0,0,.5)}
+.card:hover{transform:translateY(-3px);border-color:#333b4a}
+.card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--team)}
+.card::after{content:"";position:absolute;left:5px;top:0;bottom:0;width:2px;background:rgba(255,255,255,.55)}
+.card.full::before{background:var(--green)}
+.card .pos{font-family:'Anton';font-size:17px;text-transform:uppercase;color:var(--ink);padding-left:5px;padding-right:74px}
+.card .badge{position:absolute;top:14px;right:14px;font-family:'Outfit';font-weight:700;font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;padding:4px 9px;border-radius:99px}
+.card .b-pri{background:rgba(230,57,70,.15);color:#F18893;border:1px solid rgba(230,57,70,.35)}
+.card .b-mid{background:rgba(201,154,46,.13);color:var(--gold-lt);border:1px solid rgba(201,154,46,.35)}
+.card .b-full{background:rgba(34,197,94,.12);color:#7BE0A0;border:1px solid rgba(34,197,94,.3)}
+.card .pl{display:flex;align-items:baseline;gap:7px;margin:11px 0 8px;padding-left:5px}
+.card .pl .n{font-family:'Anton';font-size:34px;line-height:1;color:var(--team-lt)}
+.card.full .pl .n{color:var(--green)}
+.card .pl .u{font-weight:600;font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.06em}
+.card .dep{padding-left:5px;font-weight:500;font-size:11.5px;color:var(--mut)}
+
+@media(max-width:720px){
+  .widget{padding:26px 20px}
+  .field{aspect-ratio:4/5}
+}
+</style>
+</head>
+<body>
+<div class="cap">Widget besoins · réf finale — header + terrain lower-third + cards · toggle offense/défense · dérivé des départs</div>
+
+<div class="widget">
+  <div class="top">
+    <div>
+      <div class="kick">RECRUTEMENT · RENTRÉE 2027</div>
+      <div class="h2">On cherche <em>du monde</em></div>
+    </div>
+    <div class="commit">✓ 3 recrues déjà engagées pour 2027</div>
+  </div>
+
+  <div class="toggle">
+    <button class="on" id="bO" onclick="side(true)">Offense</button>
+    <button id="bD" onclick="side(false)">Défense</button>
+  </div>
+
+  <!-- OFFENSE -->
+  <div class="field" id="fO">
+    <div class="gz"><span>PHÉNIX</span></div>
+    <div class="yl" style="top:28%"></div><span class="yn" style="top:24.5%;left:2.6%">40</span><span class="yn" style="top:24.5%;right:2.6%">40</span>
+    <div class="yl" style="top:46%"></div><span class="yn" style="top:42.5%;left:2.6%">45</span><span class="yn" style="top:42.5%;right:2.6%">45</span>
+    <div class="yl" style="top:64%"></div><span class="yn" style="top:60.5%;left:2.6%">50</span><span class="yn" style="top:60.5%;right:2.6%">50</span>
+    <div class="yl" style="top:82%"></div><span class="yn" style="top:78.5%;left:2.6%">45</span><span class="yn" style="top:78.5%;right:2.6%">45</span>
+    <div class="hash" style="left:34%"></div><div class="hash" style="right:34%"></div>
+
+    <div class="tok pri" style="left:11%;top:38%"><div class="bar"></div><div class="tx"><div class="p">WR</div><div class="n">2 PLACES</div></div></div>
+    <div class="tok mid" style="left:23%;top:49%"><div class="bar"></div><div class="tx"><div class="p">SL</div><div class="n">1 PLACE</div></div></div>
+    <div class="tok pri" style="left:31.5%;top:61%"><div class="bar"></div><div class="tx"><div class="p">LT</div><div class="n">1 PLACE</div></div></div>
+    <div class="tok full" style="left:44%;top:61%"><div class="bar"></div><div class="tx"><div class="p">LG·C</div><div class="n">COMPLET</div></div></div>
+    <div class="tok mid" style="left:56.5%;top:61%"><div class="bar"></div><div class="tx"><div class="p">RG</div><div class="n">1 PLACE</div></div></div>
+    <div class="tok pri" style="left:68.5%;top:61%"><div class="bar"></div><div class="tx"><div class="p">RT</div><div class="n">1 PLACE</div></div></div>
+    <div class="tok mid" style="left:81%;top:49%"><div class="bar"></div><div class="tx"><div class="p">TE</div><div class="n">1 PLACE</div></div></div>
+    <div class="tok mid" style="left:88%;top:36%"><div class="bar"></div><div class="tx"><div class="p">WR</div><div class="n">1 PLACE</div></div></div>
+    <div class="tok mid" style="left:50%;top:76%"><div class="bar"></div><div class="tx"><div class="p">QB</div><div class="n">1 PLACE</div></div></div>
+    <div class="tok full" style="left:38%;top:89%"><div class="bar"></div><div class="tx"><div class="p">FB</div><div class="n">COMPLET</div></div></div>
+    <div class="tok mid" style="left:61%;top:91%"><div class="bar"></div><div class="tx"><div class="p">RB</div><div class="n">1 PLACE</div></div></div>
+  </div>
+
+  <!-- DÉFENSE -->
+  <div class="field" id="fD" style="display:none">
+    <div class="gz"><span>PHÉNIX</span></div>
+    <div class="yl" style="top:28%"></div><span class="yn" style="top:24.5%;left:2.6%">40</span><span class="yn" style="top:24.5%;right:2.6%">40</span>
+    <div class="yl" style="top:46%"></div><span class="yn" style="top:42.5%;left:2.6%">45</span><span class="yn" style="top:42.5%;right:2.6%">45</span>
+    <div class="yl" style="top:64%"></div><span class="yn" style="top:60.5%;left:2.6%">50</span><span class="yn" style="top:60.5%;right:2.6%">50</span>
+    <div class="yl" style="top:82%"></div><span class="yn" style="top:78.5%;left:2.6%">45</span><span class="yn" style="top:78.5%;right:2.6%">45</span>
+    <div class="hash" style="left:34%"></div><div class="hash" style="right:34%"></div>
+
+    <div class="tok pri" style="left:11%;top:52%"><div class="bar"></div><div class="tx"><div class="p">CB</div><div class="n">2 PLACES</div></div></div>
+    <div class="tok mid" style="left:30%;top:60%"><div class="bar"></div><div class="tx"><div class="p">DE</div><div class="n">1 PLACE</div></div></div>
+    <div class="tok mid" style="left:43%;top:60%"><div class="bar"></div><div class="tx"><div class="p">DT</div><div class="n">1 PLACE</div></div></div>
+    <div class="tok full" style="left:56%;top:60%"><div class="bar"></div><div class="tx"><div class="p">DT</div><div class="n">COMPLET</div></div></div>
+    <div class="tok mid" style="left:69%;top:60%"><div class="bar"></div><div class="tx"><div class="p">DE</div><div class="n">1 PLACE</div></div></div>
+    <div class="tok mid" style="left:36%;top:44%"><div class="bar"></div><div class="tx"><div class="p">LB</div><div class="n">1 PLACE</div></div></div>
+    <div class="tok pri" style="left:50%;top:41%"><div class="bar"></div><div class="tx"><div class="p">LB</div><div class="n">2 PLACES</div></div></div>
+    <div class="tok full" style="left:64%;top:44%"><div class="bar"></div><div class="tx"><div class="p">LB</div><div class="n">COMPLET</div></div></div>
+    <div class="tok mid" style="left:42%;top:26%"><div class="bar"></div><div class="tx"><div class="p">FS</div><div class="n">1 PLACE</div></div></div>
+    <div class="tok full" style="left:58%;top:26%"><div class="bar"></div><div class="tx"><div class="p">SS</div><div class="n">COMPLET</div></div></div>
+    <div class="tok mid" style="left:89%;top:52%"><div class="bar"></div><div class="tx"><div class="p">CB</div><div class="n">1 PLACE</div></div></div>
+  </div>
+
+  <!-- CARDS -->
+  <div class="cards" id="cO">
+    <div class="card"><span class="badge b-pri">Priorité</span><div class="pos">Bloqueurs</div><div class="pl"><span class="n">2</span><span class="u">places</span></div><div class="dep">LT · RT — les deux partants graduent</div></div>
+    <div class="card"><span class="badge b-pri">Besoin élevé</span><div class="pos">Receveurs</div><div class="pl"><span class="n">2</span><span class="u">places</span></div><div class="dep">2 départs sur 4</div></div>
+    <div class="card"><span class="badge b-mid">Besoin moyen</span><div class="pos">Quart-arrière</div><div class="pl"><span class="n">1</span><span class="u">place</span></div><div class="dep">1 départ sur 2</div></div>
+    <div class="card"><span class="badge b-mid">Besoin moyen</span><div class="pos">Porteur</div><div class="pl"><span class="n">1</span><span class="u">place</span></div><div class="dep">1 départ sur 3</div></div>
+    <div class="card full"><span class="badge b-full">Complet</span><div class="pos">Centre · Garde</div><div class="pl"><span class="n">0</span><span class="u">place</span></div><div class="dep">aucun départ</div></div>
+  </div>
+  <div class="cards" id="cD" style="display:none">
+    <div class="card"><span class="badge b-pri">Priorité</span><div class="pos">Demis de coin</div><div class="pl"><span class="n">2</span><span class="u">places</span></div><div class="dep">2 départs sur 3</div></div>
+    <div class="card"><span class="badge b-pri">Besoin élevé</span><div class="pos">Secondeur</div><div class="pl"><span class="n">2</span><span class="u">places</span></div><div class="dep">poste vidé — 2 départs</div></div>
+    <div class="card"><span class="badge b-mid">Besoin moyen</span><div class="pos">Ligne défensive</div><div class="pl"><span class="n">2</span><span class="u">places</span></div><div class="dep">2 départs sur 4</div></div>
+    <div class="card full"><span class="badge b-full">Complet</span><div class="pos">Maraudeur</div><div class="pl"><span class="n">0</span><span class="u">place</span></div><div class="dep">aucun départ</div></div>
+  </div>
+</div>
+
+<script>
+function side(off){
+  document.getElementById('fO').style.display = off?'':'none';
+  document.getElementById('fD').style.display = off?'none':'';
+  document.getElementById('cO').style.display = off?'':'none';
+  document.getElementById('cD').style.display = off?'none':'';
+  document.getElementById('bO').classList.toggle('on', off);
+  document.getElementById('bD').classList.toggle('on', !off);
+}
+</script>
+</body>
+</html>

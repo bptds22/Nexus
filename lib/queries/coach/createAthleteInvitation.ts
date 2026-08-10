@@ -20,11 +20,34 @@ export interface AthleteInvitationLinkResult {
   sent?: boolean;
 }
 
+/* ── DESTINATAIRE ET GATE <14 — NE PAS « CORRIGER » ────────────────────────
+   Le destinataire est EXACTEMENT l'adresse passée en `email`, telle que le
+   coach l'a saisie. Il n'existe aucun aiguillage vers un parent, ni ici, ni
+   dans la RPC, ni dans le trigger — vérifié sur les trois.
+
+   Un athlète de moins de 14 ans n'est PAS invité via un parent : il n'est PAS
+   INVITÉ DU TOUT. La Loi 25 est appliquée par blocage, pas par report sur un
+   tiers, et par DEUX barrières indépendantes côté base :
+
+     1. create_athlete_invitation lève ATHLETE_UNDER_14 avant tout INSERT
+        (bloque aussi la réutilisation d'un token PENDING existant).
+     2. notify_invitation_email, le trigger d'envoi, revérifie et supprime
+        silencieusement l'envoi — « email d'invitation SUPPRIMÉ (Loi 25) » —
+        sans poser email_sent_at.
+
+   Les deux ne bloquent que si la date de naissance est CONNUE et <14, par
+   cohérence avec isUnder14("") === false côté front.
+
+   Si un jour on veut réellement notifier un parent pour les <14, c'est un
+   chantier à part entière : consentement parental, destinataire distinct,
+   fenêtre de réponse. Ce n'est pas un correctif à glisser ici, et ce n'est
+   pas ce que le code fait aujourd'hui. */
 export async function createAthleteInvitationLink(
   supabase: SupabaseClient,
   athleteId: string,
   /** Si fourni : pose athlete_invitations.email → le trigger envoie l'invitation
-   *  par courriel (Resend). Absent = flux copy-link inchangé. */
+   *  par courriel (Resend). Absent = flux copy-link inchangé.
+   *  C'est LE destinataire, sans réécriture — voir le bloc ci-dessus. */
   email?: string,
 ): Promise<AthleteInvitationLinkResult> {
   const { data, error } = await supabase.rpc("create_athlete_invitation", {

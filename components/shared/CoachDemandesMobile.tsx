@@ -151,7 +151,6 @@ export function CoachDemandesMobile() {
       { conversationId: thread.id, newStatus },
       {
         onSuccess: () => {
-          triggerHaptic("Medium");
           toast.success({
             message: newStatus === "ARCHIVE" ? "Conversation archivée" : "Conversation réactivée",
             duration: 5000,
@@ -174,7 +173,6 @@ export function CoachDemandesMobile() {
     Promise.all(
       ids.map((id) => archiveMut.mutateAsync({ conversationId: id, newStatus: "ARCHIVE" }))
     ).then(() => {
-      triggerHaptic("Medium");
       toast.success({ message: `${ids.length} conversation${ids.length > 1 ? "s archivées" : " archivée"}` });
       setSelected(new Set());
       setEditMode(false);

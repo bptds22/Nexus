@@ -10,6 +10,7 @@ import { uploadImage } from "@/lib/upload/uploadImage";
 import PlaybookBackground from "../components/PlaybookBackground";
 import TeamSearchOrCreate, { type TeamSearchRow } from "@/components/onboarding/TeamSearchOrCreate";
 import TeamCreateForm, { type TeamFormData } from "@/components/onboarding/TeamCreateForm";
+import { ExistingTeamBanner } from "@/components/shared/teams/ExistingTeamBanner";
 import { findOrCreateSchool } from "@/lib/onboarding/findOrCreateSchool";
 import { getCurrentSeason } from "@/lib/utils/season";
 import { genderLabel } from "@/lib/config/gender";
@@ -824,6 +825,19 @@ export default function OnboardingPage() {
             : null;
         const expYears = Number.isFinite(expYearsParsed) ? (expYearsParsed as number) : null;
 
+        // FIX 2 — brouillon de création d'équipe (SchoolCoachTeamStep). Créer
+        // et rejoindre sont mutuellement exclusifs : si un brouillon existe,
+        // p_team_id = null et la RPC exécute sa branche p_team_name, qui
+        // applique le garde d'adoption borné à la saison avant d'insérer.
+        // Parité CoachOnboardingMobileSchool.tsx.
+        const pendingTeam = (localUser.profile?.pending_create_team ?? null) as
+          | { name?: string; age_group?: string | null; gender?: string | null; division?: string | null }
+          | null;
+        const pendingName =
+          typeof pendingTeam?.name === "string" && pendingTeam.name.trim() !== ""
+            ? pendingTeam.name.trim()
+            : null;
+
         const { error: rpcErr } = await supabase.rpc("finish_coach_school_onboarding", {
           p_school_id:        schoolRow.id as string,
           p_region:           (localUser.institution as { region?: string } | undefined)?.region || null,
@@ -834,12 +848,16 @@ export default function OnboardingPage() {
           p_bio:              localUser.profile?.bio || null,
           p_experience_years: expYears,
           p_photo_url:        localUser.profile?.photo_url || null,
-          p_team_id:          localUser.profile?.team_id || null,
+          p_team_id:          pendingName ? null : (localUser.profile?.team_id || null),
           p_director_choice:  directorChoice,
           p_rprp_accepted:    localUser.rprp_consent === true,
           p_invite_email:     directorChoice === "invite"
             ? ((localUser.pending_director_invite as { email?: string } | null)?.email || null)
             : null,
+          p_team_name:        pendingName,
+          p_team_age_group:   pendingName ? (pendingTeam?.age_group ?? null) : null,
+          p_team_gender:      pendingName ? (pendingTeam?.gender ?? null) : null,
+          p_team_division:    pendingName ? (pendingTeam?.division ?? null) : null,
         });
 
         if (rpcErr) {
@@ -863,6 +881,11 @@ export default function OnboardingPage() {
         // RPC OK — short-circuit les writes legacy (users / school_coaches /
         // team_coaches / admin_claims / civil RPC / recruiter). On tombe
         // directement sur setShowSuccess + redirect en bas de finish().
+        //
+        // FIX 2 : le brouillon a été consommé par la RPC (adoption ou
+        // création). On le purge pour qu'un retour sur /onboarding dans la
+        // même session ne le renvoie pas une seconde fois.
+        clearPendingTeamLocally();
       } else {
 
       // Persist DirectorChoiceStep choices made at step 2.
@@ -1992,6 +2015,50 @@ function persistTeamLocally(args: PersistTeamLocallyArgs) {
   localStorage.setItem("nexus_user", JSON.stringify(updated));
 }
 
+/* ── Équipe en attente de création (FIX 2) ────────────────────────────────
+   Id sentinelle : le step affiche une confirmation « Tu as créé X » avant
+   que la ligne teams n'existe. Aucun UUID réel n'est disponible à ce moment
+   puisque la création est déléguée au finish. Ne peut pas entrer en
+   collision avec un id d'équipe réel. */
+export const PENDING_TEAM_ID = "__pending_create__";
+
+export interface PendingCreateTeam {
+  name: string;
+  age_group: string | null;
+  gender: string | null;
+  division: string | null;
+}
+
+/* Écrit profile.pending_create_team et VIDE profile.team_id : créer et
+   rejoindre sont mutuellement exclusifs, exactement comme sur mobile
+   (p_team_id = pendingCreateTeam ? null : selectedTeamId). */
+function persistPendingTeamLocally(draft: PendingCreateTeam) {
+  const rawNow = typeof window !== "undefined" ? localStorage.getItem("nexus_user") : null;
+  if (!rawNow) return;
+  const current = JSON.parse(rawNow) as NexusUser;
+  const updated = {
+    ...current,
+    profile: {
+      ...(current.profile || {}),
+      pending_create_team: draft,
+      team: null,
+      team_id: null,
+    },
+  };
+  localStorage.setItem("nexus_user", JSON.stringify(updated));
+}
+
+function clearPendingTeamLocally() {
+  const rawNow = typeof window !== "undefined" ? localStorage.getItem("nexus_user") : null;
+  if (!rawNow) return;
+  const current = JSON.parse(rawNow) as NexusUser;
+  const updated = {
+    ...current,
+    profile: { ...(current.profile || {}), pending_create_team: null },
+  };
+  localStorage.setItem("nexus_user", JSON.stringify(updated));
+}
+
 // Inverse of persistTeamLocally : clears profile.team + profile.team_id
 // (deselect / misclick). Leaves institution + school_id intact — a civil
 // coach stays tied to their club even without a specific team. Both finishes
@@ -2224,7 +2291,8 @@ function SchoolCoachTeamStep({ user, save }: { user: NexusUser; save: (u: Partia
   const [schoolId, setSchoolId] = useState<string>(schoolIdFromLocal);
   const [sportId, setSportId] = useState<string | null>(null);
   const [resolving, setResolving] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
+  // FIX 2 : plus d'état `submitting` — la création n'écrit plus en base ici,
+  // elle enregistre un brouillon local consommé par le finish.
   const [error, setError] = useState<string | null>(null);
   const [joinedTeam, setJoinedTeam] = useState<TeamSearchRow | null>(null);
   // Distinguishes the confirmation copy : "Tu as rejoint X" (join) vs
@@ -2232,6 +2300,8 @@ function SchoolCoachTeamStep({ user, save }: { user: NexusUser; save: (u: Partia
   // same way. Resume defaults to "joined" (prior-session pick).
   const [joinedKind, setJoinedKind] = useState<"joined" | "created">("joined");
   const [mode, setMode] = useState<"umbrella" | "create">("umbrella");
+  // Stable client for the pre-submit detection banner (effect keys on it).
+  const bannerSupabase = useMemo(() => createClient(), []);
 
   // Resolve sport_principal (name) → sport_id (uuid). Mirrors the
   // resolution in LeagueCoachLeagueStep — same query, same fallback.
@@ -2256,8 +2326,27 @@ function SchoolCoachTeamStep({ user, save }: { user: NexusUser; save: (u: Partia
 
   // Resume support — if the coach already joined a team in a prior
   // session (profile.team_id set), surface it as the confirmed pick.
+  // FIX 2 : un brouillon de création (profile.pending_create_team) se
+  // restaure de la même façon, sinon revenir en arrière puis repartir
+  // perdrait l'équipe saisie (elle n'existe plus en base à ce stade).
   useEffect(() => {
     if (joinedTeam) return;
+    const pending = profileData.pending_create_team as Record<string, unknown> | null | undefined;
+    if (pending?.name) {
+      setJoinedKind("created");
+      setJoinedTeam({
+        id: PENDING_TEAM_ID,
+        name: pending.name as string,
+        age_group: (pending.age_group as string) ?? null,
+        gender: (pending.gender as string) ?? null,
+        division: (pending.division as string) ?? null,
+        league: null,
+        school_id: schoolId,
+        school_name: schoolNameFromLocal,
+        coach_count: 1,
+      });
+      return;
+    }
     const teamData = profileData.team as Record<string, unknown> | undefined;
     if (!teamData?.id) return;
     setJoinedTeam({
@@ -2290,10 +2379,15 @@ function SchoolCoachTeamStep({ user, save }: { user: NexusUser; save: (u: Partia
     // confirmation et le ✓ de la carte disparaissent (joinedTeam = null).
     if (joinedTeam?.id === team.id) {
       clearTeamLocally();
+      clearPendingTeamLocally();
       save({});
       setJoinedTeam(null);
       return;
     }
+    // FIX 2 : sélectionner une équipe existante ANNULE un éventuel brouillon
+    // de création — créer et rejoindre sont mutuellement exclusifs côté RPC
+    // (p_team_id renseigné ⇒ la branche p_team_name n'est jamais atteinte).
+    clearPendingTeamLocally();
     persistTeamLocally({
       teamId: team.id,
       teamName: team.name,
@@ -2309,81 +2403,49 @@ function SchoolCoachTeamStep({ user, save }: { user: NexusUser; save: (u: Partia
     setJoinedTeam(team);
   }
 
-  // Create a brand-new team under the coach's OWN school. Mirrors the civil
-  // handleCreateTeam (client-side inserts, RLS "Coaches create teams" gated on
-  // users.school_id) — the only differences: school_id = the real école
-  // (already set at the École step, no find-or-create), and we keep the
-  // SECONDAIRE institution (no civil override). Creator = head_coach. The
-  // form's league_input/league_id_if_existing are ignored here.
-  async function handleCreateTeamSchool(formData: TeamFormData) {
+  // FIX 2 — Création d'équipe : plus AUCUN INSERT ici.
+  //
+  // Avant : cette fonction faisait un INSERT teams brut, qui contournait à la
+  // fois le garde client de createTeam.ts ET la branche adoption de la RPC —
+  // le finish n'envoyait que p_team_id, donc la branche p_team_name de
+  // finish_coach_school_onboarding était du code mort pour le web. C'est la
+  // surface qui fabriquait les doublons sans rseq_team_id, sans calendrier.
+  //
+  // Après : on enregistre un BROUILLON local (profile.pending_create_team) et
+  // c'est le finish qui appelle la RPC avec p_team_name/age/gender/division.
+  // La RPC applique alors son garde d'adoption borné à la saison (FIX 1b) :
+  // si une équipe de même identité normalisée existe pour la saison courante,
+  // elle est ADOPTÉE (rseq_team_id préservé) au lieu d'être dupliquée.
+  // Parité exacte avec CoachOnboardingMobileSchool.tsx (pendingCreateTeam).
+  //
+  // La saison du formulaire n'est volontairement PAS transmise : la RPC pose
+  // public.current_season(), source unique partagée avec le DEFAULT de colonne
+  // et le garde client.
+  function handleCreateTeamSchool(formData: TeamFormData) {
     if (!sportId) { setError("Sport non résolu. Reviens à l'étape Profil."); return; }
-    setSubmitting(true);
     setError(null);
-    try {
-      const supabase = createClient();
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      if (!authUser) { setError("Session expirée. Reconnecte-toi pour continuer."); return; }
 
-      // Idempotent — école coaches already have users.school_id; this guards
-      // legacy in-flight sessions so the teams INSERT passes RLS.
-      await supabase.from("users").update({ school_id: schoolId }).eq("id", authUser.id);
-
-      const { data: newTeam, error: tErr } = await supabase
-        .from("teams")
-        .insert({
-          school_id: schoolId,          // LA VRAIE école (pas un club civil)
-          name: formData.team_name,
-          age_group: formData.age_group,
-          division: formData.division,
-          gender: formData.gender,
-          season: formData.season,
-          sport_id: sportId,
-        })
-        .select()
-        .single();
-      if (tErr || !newTeam) {
-        console.error("[SchoolCoachTeamStep] create team failed:", tErr);
-        setError("Impossible de créer l'équipe. Réessaie.");
-        return;
-      }
-
-      const { error: tcErr } = await supabase.from("team_coaches").insert({
-        coach_id: authUser.id,
-        team_id: newTeam.id,
-        role: "head_coach",
-      });
-      if (tcErr) console.error("[SchoolCoachTeamStep] team_coaches insert failed:", tcErr);
-
-      persistTeamLocally({
-        teamId: newTeam.id,
-        teamName: formData.team_name,
-        ageGroup: formData.age_group,
-        gender: formData.gender,
-        category: formData.division,
-        season: formData.season,
-        schoolId,
-        schoolName: schoolNameFromLocal,
-      });
-      save({});
-      setJoinedKind("created");
-      setJoinedTeam({
-        id: newTeam.id,
-        name: formData.team_name,
-        age_group: formData.age_group,
-        gender: formData.gender,
-        division: formData.division,
-        league: null,
-        school_id: schoolId,
-        school_name: schoolNameFromLocal,
-        coach_count: 1,
-      });
-      setMode("umbrella");
-    } catch (err) {
-      console.error("[SchoolCoachTeamStep] create exception:", err);
-      setError(err instanceof Error ? err.message : "Une erreur est survenue. Réessaie.");
-    } finally {
-      setSubmitting(false);
-    }
+    const draft: PendingCreateTeam = {
+      name: formData.team_name,
+      age_group: formData.age_group,
+      gender: formData.gender,
+      division: formData.division,
+    };
+    persistPendingTeamLocally(draft);
+    save({});
+    setJoinedKind("created");
+    setJoinedTeam({
+      id: PENDING_TEAM_ID,
+      name: formData.team_name,
+      age_group: formData.age_group,
+      gender: formData.gender,
+      division: formData.division,
+      league: null,
+      school_id: schoolId,
+      school_name: schoolNameFromLocal,
+      coach_count: 1,
+    });
+    setMode("umbrella");
   }
 
   if (resolving) {
@@ -2465,6 +2527,27 @@ function SchoolCoachTeamStep({ user, save }: { user: NexusUser; save: (u: Partia
           lockedSchoolId={schoolId}
           lockedSchoolName={schoolNameFromLocal}
           lockedLabel="École"
+          renderAdoption={(a) => (
+            <ExistingTeamBanner
+              supabase={bannerSupabase}
+              schoolId={schoolId}
+              sportId={a.sportId}
+              ageGroup={a.ageGroup}
+              gender={a.gender}
+              division={a.division}
+              onAdopt={(t) => {
+                // Sélection locale (même flux que handlePick) — le
+                // rattachement réel se fait au finish (RPC, branche LINK).
+                handlePick({
+                  id: t.id, name: t.name,
+                  age_group: t.ageGroup, gender: t.gender, division: t.division,
+                  league: null, school_id: schoolId, school_name: schoolNameFromLocal,
+                  coach_count: 0,
+                });
+                setMode("umbrella");
+              }}
+            />
+          )}
         />
       )}
 
@@ -2476,8 +2559,9 @@ function SchoolCoachTeamStep({ user, save }: { user: NexusUser; save: (u: Partia
           </p>
         </div>
       )}
-
-      {submitting && <p className="text-[12px] text-[#9CA3AF]">Enregistrement en cours...</p>}
+      {/* FIX 2 : plus d'indicateur « Enregistrement en cours » — la sélection
+          comme la création sont désormais purement locales à cette étape.
+          L'écriture unique se fait au finish. */}
     </div>
   );
 }
@@ -3604,6 +3688,8 @@ function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Part
   const [selectedTeam, setSelectedTeam] = useState<TeamSearchRow | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Stable client for the pre-submit detection banner (effect keys on it).
+  const bannerSupabase = useMemo(() => createClient(), []);
 
   // Resolve the sport NAME from step 0 to its uuid for downstream
   // team/league queries. step 0 saves users.sport as a name string,
@@ -3952,6 +4038,24 @@ function LeagueCoachLeagueStep({ user, save }: { user: NexusUser; save: (u: Part
           }}
           lockedSchoolId={lockedSchoolId ?? undefined}
           lockedSchoolName={lockedSchoolName || undefined}
+          renderAdoption={(a) => (
+            <ExistingTeamBanner
+              supabase={bannerSupabase}
+              schoolId={lockedSchoolId ?? undefined}
+              sportId={a.sportId}
+              ageGroup={a.ageGroup}
+              gender={a.gender}
+              division={a.division}
+              onAdopt={(t) => {
+                handleJoinExistingTeam({
+                  id: t.id, name: t.name,
+                  age_group: t.ageGroup, gender: t.gender, division: t.division,
+                  league: null, school_id: lockedSchoolId ?? "", school_name: lockedSchoolName,
+                  coach_count: 0,
+                });
+              }}
+            />
+          )}
         />
       )}
 

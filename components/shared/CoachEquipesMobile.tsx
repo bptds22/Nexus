@@ -101,7 +101,6 @@ export default function CoachEquipesMobile() {
       setSaving(false);
       return;
     }
-    triggerHaptic("Medium");
     toast.success({ message: "Équipe créée" });
     qc.invalidateQueries({ queryKey: ["coach-teams"] });
     setShowCreate(false);
@@ -114,13 +113,15 @@ export default function CoachEquipesMobile() {
   const handlePickExisting = useCallback(async (team: TeamPickerItem) => {
     if (!userId) return;
     const supabase = createClient();
-    const { error } = await joinTeam(supabase, { coachUserId: userId, teamId: team.id });
+    const { error, role } = await joinTeam(supabase, { coachUserId: userId, teamId: team.id });
     if (error) {
       toast.error({ message: (error as { message?: string }).message || "Impossible de rejoindre." });
       return;
     }
-    triggerHaptic("Medium");
-    toast.success({ message: "Équipe rejointe" });
+    // Dit le rôle : revendiquer une équipe orpheline donne head_coach.
+    toast.success({
+      message: role === "head_coach" ? "Équipe revendiquée — tu en es responsable" : "Équipe rejointe",
+    });
     qc.invalidateQueries({ queryKey: ["coach-teams"] });
     setShowPicker(false);
     router.push(`/coach/equipes/${team.id}`);
@@ -254,6 +255,8 @@ export default function CoachEquipesMobile() {
         onClose={() => setShowPicker(false)}
         schoolId={schoolId || null}
         season={getCurrentSeason()}
+        /* Ne propose pas de « rejoindre » une équipe dont je suis déjà membre. */
+        excludeTeamIds={teams.map((t) => t.id)}
         onPicked={(team) => handlePickExisting(team)}
         onCreateNew={() => { setShowPicker(false); setShowCreate(true); }}
         title="Ajouter une équipe"
@@ -269,7 +272,7 @@ export default function CoachEquipesMobile() {
                 background: `rgba(0,0,0,${Math.max(0.2, 0.6 - dragOffset / 300)})`,
                 animation: "nx-modal-fade 200ms ease-out forwards",
               }}
-              onClick={() => !saving && setShowCreate(false)}
+              onClick={() => { void triggerHaptic("Light"); !saving && setShowCreate(false); }}
               aria-hidden
             />
             <div
@@ -336,14 +339,14 @@ export default function CoachEquipesMobile() {
               <div className="px-4 pt-3 pb-3 shrink-0 border-t border-white/[0.06] bg-[#1A1D24] flex gap-2">
                 <button
                   type="button"
-                  onClick={() => !saving && setShowCreate(false)}
+                  onClick={() => { void triggerHaptic("Light"); !saving && setShowCreate(false); }}
                   className="h-14 px-5 rounded-2xl bg-[#111317] border border-white/10 text-[13px] font-bold uppercase tracking-wider text-[#9CA3AF] active:bg-white/[0.04] transition-colors"
                 >
                   Annuler
                 </button>
                 <button
                   type="button"
-                  onClick={handleCreate}
+                  onClick={() => { void triggerHaptic("Light"); handleCreate(); }}
                   disabled={!formValid || saving}
                   className="flex-1 h-14 rounded-2xl bg-[#E63946] text-white text-[14px] font-black uppercase tracking-widest active:bg-[#D42B22] active:scale-[0.97] transition-all shadow-[0_8px_24px_rgba(230,57,70,0.35)] disabled:opacity-40 disabled:shadow-none disabled:active:scale-100"
                 >

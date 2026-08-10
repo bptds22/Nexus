@@ -22,14 +22,8 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { triggerHaptic } from "@/lib/haptics";
 
-async function triggerHaptic(intensity: "Light" | "Medium" = "Light") {
-  try {
-    const { Haptics, ImpactStyle } = await import("@capacitor/haptics");
-    const style = intensity === "Light" ? ImpactStyle.Light : ImpactStyle.Medium;
-    await Haptics.impact({ style });
-  } catch { /* no-op */ }
-}
 
 const ITEM_HEIGHT = 44;
 const VISIBLE_ROWS = 5;
@@ -267,7 +261,10 @@ function WheelScroller({
     const idx = Math.round(scrollRef.current.scrollTop / ITEM_HEIGHT);
     const clamped = Math.max(0, Math.min(column.options.length - 1, idx));
     if (clamped !== prevIdxRef.current) {
-      triggerHaptic("Light");
+      // "Selection" et non "Light" : c'est un cran de roue, pas un tap. Un
+      // impact léger répété à chaque valeur qui défile martèle ; selectionChanged()
+      // est l'API prévue pour ça.
+      triggerHaptic("Selection");
       prevIdxRef.current = clamped;
       setActiveIdx(clamped);
     }

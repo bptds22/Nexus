@@ -42,6 +42,7 @@ import { uploadImage } from "@/lib/upload/uploadImage";
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import { MobilePicker, type PickerOption } from "@/components/mobile/MobilePicker";
 import { SearchSheet } from "@/components/mobile/SearchSheet";
+import { triggerHaptic } from "@/lib/haptics";
 
 /* ── Constantes ──────────────────────────────────────────────── */
 
@@ -68,16 +69,6 @@ type ProgramRow = {
 
 /* ── Helpers (duplicats parité école) ─────────────────────────── */
 
-async function triggerHaptic(intensity: "Light" | "Medium" = "Light") {
-  try {
-    const { Haptics, ImpactStyle, NotificationType } = await import("@capacitor/haptics");
-    if (intensity === "Medium") {
-      await Haptics.notification({ type: NotificationType.Success });
-    } else {
-      await Haptics.impact({ style: ImpactStyle.Light });
-    }
-  } catch { /* no-op */ }
-}
 
 function stripAccents(s: string): string {
   return s.normalize("NFD").replace(/[̀-ͯ]/g, "");
@@ -703,8 +694,7 @@ export function RecruiterOnboardingMobile() {
         footer={
           <button
             type="button"
-            onClick={() => {
-              setSelectedProgramId(null);
+            onClick={() => { void triggerHaptic("Light"); setSelectedProgramId(null);
               setSelectedProgramName("");
               setProgramSheetOpen(false);
             }}

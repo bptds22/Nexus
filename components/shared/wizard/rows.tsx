@@ -35,6 +35,7 @@
 
 import { useEffect, useState } from "react";
 import { labelCls, valueCls } from "./tokens";
+import { triggerHaptic } from "@/lib/haptics";
 
 /* ── DetailedTag — small uppercase grey pill rendered next to a
       field label when detailed=true on one of the rows. */
@@ -135,11 +136,59 @@ export function InlineEditRow({
           className="bg-transparent text-[15px] text-white font-semibold text-right outline-none flex-1 min-w-0"
         />
       ) : (
-        <button type="button" onClick={() => setEditing(true)}
+        <button type="button" onClick={() => { void triggerHaptic("Light"); setEditing(true); }}
           className={`${valueCls} ${showAdd ? "text-white/30 font-normal" : ""} text-right active:opacity-70 truncate min-w-0 flex-1`}>
           {value || (placeholder ? placeholder : "Ajouter")}
         </button>
       )}
+    </div>
+  );
+}
+
+/* ── EmailEditRow — champ courriel TOUJOURS ouvert. ────────────────────────
+   POURQUOI IL NE RÉUTILISE PAS InlineEditRow
+   InlineEditRow ne notifie qu'au COMMIT (blur ou Entrée). C'est le bon contrat
+   pour un nom ou une taille, mais il tue l'autocomplétion : la recherche
+   d'athlètes existants est debouncée sur la frappe, et avec onSave elle ne
+   partait qu'une fois le champ quitté — donc après que la ligne se soit
+   repliée en bouton. Les suggestions apparaissaient sous un champ disparu.
+   Le web n'a jamais eu ce problème : il utilise un <input> permanent avec
+   onChange (app/coach/athletes/create/page.tsx). Cette ligne aligne le mobile.
+
+   Et au repos, InlineEditRow rend un <button> typographiquement IDENTIQUE à
+   PickerRow et aux lignes en lecture seule — rien n'indique qu'on peut y
+   taper. Ici l'input est toujours monté : bordure, placeholder, caret.
+
+   autoComplete="off" (+ autoCapitalize/autoCorrect/spellCheck) : le coach
+   saisit le courriel de L'ATHLÈTE. Sans ça, iOS propose une adresse du
+   carnet de l'appareil — celle du coach, ou pire une sans rapport. Le web
+   pose déjà autoComplete="off" ici ; le mobile ne le posait pas. */
+export function EmailEditRow({
+  label, value, onChange, placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+}) {
+  return (
+    <div className="px-4 py-3 border-b border-white/[0.06] last:border-0">
+      <span className={labelCls}>{label}</span>
+      <input
+        type="email"
+        inputMode="email"
+        autoComplete="off"
+        autoCapitalize="off"
+        autoCorrect="off"
+        spellCheck={false}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        aria-label={label}
+        /* 16px minimum : en dessous, iOS zoome sur le focus et casse la mise
+           en page du wizard. Même valeur que l'input d'InviteByEmailSheet. */
+        className="mt-2 w-full bg-[#111317] border border-white/10 rounded-xl px-4 py-3 text-[16px] text-white placeholder:text-white/35 outline-none focus:border-[#E63946]/50"
+      />
     </div>
   );
 }
@@ -323,7 +372,7 @@ export function TagInputRow({
           <span key={v}
             className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] font-bold bg-[#E63946]/15 text-[#E63946] border border-[#E63946]/30">
             {v}
-            <button type="button" onClick={() => onChange(values.filter((x) => x !== v))}
+            <button type="button" onClick={() => { void triggerHaptic("Light"); onChange(values.filter((x) => x !== v)); }}
               aria-label="Retirer" className="opacity-70 active:opacity-100">
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
                 <path d="M6 6l12 12" /><path d="M6 18l12-12" />
@@ -384,7 +433,7 @@ export function MediaUrlRow({
           className="w-full bg-transparent text-[14px] text-white font-semibold outline-none"
         />
       ) : (
-        <button type="button" onClick={() => setEditing(true)}
+        <button type="button" onClick={() => { void triggerHaptic("Light"); setEditing(true); }}
           className={`block w-full text-left text-[14px] font-semibold truncate active:opacity-70 ${value ? "text-white" : "text-white/30 font-normal"}`}>
           {value || (placeholder || "Ajouter un lien")}
         </button>

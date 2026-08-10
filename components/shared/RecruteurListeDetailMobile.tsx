@@ -25,14 +25,8 @@ import { useAddListNote } from "@/lib/queries/recruiter/useAddListNote";
 import { getStatusConfig, type RecruitmentStatus } from "@/lib/config/recruitmentStatuses";
 import { AddAthleteToListSheet } from "@/components/shared/AddAthleteToListSheet";
 import { formatRelativeDate } from "@/lib/utils/formatRelativeDate";
+import { triggerHaptic } from "@/lib/haptics";
 
-async function triggerHaptic(intensity: "Light" | "Medium" = "Light") {
-  try {
-    const { Haptics, ImpactStyle } = await import("@capacitor/haptics");
-    const style = intensity === "Light" ? ImpactStyle.Light : ImpactStyle.Medium;
-    await Haptics.impact({ style });
-  } catch { /* no-op */ }
-}
 
 /* ── ListAthleteCardMobile ─────────────────────────────────────
    Réplique le visuel PipelineCardMobile (canon 14.1 photo-gauche
@@ -226,7 +220,8 @@ function AthleteNotesSheet({
       setContent("");
     } catch (e) {
       const err = e as { message?: string };
-      setError(err.message || "Erreur lors de l'ajout.");
+      void triggerHaptic("Error");
+        setError(err.message || "Erreur lors de l'ajout.");
     }
   };
 
@@ -317,7 +312,7 @@ function AthleteNotesSheet({
                 />
                 <button
                   type="button"
-                  onClick={() => { if (canSubmit) { handleSubmit().catch(() => { toast.error({ message: "Échec" }); }); } }}
+                  onClick={() => { void triggerHaptic("Light"); if (canSubmit) { handleSubmit().catch(() => { toast.error({ message: "Échec" }); }); } }}
                   disabled={!canSubmit}
                   aria-label="Ajouter"
                   className={`w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${
@@ -362,7 +357,8 @@ function ListNotesPanel({ listId }: { listId: string }) {
       setContent("");
     } catch (e) {
       const err = e as { message?: string };
-      setError(err.message || "Erreur lors de l'ajout.");
+      void triggerHaptic("Error");
+        setError(err.message || "Erreur lors de l'ajout.");
     }
   };
 
@@ -395,10 +391,18 @@ function ListNotesPanel({ listId }: { listId: string }) {
         )}
       </div>
 
-      {/* Composer sticky bottom (au-dessus de la TabBar mobile) */}
+      {/* Composer sticky bottom (au-dessus de la TabBar mobile).
+          `--kbd-h` est ajouté À LA MAIN ici, alors que la règle globale de
+          globals.css suffit partout ailleurs : ce conteneur pose son `bottom`
+          en STYLE EN LIGNE, qui bat toute feuille. Sans cet ajout, la règle
+          serait écrasée et le champ de note resterait sous le clavier — c'est
+          précisément l'un des deux écrans signalés. */}
       <div
         className="sticky bottom-0 bg-[#111317] border-t border-white/[0.06] px-4 pt-3 space-y-2"
-        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 12px)", bottom: "calc(64px + env(safe-area-inset-bottom))" }}
+        style={{
+          paddingBottom: "calc(env(safe-area-inset-bottom) + 12px)",
+          bottom: "calc(64px + env(safe-area-inset-bottom) + var(--kbd-h, 0px))",
+        }}
       >
         {error && (
           <div className="px-3 py-2 rounded-2xl bg-[#EF4444]/10 border border-[#EF4444]/30">
@@ -415,7 +419,7 @@ function ListNotesPanel({ listId }: { listId: string }) {
           />
           <button
             type="button"
-            onClick={() => { if (canSubmit) { handleSubmit().catch(() => { toast.error({ message: "Échec" }); }); } }}
+            onClick={() => { void triggerHaptic("Light"); if (canSubmit) { handleSubmit().catch(() => { toast.error({ message: "Échec" }); }); } }}
             disabled={!canSubmit}
             aria-label="Ajouter"
             className={`w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${
@@ -722,7 +726,6 @@ function DetailInner({ listId }: { listId: string }) {
     // SEULEMENT après le succès confirmé.
     try {
       await deleteMut.mutateAsync(listId);
-      triggerHaptic("Medium");
       toast.success({ message: "Liste supprimée", detail: list?.name });
       setConfirmDeleteOpen(false);
       router.push("/recruteur/listes");

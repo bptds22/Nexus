@@ -30,6 +30,7 @@ import {
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
+import { triggerHaptic, type HapticIntensity } from "@/lib/haptics";
 
 export type ToastVariant = "success" | "error" | "warning" | "info";
 
@@ -65,20 +66,23 @@ const EXPANDED_DURATION = 3000;
 const EXIT_DURATION = 220;
 const ENTER_DURATION = 350;
 
-async function triggerToastHaptic(variant: ToastVariant) {
-  try {
-    const { Haptics, NotificationType, ImpactStyle } = await import("@capacitor/haptics");
-    if (variant === "info") {
-      await Haptics.impact({ style: ImpactStyle.Light });
-    } else {
-      const type =
-        variant === "success" ? NotificationType.Success :
-        variant === "error" ? NotificationType.Error :
-        NotificationType.Warning;
-      await Haptics.notification({ type });
-    }
-  } catch { /* haptics non disponible (web / plugin absent) */ }
-}
+/* Le toast EST le porteur de la notification haptique de toute l'application :
+   37 fichiers l'utilisent, et chaque résultat qui passe par lui vibre déjà.
+   C'est pourquoi un appel haptique explicite JUSTE AVANT un toast est un
+   doublon — 31 ont été retirés dans cette passe. La règle : un résultat, une
+   vibration, et c'est une notification, pas un impact.
+
+   Ce fichier portait sa PROPRE copie de la mécanique haptique — la 39e, ratée
+   par P1 qui cherchait les noms `triggerHaptic`/`tap`. Le mapping était
+   identique à celui du helper unifié ; on délègue au lieu de le redupliquer. */
+const HAPTIQUE_PAR_VARIANTE: Record<ToastVariant, HapticIntensity> = {
+  success: "Success",
+  error: "Error",
+  warning: "Warning",
+  // "info" n'annonce pas un résultat, seulement une information : impact léger
+  // et non notification — comportement conservé tel quel.
+  info: "Light",
+};
 
 /* ── Variant style maps ────────────────────────────────────────── */
 
@@ -226,8 +230,7 @@ function ToastRenderer({ toast, phase, expanded, onToggleExpand, onActionTap }: 
           <span
             role="button"
             tabIndex={0}
-            onClick={(e) => {
-              e.stopPropagation();
+            onClick={(e) => { void triggerHaptic("Light"); e.stopPropagation();
               e.preventDefault();
               toast.action!.onClick();
               onActionTap();
@@ -334,14 +337,14 @@ export function MobileToastProvider({ children }: { children: ReactNode }) {
       window.setTimeout(() => {
         setToast(newToast);
         setPhase("entering");
-        if (opts.haptic !== false) void triggerToastHaptic(variant);
+        if (opts.haptic !== false) void triggerHaptic(HAPTIQUE_PAR_VARIANTE[variant]);
         window.setTimeout(() => setPhase("visible"), ENTER_DURATION);
         scheduleAutoDismiss(opts.duration ?? DEFAULT_DURATION);
       }, EXIT_DURATION - 100);
     } else {
       setToast(newToast);
       setPhase("entering");
-      if (opts.haptic !== false) void triggerToastHaptic(variant);
+      if (opts.haptic !== false) void triggerHaptic(HAPTIQUE_PAR_VARIANTE[variant]);
       window.setTimeout(() => setPhase("visible"), ENTER_DURATION);
       scheduleAutoDismiss(opts.duration ?? DEFAULT_DURATION);
     }

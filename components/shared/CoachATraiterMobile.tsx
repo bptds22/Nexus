@@ -42,7 +42,7 @@ import AthletePhoto from "@/components/shared/AthletePhoto";
 import { coteChanged } from "@/lib/utils/cote";
 import { ConfirmSheet } from "@/components/shared/settings";
 import CoteChangeConfirmContent from "@/components/shared/CoteChangeConfirmContent";
-import { hapticSuccess } from "@/lib/haptics";
+import { hapticSuccess, triggerHaptic } from "@/lib/haptics";
 
 /* ── Types ────────────────────────────────────────────────────── */
 
@@ -63,13 +63,6 @@ type FlatEntry =
 
 /* ── Helpers ──────────────────────────────────────────────────── */
 
-async function triggerHaptic(intensity: "Light" | "Medium" = "Light") {
-  try {
-    const { Haptics, ImpactStyle } = await import("@capacitor/haptics");
-    const style = intensity === "Light" ? ImpactStyle.Light : ImpactStyle.Medium;
-    await Haptics.impact({ style });
-  } catch { /* no-op */ }
-}
 
 function relativeTime(iso: string): string {
   if (!iso) return "";
@@ -106,9 +99,7 @@ function slimAthleteFromName(athleteId: string, athleteName: string): CoachTaskA
 const CHAMP_LABEL_MAP: Record<string, string> = {
   "Numéro": "Changement de numéro",
   "Position": "Changement de position",
-  "Position secondaire": "Changement de position secondaire",
   "Sport principal": "Changement de sport principal",
-  "Sport secondaire": "Changement de sport secondaire",
   "Taille": "Changement de taille",
   "Poids": "Changement de poids",
   "Envergure": "Changement d'envergure",
@@ -576,7 +567,7 @@ function EvalSheet({
     <>
       <div
         className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm"
-        onClick={() => { if (!saving) onClose(); }}
+        onClick={() => { void triggerHaptic("Light"); if (!saving) onClose(); }}
         style={{ animation: "nx-at-fade 200ms ease-out forwards" }}
       />
       <div
@@ -652,7 +643,7 @@ function EvalSheet({
             <button
               type="button"
               disabled={!canSave}
-              onClick={handleSubmit}
+              onClick={() => { void triggerHaptic("Light"); handleSubmit(); }}
               className="flex-1 h-12 rounded-2xl bg-[#E63946] text-white text-[14px] font-bold active:bg-[#D42B22] disabled:opacity-40"
             >
               {saving ? "…" : "Enregistrer"}
@@ -931,7 +922,6 @@ export function CoachATraiterMobile() {
       toast.error({ message: "Erreur de vérification" });
       return;
     }
-    hapticSuccess(); // moment significatif, après confirmation DB
     toast.success({ message: "Athlète vérifié" });
     reload();
   }, [coachUserId, reload, toast]);

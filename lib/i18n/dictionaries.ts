@@ -491,7 +491,9 @@ export interface Dictionary {
         media: string;
         other: string;
       };
+      submitting: string;
       toast: string;
+      toastError: string;
     };
   };
   auth: {
@@ -1243,7 +1245,9 @@ export const dictionaries: Record<Lang, Dictionary> = {
           media: "Médias",
           other: "Autre",
         },
+        submitting: "Envoi…",
         toast: "Message envoyé! On vous revient dans les 48 heures.",
+        toastError: "Envoi impossible pour le moment. Réessayez ou écrivez à bpdesfosses@nexussports.ca.",
       },
     },
     auth: {
@@ -2022,7 +2026,9 @@ export const dictionaries: Record<Lang, Dictionary> = {
           media: "Media",
           other: "Other",
         },
+        submitting: "Sending…",
         toast: "Message sent! We'll get back to you within 48 hours.",
+        toastError: "Couldn't send right now. Try again or email bpdesfosses@nexussports.ca.",
       },
     },
     auth: {

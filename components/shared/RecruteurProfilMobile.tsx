@@ -28,14 +28,8 @@ import { MobilePicker, useMobilePicker } from "@/components/mobile/MobilePicker"
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import { useRecruiterProfile } from "@/lib/queries/recruiter/useRecruiterProfile";
 import { useDebouncedValue } from "@/lib/utils/useDebouncedValue";
+import { triggerHaptic } from "@/lib/haptics";
 
-async function triggerHaptic(intensity: "Light" | "Medium" = "Light") {
-  try {
-    const { Haptics, ImpactStyle } = await import("@capacitor/haptics");
-    const style = intensity === "Light" ? ImpactStyle.Light : ImpactStyle.Medium;
-    await Haptics.impact({ style });
-  } catch { /* no-op */ }
-}
 
 const TITLES = [
   "Entraîneur-chef",
@@ -460,7 +454,7 @@ export function RecruteurProfilMobile() {
       <div className="flex flex-col items-center pt-6 pb-6 px-4">
         <button
           type="button"
-          onClick={() => fileInputRef.current?.click()}
+          onClick={() => { void triggerHaptic("Light"); fileInputRef.current?.click(); }}
           disabled={uploading}
           className="relative w-24 h-24 rounded-full overflow-hidden border-2 border-[#2D3748] active:scale-95 transition-transform"
           aria-label="Changer la photo"
@@ -485,7 +479,7 @@ export function RecruteurProfilMobile() {
         </p>
         <p className="text-[13px] text-[#9CA3AF] mt-0.5">{form.title || "Titre non défini"}</p>
         {avatarUrl && (
-          <button type="button" onClick={handleRemoveAvatar} className="mt-2 text-[12px] text-[#E63946] active:text-[#D42B22]">
+          <button type="button" onClick={() => { void triggerHaptic("Medium"); handleRemoveAvatar(); }} className="mt-2 text-[12px] text-[#E63946] active:text-[#D42B22]">
             Supprimer la photo
           </button>
         )}

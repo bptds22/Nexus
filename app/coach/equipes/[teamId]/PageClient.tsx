@@ -9,10 +9,12 @@ import type { GlobalRecruitmentStatus } from "@/lib/types/models";
 import { relativeTimeFr } from "@/lib/utils/relativeTime";
 import { orgLabelPossessive, isCivilType, type SchoolType } from "@/lib/utils/orgLabel";
 import { getCurrentSeason } from "@/lib/utils/season";
+import { loadSchoolDirectorStatus } from "@/lib/queries/coach/useSchoolDirector";
 import CoachAthleteRow from "@/components/coach/CoachAthleteRow";
 import AthletePhoto from "@/components/shared/AthletePhoto";
 import { AGE_OPTIONS, DIVISION_OPTIONS, SEASON_OPTIONS } from "@/lib/config/civilVocab";
 import CoachEquipeDetailMobile from "@/components/shared/CoachEquipeDetailMobile";
+import { inviteAthleteToTeam } from "@/lib/queries/coach/teamInvite";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 /* ═══════════════════════════════════════════════════════════════
@@ -137,6 +139,11 @@ function TeamDetailPageDesktop() {
 
   // Add athlete
   const [showAddAthlete, setShowAddAthlete] = useState(false);
+  /** Athlète refusé à l'ajout parce qu'il est déjà ancré ailleurs. Non-null
+   *  ouvre la boîte « invite-le plutôt » — jamais un déplacement d'office. */
+  const [blockedAthlete, setBlockedAthlete] = useState<
+    { id: string; name: string; currentTeam: string } | null
+  >(null);
   const [availableAthletes, setAvailableAthletes] = useState<AvailableAthlete[]>([]);
   const [athleteSearch, setAthleteSearch] = useState("");
 
@@ -151,6 +158,10 @@ function TeamDetailPageDesktop() {
   const [editDivision, setEditDivision] = useState("");
   const [editLeague, setEditLeague] = useState("");
   const [editSeason, setEditSeason] = useState("");
+  // Vrai quand le user accède à l'équipe comme DIRECTEUR d'école (pas
+  // membre team_coaches). Affiche un badge « Vue directeur » ; le gating
+  // d'édition le traite comme ADMIN (myRole forcé à ADMIN plus bas).
+  const [isDirectorView, setIsDirectorView] = useState(false);
 
   // Derived context flag. After Phase 6.1 schools.type drives
   // everything UI-side; no more users.context guard.
@@ -217,14 +228,27 @@ function TeamDetailPageDesktop() {
     //     the empty skeleton branch — pre-Phase-6.2.d behavior).
     // RLS already blocks roster reads via team_athletes / team_coaches
     // policies, so the école skeleton renders without sensitive data.
+    let directorView = false;
     if (!roleRow) {
-      if (isTeamCivil) {
-        router.replace("/coach/equipes");
+      // Oversight directeur : aucune ligne team_coaches pour ce user, mais
+      // s'il est DIRECTEUR de l'école de CETTE équipe il a le droit (RLS
+      // Part A) de la superviser. On le traite alors comme ADMIN + badge
+      // « Vue directeur ». Sinon, comportement inchangé (redirect civil /
+      // skeleton école).
+      const dir = await loadSchoolDirectorStatus(supabase, authUser.id);
+      const teamSchoolId = (tRecPre.school_id as string | null) ?? null;
+      if (dir.isDirector && dir.schoolId && dir.schoolId === teamSchoolId) {
+        directorView = true;
       } else {
-        setLoading(false);
+        if (isTeamCivil) {
+          router.replace("/coach/equipes");
+        } else {
+          setLoading(false);
+        }
+        return;
       }
-      return;
     }
+    setIsDirectorView(directorView);
 
     const tRec = t as Record<string, unknown>;
     const sportRel = tRec.sports as { nom?: string } | { nom?: string }[] | null;
@@ -232,7 +256,8 @@ function TeamDetailPageDesktop() {
     const schoolRel = tRec.schools as { name?: string; type?: string } | { name?: string; type?: string }[] | null;
     const schoolRow = Array.isArray(schoolRel) ? schoolRel[0] : schoolRel;
     const rawRole = (roleRow as { role?: string } | null)?.role;
-    const myRole: "ADMIN" | "COACH" = rawRole === "head_coach" || rawRole === "ADMIN" ? "ADMIN" : "COACH";
+    const myRole: "ADMIN" | "COACH" =
+      directorView || rawRole === "head_coach" || rawRole === "ADMIN" ? "ADMIN" : "COACH";
 
     const teamState: TeamState = {
       name: (tRec.name as string) || "",
@@ -436,11 +461,83 @@ function TeamDetailPageDesktop() {
     }
   }
 
-  async function addAthlete(athleteId: string) {
+  // ANCRAGE UNIQUE STRICT — un coach n'arrache pas un athlète à son équipe.
+  //
+  // Avant, cet écran « déplaçait » : DELETE de l'ancienne ligne puis INSERT,
+  // sur simple confirm() du coach. Ce n'est plus permis. Un athlète n'a qu'UN
+  // rattachement (team_athletes_athlete_id_key), et le changer est une décision
+  // qui appartient à l'athlète — soit par la RPC apply_team_attachment (il agit
+  // lui-même, avec écran de confirmation imposé par le serveur), soit en
+  // acceptant une invitation. Un coach qui pourrait le faire de son côté
+  // court-circuiterait le consentement ET viderait l'alignement d'un confrère
+  // sans que personne ne le sache.
+  //
+  // Il reste donc deux issues :
+  //   • athlète sans équipe  → INSERT direct (le coach a le droit de garnir SON
+  //                            alignement), et toute erreur est AFFICHÉE ;
+  //   • athlète déjà ancré   → refus explicite + proposition d'invitation, que
+  //                            l'athlète acceptera (ou non) depuis son compte.
+  async function addAthlete(athleteId: string, athleteName: string) {
     const supabase = createClient();
-    await supabase.from("team_athletes").insert({ team_id: teamId, athlete_id: athleteId });
+
+    // Plus de filtre sur sport_id : l'unicité ne dépend plus du sport. Un
+    // athlète ancré en basketball bloque tout autant un ajout en football.
+    const { data: existing, error: exErr } = await supabase
+      .from("team_athletes")
+      .select("id, team_id, teams!team_id(name, schools!school_id(name))")
+      .eq("athlete_id", athleteId)
+      .maybeSingle();
+    if (exErr) {
+      alert("Impossible de vérifier l'équipe actuelle de cet athlète. Réessaie.");
+      return;
+    }
+
+    if (existing) {
+      if (existing.team_id === teamId) {
+        setShowAddAthlete(false);
+        showToast("Déjà dans cette équipe");
+        return;
+      }
+      const prevRel = existing.teams as Record<string, unknown> | Record<string, unknown>[] | null;
+      const prev = (Array.isArray(prevRel) ? prevRel[0] : prevRel) as
+        { name?: string; schools?: unknown } | null;
+      const schoolRel = prev?.schools;
+      const school = (Array.isArray(schoolRel) ? schoolRel[0] : schoolRel) as { name?: string } | null;
+      const prevLabel = [prev?.name, school?.name].filter(Boolean).join(" · ") || "une autre équipe";
+
+      setBlockedAthlete({ id: athleteId, name: athleteName, currentTeam: prevLabel });
+      return;
+    }
+
+    const insRes = await supabase.from("team_athletes").insert({ team_id: teamId, athlete_id: athleteId });
+    if (insRes.error) {
+      // Fin du silence : même une contrainte inattendue arrive à l'écran.
+      alert(
+        insRes.error.code === "23505"
+          ? `${athleteName} vient d'être rattaché à une autre équipe. Recharge la page.`
+          : "L'ajout a échoué. Réessaie dans un moment.",
+      );
+      return;
+    }
     setShowAddAthlete(false);
     showToast("Athlète ajouté");
+    load();
+  }
+
+  /** Envoie une invitation à un athlète déjà ancré ailleurs. C'est LUI qui
+   *  tranche : à l'acceptation, le trigger applique la sémantique de transfert
+   *  complète (trace parcours + réancrage), exactement comme la RPC. */
+  async function inviteBlockedAthlete() {
+    if (!blockedAthlete) return;
+    const supabase = createClient();
+    const { error } = await inviteAthleteToTeam(supabase, blockedAthlete.id, teamId);
+    if (error) {
+      alert(error);
+      return;
+    }
+    setBlockedAthlete(null);
+    setShowAddAthlete(false);
+    showToast("Invitation envoyée");
     load();
   }
 
@@ -588,7 +685,16 @@ function TeamDetailPageDesktop() {
 
       {/* Header */}
       <div>
-        <h1 className="font-head text-2xl font-black text-white uppercase tracking-tight">{team.name}</h1>
+        <div className="flex items-center gap-3 flex-wrap">
+          <h1 className="font-head text-2xl font-black text-white uppercase tracking-tight">{team.name}</h1>
+          {/* Badge « Vue directeur » — signale que le user supervise cette
+              équipe sans en être entraîneur (accès oversight). */}
+          {isDirectorView && (
+            <span className="text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded bg-[#3B82F6]/15 text-[#3B82F6] border border-[#3B82F6]/30">
+              Vue directeur
+            </span>
+          )}
+        </div>
         {headerPills.length > 0 && (
           <p className="text-[14px] text-[#9CA3AF] mt-1">{headerPills.join(" · ")}</p>
         )}
@@ -789,6 +895,45 @@ function TeamDetailPageDesktop() {
         </div>
       </div>
 
+      {/* ── Athlète déjà ancré ailleurs : invitation, jamais déplacement ──── */}
+      {blockedAthlete && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/70" onClick={() => setBlockedAthlete(null)} />
+          <div className="relative mx-4 w-full max-w-md rounded-xl border border-[#2D3748] bg-[#1A1D24] p-6 shadow-2xl">
+            <h3 className="font-head text-lg font-black uppercase tracking-tight text-white">
+              Déjà dans une équipe
+            </h3>
+            <p className="mt-3 text-[14px] leading-relaxed text-[#9CA3AF]">
+              <span className="font-semibold text-white">{blockedAthlete.name}</span> fait
+              partie de <span className="font-semibold text-white">{blockedAthlete.currentTeam}</span>.
+              Un athlète n&apos;appartient qu&apos;à une seule équipe à la fois, et le
+              changement lui appartient — tu ne peux pas le retirer de l&apos;alignement
+              d&apos;un autre entraîneur.
+            </p>
+            <p className="mt-3 text-[13px] leading-relaxed text-[#6b7280]">
+              Envoie-lui une invitation : s&apos;il l&apos;accepte, il rejoint ton équipe et
+              son ancienne appartenance passe automatiquement dans son parcours.
+            </p>
+            <div className="mt-6 flex flex-col gap-2 sm:flex-row-reverse">
+              <button
+                type="button"
+                onClick={inviteBlockedAthlete}
+                className="flex-1 rounded-lg bg-[#E63946] px-4 py-3 text-[13px] font-head font-bold uppercase tracking-widest text-white transition hover:bg-[#D42B22]"
+              >
+                Envoyer une invitation
+              </button>
+              <button
+                type="button"
+                onClick={() => setBlockedAthlete(null)}
+                className="flex-1 rounded-lg border border-[#2D3748] px-4 py-3 text-[13px] font-head font-bold uppercase tracking-widest text-[#9CA3AF] transition hover:text-white"
+              >
+                Annuler
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Add Athlete Modal (école/cégep only) ────────────── */}
       {showAddAthlete && !isCivil && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -800,7 +945,7 @@ function TeamDetailPageDesktop() {
               {filteredAthletes.length === 0 ? (
                 <p className="text-[13px] text-[#4a4d56] py-4 text-center">Aucun athlète disponible</p>
               ) : filteredAthletes.map((a) => (
-                <button key={a.id} type="button" onClick={() => addAthlete(a.id)}
+                <button key={a.id} type="button" onClick={() => addAthlete(a.id, a.name)}
                   className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/[0.04] text-left transition-colors">
                   {/* Canonical photo (athletes.photo_url) + initials fallback
                       — mirrors the /coach/athletes roster and the mobile

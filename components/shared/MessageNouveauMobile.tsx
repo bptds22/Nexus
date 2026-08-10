@@ -29,17 +29,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import AthletePhoto from "@/components/shared/AthletePhoto";
+import { triggerHaptic } from "@/lib/haptics";
 
-async function triggerHaptic(intensity: "Light" | "Medium" = "Light") {
-  try {
-    const { Haptics, ImpactStyle, NotificationType } = await import("@capacitor/haptics");
-    if (intensity === "Medium") {
-      await Haptics.notification({ type: NotificationType.Success });
-    } else {
-      await Haptics.impact({ style: ImpactStyle.Light });
-    }
-  } catch { /* no-op */ }
-}
 
 interface PickerAthlete {
   id: string;
@@ -276,7 +267,6 @@ J'ai consulté le profil de ${a.firstName} ${a.lastName}${a.position ? ` (${a.po
       status: "ACTIVE",
     }).eq("id", convId);
 
-    triggerHaptic("Medium");
     toast.success({ message: "Message envoyé" });
     // Navigation vers le thread créé.
     router.replace(`/recruteur/messages/${convId}`);
@@ -358,7 +348,7 @@ J'ai consulté le profil de ${a.firstName} ${a.lastName}${a.position ? ` (${a.po
                   <li key={a.id}>
                     <button
                       type="button"
-                      onClick={() => handleSelect(a)}
+                      onClick={() => { void triggerHaptic("Light"); handleSelect(a); }}
                       className="w-full flex items-center gap-3 p-3 bg-[#1A1D24] rounded-2xl active:bg-[#22262e] transition-colors text-left"
                     >
                       <div className="relative w-12 h-12 rounded-full overflow-hidden flex-shrink-0 bg-[#2F3440]">
@@ -428,7 +418,7 @@ J'ai consulté le profil de ${a.firstName} ${a.lastName}${a.position ? ` (${a.po
           >
             <button
               type="button"
-              onClick={handleSend}
+              onClick={() => { void triggerHaptic("Light"); handleSend(); }}
               disabled={!canSend}
               className={`w-full h-14 rounded-2xl font-head font-black text-[14px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${
                 canSend

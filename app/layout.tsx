@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Barlow_Condensed, Outfit } from "next/font/google";
+import { Anton, Barlow_Condensed, Bebas_Neue, Outfit } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import { GrainOverlay } from "@/components/editorial";
@@ -9,6 +9,7 @@ import { QueryProvider } from "./_providers/QueryProvider";
 import { SubscriptionProvider } from "@/lib/context/SubscriptionProvider";
 import { PushRegistrar } from "@/components/push/PushRegistrar";
 import { StatusBarBootstrap } from "@/components/mobile/StatusBarBootstrap";
+import { KeyboardInset } from "@/components/mobile/KeyboardInset";
 import { SplashGate } from "@/components/mobile/auth/SplashGate";
 import { SocialLoginInit } from "@/components/auth/SocialLoginInit";
 import { OAuthDeepLinkHandler } from "@/components/mobile/auth/OAuthDeepLinkHandler";
@@ -59,6 +60,25 @@ const outfit = Outfit({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
   variable: "--font-outfit",
+  display: "swap",
+});
+
+// Anton (titres/KPIs) et Bebas Neue (labels/kickers) complètent Outfit : ce
+// sont les 3 polices du système. Elles n'étaient chargées que par les routes
+// de dev via un <link>, si bien qu'une page rendue DANS la coquille de l'app
+// (ex. /athlete/recherche) retombait en serif. Chargées ici, elles sont
+// disponibles partout — et aucune police hors système n'est ajoutée.
+const anton = Anton({
+  subsets: ["latin"],
+  weight: ["400"],
+  variable: "--font-anton",
+  display: "swap",
+});
+
+const bebasNeue = Bebas_Neue({
+  subsets: ["latin"],
+  weight: ["400"],
+  variable: "--font-bebas",
   display: "swap",
 });
 
@@ -170,7 +190,7 @@ export default function RootLayout({
     // .is-capacitor → app-shell scroll lock (globals.css). Native build only ;
     // web renders without the class and keeps normal document scroll.
     <html lang="fr" data-theme="dark" className={IS_CAPACITOR ? "is-capacitor" : undefined}>
-      <body className={`${outfit.variable} ${barlowCondensed.variable} antialiased`}>
+      <body className={`${outfit.variable} ${barlowCondensed.variable} ${anton.variable} ${bebasNeue.variable} antialiased`}>
         {/* Zéro-flash splash : AVANT tout paint, si le splash a déjà joué cette
             session (sessionStorage), on injecte une règle qui masque l'overlay
             prérendu → aucun flash du splash statique sur un reboot de nav MPA.
@@ -206,6 +226,7 @@ export default function RootLayout({
               {/* Status bar overlay (WebView sous l'island) — runtime,
                   native-only, no-op web. Fiabilise overlaysWebView. */}
               <StatusBarBootstrap />
+              <KeyboardInset />
               {/* Listener auth racine (additif) : ré-invalide ["currentUser"]
                   dès que la session redevient dispo (boot/resume) → recovery
                   sans cold restart. Single-instance, dans QueryProvider. */}

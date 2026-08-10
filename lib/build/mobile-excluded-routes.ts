@@ -27,10 +27,20 @@
 export const MOBILE_EXCLUDED_SEGMENTS = [
   '/admin',
   '/partenaire',
+  '/parent',   // Portal parental (Lot 1a) — web only. Exclusion effective via
+               // le guard notFound() dans app/parent/layout.tsx.
 ] as const;
 
 export const MOBILE_EXCLUDED_DYNAMIC_ROUTES = [
   '/partenaires', // /partenaires/[id] profil public
+  // /join/[code] — atterrissage d'un lien de code d'équipe. WEB SEULEMENT, par
+  // conception : la page détecte l'appareil et propose les liens vers l'App
+  // Store / Google Play, précisément parce qu'elle ne peut pas ouvrir
+  // l'application (aucun lien universel n'est configuré, cf. capacitor.config).
+  // Sans cette exclusion, output:'export' échoue — la route est dynamique et
+  // n'a pas de generateStaticParams(), qu'elle ne peut pas avoir : les codes
+  // sont créés à l'exécution et ne sont pas énumérables à la compilation.
+  '/join',
 ] as const;
 
 export const MOBILE_EXCLUDED_PAGES = [
@@ -55,6 +65,14 @@ export const MOBILE_EXCLUDED_PAGES = [
   '/confidentialite',
   '/conditions',
   '/collecte-donnees',
+
+  // Routes dev/test — accès web URL-only (noindex), jamais bundlées mobile.
+  // Exclusion effective via le guard notFound() en tête de chaque page.
+  '/page-test',
+  '/team-test',
+  '/wall-test',
+  '/recherche-test',
+  '/recherche-mobile-test',
 ] as const;
 
 /**

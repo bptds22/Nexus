@@ -19,6 +19,7 @@
 ═══════════════════════════════════════════════════════════════ */
 
 import { MobileWheelPicker } from "@/components/mobile/MobileWheelPicker";
+import { triggerHaptic } from "@/lib/haptics";
 
 export type UnitMode = "imperial" | "metric";
 
@@ -39,7 +40,7 @@ export function UnitToggle<T extends string>({
         <button
           key={opt.value}
           type="button"
-          onClick={() => onChange(opt.value)}
+          onClick={() => { void triggerHaptic("Selection"); onChange(opt.value); }}
           className={`px-4 py-1.5 rounded-xl text-[11px] font-bold uppercase tracking-[0.12em] transition-colors ${
             mode === opt.value ? "bg-[#E63946] text-white" : "text-white/55"
           }`}

@@ -216,7 +216,7 @@ export function CoachProfilEditMobile() {
       <div className="flex flex-col items-center pt-6 pb-2">
         <button
           type="button"
-          onClick={() => fileInputRef.current?.click()}
+          onClick={() => { void triggerHaptic("Light"); fileInputRef.current?.click(); }}
           className="relative w-24 h-24 rounded-full overflow-hidden bg-[#1A1D24] border border-white/[0.08] flex items-center justify-center active:opacity-80"
         >
           {form.avatarUrl ? (
@@ -234,7 +234,7 @@ export function CoachProfilEditMobile() {
         </button>
         <button
           type="button"
-          onClick={() => fileInputRef.current?.click()}
+          onClick={() => { void triggerHaptic("Light"); fileInputRef.current?.click(); }}
           className="text-[13px] text-[#E63946] font-semibold mt-3"
         >
           Changer la photo
@@ -323,7 +323,7 @@ export function CoachProfilEditMobile() {
         >
           <button
             type="button"
-            onClick={handleSave}
+            onClick={() => { void triggerHaptic("Light"); handleSave(); }}
             disabled={saving}
             className="w-full h-12 rounded-2xl bg-[#E63946] text-white text-[15px] font-semibold active:bg-[#D42B22] disabled:opacity-60"
           >

@@ -359,6 +359,13 @@ authorization_url_path = "/oauth/consent"
 # Allow dynamic client registration
 allow_dynamic_registration = false
 
+# Formulaire de contact public (/a-propos) — endpoint appelé depuis le navigateur.
+# Pas de JWT : la protection est applicative (honeypot + validation), pas un gate
+# d'auth. verify_jwt=false évite un 401 quand le front envoie une clé publishable
+# (non-JWT) plutôt que l'ancienne clé anon JWT.
+[functions.send-contact]
+verify_jwt = false
+
 [edge_runtime]
 enabled = true
 # Supported request policies: `oneshot`, `per_worker`.

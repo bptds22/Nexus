@@ -118,8 +118,7 @@ export default function AthletePlayerCard({
   const dims = FORMAT_CONFIG[format];
   const ratingValue = a.overallRating;
   const posAbbr = positionAbbr(a.primaryPosition);
-  const secPosAbbr = a.secondaryPosition ? positionAbbr(a.secondaryPosition) : "";
-  const posDisplay = secPosAbbr ? `${posAbbr} / ${secPosAbbr}` : (posAbbr || "—");
+  const posDisplay = posAbbr || "—";
   const sportKey = SPORT_NAME_MAP[a.primarySport];
   const sportDisplay = sportKey ? (SPORT_DISPLAY[sportKey] || a.primarySport) : a.primarySport;
   const badgeActive = a.isVerified && !isValidationExpired({ verified: !!a.isVerified, last_profile_validation: a.lastValidation ?? null });

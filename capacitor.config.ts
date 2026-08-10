@@ -74,6 +74,30 @@ const config: CapacitorConfig = {
       },
     },
   },
+  /* ── DETTE DE CONFIGURATION : LIENS UNIVERSELS MORTS ──────────────────────
+     Un apple-app-site-association est PUBLIÉ sur nexussports.ca, mais
+     l'application ne réclame pas le domaine : `com.apple.developer.associated-
+     domains` est absent de ios/App/App/App.entitlements — le fichier que le
+     projet Xcode signe réellement (CODE_SIGN_ENTITLEMENTS, deux configurations
+     sur deux). Aucun écouteur `appUrlOpen` non plus.
+
+     Conséquence : le fichier ne fait RIEN. iOS n'interroge jamais l'association
+     d'un domaine qu'aucune application ne revendique. Tout lien vers
+     nexussports.ca ouvre Safari, jamais l'app.
+
+     POURQUOI C'EST NOTÉ ET NON CORRIGÉ
+     C'est de la configuration morte, et le danger est qu'elle se LISE comme
+     vivante : qui voit le fichier servi conclura que les liens universels
+     fonctionnent, et bâtira un parcours dessus. Le courriel de transfert
+     (supabase/functions/send-team-invitation) part du postulat inverse — il
+     assume le navigateur, et c'est correct aujourd'hui.
+
+     LE JOUR OÙ ON ACTIVE : poser l'entitlement, ajouter un écouteur d'URL, et
+     EXCLURE D'ABORD les chemins web-seulement (/athlete/parametres porte
+     l'onglet transfert) AVANT la propagation. Apple met l'association en cache
+     côté CDN, et une app installée ne la relit qu'à la mise à jour : une
+     exclusion posée après coup met une journée à atteindre les appareils.
+     ───────────────────────────────────────────────────────────────────────── */
   server: {
     androidScheme: 'https',
     iosScheme: 'capacitor',

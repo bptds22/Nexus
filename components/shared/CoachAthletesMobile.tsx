@@ -32,13 +32,17 @@ import { useMobileToast } from "@/components/mobile/MobileToast";
 import AthletePhoto from "@/components/shared/AthletePhoto";
 import { isValidationExpired } from "@/lib/utils/profileValidation";
 import { parseDistinctions } from "@/lib/config/badges";
+import { selectBestEvaluation } from "@/lib/evaluations/selectEvaluation";
 import { TEAM_GENDER_FILTER_OPTIONS, firstTeamGender } from "@/lib/config/gender";
+import { taRows } from "@/lib/queries/shared/embeds";
 import {
   lookupInvitableByEmail,
   type AthleteEmailSuggestion,
 } from "@/lib/coach/athleteEmailAutocomplete";
 import { createAthleteInvitationLink } from "@/lib/queries/coach/createAthleteInvitation";
 import { loadCoachTeams, inviteAthleteToTeam, type CoachTeamOption } from "@/lib/queries/coach/teamInvite";
+import { triggerHaptic } from "@/lib/haptics";
+import { inviteAnchoredAthlete } from "@/lib/queries/coach/inviteAnchoredAthlete";
 
 /* ── Constants ────────────────────────────────────────────── */
 
@@ -121,13 +125,6 @@ export interface CoachAthlete {
 
 /* ── Helpers ──────────────────────────────────────────────── */
 
-async function triggerHaptic(intensity: "Light" | "Medium" = "Light") {
-  try {
-    const { Haptics, ImpactStyle } = await import("@capacitor/haptics");
-    const style = intensity === "Light" ? ImpactStyle.Light : ImpactStyle.Medium;
-    await Haptics.impact({ style });
-  } catch { /* no-op */ }
-}
 
 function mapCoachAthlete(a: Record<string, unknown>, favCounts: Record<string, number>): CoachAthlete {
   const posRaw = a.positions;
@@ -147,12 +144,17 @@ function mapCoachAthlete(a: Record<string, unknown>, favCounts: Record<string, n
 
   const evalsRaw = a.evaluations;
   const evals = Array.isArray(evalsRaw) ? evalsRaw : [];
-  const eval0 = evals[0] as { cote_globale?: number; distinctions?: unknown } | undefined;
+  const eval0 = selectBestEvaluation(evals) as { cote_globale?: number; distinctions?: unknown } | undefined;
   const starsRaw = (eval0?.cote_globale ?? (a.cote_globale_entraineur as number) ?? 0) as number;
   const stars = Math.round(starsRaw * 10) / 10;
   const distinctions = parseDistinctions(eval0?.distinctions);
 
-  const teamAthletes = Array.isArray(a.team_athletes) ? a.team_athletes : [];
+  // taRows : depuis l'ancrage unique strict, PostgREST renvoie cet embed en
+  // OBJET (ou null). Un test Array.isArray excluant le vidait — le roster
+  // affichait « sans équipe » pour TOUS les athlètes et perdait le genre.
+  const teamAthletes = taRows<Record<string, unknown>>(
+    a.team_athletes as Record<string, unknown> | Record<string, unknown>[] | null,
+  );
   const noTeam = teamAthletes.length === 0;
   const teamGender = firstTeamGender(teamAthletes);
 
@@ -259,7 +261,7 @@ function MobileSearchBar({
             className="flex-1 min-w-0 bg-transparent text-[16px] text-white placeholder:text-[#6B7280] outline-none"
           />
           {search.length > 0 && (
-            <button type="button" onClick={() => onSearchChange("")} className="text-[#6B7280] active:text-white" aria-label="Effacer">
+            <button type="button" onClick={() => { void triggerHaptic("Light"); onSearchChange(""); }} className="text-[#6B7280] active:text-white" aria-label="Effacer">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                 <path d="M18 6L6 18" /><path d="M6 6l12 12" />
               </svg>
@@ -525,7 +527,7 @@ function ConfirmClaimSheet({
     <>
       <div
         className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm"
-        onClick={() => { if (!submitting) onCancel(); }}
+        onClick={() => { void triggerHaptic("Light"); if (!submitting) onCancel(); }}
         style={{ animation: "nx-coach-modal-fade 200ms ease-out forwards" }}
       />
       <div
@@ -725,6 +727,8 @@ function InviteByEmailSheet({
   const [notInvitable, setNotInvitable] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errMsg, setErrMsg] = useState<string | null>(null);
+  const [transfertMsg, setTransfertMsg] = useState<string | null>(null);
+  const [transfertOk, setTransfertOk] = useState(false);
   const [teams, setTeams] = useState<CoachTeamOption[]>([]);
   const [teamId, setTeamId] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -732,6 +736,7 @@ function InviteByEmailSheet({
   useEffect(() => {
     if (!open) {
       setEmail(""); setMatch(null); setNotInvitable(false); setErrMsg(null);
+      setTransfertMsg(null); setTransfertOk(false);
       setSubmitting(false); setLooking(false); setTeamId(null);
       return;
     }
@@ -745,6 +750,7 @@ function InviteByEmailSheet({
   useEffect(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
     setMatch(null); setNotInvitable(false); setErrMsg(null);
+    setTransfertMsg(null); setTransfertOk(false);
     const e = email.trim().toLowerCase();
     if (!INVITE_EMAIL_RE.test(e)) { setLooking(false); return; }
     setLooking(true);
@@ -752,12 +758,29 @@ function InviteByEmailSheet({
       try {
         const res = await lookupInvitableByEmail(createClient(), e);
         const exact = res.suggestions.find((s) => s.email.toLowerCase() === e) ?? null;
-        setMatch(exact); setNotInvitable(!exact && res.existsNotInvitable);
+        setMatch(exact);
+        // existsExact : le bloc « déjà rattaché » et son bouton d'invitation
+        // n'apparaissent que sur un courriel COMPLET. Voir InviteByEmailModal.
+        setNotInvitable(!exact && res.existsExact);
       } catch { setNotInvitable(false); }
       finally { setLooking(false); }
     }, 300);
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
   }, [email]);
+
+  /* Transfert : distinct de handleInvite. Celui-là part d'un athlète IDENTIFIÉ
+     par une suggestion (athleteId connu) ; celui-ci part d'un courriel opaque
+     et laisse le serveur faire la résolution. Deux chemins, une seule table
+     écrite dans les deux cas : team_invitations. */
+  const handleTransfert = useCallback(async () => {
+    const e = email.trim().toLowerCase();
+    if (!e || !teamId || submitting) return;
+    setSubmitting(true); setTransfertMsg(null);
+    const r = await inviteAnchoredAthlete(createClient(), e, teamId);
+    setSubmitting(false);
+    setTransfertOk(r.ok);
+    setTransfertMsg(r.message || "Invitation envoyée — il devra l'accepter.");
+  }, [email, teamId, submitting]);
 
   const handleInvite = useCallback(async () => {
     if (!match || submitting) return;
@@ -784,7 +807,7 @@ function InviteByEmailSheet({
     <>
       <div
         className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm"
-        onClick={() => { if (!submitting) onClose(); }}
+        onClick={() => { void triggerHaptic("Light"); if (!submitting) onClose(); }}
         style={{ animation: "nx-modal-fade 200ms ease-out forwards" }}
       />
       <div
@@ -799,6 +822,10 @@ function InviteByEmailSheet({
           <p className="text-[13px] text-[#9CA3AF] mt-1 mb-4">Le courriel d&apos;un athlète à inviter.</p>
           <input
             type="email" inputMode="email" autoCapitalize="off" autoCorrect="off" spellCheck={false}
+            /* autoComplete="off" : ce champ attend le courriel d'un ATHLÈTE.
+               Sans lui, iOS propose une adresse du carnet de l'appareil — celle
+               du coach le plus souvent. Seul écart qui restait avec le web. */
+            autoComplete="off"
             value={email} onChange={(e) => setEmail(e.target.value)} placeholder="athlete@exemple.ca"
             className="w-full bg-[#111317] border border-white/10 rounded-xl px-4 py-3 text-[16px] text-white placeholder:text-white/35 outline-none focus:border-[#E63946]/50"
           />
@@ -814,7 +841,7 @@ function InviteByEmailSheet({
                     <p className="text-[13px] text-[#9CA3AF] truncate">{match.sportName || "—"} · {match.email}</p>
                   </div>
                   <button
-                    type="button" onClick={handleInvite}
+                    type="button" onClick={() => { void triggerHaptic("Light"); handleInvite(); }}
                     disabled={submitting || (match.hasAccount && !teamId && teams.length !== 1)}
                     className="shrink-0 h-11 px-4 rounded-2xl bg-[#E63946] text-white text-[13px] font-bold active:bg-[#D42B22] disabled:opacity-40"
                   >
@@ -840,9 +867,47 @@ function InviteByEmailSheet({
               </div>
             )}
 
-            {/* État 2 : existe mais NON-invitable (zéro PII) */}
+            {/* État 2 : existe mais ANCRÉ AILLEURS (zéro PII).
+                C'était un cul-de-sac : on annonçait au coach qu'il ne pouvait
+                rien faire. Il peut maintenant PROPOSER — le transfert passe par
+                une RPC qui résout le courriel côté serveur, donc l'identité de
+                l'athlète n'est toujours pas révélée. Rien n'est écrit dans
+                athlete_invitations : cet athlète a un compte, il n'a rien à
+                réclamer. */}
             {!looking && !match && notInvitable && (
-              <p className="text-[13px] text-[#9CA3AF]">Cet athlète est déjà rattaché à une équipe et ne peut pas être invité ici.</p>
+              <div className="bg-[#111317] border border-[#F59E0B]/30 rounded-xl p-4 space-y-3">
+                <p className="text-[13px] text-[#9CA3AF] leading-relaxed">
+                  Cet athlète est déjà rattaché à une autre équipe. Tu peux l&apos;inviter
+                  à rejoindre la tienne — <span className="text-white">c&apos;est lui qui décidera.</span>
+                </p>
+                {teams.length === 0 ? (
+                  <p className="text-[13px] text-[#F59E0B]">Aucune équipe — crées-en une dans « Mes équipes ».</p>
+                ) : (
+                  <>
+                    {teams.length > 1 && (
+                      <select value={teamId ?? ""} onChange={(e) => setTeamId(e.target.value || null)}
+                        className="w-full bg-[#111317] border border-white/10 rounded-xl px-4 py-3 text-[16px] text-white outline-none focus:border-[#E63946]/50" title="Équipe">
+                        <option value="">Choisis une équipe</option>
+                        {teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                      </select>
+                    )}
+                    {teams.length === 1 && (
+                      <p className="text-[13px] text-[#9CA3AF]">Équipe : <span className="text-white font-semibold">{teams[0].name}</span></p>
+                    )}
+                    <button type="button"
+                      onClick={() => { void triggerHaptic("Light"); void handleTransfert(); }}
+                      disabled={submitting || !teamId || transfertOk}
+                      className="w-full h-11 rounded-2xl bg-[#E63946] text-white text-[13px] font-bold active:bg-[#D42B22] disabled:opacity-40">
+                      {submitting ? "…" : "Inviter à rejoindre mon équipe"}
+                    </button>
+                  </>
+                )}
+                {transfertMsg && (
+                  <p className={`text-[13px] font-semibold ${transfertOk ? "text-[#22C55E]" : "text-[#EF4444]"}`}>
+                    {transfertOk ? "✓ " : ""}{transfertMsg}
+                  </p>
+                )}
+              </div>
             )}
 
             {/* État 3 : inexistant */}
@@ -960,8 +1025,44 @@ export function CoachAthletesMobile() {
           schools!school_id(name, region),
           committed_school:schools!committed_school_id(name),
           team_athletes(team_id, teams!team_id(gender)),
-          evaluations(cote_globale, rapport_entraineur, distinctions)
+          evaluations(cote_globale, rapport_entraineur, distinctions, updated_at)
         `)
+        // STATUTS VISIBLES DANS LE ROSTER — enum account_status :
+        // ACTIF · DESACTIVE · EN_ATTENTE · DIPLOME · SUPPRIME
+        //
+        // ⚠ NE PAS AJOUTER EN_ATTENTE ICI. Ca a ete essaye, puis annule.
+        //
+        // Le nom trompe : EN_ATTENTE n'est PAS un etat du cycle de vie d'un
+        // athlete. Verifie en prod le 2026-08-08 :
+        //   · le defaut de la colonne est 'ACTIF' (NOT NULL) ;
+        //   · AUCUN chemin de creation ne pose EN_ATTENTE — ni saveAthlete,
+        //     ni l'onboarding web/mobile, ni aucune fonction SQL (aucune
+        //     n'insere meme dans public.athletes) ;
+        //   · RIEN ne promeut EN_ATTENTE -> ACTIF : pas de trigger, pas de RPC,
+        //     pas de code client. Accepter une invitation d'equipe ne touche
+        //     pas au statut (_apply_team_attachment_core ecrit school_id,
+        //     coach_id, parcours_equipes — jamais status).
+        //
+        // Dans les faits, EN_ATTENTE sert d'OUTIL DE MASQUAGE. Deux migrations
+        // du 13 juillet (20260713140000_masquer_test_android_recherche et
+        // 20260713150000_masquer_profil_demo_bptds22_recherche) l'ont pose a la
+        // main sur deux fiches de demo pour les sortir de la recherche
+        // recruteur — la policy RLS « recruiters read active athletes » exige
+        // status = 'ACTIF'. Ces migrations documentent l'exclusion du roster
+        // coach comme un effet de bord ASSUME.
+        //
+        // Elargir ce filtre a EN_ATTENTE ne debloque donc aucun athlete reel :
+        // ca ne fait que remettre ces deux fiches masquees dans les rosters.
+        //
+        // SUPPRIME reste EXCLU — compte efface (Loi 25). Il l'est deja deux fois
+        // plutot qu'une : ces lignes ont school_id NULL, donc le filtre d'ecole
+        // ci-dessus les ecarte aussi. Ne pas s'appuyer sur ce hasard : garder le
+        // filtre de statut explicite.
+        //
+        // DESACTIVE et DIPLOME restent EXCLUS, faute de decision produit — zero
+        // ligne de chacun en base aujourd'hui. Si un athlete diplome doit rester
+        // consultable par son ancien coach, c'est un choix a prendre, pas un
+        // oubli a corriger ici.
         .eq("school_id", coachRow.school_id)
         .eq("status", "ACTIF");
 

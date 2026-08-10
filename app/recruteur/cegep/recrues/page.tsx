@@ -42,7 +42,7 @@ const STAGE_COLORS: Record<string, { bg: string; text: string; border: string }>
 
 export default function Page() {
   return (
-    <FeatureGate feature="cegep_management" requiredTier="all_star">
+    <FeatureGate feature="cegep_management" requiredTier="all_star" adminBypass>
       <RecrusCegepWrapperContent />
     </FeatureGate>
   );

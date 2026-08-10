@@ -1,6 +1,7 @@
 "use client";
 
 import {  useState, useRef, useEffect } from "react";
+import { selectBestEvaluation } from "@/lib/evaluations/selectEvaluation";
 import Link from "next/link";
 import { useDynamicParam } from "@/lib/platform/useDynamicParam";
 import { STATUS_CONFIG, mapDbStatus, type Message, type ThreadStatus, type ConversationThread } from "../_data/mockThreadsData";
@@ -125,7 +126,7 @@ function ThreadDetailPage() {
         // Fetch conversation
         const { data: conv, error: convError } = await supabase
           .from("conversations")
-          .select("id, recruiter_id, coach_id, athlete_id, status, last_message_at, unread_count, created_at, athletes!athlete_id(id, first_name, last_name, verified, cote_globale_entraineur, profile_completion, annee_diplomation, numero_jersey, moyenne_generale, programme_cegep_vise, pret_changer_region, ouvert_cegep_prive, ouvert_cegep_anglophone, recruitment_status, photo_url, positions!position_id(nom, abreviation), sports!sport_id(nom), schools!school_id(name, region), evaluations(distinctions, cote_globale))")
+          .select("id, recruiter_id, coach_id, athlete_id, status, last_message_at, unread_count, created_at, athletes!athlete_id(id, first_name, last_name, verified, cote_globale_entraineur, profile_completion, annee_diplomation, numero_jersey, moyenne_generale, programme_cegep_vise, pret_changer_region, ouvert_cegep_prive, ouvert_cegep_anglophone, recruitment_status, photo_url, positions!position_id(nom, abreviation), sports!sport_id(nom), schools!school_id(name, region), evaluations(distinctions, cote_globale, updated_at))")
           .eq("id", id)
           .single();
 
@@ -192,7 +193,7 @@ function ThreadDetailPage() {
           _athleteRelocate: athleteData?.pret_changer_region || false,
           _athletePrivate: athleteData?.ouvert_cegep_prive || false,
           _athleteAnglophone: athleteData?.ouvert_cegep_anglophone || false,
-          _athleteDistinctions: (() => { const e = athleteData?.evaluations; const ev = Array.isArray(e) ? e[0] : e; return parseDistinctions(ev?.distinctions); })(),
+          _athleteDistinctions: (() => { const e = athleteData?.evaluations; const ev = selectBestEvaluation(Array.isArray(e) ? e : e ? [e] : []); return parseDistinctions((ev as { distinctions?: unknown } | null)?.distinctions); })(),
           messages: [],
           status: mapDbStatus(conv.status, (msgs || []).some((m: any) => m.sender_id === conv.coach_id), (msgs || []).some((m: any) => m.sender_id === conv.recruiter_id)),
           lastMessagePreview: "",

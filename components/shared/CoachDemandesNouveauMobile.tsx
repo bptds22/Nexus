@@ -36,17 +36,8 @@ import { createClient } from "@/lib/supabase/client";
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import AthletePhoto from "@/components/shared/AthletePhoto";
 import { createCoachConversation } from "@/lib/queries/messaging/createCoachConversation";
+import { triggerHaptic } from "@/lib/haptics";
 
-async function triggerHaptic(intensity: "Light" | "Medium" = "Light") {
-  try {
-    const { Haptics, ImpactStyle, NotificationType } = await import("@capacitor/haptics");
-    if (intensity === "Medium") {
-      await Haptics.notification({ type: NotificationType.Success });
-    } else {
-      await Haptics.impact({ style: ImpactStyle.Light });
-    }
-  } catch { /* no-op */ }
-}
 
 /* ── Data shapes ─────────────────────────────────────────────── */
 
@@ -312,7 +303,6 @@ Je vous écris au sujet de ${selectedAthlete.firstName} ${selectedAthlete.lastNa
     // Catch the coach list cache so the new thread appears at the top.
     queryClient.invalidateQueries({ queryKey: ["conversations"] });
 
-    triggerHaptic("Medium");
     toast.success({ message: "Message envoyé" });
     router.replace(`/coach/demandes/${conversationId}`);
   }, [canSend, selectedAthlete, selectedRecruiter, coachUserId, messageBody, toast, queryClient, router]);
@@ -461,7 +451,7 @@ Je vous écris au sujet de ${selectedAthlete.firstName} ${selectedAthlete.lastNa
           >
             <button
               type="button"
-              onClick={handleSend}
+              onClick={() => { void triggerHaptic("Light"); handleSend(); }}
               disabled={!canSend}
               className={`w-full h-14 rounded-2xl font-head font-black text-[14px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${
                 canSend

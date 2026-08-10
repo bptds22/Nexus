@@ -42,6 +42,7 @@ import { useMobileToast } from "@/components/mobile/MobileToast";
 import { createClient } from "@/lib/supabase/client";
 
 import { TEAM_GENDER_FILTER_OPTIONS } from "@/lib/config/gender";
+import { triggerHaptic } from "@/lib/haptics";
 /* ── Constants ────────────────────────────────────────────── */
 
 const SPORTS: PickerOption[] = [
@@ -127,13 +128,6 @@ function statusPillFromStatus(status: string): StatusPill {
   }
 }
 
-async function triggerHaptic(intensity: "Light" | "Medium" = "Light") {
-  try {
-    const { Haptics, ImpactStyle } = await import("@capacitor/haptics");
-    const style = intensity === "Light" ? ImpactStyle.Light : ImpactStyle.Medium;
-    await Haptics.impact({ style });
-  } catch { /* no-op */ }
-}
 
 /* ── MobileSearchBar (pill + morph fullscreen) ────────────── */
 
@@ -426,7 +420,7 @@ function ExpandedSearchOverlay({
               className="flex-1 bg-transparent text-[16px] text-white placeholder:text-[#6B7280] outline-none"
             />
             {search.length > 0 && (
-              <button type="button" onClick={() => onSearchChange("")} className="text-[#6B7280] active:text-white" aria-label="Effacer">
+              <button type="button" onClick={() => { void triggerHaptic("Light"); onSearchChange(""); }} className="text-[#6B7280] active:text-white" aria-label="Effacer">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                   <path d="M18 6L6 18" /><path d="M6 6l12 12" />
                 </svg>
@@ -739,7 +733,7 @@ function AthleteRowMobile({ a, isFree, favDisabled, onToggleFav }: AthleteCardPr
           </div>
         </div>
         {/* Heart button right */}
-        <div onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
+        <div onClick={(e) => { void triggerHaptic("Light"); e.preventDefault(); e.stopPropagation(); }}>
           <HeartButton isFavorited={a.isFavorited} onToggle={() => onToggleFav(a.id)} size="sm" disabled={favDisabled} />
         </div>
       </div>

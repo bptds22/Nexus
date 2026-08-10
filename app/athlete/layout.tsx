@@ -41,6 +41,15 @@ const NAV_ITEMS = [
     ),
   },
   {
+    label: "Trouver mon cégep",
+    href: "/athlete/recherche",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+      </svg>
+    ),
+  },
+  {
     label: "Mon profil",
     href: "/athlete/profil",
     badgeKey: "profil" as const,
@@ -56,6 +65,24 @@ const NAV_ITEMS = [
     icon: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" />
+      </svg>
+    ),
+  },
+  {
+    /* Le transfert d'équipe était un onglet de /athlete/parametres. Il en est
+       sorti : c'est un acte administratif (il change l'école, le coach et la
+       visibilité recruteur), pas un réglage de compte — et enfoui dans les
+       paramètres il n'existait PAS sur mobile, où la page bascule sur
+       AthleteParametresMobile. Placé sous « Ma visibilité » ici comme dans le
+       panneau Plus du mobile : même ordre des deux côtés.
+       Libellé conservé de l'onglet d'origine ; la route dit « transfert »,
+       c'est elle que vise le lien du courriel d'invitation. */
+    label: "Mon équipe",
+    href: "/athlete/transfert",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" />
+        <path d="M23 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" />
       </svg>
     ),
   },

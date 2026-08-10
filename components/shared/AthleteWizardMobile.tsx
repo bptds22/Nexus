@@ -60,18 +60,7 @@ import { isValidationDue, isValidationExpired, formatDeadlineFr } from "@/lib/ut
 import { SESSION_KEY_PREFIX } from "@/lib/platform/mobileRoutes";
 import PartnerVisibilityConsentCard from "@/components/shared/PartnerVisibilityConsentCard";
 import DistinctionBadge from "@/components/shared/DistinctionBadge";
-import {
-  Card,
-  InlineEditRow,
-  PickerRow,
-  DateRow,
-  ReadOnlyRow,
-  ToggleRow,
-  ChipsBlock,
-  TagInputRow,
-  MediaUrlRow,
-  DetailedTag,
-} from "@/components/shared/wizard/rows";
+import { Card, ChipsBlock, DateRow, DetailedTag, EmailEditRow, InlineEditRow, MediaUrlRow, PickerRow, ReadOnlyRow, TagInputRow, ToggleRow } from "@/components/shared/wizard/rows";
 import { labelCls, valueCls } from "@/components/shared/wizard/tokens";
 import { StarRow } from "@/components/shared/wizard/stars";
 import { useKeyboardHeight } from "@/lib/hooks/useKeyboardHeight";
@@ -82,10 +71,11 @@ import {
 } from "@/lib/config/badges";
 import { POSITIONS } from "@/lib/sports-data";
 import {
-  autocompleteCivilUnclaimedByEmail,
+  lookupInvitableByEmail,
   type AthleteEmailAutocompleteResult,
   type AthleteEmailSuggestion,
 } from "@/lib/coach/athleteEmailAutocomplete";
+import { createAthleteInvitationLink } from "@/lib/queries/coach/createAthleteInvitation";
 import { loadAthleteRaw, buildFormFromRaw } from "@/app/coach/athletes/_data/loadAthleteFromSupabase";
 import {
   emptyAthleteForm,
@@ -101,18 +91,10 @@ import { isUnder14 } from "@/lib/legal/ageGate";
 import { ConfirmSheet } from "@/components/shared/settings";
 import { Skeleton } from "@/components/ui/Skeleton";
 import CoteChangeConfirmContent from "@/components/shared/CoteChangeConfirmContent";
+import { triggerHaptic } from "@/lib/haptics";
+import { inviteAnchoredAthlete } from "@/lib/queries/coach/inviteAnchoredAthlete";
 
 /* ── Haptics helper (matches onboarding shells) ─────────────── */
-async function triggerHaptic(intensity: "Light" | "Medium" = "Light") {
-  try {
-    const { Haptics, ImpactStyle, NotificationType } = await import("@capacitor/haptics");
-    if (intensity === "Medium") {
-      await Haptics.notification({ type: NotificationType.Success });
-    } else {
-      await Haptics.impact({ style: ImpactStyle.Light });
-    }
-  } catch { /* no-op */ }
-}
 
 /* ── Constantes ───────────────────────────────────────────────── */
 
@@ -254,8 +236,29 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [linkedToExisting, setLinkedToExisting] = useState<AthleteEmailSuggestion | null>(null);
   const [invitationTeamId, setInvitationTeamId] = useState<string | null>(null);
+  /* §2 — invitation APRÈS création. Le web remplace le formulaire par un écran
+     d'invitation quand une suggestion est liée ; ici la création va au bout et
+     la proposition arrive en modale, comme demandé. Le coach peut ENVOYER ou
+     PASSER — passer n'est pas un échec, la fiche existe déjà. */
+  const [inviteApres, setInviteApres] = useState<{ athleteId: string; email: string; prenom: string } | null>(null);
+  const [envoiInvite, setEnvoiInvite] = useState(false);
+  const [resultatInvite, setResultatInvite] = useState<{ ok: boolean; msg: string } | null>(null);
   const [isSubmittingInvitation, setIsSubmittingInvitation] = useState(false);
   const emailAutocompleteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  /* ── ANCRÉ AILLEURS — la sortie du cul-de-sac ───────────────────────────
+     Vrai quand la recherche a répondu « un athlète existe à ce courriel, mais
+     tu ne peux pas l'inviter d'ici » : le drapeau arrive SEUL, sans nom ni
+     identifiant (choix Loi 25 assumé côté base). On ne peut donc pas afficher
+     de suggestion, seulement proposer une action.
+     Le transfert passe par une RPC serveur qui résout le courriel elle-même —
+     jamais par un INSERT direct, et JAMAIS par athlete_invitations : cet
+     athlète a déjà un compte, il n'a rien à réclamer. */
+  const [ancreAilleurs, setAncreAilleurs] = useState(false);
+  const [equipeTransfert, setEquipeTransfert] = useState<string | null>(null);
+  const [openTransfertTeamPicker, setOpenTransfertTeamPicker] = useState(false);
+  const [envoiAncre, setEnvoiAncre] = useState(false);
+  const [resultatAncre, setResultatAncre] = useState<{ ok: boolean; msg: string } | null>(null);
 
   /* ── Picker / sheet open state ───────────────────────────── */
   const [openSportPicker, setOpenSportPicker] = useState(false);
@@ -463,14 +466,43 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
     if (newEmail.trim().length < 4) {
       setEmailAutocomplete(null);
       setShowSuggestions(false);
+      setAncreAilleurs(false);
+      setResultatAncre(null);
       return;
     }
     emailAutocompleteTimerRef.current = setTimeout(async () => {
       try {
         const supabase = createClient();
-        const result = await autocompleteCivilUnclaimedByEmail(supabase, newEmail);
-        setEmailAutocomplete(result);
+        // UNION des deux voies, comme le web : mes orphelins (sans compte,
+        // hasAccount=false → invitation par courriel) ET les civils sans coach
+        // AVEC compte (hasAccount=true → team_invitations in-app). Le mobile
+        // n'interrogeait que la seconde : il ne détectait donc JAMAIS ses
+        // propres orphelins, et un coach resaisissant un courriel qu'il avait
+        // lui-même créé ne voyait aucune suggestion.
+        //
+        // ⚠ CETTE DÉTECTION EST CONTOURNABLE, ET C'EST ASSUMÉ POUR L'INSTANT.
+        // Elle ne se déclenche que si le coach CLIQUE une suggestion. Taper le
+        // courriel en entier sans cliquer crée un doublon en silence : il
+        // n'existe AUCUNE contrainte d'unicité sur athletes.email — colonne
+        // `text` brut, pas de CITEXT, aucun index unique (vérifié en base). Le
+        // garde-fou serait un index unique, décidé dans un ticket séparé après
+        // comptage des doublons existants.
+        // On passe par lookupInvitableByEmail — LA MÊME recherche que le
+        // dialogue d'invitation du roster — au lieu de la variante du wizard.
+        // Deux raisons : elle couvre une population de PLUS (les comptes sans
+        // coach, scolaires comme civils, là où l'ancienne se limitait aux
+        // civils), et surtout elle rend le drapeau `existsNotInvitable`.
+        // Sans ce drapeau, un courriel appartenant à un athlète ANCRÉ AILLEURS
+        // ne produisait RIEN : ni suggestion, ni avertissement. Le coach allait
+        // au bout et créait un doublon. C'était le cul-de-sac.
+        const result = await lookupInvitableByEmail(supabase, newEmail);
+        setEmailAutocomplete({ status: result.status, suggestions: result.suggestions });
         setShowSuggestions(result.status === "ok" && result.suggestions.length > 0);
+        // existsExact, PAS existsNotInvitable : ce dernier est calculé sur
+        // PRÉFIXE et se levait dès 4 caractères — taper « bptd » suffisait à
+        // afficher la bannière, bloquer la création et proposer le bouton.
+        // Le préfixe reste pour les SUGGESTIONS ci-dessus, où il est utile.
+        setAncreAilleurs(result.existsExact && result.suggestions.length === 0);
       } catch (err) {
         console.error("[EmailAutocomplete] lookup error:", err);
       }
@@ -480,6 +512,61 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
   useEffect(() => () => {
     if (emailAutocompleteTimerRef.current) clearTimeout(emailAutocompleteTimerRef.current);
   }, []);
+
+  /* Envoi de l'invitation depuis la modale post-création. Aucun nouveau chemin :
+     createAthleteInvitationLink appelle la RPC create_athlete_invitation, qui
+     insère dans athlete_invitations ; le trigger BEFORE INSERT
+     notify_invitation_email part alors vers l'edge function send-invitation
+     (Resend). Le lien vaut ${NEXT_PUBLIC_APP_URL}/claim?token=… — bakée dans le
+     bundle mobile par scripts/build-mobile.mjs, donc valide depuis l'app — et
+     le jeton vit 30 jours (valeur réelle de la table, non modifiée).
+     Les messages d'erreur viennent du helper partagé : ils sont déjà mappés en
+     français et sans PII (ATHLETE_UNDER_14 ne révèle ni l'âge ni la date). */
+  const envoyerInvitation = useCallback(async () => {
+    if (!inviteApres || envoiInvite) return;
+    setEnvoiInvite(true);
+    setResultatInvite(null);
+    try {
+      const supabase = createClient();
+      const { error } = await createAthleteInvitationLink(supabase, inviteApres.athleteId, inviteApres.email);
+      if (error) { setResultatInvite({ ok: false, msg: error }); return; }
+      triggerHaptic("Medium");
+      setResultatInvite({ ok: true, msg: `Invitation envoyée à ${inviteApres.email}.` });
+    } finally {
+      setEnvoiInvite(false);
+    }
+  }, [inviteApres, envoiInvite]);
+
+  /* Fermeture — par « Passer » comme par « Terminer ». La modale ne doit JAMAIS
+     retenir le coach : le profil est créé, l'invitation est un bonus. */
+  const fermerInvitation = useCallback(() => {
+    setInviteApres(null);
+    setResultatInvite(null);
+    // Même destination que la sortie normale de la sauvegarde : la liste après
+    // une création, la fiche après une édition. Renvoyer un coach qui vient
+    // d'éditer vers la liste lui ferait perdre le contexte où il était.
+    router.push(isCreate || !athleteId ? "/coach/athletes" : `/coach/athletes/${athleteId}`);
+  }, [router, isCreate, athleteId]);
+
+  /* Transfert proposé à un athlète ancré ailleurs. Le courriel part tel quel
+     vers la RPC, qui le résout côté serveur : le client n'obtient jamais
+     l'identifiant de l'athlète, donc le coach n'apprend rien de plus qu'avant.
+     Une invitation déjà pendante n'est PAS une erreur — la RPC répond
+     ALREADY_PENDING et on l'affiche sur un ton neutre. */
+  const envoyerTransfert = useCallback(async () => {
+    const courriel = form.identity.email?.trim();
+    if (!courriel || !equipeTransfert || envoiAncre) return;
+    setEnvoiAncre(true);
+    setResultatAncre(null);
+    try {
+      const supabase = createClient();
+      const r = await inviteAnchoredAthlete(supabase, courriel, equipeTransfert);
+      if (r.ok) void triggerHaptic("Success");
+      setResultatAncre({ ok: r.ok, msg: r.message || "Invitation envoyée — il devra l'accepter." });
+    } finally {
+      setEnvoiAncre(false);
+    }
+  }, [form.identity.email, equipeTransfert, envoiAncre]);
 
   const handleSelectSuggestion = useCallback((suggestion: AthleteEmailSuggestion) => {
     setForm((prev) => ({
@@ -518,7 +605,6 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
         setIsSubmittingInvitation(false);
         return;
       }
-      triggerHaptic("Medium");
       toast.success({ message: `Invitation envoyée à ${linkedToExisting.firstName}` });
       router.push("/coach/athletes");
     } catch (err) {
@@ -577,7 +663,6 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
         toast.error({ message: "Erreur lors de la vérification", detail: error.message });
         return;
       }
-      triggerHaptic("Medium");
       toast.success({ message: "Athlète vérifié — délai réinitialisé" });
       // Reflète l'état localement → l'encart se masque immédiatement.
       setValidationState({ verified: true, last_profile_validation: nowIso });
@@ -723,8 +808,6 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
 
     push("Sport principal", f.sports.primarySport, b.sports.primarySport);
     push("Position", f.sports.primaryPosition, b.sports.primaryPosition);
-    push("Position secondaire", f.sports.secondaryPosition, b.sports.secondaryPosition);
-    push("Sport secondaire", f.sports.secondarySport, b.sports.secondarySport);
     push("Numéro", f.sports.jerseyNumber, b.sports.jerseyNumber);
     push("Équipe", f.sports.currentTeam, b.sports.currentTeam);
     push("Ouvert entraîneur CÉGEP", f.sports.openToCoaching, b.sports.openToCoaching);
@@ -817,6 +900,53 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
       return;
     }
 
+    /* ═══ BASCULE : UN ATHLÈTE LIÉ NE SE CRÉE PAS ═══════════════════════════
+       Le web applique ce principe par une bascule d'ÉCRAN : dès que
+       `linkedToExisting` est posé, create/page.tsx retourne l'écran d'invitation
+       au lieu du formulaire, si bien que saveAthleteCreate n'est jamais atteint.
+       Ici le formulaire reste affiché jusqu'au bout, donc la bascule se fait AU
+       SEUIL DE LA SOUMISSION — même principe, même garantie : on n'insère rien.
+
+       La fiche existe DÉJÀ ; ce que le coach demande n'est pas une création mais
+       un rattachement. Créer ici produirait exactement le doublon que la
+       détection cherche à éviter, avec deux fiches portant le même courriel —
+       et rien en base ne l'empêcherait, faute d'index unique sur athletes.email.
+
+       On réutilise l'athleteId de la SUGGESTION, jamais un nouvel id. La modale
+       route ensuite sur hasAccount : compte existant → invitation d'équipe
+       in-app ; orphelin → invitation par courriel.
+
+       Placé AVANT le hard-stop <14 : un athlète déjà en base a déjà passé ce
+       contrôle à sa création, et on n'insère rien ici. Le gate reste intégral
+       sur le seul chemin qui écrit. */
+    /* ANCRÉ AILLEURS → ON NE CRÉE RIEN.
+       Même principe que la bascule `linkedToExisting` juste dessous, pour une
+       raison plus forte encore : ici la fiche existe ET appartient à un autre
+       coach. Créer produirait un doublon que rien en base n'empêche (aucun
+       index unique sur athletes.email). La seule action légitime est
+       l'invitation, proposée dans le bloc de l'écran 1. */
+    if (isCreate && ancreAilleurs) {
+      setSaving(false);
+      setShowSummarySheet(false);
+      toast.error({
+        message: "Cet athlète existe déjà",
+        detail: "Invite-le à rejoindre ton équipe depuis le champ courriel.",
+      });
+      return;
+    }
+
+    if (isCreate && linkedToExisting) {
+      setSaving(false);
+      setShowSummarySheet(false);
+      triggerHaptic("Medium");
+      setInviteApres({
+        athleteId: linkedToExisting.athleteId,
+        email: linkedToExisting.email,
+        prenom: linkedToExisting.firstName || "",
+      });
+      return;
+    }
+
     // Hard-stop <14 (Loi 25), CREATE only — ferme le contournement par saut de
     // slide (canProceed ne gate que l'avance). Garantit qu'aucune row <14
     // n'atteint saveAthleteCreate. L'edit n'est JAMAIS bloqué.
@@ -844,14 +974,35 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
     }
     const savedId = result.id ?? athleteId ?? "";
 
-    triggerHaptic("Medium");
     toast.success({ message: isCreate ? "Profil créé" : "Profil enregistré" });
     setSaving(false);
     setShowSummarySheet(false);
+
+    /* CHEMIN B — courriel NEUF : la fiche vient d'être créée, on propose
+       l'invitation au lieu de repartir en silence. C'était le trou principal
+       du mobile : le coach quittait en croyant l'athlète prévenu, alors que
+       rien n'était envoyé. Sans courriel il n'y a rien à envoyer — on sort
+       comme avant. */
+    const courrielSaisi = form.identity.email?.trim();
+    const courrielAvant = baselineFormRef.current?.identity.email?.trim() ?? "";
+
+    /* CHEMIN C — ÉDITION, courriel AJOUTÉ APRÈS COUP.
+       Un athlète créé sans courriel est un fantôme : aucune invitation n'a pu
+       partir, et il n'existait aucune façon de réparer ça sur mobile. Le coach
+       ajoute le courriel plus tard, on lui propose la MÊME modale.
+
+       Condition stricte « vide → rempli », pas « a changé » : corriger une
+       coquille dans un courriel déjà invité ne doit PAS relancer une modale
+       d'invitation à chaque sauvegarde. */
+    const proposerInvitation = isCreate ? !!courrielSaisi : !!courrielSaisi && !courrielAvant;
+    if (savedId && proposerInvitation) {
+      setInviteApres({ athleteId: savedId, email: courrielSaisi, prenom: form.identity.firstName || "" });
+      return;
+    }
     router.push(isCreate ? "/coach/athletes" : `/coach/athletes/${savedId}`);
   }, [
-    isCreate, form, athleteId, recruitmentStatus, committedSchoolId, coach.schoolId,
-    router, toast, missingRequiredAll,
+    isCreate, form, athleteId, recruitmentStatus, committedSchoolId, coach.schoolId, linkedToExisting,
+    ancreAilleurs, router, toast, missingRequiredAll,
   ]);
 
   /* ── Chip-row navigation hooks (top-level, never below an
@@ -977,7 +1128,7 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
               return (
                 <button key={i} type="button"
                   ref={isCurrent ? activeChipRef : null}
-                  onClick={() => { if (reachable) { setDirection(i > slide ? 1 : -1); setSlide(i); } }}
+                  onClick={() => { void triggerHaptic("Light"); if (reachable) { setDirection(i > slide ? 1 : -1); setSlide(i); } }}
                   disabled={!reachable}
                   className={`px-4 py-2 rounded-full text-[12px] font-bold uppercase tracking-[0.14em] whitespace-nowrap transition-colors ${chipCls}`}>
                   {i + 1}. {label}
@@ -1048,11 +1199,6 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
         options={SPORTS.map((s) => ({ value: s, label: s }))}
         value={form.sports.primarySport || null}
         onChange={(v) => updateSports("primarySport", v ? String(v) : "")} />
-      <MobilePicker open={openSecondarySportPicker} onClose={() => setOpenSecondarySportPicker(false)}
-        title="Sport secondaire"
-        options={[{ value: "", label: "Aucun" }, ...SPORTS.map((s) => ({ value: s, label: s }))]}
-        value={form.sports.secondarySport || ""}
-        onChange={(v) => updateSports("secondarySport", v ? String(v) : "")} />
       <MobilePicker open={openGenderPicker} onClose={() => setOpenGenderPicker(false)}
         title="Genre"
         options={[{ value: "M", label: "Masculin" }, { value: "F", label: "Féminin" }, { value: "X", label: "Non genré" }]}
@@ -1080,10 +1226,6 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
         title="Position principale" options={primaryPositions}
         value={form.sports.primaryPosition || null}
         onChange={(v) => updateSports("primaryPosition", v ? String(v) : "")} />
-      <MobilePicker open={openSecondaryPosPicker} onClose={() => setOpenSecondaryPosPicker(false)}
-        title="Position secondaire" options={primaryPositions}
-        value={form.sports.secondaryPosition || null}
-        onChange={(v) => updateSports("secondaryPosition", v ? String(v) : "")} />
       <MobilePicker open={openRecruitmentStatusPicker} onClose={() => setOpenRecruitmentStatusPicker(false)}
         title="Statut de recrutement" options={RECRUITMENT_STATUS_OPTIONS}
         value={recruitmentStatus}
@@ -1148,6 +1290,22 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
         searchValue={teamSearch} onSearchChange={setTeamSearch}
         items={visibleTeams} keyOf={(t) => t.id}
         onSelect={(t) => setInvitationTeamId(t.id)}
+        renderItem={(t, onTap) => (
+          <button type="button" onClick={onTap}
+            className="w-full text-left p-3 bg-[#1A1D24] rounded-2xl active:bg-[#22262e] transition-colors">
+            <p className="text-[16px] font-semibold text-white truncate">{t.name}</p>
+            {t.level && <p className="text-[13px] text-white/55 truncate">{t.level}</p>}
+          </button>
+        )} />
+
+      {/* Sélecteur d'équipe du TRANSFERT — distinct de celui de l'invitation
+          ci-dessus : ce sont deux actions différentes sur deux tables
+          différentes, on ne partage pas leur état. */}
+      <SearchSheet<CoachTeam> open={openTransfertTeamPicker} onClose={() => setOpenTransfertTeamPicker(false)}
+        title="L'inviter sur quelle équipe ?" searchPlaceholder="Rechercher…"
+        searchValue={teamSearch} onSearchChange={setTeamSearch}
+        items={visibleTeams} keyOf={(t) => t.id}
+        onSelect={(t) => setEquipeTransfert(t.id)}
         renderItem={(t, onTap) => (
           <button type="button" onClick={onTap}
             className="w-full text-left p-3 bg-[#1A1D24] rounded-2xl active:bg-[#22262e] transition-colors">
@@ -1237,6 +1395,69 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
         }}
         extra={<CoteChangeConfirmContent newCote={pendingCote.newCote} originalCote={pendingCote.originalCote} />}
       />
+      {/* ═══ INVITATION APRÈS CRÉATION ═══════════════════════════════════════
+          Libellés repris du web À L'IDENTIQUE (app/coach/athletes/create,
+          l.1739-1770) — un athlète ne doit pas lire deux formulations selon
+          l'appareil. Le sous-titre suit hasAccount quand une suggestion a été
+          liée ; à défaut c'est un profil neuf, donc « profil déjà créé ».
+          `pointer-events-auto` sur la carte : l'enveloppe laisse passer les taps
+          hors de la modale, et le voile ferme. */}
+      {inviteApres && (
+        <div className="fixed inset-0 z-[90] flex items-end" role="dialog" aria-modal="true">
+          <button
+            type="button"
+            aria-label="Fermer"
+            className="absolute inset-0 bg-black/70"
+            onClick={fermerInvitation}
+          />
+          <div
+            className="relative w-full bg-[#1A1D24] rounded-t-2xl border-t border-[#E63946]/30 px-5 pt-5"
+            style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 20px)" }}
+          >
+            <h2 className="font-head text-[22px] font-black text-white uppercase tracking-tight">
+              Inviter {inviteApres.prenom}
+            </h2>
+            <p className="text-[13px] text-[#6b7280] mt-1">
+              {linkedToExisting?.hasAccount
+                ? "Compte Nexus existant détecté"
+                : "Profil déjà créé — invitation par courriel"}
+            </p>
+
+            <p className="text-[14px] text-[#c0c4cc] mt-4 leading-relaxed">
+              {linkedToExisting?.hasAccount
+                ? "Tu dois attendre que cet athlète accepte ton invitation avant de pouvoir voir son profil et l'évaluer. Une fois qu'il accepte, il sera ajouté à ton équipe automatiquement."
+                : "Cet athlète a déjà un profil chez toi mais n'a pas encore réclamé son compte. En l'invitant, il recevra un courriel avec un lien pour créer son compte et récupérer son profil."}
+            </p>
+            <p className="text-[13px] text-[#9CA3AF] mt-2">{inviteApres.email}</p>
+
+            {resultatInvite && (
+              <p className={`text-[13px] font-semibold mt-3 ${resultatInvite.ok ? "text-[#22C55E]" : "text-[#EF4444]"}`}>
+                {resultatInvite.ok ? "✓ " : ""}{resultatInvite.msg}
+              </p>
+            )}
+
+            <div className="flex flex-col gap-2 mt-5">
+              {!resultatInvite?.ok && (
+                <button
+                  type="button"
+                  onClick={envoyerInvitation}
+                  disabled={envoiInvite}
+                  className="w-full h-12 rounded-2xl bg-[#E63946] text-white text-[15px] font-semibold active:bg-[#D42B22] disabled:opacity-60"
+                >
+                  {envoiInvite ? "Envoi…" : "Envoyer par courriel"}
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={fermerInvitation}
+                className="w-full h-12 rounded-2xl border border-white/[0.12] text-[#c0c4cc] text-[15px] font-semibold active:bg-white/[0.06]"
+              >
+                {resultatInvite?.ok ? "Terminer" : "Passer"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 
@@ -1353,15 +1574,23 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
             onTap={() => setOpenGenderPicker(true)} required />
         </Card>
 
-        {/* CREATE-only email + orphan autocomplete (essential card) */}
-        {isCreate && (
-          <Card>
-            <InlineEditRow label="Courriel" value={d.email}
-              onSave={(v) => handleEmailChange(v)}
-              placeholder="athlete@email.com"
-              type="email" />
-          </Card>
-        )}
+        {/* Courriel — CRÉATION ET ÉDITION.
+            Il était create-only, ce qui rendait un athlète créé sans courriel
+            définitivement injoignable : aucune surface mobile ne permettait
+            d'en ajouter un plus tard, donc aucune invitation ne pouvait
+            jamais partir. Le web l'a toujours eu en édition
+            (app/coach/athletes/[id]/modifier/PageClient.tsx).
+
+            L'AUTOCOMPLÉTION RESTE CRÉATION SEULE : chercher un athlète
+            existant portant ce courriel n'a de sens que si on est en train
+            d'en créer un. En édition la fiche EXISTE — proposer de la « lier »
+            à une autre serait absurde, et `linkedToExisting` bloque la
+            soumission. On écrit donc directement dans le formulaire. */}
+        <Card>
+          <EmailEditRow label="Courriel de l'athlète" value={d.email}
+            onChange={isCreate ? handleEmailChange : (v) => updateIdentity("email", v)}
+            placeholder="athlete@email.com" />
+        </Card>
         {isCreate && showSuggestions && emailAutocomplete?.suggestions && emailAutocomplete.suggestions.length > 0 && (
           <div className="rounded-2xl bg-[#1A1D24] border border-[#E63946]/30 overflow-hidden">
             <div className="px-4 py-2 text-[11px] text-white/55 border-b border-white/[0.08]">
@@ -1369,12 +1598,57 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
             </div>
             {emailAutocomplete.suggestions.map((s) => (
               <button key={s.athleteId} type="button"
-                onClick={() => handleSelectSuggestion(s)}
+                onClick={() => { void triggerHaptic("Light"); handleSelectSuggestion(s); }}
                 className="w-full text-left px-4 py-3 active:bg-[#E63946]/10 border-b border-white/[0.06] last:border-b-0">
                 <p className="text-[14px] font-semibold text-white">{s.firstName} {s.lastName}</p>
                 <p className="text-[12px] text-white/55">{s.email}{s.sportName ? ` · ${s.sportName}` : ""}</p>
               </button>
             ))}
+          </div>
+        )}
+        {/* ANCRÉ AILLEURS — un athlète existe à ce courriel, mais il appartient
+            déjà à quelqu'un d'autre. On ne peut ni le nommer (le drapeau arrive
+            sans identité) ni le créer (ce serait le doublon). On propose donc la
+            seule chose honnête : lui demander s'il veut venir. */}
+        {isCreate && ancreAilleurs && (
+          <div className="p-4 rounded-2xl bg-[#1A1D24] border border-[#F59E0B]/30">
+            <p className="text-[13px] font-semibold text-white">
+              Un athlète utilise déjà ce courriel
+            </p>
+            <p className="text-[12px] text-white/60 mt-1 leading-relaxed">
+              Il fait partie d&apos;une autre équipe. Tu ne peux pas créer sa fiche —
+              elle existe déjà. Tu peux l&apos;inviter à rejoindre la tienne :
+              <span className="text-white/80"> c&apos;est lui qui décidera.</span>
+            </p>
+            {coach.teams.length > 0 ? (
+              <div className="mt-3 flex flex-col gap-2">
+                <PickerRow inline label=""
+                  value={equipeTransfert
+                    ? coach.teams.find((t) => t.id === equipeTransfert)?.name ?? "Équipe sélectionnée"
+                    : ""}
+                  placeholder="Choisir une équipe"
+                  onTap={() => {
+                    void triggerHaptic("Light");
+                    if (coach.teams.length === 1) setEquipeTransfert(coach.teams[0].id);
+                    else setOpenTransfertTeamPicker(true);
+                  }} />
+                <button type="button"
+                  disabled={!equipeTransfert || envoiAncre || resultatAncre?.ok}
+                  onClick={() => { void triggerHaptic("Light"); void envoyerTransfert(); }}
+                  className="h-11 rounded-2xl bg-[#E63946] text-[13px] font-bold text-white active:bg-[#D42B22] disabled:opacity-40">
+                  {envoiAncre ? "Envoi…" : "Inviter à rejoindre mon équipe"}
+                </button>
+              </div>
+            ) : (
+              <p className="text-[12px] text-[#F59E0B] mt-3">
+                Aucune équipe — crées-en une dans « Mes équipes ».
+              </p>
+            )}
+            {resultatAncre && (
+              <p className={`text-[12px] font-semibold mt-3 ${resultatAncre.ok ? "text-[#22C55E]" : "text-[#EF4444]"}`}>
+                {resultatAncre.ok ? "✓ " : ""}{resultatAncre.msg}
+              </p>
+            )}
           </div>
         )}
         {isCreate && linkedToExisting && (
@@ -1397,11 +1671,11 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
                     placeholder="Choisir une équipe"
                     onTap={() => coach.teams.length > 1 ? setOpenInviteTeamPicker(true) : null} />
                   <div className="flex gap-2">
-                    <button type="button" onClick={() => setLinkedToExisting(null)}
+                    <button type="button" onClick={() => { void triggerHaptic("Light"); setLinkedToExisting(null); }}
                       className="flex-1 h-11 rounded-2xl border border-white/[0.10] text-[13px] font-bold text-white/70 active:bg-white/[0.04]">
                       Délier
                     </button>
-                    <button type="button" onClick={handleSendInvitation}
+                    <button type="button" onClick={() => { void triggerHaptic("Light"); handleSendInvitation(); }}
                       disabled={!invitationTeamId || isSubmittingInvitation}
                       className={`flex-1 h-11 rounded-2xl text-[13px] font-bold ${
                         invitationTeamId && !isSubmittingInvitation
@@ -1503,7 +1777,7 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
               const sel = d.strongSubjects.includes(s);
               return (
                 <button key={s} type="button"
-                  onClick={() => updateAcademic("strongSubjects", toggleArrayItem(d.strongSubjects, s))}
+                  onClick={() => { void triggerHaptic("Light"); updateAcademic("strongSubjects", toggleArrayItem(d.strongSubjects, s)); }}
                   className={`px-3 py-1.5 rounded-xl text-[12px] font-bold transition-colors ${
                     sel ? "bg-[#E63946]/15 text-[#E63946] border border-[#E63946]/30"
                         : "bg-transparent border border-white/[0.10] text-white/65"
@@ -1519,7 +1793,7 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
               const sel = d.cegepRegions.includes(r);
               return (
                 <button key={r} type="button"
-                  onClick={() => updateAcademic("cegepRegions", toggleArrayItem(d.cegepRegions, r))}
+                  onClick={() => { void triggerHaptic("Light"); updateAcademic("cegepRegions", toggleArrayItem(d.cegepRegions, r)); }}
                   className={`px-3 py-1.5 rounded-xl text-[12px] font-bold transition-colors ${
                     sel ? "bg-[#E63946]/15 text-[#E63946] border border-[#E63946]/30"
                         : "bg-transparent border border-white/[0.10] text-white/65"
@@ -1649,18 +1923,6 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
         <AdvancedDivider />
 
         <Card>
-          {isCustomSport ? (
-            <InlineEditRow label="Position secondaire" value={s.secondaryPosition}
-              onSave={(v) => updateSports("secondaryPosition", v)}
-              placeholder="Saisis la position secondaire…" detailed />
-          ) : (
-            <PickerRow label="Position secondaire" value={s.secondaryPosition}
-              onTap={() => s.primarySport ? setOpenSecondaryPosPicker(true) : null}
-              placeholder="Aucune" detailed />
-          )}
-          <PickerRow label="Sport secondaire" value={s.secondarySport}
-            onTap={() => setOpenSecondarySportPicker(true)}
-            placeholder="Aucun" detailed />
           <ToggleRow label="Ouvert à devenir entraîneur CÉGEP"
             checked={s.openToCoaching}
             onToggle={() => updateSports("openToCoaching", !s.openToCoaching)}
@@ -1698,7 +1960,7 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
         <div className="flex items-center gap-1 bg-[#1A1D24] rounded-2xl p-1 w-fit">
           {(["simple", "detailed"] as const).map((opt) => (
             <button key={opt} type="button"
-              onClick={() => updateScouting("evalMode", opt)}
+              onClick={() => { void triggerHaptic("Light"); updateScouting("evalMode", opt); }}
               className={`px-4 py-2 rounded-xl text-[12px] font-bold uppercase tracking-[0.12em] transition-colors ${
                 sc.evalMode === opt ? "bg-[#E63946] text-white" : "text-white/55"
               }`}>
@@ -1732,7 +1994,7 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
               </p>
               <button
                 type="button"
-                onClick={() => updateScouting("evalMode", "detailed")}
+                onClick={() => { void triggerHaptic("Light"); updateScouting("evalMode", "detailed"); }}
                 className="mt-3 inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-[#E63946]/15 border border-[#E63946]/30 text-[#E63946] text-[12px] font-bold uppercase tracking-[0.12em] active:bg-[#E63946]/25"
               >
                 Modifier les critères
@@ -1823,8 +2085,7 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
                 <button
                   key={key}
                   type="button"
-                  onClick={() => {
-                    if (isDisabled) return;
+                  onClick={() => { void triggerHaptic("Light"); if (isDisabled) return;
                     if (isSelected) {
                       // Selected + detail-bearing → open popup to edit.
                       // Selected + non-detail → toggle off.
@@ -2102,7 +2363,7 @@ function DistinctionDetailSheet({
                     <button
                       key={s}
                       type="button"
-                      onClick={() => onChange(s)}
+                      onClick={() => { void triggerHaptic("Light"); onChange(s); }}
                       className={`px-3 py-1.5 rounded-xl text-[12px] font-bold transition-colors ${
                         sel
                           ? "bg-[#E63946]/15 text-[#E63946] border border-[#E63946]/30"
@@ -2148,7 +2409,7 @@ function DistinctionDetailSheet({
         <div className="px-4 pt-2 pb-2 shrink-0 border-t border-white/[0.06] flex gap-3">
           <button
             type="button"
-            onClick={onRemove}
+            onClick={() => { void triggerHaptic("Medium"); onRemove(); }}
             className="flex-1 h-12 rounded-2xl border border-white/[0.10] text-[13px] font-bold uppercase tracking-widest text-white/70 active:bg-white/[0.04]"
           >
             Retirer
@@ -2273,7 +2534,7 @@ function SummarySheet({
               <div className="flex flex-wrap gap-1.5">
                 {missingRequired.map((f) => (
                   <button key={f} type="button"
-                    onClick={() => onJumpToSlide(missingFieldToSlide(f))}
+                    onClick={() => { void triggerHaptic("Light"); onJumpToSlide(missingFieldToSlide(f)); }}
                     className="px-3 py-1.5 rounded-full text-[12px] font-bold bg-[#E63946]/15 text-[#E63946] border border-[#E63946]/30 active:bg-[#E63946]/25">
                     {f}
                   </button>
@@ -2354,7 +2615,7 @@ function CreateSummary({
       title: "Sport",
       rows: [
         { label: "Sport principal", value: form.sports.primarySport },
-        { label: "Position", value: `${form.sports.primaryPosition}${form.sports.secondaryPosition ? ` / ${form.sports.secondaryPosition}` : ""}` },
+        { label: "Position", value: form.sports.primaryPosition },
         { label: "Numéro", value: form.sports.jerseyNumber },
         { label: "Équipe", value: form.sports.currentTeam },
       ],
@@ -2425,6 +2686,8 @@ function CreateSummary({
             onChange={onTogglePartner} />
         </div>
       </div>
+
+
     </div>
   );
 }

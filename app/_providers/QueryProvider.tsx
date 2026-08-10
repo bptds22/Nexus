@@ -57,7 +57,21 @@ export function QueryProvider({ children }: { children: ReactNode }) {
   return (
     <PersistQueryClientProvider
       client={queryClient}
-      persistOptions={{ persister, maxAge: 30 * 60 * 1000 }}
+      persistOptions={{
+        persister,
+        maxAge: 30 * 60 * 1000,
+        // `currentUser` (userId + school_id + role) ne doit JAMAIS être réhydraté
+        // depuis sessionStorage : une valeur périmée (ex. school_id d'avant un
+        // changement de compte) survivrait à un reload et fausserait tout le
+        // scoping (édition « Ma page », RLS storage). On l'EXCLUT de la
+        // persistance → toujours re-fetch frais au boot. Les autres queries
+        // gardent la persistance (cache instantané en nav MPA). Le reste du
+        // filtre reproduit le défaut (persister uniquement les succès).
+        dehydrateOptions: {
+          shouldDehydrateQuery: (q) =>
+            q.state.status === "success" && q.queryKey?.[0] !== "currentUser",
+        },
+      }}
     >
       {children}
       {process.env.NODE_ENV !== "production" && (

@@ -10,6 +10,7 @@ import { useSubscription } from "@/lib/hooks/useSubscription";
 import UpgradeModal from "@/components/ui/UpgradeModal";
 import MorePanel from "./MorePanel";
 import { loadCoachTaskCounts } from "@/lib/coach/tasks";
+import { triggerHaptic } from "@/lib/haptics";
 
 /* ─────────────────────────────────────────────────────────────────
    MobileTabBar — bottom navigation bar for Capacitor mobile builds.
@@ -166,7 +167,12 @@ const ATHLETE_TABS: TabConfig[] = [
   { key: "dashboard", label: "Accueil", href: "/athlete/dashboard", icon: Icons.dashboard, activeMatch: "/athlete/dashboard" },
   { key: "parcours", label: "Parcours", href: "/athlete/mon-parcours", icon: Icons.flag, activeMatch: "/athlete/mon-parcours" },
   { key: "profil", label: "Profil", href: "/athlete/profil", icon: Icons.user, activeMatch: "/athlete/profil" },
-  { key: "visibilite", label: "Visibilité", href: "/athlete/visibilite", icon: Icons.eye, activeMatch: "/athlete/visibilite" },
+  // « Cégeps » remplace « Visibilité » : la recherche de cégep est le geste
+  // quotidien d'un athlète, la visibilité une consultation ponctuelle — celle-ci
+  // descend dans le panel Plus, elle n'est pas supprimée.
+  // L'onglet reste allumé sur une PAGE ÉCOLE (/college/*) : on y arrive depuis
+  // la recherche, on est toujours dans le même parcours.
+  { key: "cegeps", label: "Cégeps", href: "/athlete/recherche", icon: Icons.search, activeMatch: "/athlete/recherche|/college" },
 ];
 
 const TABS_BY_ROLE: Record<"recruteur" | "coach" | "athlete", TabConfig[]> = {
@@ -366,6 +372,12 @@ export default function MobileTabBar({ role }: MobileTabBarProps) {
   }
 
   function handleTabClick(e: React.MouseEvent, tab: TabConfig) {
+    /* Retour AVANT le test de verrou, et donc dans les deux cas : l'onglet
+       navigue, ou il ouvre la modale d'abonnement. Le doigt a touché quelque
+       chose, l'app doit le confirmer — un tap verrouillé qui ne répond pas se
+       lit comme un tap perdu. Impact léger : c'est de la navigation, pas une
+       action destructive. */
+    void triggerHaptic("Light");
     const locked = !meetsRequiredTier(tier, tab.requiredTier, isSchoolAdmin, tab.adminBypass);
     if (locked && tab.requiredTier) {
       e.preventDefault();
@@ -411,7 +423,7 @@ export default function MobileTabBar({ role }: MobileTabBarProps) {
             <Link
               key={tab.key}
               href={tab.href}
-              onClick={(e) => handleTabClick(e, tab)}
+              onClick={(e) => { void triggerHaptic("Light"); handleTabClick(e, tab); }}
               className={`relative flex-1 flex flex-col items-center justify-center gap-1.5 pt-2.5 pb-2 min-h-[64px] ${color} active:bg-white/[0.04] transition-colors`}
               aria-current={active ? "page" : undefined}
             >
@@ -439,7 +451,7 @@ export default function MobileTabBar({ role }: MobileTabBarProps) {
         {/* "Plus" — ouvre le bottom sheet */}
         <button
           type="button"
-          onClick={() => setMoreOpen(true)}
+          onClick={() => { void triggerHaptic("Light"); setMoreOpen(true); }}
           className={`relative flex-1 flex flex-col items-center justify-center gap-1.5 pt-2.5 pb-2 min-h-[64px] ${moreOpen ? "text-[#E63946]" : "text-[#8a8d96]"} active:bg-white/[0.04] transition-colors`}
           aria-label="Plus d'options"
           aria-expanded={moreOpen}

@@ -5,9 +5,11 @@
   "scripts": {
     "dev": "next dev",
     "dev:web": "cross-env NEXT_DIST_DIR=.next-web next dev -p 3000",
+    "prebuild": "node scripts/check-css-literals.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "check:css": "node scripts/check-css-literals.mjs",
     "build:mobile": "node scripts/build-mobile.mjs",
     "mobile:sync": "npm run build:mobile && npx cap sync",
     "mobile:android": "npm run mobile:sync && npx cap open android",
@@ -44,6 +46,7 @@
     "framer-motion": "^12.38.0",
     "html-to-image": "^1.11.13",
     "jszip": "^3.10.1",
+    "leaflet": "^1.9.4",
     "lucide-react": "^1.8.0",
     "next": "16.1.6",
     "react": "19.2.3",
@@ -54,6 +57,7 @@
   "devDependencies": {
     "@capacitor/assets": "^3.0.5",
     "@tailwindcss/postcss": "^4",
+    "@types/leaflet": "^1.9.21",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
@@ -64,6 +68,6 @@
     "eslint-config-next": "16.1.6",
     "playwright": "^1.60.0",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "5.9.3"
   }
 }

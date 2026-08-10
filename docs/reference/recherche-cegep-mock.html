@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="fr-CA">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=1280">
+<title>Nexus — Trouver ton cégep — mock v3 (filtres haut · liste · carte · aperçu)</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Anton&family=Bebas+Neue&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#111317;--card:#1A1D24;--card2:#20242D;--in:#171A20;--line:#2A2F3A;--txt:#EDEFF3;--mut:#8A909C;--nexus:#E63946;--ok:#22C55E;--blue:#3B82F6}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font-family:'Outfit';height:100vh;display:flex;flex-direction:column;overflow:hidden}
+/* ===== BARRE DE FILTRES (haut) ===== */
+.topbar{padding:14px 18px 12px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.brand{display:flex;flex-direction:column;margin-right:6px}
+.brand .k{font-family:'Bebas Neue';letter-spacing:.2em;font-size:9px;color:var(--nexus)}
+.brand b{font-family:'Anton';font-size:17px;text-transform:uppercase;letter-spacing:.02em}
+.search{display:flex;align-items:center;gap:8px;background:var(--in);border:1.5px solid var(--line);border-radius:11px;padding:9px 13px;color:var(--mut);font-size:13px;min-width:250px;flex:1;max-width:340px}
+.fbtn{position:relative;display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:700;color:#C6CBD4;background:var(--card);border:1.5px solid var(--line);padding:9px 13px;border-radius:11px;cursor:pointer;user-select:none}
+.fbtn.on{border-color:var(--nexus);color:#fff;background:#241A1E}
+.fbtn .n{background:var(--nexus);color:#fff;font-size:10px;font-weight:800;min-width:17px;height:17px;border-radius:99px;display:inline-flex;align-items:center;justify-content:center;padding:0 4px}
+.fbtn .car{font-size:9px;color:var(--mut)}
+.fire{border-color:#1E4230;color:var(--ok)}
+.fire.on{border-color:var(--ok);background:#12241A;color:#fff}
+/* dropdown demo */
+.dd{position:absolute;top:110%;left:0;z-index:60;background:#20242D;border:1px solid var(--line);border-radius:13px;padding:10px;min-width:230px;box-shadow:0 14px 40px #000A;display:none}
+.fbtn.open .dd{display:block}
+.dd .ds{background:var(--in);border:1px solid var(--line);border-radius:9px;padding:7px 10px;font-size:11.5px;color:var(--mut);margin-bottom:8px}
+.dd label{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:#C6CBD4;padding:6px 4px;border-radius:7px;cursor:pointer}
+.dd label:hover{background:#262B36}
+.dd input{accent-color:var(--nexus)}
+.dd .more{font-size:11px;color:var(--mut);padding:6px 4px}
+/* ===== LAYOUT 3 ZONES ===== */
+.main{flex:1;display:grid;grid-template-columns:330px 1fr;min-height:0}
+/* liste gauche */
+.list{border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+.count{padding:12px 16px 8px;font-size:12px;color:var(--mut)}
+.count b{color:#fff}
+.cards{flex:1;overflow-y:auto;padding:0 12px 16px;display:flex;flex-direction:column;gap:8px}
+.cards::-webkit-scrollbar{width:7px}.cards::-webkit-scrollbar-thumb{background:#3A404D;border-radius:99px}
+.lc{display:flex;align-items:center;gap:11px;background:var(--card);border:1.5px solid var(--line);border-radius:13px;padding:11px 12px;cursor:pointer;transition:.12s}
+.lc:hover{border-color:#3A404D}
+.lc.sel{border-color:var(--nexus)}
+.lc.fit{border-left:4px solid var(--ok)}
+.crest{width:38px;height:38px;border-radius:10px;background:#2A2F3A;color:#8A909C;display:flex;align-items:center;justify-content:center;font-family:'Anton';font-size:14px;flex:0 0 auto}
+.crest.rich{color:#fff}
+.lc b{font-size:13px;font-weight:700;display:block;line-height:1.2}
+.lc .m{font-size:10.5px;color:var(--mut);margin-top:2px}
+.lc .heart{margin-left:auto;width:30px;height:30px;border-radius:50%;border:1.5px solid var(--line);background:none;color:var(--mut);font-size:13px;cursor:pointer;flex:0 0 auto}
+.lc .heart.on{border-color:var(--nexus);color:var(--nexus)}
+.fitdot{font-size:9px;color:var(--ok)}
+/* carte */
+.maparea{position:relative;min-height:0;background:radial-gradient(120% 90% at 65% 35%,#1E2733 0%,#161B22 55%,#12151B 100%)}
+.mapgrid{position:absolute;inset:0;background:linear-gradient(#ffffff06 1px,transparent 1px) 0 0/100% 90px,linear-gradient(90deg,#ffffff06 1px,transparent 1px) 0 0/110px 100%}
+.maplabel{position:absolute;left:16px;bottom:12px;font-size:10.5px;color:#3B414D}
+.zoomnote{position:absolute;top:14px;left:50%;transform:translateX(-50%);font-size:11px;color:#8A909C;background:#111317CC;border:1px solid var(--line);padding:6px 14px;border-radius:99px}
+.pin{position:absolute;width:13px;height:13px;border-radius:50%;background:#5A616D;border:2.5px solid #fff;box-shadow:0 2px 8px #0008;cursor:pointer}
+.pin.rich{background:var(--nexus)}
+.pin.sel{transform:scale(1.5);z-index:5}
+/* ===== PANNEAU APERÇU (au clic) ===== */
+.preview{position:absolute;top:14px;right:14px;bottom:14px;width:330px;background:#16191FF5;backdrop-filter:blur(8px);border:1px solid var(--line);border-radius:18px;padding:18px;overflow-y:auto;box-shadow:0 16px 50px #000A;display:flex;flex-direction:column;gap:13px}
+.preview .close{position:absolute;top:12px;right:12px;width:28px;height:28px;border-radius:50%;border:1px solid var(--line);background:none;color:var(--mut);cursor:pointer}
+.ph{display:flex;align-items:center;gap:12px}
+.ph .crest{width:50px;height:50px;font-size:18px}
+.ph b{font-size:16px;font-weight:800;display:block;line-height:1.2}
+.ph .m{font-size:11.5px;color:var(--mut);margin-top:2px}
+.ptag{font-family:'Bebas Neue';letter-spacing:.14em;font-size:10px;color:var(--mut);margin-bottom:-6px}
+.badges{display:flex;gap:5px;flex-wrap:wrap}
+.b{font-family:'Bebas Neue';letter-spacing:.08em;font-size:10.5px;padding:3px 9px;border-radius:99px;border:1px solid var(--line);color:#C6CBD4}
+.b.need{color:var(--ok);border-color:var(--ok)}
+.why{display:flex;gap:5px;flex-wrap:wrap}
+.wchip{font-size:10.5px;font-weight:700;color:var(--ok);background:#12241A;border:1px solid #1E4230;padding:3px 9px;border-radius:99px}
+.pstat{display:flex;gap:8px}
+.ps{flex:1;background:var(--card);border:1px solid var(--line);border-radius:11px;padding:9px;text-align:center}
+.ps .v{font-family:'Anton';font-size:16px;color:var(--nexus)}
+.ps .l{font-family:'Bebas Neue';letter-spacing:.1em;font-size:8px;color:var(--mut)}
+.pcta{margin-top:auto;display:flex;flex-direction:column;gap:8px}
+.btn{width:100%;border-radius:12px;padding:13px;font-family:'Outfit';font-weight:800;font-size:13.5px;cursor:pointer;border:1.5px solid transparent}
+.btn.page{background:var(--nexus);color:#fff}
+.btn.nopage{background:none;border-color:var(--line);color:var(--mut);cursor:default}
+.btn.target{background:none;border-color:var(--nexus);color:var(--nexus)}
+.note{font-size:10px;color:#5A616D;line-height:1.5}
+</style>
+</head>
+<body>
+
+<!-- ===== FILTRES EN HAUT — compacts, tout en dropdown ===== -->
+<div class="topbar">
+  <div class="brand"><span class="k">SOIS LE NEX</span><b>Trouve ton cégep</b></div>
+  <div class="search">🔍 Collège, ville, programme… <span style="margin-left:auto;font-size:10px;color:#5A616D">match exact = zoom carte</span></div>
+  <span class="fbtn open">Sport <span class="n">1</span><span class="car">▾</span>
+    <span class="dd">
+      <label><input type="checkbox" checked> Football</label>
+      <label><input type="checkbox"> Basketball</label>
+      <label><input type="checkbox"> Volleyball</label>
+      <label><input type="checkbox"> Soccer</label>
+      <span class="more">+ 13 sports · toutes divisions · M et F inclus</span>
+    </span>
+  </span>
+  <span class="fbtn">Programme <span class="n">1</span><span class="car">▾</span>
+    <span class="dd"><span class="ds">🔍 227 programmes…</span>
+      <label><input type="checkbox" checked> Sciences de la nature</label>
+      <label><input type="checkbox"> Sciences humaines</label>
+      <label><input type="checkbox"> Soins infirmiers</label>
+    </span>
+  </span>
+  <span class="fbtn">Région <span class="n">1</span><span class="car">▾</span></span>
+  <span class="fbtn">Langue <span class="car">▾</span></span>
+  <span class="fbtn">Type <span class="car">▾</span></span>
+  <span class="fbtn fire on">🔥 Pour moi</span>
+</div>
+
+<div class="main">
+
+<!-- ===== LISTE GAUCHE — minimale ===== -->
+<div class="list">
+  <div class="count"><b>23 collèges</b> · fits d'abord</div>
+  <div class="cards">
+    <div class="lc fit sel">
+      <div class="crest rich" style="background:#A6192E">AG</div>
+      <div><b>Collège André-Grasset</b><div class="m">Montréal · Privé · FR <span class="fitdot">● FIT</span></div></div>
+      <button class="heart on">♥</button>
+    </div>
+    <div class="lc fit">
+      <div class="crest rich" style="background:#14417B">VM</div>
+      <div><b>Cégep du Vieux Montréal</b><div class="m">Montréal · Public · FR <span class="fitdot">● FIT</span></div></div>
+      <button class="heart">♥</button>
+    </div>
+    <div class="lc">
+      <div class="crest">A</div>
+      <div><b>Collège Ahuntsic</b><div class="m">Montréal · Public · FR</div></div>
+      <button class="heart">♥</button>
+    </div>
+    <div class="lc">
+      <div class="crest">BB</div>
+      <div><b>Collège de Bois-de-Boulogne</b><div class="m">Montréal · Public · FR</div></div>
+      <button class="heart">♥</button>
+    </div>
+    <div class="lc">
+      <div class="crest">GA</div>
+      <div><b>Cégep Garneau</b><div class="m">Québec · Public · FR</div></div>
+      <button class="heart">♥</button>
+    </div>
+    <div class="lc">
+      <div class="crest">CC</div>
+      <div><b>Champlain St-Lawrence</b><div class="m">Québec · Public · ANG</div></div>
+      <button class="heart">♥</button>
+    </div>
+    <div class="lc">
+      <div class="crest">M</div>
+      <div><b>Collège de Maisonneuve</b><div class="m">Montréal · Public · FR</div></div>
+      <button class="heart">♥</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== CARTE CENTRÉE + APERÇU AU CLIC ===== -->
+<div class="maparea">
+  <div class="mapgrid"></div>
+  <div class="zoomnote">🔍 « grasset » tapé → la carte a zoomé sur le match</div>
+  <div class="pin rich sel" style="left:38%;top:44%"></div>
+  <div class="pin rich" style="left:33%;top:56%"></div>
+  <div class="pin" style="left:30%;top:38%"></div>
+  <div class="pin" style="left:26%;top:50%"></div>
+  <div class="pin" style="left:44%;top:62%"></div>
+  <div class="pin" style="left:22%;top:66%"></div>
+  <div class="maplabel">🗺 Google/OSM au build · pin rouge = page Nexus · gris = fiche · clic pin ↔ carte de la liste</div>
+
+  <!-- Panneau aperçu (ouvert au clic sur une carte/pin) -->
+  <div class="preview">
+    <button class="close">✕</button>
+    <div class="ph">
+      <div class="crest rich" style="background:#A6192E">AG</div>
+      <div><b>Collège André-Grasset</b><div class="m">Montréal (Ahuntsic) · Privé · Francophone</div></div>
+    </div>
+    <div class="why"><span class="wchip">✓ QB en demande urgente</span><span class="wchip">✓ Sc. nature offert</span><span class="wchip">✓ à 12 km</span></div>
+    <div class="ptag">ÉQUIPES</div>
+    <div class="badges">
+      <span class="b">FOOTBALL D1 M</span><span class="b need">🔥 QB</span><span class="b">FLAG D2·D3 F·M</span><span class="b">SOCCER INT. M·F</span><span class="b">ULTIMATE M</span>
+    </div>
+    <div class="ptag">EN BREF</div>
+    <div class="pstat">
+      <div class="ps"><div class="v">5</div><div class="l">SPORTS RSEQ</div></div>
+      <div class="ps"><div class="v">7</div><div class="l">PROGRAMMES</div></div>
+      <div class="ps"><div class="v">12 km</div><div class="l">DE CHEZ TOI</div></div>
+    </div>
+    <div class="pcta">
+      <button class="btn page">Accéder à la page →</button>
+      <button class="btn target">♥ Ajouter à mes cibles</button>
+      <span class="note">Si le collège n'a pas de page Nexus : le bouton devient « Page à venir — cible-le, on leur fait signe 😉 » (désactivé) et le ♥ reste le geste principal.</span>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+document.querySelectorAll('.fbtn').forEach(f=>f.onclick=e=>{if(e.target.tagName==='INPUT'||e.target.tagName==='LABEL')return;f.classList.toggle('open')});
+document.querySelectorAll('.heart').forEach(h=>h.onclick=e=>{e.stopPropagation();h.classList.toggle('on')});
+document.querySelectorAll('.lc').forEach(c=>c.onclick=()=>{document.querySelectorAll('.lc').forEach(x=>x.classList.remove('sel'));c.classList.add('sel')});
+document.querySelector('.preview .close').onclick=()=>document.querySelector('.preview').style.display='none';
+</script>
+</body>
+</html>
