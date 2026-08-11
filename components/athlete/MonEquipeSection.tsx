@@ -30,7 +30,7 @@ import JoinCodeField from "@/components/athlete/JoinCodeField";
 import TransferConfirmDialog from "@/components/athlete/TransferConfirmDialog";
 import { applyTeamAttachment } from "@/lib/queries/athlete/teamAttachment";
 import { type TransferConfirmation } from "@/lib/queries/shared/attachmentErrors";
-import { taRows } from "@/lib/queries/shared/embeds";
+import { taRows, headCoachName } from "@/lib/queries/shared/embeds";
 import { teamDetails } from "@/lib/config/teamLabel";
 
 interface CurrentAnchor {
@@ -60,6 +60,11 @@ interface TeamOption {
   division?: string | null;
   gender?: string | null;
   league?: string | null;
+  /** Coach-chef (team_coaches.role = 'head_coach'). OPTIONNEL pour la même
+   *  raison que les champs ci-dessus : une équipe issue d'un CODE ne l'a pas
+   *  (resolve_team_join_token ne le retourne pas). Absent ou null ⇒ aucune
+   *  ligne « Coach : » n'est rendue. */
+  headCoachName?: string | null;
 }
 
 const label = "block text-[12px] font-bold tracking-[0.25em] uppercase text-[#6B7280] mb-1.5";
@@ -162,7 +167,7 @@ export default function MonEquipeSection({ onToast }: { onToast?: (m: string) =>
       setTeamsLoading(true);
       const { data } = await createClient()
         .from("teams")
-        .select("id, name, season, age_group, division, gender, league, sports!sport_id(nom)")
+        .select("id, name, season, age_group, division, gender, league, sports!sport_id(nom), team_coaches(role, users!coach_id(first_name, last_name))")
         .eq("school_id", schoolId)
         .eq("is_active", true)
         .order("season", { ascending: false })
@@ -180,6 +185,7 @@ export default function MonEquipeSection({ onToast }: { onToast?: (m: string) =>
             division: (t.division as string) ?? null,
             gender: (t.gender as string) ?? null,
             league: (t.league as string) ?? null,
+            headCoachName: headCoachName(t.team_coaches as Parameters<typeof headCoachName>[0]),
           };
         }),
       );
@@ -501,6 +507,11 @@ export default function MonEquipeSection({ onToast }: { onToast?: (m: string) =>
                     {teamDetails(t)}
                     {courante ? " · équipe actuelle" : ""}
                   </p>
+                  {/* Coach-chef — RENDU CONDITIONNEL : rien n'est produit si aucun
+                      head_coach n'est déclaré. Pas de « Coach : » vide. */}
+                  {t.headCoachName && (
+                    <p className="truncate text-[12px] text-white/40">Coach : {t.headCoachName}</p>
+                  )}
                 </button>
               );
             }}

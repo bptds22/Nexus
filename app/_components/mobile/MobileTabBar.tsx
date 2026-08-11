@@ -135,9 +135,9 @@ const Icons = {
       <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" />
     </svg>
   ),
-  /* Mortier — repris à l'identique de MorePanel.Icons.cegep : « Trouve ton
-     cégep » remonte du panel vers la barre, l'icône doit suivre pour que le
-     déplacement se reconnaisse. */
+  /* Mortier — repris à l'identique de MorePanel.Icons.cegep : l'onglet
+     « Cégeps » remonte du panel vers la barre, l'icône doit suivre pour que
+     le déplacement se reconnaisse. */
   cegep: (
     <svg {...SVG_PROPS}>
       <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
@@ -176,14 +176,16 @@ const ATHLETE_TABS: TabConfig[] = [
   { key: "dashboard", label: "Accueil", href: "/athlete/dashboard", icon: Icons.dashboard, activeMatch: "/athlete/dashboard" },
   { key: "parcours", label: "Mon parcours", href: "/athlete/mon-parcours", icon: Icons.flag, activeMatch: "/athlete/mon-parcours" },
   { key: "messages", label: "Messages", href: "/athlete/messages", icon: Icons.envelope, activeMatch: "/athlete/messages" },
-  /* « TROUVE TON CÉGEP » PREND LE 4e SLOT, « Mon profil » descend dans le
-     panel Plus (échange, pas ajout — la barre reste à CINQ slots, le 5e étant
-     le bouton Plus). C'est la destination de valeur du portail athlète : la
-     laisser à deux taps sous « Plus » l'enterrait.
+  /* « CÉGEPS » PREND LE 4e SLOT, « Mon profil » descend dans le panel Plus
+     (échange, pas ajout — la barre reste à CINQ slots, le 5e étant le bouton
+     Plus). C'est la destination de valeur du portail athlète : la laisser à
+     deux taps sous « Plus » l'enterrait.
+     ⚠ Libellé court « Cégeps », pas « Trouve ton cégep » : un onglet doit
+     tenir sur UNE ligne sous une icône de 26px.
      ⚠ L'entrée `recherche-cegep` a été RETIRÉE de MorePanel dans le même
      geste. Toute remise en onglet/panel doit vérifier l'autre fichier :
      l'entrée a déjà fait l'aller-retour une fois. */
-  { key: "recherche-cegep", label: "Trouve ton cégep", href: "/athlete/recherche", icon: Icons.cegep, activeMatch: "/athlete/recherche" },
+  { key: "recherche-cegep", label: "Cégeps", href: "/athlete/recherche", icon: Icons.cegep, activeMatch: "/athlete/recherche" },
 ];
 
 const TABS_BY_ROLE: Record<"recruteur" | "coach" | "athlete", TabConfig[]> = {

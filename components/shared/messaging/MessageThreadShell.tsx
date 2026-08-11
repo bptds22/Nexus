@@ -255,6 +255,21 @@ export function MessageThreadShell<M>({
           ça recrée un gap au-dessus du clavier. */}
       <div
         className="sticky bottom-0 z-20 bg-[#111317]/95 backdrop-blur-md border-t border-white/[0.06]"
+          /* ⚠ `bottom: 0` EN LIGNE, ET C'EST LE POINT — ne pas retirer.
+             Sans lui, DEUX compensations clavier s'additionnaient :
+               1. la racine (ci-dessus) pose paddingBottom = kbdH, ce qui
+                  rétrécit la colonne flex — le vrai geste, celui qui borne
+                  aussi le conteneur de scroll ;
+               2. la classe `bottom-0` fait matcher ce composer par la règle
+                  globale `html.is-capacitor .sticky.bottom-0` de globals.css,
+                  qui lui ajoute `bottom: var(--kbd-h)`.
+             Total 2 × kbdH → le composer se posait au MILIEU de l'écran, et
+             comme `position: sticky` ne retire PAS l'élément du flux, la liste
+             continuait de se rendre SOUS lui (bulles et séparateur de date
+             sous le composer). Un style en ligne bat la feuille de style, donc
+             il neutralise (2) et laisse (1) seul propriétaire de la géométrie
+             — même principe que SearchSheet, qui ne casse jamais pour ça. */
+          style={{ bottom: 0 }}
       >
         <div className="px-4 py-2 flex items-end gap-2">
           <div className="flex-1 bg-white/[0.06] rounded-2xl px-3 py-2 min-h-[40px] flex items-center">

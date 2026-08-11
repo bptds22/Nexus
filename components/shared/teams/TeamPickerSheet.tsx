@@ -26,6 +26,7 @@ import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { createClient } from "@/lib/supabase/client";
 import { formatTeamLabel } from "@/lib/teams/teamLabel";
+import { headCoachName } from "@/lib/queries/shared/embeds";
 import { triggerHaptic } from "@/lib/haptics";
 import { orgNounCe, type SchoolType } from "@/lib/utils/orgLabel";
 import { useSheetKeyboardGeometry } from "@/lib/hooks/useSheetKeyboardGeometry";
@@ -46,6 +47,9 @@ export interface TeamPickerItem {
   /** Nombre de coachs déjà sur l'équipe. 0 ⇒ équipe orpheline
    *  (scrapée, jamais revendiquée) → le 1er arrivant devient head_coach. */
   coachCount: number;
+  /** Nom du coach-chef (role = 'head_coach'), ou null si aucun n'est déclaré.
+   *  null ⇒ NE PAS rendre de ligne « Coach : » — pas de libellé vide. */
+  headCoachName: string | null;
   /** L'une des équipes DU coach courant (passée via excludeTeamIds). On ne
    *  l'exclut plus (bug #3 : la seule équipe de l'école était masquée) — on
    *  l'affiche marquée « Ton équipe », non rejoignable. */
@@ -124,7 +128,7 @@ export function TeamPickerSheet({
       });
       let q = supabase
         .from("teams")
-        .select("id, name, age_group, division, gender, season, sport_id, sports!sport_id(nom), team_athletes(id), team_coaches(coach_id)")
+        .select("id, name, age_group, division, gender, season, sport_id, sports!sport_id(nom), team_athletes(id), team_coaches(coach_id, role, users!coach_id(first_name, last_name))")
         .eq("school_id", schoolId)
         .eq("is_active", true)
         .order("name", { ascending: true });
@@ -149,6 +153,7 @@ export function TeamPickerSheet({
             gender: (r.gender as string | null) ?? null,
             athleteCount: ((r.team_athletes as unknown[]) || []).length,
             coachCount: ((r.team_coaches as unknown[]) || []).length,
+            headCoachName: headCoachName(r.team_coaches as Parameters<typeof headCoachName>[0]),
             isMine: exclude.has(r.id as string),
           };
         });
@@ -291,6 +296,15 @@ export function TeamPickerSheet({
                         {formatTeamLabel(t.sport, t.ageGroup, t.division, t.gender, t.name)}
                         {t.athleteCount > 0 ? ` · ${t.athleteCount} athlète${t.athleteCount > 1 ? "s" : ""}` : ""}
                       </p>
+                      {/* Coach-chef, RENDU CONDITIONNEL : aucune ligne n'est produite quand
+                          aucun head_coach n'est déclaré (headCoachName renvoie null) — pas
+                          de « Coach : » vide. La table team_coaches est très peu remplie,
+                          donc c'est le cas majoritaire aujourd'hui. */}
+                      {t.headCoachName && (
+                        <p className="text-[12px] text-white/45 truncate mt-0.5">
+                          Coach : {t.headCoachName}
+                        </p>
+                      )}
                       {/* Équipe orpheline (scrapée, jamais revendiquée) : le 1er
                           arrivant en devient head_coach — on l'annonce. */}
                       {!t.isMine && t.coachCount === 0 && (
