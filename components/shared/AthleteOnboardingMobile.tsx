@@ -50,6 +50,11 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { loadAthleteRaw, mapToRecruiterView } from "@/app/coach/athletes/_data/loadAthleteFromSupabase";
 import type { AthleteProfileRecruiterView } from "@/lib/types/models";
 import { triggerHaptic } from "@/lib/haptics";
+import { applyTeamAttachment, readStashedJoinCode, JOIN_CODE_STORAGE_KEY, type ResolvedJoinTeam } from "@/lib/queries/athlete/teamAttachment";
+import { teamDetails } from "@/lib/config/teamLabel";
+import { type TransferConfirmation } from "@/lib/queries/shared/attachmentErrors";
+import JoinCodeField from "@/components/athlete/JoinCodeField";
+import TransferConfirmDialog from "@/components/athlete/TransferConfirmDialog";
 
 /* ── Constantes (alignées sur desktop) ──────────────────────── */
 
@@ -181,6 +186,104 @@ export function AthleteOnboardingMobile() {
   const [userClearedCoach, setUserClearedCoach] = useState(false);
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
   const [selectedTeamName, setSelectedTeamName] = useState<string>("");
+
+  // ── Rattachement d'équipe (transfer portal, phase 2 — port 1:1 du web) ────
+  // `joinCodeUsed` n'est posé qu'après résolution RÉUSSIE : il part alors dans
+  // apply_team_attachment, qui consomme le quota du code. `joinCodePrefill` ne
+  // sert qu'à pré-remplir le champ avec le code rapporté de /join — sans cette
+  // distinction, un code mémorisé partirait avec l'équipe choisie au sheet et
+  // ferait lever JOIN_CODE_TEAM_MISMATCH. `transferAsk` n'est JAMAIS posé par
+  // l'UI : uniquement quand le serveur lève TRANSFER_REQUIRES_CONFIRMATION.
+  const [joinCodeUsed, setJoinCodeUsed] = useState<string | null>(null);
+  const [joinCodePrefill, setJoinCodePrefill] = useState("");
+  const [transferAsk, setTransferAsk] = useState<TransferConfirmation | null>(null);
+  useEffect(() => { setJoinCodePrefill(readStashedJoinCode()); }, []);
+
+  // ── CODE-FIRST (P1, port du web) ──────────────────────────────────────────
+  // Le code PILOTE le formulaire au lieu de le subir. Le bug corrigé : choisir
+  // école X + Football à la main, puis entrer un code d'une équipe de Basketball
+  // à l'école Y — la RPC ancrait chez Y pendant que le profil disait Football
+  // chez X. Rien d'incohérent pour la base, tout l'était pour un recruteur.
+  const [codeLock, setCodeLock] = useState<{
+    code: string; teamId: string; teamName: string;
+    schoolId: string; schoolName: string; schoolType: string;
+    sportName: string; details: string;
+  } | null>(null);
+
+  /** « Changer » : délie le code et déverrouille tout. On NE remet PAS l'école
+   *  et le sport à zéro — l'athlète vient de les voir, ils restent un point de
+   *  départ raisonnable ; seul le verrou saute.
+   *
+   *  Déclaré AVANT applyCodeLock, qui l'appelle : évite la référence à une
+   *  const déclarée plus bas. */
+  const releaseCodeLock = useCallback(() => {
+    setCodeLock(null);
+    setJoinCodeUsed(null);
+    setSelectedTeamId(null);
+    setSelectedTeamName("");
+  }, []);
+
+  /** Adopte un code résolu : dérive l'organisation, le contexte et le sport.
+   *
+   *  LES DEUX CONTEXTES NE REMPLISSENT PAS LES MÊMES CHAMPS. Le scolaire pose
+   *  selectedSchoolId (+ coach), le civil pose selectedClubId. Laisser l'autre
+   *  paire renseignée produirait un athlète à la fois scolaire et civil : on
+   *  efface donc explicitement la branche non retenue.
+   *
+   *  Trois écarts avec le web, propres au fichier mobile :
+   *   • userClearedCoach — remis à false, sinon l'auto-select du head_coach
+   *     resterait inhibé par un « continuer sans coach » d'un contexte
+   *     précédent ;
+   *   • primaryPositionId — vidé en même temps que primaryPosition, le mobile
+   *     porte l'id ET l'abréviation ;
+   *   • userContext est NON-NULL ici (défaut "scolaire"), pas besoin de garde.
+   *
+   *  users.context PERSISTÉ n'est PAS écrit ici : _apply_team_attachment_core
+   *  l'aligne côté serveur à chaque rattachement. On ne touche que l'état local
+   *  qui pilote l'affichage et l'ancrage. */
+  const applyCodeLock = useCallback((v: { code: string; team: ResolvedJoinTeam } | null) => {
+    const t = v?.team;
+    if (!v || !t?.teamId || !t.schoolId) { releaseCodeLock(); return; }
+
+    const isCivil = t.schoolType === "LIGUE_CIVILE";
+    setCodeLock({
+      code: v.code,
+      teamId: t.teamId,
+      teamName: t.teamName ?? "",
+      schoolId: t.schoolId,
+      schoolName: t.schoolName ?? "",
+      schoolType: t.schoolType ?? "",
+      sportName: t.sportName ?? "",
+      details: teamDetails({
+        sport: t.sportName, age_group: t.ageGroup, division: t.division,
+        gender: t.gender, season: t.season, league: t.league,
+      }),
+    });
+    setJoinCodeUsed(v.code);
+    setSelectedTeamId(t.teamId);
+    setSelectedTeamName(t.teamName ?? "");
+    setUserContext(isCivil ? "ligue_civile" : "scolaire");
+
+    if (isCivil) {
+      setSelectedClubId(t.schoolId);
+      setSelectedClubName(t.schoolName ?? "");
+      setSelectedSchoolId(null);
+      setSelectedSchoolName("");
+      setSelectedCoachId(null);      // le coach est une notion scolaire ici
+    } else {
+      setSelectedSchoolId(t.schoolId);
+      setSelectedSchoolName(t.schoolName ?? "");
+      setSelectedClubId(null);
+      setSelectedClubName("");
+    }
+    setUserClearedCoach(false);       // l'auto-select peut reproposer
+    if (t.sportName) {
+      setPrimarySport(t.sportName);
+      setPrimaryPosition("");
+      setPrimaryPositionId(null);
+    }
+    triggerHaptic("Medium");
+  }, [releaseCodeLock]);
 
   // Carte (écran 3)
   const [primaryPosition, setPrimaryPosition] = useState<string>(""); // abreviation
@@ -796,6 +899,25 @@ export function AthleteOnboardingMobile() {
       return;
     }
 
+    // ── Garde-fou de cohérence code ↔ profil ────────────────────────────────
+    // Dernier rempart, côté données et non côté UI : tant qu'un code est actif,
+    // le sport ET l'équipe DOIVENT être ceux de ce code. Les verrous visuels
+    // rendent l'écart improbable ; ceci le rend impossible — y compris si un
+    // effet, un resume d'onboarding ou un state périmé repose primarySport dans
+    // le dos de l'utilisateur.
+    if (codeLock && (primarySport !== codeLock.sportName || selectedTeamId !== codeLock.teamId)) {
+      console.error("[OnboardingMobile] incohérence code/profil", {
+        codeSport: codeLock.sportName, profilSport: primarySport,
+        codeTeam: codeLock.teamId, profilTeam: selectedTeamId,
+      });
+      toast.error({
+        message: "Ton code ne correspond plus",
+        detail: `Ton code pointe ${codeLock.teamName} (${codeLock.sportName}). Utilise « Changer » à la première étape pour choisir une autre équipe.`,
+      });
+      setSaving(false);
+      return;
+    }
+
     // Re-lire raw_user_meta_data — preuve des consents parentaux capturés
     // au signup mobile (SignupMobile iter 2a) + PII parent stashée par
     // buildConsentMetadata(). ⚠️ Loi 25 : seule source autoritaire pour
@@ -926,16 +1048,49 @@ export function AthleteOnboardingMobile() {
       athleteIdForTeam = inserted?.id ?? null;
     }
 
-    // team_athletes junction (scolaire OU civil)
+    // ── Rattachement d'équipe — via apply_team_attachment, plus d'INSERT ────
+    // L'ancien code faisait `insert(team_athletes)` et avalait le 23505. Tant
+    // que l'unicité était (athlete_id, sport_id), ce 23505 signifiait « déjà
+    // dans CETTE équipe ». Depuis l'ancrage unique strict il signifie aussi
+    // « déjà ancré AILLEURS » — et l'avaler faisait terminer l'onboarding sur
+    // l'écran WOW alors que l'athlète n'avait rejoint personne.
     if (selectedTeamId && athleteIdForTeam) {
-      const { error: taErr } = await supabase.from("team_athletes").insert({
-        team_id: selectedTeamId,
-        athlete_id: athleteIdForTeam,
+      const outcome = await applyTeamAttachment(supabase, {
+        teamId: selectedTeamId,
+        joinCode: joinCodeUsed,
+        confirmTransfer: false,        // c'est le SERVEUR qui décide
       });
-      if (taErr && taErr.code !== "23505") {
-        console.error("[OnboardingMobile] team_athletes:", taErr);
+
+      if (outcome.status === "needs_confirmation") {
+        // Le profil est déjà écrit, seul le rattachement attend. La modale
+        // reprend la main et rappellera finishOnboarding.
+        setTransferAsk(outcome.confirmation);
+        setSaving(false);
+        return;
+      }
+      if (outcome.status === "error") {
+        // Plus rien n'est avalé : on montre le message et on NE navigue PAS.
+        toast.error({ message: "Rattachement impossible", detail: outcome.message });
+        setSaving(false);
+        return;
       }
     }
+
+    await finishOnboarding(supabase, athleteIdForTeam);
+  }, [
+    canSubmit, userId, saving, primarySport, primaryPosition, primaryPositionId,
+    userContext, selectedClubId, selectedSchoolId, selectedCoachId,
+    firstName, lastName, photo, email, phone, gradYear, jerseyNumber,
+    existingAthleteId, selectedTeamId, joinCodeUsed, codeLock, router, toast, queryClient,
+  ]);
+
+  /** Queue de fin d'onboarding, commune au chemin nominal et à la reprise
+   *  après confirmation de transfert. Ne touche plus au rattachement. */
+  const finishOnboarding = useCallback(async (
+    supabase: ReturnType<typeof createClient>,
+    athleteIdForTeam: string | null,
+  ) => {
+    if (!userId) return;
 
     // Profile completion
     const { data: freshAthlete } = await supabase
@@ -975,6 +1130,9 @@ export function AthleteOnboardingMobile() {
     // dans la MÊME session et déclenche registerPush() (sinon : seulement au prochain
     // cold start). Miroir de app/athlete/onboarding/page.tsx:1032.
     await queryClient.invalidateQueries({ queryKey: ["currentUser"] });
+    // Le code rapporté de /join a servi : on le retire pour qu'un onboarding
+    // ultérieur dans le même onglet ne le repropose pas.
+    try { sessionStorage.removeItem(JOIN_CODE_STORAGE_KEY); } catch { /* privé / quota */ }
     triggerHaptic("Medium");
 
     // Iter 7.50-b3 — au lieu de redirect immédiat, on bascule en phase
@@ -1000,12 +1158,37 @@ export function AthleteOnboardingMobile() {
     // Fallback : pas d'athlète à montrer, on redirect directement.
     setSaving(false);
     router.replace("/athlete/dashboard");
-  }, [
-    canSubmit, userId, saving, primarySport, primaryPosition, primaryPositionId,
-    userContext, selectedClubId, selectedSchoolId, selectedCoachId,
-    firstName, lastName, photo, email, phone, gradYear, jerseyNumber,
-    existingAthleteId, selectedTeamId, router, toast, queryClient,
-  ]);
+  }, [userId, router, queryClient, userContext]);
+
+  /** « Confirmer le transfert » → on refait l'appel avec le drapeau, puis on
+   *  termine l'onboarding (WOW compris). */
+  const confirmTransferAndFinish = useCallback(async () => {
+    if (!selectedTeamId) return;
+    setSaving(true);
+    const supabase = createClient();
+    const outcome = await applyTeamAttachment(supabase, {
+      teamId: selectedTeamId,
+      joinCode: joinCodeUsed,
+      confirmTransfer: true,
+    });
+    if (outcome.status === "error") {
+      setTransferAsk(null);
+      toast.error({ message: "Transfert impossible", detail: outcome.message });
+      setSaving(false);
+      return;
+    }
+    triggerHaptic("Medium");
+    setTransferAsk(null);
+    await finishOnboarding(supabase, existingAthleteId);
+  }, [selectedTeamId, joinCodeUsed, existingAthleteId, toast, finishOnboarding]);
+
+  /** « Garder mon équipe actuelle » → l'onboarding se termine sans changer
+   *  l'ancrage. Le profil est déjà écrit, rien n'est perdu. */
+  const keepCurrentTeamAndFinish = useCallback(async () => {
+    setTransferAsk(null);
+    setSaving(true);
+    await finishOnboarding(createClient(), existingAthleteId);
+  }, [existingAthleteId, finishOnboarding]);
 
   /* ── Handlers nav ────────────────────────────────────────── */
 
@@ -1117,6 +1300,17 @@ export function AthleteOnboardingMobile() {
         />
       )}
 
+      {/* Ouvert UNIQUEMENT sur TRANSFER_REQUIRES_CONFIRMATION renvoyé par la
+          base — l'UI ne décide jamais seule qu'il y a transfert. */}
+      {transferAsk && (
+        <TransferConfirmDialog
+          confirmation={transferAsk}
+          busy={saving}
+          onConfirm={confirmTransferAndFinish}
+          onCancel={keepCurrentTeamAndFinish}
+        />
+      )}
+
       {/* Header sticky : back + progress + title */}
       <div
         className="sticky top-0 z-30 bg-[#111317]/95 backdrop-blur-md border-b border-white/[0.06]"
@@ -1215,6 +1409,13 @@ export function AthleteOnboardingMobile() {
             clubSelectedCivil={!!selectedClubId}
             selectedTeamNameCivil={userContext === "ligue_civile" ? selectedTeamName : ""}
             onOpenTeam={() => setTeamSheetOpen(true)}
+            joinCodePrefill={joinCodePrefill}
+            // Le champ code remonte l'ÉQUIPE RÉSOLUE COMPLÈTE : la dérivation
+            // (organisation, contexte, sport) est faite par applyCodeLock, pas
+            // ici — c'est le même corps que le web.
+            onJoinCodeResolved={applyCodeLock}
+            codeLock={codeLock}
+            onReleaseCode={releaseCodeLock}
           />
         )}
 
@@ -1595,6 +1796,21 @@ interface Step1Props {
   clubSelectedCivil: boolean;
   selectedTeamNameCivil: string;
   onOpenTeam: () => void;
+  // Transfer portal — CODE-FIRST. Le champ vit EN TÊTE de l'écran, présenté
+  // comme voie rapide : le code dérive l'organisation, le contexte et le sport
+  // au lieu d'arriver après coup et de les contredire.
+  joinCodePrefill: string;
+  /** Remonte l'équipe résolue COMPLÈTE — la dérivation est faite par le parent
+   *  (applyCodeLock), pas par cet écran. */
+  onJoinCodeResolved: (v: { code: string; team: ResolvedJoinTeam } | null) => void;
+  /** Non-null = un code pilote le formulaire : sport verrouillé, équipe
+   *  pré-confirmée, picker d'équipe masqué. */
+  codeLock: {
+    code: string; teamId: string; teamName: string;
+    schoolId: string; schoolName: string; schoolType: string;
+    sportName: string; details: string;
+  } | null;
+  onReleaseCode: () => void;
 }
 
 function Step1Content(p: Step1Props) {
@@ -1607,7 +1823,61 @@ function Step1Content(p: Step1Props) {
           ? "Choisis ton sport et ton équipe civile. Ce qui ira sur ta carte joueur."
           : "Choisis ton sport, ton école et — si elle existe — l'équipe à laquelle tu appartiens."}
       />
+      {/* ── VOIE RAPIDE : le code d'équipe, EN TÊTE ──────────────────────────
+          Il vivait plus bas, après le sport et l'école — donc après que
+          l'athlète ait pu se tromper. Ici il pilote : organisation, contexte
+          et sport en sont dérivés et verrouillés. */}
+      <div className="mt-2 mb-4 rounded-2xl border border-[#E63946]/25 bg-[#E63946]/[0.06] p-4">
+        {p.codeLock ? (
+          <div className="flex items-start gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] font-bold uppercase tracking-wider text-white/40">
+                Code {p.codeLock.code}
+              </p>
+              <p className="mt-1 truncate text-[15px] font-semibold text-white">
+                {p.codeLock.teamName}
+              </p>
+              <p className="truncate text-[12px] text-white/55">
+                {[p.codeLock.schoolName, p.codeLock.details].filter(Boolean).join(" · ")}
+              </p>
+              <p className="mt-2 text-[12px] leading-relaxed text-white/40">
+                Ton {p.codeLock.schoolType === "LIGUE_CIVILE" ? "club" : "école"} et ton
+                sport sont remplis à partir de ce code.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => { triggerHaptic("Light"); p.onReleaseCode(); }}
+              className="shrink-0 min-h-[44px] px-1 text-[12px] font-semibold text-white/55 underline"
+            >
+              Changer
+            </button>
+          </div>
+        ) : (
+          <>
+            <p className="mb-1 text-[13px] font-semibold text-white">
+              Ton entraîneur t&apos;a donné un code ?
+            </p>
+            <p className="mb-3 text-[12px] leading-relaxed text-white/55">
+              Entre-le : ton équipe, ton école ou ton club et ton sport se
+              remplissent tout seuls.
+            </p>
+            <JoinCodeField initialCode={p.joinCodePrefill} onResolved={p.onJoinCodeResolved} />
+          </>
+        )}
+      </div>
+
       <SectionTitle>Sport principal</SectionTitle>
+      {/* Sport VERROUILLÉ quand un code est actif : il vient de l'équipe. Le
+          laisser modifiable rouvrirait l'incohérence qu'on corrige (profil
+          Football, équipe de Basketball). Le déverrouillage passe par
+          « Changer » ci-dessus — un seul endroit. */}
+      {p.codeLock ? (
+        <div className="flex items-center gap-2 rounded-2xl border border-white/[0.06] bg-[#1A1D24] px-4 py-3">
+          <span className="text-[14px] font-semibold text-white">{p.codeLock.sportName}</span>
+          <span className="text-[12px] text-white/40">— défini par ton code</span>
+        </div>
+      ) : (
       <div className="grid grid-cols-2 gap-2">
         {SPORTS.map((s) => {
           const active = p.primarySport === s;
@@ -1627,8 +1897,77 @@ function Step1Content(p: Step1Props) {
           );
         })}
       </div>
+      )}
 
-      {p.userContext === "scolaire" ? (
+      {/* Organisation et équipe DÉJÀ décidées par le code : on les confirme,
+          on ne les repropose pas. Les pickers resteraient une invitation à se
+          contredire. Vaut pour les deux contextes — d'où le rendu AVANT la
+          branche scolaire/civil. */}
+      {p.codeLock ? (
+        <>
+          <SectionTitle>
+            {p.codeLock.schoolType === "LIGUE_CIVILE" ? "Mon club" : "Mon école"}
+          </SectionTitle>
+          <div className="rounded-2xl border border-white/[0.06] bg-[#1A1D24] px-4 py-3">
+            <div className="text-[15px] font-semibold text-white">{p.codeLock.schoolName}</div>
+          </div>
+
+          <SectionTitle>Mon équipe</SectionTitle>
+          <div className="flex items-start gap-3 rounded-2xl border border-[#22C55E]/30 bg-[#22C55E]/10 px-4 py-3">
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-[15px] font-semibold text-white">
+                {p.codeLock.teamName}
+              </div>
+              <div className="truncate text-[12px] text-white/55">{p.codeLock.details}</div>
+            </div>
+            <button
+              type="button"
+              onClick={() => { triggerHaptic("Light"); p.onReleaseCode(); }}
+              className="shrink-0 min-h-[44px] px-1 text-[12px] font-semibold text-white/55 underline"
+            >
+              Changer
+            </button>
+          </div>
+
+          {/* Coachs : la liste est filtrée par l'école dérivée du code — le
+              parent charge teamCoaches depuis selectedTeamId, que applyCodeLock
+              vient de poser. Aucun câblage supplémentaire. */}
+          {p.codeLock.schoolType !== "LIGUE_CIVILE" && p.teamCoachesLoaded && p.teamCoaches.length > 0 && (
+            <>
+              <SectionTitle>Mon coach</SectionTitle>
+              <div className="space-y-2">
+                {p.teamCoaches.map((c) => {
+                  const active = p.selectedCoachId === c.coach_id;
+                  return (
+                    <button
+                      key={c.coach_id}
+                      type="button"
+                      onClick={() => { triggerHaptic("Light"); p.onSelectCoach(c); }}
+                      className={`w-full min-h-[44px] flex items-center justify-between px-4 py-3 rounded-2xl text-left transition-colors ${
+                        active
+                          ? "bg-[#E63946]/10 border border-[#E63946]/30"
+                          : "bg-[#1A1D24] border border-white/[0.06]"
+                      }`}
+                    >
+                      <span className="text-[14px] text-white">
+                        {`${c.first_name ?? ""} ${c.last_name ?? ""}`.trim() || "Entraîneur"}
+                      </span>
+                      <span className="text-[11px] text-white/40">{roleLabel(c.role ?? "")}</span>
+                    </button>
+                  );
+                })}
+                <button
+                  type="button"
+                  onClick={() => { triggerHaptic("Light"); p.onClearCoach(); }}
+                  className="text-[12px] text-white/40 underline px-1 min-h-[44px]"
+                >
+                  Continuer sans coach
+                </button>
+              </div>
+            </>
+          )}
+        </>
+      ) : p.userContext === "scolaire" ? (
         <>
           <SectionTitle>Mon école</SectionTitle>
           <PickerRow
@@ -1767,6 +2106,7 @@ function Step1Content(p: Step1Props) {
           )}
         </>
       )}
+
     </div>
   );
 }

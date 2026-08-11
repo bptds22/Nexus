@@ -180,8 +180,16 @@ export function TeamPageEditorProvider({ teamId, children }: { teamId: string; c
         } | null;
         if (!team) { if (!cancelled) setLoad({ loading: false, err: "Équipe introuvable." }); return; }
 
+        /* Elle s'ecrivait `if (mySchool && …)`, donc elle etait SAUTEE des que le
+           compte n'avait pas de school_id : le compte plateforme passait, mais
+           par accident — et n'importe quel compte sans ecole passait avec lui.
+           Explicite dans les deux sens maintenant : l'admin passe parce qu'il
+           EST admin, et l'absence d'ecole ne dispense plus de rien. (L'ecriture
+           restait de toute facon arretee par la RLS — c'est l'interface qui
+           mentait, pas la base.) */
+        const isAdmin = user.profile.is_platform_admin === true;
         const mySchool = user.profile.school_id;
-        if (mySchool && team.school_id !== mySchool) {
+        if (!isAdmin && (!mySchool || team.school_id !== mySchool)) {
           if (!cancelled) setLoad({ loading: false, err: "Cette équipe n'appartient pas à ton collège." });
           return;
         }

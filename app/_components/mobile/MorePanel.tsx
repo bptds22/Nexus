@@ -240,6 +240,11 @@ export default function MorePanel({
             { key: "calendrier", label: "Calendrier", href: "/recruteur/calendrier", icon: Icons.calendar },
             { key: "listes", label: "Listes", href: "/recruteur/listes", icon: Icons.lists, requiredTier: "pro" },
             { key: "activites", label: "Activités", href: "/recruteur/activites", icon: Icons.activity, requiredTier: "pro", badge: actBadge },
+            // « Ma page » — l'editeur de la vitrine publique. L'ecran mobile ne
+            // fait que renvoyer au web (les deux editeurs sont desktop). PAS de
+            // requiredTier ici : meme raison que Calendrier et Listes ci-dessus
+            // — un verrou ouvrirait la modale et le renvoi ne serait jamais lu.
+            { key: "ma-page", label: "Ma page", href: "/recruteur/ma-page", icon: Icons.lists },
           ],
         },
         {
@@ -416,6 +421,13 @@ export default function MorePanel({
           // C'est « Visibilité » qui descend ici, à la place qu'occupait la
           // recherche dans la barre.
           { key: "visibilite", label: "Visibilité", href: "/athlete/visibilite", icon: Icons.eye },
+          // Le transfert d'équipe n'existait PAS sur mobile : il vivait dans un
+          // onglet de /athlete/parametres, et cette route bascule sur
+          // AthleteParametresMobile, qui ne l'a jamais porté. Sorti des
+          // paramètres, il a maintenant sa route à lui — même composant
+          // (MonEquipeSection), même URL des deux côtés. Sous Visibilité, comme
+          // dans la barre latérale web.
+          { key: "transfert", label: "Mon équipe", href: "/athlete/transfert", icon: Icons.users },
           { key: "notifications", label: "Notifications", href: "/athlete/notifications", icon: Icons.bell, badge: actBadge },
         ],
       },

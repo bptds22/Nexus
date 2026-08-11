@@ -248,6 +248,20 @@ export interface TeamHistoryEntry {
   year_start: number;
   /** null / absent = current (équipe actuelle). */
   year_end: number | null;
+  /* ── Champs écrits par _apply_team_attachment_core, longtemps jetés au parse.
+     Les entrées SYSTÈME (source: 'system') les portent ; les entrées déclarées
+     à la main par l'athlète ne les ont pas. D'où l'optionnalité. */
+  /** Horodatage ISO du DÉPART de l'équipe. Seul champ qui ordonne réellement
+   *  le parcours : year_start/year_end viennent de teams.season, donc toutes
+   *  les entrées d'une même saison portent les mêmes années et ne peuvent pas
+   *  être départagées entre elles. */
+  left_at?: string | null;
+  /** Nom de l'école ou du club. Sert à distinguer deux équipes homonymes. */
+  school_name?: string | null;
+  /** « 2025-2026 » — alimente teamDetails(). */
+  season?: string | null;
+  /** 'system' = écrit par un transfert ; absent = déclaré par l'athlète. */
+  source?: string | null;
 }
 
 export interface AthleteFormSports {

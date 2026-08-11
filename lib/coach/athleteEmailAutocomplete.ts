@@ -194,6 +194,7 @@ interface InvitableRow {
   sport_name: string | null;
   has_account: boolean | null;
   exists_not_invitable: boolean | null;
+  exists_exact: boolean | null;
 }
 
 export interface InvitableLookupResult {
@@ -201,8 +202,17 @@ export interface InvitableLookupResult {
   /** Athlètes invitables (has_account renseigné : false=orphelin, true=compte). */
   suggestions: AthleteEmailSuggestion[];
   /** true si un match existe mais est NON-invitable (rattaché / sans coach ni
-   *  compte) — flag SEUL côté DB, zéro PII (Loi 25). */
+   *  compte) — flag SEUL côté DB, zéro PII (Loi 25).
+   *  ⚠ Calculé sur PRÉFIXE : il se lève dès 4 caractères. Ne PAS s'en servir
+   *  pour décider d'afficher quoi que ce soit — voir existsExact. */
   existsNotInvitable: boolean;
+  /** Idem, mais sur une correspondance EXACTE du courriel complet.
+   *  C'est LUI qui doit gouverner la bannière « un athlète utilise déjà ce
+   *  courriel », le blocage de création et le bouton d'invitation : sinon
+   *  taper « bptd » suffisait à accuser un doublon et à proposer d'inviter
+   *  quelqu'un qu'on n'a pas fini d'identifier.
+   *  Toujours zéro PII — un booléen de plus, rien d'autre. */
+  existsExact: boolean;
 }
 
 /**
@@ -216,7 +226,7 @@ export async function lookupInvitableByEmail(
 ): Promise<InvitableLookupResult> {
   const trimmed = partial.trim().toLowerCase();
   if (trimmed.length < MIN_QUERY_LENGTH) {
-    return { status: "too_short", suggestions: [], existsNotInvitable: false };
+    return { status: "too_short", suggestions: [], existsNotInvitable: false, existsExact: false };
   }
 
   const { data, error } = await supabase.rpc("lookup_invitable_athletes_by_email", {
@@ -224,7 +234,7 @@ export async function lookupInvitableByEmail(
   });
   if (error) {
     console.error("[athleteEmailAutocomplete] invitable RPC error:", error);
-    return { status: "error", suggestions: [], existsNotInvitable: false };
+    return { status: "error", suggestions: [], existsNotInvitable: false, existsExact: false };
   }
 
   const rows = (data as InvitableRow[] | null) ?? [];
@@ -240,11 +250,13 @@ export async function lookupInvitableByEmail(
       hasAccount: !!r.has_account,
     }));
   const existsNotInvitable = rows.some((r) => r.exists_not_invitable === true);
+  const existsExact = rows.some((r) => r.exists_exact === true);
 
   return {
     status: suggestions.length > 0 ? "ok" : "no_results",
     suggestions,
     existsNotInvitable,
+    existsExact,
   };
 }
 

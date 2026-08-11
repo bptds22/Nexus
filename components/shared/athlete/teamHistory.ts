@@ -10,12 +10,29 @@ export const MIN_TEAM_YEAR = 1990;
 /** year_end null/absent = current team (équipe actuelle). */
 export const isCurrentEntry = (e: TeamHistoryEntry): boolean => e.year_end == null;
 
-/** Display order: current entries first, then most recent year_start first. */
+/** Ordre d'affichage : entrées courantes d'abord, puis départ le plus récent.
+ *
+ *  ⚠ POURQUOI left_at ET NON year_start.
+ *  Les entrées SYSTÈME tirent year_start / year_end de `teams.season`
+ *  (« 2025-2026 » → 2025 / 2026). Trois transferts dans la même saison
+ *  produisent donc TROIS entrées aux années IDENTIQUES, que l'ancien
+ *  comparateur ne pouvait pas départager : l'ordre retombait sur celui du
+ *  tableau. On voyait alors un sport en tête du parcours qui contredisait
+ *  l'équipe actuelle.
+ *  `left_at` est horodaté à la seconde et écrit à chaque départ : c'est le seul
+ *  champ qui ordonne réellement. Il n'existe que sur les entrées système, d'où
+ *  le repli sur year_start pour celles déclarées à la main. */
 export function sortTeamHistory(entries: TeamHistoryEntry[]): TeamHistoryEntry[] {
+  const quitteLe = (e: TeamHistoryEntry): number => {
+    const t = e.left_at ? Date.parse(e.left_at) : NaN;
+    return Number.isFinite(t) ? t : -Infinity;
+  };
   return [...entries].sort((a, b) => {
     const ac = isCurrentEntry(a);
     const bc = isCurrentEntry(b);
     if (ac !== bc) return ac ? -1 : 1;
+    const qa = quitteLe(a), qb = quitteLe(b);
+    if (qa !== qb && Number.isFinite(qa) && Number.isFinite(qb)) return qb - qa;
     return (b.year_start || 0) - (a.year_start || 0);
   });
 }
@@ -32,6 +49,15 @@ export function parseTeamHistory(raw: unknown): TeamHistoryEntry[] {
     const ys = Number(o.year_start);
     const yeRaw = o.year_end;
     const ye = yeRaw == null || yeRaw === "" ? null : Number(yeRaw);
+    /* Les quatre derniers champs étaient JETÉS ici, alors que
+       _apply_team_attachment_core les écrit à chaque transfert. Conséquences
+       observées : le parcours ne pouvait pas s'ordonner (left_at perdu) ni
+       afficher un libellé distinctif (season perdue), et deux équipes
+       homonymes de clubs différents restaient indiscernables (school_name
+       perdu). On les conserve en optionnel : les entrées déclarées à la main
+       par l'athlète ne les portent pas. */
+    const txt = (v: unknown): string | null =>
+      typeof v === "string" && v.trim() !== "" ? v : null;
     return {
       team_name: typeof o.team_name === "string" ? o.team_name : "",
       sport: typeof o.sport === "string" ? o.sport : "",
@@ -39,6 +65,10 @@ export function parseTeamHistory(raw: unknown): TeamHistoryEntry[] {
       division: typeof o.division === "string" ? o.division : "",
       year_start: Number.isFinite(ys) ? ys : 0,
       year_end: ye != null && Number.isFinite(ye) ? ye : null,
+      left_at: txt(o.left_at),
+      school_name: txt(o.school_name),
+      season: txt(o.season),
+      source: txt(o.source),
     };
   });
 }

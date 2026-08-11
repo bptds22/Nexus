@@ -18,6 +18,9 @@ const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
    Sub-nav pattern matching admin/coach/recruiter settings pages
 ═══════════════════════════════════════════════════════════════ */
 
+/* « equipe » a QUITTÉ les paramètres : le transfert d'équipe a désormais sa
+   propre route, /athlete/transfert, atteignable web ET mobile. Ici il était
+   invisible sur mobile (AthleteParametresMobile ne l'a jamais porté). */
 type SectionKey = "compte" | "abonnement" | "notifications" | "confidentialite";
 
 const SECTIONS: { key: SectionKey; label: string; icon: React.ReactNode }[] = [
@@ -366,6 +369,7 @@ function ParametresPageDesktop() {
           )}
 
           {/* ── ABONNEMENT ───────────────────────────────────── */}
+
           {section === "abonnement" && <SubscriptionManager role="ATHLETE" />}
 
           {/* ── NOTIFICATIONS ─────────────────────────────────── */}

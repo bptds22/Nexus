@@ -7,8 +7,19 @@
 // mobile build by renaming page.tsx -> page.tsx.disabled. The page route
 // disappears from the route tree, no parse error. Restore on completion.
 //
-// Single source of truth for what's hidden: lib/build/mobile-excluded-routes.ts
-// (descriptive) and the HIDE_PATTERNS array below (operational).
+// ⚠ DEUX LISTES, PAS UNE. Ce commentaire affirmait une « single source of
+// truth » — c'etait FAUX, et les deux listes avaient deja diverge (/join etait
+// dans l'une, absent de l'autre, et le build mobile echouait).
+//
+//   · HIDE_PATTERNS, ci-dessous — ce que le BUILD masque physiquement. Ce
+//     script ne lit RIEN d'autre : il n'importe pas mobile-excluded-routes.ts.
+//     Une route absente d'ici sera parsee par output:'export', point final.
+//   · lib/build/mobile-excluded-routes.ts — ce que le RUNTIME refuse, via les
+//     gardes notFound() des layouts. Sans effet sur le build.
+//
+// Les deux sont COMPLEMENTAIRES et doivent etre tenues a jour ENSEMBLE :
+// masquer au build sans bloquer au runtime laisse une route atteignable ;
+// bloquer au runtime sans masquer au build casse `next build` en export.
 
 import { spawn } from 'child_process';
 import { mkdirSync, renameSync, existsSync } from 'fs';
@@ -22,8 +33,20 @@ const HIDE_PATTERNS = [
   'app/admin/**/page.tsx',
   'app/partenaire/**/page.tsx',
   'app/parent/**/page.tsx',   // Portal parental (Lot 1a) — web only.
+  // ⚠ CROCHETS ECHAPPES — glob lit `[id]` comme une CLASSE DE CARACTERES, pas
+  // comme un nom de dossier. 'app/partenaires/[id]/page.tsx' matchait ZERO
+  // fichier (il aurait matche app/partenaires/i/page.tsx ou …/d/…). Le motif
+  // etait donc inerte depuis toujours ; ca ne se voyait pas parce que cette
+  // page-la porte un generateStaticParams et n'avait pas besoin d'etre masquee.
+  // Toute route dynamique ajoutee ici DOIT echapper ses crochets.
   // Public partner profile
-  'app/partenaires/[id]/page.tsx',
+  'app/partenaires/\\[id\\]/page.tsx',
+  // /join/[code] — atterrissage d'un lien de code d'equipe. WEB SEULEMENT :
+  // la page detecte l'appareil et propose les liens vers les magasins,
+  // precisement parce qu'elle ne peut pas ouvrir l'application. Route dynamique
+  // SANS generateStaticParams — et elle ne peut pas en avoir, les codes sont
+  // crees a l'execution. Sans ce masquage, output:'export' echoue.
+  'app/join/\\[code\\]/page.tsx',
   // NOTE: app/page.tsx is NOT hidden — Capacitor needs an out/index.html
   // entry point. The page's redirect('/auth') guard fires on mobile load.
   'app/tarifs/page.tsx',

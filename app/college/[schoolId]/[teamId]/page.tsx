@@ -24,7 +24,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
-import TeamPage from "@/components/team-page/TeamPage";
+import TeamPageWithViewer from "@/components/team-page/TeamPageWithViewer";
 import TeamPageMobile from "@/components/team-page/TeamPageMobile";
 import { loadTeamPageForRender } from "@/lib/queries/teamPage/loadForRender";
 
@@ -82,7 +82,7 @@ export default async function CollegeTeamPage(
     <>
       {FONTS}
       <main style={{ background: "#111317", minHeight: "100vh" }}>
-        <TeamPage team={team} />
+        <TeamPageWithViewer team={team} />
       </main>
     </>
   );

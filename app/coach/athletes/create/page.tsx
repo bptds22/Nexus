@@ -16,12 +16,13 @@ import { createClient } from "@/lib/supabase/client";
 import PartnerVisibilityConsentCard from "@/components/shared/PartnerVisibilityConsentCard";
 import ReadOnlyIfPending from "@/components/auth/ReadOnlyIfPending";
 import {
-  autocompleteInvitableByEmail,
+  lookupInvitableByEmail,
   type AthleteEmailAutocompleteResult,
   type AthleteEmailSuggestion,
 } from "@/lib/coach/athleteEmailAutocomplete";
 import AthleteWizardMobile from "@/components/shared/AthleteWizardMobile";
 import { saveAthleteCreate, computeCoteGlobale } from "../_data/saveAthlete";
+import { inviteAnchoredAthlete } from "@/lib/queries/coach/inviteAnchoredAthlete";
 import { isUnder14 } from "@/lib/legal/ageGate";
 import InvitationLinkModal from "@/components/ui/InvitationLinkModal";
 import { createAthleteInvitationLink } from "@/lib/queries/coach/createAthleteInvitation";
@@ -284,6 +285,13 @@ export default function CreateAthletePage() {
   // un athlete est sélectionné dans le dropdown autocomplete.
   const [formStateBeforeLink, setFormStateBeforeLink] = useState<AthleteFormData | null>(null);
   const [invitationTeamId, setInvitationTeamId] = useState<string | null>(null);
+  /* ANCRÉ AILLEURS — jumeau du bloc d'AthleteWizardMobile. Le drapeau arrive
+     SEUL, sans identité : on ne peut ni nommer l'athlète, ni créer sa fiche.
+     On propose l'invitation, résolue côté serveur. */
+  const [ancreAilleurs, setAncreAilleurs] = useState(false);
+  const [equipeTransfert, setEquipeTransfert] = useState<string | null>(null);
+  const [envoiAncre, setEnvoiAncre] = useState(false);
+  const [resultatAncre, setResultatAncre] = useState<{ ok: boolean; msg: string } | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [otherPendingCount, setOtherPendingCount] = useState<number>(0);
   const [isSubmittingInvitation, setIsSubmittingInvitation] = useState(false);
@@ -317,15 +325,28 @@ export default function CreateAthletePage() {
     if (newEmail.trim().length < 4) {
       setEmailAutocomplete(null);
       setShowSuggestions(false);
+      setAncreAilleurs(false);
+      setResultatAncre(null);
       return;
     }
 
     emailAutocompleteTimerRef.current = setTimeout(async () => {
       try {
         const supabase = createClient();
-        const result = await autocompleteInvitableByEmail(supabase, newEmail);
-        setEmailAutocomplete(result);
+        // lookupInvitableByEmail — la MÊME recherche que le dialogue du roster.
+        // Elle couvre une population de plus (les comptes sans coach, scolaires
+        // comme civils) et surtout elle rend `existsNotInvitable`. Sans ce
+        // drapeau, un courriel appartenant à un athlète ANCRÉ AILLEURS ne
+        // produisait rien : ni suggestion, ni avertissement, et le coach créait
+        // un doublon. C'était le cul-de-sac.
+        const result = await lookupInvitableByEmail(supabase, newEmail);
+        setEmailAutocomplete({ status: result.status, suggestions: result.suggestions });
         setShowSuggestions(result.status === "ok" && result.suggestions.length > 0);
+        // existsExact, PAS existsNotInvitable : ce dernier est calculé sur
+        // PRÉFIXE et se levait dès 4 caractères — taper « bptd » suffisait à
+        // afficher la bannière, bloquer la création et proposer le bouton.
+        // Le préfixe reste pour les SUGGESTIONS ci-dessus, où il est utile.
+        setAncreAilleurs(result.existsExact && result.suggestions.length === 0);
       } catch (err) {
         console.error("[EmailAutocomplete] lookup error:", err);
       }
@@ -657,8 +678,36 @@ export default function CreateAthletePage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
+  /* Transfert proposé à un athlète ancré ailleurs. Le courriel part tel quel
+     vers la RPC, qui le résout côté serveur : le client n'obtient jamais
+     l'identifiant, donc le coach n'apprend rien de plus qu'avant. N'écrit
+     QUE dans team_invitations — jamais dans athlete_invitations. */
+  async function envoyerTransfert() {
+    const courriel = form.identity.email?.trim();
+    if (!courriel || !equipeTransfert || envoiAncre) return;
+    setEnvoiAncre(true);
+    setResultatAncre(null);
+    try {
+      const r = await inviteAnchoredAthlete(createClient(), courriel, equipeTransfert);
+      setResultatAncre({ ok: r.ok, msg: r.message || "Invitation envoyée — il devra l'accepter." });
+    } finally {
+      setEnvoiAncre(false);
+    }
+  }
+
   async function handleSubmit() {
     if (!validateStep(7)) { setShowErrors(true); return; }
+
+    /* ANCRÉ AILLEURS → ON NE CRÉE RIEN.
+       La fiche existe et appartient à un autre coach. Créer produirait le
+       doublon exact que la détection cherche à éviter — et rien en base ne
+       l'empêche (aucun index unique sur athletes.email). La seule action
+       légitime est l'invitation, proposée à l'étape 1. */
+    if (ancreAilleurs) {
+      setCurrentStep(1);
+      setShowErrors(true);
+      return;
+    }
 
     // Hard-stop <14 (Loi 25) — ferme le contournement par saut d'étape
     // (goToStep ne valide rien). Garantit qu'aucune row <14 n'atteint
@@ -844,6 +893,53 @@ export default function CreateAthletePage() {
             <input type="email" value={d.email} onChange={(e) => handleEmailChange(e.target.value)}
               autoComplete="off"
               placeholder="athlete@email.com" className={inputCls} />
+
+            {/* ANCRÉ AILLEURS — un athlète existe à ce courriel mais appartient
+                déjà à quelqu'un d'autre. On ne peut ni le nommer (le drapeau
+                arrive sans identité) ni le créer (ce serait le doublon). La
+                seule chose honnête : lui demander s'il veut venir. */}
+            {ancreAilleurs && (
+              <div className="mt-2 rounded-lg bg-[#1A1D24] border border-[#F59E0B]/30 p-4">
+                <p className="text-[13px] font-semibold text-white">Un athlète utilise déjà ce courriel</p>
+                <p className="text-[12px] text-[#9CA3AF] mt-1 leading-relaxed">
+                  Il fait partie d&apos;une autre équipe. Tu ne peux pas créer sa fiche —
+                  elle existe déjà. Tu peux l&apos;inviter à rejoindre la tienne :
+                  <span className="text-white"> c&apos;est lui qui décidera.</span>
+                </p>
+                {coachTeam.teams.length === 0 ? (
+                  <p className="text-[12px] text-[#F59E0B] mt-3">
+                    Aucune équipe — crées-en une dans « Mes équipes ».
+                  </p>
+                ) : (
+                  <div className="mt-3 flex flex-col sm:flex-row gap-2">
+                    <select
+                      value={equipeTransfert ?? ""}
+                      onChange={(e) => setEquipeTransfert(e.target.value || null)}
+                      title="Équipe d'accueil"
+                      className="flex-1 bg-[#111317] border border-[#2D3748] rounded-lg px-3 py-2.5 text-[14px] text-white focus:outline-none focus:border-[#E63946]/50"
+                    >
+                      <option value="">Choisir une équipe</option>
+                      {coachTeam.teams.map((t) => (
+                        <option key={t.id} value={t.id}>{t.name}</option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => void envoyerTransfert()}
+                      disabled={!equipeTransfert || envoiAncre || resultatAncre?.ok}
+                      className="px-4 py-2.5 bg-[#E63946] hover:bg-[#D42B22] text-white text-[13px] font-semibold rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      {envoiAncre ? "Envoi…" : "Inviter à rejoindre mon équipe"}
+                    </button>
+                  </div>
+                )}
+                {resultatAncre && (
+                  <p className={`text-[12px] font-semibold mt-3 ${resultatAncre.ok ? "text-[#22C55E]" : "text-[#EF4444]"}`}>
+                    {resultatAncre.ok ? "✓ " : ""}{resultatAncre.msg}
+                  </p>
+                )}
+              </div>
+            )}
 
             {/* 6.2.c-1-pivot : dropdown autocomplete athletes orphelins
                 par email partial (ILIKE 'partial%'). Max 3 suggestions. */}

@@ -141,9 +141,27 @@ export function useEditor(): EditorCtx {
   return v;
 }
 
-export function SchoolPageEditorProvider({ children }: { children: React.ReactNode }) {
+export function SchoolPageEditorProvider(
+  { children, schoolIdParam }: { children: React.ReactNode; schoolIdParam?: string },
+) {
   const { data: user, isLoading: userLoading, error: userError } = useCurrentUser();
-  const schoolId = user?.profile.school_id ?? null;
+
+  /* ── RESOLUTION DU COLLEGE ────────────────────────────────────────────────
+     Elle lisait UNIQUEMENT `users.school_id`. Le compte plateforme n'en a pas
+     (il n'appartient a aucun etablissement), donc l'editeur s'arretait sur
+     « Ton compte n'est rattache a aucune ecole » alors que la base l'autorisait
+     deja partout : can_edit_school_page teste `is_platform_admin` sans
+     condition d'ecole. Le blocage etait entierement cote interface.
+
+     `schoolIdParam` vient du portail admin (fiche CEGEP ouverte). Il n'est
+     honore QUE pour un admin plateforme, et IGNORE pour tout le monde d'autre
+     — pas refuse, pas signale : un non-admin retombe sur son propre college,
+     exactement comme avant. La RLS refuserait l'ecriture de toute facon, mais
+     afficher le contenu d'un autre etablissement dans un editeur ressemble a
+     une faille meme quand ca n'en est pas une. */
+  const schoolId = user?.profile.is_platform_admin === true
+    ? (schoolIdParam || null)
+    : (user?.profile.school_id ?? null);
 
   const clientRef = React.useRef<SupabaseClient | null>(null);
   if (!clientRef.current) clientRef.current = createClient();
