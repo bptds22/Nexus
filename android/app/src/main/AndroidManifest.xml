@@ -15,6 +15,7 @@
             android:label="@string/title_activity_main"
             android:theme="@style/AppTheme.NoActionBarLaunch"
             android:launchMode="singleTask"
+            android:windowSoftInputMode="adjustNothing"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -44,6 +45,13 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Calendrier (@ebarooni/capacitor-calendar) — parité avec les clés
+         NSCalendars*UsageDescription iOS : « Ajouter au calendrier » (visite).
+         Réintroduites : le merge f231185 avait résolu ce manifeste en faveur
+         du côté android-launch et effacé l'effet de 91c7e7a. -->
+    <uses-permission android:name="android.permission.READ_CALENDAR" />
+    <uses-permission android:name="android.permission.WRITE_CALENDAR" />
 
     <!-- Advertising ID injecté au merge par facebook-core (tiré par
          @capgo/capacitor-social-login, provider Facebook non utilisé par l'app).
