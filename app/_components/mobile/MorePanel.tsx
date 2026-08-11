@@ -420,10 +420,11 @@ export default function MorePanel({
     return [
       {
         items: [
-            // « Trouve ton cégep » REVIENT dans ce panel : Messages a pris le
-            // slot d'onglet, la recherche cégep redescend donc ici. Une seule
-            // entrée de visibilité, libellée « Ma visibilité ».
-            { key: "recherche-cegep", label: "Trouve ton cégep", href: "/athlete/recherche", icon: Icons.cegep },
+            // « Mon profil » descend ici depuis la barre d'onglets, dont le 4e
+            // slot revient à « Trouve ton cégep » (MobileTabBar.ATHLETE_TABS).
+            // ⚠ NE PAS réintroduire d'entrée `recherche-cegep` ici : elle est
+            // maintenant un ONGLET. Une entrée aux deux endroits ferait doublon.
+            { key: "profil", label: "Mon profil", href: "/athlete/profil", icon: Icons.profile },
             { key: "visibilite", label: "Ma visibilité", href: "/athlete/visibilite", icon: Icons.eye },
             // Le transfert d'équipe n'existait PAS sur mobile : il vivait dans un
             // onglet de /athlete/parametres, et cette route bascule sur

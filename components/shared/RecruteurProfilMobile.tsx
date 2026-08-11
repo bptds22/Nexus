@@ -29,6 +29,7 @@ import { useMobileToast } from "@/components/mobile/MobileToast";
 import { useRecruiterProfile } from "@/lib/queries/recruiter/useRecruiterProfile";
 import { useDebouncedValue } from "@/lib/utils/useDebouncedValue";
 import { triggerHaptic } from "@/lib/haptics";
+import { useSheetKeyboardGeometry } from "@/lib/hooks/useSheetKeyboardGeometry";
 
 
 const TITLES = [
@@ -103,6 +104,7 @@ function useCegepList() {
 }
 
 function CegepSearchSheet({ open, onClose, currentId, onPick }: CegepSearchSheetProps) {
+  const kbdStyle = useSheetKeyboardGeometry();
   const [mounted, setMounted] = useState(false);
   const [search, setSearch] = useState("");
   const debounced = useDebouncedValue(search, 150);
@@ -137,8 +139,11 @@ function CegepSearchSheet({ open, onClose, currentId, onPick }: CegepSearchSheet
       <div
         className="fixed bottom-0 left-0 right-0 z-[70] bg-[#1A1D24] rounded-t-2xl flex flex-col"
         style={{
-          paddingBottom: "env(safe-area-inset-bottom)",
-          maxHeight: "85vh",
+          /* CLAVIER — la classe `bottom-0` faisait remonter ce sheet via la
+             règle globale de globals.css, mais SANS plafonner sa hauteur : il
+             sortait par le HAUT (titre + champ hors écran) au lieu d'être
+             masqué par le bas. Le hook fait les deux gestes. */
+          ...kbdStyle,
           animation: open ? "nx-modal-slideup 280ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards" : undefined,
         }}
         role="dialog"

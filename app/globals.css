@@ -1341,7 +1341,22 @@ body.light-mode .nx-partner-slot span {
        qui bat toute classe — elles ne bougent pas, et c'est voulu : la tab bar
        n'a pas à suivre le clavier.
    Un panneau sans champ de saisie qui se soulèverait parce qu'un clavier est
-   ouvert ailleurs est inoffensif — et de toute façon plus juste que l'inverse. */
+   ouvert ailleurs est inoffensif — et de toute façon plus juste que l'inverse.
+
+   ⚠ DEMI-MESURE — NE PAS S'Y FIER SEULE POUR UNE BOTTOM-SHEET.
+   Cette règle n'écrit que `bottom` : elle REMONTE, elle ne PLAFONNE PAS la
+   hauteur. Sur un sheet en `max-height: 85vh`, remonter de 340 px sur un écran
+   de 852 pt place son haut à 852 − 340 − 724 = −212 px : titre, bouton Fermer
+   et souvent le champ de saisie sortent PAR LE HAUT. Le bug paraît corrigé
+   depuis le web, il ne l'est pas sur l'appareil — c'est précisément ce qui a
+   fait passer six surfaces pour saines.
+   Toute sheet avec saisie DOIT utiliser `useSheetKeyboardGeometry()`
+   (lib/hooks/useSheetKeyboardGeometry.ts), qui pose bottom ET max-height. Son
+   `bottom` en ligne bat cette règle, les deux valeurs coïncident, pas de
+   conflit.
+   Cette règle est CONSERVÉE pour les surfaces non inventoriées qui en dépendent
+   encore (barres d'action collées en bas, sans saisie). Elle sera retirée quand
+   plus aucune n'en dépendra. */
 html.is-capacitor .fixed.bottom-0,
 html.is-capacitor .sticky.bottom-0 {
   bottom: var(--kbd-h, 0px);

@@ -28,6 +28,7 @@ import { createClient } from "@/lib/supabase/client";
 import { formatTeamLabel } from "@/lib/teams/teamLabel";
 import { triggerHaptic } from "@/lib/haptics";
 import { orgNounCe, type SchoolType } from "@/lib/utils/orgLabel";
+import { useSheetKeyboardGeometry } from "@/lib/hooks/useSheetKeyboardGeometry";
 
 export interface TeamPickerItem {
   id: string;
@@ -95,6 +96,10 @@ export function TeamPickerSheet({
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [dragOffset, setDragOffset] = useState(0);
+  /* Géométrie clavier — remonte ET plafonne. Voir le hook : la règle
+     globale de globals.css n'écrit que `bottom`, ce sheet sortait donc
+     par le haut au lieu d'être masqué par le bas. */
+  const kbdStyle = useSheetKeyboardGeometry();
   // Type de l'org ciblée (école / club / cégep) → vocabulaire type-aware.
   const [orgType, setOrgType] = useState<SchoolType | null>(null);
 
@@ -185,10 +190,15 @@ export function TeamPickerSheet({
       <div
         className="fixed bottom-0 left-0 right-0 z-[70] bg-[#1A1D24] rounded-t-2xl flex flex-col"
         style={{
-          maxHeight: "min(85vh, calc(100dvh - env(safe-area-inset-top, 0px)))",
-          paddingBottom: "env(safe-area-inset-bottom)",
+          /* CLAVIER — la classe `bottom-0` faisait bien remonter ce sheet via
+             la règle globale de globals.css, mais SANS plafonner sa hauteur :
+             il partait donc par le HAUT (titre + champ hors écran) au lieu
+             d'être masqué par le bas. Le hook fait les deux gestes. */
+          ...kbdStyle,
           transform: `translateY(${dragOffset}px)`,
-          transition: dragOffset === 0 ? "transform 280ms cubic-bezier(0.34, 1.56, 0.64, 1)" : "none",
+          transition: dragOffset === 0
+            ? "transform 280ms cubic-bezier(0.34, 1.56, 0.64, 1), bottom 250ms ease-out, max-height 250ms ease-out"
+            : "none",
         }}
         role="dialog"
         aria-modal="true"

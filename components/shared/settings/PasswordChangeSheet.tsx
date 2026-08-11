@@ -14,8 +14,10 @@ import { createPortal } from "react-dom";
 import { createClient } from "@/lib/supabase/client";
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import { triggerHaptic } from "./utils";
+import { useSheetKeyboardGeometry } from "@/lib/hooks/useSheetKeyboardGeometry";
 
 export function PasswordChangeSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const kbdStyle = useSheetKeyboardGeometry("90vh");
   const toast = useMobileToast();
   const [mounted, setMounted] = useState(false);
   const [newPw, setNewPw] = useState("");
@@ -61,8 +63,10 @@ export function PasswordChangeSheet({ open, onClose }: { open: boolean; onClose:
       <div
         className="fixed bottom-0 left-0 right-0 z-[70] bg-[#1A1D24] rounded-t-2xl flex flex-col"
         style={{
-          paddingBottom: "env(safe-area-inset-bottom)",
-          maxHeight: "90vh",
+          /* CLAVIER — sheet à trois champs mot de passe : sans plafond de
+             hauteur il sortait par le haut quand la règle globale le remontait.
+             90vh conservé comme hauteur clavier FERMÉ. */
+          ...kbdStyle,
           animation: "nx-modal-slideup 280ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards",
         }}
         role="dialog"

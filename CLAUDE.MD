@@ -260,6 +260,17 @@ green for the wrong reason.
 
 ---
 
+### Clavier mobile — tout conteneur avec input
+
+`capacitor.config.ts` est en `KeyboardResize.None` : la WebView **ne se redimensionne jamais**, et `100vh`/`100dvh` ne rétrécissent pas quand le clavier s'ouvre. Aucune unité viewport ne protège d'un masquage.
+
+Tout sheet, modale ou formulaire mobile contenant un `<input>`/`<textarea>` DOIT appliquer `useSheetKeyboardGeometry()` (`lib/hooks/useSheetKeyboardGeometry.ts`) — c'est-à-dire **remonter ET plafonner** : `bottom: kbdH` **et** `maxHeight: calc(100vh − kbdH − 12px)`.
+
+Remonter sans plafonner est un bug, pas un demi-fix : le conteneur sort par le **haut** et le champ disparaît quand même. La règle globale `html.is-capacitor .fixed.bottom-0` de `globals.css` ne fait que la moitié du travail — ne jamais s'y fier seule.
+
+Un `bottom: 0` **inline** bat cette règle et annule tout : ne jamais poser `bottom` en inline sur un sheet.
+
+
 ## BUSINESS RULES
 
 ### Athlete Self-Registration

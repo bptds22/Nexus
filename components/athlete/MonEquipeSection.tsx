@@ -24,6 +24,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import SchoolSelect from "@/components/ui/SchoolSelect";
+import { loadSchools, type SchoolRow } from "@/lib/queries/schools/allSchools";
 import { SearchSheet } from "@/components/mobile/SearchSheet";
 import JoinCodeField from "@/components/athlete/JoinCodeField";
 import TransferConfirmDialog from "@/components/athlete/TransferConfirmDialog";
@@ -81,17 +82,11 @@ const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
 /** Ligne d'organisation pour le sheet mobile.
  *
- *  TYPE LOCAL ET HONNÊTE, à ne PAS remplacer par le SchoolRow de SchoolSelect :
- *  celui-ci déclare `type: "SECONDAIRE" | "CEGEP"` alors que sa requête charge
- *  la table SANS filtre — elle ramène donc aussi des LIGUE_CIVILE. Le type ment.
- *  Ici `type` est une string libre, parce que la valeur sert uniquement à
- *  afficher un libellé, jamais à décider quoi que ce soit. */
-interface OrgOption {
-  id: string;
-  name: string;
-  city: string | null;
-  type: string | null;
-}
+ *  C'est le SchoolRow partagé (lib/queries/schools/allSchools), désormais
+ *  honnête : son `type` porte les TROIS valeurs canoniques, LIGUE_CIVILE
+ *  comprise. Le type local qui vivait ici n'avait de raison d'être que
+ *  parce que celui de SchoolSelect mentait — ce n'est plus le cas. */
+type OrgOption = SchoolRow;
 
 export default function MonEquipeSection({ onToast }: { onToast?: (m: string) => void }) {
   const [anchor, setAnchor] = useState<CurrentAnchor | null>(null);
@@ -198,25 +193,22 @@ export default function MonEquipeSection({ onToast }: { onToast?: (m: string) =>
      civils (type LIGUE_CIVILE) : filtrer sur SECONDAIRE — comme le fait
      l'onboarding (AthleteOnboardingMobile:625) — ferait DISPARAÎTRE leur club
      de l'écran de transfert. C'est le même choix que SchoolSelect côté web,
-     dont la requête ne filtre pas non plus. */
+     dont la requête ne filtre pas non plus.
+
+     PAGINATION OBLIGATOIRE — via `loadSchools()`, la MÊME implémentation que
+     SchoolSelect. La requête écrite à la main ici n'avait pas de `.range()` :
+     PostgREST plafonnait à 1000 lignes sur les 1199 de la table, et tout ce
+     qui suit le rang alphabétique 1000 était introuvable (« Wildcats
+     Laurentides-Lanaudière », rang 1198). Ne jamais rouvrir une requête
+     `.from("schools")` ici. */
   useEffect(() => {
     if (!IS_CAPACITOR || !orgSheetOpen || orgs.length > 0) return;
     let alive = true;
     (async () => {
       setOrgsLoading(true);
-      const { data } = await createClient()
-        .from("schools")
-        .select("id, name, city, type")
-        .order("name");
+      const rows = await loadSchools();
       if (!alive) return;
-      setOrgs(
-        (data ?? []).map((s: Record<string, unknown>) => ({
-          id: s.id as string,
-          name: (s.name as string) || "",
-          city: (s.city as string) ?? null,
-          type: (s.type as string) ?? null,
-        })),
-      );
+      setOrgs(rows);
       setOrgsLoading(false);
     })();
     return () => { alive = false; };

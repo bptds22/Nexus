@@ -135,6 +135,15 @@ const Icons = {
       <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" />
     </svg>
   ),
+  /* Mortier — repris à l'identique de MorePanel.Icons.cegep : « Trouve ton
+     cégep » remonte du panel vers la barre, l'icône doit suivre pour que le
+     déplacement se reconnaisse. */
+  cegep: (
+    <svg {...SVG_PROPS}>
+      <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+      <path d="M6 12v5c0 1.66 2.69 3 6 3s6-1.34 6-3v-5" />
+    </svg>
+  ),
 };
 
 interface TabConfig {
@@ -165,13 +174,16 @@ const COACH_TABS: TabConfig[] = [
 
 const ATHLETE_TABS: TabConfig[] = [
   { key: "dashboard", label: "Accueil", href: "/athlete/dashboard", icon: Icons.dashboard, activeMatch: "/athlete/dashboard" },
-  { key: "parcours", label: "Parcours", href: "/athlete/mon-parcours", icon: Icons.flag, activeMatch: "/athlete/mon-parcours" },
-  { key: "profil", label: "Profil", href: "/athlete/profil", icon: Icons.user, activeMatch: "/athlete/profil" },
-    // MESSAGES prend le slot. La messagerie est de l'engagement récurrent
-    // (non-lus, notifications à venir) ; la recherche cégep est épisodique et
-    // redescend dans le panel Plus, où « Ma visibilité » descend aussi.
-    // La barre reste à CINQ onglets.
-    { key: "messages", label: "Messages", href: "/athlete/messages", icon: Icons.envelope, activeMatch: "/athlete/messages" },
+  { key: "parcours", label: "Mon parcours", href: "/athlete/mon-parcours", icon: Icons.flag, activeMatch: "/athlete/mon-parcours" },
+  { key: "messages", label: "Messages", href: "/athlete/messages", icon: Icons.envelope, activeMatch: "/athlete/messages" },
+  /* « TROUVE TON CÉGEP » PREND LE 4e SLOT, « Mon profil » descend dans le
+     panel Plus (échange, pas ajout — la barre reste à CINQ slots, le 5e étant
+     le bouton Plus). C'est la destination de valeur du portail athlète : la
+     laisser à deux taps sous « Plus » l'enterrait.
+     ⚠ L'entrée `recherche-cegep` a été RETIRÉE de MorePanel dans le même
+     geste. Toute remise en onglet/panel doit vérifier l'autre fichier :
+     l'entrée a déjà fait l'aller-retour une fois. */
+  { key: "recherche-cegep", label: "Trouve ton cégep", href: "/athlete/recherche", icon: Icons.cegep, activeMatch: "/athlete/recherche" },
 ];
 
 const TABS_BY_ROLE: Record<"recruteur" | "coach" | "athlete", TabConfig[]> = {

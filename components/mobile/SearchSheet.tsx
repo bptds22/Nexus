@@ -27,6 +27,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { useSheetKeyboardGeometry } from "@/lib/hooks/useSheetKeyboardGeometry";
 import { triggerHaptic } from "@/lib/haptics";
 
 
@@ -80,25 +81,12 @@ export function SearchSheet<T>({
     if (!open) { setDragOffset(0); setIsDragging(false); }
   }, [open]);
 
-  /* ── Clavier (Option B — events natifs, KeyboardResize.None) — MÊME pattern
-        que MessageThreadShell + le sheet Notes. Le resize natif iOS étant cassé
-        (iOS 26), on lit `keyboardHeight` via keyboardWillShow/Hide et on REMONTE
-        le sheet de cette hauteur (bottom = kbdH) en plafonnant sa hauteur pour
-        qu'input + liste restent AU-DESSUS du clavier. Web → no-op (plugin
-        absent). ── */
-  const [kbdH, setKbdH] = useState(0);
-  useEffect(() => {
-    let show: { remove: () => void } | null = null;
-    let hide: { remove: () => void } | null = null;
-    (async () => {
-      try {
-        const { Keyboard } = await import("@capacitor/keyboard");
-        show = await Keyboard.addListener("keyboardWillShow", (info) => setKbdH(info.keyboardHeight));
-        hide = await Keyboard.addListener("keyboardWillHide", () => setKbdH(0));
-      } catch { /* web — no-op */ }
-    })();
-    return () => { show?.remove(); hide?.remove(); };
-  }, []);
+  /* ── Clavier — géométrie déléguée à useSheetKeyboardGeometry.
+        Ce composant portait la logique en propre (listener + bottom + cap de
+        hauteur) ; elle a été EXTRAITE TELLE QUELLE dans le hook, qui est
+        désormais la source unique pour toutes les sheets. Aucun changement de
+        comportement ici : mêmes valeurs, même transition. ── */
+  const kbdStyle = useSheetKeyboardGeometry();
 
   if (!mounted || !open) return null;
 
@@ -121,14 +109,13 @@ export function SearchSheet<T>({
       <div
         className="fixed inset-x-0 z-[70] bg-[#111317] rounded-t-2xl flex flex-col"
         style={{
-          // Clavier OUVERT : on remonte le sheet pile au-dessus du clavier
-          // (bottom = kbdH) et on plafonne sa hauteur à l'espace restant pour
-          // que l'input + la liste restent visibles. Clavier FERMÉ : bottom:0
-          // + safe-area, comportement d'origine.
-          bottom: kbdH,
-          maxHeight: kbdH > 0 ? `calc(100vh - ${kbdH}px - 12px)` : "85vh",
-          paddingBottom: kbdH > 0 ? 8 : "env(safe-area-inset-bottom)",
+          // Clavier OUVERT : le sheet remonte pile au-dessus du clavier et sa
+          // hauteur est plafonnée à l'espace restant (hook). Clavier FERMÉ :
+          // bottom:0 + safe-area, comportement d'origine.
+          ...kbdStyle,
           transform: `translateY(${dragOffset}px)`,
+          // Le drag doit être instantané : on écrase la transition du hook
+          // pendant le geste, on la recompose avec celle du transform sinon.
           transition: isDragging
             ? "none"
             : "transform 280ms cubic-bezier(0.34, 1.56, 0.64, 1), bottom 250ms ease-out, max-height 250ms ease-out",
