@@ -174,7 +174,7 @@ const COACH_TABS: TabConfig[] = [
 
 const ATHLETE_TABS: TabConfig[] = [
   { key: "dashboard", label: "Accueil", href: "/athlete/dashboard", icon: Icons.dashboard, activeMatch: "/athlete/dashboard" },
-  { key: "parcours", label: "Mon parcours", href: "/athlete/mon-parcours", icon: Icons.flag, activeMatch: "/athlete/mon-parcours" },
+  { key: "parcours", label: "Parcours", href: "/athlete/mon-parcours", icon: Icons.flag, activeMatch: "/athlete/mon-parcours" },
   { key: "messages", label: "Messages", href: "/athlete/messages", icon: Icons.envelope, activeMatch: "/athlete/messages" },
   /* « CÉGEPS » PREND LE 4e SLOT, « Mon profil » descend dans le panel Plus
      (échange, pas ajout — la barre reste à CINQ slots, le 5e étant le bouton
