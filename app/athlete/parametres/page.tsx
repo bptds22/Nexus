@@ -45,15 +45,15 @@ const SECTIONS: { key: SectionKey; label: string; icon: React.ReactNode }[] = [
 const inputCls = "w-full bg-[#13151a] border border-[#2a2d36] rounded-lg px-4 py-2.5 text-[14px] text-[#e0e0e0] placeholder:text-[#4a4d56] focus:border-[#E63946] outline-none transition-colors";
 const labelCls = "block text-[12px] font-bold tracking-[0.25em] uppercase text-[#6B7280] mb-1.5";
 
-const NOTIF_PREFS = [
-  { key: "profile_viewed", label: "Profil consulté par un recruteur", default: true },
-  { key: "new_favorite", label: "Ajouté aux favoris", default: true },
-  { key: "suggestion_approved", label: "Suggestion approuvée", default: true },
-  { key: "suggestion_rejected", label: "Suggestion rejetée", default: true },
-  { key: "coach_update", label: "Profil mis à jour par ton coach", default: true },
-  { key: "completion_reminder", label: "Rappel de complétion (hebdomadaire)", default: true },
-  { key: "milestone", label: "Milestones (vues, favoris)", default: true },
-];
+/* Les 7 bascules de notification ont été retirées (parité mobile —
+   AthleteParametresMobile / CoachParametresMobile / RecruteurParametresMobile).
+   Elles vivaient dans un useState jamais écrit en base : le toast annonçait
+   « Préférence sauvegardée (POC) » et rien ne partait. Même en les branchant
+   sur users.notification_preferences (la colonne existe), rien n'aurait changé
+   à l'écran : AUCUN émetteur ne lit ces clés — ni trigger, ni RPC, ni edge
+   function. La seule fonction SQL qui les mentionne est delete_my_account, qui
+   les efface. Une bascule qui ment est pire qu'une absente.
+   La section reste dans la nav et porte désormais une ligne honnête. */
 
 export default function ParametresPage() {
   if (IS_CAPACITOR) return <AthleteParametresMobile />;
@@ -65,9 +65,6 @@ function ParametresPageDesktop() {
   const [section, setSection] = useState<SectionKey>("compte");
   const [toast, setToast] = useState<string | null>(null);
   const [showPwdForm, setShowPwdForm] = useState(false);
-  const [notifToggles, setNotifToggles] = useState<Record<string, boolean>>(
-    Object.fromEntries(NOTIF_PREFS.map((p) => [p.key, p.default]))
-  );
   const [showRevokeModal, setShowRevokeModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [actionPending, setActionPending] = useState(false);
@@ -375,17 +372,11 @@ function ParametresPageDesktop() {
           {/* ── NOTIFICATIONS ─────────────────────────────────── */}
           {section === "notifications" && (
             <div>
-              <h2 className="font-head text-lg font-black text-white uppercase tracking-tight mb-4">Préférences de notifications</h2>
-              <div className="space-y-1">
-                {NOTIF_PREFS.map((pref) => (
-                  <div key={pref.key} className="flex items-center justify-between py-3 border-b border-[#2D3748]/30 last:border-0">
-                    <span className="text-[13px] text-[#9CA3AF]">{pref.label}</span>
-                    <button type="button" onClick={() => { setNotifToggles((prev) => ({ ...prev, [pref.key]: !prev[pref.key] })); showToast("Préférence sauvegardée (POC)"); }}
-                      className={`relative w-10 h-6 rounded-full transition-colors ${notifToggles[pref.key] ? "bg-[#22C55E]" : "bg-[#2D3748]"}`}>
-                      <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform ${notifToggles[pref.key] ? "left-[18px]" : "left-0.5"}`} />
-                    </button>
-                  </div>
-                ))}
+              <h2 className="font-head text-lg font-black text-white uppercase tracking-tight mb-4">Notifications</h2>
+              <div className="bg-[#13151a] border border-white/5 rounded-lg p-4">
+                <p className="text-[13px] text-[#9CA3AF] leading-relaxed">
+                  Les notifications ne sont pas encore réglables une par une. Sur l&apos;application mobile, tu peux les couper entièrement dans les réglages de ton appareil.
+                </p>
               </div>
             </div>
           )}

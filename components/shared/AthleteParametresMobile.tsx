@@ -47,12 +47,10 @@ import { deleteMyAccount } from "@/lib/auth/deleteAccount";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
-/* ── Athlete notification rows — additive keys on users.notification_preferences JSONB.
-   Consentement marketing seulement — les bascules de notification ont été
-   through the master "Recevoir aussi par courriel" toggle. The 7 athlete keys live in
-   the SAME JSONB as the coach/recruiter keys — no migration needed, additive only. */
-
-interface NotifPrefs { [k: string]: boolean | string }
+/* ── Communications — consentement marketing SEULEMENT.
+   Les bascules de notification ont été retirées : voir le commentaire de la
+   section Communications plus bas, et app/athlete/parametres/page.tsx pour la
+   surface web, qui porte désormais la même ligne d'explication. */
 
 interface AthleteProfile {
   email: string;
@@ -83,9 +81,6 @@ export function AthleteParametresMobile() {
   const [loading, setLoading] = useState(true);
   const [signupDate, setSignupDate] = useState<string>("");
 
-  /* B2 — Notifications state (load → mutate → save back as whole JSONB).
-     Seed mirrors coach pattern : app_X = true unless explicit false ; email_X = false unless explicit true.
-     `origNotifs` snapshot drives the dirty-CTA. */
   // Consentement marketing — registre DATÉ (privacy_preferences.consent_marketing).
   const [marketingOn, setMarketingOn] = useState(false);
   const [origMarketingOn, setOrigMarketingOn] = useState(false);
@@ -155,11 +150,12 @@ export function AthleteParametresMobile() {
      collapsed so the toggle stays clean ; details on demand. */
   const [explainerOpen, setExplainerOpen] = useState(false);
 
-  /* ── Load athlete affiliation + consent state + notification prefs ─
+  /* ── Load athlete affiliation + consent state ──────────────────────
      Mirrors the desktop page.tsx loadProfile() shape (the join graph :
      schools!school_id, team_athletes → teams → schools, users!coach_id_fkey).
      B2 expansion : pulls partner_visibility_* + consentement_parental*
-     + date_naissance + users.notification_preferences (desktop L131-186). */
+     + date_naissance. users.notification_preferences n'est plus lu — les
+     bascules qu'il alimentait ont été retirées. */
   const loadProfile = useCallback(async () => {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -185,7 +181,7 @@ export function AthleteParametresMobile() {
 
     const { data: userRow } = await supabase
       .from("users")
-      .select("context, notification_preferences")
+      .select("context")
       .eq("id", user.id)
       .maybeSingle();
 
@@ -215,11 +211,6 @@ export function AthleteParametresMobile() {
       partnerParentalConsent: row.partner_visibility_parental_consent === true,
       parentalConsentDate: (row.consentement_parental_date as string | null) ?? null,
     });
-
-    /* Seed notification state — preserve the WHOLE existing JSONB so other roles'
-       keys survive the eventual write-back (merge-write discipline, mirrors the
-       parcours_readiness pattern). Then overlay defaults for the 7 athlete keys. */
-    const n = (userRow?.notification_preferences as NotifPrefs) || {};
 
     if (user.created_at) {
       setSignupDate(new Date(user.created_at).toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" }));
@@ -491,7 +482,6 @@ export function AthleteParametresMobile() {
         )}
       </Group>
 
-      {/* NOTIFICATIONS — 7 athlete ToggleRows + master email + marketing */}
       {/* COMMUNICATIONS — voir RecruteurParametresMobile pour le raisonnement
           complet. En résumé : les six bascules de notification et le maître
           « recevoir aussi par courriel » écrivaient dans
@@ -499,15 +489,26 @@ export function AthleteParametresMobile() {
           Le consentement marketing reste et pointe désormais sur le registre
           daté, privacy_preferences.consent_marketing : accorder écrit la date,
           retirer écrit null — le retrait doit être aussi simple que le
-          consentement (Loi 25). */}
+          consentement (Loi 25).
+
+          La ligne « Notifications » ci-dessous dit la même chose que
+          app/athlete/parametres/page.tsx, mot pour mot : retirer les bascules
+          sans rien mettre à la place laissait l'athlète devant une absence
+          plutôt que devant une réponse. */}
       <SectionLabel>Communications</SectionLabel>
       <Group>
+        <NavRow
+          label="Notifications"
+          sublabel="Les notifications ne sont pas encore réglables une par une. Sur l'application mobile, tu peux les couper entièrement dans les réglages de ton appareil."
+          isFirst
+          rightChevron="none"
+        />
         <ToggleRow
           label="Emails marketing"
           sublabel={marketingDate
             ? `Consenti le ${marketingDate} — désactive pour retirer`
             : "Annonces produit et infolettre"}
-          isFirst
+          isFirst={false}
           checked={marketingOn}
           onChange={setMarketingOn}
         />
