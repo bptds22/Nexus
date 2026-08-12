@@ -28,6 +28,10 @@ interface AthleteInfoCardProps {
   athleteOpenPrivate?: boolean;
   athleteOpenAnglophone?: boolean;
   athleteDistinctions?: string[];
+  /** Route for the "Voir le profil complet" CTA. Defaults to the recruiter
+      athlete route so existing recruiter callers render unchanged; the coach
+      thread passes /coach/athletes/[id]. */
+  profileHref?: string;
 }
 
 export default function AthleteInfoCard({
@@ -53,6 +57,7 @@ export default function AthleteInfoCard({
   athleteOpenPrivate = false,
   athleteOpenAnglophone = false,
   athleteDistinctions = [],
+  profileHref,
 }: AthleteInfoCardProps) {
   // Split athleteName so AthletePhoto can compute initials in
   // its onError fallback path. The athleteInitials prop becomes
@@ -179,7 +184,7 @@ export default function AthleteInfoCard({
       {/* Full profile CTA */}
       <div className="mt-4 pt-4 border-t border-white/[0.06]">
         <Link
-          href={`/recruteur/athletes/${athleteId}`}
+          href={profileHref ?? `/recruteur/athletes/${athleteId}`}
           className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border border-[#E63946] text-[#E63946] text-[13px] font-bold uppercase tracking-wider rounded-lg hover:bg-[#E63946]/10 transition-colors"
         >
           Voir le profil complet →

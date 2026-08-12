@@ -357,6 +357,20 @@ WHERE a.user_id = au.id
     SELECT 1 FROM recruiter_pipeline rp WHERE rp.athlete_id = a.id
   );
 
+-- Recruiters WORK at a CÉGEP (set at onboarding in prod ; the auth trigger does
+-- NOT set school_id for recruiters, so the demo must wire it explicitly). Drives
+-- the coach/director → recruiter directory (every CÉGEP with ≥1 recruiter, all
+-- its recruiters, no tier/verification filter). Spread across CÉGEPs to mirror
+-- prod reality — every recruiter reachable.
+UPDATE public.users u SET school_id = s.id FROM public.schools s
+  WHERE u.email = 'demo+rec01@nexussports.ca' AND s.type = 'CEGEP' AND s.name = 'Cégep de Sainte-Foy';
+UPDATE public.users u SET school_id = s.id FROM public.schools s
+  WHERE u.email = 'demo+rec02@nexussports.ca' AND s.type = 'CEGEP' AND s.name = 'Cégep de Limoilou';
+UPDATE public.users u SET school_id = s.id FROM public.schools s
+  WHERE u.email = 'demo+rec03@nexussports.ca' AND s.type = 'CEGEP' AND s.name = 'Cégep de Drummondville';
+UPDATE public.users u SET school_id = s.id FROM public.schools s
+  WHERE u.email = 'demo+rec04@nexussports.ca' AND s.type = 'CEGEP' AND s.name = 'Cégep de Jonquière';
+
 COMMIT;
 
 -- =============================================================================

@@ -61,6 +61,9 @@ import { SESSION_KEY_PREFIX } from "@/lib/platform/mobileRoutes";
 import PartnerVisibilityConsentCard from "@/components/shared/PartnerVisibilityConsentCard";
 import DistinctionBadge from "@/components/shared/DistinctionBadge";
 import { Card, ChipsBlock, DateRow, DetailedTag, EmailEditRow, InlineEditRow, MediaUrlRow, PickerRow, ReadOnlyRow, TagInputRow, ToggleRow } from "@/components/shared/wizard/rows";
+import TeamHistoryEditor from "@/components/shared/athlete/TeamHistoryEditor";
+import { diffTeamHistory, isTeamHistoryDiffEmpty, summarizeTeamHistoryDiff } from "@/components/shared/athlete/teamHistory";
+import type { TeamHistoryEntry } from "@/lib/types/models";
 import { labelCls, valueCls } from "@/components/shared/wizard/tokens";
 import { StarRow } from "@/components/shared/wizard/stars";
 import { useKeyboardHeight } from "@/lib/hooks/useKeyboardHeight";
@@ -405,7 +408,7 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
           return;
         }
         const raw = data as Record<string, unknown>;
-        const formFromDB = buildFormFromRaw(raw) as unknown as AthleteFormData;
+        const formFromDB = buildFormFromRaw(raw, user?.id) as unknown as AthleteFormData;
         const finalForm: AthleteFormData = { ...formFromDB, partnerVisibilityConsent: false };
         if (cancelled) return;
         setForm(finalForm);
@@ -681,6 +684,9 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
   const updatePhysical = useCallback((field: string, value: string) => {
     setForm((prev) => ({ ...prev, physical: { ...prev.physical, [field]: value } }));
   }, []);
+  const updateParcours = useCallback((entries: TeamHistoryEntry[]) => {
+    setForm((prev) => ({ ...prev, sports: { ...prev.sports, parcoursEquipes: entries } }));
+  }, []);
   const updateSports = useCallback((field: string, value: string | boolean) => {
     setForm((prev) => ({ ...prev, sports: { ...prev.sports, [field]: value } }));
   }, []);
@@ -811,6 +817,12 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
     push("Numéro", f.sports.jerseyNumber, b.sports.jerseyNumber);
     push("Équipe", f.sports.currentTeam, b.sports.currentTeam);
     push("Ouvert entraîneur CÉGEP", f.sports.openToCoaching, b.sports.openToCoaching);
+    // Parcours d'équipes — array diff (ajouts / retraits / modifs par
+    // team_name+year_start). One consolidated row w/ counts + team names.
+    const parcoursDiff = diffTeamHistory(b.sports.parcoursEquipes ?? [], f.sports.parcoursEquipes ?? []);
+    if (!isTeamHistoryDiffEmpty(parcoursDiff)) {
+      rows.push({ label: "Parcours d'équipes", old: "", new: summarizeTeamHistoryDiff(parcoursDiff) });
+    }
 
     push("Cote étoile", f.scouting.starRating, b.scouting.starRating);
     push("Rapport coach", f.scouting.coachEndorsement, b.scouting.coachEndorsement);
@@ -1920,6 +1932,20 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
           )}
         </Card>
 
+        {/* Parcours d'équipes (#5) — édition complète (add/modify/remove) de
+            l'historique d'équipes de l'athlète par le coach/directeur. Persisté
+            avec le reste du profil (form.sports.parcoursEquipes → saveAthlete) ;
+            RLS UPDATE athletes couvre déjà coach (coach_id) + directeur (école). */}
+        <div>
+          <h3 className="font-head text-[15px] font-black text-white uppercase tracking-tight mb-1">Parcours d&apos;équipes</h3>
+          <p className="text-[12px] text-white/45 mb-3">Historique d&apos;équipes de l&apos;athlète (max 10).</p>
+          <TeamHistoryEditor
+            value={s.parcoursEquipes ?? []}
+            onChange={updateParcours}
+            sports={SPORTS.filter((x) => x !== "Autre").map((x) => ({ id: x, nom: x }))}
+          />
+        </div>
+
         <AdvancedDivider />
 
         <Card>
@@ -1949,12 +1975,29 @@ export default function AthleteWizardMobile({ mode, athleteId }: AthleteWizardMo
        athlete-suggestion path. */
     const hasDetailedTraits = ratedTraits.length > 0;
 
+    // Bandeau contexte (#3) : la VALEUR, pas l'alerte. Quand la note PUBLIQUE
+    // last-write diffère de l'éval propre du coach, on affiche sobrement la note
+    // publique + qui l'a modifiée (le directeur, lisible via la RLS #1).
+    const publicNote = (form as { publicNote?: number }).publicNote ?? 0;
+    const publicEvaluatorName = (form as { publicEvaluatorName?: string }).publicEvaluatorName ?? "";
+    // #2 : le form ouvre déjà sur l'éval publique → le bandeau est purement
+    // contextuel (qui a fait la note), affiché quand c'est un AUTRE évaluateur.
+    const publicByOther = (form as { publicByOther?: boolean }).publicByOther ?? false;
+    const showPublicNoteBanner = publicNote > 0 && publicByOther;
+
     return (
       <div className="space-y-5">
         <div>
           <h2 className="font-head text-[22px] font-black text-white uppercase tracking-tight">Évaluation</h2>
           <p className="text-[13px] text-white/55 mt-1">Cote, distinctions, rapport</p>
         </div>
+
+        {showPublicNoteBanner && (
+          <p className="text-[12px] text-white/55 -mt-1">
+            Note publique : <span className="font-semibold text-white/85">{publicNote.toFixed(1)}</span>
+            {publicEvaluatorName ? <> — modifiée par {publicEvaluatorName}</> : null}
+          </p>
+        )}
 
         {/* Behavior-changing toggle (kept) */}
         <div className="flex items-center gap-1 bg-[#1A1D24] rounded-2xl p-1 w-fit">

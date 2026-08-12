@@ -15,6 +15,8 @@
      from non-zero trait ratings in BOTH modes (fix unification).
 ═══════════════════════════════════════════════════════════════ */
 
+import type { TeamHistoryEntry } from "@/lib/types/models";
+
 import type { DistinctionEntry } from "@/lib/config/badges";
 
 export interface AthleteFormData {
@@ -80,6 +82,11 @@ export interface AthleteFormData {
     secondaryLeague: string;
     recruitingLevel: string;
     openToCoaching: boolean;
+    /** Parcours d'équipes — historique déclaratif (JSONB). Miroir de
+     *  AthleteFormSports.parcoursEquipes (lib/types/models.ts). Le champ
+     *  manquait ICI alors que les consommateurs le posaient déjà : le wizard
+     *  mobile qui l'édite ne compilait pas. */
+    parcoursEquipes: TeamHistoryEntry[];
   };
   scouting: {
     evalMode: "simple" | "detailed";
@@ -136,6 +143,7 @@ export function emptyAthleteForm(): AthleteFormData {
       jerseyNumber: "", league: "",
       secondaryTeamId: "", secondaryTeam: "", secondaryTeamLevel: "", secondaryTeamDivision: "", secondaryLeague: "",
       recruitingLevel: "", openToCoaching: false,
+      parcoursEquipes: [],
     },
     scouting: {
       evalMode: "simple",

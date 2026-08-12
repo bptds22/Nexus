@@ -134,7 +134,7 @@ function CoachesListPage() {
       // Get all coaches in the same school
       const { data: schoolCoaches, error } = await supabase
         .from("school_coaches")
-        .select("coach_id, role, sport, team_name, created_at")
+        .select("coach_id, role, sport, created_at")
         .eq("school_id", mySchool.school_id);
 
       if (error || !schoolCoaches) { setLoading(false); return; }

@@ -8,7 +8,13 @@
    via ses getters UTC — donc indépendant du fuseau du navigateur.
    Un `Date` construit depuis un timestamptz Postgres est déjà le bon
    instant ; on ne fait que le formater.
+
+   Le corps .ics est délégué au helper pur `lib/utils/buildIcs` (source
+   unique du VCALENDAR/VEVENT) ; ici on ne fait qu'y ajouter l'URL
+   Google, le Blob et la commodité de download.
 ═══════════════════════════════════════════════════════════════ */
+
+import { buildIcs, toICalUtc } from "@/lib/utils/buildIcs";
 
 export interface CalendarEventInput {
   title: string;
@@ -27,52 +33,6 @@ export interface CalendarLinks {
 }
 
 const DEFAULT_DURATION_MIN = 60;
-
-/** Date → `YYYYMMDDTHHMMSSZ` (UTC). Le format attendu par iCal ET par Google. */
-function toICalUtc(d: Date): string {
-  const p = (n: number, len = 2) => String(n).padStart(len, "0");
-  return (
-    `${d.getUTCFullYear()}${p(d.getUTCMonth() + 1)}${p(d.getUTCDate())}` +
-    `T${p(d.getUTCHours())}${p(d.getUTCMinutes())}${p(d.getUTCSeconds())}Z`
-  );
-}
-
-/* Échappement iCalendar (RFC 5545 §3.3.11) : backslash, virgule et
-   point-virgule sont des séparateurs, et un retour ligne s'écrit `\n`
-   littéral. L'ordre compte — le backslash d'abord, sinon on ré-échappe
-   les backslashes qu'on vient d'introduire. */
-function escapeICalText(s: string): string {
-  return s
-    .replace(/\\/g, "\\\\")
-    .replace(/;/g, "\\;")
-    .replace(/,/g, "\\,")
-    .replace(/\r?\n/g, "\\n");
-}
-
-/* Les lignes iCal sont limitées à 75 octets ; au-delà on plie avec un
-   CRLF suivi d'UNE espace. On compte en octets (UTF-8), pas en chars —
-   un « é » pèse 2 octets et ferait déborder une ligne comptée en chars. */
-function foldICalLine(line: string): string {
-  const enc = new TextEncoder();
-  if (enc.encode(line).length <= 75) return line;
-
-  const out: string[] = [];
-  let cur = "";
-  let curBytes = 0;
-  // Limite à 74 pour laisser la place à l'espace de continuation.
-  for (const ch of line) {
-    const chBytes = enc.encode(ch).length;
-    if (curBytes + chBytes > 74) {
-      out.push(cur);
-      cur = "";
-      curBytes = 0;
-    }
-    cur += ch;
-    curBytes += chBytes;
-  }
-  if (cur) out.push(cur);
-  return out.join("\r\n ");
-}
 
 export function generateCalendarLinks(input: CalendarEventInput): CalendarLinks {
   const {
@@ -102,32 +62,15 @@ export function generateCalendarLinks(input: CalendarEventInput): CalendarLinks 
   const googleUrl = `https://calendar.google.com/calendar/render?${googleParams}`;
 
   /* ── .ics ─────────────────────────────────────────────────────
-     UID : stable pour un même (titre, instant) → ré-importer le même
-     fichier met à jour l'événement au lieu d'en créer un doublon.
-     Pas de Math.random() : deux téléchargements du même rendez-vous
-     doivent produire le même UID. */
-  const uid = `${dtStart}-${encodeURIComponent(title).slice(0, 40)}@nexussports.ca`;
-
-  const lines = [
-    "BEGIN:VCALENDAR",
-    "VERSION:2.0",
-    "PRODID:-//Nexus//Visite planifiee//FR",
-    "CALSCALE:GREGORIAN",
-    "METHOD:PUBLISH",
-    "BEGIN:VEVENT",
-    `UID:${uid}`,
-    `DTSTAMP:${toICalUtc(startDate)}`,
-    `DTSTART:${dtStart}`,
-    `DTEND:${dtEnd}`,
-    foldICalLine(`SUMMARY:${escapeICalText(title)}`),
-    foldICalLine(`DESCRIPTION:${escapeICalText(description)}`),
-    foldICalLine(`LOCATION:${escapeICalText(location)}`),
-    "END:VEVENT",
-    "END:VCALENDAR",
-  ];
-
-  // CRLF obligatoire (RFC 5545 §3.1) — Outlook rejette les LF nus.
-  const icsContent = lines.join("\r\n") + "\r\n";
+     Corps délégué au helper pur (source unique du VCALENDAR/VEVENT,
+     escaping, folding et UID stable). */
+  const icsContent = buildIcs({
+    summary: title,
+    start: startDate,
+    end,
+    location,
+    description,
+  });
 
   return {
     googleUrl,

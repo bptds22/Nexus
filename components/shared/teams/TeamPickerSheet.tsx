@@ -26,7 +26,10 @@ import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { createClient } from "@/lib/supabase/client";
 import { formatTeamLabel } from "@/lib/teams/teamLabel";
+import { headCoachName } from "@/lib/queries/shared/embeds";
 import { triggerHaptic } from "@/lib/haptics";
+import { orgNounCe, type SchoolType } from "@/lib/utils/orgLabel";
+import { useSheetKeyboardGeometry } from "@/lib/hooks/useSheetKeyboardGeometry";
 
 export interface TeamPickerItem {
   id: string;
@@ -44,6 +47,13 @@ export interface TeamPickerItem {
   /** Nombre de coachs déjà sur l'équipe. 0 ⇒ équipe orpheline
    *  (scrapée, jamais revendiquée) → le 1er arrivant devient head_coach. */
   coachCount: number;
+  /** Nom du coach-chef (role = 'head_coach'), ou null si aucun n'est déclaré.
+   *  null ⇒ NE PAS rendre de ligne « Coach : » — pas de libellé vide. */
+  headCoachName: string | null;
+  /** L'une des équipes DU coach courant (passée via excludeTeamIds). On ne
+   *  l'exclut plus (bug #3 : la seule équipe de l'école était masquée) — on
+   *  l'affiche marquée « Ton équipe », non rejoignable. */
+  isMine: boolean;
 }
 
 export interface TeamPickerSheetProps {
@@ -90,6 +100,12 @@ export function TeamPickerSheet({
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [dragOffset, setDragOffset] = useState(0);
+  /* Géométrie clavier — remonte ET plafonne. Voir le hook : la règle
+     globale de globals.css n'écrit que `bottom`, ce sheet sortait donc
+     par le haut au lieu d'être masqué par le bas. */
+  const kbdStyle = useSheetKeyboardGeometry();
+  // Type de l'org ciblée (école / club / cégep) → vocabulaire type-aware.
+  const [orgType, setOrgType] = useState<SchoolType | null>(null);
 
   useEffect(() => { setMounted(true); }, []);
   useEffect(() => { if (!open) { setSearch(""); setDragOffset(0); } }, [open]);
@@ -106,9 +122,13 @@ export function TeamPickerSheet({
     setLoading(true);
     (async () => {
       const supabase = createClient();
+      // Type de l'org ciblée pour le vocabulaire (école vs club vs cégep).
+      supabase.from("schools").select("type").eq("id", schoolId).maybeSingle().then(({ data: s }) => {
+        if (!cancelled) setOrgType((s as { type?: SchoolType } | null)?.type ?? null);
+      });
       let q = supabase
         .from("teams")
-        .select("id, name, age_group, division, gender, season, sport_id, sports!sport_id(nom), team_athletes(id), team_coaches(coach_id)")
+        .select("id, name, age_group, division, gender, season, sport_id, sports!sport_id(nom), team_athletes(id), team_coaches(coach_id, role, users!coach_id(first_name, last_name))")
         .eq("school_id", schoolId)
         .eq("is_active", true)
         .order("name", { ascending: true });
@@ -117,8 +137,10 @@ export function TeamPickerSheet({
       const { data } = await q;
       if (cancelled) return;
       const exclude = new Set(excludeKey ? excludeKey.split(",") : []);
+      // Bug #3 : on N'EXCLUT PLUS les équipes du coach (sinon sa seule équipe
+      // masque toute la liste → « Aucune équipe existante »). On les garde et
+      // on les marque isMine pour les afficher « Ton équipe », non rejoignables.
       const mapped: TeamPickerItem[] = (data || [])
-        .filter((r: Record<string, unknown>) => !exclude.has(r.id as string))
         .map((r: Record<string, unknown>) => {
           // L'embed peut arriver en objet ou en tableau selon la relation.
           const sportRel = Array.isArray(r.sports) ? r.sports[0] : r.sports;
@@ -131,6 +153,8 @@ export function TeamPickerSheet({
             gender: (r.gender as string | null) ?? null,
             athleteCount: ((r.team_athletes as unknown[]) || []).length,
             coachCount: ((r.team_coaches as unknown[]) || []).length,
+            headCoachName: headCoachName(r.team_coaches as Parameters<typeof headCoachName>[0]),
+            isMine: exclude.has(r.id as string),
           };
         });
       setTeams(mapped);
@@ -171,10 +195,15 @@ export function TeamPickerSheet({
       <div
         className="fixed bottom-0 left-0 right-0 z-[70] bg-[#1A1D24] rounded-t-2xl flex flex-col"
         style={{
-          maxHeight: "min(85vh, calc(100dvh - env(safe-area-inset-top, 0px)))",
-          paddingBottom: "env(safe-area-inset-bottom)",
+          /* CLAVIER — la classe `bottom-0` faisait bien remonter ce sheet via
+             la règle globale de globals.css, mais SANS plafonner sa hauteur :
+             il partait donc par le HAUT (titre + champ hors écran) au lieu
+             d'être masqué par le bas. Le hook fait les deux gestes. */
+          ...kbdStyle,
           transform: `translateY(${dragOffset}px)`,
-          transition: dragOffset === 0 ? "transform 280ms cubic-bezier(0.34, 1.56, 0.64, 1)" : "none",
+          transition: dragOffset === 0
+            ? "transform 280ms cubic-bezier(0.34, 1.56, 0.64, 1), bottom 250ms ease-out, max-height 250ms ease-out"
+            : "none",
         }}
         role="dialog"
         aria-modal="true"
@@ -242,7 +271,7 @@ export function TeamPickerSheet({
               </p>
               <p className="text-[12px] text-white/55 mt-1 max-w-xs">
                 {teams.length === 0
-                  ? "Sois la première personne à créer une équipe à cette école."
+                  ? `Sois la première personne à créer une équipe à ${orgNounCe(orgType)}.`
                   : "Essaie un autre nom ou crée une nouvelle équipe."}
               </p>
             </div>
@@ -252,8 +281,9 @@ export function TeamPickerSheet({
                 <li key={t.id}>
                   <button
                     type="button"
-                    onClick={() => { void triggerHaptic("Light"); onPicked(t); }}
-                    className="w-full flex items-center gap-3 p-3 bg-[#111317] rounded-2xl active:bg-[#22262e] transition-colors text-left"
+                    onClick={t.isMine ? undefined : () => { void triggerHaptic("Light"); onPicked(t); }}
+                    disabled={t.isMine}
+                    className={`w-full flex items-center gap-3 p-3 bg-[#111317] rounded-2xl transition-colors text-left ${t.isMine ? "opacity-60 cursor-default" : "active:bg-[#22262e]"}`}
                   >
                     <div className="w-10 h-10 rounded-xl bg-[#E63946]/15 border border-[#E63946]/30 flex items-center justify-center flex-shrink-0">
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2" strokeLinecap="round">
@@ -266,17 +296,32 @@ export function TeamPickerSheet({
                         {formatTeamLabel(t.sport, t.ageGroup, t.division, t.gender, t.name)}
                         {t.athleteCount > 0 ? ` · ${t.athleteCount} athlète${t.athleteCount > 1 ? "s" : ""}` : ""}
                       </p>
+                      {/* Coach-chef, RENDU CONDITIONNEL : aucune ligne n'est produite quand
+                          aucun head_coach n'est déclaré (headCoachName renvoie null) — pas
+                          de « Coach : » vide. La table team_coaches est très peu remplie,
+                          donc c'est le cas majoritaire aujourd'hui. */}
+                      {t.headCoachName && (
+                        <p className="text-[12px] text-white/45 truncate mt-0.5">
+                          Coach : {t.headCoachName}
+                        </p>
+                      )}
                       {/* Équipe orpheline (scrapée, jamais revendiquée) : le 1er
                           arrivant en devient head_coach — on l'annonce. */}
-                      {t.coachCount === 0 && (
+                      {!t.isMine && t.coachCount === 0 && (
                         <p className="text-[11px] text-[#22C55E] font-bold mt-0.5">
                           Aucun entraîneur — tu en deviendras responsable
                         </p>
                       )}
                     </div>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4a4d56" strokeWidth="2.4" strokeLinecap="round">
-                      <polyline points="9 18 15 12 9 6" />
-                    </svg>
+                    {t.isMine ? (
+                      <span className="text-[10px] font-black uppercase tracking-wider text-white/70 bg-white/10 rounded-full px-2 py-1 flex-shrink-0">
+                        Ton équipe
+                      </span>
+                    ) : (
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4a4d56" strokeWidth="2.4" strokeLinecap="round">
+                        <polyline points="9 18 15 12 9 6" />
+                      </svg>
+                    )}
                   </button>
                 </li>
               ))}

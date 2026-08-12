@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -14,10 +15,21 @@
             android:label="@string/title_activity_main"
             android:theme="@style/AppTheme.NoActionBarLaunch"
             android:launchMode="singleTask"
+            android:windowSoftInputMode="adjustNothing"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <!-- Retour du flow web OAuth (Google/Apple via Supabase) : capte la
+                 redirection ca.nexussports.app://auth/callback dans l'app
+                 (singleTask → onNewIntent → App.appUrlOpen → OAuthDeepLinkHandler). -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="ca.nexussports.app" />
             </intent-filter>
         </activity>
 
@@ -33,4 +45,19 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Calendrier (@ebarooni/capacitor-calendar) — parité avec les clés
+         NSCalendars*UsageDescription iOS : « Ajouter au calendrier » (visite).
+         Réintroduites : le merge f231185 avait résolu ce manifeste en faveur
+         du côté android-launch et effacé l'effet de 91c7e7a. -->
+    <uses-permission android:name="android.permission.READ_CALENDAR" />
+    <uses-permission android:name="android.permission.WRITE_CALENDAR" />
+
+    <!-- Advertising ID injecté au merge par facebook-core (tiré par
+         @capgo/capacitor-social-login, provider Facebook non utilisé par l'app).
+         Nexus n'a AUCUNE pub et cible des mineurs (13-15) → l'AD_ID est interdit
+         (COPPA / Play Families + déclaration Data Safety). On le retire du
+         manifeste fusionné. Idem pour la variante Privacy Sandbox (Android 13+). -->
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID" tools:node="remove" />
+    <uses-permission android:name="android.permission.ACCESS_ADSERVICES_AD_ID" tools:node="remove" />
 </manifest>

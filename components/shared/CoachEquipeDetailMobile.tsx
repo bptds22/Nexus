@@ -106,6 +106,13 @@ function toCoachAthlete(
     hasDistinction: false,
     hasAcademicBadge: false,
     createdAt: "",
+    // Requis par CoachAthlete. Le detail d'equipe ne liste que des ACTIF
+    // (cf. le bloc de statuts de CoachAthletesMobile) : isPending y est
+    // structurellement false, il n'est pas "inconnu".
+    isPending: false,
+    // Pas d'attribution d'evaluateur sur cet ecran : la note affichee est
+    // celle du coach courant.
+    evaluatedByName: "",
   };
 }
 

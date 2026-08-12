@@ -338,14 +338,25 @@ export async function saveAthleteEdit(
     .from("athletes")
     .update({ ...shared, ...editOnly, ...consentBlock })
     .eq("id", athleteId);
-  if (updateRes.error) return { error: updateRes.error };
+  /* NE PAS court-circuiter l'upsert éval si l'UPDATE athletes échoue.
+     Un directeur qui évalue l'athlète d'un AUTRE coach a le droit d'écrire
+     SON éval (RLS evaluations : coach_id = auth.uid() → passe), mais l'UPDATE
+     athletes peut être bloqué/partiel selon ses policies (il n'est pas le
+     coach primaire). Avant ce fix, un updateRes.error faisait un `return`
+     AVANT l'upsert → l'éval du directeur était silencieusement perdue
+     ("non sauvegardée"). On tente donc TOUJOURS l'upsert éval, et on ne
+     remonte l'erreur athletes qu'APRÈS, une fois l'éval en sécurité. */
 
-  // evaluations UPSERT
+  // evaluations UPSERT (indépendant du résultat de l'UPDATE athletes)
   const evalRecord = buildEvalRecord(form, athleteId, coachUserId, coteGlobale);
   const evalRes = await supabase
     .from("evaluations")
     .upsert(evalRecord, { onConflict: "coach_id,athlete_id" });
   if (evalRes.error) return { error: evalRes.error };
+
+  // L'éval est persistée : on peut maintenant remonter une éventuelle
+  // erreur d'écriture athletes sans risquer de perdre l'évaluation.
+  if (updateRes.error) return { error: updateRes.error };
 
   /* team_athletes — DÉPLACEMENT borné au sport, plus une purge globale.
      FIX 4 : l'ancien `.delete().eq("athlete_id", …)` effaçait TOUTES les

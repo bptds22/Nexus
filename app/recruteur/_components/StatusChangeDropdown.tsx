@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import type { RecruitmentStatus, RetireReason } from "@/lib/config/recruitmentStatuses";
 import { getStatusConfig, getValidTransitions, needsAutoMessage, RETIRE_REASONS, RECRUITMENT_STATUSES } from "@/lib/config/recruitmentStatuses";
+import { combineVisitInstant } from "@/lib/pipeline/visitInstant";
 import { StatusIcon } from "./RecruitmentStatusBadge";
 
 /* ─────────────────────────────────────────────────────────────────
@@ -26,19 +27,8 @@ interface Props {
   onCelebrate?: () => void;
 }
 
-/* `<input type="date">` donne "YYYY-MM-DD", `<input type="time">` donne
- * "HH:MM". `new Date("2026-03-12T14:00")` (sans suffixe Z) est interprété
- * en HEURE LOCALE par le moteur JS — exactement ce qu'on veut : le
- * recruteur saisit 14h à Montréal, on stocke l'instant UTC correspondant.
- * Ajouter un "Z" ici décalerait la visite de 4-5h.
- *
- * Heure absente → minuit local. VisitCalendarCard traite minuit pile comme
- * « pas d'heure saisie » et n'affiche alors que la date. */
-function combineVisitInstant(date: string, time: string): string | undefined {
-  if (!date) return undefined;
-  const d = new Date(`${date}T${time || "00:00"}`);
-  return Number.isNaN(d.getTime()) ? undefined : d.toISOString();
-}
+/* combineVisitInstant vit désormais dans lib/pipeline/visitInstant.ts
+ * (source unique partagée avec le mini date-picker mobile). */
 
 export default function StatusChangeDropdown({
   currentStatus,

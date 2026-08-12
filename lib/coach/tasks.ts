@@ -28,6 +28,7 @@
 ═══════════════════════════════════════════════════════════════ */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { loadCoachAthleteScope } from "@/lib/queries/coach/getCoachAthletes";
 
 /* ── Public types ─────────────────────────────────────────────── */
 
@@ -198,6 +199,17 @@ export async function loadCoachTasks(
   supabase: SupabaseClient,
   coachUserId: string,
 ): Promise<CoachTasksBreakdown> {
+  // Périmètre canonique (owner ∪ team, +école si directeur ; ACTIF+EN_ATTENTE)
+  // — source unique get_coach_athletes. La file « à traiter » couvre donc
+  // exactement les athlètes du roster : plus de divergence badge / liste /
+  // dashboard, et le directeur obtient le périmètre école automatiquement
+  // (le RPC détecte son statut). coachUserId ne sert plus au scope, seulement
+  // à attribuer l'éval « la mienne » (coteGlobale de la EvalQuickSheet).
+  const { ids: scopeIds } = await loadCoachAthleteScope(supabase);
+  if (!scopeIds.length) {
+    return { unverified: [], missingEval: [], pendingSuggestions: [], total: 0 };
+  }
+
   const [athletesRes, suggestionsRes] = await Promise.all([
     supabase
       .from("athletes")
@@ -210,12 +222,12 @@ export async function loadCoachTasks(
         verified,
         modified_since_verification,
         cote_globale_entraineur,
+        coach_id,
         sports!sport_id(nom),
         positions!position_id(abreviation),
         evaluations(coach_id, cote_globale, rapport_entraineur)
       `)
-      .eq("coach_id", coachUserId)
-      .eq("status", "ACTIF"),
+      .in("id", scopeIds),
     supabase
       .from("athlete_suggestions")
       .select(`
@@ -228,14 +240,10 @@ export async function loadCoachTasks(
         created_at,
         athletes!athlete_id!inner(first_name, last_name, coach_id)
       `)
-      // Scope by the athlete's CURRENT coach, not the suggestion's own
-      // coach_id column. That column is a point-in-time snapshot: a
-      // suggestion filed before the coach claimed the athlete carries
-      // coach_id=null and is never backfilled, so filtering on it drops
-      // the task silently. The !inner embed + athletes.coach_id filter
-      // mirrors the RLS policy (athlete_id IN athletes WHERE coach_id =
-      // auth.uid()) and the coach athlete-profile view.
-      .eq("athletes.coach_id", coachUserId)
+      // Suggestions des athlètes en périmètre canonique — filtre direct sur
+      // athlete_id (le RPC a déjà borné le set : owner ∪ team ∪ école-dir).
+      // status EN_ATTENTE = suggestion en attente de décision du coach.
+      .in("athlete_id", scopeIds)
       .eq("status", "EN_ATTENTE")
       .order("created_at", { ascending: false }),
   ]);
@@ -259,7 +267,13 @@ export async function loadCoachTasks(
     // "anyone can read evaluations" RLS makes the join return rows
     // owned by other coaches too — we filter explicitly so the gate
     // is coach-scoped, not "any coach who happens to share an athlete".
+    // coteGlobale de la carte = MON éval (pour la EvalQuickSheet originalCote).
     const myEval = evals.find((e) => e.coach_id === coachUserId) ?? null;
+    // « éval manquante » se juge contre l'éval du PROPRIÉTAIRE (row.coach_id) :
+    // un athlète d'équipe déjà évalué par son owner n'est pas « à évaluer », et
+    // un non réclamé (coach_id null) n'a pas d'owner → compte comme manquant.
+    // Pour un athlète que je possède, owner == moi → ownerEval == myEval.
+    const ownerEval = evals.find((e) => e.coach_id === (row as { coach_id?: string | null }).coach_id) ?? null;
 
     const task = toTaskAthlete(row, myEval);
 
@@ -271,7 +285,7 @@ export async function loadCoachTasks(
     if (!row.verified || row.modified_since_verification) {
       unverified.push(task);
     }
-    if (isMissingEval({ cote_globale_entraineur: row.cote_globale_entraineur }, myEval)) {
+    if (isMissingEval({ cote_globale_entraineur: row.cote_globale_entraineur }, ownerEval)) {
       missingEval.push(task);
     }
   }
@@ -319,3 +333,12 @@ export async function loadCoachTaskCounts(
     total: breakdown.total,
   };
 }
+
+/* ── Variante « école » supprimée (convergence 2026-08) ───────────
+   loadSchoolTaskCounts n'existe plus : get_coach_athletes détecte le
+   statut directeur côté serveur et renvoie déjà le périmètre école.
+   loadCoachTaskCounts(supabase, user.id) couvre donc les DEUX cas —
+   coach (owner ∪ team) et directeur (+ école) — avec la même détection
+   missingEval contre l'éval du propriétaire. Le dashboard n'a plus à
+   brancher sur isDir pour les tâches.
+─────────────────────────────────────────────────────────────────── */

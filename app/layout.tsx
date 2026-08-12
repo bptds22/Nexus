@@ -12,6 +12,7 @@ import { StatusBarBootstrap } from "@/components/mobile/StatusBarBootstrap";
 import { KeyboardInset } from "@/components/mobile/KeyboardInset";
 import { SplashGate } from "@/components/mobile/auth/SplashGate";
 import { SocialLoginInit } from "@/components/auth/SocialLoginInit";
+import { OAuthDeepLinkHandler } from "@/components/mobile/auth/OAuthDeepLinkHandler";
 import { AuthSync } from "@/components/auth/AuthSync";
 
 const ORGANIZATION_JSONLD = {
@@ -234,6 +235,9 @@ export default function RootLayout({
               <MobileToastProvider>
                 {/* Init unique du plugin social login (idempotent, native-only). */}
                 <SocialLoginInit />
+                {/* Retour du flow web OAuth Android (deep-link → session → dispatch).
+                    Android-only ; no-op iOS/web. */}
+                <OAuthDeepLinkHandler />
                 {/* Iter 7.47 — SplashGate joue l'anim X→logo UNE FOIS par
                     cold start Capacitor. Desktop : passthrough immédiat
                     (IS_CAPACITOR=false → children direct, jamais d'anim). */}

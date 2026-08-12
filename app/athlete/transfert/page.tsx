@@ -43,8 +43,15 @@ export default function AthleteTransfertPage() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
-      <header className="mb-6">
+    /* pb-8 et NON py-8, + nx-safe-top sur le header — même patron que
+       /athlete/notifications. Le layout athlète ne pose AUCUN padding-top en
+       Capacitor (« headers sticky safe-area », layout.tsx) : chaque page gère
+       son haut. Cette page-ci n'a pas de branche IS_CAPACITOR — c'est
+       délibéré — donc elle rend le markup web tel quel sur l'appareil, et son
+       titre entrait dans la barre de statut iOS. Garder py-8 empilerait le
+       padding haut par-dessus la safe-area. */
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 pb-8">
+      <header className="mb-6 nx-safe-top">
         <h1 className="font-head text-[26px] font-black text-white uppercase tracking-tight">
           Mon équipe
         </h1>

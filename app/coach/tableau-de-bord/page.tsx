@@ -8,6 +8,8 @@ import HotAthletes from "./_components/HotAthletes";
 import ActivityFeed from "./_components/ActivityFeed";
 import { CoachDashboardMobile } from "@/components/shared/CoachDashboardMobile";
 import { loadCoachTaskCounts } from "@/lib/coach/tasks";
+import { loadSchoolDirectorStatus } from "@/lib/queries/coach/useSchoolDirector";
+import { loadCoachAthleteScope } from "@/lib/queries/coach/getCoachAthletes";
 
 import type { ActionBarData, KpiData, HotAthlete } from "./_data/mockDashboardData";
 import type { ActivityEvent } from "@/lib/types/activityEvents";
@@ -41,6 +43,8 @@ export default function TableauDeBordPage() {
   const [hotAthletes, setHotAthletes] = useState<HotAthlete[]>([]);
   const [activities, setActivities] = useState<ActivityEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isDirector, setIsDirector] = useState(false);
+  const [activeTeams, setActiveTeams] = useState(0);
   const [isInterimDirector, setIsInterimDirector] = useState(false);
   const [interimSchoolName, setInterimSchoolName] = useState("");
   const [demotionNotifications, setDemotionNotifications] = useState<{
@@ -97,6 +101,21 @@ export default function TableauDeBordPage() {
         return;
       }
 
+      // Director → school-wide dashboard scope (BP rule). Non-director unchanged.
+      const dir = await loadSchoolDirectorStatus(supabase, user.id);
+      const isDir = dir.isDirector;
+      setIsDirector(isDir);
+      let schoolCoachIds: string[] = [];
+      if (isDir) {
+        const { data: scRows } = await supabase
+          .from("school_coaches").select("coach_id").eq("school_id", coachSchoolId);
+        schoolCoachIds = [...new Set((scRows ?? []).map((r) => (r as { coach_id: string }).coach_id).filter(Boolean))];
+        const { count: teamCount } = await supabase
+          .from("teams").select("id", { count: "exact", head: true })
+          .eq("school_id", coachSchoolId).eq("is_active", true);
+        setActiveTeams(teamCount || 0);
+      }
+
       // Load unread INTERIM_DEMOTED notifications
       const { data: demotions } = await supabase
         .from("coach_notifications")
@@ -115,12 +134,17 @@ export default function TableauDeBordPage() {
         })));
       }
 
-      // Get athletes claimed by this coach (coach-scoped roster)
-      const { data: athleteRows } = await supabase
-        .from("athletes")
-        .select("id, verified")
-        .eq("coach_id", user.id)
-        .eq("status", "ACTIF");
+      // Périmètre canonique roster — source unique get_coach_athletes (owner ∪
+      // team, +école si directeur ; ACTIF+EN_ATTENTE). Même set que le roster,
+      // le chat, l'à-traiter : le compte du dashboard ne peut plus diverger.
+      const { ids: scopeIds } = await loadCoachAthleteScope(supabase);
+      let athleteRows: { id: string; verified: boolean }[] | null = null;
+      if (scopeIds.length) {
+        ({ data: athleteRows } = await supabase
+          .from("athletes")
+          .select("id, verified")
+          .in("id", scopeIds));
+      }
 
       const athletes = athleteRows || [];
       const coachAthleteIds = athletes.map((a: { id: string }) => a.id);
@@ -142,15 +166,19 @@ export default function TableauDeBordPage() {
       // ÉTAPE 3c — convergence sur lib/coach/tasks.loadCoachTaskCounts pour que
       // le tab badge, le dashboard et la page /coach/a-traiter soient tous
       // alimentés par UNE SEULE source. Adds 'missingEvals' (ÉTAPE 3b nouveau).
+      // Un seul appel : get_coach_athletes (dans loadCoachTaskCounts) détecte
+      // le directeur → périmètre école automatique. Plus de branche isDir.
       const taskCounts = await loadCoachTaskCounts(supabase, user.id);
 
       // Banner 3: new athletes added (unread) — séparé, pas une "tâche"
-      const { count: newAthletesCount } = await supabase
+      const newAthletesSel = supabase
         .from("activities")
         .select("id", { count: "exact", head: true })
-        .eq("coach_id", user.id)
         .eq("type", "ATHLETE_ADDED")
         .eq("read", false);
+      const { count: newAthletesCount } = await (isDir
+        ? newAthletesSel.in("coach_id", schoolCoachIds.length ? schoolCoachIds : ["00000000-0000-0000-0000-000000000000"])
+        : newAthletesSel.eq("coach_id", user.id));
 
       setActionBar({
         unreadMessages,
@@ -388,7 +416,9 @@ export default function TableauDeBordPage() {
         <p className="text-[14px] text-[#9CA3AF] mt-1">
           {loading
             ? "Chargement…"
-            : `Bienvenue, ${coachName}${schoolName ? ` — ${schoolName}` : ""}`
+            : isDirector
+              ? `Vue école — ${schoolName || coachName}`
+              : `Bienvenue, ${coachName}${schoolName ? ` — ${schoolName}` : ""}`
           }
         </p>
         <p className="text-[12px] text-[#6b7280] mt-0.5 capitalize">{frenchDate()}</p>
@@ -453,7 +483,7 @@ export default function TableauDeBordPage() {
       <ActionBar data={actionBar} />
 
       {/* Zone 2: KPI Cards */}
-      <KpiCards data={kpi} />
+      <KpiCards data={kpi} isDirector={isDirector} activeTeams={activeTeams} />
 
       {/* Zone 3 + 4: Hot Athletes + Activity Feed */}
       <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">

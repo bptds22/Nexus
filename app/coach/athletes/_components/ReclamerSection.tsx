@@ -4,6 +4,7 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { RosterAthlete } from "../_data/mockRosterData";
 import AthletePhotoFill from "@/components/shared/AthletePhotoFill";
+import { orgNounPossessif, type SchoolType } from "@/lib/utils/orgLabel";
 
 /* ═══════════════════════════════════════════════════════════════
    ReclamerSection — multi-select grid for claiming unclaimed
@@ -17,12 +18,15 @@ import AthletePhotoFill from "@/components/shared/AthletePhotoFill";
 interface ReclamerSectionProps {
   unclaimedAthletes: RosterAthlete[];
   currentUserId: string;
+  /** Type d'org du coach courant → vocabulaire type-aware (club vs école). */
+  orgType?: SchoolType | null;
   onClaimSuccess: () => void;
 }
 
 export default function ReclamerSection({
   unclaimedAthletes,
   currentUserId,
+  orgType = null,
   onClaimSuccess,
 }: ReclamerSectionProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -81,7 +85,7 @@ export default function ReclamerSection({
           Aucun athlète non réclamé
         </h3>
         <p className="text-[13px] text-[#9CA3AF] mt-2 max-w-sm mx-auto">
-          Aucun athlète non réclamé à ton école pour l&apos;instant.
+          Aucun athlète non réclamé à {orgNounPossessif(orgType)} pour l&apos;instant.
         </p>
       </div>
     );
@@ -94,7 +98,7 @@ export default function ReclamerSection({
       <div className="space-y-4">
         <div>
           <h3 className="font-head text-[16px] font-black text-white uppercase tracking-tight">
-            Athlètes non réclamés à ton école
+            Athlètes non réclamés à {orgNounPossessif(orgType)}
             <span className="text-[#F59E0B] ml-2">({unclaimedAthletes.length})</span>
           </h3>
           <p className="text-[13px] text-[#9CA3AF] mt-1">

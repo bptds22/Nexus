@@ -407,8 +407,17 @@ export function MessagesListShell<T>({
       {/* Edit-mode bulk-archive bar */}
       {editMode && !isLocked && (
         <div
-          className="fixed inset-x-0 bottom-0 z-40 bg-[#1A1D24] border-t border-white/[0.06] px-4 py-3"
-          style={{ paddingBottom: "calc(12px + env(safe-area-inset-bottom))" }}
+          className="fixed inset-x-0 bottom-0 z-[70] bg-[#1A1D24] border-t border-white/[0.06] px-4 py-3"
+          /* z-[70] — convention des sheets, et NON z-40. La tab bar est
+             `fixed z-40` PORTALISÉE sur document.body : à z-index égal c'est
+             l'ordre du DOM qui tranche, et un portail sur body arrive après
+             l'arbre de la page → la tab bar peignait PAR-DESSUS ce bouton,
+             qui devenait intapable.
+             paddingBottom réserve en plus la hauteur de la tab bar (88px, la
+             même constante que le shell de fil et le layout) + la safe-area,
+             pour que le bouton se pose AU-DESSUS de la zone de la tab bar au
+             lieu de se superposer à ses icônes. */
+          style={{ paddingBottom: "calc(88px + env(safe-area-inset-bottom))" }}
         >
           <button
             type="button"

@@ -31,6 +31,7 @@ import { TeamPickerSheet, type TeamPickerItem } from "@/components/shared/teams/
 import { getCurrentSeason } from "@/lib/utils/season";
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import { triggerHaptic } from "@/components/shared/settings";
+import { useSheetKeyboardGeometry } from "@/lib/hooks/useSheetKeyboardGeometry";
 
 const ROLE_LABEL: Record<string, string> = {
   head_coach: "Chef",
@@ -77,6 +78,10 @@ export default function CoachEquipesMobile() {
 
   // Drag handle for the create sheet
   const [dragOffset, setDragOffset] = useState(0);
+  /* Géométrie clavier — remonte ET plafonne. Voir le hook : la règle
+     globale de globals.css n'écrit que `bottom`, ce sheet sortait donc
+     par le haut au lieu d'être masqué par le bas. */
+  const kbdStyle = useSheetKeyboardGeometry();
   const touchStartRef = useRef(0);
 
   const handleCreate = useCallback(async () => {
@@ -254,7 +259,12 @@ export default function CoachEquipesMobile() {
         open={showPicker}
         onClose={() => setShowPicker(false)}
         schoolId={schoolId || null}
-        season={getCurrentSeason()}
+        /* PAS de filtre saison : c'est LA surface anti-doublon. Une équipe
+           existe indépendamment de la saison — filtrer par getCurrentSeason()
+           masquait les équipes créées pour une autre saison (le formulaire
+           laisse choisir 2025-2026 / 2026-2027) et les équipes scrapées,
+           donc le coach ne les voyait pas et en créait un doublon.
+           On surface TOUTES les équipes de l'école, toutes saisons. */
         /* Ne propose pas de « rejoindre » une équipe dont je suis déjà membre. */
         excludeTeamIds={teams.map((t) => t.id)}
         onPicked={(team) => handlePickExisting(team)}
@@ -279,15 +289,21 @@ export default function CoachEquipesMobile() {
               className="fixed left-0 right-0 z-[70] bg-[#1A1D24] rounded-t-2xl flex flex-col shadow-[0_-12px_32px_rgba(0,0,0,0.5)]"
               style={{
                 // Tab bar = bulle flottante désormais : la sheet part du bas
-                // RÉEL de l'écran (bottom:0), pleine largeur, et recouvre la
-                // bulle (z-[70] > nav z-40). paddingBottom safe-area pour que
-                // l'action bar dégage le home indicator (l'ancien offset 64px
-                // de tab-bar laissait un gap sous la sheet avec la bulle).
-                bottom: 0,
-                paddingBottom: "env(safe-area-inset-bottom)",
-                maxHeight: "min(82dvh, calc(100dvh - env(safe-area-inset-top, 0px)))",
+                // RÉEL de l'écran, pleine largeur, et recouvre la bulle
+                // (z-[70] > nav z-40).
+                //
+                // CLAVIER — ce sheet était DOUBLEMENT immunisé contre la
+                // compensation : pas de classe `bottom-0` (la règle globale de
+                // globals.css ne le sélectionnait donc pas) ET un `bottom: 0`
+                // INLINE, qui aurait battu la règle de toute façon. Son plafond
+                // en `dvh` ne servait à rien non plus : sous KeyboardResize.None
+                // la WebView ne rétrécit pas. Le clavier dessinait par-dessus le
+                // formulaire. Le hook fournit bottom + maxHeight + paddingBottom.
+                ...kbdStyle,
                 transform: `translateY(${dragOffset}px)`,
-                transition: dragOffset === 0 ? "transform 280ms cubic-bezier(0.34, 1.56, 0.64, 1)" : "none",
+                transition: dragOffset === 0
+                  ? "transform 280ms cubic-bezier(0.34, 1.56, 0.64, 1), bottom 250ms ease-out, max-height 250ms ease-out"
+                  : "none",
               }}
               role="dialog"
               aria-modal="true"

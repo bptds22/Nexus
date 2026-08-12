@@ -39,93 +39,11 @@ const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
    TYPE DEFINITIONS
 ══════════════════════════════════════════════════════════════ */
 
-interface AthleteFormData {
-  identity: {
-    identityMode: "simple" | "detailed";
-    photo: string;
-    firstName: string;
-    lastName: string;
-    gender: string;
-    dateOfBirth: string;
-    gradYear: string;
-    school: string;
-    city: string;
-    region: string;
-    phone: string;
-    email: string;
-    parentName: string;
-    parentPhone: string;
-  };
-  academic: {
-    academicMode: "simple" | "detailed";
-    gpa: string;
-    strongSubjects: string[];
-    academicHonors: string[];
-    cegepType: "dec_general" | "technique" | "";
-    cegepProgramDetail: string;
-    openToPrivate: boolean;
-    openToAnglophone: boolean;
-    openToRelocate: boolean;
-    cegepRegions: string[];
-  };
-  physical: {
-    physicalMode: "simple" | "detailed";
-    heightFeet: string;
-    heightInches: string;
-    weightLbs: string;
-    wingspan: string;
-    handSize: string;
-    dominantHand: string;
-    dominantFoot: string;
-    fortyYard: string;
-    verticalJump: string;
-    broadJump: string;
-    benchPress: string;
-    shuttleAgility: string;
-    sprint100m: string;
-  };
-  sports: {
-    sportsMode: "simple" | "detailed";
-    primarySport: string;
-    primarySportDetail: string;
-    primaryPosition: string;
-    selectedTeamId: string;
-    currentTeam: string;
-    teamLevel: string;
-    teamDivision: string;
-    jerseyNumber: string;
-    league: string;
-    secondaryTeamId: string;
-    secondaryTeam: string;
-    secondaryTeamLevel: string;
-    secondaryTeamDivision: string;
-    secondaryLeague: string;
-    recruitingLevel: string;
-    openToCoaching: boolean;
-    parcoursEquipes: TeamHistoryEntry[];
-  };
-  scouting: {
-    evalMode: "simple" | "detailed";
-    starRating: number;
-    traitRatings: Record<string, number>;
-    badges: DistinctionEntry[];
-    coachEndorsement: string;
-  };
-  parentalConsent: boolean;
-  media: {
-    mediaMode: "simple" | "detailed";
-    hudlLink: string;
-    youtubeLink: string;
-    instagramLink: string;
-    highlightVideo: string;
-    fullGameVideo: string;
-    trainingVideo: string;
-  };
-  submission: {
-    recruitingStatus: string;
-    preferredDivision: string;
-  };
-}
+/* AthleteFormData n'est PAS redeclaree ici. Une copie locale vivait a cet
+   endroit, quasi identique a la canonique — assez proche pour tromper, assez
+   differente pour que TS refuse de passer l'une pour l'autre a saveAthleteEdit.
+   Une seule forme : wizardFormShape. */
+import type { AthleteFormData } from "@/app/coach/athletes/_data/wizardFormShape";
 
 /* ══════════════════════════════════════════════════════════════
    CONSTANTS
@@ -178,7 +96,10 @@ function emptyForm(): AthleteFormData {
     scouting: { evalMode: "simple", starRating: 0, traitRatings: {}, badges: [], coachEndorsement: "" },
     media: { mediaMode: "simple", hudlLink: "", youtubeLink: "", instagramLink: "", highlightVideo: "", fullGameVideo: "", trainingVideo: "" },
     submission: { recruitingStatus: "", preferredDivision: "" },
-    parentalConsent: false };
+    parentalConsent: false,
+    // Requis par la forme canonique. CREATE-only a l'ecriture, mais il vit
+    // sur la forme partagee pour que le wizard le porte de bout en bout.
+    partnerVisibilityConsent: false };
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -335,7 +256,7 @@ function ModifierContent({ id }: { id: string }) {
 
     })();
 
-    loadAthleteRaw(id).then(({ data, error }) => {
+    loadAthleteRaw(id).then(async ({ data, error }) => {
       if (error || !data) {
         console.error("Modifier: failed to load:", error);
         // Distinguish the auth failure from data-side failures so we can
@@ -353,7 +274,11 @@ function ModifierContent({ id }: { id: string }) {
       }
       const raw = data as Record<string, unknown>;
       // Build form directly from raw DB data — preserves all values
-      const formFromDB = buildFormFromRaw(raw) as unknown as AthleteFormData;
+      // `user` vit dans l'IIFE au-dessus (ecole + equipes du coach), qui se
+      // referme AVANT ce callback : hors de portee ici. On le relit dans le bon
+      // scope — getUser() sert la session en cache, pas un aller-retour reseau.
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      const formFromDB = buildFormFromRaw(raw, currentUser?.id) as unknown as AthleteFormData;
       setForm(formFromDB);
 
       // Load recruitment status fields from athlete record
@@ -1136,6 +1061,12 @@ function ModifierContent({ id }: { id: string }) {
 
     const heightStr = physical.heightFeet && physical.heightInches ? `${physical.heightFeet}'${physical.heightInches}"` : physical.heightFeet ? `${physical.heightFeet}'` : "";
 
+    // Parcours d'équipes — résumé lisible pour la carte Sport (nb + noms).
+    const parcours = sports.parcoursEquipes ?? [];
+    const parcoursStr = parcours.length === 0
+      ? ""
+      : `${parcours.length} équipe${parcours.length > 1 ? "s" : ""} : ${parcours.map((e) => (e.team_name || "").trim() || "Sans nom").join(", ")}`;
+
     return (
       <div className={cardCls}>
         <h2 className="font-head text-xl sm:text-2xl font-black text-white uppercase tracking-tight mb-1">Révision &amp; Enregistrement</h2>
@@ -1147,7 +1078,7 @@ function ModifierContent({ id }: { id: string }) {
 
         {summaryCard("Physique", 3, (<div>{infoRow("Taille", heightStr)}{infoRow("Poids", physical.weightLbs ? `${physical.weightLbs} lbs` : "")}{infoRow("Main dominante", physical.dominantHand)}{infoRow("40 verges", physical.fortyYard)}</div>))}
 
-        {summaryCard("Sport", 4, (<div>{infoRow("Sport principal", sports.primarySport)}{infoRow("Position", sports.primaryPosition)}{infoRow("Équipe", sports.currentTeam)}{infoRow("Niveau", sports.teamLevel)}</div>))}
+        {summaryCard("Sport", 4, (<div>{infoRow("Sport principal", sports.primarySport)}{infoRow("Position", sports.primaryPosition)}{infoRow("Équipe", sports.currentTeam)}{infoRow("Niveau", sports.teamLevel)}{infoRow("Parcours d'équipes", parcoursStr)}</div>))}
 
         {summaryCard("Évaluation", 5, (<div>
           {infoRow("Distinctions", scouting.badges.length > 0 ? scouting.badges.map((b) => {

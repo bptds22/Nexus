@@ -10,6 +10,7 @@ import CoachInfoCard from "@/components/recruteur/CoachInfoCard";
 import AthleteInfoCard from "@/components/recruteur/AthleteInfoCard";
 import FeatureGate from "@/components/subscription/FeatureGate";
 import { RecruteurMessagesThreadMobile } from "@/components/shared/RecruteurMessagesThreadMobile";
+import RetractedMessageRow from "@/components/messaging/RetractedMessageRow";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -23,10 +24,13 @@ interface MessageData {
   senderId: string;
   content: string;
   createdAt: string;
+  retracted?: boolean;
 }
 
 interface ThreadContext {
   conversationId: string;
+  /** RECRUTEUR_ATHLETE = direct thread (no coach, no about-athlete panels). */
+  isDirect: boolean;
   coachId: string;
   coachName: string;
   coachInitials: string;
@@ -93,10 +97,11 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 function MessageBubble({ msg, isMe, coachName }: { msg: MessageData; isMe: boolean; coachName: string }) {
+  if (msg.retracted) return <RetractedMessageRow text={msg.content} />;
   return (
     <div className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}>
       <p className="text-[11px] text-[#6b7280] mb-1.5">{isMe ? "Vous" : coachName} · {relativeTime(msg.createdAt)}</p>
-      <div className={`max-w-[80%] sm:max-w-[70%] rounded-2xl px-4 py-3 ${isMe ? "bg-[#1E3A5F] rounded-br-md" : "bg-[#1E293B] rounded-bl-md"}`}>
+      <div className={`max-w-[80%] sm:max-w-[70%] rounded-2xl px-4 py-3 ${isMe ? "bg-[#0A84FF] rounded-br-md" : "bg-[#262628] rounded-bl-md"}`}>
         <p className="text-[14px] text-white leading-relaxed whitespace-pre-wrap">{msg.content}</p>
       </div>
     </div>
@@ -149,7 +154,7 @@ function RecruiterThreadPage() {
       const { data: conv, error } = await supabase
         .from("conversations")
         .select(`
-          id, status, recruiter_id, coach_id, athlete_id, created_at,
+          id, conversation_type, status, recruiter_id, coach_id, athlete_id, created_at,
           coach:users!coach_id(id, first_name, last_name, avatar_url, email, phone, schools!school_id(name, region)),
           athlete:athletes!athlete_id(
             id, first_name, last_name, photo_url, verified, cote_globale_entraineur,
@@ -201,6 +206,7 @@ function RecruiterThreadPage() {
 
         const athleteData = {
           conversationId: conv.id,
+          isDirect: (conv.conversation_type as string) === "RECRUTEUR_ATHLETE",
           coachId: (coach?.id as string) || "",
           coachName: `${cf} ${cl}`.trim(),
           coachInitials: `${cf[0] || ""}${cl[0] || ""}`.toUpperCase(),
@@ -238,7 +244,7 @@ function RecruiterThreadPage() {
       // Load messages
       const { data: msgData } = await supabase
         .from("messages")
-        .select("id, sender_id, content, created_at")
+        .select("id, sender_id, content, created_at, retracted_at")
         .eq("conversation_id", id)
         .order("created_at", { ascending: true });
 
@@ -248,6 +254,7 @@ function RecruiterThreadPage() {
           senderId: m.sender_id,
           content: m.content,
           createdAt: m.created_at,
+          retracted: !!m.retracted_at,
         })));
       }
 
@@ -312,9 +319,16 @@ function RecruiterThreadPage() {
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M19 12H5" /><path d="M12 19l-7-7 7-7" /></svg>
               Retour
             </Link>
-            <p className="text-[14px] font-bold text-white truncate">
-              {ctx.coachName} — à propos de {ctx.athleteName}
-            </p>
+            {ctx.isDirect ? (
+              <span className="flex items-center gap-2 min-w-0">
+                <span className="text-[14px] font-bold text-white truncate">{ctx.athleteName || "Athlète"}</span>
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#22C55E]/15 border border-[#22C55E]/30 text-[#22C55E] shrink-0">Athlète</span>
+              </span>
+            ) : (
+              <p className="text-[14px] font-bold text-white truncate">
+                {ctx.coachName} — à propos de {ctx.athleteName}
+              </p>
+            )}
           </div>
           <StatusBadge status={ctx.status} />
         </div>
@@ -331,7 +345,7 @@ function RecruiterThreadPage() {
                 <DaySeparator date={group.date} />
                 <div className="space-y-4">
                   {group.msgs.map(msg => (
-                    <MessageBubble key={msg.id} msg={msg} isMe={msg.senderId === userId} coachName={ctx.coachName} />
+                    <MessageBubble key={msg.id} msg={msg} isMe={msg.senderId === userId} coachName={ctx.isDirect ? (ctx.athleteName || "Athlète") : ctx.coachName} />
                   ))}
                 </div>
               </div>
@@ -358,7 +372,10 @@ function RecruiterThreadPage() {
           </div>
         </div>
 
-        {/* Sidebar */}
+        {/* Sidebar — context cards ONLY for about-athlete (RECRUTEUR_COACH)
+            threads. A direct RECRUTEUR_ATHLETE thread has no coach card and no
+            "athlète concerné" panel (the athlete is the counterparty, not a subject). */}
+        {!ctx.isDirect && (
         <div className="xl:w-[340px] shrink-0 space-y-4 mt-6 xl:mt-0">
           {/* ── Coach card ─────────────────────────────── */}
           <CoachInfoCard
@@ -399,6 +416,7 @@ function RecruiterThreadPage() {
             athleteDistinctions={ctx.athleteDistinctions}
           />
         </div>
+        )}
       </div>
 
     </div>

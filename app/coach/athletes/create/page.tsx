@@ -105,6 +105,8 @@ interface AthleteFormData {
     secondaryLeague: string;
     recruitingLevel: string;
     openToCoaching: boolean;
+    /** Miroir de wizardFormShape.AthleteFormData.sports. */
+    parcoursEquipes: import("@/lib/types/models").TeamHistoryEntry[];
   };
   scouting: {
     evalMode: "simple" | "detailed";
@@ -214,7 +216,7 @@ const INITIAL_FORM: AthleteFormData = {
     selectedTeamId: "", currentTeam: "", teamLevel: "", teamDivision: "",
     jerseyNumber: "", league: "",
     secondaryTeamId: "", secondaryTeam: "", secondaryTeamLevel: "", secondaryTeamDivision: "", secondaryLeague: "",
-    recruitingLevel: "", openToCoaching: false,
+    recruitingLevel: "", openToCoaching: false, parcoursEquipes: [],
   },
   scouting: {
     evalMode: "simple",

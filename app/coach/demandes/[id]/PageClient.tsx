@@ -10,6 +10,11 @@ import StarRating from "@/components/ui/StarRating";
 import { createClient } from "@/lib/supabase/client";
 import { parseDistinctions, type DistinctionEntry } from "@/lib/config/badges";
 import { CoachDemandesThreadMobile } from "@/components/shared/CoachDemandesThreadMobile";
+import CoachAthleteThreadView from "./CoachAthleteThreadView";
+import CoachCoachThreadView from "./CoachCoachThreadView";
+import CoachParentThreadView from "./CoachParentThreadView";
+import CoachGroupThreadView from "./CoachGroupThreadView";
+import RetractedMessageRow from "@/components/messaging/RetractedMessageRow";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -64,6 +69,8 @@ function StatusBadge({ status }: { status: ThreadStatus }) {
 function MessageBubble({ msg, recruiterName }: { msg: Message; recruiterName?: string }) {
   const isCoach = msg.sender === "coach";
 
+  if ((msg as { retracted?: boolean }).retracted) return <RetractedMessageRow text={msg.text} />;
+
   return (
     <div className={`flex flex-col ${isCoach ? "items-end" : "items-start"}`}>
       <p className="text-[11px] text-[#6b7280] mb-1.5">
@@ -71,8 +78,8 @@ function MessageBubble({ msg, recruiterName }: { msg: Message; recruiterName?: s
       </p>
       <div className={`max-w-[80%] sm:max-w-[70%] rounded-2xl px-4 py-3 ${
         isCoach
-          ? "bg-[#14532D] rounded-br-md"
-          : "bg-[#1E293B] rounded-bl-md"
+          ? "bg-[#0A84FF] rounded-br-md"
+          : "bg-[#262628] rounded-bl-md"
       }`}>
         <p className="text-[14px] text-white leading-relaxed whitespace-pre-wrap">{msg.text}</p>
       </div>
@@ -101,6 +108,40 @@ export default function Page() {
   // /recruteur/messages/[id]/PageClient). Coach Free CAN message,
   // so no FeatureGate here (vs recruiter which gates behind Pro).
   if (IS_CAPACITOR) return <CoachDemandesThreadMobile />;
+  return <CoachThreadRouter />;
+}
+
+/* Route by conversation_type : ATHLETE_COACH → 2-party athlete view ;
+   anything else → the existing recruiter↔coach thread (byte-identical). */
+function CoachThreadRouter() {
+  const id = useDynamicParam("id");
+  const [convType, setConvType] = useState<"loading" | "ATHLETE_COACH" | "COACH_COACH" | "PARENT_COACH" | "GROUP" | "OTHER">("loading");
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const supabase = createClient();
+        const { data } = await supabase.from("conversations").select("conversation_type").eq("id", id).maybeSingle();
+        const t = data?.conversation_type;
+        if (!cancelled) setConvType(t === "ATHLETE_COACH" ? "ATHLETE_COACH" : t === "COACH_COACH" ? "COACH_COACH" : t === "PARENT_COACH" ? "PARENT_COACH" : t === "GROUP" ? "GROUP" : "OTHER");
+      } catch {
+        if (!cancelled) setConvType("OTHER");
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [id]);
+
+  if (convType === "loading") {
+    return (
+      <div className="min-h-screen bg-[#111317] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-[#E63946] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+  if (convType === "ATHLETE_COACH") return <CoachAthleteThreadView id={id} />;
+  if (convType === "COACH_COACH") return <CoachCoachThreadView id={id} />;
+  if (convType === "PARENT_COACH") return <CoachParentThreadView id={id} />;
+  if (convType === "GROUP") return <CoachGroupThreadView id={id} />;
   return <ThreadDetailPage />;
 }
 
@@ -210,7 +251,8 @@ function ThreadDetailPage() {
           sender: m.sender_id === user.id ? "coach" as const : "recruiter" as const,
           text: m.content || "",
           timestamp: m.created_at,
-        }));
+          retracted: !!m.retracted_at,
+        })) as Message[];
         setMessages(mappedMessages);
 
         // Mark unread messages as read

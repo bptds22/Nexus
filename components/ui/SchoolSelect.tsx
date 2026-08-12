@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { loadSchools, type SchoolRow } from "@/lib/queries/schools/allSchools";
+import type { SchoolType } from "@/lib/utils/orgLabel";
 
 /* ─────────────────────────────────────────────────────────────────
    SchoolSelect — searchable combobox for picking a school.
@@ -11,14 +12,13 @@ import { createClient } from "@/lib/supabase/client";
    - Optional filterType to restrict to SECONDAIRE or CEGEP
 ───────────────────────────────────────────────────────────────── */
 
-export type SchoolType = "SECONDAIRE" | "CEGEP";
-
-export interface SchoolRow {
-  id: string;
-  name: string;
-  city: string | null;
-  type: SchoolType;
-}
+/* Le chargement (pagination + cache) vit désormais dans
+   lib/queries/schools/allSchools.ts — implémentation unique partagée avec
+   le sheet mobile, qui s'en était écarté et retombait sous le plafond de
+   1000 lignes de PostgREST. Les deux types sont ré-exportés pour ne rien
+   changer à la surface publique de ce composant. */
+export type { SchoolRow };
+export type { SchoolType };
 
 interface Props {
   value: string | null;
@@ -27,42 +27,6 @@ interface Props {
   filterType?: SchoolType | null;
   className?: string;
   disabled?: boolean;
-}
-
-// Module-level cache so multiple SchoolSelect instances share one fetch.
-let _schoolsCache: SchoolRow[] | null = null;
-let _schoolsPromise: Promise<SchoolRow[]> | null = null;
-
-// Paginate past PostgREST's 1000-row cap (même patron que /admin/schools,
-// commit 4da34dd) → toutes les écoles chargent, pas juste les 1000 premières
-// par nom. Sinon un CÉGEP au-delà de la position 1000 (ex. Mérici) n'apparaît
-// dans aucune instance de SchoolSelect.
-async function fetchAllSchools(): Promise<SchoolRow[]> {
-  const supabase = createClient();
-  const PAGE = 1000;
-  const all: SchoolRow[] = [];
-  for (let from = 0; ; from += PAGE) {
-    const { data, error } = await supabase
-      .from("schools")
-      .select("id,name,city,type")
-      .order("name")
-      .range(from, from + PAGE - 1);
-    if (error) { console.error("[SchoolSelect] loadSchools", error); break; }
-    if (!data || data.length === 0) break;
-    all.push(...(data as SchoolRow[]));
-    if (data.length < PAGE) break;
-  }
-  return all.filter((s) => s.id && s.name);
-}
-
-function loadSchools(): Promise<SchoolRow[]> {
-  if (_schoolsCache) return Promise.resolve(_schoolsCache);
-  if (_schoolsPromise) return _schoolsPromise;
-  _schoolsPromise = fetchAllSchools().then((rows) => {
-    _schoolsCache = rows;
-    return _schoolsCache;
-  });
-  return _schoolsPromise;
 }
 
 function stripAccents(s: string): string {

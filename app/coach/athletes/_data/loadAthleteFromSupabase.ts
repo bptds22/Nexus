@@ -84,7 +84,8 @@ const ATHLETE_SELECT = `
     vision_du_jeu, sens_tactique,
     leadership, discipline, coachabilite, intelligence_jeu,
     competitivite, esprit_equipe, resilience, attitude_mentalite,
-    rapport_entraineur, distinctions, updated_at
+    rapport_entraineur, distinctions, updated_at, coach_id,
+    evaluator:users!evaluations_coach_id_fkey(first_name, last_name)
   ),
   users!coach_id(first_name, last_name)
 `;
@@ -159,15 +160,32 @@ export function mapToAthleteProfile(raw: Record<string, unknown>): AthleteProfil
 }
 
 /** Build modifier form data directly from raw Supabase response — preserves ALL fields */
-export function buildFormFromRaw(raw: Record<string, unknown>): Record<string, unknown> {
+export function buildFormFromRaw(raw: Record<string, unknown>, coachUserId?: string): Record<string, unknown> {
   const sportRel = Array.isArray(raw.sports) ? raw.sports[0] : raw.sports;
   const posRel = Array.isArray(raw.positions) ? raw.positions[0] : raw.positions;
   const schoolRel = Array.isArray(raw.schools) ? raw.schools[0] : raw.schools;
   const sportObj = sportRel as { nom?: string } | null;
   const posObj = posRel as { nom?: string; abreviation?: string } | null;
   const schoolObj = schoolRel as { name?: string; city?: string; region?: string; type?: string } | null;
-  const evals = Array.isArray(raw.evaluations) ? raw.evaluations : [];
+  const evals = (Array.isArray(raw.evaluations) ? raw.evaluations : []) as Record<string, unknown>[];
+  // #2 (règle finale BP — UNE seule éval vivante) : le FORMULAIRE Modifier ouvre
+  // sur l'éval PUBLIQUE ACTUELLE = la plus récente (celle du directeur si dernière),
+  // TOUS les champs (cote + traits) inclus. Le coach modifie À PARTIR d'elle et sa
+  // sauvegarde (coach_id=self, updated_at=now) devient la nouvelle publique
+  // (latest-wins à l'écriture). Plus de « chacun édite sa version ».
   const eval0 = (selectBestEvaluation(evals) ?? undefined) as Record<string, unknown> | undefined;
+  // Note publique = colonne dénormalisée last-write (identique à eval0 ci-dessus).
+  const publicNote = (raw.cote_globale_entraineur as number) || 0;
+  // Évaluateur de la note publique (souvent le directeur), lisible via la RLS #1.
+  const publicEvaluatorName = ((): string => {
+    const evRaw = eval0?.evaluator;
+    const ev = (Array.isArray(evRaw) ? evRaw[0] : evRaw) as { first_name?: string; last_name?: string } | null;
+    return ev ? `${ev.first_name || ""} ${ev.last_name || ""}`.trim() : "";
+  })();
+  const publicEvaluatorId = (eval0?.coach_id as string) || "";
+  // Le bandeau « modifiée par {nom} » ne s'affiche que si l'éval publique vient
+  // d'un AUTRE évaluateur que le coach courant (sinon c'est déjà la sienne).
+  const publicByOther = !!publicEvaluatorId && !!coachUserId && publicEvaluatorId !== coachUserId;
 
 
   const heightFt = raw.taille_pieds != null ? String(raw.taille_pieds) : "";
@@ -181,6 +199,11 @@ export function buildFormFromRaw(raw: Record<string, unknown>): Record<string, u
   else if (typeof progRaw === "string" && progRaw.startsWith("[")) try { progArr = JSON.parse(progRaw).filter((v: unknown) => v != null); } catch { /* */ }
 
   const formData = {
+    // Note publique last-write (#2/#3) — pour le bandeau contexte du formulaire.
+    publicNote,
+    publicEvaluatorName,
+    publicEvaluatorId,
+    publicByOther,
     identity: {
       identityMode: "detailed",
       photo: (raw.photo_url as string) || "",
@@ -423,8 +446,24 @@ export function mapToRecruiterView(raw: Record<string, unknown>): AthleteProfile
     coachSchool: schoolObj?.name || "",
     coachReport: (raw.notes_coach as string) || (eval0?.rapport_entraineur as string) || "",
     traitRatings: traitRatings as AthleteProfileRecruiterView["traitRatings"],
-    overallRating: (eval0?.cote_globale as number) || (raw.cote_globale_entraineur as number) || 0,
+    // NOTE affichée = LA PLUS RÉCENTE. On lit d'abord la colonne dénormalisée
+    // athletes.cote_globale_entraineur (maintenue en last-write par le trigger
+    // calc_cote_globale : elle reflète TOUJOURS la dernière éval saisie, tous
+    // coachs confondus, et reste lisible même quand la RLS evaluations ne
+    // renvoie au coach courant que SA propre ligne). eval0 (selectBestEvaluation)
+    // ne sert que de repli si la colonne est nulle (données legacy sans cascade).
+    overallRating: (raw.cote_globale_entraineur as number) || (eval0?.cote_globale as number) || 0,
     distinctions: parseDistinctions(eval0?.distinctions),
+    // Attribution : auteur de l'éval choisie (selectBestEvaluation → coach_id +
+    // users embed). Le composant compare evaluatorCoachId au coach connecté pour
+    // décider d'afficher « Évalué par … ». Visible quand la requête renvoie la
+    // ligne d'un autre évaluateur (directeur en oversight, admin).
+    evaluatorCoachId: (eval0?.coach_id as string | null) ?? null,
+    evaluatorName: (() => {
+      const ev = eval0?.evaluator as { first_name?: string; last_name?: string } | Array<{ first_name?: string; last_name?: string }> | null | undefined;
+      const evObj = Array.isArray(ev) ? ev[0] : ev;
+      return evObj ? `${evObj.first_name || ""} ${evObj.last_name || ""}`.trim() : "";
+    })(),
     highlightVideoUrl: (raw.video_faits_saillants_url as string) || "",
     hudlUrl: (raw.hudl_url as string) || "",
     youtubeUrl: (raw.youtube_url as string) || "",

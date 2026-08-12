@@ -71,6 +71,11 @@ keystore.properties
 /ios/App/Pods/
 /ios/App/output/
 
+# Android signing — NE JAMAIS COMMITER
+*.jks
+*.keystore
+android/keystore.properties
+
 # Capacitor assets generated outputs (sources kept; outputs regenerable)
 /assets/generated/
 # Data dumps temporaires (one-shot scripts)

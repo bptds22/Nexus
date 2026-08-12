@@ -21,6 +21,28 @@ import { norm, regionCentroid, scoreCegep } from "@/lib/queries/cegepSearch/scor
 import Link from "next/link";
 import type { MapFocus } from "./MapPane";
 
+const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
+const PUBLIC_BASE = "https://nexussports.ca";
+
+// La page école (ProgramPage) est server-only — loaders service-role + params
+// dynamiques ?school= → absente du bundle mobile (routes (dev) exclues). Sur
+// Capacitor, on ouvre la version HÉBERGÉE dans le navigateur in-app
+// (@capacitor/browser, overlay SafariVC → l'athlète reste dans Nexus et revient
+// à la carte en fermant). MÊME pattern que « Mon école » du coach
+// (GestionEcoleMobile) et les items external du MorePanel. Sur web : lien
+// relatif normal (nouvel onglet), inchangé.
+async function openCegepPageMobile(schoolId: string) {
+  // Route PUBLIQUE reelle. `/page-test` etait une page de banc d'essai du
+  // groupe (dev), desormais exclue du bundle mobile ET du build : y pointer
+  // donnait un 404 sur device.
+  const url = `${PUBLIC_BASE}/college/${schoolId}`;
+  try {
+    const { Browser } = await import("@capacitor/browser");
+    await Browser.open({ url });
+  } catch {
+    window.open(url, "_blank", "noopener,noreferrer");
+  }
+}
 
 const MapPane = dynamic(() => import("./MapPane"), { ssr: false });
 
@@ -574,8 +596,17 @@ function Apercu({
       <div className="pcta">
         {/* Page collège = route NATIVE (bundle Capacitor) → navigation INTERNE
             (client-side), l'athlète ne quitte pas l'app. Idem web. */}
+        {/* Route PUBLIQUE `/college/[id]`. Sous Capacitor on passe par le
+            navigateur in-app plutot qu'un <Link> Next : la page vit cote web,
+            elle n'est pas dans le bundle natif. */}
         {c.riche ? (
-          <Link className="btn page" href={`/college/${c.id}`}>Accéder à la page →</Link>
+            <a
+              className="btn page"
+              href={`/college/${c.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={IS_CAPACITOR ? (e) => { e.preventDefault(); void openCegepPageMobile(c.id); } : undefined}
+            >Accéder à la page →</a>
         ) : (
           <button className="btn nopage" disabled>Page à venir — cible-le.</button>
         )}

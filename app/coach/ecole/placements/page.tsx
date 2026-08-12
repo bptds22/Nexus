@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { loadCoachAthleteScope } from "@/lib/queries/coach/getCoachAthletes";
 import PlacementsTable from "@/components/director/PlacementsTable";
 import SchoolGate from "@/components/subscription/SchoolGate";
 import type { Placement } from "@/lib/types/models";
@@ -40,11 +41,15 @@ function PlacementsPage() {
       if (!schoolCoaches || schoolCoaches.length === 0) { setLoading(false); return; }
       const coachIds = schoolCoaches.map(sc => sc.coach_id);
 
-      // Get all athletes for these coaches with sport + position joins
+      // Périmètre canonique — source unique get_coach_athletes (directeur →
+      // école ∪ équipes ; ACTIF+EN_ATTENTE). Remplace .in("coach_id", coachIds).
+      // (coachIds reste utilisé plus bas pour les profils coachs.)
+      const { ids: scopeIds } = await loadCoachAthleteScope(supabase);
+      if (!scopeIds.length) { setLoading(false); return; }
       const { data: athletes } = await supabase
         .from("athletes")
         .select("id, first_name, last_name, sport_id, coach_id, position_id, sports!sport_id(nom), positions!position_id(nom, abreviation)")
-        .in("coach_id", coachIds);
+        .in("id", scopeIds);
 
       if (!athletes || athletes.length === 0) { setLoading(false); return; }
       const athleteIds = athletes.map(a => a.id);

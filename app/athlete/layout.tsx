@@ -31,6 +31,17 @@ const NAV_ITEMS = [
     ),
   },
   {
+    label: "Messages",
+    href: "/athlete/messages",
+    badgeKey: "messages" as const,
+    badgeColor: "#22C55E" as const,
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z" />
+      </svg>
+    ),
+  },
+  {
     label: "Mon parcours",
     href: "/athlete/mon-parcours",
     icon: (
@@ -93,6 +104,17 @@ const NAV_ITEMS = [
     icon: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 01-3.46 0" />
+      </svg>
+    ),
+  },
+  {
+    // Déplacée du groupe primaire vers le groupe secondaire (avec Notifications
+    // / Paramètres) — Messages occupe désormais le slot primaire (#2).
+    label: "Ma visibilité",
+    href: "/athlete/visibilite",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" />
       </svg>
     ),
   },
@@ -187,9 +209,29 @@ function AthleteSidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose:
       .eq("athlete_id", athlete.id)
       .eq("status", "EN_ATTENTE");
 
+    // Unread athlete↔coach messages (inbound, read_at IS NULL). The
+    // mark_conversation_read RPC keeps read_at current for this surface.
+    let msgUnread = 0;
+    const { data: myConvs } = await supabase
+      .from("conversations")
+      .select("id")
+      .eq("conversation_type", "ATHLETE_COACH")
+      .eq("athlete_id", athlete.id);
+    const convIds = (myConvs || []).map((c: { id: string }) => c.id);
+    if (convIds.length > 0) {
+      const { count } = await supabase
+        .from("messages")
+        .select("id", { count: "exact", head: true })
+        .in("conversation_id", convIds)
+        .is("read_at", null)
+        .neq("sender_id", user.id);
+      msgUnread = count || 0;
+    }
+
     setBadges({
       notifications: (unreadNotifs || 0) + (pendingInvitations || 0),
       profil: pendingSuggs || 0,
+      messages: msgUnread,
     });
   }, []);
 
@@ -229,7 +271,12 @@ function AthleteSidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose:
               <span className={isActive ? "text-[#E63946]" : "text-[#6b7280]"}>{item.icon}</span>
               <span className="flex-1">{item.label}</span>
               {(item as any).badgeKey && badges[(item as any).badgeKey] > 0 && (
-                <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-[#E63946] text-white text-[10px] font-black">{badges[(item as any).badgeKey]}</span>
+                <span
+                  className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-white text-[10px] font-black"
+                  style={{ backgroundColor: (item as any).badgeColor || "#E63946" }}
+                >
+                  {badges[(item as any).badgeKey]}
+                </span>
               )}
             </Link>
           );
@@ -339,7 +386,21 @@ export default function AthleteLayout({ children }: { children: React.ReactNode 
         .eq("id", session.user.id)
         .single();
 
-      const isComplete = !error && data?.onboarding_complete === true;
+      // Distinguish a NETWORK/RLS failure from a genuinely incomplete profile.
+      // A failed read must NEVER eject a logged-in athlete to the onboarding
+      // wizard — that is exactly how a transient DB slowdown (statement timeout
+      // under load) wiped the screen and bounced the user mid-session. Only a
+      // SUCCESSFUL read of onboarding_complete === false is a real "go to the
+      // wizard" signal. On error, render the shell and let each page re-fetch
+      // its own data (the athletes-table check in onboarding/dashboard is the
+      // backstop for a truly-incomplete profile).
+      if (error) {
+        console.warn("[AthleteLayout] onboarding_complete read failed — rendering shell, NOT redirecting:", error.message);
+        setState("ok");
+        return;
+      }
+
+      const isComplete = data?.onboarding_complete === true;
 
       if (!isComplete && normalizedPath !== "/athlete/onboarding") {
         router.replace("/athlete/onboarding");

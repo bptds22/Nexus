@@ -40,6 +40,8 @@ import { triggerHaptic } from "@/lib/haptics";
 import {
   needsSignupRole,
   claimSignupRole,
+  stashSignupRole,
+  clearSignupRole,
   type ClaimableRole,
   type ClaimableContext,
 } from "@/lib/auth/claimSignupRole";
@@ -104,8 +106,10 @@ export function SocialButtonsMobile({ topMargin = 20, role, context }: SocialBut
     triggerHaptic();
     setBusy(provider);
     try {
-      if (Capacitor.isNativePlatform()) {
-        // Device : flow NATIF (l'utilisateur reste dans l'app).
+      const nativePlatform = Capacitor.getPlatform();
+
+      if (nativePlatform === "ios") {
+        // iOS : flow NATIF (SDK Capgo — l'utilisateur reste dans l'app).
         // signInWithIdToken ne peut porter ni redirectTo ni raw_user_meta_data,
         // et /auth/callback (qui corrige le rôle sur web) est exclu du build
         // output:'export'. Le rôle est donc réclamé ICI, via la RPC.
@@ -144,6 +148,38 @@ export function SocialButtonsMobile({ topMargin = 20, role, context }: SocialBut
 
         // Aucun rôle connu (Welcome / Login) → interstitiel. PAS de défaut ATHLETE.
         router.replace("/inscription/role");
+      } else if (nativePlatform === "android") {
+        // Android : le SDK natif Apple/Google n'est pas câblé (pas de Services ID
+        // ni de client OAuth Android). On passe par le flow web OAuth (providers
+        // gérés par Supabase) + Custom Tab ; le retour arrive via le deep-link
+        // ca.nexussports.app://auth/callback → OAuthDeepLinkHandler complète la
+        // session + dispatche. Ici on ouvre juste l'onglet et on rend la main.
+        //
+        // Le rôle ne peut PAS voyager avec la requête : signInWithOAuth ne porte
+        // pas de metadata, et /auth/callback (correction web) est exclu du build
+        // output:'export'. On le dépose donc en local AVANT de sortir de l'app ;
+        // OAuthDeepLinkHandler le relit et le réclame via la RPC au retour, une
+        // fois la session posée. Sans stash → interstitiel /inscription/role.
+        // JAMAIS de défaut ATHLETE (même garantie que iOS et web).
+        if (role) stashSignupRole(role, context ?? null);
+
+        const supabase = createClient();
+        const { data, error } = await supabase.auth.signInWithOAuth({
+          provider,
+          options: {
+            redirectTo: "ca.nexussports.app://auth/callback",
+            skipBrowserRedirect: true,
+          },
+        });
+        if (error) {
+          clearSignupRole(); // pas de round-trip → pas de stash orphelin
+          toast.error({ message: "Connexion impossible", detail: error.message });
+          return;
+        }
+        if (data?.url) {
+          const { Browser } = await import("@capacitor/browser");
+          await Browser.open({ url: data.url });
+        }
       } else {
         // Web : flow OAuth standard (redirect navigateur géré par Supabase).
         // Le rôle connu voyage en query param — /auth/callback l'applique en

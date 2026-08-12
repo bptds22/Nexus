@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import SchoolGate from "@/components/subscription/SchoolGate";
 import { createClient } from "@/lib/supabase/client";
+import { loadCoachAthleteScope } from "@/lib/queries/coach/getCoachAthletes";
 
 /* ── types ──────────────────────────────────────────────── */
 
@@ -65,17 +66,15 @@ function StatsPage() {
         .single();
       if (!mySchool) { setLoading(false); return; }
 
-      const { data: schoolCoaches } = await supabase
-        .from("school_coaches")
-        .select("coach_id")
-        .eq("school_id", mySchool.school_id);
-      if (!schoolCoaches || schoolCoaches.length === 0) { setLoading(false); return; }
-      const coachIds = schoolCoaches.map(sc => sc.coach_id);
+      // Périmètre canonique — source unique get_coach_athletes (directeur →
+      // école ∪ équipes ; ACTIF+EN_ATTENTE). Remplace .in("coach_id", coachIds).
+      const { ids: scopeIds } = await loadCoachAthleteScope(supabase);
+      if (!scopeIds.length) { setLoading(false); return; }
 
       const { data: athletes } = await supabase
         .from("athletes")
         .select("id, first_name, last_name, sport_id, coach_id, profile_completion, verified, annee_diplomation, position_id, sports!sport_id(nom), positions!position_id(nom, abreviation)")
-        .in("coach_id", coachIds);
+        .in("id", scopeIds);
 
       if (!athletes || athletes.length === 0) { setLoading(false); return; }
       const athleteIds = athletes.map(a => a.id);

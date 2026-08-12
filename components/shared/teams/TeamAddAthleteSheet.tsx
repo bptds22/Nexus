@@ -16,6 +16,8 @@ import { createPortal } from "react-dom";
 import { createClient } from "@/lib/supabase/client";
 import AthletePhoto from "@/components/shared/AthletePhoto";
 import { triggerHaptic } from "@/lib/haptics";
+import { orgNounPossessif, type SchoolType } from "@/lib/utils/orgLabel";
+import { useSheetKeyboardGeometry } from "@/lib/hooks/useSheetKeyboardGeometry";
 
 export interface AthleteCandidate {
   id: string;
@@ -51,6 +53,11 @@ export function TeamAddAthleteSheet({
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [dragOffset, setDragOffset] = useState(0);
+  /* Géométrie clavier — remonte ET plafonne. Voir le hook : la règle
+     globale de globals.css n'écrit que `bottom`, ce sheet sortait donc
+     par le haut au lieu d'être masqué par le bas. */
+  const kbdStyle = useSheetKeyboardGeometry();
+  const [orgType, setOrgType] = useState<SchoolType | null>(null);
 
   useEffect(() => { setMounted(true); }, []);
   useEffect(() => { if (!open) { setSearch(""); setDragOffset(0); } }, [open]);
@@ -61,6 +68,10 @@ export function TeamAddAthleteSheet({
     setLoading(true);
     (async () => {
       const supabase = createClient();
+      // Type de l'org (école vs club vs cégep) pour le vocabulaire type-aware.
+      supabase.from("schools").select("type").eq("id", schoolId).maybeSingle().then(({ data: s }) => {
+        if (!cancelled) setOrgType((s as { type?: SchoolType } | null)?.type ?? null);
+      });
       const { data } = await supabase
         .from("athletes")
         .select("id, first_name, last_name, photo_url, positions!position_id(abreviation)")
@@ -117,10 +128,15 @@ export function TeamAddAthleteSheet({
       <div
         className="fixed bottom-0 left-0 right-0 z-[70] bg-[#1A1D24] rounded-t-2xl flex flex-col"
         style={{
-          maxHeight: "min(85vh, calc(100dvh - env(safe-area-inset-top, 0px)))",
-          paddingBottom: "env(safe-area-inset-bottom)",
+          /* CLAVIER — la classe `bottom-0` faisait bien remonter ce sheet via
+             la règle globale de globals.css, mais SANS plafonner sa hauteur :
+             il partait donc par le HAUT (titre + champ hors écran) au lieu
+             d'être masqué par le bas. Le hook fait les deux gestes. */
+          ...kbdStyle,
           transform: `translateY(${dragOffset}px)`,
-          transition: dragOffset === 0 ? "transform 280ms cubic-bezier(0.34, 1.56, 0.64, 1)" : "none",
+          transition: dragOffset === 0
+            ? "transform 280ms cubic-bezier(0.34, 1.56, 0.64, 1), bottom 250ms ease-out, max-height 250ms ease-out"
+            : "none",
         }}
         role="dialog"
         aria-modal="true"
@@ -145,7 +161,7 @@ export function TeamAddAthleteSheet({
             Ajouter un athlète
           </h2>
           <p className="text-[12px] text-[#9CA3AF] text-center mt-1">
-            Choisis un athlète de ton école pour l&apos;ajouter à l&apos;équipe.
+            Choisis un athlète de {orgNounPossessif(orgType)} pour l&apos;ajouter à l&apos;équipe.
           </p>
         </div>
 

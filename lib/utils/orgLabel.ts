@@ -82,6 +82,92 @@ export function orgPlaceholder(type: SchoolType | null | undefined): string {
   }
 }
 
+/* ─────────────────────────────────────────────────────────────────
+   Nom d'ENTITÉ de l'organisation (chantier #4 — décision BP).
+
+   ⚠️ Distinct de orgLabel() : orgLabel('LIGUE_CIVILE') reste 'ligue'
+   (vocabulaire d'ONBOARDING — « Sélectionne ta ligue »). Ici, hors
+   onboarding, un club LIGUE_CIVILE est une CORPORATION qui se nomme
+   « club », JAMAIS « école ». Ne PAS remplacer orgLabel par orgNoun
+   dans les surfaces d'onboarding.
+   ───────────────────────────────────────────────────────────────── */
+
+/**
+ * Nom nu de l'organisation.
+ *
+ * @example
+ *   orgNoun('LIGUE_CIVILE') → 'club'
+ *   orgNoun('SECONDAIRE')   → 'école'
+ *   orgNoun('CEGEP')        → 'cégep'
+ *   orgNoun(null)           → 'établissement'
+ */
+export function orgNoun(type: SchoolType | null | undefined): string {
+  switch (type) {
+    case 'LIGUE_CIVILE':
+      return 'club';
+    case 'CEGEP':
+      return 'cégep';
+    case 'SECONDAIRE':
+      return 'école';
+    default:
+      return 'établissement';
+  }
+}
+
+/**
+ * Possessif contracté avec « ton » (invariable en genre ici) — pour les
+ * tournures « de ton … » / « à ton … ».
+ *
+ * @example
+ *   `de ${orgNounPossessif('LIGUE_CIVILE')}` → 'de ton club'
+ *   `à ${orgNounPossessif('SECONDAIRE')}`    → 'à ton école'
+ */
+export function orgNounPossessif(type: SchoolType | null | undefined): string {
+  return `ton ${orgNoun(type)}`;
+}
+
+/**
+ * Génitif contracté « de + article » — respecte l'élision (« de l'école »
+ * vs « du club »). Pour les libellés impersonnels « … de l'école ».
+ *
+ * @example
+ *   `Athlètes ${orgNounDe('LIGUE_CIVILE')}` → 'Athlètes du club'
+ *   `Athlètes ${orgNounDe('SECONDAIRE')}`   → "Athlètes de l'école"
+ */
+export function orgNounDe(type: SchoolType | null | undefined): string {
+  switch (type) {
+    case 'LIGUE_CIVILE':
+      return 'du club';
+    case 'CEGEP':
+      return 'du cégep';
+    case 'SECONDAIRE':
+      return "de l'école";
+    default:
+      return "de l'établissement";
+  }
+}
+
+/**
+ * Démonstratif accordé en genre — « ce club » / « cette école » /
+ * « ce cégep » / « cet établissement ». Pour « à cette école ».
+ *
+ * @example
+ *   `à ${orgNounCe('LIGUE_CIVILE')}` → 'à ce club'
+ *   `à ${orgNounCe('SECONDAIRE')}`   → 'à cette école'
+ */
+export function orgNounCe(type: SchoolType | null | undefined): string {
+  switch (type) {
+    case 'LIGUE_CIVILE':
+      return 'ce club';
+    case 'CEGEP':
+      return 'ce cégep';
+    case 'SECONDAIRE':
+      return 'cette école';
+    default:
+      return 'cet établissement';
+  }
+}
+
 /**
  * Convertit un users.context en SchoolType pour les queries filtrées.
  *

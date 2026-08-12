@@ -72,3 +72,59 @@ export async function claimSignupRole(
   }
   return { ok: true };
 }
+
+/* ─────────────────────────────────────────────────────────────────
+   Stash du role — ANDROID uniquement.
+
+   Sur Android le flow OAuth sort de l'app (Custom Tab) et revient par le
+   deep-link ca.nexussports.app://auth/callback. Le role choisi a l'ecran 0
+   de SignupMobile ne survit pas a cet aller-retour : signInWithOAuth ne
+   porte pas de metadata, et /auth/callback (qui corrige le role sur web) est
+   exclu du build output:'export'. On le depose donc ici avant d'ouvrir
+   l'onglet, et OAuthDeepLinkHandler le relit au retour.
+
+   localStorage, pas sessionStorage : Android peut detruire l'activite (donc
+   la WebView, donc sessionStorage) pendant que le Custom Tab est au premier
+   plan. localStorage survit a la recreation.
+
+   TTL : un stash orphelin (utilisateur qui abandonne le consentement) ne doit
+   pas etre applique a un signup ulterieur sans rapport. La garde reelle reste
+   needsSignupRole() + la RPC one-shot — le TTL n'est qu'une ceinture de plus.
+───────────────────────────────────────────────────────────────── */
+
+const STASH_KEY = "nexus.signupRole";
+const STASH_TTL_MS = 10 * 60 * 1000; // 10 min — duree plausible d'un consentement OAuth
+
+interface StashedRole {
+  role: ClaimableRole;
+  context: ClaimableContext | null;
+  at: number;
+}
+
+export function stashSignupRole(role: ClaimableRole, context?: ClaimableContext | null): void {
+  try {
+    const payload: StashedRole = { role, context: context ?? null, at: Date.now() };
+    localStorage.setItem(STASH_KEY, JSON.stringify(payload));
+  } catch { /* storage indisponible → retour au flow interstitiel */ }
+}
+
+/** Relit le stash et le CONSOMME (lecture unique). null si absent/expire/corrompu. */
+export function readSignupRole(): { role: ClaimableRole; context: ClaimableContext | null } | null {
+  try {
+    const raw = localStorage.getItem(STASH_KEY);
+    if (!raw) return null;
+    localStorage.removeItem(STASH_KEY);
+
+    const parsed = JSON.parse(raw) as StashedRole;
+    if (!parsed?.role) return null;
+    if (Date.now() - parsed.at > STASH_TTL_MS) return null;
+
+    return { role: parsed.role, context: parsed.context ?? null };
+  } catch {
+    return null;
+  }
+}
+
+export function clearSignupRole(): void {
+  try { localStorage.removeItem(STASH_KEY); } catch { /* no-op */ }
+}

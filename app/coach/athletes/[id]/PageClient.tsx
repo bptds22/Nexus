@@ -10,11 +10,12 @@ import { SPORT_NAME_MAP } from "@/lib/config/sportBadges";
 import NxIcon from "@/components/ui/NxIcon";
 import StarRating from "@/components/ui/StarRating";
 import { createClient } from "@/lib/supabase/client";
+import { findOrCreateAthleteCoachConversation } from "@/lib/queries/messaging/createAthleteCoachConversation";
 import InvitationLinkModal from "@/components/ui/InvitationLinkModal";
 import { createAthleteInvitationLink } from "@/lib/queries/coach/createAthleteInvitation";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
 import DistinctionBadge from "@/components/shared/DistinctionBadge";
-import { parseDistinctions, type DistinctionEntry } from "@/lib/config/badges";
+import { type DistinctionEntry } from "@/lib/config/badges";
 import VideoEmbed from "@/components/ui/VideoEmbed";
 import type { GlobalRecruitmentStatus } from "@/lib/types/models";
 import { isValidationExpired } from "@/lib/utils/profileValidation";
@@ -279,6 +280,15 @@ export default function CoachAthleteProfilePage() {
 
       const mapped = mapToRecruiterView(raw);
       setA(mapped);
+      // Distinctions : réutiliser CELLES de l'éval choisie par
+      // selectBestEvaluation (mapped.distinctions), pas une lecture à part.
+      // L'ancien chemin refetchait evaluations avec .limit(1).maybeSingle()
+      // SANS order updated_at : pour un directeur (RLS lui laisse voir l'éval
+      // du coach propriétaire ET la sienne) ça renvoyait une ligne arbitraire
+      // — typiquement celle du coach — donc ses propres distinctions tout
+      // juste enregistrées ne se reflétaient pas. mapped.distinctions vient
+      // de selectBestEvaluation (la plus récente par updated_at) = la sienne.
+      setDbDistinctions(mapped.distinctions);
       setAthleteHasAccount(!!raw.user_id);
       setAthleteEmail((raw.email as string | null) ?? null);
       setLoading(false);
@@ -286,6 +296,10 @@ export default function CoachAthleteProfilePage() {
       // Load pipeline data (how many recruiters are interested)
       const { createClient } = await import("@/lib/supabase/client");
       const supabase = createClient();
+      // Coach connecté — sert à l'attribution « Évalué par … » : on ne l'affiche
+      // que si l'éval affichée (la plus récente) appartient à un AUTRE évaluateur.
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      setCurrentCoachId(authUser?.id ?? null);
       const { data: pipeRows } = await supabase
         .from("recruiter_pipeline")
         .select("stage, updated_at")
@@ -305,20 +319,6 @@ export default function CoachAthleteProfilePage() {
       const overrideAt = raw.recrutement_override_at as string | null;
       if (overrideVal && overrideAt) {
         setRecruitOverride({ value: overrideVal, at: overrideAt });
-      }
-
-      // Load full evaluation from evaluations table
-      const { data: evalRow } = await supabase
-        .from("evaluations")
-        .select("*")
-        .eq("athlete_id", id)
-        .limit(1)
-        .maybeSingle();
-      if (evalRow?.distinctions) {
-        let d = evalRow.distinctions;
-        if (typeof d === "string") { try { d = JSON.parse(d); } catch { d = []; } }
-        const parsed = parseDistinctions(d);
-        setDbDistinctions(parsed);
       }
 
       // Engagement metrics
@@ -451,6 +451,7 @@ export default function CoachAthleteProfilePage() {
   const [pipelineMaxAt, setPipelineMaxAt] = useState("");
   const [recruitOverride, setRecruitOverride] = useState<{ value: string; at: string } | null>(null);
   const [dbDistinctions, setDbDistinctions] = useState<DistinctionEntry[]>([]);
+  const [currentCoachId, setCurrentCoachId] = useState<string | null>(null);
   const [viewCount, setViewCount] = useState(0);
   const [favoriteCount, setFavoriteCount] = useState(0);
   const [globalRecruitmentStatus, setGlobalRecruitmentStatus] = useState<string>("OUVERT");
@@ -477,6 +478,13 @@ export default function CoachAthleteProfilePage() {
   const ratedTraits = traitEntries.filter(([, v]) => v > 0);
   const traitAvg = ratedTraits.length > 0 ? ratedTraits.reduce((s, [, v]) => s + v, 0) / ratedTraits.length : null;
   const coteGlobale = traitAvg ?? a.overallRating;
+
+  // Attribution — la note/éval affichée (la plus récente) n'est PAS celle du
+  // coach connecté : afficher « Évalué par {Prénom Nom} » (typiquement le
+  // directeur). evaluatorCoachId + evaluatorName viennent de la ligne choisie
+  // par selectBestEvaluation (join users). Ne s'affiche que si l'auteur diffère.
+  const evaluatedByOther =
+    !!a.evaluatorName && !!a.evaluatorCoachId && a.evaluatorCoachId !== currentCoachId;
 
   // FIX 4 — age calculation
   const age = a.dateOfBirth ? Math.floor((new Date().getTime() - new Date(a.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : 0;
@@ -526,6 +534,22 @@ export default function CoachAthleteProfilePage() {
             {/* Invitation : le bouton "Générer le lien" vit dans la bannière
                 "Compte non réclamé" ci-dessous (chemin token-based #48).
                 L'ancien bouton e-mail best-effort a été retiré. */}
+
+            {/* Envoyer un message (athlète ↔ coach) — Q4 */}
+            <button
+              type="button"
+              onClick={async () => {
+                const supabase = createClient();
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) return;
+                const { conversationId } = await findOrCreateAthleteCoachConversation(supabase, { athleteId: id, coachId: user.id });
+                if (conversationId) router.push(`/coach/demandes?id=${conversationId}`);
+              }}
+              className="flex items-center gap-2 px-4 py-2 border border-[#22C55E] text-[#22C55E] rounded-lg text-[11px] font-bold uppercase tracking-wider hover:bg-[#22C55E]/10 transition-colors"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z" /></svg>
+              Message
+            </button>
 
             {/* Edit */}
             <Link href={`/coach/athletes/${id}/modifier`} className="flex items-center gap-2 px-4 py-2 border border-[#E63946] text-[#E63946] rounded-lg text-[11px] font-bold uppercase tracking-wider hover:bg-[#E63946]/10 transition-colors">
@@ -729,10 +753,15 @@ export default function CoachAthleteProfilePage() {
             <div className={a.coachReport ? "mt-3" : ""}>
 
               {!isDetailed && (
-                <div className="mt-3 pl-5 flex items-center gap-3">
-                  <StarRating rating={coteGlobale} size="md" showNumber={false} />
-                  <span className="text-[18px] font-head font-black text-white">{coteGlobale.toFixed(1)}<span className="text-[14px] text-[#6B7280] font-normal">/5</span></span>
-                  <span className="text-[12px] text-[#6B7280] uppercase tracking-wider font-bold">Cote Globale</span>
+                <div className="mt-3 pl-5">
+                  <div className="flex items-center gap-3">
+                    <StarRating rating={coteGlobale} size="md" showNumber={false} />
+                    <span className="text-[18px] font-head font-black text-white">{coteGlobale.toFixed(1)}<span className="text-[14px] text-[#6B7280] font-normal">/5</span></span>
+                    <span className="text-[12px] text-[#6B7280] uppercase tracking-wider font-bold">Cote Globale</span>
+                  </div>
+                  {evaluatedByOther && (
+                    <p className="text-[12px] text-[#9CA3AF] mt-1.5">Évalué par <span className="font-bold text-white">{a.evaluatorName}</span></p>
+                  )}
                 </div>
               )}
 
@@ -743,6 +772,9 @@ export default function CoachAthleteProfilePage() {
                     <div>
                       <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#6b7280]">Cote globale (moyenne auto)</p>
                       <p className="text-[28px] font-head font-black text-[#F59E0B] leading-none mt-1">{coteGlobale.toFixed(1)}<span className="text-[14px] text-[#6b7280] font-normal ml-1">/ 5</span></p>
+                      {evaluatedByOther && (
+                        <p className="text-[12px] text-[#9CA3AF] mt-2">Évalué par <span className="font-bold text-white">{a.evaluatorName}</span></p>
+                      )}
                     </div>
                     <StarRating rating={coteGlobale} size="md" showNumber={false} />
                   </div>

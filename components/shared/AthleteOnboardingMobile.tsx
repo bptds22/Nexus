@@ -1373,6 +1373,16 @@ export function AthleteOnboardingMobile() {
               setUserContext(c);
               setStep(1);
             }}
+            initialCode={joinCodePrefill}
+            // applyCodeLock pose le contexte, l'organisation, l'équipe et le
+            // sport — mais PAS l'étape : c'est onPick qui avançait. On avance
+            // donc ici, et seulement sur un code réellement adopté (v non-null ;
+            // un code effacé rappelle avec null et doit laisser l'athlète à
+            // l'étape 0).
+            onCodeAdopted={(v) => {
+              applyCodeLock(v);
+              if (v) { triggerHaptic("Light"); setStep(1); }
+            }}
           />
         )}
 
@@ -1415,7 +1425,17 @@ export function AthleteOnboardingMobile() {
             // ici — c'est le même corps que le web.
             onJoinCodeResolved={applyCodeLock}
             codeLock={codeLock}
-            onReleaseCode={releaseCodeLock}
+            // « Changer » RAMÈNE À L'ÉTAPE 0 (lot 2). Le code ayant décidé du
+            // contexte sans que l'athlète ne réponde à « école ou club ? », le
+            // délier doit lui rendre cette question — sinon il resterait à
+            // l'étape 1 avec un contexte qu'il n'a jamais choisi.
+            //
+            // Le retour est posé ICI et pas dans releaseCodeLock : cette
+            // dernière est aussi appelée par applyCodeLock(null) quand on VIDE
+            // le champ code à l'étape 1, et éjecter l'athlète à ce moment-là
+            // serait absurde. Les champs déjà saisis sont conservés —
+            // releaseCodeLock ne remet à zéro que le verrou et l'équipe.
+            onReleaseCode={() => { releaseCodeLock(); setStep(0); }}
           />
         )}
 
@@ -2134,13 +2154,52 @@ interface Step2Props {
    équipe civile + région). Le choix vit en état LOCAL pendant la session
    et n'est persisté (users.context) qu'au submit via la RPC one-shot
    set_initial_role_and_context. ───────────────────────────────────── */
-function ContextPicker({ onPick }: { onPick: (c: "scolaire" | "ligue_civile") => void }) {
+/* ── LOT 2 — le code d'équipe MONTE à l'étape 0 ────────────────────────────
+   Il vivait à l'étape 1, donc APRÈS que l'athlète ait répondu « école ou
+   club ? ». Or le code porte déjà la réponse : resolve_team_join_token
+   retourne school_type, et applyCodeLock en dérive le contexte. Poser la
+   question puis la contredire une étape plus loin n'avait pas de sens.
+
+   Ici le code court-circuite la question : code résolu → contexte, école et
+   équipe dérivés → saut direct à l'étape 1, tout verrouillé.
+
+   `initialCode` vient de readStashedJoinCode(), lu au MONTAGE (:200) donc
+   toujours posé avant que l'étape 0 ne s'affiche — l'effet d'init qui appelle
+   setStep(0) attend Supabase, celui du stash n'attend rien. Le chemin
+   /join/CODE → signup → onboarding arrive donc pré-rempli ici aussi.
+
+   PORT 1:1 — le même bloc existe dans app/athlete/onboarding/page.tsx. */
+function ContextPicker({
+  onPick, initialCode, onCodeAdopted,
+}: {
+  onPick: (c: "scolaire" | "ligue_civile") => void;
+  initialCode: string;
+  onCodeAdopted: (v: { code: string; team: ResolvedJoinTeam } | null) => void;
+}) {
   return (
     <div className="px-6 pt-4 space-y-3">
       <StepHeading
         title="Où joues-tu ?"
         subtitle="Choisis ton parcours — ça détermine comment tu relies ton équipe."
       />
+
+      <div className="rounded-2xl border border-[#E63946]/25 bg-[#E63946]/[0.06] p-4">
+        <p className="text-[14px] font-semibold text-white">
+          Ton entraîneur t&apos;a donné un code ?
+        </p>
+        <p className="mt-1 mb-3 text-[13px] leading-relaxed text-white/55">
+          Entre-le : ton équipe, ton école ou ton club et ton sport se
+          remplissent tout seuls — pas besoin de répondre à la question.
+        </p>
+        <JoinCodeField initialCode={initialCode} onResolved={onCodeAdopted} />
+      </div>
+
+      <div className="flex items-center gap-3 py-1">
+        <div className="h-px flex-1 bg-white/10" />
+        <span className="text-[11px] uppercase tracking-wider text-white/35">ou</span>
+        <div className="h-px flex-1 bg-white/10" />
+      </div>
+
       <button
         type="button"
         onClick={() => { void triggerHaptic("Light"); onPick("scolaire"); }}

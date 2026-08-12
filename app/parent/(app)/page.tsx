@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { useParentConversations } from "@/lib/queries/parent/useParentConversations";
 
 /* Home parent minimale (Lot 1a) — identité de l'enfant lié via le RPC
    colonne-restreint get_my_children() (Option B : PAS tout le profil).
@@ -20,6 +21,8 @@ interface Child {
 export default function ParentHome() {
   const [child, setChild] = useState<Child | null>(null);
   const [loading, setLoading] = useState(true);
+  const { data: threads = [] } = useParentConversations();
+  const unreadMessages = threads.filter((t) => t.unreadCount > 0).length;
 
   useEffect(() => {
     let cancelled = false;
@@ -57,6 +60,7 @@ export default function ParentHome() {
       </div>
 
       <nav className="grid gap-3">
+        <HomeTile href="/parent/messages" title="Messages" sub="Écrire aux entraîneurs et directeurs de l'école de votre enfant" badge={unreadMessages} />
         <HomeTile href="/parent/consentements" title="Consentements" sub="Gérer les autorisations liées au profil de votre enfant" />
         <HomeTile href="/parent/activite" title="Activité" sub="Vues du profil et intérêt des recruteurs (anonyme)" />
         <HomeTile href="/parent/notifications" title="Notifications" sub="Événements récents liés au profil de votre enfant" />
@@ -65,11 +69,16 @@ export default function ParentHome() {
   );
 }
 
-function HomeTile({ href, title, sub }: { href: string; title: string; sub: string }) {
+function HomeTile({ href, title, sub, badge = 0 }: { href: string; title: string; sub: string; badge?: number }) {
   return (
     <Link href={href} className="bg-[#1A1D24] border border-white/5 rounded-xl px-5 py-4 flex items-center justify-between gap-4 hover:border-[#E63946]/40 transition-colors group">
       <div className="min-w-0">
-        <p className="font-semibold text-white">{title}</p>
+        <div className="flex items-center gap-2">
+          <p className="font-semibold text-white">{title}</p>
+          {badge > 0 && (
+            <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-[#E63946] text-white text-[10px] font-bold inline-flex items-center justify-center">{badge > 9 ? "9+" : badge}</span>
+          )}
+        </div>
         <p className="text-[12px] text-[#6B7280] mt-0.5">{sub}</p>
       </div>
       <svg className="shrink-0 text-[#6B7280] group-hover:text-[#E63946] transition-colors" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
