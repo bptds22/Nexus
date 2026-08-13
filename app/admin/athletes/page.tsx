@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import AdminTable, { AdminColumn } from "../_components/AdminTable";
+import { embeddedSchool, schoolTypeLabel } from "@/lib/config/schoolTypes";
 
 interface AthleteRow {
   id: string;
@@ -26,6 +27,7 @@ interface AthleteRow {
   // computed
   sport_name?: string | null;
   school_name?: string | null;
+  school_type?: string | null;
   coach_name?: string | null;
   created_at_fmt?: string;
 }
@@ -38,6 +40,7 @@ interface UserRow {
   role: string | null;
   school_id: string | null;
   school_name?: string | null;
+  school_type?: string | null;
   created_at: string | null;
 }
 
@@ -102,7 +105,6 @@ function AdminAthletesPageInner() {
 
   const [rows, setRows] = useState<AthleteRow[]>([]);
   const [sports, setSports] = useState<Sport[]>([]);
-  const [schools, setSchools] = useState<School[]>([]);
   const [stagnantAthleteIds, setStagnantAthleteIds] = useState<Set<string>>(new Set());
   const [userRows, setUserRows] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -132,20 +134,20 @@ function AdminAthletesPageInner() {
     (async () => {
       setLoading(true);
 
-      // Always fetch schools/sports (filters + lookups).
-      const [spRes, schRes] = await Promise.all([
-        supabase.from("sports").select("id,nom").order("nom"),
-        supabase.from("schools").select("id,name").order("name"),
-      ]);
+      // `schools` n'est plus chargée en entier : la table dépasse 1000
+      // lignes et PostgREST tronquait, ce qui vidait l'établissement de
+      // tout compte rattaché au-delà du 1000e nom. L'établissement vient
+      // désormais de la jointure, et le menu de filtre se déduit des
+      // lignes déjà chargées (cf. schoolsWithAthletes).
+      const spRes = await supabase.from("sports").select("id,nom").order("nom");
       setSports((spRes.data as Sport[]) || []);
-      setSchools((schRes.data as School[]) || []);
 
       if (isUserView) {
         // Branch: fetch users + pipeline + athlete→coach linkage.
         const targetRole = filterParam === "coach-sans-athletes" ? "COACH" : "RECRUTEUR";
         const [uRes, linkRes, pipeRes] = await Promise.all([
           supabase.from("users")
-            .select("id,first_name,last_name,email,role,school_id,created_at")
+            .select("id,first_name,last_name,email,role,school_id,created_at,schools!school_id(name,type)")
             .eq("role", targetRole),
           supabase.from("athletes").select("coach_id"),
           supabase.from("recruiter_pipeline").select("recruiter_id"),
@@ -160,17 +162,18 @@ function AdminAthletesPageInner() {
           if (p.recruiter_id) recruiterIdsActive.add(p.recruiter_id);
         }
 
-        const schoolsById = new Map<string, School>();
-        for (const s of (schRes.data as School[]) || []) schoolsById.set(s.id, s);
-
-        const filtered = ((uRes.data || []) as UserRow[])
+        const filtered = ((uRes.data || []) as (UserRow & { schools?: unknown })[])
           .filter((u) => filterParam === "coach-sans-athletes"
             ? !coachIdsWithAthletes.has(u.id)
             : !recruiterIdsActive.has(u.id))
-          .map((u) => ({
-            ...u,
-            school_name: u.school_id ? schoolsById.get(u.school_id)?.name ?? null : null,
-          }));
+          .map((u) => {
+            const joined = embeddedSchool(u.schools);
+            return {
+              ...u,
+              school_name: joined?.name ?? null,
+              school_type: joined?.type ?? null,
+            };
+          });
 
         setUserRows(filtered);
         setRows([]);
@@ -184,7 +187,7 @@ function AdminAthletesPageInner() {
         "id,first_name,last_name,sport_id,school_id,coach_id,annee_diplomation,verified," +
         "cote_globale_entraineur,statut_recrutement_override,profile_completion,consentement_parental," +
         "video_faits_saillants_url,video_match_complet_url,video_entrainement_url,created_at," +
-        "sports:sport_id(nom), schools:school_id(name), coach:coach_id(first_name,last_name)";
+        "sports:sport_id(nom), schools:school_id(name,type), coach:coach_id(first_name,last_name)";
 
       const tasks: PromiseLike<unknown>[] = [
         supabase.from("athletes").select(athletesSelect).order("created_at", { ascending: false }),
@@ -201,7 +204,7 @@ function AdminAthletesPageInner() {
       const mapped: AthleteRow[] = ((aRes.data || []) as Record<string, unknown>[]).map((a) => {
         const coach = a.coach as { first_name?: string; last_name?: string } | null;
         const sportRel = a.sports as { nom?: string } | null;
-        const schoolRel = a.schools as { name?: string } | null;
+        const schoolRel = embeddedSchool(a.schools);
         return {
           id: a.id as string,
           first_name: (a.first_name as string) ?? "",
@@ -221,6 +224,7 @@ function AdminAthletesPageInner() {
           created_at: a.created_at as string,
           sport_name: sportRel?.nom ?? null,
           school_name: schoolRel?.name ?? null,
+          school_type: schoolRel?.type ?? null,
           coach_name: coach ? `${coach.first_name ?? ""} ${coach.last_name ?? ""}`.trim() : null,
           created_at_fmt: formatDate(a.created_at as string),
         };
@@ -272,11 +276,17 @@ function AdminAthletesPageInner() {
   }, [loading, isUserView, filterParam, sportParam, schoolParam, searchQuery, filteredRows.length]);
 
   // Schools that actually have at least one athlete (for the dropdown).
+  // Déduit des lignes chargées — leur nom vient de la jointure, donc plus
+  // besoin d'un select complet de `schools` (qui était tronqué à 1000).
   const schoolsWithAthletes = useMemo(() => {
-    const ids = new Set<string>();
-    for (const r of rows) if (r.school_id) ids.add(r.school_id);
-    return schools.filter((s) => ids.has(s.id));
-  }, [rows, schools]);
+    const byId = new Map<string, School>();
+    for (const r of rows) {
+      if (r.school_id && r.school_name && !byId.has(r.school_id)) {
+        byId.set(r.school_id, { id: r.school_id, name: r.school_name });
+      }
+    }
+    return [...byId.values()].sort((a, b) => a.name.localeCompare(b.name, "fr"));
+  }, [rows]);
 
   const activeLabel = filterParam ? FILTER_LABELS[filterParam] || filterParam : null;
   const activeCount = isUserView ? userRows.length : filteredRows.length;
@@ -303,8 +313,13 @@ function AdminAthletesPageInner() {
       render: (r) => r.sport_name ? <span className="text-[13px] text-[#9CA3AF]">{r.sport_name}</span> : <span className="text-[#4a4d56]">—</span>,
     },
     {
-      key: "school_name", label: "École", readonly: true,
-      render: (r) => r.school_name ? <span className="text-[13px] text-[#9CA3AF]">{r.school_name}</span> : <span className="text-[#4a4d56]">—</span>,
+      key: "school_name", label: "Établissement", readonly: true,
+      render: (r) => r.school_name ? (
+        <span className="flex flex-col items-start leading-tight">
+          <span className="text-[13px] text-[#9CA3AF]">{r.school_name}</span>
+          {r.school_type && <span className="text-[11px] text-[#6b7280]">{schoolTypeLabel(r.school_type)}</span>}
+        </span>
+      ) : <span className="text-[#4a4d56]">—</span>,
     },
     { key: "annee_diplomation", label: "Promotion", readonly: true, align: "center" },
     {
@@ -536,7 +551,7 @@ function UserListTable({ rows }: { rows: UserRow[] }) {
           <tr className="bg-[#13151a] border-b border-[#2D3748]">
             <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-[0.1em] text-[#9CA3AF]">Nom</th>
             <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-[0.1em] text-[#9CA3AF]">Email</th>
-            <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-[0.1em] text-[#9CA3AF]">École</th>
+            <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-[0.1em] text-[#9CA3AF]">Établissement</th>
             <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-[0.1em] text-[#9CA3AF]">Inscrit le</th>
           </tr>
         </thead>
@@ -547,7 +562,14 @@ function UserListTable({ rows }: { rows: UserRow[] }) {
               <tr key={u.id} className="border-b border-[#2D3748] hover:bg-[#22252D]">
                 <td className="px-4 py-2.5 text-[13px] font-bold text-white">{name}</td>
                 <td className="px-4 py-2.5 text-[13px] text-[#9CA3AF]">{u.email || "—"}</td>
-                <td className="px-4 py-2.5 text-[13px] text-[#9CA3AF]">{u.school_name || "—"}</td>
+                <td className="px-4 py-2.5 text-[13px] text-[#9CA3AF]">
+                  {u.school_name ? (
+                    <span className="flex flex-col items-start leading-tight">
+                      <span>{u.school_name}</span>
+                      {u.school_type && <span className="text-[11px] text-[#6b7280]">{schoolTypeLabel(u.school_type)}</span>}
+                    </span>
+                  ) : "—"}
+                </td>
                 <td className="px-4 py-2.5 text-[13px] text-[#9CA3AF]">{formatDate(u.created_at)}</td>
               </tr>
             );

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import AdminTable, { AdminColumn } from "../_components/AdminTable";
 import SchoolSelect from "@/components/ui/SchoolSelect";
+import { embeddedSchool, schoolTypeLabel } from "@/lib/config/schoolTypes";
 
 type UserRole =
   | "ADMIN"
@@ -23,6 +24,7 @@ interface UserRow {
   status: AccountStatus;
   school_id: string | null;
   school_name?: string | null;
+  school_type?: string | null;
   is_school_admin: boolean | null;
   subscription_tier?: string | null;
   created_at: string;
@@ -30,10 +32,19 @@ interface UserRow {
   athlete_id?: string | null;
 }
 
-interface SchoolLookup {
+interface AthleteJoinRow {
   id: string;
-  name: string;
+  user_id: string | null;
+  school_id: string | null;
+  schools?: unknown;
 }
+
+/**
+ * Colonnes lues sur `users`, embed d'établissement compris.
+ * Littéral d'un seul tenant : une concaténation élargit le type en
+ * `string` et supabase-js retombe alors sur GenericStringError.
+ */
+const USERS_SELECT = "id,email,first_name,last_name,role,status,school_id,is_school_admin,created_at,schools!school_id(name,type)";
 
 const ROLE_OPTIONS: { value: UserRole; label: string }[] = [
   { value: "ADMIN", label: "Admin" },
@@ -72,7 +83,6 @@ function formatDate(iso: string | null | undefined) {
 export default function AdminUsersPage() {
   const supabase = useMemo(() => createClient(), []);
   const [rows, setRows] = useState<UserRow[]>([]);
-  const [schools, setSchools] = useState<SchoolLookup[]>([]);
   const [loading, setLoading] = useState(true);
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -100,31 +110,43 @@ export default function AdminUsersPage() {
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const [uRes, sRes, subRes, athRes] = await Promise.all([
+      // L'établissement vient d'une JOINTURE (schools!school_id), jamais
+      // d'une map construite à partir d'un select complet de `schools` :
+      // la table a plus de 1000 lignes et PostgREST tronque, ce qui faisait
+      // afficher un tiret à des comptes pourtant rattachés. Même patron que
+      // /admin/recruteurs.
+      const [uRes, subRes, athRes] = await Promise.all([
         supabase
           .from("users")
-          .select("id,email,first_name,last_name,role,status,school_id,is_school_admin,created_at")
+          .select(USERS_SELECT)
           .order("created_at", { ascending: false }),
-        supabase.from("schools").select("id,name").order("name"),
         supabase.from("subscriptions").select("user_id,tier"),
-        supabase.from("athletes").select("id,user_id,school_id"),
+        supabase.from("athletes").select("id,user_id,school_id,schools!school_id(name,type)"),
       ]);
-
-      const schoolMap = new Map((sRes.data || []).map((s: SchoolLookup) => [s.id, s.name]));
       const subMap = new Map<string, string>(
         (subRes.data || []).map((s: { user_id: string; tier: string }) => [s.user_id, s.tier]),
       );
-      const athleteSchoolMap = new Map<string, string>();
+      // Repli athlète : un ATHLETE porte son établissement sur sa fiche
+      // `athletes`, pas sur `users`. On récupère l'embed de CETTE ligne.
+      const athleteSchoolMap = new Map<string, { id: string | null; name: string | null; type: string | null }>();
       const athleteIdMap = new Map<string, string>();
-      for (const a of ((athRes.data || []) as { id: string; user_id: string | null; school_id: string | null }[])) {
-        if (a.user_id) athleteIdMap.set(a.user_id, a.id);
-        if (a.user_id && a.school_id) athleteSchoolMap.set(a.user_id, a.school_id);
+      for (const a of ((athRes.data || []) as AthleteJoinRow[])) {
+        if (!a.user_id) continue;
+        athleteIdMap.set(a.user_id, a.id);
+        if (a.school_id) {
+          athleteSchoolMap.set(a.user_id, {
+            id: a.school_id,
+            name: embeddedSchool(a.schools)?.name ?? null,
+            type: embeddedSchool(a.schools)?.type ?? null,
+          });
+        }
       }
 
       const mapped: UserRow[] = (uRes.data || []).map((u: Record<string, unknown>) => {
         const uid = u.id as string;
         const userSchoolId = (u.school_id as string) ?? null;
-        const resolvedSchoolId = userSchoolId ?? athleteSchoolMap.get(uid) ?? null;
+        const joined = embeddedSchool(u.schools);
+        const fallback = athleteSchoolMap.get(uid) ?? null;
         return {
           id: uid,
           email: (u.email as string) ?? "",
@@ -132,8 +154,9 @@ export default function AdminUsersPage() {
           last_name: (u.last_name as string) ?? null,
           role: u.role as UserRole,
           status: u.status as AccountStatus,
-          school_id: resolvedSchoolId,
-          school_name: resolvedSchoolId ? schoolMap.get(resolvedSchoolId) ?? null : null,
+          school_id: userSchoolId ?? fallback?.id ?? null,
+          school_name: joined?.name ?? fallback?.name ?? null,
+          school_type: joined?.type ?? fallback?.type ?? null,
           is_school_admin: (u.is_school_admin as boolean) ?? false,
           subscription_tier: subMap.get(uid) ?? "free",
           created_at: u.created_at as string,
@@ -143,7 +166,6 @@ export default function AdminUsersPage() {
       });
 
       setRows(mapped);
-      setSchools((sRes.data as SchoolLookup[]) || []);
       setLoading(false);
     })();
   }, [supabase, version]);
@@ -221,11 +243,16 @@ export default function AdminUsersPage() {
     },
     {
       key: "school_name",
-      label: "École",
+      label: "Établissement",
       readonly: true,
       render: (r) =>
         r.school_name ? (
-          <span className="text-[13px] text-[#9CA3AF]">{r.school_name}</span>
+          <span className="flex flex-col items-start leading-tight">
+            <span className="text-[13px] text-[#9CA3AF]">{r.school_name}</span>
+            {r.school_type && (
+              <span className="text-[11px] text-[#6b7280]">{schoolTypeLabel(r.school_type)}</span>
+            )}
+          </span>
         ) : (
           <span className="text-[#4a4d56]">—</span>
         ),
@@ -320,25 +347,28 @@ export default function AdminUsersPage() {
     // Refresh
     const { data } = await supa
       .from("users")
-      .select("id,email,first_name,last_name,role,status,school_id,is_school_admin,created_at")
+      .select(USERS_SELECT)
       .order("created_at", { ascending: false });
     if (data) {
       setRows((prev) => {
-        const schoolMap = new Map(schools.map((s) => [s.id, s.name]));
-        return data.map((u: Record<string, unknown>) => ({
-          id: u.id as string,
-          email: (u.email as string) ?? "",
-          first_name: (u.first_name as string) ?? null,
-          last_name: (u.last_name as string) ?? null,
-          role: u.role as UserRole,
-          status: u.status as AccountStatus,
-          school_id: (u.school_id as string) ?? null,
-          school_name: u.school_id ? schoolMap.get(u.school_id as string) ?? null : null,
-          is_school_admin: (u.is_school_admin as boolean) ?? false,
-          subscription_tier: prev.find((p) => p.id === u.id)?.subscription_tier ?? "free",
-          created_at: u.created_at as string,
-          created_at_fmt: formatDate(u.created_at as string),
-        }));
+        return data.map((u: Record<string, unknown>) => {
+          const joined = embeddedSchool(u.schools);
+          return {
+            id: u.id as string,
+            email: (u.email as string) ?? "",
+            first_name: (u.first_name as string) ?? null,
+            last_name: (u.last_name as string) ?? null,
+            role: u.role as UserRole,
+            status: u.status as AccountStatus,
+            school_id: (u.school_id as string) ?? null,
+            school_name: joined?.name ?? null,
+            school_type: joined?.type ?? null,
+            is_school_admin: (u.is_school_admin as boolean) ?? false,
+            subscription_tier: prev.find((p) => p.id === u.id)?.subscription_tier ?? "free",
+            created_at: u.created_at as string,
+            created_at_fmt: formatDate(u.created_at as string),
+          };
+        });
       });
     }
   }
