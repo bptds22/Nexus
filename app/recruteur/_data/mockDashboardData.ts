@@ -55,6 +55,13 @@ export interface TrendingAthlete {
   photoUrl?: string | null;
   firstName?: string;
   lastName?: string;
+  /**
+   * Projection serveur : false = identité masquée (Loi 25 ou tier FREE).
+   * Quand false, `name` porte déjà « Identité réservée » et il faut le
+   * passer aux AthletePhoto* pour qu'ils n'en dérivent pas d'initiales.
+   * Optionnel : le seed mock ci-dessous ne le porte pas.
+   */
+  identityVisible?: boolean;
 }
 
 export const TRENDING_ATHLETES: TrendingAthlete[] = [

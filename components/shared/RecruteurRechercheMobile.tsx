@@ -228,11 +228,19 @@ interface SuggestionItemProps {
   subtitle: string;
   query?: string;
   onTap: () => void;
+  /** false = identité masquée (Loi 25 ou tier FREE). */
+  identityVisible?: boolean;
+  /** Libellé déjà résolu à afficher quand identityVisible est false. */
+  lockedLabel?: string;
 }
 
-function SuggestionItem({ id, firstName, lastName, photoUrl, subtitle, query, onTap }: SuggestionItemProps) {
+function SuggestionItem({ id, firstName, lastName, photoUrl, subtitle, query, onTap, identityVisible, lockedLabel }: SuggestionItemProps) {
   // Highlight match si query
   const renderName = () => {
+    // Sous masquage, pas de surlignage : il n'y a pas de nom à
+    // surligner, et la requête ne doit pas laisser croire qu'elle a
+    // matché quelque chose.
+    if (identityVisible === false) return lockedLabel ?? "Identité réservée";
     const name = `${firstName} ${lastName}`.trim() || "—";
     if (!query || query.length < 2) return name;
     const lower = name.toLowerCase();
@@ -253,7 +261,7 @@ function SuggestionItem({ id, firstName, lastName, photoUrl, subtitle, query, on
       className="flex items-center gap-3 p-2 rounded-2xl active:bg-[#1A1D24] transition-colors"
     >
       <div className="relative w-11 h-11 rounded-full overflow-hidden flex-shrink-0 bg-[#2F3440]">
-        <AthletePhoto photoUrl={photoUrl ?? ""} firstName={firstName} lastName={lastName} size={44} />
+        <AthletePhoto photoUrl={photoUrl ?? ""} firstName={firstName} lastName={lastName} size={44} identityVisible={identityVisible} />
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-white font-semibold text-[15px] truncate">{renderName()}</p>
@@ -325,6 +333,8 @@ function SuggestionsPanel({ query, onItemTap }: { query: string; onItemTap: () =
                     photoUrl={a.photoUrl}
                     subtitle={[a.position, a.sport, a.school].filter(Boolean).join(" · ") || "—"}
                     onTap={onItemTap}
+                    identityVisible={a.identityVisible}
+                    lockedLabel={a.fullName}
                   />
                 ))}
               </div>
@@ -348,6 +358,8 @@ function SuggestionsPanel({ query, onItemTap }: { query: string; onItemTap: () =
                       photoUrl={null}
                       subtitle={[t.position, t.school].filter(Boolean).join(" · ") || "—"}
                       onTap={onItemTap}
+                      identityVisible={t.identityVisible}
+                      lockedLabel={t.name}
                     />
                   );
                 })}

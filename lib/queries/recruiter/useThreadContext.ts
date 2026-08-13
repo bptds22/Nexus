@@ -9,6 +9,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
+import { fetchRecruiterAthleteCards, displayFullName } from "@/lib/queries/shared/recruiterAthleteCards";
 
 export interface ThreadContextMobile {
   conversationId: string;
@@ -20,11 +21,15 @@ export interface ThreadContextMobile {
   coachInitials: string;
   coachPhotoUrl: string | null;
   athleteId: string;
+  /** Déjà résolu par displayFullName() — ne jamais reconcaténer
+   *  athleteFirstName + athleteLastName, vides sous masquage. */
   athleteName: string;
   athleteFirstName: string;
   athleteLastName: string;
   athletePhotoUrl: string | null;
   athletePosition: string;
+  /** false = identité masquée par le serveur (Loi 25 ou tier FREE). */
+  athleteIdentityVisible: boolean;
 }
 
 export function useThreadContext(conversationId: string | null) {
@@ -33,15 +38,14 @@ export function useThreadContext(conversationId: string | null) {
     queryFn: async () => {
       if (!conversationId) return null;
       const supabase = createClient();
+      /* Temps 1 — la conversation seule. L'embed `coach:users` reste :
+         il porte un utilisateur, pas un athlète, donc il n'est pas
+         concerné par la projection Loi 25. Seul l'embed athletes part. */
       const { data, error } = await supabase
         .from("conversations")
         .select(`
           id, conversation_type, status, coach_id, athlete_id,
-          coach:users!coach_id(id, first_name, last_name, avatar_url, photo_url),
-          athlete:athletes!athlete_id(
-            id, first_name, last_name, photo_url,
-            positions!position_id(abreviation)
-          )
+          coach:users!coach_id(id, first_name, last_name, avatar_url, photo_url)
         `)
         .eq("id", conversationId)
         .single();
@@ -50,15 +54,14 @@ export function useThreadContext(conversationId: string | null) {
 
       const coachRaw = data.coach;
       const coach = (Array.isArray(coachRaw) ? coachRaw[0] : coachRaw) as Record<string, unknown> | null;
-      const athleteRaw = data.athlete;
-      const athlete = (Array.isArray(athleteRaw) ? athleteRaw[0] : athleteRaw) as Record<string, unknown> | null;
-      const posRaw = athlete?.positions;
-      const pos = (Array.isArray(posRaw) ? posRaw[0] : posRaw) as { abreviation?: string } | null;
+
+      /* Temps 2 — la carte athlète projetée. */
+      const athleteId = (data.athlete_id as string | null) ?? null;
+      const cardMap = await fetchRecruiterAthleteCards(supabase, athleteId ? [athleteId] : []);
+      const card = (athleteId ? cardMap.get(athleteId) : null) ?? null;
 
       const cf = (coach?.first_name as string) || "";
       const cl = (coach?.last_name as string) || "";
-      const af = (athlete?.first_name as string) || "";
-      const al = (athlete?.last_name as string) || "";
       const coachPhoto = (coach?.photo_url as string) || (coach?.avatar_url as string) || null;
 
       return {
@@ -69,12 +72,13 @@ export function useThreadContext(conversationId: string | null) {
         coachName: `${cf} ${cl}`.trim() || "Coach",
         coachInitials: `${cf[0] || ""}${cl[0] || ""}`.toUpperCase(),
         coachPhotoUrl: coachPhoto,
-        athleteId: (athlete?.id as string) || "",
-        athleteName: `${af} ${al}`.trim() || "Athlète",
-        athleteFirstName: af,
-        athleteLastName: al,
-        athletePhotoUrl: (athlete?.photo_url as string) || null,
-        athletePosition: pos?.abreviation || "",
+        athleteId: card?.id ?? athleteId ?? "",
+        athleteName: displayFullName(card, "Athlète"),
+        athleteFirstName: card?.first_name ?? "",
+        athleteLastName: card?.last_name ?? "",
+        athletePhotoUrl: card?.photo_url ?? null,
+        athletePosition: card?.position_abbr ?? "",
+        athleteIdentityVisible: card?.identity_visible ?? false,
       };
     },
     enabled: !!conversationId,

@@ -49,6 +49,36 @@ interface LockedIdentityPlaceholderProps {
   className?: string;
 }
 
+/* Badge cadenas, coin inférieur droit.
+   L'asset seul ne dit pas POURQUOI il n'y a pas de photo : sur une
+   pastille de 40px il n'y a ni nom ni libellé à côté, donc rien ne
+   distingue « identité verrouillée » de « athlète sans photo ». Le
+   cadenas porte cette différence. Il est décoratif au sens ARIA —
+   le sens est déjà dans l'alt de l'image. */
+function LockBadge({ px }: { px: number }) {
+  return (
+    <span
+      className="absolute rounded-full bg-black/70 backdrop-blur-sm flex items-center justify-center"
+      style={{ width: px, height: px, right: Math.round(px * 0.12), bottom: Math.round(px * 0.12) }}
+      aria-hidden="true"
+    >
+      <svg
+        width={Math.round(px * 0.62)}
+        height={Math.round(px * 0.62)}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="#9CA3AF"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <rect x="3" y="11" width="18" height="11" rx="2" />
+        <path d="M7 11V7a5 5 0 0110 0v4" />
+      </svg>
+    </span>
+  );
+}
+
 export default function LockedIdentityPlaceholder({
   variant,
   size = 40,
@@ -56,24 +86,33 @@ export default function LockedIdentityPlaceholder({
 }: LockedIdentityPlaceholderProps) {
   if (variant === "fill") {
     return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src={PLACEHOLDER_SRC}
-        alt={LABEL}
-        title={LABEL}
-        className={`absolute inset-0 w-full h-full object-cover z-[1] ${className}`}
-      />
+      <span className={`absolute inset-0 z-[1] block ${className}`}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={PLACEHOLDER_SRC}
+          alt={LABEL}
+          title={LABEL}
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+        <LockBadge px={22} />
+      </span>
     );
   }
 
   return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={PLACEHOLDER_SRC}
-      alt={LABEL}
-      title={LABEL}
+    <span
+      className={`relative inline-block shrink-0 ${className}`}
       style={{ width: size, height: size }}
-      className={`rounded-full object-cover shrink-0 ${className}`}
-    />
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={PLACEHOLDER_SRC}
+        alt={LABEL}
+        title={LABEL}
+        className="w-full h-full rounded-full object-cover"
+      />
+      {/* En dessous de ~28px le badge mangerait la silhouette. */}
+      {size >= 28 && <LockBadge px={Math.max(12, Math.round(size * 0.36))} />}
+    </span>
   );
 }

@@ -580,12 +580,13 @@ function AthleteThreadSheet({
                         firstName={summary.firstName}
                         lastName={summary.lastName}
                         size={72}
+                        identityVisible={summary.identityVisible}
                       />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 min-w-0">
                         <p className="font-head text-[22px] font-black text-white uppercase tracking-tight truncate">
-                          {summary.firstName} {summary.lastName}
+                          {summary.fullName}
                         </p>
                         {/* Iter 7.9 Section 4 — verified = CHECK ✓ dans cercle
                             bleu #3B82F6 (canon), plus l'étoile (réservée à la cote). */}
@@ -767,7 +768,7 @@ export function RecruteurMessagesThreadMobile() {
       className="flex flex-col items-center gap-0.5 active:opacity-70 transition-opacity min-w-0 max-w-full"
     >
       <div className="w-9 h-9 rounded-full overflow-hidden flex-shrink-0 bg-[#2F3440]">
-        <AthletePhoto photoUrl={ctx?.athletePhotoUrl ?? null} firstName={ctx?.athleteFirstName ?? "A"} lastName={ctx?.athleteLastName ?? ""} size={36} />
+        <AthletePhoto photoUrl={ctx?.athletePhotoUrl ?? null} firstName={ctx?.athleteFirstName ?? "A"} lastName={ctx?.athleteLastName ?? ""} size={36} identityVisible={ctx?.athleteIdentityVisible} />
       </div>
       <div className="flex items-center gap-1.5 min-w-0 max-w-full">
         <span className="text-[16px] font-bold text-white truncate">{ctx?.athleteName ?? "Athlète"}</span>
