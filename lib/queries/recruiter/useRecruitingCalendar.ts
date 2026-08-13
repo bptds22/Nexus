@@ -31,8 +31,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
-import { taRows } from "@/lib/queries/shared/embeds";
 import { genderLabel } from "@/lib/config/gender";
+import { fetchRecruiterAthleteCards, displayFullName } from "@/lib/queries/shared/recruiterAthleteCards";
 
 /* ── Types ─────────────────────────────────────────────────── */
 
@@ -41,8 +41,13 @@ import { genderLabel } from "@/lib/config/gender";
  *  ce qui est exactement ce qu'il faut pour rattacher ses matchs. */
 export interface CalendarTarget {
   athleteId: string;
+  /** false = identité masquée par le serveur (Loi 25 ou tier FREE). */
+  identityVisible: boolean;
+  /** Déjà résolu par displayFullName() — ne jamais reconcaténer. */
+  fullName: string;
   firstName: string;
   lastName: string;
+  /** Vide sous masquage : une initiale est une divulgation partielle. */
   initials: string;
   photo: string;
   /** Slug sport aligné sur la page Recherche ("flag_football"). */
@@ -193,65 +198,80 @@ export function useRecruitingCalendar(enabled: boolean = true) {
 
       if (targetIds.length === 0) return EMPTY;
 
-      /* ── 2. Athlètes + leur(s) équipe(s) — un seul .in() ── */
-      const { data: athleteRows, error: athleteErr } = await supabase
-        .from("athletes")
-        .select(`
-          id, first_name, last_name, photo_url, verified,
-          annee_diplomation, video_faits_saillants_url,
-          cote_globale_entraineur, moyenne_generale, school_id,
-          sports!sport_id(nom),
-          positions!position_id(nom, abreviation),
-          schools!school_id(name, region, type),
-          team_athletes(
-            team_id,
-            teams!team_id(id, name, rseq_team_id)
-          )
-        ` as unknown as "*")
-        .in("id", targetIds)
-        .eq("status", "ACTIF");
-      if (athleteErr) throw athleteErr;
+      /* ── 2a. Les cartes projetées (famille 1 : lot d'IDs) ──
+         targetIds vient de pipeline ∪ favoris ∪ listes, donc c'est
+         bien un lot d'IDs connus, pas une recherche filtrée. */
+      const cardMap = await fetchRecruiterAthleteCards(supabase, targetIds);
+
+      /* ── 2b. Le rattachement d'équipe, à part ──
+         Les RPC de projection ne portent AUCUN champ d'équipe, et le
+         calendrier ne peut rien afficher sans le pont RSEQ. On le lit
+         donc directement : team_athletes et teams ne contiennent
+         aucune donnée personnelle d'athlète, seulement un lien.
+
+         La RLS reste le gardien, à l'identique de l'embed d'avant :
+         « Recruiters read own target team rows » couvre tout athlète
+         ACTIF présent dans le pipeline, les favoris ou les listes du
+         recruteur — c'est exactement la définition de targetIds, donc
+         la couverture est totale ici, vérifiés ou non. */
+      const { data: linkRows, error: linkErr } = await supabase
+        .from("team_athletes")
+        .select("athlete_id, team_id, teams!team_id(id, name, rseq_team_id)")
+        .in("athlete_id", targetIds);
+      if (linkErr) throw linkErr;
+
+      const linksByAthlete = new Map<string, Record<string, unknown>[]>();
+      for (const row of (linkRows ?? []) as Record<string, unknown>[]) {
+        const aid = row.athlete_id as string;
+        const cur = linksByAthlete.get(aid) ?? [];
+        cur.push(row);
+        linksByAthlete.set(aid, cur);
+      }
 
       const targets: CalendarTarget[] = [];
       const rseqTeamIds = new Set<string>();
 
-      ((athleteRows ?? []) as Record<string, unknown>[]).forEach((a) => {
-        const sportRel = pickOne<Record<string, string>>(a.sports);
-        const posRel = pickOne<Record<string, string>>(a.positions);
-        const schoolRel = pickOne<Record<string, string>>(a.schools);
-        // taRows : depuis l'ancrage unique strict, PostgREST renvoie cet embed
-        // en OBJET (ou null). Un test Array.isArray excluant le vidait, et le
-        // calendrier perdait TOUS ses matchs sans lever la moindre erreur.
-        const links = taRows<Record<string, unknown>>(
-          a.team_athletes as Record<string, unknown> | Record<string, unknown>[] | null,
-        );
+      targetIds.forEach((athleteId) => {
+        // `?? null` explicite : la RPC ne rend rien pour un athlète
+        // inactif — l'ancien `.eq("status","ACTIF")` le filtrait pareil.
+        const card = cardMap.get(athleteId) ?? null;
+        if (!card) return;
+
+        const links = linksByAthlete.get(athleteId) ?? [];
 
         const base = {
-          athleteId: a.id as string,
-          firstName: (a.first_name as string) || "",
-          lastName: (a.last_name as string) || "",
-          initials: initialsOf((a.first_name as string) || "", (a.last_name as string) || ""),
-          photo: (a.photo_url as string) || "",
-          sport: (sportRel?.nom || "").toLowerCase().replace(/ /g, "_"),
-          sportName: sportRel?.nom || "",
-          position: posRel?.abreviation || "",
-          graduationYear: (a.annee_diplomation as number) || 0,
-          region: schoolRel?.region || "",
-          school: schoolRel?.name || "",
-          verified: a.verified === true,
-          hasVideo: !!a.video_faits_saillants_url,
-          stars: (a.cote_globale_entraineur as number) || 0,
-          gpa: (a.moyenne_generale as number) || 0,
-          orgType: (!a.school_id
+          athleteId: card.id,
+          identityVisible: card.identity_visible,
+          fullName: displayFullName(card),
+          firstName: card.first_name ?? "",
+          lastName: card.last_name ?? "",
+          // Sous masquage, pas d'initiales : elles recoupées à l'école
+          // et à la position réidentifient. Le rendu bascule sur le
+          // placeholder via identityVisible.
+          initials: card.identity_visible
+            ? initialsOf(card.first_name ?? "", card.last_name ?? "")
+            : "",
+          photo: card.photo_url ?? "",
+          sport: (card.sport_nom || "").toLowerCase().replace(/ /g, "_"),
+          sportName: card.sport_nom ?? "",
+          position: card.position_abbr ?? "",
+          graduationYear: card.annee_diplomation ?? 0,
+          region: card.school_region ?? "",
+          school: card.school_name ?? "",
+          verified: card.verified === true,
+          hasVideo: !!card.a_une_video,
+          stars: card.cote_globale ?? 0,
+          gpa: card.moyenne_generale ?? 0,
+          orgType: (!card.school_id
             ? undefined
-            : schoolRel?.type === "LIGUE_CIVILE"
+            : card.school_type === "LIGUE_CIVILE"
               ? "ligue_civile"
               : "scolaire") as "scolaire" | "ligue_civile" | undefined,
-          pipelineStage: stageByAthlete.get(a.id as string) ?? null,
-          listIds: listsByAthlete.get(a.id as string) ?? [],
+          pipelineStage: stageByAthlete.get(athleteId) ?? null,
+          listIds: listsByAthlete.get(athleteId) ?? [],
         };
 
-        (links as Record<string, unknown>[]).forEach((link) => {
+        links.forEach((link) => {
           const team = pickOne<Record<string, unknown>>(link.teams);
           const rseq = team?.rseq_team_id as string | null | undefined;
           // Sans pont RSEQ, l'équipe ne peut porter aucun match : on
