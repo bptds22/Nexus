@@ -10,6 +10,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
+import { fetchRecruiterAthleteCards, displayFullName } from "@/lib/queries/shared/recruiterAthleteCards";
 import type { PipelineKanbanCard } from "@/app/recruteur/pipeline/_data/mockKanbanData";
 import type { RecruitmentStatus } from "@/lib/config/recruitmentStatuses";
 
@@ -35,6 +36,7 @@ export function usePipelineCards() {
       if (!userId) return EMPTY;
       const supabase = createClient();
 
+      /* Temps 1 — la relation SEULE (embed athletes retiré). */
       const { data, error } = await supabase
         .from("recruiter_pipeline")
         .select(`
@@ -49,27 +51,7 @@ export function usePipelineCards() {
           visit_at,
           moved_at,
           created_at,
-          updated_at,
-          athletes!athlete_id(
-            id,
-            first_name,
-            last_name,
-            photo_url,
-            verified,
-            profile_completion,
-            video_faits_saillants_url,
-            annee_diplomation,
-            numero_jersey,
-            cote_globale_entraineur,
-            recruitment_status,
-            committed_school_id,
-            school_id,
-            open_to_offers,
-            sports!sport_id(nom),
-            positions!position_id(nom, abreviation),
-            schools!school_id(name, region),
-            committed_school:schools!committed_school_id(name)
-          )
+          updated_at
         `)
         .eq("recruiter_id", userId)
         .order("moved_at", { ascending: false });
@@ -77,41 +59,45 @@ export function usePipelineCards() {
       if (error) throw error;
       if (!data) return EMPTY;
 
+      /* Temps 2 — les cartes projetées, résolues par lot. */
+      const cardMap = await fetchRecruiterAthleteCards(
+        supabase,
+        data.map((p) => p.athlete_id as string),
+      );
+
       const mapped: PipelineKanbanCard[] = data.map((p: Record<string, unknown>) => {
-        const aRaw = p.athletes;
-        const a = (Array.isArray(aRaw) ? aRaw[0] : aRaw) as Record<string, unknown> | null;
-        const sportRel = a?.sports;
-        const sport = (Array.isArray(sportRel) ? sportRel[0] : sportRel) as { nom?: string } | null;
-        const posRel = a?.positions;
-        const pos = (Array.isArray(posRel) ? posRel[0] : posRel) as { abreviation?: string } | null;
-        const schoolRel = a?.schools;
-        const school = (Array.isArray(schoolRel) ? schoolRel[0] : schoolRel) as { name?: string; region?: string } | null;
-        const committedSchoolRel = a?.committed_school;
-        const committedSchool = (Array.isArray(committedSchoolRel) ? committedSchoolRel[0] : committedSchoolRel) as { name?: string } | null;
+        // `?? null` explicite : la RPC ne rend rien pour un athlète
+        // inactif ou supprimé, et un `undefined` interpolé écrirait
+        // "undefined" sur la carte.
+        const card = cardMap.get(p.athlete_id as string) ?? null;
 
         const movedAt = (p.moved_at as string) || (p.updated_at as string) || null;
         const daysSinceMove = movedAt ? Math.floor((Date.now() - new Date(movedAt).getTime()) / 86400000) : 0;
         const stageRaw = ((p.stage as string) || "IDENTIFIE").toLowerCase();
 
         return {
-          id: (a?.id as string) || (p.athlete_id as string),
+          id: card?.id ?? (p.athlete_id as string),
           pipeline_id: p.id as string,
-          full_name: a ? `${a.first_name} ${a.last_name}` : "Athlète inconnu",
-          photo_url: (a?.photo_url as string) || "",
-          sport: sport?.nom || "",
-          position: pos?.abreviation || "",
-          school: school?.name || "",
-          region: school?.region || "",
+          // Anciennement `${a.first_name} ${a.last_name}` : dès que le
+          // serveur masque l'identité, les deux champs sont NULL et le
+          // template littéral affichait "null null" sur le kanban.
+          full_name: displayFullName(card),
+          identityVisible: card?.identity_visible ?? false,
+          photo_url: card?.photo_url ?? "",
+          sport: card?.sport_nom ?? "",
+          position: card?.position_abbr ?? "",
+          school: card?.school_name ?? "",
+          region: card?.school_region ?? "",
           division: "D1" as const,
-          graduation_year: (a?.annee_diplomation as number) || 0,
-          coach_rating: (a?.cote_globale_entraineur as number) || 0,
-          profile_completeness: (a?.profile_completion as number) || 0,
-          is_verified: !!a?.verified,
-          has_video: !!a?.video_faits_saillants_url,
-          jersey: a?.numero_jersey ? String(a.numero_jersey) : "",
-          recruitment_status: (a?.recruitment_status as string) || "OUVERT",
-          committed_school_name: committedSchool?.name || "",
-          open_to_offers: (a?.open_to_offers as boolean | null) ?? null,
+          graduation_year: card?.annee_diplomation ?? 0,
+          coach_rating: card?.cote_globale ?? 0,
+          profile_completeness: card?.profile_completion ?? 0,
+          is_verified: !!card?.verified,
+          has_video: !!card?.a_une_video,
+          jersey: card?.numero_jersey ? String(card.numero_jersey) : "",
+          recruitment_status: card?.recruitment_status ?? "OUVERT",
+          committed_school_name: card?.committed_school_name ?? "",
+          open_to_offers: card?.open_to_offers ?? null,
           status: stageRaw as RecruitmentStatus,
           days_in_status: daysSinceMove,
           notes: (p.notes as string) || "",
@@ -123,7 +109,7 @@ export function usePipelineCards() {
           // autres stages la remettent à NULL à l'écriture.
           visit_at: (p.visit_at as string) || null,
           moved_at: movedAt,
-          noTeam: !a?.school_id,
+          noTeam: !card?.school_id,
         } as PipelineKanbanCard;
       });
 

@@ -39,6 +39,18 @@ export interface PipelineKanbanCard {
   // nor league_team set (chk_school_or_league rules out both-set, so
   // this is the both-NULL case).
   noTeam?: boolean;
+  /**
+   * Projection serveur (recruiter_athlete_cards) : false = identité
+   * masquée, par Loi 25 ou par tier FREE.
+   *
+   * Quand false, `full_name` porte déjà LOCKED_NAME_LABEL et
+   * `photo_url` est vide — mais il faut aussi le passer à
+   * AthletePhotoFill, sinon la photo retombe sur les initiales,
+   * qui sont une divulgation partielle.
+   *
+   * Optionnel : les fixtures mock du fichier ne le portent pas.
+   */
+  identityVisible?: boolean;
 }
 
 export const KANBAN_COLUMNS: {

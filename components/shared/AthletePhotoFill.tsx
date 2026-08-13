@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+import LockedIdentityPlaceholder from "@/components/shared/LockedIdentityPlaceholder";
+
 /* ═══════════════════════════════════════════════════════════════
    AthletePhotoFill — full-bleed athlete photo for cards/heroes.
 
@@ -44,6 +46,14 @@ interface AthletePhotoFillProps {
   className?: string;
   /** Pixel font size for the watermark initials. Default 120. */
   initialsFontSize?: number;
+  /**
+   * Projection serveur (RPC recruteur) : false = identité masquée.
+   *
+   * Laisser `undefined` sur toute surface non-recruteur — le
+   * comportement historique (photo, sinon initiales) est conservé
+   * tel quel. Seul un `false` EXPLICITE verrouille.
+   */
+  identityVisible?: boolean;
 }
 
 export default function AthletePhotoFill({
@@ -52,11 +62,21 @@ export default function AthletePhotoFill({
   lastName,
   className = "",
   initialsFontSize = 120,
+  identityVisible,
 }: AthletePhotoFillProps) {
   const [hasError, setHasError] = useState(false);
   const showImage = !!photoUrl && !hasError;
   const f = (firstName ?? "").trim()[0] ?? "";
   const l = (lastName ?? "").trim()[0] ?? "";
+
+  /* Identité verrouillée — AVANT la photo comme avant les initiales.
+     Avant la photo : si un appelant tient encore une photo en cache
+     alors que le serveur vient de masquer, on ne la rend pas.
+     Avant les initiales : « G. M. » recoupé à l'école + la position
+     + la promotion réidentifie. Voir LockedIdentityPlaceholder. */
+  if (identityVisible === false) {
+    return <LockedIdentityPlaceholder variant="fill" className={className} />;
+  }
 
   if (showImage) {
     return (

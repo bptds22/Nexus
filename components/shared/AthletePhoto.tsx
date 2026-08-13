@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+import LockedIdentityPlaceholder from "@/components/shared/LockedIdentityPlaceholder";
+
 /* ═══════════════════════════════════════════════════════════════
    AthletePhoto — circular athlete photo with graceful fallback.
 
@@ -35,6 +37,14 @@ interface AthletePhotoProps {
   className?: string;
   /** alt text override — defaults to "FirstName LastName" */
   alt?: string;
+  /**
+   * Projection serveur (RPC recruteur) : false = identité masquée.
+   *
+   * Laisser `undefined` sur toute surface non-recruteur — le
+   * comportement historique (photo, sinon initiales) est conservé
+   * tel quel. Seul un `false` EXPLICITE verrouille.
+   */
+  identityVisible?: boolean;
 }
 
 function getInitials(firstName?: string | null, lastName?: string | null): string {
@@ -50,6 +60,7 @@ export default function AthletePhoto({
   size = 40,
   className = "",
   alt,
+  identityVisible,
 }: AthletePhotoProps) {
   const [hasError, setHasError] = useState(false);
   const showImage = !!photoUrl && !hasError;
@@ -60,6 +71,15 @@ export default function AthletePhoto({
   // gives proportional sizing for both small avatars (32) and
   // larger thumbnails (80).
   const fontSize = Math.max(10, Math.round(size * 0.3));
+
+  /* Identité verrouillée — AVANT la photo comme avant les initiales.
+     Avant la photo : si un appelant tient encore une photo en cache
+     alors que le serveur vient de masquer, on ne la rend pas.
+     Avant les initiales : « G. M. » recoupé à l'école + la position
+     + la promotion réidentifie. Voir LockedIdentityPlaceholder. */
+  if (identityVisible === false) {
+    return <LockedIdentityPlaceholder variant="circle" size={size} className={className} />;
+  }
 
   if (showImage) {
     return (
