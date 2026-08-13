@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import DatePicker from "@/app/coach/components/DatePicker";
 import SchoolSelect from "@/components/ui/SchoolSelect";
+import { embeddedSchool } from "@/lib/config/schoolTypes";
 import FormModeToggle from "@/app/coach/components/FormModeToggle";
 import DistinctionBadge from "@/components/shared/DistinctionBadge";
 import StarRating from "@/components/ui/StarRating";
@@ -276,10 +277,6 @@ export default function AdminAthleteDetailPage() {
           .order("updated_at", { ascending: false }),
       ]);
 
-      const schoolNameMap = new Map(
-        ((schRes.data as School[]) || []).map((s) => [s.id, s.name]),
-      );
-
       type PipelineRaw = {
         id: string;
         recruiter_id: string | null;
@@ -303,7 +300,7 @@ export default function AdminAthleteDetailPage() {
       if (recruiterIds.length > 0) {
         const recRes = await supabase
           .from("users")
-          .select("id, first_name, last_name, email, school_id")
+          .select("id, first_name, last_name, email, school_id, schools!school_id(name,type)")
           .in("id", recruiterIds);
         recruiterMap = new Map(
           ((recRes.data as RecruiterRow[]) || []).map((r) => [r.id, r]),
@@ -323,7 +320,9 @@ export default function AdminAthleteDetailPage() {
           recruiter_id: rec?.id ?? "",
           recruiter_name: recruiterName,
           recruiter_email: rec?.email ?? "",
-          cegep_name: rec?.school_id ? schoolNameMap.get(rec.school_id) ?? "" : "",
+          // Via la jointure : schoolNameMap venait d'un select complet de
+          // `schools`, tronqué par PostgREST au-delà de 1000 lignes.
+          cegep_name: embeddedSchool((rec as { schools?: unknown } | null)?.schools)?.name ?? "",
         };
       });
       setPipeline(mappedPipeline);
@@ -333,12 +332,12 @@ export default function AdminAthleteDetailPage() {
         if (aRes.data.coach_id) {
           const cRes = await supabase
             .from("users")
-            .select("first_name, last_name, school_id")
+            .select("first_name, last_name, school_id, schools!school_id(name,type)")
             .eq("id", aRes.data.coach_id)
             .maybeSingle();
           if (cRes.data) {
-            const c = cRes.data as { first_name: string | null; last_name: string | null; school_id: string | null };
-            const schoolName = c.school_id ? schoolNameMap.get(c.school_id) ?? "" : "";
+            const c = cRes.data as { first_name: string | null; last_name: string | null; school_id: string | null; schools?: unknown };
+            const schoolName = embeddedSchool(c.schools)?.name ?? "";
             setCoachInfo({
               name: `${c.first_name ?? ""} ${c.last_name ?? ""}`.trim() || "—",
               school: schoolName,

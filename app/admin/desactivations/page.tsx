@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import AdminTable, { AdminColumn } from "../_components/AdminTable";
+import { embeddedSchool, schoolTypeLabel } from "@/lib/config/schoolTypes";
 
 /* ─────────────────────────────────────────────────────────────────
    Admin Désactivations — derived from users.status='DESACTIVE'.
@@ -26,6 +27,7 @@ interface DeactRow {
   email: string;
   role: string;
   school_name: string | null;
+  school_type: string | null;
   deactivated_at: string;
   deactivated_at_fmt: string;
 }
@@ -39,6 +41,7 @@ interface RawUser {
   status: string;
   school_id: string | null;
   updated_at: string;
+  schools?: unknown;
 }
 
 function fmt(iso: string | null) {
@@ -57,30 +60,29 @@ export default function AdminDesactivationsPage() {
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const [uRes, sRes] = await Promise.all([
-        supabase
-          .from("users")
-          .select("id, first_name, last_name, email, role, status, updated_at, school_id")
-          .eq("status", "DESACTIVE")
-          .order("updated_at", { ascending: false }),
-        supabase.from("schools").select("id,name"),
-      ]);
+      // Jointure plutôt qu'une map issue d'un select complet de `schools` :
+      // la table dépasse 1000 lignes et PostgREST tronque.
+      const uRes = await supabase
+        .from("users")
+        .select("id, first_name, last_name, email, role, status, updated_at, school_id, schools!school_id(name,type)")
+        .eq("status", "DESACTIVE")
+        .order("updated_at", { ascending: false });
 
-      const schoolMap = new Map<string, string>(
-        ((sRes.data || []) as { id: string; name: string }[]).map((s) => [s.id, s.name]),
-      );
-
-      const mapped: DeactRow[] = ((uRes.data || []) as RawUser[]).map((u) => ({
-        id: u.id,
-        first_name: u.first_name,
-        last_name: u.last_name,
-        name: [u.first_name, u.last_name].filter(Boolean).join(" ") || "—",
-        email: u.email,
-        role: u.role,
-        school_name: u.school_id ? schoolMap.get(u.school_id) ?? null : null,
-        deactivated_at: u.updated_at,
-        deactivated_at_fmt: fmt(u.updated_at),
-      }));
+      const mapped: DeactRow[] = ((uRes.data || []) as RawUser[]).map((u) => {
+        const joined = embeddedSchool(u.schools);
+        return {
+          id: u.id,
+          first_name: u.first_name,
+          last_name: u.last_name,
+          name: [u.first_name, u.last_name].filter(Boolean).join(" ") || "—",
+          email: u.email,
+          role: u.role,
+          school_name: joined?.name ?? null,
+          school_type: joined?.type ?? null,
+          deactivated_at: u.updated_at,
+          deactivated_at_fmt: fmt(u.updated_at),
+        };
+      });
 
       setRows(mapped);
       setLoading(false);
@@ -128,11 +130,16 @@ export default function AdminDesactivationsPage() {
     },
     {
       key: "school_name",
-      label: "École",
+      label: "Établissement",
       readonly: true,
       render: (r) =>
         r.school_name ? (
-          <span className="text-[13px] text-[#9CA3AF]">{r.school_name}</span>
+          <span className="flex flex-col items-start leading-tight">
+            <span className="text-[13px] text-[#9CA3AF]">{r.school_name}</span>
+            {r.school_type && (
+              <span className="text-[11px] text-[#6b7280]">{schoolTypeLabel(r.school_type)}</span>
+            )}
+          </span>
         ) : (
           <span className="text-[#4a4d56]">—</span>
         ),

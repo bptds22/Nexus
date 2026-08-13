@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { embeddedSchool, schoolTypeLabel } from "@/lib/config/schoolTypes";
 
 type Stage = "IDENTIFIE" | "CONTACTE" | "VISITE_PLANIFIEE" | "ENGAGE" | "LETTRE_SIGNEE";
 const STAGE_ORDER: Stage[] = ["IDENTIFIE", "CONTACTE", "VISITE_PLANIFIEE", "ENGAGE", "LETTRE_SIGNEE"];
@@ -28,6 +29,7 @@ interface UserRow {
   last_name: string | null;
   school_id: string | null;
   role?: string | null;
+  schools?: unknown;
 }
 interface PipelineEntry {
   id: string;
@@ -38,12 +40,11 @@ interface PipelineEntry {
 }
 interface ConvRow { id: string; recruiter_id: string | null }
 interface MessageRow { id: string; conversation_id: string | null; sender_id: string | null; read_at: string | null; created_at: string | null }
-interface SchoolRow { id: string; name: string | null }
-
 interface RecruiterRow {
   id: string;
   name: string;
   school_name: string | null;
+  school_type: string | null;
   pipeline_count: number;
   moved_this_month: number;
   stagnant_count: number;
@@ -91,22 +92,19 @@ export default function AdminPipelinePage() {
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const [uRes, pipeRes, convRes, msgRes, schRes] = await Promise.all([
-        supabase.from("users").select("id,first_name,last_name,school_id,role"),
+      // L'établissement vient de la jointure : un select complet de
+      // `schools` était tronqué par PostgREST au-delà de 1000 lignes.
+      const [uRes, pipeRes, convRes, msgRes] = await Promise.all([
+        supabase.from("users").select("id,first_name,last_name,school_id,role,schools!school_id(name,type)"),
         supabase.from("recruiter_pipeline").select("id,recruiter_id,stage,moved_at,created_at"),
         supabase.from("conversations").select("id,recruiter_id"),
         supabase.from("messages").select("id,conversation_id,sender_id,read_at,created_at"),
-        supabase.from("schools").select("id,name"),
       ]);
 
       const users = ((uRes.data || []) as UserRow[]).filter((u) => u.role === "RECRUTEUR");
       const pipeline = (pipeRes.data || []) as PipelineEntry[];
       const conversations = (convRes.data || []) as ConvRow[];
       const messages = (msgRes.data || []) as MessageRow[];
-      const schools = (schRes.data || []) as SchoolRow[];
-
-      const schoolsById = new Map<string, SchoolRow>();
-      for (const s of schools) schoolsById.set(s.id, s);
 
       const now = Date.now();
       const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).getTime();
@@ -175,10 +173,13 @@ export default function AdminPipelinePage() {
         const lastMsgT = lastMsgByUser.get(u.id) || 0;
         if (lastMsgT > lastActT) lastActT = lastMsgT;
 
+        const joined = embeddedSchool(u.schools);
+
         return {
           id: u.id,
           name: `${u.first_name || ""} ${u.last_name || ""}`.trim() || "—",
-          school_name: u.school_id ? schoolsById.get(u.school_id)?.name || null : null,
+          school_name: joined?.name ?? null,
+          school_type: joined?.type ?? null,
           pipeline_count: list.length,
           moved_this_month: movedMonth,
           stagnant_count: stagnant,
@@ -325,7 +326,16 @@ export default function AdminPipelinePage() {
                       </div>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-[13px] text-[#9CA3AF]">{r.school_name || "—"}</td>
+                  <td className="px-4 py-3 text-[13px] text-[#9CA3AF]">
+                    {r.school_name ? (
+                      <span className="flex flex-col items-start leading-tight">
+                        <span>{r.school_name}</span>
+                        {r.school_type && (
+                          <span className="text-[11px] text-[#6b7280]">{schoolTypeLabel(r.school_type)}</span>
+                        )}
+                      </span>
+                    ) : "—"}
+                  </td>
                   <td className="px-4 py-3 text-right tabular-nums">
                     <span className={r.pipeline_count === 0 ? "text-[#4a4d56]" : "text-white font-bold"}>{r.pipeline_count}</span>
                   </td>
