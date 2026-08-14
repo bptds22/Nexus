@@ -1,7 +1,7 @@
 "use client";
 
 // components/team-editor/PresentationEditorSection.tsx — S4 « Présentation &
-// palmarès » (MANUEL, modéré). Accroche ≤280, championnats, staff depuis, photo
+// palmarès » (MANUEL). Accroche ≤280, championnats, staff depuis, photo
 // + bio de l'entraîneur-chef (nom & rôle restent AUTO), fanions (max 8) dont le
 // TYPE pilote la couleur. Aperçu = le VRAI PresentationSection.
 
@@ -116,10 +116,9 @@ export default function PresentationEditorSection() {
         <div className="cols">
           <div>
             <div className="panel" style={{ marginBottom: 14 }}>
-              <div className="pt"><span className="n">1</span>L&apos;ACCROCHE (modérée)</div>
+              <div className="pt"><span className="n">1</span>L&apos;ACCROCHE</div>
               <textarea className="ti" maxLength={280} value={lead} onChange={(e) => setLead(e.target.value)} />
               <div className="cnt">{lead.length}/280</div>
-              <div className="mod">⚠ Modéré avant publication.</div>
               <div className="row2" style={{ marginTop: 12 }}>
                 <div>
                   <label className="fl">Championnats</label>
@@ -185,7 +184,7 @@ export default function PresentationEditorSection() {
                 La vignette n&apos;a pas le même cadre partout — <b>16:10 sur le web</b>, <b>portrait sur mobile</b>.
                 Le point focal reste au même endroit de la photo dans les deux.
               </div>
-              <label className="fl">Bio courte (modérée)</label>
+              <label className="fl">Bio courte</label>
               <textarea className="ti" maxLength={200} value={bio} onChange={(e) => setBio(e.target.value)} />
               <div className="cnt">{bio.length}/200</div>
             </div>
