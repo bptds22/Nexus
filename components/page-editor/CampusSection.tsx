@@ -135,7 +135,7 @@ export default function CampusSection() {
             <button className="addbtn" onClick={addCard}>+ Ajouter une carte (photo + titre + description)</button>
             <label className="fl">Carte vidéo (YouTube, optionnel)</label>
             <input className="ti" placeholder="https://youtube.com/watch?v=…" value={yt} onChange={(e) => setYt(e.target.value)} />
-            <div className="mod">⚠ Modéré · AUCUN mineur identifiable (Loi 25).</div>
+            <div className="mod">⚠ AUCUN mineur identifiable dans les images (Loi 25).</div>
           </div>
 
           <div className="panel" style={{ marginBottom: 14 }}>

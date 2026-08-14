@@ -323,7 +323,6 @@ export default function IdentityWall({
               <input className="ti" maxLength={12} placeholder="≤ 12 caractères — ex. « KA-POW »" value={wcustom} onChange={(e) => setWcustom(e.target.value.toUpperCase())} style={{ textTransform: "uppercase" }} />
               <button className="btn ghost" onClick={addWord}>Ajouter</button>
             </div>
-            <div className="mod">⚠ Mots persos modérés avant publication.</div>
             <div className="note">Max 4 mots affichés. Les mots deviennent les ghosts typographiques du mur.</div>
           </div>
 

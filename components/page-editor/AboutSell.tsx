@@ -28,13 +28,12 @@ export default function AboutSell() {
       {hidden ? <SectionHidden sectionKey="about" /> : (
       <div className="cols">
         <div className="panel">
-          <div className="pt"><span className="n">1</span>LE TEXTE VENDEUR — 2 CHAMPS (modérés)</div>
+          <div className="pt"><span className="n">1</span>LE TEXTE VENDEUR — 2 CHAMPS</div>
           <label className="fl">Titre</label>
           <input className="ti" maxLength={40} value={abt} onChange={(e) => setAbt(e.target.value)} />
           <label className="fl">Texte (≤ 280)</label>
           <textarea className="ti" maxLength={280} value={abx} onChange={(e) => setAbx(e.target.value)} />
           <div className="cnt">{abx.length}/280</div>
-          <div className="mod">⚠ File de modération Nexus avant publication.</div>
         </div>
         <div className="pv">
           <div className="pvhead">APERÇU LIVE — RENDU RÉEL</div>
