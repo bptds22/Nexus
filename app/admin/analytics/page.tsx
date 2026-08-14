@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { fetchAllRows } from "@/lib/supabase/fetchAllRows";
 
 type PipelineStage =
   | "IDENTIFIE"
@@ -116,7 +117,11 @@ export default function AdminAnalytiquePage() {
         supabase.from("conversations").select("id,recruiter_id,coach_id"),
         supabase.from("messages").select("id,conversation_id,sender_id,created_at"),
         supabase.from("sports").select("id,nom").order("nom"),
-        supabase.from("schools").select("id,name,region"),
+        // Pagination obligatoire : ces régions alimentent des AGRÉGATS
+        // (athlètes/écoles/recruteurs par région). Tronquée à 1000 lignes,
+        // la table faisait sortir des athlètes du décompte régional sans
+        // le moindre signe.
+        fetchAllRows<School>((f, t) => supabase.from("schools").select("id,name,region").range(f, t), "AdminAnalytics"),
       ]);
 
       setAthletes((aRes.data || []) as Athlete[]);
@@ -125,7 +130,8 @@ export default function AdminAnalytiquePage() {
       setConversations((cRes.data || []) as Conversation[]);
       setMessages((mRes.data || []) as Message[]);
       setSports((spRes.data || []) as Sport[]);
-      setSchools((schRes.data || []) as School[]);
+      // schRes vient de fetchAllRows : c'est déjà un tableau, pas un { data }.
+      setSchools(schRes);
       setLoading(false);
     })();
   }, [supabase]);

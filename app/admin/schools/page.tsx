@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import AdminTable, { AdminColumn } from "../_components/AdminTable";
+import { fetchAllRows } from "@/lib/supabase/fetchAllRows";
 
 type SchoolType = "SECONDAIRE" | "CEGEP" | "LIGUE_CIVILE";
 type Reseau = "PUBLIC" | "PRIVE";
@@ -62,26 +63,6 @@ const SORT_OPTIONS: { value: SortBy; label: string }[] = [
   { value: "teams_desc", label: "# Équipes (↓)" },
 ];
 
-/** Fetch ALL rows for a query, paging past PostgREST's 1000-row cap.
- *  Isolated to this admin page: loads the full schools list (+ the companion
- *  count sources) so search / sort / filters run over EVERY establishment,
- *  not just the first 1000. Each type stays < 1000, but the admin list mixes
- *  all types (1000+ total), so a single request would silently truncate. */
-async function fetchAllRows<T>(
-  build: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: unknown }>,
-): Promise<T[]> {
-  const PAGE = 1000;
-  const all: T[] = [];
-  for (let from = 0; ; from += PAGE) {
-    const { data, error } = await build(from, from + PAGE - 1);
-    if (error) { console.error("[AdminSchools] fetchAllRows", error); break; }
-    if (!data || data.length === 0) break;
-    all.push(...data);
-    if (data.length < PAGE) break;
-  }
-  return all;
-}
-
 export default function AdminSchoolsPage() {
   const supabase = useMemo(() => createClient(), []);
   const router = useRouter();
@@ -124,7 +105,12 @@ export default function AdminSchoolsPage() {
     const [schoolsData, athletesData, scCoachesData, legacyCoachesData, recruitersData, teamsData] = await Promise.all([
       fetchAllRows<Record<string, unknown>>((f, t) => supabase.from("schools").select("id,name,type,city,region,reseau,langue").order("name").range(f, t)),
       fetchAllRows<{ school_id: string | null }>((f, t) => supabase.from("athletes").select("school_id").range(f, t)),
-      fetchAllRows<{ school_id: string | null; user_id: string | null }>((f, t) => supabase.from("school_coaches").select("school_id, user_id").range(f, t)),
+      // La colonne est `coach_id`, PAS `user_id` : le select fautif rendait
+      // une erreur PostgREST, fetchAllRows la loguait et retournait [], donc
+      // le compte d'entraîneurs retombait sur le seul users.school_id. Sans
+      // écart numérique à ce jour (les paires coïncident), mais tout coach
+      // rattaché uniquement via school_coaches aurait manqué à l'appel.
+      fetchAllRows<{ school_id: string | null; coach_id: string | null }>((f, t) => supabase.from("school_coaches").select("school_id, coach_id").range(f, t), "AdminSchools"),
       fetchAllRows<{ id: string; school_id: string | null }>((f, t) => supabase.from("users").select("id, school_id, role").eq("role", "COACH").range(f, t)),
       fetchAllRows<{ id: string; school_id: string | null }>((f, t) => supabase.from("users").select("id, school_id, role").eq("role", "RECRUTEUR").range(f, t)),
       fetchAllRows<{ school_id: string | null; sport_id: string | null }>((f, t) => supabase.from("teams").select("school_id,sport_id").range(f, t)),
@@ -138,8 +124,8 @@ export default function AdminSchoolsPage() {
     // Union school_coaches + legacy users.school_id, dedupe by (school_id, user_id)
     const coachPairs = new Set<string>();
     for (const c of scCoachesData) {
-      if (!c.school_id || !c.user_id) continue;
-      coachPairs.add(`${c.school_id}:${c.user_id}`);
+      if (!c.school_id || !c.coach_id) continue;
+      coachPairs.add(`${c.school_id}:${c.coach_id}`);
     }
     for (const u of legacyCoachesData) {
       if (!u.school_id) continue;

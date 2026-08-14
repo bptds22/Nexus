@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { fetchAllRows } from "@/lib/supabase/fetchAllRows";
 
 type RecruitBucket = "OUVERT" | "EN_PROCESSUS" | "RECRUTE" | "RETIRE" | null;
 
@@ -123,7 +124,10 @@ export default function AdminSportDetailPage() {
         )
         .eq("sport_id", id),
       supabase.from("positions").select("id,sport_id,nom,abreviation").eq("sport_id", id).order("nom"),
-      supabase.from("schools").select("id,name,region,city"),
+      // Pagination : ce map alimente le classement des établissements et
+      // la répartition régionale du sport. Tronqué, il faisait disparaître
+      // des athlètes de leur école et de leur région.
+      fetchAllRows<School>((f, t) => supabase.from("schools").select("id,name,region,city").range(f, t), "AdminSportDetail"),
       supabase.from("athletes").select("cote_globale_entraineur").not("cote_globale_entraineur", "is", null),
     ]);
 
@@ -147,7 +151,7 @@ export default function AdminSportDetailPage() {
     );
 
     const sMap = new Map<string, School>();
-    for (const s of (schoolsRes.data || []) as School[]) sMap.set(s.id, s);
+    for (const s of schoolsRes) sMap.set(s.id, s);
     setSchoolsMap(sMap);
 
     const athleteIds = athletesData.map((a) => a.id);

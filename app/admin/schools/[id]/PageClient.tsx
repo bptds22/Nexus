@@ -4,6 +4,7 @@ import {  useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { fetchAllRows } from "@/lib/supabase/fetchAllRows";
 import { genderLabel } from "@/lib/config/gender";
 import { selectBestEvaluation } from "@/lib/evaluations/selectEvaluation";
 import { uploadImage } from "@/lib/upload/uploadImage";
@@ -171,8 +172,14 @@ export default function AdminSchoolDetailPage() {
       setSchool(sch as SchoolRow);
 
       // distinct regions for dropdown
-      const { data: regRows } = await supabase.from("schools").select("region");
-      const regs = Array.from(new Set(((regRows as { region: string | null }[] | null) || [])
+      // Pagination : la liste des régions se déduit de TOUTES les lignes.
+      // Tronquée à 1000, une région ne vivant que dans les 199 dernières
+      // écoles n'apparaissait jamais dans le menu.
+      const regRows = await fetchAllRows<{ region: string | null }>(
+        (f, t) => supabase.from("schools").select("region").range(f, t),
+        "AdminSchoolDetail",
+      );
+      const regs = Array.from(new Set(regRows
         .map((r) => r.region).filter((r): r is string => !!r))).sort((a, b) => a.localeCompare(b, "fr"));
       if (!cancelled) setRegionOptions(regs);
 
