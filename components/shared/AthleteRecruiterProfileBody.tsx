@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { fetchRecruiterAthleteCards, displayFullName, LOCKED_NAME_LABEL } from "@/lib/queries/shared/recruiterAthleteCards";
 import { findOrCreateRecruiterAthleteConversation } from "@/lib/utils/findOrCreateRecruiterConversation";
 import {
   mockAthleteProfileFull,
@@ -29,7 +30,6 @@ import SuccessToast, { type SuccessToastData } from "@/components/ui/SuccessToas
 import NxIcon from "@/components/ui/NxIcon";
 import StarRating from "@/components/ui/StarRating";
 import VideoEmbed from "@/components/ui/VideoEmbed";
-import { calculateCompletion, type AthleteLike, type EvalLike } from "@/lib/utils/profileCompletion";
 import { isValidationExpired } from "@/lib/utils/profileValidation";
 import AthletePhotoFill from "@/components/shared/AthletePhotoFill";
 import { TeamDetailsBlock, type TeamDetail } from "@/components/shared/athlete/TeamDetailsBlock";
@@ -186,6 +186,9 @@ function positionAbbr(pos: string): string {
 }
 
 function PlayerCard({ a, isFree }: { a: AthleteProfileRecruiterView; isFree: boolean }) {
+  // `isFree` reste pour les sections GATÉES PAR TIER (contenu premium).
+  // L'identité, elle, ne se décide plus ici : elle vient du serveur.
+  const locked = a.identityVisible === false;
   const ratingValue = a.overallRating;
   const posAbbr = positionAbbr(a.primaryPosition);
   const sportKey = SPORT_NAME_MAP[a.primarySport];
@@ -227,12 +230,23 @@ function PlayerCard({ a, isFree }: { a: AthleteProfileRecruiterView; isFree: boo
             photoUrl={a.photoUrl}
             firstName={a.firstName}
             lastName={a.lastName}
+            identityVisible={a.identityVisible}
             className="object-[center_15%]"
           />
           <div className="absolute bottom-0 left-0 right-0 h-1/2 z-[2]" style={{ background: 'linear-gradient(to top, rgba(11,18,32,0.97) 0%, rgba(11,18,32,0.7) 35%, transparent 100%)' }} />
-          <div className={`absolute bottom-4 left-4 z-[3]${isFree ? " select-none pointer-events-none blur-[5px]" : ""}`}>
-            <p style={{ fontFamily: 'var(--font-outfit), sans-serif', fontSize: 28, fontWeight: 900, color: '#fff', letterSpacing: '0.04em', lineHeight: 1, textTransform: 'uppercase' }}>{isFree ? "Prénom" : a.firstName}</p>
-            <p style={{ fontFamily: 'var(--font-outfit), sans-serif', fontSize: 28, fontWeight: 900, color: '#fff', letterSpacing: '0.04em', lineHeight: 1, textTransform: 'uppercase' }}>{isFree ? "Nom" : a.lastName}</p>
+          {/* Le masquage n'est plus un flou CSS sur un nom présent dans le
+              DOM : sous identité réservée le serveur n'envoie rien, et on
+              affiche le libellé partagé. Le flou restait contournable au
+              devtools et ne couvrait que le tier FREE, pas la Loi 25. */}
+          <div className="absolute bottom-4 left-4 z-[3]">
+            {locked ? (
+              <p style={{ fontFamily: 'var(--font-outfit), sans-serif', fontSize: 22, fontWeight: 900, color: '#9CA3AF', letterSpacing: '0.04em', lineHeight: 1.1, textTransform: 'uppercase' }}>{LOCKED_NAME_LABEL}</p>
+            ) : (
+              <>
+                <p style={{ fontFamily: 'var(--font-outfit), sans-serif', fontSize: 28, fontWeight: 900, color: '#fff', letterSpacing: '0.04em', lineHeight: 1, textTransform: 'uppercase' }}>{a.firstName}</p>
+                <p style={{ fontFamily: 'var(--font-outfit), sans-serif', fontSize: 28, fontWeight: 900, color: '#fff', letterSpacing: '0.04em', lineHeight: 1, textTransform: 'uppercase' }}>{a.lastName}</p>
+              </>
+            )}
           </div>
         </div>
 
@@ -414,22 +428,25 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
   useEffect(() => {
     if (tierLoading) return;
     const supabase = createClient();
-    // Free recruiters don't receive athlete names — stripped
-    // server-side (not CSS-only). Preview/partner/Pro get them.
-    const identityCols = isFreeRecruiter ? "" : "first_name, last_name,";
+    /* Temps 1 — TOUT sauf l'identité.
+       first_name, last_name, photo_url, numero_jersey et date_naissance ont
+       quitté ce select : ils arrivent du temps 2, par la RPC.
+
+       Ce qui était là avant — `isFreeRecruiter ? "" : "first_name, last_name,"`
+       — était un masquage décidé CÔTÉ CLIENT, et il ne couvrait que le nom.
+       La photo et le dossard partaient en clair pour tout le monde, et la
+       règle Loi 25 (mineur sans consentement parental) n'était appliquée
+       nulle part : elle dépend de date_naissance et consentement_parental,
+       que le client n'a aucun droit de lire pour en tirer une décision. */
     supabase
       .from("athletes")
       .select(`
         id,
         user_id,
-        ${identityCols}
-        photo_url,
         verified,
         profile_completion,
         last_profile_validation,
-        numero_jersey,
         annee_diplomation,
-        date_naissance,
         genre,
         video_faits_saillants_url,
         hudl_url,
@@ -496,6 +513,15 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
         if (error || !data) { setLoadingAthlete(false); return; }
 
         const d = data as Record<string, unknown>;
+
+        /* Temps 2 — l'identité, projetée par le serveur.
+           `?? null` explicite : la RPC ne rend AUCUNE ligne pour un athlète
+           inactif ou supprimé, et un `undefined` interpolé écrirait
+           "undefined" à l'écran. Même piège que usePipelineCards:72. */
+        const cardMap = await fetchRecruiterAthleteCards(supabase, [id]);
+        const card = cardMap.get(id) ?? null;
+        const identityVisible = card?.identity_visible ?? false;
+
         setAthleteUserId((d.user_id as string | null) ?? null);
         const evals = d.evaluations as Record<string, unknown>[] | null;
         // Pick by rule (détaillée > simple, then most recent updated_at) —
@@ -521,8 +547,11 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
         const school = schoolRel as { name: string; region: string; city: string; type: string } | null;
 
         // Age from birth date
-        const birthDate = d.date_naissance as string | null;
-        const age = birthDate ? Math.floor((Date.now() - new Date(birthDate).getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : null;
+        /* L'âge vient de la RPC, DÉRIVÉ côté serveur. date_naissance n'est
+           jamais projetée à un recruteur — c'est elle qui décide du masquage
+           Loi 25, la livrer permettrait de recalculer ce que le masquage
+           protège. */
+        const age = card?.age ?? null;
 
         // Programme CÉGEP
         const progArr = (d.programme_cegep_vise as string[]) || [];
@@ -552,13 +581,23 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
         const mapped: AthleteProfileRecruiterView = {
           ...mockAthleteProfileFull,
           id: d.id as string,
-          firstName: d.first_name as string,
-          lastName: d.last_name as string,
-          photoUrl: (d.photo_url as string) || "",
+          // Identité : RIEN ne vient plus de `d`. Sous masquage le serveur
+          // rend ces quatre champs à NULL, et `?? ""` garde le contrat
+          // `string` du type sans jamais produire "null".
+          identityVisible,
+          firstName: card?.first_name ?? "",
+          lastName: card?.last_name ?? "",
+          photoUrl: card?.photo_url ?? "",
           isVerified: d.verified as boolean,
           lastValidation: (d.last_profile_validation as string) || null,
-          profileCompleteness: calculateCompletion(d as AthleteLike, (eval0 as EvalLike) || null, null).percentage,
-          jerseyNumber: (d.numero_jersey as string) || "",
+          /* Complétion : valeur SERVEUR, plus de recalcul client.
+             calculateCompletion() pondère photo_url, date_naissance (3) et
+             numero_jersey (3) — trois colonnes qui ne sont plus dans le
+             select. Le recalculer ici sous-estimerait tout profil vu par un
+             recruteur, d'un score d'autant plus faux que le profil est
+             complet. La RPC porte la valeur calculée sur la ligne entière. */
+          profileCompleteness: card?.profile_completion ?? (d.profile_completion as number) ?? 0,
+          jerseyNumber: card?.numero_jersey ?? "",
           graduationYear: (d.annee_diplomation as number) || 0,
           highlightVideoUrl: (d.video_faits_saillants_url as string) || "",
           hudlUrl: (d.hudl_url as string) || "",
