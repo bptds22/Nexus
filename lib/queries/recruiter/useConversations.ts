@@ -32,8 +32,21 @@ export interface ThreadData {
    */
   athleteInitials: string;
   /** Décision SERVEUR (identity_visible de la RPC). false = nom, photo et
-   *  dossard sont ABSENTS de la réponse, pas juste cachés à l'écran. */
+   *  dossard sont ABSENTS de la réponse, pas juste cachés à l'écran.
+   *  À lire TOUJOURS avec athleteCardMissing — false seul ne dit pas
+   *  laquelle des deux causes s'applique. */
   athleteIdentityVisible: boolean;
+  /**
+   * La RPC n'a rendu AUCUNE ligne pour cet athlète.
+   *
+   * Troisième état, distinct du masquage : la RPC filtre `status = 'ACTIF'`,
+   * donc un athlète EN_ATTENTE/DESACTIVE/DIPLOME — ou une conversation sans
+   * athlete_id (GROUP, COACH_COACH) — sort du périmètre sans que rien ne soit
+   * verrouillé. Confondre les deux affichait le cadenas « Identité réservée »
+   * sur un athlète public : cause fausse, et sur /recruteur/messages ça a
+   * suffi à déclencher le placeholder qui recouvrait la liste entière.
+   */
+  athleteCardMissing: boolean;
   athleteId: string;
   athletePhotoUrl: string | null;
   athletePosition: string;
@@ -111,6 +124,11 @@ export function useConversations() {
         // `?? null` explicite : la RPC ne rend rien pour un athlète inactif
         // ou supprimé, et un `undefined` interpolé écrirait "undefined".
         const card = cardMap.get(c.athlete_id as string) ?? null;
+        /* `?? false` fait échouer VERS LE MASQUAGE, ce qui est le bon défaut
+           quand la question est « a-t-on le droit d'afficher ». Mais il écrase
+           deux causes en une : d'où cardMissing à côté, pour que l'UI dise la
+           vraie raison au lieu d'inventer un verrou Loi 25. */
+        const cardMissing = card === null;
         const identityVisible = card?.identity_visible ?? false;
 
         const coachFirst = (coach?.first_name as string) || "";
@@ -134,6 +152,7 @@ export function useConversations() {
           // volontairement. Voir le commentaire du type.
           athleteInitials: `${athFirst[0] || ""}${athLast[0] || ""}`.toUpperCase(),
           athleteIdentityVisible: identityVisible,
+          athleteCardMissing: cardMissing,
           athleteId: (c.athlete_id as string) || "",
           athletePhotoUrl: card?.photo_url ?? null,
           athletePosition: card?.position_abbr ?? "",

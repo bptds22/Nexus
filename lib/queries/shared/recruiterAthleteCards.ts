@@ -143,5 +143,32 @@ export async function fetchRecruiterAthleteCards(
   if (error) throw error;
 
   const rows = (data ?? []) as RecruiterAthleteCard[];
-  return new Map(rows.map((r) => [r.id, r]));
+  const map = new Map(rows.map((r) => [r.id, r]));
+
+  /* CARTE ABSENTE ≠ IDENTITÉ VERROUILLÉE — et c'est un piège qui a
+     déjà coûté un blocage en preview.
+
+     La RPC filtre `AND a.status = 'ACTIF'`. Un athlète EN_ATTENTE,
+     DESACTIVE ou DIPLOME ne rend donc AUCUNE ligne, sans erreur : le
+     `Map.get()` vaut `undefined`, l'appelant fait `?? false` sur
+     identity_visible, et un athlète parfaitement public se retrouve
+     rendu comme « identité réservée ». La cause affichée est fausse.
+
+     L'erreur du temps 2, elle, est déjà bruyante (throw plus haut →
+     la requête TanStack échoue). C'est le trou SILENCIEUX qu'il
+     fallait éclairer : on le journalise ici, une fois, au seul
+     endroit qui connaît l'écart entre demandé et obtenu. Les
+     appelants qui distinguent les deux états lisent simplement
+     l'absence de la clé dans la Map. */
+  if (map.size < ids.length && typeof console !== "undefined") {
+    const manquants = ids.filter((id) => !map.has(id));
+    console.warn(
+      `[recruiter_athlete_cards] ${manquants.length}/${ids.length} carte(s) non rendue(s) — ` +
+        `athlète absent ou status <> ACTIF. Ce n'est PAS un masquage Loi 25 : ` +
+        `ne pas rendre le cadenas pour ces ids.`,
+      manquants,
+    );
+  }
+
+  return map;
 }

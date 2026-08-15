@@ -126,12 +126,14 @@ function AthleteCombobox({
     return (
       <div className="flex items-center gap-3 bg-[#13151a] border border-[#2D3748] rounded-lg px-4 py-3">
         {/* Sous masquage, firstName/lastName sont vides : la pastille
-            d'initiales serait creuse. On rend le placeholder partagé. */}
+            d'initiales serait creuse. On rend le placeholder partagé.
+            `circle` et non `fill` : ce conteneur n'est pas positionné, un
+            `fill` s'y échapperait jusqu'à la page. */}
         <div className="w-9 h-9 rounded-full bg-[#E63946]/20 border border-[#E63946]/40 flex items-center justify-center shrink-0 overflow-hidden">
           {selected.identityVisible ? (
             <span className="text-[11px] font-bold text-[#E63946]">{selected.firstName[0]}{selected.lastName[0]}</span>
           ) : (
-            <LockedIdentityPlaceholder variant="fill" />
+            <LockedIdentityPlaceholder variant="circle" size={36} />
           )}
         </div>
         <div className="min-w-0 flex-1">
@@ -161,7 +163,7 @@ function AthleteCombobox({
                 {a.identityVisible ? (
                   <span className="text-[10px] font-bold text-[#9CA3AF]">{a.firstName[0]}{a.lastName[0]}</span>
                 ) : (
-                  <LockedIdentityPlaceholder variant="fill" />
+                  <LockedIdentityPlaceholder variant="circle" size={32} />
                 )}
               </div>
               <div className="min-w-0 flex-1">

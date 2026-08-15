@@ -40,10 +40,19 @@ const LABEL = "Identité réservée";
 
 interface LockedIdentityPlaceholderProps {
   /**
-   * "fill"   — remplit un parent `relative` (cartes, héros), pour AthletePhotoFill.
-   * "circle" — pastille de taille fixe, pour AthletePhoto.
+   * "circle" — pastille BORNÉE de `size` px. C'est le DÉFAUT.
+   * "fill"   — ⚠️ rend `absolute inset-0` : le parent DOIT être positionné
+   *            (`relative`/`absolute`). Sinon le placeholder se cale sur le
+   *            premier ancêtre positionné — potentiellement la page — et
+   *            recouvre tout l'écran par-dessus le contenu.
+   *
+   * Le défaut est volontairement le variant BORNÉ : un appelant qui oublie
+   * de choisir obtient une pastille de 40px, jamais une prise d'otage de la
+   * mise en page. C'est arrivé en preview sur /recruteur/messages — trois
+   * appels en `fill` dans des conteneurs sans `relative` masquaient la liste
+   * entière derrière un placeholder plein écran.
    */
-  variant: "fill" | "circle";
+  variant?: "fill" | "circle";
   /** Côté du cercle en px. Ignoré en variant "fill". Défaut 40. */
   size?: number;
   className?: string;
@@ -80,7 +89,7 @@ function LockBadge({ px }: { px: number }) {
 }
 
 export default function LockedIdentityPlaceholder({
-  variant,
+  variant = "circle",
   size = 40,
   className = "",
 }: LockedIdentityPlaceholderProps) {
