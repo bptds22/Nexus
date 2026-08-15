@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { fetchAllRows } from "@/lib/supabase/fetchAllRows";
 import DatePicker from "@/app/coach/components/DatePicker";
 import SchoolSelect from "@/components/ui/SchoolSelect";
 import { embeddedSchool } from "@/lib/config/schoolTypes";
@@ -269,7 +270,9 @@ export default function AdminAthleteDetailPage() {
         supabase.from("athletes").select("*").eq("id", id).maybeSingle(),
         supabase.from("sports").select("id,nom").order("nom"),
         supabase.from("positions").select("id,nom,sport_id,abreviation"),
-        supabase.from("schools").select("id,name,city,region").order("name"),
+        // Pagination : liste complète pour le sélecteur d'établissement.
+        // (L'affichage du nom, lui, passe par la jointure — cf. plus bas.)
+        fetchAllRows<School>((f, t) => supabase.from("schools").select("id,name,city,region").order("name").range(f, t), "AdminAthleteDetail"),
         supabase
           .from("recruiter_pipeline")
           .select("id, recruiter_id, stage, moved_at, updated_at")
@@ -392,7 +395,7 @@ export default function AdminAthleteDetailPage() {
 
       setSports((spRes.data as Sport[]) || []);
       setPositions((posRes.data as Position[]) || []);
-      setSchools((schRes.data as School[]) || []);
+      setSchools(schRes);
       setLoading(false);
     })();
   }, [supabase, id]);

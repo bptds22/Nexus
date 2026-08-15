@@ -8,6 +8,7 @@
 // Aucune requête par carte (pas de N+1), aucune vue ni RPC (zéro DDL).
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { fetchAllRows } from "@/lib/supabase/fetchAllRows";
 
 /** Écoles de test de la plateforme — jamais dans la recherche publique.
  *  Critère volontairement bête : le préfixe du nom. Les vraies écoles sont
@@ -92,12 +93,27 @@ export async function loadSearchData(supabase: SupabaseClient): Promise<SearchDa
       // logoDeLEcole().
       .select("id, name, city, region, langue, reseau, lat, lng")
       .eq("type", "CEGEP"),
-    supabase.from("teams").select("school_id, division, gender, sports:sport_id(nom)"),
-    supabase.from("school_programs").select("school_id, name").eq("is_displayed", true),
+    // Filtre de type CÔTÉ SERVEUR (schools!...!inner) : sans lui, ce select
+    // balayait les 7943 équipes toutes catégories et PostgREST en rendait
+    // 1000, en ordre physique. Les équipes de cégep (398, sur 65 cégeps)
+    // vivent en fin de table derrière l'import RSEQ scolaire : UN SEUL
+    // cégep tombait dans la fenêtre, les 64 autres perdaient leurs badges
+    // de sport sans la moindre erreur. Borné au type, on lit 398 lignes en
+    // une requête — plus juste ET plus rapide qu'avant.
+    supabase.from("teams")
+      .select("school_id, division, gender, sports:sport_id(nom), schools!school_id!inner(type)")
+      .eq("schools.type", "CEGEP"),
+    // Les 1263 programmes sont TOUS is_displayed=true et TOUS rattachés à un
+    // cégep : le filtre ne borne rien et on dépasse les 1000. Pagination.
+    fetchAllRows<{ school_id: string; name: string }>(
+      (f, t) => supabase.from("school_programs").select("school_id, name").eq("is_displayed", true).range(f, t),
+      "cegepSearch/programs",
+    ),
     supabase.from("school_page_content").select("school_id, nickname, logo_path, sell_text, color_primary"),
     supabase.from("school_campus_cards").select("school_id"),
   ]);
-  for (const r of [schools, teams, programs, pageContent, cards]) if (r.error) throw r.error;
+  // `programs` vient de fetchAllRows : c'est un tableau, sans .error.
+  for (const r of [schools, teams, pageContent, cards]) if (r.error) throw r.error;
 
   const teamsBy = new Map<string, TeamBadge[]>();
   for (const t of (teams.data ?? []) as unknown as { school_id: string; division: string | null; gender: string | null; sports: { nom: string } | null }[]) {
@@ -107,7 +123,7 @@ export async function loadSearchData(supabase: SupabaseClient): Promise<SearchDa
   }
 
   const progsBy = new Map<string, string[]>();
-  for (const p of (programs.data ?? []) as { school_id: string; name: string }[]) {
+  for (const p of programs) {
     const arr = progsBy.get(p.school_id) ?? [];
     arr.push(p.name);
     progsBy.set(p.school_id, arr);
@@ -155,7 +171,7 @@ export async function loadSearchData(supabase: SupabaseClient): Promise<SearchDa
     })
     .sort((a, b) => a.name.localeCompare(b.name, "fr"));
 
-  const catalogueProgrammes = [...new Set(((programs.data ?? []) as { name: string }[]).map((p) => p.name.trim()).filter(Boolean))]
+  const catalogueProgrammes = [...new Set(programs.map((p) => p.name.trim()).filter(Boolean))]
     .sort((a, b) => a.localeCompare(b, "fr"));
   const regions = [...new Set(cegeps.map((c) => c.region).filter(Boolean))].sort((a, b) => a.localeCompare(b, "fr"));
   const sports = [...new Set(cegeps.flatMap((c) => c.sports))].sort((a, b) => a.localeCompare(b, "fr"));

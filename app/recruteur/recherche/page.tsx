@@ -20,11 +20,17 @@ import { useFavoriteCounts } from "@/lib/queries/shared/useFavoriteCounts";
 import { useRegions } from "@/lib/queries/shared/useRegions";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import { HeartButton } from "@/components/mobile/HeartButton";
+import { LOCKED_NAME_LABEL } from "@/lib/queries/shared/recruiterAthleteCards";
 import { RecruteurRechercheMobile } from "@/components/shared/RecruteurRechercheMobile";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
-type ExtendedAthlete = SearchAthlete & { academicBadges: string[]; stars: number; recruitmentStatus: string | null; heightWeight: string; gpa: number; committedSchoolName: string | null; openToOffers: boolean | null; jersey: string; sportName: string; ouvertDemenager: boolean; ouvertPrive: boolean; ouvertAnglophone: boolean; createdAt: string; lastValidation?: string | null; noTeam: boolean; context: string | null };
+/* identityVisible : décision SERVEUR (recruiter_search_athletes). Quand il
+   est faux, firstName / lastName / photo / jersey arrivent vides — le client
+   n'a rien à recalculer, seulement à rendre le placeholder verrouillé.
+   ouvert{Demenager,Prive,Anglophone} retirés : la RPC ne les projette pas
+   (ce sont des filtres, pas des colonnes) et rien ne les lisait. */
+type ExtendedAthlete = SearchAthlete & { identityVisible: boolean; academicBadges: string[]; stars: number; recruitmentStatus: string | null; heightWeight: string; gpa: number; committedSchoolName: string | null; openToOffers: boolean | null; jersey: string; sportName: string; createdAt: string; lastValidation?: string | null; noTeam: boolean; context: string | null };
 import { useSubscription } from "@/lib/hooks/useSubscription";
 
 import { TEAM_GENDER_FILTER_OPTIONS } from "@/lib/config/gender";
@@ -64,21 +70,26 @@ const sportLabel = (value: string): string => {
 
 /* ── Athlete Search Card ──────────────────────────────────── */
 
-function AthleteSearchCard({ a, onToggleFav, favDisabled, favDisabledReason, isFree }: {
+function AthleteSearchCard({ a, onToggleFav, favDisabled, favDisabledReason }: {
   a: ExtendedAthlete;
   onToggleFav: (id: string) => void;
   favDisabled: boolean;
   favDisabledReason: string;
-  isFree: boolean;
 }) {
   return (
     <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] overflow-hidden hover:border-[#E63946]/30 hover:shadow-[0_0_24px_rgba(230,57,70,0.12)] hover:-translate-y-1.5 hover:scale-[1.02] transition-all duration-300 ease-out group flex flex-col">
       {/* Photo area */}
       <Link href={`/recruteur/athletes/${a.id}`} className="relative block h-[180px] bg-[#2F3440] overflow-hidden cursor-pointer">
+        {/* identityVisible=false → LockedIdentityPlaceholder, PAS un flou.
+            Une photo floutée est toujours la photo : elle a transité, elle
+            est dans le cache disque et un filtre CSS se retire en une ligne
+            de devtools. Ici il n'y a rien à défloumeter — photo_url est NULL
+            dans la réponse. */}
         <AthletePhotoFill
           photoUrl={a.photo}
           firstName={a.firstName}
           lastName={a.lastName}
+          identityVisible={a.identityVisible}
           initialsFontSize={72}
           className="object-[center_15%]"
         />
@@ -124,11 +135,11 @@ function AthleteSearchCard({ a, onToggleFav, favDisabled, favDisabledReason, isF
       <div className="p-4 flex flex-col flex-1">
         {/* Name + position pill + jersey */}
         <div className="flex items-center gap-2 flex-wrap">
-          {isFree ? (
-            <span className="inline-flex items-center gap-1.5" title="Nom réservé aux recruteurs Pro">
-              <span aria-hidden="true" className="text-[17px] font-bold text-white select-none pointer-events-none blur-[5px]">
-                Prénom Nom
-              </span>
+          {!a.identityVisible ? (
+            /* Libellé partagé avec les 6 surfaces déjà basculées
+               (displayFullName) — même masquage, même mot à l'écran. */
+            <span className="inline-flex items-center gap-1.5" title={LOCKED_NAME_LABEL}>
+              <span className="text-[17px] font-bold text-[#9CA3AF]">{LOCKED_NAME_LABEL}</span>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="3" y="11" width="18" height="11" rx="2" />
                 <path d="M7 11V7a5 5 0 0110 0v4" />
@@ -204,12 +215,11 @@ function AthleteSearchCard({ a, onToggleFav, favDisabled, favDisabledReason, isF
 
 /* ── Athlete Search Row (list view) ─────────────────────────── */
 
-function AthleteSearchRow({ a, onToggleFav, favDisabled, favDisabledReason, isFree }: {
+function AthleteSearchRow({ a, onToggleFav, favDisabled, favDisabledReason }: {
   a: ExtendedAthlete;
   onToggleFav: (id: string) => void;
   favDisabled: boolean;
   favDisabledReason: string;
-  isFree: boolean;
 }) {
   return (
     <div className="bg-[#1A1D24] rounded-lg border border-[#2D3748] hover:border-[#E63946]/30 hover:shadow-[0_0_24px_rgba(230,57,70,0.12)] transition-all duration-300 ease-out flex items-center px-4 py-3 gap-4">
@@ -220,6 +230,7 @@ function AthleteSearchRow({ a, onToggleFav, favDisabled, favDisabledReason, isFr
           photoUrl={a.photo}
           firstName={a.firstName}
           lastName={a.lastName}
+          identityVisible={a.identityVisible}
           size={48}
         />
         <div className="absolute -top-1 -right-1 z-10">
@@ -237,11 +248,9 @@ function AthleteSearchRow({ a, onToggleFav, favDisabled, favDisabledReason, isFr
 
       {/* Name + school + stars */}
       <div className="min-w-[180px] max-w-[220px]">
-        {isFree ? (
-          <span className="inline-flex items-center gap-1.5" title="Nom réservé aux recruteurs Pro">
-            <span aria-hidden="true" className="text-[15px] font-bold text-white select-none pointer-events-none blur-[5px]">
-              Prénom Nom
-            </span>
+        {!a.identityVisible ? (
+          <span className="inline-flex items-center gap-1.5" title={LOCKED_NAME_LABEL}>
+            <span className="text-[15px] font-bold text-[#9CA3AF]">{LOCKED_NAME_LABEL}</span>
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <rect x="3" y="11" width="18" height="11" rx="2" />
               <path d="M7 11V7a5 5 0 0110 0v4" />
@@ -340,7 +349,13 @@ function RechercheContent() {
   if (IS_CAPACITOR) return <RecruteurRechercheMobile />;
 
   const searchParams = useSearchParams();
-  const { maxSearchResults, maxFavorites, tier, loading: tierLoading } = useSubscription();
+  /* maxSearchResults n'est plus lu ici : le plafond de résultats est mort
+     avec la bascule RPC (p_limit NULL = illimité, tous tiers confondus).
+     `tier` sert encore à deux choses, aucune n'étant un test d'identité :
+     la portée du cache de useAthleteSearch, et le gel du champ de recherche
+     par nom (fonction Pro, pas règle de confidentialité — le serveur
+     neutralise p_search de son côté quoi qu'il arrive). */
+  const { maxFavorites, tier, loading: tierLoading } = useSubscription();
   const isFreeRecruiter = tier === "free";
   const [search, setSearch] = useState("");
   const [sport, setSport] = useState("");
@@ -401,8 +416,7 @@ function RechercheContent() {
     minGpa,
     sortBy,
     sportId,
-    isFreeRecruiter,
-    maxSearchResults,
+    tier,
   });
   const loading = tierLoading || athletesLoading;
 
@@ -414,13 +428,14 @@ function RechercheContent() {
   // Bloc legacy supprimé ↓
 
   // Client-side residual filters. Server-side filters (search, sport, promotion,
-  // verified, video, orgType, GPA, minRating, ouvert_*, filterNewOnly) have
-  // already been applied by the Supabase query, so we only run filters here
-  // that can't be expressed server-side without extra joins / denormalization.
+  // verified, video, GPA, minRating, ouvert_*, filterNewOnly) have déjà été
+  // appliqués par la RPC ; on ne garde ici que ceux qu'elle n'exprime pas.
   //
-  // LIMITATION for Free users: these residual filters reduce the returned page
-  // but won't fetch additional matches beyond the server cap. That's a known
-  // revenue trade-off — upgrade to Pro to filter across the full athlete set.
+  // L'ancienne « LIMITATION for Free users » est levée : la RPC ne plafonne
+  // plus (p_limit NULL), donc ces filtres résiduels travaillent sur TOUS les
+  // athlètes actifs et non sur une fenêtre de 10 lignes. Un Free qui filtre
+  // par région obtient désormais la vraie réponse, pas le sous-ensemble des
+  // 10 premiers.
   const filtered = useMemo(() => {
     let list = [...athletes];
     // orgType client-side (déplacé du legacy useEffect en iter 5.3b pour stabiliser
@@ -753,7 +768,6 @@ function RechercheContent() {
                     onToggleFav={toggleFav}
                     favDisabled={atFavCap && !a.isFavorited}
                     favDisabledReason={favDisabledReason}
-                    isFree={isFreeRecruiter}
                   />
                 ))}
               </div>
@@ -766,48 +780,18 @@ function RechercheContent() {
                     onToggleFav={toggleFav}
                     favDisabled={atFavCap && !a.isFavorited}
                     favDisabledReason={favDisabledReason}
-                    isFree={isFreeRecruiter}
                   />
                 ))}
               </div>
             );
           })()}
 
-          {/* Free-tier cap banner — the query was .limit(maxSearchResults), so
-              if we came back with exactly that many rows, more matches likely
-              exist. Shown only when Free hit the cap; Pro+ is unlimited (-1). */}
-          {maxSearchResults !== -1 && athletes.length >= maxSearchResults && (
-            <UpgradeMoreBanner cap={maxSearchResults} />
-          )}
+          {/* UpgradeMoreBanner retiré (Lot A). Elle annonçait « N athlètes
+              affichés — d'autres correspondent » là où la requête tronquait
+              volontairement à N. La RPC ne tronque plus : la bannière serait
+              devenue un mensonge, et le composant avec elle. */}
         </>
       )}
-    </div>
-  );
-}
-
-function UpgradeMoreBanner({ cap }: { cap: number }) {
-  return (
-    <div className="mt-6 bg-[#1A1D24] border border-[#E63946]/20 rounded-xl p-6 flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
-      <div className="w-12 h-12 rounded-full bg-[#E63946]/10 flex items-center justify-center shrink-0">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#E63946" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="3" y="11" width="18" height="11" rx="2" />
-          <path d="M7 11V7a5 5 0 0110 0v4" />
-        </svg>
-      </div>
-      <div className="flex-1 text-center sm:text-left">
-        <h3 className="font-head text-[15px] font-black text-white mb-1 uppercase tracking-tight">
-          {cap} athlètes affichés — d&apos;autres correspondent à ta recherche
-        </h3>
-        <p className="text-[13px] text-[#9CA3AF] leading-relaxed">
-          Passe à Recruteur Pro pour voir tous les athlètes correspondants et filtrer sur l&apos;ensemble de la base.
-        </p>
-      </div>
-      <Link
-        href="/tarifs"
-        className="inline-flex items-center justify-center h-11 px-6 rounded-lg bg-[#E63946] hover:bg-[#D42B22] text-white font-head font-bold text-[12px] uppercase tracking-wider transition-colors shrink-0"
-      >
-        Voir les forfaits →
-      </Link>
     </div>
   );
 }

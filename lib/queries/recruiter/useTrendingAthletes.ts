@@ -8,6 +8,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import type { TrendingAthlete } from "@/app/recruteur/_data/mockDashboardData";
+import { fetchRecruiterAthleteCards, displayFullName } from "@/lib/queries/shared/recruiterAthleteCards";
 
 export function useTrendingAthletes() {
   return useQuery<TrendingAthlete[]>({
@@ -16,22 +17,18 @@ export function useTrendingAthletes() {
       const supabase = createClient();
       const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
+      /* Temps 1 — les vues seules, embed athletes retiré. */
       const { data: viewsData } = await supabase
         .from("recruiter_athlete_views")
-        .select(
-          // Iter 6.2-fix : ajout photo_url pour le carousel mobile.
-          "athlete_id, athletes!athlete_id(first_name, last_name, photo_url, cote_globale_entraineur, sports!sport_id(nom), positions!position_id(abreviation), schools!school_id(name))",
-        )
+        .select("athlete_id")
         .gte("viewed_at", sevenDaysAgo);
 
       const allViews = viewsData || [];
       if (allViews.length === 0) return [];
 
-      const viewMap = new Map<string, { count: number; row: typeof allViews[0] }>();
+      const viewMap = new Map<string, number>();
       for (const v of allViews) {
-        const existing = viewMap.get(v.athlete_id);
-        if (existing) existing.count++;
-        else viewMap.set(v.athlete_id, { count: 1, row: v });
+        viewMap.set(v.athlete_id, (viewMap.get(v.athlete_id) || 0) + 1);
       }
 
       const athleteIds = Array.from(viewMap.keys());
@@ -45,34 +42,25 @@ export function useTrendingAthletes() {
       }
 
       const sorted = Array.from(viewMap.entries())
-        .sort((a, b) => b[1].count - a[1].count)
+        .sort((a, b) => b[1] - a[1])
         .slice(0, 5);
 
-      return sorted.map(([athId, { count, row }], i): TrendingAthlete => {
-        const ath = row.athletes as unknown as {
-          first_name?: string;
-          last_name?: string;
-          photo_url?: string | null;
-          cote_globale_entraineur?: number;
-          sports?: { nom?: string } | { nom?: string }[] | null;
-          positions?: { abreviation?: string } | { abreviation?: string }[] | null;
-          schools?: { name?: string } | { name?: string }[] | null;
-        } | null;
-        const sRel = ath?.sports; const sObj = Array.isArray(sRel) ? sRel[0] : sRel;
-        const pRel = ath?.positions; const pObj = Array.isArray(pRel) ? pRel[0] : pRel;
-        const schRel = ath?.schools; const schObj = Array.isArray(schRel) ? schRel[0] : schRel;
-        const firstName = ath?.first_name || "";
-        const lastName = ath?.last_name || "";
+      /* Temps 2 — les cartes projetées, sur le top 5 seulement. */
+      const cardMap = await fetchRecruiterAthleteCards(supabase, sorted.map(([id]) => id));
+
+      return sorted.map(([athId, count], i): TrendingAthlete => {
+        const card = cardMap.get(athId) ?? null;
         return {
           id: athId,
           rank: i + 1,
-          name: `${firstName} ${lastName}`.trim(),
-          firstName,
-          lastName,
-          photoUrl: ath?.photo_url ?? null,
-          position: pObj?.abreviation || sObj?.nom || "",
-          school: schObj?.name || "",
-          stars: (ath?.cote_globale_entraineur as number) || 0,
+          name: displayFullName(card, "Athlète"),
+          identityVisible: card?.identity_visible ?? false,
+          firstName: card?.first_name ?? "",
+          lastName: card?.last_name ?? "",
+          photoUrl: card?.photo_url ?? null,
+          position: card?.position_abbr || card?.sport_nom || "",
+          school: card?.school_name ?? "",
+          stars: card?.cote_globale ?? 0,
           viewsThisWeek: count,
           favoritedBy: favCountMap.get(athId) || 0,
         };

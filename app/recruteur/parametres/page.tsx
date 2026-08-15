@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import type { RecruiterSettings } from "@/lib/types/models";
 import { createClient } from "@/lib/supabase/client";
+import { fetchAllRows } from "@/lib/supabase/fetchAllRows";
 import { useSubscription } from "@/lib/hooks/useSubscription";
 import { deleteMyAccount } from "@/lib/auth/deleteAccount";
 import { RecruteurParametresMobile } from "@/components/shared/RecruteurParametresMobile";
@@ -518,8 +519,14 @@ function RecruiterSettingsDesktop() {
       const supabase = createClient();
 
       // Load schools for Établissement dropdown
-      const { data: schoolsData } = await supabase.from("schools").select("id, name").order("name");
-      if (schoolsData) setSchoolsList(schoolsData);
+      // Pagination : la liste alimente le menu Établissement. Tronquée à
+      // 1000 lignes, les 199 derniers noms étaient tout simplement
+      // impossibles à choisir.
+      const schoolsData = await fetchAllRows<{ id: string; name: string }>(
+        (f, t) => supabase.from("schools").select("id, name").order("name").range(f, t),
+        "RecruteurParametres",
+      );
+      setSchoolsList(schoolsData);
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 

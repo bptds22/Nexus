@@ -164,6 +164,7 @@ function TrendingAthleteCard({ athlete, isFavorited, onTap }: {
         lastName={lastName}
         initialsFontSize={48}
         className="object-[center_15%]"
+        identityVisible={athlete.identityVisible}
       />
 
       {/* Iter 7.5 Section B — gradient termine en #1A1D24 OPAQUE (couleur

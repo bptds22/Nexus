@@ -32,6 +32,17 @@ interface AthleteInfoCardProps {
       athlete route so existing recruiter callers render unchanged; the coach
       thread passes /coach/athletes/[id]. */
   profileHref?: string;
+  /**
+   * Projection serveur : false = identité masquée (Loi 25 ou tier FREE).
+   *
+   * Indispensable ici parce que ce composant DÉRIVE les initiales en
+   * splittant `athleteName` : sous masquage, `athleteName` vaut
+   * « Identité réservée » et la dérivation produirait « IR », soit
+   * précisément une initiale affichée pour une identité verrouillée.
+   *
+   * Laisser `undefined` côté coach — comportement historique intact.
+   */
+  athleteIdentityVisible?: boolean;
 }
 
 export default function AthleteInfoCard({
@@ -58,6 +69,7 @@ export default function AthleteInfoCard({
   athleteOpenAnglophone = false,
   athleteDistinctions = [],
   profileHref,
+  athleteIdentityVisible,
 }: AthleteInfoCardProps) {
   // Split athleteName so AthletePhoto can compute initials in
   // its onError fallback path. The athleteInitials prop becomes
@@ -78,6 +90,7 @@ export default function AthleteInfoCard({
           size={80}
           alt={athleteName}
           className="border border-white/10"
+          identityVisible={athleteIdentityVisible}
         />
       </div>
 

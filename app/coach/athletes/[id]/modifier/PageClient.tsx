@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useDynamicParam } from "@/lib/platform/useDynamicParam";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { fetchAllRows } from "@/lib/supabase/fetchAllRows";
 import { loadAthleteRaw, buildFormFromRaw } from "../../_data/loadAthleteFromSupabase";
 import TeamHistoryEditor from "@/components/shared/athlete/TeamHistoryEditor";
 import type { TeamHistoryEntry } from "@/lib/types/models";
@@ -182,9 +183,12 @@ function ModifierContent({ id }: { id: string }) {
   useEffect(() => {
     // Fetch schools for committed school selector + coach's teams
     const supabase = createClient();
-    supabase.from("schools").select("id, name").order("name").then(({ data: schoolsData }) => {
-      if (schoolsData) setSchoolsList(schoolsData);
-    });
+    // Pagination : sélecteur d'établissement d'engagement. Tronqué à 1000
+    // lignes, il rendait les 199 derniers noms inatteignables.
+    fetchAllRows<{ id: string; name: string }>(
+      (f, t) => supabase.from("schools").select("id, name").order("name").range(f, t),
+      "CoachModifierAthlete",
+    ).then((schoolsData) => setSchoolsList(schoolsData));
 
     // Load coach's school + teams from the `teams` table (cf. requête plus
     // bas). NB : `equipes` est une table morte — 0 ligne, aucun code ne la

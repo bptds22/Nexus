@@ -54,6 +54,24 @@ interface Subscription {
 
 /* ── Feature flag tables ──────────────────────────────────── */
 
+/* ⚠️ RETIRÉS DE LA MATRICE RECRUTEUR (Lot A) :
+   can_see_athlete_name / can_see_athlete_photo / can_see_jersey_number.
+
+   Ils n'ont jamais été branchés — aucun composant ne les lisait — et il ne
+   faut PAS les brancher : le client ne peut pas exprimer la règle qu'ils
+   prétendent porter. La visibilité d'une identité dépend de la date de
+   naissance et du consentement parental (Loi 25), deux colonnes qui ne sont
+   jamais projetées à un recruteur. Un drapeau par tier aurait montré le nom
+   d'un mineur non consentant à tout recruteur Pro.
+
+   La décision est prise par ligne, côté serveur, et arrive dans
+   `identity_visible` des RPC recruteur. Un drapeau client par-dessus ne
+   pourrait que diverger.
+
+   `search_results_limit` survit ici mais n'est plus lu par la Recherche
+   (p_limit NULL = illimité). Laissé en place : il n'est pas à moi de
+   trancher son sort dans ce lot. */
+
 type FeatureValue = boolean | number;
 type FeatureSet = Record<string, FeatureValue>;
 
@@ -62,9 +80,6 @@ const RECRUITER_FEATURES: Record<SubscriptionTier, FeatureSet> = {
     can_search: true,
     can_use_advanced_filters: false,
     search_results_limit: 10,
-    can_see_athlete_name: false,
-    can_see_athlete_photo: false,
-    can_see_jersey_number: false,
     can_see_highlights: false,
     can_see_coach_comments: false,
     can_see_academic_full: false,
@@ -91,9 +106,6 @@ const RECRUITER_FEATURES: Record<SubscriptionTier, FeatureSet> = {
     can_search: true,
     can_use_advanced_filters: true,
     search_results_limit: -1,
-    can_see_athlete_name: true,
-    can_see_athlete_photo: true,
-    can_see_jersey_number: true,
     can_see_highlights: true,
     can_see_coach_comments: true,
     can_see_academic_full: true,
@@ -120,9 +132,6 @@ const RECRUITER_FEATURES: Record<SubscriptionTier, FeatureSet> = {
     can_search: true,
     can_use_advanced_filters: true,
     search_results_limit: -1,
-    can_see_athlete_name: true,
-    can_see_athlete_photo: true,
-    can_see_jersey_number: true,
     can_see_highlights: true,
     can_see_coach_comments: true,
     can_see_academic_full: true,

@@ -443,6 +443,7 @@ const DraggableKanbanCard = memo(function DraggableKanbanCard({
                 lastName={rest.join(" ")}
                 initialsFontSize={48}
                 className="object-[center_15%]"
+                identityVisible={card.identityVisible}
               />
             );
           })()}

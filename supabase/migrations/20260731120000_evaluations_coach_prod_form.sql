@@ -1,0 +1,64 @@
+-- ═══════════════════════════════════════════════════════════════
+-- MIROIR DE RATTRAPAGE — policy « evaluations coach » (forme PROD)
+--
+-- ⚠️ SEUL FICHIER DE CE LOT AVEC UN PRÉFIXE NEUF, ET C'EST DÉLIBÉRÉ.
+-- La consigne était : « préfixe = la version enregistrée dans schema_migrations ».
+-- Elle est inapplicable ici : la forme prod de cette policy n'est enregistrée
+-- sous AUCUNE version. Elle résulte d'un apply hors migration. Le préfixe
+-- 20260731120000 a été vérifié libre partout avant usage :
+--   • absent de supabase_migrations.schema_migrations (max = 20260729194041)
+--   • absent de supabase/migrations/ sur dev, sur origin/feat/messaging-athlete-coach
+--     et sur le disque
+--
+-- ── LE FAIT ────────────────────────────────────────────────────
+-- État PROD constaté le 2026-07-30 (pg_policy, résolution des rôles incluse) :
+--   polname    : evaluations coach
+--   polcmd     : ALL          polpermissive : true
+--   polroles   : {authenticated}          (pas de pseudo-rôle PUBLIC/0)
+--   USING      : (coach_id = ( SELECT auth.uid() AS uid))
+--   WITH CHECK : (coach_id = ( SELECT auth.uid() AS uid))   ← PRÉSENT
+--
+-- ── LA DIVERGENCE ──────────────────────────────────────────────
+-- Deux fichiers seulement définissent cette policy dans le dépôt, et AUCUN ne
+-- produit la forme ci-dessus :
+--
+--   1. 20260417120000_baseline.sql:4338
+--        CREATE POLICY "evaluations coach" ON "public"."evaluations"
+--          USING (("coach_id" = "auth"."uid"()));
+--      → TO PUBLIC (clause TO omise), PAS de WITH CHECK, auth.uid() nu.
+--
+--   2. 20260727130000_rls_initplan_and_fk_indexes.sql:255-257
+--        CREATE POLICY "evaluations coach" ON public.evaluations
+--          AS PERMISSIVE FOR ALL TO public
+--          USING ((coach_id = (select auth.uid())));
+--      → TO public, PAS de WITH CHECK.
+--      Cette migration N'A JAMAIS ÉTÉ APPLIQUÉE : la version 20260727130000
+--      est absente de schema_migrations. Son en-tête décrit précisément la
+--      forme aujourd'hui en prod comme un « ÉCART CC-Windows » laissé par la
+--      passe 1 du Mac, et se donne pour but de la RESTAURER en TO public sans
+--      WITH CHECK. Cette restauration n'a donc jamais eu lieu.
+--
+-- ── QUELLE FORME FAIT FOI ──────────────────────────────────────
+-- LA FORME PROD. C'est elle qui gouverne les écritures des coachs depuis le
+-- 2026-07-27 ; c'est contre elle que tout comportement observé a été validé.
+-- Ce fichier la fige telle quelle. Il ne « corrige » rien et n'arbitre pas :
+-- si BP veut au contraire revenir à TO public sans WITH CHECK (l'intention de
+-- 20260727130000), ce sera une migration de portée séparée et assumée, pas ce
+-- fichier-ci.
+--
+-- Note d'équivalence, pour mémoire et non comme justification :
+--   • sur une policy FOR ALL, un WITH CHECK omis retombe sur l'expression
+--     USING — le WITH CHECK explicite est donc inerte ;
+--   • TO authenticated au lieu de TO public est un rétrécissement de portée
+--     inerte en pratique (service_role et postgres ont BYPASSRLS ; pour anon,
+--     auth.uid() est NULL, donc `coach_id = NULL` ne rendait déjà aucune ligne).
+--   Inerte ne veut pas dire identique : ce fichier reproduit ce qui EST.
+--
+-- IDEMPOTENT : DROP POLICY IF EXISTS / CREATE POLICY.
+-- ═══════════════════════════════════════════════════════════════
+
+DROP POLICY IF EXISTS "evaluations coach" ON public.evaluations;
+CREATE POLICY "evaluations coach" ON public.evaluations
+  AS PERMISSIVE FOR ALL TO authenticated
+  USING ((coach_id = ( SELECT auth.uid() AS uid)))
+  WITH CHECK ((coach_id = ( SELECT auth.uid() AS uid)));

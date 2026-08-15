@@ -966,7 +966,7 @@ function PipelineDetailSheet({
                 <div className="relative w-16 h-16 rounded-2xl overflow-hidden flex-shrink-0 bg-[#2F3440]">
                   {(() => {
                     const [f, ...r] = (card.full_name || "").split(/\s+/);
-                    return <AthletePhotoFill photoUrl={card.photo_url} firstName={f} lastName={r.join(" ")} initialsFontSize={22} className="object-[center_15%]" />;
+                    return <AthletePhotoFill photoUrl={card.photo_url} firstName={f} lastName={r.join(" ")} initialsFontSize={22} className="object-[center_15%]" identityVisible={card.identityVisible} />;
                   })()}
                   <div
                     className="absolute inset-0 pointer-events-none"
