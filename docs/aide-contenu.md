@@ -16,6 +16,19 @@ Il se convertit en `content/aide/sections.ts`.
 
 ⚠️ **NE PAS PUBLIER `SECU-04` ET `SECU-06` SANS VALIDATION.** Voir la note en fin de fichier.
 
+## Dépendance de publication
+
+**`/aide` ne merge pas dans `main` avant la livraison de deux chantiers parallèles :**
+
+1. **Table blackout RSEQ peuplée** — conditionne `COACH-06` et `SECU-06`.
+2. **RLS recruteur fermé côté API directe** — conditionne `RECR-02` et `SECU-04`.
+
+`SECU-04` et `SECU-06` sortent de brouillon **en même temps**, à la livraison des deux.
+
+La raison de cette dépendance : le drapeau `draft` retire des **articles**, pas des **affirmations**. Les deux revendications sous réserve subsistent dans des articles publiés — `COACH-06` porte les périodes de silence RSEQ, `RECR-02` porte ce qui n'est pas transmis au recruteur. Masquer `SECU-04` et `SECU-06` ne suffit donc pas à retirer les affirmations du site : c'est la page entière qui attend.
+
+Le même avertissement est repris en tête de `content/aide/sections.ts`, où il bloque le merge côté code.
+
 ---
 
 ## SECTION BASE — Les bases
