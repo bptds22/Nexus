@@ -1,14 +1,46 @@
 /* ═══════════════════════════════════════════════════════════════
-   useAthleteAutocomplete — TanStack hook (iter 6.0a)
-   Suggestions légères pendant la frappe (8-10 matches). Payload
-   minimal pour rapidité. enabled si query.length >= 2.
+   useAthleteAutocomplete — suggestions pendant la frappe (max 10).
+
+   BASCULÉ SUR recruiter_search_athletes (chantier bascule RPC).
+
+   Ce hook est le seul du lot qui ne pouvait PAS passer par
+   recruiter_athlete_cards : cette RPC prend des IDs, or ici on part
+   d'une chaîne de recherche. Il fallait donc la RPC de recherche.
+
+   ── Pourquoi l'ancien `.or(first_name.ilike...)` était un trou ──
+   Le nom n'y était pas seulement PROJETÉ, il était FILTRÉ dessus. Un
+   filtre est une divulgation : en tapant des préfixes successifs on
+   déduit par dichotomie le nom d'un athlète qu'on n'a pas le droit de
+   voir, sans que ce nom apparaisse jamais à l'écran. Retirer la colonne
+   de la projection n'y aurait rien changé.
+
+   Le serveur tranche maintenant, et il le fait AVANT le WHERE :
+
+       v_search := CASE WHEN v_tier_ok
+                        THEN NULLIF(btrim(COALESCE(p_search,'')),'')
+                   END;
+
+   Si le tier de l'appelant ne donne pas droit à la recherche par nom,
+   v_search est NULL et le filtre ne s'applique tout simplement pas —
+   il n'y a pas de version client de cette règle à contourner.
+
+   p_limit 10 est délibéré ici : c'est une liste de suggestions pendant
+   la frappe, pas la Recherche. La page Recherche, elle, passe p_limit
+   NULL (= illimité côté serveur, cf. le LIMIT CASE de la fonction) et
+   ne doit surtout pas hériter de ce 10.
 ═══════════════════════════════════════════════════════════════ */
 
 import { useQuery } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
+import { displayFullName, type RecruiterAthleteCard } from "@/lib/queries/shared/recruiterAthleteCards";
 
 export interface AutocompleteAthlete {
   id: string;
+  /** Décision SERVEUR. false = nom, photo et dossard sont ABSENTS. */
+  identityVisible: boolean;
+  /** Déjà résolu — « Identité réservée » sous masquage. Ne pas
+   *  reconstruire par interpolation, ni en dériver des initiales. */
+  fullName: string;
   firstName: string;
   lastName: string;
   photoUrl: string | null;
@@ -18,6 +50,13 @@ export interface AutocompleteAthlete {
   school: string | null;
 }
 
+/** Le sur-ensemble rendu par recruiter_search_athletes. Deux colonnes de
+ *  plus que RecruiterAthleteCard : created_at et team_gender. */
+type SearchRow = RecruiterAthleteCard & {
+  created_at: string | null;
+  team_gender: string | null;
+};
+
 export function useAthleteAutocomplete(query: string) {
   const trimmed = query.trim();
   return useQuery<AutocompleteAthlete[]>({
@@ -25,35 +64,29 @@ export function useAthleteAutocomplete(query: string) {
     queryFn: async () => {
       if (trimmed.length < 2) return [];
       const supabase = createClient();
-      const q = trimmed.replace(/[%,]/g, "");
-      const { data, error } = await supabase
-        .from("athletes")
-        .select(`
-          id, first_name, last_name, photo_url, numero_jersey,
-          sports!sport_id(nom),
-          positions!position_id(abreviation),
-          schools!school_id(name)
-        `)
-        .or(`first_name.ilike.%${q}%,last_name.ilike.%${q}%`)
-        .eq("status", "ACTIF")
-        .limit(10);
+
+      // Plus d'échappement manuel de % et , : la chaîne ne sert plus à
+      // construire un filtre PostgREST, elle part en paramètre.
+      const { data, error } = await supabase.rpc("recruiter_search_athletes", {
+        p_search: trimmed,
+        p_limit: 10,
+      });
       if (error) throw error;
 
-      return ((data ?? []) as Record<string, unknown>[]).map((a) => {
-        const sportRel = a.sports; const sport = (Array.isArray(sportRel) ? sportRel[0] : sportRel) as { nom?: string } | null;
-        const posRel = a.positions; const pos = (Array.isArray(posRel) ? posRel[0] : posRel) as { abreviation?: string } | null;
-        const schoolRel = a.schools; const school = (Array.isArray(schoolRel) ? schoolRel[0] : schoolRel) as { name?: string } | null;
-        return {
-          id: a.id as string,
-          firstName: (a.first_name as string) ?? "",
-          lastName: (a.last_name as string) ?? "",
-          photoUrl: (a.photo_url as string) ?? null,
-          jersey: (a.numero_jersey as string) ?? null,
-          sport: sport?.nom ?? null,
-          position: pos?.abreviation ?? null,
-          school: school?.name ?? null,
-        };
-      });
+      return ((data ?? []) as SearchRow[]).map((a) => ({
+        id: a.id,
+        identityVisible: a.identity_visible,
+        fullName: displayFullName(a),
+        // Sous masquage le serveur rend NULL : `?? ""` garde le contrat
+        // `string` sans jamais afficher "null".
+        firstName: a.first_name ?? "",
+        lastName: a.last_name ?? "",
+        photoUrl: a.photo_url,
+        jersey: a.numero_jersey,
+        sport: a.sport_nom,
+        position: a.position_abbr,
+        school: a.school_name,
+      }));
     },
     enabled: trimmed.length >= 2,
     staleTime: 60 * 1000,
