@@ -185,7 +185,11 @@ export function AddAthleteToListSheet({
               ) : (
                 <div className="space-y-2 pt-2">
                   {filtered.map((a) => {
-                    const fullName = `${a.firstName} ${a.lastName}`.trim();
+                    // `a.fullName` est résolu par displayFullName() dans le
+                    // hook. L'interpolation manuelle qui était ici rendait une
+                    // chaîne VIDE sous identité réservée : le serveur ne
+                    // projette ni first_name ni last_name dans ce cas.
+                    const fullName = a.fullName;
                     const isAdding = adding.has(a.id);
                     return (
                       <div key={a.id} className="bg-[#1A1D24] rounded-xl px-3 py-2.5 flex items-center gap-3">
@@ -194,6 +198,7 @@ export function AddAthleteToListSheet({
                             photoUrl={a.photo}
                             firstName={a.firstName}
                             lastName={a.lastName}
+                            identityVisible={a.identityVisible}
                             size={40}
                           />
                         </div>

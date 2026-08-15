@@ -7,6 +7,12 @@ import type { RecruitmentStatus } from "@/lib/config/recruitmentStatuses";
 
 export interface ProspectListAthlete {
   id: string;
+  /** Décision SERVEUR (identity_visible des RPC recruteur). false = nom,
+   *  photo et dossard sont ABSENTS de la réponse, pas juste cachés.
+   *  Optionnel : les mocks de ce fichier ne portent pas la notion. */
+  identity_visible?: boolean;
+  /** Déjà résolu par displayFullName() — « Identité réservée » sous masquage.
+   *  Ne jamais reconstruire par interpolation de first_name + last_name. */
   full_name: string;
   photo_url: string;
   jersey: string;
