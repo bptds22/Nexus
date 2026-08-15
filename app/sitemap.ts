@@ -28,6 +28,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   // Pages info — value moyenne, contenu informationnel
   const infoPages: MetadataRoute.Sitemap = [
     "a-propos",
+    "aide",
     "comment-ca-marche",
     "guide-recrutement",
     "tarifs",

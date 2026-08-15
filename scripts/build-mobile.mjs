@@ -58,6 +58,15 @@ const HIDE_PATTERNS = [
   'app/join/\\[code\\]/page.tsx',
   // NOTE: app/page.tsx is NOT hidden — Capacitor needs an out/index.html
   // entry point. The page's redirect('/auth') guard fires on mobile load.
+  // Centre d'aide public (chantier 5). WEB SEULEMENT pour l'instant :
+  // la page importe MarketingNav + Footer, du decor marketing qui n'a
+  // rien a faire dans l'application. L'aide arrivera sur mobile par un
+  // sheet natif relisant le meme content/aide/*, sur le modele de
+  // components/legal/LegalSheetMobile.tsx — sans ajouter de route.
+  // Pas de crochets dans le chemin : rien a echapper ici.
+  // Le layout.tsx voisin reste en place — un layout sans page ne cree
+  // aucune route (meme montage que /tarifs, /a-propos, etc.).
+  'app/aide/page.tsx',
   'app/tarifs/page.tsx',
   'app/a-propos/page.tsx',
   'app/comment-ca-marche/page.tsx',
