@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import RecruteurMessagesThread from "./[id]/PageClient";
 import StarRating from "@/components/ui/StarRating";
+import LockedIdentityPlaceholder from "@/components/shared/LockedIdentityPlaceholder";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
 import type { GlobalRecruitmentStatus } from "@/lib/types/models";
 import { useConversations, type ThreadData } from "@/lib/queries/recruiter/useConversations";
@@ -108,8 +109,15 @@ function ThreadCard({ thread: t }: { thread: ThreadData }) {
       {/* Athlete context — ONLY for about-athlete (RECRUTEUR_COACH) threads. */}
       {!isDirect && (
         <div className="hidden md:flex items-center gap-2 shrink-0 w-[260px]">
-          <div className="w-8 h-8 rounded-full bg-[#111317] border border-[#2D3748] flex items-center justify-center shrink-0">
-            <span className="text-[9px] font-bold text-[#6b7280]">{t.athleteInitials}</span>
+          {/* Sous identité réservée, athleteInitials est VIDE par contrat —
+              afficher une pastille creuse serait un trou visuel. On rend le
+              placeholder partagé, qui dit la bonne chose. */}
+          <div className="w-8 h-8 rounded-full overflow-hidden bg-[#111317] border border-[#2D3748] flex items-center justify-center shrink-0">
+            {t.athleteIdentityVisible ? (
+              <span className="text-[9px] font-bold text-[#6b7280]">{t.athleteInitials}</span>
+            ) : (
+              <LockedIdentityPlaceholder variant="fill" />
+            )}
           </div>
           <div className="min-w-0">
             <span className="text-[13px] font-semibold text-[#9CA3AF] truncate block">{t.athleteName}</span>

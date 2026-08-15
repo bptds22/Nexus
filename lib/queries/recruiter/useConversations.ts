@@ -8,6 +8,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
+import { fetchRecruiterAthleteCards, displayFullName } from "@/lib/queries/shared/recruiterAthleteCards";
 
 export interface ThreadData {
   id: string;
@@ -20,7 +21,19 @@ export interface ThreadData {
   coachId: string;
   coachPhotoUrl: string | null;
   athleteName: string;
+  /**
+   * Initiales de l'athlète — VIDE sous identité réservée.
+   *
+   * Ce n'est pas un oubli : deux lettres recoupées à l'école et à la
+   * position réidentifient. Les consommateurs doivent lire
+   * `athleteIdentityVisible` et rendre LockedIdentityPlaceholder, jamais
+   * retomber sur ces initiales ni les redériver depuis athleteName —
+   * qui vaut « Identité réservée » et donnerait « IR ».
+   */
   athleteInitials: string;
+  /** Décision SERVEUR (identity_visible de la RPC). false = nom, photo et
+   *  dossard sont ABSENTS de la réponse, pas juste cachés à l'écran. */
+  athleteIdentityVisible: boolean;
   athleteId: string;
   athletePhotoUrl: string | null;
   athletePosition: string;
@@ -51,13 +64,7 @@ export function useConversations() {
         .select(`
           id, conversation_type, status, last_message_at, unread_count, created_at,
           coach:users!coach_id(id, first_name, last_name, photo_url, avatar_url, school_id, schools!school_id(name)),
-          athlete:athletes!athlete_id(
-            id, first_name, last_name, photo_url, verified, cote_globale_entraineur,
-            numero_jersey, annee_diplomation, recruitment_status,
-            sports!sport_id(nom),
-            positions!position_id(nom, abreviation),
-            schools!school_id(name, region)
-          )
+          athlete_id
         `)
         .eq("recruiter_id", userId)
         .order("last_message_at", { ascending: false });
@@ -86,21 +93,30 @@ export function useConversations() {
         }
       }
 
+      /* Temps 2 — les cartes projetées, résolues par lot.
+         Le coach reste en embed : `users` n'est pas `athletes`, la
+         projection Loi 25 ne le concerne pas. Seul l'athlète bascule. */
+      const cardMap = await fetchRecruiterAthleteCards(
+        supabase,
+        data.map((c: Record<string, unknown>) => c.athlete_id as string).filter(Boolean),
+      );
+
       // Mapping identique à la page existante
       return data.map((c: Record<string, unknown>): ThreadData => {
         const coachRaw = c.coach;
         const coach = (Array.isArray(coachRaw) ? coachRaw[0] : coachRaw) as Record<string, unknown> | null;
         const coachSchoolRaw = coach?.schools;
         const coachSchool = (Array.isArray(coachSchoolRaw) ? coachSchoolRaw[0] : coachSchoolRaw) as { name?: string } | null;
-        const athleteRaw = c.athlete;
-        const athlete = (Array.isArray(athleteRaw) ? athleteRaw[0] : athleteRaw) as Record<string, unknown> | null;
-        const posRaw = athlete?.positions;
-        const pos = (Array.isArray(posRaw) ? posRaw[0] : posRaw) as { abreviation?: string } | null;
+
+        // `?? null` explicite : la RPC ne rend rien pour un athlète inactif
+        // ou supprimé, et un `undefined` interpolé écrirait "undefined".
+        const card = cardMap.get(c.athlete_id as string) ?? null;
+        const identityVisible = card?.identity_visible ?? false;
 
         const coachFirst = (coach?.first_name as string) || "";
         const coachLast = (coach?.last_name as string) || "";
-        const athFirst = (athlete?.first_name as string) || "";
-        const athLast = (athlete?.last_name as string) || "";
+        const athFirst = card?.first_name ?? "";
+        const athLast = card?.last_name ?? "";
 
         return {
           id: c.id as string,
@@ -110,14 +126,20 @@ export function useConversations() {
           coachSchool: coachSchool?.name || "",
           coachId: (coach?.id as string) || "",
           coachPhotoUrl: (coach?.photo_url as string) || (coach?.avatar_url as string) || null,
-          athleteName: `${athFirst} ${athLast}`.trim() || "Athlète",
+          // displayFullName porte les trois cas (carte absente, masquée, nom
+          // partiel). Le repli « Athlète » a disparu : il inventait un nom
+          // pour cacher un nom absent.
+          athleteName: displayFullName(card),
+          // Sous masquage athFirst/athLast sont vides -> initiales vides,
+          // volontairement. Voir le commentaire du type.
           athleteInitials: `${athFirst[0] || ""}${athLast[0] || ""}`.toUpperCase(),
-          athleteId: (athlete?.id as string) || "",
-          athletePhotoUrl: (athlete?.photo_url as string) || null,
-          athletePosition: pos?.abreviation || "",
-          athleteVerified: !!athlete?.verified,
-          athleteStars: (athlete?.cote_globale_entraineur as number) || 0,
-          athleteRecruitmentStatus: (athlete?.recruitment_status as string) || "OUVERT",
+          athleteIdentityVisible: identityVisible,
+          athleteId: (c.athlete_id as string) || "",
+          athletePhotoUrl: card?.photo_url ?? null,
+          athletePosition: card?.position_abbr ?? "",
+          athleteVerified: !!card?.verified,
+          athleteStars: card?.cote_globale ?? 0,
+          athleteRecruitmentStatus: card?.recruitment_status ?? "OUVERT",
           lastMessage: lastMsgMap.get(c.id as string) || "",
           lastMessageAt: (c.last_message_at as string) || (c.created_at as string) || "",
           lastSenderId: lastSenderMap.get(c.id as string) ?? null,

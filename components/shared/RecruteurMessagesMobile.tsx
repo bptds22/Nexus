@@ -220,6 +220,9 @@ export function RecruteurMessagesMobile() {
     const isDirect = t.conversationType === "RECRUTEUR_ATHLETE";
     const cpPhoto = isDirect ? t.athletePhotoUrl : t.coachPhotoUrl;
     const cpInitials = isDirect ? t.athleteInitials : t.coachInitials;
+    // Le masquage ne concerne QUE l'athlète : un fil « à propos de » a le
+    // coach en contrepartie, et `users` n'est pas soumis à la projection.
+    const cpIdentityVisible = isDirect ? t.athleteIdentityVisible : undefined;
     return (
       <div className="flex items-center gap-3">
         <div className="relative w-[52px] h-[52px] rounded-full overflow-hidden flex-shrink-0 bg-[#2F3440]">
@@ -227,6 +230,7 @@ export function RecruteurMessagesMobile() {
             photoUrl={cpPhoto}
             firstName={cpInitials[0] ?? ""}
             lastName={cpInitials[1] ?? ""}
+            identityVisible={cpIdentityVisible}
             initialsFontSize={20}
           />
         </div>
