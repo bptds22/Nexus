@@ -5,6 +5,7 @@ import Link from "next/link";
 import FeatureGate from "@/components/subscription/FeatureGate";
 import CegepGate from "@/components/subscription/CegepGate";
 import { createClient } from "@/lib/supabase/client";
+import { fetchRecruiterAthleteCards, displayFullName } from "@/lib/queries/shared/recruiterAthleteCards";
 import StarRating from "@/components/ui/StarRating";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
 import type { GlobalRecruitmentStatus } from "@/lib/types/models";
@@ -13,8 +14,11 @@ import type { GlobalRecruitmentStatus } from "@/lib/types/models";
 
 interface RecrueCegep {
   athleteId: string;
-  firstName: string;
-  lastName: string;
+  /** Déjà résolu par displayFullName() — « Identité réservée » sous masquage,
+   *  « Athlète inconnu » si la carte manque. Remplace firstName/lastName :
+   *  les garder séparés invitait le `{firstName} {lastName}` qui, sous
+   *  masquage, n'imprimait qu'une espace. */
+  name: string;
   jerseyNumber: string;
   verified: boolean;
   sport: string;
@@ -72,47 +76,41 @@ function RecrusCegepPage() {
 
       if (teamIds.length === 0) { setLoading(false); return; }
 
+      /* TEMPS 1 — la relation possédée, SANS embed `athletes` du tout.
+         Cas rare et confortable : la RPC projette la TOTALITÉ de ce que
+         cette page affiche (nom, dossard, vérifié, cote, statut, sport,
+         position, école, région). L'embed n'avait donc aucune raison de
+         survivre — contrairement au profil ou au fil, où GPA et programmes
+         obligent à un partage. */
       const { data: recrueData } = await supabase
         .from("recruiter_pipeline")
-        .select(`
-          stage, updated_at, recruiter_id,
-          athletes!athlete_id(
-            id, first_name, last_name, verified, cote_globale_entraineur,
-            recruitment_status, numero_jersey,
-            sports!sport_id(nom),
-            positions!position_id(nom, abreviation),
-            schools!school_id(name, region)
-          )
-        `)
+        .select("stage, updated_at, recruiter_id, athlete_id")
         .in("recruiter_id", teamIds)
         .in("stage", ["ENGAGE", "LETTRE_SIGNEE"])
         .order("updated_at", { ascending: false });
 
-      const mapped: RecrueCegep[] = (recrueData || []).map((row) => {
-        const ath = row.athletes as unknown as {
-          id: string; first_name: string; last_name: string; verified: boolean;
-          cote_globale_entraineur: number | null; recruitment_status: string | null; numero_jersey: string | null;
-          sports?: { nom?: string } | { nom?: string }[] | null;
-          positions?: { nom?: string; abreviation?: string } | { nom?: string; abreviation?: string }[] | null;
-          schools?: { name?: string; region?: string } | { name?: string; region?: string }[] | null;
-        } | null;
+      /* TEMPS 2 — l'identité et le reste, projetés par le serveur. */
+      const cards = await fetchRecruiterAthleteCards(
+        supabase,
+        (recrueData || []).map((r) => r.athlete_id as string).filter(Boolean),
+      );
 
-        const sportRel = ath?.sports; const sportObj = Array.isArray(sportRel) ? sportRel[0] : sportRel;
-        const posRel = ath?.positions; const posObj = Array.isArray(posRel) ? posRel[0] : posRel;
-        const schoolRel = ath?.schools; const schoolObj = Array.isArray(schoolRel) ? schoolRel[0] : schoolRel;
+      const mapped: RecrueCegep[] = (recrueData || []).map((row) => {
+        const athleteId = (row.athlete_id as string) || "";
+        const card = cards.get(athleteId) ?? null;
 
         return {
-          athleteId: ath?.id || "",
-          firstName: ath?.first_name || "",
-          lastName: ath?.last_name || "",
-          jerseyNumber: (ath?.numero_jersey as string) || "",
-          verified: ath?.verified === true,
-          sport: sportObj?.nom || "",
-          position: posObj?.abreviation || "",
-          sourceSchool: schoolObj?.name || "",
-          sourceRegion: schoolObj?.region || "",
-          coteGlobale: (ath?.cote_globale_entraineur as number) || 0,
-          recruitmentStatus: (ath?.recruitment_status as string) || "OUVERT",
+          athleteId,
+          name: displayFullName(card),
+          // Dossard : masqué par le serveur au même titre que le nom.
+          jerseyNumber: card?.numero_jersey ? String(card.numero_jersey) : "",
+          verified: card?.verified === true,
+          sport: card?.sport_nom || "",
+          position: card?.position_abbr || "",
+          sourceSchool: card?.school_name || "",
+          sourceRegion: card?.school_region || "",
+          coteGlobale: card?.cote_globale ?? 0,
+          recruitmentStatus: card?.recruitment_status || "OUVERT",
           recruiterName: teamNameMap.get(row.recruiter_id) || "",
           stage: (row.stage as string) || "",
           updatedAt: (row.updated_at as string) || "",
@@ -206,7 +204,7 @@ function RecrusCegepPage() {
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
                           <Link href={`/recruteur/athletes/${r.athleteId}`} className="text-[13px] font-bold text-white hover:text-[#E63946] transition-colors whitespace-nowrap">
-                            {r.firstName} {r.lastName}
+                            {r.name}
                           </Link>
                           {r.verified && (
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="#3B82F6" stroke="none" className="shrink-0">

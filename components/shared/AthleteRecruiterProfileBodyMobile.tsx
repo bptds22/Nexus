@@ -1754,6 +1754,22 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
   const [pipelineStatus, setPipelineStatus] = useState<RecruitmentStatus>(initialTracking?.status || "none");
   const [showCelebration, setShowCelebration] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  /* Même verrou partagé qu'en desktop : deux entrées, un seul modal, donc
+     un titre variable — sinon « Contacter » annonce le processus. */
+  const [upgradeFeatureTitle, setUpgradeFeatureTitle] = useState("Le processus de recrutement");
+
+  /* Le bouton « Contacter » reste VISIBLE en free et vend la mise à niveau
+     au lieu de disparaître. Voir le jumeau desktop. */
+  const contactLocked = !canMessageCoach;
+  const handleContactClick = () => {
+    triggerHaptic("Light");
+    if (contactLocked) {
+      setUpgradeFeatureTitle("Contacter les athlètes et leurs coachs");
+      setShowUpgradeModal(true);
+      return;
+    }
+    setShowContactMenu(true);
+  };
   // Bottom sheet « Changer le statut » (remplace StatusChangeDropdown).
   const [statusSheetOpen, setStatusSheetOpen] = useState(false);
   const [savingVisit, setSavingVisit] = useState(false);
@@ -2182,7 +2198,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
             ) : (
               <button
                 type="button"
-                onClick={() => { void triggerHaptic("Light"); setShowUpgradeModal(true); }}
+                onClick={() => { void triggerHaptic("Light"); setUpgradeFeatureTitle("Le processus de recrutement"); setShowUpgradeModal(true); }}
                 className="inline-flex items-center gap-2 bg-[#E63946]/10 border border-[#E63946]/30 rounded-full px-4 py-2 text-[13px] font-bold uppercase tracking-wider text-[#E63946] active:bg-[#E63946]/20"
               >
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -2930,18 +2946,22 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
             transition: "transform 280ms cubic-bezier(0.4, 0, 0.2, 1)",
           }}
         >
-          {canMessageCoach && (
-            <button
-              type="button"
-              onClick={() => { triggerHaptic("Light"); setShowContactMenu(true); }}
-              className="flex-1 flex items-center justify-center gap-2 bg-[#E63946] text-white rounded-2xl px-4 py-3.5 font-head font-bold text-[14px] uppercase tracking-widest active:bg-[#D42B22] shadow-[0_0_20px_rgba(230,57,70,0.3)]"
-            >
+          <button
+            type="button"
+            onClick={handleContactClick}
+            className="flex-1 flex items-center justify-center gap-2 bg-[#E63946] text-white rounded-2xl px-4 py-3.5 font-head font-bold text-[14px] uppercase tracking-widest active:bg-[#D42B22] shadow-[0_0_20px_rgba(230,57,70,0.3)]"
+          >
+            {contactLocked ? (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0110 0v4" />
+              </svg>
+            ) : (
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                 <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" />
               </svg>
-              Contacter
-            </button>
-          )}
+            )}
+            Contacter
+          </button>
           {/* Iter 7.23 Sprint 4 — bouton "Ajouter à une liste" (PRO-only).
               Icône liste-avec-+ pour signaler l'action d'ajout. Tap → ouvre
               AddToListSheet (réutilise useRecruiterLists + checkboxes
@@ -3421,7 +3441,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
           onClose={() => setShowUpgradeModal(false)}
           role="recruteur"
           tierId="rec_pro"
-          lockedFeatureTitle="Le processus de recrutement"
+          lockedFeatureTitle={upgradeFeatureTitle}
           returnTo={typeof window !== "undefined" ? window.location.pathname : undefined}
         />
       )}

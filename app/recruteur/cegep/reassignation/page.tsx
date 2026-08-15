@@ -6,6 +6,12 @@ import FeatureGate from "@/components/subscription/FeatureGate";
 import CegepGate from "@/components/subscription/CegepGate";
 import StarRating from "@/components/ui/StarRating";
 import { createClient } from "@/lib/supabase/client";
+import { selectBestEvaluation } from "@/lib/evaluations/selectEvaluation";
+import {
+  fetchRecruiterAthleteCards,
+  displayFullName,
+  type RecruiterEvalRow,
+} from "@/lib/queries/shared/recruiterAthleteCards";
 import type { RecruitmentStatus } from "@/lib/config/recruitmentStatuses";
 
 /* ── Local types (replaces mock imports) ── */
@@ -315,24 +321,29 @@ function ReassignationPage() {
       const teamIds = recs.map((r) => r.id);
       if (teamIds.length === 0) { setLoading(false); return; }
 
-      // All pipeline entries with athlete details
+      /* TEMPS 1 — la relation possédée, sans embed `athletes` : la RPC
+         projette tout ce que cette page lit (nom, vérifié, sport, position,
+         école, et l'agrégat d'évaluations pour la cote). */
       const { data: pipelineData } = await supabase
         .from("recruiter_pipeline")
-        .select("recruiter_id, athlete_id, stage, created_at, updated_at, athletes!athlete_id(first_name, last_name, verified, sports!sport_id(nom), positions!position_id(abreviation), schools!school_id(name), evaluations(cote_globale))")
+        .select("recruiter_id, athlete_id, stage, created_at, updated_at")
         .in("recruiter_id", teamIds);
 
+      /* TEMPS 2 — l'identité et le reste, projetés par le serveur. */
+      const cards = await fetchRecruiterAthleteCards(
+        supabase,
+        (pipelineData || []).map((p) => p.athlete_id as string).filter(Boolean),
+      );
+
       const athList: ReassignAthlete[] = (pipelineData || []).map((p) => {
-        const ath = p.athletes as unknown as {
-          first_name?: string; last_name?: string; verified?: boolean;
-          sports?: { nom?: string } | { nom?: string }[] | null;
-          positions?: { abreviation?: string } | { abreviation?: string }[] | null;
-          schools?: { name?: string } | { name?: string }[] | null;
-          evaluations?: { cote_globale?: number }[] | { cote_globale?: number } | null;
-        } | null;
-        const sRel = ath?.sports; const sObj = Array.isArray(sRel) ? sRel[0] : sRel;
-        const pRel = ath?.positions; const pObj = Array.isArray(pRel) ? pRel[0] : pRel;
-        const schRel = ath?.schools; const schObj = Array.isArray(schRel) ? schRel[0] : schRel;
-        const eRel = ath?.evaluations; const eObj = Array.isArray(eRel) ? eRel[0] : eRel;
+        const card = cards.get(p.athlete_id as string) ?? null;
+        /* `coach_rating` lisait `evaluations.cote_globale`, PAS
+           `cote_globale_entraineur` — deux colonnes distinctes. On garde la
+           même source via l'agrégat projeté, sinon la cote affichée change
+           silencieusement de sens. */
+        const eObj = selectBestEvaluation(
+          Array.isArray(card?.evaluations) ? (card.evaluations as RecruiterEvalRow[]) : [],
+        ) as { cote_globale?: number } | null;
         const STAGE_TO_STATUS: Record<string, RecruitmentStatus> = {
           IDENTIFIE: "identifie", CONTACTE: "contacte", EN_DISCUSSION: "en_discussion",
           VISITE_PLANIFIEE: "visite_planifiee", ENGAGE: "engage", LETTRE_SIGNEE: "lettre_signee",
@@ -340,15 +351,15 @@ function ReassignationPage() {
         const daysInStatus = p.updated_at ? Math.floor((Date.now() - new Date(p.updated_at as string).getTime()) / 86400000) : 0;
         return {
           id: p.athlete_id,
-          full_name: `${ath?.first_name || ""} ${ath?.last_name || ""}`.trim(),
+          full_name: displayFullName(card),
           recruiterId: p.recruiter_id,
-          sport: sObj?.nom || "",
-          position: pObj?.abreviation || "",
-          school: schObj?.name || "",
+          sport: card?.sport_nom || "",
+          position: card?.position_abbr || "",
+          school: card?.school_name || "",
           pipeline_status: STAGE_TO_STATUS[p.stage as string] || ("identifie" as RecruitmentStatus),
           days_in_status: daysInStatus,
           coach_rating: (eObj?.cote_globale as number) || 0,
-          is_verified: ath?.verified === true,
+          is_verified: card?.verified === true,
         };
       });
       setAthletes(athList);

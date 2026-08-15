@@ -146,6 +146,13 @@ function RecruiterThreadPage() {
   const [reply, setReply] = useState("");
   const [userId, setUserId] = useState("");
   const [loading, setLoading] = useState(true);
+  /* Échec de chargement — distinct de « rien à afficher ».
+     Avant, load() n'avait NI try/catch NI .catch() et setLoading(false)
+     était sa toute dernière instruction : n'importe quel throw en cours de
+     route (le temps 2 en lève un sur erreur RPC) laissait la page sur
+     « Chargement… » pour toujours, avec un rejet de promesse non géré que
+     personne ne voit. Un échec doit se dire, pas se figer. */
+  const [loadError, setLoadError] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -281,10 +288,13 @@ function RecruiterThreadPage() {
 
       // Mark as read
       await supabase.from("conversations").update({ unread_count: 0 }).eq("id", id);
-
-      setLoading(false);
     }
-    load();
+    load()
+      .catch((e: unknown) => {
+        console.error("[messages/[id]] chargement du fil échoué", e);
+        setLoadError(e instanceof Error ? e.message : String(e));
+      })
+      .finally(() => setLoading(false));
   }, [id]);
 
   useEffect(() => {
@@ -308,6 +318,19 @@ function RecruiterThreadPage() {
   }
 
   if (loading) return <div className="px-6 sm:px-10 py-8 max-w-[1280px] mx-auto text-[#6b7280]">Chargement...</div>;
+
+  /* Un échec technique n'est PAS « conversation introuvable ». Les
+     confondre envoyait le recruteur chercher une conversation supprimée
+     alors que c'est la requête qui a cassé. */
+  if (loadError) {
+    return (
+      <div className="px-6 sm:px-10 py-8 max-w-[1280px] mx-auto">
+        <p className="text-[14px] text-[#EF4444] font-semibold">Impossible de charger cette conversation.</p>
+        <p className="text-[13px] text-[#6b7280] mt-1">Réessaie dans un instant. Si ça persiste, signale-le.</p>
+        <Link href="/recruteur/messages" className="text-[13px] text-[#22C55E] hover:underline mt-3 inline-block">Retour aux messages</Link>
+      </div>
+    );
+  }
 
   if (!ctx) {
     return (
@@ -361,6 +384,27 @@ function RecruiterThreadPage() {
         {/* Messages Column */}
         <div className="flex-1 flex flex-col min-w-0">
           <div className="flex-1 overflow-y-auto space-y-4 pb-4" style={{ maxHeight: "calc(100vh - 220px)" }}>
+            {/* ÉTAT VIDE — il manquait, et son absence a été lue comme une
+                panne à la passe preview : trois des neuf conversations du
+                jeu de test n'ont aucun message, et le fil ne rendait alors
+                qu'un header et un composeur séparés par un trou noir. Rien
+                ne distinguait « conversation neuve » de « chargement
+                cassé ». */}
+            {messageGroups.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <div className="w-14 h-14 rounded-full bg-[#1A1D24] border border-[#2D3748] flex items-center justify-center mb-4">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4a4d56" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+                  </svg>
+                </div>
+                <p className="text-[14px] font-semibold text-[#9CA3AF]">Aucun message pour l&apos;instant</p>
+                <p className="text-[13px] text-[#6b7280] mt-1">
+                  {ctx.isDirect
+                    ? "Écris le premier message pour lancer la conversation."
+                    : `Écris le premier message à ${ctx.coachName || "ce coach"} pour lancer la conversation.`}
+                </p>
+              </div>
+            )}
             {messageGroups.map((group, gi) => (
               <div key={gi}>
                 <DaySeparator date={group.date} />
