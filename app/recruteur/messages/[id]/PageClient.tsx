@@ -4,6 +4,7 @@ import {  useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useDynamicParam } from "@/lib/platform/useDynamicParam";
 import { createClient } from "@/lib/supabase/client";
+import { fetchRecruiterAthleteCards, displayFullName } from "@/lib/queries/shared/recruiterAthleteCards";
 import { parseDistinctions } from "@/lib/config/badges";
 import { selectBestEvaluation } from "@/lib/evaluations/selectEvaluation";
 import CoachInfoCard from "@/components/recruteur/CoachInfoCard";
@@ -41,7 +42,11 @@ interface ThreadContext {
   coachPhone: string;
   athleteId: string;
   athleteName: string;
+  /** VIDE sous identité réservée — voir le contrat de ThreadData. Ne pas
+   *  redériver depuis athleteName, qui vaut « Identité réservée ». */
   athleteInitials: string;
+  /** Décision SERVEUR (identity_visible de la RPC). */
+  athleteIdentityVisible: boolean;
   athletePhotoUrl: string;
   athletePosition: string;
   athleteSport: string;
@@ -157,8 +162,8 @@ function RecruiterThreadPage() {
           id, conversation_type, status, recruiter_id, coach_id, athlete_id, created_at,
           coach:users!coach_id(id, first_name, last_name, avatar_url, email, phone, schools!school_id(name, region)),
           athlete:athletes!athlete_id(
-            id, first_name, last_name, photo_url, verified, cote_globale_entraineur,
-            annee_diplomation, numero_jersey, recruitment_status, committed_school_id, open_to_offers,
+            id, verified, cote_globale_entraineur,
+            annee_diplomation, recruitment_status, committed_school_id, open_to_offers,
             moyenne_generale, programme_cegep_vise, pret_changer_region, ouvert_cegep_prive, ouvert_cegep_anglophone,
             sports!sport_id(nom),
             positions!position_id(nom, abreviation),
@@ -193,10 +198,23 @@ function RecruiterThreadPage() {
         // droppait silencieusement le format objet.
         const distinctions: string[] = parseDistinctions(eval0?.distinctions).map((d) => d.badge);
 
+        /* Temps 2 — l'identité, projetée par le serveur.
+           Le reste de l'athlète (GPA, programmes, ouvert_*) RESTE dans
+           l'embed : la RPC ne projette pas ces colonnes, elle ne les expose
+           que comme filtres. Même partage qu'au profil (surface 1).
+           Le coach reste en embed `users` : ce n'est pas `athletes`, la
+           projection Loi 25 ne le concerne pas. */
+        const athleteId = (conv.athlete_id as string) || "";
+        const card = athleteId
+          ? (await fetchRecruiterAthleteCards(supabase, [athleteId])).get(athleteId) ?? null
+          : null;
+        const identityVisible = card?.identity_visible ?? false;
+
         const cf = (coach?.first_name as string) || "";
         const cl = (coach?.last_name as string) || "";
-        const af = (athlete?.first_name as string) || "";
-        const al = (athlete?.last_name as string) || "";
+        // Vides sous masquage — d'où des initiales vides, volontairement.
+        const af = card?.first_name ?? "";
+        const al = card?.last_name ?? "";
 
         // Normalize programme_cegep_vise JSONB: accept array of strings or legacy scalar
         const rawProg: unknown = athlete?.programme_cegep_vise;
@@ -215,10 +233,13 @@ function RecruiterThreadPage() {
           coachRegion: coachSchool?.region || "",
           coachEmail: (coach?.email as string) || "",
           coachPhone: (coach?.phone as string) || "",
-          athleteId: (athlete?.id as string) || "",
-          athleteName: `${af} ${al}`.trim(),
+          athleteId,
+          // displayFullName porte les trois cas (carte absente, masquée, nom
+          // partiel) — jamais d'interpolation qui donnerait "null null".
+          athleteName: displayFullName(card),
           athleteInitials: `${af[0] || ""}${al[0] || ""}`.toUpperCase(),
-          athletePhotoUrl: (athlete?.photo_url as string) || "",
+          athleteIdentityVisible: identityVisible,
+          athletePhotoUrl: card?.photo_url ?? "",
           athletePosition: pos?.abreviation || "",
           athleteSport: sport?.nom || "",
           athleteVerified: !!(athlete?.verified),
@@ -226,7 +247,7 @@ function RecruiterThreadPage() {
           athleteSchool: athSchool?.name || "",
           athleteRegion: athSchool?.region || "",
           athleteGradYear: (athlete?.annee_diplomation as number) || 0,
-          athleteJersey: athlete?.numero_jersey ? String(athlete.numero_jersey) : "",
+          athleteJersey: card?.numero_jersey ? String(card.numero_jersey) : "",
           athleteRecruitmentStatus: (athlete?.recruitment_status as string) || "OUVERT",
           athleteCommittedSchool: committedSchool?.name || "",
           athleteOpenToOffers: (athlete?.open_to_offers as boolean | null) ?? null,
@@ -396,6 +417,7 @@ function RecruiterThreadPage() {
             athleteId={ctx.athleteId}
             athleteName={ctx.athleteName}
             athleteInitials={ctx.athleteInitials}
+            athleteIdentityVisible={ctx.athleteIdentityVisible}
             athletePhotoUrl={ctx.athletePhotoUrl || undefined}
             athleteJersey={ctx.athleteJersey || undefined}
             athleteSport={ctx.athleteSport || undefined}
