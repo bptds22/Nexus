@@ -8,10 +8,11 @@
   </defs>
   <g clip-path="url(#nxSqB)">
     <rect width="512" height="512" fill="url(#nxMkB)"></rect>
-    <g fill="#2C3038">
-      <path d="M 229 204 L 283 204 L 283 262 L 229 262 Z"></path>
-      <path d="M 256 122 C 282 122 302 146 302 176 C 302 206 282 230 256 230 C 230 230 210 206 210 176 C 210 146 230 122 256 122 Z"></path>
-      <path d="M 226 250 C 213 256 203 262 196 270 C 170 278 140 292 138 318 L 138 406 Q 138 420 152 420 L 360 420 Q 374 420 374 406 L 374 318 C 372 292 342 278 316 270 C 309 262 299 256 286 250 Z"></path>
+    <!-- Silhouette identique à placeholder-athlete.svg — toute correction ici
+         doit être reportée là-bas, et inversement. -->
+    <g fill="#2A2D33">
+      <circle cx="256" cy="180" r="66"></circle>
+      <path d="M 116 392 L 116 356 C 116 316 152 292 196 283 C 216 278 234 276 256 276 C 278 276 296 278 316 283 C 360 292 396 316 396 356 L 396 392 Q 396 408 380 408 L 132 408 Q 116 408 116 392 Z"></path>
     </g>
   </g>
 </svg>
