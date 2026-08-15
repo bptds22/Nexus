@@ -110,19 +110,21 @@ export function buildMatches(
   sort: CalendarSort = "date",
   minTargets: number = 1,
 ): MatchView[] {
-  // Index rseq_team_id → cibles, construit une fois : la boucle sur les
+  // Index teams.id → cibles, construit une fois : la boucle sur les
   // matchs reste en O(matchs), pas en O(matchs × cibles).
+  // Une seule clé, donc au plus UN appariement par (match, cible) : pas
+  // de double comptage possible dans `count`.
   const byTeam = new Map<string, CalendarTarget[]>();
   targets.forEach((t) => {
-    const cur = byTeam.get(t.rseqTeamId) ?? [];
+    const cur = byTeam.get(t.teamId) ?? [];
     cur.push(t);
-    byTeam.set(t.rseqTeamId, cur);
+    byTeam.set(t.teamId, cur);
   });
 
   const views: MatchView[] = [];
   games.forEach((game) => {
-    const homeTargets = (game.homeRseqTeamId && byTeam.get(game.homeRseqTeamId)) || [];
-    const visitorTargets = (game.visitorRseqTeamId && byTeam.get(game.visitorRseqTeamId)) || [];
+    const homeTargets = (game.homeTeamId && byTeam.get(game.homeTeamId)) || [];
+    const visitorTargets = (game.visitorTeamId && byTeam.get(game.visitorTeamId)) || [];
     const count = homeTargets.length + visitorTargets.length;
     if (count === 0) return;
     if (count < Math.max(1, minTargets)) return;

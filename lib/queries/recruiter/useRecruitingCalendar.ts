@@ -3,20 +3,32 @@
 
    Chaîne : cibles → athletes → team_athletes → teams → games.
 
-   ⚠️ JOINTURE MATCHS PAR CLÉ RSEQ, jamais par games.home_team_id /
-   visitor_team_id. Ces deux colonnes ne sont remplies qu'à ~51 % (le
-   pont teams.id n'existe que pour les équipes déjà adoptées par un
-   coach), alors que home_rseq_team_id / visitor_rseq_team_id sont à
-   100 %. La clé de jointure est donc teams.rseq_team_id ↔
-   games.home_rseq_team_id / games.visitor_rseq_team_id.
+   JOINTURE MATCHS PAR teams.id ↔ games.home_team_id / visitor_team_id.
+
+   Le filtre du calendrier, ce sont les ATHLÈTES suivis — jamais
+   l'origine du match. La jointure passait auparavant par le pont RSEQ
+   (teams.rseq_team_id ↔ games.home_rseq_team_id), un raccourci de
+   l'époque où tout match venait du RSEQ. Il excluait EN SILENCE toute
+   équipe non pontée, civile comme scolaire.
+
+   Pourquoi teams.id ne perd rien — mesuré le 2026-08-14 sur les 97 478
+   côtés de match : games.*_team_id est NULL dans 30 575 cas, et dans
+   CES 30 575 cas il n'existe AUCUNE ligne `teams` pour l'id RSEQ visé
+   (0 exception). Autrement dit *_team_id n'est jamais vide sur une
+   équipe que nous connaissons — les côtés orphelins sont des
+   adversaires absents de la base (« Collège Beaubois », et même
+   « Congé (Bye) »). Or une cible du calendrier est par construction une
+   ligne `teams`, puisqu'un athlète y est rattaché. Vérifié sur le
+   périmètre réel — les équipes portant au moins un athlète : 24 matchs
+   par le pont RSEQ, 24 par teams.id, 0 perdu.
 
    Perf — requêtes à plat, aucune N+1 par cible ni par match :
      1. cibles       (pipeline ∪ favoris ∪ membres de listes)
      2. athlètes     (1 seul .in() sur l'union des ids)
-     3. matchs       (1 seul .or() avec 2 .in() sur l'array de rseq ids)
+     3. matchs       (1 seul .or() avec 2 .in() sur l'array de teams.id)
      4. adversaires  (1 seul .in() pour nommer les équipes d'en face)
      5. fraîcheur    (MAX(games.updated_at), 1 ligne)
-   L'array de rseq_team_id part en littéral dans le .in() — pas de CTE
+   L'array de teams.id part en littéral dans le .in() — pas de CTE
    non analysé côté serveur (cf. bench diagnostic).
 
    Le hook renvoie les cibles et les matchs BRUTS. Le filtrage vit dans
@@ -67,9 +79,9 @@ export interface CalendarTarget {
   pipelineStage: string | null;
   /** Listes du recruteur contenant cet athlète. */
   listIds: string[];
+  /** Clé de jointure aux matchs (games.home_team_id / visitor_team_id). */
   teamId: string;
   teamName: string;
-  rseqTeamId: string;
 }
 
 export interface CalendarGame {
@@ -78,8 +90,8 @@ export interface CalendarGame {
   gameDate: string;
   gameTime: string;
   venue: string;
-  homeRseqTeamId: string | null;
-  visitorRseqTeamId: string | null;
+  homeTeamId: string | null;
+  visitorTeamId: string | null;
   homeName: string;
   visitorName: string;
   /** "Football juvénile D2 · Masculin" — ligne `lg` de la carte. */
@@ -204,8 +216,7 @@ export function useRecruitingCalendar(enabled: boolean = true) {
       const cardMap = await fetchRecruiterAthleteCards(supabase, targetIds);
 
       /* ── 2b. Le rattachement d'équipe, à part ──
-         Les RPC de projection ne portent AUCUN champ d'équipe, et le
-         calendrier ne peut rien afficher sans le pont RSEQ. On le lit
+         Les RPC de projection ne portent AUCUN champ d'équipe. On le lit
          donc directement : team_athletes et teams ne contiennent
          aucune donnée personnelle d'athlète, seulement un lien.
 
@@ -216,7 +227,7 @@ export function useRecruitingCalendar(enabled: boolean = true) {
          la couverture est totale ici, vérifiés ou non. */
       const { data: linkRows, error: linkErr } = await supabase
         .from("team_athletes")
-        .select("athlete_id, team_id, teams!team_id(id, name, rseq_team_id)")
+        .select("athlete_id, team_id, teams!team_id(id, name)")
         .in("athlete_id", targetIds);
       if (linkErr) throw linkErr;
 
@@ -229,7 +240,7 @@ export function useRecruitingCalendar(enabled: boolean = true) {
       }
 
       const targets: CalendarTarget[] = [];
-      const rseqTeamIds = new Set<string>();
+      const teamIds = new Set<string>();
 
       targetIds.forEach((athleteId) => {
         // `?? null` explicite : la RPC ne rend rien pour un athlète
@@ -273,68 +284,70 @@ export function useRecruitingCalendar(enabled: boolean = true) {
 
         links.forEach((link) => {
           const team = pickOne<Record<string, unknown>>(link.teams);
-          const rseq = team?.rseq_team_id as string | null | undefined;
-          // Sans pont RSEQ, l'équipe ne peut porter aucun match : on
-          // n'invente rien, la cible est simplement sans calendrier.
-          if (!rseq) return;
-          rseqTeamIds.add(rseq);
+          // teams.id est la seule clé de jointure. Une équipe sans match
+          // reste une cible légitime : elle apparaît simplement sans
+          // calendrier, au lieu d'être écartée en amont.
+          const teamId = (team?.id as string) || (link.team_id as string) || "";
+          if (!teamId) return;
+          teamIds.add(teamId);
           targets.push({
             ...base,
-            teamId: (team?.id as string) || (link.team_id as string) || "",
+            teamId,
             teamName: (team?.name as string) || "",
-            rseqTeamId: rseq,
           });
         });
       });
 
-      if (rseqTeamIds.size === 0) {
+      if (targets.length === 0) {
         return { targets: [], games: [], lastUpdated: await fetchLastUpdated(supabase) };
       }
 
-      /* ── 3. Matchs à venir — UNE requête, array de rseq ids ── */
-      const ids = Array.from(rseqTeamIds);
+      /* ── 3. Matchs à venir — UNE requête, array de teams.id ── */
+      const ids = Array.from(teamIds);
       const inList = `(${ids.join(",")})`;
       const { data: gameRows, error: gameErr } = await supabase
         .from("games")
         .select(`
           id, game_date, game_time, venue,
-          home_rseq_team_id, visitor_rseq_team_id,
+          home_team_id, visitor_team_id,
           home_name_raw, visitor_name_raw,
           league_name, sport, division, category, sex_type
         `)
-        .or(`home_rseq_team_id.in.${inList},visitor_rseq_team_id.in.${inList}`)
+        .or(`home_team_id.in.${inList},visitor_team_id.in.${inList}`)
         .gte("game_date", todayIso())
         .order("game_date", { ascending: true });
       if (gameErr) throw gameErr;
 
       /* Nom d'équipe : le nom Nexus prime des DEUX côtés, sinon le
-         libellé brut du calendrier RSEQ. La policy « Recruiters see
+         libellé brut du calendrier source. La policy « Recruiters see
          teams » autorise la lecture de toutes les équipes, donc
          l'adversaire est résolu lui aussi — sans quoi une carte
          afficherait « Amitié vs Thérèse-Martin », un nom Nexus contre
-         un libellé RSEQ. Une seule requête à plat sur l'ensemble des
-         rseq ids apparus dans les matchs. */
-      const teamNameByRseq = new Map<string, string>();
+         un libellé brut. Une seule requête à plat sur l'ensemble des
+         teams.id apparus dans les matchs.
+         L'adversaire peut n'avoir AUCUNE ligne `teams` (équipe hors
+         base) : son côté est alors NULL et on retombe sur *_name_raw. */
+      const teamNameById = new Map<string, string>();
       targets.forEach((t) => {
-        if (t.teamName && !teamNameByRseq.has(t.rseqTeamId)) {
-          teamNameByRseq.set(t.rseqTeamId, t.teamName);
+        if (t.teamName && !teamNameById.has(t.teamId)) {
+          teamNameById.set(t.teamId, t.teamName);
         }
       });
 
       const opponentIds = Array.from(new Set(
         ((gameRows ?? []) as Record<string, unknown>[])
-          .flatMap((g) => [g.home_rseq_team_id, g.visitor_rseq_team_id])
-          .filter((v): v is string => typeof v === "string" && !teamNameByRseq.has(v)),
+          .flatMap((g) => [g.home_team_id, g.visitor_team_id])
+          .filter((v): v is string => typeof v === "string" && !teamNameById.has(v)),
       ));
       if (opponentIds.length > 0) {
         const { data: oppRows } = await supabase
           .from("teams")
-          .select("rseq_team_id, name")
-          .in("rseq_team_id", opponentIds);
-        ((oppRows ?? []) as { rseq_team_id: string | null; name: string | null }[])
+          .select("id, name")
+          .in("id", opponentIds);
+        ((oppRows ?? []) as { id: string | null; name: string | null }[])
           .forEach((r) => {
-            if (r.rseq_team_id && r.name && !teamNameByRseq.has(r.rseq_team_id)) {
-              teamNameByRseq.set(r.rseq_team_id, r.name);
+            if (r.id && r.name && !teamNameById.has(r.id)) {
+              teamNameById.set(r.id, r.name);
             }
           });
       }
@@ -342,21 +355,21 @@ export function useRecruitingCalendar(enabled: boolean = true) {
       const games: CalendarGame[] = ((gameRows ?? []) as Record<string, unknown>[])
         .filter((g) => !!g.game_date)
         .map((g) => {
-          const homeRseq = (g.home_rseq_team_id as string | null) ?? null;
-          const visRseq = (g.visitor_rseq_team_id as string | null) ?? null;
+          const homeId = (g.home_team_id as string | null) ?? null;
+          const visId = (g.visitor_team_id as string | null) ?? null;
           return {
             id: g.id as string,
             gameDate: g.game_date as string,
             gameTime: (g.game_time as string) || "",
             venue: (g.venue as string) || "",
-            homeRseqTeamId: homeRseq,
-            visitorRseqTeamId: visRseq,
+            homeTeamId: homeId,
+            visitorTeamId: visId,
             homeName:
-              (homeRseq && teamNameByRseq.get(homeRseq)) ||
+              (homeId && teamNameById.get(homeId)) ||
               (g.home_name_raw as string) ||
               "Équipe à confirmer",
             visitorName:
-              (visRseq && teamNameByRseq.get(visRseq)) ||
+              (visId && teamNameById.get(visId)) ||
               (g.visitor_name_raw as string) ||
               "Équipe à confirmer",
             competition: buildCompetition(g),
