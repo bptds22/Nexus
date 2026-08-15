@@ -68,7 +68,11 @@ export default function AProposPage() {
     email: "",
     subject: T.contact.subjects.general,
     message: "",
-    company: "", // honeypot — champ caché, doit rester vide
+    // nx_ref = honeypot. Nom volontairement neutre : un champ nommé "company"
+    // est mappé par Chrome sur autocomplete="organization" et rempli par
+    // 1Password, ce qui piégeait de vrais visiteurs (message avalé en silence).
+    // Il part vers la fonction sous la clé `company`, qui est ce qu'elle attend.
+    nx_ref: "",
   });
   const [submitted, setSubmitted] = useState(false);
   const [sending, setSending] = useState(false);
@@ -92,13 +96,14 @@ export default function AProposPage() {
           email: form.email,
           subject: form.subject,
           message: form.message,
-          company: form.company, // honeypot
+          company: form.nx_ref, // honeypot
+          source: "a-propos",
         },
       });
       if (error || !data?.ok) throw error ?? new Error("send-contact failed");
 
       setSubmitted(true);
-      setForm({ name: "", email: "", subject: T.contact.subjects.general, message: "", company: "" });
+      setForm({ name: "", email: "", subject: T.contact.subjects.general, message: "", nx_ref: "" });
       setTimeout(() => setSubmitted(false), 4000);
     } catch {
       setErrored(true);
@@ -277,17 +282,20 @@ export default function AProposPage() {
                     />
                   </div>
 
-                  {/* Honeypot anti-spam — caché aux humains, rempli par les bots. */}
-                  <input
-                    type="text"
-                    name="company"
-                    value={form.company}
-                    onChange={handleChange}
-                    tabIndex={-1}
-                    autoComplete="off"
-                    aria-hidden="true"
-                    className="hidden"
-                  />
+                  {/* Honeypot anti-spam — hors écran, jamais display:none ni
+                      sr-only (les deux sont détectés et évités par les bots
+                      sérieux). aria-hidden + tabIndex={-1} le retirent du
+                      parcours clavier et des lecteurs d'écran. */}
+                  <div aria-hidden="true" className="absolute -left-[9999px] h-0 w-0 overflow-hidden">
+                    <input
+                      type="text"
+                      name="nx_ref"
+                      value={form.nx_ref}
+                      onChange={handleChange}
+                      tabIndex={-1}
+                      autoComplete="off"
+                    />
+                  </div>
 
                   {/* Submit */}
                   <button

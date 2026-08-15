@@ -5,6 +5,7 @@ import Link from "next/link";
 import MarketingNav from "@/components/marketing/MarketingNav";
 import PlaybookBackground from "../components/PlaybookBackground";
 import Footer from "@/components/marketing/Footer";
+import { createClient } from "@/lib/supabase/client";
 
 import { notFound } from "next/navigation";
 /* ─────────────────────────────────────────────────────────────────
@@ -38,8 +39,8 @@ const CONTACT_INFO = [
   },
   {
     label: "Courriel",
-    value: "confidentialite@nexussports.ca",
-    href: "mailto:confidentialite@nexussports.ca",
+    value: "info@nexussports.ca",
+    href: "mailto:info@nexussports.ca",
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <rect x="2" y="4" width="20" height="16" rx="2" />
@@ -52,19 +53,46 @@ const CONTACT_INFO = [
 export default function ContactPage() {
   // Mobile build (Capacitor): page exclue.
   if (process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true") notFound();
-  const [form, setForm] = useState({ name: "", email: "", subject: "", message: "" });
+  // nx_ref = honeypot. Nom volontairement neutre : un champ nommé "company" est
+  // mappé par Chrome sur autocomplete="organization" et rempli par 1Password, ce
+  // qui piège de vrais utilisateurs. Il part vers la fonction sous la clé
+  // `company`, qui est ce qu'elle attend.
+  const [form, setForm] = useState({ name: "", email: "", subject: "", message: "", nx_ref: "" });
   const [submitted, setSubmitted] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [errored, setErrored] = useState(false);
   const fadeRef = useRef<HTMLDivElement>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name.trim() || !form.email.trim() || !form.message.trim()) return;
-    // TODO: integrate with backend / email service
-    setSubmitted(true);
+    if (sending || !form.name.trim() || !form.email.trim() || !form.message.trim()) return;
+    setErrored(false);
+    setSending(true);
+    try {
+      const supabase = createClient();
+      const { data, error } = await supabase.functions.invoke("send-contact", {
+        body: {
+          name: form.name,
+          email: form.email,
+          subject: form.subject,
+          message: form.message,
+          company: form.nx_ref, // honeypot
+          source: "contact",
+        },
+      });
+      if (error || !data?.ok) throw error ?? new Error("send-contact failed");
+
+      setSubmitted(true);
+    } catch {
+      setErrored(true);
+      setTimeout(() => setErrored(false), 8000);
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -204,13 +232,51 @@ export default function ContactPage() {
                       />
                     </div>
 
+                    {/* Honeypot anti-spam — hors écran, jamais display:none ni
+                        sr-only (les deux sont détectés et évités par les bots
+                        sérieux). aria-hidden + tabIndex={-1} le retirent du
+                        parcours clavier et des lecteurs d'écran. */}
+                    <div aria-hidden="true" className="absolute -left-[9999px] h-0 w-0 overflow-hidden">
+                      <input
+                        type="text"
+                        name="nx_ref"
+                        value={form.nx_ref}
+                        onChange={handleChange}
+                        tabIndex={-1}
+                        autoComplete="off"
+                      />
+                    </div>
+
                     {/* Submit */}
                     <button
                       type="submit"
-                      className="nx-ghost-btn h-12 w-full border font-head font-black text-sm uppercase tracking-widest mt-1"
+                      disabled={sending}
+                      className="nx-ghost-btn h-12 w-full border font-head font-black text-sm uppercase tracking-widest mt-1 disabled:opacity-60 disabled:cursor-not-allowed"
                     >
-                      Envoyer le message
+                      {sending ? "Envoi en cours…" : "Envoyer le message"}
                     </button>
+
+                    {/* Échec : porte de sortie explicite, sinon le formulaire
+                        mort ne vaut pas mieux que l'ancien stub. */}
+                    {errored && (
+                      <div
+                        role="alert"
+                        className="flex items-start gap-3 border border-[#EF4444]/40 bg-[#EF4444]/10 px-4 py-3"
+                      >
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5">
+                          <circle cx="12" cy="12" r="10" />
+                          <path d="M12 8v4" />
+                          <path d="M12 16h.01" />
+                        </svg>
+                        <p className="font-sans text-[13px] text-white leading-relaxed">
+                          Échec de l&apos;envoi. Réessayez ou écrivez-nous directement à{" "}
+                          <a href="mailto:info@nexussports.ca" className="text-wl-red hover:underline">
+                            info@nexussports.ca
+                          </a>
+                          .
+                        </p>
+                      </div>
+                    )}
                   </form>
                 ) : (
                   /* ── Success state ── */
@@ -232,7 +298,8 @@ export default function ContactPage() {
                       type="button"
                       onClick={() => {
                         setSubmitted(false);
-                        setForm({ name: "", email: "", subject: "", message: "" });
+                        setErrored(false);
+                        setForm({ name: "", email: "", subject: "", message: "", nx_ref: "" });
                         const el = fadeRef.current;
                         if (el) {
                           el.classList.remove("nx-auth-fade");

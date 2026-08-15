@@ -1,4 +1,4 @@
-// send-contact : formulaire de contact public de la page /a-propos.
+// send-contact : formulaires de contact publics (/contact et /a-propos).
 //
 // Appelé DEPUIS LE NAVIGATEUR via supabase.functions.invoke("send-contact").
 // La gateway Supabase vérifie le JWT anon (clé publique du front) → gate léger.
@@ -12,8 +12,24 @@ import { FROM } from "../_shared/emailLayout.ts";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY")!;
 
-// Destinataire interne du formulaire de contact.
-const TO = "bpdesfosses@nexussports.ca";
+// Destinataire interne du formulaire de contact. Boîte réellement lue — le canal
+// RPRP (confidentialite@) reste dédié et n'est PAS mêlé au contact général.
+const TO = "info@nexussports.ca";
+
+// Page d'origine du message. Table de correspondance fermée : la valeur envoyée
+// par le client n'est JAMAIS interpolée telle quelle dans le courriel, seule la
+// valeur mappée l'est. Défaut "/a-propos" = rétrocompat avec le bundle live qui
+// n'envoie pas encore le champ.
+const SOURCES = { contact: "/contact", "a-propos": "/a-propos" } as const;
+const DEFAULT_SOURCE = "/a-propos";
+
+// Object.hasOwn est requis : un simple SOURCES[v] ?? DEFAULT laisserait passer
+// les clés héritées du prototype ("constructor", "toString"…), qui résolvent en
+// fonction — donc truthy, donc injectées dans le sujet et le corps HTML.
+const resolveSource = (v: unknown): string =>
+  typeof v === "string" && Object.hasOwn(SOURCES, v)
+    ? SOURCES[v as keyof typeof SOURCES]
+    : DEFAULT_SOURCE;
 
 // CORS : requête cross-origin depuis nexussports.ca vers le domaine functions.
 const CORS = {
@@ -43,6 +59,7 @@ Deno.serve(async (req) => {
   const subject = str(payload?.subject);
   const message = str(payload?.message);
   const honeypot = str(payload?.company); // doit rester vide
+  const source = resolveSource(payload?.source);
 
   // Honeypot rempli = bot. On répond 200 (ne pas révéler le piège) sans envoyer.
   if (honeypot) return json({ ok: true });
@@ -54,9 +71,9 @@ Deno.serve(async (req) => {
     return json({ ok: false, error: "Champs trop longs" }, 400);
   }
 
-  const subjectLine = `Contact /a-propos${subject ? ` — ${subject}` : ""} — ${name}`;
+  const subjectLine = `Contact ${source}${subject ? ` — ${subject}` : ""} — ${name}`;
   const html = `<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.55;color:#1a1d24;">
-    <p><strong>Nouveau message — formulaire /a-propos</strong></p>
+    <p><strong>Nouveau message — formulaire ${source}</strong></p>
     <p>
       <strong>Nom :</strong> ${esc(name)}<br>
       <strong>Courriel :</strong> ${esc(email)}<br>
@@ -65,7 +82,7 @@ Deno.serve(async (req) => {
     <p style="white-space:pre-wrap;">${esc(message)}</p>
   </div>`;
   const text = [
-    "Nouveau message — formulaire /a-propos",
+    `Nouveau message — formulaire ${source}`,
     "",
     `Nom : ${name}`,
     `Courriel : ${email}`,
