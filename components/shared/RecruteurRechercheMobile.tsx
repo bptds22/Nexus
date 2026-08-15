@@ -30,6 +30,7 @@ import { useFavorites } from "@/lib/queries/shared/useFavorites";
 import { useFavoriteCounts } from "@/lib/queries/shared/useFavoriteCounts";
 import { useRegions } from "@/lib/queries/shared/useRegions";
 import { useAthleteSearch } from "@/lib/queries/recruiter/useAthleteSearch";
+import { LOCKED_NAME_LABEL } from "@/lib/queries/shared/recruiterAthleteCards";
 import { usePositionsBySport } from "@/lib/queries/recruiter/usePositionsBySport";
 import { useRecentViewedAthletes } from "@/lib/queries/recruiter/useRecentViewedAthletes";
 import { useAthleteAutocomplete } from "@/lib/queries/recruiter/useAthleteAutocomplete";
@@ -470,8 +471,31 @@ export interface AthleteCardProps {
     committedSchoolName: string | null;
     openToOffers: boolean | null;
     noTeam: boolean;
+    /**
+     * Décision SERVEUR (identity_visible des RPC recruteur). false = nom,
+     * photo et dossard sont ABSENTS de la réponse, pas juste cachés.
+     *
+     * `undefined` = la surface appelante n'est pas encore branchée sur une
+     * RPC projetée (cas de Favoris mobile, qui passe encore par
+     * useAthletesByIds). Elle retombe alors sur `isFree` ci-dessous.
+     */
+    identityVisible?: boolean;
   };
-  isFree: boolean;
+  /**
+   * ⚠️ REPLI HISTORIQUE, VOUÉ À DISPARAÎTRE.
+   *
+   * Ne sert QUE lorsque `a.identityVisible` est undefined, c'est-à-dire pour
+   * les surfaces pas encore basculées sur les RPC (Favoris mobile). Sur ces
+   * surfaces, la donnée arrive en clair de `athletes` et le seul masquage
+   * possible est celui-ci, côté client.
+   *
+   * Il ne couvre PAS la Loi 25 — un client ne peut pas savoir si l'athlète
+   * est un mineur sans consentement parental, la date de naissance ne lui
+   * étant jamais projetée. Il ne couvre que le tier. C'est précisément
+   * pourquoi il doit mourir avec la bascule de useAthletesByIds, et pourquoi
+   * la Recherche (déjà basculée) ne le passe plus.
+   */
+  isFree?: boolean;
   favDisabled: boolean;
   onToggleFav: (id: string) => void;
   /** Iter 7.10 Section 3 — clé sessionStorage 'lastRecruiterTab' posée
@@ -500,6 +524,9 @@ export function AthleteCardMobile({
   favoritesCount, selected, onToggleSelect, profileHref, layoutIdPrefix,
 }: AthleteCardProps) {
   const router = useRouter();
+  // La décision serveur prime ; `isFree` n'est consulté que si elle est
+  // absente. Voir les deux blocs de doc sur AthleteCardProps.
+  const identityLocked = a.identityVisible === false || (a.identityVisible === undefined && !!isFree);
   const verifiedActive = a.isVerified && !isValidationExpired({ verified: !!a.isVerified, last_profile_validation: a.lastValidation ?? null });
   // Iter 7.3 Section B — status pill retiré du grid card
   const [showHeartPop, setShowHeartPop] = useState(false);
@@ -570,10 +597,13 @@ export function AthleteCardMobile({
           selected ? "ring-2 ring-[#E63946] shadow-[0_0_20px_rgba(230,57,70,0.3)]" : ""
         }`}
       >
+        {/* identityLocked → LockedIdentityPlaceholder (asset Cody + cadenas),
+            jamais un flou : la photo ne doit pas atteindre le navigateur. */}
         <AthletePhotoFill
           photoUrl={a.photo}
           firstName={a.firstName}
           lastName={a.lastName}
+          identityVisible={!identityLocked}
           initialsFontSize={64}
           className="object-[center_15%]"
         />
@@ -649,9 +679,9 @@ export function AthleteCardMobile({
         {/* Bottom info overlay (Iter 7.5 Section B — respiration pb-4) */}
         <div className="absolute inset-x-0 bottom-0 px-3 pt-3 pb-4 z-10">
           <p className="text-white font-bold text-base truncate leading-tight">
-            {isFree ? (
-              <span className="inline-flex items-center gap-1.5">
-                <span aria-hidden className="blur-[5px] select-none uppercase">Prénom Nom</span>
+            {identityLocked ? (
+              <span className="inline-flex items-center gap-1.5 text-[#9CA3AF]">
+                {LOCKED_NAME_LABEL}
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0110 0v4" />
                 </svg>
@@ -691,6 +721,7 @@ export function AthleteCardMobile({
 function AthleteRowMobile({ a, isFree, favDisabled, onToggleFav }: AthleteCardProps) {
   const verifiedActive = a.isVerified && !isValidationExpired({ verified: !!a.isVerified, last_profile_validation: a.lastValidation ?? null });
   const pill = statusPillFromStatus(a.recruitmentStatus);
+  const identityLocked = a.identityVisible === false || (a.identityVisible === undefined && !!isFree);
   return (
     <Link href={`/recruteur/athletes/${a.id}`} className="block">
       <div className="flex items-center gap-3 p-3 bg-[#1A1D24] rounded-2xl active:bg-[#22262e] transition-colors">
@@ -699,7 +730,7 @@ function AthleteRowMobile({ a, isFree, favDisabled, onToggleFav }: AthleteCardPr
           layoutId={`athlete-photo-${a.id}`}
           className="relative w-16 h-16 rounded-2xl overflow-hidden flex-shrink-0 bg-[#2F3440]"
         >
-          <AthletePhoto photoUrl={a.photo} firstName={a.firstName} lastName={a.lastName} size={64} />
+          <AthletePhoto photoUrl={a.photo} firstName={a.firstName} lastName={a.lastName} identityVisible={!identityLocked} size={64} />
           {verifiedActive && (
             <div className="absolute -top-0.5 -right-0.5 w-5 h-5 rounded-full bg-[#3B82F6]/20 backdrop-blur-sm flex items-center justify-center border border-[#111317]">
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
@@ -711,9 +742,9 @@ function AthleteRowMobile({ a, isFree, favDisabled, onToggleFav }: AthleteCardPr
         {/* Info 3 lignes */}
         <div className="flex-1 min-w-0">
           <p className="text-white font-bold text-[14px] truncate leading-tight">
-            {isFree ? (
-              <span className="inline-flex items-center gap-1.5">
-                <span aria-hidden className="blur-[5px] select-none uppercase">Prénom Nom</span>
+            {identityLocked ? (
+              <span className="inline-flex items-center gap-1.5 text-[#9CA3AF]">
+                {LOCKED_NAME_LABEL}
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0110 0v4" />
                 </svg>
@@ -1022,7 +1053,10 @@ function EmptyState({ hasFilters, onReset }: { hasFilters: boolean; onReset: () 
 
 export function RecruteurRechercheMobile() {
   const searchParams = useSearchParams();
-  const { maxSearchResults, maxFavorites, tier, loading: tierLoading } = useSubscription();
+  /* maxSearchResults n'est plus lu : la RPC ne plafonne plus (p_limit NULL).
+     `tier` ne sert qu'à la portée du cache et au gel du champ de recherche
+     par nom — jamais au masquage, tranché serveur par ligne. */
+  const { maxFavorites, tier, loading: tierLoading } = useSubscription();
   const isFreeRecruiter = tier === "free";
   const queryClient = useQueryClient();
   const toast = useMobileToast();
@@ -1153,8 +1187,7 @@ export function RecruteurRechercheMobile() {
     minGpa,
     sortBy,
     sportId,
-    isFreeRecruiter,
-    maxSearchResults,
+    tier,
   });
   const loading = tierLoading || athletesLoading;
 
@@ -1315,9 +1348,10 @@ export function RecruteurRechercheMobile() {
                         ease: [0.16, 1, 0.3, 1],
                       }}
                     >
+                      {/* Plus de prop isFree : la Recherche est basculée sur
+                          la RPC, donc `a.identityVisible` porte la décision. */}
                       <AthleteCardMobile
                         a={a as Parameters<typeof AthleteCardMobile>[0]["a"]}
-                        isFree={isFreeRecruiter}
                         favDisabled={atFavCap && !a.isFavorited}
                         onToggleFav={toggleFav}
                       />
@@ -1343,7 +1377,6 @@ export function RecruteurRechercheMobile() {
                     >
                       <AthleteRowMobile
                         a={a as Parameters<typeof AthleteRowMobile>[0]["a"]}
-                        isFree={isFreeRecruiter}
                         favDisabled={atFavCap && !a.isFavorited}
                         onToggleFav={toggleFav}
                       />
