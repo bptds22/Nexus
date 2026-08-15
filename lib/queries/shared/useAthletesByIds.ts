@@ -1,69 +1,67 @@
 /* ═══════════════════════════════════════════════════════════════
-   useAthletesByIds — TanStack hook (iter 5.3a)
-   Fetch un set d'athlètes par leurs IDs avec le gros select hydraté
-   (sports + positions + schools + committed_school + evaluations).
+   useAthletesByIds — hydratation d'un lot d'athlètes par leurs IDs.
 
-   Le select reproduit le format utilisé dans Favoris (lignes 295-305
-   originales) pour préserver la compatibilité avec les
-   transformations aval.
+   BASCULÉ SUR recruiter_athlete_cards (chantier bascule RPC).
 
-   IDs triés (stableIds) → queryKey stable même si l'ordre des IDs
-   en input change.
+   Avant : un `.from("athletes")` direct avec un gros select hydraté.
+   C'est exactement ce que le verrou RLS doit fermer, et ça ne pouvait
+   appliquer aucune projection Loi 25 — le nom, la photo et le dossard
+   partaient en clair, à charge du client de les cacher. Un masquage
+   client ne masque rien : la donnée est déjà dans la réponse réseau.
+
+   Ce hook n'a pas de relation à lui (contrairement à usePipelineCards,
+   qui garde sa table de pipeline) : il EST l'hydratation. Le 2-temps se
+   réduit donc à son temps 2, et le hook devient un simple appel à la
+   fondation partagée.
+
+   ── Ce qui change pour les appelants ──────────────────────────
+   Le type rendu est désormais `RecruiterAthleteCard`, le miroir exact
+   du RETURNS TABLE de la RPC. Trois correspondances à connaître :
+
+     video_faits_saillants_url  ->  a_une_video   (booléen, pas l'URL :
+                                    un recruteur n'a pas besoin de l'URL
+                                    pour savoir qu'une vidéo existe)
+     committed_school_id        ->  committed_school_name
+     cote_globale_entraineur    ->  cote_globale
+
+   Et surtout : `identity_visible`. Quand il est faux, first_name,
+   last_name, photo_url et numero_jersey arrivent à NULL — le serveur ne
+   les envoie pas. Les surfaces doivent le propager jusqu'aux
+   composants AthletePhoto*, et ne JAMAIS retomber sur des initiales.
+
+   IDs triés (stableIds) → queryKey stable même si l'ordre des IDs en
+   entrée change.
 ═══════════════════════════════════════════════════════════════ */
 
 import { useQuery } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
+import {
+  fetchRecruiterAthleteCards,
+  type RecruiterAthleteCard,
+} from "@/lib/queries/shared/recruiterAthleteCards";
 
-export interface AthleteRow {
-  id: string;
-  first_name: string;
-  last_name: string;
-  photo_url: string | null;
-  verified: boolean;
-  last_profile_validation: string | null;
-  video_faits_saillants_url: string | null;
-  annee_diplomation: number | null;
-  cote_globale_entraineur: number | null;
-  numero_jersey: string | null;
-  taille_pieds: number | null;
-  taille_pouces: number | null;
-  poids_lbs: number | null;
-  recruitment_status: string | null;
-  committed_school_id: string | null;
-  open_to_offers: boolean | null;
-  school_id: string | null;
-  sports: { nom: string } | { nom: string }[] | null;
-  positions: { nom: string; abreviation: string } | { nom: string; abreviation: string }[] | null;
-  schools: { name: string; region: string } | { name: string; region: string }[] | null;
-  committed_school: { name: string } | { name: string }[] | null;
-  evaluations: { cote_globale: number | null; distinctions: string[] | null; updated_at: string | null }[] | null;
-}
+/** Ré-export de commodité : les appelants historiques importaient
+ *  `AthleteRow` d'ici. Le nom reste, la forme est celle de la RPC. */
+export type { RecruiterAthleteCard } from "@/lib/queries/shared/recruiterAthleteCards";
 
 export function useAthletesByIds(ids: string[]) {
   // Tri pour stabilité du queryKey (TanStack hash l'array)
   const stableIds = [...ids].sort();
 
-  return useQuery<AthleteRow[]>({
-    queryKey: ["athletes-by-ids", stableIds],
+  return useQuery<RecruiterAthleteCard[]>({
+    // Clé distincte de l'ancienne : la forme rendue a changé, un cache
+    // persistant de l'ancienne version tromperait les consommateurs.
+    queryKey: ["athlete-cards-by-ids", stableIds],
     queryFn: async () => {
       if (stableIds.length === 0) return [];
       const supabase = createClient();
-      const { data, error } = await supabase
-        .from("athletes")
-        .select(`
-          id, first_name, last_name, photo_url, verified, last_profile_validation,
-          video_faits_saillants_url, annee_diplomation,
-          cote_globale_entraineur, numero_jersey, taille_pieds, taille_pouces, poids_lbs,
-          recruitment_status, committed_school_id, open_to_offers, school_id,
-          sports!sport_id(nom),
-          positions!position_id(nom, abreviation),
-          schools!school_id(name, region),
-          committed_school:schools!committed_school_id(name),
-          evaluations(cote_globale, distinctions, updated_at)
-        `)
-        .in("id", stableIds);
-      if (error) throw error;
-      return (data ?? []) as unknown as AthleteRow[];
+      const cardMap = await fetchRecruiterAthleteCards(supabase, stableIds);
+      // La Map peut contenir MOINS d'entrées que d'IDs demandés : la RPC
+      // ne rend rien pour un athlète inactif ou supprimé. On rend donc
+      // les cartes réellement obtenues, pas un tableau troué.
+      return stableIds
+        .map((id) => cardMap.get(id))
+        .filter((c): c is RecruiterAthleteCard => !!c);
     },
     enabled: stableIds.length > 0,
     staleTime: 5 * 60 * 1000,

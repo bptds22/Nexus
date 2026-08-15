@@ -27,8 +27,10 @@ export function RecruteurFavorisMobile() {
   // `tierLoading` : tant que le tier n'est pas chargé, on ne rend PAS les cartes
   // (le Provider défaute tier→"free" avant le fetch, ce qui anonymiserait les
   // cartes d'un All Star une fraction de seconde au login). Skeleton jusque-là.
-  const { tier, loading: tierLoading } = useSubscription();
-  const isFree = tier === "free";
+  // `isFree` a disparu avec la bascule de useAthletesByIds sur la RPC :
+  // l'anonymisation n'est plus une décision de tier prise ici, elle arrive
+  // par identityVisible, ligne par ligne, depuis le serveur.
+  const { loading: tierLoading } = useSubscription();
   const queryClient = useQueryClient();
   const toast = useMobileToast();
   // Iter 7.11 Section 3.2 — userId nécessaire pour patcher la BONNE queryKey
@@ -42,6 +44,10 @@ export function RecruteurFavorisMobile() {
     const q = debouncedSearch.trim().toLowerCase();
     if (!q) return athletes;
     return athletes.filter((a) => {
+      // Volontairement sur firstName/lastName, pas fullName : sous masquage
+      // les deux sont vides, donc un athlète à identité réservée ne répond à
+      // AUCUNE recherche par nom. Passer par fullName le ferait remonter sur
+      // « identité », ce qui n'a pas de sens pour l'utilisateur.
       const full = `${a.firstName} ${a.lastName}`.toLowerCase();
       return full.includes(q);
     });
@@ -225,8 +231,8 @@ export function RecruteurFavorisMobile() {
                       committedSchoolName: a.committedSchoolName || null,
                       openToOffers: a.openToOffers,
                       noTeam: a.noTeam,
+                      identityVisible: a.identityVisible,
                     }}
-                    isFree={isFree}
                     favDisabled={false}
                     onToggleFav={handleUnfavorite}
                     lastTabKey="favoris"

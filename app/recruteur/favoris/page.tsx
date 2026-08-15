@@ -22,41 +22,18 @@ const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
    Same layout as coach "Mes Athlètes"
 ═══════════════════════════════════════════════════════════════ */
 
-interface FavoriAthlete {
-  id: string;
-  firstName: string;
-  lastName: string;
-  photo: string;
-  position: string;
-  sport: string;
-  sportName: string;
-  school: string;
-  region: string;
-  graduationYear: number;
-  stars: number;
-  isVerified: boolean;
-  lastValidation?: string | null;
-  hasVideo: boolean;
-  heightWeight: string;
-  favoritedAt: string;
-  pipelineStage: string | null;
-  pipelineMovedAt: string | null;
-  daysIdle: number;
-  favCount: number;
-  jersey: string;
-  recruitmentStatus: string;
-  committedSchoolName: string;
-  openToOffers: boolean | null;
-  badges: { badgeId: string; label: string; icon: string }[];
-  // "Ligue Civile" = no school anchor on the athlete row. Post-Phase
-  // 6.1 civil athletes are anchored via school_id to a LIGUE_CIVILE
-  // school, so noTeam only fires for orphans (school_id NULL).
-  noTeam: boolean;
-}
+/* Le type vient du hook, il n'est plus redéclaré ici.
+   Il y en avait une copie locale, à jour par accident : elle a divergé dès
+   que le hook a gagné identityVisible et fullName, et le compilateur ne
+   pouvait pas le signaler puisque les deux formes portaient le même nom. */
+import type { FavoriAthlete } from "@/lib/queries/recruiter/useFavoriteAthletes";
 
 /* ── Grid Card (same as coach Mes Athlètes) ──────────────── */
 
-function FavoriGridCard({ a, onUnfavorite, isFree }: { a: FavoriAthlete; onUnfavorite: (id: string) => void; isFree: boolean }) {
+function FavoriGridCard({ a, onUnfavorite }: { a: FavoriAthlete; onUnfavorite: (id: string) => void }) {
+  // L'identité n'est plus une décision de tier prise ici : elle arrive du
+  // serveur, ligne par ligne, et couvre aussi la Loi 25 que `isFree` ignorait.
+  const locked = !a.identityVisible;
   return (
     <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748] overflow-hidden hover:border-[#E63946]/30 hover:shadow-[0_0_24px_rgba(230,57,70,0.12)] hover:-translate-y-1.5 hover:scale-[1.02] transition-all duration-300 ease-out group flex flex-col">
       {/* Photo */}
@@ -65,6 +42,7 @@ function FavoriGridCard({ a, onUnfavorite, isFree }: { a: FavoriAthlete; onUnfav
           photoUrl={a.photo}
           firstName={a.firstName}
           lastName={a.lastName}
+          identityVisible={a.identityVisible}
           initialsFontSize={72}
           className="object-[center_15%]"
         />
@@ -106,11 +84,12 @@ function FavoriGridCard({ a, onUnfavorite, isFree }: { a: FavoriAthlete; onUnfav
       <div className="p-4 flex flex-col flex-1">
         {/* Name + position + jersey */}
         <div className="flex items-center gap-2 flex-wrap">
-          {isFree ? (
-            <span className="inline-flex items-center gap-1.5" title="Nom réservé aux recruteurs Pro">
-              <span aria-hidden="true" className="text-[17px] font-bold text-white select-none pointer-events-none blur-[5px]">
-                Prénom Nom
-              </span>
+          {locked ? (
+            /* Plus de faux nom flouté : le serveur n'envoie rien, donc on
+               n'a rien à cacher. Le libellé partagé dit la vérité, et le
+               cadenas reste pour signaler que c'est débloquable. */
+            <span className="inline-flex items-center gap-1.5" title="Identité réservée">
+              <span className="text-[17px] font-bold text-[#9CA3AF]">{a.fullName}</span>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="3" y="11" width="18" height="11" rx="2" />
                 <path d="M7 11V7a5 5 0 0110 0v4" />
@@ -118,7 +97,7 @@ function FavoriGridCard({ a, onUnfavorite, isFree }: { a: FavoriAthlete; onUnfav
             </span>
           ) : (
             <Link href={`/recruteur/athletes/${a.id}`} className="text-[17px] font-bold text-white hover:text-[#E63946] transition-colors">
-              {a.firstName} {a.lastName}
+              {a.fullName}
             </Link>
           )}
           {a.position && (
@@ -182,7 +161,8 @@ function FavoriGridCard({ a, onUnfavorite, isFree }: { a: FavoriAthlete; onUnfav
 
 /* ── List Row ────────────────────────────────────────────────── */
 
-function FavoriListRow({ a, onUnfavorite, isFree }: { a: FavoriAthlete; onUnfavorite: (id: string) => void; isFree: boolean }) {
+function FavoriListRow({ a, onUnfavorite }: { a: FavoriAthlete; onUnfavorite: (id: string) => void }) {
+  const locked = !a.identityVisible;
   return (
     <div className="bg-[#1A1D24] rounded-lg border border-[#2D3748] hover:border-[#E63946]/30 hover:shadow-[0_0_24px_rgba(230,57,70,0.12)] transition-all duration-300 ease-out flex items-center px-4 py-3 gap-4">
       {/* Avatar */}
@@ -191,6 +171,7 @@ function FavoriListRow({ a, onUnfavorite, isFree }: { a: FavoriAthlete; onUnfavo
           photoUrl={a.photo}
           firstName={a.firstName}
           lastName={a.lastName}
+          identityVisible={a.identityVisible}
           size={48}
         />
         <div className="absolute -top-1 -right-1 z-10">
@@ -211,11 +192,9 @@ function FavoriListRow({ a, onUnfavorite, isFree }: { a: FavoriAthlete; onUnfavo
 
       {/* Name + school (or "Ligue Civile" badge) — fixed width */}
       <div className="w-[200px] shrink-0">
-        {isFree ? (
-          <span className="inline-flex items-center gap-1.5" title="Nom réservé aux recruteurs Pro">
-            <span aria-hidden="true" className="text-[14px] font-bold text-white select-none pointer-events-none blur-[5px]">
-              Prénom Nom
-            </span>
+        {locked ? (
+          <span className="inline-flex items-center gap-1.5" title="Identité réservée">
+            <span className="text-[14px] font-bold text-[#9CA3AF] truncate">{a.fullName}</span>
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <rect x="3" y="11" width="18" height="11" rx="2" />
               <path d="M7 11V7a5 5 0 0110 0v4" />
@@ -223,7 +202,7 @@ function FavoriListRow({ a, onUnfavorite, isFree }: { a: FavoriAthlete; onUnfavo
           </span>
         ) : (
           <Link href={`/recruteur/athletes/${a.id}`} className="text-[14px] font-bold text-white hover:text-[#E63946] transition-colors truncate block">
-            {a.firstName} {a.lastName}
+            {a.fullName}
           </Link>
         )}
         <p className="text-[12px] text-[#6b7280] truncate flex items-center gap-1.5">
@@ -299,11 +278,10 @@ function FavorisContent() {
   // `tierLoading` inclus dans le garde `loading` plus bas : le Provider défaute
   // tier→"free" (maxFavorites=10) avant le fetch — sans ça, un All Star (illimité)
   // verrait « X / 10 » flasher au login. On attend le tier avant d'afficher le cap.
-  // Le nom (comme la recherche et le profil) est réservé aux tiers payants.
-  // Fail-closed : tant que le tier n'est pas résolu, `tier` vaut "free" côté
-  // provider → on floute, puis on révèle. Jamais l'inverse.
-  const { maxFavorites, tier, loading: tierLoading } = useSubscription();
-  const isFree = tier === "free";
+  // Le nom n'est PLUS gaté ici : identityVisible arrive de la RPC, ligne par
+  // ligne, et couvre la Loi 25 en plus du tier. `tier` ne sert plus qu'au cap
+  // de favoris.
+  const { maxFavorites, loading: tierLoading } = useSubscription();
   // Migration TanStack (iter 5.3a) — fetch + transformation déléguées
   const { athletes, isLoading: dataLoading } = useFavoriteAthletes();
   const loading = dataLoading || tierLoading;
@@ -489,11 +467,11 @@ function FavorisContent() {
         </div>
       ) : viewMode === "grid" ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-          {filtered.map(a => <FavoriGridCard key={a.id} a={a} onUnfavorite={handleUnfavorite} isFree={isFree} />)}
+          {filtered.map(a => <FavoriGridCard key={a.id} a={a} onUnfavorite={handleUnfavorite} />)}
         </div>
       ) : (
         <div className="flex flex-col gap-2">
-          {filtered.map(a => <FavoriListRow key={a.id} a={a} onUnfavorite={handleUnfavorite} isFree={isFree} />)}
+          {filtered.map(a => <FavoriListRow key={a.id} a={a} onUnfavorite={handleUnfavorite} />)}
         </div>
       )}
     </div>
