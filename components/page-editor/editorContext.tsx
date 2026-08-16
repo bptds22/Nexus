@@ -121,7 +121,9 @@ interface EditorCtx {
   initial: EditorInitial;
   client: SupabaseClient;
   assetUrl: (path: string | null | undefined, bucket: Bucket) => string | null;
-  uploadAsset: (bucket: Bucket, file: File) => Promise<string>;
+  /** `previousPath` : objet remplacé, supprimé après un upload réussi.
+   *  Omets-le pour un ajout (nouvelle carte), passe-le pour un remplacement. */
+  uploadAsset: (bucket: Bucket, file: File, previousPath?: string | null) => Promise<string>;
   report: (key: string, value: unknown) => void;
   saveAll: () => Promise<void>;
   dirty: boolean;
@@ -329,13 +331,45 @@ export function SchoolPageEditorProvider(
     [client],
   );
 
-  const uploadAsset = React.useCallback(async (bucket: Bucket, file: File): Promise<string> => {
+  /* CHEMIN VERSIONNÉ — c'est le correctif du bug « le logo ne se remplace
+     jamais ».
+
+     Avant : `{school_id}/logo.{ext}`, nom FIXE + upsert. Ré-uploader un PNG
+     écrasait l'objet en place, l'URL publique restait identique au caractère
+     près, et le CDN (cacheControl 3600) plus le cache navigateur servaient
+     l'ancienne image jusqu'à une heure. Rien n'échouait — d'où le diagnostic
+     « erreur avalée » alors que tout réussissait.
+
+     L'extension venait du fichier source, ce qui produisait en plus des
+     doublons : un `logo.jfif` ET un `logo.webp` pour la même école, dont un
+     seul référencé.
+
+     Maintenant chaque upload porte un nom unique : l'URL change, donc le
+     rendu change, sans dépendre d'aucune expiration de cache.
+
+     `previousPath` permet de supprimer l'objet remplacé — sans quoi le nom
+     versionné empilerait un orphelin à chaque essai. La suppression est
+     DÉLIBÉRÉMENT non bloquante : l'upload a réussi, la page doit continuer.
+     Un orphelin est un coût de stockage ; un throw ici serait une perte de
+     travail. */
+  const uploadAsset = React.useCallback(async (
+    bucket: Bucket,
+    file: File,
+    previousPath?: string | null,
+  ): Promise<string> => {
     if (!schoolId) throw new Error("Aucune école");
     const ext = (file.name.split(".").pop() || "png").toLowerCase();
-    const base = bucket === "school-logos" ? "logo" : "card-" + Math.random().toString(36).slice(2, 9);
+    const base = bucket === "school-logos"
+      ? `logo_${schoolId}_${Date.now()}`
+      : `card_${schoolId}_${Date.now()}`;
     const path = `${schoolId}/${base}.${ext}`;
     const { error } = await client.storage.from(bucket).upload(path, file, { upsert: true, cacheControl: "3600" });
     if (error) throw friendlyDbError(error);
+
+    if (previousPath && previousPath !== path) {
+      const { error: delErr } = await client.storage.from(bucket).remove([previousPath]);
+      if (delErr) console.warn(`[uploadAsset] ancien objet non supprimé (${bucket}/${previousPath})`, delErr);
+    }
     return path;
   }, [client, schoolId]);
 

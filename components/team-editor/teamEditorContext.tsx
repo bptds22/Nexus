@@ -127,7 +127,8 @@ interface TeamEditorCtx {
   hiddenSections: string[];
   toggleSection: (key: string) => void;
   assetUrl: (path: string | null | undefined) => string | null;
-  uploadAsset: (kind: "hero" | "coach", file: File) => Promise<string>;
+  /** `previousPath` : objet remplacé, supprimé après un upload réussi. */
+  uploadAsset: (kind: "hero" | "coach", file: File, previousPath?: string | null) => Promise<string>;
 }
 
 const Ctx = React.createContext<TeamEditorCtx | null>(null);
@@ -202,7 +203,9 @@ export function TeamPageEditorProvider({ teamId, children }: { teamId: string; c
         const [page, sport, school, schoolPage, positions, games, coaches, commits, hint, coachAccounts, tousMatchs] = await Promise.all([
           loadTeamPage(client, team.id),
           client.from("sports").select("nom").eq("id", team.sport_id).maybeSingle(),
-          client.from("schools").select("name").eq("id", team.school_id).maybeSingle(),
+          // logo_url = repli d'affichage derrière logo_path : l'aperçu de
+          // l'éditeur doit montrer ce que le public verra, repli compris.
+          client.from("schools").select("name, logo_url").eq("id", team.school_id).maybeSingle(),
           client.from("school_page_content")
             .select("nickname, initiales, logo_path, color_primary, color_dark, color_light, wall_words")
             .eq("school_id", team.school_id).maybeSingle(),
@@ -252,9 +255,10 @@ export function TeamPageEditorProvider({ teamId, children }: { teamId: string; c
           schoolName,
           nickname: (sp?.nickname as string) || schoolName,
           initiales: (sp?.initiales as string) || schoolName.slice(0, 1).toUpperCase(),
+          // logo_path (déposé) d'abord, logo_url (import RSEQ) en repli.
           logoUrl: sp?.logo_path
             ? client.storage.from("school-logos").getPublicUrl(sp.logo_path as string).data.publicUrl
-            : null,
+            : ((school.data as { logo_url?: string | null } | null)?.logo_url?.trim() || null),
           colorPrimary: (sp?.color_primary as string) || "#A6192E",
           colorDark: (sp?.color_dark as string) || "#5A0E1B",
           colorLight: (sp?.color_light as string) || "#E8C7CD",
@@ -375,12 +379,31 @@ export function TeamPageEditorProvider({ teamId, children }: { teamId: string; c
   // être le school_id (c'est lui que can_edit_school_page vérifie). D'où
   // {school_id}/teams/{team_id}/… — aucun bucket ni policy en plus.
   const schoolId = load.identity?.schoolId;
-  const uploadAsset = React.useCallback(async (kind: "hero" | "coach", file: File): Promise<string> => {
+  /* Chemin VERSIONNÉ — même maladie et même correctif que le logo d'école,
+     voir editorContext.uploadAsset. Le nom fixe `hero.{ext}` écrasait en
+     place : URL inchangée, CDN qui sert l'ancienne image. Les données le
+     confirmaient — un `hero.jpg` réécrasé ET un `hero.png` pour la même
+     équipe.
+
+     Le 1er segment DOIT rester le school_id : c'est lui que
+     can_edit_school_page vérifie dans les policies « ma_page assets ». La
+     version s'ajoute au nom de fichier, jamais au préfixe. */
+  const uploadAsset = React.useCallback(async (
+    kind: "hero" | "coach",
+    file: File,
+    previousPath?: string | null,
+  ): Promise<string> => {
     if (!schoolId || !teamId2) throw new Error("Équipe non chargée");
     const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
-    const path = `${schoolId}/teams/${teamId2}/${kind}.${ext}`;
+    const path = `${schoolId}/teams/${teamId2}/${kind}_${Date.now()}.${ext}`;
     const { error } = await client.storage.from("campus-photos").upload(path, file, { upsert: true, cacheControl: "3600" });
     if (error) throw friendlyDbError(error);
+
+    // Non bloquant : l'upload a réussi, un orphelin ne doit pas casser le flow.
+    if (previousPath && previousPath !== path) {
+      const { error: delErr } = await client.storage.from("campus-photos").remove([previousPath]);
+      if (delErr) console.warn(`[teamEditor uploadAsset] ancien objet non supprimé (${previousPath})`, delErr);
+    }
     return path;
   }, [client, schoolId, teamId2]);
 

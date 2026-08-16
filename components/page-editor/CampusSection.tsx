@@ -59,10 +59,13 @@ export default function CampusSection() {
       const file = input.files?.[0];
       if (!file) return;
       try {
-        const path = await uploadAsset("campus-photos", file);
+        // Remplacer la photo d'une carte supprime l'ancienne : sans ça, chaque
+        // correction laissait un objet mort dans le bucket (le nom aléatoire
+        // d'origine ne collisionnait jamais, donc rien n'était nettoyé).
+        const path = await uploadAsset("campus-photos", file, cards[i]?.image_path ?? null);
         setCards((cs) => cs.map((x, k) => (k === i ? { ...x, image_path: path } : x)));
-        toast("Photo téléversée");
-      } catch (e) { toast(e instanceof Error ? e.message : "Échec de l'upload"); }
+        toast("Photo téléversée — pense à enregistrer");
+      } catch (e) { toast(e instanceof Error ? e.message : "Échec de l'upload de la photo", "error"); }
     };
     input.click();
   };

@@ -100,8 +100,9 @@ export default function IdentityWall({
     input.onchange = async () => {
       const file = input.files?.[0];
       if (!file) return;
-      try { const path = await uploadAsset("school-logos", file); setLogoPath(path); toast("Logo téléversé"); }
-      catch (e) { toast(e instanceof Error ? e.message : "Échec de l'upload"); }
+      // logoPath = l'objet remplacé : supprimé après succès, pas d'orphelin.
+      try { const path = await uploadAsset("school-logos", file, logoPath); setLogoPath(path); toast("Logo téléversé — pense à enregistrer"); }
+      catch (e) { toast(e instanceof Error ? e.message : "Échec de l'upload du logo", "error"); }
     };
     input.click();
   };

@@ -28,6 +28,9 @@ export interface SchoolRow {
   /** nominatim (bâtiment trouvé par son nom) · manuel (corrigé à la main) ·
    *  approx (repli centre-ville / point voisin). */
   geo_source: string | null;
+  /** Logo d'import RSEQ. REPLI d'affichage uniquement, derrière
+   *  school_page_content.logo_path — jamais réécrit. Voir logoUrl plus bas. */
+  logo_url?: string | null;
 }
 
 /** Une équipe telle que lue dans public.teams (+ le nom de son sport). */
@@ -173,7 +176,16 @@ export function dbToProgramPage(
     // claire custom en DB (≠ défaut #E8C7CD) → glyphes tuiles claires assombris (#3)
     lightDefined: !!(c.color_light && c.color_light.trim() && c.color_light.trim().toLowerCase() !== "#e8c7cd"),
 
-    logoUrl: assetUrl(c.logo_path, "school-logos"),
+    /* ORDRE DU REPLI : logo_path d'abord, logo_url ensuite.
+       logo_path est le fichier que l'école a elle-même déposé — il gagne
+       toujours. logo_url est l'import RSEQ, conservé pour que les centaines
+       d'écoles jamais configurées gardent un logo au lieu de retomber sur le
+       monogramme. Inverser l'ordre ferait réapparaître l'image scrapée
+       par-dessus le choix explicite de l'école.
+       Ce repli profite aussi à degradedProgramPage, qui passe par ici avec un
+       contenu vide et un assetUrl qui rend toujours null — donc l'école non
+       configurée arrive directement sur logo_url. */
+    logoUrl: assetUrl(c.logo_path, "school-logos") ?? (school.logo_url?.trim() || null),
     city: nn(c.ville, (school.city || "").toUpperCase()),
     regionTag: `${nn(c.quartier, (school.region || "").toUpperCase())} · ${code}`,
     areaCode: nn(c.code_regional, code),

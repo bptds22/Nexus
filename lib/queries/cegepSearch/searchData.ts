@@ -77,8 +77,17 @@ const s = (v: unknown): string => (v == null ? "" : String(v));
  *  tiers, et 50 des 61 cégeps en ont une. La brancher en repli ferait apparaître
  *  50 logos scrapés sur des cartes qui n'en ont jamais montré. La colonne reste
  *  écrite et affichée par l'admin école (app/admin/schools/[id]) — elle n'est
- *  simplement pas une source pour la recherche PUBLIQUE. Pour l'y rebrancher un
- *  jour : remettre logo_url dans le select ci-dessous et le rendre ici en repli. */
+ *  simplement pas une source pour la recherche PUBLIQUE.
+ *
+ *  DÉCISION RATIFIÉE le 2026-08-16, ne pas la défaire par zèle. Le repli
+ *  `logo_path ?? logo_url` a été branché partout AILLEURS ce jour-là (page
+ *  école, page équipe, éditeurs, fiche admin) et délibérément PAS ici. Le
+ *  critère n'est pas « cette surface lit-elle logo_path ? » mais « cette
+ *  surface montrait-elle déjà un logo ? ». Ici : non, jamais. Y ajouter le
+ *  repli ne réparerait rien, ça publierait 50 images scrapées de plus.
+ *  Le jour où les cégeps veulent leur logo ici, ce sera par leur propre dépôt
+ *  (logo_path via l'éditeur de page), pas par le scrape.
+ *  Voir docs/bascule-rpc-avant-verrou.md, section « Doctrine ». */
 function logoDeLEcole(supabase: SupabaseClient, logoPath: string | null | undefined): string | null {
   const chemin = logoPath?.trim();
   if (!chemin) return null;
