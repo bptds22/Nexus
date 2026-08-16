@@ -127,7 +127,8 @@ interface TeamEditorCtx {
   hiddenSections: string[];
   toggleSection: (key: string) => void;
   assetUrl: (path: string | null | undefined) => string | null;
-  uploadAsset: (kind: "hero" | "coach", file: File) => Promise<string>;
+  /** `previousPath` : objet remplacé, supprimé après un upload réussi. */
+  uploadAsset: (kind: "hero" | "coach", file: File, previousPath?: string | null) => Promise<string>;
 }
 
 const Ctx = React.createContext<TeamEditorCtx | null>(null);
@@ -375,12 +376,31 @@ export function TeamPageEditorProvider({ teamId, children }: { teamId: string; c
   // être le school_id (c'est lui que can_edit_school_page vérifie). D'où
   // {school_id}/teams/{team_id}/… — aucun bucket ni policy en plus.
   const schoolId = load.identity?.schoolId;
-  const uploadAsset = React.useCallback(async (kind: "hero" | "coach", file: File): Promise<string> => {
+  /* Chemin VERSIONNÉ — même maladie et même correctif que le logo d'école,
+     voir editorContext.uploadAsset. Le nom fixe `hero.{ext}` écrasait en
+     place : URL inchangée, CDN qui sert l'ancienne image. Les données le
+     confirmaient — un `hero.jpg` réécrasé ET un `hero.png` pour la même
+     équipe.
+
+     Le 1er segment DOIT rester le school_id : c'est lui que
+     can_edit_school_page vérifie dans les policies « ma_page assets ». La
+     version s'ajoute au nom de fichier, jamais au préfixe. */
+  const uploadAsset = React.useCallback(async (
+    kind: "hero" | "coach",
+    file: File,
+    previousPath?: string | null,
+  ): Promise<string> => {
     if (!schoolId || !teamId2) throw new Error("Équipe non chargée");
     const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
-    const path = `${schoolId}/teams/${teamId2}/${kind}.${ext}`;
+    const path = `${schoolId}/teams/${teamId2}/${kind}_${Date.now()}.${ext}`;
     const { error } = await client.storage.from("campus-photos").upload(path, file, { upsert: true, cacheControl: "3600" });
     if (error) throw friendlyDbError(error);
+
+    // Non bloquant : l'upload a réussi, un orphelin ne doit pas casser le flow.
+    if (previousPath && previousPath !== path) {
+      const { error: delErr } = await client.storage.from("campus-photos").remove([previousPath]);
+      if (delErr) console.warn(`[teamEditor uploadAsset] ancien objet non supprimé (${previousPath})`, delErr);
+    }
     return path;
   }, [client, schoolId, teamId2]);
 

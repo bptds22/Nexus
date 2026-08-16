@@ -294,4 +294,5 @@ const PE_CSS = `
 /* toast */
 .pe .pe-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:#20242D;border:1px solid var(--line);color:var(--txt);font-size:13px;font-weight:600;padding:12px 20px;border-radius:12px;opacity:0;transition:.25s;pointer-events:none;z-index:99}
 .pe .pe-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.pe .pe-toast.error{background:#2A1416;border-color:#E63946;color:#FCA5A5;max-width:min(560px,92vw);white-space:pre-wrap;text-align:left}
 `;

@@ -118,6 +118,7 @@ export default function AdminSchoolDetailPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [toastKind, setToastKind] = useState<"info" | "error">("info");
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [tab, setTab] = useState<Tab>("coachs");
   // Loi 25 logo gate — true only when ≥1 confirmed staff user is linked.
@@ -149,9 +150,13 @@ export default function AdminSchoolDetailPage() {
   const [deleteModal, setDeleteModal] = useState<{ coach: CoachRow; ackChecked: boolean } | null>(null);
   const [actionPending, setActionPending] = useState(false);
 
-  function notify(msg: string) {
+  /* Un échec reste affiché bien plus longtemps qu'une confirmation : 2,5 s
+     ne suffisent pas à lire un message d'erreur, et c'est comme ça qu'un
+     échec finit par passer pour un succès. */
+  function notify(msg: string, kind: "info" | "error" = "info") {
     setToast(msg);
-    setTimeout(() => setToast(null), 2500);
+    setToastKind(kind);
+    setTimeout(() => setToast(null), kind === "error" ? 7000 : 2500);
   }
 
   function S(key: string): string {
@@ -507,20 +512,72 @@ export default function AdminSchoolDetailPage() {
   // logo_url n'étant PAS dans le patch de handleSave, on persiste tout de
   // suite via le même pattern from("schools").update. Le gate d'affichage
   // Loi 25 (logoAllowed) n'est PAS touché — on ajoute juste la capacité.
+  /* Préfixe des logos d'école dans le bucket `avatars`. Sert aussi à décider
+     si l'ancienne valeur de logo_url nous appartient (donc supprimable) ou
+     vient d'un import externe (rseq.ca) — qu'on ne touche évidemment pas. */
+  const LOGO_PREFIX = "logos/schools/";
+
+  /** Extrait le chemin storage d'une URL publique `avatars`, ou null si
+   *  l'URL est externe / d'une autre forme. */
+  function cheminDepuisUrlPublique(url: string): string | null {
+    const marqueur = "/storage/v1/object/public/avatars/";
+    const i = url.indexOf(marqueur);
+    if (i === -1) return null;
+    const chemin = url.slice(i + marqueur.length).split("?")[0];
+    return chemin.startsWith(LOGO_PREFIX) ? decodeURIComponent(chemin) : null;
+  }
+
   async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploadingLogo(true);
+    // On capture l'ancienne valeur AVANT l'upload : c'est elle qu'on supprimera.
+    const ancienChemin = cheminDepuisUrlPublique(S("logo_url"));
+
+    /* Chemin VERSIONNÉ — même correctif que les éditeurs de page et
+       d'équipe. Un nom fixe écrasait l'objet en place : URL identique, donc
+       CDN et navigateur continuaient de servir l'ancienne image. */
     const res = await uploadImage(file, {
       bucket: "avatars",
-      pathBase: `logos/schools/${id}`,
+      pathBase: `${LOGO_PREFIX}logo_${id}_${Date.now()}`,
       preserveTransparency: true,
     });
-    if (!res.ok) { notify(`Erreur logo : ${res.message}`); setUploadingLogo(false); return; }
+    if (!res.ok) { notify(`Échec du téléversement : ${res.message}`, "error"); setUploadingLogo(false); return; }
+
     const supabase = createClient();
-    const { error } = await supabase.from("schools").update({ logo_url: res.publicUrl }).eq("id", id);
-    if (error) { notify(`Erreur sauvegarde : ${error.message}`); setUploadingLogo(false); return; }
-    setS("logo_url", res.publicUrl);
+    /* `.select()` N'EST PAS COSMÉTIQUE. Sans lui, un UPDATE que RLS filtre
+       rend 204 sans erreur ET sans ligne : `error` est null, on affichait
+       « Logo mis à jour », et rien n'était écrit. Le nombre de lignes
+       revenues est la SEULE preuve que l'écriture a eu lieu. */
+    const { data: lignes, error } = await supabase
+      .from("schools")
+      .update({ logo_url: res.publicUrl })
+      .eq("id", id)
+      .select("logo_url");
+
+    if (error) { notify(`Échec de la sauvegarde : ${error.message}`, "error"); setUploadingLogo(false); return; }
+    if (!lignes || lignes.length === 0) {
+      notify(
+        "Échec de la sauvegarde : aucune ligne modifiée.\nL'image a été téléversée mais la fiche n'a pas été mise à jour (droits insuffisants ?).",
+        "error",
+      );
+      setUploadingLogo(false);
+      return;
+    }
+
+    /* L'état local prend la valeur RENDUE PAR LA BASE, pas celle qu'on
+       espérait écrire. Le champ ne reflète que ce qui est réellement stocké. */
+    setS("logo_url", lignes[0].logo_url);
+
+    /* Suppression de l'ancien objet — APRÈS la confirmation d'écriture, et
+       non bloquante : le logo est déjà en place, un orphelin ne justifie pas
+       d'alarmer l'utilisateur. Ne s'applique jamais aux URL externes
+       (import RSEQ), que cheminDepuisUrlPublique rend à null. */
+    if (ancienChemin && ancienChemin !== res.path) {
+      const { error: delErr } = await supabase.storage.from("avatars").remove([ancienChemin]);
+      if (delErr) console.warn(`[handleLogoUpload] ancien logo non supprimé (${ancienChemin})`, delErr);
+    }
+
     notify("Logo mis à jour");
     setUploadingLogo(false);
   }
@@ -1378,7 +1435,14 @@ export default function AdminSchoolDetailPage() {
       )}
 
       {toast && (
-        <div className="fixed bottom-6 right-6 bg-[#1A1D24] border border-[#E63946] rounded-lg px-5 py-3 text-[13px] text-white shadow-2xl z-50">
+        <div
+          role={toastKind === "error" ? "alert" : "status"}
+          className={`fixed bottom-6 right-6 rounded-lg px-5 py-3 text-[13px] shadow-2xl z-50 max-w-[560px] whitespace-pre-wrap ${
+            toastKind === "error"
+              ? "bg-[#2A1416] border border-[#EF4444] text-[#FCA5A5]"
+              : "bg-[#1A1D24] border border-[#E63946] text-white"
+          }`}
+        >
           {toast}
         </div>
       )}

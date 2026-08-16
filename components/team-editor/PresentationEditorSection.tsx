@@ -66,8 +66,9 @@ export default function PresentationEditorSection() {
     input.onchange = async () => {
       const file = input.files?.[0];
       if (!file) return;
-      try { setPhoto(await uploadAsset("coach", file)); toast("Photo du coach téléversée"); }
-      catch (e) { toast(e instanceof Error ? e.message : "Échec de l'upload"); }
+      // photo = l'ancienne photo du coach : supprimée après succès.
+      try { setPhoto(await uploadAsset("coach", file, photo)); toast("Photo du coach téléversée — pense à enregistrer"); }
+      catch (e) { toast(e instanceof Error ? e.message : "Échec de l'upload de la photo du coach", "error"); }
     };
     input.click();
   };

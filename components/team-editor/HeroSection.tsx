@@ -101,9 +101,10 @@ export default function HeroSection() {
       const file = input.files?.[0];
       if (!file) return;
       try {
-        setHeroPath(await uploadAsset("hero", file));
-        toast("Photo hero téléversée");
-      } catch (e) { toast(e instanceof Error ? e.message : "Échec de l'upload"); }
+        // heroPath = la bannière remplacée : supprimée après succès.
+        setHeroPath(await uploadAsset("hero", file, heroPath));
+        toast("Photo hero téléversée — pense à enregistrer");
+      } catch (e) { toast(e instanceof Error ? e.message : "Échec de l'upload de la bannière", "error"); }
     };
     input.click();
   };
