@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { fetchRecruiterAthleteCards, displayFullName, LOCKED_NAME_LABEL } from "@/lib/queries/shared/recruiterAthleteCards";
 import { findOrCreateRecruiterAthleteConversation } from "@/lib/utils/findOrCreateRecruiterConversation";
 import {
   mockAthleteProfileFull,
@@ -29,7 +30,6 @@ import SuccessToast, { type SuccessToastData } from "@/components/ui/SuccessToas
 import NxIcon from "@/components/ui/NxIcon";
 import StarRating from "@/components/ui/StarRating";
 import VideoEmbed from "@/components/ui/VideoEmbed";
-import { calculateCompletion, type AthleteLike, type EvalLike } from "@/lib/utils/profileCompletion";
 import { isValidationExpired } from "@/lib/utils/profileValidation";
 import AthletePhotoFill from "@/components/shared/AthletePhotoFill";
 import { TeamDetailsBlock, type TeamDetail } from "@/components/shared/athlete/TeamDetailsBlock";
@@ -186,6 +186,9 @@ function positionAbbr(pos: string): string {
 }
 
 function PlayerCard({ a, isFree }: { a: AthleteProfileRecruiterView; isFree: boolean }) {
+  // `isFree` reste pour les sections GATÉES PAR TIER (contenu premium).
+  // L'identité, elle, ne se décide plus ici : elle vient du serveur.
+  const locked = a.identityVisible === false;
   const ratingValue = a.overallRating;
   const posAbbr = positionAbbr(a.primaryPosition);
   const sportKey = SPORT_NAME_MAP[a.primarySport];
@@ -227,12 +230,23 @@ function PlayerCard({ a, isFree }: { a: AthleteProfileRecruiterView; isFree: boo
             photoUrl={a.photoUrl}
             firstName={a.firstName}
             lastName={a.lastName}
+            identityVisible={a.identityVisible}
             className="object-[center_15%]"
           />
           <div className="absolute bottom-0 left-0 right-0 h-1/2 z-[2]" style={{ background: 'linear-gradient(to top, rgba(11,18,32,0.97) 0%, rgba(11,18,32,0.7) 35%, transparent 100%)' }} />
-          <div className={`absolute bottom-4 left-4 z-[3]${isFree ? " select-none pointer-events-none blur-[5px]" : ""}`}>
-            <p style={{ fontFamily: 'var(--font-outfit), sans-serif', fontSize: 28, fontWeight: 900, color: '#fff', letterSpacing: '0.04em', lineHeight: 1, textTransform: 'uppercase' }}>{isFree ? "Prénom" : a.firstName}</p>
-            <p style={{ fontFamily: 'var(--font-outfit), sans-serif', fontSize: 28, fontWeight: 900, color: '#fff', letterSpacing: '0.04em', lineHeight: 1, textTransform: 'uppercase' }}>{isFree ? "Nom" : a.lastName}</p>
+          {/* Le masquage n'est plus un flou CSS sur un nom présent dans le
+              DOM : sous identité réservée le serveur n'envoie rien, et on
+              affiche le libellé partagé. Le flou restait contournable au
+              devtools et ne couvrait que le tier FREE, pas la Loi 25. */}
+          <div className="absolute bottom-4 left-4 z-[3]">
+            {locked ? (
+              <p style={{ fontFamily: 'var(--font-outfit), sans-serif', fontSize: 22, fontWeight: 900, color: '#9CA3AF', letterSpacing: '0.04em', lineHeight: 1.1, textTransform: 'uppercase' }}>{LOCKED_NAME_LABEL}</p>
+            ) : (
+              <>
+                <p style={{ fontFamily: 'var(--font-outfit), sans-serif', fontSize: 28, fontWeight: 900, color: '#fff', letterSpacing: '0.04em', lineHeight: 1, textTransform: 'uppercase' }}>{a.firstName}</p>
+                <p style={{ fontFamily: 'var(--font-outfit), sans-serif', fontSize: 28, fontWeight: 900, color: '#fff', letterSpacing: '0.04em', lineHeight: 1, textTransform: 'uppercase' }}>{a.lastName}</p>
+              </>
+            )}
           </div>
         </div>
 
@@ -414,22 +428,25 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
   useEffect(() => {
     if (tierLoading) return;
     const supabase = createClient();
-    // Free recruiters don't receive athlete names — stripped
-    // server-side (not CSS-only). Preview/partner/Pro get them.
-    const identityCols = isFreeRecruiter ? "" : "first_name, last_name,";
+    /* Temps 1 — TOUT sauf l'identité.
+       first_name, last_name, photo_url, numero_jersey et date_naissance ont
+       quitté ce select : ils arrivent du temps 2, par la RPC.
+
+       Ce qui était là avant — `isFreeRecruiter ? "" : "first_name, last_name,"`
+       — était un masquage décidé CÔTÉ CLIENT, et il ne couvrait que le nom.
+       La photo et le dossard partaient en clair pour tout le monde, et la
+       règle Loi 25 (mineur sans consentement parental) n'était appliquée
+       nulle part : elle dépend de date_naissance et consentement_parental,
+       que le client n'a aucun droit de lire pour en tirer une décision. */
     supabase
       .from("athletes")
       .select(`
         id,
         user_id,
-        ${identityCols}
-        photo_url,
         verified,
         profile_completion,
         last_profile_validation,
-        numero_jersey,
         annee_diplomation,
-        date_naissance,
         genre,
         video_faits_saillants_url,
         hudl_url,
@@ -496,6 +513,15 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
         if (error || !data) { setLoadingAthlete(false); return; }
 
         const d = data as Record<string, unknown>;
+
+        /* Temps 2 — l'identité, projetée par le serveur.
+           `?? null` explicite : la RPC ne rend AUCUNE ligne pour un athlète
+           inactif ou supprimé, et un `undefined` interpolé écrirait
+           "undefined" à l'écran. Même piège que usePipelineCards:72. */
+        const cardMap = await fetchRecruiterAthleteCards(supabase, [id]);
+        const card = cardMap.get(id) ?? null;
+        const identityVisible = card?.identity_visible ?? false;
+
         setAthleteUserId((d.user_id as string | null) ?? null);
         const evals = d.evaluations as Record<string, unknown>[] | null;
         // Pick by rule (détaillée > simple, then most recent updated_at) —
@@ -521,8 +547,11 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
         const school = schoolRel as { name: string; region: string; city: string; type: string } | null;
 
         // Age from birth date
-        const birthDate = d.date_naissance as string | null;
-        const age = birthDate ? Math.floor((Date.now() - new Date(birthDate).getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : null;
+        /* L'âge vient de la RPC, DÉRIVÉ côté serveur. date_naissance n'est
+           jamais projetée à un recruteur — c'est elle qui décide du masquage
+           Loi 25, la livrer permettrait de recalculer ce que le masquage
+           protège. */
+        const age = card?.age ?? null;
 
         // Programme CÉGEP
         const progArr = (d.programme_cegep_vise as string[]) || [];
@@ -552,13 +581,23 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
         const mapped: AthleteProfileRecruiterView = {
           ...mockAthleteProfileFull,
           id: d.id as string,
-          firstName: d.first_name as string,
-          lastName: d.last_name as string,
-          photoUrl: (d.photo_url as string) || "",
+          // Identité : RIEN ne vient plus de `d`. Sous masquage le serveur
+          // rend ces quatre champs à NULL, et `?? ""` garde le contrat
+          // `string` du type sans jamais produire "null".
+          identityVisible,
+          firstName: card?.first_name ?? "",
+          lastName: card?.last_name ?? "",
+          photoUrl: card?.photo_url ?? "",
           isVerified: d.verified as boolean,
           lastValidation: (d.last_profile_validation as string) || null,
-          profileCompleteness: calculateCompletion(d as AthleteLike, (eval0 as EvalLike) || null, null).percentage,
-          jerseyNumber: (d.numero_jersey as string) || "",
+          /* Complétion : valeur SERVEUR, plus de recalcul client.
+             calculateCompletion() pondère photo_url, date_naissance (3) et
+             numero_jersey (3) — trois colonnes qui ne sont plus dans le
+             select. Le recalculer ici sous-estimerait tout profil vu par un
+             recruteur, d'un score d'autant plus faux que le profil est
+             complet. La RPC porte la valeur calculée sur la ligne entière. */
+          profileCompleteness: card?.profile_completion ?? (d.profile_completion as number) ?? 0,
+          jerseyNumber: card?.numero_jersey ?? "",
           graduationYear: (d.annee_diplomation as number) || 0,
           highlightVideoUrl: (d.video_faits_saillants_url as string) || "",
           hudlUrl: (d.hudl_url as string) || "",
@@ -934,6 +973,24 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
   const [pipelineStatus, setPipelineStatus] = useState<RecruitmentStatus>(initialTracking?.status || "none");
   const [showCelebration, setShowCelebration] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  /* Deux verrous distincts ouvrent le MÊME UpgradeModal : le processus de
+     recrutement et « Contacter ». Le titre était figé sur le premier, donc
+     l'ouvrir depuis le second annonçait la mauvaise fonctionnalité. */
+  const [upgradeFeatureTitle, setUpgradeFeatureTitle] = useState("Le processus de recrutement");
+
+  /* Le bouton « Contacter » reste VISIBLE en free et vend la mise à niveau.
+     Avant, `{canMessageCoach && …}` le faisait disparaître : un free ne
+     voyait pas la fonctionnalité, donc ne savait pas qu'elle existait ni
+     qu'elle s'achète. Un verrou visible convertit, un vide ne dit rien. */
+  const contactLocked = !canMessageCoach;
+  const handleContactClick = () => {
+    if (contactLocked) {
+      setUpgradeFeatureTitle("Contacter les athlètes et leurs coachs");
+      setShowUpgradeModal(true);
+      return;
+    }
+    setShowContactMenu(true);
+  };
   const [statusToast, setStatusToast] = useState<SuccessToastData | null>(null);
 
   /* Le stage est désormais PERSISTÉ (avant : setState local uniquement → tout
@@ -1141,7 +1198,7 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
                   ) : tier === "free" ? (
                     <button
                       type="button"
-                      onClick={() => setShowUpgradeModal(true)}
+                      onClick={() => { setUpgradeFeatureTitle("Le processus de recrutement"); setShowUpgradeModal(true); }}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#E63946]/10 border border-[#E63946]/30 text-[11px] font-bold text-[#E63946] hover:bg-[#E63946]/20 hover:border-[#E63946]/50 transition-all"
                     >
                       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -1689,15 +1746,20 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
       <div className="fixed bottom-0 left-0 right-0 z-40 md:bottom-6 md:left-auto md:right-6 md:w-auto">
         {/* Mobile — full-width bar */}
         <div className="md:hidden bg-[#111317]/95 backdrop-blur-sm border-t border-[#2D3748] px-4 py-3 flex items-center gap-2">
-          {canMessageCoach && (
-            <button type="button" onClick={() => setShowContactMenu(true)}
-              className="flex-1 flex items-center justify-center gap-2.5 bg-[#E63946] text-white rounded-xl px-6 py-3.5 font-head font-bold text-[14px] uppercase tracking-widest transition-all hover:bg-[#D42B22] active:scale-[0.98] shadow-[0_0_20px_rgba(230,57,70,0.3)]">
+          <button type="button" onClick={handleContactClick}
+            title={contactLocked ? "Contacter nécessite un abonnement Pro" : undefined}
+            className="flex-1 flex items-center justify-center gap-2.5 bg-[#E63946] text-white rounded-xl px-6 py-3.5 font-head font-bold text-[14px] uppercase tracking-widest transition-all hover:bg-[#D42B22] active:scale-[0.98] shadow-[0_0_20px_rgba(230,57,70,0.3)]">
+            {contactLocked ? (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0110 0v4" />
+              </svg>
+            ) : (
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                 <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" />
               </svg>
-              Contacter
-            </button>
-          )}
+            )}
+            Contacter
+          </button>
           <button type="button" onClick={toggleFav}
             disabled={favButtonDisabled}
             title={favButtonDisabled ? favDisabledTitle : (isFavorited ? "Retirer des favoris" : "Ajouter aux favoris")}
@@ -1716,15 +1778,20 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
         </div>
         {/* Desktop — floating pill */}
         <div className="hidden md:flex items-center gap-2">
-          {canMessageCoach && (
-            <button type="button" onClick={() => setShowContactMenu(true)}
-              className="flex items-center gap-2.5 bg-[#E63946] text-white rounded-xl px-8 py-4 font-head font-bold text-[14px] uppercase tracking-widest justify-center transition-all hover:bg-[#D42B22] hover:-translate-y-0.5 hover:shadow-[0_0_30px_rgba(230,57,70,0.4)] active:scale-[0.98] shadow-[0_4px_20px_rgba(230,57,70,0.3)]">
+          <button type="button" onClick={handleContactClick}
+            title={contactLocked ? "Contacter nécessite un abonnement Pro" : undefined}
+            className="flex items-center gap-2.5 bg-[#E63946] text-white rounded-xl px-8 py-4 font-head font-bold text-[14px] uppercase tracking-widest justify-center transition-all hover:bg-[#D42B22] hover:-translate-y-0.5 hover:shadow-[0_0_30px_rgba(230,57,70,0.4)] active:scale-[0.98] shadow-[0_4px_20px_rgba(230,57,70,0.3)]">
+            {contactLocked ? (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0110 0v4" />
+              </svg>
+            ) : (
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                 <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" />
               </svg>
-              Contacter
-            </button>
-          )}
+            )}
+            Contacter
+          </button>
           <button type="button" onClick={toggleFav}
             disabled={favButtonDisabled}
             className={`w-12 h-12 rounded-xl flex items-center justify-center border transition-all ${favButtonDisabled ? "cursor-not-allowed opacity-40" : "hover:-translate-y-0.5"} ${isFavorited ? "bg-[#E63946]/10 border-[#E63946]/30" : `bg-[#1A1D24] border-[#2D3748] ${favButtonDisabled ? "" : "hover:border-[#E63946]/30"}`}`}
@@ -1907,7 +1974,7 @@ export default function AthleteRecruiterProfileBody({ athleteId, viewerMode }: A
         onClose={() => setShowUpgradeModal(false)}
         role="recruteur"
         tierId="rec_pro"
-        lockedFeatureTitle="Le processus de recrutement"
+        lockedFeatureTitle={upgradeFeatureTitle}
         returnTo={typeof window !== "undefined" ? window.location.pathname : undefined}
       />
     </div>

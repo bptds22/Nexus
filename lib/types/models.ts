@@ -725,6 +725,20 @@ import type { DistinctionEntry } from "@/lib/config/badges";
 export interface AthleteProfileRecruiterView {
   // Identity (filtered — no email, phone, parent)
   id: string;
+  /**
+   * false = identité masquée par le SERVEUR (Loi 25 ou tier FREE).
+   *
+   * Décidé ligne par ligne dans recruiter_athlete_cards, jamais côté
+   * client : la règle dépend de la date de naissance et du consentement
+   * parental, deux colonnes qui ne sont jamais projetées à un recruteur.
+   * Quand c'est false, firstName/lastName/photoUrl/jerseyNumber arrivent
+   * vides — passer par displayFullName() et donner identityVisible aux
+   * composants AthletePhoto*, jamais d'initiales.
+   *
+   * Optionnel car les vues coach et les mocks ne portent pas la notion.
+   * Absent = pas de masquage (chemin coach).
+   */
+  identityVisible?: boolean;
   firstName: string;
   lastName: string;
   age: number;

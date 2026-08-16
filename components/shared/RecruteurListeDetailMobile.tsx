@@ -15,6 +15,7 @@ import { motion, AnimatePresence, useMotionValue, useTransform } from "framer-mo
 import FeatureGate from "@/components/subscription/FeatureGate";
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import { EmptyState as SharedEmptyState } from "@/components/mobile/EmptyState";
+import LockedIdentityPlaceholder from "@/components/shared/LockedIdentityPlaceholder";
 import { useListAthletes, type ListAthlete, type ListMetadata } from "@/lib/queries/recruiter/useListAthletes";
 import { useRemoveListMember } from "@/lib/queries/recruiter/useRemoveListMember";
 import { useDeleteList } from "@/lib/queries/recruiter/useDeleteList";
@@ -52,8 +53,12 @@ function ListAthleteCardMobile({
   // (x devient négatif). On affiche le bouton dans l'overlay et on l'opacifie
   // proportionnellement au déplacement.
   const removeOpacity = useTransform(x, [-REMOVE_THRESHOLD, -40, 0], [1, 0.5, 0]);
-  const fullName = `${athlete.firstName} ${athlete.lastName}`.trim() || "Athlète";
-  const [first, ...rest] = fullName.split(/\s+/);
+  // Résolu par displayFullName() dans le hook. L'interpolation manuelle
+  // rendait une chaîne vide sous identité réservée, rattrapée par un faux
+  // « Athlète » — un nom inventé pour cacher un nom absent.
+  const fullName = athlete.fullName;
+  const locked = !athlete.identityVisible;
+  const [first, ...rest] = `${athlete.firstName} ${athlete.lastName}`.trim().split(/\s+/);
   const statusConfig = athlete.recruitmentStatus
     ? getStatusConfig(athlete.recruitmentStatus as RecruitmentStatus)
     : null;
@@ -96,7 +101,14 @@ function ListAthleteCardMobile({
           style={{ height: 132 }}
         >
           {/* Photo bleed gauche 150px (canon 14.1) */}
-          {athlete.photoUrl ? (
+          {locked ? (
+            /* Sous identité réservée, PAS d'initiales : deux lettres
+               recoupées à l'école et à la position réidentifient. Le
+               placeholder partagé porte déjà la bonne sémantique. */
+            <div className="absolute left-0 top-0 bottom-0 w-[150px] z-0 pointer-events-none">
+              <LockedIdentityPlaceholder variant="fill" />
+            </div>
+          ) : athlete.photoUrl ? (
             <div className="absolute left-0 top-0 bottom-0 w-[150px] z-0 pointer-events-none">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -226,7 +238,8 @@ function AthleteNotesSheet({
   };
 
   const canSubmit = !!content.trim() && !addMut.isPending;
-  const fullName = athlete ? `${athlete.firstName} ${athlete.lastName}`.trim() : "";
+  // Déjà résolu par le hook — vide sous masquage si on l'interpolait ici.
+  const fullName = athlete?.fullName ?? "";
 
   return createPortal(
     <AnimatePresence>
@@ -711,7 +724,7 @@ function DetailInner({ listId }: { listId: string }) {
       });
       toast.success({
         message: "Retiré de la liste",
-        detail: `${a.firstName} ${a.lastName} reste dans tes favoris.`,
+        detail: `${a.fullName} reste dans tes favoris.`,
       });
     } catch (e) {
       const err = e as { message?: string };

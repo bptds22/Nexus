@@ -312,6 +312,8 @@ function SuggestionsPanel({ query, onItemTap }: { query: string; onItemTap: () =
                   subtitle={[a.position, a.sport, a.school].filter(Boolean).join(" · ") || "—"}
                   query={query}
                   onTap={onItemTap}
+                  identityVisible={a.identityVisible}
+                  lockedLabel={a.fullName}
                 />
               ))}
             </div>

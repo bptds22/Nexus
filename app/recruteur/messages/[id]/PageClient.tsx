@@ -4,6 +4,7 @@ import {  useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useDynamicParam } from "@/lib/platform/useDynamicParam";
 import { createClient } from "@/lib/supabase/client";
+import { fetchRecruiterAthleteCards, displayFullName } from "@/lib/queries/shared/recruiterAthleteCards";
 import { parseDistinctions } from "@/lib/config/badges";
 import { selectBestEvaluation } from "@/lib/evaluations/selectEvaluation";
 import CoachInfoCard from "@/components/recruteur/CoachInfoCard";
@@ -41,7 +42,11 @@ interface ThreadContext {
   coachPhone: string;
   athleteId: string;
   athleteName: string;
+  /** VIDE sous identité réservée — voir le contrat de ThreadData. Ne pas
+   *  redériver depuis athleteName, qui vaut « Identité réservée ». */
   athleteInitials: string;
+  /** Décision SERVEUR (identity_visible de la RPC). */
+  athleteIdentityVisible: boolean;
   athletePhotoUrl: string;
   athletePosition: string;
   athleteSport: string;
@@ -141,6 +146,13 @@ function RecruiterThreadPage() {
   const [reply, setReply] = useState("");
   const [userId, setUserId] = useState("");
   const [loading, setLoading] = useState(true);
+  /* Échec de chargement — distinct de « rien à afficher ».
+     Avant, load() n'avait NI try/catch NI .catch() et setLoading(false)
+     était sa toute dernière instruction : n'importe quel throw en cours de
+     route (le temps 2 en lève un sur erreur RPC) laissait la page sur
+     « Chargement… » pour toujours, avec un rejet de promesse non géré que
+     personne ne voit. Un échec doit se dire, pas se figer. */
+  const [loadError, setLoadError] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -157,8 +169,8 @@ function RecruiterThreadPage() {
           id, conversation_type, status, recruiter_id, coach_id, athlete_id, created_at,
           coach:users!coach_id(id, first_name, last_name, avatar_url, email, phone, schools!school_id(name, region)),
           athlete:athletes!athlete_id(
-            id, first_name, last_name, photo_url, verified, cote_globale_entraineur,
-            annee_diplomation, numero_jersey, recruitment_status, committed_school_id, open_to_offers,
+            id, verified, cote_globale_entraineur,
+            annee_diplomation, recruitment_status, committed_school_id, open_to_offers,
             moyenne_generale, programme_cegep_vise, pret_changer_region, ouvert_cegep_prive, ouvert_cegep_anglophone,
             sports!sport_id(nom),
             positions!position_id(nom, abreviation),
@@ -193,10 +205,23 @@ function RecruiterThreadPage() {
         // droppait silencieusement le format objet.
         const distinctions: string[] = parseDistinctions(eval0?.distinctions).map((d) => d.badge);
 
+        /* Temps 2 — l'identité, projetée par le serveur.
+           Le reste de l'athlète (GPA, programmes, ouvert_*) RESTE dans
+           l'embed : la RPC ne projette pas ces colonnes, elle ne les expose
+           que comme filtres. Même partage qu'au profil (surface 1).
+           Le coach reste en embed `users` : ce n'est pas `athletes`, la
+           projection Loi 25 ne le concerne pas. */
+        const athleteId = (conv.athlete_id as string) || "";
+        const card = athleteId
+          ? (await fetchRecruiterAthleteCards(supabase, [athleteId])).get(athleteId) ?? null
+          : null;
+        const identityVisible = card?.identity_visible ?? false;
+
         const cf = (coach?.first_name as string) || "";
         const cl = (coach?.last_name as string) || "";
-        const af = (athlete?.first_name as string) || "";
-        const al = (athlete?.last_name as string) || "";
+        // Vides sous masquage — d'où des initiales vides, volontairement.
+        const af = card?.first_name ?? "";
+        const al = card?.last_name ?? "";
 
         // Normalize programme_cegep_vise JSONB: accept array of strings or legacy scalar
         const rawProg: unknown = athlete?.programme_cegep_vise;
@@ -215,10 +240,13 @@ function RecruiterThreadPage() {
           coachRegion: coachSchool?.region || "",
           coachEmail: (coach?.email as string) || "",
           coachPhone: (coach?.phone as string) || "",
-          athleteId: (athlete?.id as string) || "",
-          athleteName: `${af} ${al}`.trim(),
+          athleteId,
+          // displayFullName porte les trois cas (carte absente, masquée, nom
+          // partiel) — jamais d'interpolation qui donnerait "null null".
+          athleteName: displayFullName(card),
           athleteInitials: `${af[0] || ""}${al[0] || ""}`.toUpperCase(),
-          athletePhotoUrl: (athlete?.photo_url as string) || "",
+          athleteIdentityVisible: identityVisible,
+          athletePhotoUrl: card?.photo_url ?? "",
           athletePosition: pos?.abreviation || "",
           athleteSport: sport?.nom || "",
           athleteVerified: !!(athlete?.verified),
@@ -226,7 +254,7 @@ function RecruiterThreadPage() {
           athleteSchool: athSchool?.name || "",
           athleteRegion: athSchool?.region || "",
           athleteGradYear: (athlete?.annee_diplomation as number) || 0,
-          athleteJersey: athlete?.numero_jersey ? String(athlete.numero_jersey) : "",
+          athleteJersey: card?.numero_jersey ? String(card.numero_jersey) : "",
           athleteRecruitmentStatus: (athlete?.recruitment_status as string) || "OUVERT",
           athleteCommittedSchool: committedSchool?.name || "",
           athleteOpenToOffers: (athlete?.open_to_offers as boolean | null) ?? null,
@@ -260,10 +288,13 @@ function RecruiterThreadPage() {
 
       // Mark as read
       await supabase.from("conversations").update({ unread_count: 0 }).eq("id", id);
-
-      setLoading(false);
     }
-    load();
+    load()
+      .catch((e: unknown) => {
+        console.error("[messages/[id]] chargement du fil échoué", e);
+        setLoadError(e instanceof Error ? e.message : String(e));
+      })
+      .finally(() => setLoading(false));
   }, [id]);
 
   useEffect(() => {
@@ -287,6 +318,19 @@ function RecruiterThreadPage() {
   }
 
   if (loading) return <div className="px-6 sm:px-10 py-8 max-w-[1280px] mx-auto text-[#6b7280]">Chargement...</div>;
+
+  /* Un échec technique n'est PAS « conversation introuvable ». Les
+     confondre envoyait le recruteur chercher une conversation supprimée
+     alors que c'est la requête qui a cassé. */
+  if (loadError) {
+    return (
+      <div className="px-6 sm:px-10 py-8 max-w-[1280px] mx-auto">
+        <p className="text-[14px] text-[#EF4444] font-semibold">Impossible de charger cette conversation.</p>
+        <p className="text-[13px] text-[#6b7280] mt-1">Réessaie dans un instant. Si ça persiste, signale-le.</p>
+        <Link href="/recruteur/messages" className="text-[13px] text-[#22C55E] hover:underline mt-3 inline-block">Retour aux messages</Link>
+      </div>
+    );
+  }
 
   if (!ctx) {
     return (
@@ -340,6 +384,27 @@ function RecruiterThreadPage() {
         {/* Messages Column */}
         <div className="flex-1 flex flex-col min-w-0">
           <div className="flex-1 overflow-y-auto space-y-4 pb-4" style={{ maxHeight: "calc(100vh - 220px)" }}>
+            {/* ÉTAT VIDE — il manquait, et son absence a été lue comme une
+                panne à la passe preview : trois des neuf conversations du
+                jeu de test n'ont aucun message, et le fil ne rendait alors
+                qu'un header et un composeur séparés par un trou noir. Rien
+                ne distinguait « conversation neuve » de « chargement
+                cassé ». */}
+            {messageGroups.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <div className="w-14 h-14 rounded-full bg-[#1A1D24] border border-[#2D3748] flex items-center justify-center mb-4">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4a4d56" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+                  </svg>
+                </div>
+                <p className="text-[14px] font-semibold text-[#9CA3AF]">Aucun message pour l&apos;instant</p>
+                <p className="text-[13px] text-[#6b7280] mt-1">
+                  {ctx.isDirect
+                    ? "Écris le premier message pour lancer la conversation."
+                    : `Écris le premier message à ${ctx.coachName || "ce coach"} pour lancer la conversation.`}
+                </p>
+              </div>
+            )}
             {messageGroups.map((group, gi) => (
               <div key={gi}>
                 <DaySeparator date={group.date} />
@@ -372,11 +437,17 @@ function RecruiterThreadPage() {
           </div>
         </div>
 
-        {/* Sidebar — context cards ONLY for about-athlete (RECRUTEUR_COACH)
-            threads. A direct RECRUTEUR_ATHLETE thread has no coach card and no
-            "athlète concerné" panel (the athlete is the counterparty, not a subject). */}
-        {!ctx.isDirect && (
+        {/* Barre latérale — TOUJOURS rendue, quel que soit le type de fil.
+            Elle était réservée aux fils RECRUTEUR_COACH, sur le raisonnement
+            que dans un fil direct « l'athlète est l'interlocuteur, pas un
+            sujet ». En pratique ça privait le recruteur de tout contexte
+            exactement là où il en a le plus besoin : il écrit à l'athlète
+            sans voir sa position, sa cote, son école ni son profil. Le
+            panneau coach, lui, reste propre aux fils coach — un fil direct
+            n'a pas de coach à décrire. */}
         <div className="xl:w-[340px] shrink-0 space-y-4 mt-6 xl:mt-0">
+          {!ctx.isDirect && (
+          <>
           {/* ── Coach card ─────────────────────────────── */}
           <CoachInfoCard
             coachId={ctx.coachId}
@@ -390,12 +461,21 @@ function RecruiterThreadPage() {
             athleteId={ctx.athleteId}
             athleteName={ctx.athleteName}
           />
+          </>
+          )}
 
           {/* ── Athlete card ──────────────────────────────── */}
+          {/* Gardé sur athleteId : sans lui le CTA pointerait sur
+              /recruteur/athletes/ tout court. */}
+          {ctx.athleteId && (
           <AthleteInfoCard
+            /* Dans un fil direct l'athlète EST l'interlocuteur : le libellé
+               « Athlète concerné » y désignerait un tiers qui n'existe pas. */
+            title={ctx.isDirect ? "Interlocuteur" : undefined}
             athleteId={ctx.athleteId}
             athleteName={ctx.athleteName}
             athleteInitials={ctx.athleteInitials}
+            athleteIdentityVisible={ctx.athleteIdentityVisible}
             athletePhotoUrl={ctx.athletePhotoUrl || undefined}
             athleteJersey={ctx.athleteJersey || undefined}
             athleteSport={ctx.athleteSport || undefined}
@@ -415,8 +495,8 @@ function RecruiterThreadPage() {
             athleteOpenAnglophone={ctx.athleteOpenAnglophone}
             athleteDistinctions={ctx.athleteDistinctions}
           />
+          )}
         </div>
-        )}
       </div>
 
     </div>

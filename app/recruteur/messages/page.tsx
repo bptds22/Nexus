@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import RecruteurMessagesThread from "./[id]/PageClient";
 import StarRating from "@/components/ui/StarRating";
+import LockedIdentityPlaceholder from "@/components/shared/LockedIdentityPlaceholder";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
 import type { GlobalRecruitmentStatus } from "@/lib/types/models";
 import { useConversations, type ThreadData } from "@/lib/queries/recruiter/useConversations";
@@ -108,8 +109,22 @@ function ThreadCard({ thread: t }: { thread: ThreadData }) {
       {/* Athlete context — ONLY for about-athlete (RECRUTEUR_COACH) threads. */}
       {!isDirect && (
         <div className="hidden md:flex items-center gap-2 shrink-0 w-[260px]">
-          <div className="w-8 h-8 rounded-full bg-[#111317] border border-[#2D3748] flex items-center justify-center shrink-0">
-            <span className="text-[9px] font-bold text-[#6b7280]">{t.athleteInitials}</span>
+          {/* TROIS états, pas deux — c'est le bug de la preview :
+              · identité visible      -> initiales ;
+              · identité VERROUILLÉE  -> placeholder (Loi 25 / tier FREE) ;
+              · carte ABSENTE         -> tiret neutre. L'athlète n'est pas
+                masqué, il est hors périmètre de la RPC (status <> ACTIF).
+                Lui coller le cadenas mentait sur la cause.
+              `circle`, pas `fill` : ce conteneur n'est pas positionné, et un
+              `fill` s'y échappe jusqu'à la page (cf. LockedIdentityPlaceholder). */}
+          <div className="w-8 h-8 rounded-full overflow-hidden bg-[#111317] border border-[#2D3748] flex items-center justify-center shrink-0">
+            {t.athleteIdentityVisible ? (
+              <span className="text-[9px] font-bold text-[#6b7280]">{t.athleteInitials}</span>
+            ) : t.athleteCardMissing ? (
+              <span className="text-[11px] font-bold text-[#4a4d56]">—</span>
+            ) : (
+              <LockedIdentityPlaceholder variant="circle" size={32} />
+            )}
           </div>
           <div className="min-w-0">
             <span className="text-[13px] font-semibold text-[#9CA3AF] truncate block">{t.athleteName}</span>

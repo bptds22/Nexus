@@ -10,6 +10,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
+import { fetchRecruiterAthleteCards, displayFullName } from "@/lib/queries/shared/recruiterAthleteCards";
 
 export interface ListMetadata {
   id: string;
@@ -24,6 +25,11 @@ export interface ListAthlete {
   /** id de l'athlète (pour navigation profil + UNIQUE pair clé) */
   athleteId: string;
   addedAt: string;
+  /** Décision SERVEUR (identity_visible de la RPC). false = nom, photo et
+   *  dossard sont ABSENTS de la réponse, pas juste cachés à l'écran. */
+  identityVisible: boolean;
+  /** Libellé déjà résolu — « Identité réservée » sous masquage. */
+  fullName: string;
   firstName: string;
   lastName: string;
   photoUrl: string | null;
@@ -52,6 +58,13 @@ export interface UseListAthletesResult {
   };
 }
 
+/* La relation SEULE. L'embed `athletes(...)` a disparu : c'était une lecture
+   directe de la table, exactement ce que le verrou RLS doit fermer, et elle
+   ne pouvait appliquer aucune projection Loi 25. Il ne reste que le lien.
+
+   AthleteJoin et pickOne() sont partis avec lui — la RPC projette à plat,
+   il n'y a plus d'embed to-one à déballer (PostgREST le rendait tantôt
+   objet, tantôt tableau à un élément selon la forme du select). */
 interface ListRow {
   id: string;
   name: string;
@@ -61,30 +74,7 @@ interface ListRow {
     id: string;
     added_at: string;
     athlete_id: string;
-    athletes:
-      | AthleteJoin
-      | AthleteJoin[]
-      | null;
   }> | null;
-}
-
-interface AthleteJoin {
-  first_name: string | null;
-  last_name: string | null;
-  photo_url: string | null;
-  numero_jersey: string | number | null;
-  annee_diplomation: number | null;
-  verified: boolean | null;
-  cote_globale_entraineur: number | null;
-  statut_recrutement_override: string | null;
-  sports: { nom: string | null } | { nom: string | null }[] | null;
-  positions: { abreviation: string | null } | { abreviation: string | null }[] | null;
-  schools: { name: string | null } | { name: string | null }[] | null;
-}
-
-function pickOne<T>(v: T | T[] | null | undefined): T | null {
-  if (!v) return null;
-  return Array.isArray(v) ? (v[0] ?? null) : v;
 }
 
 function computeStats(athletes: ListAthlete[]) {
@@ -113,20 +103,13 @@ export function useListAthletes(listId: string | null): UseListAthletesResult {
     queryFn: async () => {
       if (!listId) return null;
       const supabase = createClient();
+
+      /* Temps 1 — la relation SEULE (embed athletes retiré). */
       const { data, error } = await supabase
         .from("recruiter_lists")
         .select(`
           id, name, color, description,
-          recruiter_list_members(
-            id, added_at, athlete_id,
-            athletes(
-              first_name, last_name, photo_url, numero_jersey, annee_diplomation,
-              verified, cote_globale_entraineur, statut_recrutement_override,
-              sports!sport_id(nom),
-              positions!position_id(abreviation),
-              schools!school_id(name)
-            )
-          )
+          recruiter_list_members(id, added_at, athlete_id)
         `)
         .eq("id", listId)
         .order("added_at", { foreignTable: "recruiter_list_members", ascending: false })
@@ -140,28 +123,42 @@ export function useListAthletes(listId: string | null): UseListAthletesResult {
         color: row.color || "#E63946",
         description: row.description,
       };
-      const athletes: ListAthlete[] = (row.recruiter_list_members ?? [])
-        .filter((m) => !!m.athletes)
+
+      const members = row.recruiter_list_members ?? [];
+
+      /* Temps 2 — les cartes projetées, résolues par lot. */
+      const cardMap = await fetchRecruiterAthleteCards(
+        supabase,
+        members.map((m) => m.athlete_id),
+      );
+
+      const athletes: ListAthlete[] = members
+        // La RPC ne rend AUCUNE ligne pour un athlète inactif ou supprimé.
+        // On retire le membre plutôt que d'afficher une carte vide — c'est
+        // ce que faisait déjà le `.filter(m => !!m.athletes)` sur l'embed,
+        // qui tombait à null dans le même cas.
+        .filter((m) => cardMap.has(m.athlete_id))
         .map((m): ListAthlete => {
-          const ath = pickOne(m.athletes) as AthleteJoin;
-          const sport = pickOne(ath.sports);
-          const pos = pickOne(ath.positions);
-          const school = pickOne(ath.schools);
+          const card = cardMap.get(m.athlete_id)!;
           return {
             memberId: m.id,
             athleteId: m.athlete_id,
             addedAt: m.added_at,
-            firstName: ath.first_name ?? "",
-            lastName: ath.last_name ?? "",
-            photoUrl: ath.photo_url,
-            jersey: ath.numero_jersey != null && ath.numero_jersey !== "" ? String(ath.numero_jersey) : null,
-            sportName: sport?.nom ?? null,
-            positionAbbr: pos?.abreviation ?? null,
-            schoolName: school?.name ?? null,
-            graduationYear: ath.annee_diplomation,
-            coachRating: Number(ath.cote_globale_entraineur ?? 0),
-            isVerified: ath.verified === true,
-            recruitmentStatus: ath.statut_recrutement_override,
+            identityVisible: card.identity_visible,
+            fullName: displayFullName(card),
+            // Sous masquage le serveur rend NULL : `?? ""` garde le contrat
+            // `string` sans jamais afficher "null".
+            firstName: card.first_name ?? "",
+            lastName: card.last_name ?? "",
+            photoUrl: card.photo_url,
+            jersey: card.numero_jersey != null && card.numero_jersey !== "" ? String(card.numero_jersey) : null,
+            sportName: card.sport_nom,
+            positionAbbr: card.position_abbr,
+            schoolName: card.school_name,
+            graduationYear: card.annee_diplomation,
+            coachRating: Number(card.cote_globale ?? 0),
+            isVerified: card.verified === true,
+            recruitmentStatus: card.statut_recrutement_override,
           };
         });
       return { list, athletes };

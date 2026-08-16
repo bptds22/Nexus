@@ -4,6 +4,8 @@ import { useState, useEffect, useMemo, useRef, useCallback, Suspense } from "rea
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { fetchRecruiterAthleteCards, displayFullName } from "@/lib/queries/shared/recruiterAthleteCards";
+import LockedIdentityPlaceholder from "@/components/shared/LockedIdentityPlaceholder";
 import { parseDistinctions } from "@/lib/config/badges";
 import { selectBestEvaluation } from "@/lib/evaluations/selectEvaluation";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
@@ -28,6 +30,14 @@ const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
 interface SelectableAthlete {
   id: string;
+  /** Décision SERVEUR (identity_visible de la RPC). false = nom, photo et
+   *  dossard sont ABSENTS de la réponse, pas juste cachés à l'écran. */
+  identityVisible: boolean;
+  /** Déjà résolu par displayFullName() — « Identité réservée » sous
+   *  masquage. Ne jamais reconstruire par interpolation, ni en dériver
+   *  d'initiales : deux lettres recoupées à l'école et à la position
+   *  réidentifient. */
+  fullName: string;
   firstName: string;
   lastName: string;
   position: string;
@@ -91,6 +101,13 @@ function AthleteCombobox({
     if (query.trim().length < 1) return athletes;
     const q = query.toLowerCase();
     return athletes.filter(a =>
+      // Volontairement sur firstName/lastName, pas fullName : sous masquage
+      // les deux sont vides, donc un athlète à identité réservée ne répond à
+      // AUCUNE recherche par nom. Passer par fullName le ferait remonter en
+      // tapant « identité ». Position et école restent cherchables — ce ne
+      // sont pas de l'identité. Filtre 100 % CLIENT sur un lot déjà projeté :
+      // aucune divulgation possible, contrairement au ILIKE serveur de
+      // l'autocomplete.
       `${a.firstName} ${a.lastName}`.toLowerCase().includes(q) ||
       a.position.toLowerCase().includes(q) ||
       a.school.toLowerCase().includes(q)
@@ -108,11 +125,19 @@ function AthleteCombobox({
   if (selected) {
     return (
       <div className="flex items-center gap-3 bg-[#13151a] border border-[#2D3748] rounded-lg px-4 py-3">
-        <div className="w-9 h-9 rounded-full bg-[#E63946]/20 border border-[#E63946]/40 flex items-center justify-center shrink-0">
-          <span className="text-[11px] font-bold text-[#E63946]">{selected.firstName[0]}{selected.lastName[0]}</span>
+        {/* Sous masquage, firstName/lastName sont vides : la pastille
+            d'initiales serait creuse. On rend le placeholder partagé.
+            `circle` et non `fill` : ce conteneur n'est pas positionné, un
+            `fill` s'y échapperait jusqu'à la page. */}
+        <div className="w-9 h-9 rounded-full bg-[#E63946]/20 border border-[#E63946]/40 flex items-center justify-center shrink-0 overflow-hidden">
+          {selected.identityVisible ? (
+            <span className="text-[11px] font-bold text-[#E63946]">{selected.firstName[0]}{selected.lastName[0]}</span>
+          ) : (
+            <LockedIdentityPlaceholder variant="circle" size={36} />
+          )}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-[14px] font-bold text-white truncate">{selected.firstName} {selected.lastName}</p>
+          <p className="text-[14px] font-bold text-white truncate">{selected.fullName}</p>
           <p className="text-[12px] text-[#6b7280] truncate">{selected.position} · {selected.school}</p>
         </div>
         <button type="button" onClick={onClear} className="w-7 h-7 rounded-full bg-[#2D3748] hover:bg-[#374151] flex items-center justify-center transition-colors shrink-0" aria-label="Retirer">
@@ -134,12 +159,16 @@ function AthleteCombobox({
             <div className="px-4 py-6 text-center text-[13px] text-[#6b7280]">Aucun athlète trouvé</div>
           ) : results.map(a => (
             <button key={a.id} type="button" onClick={() => { onSelect(a); setQuery(""); setOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#252D3A] transition-colors text-left">
-              <div className="w-8 h-8 rounded-full bg-[#2D3748] flex items-center justify-center shrink-0">
-                <span className="text-[10px] font-bold text-[#9CA3AF]">{a.firstName[0]}{a.lastName[0]}</span>
+              <div className="w-8 h-8 rounded-full bg-[#2D3748] flex items-center justify-center shrink-0 overflow-hidden">
+                {a.identityVisible ? (
+                  <span className="text-[10px] font-bold text-[#9CA3AF]">{a.firstName[0]}{a.lastName[0]}</span>
+                ) : (
+                  <LockedIdentityPlaceholder variant="circle" size={32} />
+                )}
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5">
-                  <p className="text-[13px] font-semibold text-white truncate">{a.firstName} {a.lastName}</p>
+                  <p className="text-[13px] font-semibold text-white truncate">{a.fullName}</p>
                   {a.jersey && <span className="text-[11px] font-black text-[#E63946]">#{a.jersey}</span>}
                   {a.position && <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-[#2D3748] text-[#c0c4cc] text-[10px] font-bold uppercase">{a.position}</span>}
                 </div>
@@ -214,8 +243,8 @@ function NouveauMessageContent() {
         .select(`
           athlete_id,
           athletes!athlete_id(
-            id, first_name, last_name, photo_url, verified, coach_id,
-            numero_jersey, recruitment_status, cote_globale_entraineur,
+            id, verified, coach_id,
+            recruitment_status, cote_globale_entraineur,
             annee_diplomation, committed_school_id, open_to_offers,
             moyenne_generale, programme_cegep_vise,
             pret_changer_region, ouvert_cegep_prive, ouvert_cegep_anglophone,
@@ -230,10 +259,25 @@ function NouveauMessageContent() {
         .eq("recruiter_id", user.id);
 
       if (pipeData) {
+        /* Temps 2 — l'identité, projetée par le serveur, pour tout le lot.
+           Le RESTE de l'athlète (GPA, programmes, ouvert_*) reste dans
+           l'embed : la RPC ne projette pas ces colonnes, elle ne les expose
+           que comme filtres, et AthleteInfoCard les affiche vraiment.
+           Même partage qu'au profil (surface 1) et au fil (surface 7). */
+        const pipeCards = await fetchRecruiterAthleteCards(
+          supabase,
+          (pipeData as Record<string, unknown>[])
+            .map((f) => f.athlete_id as string)
+            .filter(Boolean),
+        );
+
         const mapped: SelectableAthlete[] = pipeData.map((f: Record<string, unknown>) => {
           const aRaw = f.athletes;
           const a = (Array.isArray(aRaw) ? aRaw[0] : aRaw) as Record<string, unknown> | null;
           if (!a) return null;
+          // `?? null` explicite : la RPC ne rend rien pour un athlète inactif
+          // ou supprimé, et un `undefined` interpolé écrirait "undefined".
+          const card = pipeCards.get(a.id as string) ?? null;
           const posRel = a.positions;
           const pos = (Array.isArray(posRel) ? posRel[0] : posRel) as { abreviation?: string } | null;
           const schoolRel = a.schools;
@@ -256,11 +300,15 @@ function NouveauMessageContent() {
             : (typeof rawProg === "string" && rawProg !== "" ? [rawProg] : []);
           return {
             id: a.id as string,
-            firstName: (a.first_name as string) || "",
-            lastName: (a.last_name as string) || "",
+            identityVisible: card?.identity_visible ?? false,
+            fullName: displayFullName(card),
+            // Sous masquage le serveur rend NULL : `?? ""` garde le contrat
+            // `string` sans jamais afficher "null".
+            firstName: card?.first_name ?? "",
+            lastName: card?.last_name ?? "",
             position: pos?.abreviation || "",
             school: school?.name || "",
-            jersey: a.numero_jersey != null && a.numero_jersey !== "" ? String(a.numero_jersey) : "",
+            jersey: card?.numero_jersey ?? "",
             recruitmentStatus: (a.recruitment_status as string) || "OUVERT",
             stars: (a.cote_globale_entraineur as number) || 0,
             isVerified: !!(a.verified),
@@ -271,7 +319,7 @@ function NouveauMessageContent() {
             coachEmail: (coach?.email as string) || "",
             coachPhone: (coach?.phone as string) || "",
             coachRegion: coachSchoolObj?.region || "",
-            photoUrl: (a.photo_url as string) || "",
+            photoUrl: card?.photo_url ?? "",
             sport: sportObj?.nom || "",
             gradYear: (a.annee_diplomation as number) || 0,
             committedSchool: committedSchoolObj?.name || "",
@@ -296,8 +344,8 @@ function NouveauMessageContent() {
             const { data: directAthlete } = await supabase
               .from("athletes")
               .select(`
-                id, first_name, last_name, photo_url, verified, coach_id,
-                numero_jersey, recruitment_status, cote_globale_entraineur,
+                id, verified, coach_id,
+                recruitment_status, cote_globale_entraineur,
                 annee_diplomation, committed_school_id, open_to_offers,
                 moyenne_generale, programme_cegep_vise,
                 pret_changer_region, ouvert_cegep_prive, ouvert_cegep_anglophone,
@@ -311,6 +359,12 @@ function NouveauMessageContent() {
               .eq("id", athleteId)
               .single();
             if (directAthlete) {
+              /* Temps 2 — même règle que ci-dessus. Cette lecture est une
+                 pré-sélection PAR ID (athlete= dans l'URL), pas une
+                 recherche : c'est donc recruiter_athlete_cards, pas la RPC
+                 de recherche. */
+              const directCard =
+                (await fetchRecruiterAthleteCards(supabase, [athleteId])).get(athleteId) ?? null;
               const posRel = (directAthlete as any).positions;
               const pos = (Array.isArray(posRel) ? posRel[0] : posRel) as { abreviation?: string } | null;
               const schoolRel = (directAthlete as any).schools;
@@ -333,11 +387,13 @@ function NouveauMessageContent() {
                 : (typeof directRawProg === "string" && directRawProg !== "" ? [directRawProg] : []);
               found = {
                 id: directAthlete.id as string,
-                firstName: (directAthlete.first_name as string) || "",
-                lastName: (directAthlete.last_name as string) || "",
+                identityVisible: directCard?.identity_visible ?? false,
+                fullName: displayFullName(directCard),
+                firstName: directCard?.first_name ?? "",
+                lastName: directCard?.last_name ?? "",
                 position: pos?.abreviation || "",
                 school: school?.name || "",
-                jersey: directAthlete.numero_jersey != null ? String(directAthlete.numero_jersey) : "",
+                jersey: directCard?.numero_jersey ?? "",
                 recruitmentStatus: (directAthlete.recruitment_status as string) || "OUVERT",
                 stars: (directAthlete.cote_globale_entraineur as number) || 0,
                 isVerified: !!(directAthlete.verified),
@@ -348,7 +404,7 @@ function NouveauMessageContent() {
                 coachEmail: ((coach as Record<string, unknown>)?.email as string) || "",
                 coachPhone: ((coach as Record<string, unknown>)?.phone as string) || "",
                 coachRegion: directCoachSchoolObj?.region || "",
-                photoUrl: ((directAthlete as Record<string, unknown>)?.photo_url as string) || "",
+                photoUrl: directCard?.photo_url ?? "",
                 sport: directSportObj?.nom || "",
                 gradYear: ((directAthlete as Record<string, unknown>)?.annee_diplomation as number) || 0,
                 committedSchool: directCommittedSchoolObj?.name || "",
@@ -382,7 +438,7 @@ function NouveauMessageContent() {
 
 Je suis ${recruiterName.first || (profile?.first_name as string) || ""} ${recruiterName.last || (profile?.last_name as string) || ""}, recruteur au ${school?.name || recruiterName.school || ""}.
 
-J'ai consulté le profil de ${a.firstName} ${a.lastName} (${a.position}) et j'aimerais discuter de son avenir sportif au niveau collégial.
+J'ai consulté le profil de ${a.fullName} (${a.position}) et j'aimerais discuter de son avenir sportif au niveau collégial.
 
 [Votre message personnalisé ici]
 
@@ -555,8 +611,9 @@ ${recruiterName.first || (profile?.first_name as string) || ""} ${recruiterName.
               <>
                 <AthleteInfoCard
                   athleteId={selectedAthlete.id}
-                  athleteName={`${selectedAthlete.firstName} ${selectedAthlete.lastName}`.trim()}
+                  athleteName={selectedAthlete.fullName}
                   athleteInitials={`${selectedAthlete.firstName[0] || ""}${selectedAthlete.lastName[0] || ""}`.toUpperCase()}
+                  athleteIdentityVisible={selectedAthlete.identityVisible}
                   athletePhotoUrl={selectedAthlete.photoUrl || undefined}
                   athleteJersey={selectedAthlete.jersey || undefined}
                   athleteSport={selectedAthlete.sport || undefined}
@@ -588,7 +645,7 @@ ${recruiterName.first || (profile?.first_name as string) || ""} ${recruiterName.
                   coachEmail={selectedAthlete.coachEmail || undefined}
                   coachPhone={selectedAthlete.coachPhone || undefined}
                   athleteId={selectedAthlete.id}
-                  athleteName={`${selectedAthlete.firstName} ${selectedAthlete.lastName}`.trim()}
+                  athleteName={selectedAthlete.fullName}
                 />
               </>
             ) : (

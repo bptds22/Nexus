@@ -11,6 +11,7 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { fetchRecruiterAthleteCards, LOCKED_NAME_LABEL } from "@/lib/queries/shared/recruiterAthleteCards";
 import { findOrCreateAthleteCoachConversation } from "@/lib/queries/messaging/createAthleteCoachConversation";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import { mockAthleteProfileFull } from "@/lib/mock/athleteProfileRecruiter";
@@ -189,6 +190,9 @@ function positionAbbr(pos: string): string {
     cardRevealed: contrôle l'animation d'arrivée propre (opacity+scale) — sans glitch latéral.
     photoParallaxY: décalage Y appliqué sur la photo pour effet parallax subtil au scroll. */
 function PlayerCardMobile({ a, isFree, starsRevealed = 5, cardRevealed = true, photoParallaxY = 0, layoutIdPrefix = "athlete-photo" }: { a: AthleteProfileRecruiterView; isFree: boolean; starsRevealed?: number; cardRevealed?: boolean; photoParallaxY?: number; layoutIdPrefix?: string }) {
+  // `isFree` reste pour les sections GATÉES PAR TIER. L'identité, elle, vient
+  // du serveur — voir AthleteRecruiterProfileBody, même règle.
+  const locked = a.identityVisible === false;
   const ratingValue = a.overallRating;
   const posAbbr = positionAbbr(a.primaryPosition);
   const sportKey = SPORT_NAME_MAP[a.primarySport];
@@ -267,13 +271,22 @@ function PlayerCardMobile({ a, isFree, starsRevealed = 5, cardRevealed = true, p
               photoUrl={a.photoUrl}
               firstName={a.firstName}
               lastName={a.lastName}
+              identityVisible={a.identityVisible}
               className="object-[center_15%]"
             />
           </div>
           <div className="absolute bottom-0 left-0 right-0 h-1/2 z-[2]" style={{ background: 'linear-gradient(to top, rgba(11,18,32,0.97) 0%, rgba(11,18,32,0.7) 35%, transparent 100%)' }} />
-          <div className={`absolute bottom-4 left-4 z-[3]${isFree ? " select-none pointer-events-none blur-[5px]" : ""}`}>
-            <p style={{ fontFamily: 'var(--font-outfit), sans-serif', fontSize: 26, fontWeight: 900, color: '#fff', letterSpacing: '0.04em', lineHeight: 1, textTransform: 'uppercase' }}>{isFree ? "Prénom" : a.firstName}</p>
-            <p style={{ fontFamily: 'var(--font-outfit), sans-serif', fontSize: 26, fontWeight: 900, color: '#fff', letterSpacing: '0.04em', lineHeight: 1, textTransform: 'uppercase' }}>{isFree ? "Nom" : a.lastName}</p>
+          {/* Plus de flou CSS sur un nom présent dans le DOM : sous identité
+              réservée le serveur n'envoie rien. Voir le desktop, même règle. */}
+          <div className="absolute bottom-4 left-4 z-[3]">
+            {locked ? (
+              <p style={{ fontFamily: 'var(--font-outfit), sans-serif', fontSize: 20, fontWeight: 900, color: '#9CA3AF', letterSpacing: '0.04em', lineHeight: 1.1, textTransform: 'uppercase' }}>{LOCKED_NAME_LABEL}</p>
+            ) : (
+              <>
+                <p style={{ fontFamily: 'var(--font-outfit), sans-serif', fontSize: 26, fontWeight: 900, color: '#fff', letterSpacing: '0.04em', lineHeight: 1, textTransform: 'uppercase' }}>{a.firstName}</p>
+                <p style={{ fontFamily: 'var(--font-outfit), sans-serif', fontSize: 26, fontWeight: 900, color: '#fff', letterSpacing: '0.04em', lineHeight: 1, textTransform: 'uppercase' }}>{a.lastName}</p>
+              </>
+            )}
           </div>
         </div>
 
@@ -386,10 +399,14 @@ function HeroMiniAvatar({ a, isFree }: { a: AthleteProfileRecruiterView; isFree:
   const badgeActive = a.isVerified && !isValidationExpired({ verified: !!a.isVerified, last_profile_validation: a.lastValidation ?? null });
   return (
     <div className="relative w-[56px] h-[56px] rounded-2xl overflow-hidden flex-shrink-0 border border-white/10 bg-[#2F3440]">
+      {/* identityVisible pilote le placeholder verrouillé. Les initiales ne
+          sont PAS un repli acceptable sous masquage : deux lettres recoupées
+          à l'école et à la position réidentifient. */}
       <AthletePhotoFill
         photoUrl={a.photoUrl}
-        firstName={isFree ? "" : a.firstName}
-        lastName={isFree ? "" : a.lastName}
+        firstName={a.firstName}
+        lastName={a.lastName}
+        identityVisible={a.identityVisible}
         className={`object-[center_15%]${isFree ? " blur-[5px]" : ""}`}
       />
       {badgeActive && (
@@ -862,21 +879,33 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
     // load. The athletes SELECT runs under the "athletes can read own
     // profile" RLS policy when the caller is the athlete themselves
     // (USING user_id = auth.uid()), so no recruiter-role privilege is
-    // required — the same SELECT + joins resolves cleanly. isFreeRecruiter
-    // is forced false above for self-preview, so identityCols always
-    // include first_name/last_name in this branch.
+    // required — the same SELECT + joins resolves cleanly.
     if (!isRecruiter && !isSelfPreview) return;
     if (tierLoading) return;
     // #52 — id placeholder (Capacitor) : pas de fetch faux id, rester en loading.
     if (id === "placeholder") return;
     const supabase = createClient();
-    const identityCols = isFreeRecruiter ? "" : "first_name, last_name,";
+    /* Temps 1 — l'identité sort du select POUR LE RECRUTEUR seulement.
+       La condition n'est plus le tier mais QUI REGARDE :
+
+         self-preview  l'athlète lit SA propre ligne, autorisé par la policy
+                       « athletes can read own profile ». La RPC recruteur ne
+                       lui répondrait pas — il garde donc le chemin direct.
+         recruteur     identité par recruiter_athlete_cards (temps 2).
+
+       L'ancien `isFreeRecruiter ? "" : "first_name, last_name,"` masquait
+       côté client, ne couvrait que le nom (photo et dossard partaient en
+       clair) et ignorait la règle Loi 25, qui dépend de date_naissance et
+       consentement_parental — deux colonnes qu'un recruteur ne doit pas lire. */
+    const identityCols = isSelfPreview
+      ? "first_name, last_name, photo_url, numero_jersey, date_naissance,"
+      : "";
     supabase
       .from("athletes")
       .select(`
         id, user_id, ${identityCols}
-        photo_url, verified, profile_completion, last_profile_validation,
-        numero_jersey, annee_diplomation, date_naissance, genre,
+        verified, profile_completion, last_profile_validation,
+        annee_diplomation, genre,
         video_faits_saillants_url, hudl_url, youtube_url, instagram_url,
         video_match_complet_url, video_entrainement_url,
         moyenne_generale, matieres_fortes, mentions_academiques,
@@ -910,6 +939,18 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
         if (error || !data) { setLoadingAthlete(false); return; }
 
         const d = data as Record<string, unknown>;
+
+        /* Temps 2 — l'identité, projetée par le serveur, pour le recruteur.
+           En self-preview on ne l'appelle pas : la RPC est recruteur-only et
+           l'athlète a déjà ses propres champs par le temps 1.
+           `?? null` explicite : la RPC ne rend AUCUNE ligne pour un athlète
+           inactif ou supprimé, et un `undefined` interpolé écrirait
+           "undefined" à l'écran. Même piège que usePipelineCards:72. */
+        const card = isSelfPreview
+          ? null
+          : (await fetchRecruiterAthleteCards(supabase, [id])).get(id) ?? null;
+        const identityVisible = isSelfPreview ? true : (card?.identity_visible ?? false);
+
         setAthleteUserId((d.user_id as string | null) ?? null);
         const evals = d.evaluations as Record<string, unknown>[] | null;
         // Pick by rule (détaillée > simple, then most recent updated_at) —
@@ -932,8 +973,13 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
         const schoolRel = Array.isArray(d.schools) ? d.schools[0] : d.schools;
         const school = schoolRel as { name: string; region: string; city: string; type: string } | null;
 
-        const birthDate = d.date_naissance as string | null;
-        const age = birthDate ? Math.floor((Date.now() - new Date(birthDate).getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : null;
+        /* Self-preview : date_naissance vient de sa propre ligne.
+           Recruteur : l'âge est DÉRIVÉ par la RPC — date_naissance n'est
+           jamais projetée, c'est elle qui décide du masquage Loi 25. */
+        const birthDate = isSelfPreview ? (d.date_naissance as string | null) : null;
+        const age = isSelfPreview
+          ? (birthDate ? Math.floor((Date.now() - new Date(birthDate).getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : null)
+          : (card?.age ?? null);
 
         const progArr = (d.programme_cegep_vise as string[]) || [];
 
@@ -962,13 +1008,24 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
         const mapped: AthleteProfileRecruiterView = {
           ...mockAthleteProfileFull,
           id: d.id as string,
-          firstName: d.first_name as string,
-          lastName: d.last_name as string,
-          photoUrl: (d.photo_url as string) || "",
+          // Identité : self-preview lit sa propre ligne, le recruteur passe
+          // par la carte projetée. Sous masquage le serveur rend NULL, et
+          // `?? ""` garde le contrat `string` sans jamais produire "null".
+          identityVisible,
+          firstName: (isSelfPreview ? (d.first_name as string | null) : card?.first_name) ?? "",
+          lastName: (isSelfPreview ? (d.last_name as string | null) : card?.last_name) ?? "",
+          photoUrl: (isSelfPreview ? (d.photo_url as string | null) : card?.photo_url) ?? "",
           isVerified: d.verified as boolean,
           lastValidation: (d.last_profile_validation as string) || null,
-          profileCompleteness: calculateCompletion(d as AthleteLike, (eval0 as EvalLike) || null, null).percentage,
-          jerseyNumber: (d.numero_jersey as string) || "",
+          /* Complétion : self-preview a toutes les colonnes, il peut encore
+             recalculer. Le recruteur, non — calculateCompletion() pondère
+             photo_url, date_naissance (3) et numero_jersey (3), absentes de
+             son select : le recalcul sous-estimerait tout profil. Valeur
+             serveur dans ce cas. */
+          profileCompleteness: isSelfPreview
+            ? calculateCompletion(d as AthleteLike, (eval0 as EvalLike) || null, null).percentage
+            : (card?.profile_completion ?? (d.profile_completion as number) ?? 0),
+          jerseyNumber: (isSelfPreview ? (d.numero_jersey as string | null) : card?.numero_jersey) ?? "",
           graduationYear: (d.annee_diplomation as number) || 0,
           highlightVideoUrl: (d.video_faits_saillants_url as string) || "",
           hudlUrl: (d.hudl_url as string) || "",
@@ -1697,6 +1754,22 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
   const [pipelineStatus, setPipelineStatus] = useState<RecruitmentStatus>(initialTracking?.status || "none");
   const [showCelebration, setShowCelebration] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  /* Même verrou partagé qu'en desktop : deux entrées, un seul modal, donc
+     un titre variable — sinon « Contacter » annonce le processus. */
+  const [upgradeFeatureTitle, setUpgradeFeatureTitle] = useState("Le processus de recrutement");
+
+  /* Le bouton « Contacter » reste VISIBLE en free et vend la mise à niveau
+     au lieu de disparaître. Voir le jumeau desktop. */
+  const contactLocked = !canMessageCoach;
+  const handleContactClick = () => {
+    triggerHaptic("Light");
+    if (contactLocked) {
+      setUpgradeFeatureTitle("Contacter les athlètes et leurs coachs");
+      setShowUpgradeModal(true);
+      return;
+    }
+    setShowContactMenu(true);
+  };
   // Bottom sheet « Changer le statut » (remplace StatusChangeDropdown).
   const [statusSheetOpen, setStatusSheetOpen] = useState(false);
   const [savingVisit, setSavingVisit] = useState(false);
@@ -2125,7 +2198,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
             ) : (
               <button
                 type="button"
-                onClick={() => { void triggerHaptic("Light"); setShowUpgradeModal(true); }}
+                onClick={() => { void triggerHaptic("Light"); setUpgradeFeatureTitle("Le processus de recrutement"); setShowUpgradeModal(true); }}
                 className="inline-flex items-center gap-2 bg-[#E63946]/10 border border-[#E63946]/30 rounded-full px-4 py-2 text-[13px] font-bold uppercase tracking-wider text-[#E63946] active:bg-[#E63946]/20"
               >
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -2873,18 +2946,22 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
             transition: "transform 280ms cubic-bezier(0.4, 0, 0.2, 1)",
           }}
         >
-          {canMessageCoach && (
-            <button
-              type="button"
-              onClick={() => { triggerHaptic("Light"); setShowContactMenu(true); }}
-              className="flex-1 flex items-center justify-center gap-2 bg-[#E63946] text-white rounded-2xl px-4 py-3.5 font-head font-bold text-[14px] uppercase tracking-widest active:bg-[#D42B22] shadow-[0_0_20px_rgba(230,57,70,0.3)]"
-            >
+          <button
+            type="button"
+            onClick={handleContactClick}
+            className="flex-1 flex items-center justify-center gap-2 bg-[#E63946] text-white rounded-2xl px-4 py-3.5 font-head font-bold text-[14px] uppercase tracking-widest active:bg-[#D42B22] shadow-[0_0_20px_rgba(230,57,70,0.3)]"
+          >
+            {contactLocked ? (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0110 0v4" />
+              </svg>
+            ) : (
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                 <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" />
               </svg>
-              Contacter
-            </button>
-          )}
+            )}
+            Contacter
+          </button>
           {/* Iter 7.23 Sprint 4 — bouton "Ajouter à une liste" (PRO-only).
               Icône liste-avec-+ pour signaler l'action d'ajout. Tap → ouvre
               AddToListSheet (réutilise useRecruiterLists + checkboxes
@@ -3364,7 +3441,7 @@ export default function AthleteRecruiterProfileBodyMobile({ athleteId, viewerMod
           onClose={() => setShowUpgradeModal(false)}
           role="recruteur"
           tierId="rec_pro"
-          lockedFeatureTitle="Le processus de recrutement"
+          lockedFeatureTitle={upgradeFeatureTitle}
           returnTo={typeof window !== "undefined" ? window.location.pathname : undefined}
         />
       )}

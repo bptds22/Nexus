@@ -7,6 +7,7 @@ import React, { useState, useMemo, useCallback, useEffect } from "react";
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { fetchRecruiterAthleteCards, displayFullName } from "@/lib/queries/shared/recruiterAthleteCards";
 import type { RecruitmentStatus } from "@/lib/config/recruitmentStatuses";
 import StarRating from "@/components/ui/StarRating";
 import RecruitmentStatusBadge from "@/components/ui/RecruitmentStatusBadge";
@@ -274,51 +275,37 @@ function AddAthleteModal({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setLoading(false); return; }
 
+      /* Temps 1 — la relation SEULE (embed athletes retiré). */
       const { data } = await supabase
         .from("recruiter_favorites")
-        .select(`
-          athlete_id,
-          athletes!athlete_id(
-            id, first_name, last_name, photo_url, verified, annee_diplomation,
-            numero_jersey, cote_globale_entraineur,
-            sports!sport_id(nom),
-            positions!position_id(nom, abreviation),
-            schools!school_id(name)
-          )
-        `)
+        .select("athlete_id")
         .eq("recruiter_id", user.id);
 
       if (data) {
-        const mapped: ProspectListAthlete[] = data
-          .map((f: Record<string, unknown>) => {
-            const aRaw = f.athletes;
-            const a = (Array.isArray(aRaw) ? aRaw[0] : aRaw) as Record<string, unknown> | null;
-            if (!a) return null;
-            const sportRel = a.sports;
-            const sport = (Array.isArray(sportRel) ? sportRel[0] : sportRel) as { nom?: string } | null;
-            const posRel = a.positions;
-            const pos = (Array.isArray(posRel) ? posRel[0] : posRel) as { abreviation?: string } | null;
-            const schoolRel = a.schools;
-            const school = (Array.isArray(schoolRel) ? schoolRel[0] : schoolRel) as { name?: string } | null;
-            return {
-              id: a.id as string,
-              full_name: `${a.first_name} ${a.last_name}`,
-              photo_url: (a.photo_url as string) || "",
-              jersey: a.numero_jersey != null && a.numero_jersey !== "" ? String(a.numero_jersey) : "",
-              sport: sport?.nom || "",
-              position: pos?.abreviation || "",
-              school: school?.name || "",
-              division: "D1" as const,
-              graduation_year: (a.annee_diplomation as number) || 0,
-              coach_rating: (a.cote_globale_entraineur as number) || 0,
-              is_verified: !!(a.verified),
-              pipeline_status: "identifie" as RecruitmentStatus,
-              added_at: "",
-              recruiter_note: "",
-              priority: false,
-            };
-          })
-          .filter(Boolean) as ProspectListAthlete[];
+        /* Temps 2 — les cartes projetées, résolues par lot. */
+        const cardMap = await fetchRecruiterAthleteCards(
+          supabase,
+          (data as { athlete_id: string }[]).map((f) => f.athlete_id),
+        );
+
+        const mapped: ProspectListAthlete[] = [...cardMap.values()].map((card) => ({
+          id: card.id,
+          identity_visible: card.identity_visible,
+          full_name: displayFullName(card),
+          photo_url: card.photo_url ?? "",
+          jersey: card.numero_jersey != null && card.numero_jersey !== "" ? String(card.numero_jersey) : "",
+          sport: card.sport_nom ?? "",
+          position: card.position_abbr ?? "",
+          school: card.school_name ?? "",
+          division: "D1" as const,
+          graduation_year: card.annee_diplomation ?? 0,
+          coach_rating: card.cote_globale ?? 0,
+          is_verified: !!card.verified,
+          pipeline_status: "identifie" as RecruitmentStatus,
+          added_at: "",
+          recruiter_note: "",
+          priority: false,
+        }));
         setAvailable(mapped.filter(a => !existingIds.has(a.id)));
       }
       setLoading(false);
@@ -374,6 +361,9 @@ function AddAthleteModal({
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2.5 min-w-0">
                     {(() => {
+                      // full_name vaut « Identité réservée » sous masquage —
+                      // le découper donnerait « IR » en initiales. C'est
+                      // identityVisible qui décide, pas le nom.
                       const [first, ...rest] = (a.full_name || "").split(/\s+/);
                       return (
                         <div className="relative w-8 h-8 shrink-0">
@@ -381,6 +371,7 @@ function AddAthleteModal({
                             photoUrl={a.photo_url}
                             firstName={first}
                             lastName={rest.join(" ")}
+                            identityVisible={a.identity_visible}
                             size={32}
                           />
                         </div>
@@ -768,6 +759,7 @@ function ExpandedListView({
                       photoUrl={a.photo_url}
                       firstName={first}
                       lastName={rest.join(" ")}
+                      identityVisible={a.identity_visible}
                       size={40}
                     />
                     <div className="absolute -top-0.5 -right-0.5 z-10">
@@ -985,45 +977,29 @@ function ListesPageContent() {
       const athleteIds = [...new Set(athleteLinks.map(l => l.athlete_id))];
       let athleteMap = new Map<string, ProspectListAthlete>();
       if (athleteIds.length > 0) {
-        const { data: athData } = await supabase
-          .from("athletes")
-          .select(`
-            id, first_name, last_name, photo_url, verified, annee_diplomation,
-            numero_jersey, cote_globale_entraineur,
-            recruitment_status,
-            sports!sport_id(nom),
-            positions!position_id(nom, abreviation),
-            schools!school_id(name, region)
-          `)
-          .in("id", athleteIds);
+        /* Temps 2 — les membres sont déjà résolus (temps 1 sur
+           recruiter_list_members), il ne reste que les cartes projetées. */
+        const cardMap = await fetchRecruiterAthleteCards(supabase, athleteIds);
 
-        if (athData) {
-          for (const a of athData as Record<string, unknown>[]) {
-            const sportRel = a.sports;
-            const sport = (Array.isArray(sportRel) ? sportRel[0] : sportRel) as { nom?: string } | null;
-            const posRel = a.positions;
-            const pos = (Array.isArray(posRel) ? posRel[0] : posRel) as { abreviation?: string } | null;
-            const schoolRel = a.schools;
-            const school = (Array.isArray(schoolRel) ? schoolRel[0] : schoolRel) as { name?: string } | null;
-
-            athleteMap.set(a.id as string, {
-              id: a.id as string,
-              full_name: `${a.first_name} ${a.last_name}`,
-              photo_url: (a.photo_url as string) || "",
-              jersey: a.numero_jersey != null && a.numero_jersey !== "" ? String(a.numero_jersey) : "",
-              sport: sport?.nom || "",
-              position: pos?.abreviation || "",
-              school: school?.name || "",
-              division: "D1",
-              graduation_year: (a.annee_diplomation as number) || 0,
-              coach_rating: (a.cote_globale_entraineur as number) || 0,
-              is_verified: !!(a.verified),
-              pipeline_status: ((a.recruitment_status as string) || "OUVERT").toLowerCase() as RecruitmentStatus,
-              added_at: "",
-              recruiter_note: "",
-              priority: false,
-            });
-          }
+        for (const card of cardMap.values()) {
+          athleteMap.set(card.id, {
+            id: card.id,
+            identity_visible: card.identity_visible,
+            full_name: displayFullName(card),
+            photo_url: card.photo_url ?? "",
+            jersey: card.numero_jersey != null && card.numero_jersey !== "" ? String(card.numero_jersey) : "",
+            sport: card.sport_nom ?? "",
+            position: card.position_abbr ?? "",
+            school: card.school_name ?? "",
+            division: "D1",
+            graduation_year: card.annee_diplomation ?? 0,
+            coach_rating: card.cote_globale ?? 0,
+            is_verified: !!card.verified,
+            pipeline_status: (card.recruitment_status || "OUVERT").toLowerCase() as RecruitmentStatus,
+            added_at: "",
+            recruiter_note: "",
+            priority: false,
+          });
         }
       }
 

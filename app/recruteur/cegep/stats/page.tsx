@@ -8,6 +8,11 @@ import KpiCard from "@/components/director/KpiCard";
 import KpiCardRow from "@/components/director/KpiCardRow";
 import { createClient } from "@/lib/supabase/client";
 import {
+  fetchRecruiterAthleteCards,
+  displayFullName,
+  type RecruiterAthleteCard,
+} from "@/lib/queries/shared/recruiterAthleteCards";
+import {
   BarChart,
   Bar,
   XAxis,
@@ -78,6 +83,9 @@ interface TopTarget {
   athleteId: string;
   rank: number;
   rating: number;
+  /** Déjà résolu par displayFullName() — donc « Identité réservée » sous
+   *  masquage et « Athlète inconnu » si la carte manque. Ne JAMAIS
+   *  reconstruire un nom à partir d'autre chose ici. */
   name: string;
   sport: string;
   position: string;
@@ -128,6 +136,9 @@ function CegepStatsPage() {
   const [schoolName, setSchoolName] = useState("CÉGEP");
   const [team, setTeam] = useState<TeamMember[]>([]);
   const [rawPipeline, setRawPipeline] = useState<PipelineRow[]>([]);
+  /** Cartes projetées, indexées par athlete_id (temps 2). Une clé absente
+   *  signifie « hors périmètre RPC » (status <> ACTIF), PAS « verrouillé ». */
+  const [athleteCards, setAthleteCards] = useState<Map<string, RecruiterAthleteCard>>(new Map());
   const [sports, setSports] = useState<{ id: string; nom: string }[]>([]);
   const [selectedSportId, setSelectedSportId] = useState<string>("all");
   const [sportData, setSportData] = useState<SportRow[]>([]);
@@ -164,14 +175,27 @@ function CegepStatsPage() {
         .in("recruiter_id", teamIds);
       setContactsCount(convCount ?? 0);
 
-      // Get ALL pipeline entries (include sport_id for client-side sport filtering)
+      /* TEMPS 1 — la relation possédée, SANS identité.
+         L'embed garde `sport_id` (filtre client, non projeté par la RPC),
+         le sport, la position et la cote. Il perd first_name/last_name :
+         un embed lit `athletes` en direct et court-circuite entièrement la
+         projection Loi 25, donc affichait le vrai nom d'un mineur sans
+         consentement parental à n'importe quel admin CÉGEP en free. */
       const { data: allPipeline } = await supabase
         .from("recruiter_pipeline")
-        .select("recruiter_id, athlete_id, stage, created_at, updated_at, athletes!athlete_id(sport_id, first_name, last_name, sports!sport_id(nom), positions!position_id(abreviation), evaluations(cote_globale))")
+        .select("recruiter_id, athlete_id, stage, created_at, updated_at, athletes!athlete_id(sport_id, sports!sport_id(nom), positions!position_id(abreviation), evaluations(cote_globale))")
         .in("recruiter_id", teamIds);
 
       const pipeline: PipelineRow[] = allPipeline || [];
       setRawPipeline(pipeline);
+
+      /* TEMPS 2 — l'identité, projetée par le serveur. */
+      setAthleteCards(
+        await fetchRecruiterAthleteCards(
+          supabase,
+          pipeline.map((p) => p.athlete_id).filter(Boolean),
+        ),
+      );
 
       // === SPORT BREAKDOWN (separate queries for each column) ===
       const sportMap = new Map<string, SportRow>();
@@ -342,7 +366,6 @@ function CegepStatsPage() {
     const targets = filteredPipeline
       .map((p) => {
         const athleteRel = p.athletes as unknown as {
-          first_name?: string; last_name?: string;
           sports?: { nom?: string } | { nom?: string }[] | null;
           positions?: { abreviation?: string } | { abreviation?: string }[] | null;
           evaluations?: { cote_globale?: number }[] | { cote_globale?: number } | null;
@@ -357,7 +380,7 @@ function CegepStatsPage() {
           athleteId: p.athlete_id,
           rank: 0,
           rating: (evalObj?.cote_globale as number) || 0,
-          name: `${athleteRel?.first_name || ""} ${athleteRel?.last_name || ""}`.trim(),
+          name: displayFullName(athleteCards.get(p.athlete_id)),
           sport: sportObj?.nom || "",
           position: posObj?.abreviation || "",
           recruiterName: teamNameMap.get(p.recruiter_id) || "",
@@ -375,7 +398,7 @@ function CegepStatsPage() {
       .map((t, i) => ({ ...t, rank: i + 1 }));
 
     return targets;
-  }, [filteredPipeline, team, selectedSportId]);
+  }, [filteredPipeline, team, selectedSportId, athleteCards]);
 
   /* Sort recruiters */
   const sortedRecruiters = useMemo(() => {
@@ -669,6 +692,15 @@ function CegepStatsPage() {
               IDENTIFIE:     "bg-[#6B7280]/15 text-[#9CA3AF] border border-[#6B7280]/30",
             };
             const badgeCls = stageBadge[t.stage] || "bg-[#6B7280]/15 text-[#9CA3AF] border border-[#6B7280]/30";
+            /* Séparateurs JOINTS, pas codés en dur. La forme d'origine
+               `{sport} · {position} — {recruteur}` imprimait « · — » tout
+               seul quand les trois valeurs manquaient : un gabarit qui
+               suppose que ses trous sont remplis, même maladie que le
+               "null null". */
+            const meta = [
+              [t.sport, t.position].filter(Boolean).join(" · "),
+              t.recruiterName,
+            ].filter(Boolean).join(" — ");
             return (
               <div key={`${t.athleteId}-${t.rank}`} className="flex items-center gap-3 py-2.5 px-3 rounded-lg hover:bg-[rgba(255,255,255,0.04)] transition-colors">
                 <span className="text-[18px] font-head font-black w-[36px] shrink-0" style={{ color: t.rank <= 3 ? "#E63946" : "#4a4d56" }}>#{t.rank}</span>
@@ -676,7 +708,7 @@ function CegepStatsPage() {
                 <div className="flex-1 min-w-0">
                   <Link href={`/recruteur/athletes/${t.athleteId}`} className="text-[14px] font-bold text-white hover:text-[#E63946] transition-colors truncate block">{t.name}</Link>
                   <div className="flex items-center gap-2 mt-0.5">
-                    <p className="text-[11px] text-[#6B7280] truncate">{t.sport} · {t.position} — {t.recruiterName}</p>
+                    {meta && <p className="text-[11px] text-[#6B7280] truncate">{meta}</p>}
                     {t.rating > 0 && <StarRating rating={t.rating} size="sm" />}
                   </div>
                 </div>

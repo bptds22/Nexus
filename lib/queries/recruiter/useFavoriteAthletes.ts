@@ -11,12 +11,19 @@
 import { useMemo } from "react";
 import { useFavorites } from "@/lib/queries/shared/useFavorites";
 import { useFavoriteCounts } from "@/lib/queries/shared/useFavoriteCounts";
-import { useAthletesByIds, type AthleteRow } from "@/lib/queries/shared/useAthletesByIds";
+import { useAthletesByIds } from "@/lib/queries/shared/useAthletesByIds";
+import { displayFullName, type RecruiterAthleteCard } from "@/lib/queries/shared/recruiterAthleteCards";
 import { parseDistinctions } from "@/lib/config/badges";
 import { selectBestEvaluation } from "@/lib/evaluations/selectEvaluation";
 
 export interface FavoriAthlete {
   id: string;
+  /** Décision SERVEUR (identity_visible de la RPC). false = nom, photo et
+   *  dossard sont ABSENTS de la réponse, pas juste cachés à l'écran. */
+  identityVisible: boolean;
+  /** Libellé déjà résolu — « Identité réservée » sous masquage. Ne jamais
+   *  reconcaténer firstName + lastName pour l'affichage. */
+  fullName: string;
   firstName: string;
   lastName: string;
   photo: string;
@@ -50,15 +57,10 @@ const BADGE_MAP: Record<string, { label: string; icon: string }> = {
   team_leader: { label: "Leader", icon: "award" },
 };
 
-function transformAthlete(a: AthleteRow, favCount: number): FavoriAthlete {
-  const sportRel = a.sports;
-  const sportObj = (Array.isArray(sportRel) ? sportRel[0] : sportRel) as { nom?: string } | null;
-  const posRel = a.positions;
-  const pos = (Array.isArray(posRel) ? posRel[0] : posRel) as { abreviation?: string } | null;
-  const schoolRel = a.schools;
-  const school = (Array.isArray(schoolRel) ? schoolRel[0] : schoolRel) as { name?: string; region?: string } | null;
-  const committedSchoolRel = a.committed_school;
-  const committedSchool = (Array.isArray(committedSchoolRel) ? committedSchoolRel[0] : committedSchoolRel) as { name?: string } | null;
+function transformAthlete(a: RecruiterAthleteCard, favCount: number): FavoriAthlete {
+  // La RPC projette à plat — plus d'embeds à déballer, donc plus de
+  // `Array.isArray(...) ? [0] : ...` : PostgREST rendait un embed to-one
+  // tantôt objet, tantôt tableau à un élément selon la forme du select.
   const evalRel = a.evaluations;
   const eval0 = selectBestEvaluation(Array.isArray(evalRel) ? evalRel : evalRel ? [evalRel] : []) as { cote_globale?: number | null; distinctions?: unknown } | null;
   // #56 — parseDistinctions gère string[] (legacy) ET {badge,detail} (objet).
@@ -73,19 +75,28 @@ function transformAthlete(a: AthleteRow, favCount: number): FavoriAthlete {
 
   return {
     id: a.id,
-    firstName: a.first_name || "Athlète",
-    lastName: a.last_name || "",
-    photo: a.photo_url || "",
-    position: pos?.abreviation || "",
-    sport: (sportObj?.nom || "").toLowerCase().replace(/ /g, "_"),
-    sportName: sportObj?.nom || "",
-    school: school?.name || "",
-    region: school?.region || "",
-    graduationYear: a.annee_diplomation || 0,
-    stars: (eval0?.cote_globale as number) ?? (a.cote_globale_entraineur as number) ?? 0,
+    identityVisible: a.identity_visible,
+    // displayFullName porte les trois cas (carte absente, masquée, nom
+    // partiel) — jamais d'interpolation directe qui produirait "null null".
+    fullName: displayFullName(a),
+    // Sous masquage le serveur rend NULL : `?? ""` garde le contrat
+    // `string` sans jamais afficher "null". Le repli "Athlète" a disparu —
+    // il masquait un nom vide derrière un faux nom.
+    firstName: a.first_name ?? "",
+    lastName: a.last_name ?? "",
+    photo: a.photo_url ?? "",
+    position: a.position_abbr ?? "",
+    sport: (a.sport_nom ?? "").toLowerCase().replace(/ /g, "_"),
+    sportName: a.sport_nom ?? "",
+    school: a.school_name ?? "",
+    region: a.school_region ?? "",
+    graduationYear: a.annee_diplomation ?? 0,
+    stars: (eval0?.cote_globale as number) ?? a.cote_globale ?? 0,
     isVerified: !!a.verified,
     lastValidation: a.last_profile_validation,
-    hasVideo: !!a.video_faits_saillants_url,
+    // a_une_video : booléen dérivé serveur. L'URL de la vidéo n'est pas
+    // nécessaire pour afficher un badge « a une vidéo ».
+    hasVideo: !!a.a_une_video,
     heightWeight: hwParts.join(" · "),
     favoritedAt: "", // non utilisé dans le rendu actuel (assigné mais jamais lu)
     pipelineStage: null,
@@ -94,7 +105,7 @@ function transformAthlete(a: AthleteRow, favCount: number): FavoriAthlete {
     favCount,
     jersey: a.numero_jersey != null && a.numero_jersey !== "" ? String(a.numero_jersey) : "",
     recruitmentStatus: a.recruitment_status || "OUVERT",
-    committedSchoolName: committedSchool?.name || "",
+    committedSchoolName: a.committed_school_name ?? "",
     openToOffers: a.open_to_offers ?? null,
     badges: distinctions
       .filter((d) => !!BADGE_MAP[d.badge])
