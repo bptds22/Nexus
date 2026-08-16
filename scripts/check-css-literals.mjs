@@ -25,7 +25,7 @@
 // la vérification.
 
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 
 const RACINE = path.resolve(import.meta.dirname, "..");
@@ -88,7 +88,18 @@ let regles = 0;
 const echecs = [];
 
 for (const rel of fichiersSuivis()) {
-  const src = readFileSync(path.join(RACINE, rel), "utf8");
+  const abs = path.join(RACINE, rel);
+  /* SUIVI PAR GIT ≠ PRÉSENT SUR LE DISQUE. Un fichier supprimé dont la
+     suppression n'est pas encore indexée reste listé par `git ls-files`, et le
+     readFileSync qui suivait plantait le pré-build sur un ENOENT.
+
+     Le worktree est partagé par plusieurs sessions : une suppression en cours
+     chez l'une cassait le build de toutes les autres, sur un fichier qu'aucune
+     ne pouvait légitimement restaurer. On saute en silence — un fichier absent
+     n'a pas de CSS à vérifier, et ce script n'est pas un contrôle d'intégrité
+     de l'index. */
+  if (!existsSync(abs)) continue;
+  const src = readFileSync(abs, "utf8");
   for (const m of src.matchAll(DECLARATION)) {
     const [, nom, css] = m;
     if (!RESSEMBLE_A_DU_CSS(css)) continue;

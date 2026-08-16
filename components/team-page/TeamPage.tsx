@@ -215,6 +215,16 @@ export const TP_CSS = `
 
 /* ── SECTION CALENDRIER (entre hero et présentation) — sans boîte ──────────── */
 .tp .cal-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:20px}
+/* Sélecteur de saison — n'apparaît qu'à partir de DEUX saisons (une pill seule
+   est du bruit). La division n'est portée que si elle distingue les saisons. */
+.tp .cal-seasons{display:flex;gap:8px;flex-wrap:wrap;margin:-6px 0 18px}
+.tp .cal-pill{display:inline-flex;align-items:center;gap:7px;padding:7px 14px;border-radius:999px;border:1.5px solid var(--line-card);background:var(--card);color:var(--p-ink);font-size:13px;font-weight:700;letter-spacing:.02em;cursor:pointer;transition:border-color .2s,background .2s,transform .2s var(--pop)}
+.tp .cal-pill:hover{transform:translateY(-1px);border-color:var(--red-lt)}
+.tp .cal-pill.on{background:var(--p);border-color:var(--p);color:var(--p-on)}
+.tp .cal-pill .div{font-size:11px;font-weight:800;opacity:.72;padding:1px 6px;border-radius:999px;background:rgba(0,0,0,.14)}
+.tp .cal-pill.on .div{background:rgba(255,255,255,.18)}
+/* État vide d'UNE saison — la section reste, l'historique reste atteignable. */
+.tp .cal-vide{margin:2px 0 18px;padding:18px 20px;border:1.5px dashed var(--line-card);border-radius:14px;color:var(--muted);font-size:14px;line-height:1.55;max-width:640px}
 .tp .cara-nav{display:flex;gap:8px}
 .tp .cara-nav button{width:40px;height:40px;border-radius:10px;border:1.5px solid var(--line-card);background:var(--card);color:var(--p-ink);font-size:20px;line-height:1;cursor:pointer;transition:transform .2s var(--pop),border-color .2s}
 /* hover : teinte ÉQUIPE (le rouge Nexus est réservé au CTA cibles) */
