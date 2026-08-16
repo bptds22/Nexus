@@ -437,11 +437,17 @@ function RecruiterThreadPage() {
           </div>
         </div>
 
-        {/* Sidebar — context cards ONLY for about-athlete (RECRUTEUR_COACH)
-            threads. A direct RECRUTEUR_ATHLETE thread has no coach card and no
-            "athlète concerné" panel (the athlete is the counterparty, not a subject). */}
-        {!ctx.isDirect && (
+        {/* Barre latérale — TOUJOURS rendue, quel que soit le type de fil.
+            Elle était réservée aux fils RECRUTEUR_COACH, sur le raisonnement
+            que dans un fil direct « l'athlète est l'interlocuteur, pas un
+            sujet ». En pratique ça privait le recruteur de tout contexte
+            exactement là où il en a le plus besoin : il écrit à l'athlète
+            sans voir sa position, sa cote, son école ni son profil. Le
+            panneau coach, lui, reste propre aux fils coach — un fil direct
+            n'a pas de coach à décrire. */}
         <div className="xl:w-[340px] shrink-0 space-y-4 mt-6 xl:mt-0">
+          {!ctx.isDirect && (
+          <>
           {/* ── Coach card ─────────────────────────────── */}
           <CoachInfoCard
             coachId={ctx.coachId}
@@ -455,9 +461,17 @@ function RecruiterThreadPage() {
             athleteId={ctx.athleteId}
             athleteName={ctx.athleteName}
           />
+          </>
+          )}
 
           {/* ── Athlete card ──────────────────────────────── */}
+          {/* Gardé sur athleteId : sans lui le CTA pointerait sur
+              /recruteur/athletes/ tout court. */}
+          {ctx.athleteId && (
           <AthleteInfoCard
+            /* Dans un fil direct l'athlète EST l'interlocuteur : le libellé
+               « Athlète concerné » y désignerait un tiers qui n'existe pas. */
+            title={ctx.isDirect ? "Interlocuteur" : undefined}
             athleteId={ctx.athleteId}
             athleteName={ctx.athleteName}
             athleteInitials={ctx.athleteInitials}
@@ -481,8 +495,8 @@ function RecruiterThreadPage() {
             athleteOpenAnglophone={ctx.athleteOpenAnglophone}
             athleteDistinctions={ctx.athleteDistinctions}
           />
+          )}
         </div>
-        )}
       </div>
 
     </div>

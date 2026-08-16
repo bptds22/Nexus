@@ -43,6 +43,15 @@ interface AthleteInfoCardProps {
    * Laisser `undefined` côté coach — comportement historique intact.
    */
   athleteIdentityVisible?: boolean;
+  /**
+   * Libellé de l'entête. Défaut « Athlète concerné » — les appelants
+   * existants ne changent pas.
+   *
+   * Existe pour le fil RECRUTEUR_ATHLETE, où l'athlète est l'interlocuteur
+   * et non un tiers dont on parle : « concerné » y désignerait quelqu'un
+   * qui n'est pas dans la conversation.
+   */
+  title?: string;
 }
 
 export default function AthleteInfoCard({
@@ -70,6 +79,7 @@ export default function AthleteInfoCard({
   athleteDistinctions = [],
   profileHref,
   athleteIdentityVisible,
+  title = "Athlète concerné",
 }: AthleteInfoCardProps) {
   // Split athleteName so AthletePhoto can compute initials in
   // its onError fallback path. The athleteInitials prop becomes
@@ -79,7 +89,7 @@ export default function AthleteInfoCard({
 
   return (
     <div className="bg-[#1A1D24] rounded-xl border border-[#2D3748]/60 p-6">
-      <p className="text-[11px] font-semibold tracking-[0.25em] uppercase text-[#E63946] mb-4">Athlète concerné</p>
+      <p className="text-[11px] font-semibold tracking-[0.25em] uppercase text-[#E63946] mb-4">{title}</p>
 
       {/* Photo with onError → initials fallback */}
       <div className="flex justify-center">
