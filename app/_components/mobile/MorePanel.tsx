@@ -123,22 +123,7 @@ interface PanelItem {
   rightAccessory?: ReactNode;
 }
 
-/* ── Gestion École pills (gold PRO / blue ADMIN) ────────────── */
-
-function ProPill() {
-  return (
-    <span
-      className="inline-flex items-center h-5 px-2 rounded-full text-[9px] font-black uppercase tracking-[0.12em] shrink-0"
-      style={{
-        color: "#F59E0B",
-        backgroundColor: "rgba(245,158,11,0.12)",
-        border: "1px solid rgba(245,158,11,0.35)",
-      }}
-    >
-      Pro
-    </span>
-  );
-}
+/* ── Gestion École pill (blue ADMIN — rôle, pas palier) ─────── */
 
 function AdminPill() {
   return (
@@ -295,25 +280,19 @@ export default function MorePanel({
       // Plus panel (plus d'écran intermédiaire). Visible à TOUS les
       // coachs (école + civil — labels école pour tous, accepté beta).
       // Chaque ligne porte sa propre logique d'accès :
-      //   1-5 : Pro OR is_school_admin → openExternal web ; sinon
-      //         pill PRO + tap = router.push /coach/settings (upsell).
+      //   1-5 : ouvertes à tous les entraîneurs → openExternal web.
       //   6   : is_school_admin → openExternal web ; sinon pill ADMIN
       //         + toast "Réservé aux administrateurs".
-      // Mirror exact de SchoolGate.tsx (canSee('can_see_mon_ecole') OR
-      // is_school_admin). Le teaser GestionEcoleMobile + le dispatch au
-      // /coach/ecole sont laissés en place (potentiellement utiles
-      // pour la future view recruteur→coach).
-      const hasProOrAdmin = tier !== "free" || isSchoolAdmin;
+      // Le verrou de palier a disparu avec les tiers coach ; seul
+      // subsiste le rôle d'administrateur d'établissement, qui n'a
+      // jamais été un palier. Le teaser GestionEcoleMobile + le
+      // dispatch au /coach/ecole sont laissés en place.
       const tapProSection = (webPath: string) => () => {
-        if (hasProOrAdmin) {
-          if (IS_CAPACITOR) {
-            // iOS (3.1.1) : pas d'ouverture du web (le tunnel d'achat Stripe y est joignable).
-            toast.info({ message: "Disponible sur la version web", detail: "Cette section se gère sur nexussports.ca." });
-          } else {
-            openExternal(`${PUBLIC_BASE}${webPath}`);
-          }
+        if (IS_CAPACITOR) {
+          // iOS (3.1.1) : pas d'ouverture du web (le tunnel d'achat Stripe y est joignable).
+          toast.info({ message: "Disponible sur la version web", detail: "Cette section se gère sur nexussports.ca." });
         } else {
-          router.push("/coach/settings");
+          openExternal(`${PUBLIC_BASE}${webPath}`);
         }
       };
       const tapAdminSection = (webPath: string) => () => {
@@ -339,7 +318,7 @@ export default function MorePanel({
         title: "Gestion École",
         items: [
           // Sublabels intentionally dropped — the label + the
-          // PRO/ADMIN pill + the external-link icon already convey
+          // la pastille ADMIN + the external-link icon already convey
           // meaning. Keeping the rows at the standard ~52px
           // MorePanel height ensures the whole sheet fits on a
           // standard-size phone without scrolling.
@@ -349,8 +328,7 @@ export default function MorePanel({
             href: `${PUBLIC_BASE}/coach/ecole`,
             icon: Icons.school,
             onClick: tapProSection("/coach/ecole"),
-            rightAccessory: hasProOrAdmin ? undefined : <ProPill />,
-            opensWeb: hasProOrAdmin,
+            opensWeb: true,
           },
           {
             key: "ecole-coachs",
@@ -358,8 +336,7 @@ export default function MorePanel({
             href: `${PUBLIC_BASE}/coach/ecole/coachs`,
             icon: Icons.users,
             onClick: tapProSection("/coach/ecole/coachs"),
-            rightAccessory: hasProOrAdmin ? undefined : <ProPill />,
-            opensWeb: hasProOrAdmin,
+            opensWeb: true,
           },
           {
             key: "ecole-stats",
@@ -367,8 +344,7 @@ export default function MorePanel({
             href: `${PUBLIC_BASE}/coach/ecole/stats`,
             icon: Icons.stats,
             onClick: tapProSection("/coach/ecole/stats"),
-            rightAccessory: hasProOrAdmin ? undefined : <ProPill />,
-            opensWeb: hasProOrAdmin,
+            opensWeb: true,
           },
           {
             key: "ecole-analytics",
@@ -376,8 +352,7 @@ export default function MorePanel({
             href: `${PUBLIC_BASE}/coach/ecole/analytics`,
             icon: Icons.trendingUp,
             onClick: tapProSection("/coach/ecole/analytics"),
-            rightAccessory: hasProOrAdmin ? undefined : <ProPill />,
-            opensWeb: hasProOrAdmin,
+            opensWeb: true,
           },
           {
             key: "ecole-placements",
@@ -385,8 +360,7 @@ export default function MorePanel({
             href: `${PUBLIC_BASE}/coach/ecole/placements`,
             icon: Icons.trophy,
             onClick: tapProSection("/coach/ecole/placements"),
-            rightAccessory: hasProOrAdmin ? undefined : <ProPill />,
-            opensWeb: hasProOrAdmin,
+            opensWeb: true,
           },
           {
             key: "ecole-admin",

@@ -20,9 +20,9 @@
                   the `inApp` flag) + master "Recevoir aussi par
                   courriel" toggle at the bottom (computed from
                   email_* flags, mirror on flip). Per-group save bar.
-   6. Abonnement — 2 TierCards (Free / Pro) at coach pricing
-                  ($4.99/mo, $39/yr). Civil variant relabels Mon
-                  École → Ma Ligue in the feature lists.
+   6. (retiré) Abonnement — l'entraîneur est entièrement gratuit :
+                  plus de bandeau de plan, plus de TierCards, plus
+                  d'accès au portail de facturation.
    7. Confidentialité (slim) — 2 external NavRows + read-only
                   consent dates. NO discoverability toggles.
    8. Compte    — Changer le mot de passe
@@ -43,12 +43,11 @@ import { createClient } from "@/lib/supabase/client";
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import { useSubscription } from "@/lib/hooks/useSubscription";
 import {
-  triggerHaptic, openExternal, tierStatus,
+  triggerHaptic, openExternal,
   SectionLabel, Group, ToggleRow, NavRow, DangerRow,
-  TierCard, PasswordChangeSheet, ConfirmSheet,
+  PasswordChangeSheet, ConfirmSheet,
 } from "@/components/shared/settings";
 import { deleteMyAccount } from "@/lib/auth/deleteAccount";
-import { startMobilePortal, fmtSubDate, subStatusLabel } from "@/components/shared/settings/utils";
 import { openLegalDocument } from "@/lib/legal";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
@@ -80,11 +79,10 @@ interface SchoolInfo {
 export function CoachParametresMobile() {
   const router = useRouter();
   const toast = useMobileToast();
-  const { tier, isStripeManaged, refresh, periodEnd, billing, status, cancelAtPeriodEnd } = useSubscription();
-
-  // Coach only has Free/Pro per business rules ; an "all_star" DB
-  // value collapses to Pro for display.
-  const displayTier: "free" | "pro" = tier === "free" ? "free" : "pro";
+  // L'entraîneur n'a plus de palier payant : aucune lecture de tier ici.
+  // `refresh` reste appelé au montage/reprise — l'abonnement gouverne
+  // encore d'autres surfaces (recruteur), et le contexte est partagé.
+  const { refresh } = useSubscription();
 
   /* State (hooks BEFORE any early return — Rules of Hooks). */
   // Consentement marketing — registre DATÉ (privacy_preferences.consent_marketing).
@@ -122,30 +120,10 @@ export function CoachParametresMobile() {
   const [school, setSchool] = useState<SchoolInfo | null>(null);
 
   const [loading, setLoading] = useState(true);
-  const [portalBusy, setPortalBusy] = useState(false);
 
   const [passwordSheetOpen, setPasswordSheetOpen] = useState(false);
   const [deleteSheetOpen, setDeleteSheetOpen] = useState(false);
   const [logoutSheetOpen, setLogoutSheetOpen] = useState(false);
-
-  /* ── Portail Stripe mobile : fetch /api/stripe/portal (Bearer) +
-        in-app browser. Erreur visible (toast). ── */
-  async function handlePortal() {
-    if (portalBusy) return;
-    if (IS_CAPACITOR) return; // iOS (3.1.1) : pas de portail de paiement in-app.
-    triggerHaptic("Light");
-    setPortalBusy(true);
-    try {
-      await startMobilePortal();
-    } catch (e) {
-      toast.error({
-        message: "Portail indisponible",
-        detail: e instanceof Error ? e.message : "Erreur inconnue",
-      });
-    } finally {
-      setPortalBusy(false);
-    }
-  }
 
   /* Refresh le tier au retour de l'in-app browser (portail). Plugins
      absents sur web → no-op. Parité avec RecruteurParametresMobile. */
@@ -298,9 +276,6 @@ export function CoachParametresMobile() {
     router.push("/coach/tableau-de-bord");
   }
 
-  /* ── Tier display ─────────────────────────────────────────── */
-
-  const tierLabel = displayTier === "pro" ? "Pro" : "Gratuit";
   const ecoleLabel = isCivilCoach ? "Ma Ligue" : "Mon École";
   const ecoleStatsLabel = isCivilCoach ? "Stats Ligue" : "Stats École";
   const sectionEcoleLabel = isCivilCoach ? "Ligue & équipe" : "École & programme";
@@ -334,71 +309,6 @@ export function CoachParametresMobile() {
           <h1 className="flex-1 text-center font-head text-[17px] font-black text-white uppercase tracking-tight pr-9">
             Paramètres
           </h1>
-        </div>
-      </div>
-
-      {/* Subscription bandeau */}
-      <div className="px-4 pt-6 pb-2">
-        <div className="rounded-2xl bg-[#1A1D24] border border-white/[0.06] p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-[#22C55E]" />
-              <span className="text-[13px] text-[#9CA3AF]">Plan actuel</span>
-            </div>
-            <span className="text-[14px] font-semibold text-white uppercase tracking-wider">{tierLabel}</span>
-          </div>
-          {displayTier === "free" && (
-            <p className="text-[12px] text-[#6b7280] mt-2">Réservé aux membres Pro : {ecoleLabel.toLowerCase()}, {ecoleStatsLabel.toLowerCase()} et plus.</p>
-          )}
-          {/* Payant + vrai abo Stripe → résumé (statut/cycle/renouvellement)
-              + portail (in-app browser). */}
-          {tier !== "free" && isStripeManaged && (
-            <div className="mt-3 space-y-2">
-              <div className="space-y-1">
-                <div className="flex justify-between text-[12px]">
-                  <span className="text-[#9CA3AF]">Statut</span>
-                  <span className="text-white font-semibold">{subStatusLabel(status)}</span>
-                </div>
-                <div className="flex justify-between text-[12px]">
-                  <span className="text-[#9CA3AF]">Cycle</span>
-                  <span className="text-white font-semibold">{billing === "annual" ? "Annuel" : "Mensuel"}</span>
-                </div>
-                {cancelAtPeriodEnd ? (
-                  <p className="text-[12px] text-[#E63946]">Ton abonnement se termine le {fmtSubDate(periodEnd)}.</p>
-                ) : (
-                  <div className="flex justify-between text-[12px]">
-                    <span className="text-[#9CA3AF]">Renouvellement</span>
-                    <span className="text-white font-semibold">{fmtSubDate(periodEnd)}</span>
-                  </div>
-                )}
-              </div>
-              {IS_CAPACITOR ? (
-                // iOS (3.1.1) : pas de gestion de paiement in-app.
-                // Texte descriptif PUR — aucun lien ni bouton cliquable.
-                <p className="text-[12px] text-[#9CA3AF] leading-snug">
-                  Pour gérer ou modifier ton abonnement, rends-toi sur la version web de Nexus.
-                </p>
-              ) : (
-                <button
-                  type="button"
-                  onClick={handlePortal}
-                  disabled={portalBusy}
-                  className="w-full h-11 rounded-xl border border-white/15 text-white font-bold text-[12px] uppercase tracking-wider active:bg-white/5 disabled:opacity-60"
-                >
-                  {portalBusy ? "Ouverture…" : "Gérer mon abonnement"}
-                </button>
-              )}
-            </div>
-          )}
-          {/* Payant SANS abo Stripe (accès offert) → pas de portail. */}
-          {tier !== "free" && !isStripeManaged && (
-            <div className="mt-3">
-              <p className="text-[13px] font-bold text-white">Accès accordé par l&apos;équipe Nexus</p>
-              <p className="text-[12px] text-[#6b7280] mt-1">
-                Ton plan t&apos;a été offert par Nexus — aucune facturation à gérer.
-              </p>
-            </div>
-          )}
         </div>
       </div>
 
@@ -504,37 +414,6 @@ export function CoachParametresMobile() {
           </button>
         </div>
       )}
-
-      {/* ABONNEMENT — 2 TierCards (Free / Pro), coach pricing */}
-      <SectionLabel>Abonnement</SectionLabel>
-      <div className="px-4 space-y-2">
-        <TierCard
-          name="Gratuit"
-          price="0 $"
-          period=""
-          features={[
-            "Profil coach + création d'athlètes",
-            "Évaluations + vérification",
-            "Messagerie avec recruteurs",
-          ]}
-          status={tierStatus(displayTier, "free")}
-        />
-        <TierCard
-          name="Pro"
-          price="4,99 $"
-          period="/mois"
-          features={[
-            `${ecoleLabel} complète + ${ecoleStatsLabel}`,
-            "Placements & suivi",
-            "Ma Réputation + analytics profils",
-            "Alertes recruteurs en temps réel",
-          ]}
-          status={tierStatus(displayTier, "pro")}
-          accentDot="#F59E0B"
-          onUpgrade={() => router.push("/tarifs")}
-          upgradeLabel="Passer à Pro"
-        />
-      </div>
 
       {/* CONFIDENTIALITÉ — slim (no discoverability toggles) */}
       <SectionLabel>Confidentialité</SectionLabel>

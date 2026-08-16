@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import SchoolGate from "@/components/subscription/SchoolGate";
 import { createClient } from "@/lib/supabase/client";
 import { loadCoachAthleteScope } from "@/lib/queries/coach/getCoachAthletes";
 import { calculateProfileCompletion } from "@/lib/utils/calculateProfileCompletion";
@@ -66,7 +65,7 @@ interface AnalyticsData {
 }
 
 export default function CoachAnalyticsWrapper() {
-  return <SchoolGate><CoachAnalyticsPage /></SchoolGate>;
+  return <CoachAnalyticsPage />;
 }
 
 function CoachAnalyticsPage() {

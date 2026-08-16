@@ -8,8 +8,6 @@ import SchoolSection from "./_components/SchoolSection";
 import NotificationsSection from "./_components/NotificationsSection";
 import AccountSection from "./_components/AccountSection";
 import type { SettingsSection } from "./_components/SettingsNav";
-import SubscriptionManager from "@/components/subscription/SubscriptionManager";
-import SchoolGate from "@/components/subscription/SchoolGate";
 import { CoachParametresMobile } from "@/components/shared/CoachParametresMobile";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
@@ -135,16 +133,14 @@ function AdminEcoleSection({ isCivilCoach = false }: { isCivilCoach?: boolean })
 
   if (loading) {
     return (
-      <SchoolGate>
-        <div className="flex items-center justify-center py-20">
-          <div className="w-8 h-8 border-2 border-[#E63946] border-t-transparent rounded-full animate-spin" />
-        </div>
-      </SchoolGate>
+      <div className="flex items-center justify-center py-20">
+        <div className="w-8 h-8 border-2 border-[#E63946] border-t-transparent rounded-full animate-spin" />
+      </div>
     );
   }
 
   return (
-    <SchoolGate>
+    <>
       <div className="space-y-8">
         {/* Directors table */}
         <div>
@@ -268,7 +264,7 @@ function AdminEcoleSection({ isCivilCoach = false }: { isCivilCoach?: boolean })
           </div>
         )}
       </div>
-    </SchoolGate>
+    </>
   );
 }
 
@@ -331,7 +327,6 @@ function CoachSettingsDesktop() {
           <div className="bg-[#111317]/60 backdrop-blur-sm rounded-xl border border-[#1e2128] p-6 sm:p-8">
             {section === "profil" && <ProfileSection />}
             {section === "ecole" && <SchoolSection isCivilCoach={isCivilCoach} />}
-            {section === "abonnement" && <SubscriptionManager role="COACH" isCivilCoach={isCivilCoach} />}
             {section === "admin_ecole" && <AdminEcoleSection isCivilCoach={isCivilCoach} />}
             {section === "notifications" && <NotificationsSection />}
             {section === "compte" && <AccountSection />}

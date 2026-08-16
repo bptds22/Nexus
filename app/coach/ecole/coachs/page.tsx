@@ -3,7 +3,6 @@
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import SchoolGate from "@/components/subscription/SchoolGate";
 import type { CoachOverview } from "@/lib/types/models";
 
 /* ── Helpers ─────────────────────────────────────────────── */
@@ -102,7 +101,7 @@ function deriveStatus(updatedAt: string | null): CoachOverview["status"] {
 /* ── Component ───────────────────────────────────────────── */
 
 export default function CoachesListPageWrapper() {
-  return <SchoolGate><CoachesListPage /></SchoolGate>;
+  return <CoachesListPage />;
 }
 
 function CoachesListPage() {

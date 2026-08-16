@@ -5,11 +5,10 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { loadCoachAthleteScope } from "@/lib/queries/coach/getCoachAthletes";
 import PlacementsTable from "@/components/director/PlacementsTable";
-import SchoolGate from "@/components/subscription/SchoolGate";
 import type { Placement } from "@/lib/types/models";
 
 export default function PlacementsPageWrapper() {
-  return <SchoolGate><PlacementsPage /></SchoolGate>;
+  return <PlacementsPage />;
 }
 
 function PlacementsPage() {
