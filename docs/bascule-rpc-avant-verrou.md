@@ -228,6 +228,43 @@ dernières 24 h — il peut appartenir à une édition en cours).
 
 ---
 
+## Doctrine — ce que le repli `logo_url` sert, et ce qu'il ne sert pas
+
+Tranché par BP le 2026-08-16, à la suite de la bascule `logo_path` canonique
+(`bb39c82`). Ce n'est pas une tâche : c'est une règle qui contraint les tâches
+à venir. Ce n'est pas non plus une numérotation oubliée — les items numérotés
+sont du travail à faire, celui-ci est une décision.
+
+**La règle**
+
+`schools.logo_url` est une image **scrapée du RSEQ** (`rseq.ca/ImageGen.ashx…`).
+L'établissement ne l'a pas choisie et l'URL dépend d'un tiers. Deux usages, un
+seul légitime :
+
+| | |
+|---|---|
+| ✅ **Continuité d'affichage** | Là où un logo s'affichait déjà : pages école, pages équipe, fiche admin, écoles secondaires. Le repli évite qu'une école jamais configurée retombe sur le monogramme. |
+| ❌ **Introduction de contenu tiers** | Jamais sur une surface publique qui n'en a **jamais** montré. Y brancher le repli ne corrige rien : ça publie 50 images scrapées qui n'y étaient pas. |
+
+Le test à appliquer n'est donc pas « cette surface lit-elle `logo_path` ? » mais
+**« cette surface montrait-elle déjà un logo ? »**. Si non, le repli n'a rien à
+y faire.
+
+**Le cas qui a fixé la règle**
+
+`lib/queries/cegepSearch/searchData.ts` — la recherche PUBLIQUE de cégeps. Le
+fichier portait déjà la décision et son raisonnement aux lignes 75-81 ; elle est
+maintenant **ratifiée**, pas seulement héritée. Le repli n'y est PAS branché et
+ne doit pas l'être. 50 des 61 cégeps ont un `logo_url` scrapé ; les cartes de
+recherche n'en ont jamais affiché un seul.
+
+Le jour où les cégeps veulent leur logo sur cette surface, ce sera par **leur
+propre dépôt** (`logo_path`, via l'éditeur de page) — pas par le scrape. Le
+chemin existe déjà et fonctionne : aucun travail à prévoir, seulement des écoles
+à convaincre de configurer leur page.
+
+---
+
 ## 6. Lectures d'`athletes` sans identité — casseront au verrou, ne fuient rien
 
 À traiter au moment du verrou, pas avant ; aucune urgence Loi 25.
