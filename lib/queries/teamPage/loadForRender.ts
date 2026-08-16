@@ -67,7 +67,8 @@ export async function loadTeamPageForRender(teamId: string): Promise<TeamRenderR
 
   const [sport, school, schoolPage, positions, games, roster, coaches, commits] = await Promise.all([
     svc.from("sports").select("nom").eq("id", team.sport_id).maybeSingle(),
-    svc.from("schools").select("name").eq("id", team.school_id).maybeSingle(),
+    // logo_url = repli d'affichage derrière logo_path (import RSEQ, jamais réécrit).
+    svc.from("schools").select("name, logo_url").eq("id", team.school_id).maybeSingle(),
     svc.from("school_page_content")
       .select("nickname, initiales, logo_path, color_primary, color_dark, color_light, wall_words")
       .eq("school_id", team.school_id).maybeSingle(),
@@ -90,15 +91,17 @@ export async function loadTeamPageForRender(teamId: string): Promise<TeamRenderR
   const sportNom = (sport.data as { nom: string } | null)?.nom ?? "";
   const sportKey = sportKeyFromNom(sportNom);
   const sp = (schoolPage.data ?? null) as Record<string, unknown> | null;
-  const schoolName = (school.data as { name: string } | null)?.name ?? "Mon collège";
+  const schoolRow = school.data as { name: string; logo_url: string | null } | null;
+  const schoolName = schoolRow?.name ?? "Mon collège";
 
   const identity: SchoolIdentity = {
     name: schoolName,
     nickname: (sp?.nickname as string) || schoolName || "",
     initiales: (sp?.initiales as string) || "",
+    // logo_path (déposé par l'école) d'abord, logo_url (import RSEQ) en repli.
     logoUrl: sp?.logo_path
       ? svc.storage.from("school-logos").getPublicUrl(sp.logo_path as string).data.publicUrl
-      : null,
+      : (schoolRow?.logo_url?.trim() || null),
     colorPrimary: (sp?.color_primary as string) || "#A6192E",
     colorDark: (sp?.color_dark as string) || "#5A0E1B",
     colorLight: (sp?.color_light as string) || "#E8C7CD",

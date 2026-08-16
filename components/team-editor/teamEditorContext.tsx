@@ -203,7 +203,9 @@ export function TeamPageEditorProvider({ teamId, children }: { teamId: string; c
         const [page, sport, school, schoolPage, positions, games, coaches, commits, hint, coachAccounts, tousMatchs] = await Promise.all([
           loadTeamPage(client, team.id),
           client.from("sports").select("nom").eq("id", team.sport_id).maybeSingle(),
-          client.from("schools").select("name").eq("id", team.school_id).maybeSingle(),
+          // logo_url = repli d'affichage derrière logo_path : l'aperçu de
+          // l'éditeur doit montrer ce que le public verra, repli compris.
+          client.from("schools").select("name, logo_url").eq("id", team.school_id).maybeSingle(),
           client.from("school_page_content")
             .select("nickname, initiales, logo_path, color_primary, color_dark, color_light, wall_words")
             .eq("school_id", team.school_id).maybeSingle(),
@@ -253,9 +255,10 @@ export function TeamPageEditorProvider({ teamId, children }: { teamId: string; c
           schoolName,
           nickname: (sp?.nickname as string) || schoolName,
           initiales: (sp?.initiales as string) || schoolName.slice(0, 1).toUpperCase(),
+          // logo_path (déposé) d'abord, logo_url (import RSEQ) en repli.
           logoUrl: sp?.logo_path
             ? client.storage.from("school-logos").getPublicUrl(sp.logo_path as string).data.publicUrl
-            : null,
+            : ((school.data as { logo_url?: string | null } | null)?.logo_url?.trim() || null),
           colorPrimary: (sp?.color_primary as string) || "#A6192E",
           colorDark: (sp?.color_dark as string) || "#5A0E1B",
           colorLight: (sp?.color_light as string) || "#E8C7CD",

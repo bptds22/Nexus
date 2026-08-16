@@ -197,7 +197,38 @@ défauts résiduels, tous deux vérifiés :
 
 ---
 
-## 5. Lectures d'`athletes` sans identité — casseront au verrou, ne fuient rien
+## 5. Purge des objets orphelins des buckets d'images
+
+Ajouté le 2026-08-16, décision explicite de BP : **statu quo accepté**, pas de
+refonte du staging d'upload aujourd'hui. À traiter au prochain lot de ménage.
+
+Les uploads écrivent dans le storage **immédiatement**, alors que le chemin
+n'est persisté qu'au « Enregistrer » de l'éditeur. Qui téléverse puis quitte
+sans enregistrer laisse un objet que plus rien ne référence. Cas réel constaté :
+l'école `eade6d14-a725-409f-a6d9-47f4770eda4a` a deux objets
+(`logo.jfif`, `logo.webp`) et un `logo_path` à `NULL`.
+
+Depuis `884294b` les chemins sont versionnés et l'objet remplacé est supprimé
+après un upload réussi, donc **le flux normal ne crée plus d'orphelins**. Restent
+deux sources résiduelles : les téléversements jamais enregistrés, et la
+suppression volontairement non bloquante (si elle échoue, on `console.warn` et
+on continue).
+
+**Script à écrire** — lister puis supprimer les objets non référencés :
+
+| Bucket | Références à croiser |
+|---|---|
+| `school-logos` | `school_page_content.logo_path` |
+| `campus-photos` | `school_page_cards.image_path`, `team_page_content.hero_image_path`, `headcoach_photo_path` |
+
+Vérifier les noms de colonnes au moment d'écrire le script plutôt que de faire
+confiance à ce tableau. Prévoir un mode « liste seulement » avant toute
+suppression, et une fenêtre de grâce (ne pas supprimer un objet créé dans les
+dernières 24 h — il peut appartenir à une édition en cours).
+
+---
+
+## 6. Lectures d'`athletes` sans identité — casseront au verrou, ne fuient rien
 
 À traiter au moment du verrou, pas avant ; aucune urgence Loi 25.
 

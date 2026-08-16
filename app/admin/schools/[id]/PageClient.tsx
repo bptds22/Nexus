@@ -120,6 +120,11 @@ export default function AdminSchoolDetailPage() {
   const [toast, setToast] = useState<string | null>(null);
   const [toastKind, setToastKind] = useState<"info" | "error">("info");
   const [uploadingLogo, setUploadingLogo] = useState(false);
+  /* CHEMIN CANONIQUE du logo : school_page_content.logo_path, la même colonne
+     que l'éditeur de page. `schools.logo_url` n'est plus jamais écrit ici —
+     il survit uniquement comme REPLI d'affichage pour les centaines d'écoles
+     jamais configurées, qui gardent ainsi leur logo d'import RSEQ. */
+  const [logoPath, setLogoPath] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("coachs");
   // Loi 25 logo gate — true only when ≥1 confirmed staff user is linked.
   const [logoAllowed, setLogoAllowed] = useState(false);
@@ -175,6 +180,15 @@ export default function AdminSchoolDetailPage() {
       if (cancelled) return;
       if (!sch) { setSchool(null); setLoading(false); return; }
       setSchool(sch as SchoolRow);
+
+      /* Le logo canonique vit dans school_page_content, pas dans schools.
+         Sans cette lecture, l'admin affichait toujours l'import RSEQ et ne
+         voyait jamais le logo réellement déposé par l'école — c'est ce
+         décalage qui a fait croire que le téléversement ne marchait pas. */
+      const { data: pc } = await supabase
+        .from("school_page_content").select("logo_path").eq("school_id", id).maybeSingle();
+      if (cancelled) return;
+      setLogoPath((pc as { logo_path: string | null } | null)?.logo_path ?? null);
 
       // distinct regions for dropdown
       // Pagination : la liste des régions se déduit de TOUTES les lignes.
@@ -512,69 +526,70 @@ export default function AdminSchoolDetailPage() {
   // logo_url n'étant PAS dans le patch de handleSave, on persiste tout de
   // suite via le même pattern from("schools").update. Le gate d'affichage
   // Loi 25 (logoAllowed) n'est PAS touché — on ajoute juste la capacité.
-  /* Préfixe des logos d'école dans le bucket `avatars`. Sert aussi à décider
-     si l'ancienne valeur de logo_url nous appartient (donc supprimable) ou
-     vient d'un import externe (rseq.ca) — qu'on ne touche évidemment pas. */
-  const LOGO_PREFIX = "logos/schools/";
-
-  /** Extrait le chemin storage d'une URL publique `avatars`, ou null si
-   *  l'URL est externe / d'une autre forme. */
-  function cheminDepuisUrlPublique(url: string): string | null {
-    const marqueur = "/storage/v1/object/public/avatars/";
-    const i = url.indexOf(marqueur);
-    if (i === -1) return null;
-    const chemin = url.slice(i + marqueur.length).split("?")[0];
-    return chemin.startsWith(LOGO_PREFIX) ? decodeURIComponent(chemin) : null;
-  }
+  /* ORDRE DU REPLI, identique à toutes les surfaces publiques (page école,
+     page équipe, éditeurs) : logo_path déposé d'abord, import RSEQ ensuite.
+     Inverser ferait réapparaître l'image scrapée par-dessus le choix
+     explicite de l'établissement. */
+  const logoAffiche = logoPath
+    ? supabase.storage.from("school-logos").getPublicUrl(logoPath).data.publicUrl
+    : (S("logo_url").trim() || null);
 
   async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploadingLogo(true);
-    // On capture l'ancienne valeur AVANT l'upload : c'est elle qu'on supprimera.
-    const ancienChemin = cheminDepuisUrlPublique(S("logo_url"));
+    // Capturé AVANT l'upload : c'est l'objet qu'on supprimera après succès.
+    const ancienChemin = logoPath;
 
-    /* Chemin VERSIONNÉ — même correctif que les éditeurs de page et
-       d'équipe. Un nom fixe écrasait l'objet en place : URL identique, donc
-       CDN et navigateur continuaient de servir l'ancienne image. */
+    /* Bucket `school-logos` et non plus `avatars` : même bucket, même
+       convention de chemin et même colonne que l'éditeur de page. Il n'y a
+       plus deux systèmes de logo qui s'ignorent.
+
+       Le 1er segment DOIT être le school_id — c'est lui que
+       can_edit_school_page vérifie dans les policies « ma_page assets ». La
+       version va dans le nom de fichier, jamais dans le préfixe. */
     const res = await uploadImage(file, {
-      bucket: "avatars",
-      pathBase: `${LOGO_PREFIX}logo_${id}_${Date.now()}`,
+      bucket: "school-logos",
+      pathBase: `${id}/logo_${id}_${Date.now()}`,
       preserveTransparency: true,
     });
     if (!res.ok) { notify(`Échec du téléversement : ${res.message}`, "error"); setUploadingLogo(false); return; }
 
     const supabase = createClient();
-    /* `.select()` N'EST PAS COSMÉTIQUE. Sans lui, un UPDATE que RLS filtre
-       rend 204 sans erreur ET sans ligne : `error` est null, on affichait
-       « Logo mis à jour », et rien n'était écrit. Le nombre de lignes
-       revenues est la SEULE preuve que l'écriture a eu lieu. */
+    /* upsert : une école peut n'avoir aucune ligne de contenu de page (c'est
+       le cas des centaines jamais configurées). onConflict school_id pour que
+       le second dépôt mette à jour au lieu de violer la contrainte.
+
+       `.select()` N'EST PAS COSMÉTIQUE : sans lui, une écriture que RLS
+       filtre rend 204 sans erreur ET sans ligne — `error` est null, on
+       affichait « Logo mis à jour », et rien n'était écrit. Le nombre de
+       lignes revenues est la SEULE preuve de l'écriture. */
     const { data: lignes, error } = await supabase
-      .from("schools")
-      .update({ logo_url: res.publicUrl })
-      .eq("id", id)
-      .select("logo_url");
+      .from("school_page_content")
+      .upsert({ school_id: id, logo_path: res.path }, { onConflict: "school_id" })
+      .select("logo_path");
 
     if (error) { notify(`Échec de la sauvegarde : ${error.message}`, "error"); setUploadingLogo(false); return; }
     if (!lignes || lignes.length === 0) {
       notify(
-        "Échec de la sauvegarde : aucune ligne modifiée.\nL'image a été téléversée mais la fiche n'a pas été mise à jour (droits insuffisants ?).",
+        "Échec de la sauvegarde : aucune ligne écrite.\nL'image a été téléversée mais la fiche n'a pas été mise à jour (droits insuffisants ?).",
         "error",
       );
       setUploadingLogo(false);
       return;
     }
 
-    /* L'état local prend la valeur RENDUE PAR LA BASE, pas celle qu'on
-       espérait écrire. Le champ ne reflète que ce qui est réellement stocké. */
-    setS("logo_url", lignes[0].logo_url);
+    /* L'état prend la valeur RENDUE PAR LA BASE, pas celle qu'on espérait
+       écrire. Le champ ne reflète que ce qui est réellement stocké. */
+    setLogoPath(lignes[0].logo_path as string | null);
 
-    /* Suppression de l'ancien objet — APRÈS la confirmation d'écriture, et
-       non bloquante : le logo est déjà en place, un orphelin ne justifie pas
-       d'alarmer l'utilisateur. Ne s'applique jamais aux URL externes
-       (import RSEQ), que cheminDepuisUrlPublique rend à null. */
+    /* Suppression de l'ancien objet — APRÈS confirmation d'écriture, et non
+       bloquante : le logo est déjà en place, un orphelin ne justifie pas
+       d'alarmer l'utilisateur. `schools.logo_url` n'est jamais touché : c'est
+       une URL externe (rseq.ca) qui ne nous appartient pas, et elle reste le
+       repli d'affichage des écoles non configurées. */
     if (ancienChemin && ancienChemin !== res.path) {
-      const { error: delErr } = await supabase.storage.from("avatars").remove([ancienChemin]);
+      const { error: delErr } = await supabase.storage.from("school-logos").remove([ancienChemin]);
       if (delErr) console.warn(`[handleLogoUpload] ancien logo non supprimé (${ancienChemin})`, delErr);
     }
 
@@ -830,9 +845,9 @@ export default function AdminSchoolDetailPage() {
             linked to this school; otherwise hidden (no consent = no image). */}
         <div className="flex items-center gap-4 mb-5 pb-5 border-b border-[#2D3748]">
           <div className="w-20 h-20 rounded-lg bg-[#111317] border border-[#2D3748] flex items-center justify-center overflow-hidden shrink-0">
-            {logoAllowed && S("logo_url") ? (
+            {logoAllowed && logoAffiche ? (
               /* eslint-disable-next-line @next/next/no-img-element */
-              <img src={S("logo_url")} alt={`Logo ${S("name")}`} className="w-full h-full object-contain" />
+              <img src={logoAffiche} alt={`Logo ${S("name")}`} className="w-full h-full object-contain" />
             ) : (
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4a4d56" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4" />
@@ -840,10 +855,14 @@ export default function AdminSchoolDetailPage() {
             )}
           </div>
           <div className="text-[12px] leading-relaxed min-w-0">
-            {!S("logo_url") ? (
-              <span className="text-[#6b7280]">Aucun logo importé pour cet établissement.</span>
+            {!logoAffiche ? (
+              <span className="text-[#6b7280]">Aucun logo pour cet établissement.</span>
             ) : logoAllowed ? (
-              <span className="text-[#9CA3AF]">Logo affiché — au moins un utilisateur confirmé est rattaché à cet établissement.</span>
+              <span className="text-[#9CA3AF]">
+                {logoPath
+                  ? "Logo déposé — affiché sur la page publique de l'établissement."
+                  : "Logo d'import RSEQ — sera remplacé dès qu'un logo est déposé ici."}
+              </span>
             ) : (
               <span className="text-[#F59E0B]">Logo masqué — aucun utilisateur confirmé rattaché. L&apos;affichage reste bloqué tant qu&apos;aucun consentement réel n&apos;existe (Loi 25, droits d&apos;image).</span>
             )}

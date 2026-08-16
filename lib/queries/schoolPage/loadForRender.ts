@@ -24,7 +24,10 @@ export type RenderResult =
 
 export async function loadSchoolPageForRender(idOrSlug: string): Promise<RenderResult> {
   const svc = createServiceClient();
-  const q = svc.from("schools").select("id, name, city, region, langue, reseau, lat, lng, geo_source").limit(1);
+  // `logo_url` est lu comme REPLI d'affichage derrière school_page_content.logo_path
+  // — voir dbToProgramPage. Sans lui, les écoles jamais configurées perdaient
+  // leur logo d'import RSEQ et retombaient sur le monogramme.
+  const q = svc.from("schools").select("id, name, city, region, langue, reseau, lat, lng, geo_source, logo_url").limit(1);
   const { data: rows } = UUID.test(idOrSlug)
     ? await q.eq("id", idOrSlug)
     : await q.ilike("name", "%" + idOrSlug.replace(/-/g, "%") + "%");
