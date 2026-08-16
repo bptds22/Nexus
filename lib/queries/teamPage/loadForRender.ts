@@ -108,6 +108,64 @@ export async function loadTeamPageForRender(teamId: string): Promise<TeamRenderR
     wallWords: Array.isArray(sp?.wall_words) ? (sp!.wall_words as string[]).filter(Boolean) : [],
   };
 
+  /* SAISONS DISPONIBLES — les lignes `teams` sœurs de la même équipe.
+     Clé volontairement SANS division : mesuré en base, les 30 identités
+     cégep présentes dans deux saisons changent toutes de division. L'inclure
+     couperait l'équipe en deux exactement quand son historique commence.
+     Une équipe promue de D3 en D2 reste la même page ; la division part sur
+     la pill de saison. */
+  const { data: soeurs } = await svc
+    .from("teams")
+    .select("id, season, division")
+    .eq("school_id", team.school_id)
+    .eq("sport_id", team.sport_id)
+    .eq("gender", team.gender ?? "")
+    .not("season", "is", null);
+
+  const lignesSoeurs = ((soeurs ?? []) as { id: string; season: string; division: string | null }[])
+    .filter((t) => t.season);
+
+  /* Les matchs de TOUTES les saisons en une requête. Un match appartient à la
+     saison de la ligne d'équipe qui le porte — on n'interroge donc pas
+     `games.season`, qui pourrait diverger de `teams.season` sur une ligne
+     dont la saison a été avancée à la main. */
+  const idsSoeurs = lignesSoeurs.map((t) => t.id);
+  const { data: matchsToutesSaisons } = idsSoeurs.length
+    ? await svc.from("games")
+        .select("game_date, game_time, venue, home_team_id, visitor_team_id, home_name_raw, visitor_name_raw, home_score, visitor_score, is_played")
+        .or(idsSoeurs.map((id) => `home_team_id.eq.${id},visitor_team_id.eq.${id}`).join(","))
+        .order("game_date")
+    : { data: [] };
+
+  /* UNE SEULE LIGNE PAR SAISON — cas réel : Ahuntsic aligne en 2025-2026 une
+     équipe de flag D2 ET une D3. Sans arbitrage, le sélecteur afficherait deux
+     pills « 2025-2026 » indiscernables.
+
+     Ces deux équipes sont réellement distinctes et ont chacune leur page ; le
+     sélecteur n'est pas là pour les fusionner. On garde donc, par saison,
+     celle qui prolonge le mieux la page courante : même division d'abord,
+     sinon la première venue. L'autre reste accessible par sa propre page. */
+  const parSaison = new Map<string, { id: string; season: string; division: string | null }>();
+  for (const t of lignesSoeurs) {
+    const dejaLa = parSaison.get(t.season);
+    if (!dejaLa) { parSaison.set(t.season, t); continue; }
+    const memeDivision = (x: { division: string | null }) => x.division === team.division;
+    if (!memeDivision(dejaLa) && memeDivision(t)) parSaison.set(t.season, t);
+  }
+  // La saison courante pointe toujours sur LA ligne demandée, jamais sa jumelle.
+  if (team.season) parSaison.set(team.season, { id: team.id, season: team.season, division: team.division });
+
+  const seasons = [...parSaison.values()]
+    .map((t) => ({
+      saison: t.season,
+      teamId: t.id,
+      division: t.division,
+      games: ((matchsToutesSaisons ?? []) as GameRow[])
+        .filter((g) => g.home_team_id === t.id || g.visitor_team_id === t.id),
+    }))
+    // Plus récente en tête — tri lexical, correct sur « 2026-2027 » vs « 2025-2026 ».
+    .sort((a, b) => b.saison.localeCompare(a.saison));
+
   const posRows = (positions.data ?? []) as PositionRow[];
   // Besoins : défauts du CODE + lignes enregistrées par-dessus. Tant que rien
   // n'est enregistré, `needs` reste vide → le moteur dérivé du roster gouverne.
@@ -161,6 +219,7 @@ export async function loadTeamPageForRender(teamId: string): Promise<TeamRenderR
     camps: page.camps,
     needs,
     games: (games.data ?? []) as GameRow[],
+    seasons,
     roster: rosterRows,
     commitRows: (commits.data ?? []) as CommitRow[],
     headCoachName,

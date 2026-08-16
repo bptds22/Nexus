@@ -170,6 +170,25 @@ export interface TeamEvent {
   scoreContre?: number | null; // score de l'adversaire
 }
 
+/** Une saison sélectionnable dans le calendrier.
+ *
+ *  IDENTITÉ INTER-SAISONS : `school_id + sport_id + gender`, division EXCLUE.
+ *  Mesuré en base — sur les cégeps, les 30 identités présentes dans deux
+ *  saisons portent toutes plus d'une division. Une équipe qui monte de D3 en
+ *  D2 reste la même équipe pour qui regarde la page ; l'inclure dans la clé
+ *  la couperait en deux au moment précis où l'historique devient intéressant.
+ *
+ *  D'où `division` ici : la pill l'affiche quand elle diffère d'une saison à
+ *  l'autre, ce qui dit la promotion au lieu de la cacher. */
+export interface TeamSeason {
+  /** Libellé DB, ex. « 2026-2027 ». Sert de clé de sélection. */
+  saison: string;
+  /** L'id de la ligne `teams` de CETTE saison — les matchs y sont rattachés. */
+  teamId: string;
+  division: string | null;
+  events: TeamEvent[];
+}
+
 /** Recrue engagée (section « Déjà engagées »). MOCK ; Bloc 2 = commits DB.
  *  R2 : noms publics de mineurs → gérés par visiblePublic (consentement). */
 export interface Commit {
@@ -232,8 +251,14 @@ export interface TeamData {
   heroZoom?: number | null;
   // Contenu éditorial (section Présentation). null → section absente.
   content?: TeamContent | null;
-  // Calendrier (section Calendrier). [] / absent → section absente.
+  // Calendrier (section Calendrier) — événements de la saison COURANTE.
+  // Conservé pour les appelants qui ne fournissent pas `seasons` (mocks,
+  // fixtures, aperçu éditeur) : le composant y retombe sans rien changer.
   events?: TeamEvent[] | null;
+  /** Toutes les saisons de cette équipe, la plus récente en tête.
+   *  Absent → le composant se rabat sur `events` et ne rend aucun sélecteur.
+   *  Une seule entrée → pas de sélecteur non plus : une pill seule est du bruit. */
+  seasons?: TeamSeason[] | null;
   // Recrues engagées (section « Déjà engagées »). [] / absent → section absente.
   commits?: Commit[] | null;
   // Sections masquées par le collège (team_page_content.hidden_sections) :

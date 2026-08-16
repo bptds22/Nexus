@@ -202,6 +202,10 @@ export interface BuildTeamDataInput {
   camps: { titre: string; event_date: string; lieu: string }[];
   needs: TeamNeed[];
   games: GameRow[];
+  /** Saisons SŒURS de la même équipe (même école + sport + genre), matchs
+   *  compris — chacune avec l'id de sa propre ligne `teams`, puisque c'est lui
+   *  qui décide domicile/extérieur. Absent → pas de sélecteur de saison. */
+  seasons?: { saison: string; teamId: string; division: string | null; games: GameRow[] }[];
   roster: { pos: string; annee_fin: number | null }[];
   commitRows: CommitRow[];
   headCoachName: string;
@@ -289,6 +293,19 @@ export function buildTeamData(i: BuildTeamDataInput): TeamData {
     heroZoom: i.content?.hero_zoom ?? 100,
     content,
     events: buildEvents(i.team.id, i.games, hidden.has("camps") ? [] : i.camps),
+    /* Les camps ne sont rattachés qu'à la saison COURANTE : ils vivent dans
+       team_events de CETTE ligne d'équipe. Les saisons passées ne rendent donc
+       que leurs matchs, ce qui est exact — on n'invente pas un camp rétroactif. */
+    seasons: i.seasons?.map((s) => ({
+      saison: s.saison,
+      teamId: s.teamId,
+      division: s.division,
+      events: buildEvents(
+        s.teamId,
+        s.games,
+        s.teamId === i.team.id && !hidden.has("camps") ? i.camps : [],
+      ),
+    })) ?? null,
     commits: hidden.has("engagees") ? [] : commits,
     needs: i.needs,
     hiddenSections: [...hidden],
