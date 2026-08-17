@@ -29,13 +29,23 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useMobileToast } from "@/components/mobile/MobileToast";
 import AthletePhoto from "@/components/shared/AthletePhoto";
+import {
+  fetchRecruiterAthleteCards,
+  displayFullName,
+} from "@/lib/queries/shared/recruiterAthleteCards";
 import { triggerHaptic } from "@/lib/haptics";
 
 
 interface PickerAthlete {
   id: string;
+  /** VIDES sous identité réservée — le serveur ne les envoie pas. Conservés
+   *  pour le filtre de recherche, jamais pour l'affichage : voir `fullName`. */
   firstName: string;
   lastName: string;
+  /** Déjà résolu par displayFullName() : « Identité réservée » sous masquage. */
+  fullName: string;
+  /** Décision SERVEUR. false → photo et nom sont ABSENTS de la réponse. */
+  identityVisible: boolean;
   photoUrl: string | null;
   coachId: string;
   position: string;
@@ -45,38 +55,17 @@ interface PickerAthlete {
   source: "favorite" | "pipeline" | "both";
 }
 
+/** Ce qui reste de l'embed : l'identifiant et le coach. `coach_id` n'est PAS
+ *  projeté par recruiter_athlete_cards et il sert à filtrer (sans coach, pas
+ *  de destinataire) — même partage assumé qu'au profil et au fil. */
 interface RawAthleteRow {
   id?: string;
-  first_name?: string;
-  last_name?: string;
-  photo_url?: string | null;
   coach_id?: string | null;
-  positions?: { abreviation?: string } | { abreviation?: string }[] | null;
-  schools?: { name?: string } | { name?: string }[] | null;
-  sports?: { nom?: string } | { nom?: string }[] | null;
 }
 
 function flatten<T>(rel: T | T[] | null | undefined): T | null {
   if (!rel) return null;
   return Array.isArray(rel) ? (rel[0] ?? null) : rel;
-}
-
-function mapAthleteRow(a: RawAthleteRow | null, source: "favorite" | "pipeline"): PickerAthlete | null {
-  if (!a || !a.id) return null;
-  const pos = flatten(a.positions);
-  const school = flatten(a.schools);
-  const sport = flatten(a.sports);
-  return {
-    id: a.id,
-    firstName: a.first_name || "",
-    lastName: a.last_name || "",
-    photoUrl: a.photo_url ?? null,
-    coachId: a.coach_id || "",
-    position: pos?.abreviation || "",
-    school: school?.name || "",
-    sport: sport?.nom || "",
-    source,
-  };
 }
 
 export function MessageNouveauMobile() {
@@ -100,10 +89,14 @@ export function MessageNouveauMobile() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setLoading(false); return; }
 
-      const athleteSelect = `id, first_name, last_name, photo_url, coach_id,
-        sports!sport_id(nom),
-        positions!position_id(abreviation),
-        schools!school_id(name)`;
+      /* TEMPS 1 — les relations POSSÉDÉES (favoris, pipeline), sans identité.
+         L'embed ne garde que l'id et le coach : `coach_id` n'est pas projeté
+         par la RPC et sert à filtrer (sans coach, aucun destinataire).
+         Tout le reste — nom, photo, sport, position, école — vient du temps 2,
+         donc de la projection Loi 25. Avant, cet embed lisait first_name,
+         last_name et photo_url en direct : la 15e surface, et la dernière du
+         portail recruteur à court-circuiter le masquage. */
+      const athleteSelect = "id, coach_id";
 
       const [favRes, pipeRes] = await Promise.all([
         supabase
@@ -118,24 +111,45 @@ export function MessageNouveauMobile() {
 
       if (cancelled) return;
 
-      const byId = new Map<string, PickerAthlete>();
-      // Pipeline d'abord (ordre stable), favoris ensuite — favoris écrase
-      // si présent dans les deux (source devient "both" pour debug).
-      for (const row of pipeRes.data || []) {
-        const raw = flatten((row as Record<string, unknown>).athletes as RawAthleteRow | RawAthleteRow[] | null);
-        const mapped = mapAthleteRow(raw, "pipeline");
-        if (mapped && mapped.coachId) byId.set(mapped.id, mapped);
-      }
-      for (const row of favRes.data || []) {
-        const raw = flatten((row as Record<string, unknown>).athletes as RawAthleteRow | RawAthleteRow[] | null);
-        const mapped = mapAthleteRow(raw, "favorite");
-        if (!mapped || !mapped.coachId) continue;
-        const existing = byId.get(mapped.id);
-        if (existing) {
-          byId.set(mapped.id, { ...existing, source: "both" });
-        } else {
-          byId.set(mapped.id, mapped);
+      // Coach par athlète + provenance, avant toute résolution d'identité.
+      const coachPar = new Map<string, string>();
+      const sourcePar = new Map<string, "favorite" | "pipeline" | "both">();
+      const noter = (rows: unknown[], source: "favorite" | "pipeline") => {
+        for (const row of rows || []) {
+          const raw = flatten((row as Record<string, unknown>).athletes as RawAthleteRow | RawAthleteRow[] | null);
+          if (!raw?.id || !raw.coach_id) continue; // sans coach → pas de destinataire
+          coachPar.set(raw.id, raw.coach_id);
+          const vu = sourcePar.get(raw.id);
+          sourcePar.set(raw.id, vu && vu !== source ? "both" : source);
         }
+      };
+      // Pipeline d'abord (ordre stable), favoris ensuite.
+      noter(pipeRes.data || [], "pipeline");
+      noter(favRes.data || [], "favorite");
+
+      /* TEMPS 2 — les cartes projetées. Une carte ABSENTE (athlète non ACTIF)
+         retire l'athlète du sélecteur : on ne propose pas d'écrire au sujet de
+         quelqu'un dont on ne peut rien afficher. */
+      const cartes = await fetchRecruiterAthleteCards(supabase, [...coachPar.keys()]);
+      if (cancelled) return;
+
+      const byId = new Map<string, PickerAthlete>();
+      for (const [athleteId, coachId] of coachPar) {
+        const c = cartes.get(athleteId);
+        if (!c) continue;
+        byId.set(athleteId, {
+          id: athleteId,
+          firstName: c.first_name ?? "",
+          lastName: c.last_name ?? "",
+          fullName: displayFullName(c),
+          identityVisible: c.identity_visible,
+          photoUrl: c.photo_url ?? null,
+          coachId,
+          position: c.position_abbr ?? "",
+          school: c.school_name ?? "",
+          sport: c.sport_nom ?? "",
+          source: sourcePar.get(athleteId) ?? "pipeline",
+        });
       }
 
       const list = Array.from(byId.values()).sort((a, b) => {
@@ -168,6 +182,10 @@ export function MessageNouveauMobile() {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return athletes;
+    /* Le filtre porte sur firstName/lastName, PAS sur fullName, et c'est
+       délibéré : sous masquage les deux premiers sont vides, donc un athlète
+       à identité réservée ne répond à aucune recherche par nom. Passer par
+       fullName le ferait remonter en tapant « identité ». */
     return athletes.filter((a) =>
       `${a.firstName} ${a.lastName}`.toLowerCase().includes(q),
     );
@@ -189,10 +207,16 @@ export function MessageNouveauMobile() {
     setSelectedId(a.id);
     // Template court — on n'a pas le nom du coach (RLS), on évite
     // "Bonjour Coach [vide]". Reste neutre.
+    //
+    // `fullName` et NON firstName/lastName : c'est la plus sensible des
+    // interpolations de ce fichier, parce qu'elle n'affiche pas le nom, elle
+    // l'ÉCRIT dans un message envoyé à un coach. Sous masquage la forme
+    // précédente produisait « le profil de   (QB) » — deux espaces et un trou
+    // au milieu d'un texte que le recruteur allait envoyer tel quel.
     setMessageBody(
       `Bonjour,
 
-J'ai consulté le profil de ${a.firstName} ${a.lastName}${a.position ? ` (${a.position})` : ""} et j'aimerais discuter de son avenir au niveau collégial.
+J'ai consulté le profil de ${a.fullName}${a.position ? ` (${a.position})` : ""} et j'aimerais discuter de son avenir au niveau collégial.
 
 `,
     );
@@ -352,17 +376,21 @@ J'ai consulté le profil de ${a.firstName} ${a.lastName}${a.position ? ` (${a.po
                       className="w-full flex items-center gap-3 p-3 bg-[#1A1D24] rounded-2xl active:bg-[#22262e] transition-colors text-left"
                     >
                       <div className="relative w-12 h-12 rounded-full overflow-hidden flex-shrink-0 bg-[#2F3440]">
-                        <AthletePhoto photoUrl={a.photoUrl ?? ""} firstName={a.firstName} lastName={a.lastName} size={48} />
+                        <AthletePhoto photoUrl={a.photoUrl ?? ""} firstName={a.firstName} lastName={a.lastName} size={48} identityVisible={a.identityVisible} />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-[16px] font-semibold text-white truncate">
-                          {a.firstName} {a.lastName}
+                          {a.fullName}
                         </p>
                         <p className="text-[14px] text-white/55 truncate">
                           {[a.position || a.sport, a.school].filter(Boolean).join(" · ") || "—"}
                         </p>
+                        {/* Sous masquage, firstName est vide : « Coach de  »
+                            resterait suspendu dans le vide. On retombe sur le
+                            libellé générique — l'athlète est déjà nommé (ou
+                            déclaré réservé) juste au-dessus. */}
                         <p className="text-[13px] text-white/40 truncate mt-0.5">
-                          Coach de {a.firstName}
+                          {a.identityVisible && a.firstName ? `Coach de ${a.firstName}` : "Coach de cet athlète"}
                         </p>
                       </div>
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4a4d56" strokeWidth="2.4" strokeLinecap="round">
@@ -384,14 +412,14 @@ J'ai consulté le profil de ${a.firstName} ${a.lastName}${a.position ? ` (${a.po
           <div className="px-4 pt-3 pb-3 border-b border-white/[0.06]">
             <div className="flex items-center gap-3">
               <div className="relative w-12 h-12 rounded-full overflow-hidden flex-shrink-0 bg-[#2F3440]">
-                <AthletePhoto photoUrl={selected.photoUrl ?? ""} firstName={selected.firstName} lastName={selected.lastName} size={48} />
+                <AthletePhoto photoUrl={selected.photoUrl ?? ""} firstName={selected.firstName} lastName={selected.lastName} size={48} identityVisible={selected.identityVisible} />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-[11px] uppercase tracking-[0.18em] font-bold text-white/40">
                   Tu écris au coach de
                 </p>
                 <p className="text-[16px] font-semibold text-white truncate">
-                  {selected.firstName} {selected.lastName}
+                  {selected.fullName}
                 </p>
                 <p className="text-[13px] text-white/55 truncate">
                   {[selected.position || selected.sport, selected.school].filter(Boolean).join(" · ") || "—"}
