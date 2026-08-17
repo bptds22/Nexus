@@ -2,12 +2,17 @@
 
 import Link from "next/link";
 import useAthleteVisibility, { useAthleteVisibilityPro } from "@/hooks/useAthleteVisibility";
-import { relativeTimeFr } from "@/lib/utils/relativeTime";
 
 /* ═══════════════════════════════════════════════════════════════
-   Ma Visibilité — Recruiter activity on athlete profile
-   Free: KPIs, chart, regions, comparison
-   Pro: CÉGEP cards, recruiter rows
+   Ma Visibilité — activité des recruteurs sur le profil athlète.
+
+   Contenu : compteurs, graphique hebdomadaire, régions, comparaison,
+   et la liste des CÉGEPs qui ont consulté le profil.
+
+   ⚠ L'ATHLÈTE NE VOIT JAMAIS QUEL RECRUTEUR l'a consulté — décision
+   produit : le CÉGEP oui, la personne non. La section « Qui consulte
+   ton profil » a été retirée pour cette raison ; elle affichait des
+   noms de recruteurs.
 ═══════════════════════════════════════════════════════════════ */
 
 const sectionTitle = "text-[11px] font-semibold tracking-[2px] uppercase text-[#555]";
@@ -173,10 +178,7 @@ export default function VisibilitePage() {
       {/* ── Section 5: Quels CÉGEPs consultent ton profil ── */}
       <CegepDetailsSection />
 
-      {/* ── Section 6: Qui consulte ton profil ────────────── */}
-      <RecruiterDetailsSection />
-
-      {/* ── Section 7: Verified + video impact ────────────────── */}
+      {/* ── Section 6: Verified + video impact ────────────────── */}
       <div className="bg-[#1A1D24] rounded-xl border border-[#E63946]/10 p-5">
         <p className="text-[13px] text-[#9CA3AF] mb-4">Les profils vérifiés avec vidéo reçoivent :</p>
         <div className="grid grid-cols-3 gap-4">
@@ -208,17 +210,22 @@ export default function VisibilitePage() {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   Sous-composants « qui a consulté mon profil ».
+   Section « quels CÉGEPs consultent ton profil ».
 
-   Anciennement réservés au palier Pro de l'athlète, aujourd'hui
-   ouverts à tous : l'athlète n'a plus de palier payant. Leurs
-   hooks se déclenchent donc au montage, sans condition.
+   Anciennement réservée au palier Pro de l'athlète, aujourd'hui
+   ouverte à tous : l'athlète n'a plus de palier payant. Son hook
+   se déclenche au montage, sans condition.
 
-   ⚠ LE VERROU DE BASE N'EST PAS LEVÉ. Le RPC
-   get_my_athlete_view_details() porte encore `user_has_pro()` et
+   ⚠ LE VERROU DE BASE N'EST PAS ENCORE LEVÉ. Le RPC
+   get_my_athlete_view_details() porte toujours `user_has_pro()` et
    rend ZÉRO ligne à un athlète gratuit — c'est-à-dire à tous
-   aujourd'hui. Ces deux sections s'affichent donc, mais avec leur
-   état vide, tant que ce verrou n'est pas retiré côté base.
+   aujourd'hui. La section s'affiche donc avec son état vide.
+
+   Ce texte est volontairement neutre (« Les consultations de ton
+   profil arrivent bientôt ici. ») : il reste vrai que le verrou
+   soit en place ou levé. L'ancienne formulation affirmait que
+   personne n'avait consulté, ce qui est faux — des CÉGEPs l'ont
+   fait, la donnée est simplement verrouillée.
 ═══════════════════════════════════════════════════════════════ */
 
 function CegepDetailsSection() {
@@ -266,56 +273,10 @@ function CegepDetailsSection() {
         </div>
       ) : (
         <div className="bg-[#1A1D24] rounded-xl border border-white/5 p-6 text-center">
-          <p className="text-[13px] text-[#555]">Aucun CÉGEP n&apos;a encore consulté ton profil</p>
+          <p className="text-[13px] text-[#555]">Les consultations de ton profil arrivent bient&ocirc;t ici.</p>
         </div>
       )}
     </div>
   );
 }
 
-function RecruiterDetailsSection() {
-  const { recruiterDetails, loading } = useAthleteVisibilityPro();
-
-  if (loading) {
-    return <div className="h-40 bg-[#1A1D24] rounded-xl animate-pulse" />;
-  }
-
-  return (
-    <div>
-      <div className="flex items-center mb-4">
-        <h2 className={sectionTitle}>Qui consulte ton profil</h2>
-      </div>
-      {recruiterDetails.length > 0 ? (
-        <div className="space-y-2">
-          {recruiterDetails.map((r) => (
-            <div
-              key={r.recruiterId}
-              className="bg-[#1A1D24] rounded-lg flex items-center gap-3.5"
-              style={{ padding: "12px 14px" }}
-            >
-              <Initials name={r.name} size={36} />
-              <div className="flex-1 min-w-0">
-                <p className="text-[13px] font-bold text-white">{r.name}</p>
-                {r.cegepName && <p className="text-[11px] text-[#6b7280]">{r.cegepName}</p>}
-              </div>
-              <div className="flex items-center gap-3 shrink-0">
-                <span className="flex items-center gap-1 text-[12px] text-[#9CA3AF]">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
-                  {r.viewCount}
-                </span>
-                {r.hasFavorited && (
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="#E63946" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" /></svg>
-                )}
-                <span className="text-[11px] text-[#4a4d56]">{relativeTimeFr(r.lastViewed)}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="bg-[#1A1D24] rounded-xl border border-white/5 p-6 text-center">
-          <p className="text-[13px] text-[#555]">Aucun recruteur n&apos;a encore consulté ton profil</p>
-        </div>
-      )}
-    </div>
-  );
-}

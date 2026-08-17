@@ -31,15 +31,6 @@ export interface CegepDetail {
   interestLevel: "fort" | "interesse" | "nouveau";
 }
 
-export interface RecruiterDetail {
-  recruiterId: string;
-  name: string;
-  cegepName: string | null;
-  viewCount: number;
-  lastViewed: string;
-  hasFavorited: boolean;
-}
-
 export interface AthleteVisibility {
   stats: VisibilityStats;
   weeklyViews: WeeklyView[];
@@ -51,7 +42,6 @@ export interface AthleteVisibility {
 
 export interface AthleteVisibilityPro {
   cegepDetails: CegepDetail[];
-  recruiterDetails: RecruiterDetail[];
   loading: boolean;
 }
 
@@ -165,14 +155,23 @@ export default function useAthleteVisibility(): AthleteVisibility {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   Pro-tier hook: fetches PII (recruiter names, cegep names).
-   Must be called ONLY inside a FeatureGate-wrapped component so
-   gated rows never reach the browser for free users.
+   Détail par CÉGEP — passe par le RPC get_my_athlete_view_details.
+
+   Le nom conserve le suffixe « Pro » pour ne pas rompre les
+   références, mais il n'y a plus de condition de palier côté
+   interface : l'athlète est entièrement gratuit.
+
+   NE REND PLUS D'IDENTITÉ DE RECRUTEUR. Le regroupement se fait
+   par CÉGEP ; `recruiterCount` est un compteur, jamais un nom.
+   Décision produit : le CÉGEP oui, la personne non.
+
+   ⚠ Le RPC porte encore `user_has_pro()` en base et rend zéro
+   ligne à un athlète gratuit. La section reste donc vide tant que
+   ce verrou n'est pas retiré.
 ═══════════════════════════════════════════════════════════════ */
 export function useAthleteVisibilityPro(): AthleteVisibilityPro {
   const [data, setData] = useState<AthleteVisibilityPro>({
     cegepDetails: [],
-    recruiterDetails: [],
     loading: true,
   });
 
@@ -246,18 +245,7 @@ export function useAthleteVisibilityPro(): AthleteVisibilityPro {
         }))
         .sort((a, b) => b.totalViews - a.totalViews);
 
-      const recruiterDetails: RecruiterDetail[] = details
-        .slice(0, 10)
-        .map((d: any) => ({
-          recruiterId: d.recruiter_id,
-          name: d.recruiter_name || "Recruteur",
-          cegepName: d.cegep_name || null,
-          viewCount: Number(d.visit_count || 0),
-          lastViewed: d.last_viewed_at,
-          hasFavorited: favSet.has(d.recruiter_id),
-        }));
-
-      setData({ cegepDetails, recruiterDetails, loading: false });
+      setData({ cegepDetails, loading: false });
     };
 
     load();
